@@ -51,12 +51,14 @@ test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real c
   ok('window.IntMapSatProto=', 'testable resolve hook exposed');
 });
 
-test('R158 #10 → R159 sidebar open/close — smooth per-frame resize + edge anchor (no stretch-snap, no map pan)', () => {
-  ok('window._sbBeginAnim=function(onEnd, anchor)', 'the sidebar-slide gate takes a pre-captured anchor (R159)');
-  ok("if(!e||(e.propertyName!=='margin-left'&&e.propertyName!=='margin-right')) return;", 'transitionend on the map-box margin ends the animation');
-  ok('const coalescedResize=()=>{ if(_sbRAF) return;', 'the ResizeObserver stands down while the R159 slide loop resizes every frame');
-  ok('window._sbBeginAnim(null, _sbAnchor0)', 'left toggle anchors the map (pre-captured) so opening/closing never pans it (R159)');
+test('R158 #10 → R160 sidebar open/close — never moves the map (overlay; per-frame/anchor machinery deleted)', () => {
+  // R160 superseded both the R158 (transitionend snap) and R159 (per-frame resize + anchor) schemes with a
+  // structural overlay: the map-container is a fixed full-width backdrop, so a toggle can't resize/recentre it.
+  gone("window._sbBeginAnim=function(onEnd, anchor)", 'the R159 anchor-taking slide gate is gone');
+  gone('window._sbBeginAnim(null, _sbAnchor0)', 'the left toggle no longer drives an anchored slide');
   gone('if (time - start < 450) requestAnimationFrame(sync);', 'the old per-frame 450ms resize loop is gone');
+  ok('const coalescedResize=()=>{ if(_rsRAF) return;', 'a plain coalesced resize remains for GENUINE viewport changes only');
+  ok('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'the map is a fixed full-width backdrop under both sidebars');
 });
 
 test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', () => {

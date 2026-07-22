@@ -172,10 +172,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     蓄積禁止）。全世界の全湖沼・全山岳が対象。診断: `window._imLabelStats()`。
     ③**ティッカーは真のインフロー帯** — `position:fixed`廃止→`.operation-room`直後の**通常フロー要素**（不透明
     `--bg-color`、30px）。表示倍率やdvh差異でも地図に重なり得ない。
-    ④**右レイヤーサイドバー＝左と同じ展開式** — fixedオーバーレイ廃止→`.operation-room`の**フレックス子**
-    （`margin-right`トランジション＝左サイドバーの鏡像、`--lsr-w`）。開くと**地図が縮む**。検索・プレビュー・
-    Active layers維持。（バグ修正: `.lsr-thumb`スパンが名前抽出querySelectorに先に一致し、右モードでActive layers
-    チップ名が全て空になっていた → 全抽出箇所に `:not(.lsr-thumb)`）
+    ④**右レイヤーサイドバー** — 検索・プレビュー・Active layers維持。（バグ修正: `.lsr-thumb`スパンが名前抽出
+    querySelectorに先に一致し、右モードでActive layersチップ名が全て空になっていた → 全抽出箇所に `:not(.lsr-thumb)`）
+    **※#R160 更新**: かつては `margin-right` で地図を縮めていた（「開くと地図が縮む」）が、**開閉で地図が動く**問題の
+    構造的根治として、左右どちらのサイドバーも**固定フル幅の地図に重なるオーバーレイ**へ変更（`@media(min-width:769px)
+    { body:not(.ws-mode) .map-container{position:absolute;inset:0;width:100%} + .sidebar{position:absolute} }`）。
+    地図コンテナは開閉で一切リサイズ・移動しない＝再センタリングが構造的に起きない。右アンカーHUDは `body.lsr-open`
+    時に `right:calc(var(--lsr-w)+…)` でパネル幅ぶん左へ退避。既定幅 `--lsr-w` は 340→**300**（#R160）。
     ⑤**Active layersは最上部** — sticky **top** の先頭要素（クラシック/右サイドバー/モバイルシート共通）。チップは
     **固定高1行の横スクロール**で、R32の「1pxも動かない」保証は高さ不変で維持（空でも"(0)"で常時表示）。5言語化。
     ⑥**POI全域網羅＋根拠明示** — 地名が実OSM行政リレーションに解決されたら **Overpassエリアクエリ**
@@ -1043,16 +1046,16 @@ supabase/
 
 ## #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
 
-### §7.1 `IntMapGeoEngine` — レンダラー抽象層（業務委託・第1段階）
+### §7.1 `IntMapGeoEngine` — レンダラー抽象層（業務委託・第1段階＝#R152 / 第2段階＝#R160）
 `window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
 
 - **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
-- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決）・`events`（on/off/once）。
+- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas）**・`events`（on/off/once）。
 - **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
-- **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **`pitch`/`bearing` の `easeTo` を `IntMapGeoEngine.camera.easeTo` へ**通す。
-- **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120 の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②pin/marker と GeoJSON ヘルパ（addChoro/addRaster）を engine へ、③別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、④Cesium Adapter の骨子。
-- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`（facade/adapter/contract/camera 配線の存在）＋既存スモーク（`smoke.spec` の 7 critical globals＋#map で全体ブートを担保）。
+- **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
+- **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②pin/marker と GeoJSON ヘルパ（addChoro/addRaster）を engine へ、③`flyTo`/`fitBounds` 系ディスパッチの移行、④別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑤Cesium Adapter の骨子。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`（facade/adapter/contract/拡幅契約/camera 配線の存在）＋既存スモーク（`smoke.spec` の critical globals＋#map で全体ブートを担保）。
 
 ### その他12件（要点）
 ①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。

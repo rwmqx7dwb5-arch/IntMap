@@ -36,24 +36,24 @@ test('R159 #2 redundant "その他の収集記事" source pile removed; never-ze
   ok("L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')", 'never-zero "Related articles" fallback kept');
 });
 
-test('R159 #3 right sidebar default width smaller (380 → 340)', () => {
-  ok(':root{--lsr-w:min(340px,92vw);}', 'CSS default width 340');
-  ok('Math.max(280,Math.min(340,', 'JS default cap 340 (floor 280 kept)');
+test('R159 #3 right sidebar default width smaller (R160 superseded: 340 → 300)', () => {
+  // R160 shrank it once more ("もう少し小さく"): 380→340→300. Assert the CURRENT value so the check stays truthful.
+  ok(':root{--lsr-w:min(300px,92vw);}', 'CSS default width 300');
+  ok('Math.max(280,Math.min(300,', 'JS default cap 300 (floor 280 kept)');
   gone('--lsr-w:min(380px,92vw)', 'the old 380 default is gone');
+  gone('--lsr-w:min(340px,92vw)', 'the old 340 default is gone');
 });
 
-test('R159 #4 sidebar open/close is smooth and never pans the map (left anchored)', () => {
-  ok('window._sbBeginAnim=function(onEnd, anchor){', 'slide gate takes a pre-captured anchor');
-  ok('function _sbCaptureAnchor(side){', 'anchor captured as a PAGE position BEFORE the reflow (correct even if the reflow snaps instantly)');
-  ok('function _sbReanchor(){', 're-pin helper keeps the map visually stationary');
-  ok('function _sbFrame(){', 'per-frame rAF resize loop (no stretch-then-snap)');
-  ok('if(isFinite(dx)&&isFinite(dy)&&(Math.abs(dx)>0.05||Math.abs(dy)>0.05)) map.panBy([-dx,-dy],{duration:0});', 'anchor compensates the resize pan');
-  ok("const _sbAnchor0=(!document.body.classList.contains('sidebar-glass') && !isMobile()) ? _sbCaptureAnchor('left') : null;", 'the LEFT toggle captures the anchor before the reflow');
-  ok('window._sbBeginAnim(null, _sbAnchor0)', 'the LEFT toggle anchors so the map never moves');
-  ok('const coalescedResize=()=>{ if(_sbRAF) return;', 'the ResizeObserver stands down while the slide loop runs');
-  // the redundant solid-mode easeTo (0→0 padding no-op that still drove a 400ms camera cycle) is gone — now frosted-only
-  ok('SOLID mode adds NO optical offset', 'solid mode no longer runs a redundant easeTo');
-  ok("cur.left){ map.setPadding({top:0,right:0,bottom:0,left:0}); }", 'solid mode only resets a stale left-padding, never animates the camera');
+test('R159 #4 → R160: sidebar open/close never moves the map (STRUCTURAL: overlay, machinery deleted)', () => {
+  // R160 replaced the whole R158/R159 per-frame-resize + edge-anchor scheme with a structural fix: BOTH sidebars
+  // OVERLAY a fixed full-width map, so the map-container never resizes on toggle and the camera is never touched —
+  // it is impossible for the map to move. The old machinery is gone.
+  gone('function _sbCaptureAnchor(side){', 'the R159 anchor-capture machinery is deleted');
+  gone('function _sbReanchor(){', 'the R159 reanchor machinery is deleted');
+  gone('function _sbFrame(){', 'the R159 per-frame resize loop is deleted');
+  gone('map.panBy([-dx,-dy],{duration:0})', 'no per-frame pan compensation anymore');
+  ok('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'desktop map-container is a fixed full-width backdrop');
+  ok('body:not(.ws-mode) .sidebar{ position:absolute;', 'desktop sidebar overlays the map in BOTH solid and frosted styles');
 });
 
 test('R159 #6 news-pin band hides when its hover popup opens', () => {

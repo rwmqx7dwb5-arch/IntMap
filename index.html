@@ -1890,14 +1890,17 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
     .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
-    /* Desktop: SOLID keeps the sidebar in normal flex flow (map centerd beside it, no shift).
-       A FROSTED mode overlays the sidebar on the map so the glass actually has the map behind it
-       to blur (#23); the map keeps its optical center via JS padding (applySidebarStyle). */
+    /* (#R160) Desktop classic mode ALWAYS overlays the sidebar on a FULL-WIDTH map — in BOTH the solid and
+       frosted styles — so opening/closing the sidebar can NEVER resize or recentre the map. The map is a fixed
+       full-bleed backdrop; the sidebar simply slides over it (opaque hides the strip it covers, frosted blurs
+       the map behind it #23). Collapsing REVEALS the covered strip rather than shifting the whole view, so the
+       existing map content never moves ("左サイドバーを開閉すると地図が勝手に動いてしまう" の根絶). There is NO
+       per-frame resize / camera reanchor / optical-padding on toggle anymore — that machinery is deleted.
+       ws-mode (each panel is its own window) keeps its own !important layout and is excluded. */
     @media(min-width:769px){
-      .sidebar{ position:relative; }
-      body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }
-      body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
-      body.sidebar-glass .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
+      body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }
+      body:not(.ws-mode) .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
+      body:not(.ws-mode) .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
     }
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
@@ -1927,14 +1930,29 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
        sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
     .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:1200; }
     .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat{ color:#fff !important; font-weight:600; }
-    body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
-    body.sidebar-glass .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
-    /* (#R13c) Desktop legends now sit on the LEFT of the map. In frosted-overlay mode the sidebar floats
-       over the map, so push the legends past it (clear of the sidebar); collapsed sidebar → flush left. */
+    /* (#R13c/#R160) Desktop classic mode now ALWAYS overlays the sidebar (solid + frosted), so the left-anchored
+       HUD (coord readout, data/Köppen legends) must clear the open sidebar; a collapsed sidebar → flush left.
+       Desktop-only (mobile's --sidebar-w is 100vw, which would fling these off-screen) and not ws-mode. */
     @media(min-width:769px){
-      body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
+      body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
+      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
+      body:not(.ws-mode) .data-legend:not([data-dragged]), body:not(.ws-mode) .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
+      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
+      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
+      /* country-info popup (bottom-left) rides the same rail so the overlaying sidebar never hides it. */
+      body:not(.ws-mode) .country-info{ left:calc(var(--sidebar-w) + 24px); }
+      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .country-info{ left:24px; }
+    }
+
+    /* (#R160) RIGHT layer sidebar now OVERLAYS the map too (it no longer pushes the map-container's margin —
+       that was what shifted "地図領域の位置"). So the right-anchored map HUD must slide left by the panel width
+       while it is open, exactly as it used to when the map shrank. Smoothly, and desktop-only / not ws-mode. */
+    @media(min-width:769px){
+      body:not(.ws-mode) .map-controls-top, body:not(.ws-mode) #tool-panel,
+      body:not(.ws-mode) #sat-controller, body:not(.ws-mode) .news-timeline{ transition:right .38s cubic-bezier(0.25,1,0.5,1); }
+      body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }
+      body.lsr-open:not(.ws-mode) #tool-panel, body.lsr-open:not(.ws-mode) #sat-controller{ right:calc(var(--lsr-w) + 24px); }
+      body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 10px); }
     }
 
     /* --- Avatar crop modal (#12) --- */
@@ -4128,20 +4146,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   if(isMobile()) sidebar.classList.add('collapsed'); /* start collapsed on phone */
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-    /* (#R159) capture the map anchor BEFORE the flex reflow (which can snap instantly), so the LEFT sidebar never
-       pans the map — desktop solid only (frosted overlays the map; mobile uses the bottom sheet). */
-    const _sbAnchor0=(!document.body.classList.contains('sidebar-glass') && !isMobile()) ? _sbCaptureAnchor('left') : null;
+    /* (#R160) The sidebar now OVERLAYS a fixed full-width map (desktop) or is the bottom sheet (mobile), so the
+       map-container never changes size on toggle — the map simply cannot move. No anchor capture, no per-frame
+       resize, no camera reanchor (all of that machinery is gone). Just slide the panel and let the search-pill
+       layout recompute against the sidebar's new open/closed state. */
     sidebar.classList.toggle('collapsed');
-    try{ applySidebarStyle(true); }catch(_){}   /* frosted: animate the overlay map-padding with the slide (#4) */
-    /* SOLID mode: the map-container is a flex child that physically grows/shrinks as the sidebar
-       slides, so resize every frame keeps the camera centerd in the remaining area. In FROSTED mode
-       the container size is unchanged (the sidebar overlays it) — the animated setPadding above already
-       glides the center, so the per-frame resize would only fight that ease; skip it. */
-    const frosted=document.body.classList.contains('sidebar-glass');
-    /* (#R158) SOLID mode reflows the flex map-container as the sidebar slides — suppress the per-frame buffer resize and
-       snap once at transitionend (no flicker). FROSTED mode overlays the map (fixed size) and glides via setPadding above,
-       so it needs no resize at all. */
-    if(!frosted || isMobile()){ try{ window._sbBeginAnim&&window._sbBeginAnim(null, _sbAnchor0); }catch(_){} }   /* (#R159) desktop solid: anchor (pre-captured) so opening/closing the LEFT sidebar never pans the map */
+    try{ applySidebarStyle(false); }catch(_){}   /* keep the frost/material classes in sync; NO camera padding */
+    try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* nudge ms-narrow (sidebar size is unchanged, so ResizeObserver won't) */
   });
   /* (#R15) Keyboard shortcut: Esc collapses the sidebar. Ignored while typing in a field, while a modal
      or popup is open (Esc should close those first), or on mobile (it uses the bottom sheet, not a sidebar). */
@@ -4362,38 +4373,19 @@ window.addEventListener('DOMContentLoaded', () => {
      SUPPRESS the per-frame resize while a known sidebar slide is in flight and resize the buffer exactly ONCE at
      transitionend — the canvas CSS-scales its existing buffer for the ~0.4 s (imperceptible) then snaps sharp. Only the
      TIMING of the buffer resize changes; layout, animation curves and camera are untouched. */
-  /* (#R159) The R158 "suppress the per-frame resize, snap ONCE at transitionend" made the open/close feel gross
-     ("開閉の動きがきもくなっている"): the GL buffer CSS-stretched for the whole 0.4 s and then POPPED sharp, and because
-     map.resize() re-centres the geo-centre in the (asymmetrically) regrown container, the map JUMPED sideways at the
-     snap. Replace it with a SMOOTH per-frame rAF resize so the canvas tracks the container continuously (no stretch,
-     no pop), plus an optional EDGE ANCHOR that re-pins one stationary container edge every frame so the map does NOT
-     move at all — the left sidebar must never shift the map ("左サイドバーによって地図の位置は変えなくていい"). */
-  let _sbSuppressUntil=0, _sbEndTimer=0, _sbOnEnd=null, _sbRAF=0, _sbAnimEnd=0, _sbAnchor=null;
-  function _sbStopLoop(){ if(_sbRAF){ try{ cancelAnimationFrame(_sbRAF); }catch(_){} _sbRAF=0; } }
-  /* (#R159) Capture, BEFORE the layout changes, the geo currently under a STATIONARY container edge, stored as an
-     absolute PAGE position. Left sidebar → the RIGHT edge holds still; right sidebar → the LEFT edge. Capturing pre-
-     reflow (and targeting a page position, not a container-local one) makes the anchor correct whether the flex reflow
-     is animated over 0.4 s or snaps instantly. */
-  function _sbCaptureAnchor(side){ try{ if(!map||!map.project) return null; const mc=document.getElementById('map-container'); if(!mc) return null;
-      const r=mc.getBoundingClientRect(); if(!r.width||!r.height) return null;
-      const pageX=(side==='left')?(r.right-1):(r.left+1); const pageY=r.top+Math.round(r.height/2);
-      return { side, pageX, pageY, lngLat:map.unproject([pageX-r.left, pageY-r.top]) }; }catch(_){ return null; } }
-  /* force that geo back to the SAME page position after each resize → the map never visually moves. */
-  function _sbReanchor(){ try{ const a=_sbAnchor; if(!a||!map) return; const mc=document.getElementById('map-container'); if(!mc) return;
-      const r=mc.getBoundingClientRect(); if(!r.width) return; const tx=a.pageX-r.left, ty=a.pageY-r.top;
-      const p=map.project(a.lngLat); const dx=tx-p.x, dy=ty-p.y;
-      if(isFinite(dx)&&isFinite(dy)&&(Math.abs(dx)>0.05||Math.abs(dy)>0.05)) map.panBy([-dx,-dy],{duration:0}); }catch(_){} }
-  function _sbFinishAnim(){ _sbStopLoop(); _sbSuppressUntil=0; _sbAnimEnd=0; if(_sbEndTimer){ clearTimeout(_sbEndTimer); _sbEndTimer=0; } try{ if(map){ map.resize(); _sbReanchor(); } }catch(_){} _sbAnchor=null; const cb=_sbOnEnd; _sbOnEnd=null; if(cb){ try{ cb(); }catch(_){} } }
-  function _sbFrame(){ _sbRAF=0; try{ if(map){ map.resize(); _sbReanchor(); } }catch(_){} if(performance.now()<_sbAnimEnd){ _sbRAF=requestAnimationFrame(_sbFrame); } else { _sbFinishAnim(); } }
-  window._sbBeginAnim=function(onEnd, anchor){ if(onEnd) _sbOnEnd=onEnd;
-    _sbAnchor=(anchor&&typeof anchor==='object')?anchor:(typeof anchor==='string'?_sbCaptureAnchor(anchor):null);   /* object = pre-captured before the reflow (preferred); string = capture now (best-effort) */
-    _sbAnimEnd=performance.now()+480; _sbSuppressUntil=0;   /* run the smooth loop a hair past the 0.4 s CSS slide */
-    if(_sbEndTimer) clearTimeout(_sbEndTimer); _sbEndTimer=setTimeout(_sbFinishAnim,640);   /* safety net if rAF/transitionend stalls */
-    _sbStopLoop(); _sbRAF=requestAnimationFrame(_sbFrame); };
-  window.addEventListener('transitionend',e=>{ try{ if(!e||(e.propertyName!=='margin-left'&&e.propertyName!=='margin-right')) return; const t=e.target; if(t&&(t.id==='map-container'||t.id==='sidebar'||t.id==='layer-sidebar-r'||(t.classList&&t.classList.contains('sidebar')))) _sbFinishAnim(); }catch(_){} },true);
-  let _rsRAF=0; const coalescedResize=()=>{ if(_sbRAF) return; if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };   /* (#R159) our slide loop already resizes every frame — let the observer stand down while it runs */
+  /* (#R160) The sidebars now OVERLAY a fixed full-width map (desktop; mobile uses the bottom sheet) — see the
+     layout CSS. The map-container NEVER changes size when a panel opens or closes, so there is nothing to resize
+     or re-anchor on toggle: the map physically cannot move. The entire R158/R159 per-frame-resize + edge-anchor
+     machinery (`_sbBeginAnim`/`_sbReanchor`/`_sbCaptureAnchor`/`_sbFinishAnim`) is DELETED — it was the "余計な事"
+     that fought a problem which no longer exists, and it was itself what jerked the map around. We keep only a
+     coalesced resize for GENUINE viewport/container size changes (window resize, devtools, rotation). */
+  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };
   if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
+  /* (#R160) Back-compat shim: a couple of callers still do `_sbBeginAnim(onEnd)` to "reveal the panel, then
+     notify". There is no camera animation to run anymore (the map doesn't move), so just coalesce a resize in
+     case the viewport genuinely changed and fire the callback on the next frame. */
+  window._sbBeginAnim=function(onEnd){ try{ coalescedResize(); }catch(_){} if(typeof onEnd==='function') requestAnimationFrame(()=>{ try{ onEnd(); }catch(_){} }); };
 
   /* Google-Earth-style navigation feel: stepless wheel zoom centerd on the cursor, a little
      snappier than the default, plus a low-angle tilt limit so you can lean into the horizon. */
@@ -7118,6 +7110,14 @@ window.addEventListener('DOMContentLoaded', () => {
           setPaint(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setPaintProperty(id,p,v); }, setLayout(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,p,v); },
           setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) m.setPaintProperty(id,p,v); },
           on(e,c){ const m=_m(); if(m) m.on(e,c); }, off(e,c){ const m=_m(); if(m) m.off(e,c); }, once(e,c){ const m=_m(); if(m) m.once(e,c); },
+          /* (#R160) Phase-2 contract broadening — the common camera getters, zoom controls, render + feature-state ops
+             that call sites still reach for on the raw map. Each is a 1:1 pass-through (byte-identical behaviour), so
+             adopting them anywhere is safe, and a future adapter (Cesium/Earth) only has to implement these. */
+          getZoom(){ const m=_m(); return m?m.getZoom():null; }, getCenter(){ const m=_m(); return m?m.getCenter():null; },
+          getBearing(){ const m=_m(); return m?m.getBearing():0; }, getPitch(){ const m=_m(); return m?m.getPitch():0; }, getBounds(){ const m=_m(); return m?m.getBounds():null; },
+          zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }, zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }, zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }, stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
+          resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
+          setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
           raw(){ return _m(); } };
         /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
            (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
@@ -7126,9 +7126,16 @@ window.addEventListener('DOMContentLoaded', () => {
         return {
           id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
           adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; }, contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
-          camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo) },
+          camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo),
+            /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
+            getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
+            zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop() },
           coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
-          layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v) },
+          layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
+            /* (#R160) feature-state (hover/selection highlighting) through the engine */
+            setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k) },
+          /* (#R160) render surface — resize / repaint / canvas the renderer owns */
+          render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas() },
           events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c) },
           raw(){ return _adapter.raw(); }
         };
@@ -8172,18 +8179,18 @@ window.addEventListener('DOMContentLoaded', () => {
          `.map-container{margin-right:var(--lsr-w)}` (also set INLINE by open()) — and the sidebar merely fills
          the vacated strip as an absolute panel. The map's width never depends on the sidebar's flex/transition
          state, so no failure mode of the panel can ever leave it covering the map: worst case is an empty strip. */
-      st.textContent=':root{--lsr-w:min(340px,92vw);}'   /* (#R154/#R159) smaller default width ("デフォルト幅をもう少し小さく") — 430→380→340 */
+      st.textContent=':root{--lsr-w:min(300px,92vw);}'   /* (#R154/#R159/#R160) smaller default width ("もう少し小さく") — 430→380→340→300 */
         +'body.lsr-avail .operation-room{position:relative;}'
         /* (#R154) LEFT-EDGE drag-resizer — mirror of the left sidebar's #sb-resizer so the right sidebar is
            left-right adjustable too ("左サイドバーと同様に左右に調整"). Grows as the cursor moves LEFT. Desktop only. */
         +'#layer-sidebar-r .lsr-resizer{position:absolute;top:0;left:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;}'
         +'#layer-sidebar-r .lsr-resizer:hover{background:linear-gradient(to left,transparent,rgba(0,122,255,0.35),transparent);}'
         +'@media(max-width:768px){#layer-sidebar-r .lsr-resizer{display:none;}}'
-        +'body.lsr-avail .map-container{transition:margin-right .38s cubic-bezier(0.25,1,0.5,1);}'
-        +'body.lsr-open .map-container{margin-right:var(--lsr-w);}'
-        /* (#R107) MOBILE: the right sidebar OVERLAYS the map (never shrinks it), rides above the bottom sheet, and the
-           desktop edge-tab is hidden (the layer FAB is the entry point on phones). */
-        +'@media(max-width:768px){body.lsr-open .map-container{margin-right:0 !important;}#layer-sidebar-r{z-index:1460;box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
+        /* (#R160) The right sidebar now OVERLAYS the map on DESKTOP too (previously it pushed the map with
+           margin-right, which resized + recentred the map = "地図領域の位置が動く"). The map-container keeps its
+           fixed full width; the panel slides over the right strip. The right-anchored HUD slides left to clear
+           it (rules above). Mobile already overlaid — this just makes desktop match. */
+        +'@media(max-width:768px){#layer-sidebar-r{z-index:1460;box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
         +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
         +'#layer-sidebar-r.open{transform:translateX(0);pointer-events:auto;visibility:visible;}'
         +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,env(safe-area-inset-top));}'
@@ -8248,11 +8255,10 @@ window.addEventListener('DOMContentLoaded', () => {
       (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title='Drag to resize'; sb.appendChild(rh);
         let rdrag=false, rsx=0, rsw=0;
         rh.addEventListener('pointerdown',e=>{ if(isMob()) return; rdrag=true; rsx=e.clientX; rsw=sb.offsetWidth; try{ rh.setPointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); e.stopPropagation(); });
-        rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
+        rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed'))?ls.getBoundingClientRect().width:0;
           let w=rsw-(e.clientX-rsx); w=Math.max(260,Math.min(Math.max(300,window.innerWidth-lw-320),w));   /* keep ≥320px of map, ≥260px panel */
-          document.documentElement.style.setProperty('--lsr-w', w+'px');
-          try{ const mc=document.querySelector('.map-container'); if(mc&&document.body.classList.contains('lsr-open')) mc.style.marginRight='var(--lsr-w)'; }catch(_){}
-          try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} });
+          document.documentElement.style.setProperty('--lsr-w', w+'px');   /* (#R160) overlay: only the panel width changes; the map stays full-width behind it (no margin push, no resize) */
+          try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} });
         const end=e=>{ if(!rdrag) return; rdrag=false; try{ rh.releasePointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect=''; sb.style.transition='';
           try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} };
         rh.addEventListener('pointerup',end); rh.addEventListener('pointercancel',end);
@@ -8363,10 +8369,12 @@ window.addEventListener('DOMContentLoaded', () => {
          with a widened left sidebar, a fixed 430px panel swallowed the map ("覆いかぶさる" perception). */
       try{ if(isMob()){ document.documentElement.style.setProperty('--lsr-w','min(430px,92vw)'); }   /* (#R107) mobile: near-full-width overlay */
         else { const ls=document.getElementById('sidebar');
-        const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
+        /* (#R160) the LEFT sidebar now always OVERLAYS the map (absolute), but it still visually covers its strip,
+           so subtract its width whenever it is open — keep ≥320px of VISIBLE map between the two overlays. */
+        const lw=(ls&&!ls.classList.contains('collapsed'))?ls.getBoundingClientRect().width:0;
         const cap=Math.max(300, Math.round(window.innerWidth-lw-320));   /* keep ≥320px of map */
         let saved=parseInt(localStorage.getItem('intmap_lsr_w')||'',10);   /* (#R154) honour a user-dragged width instead of clobbering it every open */
-        const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(340, Math.round(window.innerWidth-lw-320)));   /* (#R154/#R159) default cap 430→380→340 (smaller) */
+        const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(300, Math.round(window.innerWidth-lw-320)));   /* (#R154/#R159/#R160) default cap 430→380→340→300 (smaller) */
         document.documentElement.style.setProperty('--lsr-w', w+'px'); } }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
       /* (#R73) fire any lazy previews that IO missed while the panel was prebuilt off-screen */
@@ -8374,7 +8382,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R66) INLINE, decoupled: the MAP cedes the strip via its own margin (one line, no cascade, no flex
          math), the panel just slides into the vacated strip. Neither depends on the other. */
       sb.style.transform='translateX(0)'; sb.style.visibility='visible'; sb.style.pointerEvents='auto';
-      try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=isMob()?'':'var(--lsr-w)'; }catch(_){}   /* (#R107) mobile overlays, never shrinks the map */
+      try{ const mc=document.querySelector('.map-container'); if(mc&&mc.style.marginRight) mc.style.marginRight=''; }catch(_){}   /* (#R160) overlay: the panel never pushes the map — clear any stale inline margin from an older session */
       /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
@@ -8383,16 +8391,17 @@ window.addEventListener('DOMContentLoaded', () => {
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
       try{ map&&map.on('click',open._mapCloser); }catch(_){}
-      /* (#R158) suppress the per-frame resize during the margin-right slide; resize once + notify at transitionend (no flicker) */
-      try{ if(window._sbBeginAnim){ window._sbBeginAnim(()=>{ try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }); } else { map&&map.resize(); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){} }
+      /* (#R160) overlay: the map-container did NOT change size, so no resize/recentre — just let the search-pill
+         layout recompute against the now-open panel (the right-anchored HUD slides left via CSS). */
+      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
     function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
       if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
       try{ if(open._mapCloser&&map) map.off('click',open._mapCloser); }catch(_){}
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
-      /* (#R158) suppress the per-frame resize during the margin-right slide; resize once + notify at transitionend (no flicker) */
-      try{ if(window._sbBeginAnim){ window._sbBeginAnim(()=>{ try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }); } else { map&&map.resize(); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){} }
+      /* (#R160) overlay: closing the panel doesn't resize the map — just recompute the search-pill layout. */
+      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
     function apply(){ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail'); if(!isMob()) open(); } else { close(); document.body.classList.remove('lsr-avail'); } }   /* (#R107) build on mobile too; only auto-OPEN on desktop (mobile opens on the layer button) */
     setTimeout(()=>{ try{ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail');
@@ -10337,11 +10346,9 @@ window.addEventListener('DOMContentLoaded', () => {
        open), so follow-ups like "この記事について詳しく"/"translate this"/"背景は？"/"where did this happen" resolve.
        globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
     try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
-    try{ const _sb=document.getElementById('sidebar'); const _wasCol=_sb&&_sb.classList.contains('collapsed');
-      /* (#R159) opening the sidebar from the news reader must not jump the map either — capture the anchor BEFORE the reflow */
-      const _a=(_wasCol && !isMobile() && !document.body.classList.contains('sidebar-glass')) ? _sbCaptureAnchor('left') : null;
-      if(_sb) _sb.classList.remove('collapsed');
-      if(map){ if(_a && window._sbBeginAnim){ window._sbBeginAnim(null,_a); } else { setTimeout(()=>{ try{ map.resize(); }catch(_){} },60); } } }catch(_){}
+    /* (#R160) reveal the sidebar to show the article reader. The sidebar overlays a fixed full-width map, so this
+       can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
+    try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
     try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
     const sbBar=document.getElementById('sidebar-search-bar'); if(sbBar) sbBar.style.display='none';   /* (#R79e) by ID, not .search-bar (see renderUI note) */
@@ -17813,31 +17820,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const frosted=(s==='translucent'||s==='glass2');
     document.body.classList.toggle('sidebar-translucent', frosted);
     document.body.classList.toggle('sidebar-glass2', s==='glass2');
-    document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost */
-    /* Desktop frosted mode overlays the sidebar on the map so the glass has the map behind it to
-       blur (#23). Keep the map's optical center in the area to the RIGHT of the glass by padding the
-       camera by the sidebar width — ANIMATED so the centerd point glides with the 0.4s slide instead
-       of snapping (#4). Mobile padding is owned by the bottom-sheet detents — leave it. */
-    try{
-      if(map && map.setPadding && !isMobile()){
-        const sb=document.getElementById('sidebar');
-        const collapsed=sb && sb.classList.contains('collapsed');
-        if(frosted){
-          /* FROSTED overlay: the glass sits ON the map (container size unchanged), so glide the optical centre by the
-             sidebar width in lock-step with the 0.4s slide. (#R140) setPadding is instant in MapLibre v5 → animate via easeTo.
-             (#R78e) workspace mode → the sidebar is its own window, never an overlay, so no optical offset. */
-          const pad=(document.body.classList.contains('ws-mode')) ? 0 : (collapsed ? 0 : (sb ? sb.offsetWidth : 440));
-          const _pad={top:0,right:0,bottom:0,left:pad};
-          if(animate && map.easeTo){ try{ map.easeTo({padding:_pad, duration:400, easing:x=>1-Math.pow(1-x,3)}); }catch(_){} }
-          else { try{ map.setPadding(_pad); }catch(_){} requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} }); }
-        } else {
-          /* (#R159) SOLID mode adds NO optical offset — the flex map-container reflows and the toggle's anchored resize
-             loop owns the camera. Do NOT run a redundant easeTo here (it was a 0→0 padding no-op that still drove a full
-             400ms camera cycle fighting the resize). Only reset a stale left-padding left over from a prior frosted mode. */
-          try{ const cur=map.getPadding&&map.getPadding(); if(cur&&cur.left){ map.setPadding({top:0,right:0,bottom:0,left:0}); } }catch(_){}
-        }
-      }
-    }catch(_){}
+    document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost MATERIAL only (blur/translucency) */
+    /* (#R160) NO camera padding on toggle or style change anymore. Both solid and frosted sidebars overlay a
+       FIXED full-width map (see the layout CSS), so the map keeps its own centre and must never be optically
+       shifted — that optical shift was exactly the "地図が勝手に動いてしまう" the user reported. The `animate`
+       argument is kept only for call-site compatibility and is now a no-op. Mobile bottom-sheet padding is
+       owned by the detent system elsewhere and is deliberately left untouched. As a one-time safety net, clear
+       any stray desktop left/right map padding a prior build may have set (fresh maps already start at 0). */
+    try{ if(map && map.getPadding && map.setPadding && !isMobile()){ const cur=map.getPadding(); if(cur && (cur.left||cur.right)) map.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
   }
 
   /* (#R21) Narrow-desktop watcher: body.ms-narrow drops the search pill to a second row whenever
@@ -17870,7 +17860,9 @@ window.addEventListener('DOMContentLoaded', () => {
         let rightLeft=mapR, stackBottom=66;
         document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
         let leftRight=mapL;
-        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
+        /* (#R160) the LEFT sidebar now ALWAYS overlays the full-width map on desktop (solid + frosted), so the
+           map rect no longer excludes it — push the pill's left boundary past the open sidebar in every style. */
+        try{ if(!document.body.classList.contains('ws-mode')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')&&getComputedStyle(sb).position==='absolute') leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
         try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
         const half=110, margin=14;   /* half = half of a comfortable ~220px centered pill */
         const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
@@ -18174,7 +18166,12 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
       if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
-      if(v('setting-layerpanel')){ window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} }
+      if(v('setting-layerpanel')){ const _oldLP=window.imLayerPanel; window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */
+        /* (#R160) ROOT CAUSE of "設定を変更すると勝手に右サイドバーが出てくる": apply() ALWAYS re-opens the right
+           panel (if(!isMob()) open()), and it ran on EVERY settings save — so changing any unrelated setting
+           (theme, units, …) reopened a panel the user had deliberately closed. Only reconcile when the layer-panel
+           MODE actually changed; otherwise leave the panel's open/closed state exactly as the user left it. */
+        if(_oldLP!==window.imLayerPanel){ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} } }
       if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
       if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
       const ncWrap=document.getElementById('newscountry-multi');
@@ -30825,14 +30822,14 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'terrain3d': { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('⚠')); }
         case 'grid': { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('⚠')); }
         case 'resetNorth': case 'resetView': { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('⚠')); }
-        case 'zoom': { let tz=null; try{ if(a.to!=null){ tz=+a.to; map.zoomTo(tz,{duration:600}); } else if(a.delta!=null){ tz=map.getZoom()+(+a.delta); map.zoomTo(tz,{duration:400}); } else if(String(a.dir||'')==='out'){ tz=map.getZoom()-1; map.zoomOut(); } else { tz=map.getZoom()+1; map.zoomIn(); } }catch(_){}
+        case 'zoom': { let tz=null; try{ const GE=IntMapGeoEngine.camera; if(a.to!=null){ tz=+a.to; GE.zoomTo(tz,{duration:600}); } else if(a.delta!=null){ tz=GE.getZoom()+(+a.delta); GE.zoomTo(tz,{duration:400}); } else if(String(a.dir||'')==='out'){ tz=GE.getZoom()-1; GE.zoomOut(); } else { tz=GE.getZoom()+1; GE.zoomIn(); } }catch(_){}   /* (#R160) zoom control via IntMapGeoEngine (renderer abstraction) */
           /* (#R61) report the TARGET, not the pre-animation zoom (the old note read the camera mid-flight and
              printed a stale value — a false "done" report). */
-          return R(true, note('✓ '+L('Zoom','ズーム','Zoom','Зум','Zoom')+' → '+(tz!=null&&isFinite(tz)?(+tz).toFixed(1):map.getZoom().toFixed(1)))); }
-        case 'bearing': case 'rotate': { let tb=null; try{ const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(map.getBearing()+(+a.delta)):0)); IntMapGeoEngine.camera.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:map.getPitch(),duration:600}); }catch(_){}   /* (#R152) camera execution via IntMapGeoEngine (renderer abstraction) */
-          return R(true, note('✓ '+L('Bearing','方位','Ausrichtung','Азимут','Rumbo')+' → '+Math.round(tb!=null&&isFinite(tb)?tb:map.getBearing())+'°')); }
-        case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); IntMapGeoEngine.camera.easeTo({pitch:tp,duration:600}); }catch(_){}   /* (#R152) camera execution via IntMapGeoEngine */
-          return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:map.getPitch())+'°')); }
+          return R(true, note('✓ '+L('Zoom','ズーム','Zoom','Зум','Zoom')+' → '+(tz!=null&&isFinite(tz)?(+tz).toFixed(1):IntMapGeoEngine.camera.getZoom().toFixed(1)))); }
+        case 'bearing': case 'rotate': { let tb=null; try{ const GE=IntMapGeoEngine.camera; const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(GE.getBearing()+(+a.delta)):0)); GE.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:GE.getPitch(),duration:600}); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine (renderer abstraction) */
+          return R(true, note('✓ '+L('Bearing','方位','Ausrichtung','Азимут','Rumbo')+' → '+Math.round(tb!=null&&isFinite(tb)?tb:IntMapGeoEngine.camera.getBearing())+'°')); }
+        case 'pitch': case 'tilt': { let tp=null; try{ const GE=IntMapGeoEngine.camera; tp=(a.deg!=null)?+a.deg:(a.delta!=null?(GE.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); GE.easeTo({pitch:tp,duration:600}); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine */
+          return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:IntMapGeoEngine.camera.getPitch())+'°')); }
         case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
         case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
           const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
