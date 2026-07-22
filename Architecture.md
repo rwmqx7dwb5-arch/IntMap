@@ -174,11 +174,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     `--bg-color`、30px）。表示倍率やdvh差異でも地図に重なり得ない。
     ④**右レイヤーサイドバー** — 検索・プレビュー・Active layers維持。（バグ修正: `.lsr-thumb`スパンが名前抽出
     querySelectorに先に一致し、右モードでActive layersチップ名が全て空になっていた → 全抽出箇所に `:not(.lsr-thumb)`）
-    **※#R160 更新**: かつては `margin-right` で地図を縮めていた（「開くと地図が縮む」）が、**開閉で地図が動く**問題の
-    構造的根治として、左右どちらのサイドバーも**固定フル幅の地図に重なるオーバーレイ**へ変更（`@media(min-width:769px)
-    { body:not(.ws-mode) .map-container{position:absolute;inset:0;width:100%} + .sidebar{position:absolute} }`）。
-    地図コンテナは開閉で一切リサイズ・移動しない＝再センタリングが構造的に起きない。右アンカーHUDは `body.lsr-open`
-    時に `right:calc(var(--lsr-w)+…)` でパネル幅ぶん左へ退避。既定幅 `--lsr-w` は 340→**300**（#R160）。
+    **※#R160 更新**: かつては `margin-right` で地図を縮めていた（「開くと地図が縮む」→再センタリングで地図が動く）が、
+    **右サイドバーは押し出しを撤去**し、`position:absolute`＋`transform` スライドの**純オーバーレイ**へ（地図領域は不動・
+    パネルが右端に重なるだけ）。右アンカーHUDは `body.lsr-open` 時に `right:calc(var(--lsr-w)+…)` で左へ退避。既定幅
+    `--lsr-w` は 340→**300**。**左サイドバーは機構もアニメも変更しない**（solid=横並びフレックス／frosted=オーバーレイ）。
+    「開閉で地図を動かすな／地球が回る」への最終解＝**トグルハンドラはカメラに一切触らない**（`panBy`/`setPadding`/`easeTo`
+    /アンカーを呼ばない。`panBy` は既定の globe 投影では**地球を回転**させる）。キャンバス追従は既存の ResizeObserver 任せ
+    （`map.resize()` は `getCenter/getBearing` を保つので無回転）。R158/R159 の毎フレーム resize＋アンカー機構は削除。
     ⑤**Active layersは最上部** — sticky **top** の先頭要素（クラシック/右サイドバー/モバイルシート共通）。チップは
     **固定高1行の横スクロール**で、R32の「1pxも動かない」保証は高さ不変で維持（空でも"(0)"で常時表示）。5言語化。
     ⑥**POI全域網羅＋根拠明示** — 地名が実OSM行政リレーションに解決されたら **Overpassエリアクエリ**

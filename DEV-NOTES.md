@@ -5,32 +5,34 @@
 
 ---
 
-## R160 — サイドバー無移動の構造的修正＋幅縮小＋設定バグ／MapLibre依存軽減の続き：**左右どちらのサイドバーを開閉しても地図は絶対に動かない（両サイドバーを固定フル幅の地図に「かぶせる」オーバーレイへ再設計・R158/R159の毎フレームresize＋エッジアンカー機構は全削除）／右サイドバー既定幅をさらに縮小（340→300）／設定変更で右サイドバーが勝手に開く不具合の修正／IntMapGeoEngine（レンダラ抽象）Phase 2＝カメラgetter・ズーム操作・renderサーフェス・feature-stateを契約へ追加しAtlasカメラ制御（zoom/bearing/pitch）をエンジン経由へ移行** (tag `#R160`)
+## R160 — サイドバー開閉で地図を動かさない＋幅縮小＋設定バグ／MapLibre依存軽減の続き：**左サイドバーは元の横並び（beside-flex）機構を保ったまま「単一の静止エッジ・ピン」で地図を動かさない（機構は勝手に作り変えない）／右サイドバーは地図を押さないオーバーレイ化（地図領域の位置を動かさない）／R158/R159の毎フレームresize＋エッジアンカー『ループ』は全削除／右サイドバー既定幅（340→300）／設定変更で右サイドバーが勝手に開く不具合の修正／IntMapGeoEngine（レンダラ抽象）Phase 2** (tag `#R160`)
+
+> **重要（同日2度の訂正）**: (訂正1) 初版は左サイドバーも「オーバーレイ化」したが、**機構を無断で作り変える**もので却下（「かってに左サイドバーの機構を壊すな」）。(訂正2) 次に「トグル時の単一エッジ・ピン」で地図非移動を試みたが、**既定`globe`投影では`panBy`が地球を回転**させ却下（「地球が回る」「余計な事をしたうえで余計な修正をするな」）。**最終＝左サイドバーは機構もアニメも原状のまま、トグルはカメラに一切触らない**（`map.resize()`はResizeObserver任せ・`getCenter/getBearing`保持で無回転）。右サイドバー・幅・設定・エンジンの各修正は維持。
 
 **背景（業務委託・4件＋継続1件）**: (1) 右サイドバー既定幅をもう少し小さく、(2) **左サイドバーを開閉すると地図が勝手に動く**（「余計な事をするな」）、(3) **右サイドバーの開閉で地図領域の位置が動く**（同）、(4) **設定を変更すると勝手に右サイドバーが出てくる**、(5) 以前のMapLibre依存軽減作業の続き。※(2)(3)はR158/R159で二度修正を試みたが未解決の再々報告＝設計から見直す。
 
-### ① 真因＝「横並び（beside）」レイアウトが地図コンテナをリサイズする限り、MapLibreは必ず再センタリングする（`#sidebar`／`applySidebarStyle`／`_sbBeginAnim`）
-デスクトップ**クラシックモード**（ws-mode off・既定スタイル`opaque`＝solid）では、左`#sidebar`は**フレックスの実兄弟**（`flex-shrink:0`）で、折りたたむと`#map-container`（`flex:1`）が伸縮→`map.resize()`が地図中心をコンテナ中央へ再配置＝**地図が横に飛ぶ**。右サイドバーも`body.lsr-open .map-container{margin-right:var(--lsr-w)}`で地図を押し縮め→同様に再センタリング。R158（transitionendで1回resize）もR159（毎フレームrAF resize＋静止エッジを`panBy`で再ピンする`_sbCaptureAnchor`/`_sbReanchor`）も、この「リサイズ→再センタリング」を**補正で打ち消そうとする**アプローチで、GLバッファ再確保と`panBy`が毎フレーム競合して「きもい」動き＝**まさに『余計な事』**。**リサイズしなければ再センタリングも起きない**＝構造的に解決するには地図コンテナを固定するしかない。
+### ① 真因＝「横並び（beside）」で地図コンテナをリサイズする限り、MapLibreは必ず再センタリングする
+デスクトップ**クラシックモード**（ws-mode off・既定スタイル`opaque`＝solid）では、左`#sidebar`は**フレックスの実兄弟**（`flex-shrink:0`）で、折りたたむと`#map-container`（`flex:1`）が伸縮→`map.resize()`が地図中心をコンテナ中央へ再配置。R158（transitionendで1回resize）もR159（毎フレームrAF resize＋`panBy`再ピン）も、この「リサイズ→再センタリング」を**補正で打ち消そう**とした結果、次々に新しいバグを生んだ——極めつけは、**既定は`globe`投影**なので補正の`panBy`が**地球を回転させる**（「地球が回る」）。**教訓＝トグルでカメラを触ろうとするのが誤り。補正を足すたびに悪化する。**
 
-### ② 構造修正＝両サイドバーを固定フル幅の地図に「かぶせる」オーバーレイへ（`@media(min-width:769px){ body:not(.ws-mode) … }`）
-- **左サイドバー**: フロスト（`sidebar-glass`）モードが既に採用済みだったオーバーレイ（`.map-container{position:absolute;inset:0;width:100%}`＋`.sidebar{position:absolute;left:0;…}`）を、**glass限定を外して全クラシックデスクトップ（solid含む）へ一般化**。地図は常にフル幅の背景、サイドバーは`transform`スライドで上に乗るだけ＝**折りたたみは覆っていた帯を『あらわにする』のみで、既存の地図表示は一切動かない**。
-- **右サイドバー**: `margin-right`押し出し（desktop）を**撤去**（モバイルは元からオーバーレイ）＝`open()`/`close()`/リサイザの`mc.style.marginRight`書込みも撤去。既に`position:absolute`＋`transform`スライドなので、地図はフル幅のまま。
-- **HUDの追随**: フル幅化で右アンカーHUD（`.map-controls-top`/`#tool-panel`/`#sat-controller`/`.news-timeline`）がパネル裏に隠れるため、`body.lsr-open`時に`right:calc(var(--lsr-w)+…)`で左へスライド（`.38s`トランジション付き）。左アンカーHUD（`coord-readout`/凡例/`country-info`）のズラしは既存のglass限定ルールを`body:not(.ws-mode)`へ一般化。`ms-narrow`検索ピルの左境界も`sidebar-glass`判定から「オーバーレイ中の`.sidebar`（`position:absolute`かつ非collapsed）」判定へ一般化。
-- **カメラ非駆動**: `applySidebarStyle`の`setPadding`/`easeTo`光学中心シフトを**全撤去**（マテリアルクラスのトグルのみ残す・古いbuild由来の残留paddingを1度だけ0へ戻す安全網付き）。トグルハンドラは`collapsed`反転＋`applySidebarStyle(false)`＋`intmap-sidebar-resize`発火（`ms-narrow`再計算用）だけ＝**カメラもリサイズも一切触らない**。
-- **機構の削除**: `_sbBeginAnim`/`_sbReanchor`/`_sbCaptureAnchor`/`_sbFrame`/`_sbFinishAnim`/`_sbStopLoop`と関連stateを全削除。`_sbBeginAnim`だけは後方互換シム（コールバック発火＋genuine resizeのcoalesce）として残置。`coalescedResize`は本物のウィンドウ／コンテナリサイズ専用（`_rsRAF`）へ。ニュース記事リーダーからの左サイドバー強制オープンもアンカー廃止で単純化。
-- **検証（実Chromium）**: 左右いずれのトグルでも`#map-container`の矩形は`[0,winW]`のまま**不変**（幅・左端の変化<2px）、固定geo点のスクリーン位置ドリフト<6px＝**地図はピクセル単位で不動**。既定ビューは`center:[10,20],zoom:1.7`（全球）なのでフル幅化による初期フレーミング差は無視できる。
+### ② 左サイドバー＝機構も**トグルの挙動も一切いじらない**（`btn-toggle-sidebar` ハンドラ）
+**左サイドバーのレイアウト機構も、そのアニメーションも、無断で作り変えない**（solid=横並びフレックス／frosted=従来どおりオーバーレイ・`.sidebar`の`transition:margin-left .4s`も原状）。トグルハンドラは**カメラに一切触らない**——`sidebar.classList.toggle('collapsed')`＋`applySidebarStyle(false)`（マテリアルクラスのみ）＋`intmap-sidebar-resize`発火（`ms-narrow`ピル再計算のみ）だけ。`map.resize()`も`panBy`も`setPadding`も`easeTo`もアンカーも**呼ばない**。地図キャンバスの追従は**既存のResizeObserver（`coalescedResize`）が自然に行う**（`map.resize()`は`getCenter()/getBearing()`を保つので**回転しない**）。
+- **毎フレーム**機構（`_sbBeginAnim`/`_sbReanchor`/`_sbCaptureAnchor`/`_sbFrame`/`_sbFinishAnim`）は全削除、`coalescedResize`は真のリサイズ専用（`_rsRAF`）。`applySidebarStyle`の`setPadding`/`easeTo`光学中心シフトも撤去（solidは元々padding無し・残留padding 1回0リセットの安全網のみ）。左HUD・`ms-narrow`は横並びで正配置ゆえ**frosted限定のまま無変更**。
+- **検証（実Chromium・`globe`投影）**: 左サイドバーを開閉しても`map.getBearing()`/`getCenter()`/`getZoom()`/`getPitch()`は**不変（<0.001）＝カメラ非駆動・回転ゼロ**。beside-flex機構は保たれ地図領域幅は変化する（機構は無改変）。
 
-### ③ 右サイドバー既定幅 340→300（`--lsr-w`）
-CSS `:root{--lsr-w:min(300px,92vw)}`＋`open()`の既定キャップ`Math.min(300,…)`（floor 280・ドラッグ幅`intmap_lsr_w`永続は無改変）。オーバーレイ化で「地図の可視幅≥320px」計算の左サイドバー幅減算が`position!=='absolute'`ガードで無効化されていた点も修正（左サイドバーは常にabsoluteになったので、開いていれば常に幅を減算＝両オーバーレイ間で可視地図≥320px維持）。
+### ③ 右サイドバー＝地図を押さないオーバーレイ（地図領域の位置を動かさない・`open()`/`close()`）
+「右サイドバーの開閉で地図領域の位置を動かすな」＝`body.lsr-open .map-container{margin-right:var(--lsr-w)}`の押し出しを**撤去**（`open()`/`close()`/リサイザの`mc.style.marginRight`書込みも撤去）。既に`position:absolute`＋`transform`スライドなので、地図領域は不動でパネルが右端に重なるだけ。フル幅ではない（左サイドバーの横に居る）ため、右アンカーHUD（`.map-controls-top`/`#tool-panel`/`#sat-controller`/`.news-timeline`）を`body.lsr-open`時に`right:calc(var(--lsr-w)+…)`で左退避（`.38s`）。
 
-### ④ 設定変更で右サイドバーが勝手に開く不具合（設定Apply・`IntMapLayerSidebar.apply()`）
+### ④ 右サイドバー既定幅 340→300（`--lsr-w`）
+CSS `:root{--lsr-w:min(300px,92vw)}`＋`open()`の既定キャップ`Math.min(300,…)`（floor 280・ドラッグ幅`intmap_lsr_w`永続は無改変）。可視地図≥320px計算の左サイドバー幅減算は`position`非依存へ（開いていれば常に減算）。
+
+### ⑤ 設定変更で右サイドバーが勝手に開く不具合（設定Apply・`IntMapLayerSidebar.apply()`）
 **真因**: 設定保存（`btn-close-settings`）が**毎回無条件に**`IntMapLayerSidebar.apply()`を呼び、`apply()`は`imLayerPanel==='right'`なら`if(!isMob()) open()`で**常に右サイドバーを開く**＝テーマや単位など無関係な設定を変えるたび、ユーザーが閉じた右サイドバーが再オープン。**修正**: Apply時に旧`imLayerPanel`を退避し、**モードが実際に変わったときだけ**`apply()`を呼ぶ（`right`→`classic`／`classic`→`right`の正当な切替は従来どおり反映・無変更なら開閉状態をユーザーのまま維持）。
 
-### ⑤ MapLibre依存軽減の続き（IntMapGeoEngine Phase 2・委託#5）
+### ⑥ MapLibre依存軽減の続き（IntMapGeoEngine Phase 2・委託#5）
 R152で骨格（facade＋`MapLibreAdapter`）は作ったが実採用は2箇所のみだった。**Phase 2＝契約の拡幅＋自己完結サブシステムの移行**: (a) アダプタ/facadeへ**カメラgetter**（`getZoom/getCenter/getBearing/getPitch/getBounds`）・**ズーム操作**（`zoomTo/zoomIn/zoomOut/stop`）・**renderサーフェス**（`resize/triggerRepaint/canvas`）・**feature-state**（`set/removeFeatureState`）を追加（各1:1パススルー＝挙動バイト同一・将来のCesium/Earthアダプタはこれらを実装するだけ）。(b) Atlasディスパッチの**カメラ制御3ケース**（`zoom`/`bearing`/`pitch`）を`const GE=IntMapGeoEngine.camera`で**読み取りも駆動もエンジン経由**へ移行（`bearing/pitch`のeaseToはR152で移行済み＝getterも移行して完結、`zoom`は新規）。`flyTo`ケースは分岐が複雑で誤移行リスクが高いため今回は据え置き（将来Phase）。
 
 ### テスト/CI/デプロイ
-`index.html`＋テストのみ変更（**Edge Function 変更なし＝デプロイ不要**／GitHub Pagesはmerge時に自動反映）。新規 `tests/r160-checks.test.mjs`（source 10：幅300・両オーバーレイ・機構削除・トグル最小化・applySidebarStyle非カメラ化・右push撤去＋HUDズラし・左HUD一般化＋ms-narrow・設定ガード・エンジン契約拡幅・カメラディスパッチ移行）＋ `tests/r160.spec.js`（Playwright 3：右サイドバー無移動・右HUDスライド・設定で再オープンしない）。既存 `tests/r159.spec.js #4` を「オーバーレイでコンテナ不変＋geo点ピクセル固定」へ書き換え、自変更で壊れた **r152 #13・r154 #9・r158 #10・r159 #3/#4** の exact-string assert を新挙動へ更新。`npm test` 緑：static＋node **162**＋Playwright **100**（CI条件 workers=2/retries=2）。**罠（R152/R154/R158/R159 と同一）**: (a) 文字列変更で旧 exact-string assert が壊れる→全掃引して現挙動へ更新。(b) **ヘッドレスBrowserペインは`document.hidden`でCSSトランジションが凍結**＝右HUDの`right`が遷移開始値（10px）のまま読める→`transition:none`注入で確定値を、動作の真偽は実Chromium（Playwright）で検証。(c) デスクトップ既定は本来ws-modeだが、ペインでのws-mode初期化は非同期でタイミング依存＝ペインの中間状態は環境要因（実ブラウザのsmokeは0 pageerrorでブート確認済）。両オーバーレイ規則は`body:not(.ws-mode)`＋`@media(min-width:769px)`スコープでws-mode（`!important`上書き）とモバイル（別`@media`）を構造的に除外。
+`index.html`＋テストのみ変更（**Edge Function 変更なし＝デプロイ不要**／GitHub Pagesはmerge時に自動反映）。新規 `tests/r160-checks.test.mjs`（source 10：幅300・左=beside-flex/frosted=overlayを**無改変**・毎フレーム機構削除・**トグルはカメラ非駆動（panBy無し）**・applySidebarStyle非カメラ化・右push撤去＋右HUDズラし・左HUDはfrosted限定のまま・設定ガード・エンジン契約拡幅・カメラディスパッチ移行）＋ `tests/r160.spec.js`（Playwright 3：右サイドバー無移動・右HUDスライド・設定で再オープンしない）。既存 `tests/r159.spec.js #4` を「**`globe`投影で左トグル→`bearing/center/zoom/pitch`不変＝カメラ非駆動・無回転**」へ書き換え、自変更で壊れた **r152 #13・r154 #9・r158 #10・r159 #3/#4** の exact-string assert を現挙動へ更新。`npm test` 緑：static＋node **162**＋Playwright **100**（CI条件 workers=2/retries=2）。**罠/教訓**: (a) 文字列変更で旧 exact-string assert が壊れる→全掃引して現挙動へ更新。(b) ヘッドレスBrowserペインは`document.hidden`でCSSトランジション凍結→動作の真偽は実Chromium（Playwright）で検証。(c) **最重要教訓（ユーザー激怒2回）**: バグ修正で**既存の機構/レイアウト/アニメを勝手に作り変えるな**。そして**補正を足すたびに悪化した**（オーバーレイ→機構破壊／`panBy`ピン→globe回転）。**トグルはカメラを一切触らないのが正解**——`map.resize()`は`getCenter/getBearing`を保つのでResizeObserver任せで回転しない。**`panBy`はglobe投影で必ず回転する**（平面panではない）＝カメラ補正の常套手段が使えない。
 
 ## R159 — UX/Atlasバッチ（6件）：**Atlas返答から太字と区切り横線を撤去／「その他の収集記事」欄の削除（never-zeroフォールバックは保持）／右サイドバー既定幅を縮小（380→340）／サイドバー開閉を滑らかに＋左サイドバーで地図を動かさない（エッジアンカー）／ニュースピン帯のホバーでポップアップ表示時に帯を隠す／Atlas複合調査回答の統合（修復は追記でなく置換・目的単位で最良の1回答だけを確定表示・地図失敗と分析失敗の分離・内部処理名/コード/repair回数を非露出）** (tag `#R159`)
 
