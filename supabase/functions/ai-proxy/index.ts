@@ -115,6 +115,7 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
   geo_verify: 500,   // (#R130) web-search-grounded place verification for the Atlas highlight/outline resolver — tiny JSON
   geo_resolve: 1800, // (#R132) web-search-grounded STRUCTURED region resolution (metadata + boundary anchors, NOT a dense polygon)
   research_map: 2600, // (#R135) time-axis research/situation map: written explanation + related mappable places (historical/current/mixed)
+  vision_read: 3000, // (#R156) multimodal read: classify → transcribe → solve (LaTeX/Markdown) → verify-checks → optional places. Needs room for a transcription + working + the checks matrices.
 };
 const FALLBACK_MAX_OUTPUT = 1800;
 const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
@@ -133,13 +134,14 @@ const TASK_REASONING: Record<string, string> = {
   geo_verify: "low",   // (#R130) freshness comes from the forced web search, not reasoning
   geo_resolve: "medium",   // (#R132) classifying an ambiguous / natural / historical region + picking a geometry strategy needs real reasoning
   research_map: "medium",   // (#R135) a grounded historical/situation answer + naming real related places needs real reasoning
+  vision_read: "medium",   // (#R156) reading small text + transcribing + solving a maths problem needs real reasoning (effortHint:"high" bumps it further)
 };
 
 // (#R113) Which tasks want JSON output (structured-output / responseMimeType json).
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["map_report", "json_extract", "geo_verify", "geo_resolve", "research_map"]);
+const JSON_TASKS = new Set(["map_report", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) */
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -295,12 +297,15 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, _isFallback = false): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
+  // (#R156) input_image `detail`: "high" tiles the image so the model reads SMALL text / fraction bars /
+  // subscripts (the vision_read OCR/maths win); "auto" (default) is unchanged for every other caller.
   const content: unknown[] = [{ type: "input_text", text: prompt }];
-  for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}` });
+  const _detail = (imageDetail === "high" || imageDetail === "low") ? imageDetail : "auto";
+  for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
 
   const build = (choice: string | null, json: boolean, tools: boolean): Record<string, unknown> => {
     const b: Record<string, unknown> = {
@@ -368,7 +373,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (!_isFallback && (r.status === 403 || r.status === 404) && model !== FALLBACK_MODEL &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: FALLBACK_MODEL, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, true);
+      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true);
     }
     const pe = classifyGemini(r.status, t, "", "");
     pe.meta.bodySnippet = t.slice(0, 160);   // (#R116) surfaced in the server log for diagnosis (no secrets in an error body)
@@ -562,11 +567,13 @@ Deno.serve(async (req) => {
   // web policy per feature — instead of one MAX_TOKENS / one boolean for everything.
   let payload: {
     prompt?: string; system?: string; images?: string[]; lang?: string;
-    web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown;
+    web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
   } = {};
   try { payload = await req.json(); } catch (_) { payload = {}; }
 
   const task = String(payload.task || "free_text").toLowerCase();
+  // (#R156) input_image detail — "high" is the small-text/maths OCR lever for vision_read; clamp to a safe set.
+  const imageDetail = (payload.imageDetail === "high" || payload.imageDetail === "low") ? payload.imageDetail : "auto";
   const webMode = String(payload.webMode || (payload.web === true ? "auto" : "off")).toLowerCase();
   // (#R117) client complexity hint: a long / multi-clause / previously-failed request may ask the
   // PLANNER (and analysis) to think at "high". Bounded: only these two tasks, only one step up —
@@ -605,15 +612,15 @@ Deno.serve(async (req) => {
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
       let effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
-      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis")) effort = "high";   // (#R117) complexity hint
+      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis" || task === "vision_read")) effort = "high";   // (#R117/#R156) complexity hint (vision reading small text + maths earns "high")
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort);
+        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort);
+          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail);
         } else {
           throw e;
         }

@@ -5,6 +5,37 @@
 
 ---
 
+## R156 — Atlas 統合品質改修（Vision・数式レンダリング・地理判定）：**画像は専用Visionパイプライン**（分類→転記→求解→**決定論的検算**→統一レンダリング→地理のときだけ地図化）／**KaTeXによるChatGPT品質の数式表示**（統一Markdown+LaTeXレンダラ：コードブロック/表/行列/分数/添字）／**コンテンツ分類が全経路を貫く単一の背骨**（数学/文書/コードは地点抽出を一切呼ばない＝"Problem/Thus/Let U"の誤地名化が構造的に不可能）／**画像は高精細エンコード＋detail:high**／**送信・停止ボタンをアクセントカラー化**（文字入力までは現状色） (tag `#R156`)
+
+**背景（業務委託書）**: 現行は画像を `compressImage(f,1100,0.72)` でJPEG化し、**地図志向の汎用プランナー**（MAPPING MANDATE付き）へ渡す一枚岩構造。よって(1)小さい文字/数式/表の認識精度が未検証で低い、(2)回答表示は `mdMini` の正規表現のみで**数式レンダリング基盤が皆無**、(3)画像回答にも地点マッピング指示が適用され数学問題の `Problem`/`Thus`/`Let U and V` まで地名候補になる、の三重苦。委託書の要求は「単なるプロンプト追加や禁止語登録ではなく、**入力分類→認識→検証→回答生成→表示→地図化を一つの処理系として設計**」。
+
+### ① 統一Markdown+LaTeXレンダラ（`mdMini` を加算的に再実装・`_atlKatex`/`_atlCodeBlock`/`_atlBuildTable`）
+`mdMini` の正規表現追加を止め、**PUAプレースホルダ保護方式**の実レンダラへ。順序: (a) fenced ` ``` ` コードブロック（言語ラベル＋Copyボタン・HTMLエスケープ＝実行しない）、(b) `$$…$$`/`\[…\]` 表示数式・`$…$`/`\(…\)` インライン数式（**KaTeX** `renderToString(throwOnError:false)`）、(c) `` `inline code` ``、(d) GFMパイプ表（`overflow-x:auto` ラッパでモバイル横スクロール）を**esc前に**プレースホルダ化→R154/R155の見出し/太字/箇条書き/余白HTMLは**一字一句温存**→復元。**XSS安全**（著者テキストは全てesc、注入されるHTMLは自前生成タグとKaTeX出力＝固定信頼ライブラリ`output:'html',trust:false`のみ）。**堅牢性**: 壊れたLaTeX＝throwOnErrorで赤字表示、KaTeX未ロード/CDN障害＝エスケープ済み生LaTeXへ縮退（`data-tex`保持で遅延ロード時に`_atlTypesetMath`が昇格）＝一つの壊れた式が回答全体を壊さない。KaTeXは**jsDelivrのバージョン固定**（`katex@0.16.11`・CSPの`script-src`許可リストに既存＝MapLibre/Supabase/Turfと同一・`style-src`/`font-src`は無制限）。
+
+### ② コンテンツ分類の単一の背骨＋コード側地理ゲート（`_atlContentClass`/`_atlShouldMap`）
+モデルが各回答（特に画像）を `math|document|code|language|geographic|photo|conceptual` に分類し、**同じ分類結果**が画像精細度・数式検算・地図化を駆動。`_atlShouldMap` は `geographic`（および未分類`''`＝プレーンテキスト地理回答の非退行）のみ真。**`_pinReplyPlaces` は非地理クラスで即return**（地点抽出も地図注記も走らない）＝**「地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で検証」**。数学回答が偶然 `Problem` を含んでも `shouldMap('math')===false` で全ピンをブロック＝**禁止語一覧に依存しない**（委託書の明示要求）。`answer` アクションにも `contentClass`/`checks` を追加し同一ゲートを適用。
+
+### ③ 決定論的検算（BigInt厳密有理数・`_atlVerifyChecks`）
+Visionモデルが独立検証可能な数値/行列恒等式を `checks` として返し、**クライアントがBigInt分数で厳密再計算**して合否を返す（委託書の「計算可能な問題は決定論的に検算／一致しなければ画像の該当箇所を再確認」）。`matmul`（`V·P = U` 等の遷移/逆/基底変換行列）と `equal`（有理数/行列一致）をサポート。分数 `1/22` `-5/22` は厳密（浮動小数点誤差なし＝`1/3+1/3+1/3` を1と正しく判定）。未対応/不正な check は**スキップ**（偽の"verified"を出さない）。合否は正直な自己チェック注記で表示。
+
+### ④ 専用Visionパイプライン（`_atlVisionTurn`/`_visionSYS`）
+画像は**地図志向の汎用プランナーを経由しない**（委託書「現在の構造を改めてください」）。専用パイプラインが一つの処理系を実行: 分類→転記（**判読不確実な字を`uncertain`で明示・確定扱いしない**）→求解/分析（LaTeX+Markdown）→**決定論的検算**→統一レンダリング→**地理のときだけ地図化**。検算が失敗したら**画像の該当領域を1回だけ再精査**（「検算失敗時は回答をそのまま返さず再確認」）。デフォルト画像プロンプトを中立化（旧「写っている場所を必ず地図化」＝数学にも地図意図を強制→撤廃）。
+
+### ⑤ 画像認識基盤（高精細＋detail:high）
+Atlas添付を `compressImage(f,1100,0.72)` → **`compressImage(f,2000,0.9)`**（小さい文字/分数バー/添字が溶ける固定圧縮を廃止）。ai-proxyに**`vision_read` タスク**追加（JSON・budget 3000・reasoning medium／effortHint highで high）＋OpenAI `input_image` に**`detail:"high"`**（画像をタイル分割して小さい文字を読む最大のOCRレバー）。本番デプロイ済（OPTIONS 200／no-auth 401でクリーン起動確認）。
+
+### ⑥ 送信・停止ボタン＝アクセントカラー
+`.atl-go` 基底（テキスト入力済み/アクティブ）＝アクセント塗り＋白アイコン、`.idle`（空欄）＝従来の白背景/黒↑（「文字を入力するまでは今の色」）、`.busy`（停止）＝アクセント塗り＋白■。※実ブラウザ検証で `transition:background .15s` により**変更直後のgetComputedStyleは遷移途中の白**を読む＝テストは`transition:none`で確定値を読む必要あり（罠）。
+
+### テスト/CI/デプロイ
+`index.html` ＋ `supabase/functions/ai-proxy/index.ts`。新規 `tests/r156-checks.test.mjs`（source 8）＋ `tests/r156.spec.js`（Playwright 6：**実KaTeX描画**・コード/表・分類/ゲート・**厳密有理数検算**・サンプル画像のヘルメティックE2E＝数学回答は数式描画＋検証済み注記かつ**ピン0件**・ボタンアクセント）。自変更で壊れた r149/r150 の exact-string assert を更新。`npm test` 緑：static＋node **132**＋Playwright **86**（CI条件 workers=2/retries=2）。**教訓**: 並列workerでの環境flake（smoke/security/monitors/r146が"did not run"付きで多様に落ちる）は単独/CI条件再実行で全緑＝R154と同じ罠。実chromiumで7 critical globals＋`katex`＋pageerror 0確認。ai-proxy本番反映済。
+
+### 罠・教訓
+- **KaTeXはjsDelivr（CSP `script-src` に既存）＝CSP変更不要**。`style-src`/`font-src` はこのアプリでは無制限（`default-src` 無し）なのでCSS/woff2も自由。SRIハッシュは**捏造禁止**（他6 CDN依存もSRI無し＝一貫）。
+- **プレースホルダはPUA ``/``**（escの `&<>"` に触れられない・AI散文に出現しない）。restore正規表現のバイト一致を `od -c` で検証。
+- **ボタン色の`transition`罠**: 見た目は正しいのにgetComputedStyleが白を返す＝遷移途中値。テストは`transition:none`必須。
+- **並列Playwright flake**: 「多様な無関係失敗＋did not run」は環境要因。fresh port単独/CI条件（retries=2）で確定・全緑。
+
 ## R155 — 統合セキュリティ大改修＋UX/認証バッチ：**本番で発見した2件の重大脆弱性を修正・本番反映済**（profiles PII世界公開／is_pro・plan自己昇格）／**最小権限化＋profilesガードトリガ**／**アカウント削除（真の削除）**／**パスキー(WebAuthn)**／**弱い/漏えいパスワード拒否・列挙防止・トークン流出防止**／**admin.html隔離**／**Atlas返答言語ロック(山東省→中国語バグ)**／**Atlas位置情報を要求(行き止まり廃止)**／**右サイドバー既定の真の反映**／**Atlasタイポ強化＋出典ゼロ回避**／**ケッペン幅7回目=border-box** (tag `#R155`)
 
 **背景**: 本番DBが移行ファイルから乖離しており、再構築ベースラインは本番のロックダウン状況を過大評価していた。`supabase db query --linked`(Management API・DBパス不要)による**本番ライブ監査**(2026-07-22)で、`profiles`上に**2件のライブ重大脆弱性**を発見・**同日修正・本番反映・検証**。
