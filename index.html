@@ -2740,6 +2740,14 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- (#R156) KaTeX — ChatGPT-quality math rendering for Atlas replies (inline/display math, matrices, fractions,
+     sub/superscripts). VERSION-PINNED on jsDelivr (already in the script-src allowlist; style-src/font-src are
+     unrestricted so the CSS + woff2 fonts load freely). Loaded with defer so it never blocks boot; the renderer
+     (_atlKatex) feature-detects window.katex and DEGRADES to the escaped raw LaTeX source when it is unavailable,
+     so a CDN outage can never break an Atlas reply. auto-render is NOT used — the renderer calls
+     katex.renderToString(…, {throwOnError:false}) per expression so a single broken formula never breaks the reply. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   /* ===== State ===== */
@@ -3862,6 +3870,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(opts.requestedCount!=null && isFinite(+opts.requestedCount)) body.requestedCount=+opts.requestedCount;
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
       if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
+      if(opts.imageDetail) body.imageDetail=String(opts.imageDetail);   /* (#R156) "high" → OpenAI input_image detail:high (small-text/math OCR); server clamps by task */
     }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
@@ -28360,32 +28369,101 @@ window.addEventListener('DOMContentLoaded', () => {
         out.push(p);
       }
       return out.join('\n\n'); }
-    function mdMini(s){ return esc(_dedupText(_atlStanza(String(s||''))))
-      /* (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. The user explicitly said "目次を色分けする
-         のはやめる。テキストサイズや配置のみで勝負する" (stop colouring headings; compete on size and placement only), so
-         every heading level is now var(--text-main) with a clear size step + generous top margin (the "配置") instead of
-         the accent colour. The hierarchy is # > ## > ### > whole-line **bold**, each a distinct size above the body. */
-      /* (#R155) STRONGER hierarchy so a structured reply is unmistakably NOT monotonous. Still SIZE + PLACEMENT
-         only (no colour-coding): headings are var(--text-main); a "## " section additionally gets a subtle NEUTRAL
-         top hairline (the same rgba(128,128,128,.18) used for dividers elsewhere) = pure "配置"/placement, which reads
-         as sectioning far more strongly than spacing alone. */
-      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .32em;font-size:1.18em;line-height:1.32;">$1</div>')
-      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.7em 0 .55em;padding-top:.62em;border-top:1px solid rgba(128,128,128,.18);font-size:1.44em;line-height:1.28;letter-spacing:.005em;">$1</div>')
-      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.45em 0 .6em;font-size:1.68em;letter-spacing:.01em;line-height:1.24;">$1</div>')
-      /* (#R151/#R154) a line that is ENTIRELY a **bold run** is a section lead the model authored (models reach for
-         standalone bold far more readily than "## ") — render it as a modest heading (size + spacing, no colour), a clear
-         step above body but below a real "## " section. Inline mid-sentence bold stays <b> (below). */
-      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.3em 0 .42em;font-size:1.2em;line-height:1.3;">$1</div>')
-      .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
-      /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
-      .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
-      /* (#R79g) ALSO linkify BARE urls the model prints without markdown syntax ("Atlas内からリンクを踏めるように")
-         — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
-      .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
-      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.3em;text-indent:-1.05em;margin:.32em 0;line-height:1.5;">•&nbsp; $1</div>')   /* (#R155) clearer bullets (more indent + row spacing) */
-      .replace(/\n{2,}/g,'<div style="height:1.3em"></div>')                                         /* (#R155) 1.2→1.3em paragraph gap (more "余白" between groups) */
-      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.78em"></div>')                  /* (#R150/#R151/#R152/#R155) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
-      .replace(/\n/g,'<br>'); }
+    /* (#R156) ================= UNIFIED MARKDOWN + LaTeX RENDERER =================
+       The long-standing "Atlas replies are a monotone wall of text" complaint AND the vision/math work order both
+       demand a REAL renderer, not more regexes bolted onto esc(). mdMini is now a wrapper that ADDS, on top of the
+       existing R154/R155 heading/bold/bullet/paragraph typography (kept verbatim below):
+         • fenced ``` code blocks  → language label + Copy button, HTML-escaped (never executed)
+         • $$…$$ / \[…\] display + $…$ / \(…\) inline math → KaTeX (ChatGPT-quality: matrices, fractions, subs/sups)
+         • GFM pipe tables          → real <table> inside a horizontally-scrollable wrapper (mobile-safe)
+         • `inline code`, *italic*, > blockquotes
+       SAFETY: every author text run is still esc()'d; the ONLY HTML injected is (a) our own generated tags and (b)
+       KaTeX output (fixed trusted lib, output:'html', trust:false). Code/math/tables are pulled into PLACEHOLDER
+       tokens (PUA … — untouched by esc) BEFORE the markdown pass and restored AFTER, so a `$` or `<`
+       inside code/math is never mis-parsed and math is never HTML-escaped into garbage.
+       ROBUSTNESS: broken LaTeX (throwOnError:false) and a KaTeX-not-loaded/CDN-down state both DEGRADE to the escaped
+       raw source (data-tex kept so _atlTypesetMath upgrades it if KaTeX arrives late) — one bad formula never breaks
+       the whole reply. Pure/deterministic → unit-tested via IntMapAtlasDebug.mdMini. */
+    let _atlCbSeq=0;
+    function _atlKatex(tex, display){ tex=String(tex==null?'':tex).trim();
+      if(window.katex && typeof window.katex.renderToString==='function'){ try{
+        const h=window.katex.renderToString(tex,{displayMode:!!display,throwOnError:false,strict:false,output:'html',trust:false});
+        return display?('<div class="atl-math-b">'+h+'</div>'):h;
+      }catch(_){} }
+      const attr=' data-tex="'+esc(tex)+'" data-display="'+(display?'1':'0')+'"';   /* fallback carries the source → upgradeable if KaTeX loads late / returns */
+      return display?('<div class="atl-math-b atl-math-raw"'+attr+'><code>'+esc(tex)+'</code></div>')
+                    :('<code class="atl-math-raw"'+attr+'>'+esc(tex)+'</code>'); }
+    function _atlTypesetMath(root){ try{ if(!(window.katex&&window.katex.renderToString)) return;
+      (root||document).querySelectorAll('.atl-math-raw[data-tex]').forEach(el=>{ try{ const tex=el.getAttribute('data-tex')||''; const disp=el.getAttribute('data-display')==='1';
+        const h=window.katex.renderToString(tex,{displayMode:disp,throwOnError:false,strict:false,output:'html',trust:false});
+        if(disp){ el.classList.remove('atl-math-raw'); el.removeAttribute('data-tex'); el.innerHTML=h; }
+        else { const s=document.createElement('span'); s.innerHTML=h; el.replaceWith(s.firstChild||s); } }catch(_){} }); }catch(_){} }
+    try{ window._atlTypesetMath=_atlTypesetMath; }catch(_){}
+    function _atlCodeBlock(code, lang){ code=String(code).replace(/\n+$/,''); const id='atlcb'+(_atlCbSeq++);
+      const lbl=lang?esc(String(lang).slice(0,24)):'';
+      return '<div class="atl-codewrap"><div class="atl-codebar"><span class="atl-codelang">'+(lbl||'code')+'</span>'
+        +'<button class="atl-codecopy" type="button" data-cid="'+id+'">'+esc(L('Copy','コピー','Kopieren','Копировать','Copiar'))+'</button></div>'
+        +'<pre class="atl-codeblock"><code id="'+id+'">'+esc(code)+'</code></pre></div>'; }
+    function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>'); }   /* light inline for table cells (bold; inline code/math placeholders survive esc + restore globally) */
+    function _atlBuildTable(header, sep, body){
+      const cut=r=>String(r).trim().replace(/^\|/,'').replace(/\|$/,'').split(/\|/).map(x=>x.trim());
+      const aligns=cut(sep).map(s=>{ const l=/^:/.test(s), r=/:$/.test(s); return (r&&l)?'center':r?'right':l?'left':''; });
+      const th=cut(header); const rows=body.map(cut); const al=i=>aligns[i]?(' style="text-align:'+aligns[i]+'"'):'';
+      let h='<div class="atl-tablewrap"><table class="atl-md-table"><thead><tr>';
+      th.forEach((c,i)=>{ h+='<th'+al(i)+'>'+_atlCellFmt(c)+'</th>'; }); h+='</tr></thead><tbody>';
+      rows.forEach(r=>{ h+='<tr>'; for(let i=0;i<th.length;i++){ h+='<td'+al(i)+'>'+_atlCellFmt(r[i])+'</td>'; } h+='</tr>'; });
+      return h+'</tbody></table></div>'; }
+    function mdMini(s){ s=String(s||''); const B=[], I=[];
+      const pB=h=>{ B.push(h); return 'B'+(B.length-1)+''; };
+      const pI=h=>{ I.push(h); return 'I'+(I.length-1)+''; };
+      /* 1) protect fenced code, then display + inline math, then inline code (block-level first; guarded $…$ last) */
+      s=s.replace(/```([\w+#.\-]*)[ \t]*\r?\n?([\s\S]*?)```/g,(m,lang,code)=>pB(_atlCodeBlock(code,lang)));
+      s=s.replace(/\$\$([\s\S]+?)\$\$/g,(m,t)=>pB(_atlKatex(t,true)));
+      s=s.replace(/\\\[([\s\S]+?)\\\]/g,(m,t)=>pB(_atlKatex(t,true)));
+      s=s.replace(/`([^`\n]+)`/g,(m,c)=>pI('<code class="atl-code-i">'+esc(c)+'</code>'));
+      s=s.replace(/\\\(([\s\S]+?)\\\)/g,(m,t)=>pI(_atlKatex(t,false)));
+      s=s.replace(/(^|[^\\$\w])\$(?!\s)([^\n$]*?[^\s$])\$(?![\w$])/g,(m,pre,t)=>pre+pI(_atlKatex(t,false)));   /* inline $…$ — guarded so "$5"/"a$b" currency & code don't misfire */
+      /* 2) GFM pipe tables → protected block */
+      s=(function(src){ const ls=src.split('\n'), out=[]; let i=0;
+        const isRow=l=>/^\s*\|.*\|\s*$/.test(l), isSep=l=>/\|/.test(l)&&/-/.test(l)&&/^\s*\|?[\s:|-]*-[-\s:|]*\|?\s*$/.test(l);
+        while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd))); i=j; } else { out.push(ls[i]); i++; } }
+        return out.join('\n'); })(s);
+      /* 3) the EXISTING R154/R155 typography pipeline — the text is now placeholder-protected (code/math/tables intact).
+         (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR ("目次を色分けするのはやめる"). (#R155) a "## "
+         section also gets a subtle neutral top hairline = pure 配置/placement. */
+      let html=esc(_dedupText(_atlStanza(s)))
+        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .32em;font-size:1.18em;line-height:1.32;">$1</div>')
+        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.7em 0 .55em;padding-top:.62em;border-top:1px solid rgba(128,128,128,.18);font-size:1.44em;line-height:1.28;letter-spacing:.005em;">$1</div>')
+        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.45em 0 .6em;font-size:1.68em;letter-spacing:.01em;line-height:1.24;">$1</div>')
+        /* (#R151/#R154) a whole-line **bold run** is an author-written section lead → modest heading (size+spacing, no colour) */
+        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.3em 0 .42em;font-size:1.2em;line-height:1.3;">$1</div>')
+        .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+        .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,'$1<i>$2</i>')                      /* (#R156) *italic* (single asterisk; guarded so ** and "2 * 3"/bullets don't misfire) */
+        .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.35);padding:2px 0 2px 11px;margin:.5em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
+        /* (#R74) markdown links → real (safe) anchors */
+        .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
+        /* (#R79g) linkify BARE urls too (leading-char guard skips urls already inside an href="…") */
+        .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
+        .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.3em;text-indent:-1.05em;margin:.32em 0;line-height:1.5;">•&nbsp; $1</div>')   /* (#R155) clearer bullets */
+        .replace(/\n{2,}/g,'<div style="height:1.3em"></div>')                                        /* (#R155) paragraph gap */
+        .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.78em"></div>')                 /* (#R150-R155) sentence-end + single newline = soft gap */
+        .replace(/\n/g,'<br>');
+      /* 4) restore protected blocks (may hold inline placeholders) THEN inlines */
+      return html.replace(/B(\d+)/g,(m,i)=>B[+i]||'').replace(/I(\d+)/g,(m,i)=>I[+i]||''); }
+    /* (#R156) ONE-TIME wiring for the renderer's interactive bits, at document level so it works in EVERY Atlas
+       surface (floating panel, sidebar tab, workspace window): (a) a Copy button on each code block copies the raw
+       code + flips its label for ~1.4s; (b) if KaTeX finishes loading AFTER a reply was painted (slow CDN — rare,
+       since it is a defer script that runs before DOMContentLoaded), upgrade the escaped-raw fallbacks in place. */
+    function _atlFallbackCopy(txt){ try{ const ta=document.createElement('textarea'); ta.value=String(txt||''); ta.style.cssText='position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.focus(); ta.select(); try{ document.execCommand('copy'); }catch(_){} ta.remove(); }catch(_){} }
+    try{ if(!window.__atlRenderWired){ window.__atlRenderWired=true;
+      document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-codecopy'); if(!b) return;
+        const code=document.getElementById(b.getAttribute('data-cid')); const txt=code?(code.textContent||''):'';
+        const done=()=>{ const old=b.textContent; b.textContent=L('Copied','コピー済み','Kopiert','Скопировано','Copiado'); b.classList.add('ok'); setTimeout(()=>{ try{ b.textContent=old; b.classList.remove('ok'); }catch(_){} },1400); };
+        try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>{ _atlFallbackCopy(txt); done(); }); } else { _atlFallbackCopy(txt); done(); } }catch(_){ _atlFallbackCopy(txt); done(); }
+      }catch(_){} });
+      /* belt-and-suspenders: re-typeset any raw-LaTeX fallbacks once KaTeX is present (covers a slow-CDN edge) */
+      try{ if(window.katex&&window.katex.renderToString){ _atlTypesetMath(document); } else { let _k=0; const _t=setInterval(()=>{ if((window.katex&&window.katex.renderToString)){ clearInterval(_t); _atlTypesetMath(document); } else if(++_k>20){ clearInterval(_t); } },500); } }catch(_){}
+    } }catch(_){}
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
        mapReport and any reply that carries real article URLs. Only http(s) URLs that came from evidence or
@@ -29580,7 +29658,15 @@ window.addEventListener('DOMContentLoaded', () => {
       mappingVerdict:function(s){ try{ return _atlMappingVerdict(s); }catch(_){ return null; } },
       mappingNote:function(v,s,m){ try{ return _atlMappingNoteHtml(v,s,m); }catch(_){ return ''; } },
       stanza:function(t){ try{ return _atlStanza(t); }catch(_){ return t; } },
-      mdMini:function(t){ try{ return mdMini(t); }catch(_){ return ''; } } }; }catch(_){}
+      mdMini:function(t){ try{ return mdMini(t); }catch(_){ return ''; } },
+      /* (#R156) UNIFIED VISION/RENDER/GEO spine — exposed for the hermetic node + Playwright tests: content class,
+         the map gate, exact-rational deterministic verification, the self-check note, and the vision system prompt. */
+      contentClass:function(x){ try{ return _atlContentClass(x); }catch(_){ return ''; } },
+      shouldMap:function(x){ try{ return _atlShouldMap(x); }catch(_){ return false; } },
+      verifyChecks:function(c){ try{ return _atlVerifyChecks(c); }catch(_){ return {ran:0,passed:0,failed:[]}; } },
+      checksNote:function(v){ try{ return _atlChecksNoteHtml(v); }catch(_){ return ''; } },
+      parseRat:function(x){ try{ const r=_atlParseRat(x); return r?{n:r.n.toString(),d:r.d.toString()}:null; }catch(_){ return null; } },
+      visionSys:function(){ try{ return _visionSYS(); }catch(_){ return ''; } } }; }catch(_){}
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -30281,6 +30367,71 @@ window.addEventListener('DOMContentLoaded', () => {
        multi-word candidate. Deliberately EXCLUDES directional/qualifier words (North/South/New/Old/Upper/Central…)
        because those ARE real place components ("North Korea", "New York", "Western Sahara") — stripping them corrupts. */
     const _ATL_LEAD=new Set('visit see explore discover today yesterday meanwhile however then also both either neither near around throughout during despite'.split(' '));
+    /* (#R156) ================ CONTENT CLASS — the shared spine ================
+       The model classifies each reply (and every attached image) into ONE content class. That SAME class then drives
+       image fidelity, math self-check AND mapping — so a math/document/code answer NEVER runs place extraction (the
+       "Problem"/"Thus"/"Let U and V" false-place bug is impossible because extraction is never even reached), while a
+       genuinely geographic answer still maps. This is code-side enforcement, NOT prompt-trust: even if the model wrongly
+       lists places on a math answer, _atlShouldMap('math') === false blocks every pin + note. An UNCLASSIFIED ('') reply
+       stays mappable, so plain-text geographic answers are completely unchanged (no regression). */
+    function _atlContentClass(x){ const s=String(x==null?'':x).toLowerCase().replace(/[^a-z]/g,'');
+      if(!s) return '';
+      if(/(math|equation|formula|algebra|calculus|matrix|matrices|proof|geometry|trig|physics|chemis|scienti|statistic)/.test(s)) return 'math';
+      if(/(code|program|software|snippet|shell|script|sql|json|html|css|javascript|python)/.test(s)) return 'code';
+      if(/(document|table|form|receipt|invoice|spreadsheet|ledger|ocr|handwrit|textextract|paper|article|essaytext)/.test(s)) return 'document';
+      if(/(grammar|translat|languagelearn|spelling|proofread|writing|essay)/.test(s)) return 'language';
+      if(/(geograph|^geo$|map|place|location|landmark|city|country|region|terrain|facility|travel|street|address|nature|landscape)/.test(s)) return 'geographic';
+      if(/(photo|image|picture|screenshot|^ui$|interface|diagram|chart|graph|artwork|meme|logo)/.test(s)) return 'photo';
+      if(/(concept|explain|general|knowledge|conversation|advice|medic|pharma|health|history|abstract|opinion)/.test(s)) return 'conceptual';
+      return s; }
+    function _atlShouldMap(cls){ const c=_atlContentClass(cls); return c==='geographic'||c===''; }
+    /* (#R156) EXACT-RATIONAL deterministic verification (BigInt fractions → 1/22 etc. are exact, no float error). The
+       vision/answer model returns a `checks` array of INDEPENDENTLY computable facts (chiefly matrix products, e.g.
+       V·P = U for a transition-matrix problem); the client recomputes them and reports pass/fail. This is the work
+       order's "計算可能な問題は決定論的に検算する / 一致しなければ画像の該当箇所を再確認する" — real verification, not the model
+       grading itself. Unsupported/ill-formed checks are SKIPPED (never a false "verified"); a failure triggers ONE
+       image re-examination round in the vision turn. */
+    function _atlGcd(a,b){ a=a<0n?-a:a; b=b<0n?-b:b; while(b){ const t=a%b; a=b; b=t; } return a||1n; }
+    function _atlRat(n,d){ try{ n=BigInt(n); d=(d===undefined?1n:BigInt(d)); }catch(_){ return null; } if(d===0n) return null; if(d<0n){ n=-n; d=-d; } const g=_atlGcd(n,d); return {n:n/g,d:d/g}; }
+    function _atlDecRat(s){ const neg=/^-/.test(s); s=s.replace(/^[+-]/,''); const p=s.split('.'); const intp=p[0]||'0', frac=p[1]||''; return _atlRat((neg?-1n:1n)*BigInt((intp+frac)||'0'), 10n**BigInt(frac.length)); }
+    function _atlParseRat(x){ if(x==null) return null;
+      if(typeof x==='number'){ if(!isFinite(x)) return null; return Number.isInteger(x)?_atlRat(x,1):_atlDecRat(String(x)); }
+      let s=String(x).trim().replace(/\\!|\\,|\s|\{|\}|\$/g,''); if(!s) return null;
+      let m=s.match(/^\\?d?frac([+-]?\d+)([+-]?\d+)$/); if(m) return _atlRat(BigInt(m[1]),BigInt(m[2]));   /* \frac{a}{b} after brace-strip → "fracab"; simple a,b only */
+      m=s.match(/^([+-]?\d+)\/([+-]?\d+)$/); if(m) return _atlRat(BigInt(m[1]),BigInt(m[2]));
+      if(/^[+-]?\d+$/.test(s)) return _atlRat(BigInt(s),1n);
+      if(/^[+-]?(?:\d+\.\d*|\.\d+|\d+)$/.test(s)&&/\./.test(s)) return _atlDecRat(s);
+      return null; }
+    const _rAdd=(a,b)=>_atlRat(a.n*b.d+b.n*a.d, a.d*b.d), _rMul=(a,b)=>_atlRat(a.n*b.n, a.d*b.d), _rEq=(a,b)=>!!a&&!!b&&a.n===b.n&&a.d===b.d;
+    function _atlParseMat(M){ if(!Array.isArray(M)||!M.length||M.length>16) return null; const out=[]; let cols=-1;
+      for(const row of M){ const r0=Array.isArray(row)?row:[row]; if(cols<0) cols=r0.length; if(!r0.length||r0.length!==cols||r0.length>16) return null;
+        const r=[]; for(const c of r0){ const q=_atlParseRat(c); if(!q) return null; r.push(q); } out.push(r); }
+      return out; }
+    function _atlMatMul(A,B){ const n=A.length,k=A[0].length,m=B[0].length; if(B.length!==k) return null; const C=[];
+      for(let i=0;i<n;i++){ const row=[]; for(let j=0;j<m;j++){ let s=_atlRat(0,1); for(let t=0;t<k;t++){ s=_rAdd(s,_rMul(A[i][t],B[t][j])); if(!s) return null; } row.push(s); } C.push(row); } return C; }
+    function _atlMatEq(A,B){ if(!A||!B||A.length!==B.length) return false; for(let i=0;i<A.length;i++){ if(A[i].length!==B[i].length) return false; for(let j=0;j<A[i].length;j++){ if(!_rEq(A[i][j],B[i][j])) return false; } } return true; }
+    function _atlVerifyChecks(checks){ const out={ran:0,passed:0,failed:[]}; if(!Array.isArray(checks)) return out;
+      for(const c of checks.slice(0,12)){ try{ if(!c||!c.type) continue; const type=String(c.type).toLowerCase().replace(/[^a-z]/g,''); const label=String(c.label||c.desc||c.name||type).slice(0,120);
+        if(/(matmul|matrixproduct|matrixmultiply|verifyinverse|verifysystem|productequals)/.test(type)){
+          const A=_atlParseMat(c.a||c.A||c.left), B=_atlParseMat(c.b||c.B||c.right), E=_atlParseMat(c.expect||c.equals||c.result||c.u||c.U);
+          if(!A||!B||!E) continue; const P=_atlMatMul(A,B); if(!P) continue; out.ran++; if(_atlMatEq(P,E)) out.passed++; else out.failed.push({label, detail:'A·B ≠ expected'}); }
+        else if(/(mateq|matrixequal|equalmatrix)/.test(type)){ const A=_atlParseMat(c.a||c.A||c.left), B=_atlParseMat(c.b||c.B||c.right||c.expect); if(!A||!B) continue; out.ran++; if(_atlMatEq(A,B)) out.passed++; else out.failed.push({label, detail:'matrices differ'}); }
+        else if(/(equal|scalar|value|arith|calc)/.test(type)){ const lv=_atlParseRat(c.left!=null?c.left:c.a), rv=_atlParseRat(c.right!=null?c.right:(c.expect!=null?c.expect:(c.equals!=null?c.equals:c.b))); if(!lv||!rv) continue; out.ran++; if(_rEq(lv,rv)) out.passed++; else out.failed.push({label, detail:'values differ'}); }
+      }catch(_){} }
+      return out; }
+    function _atlChecksNoteHtml(v){ if(!v||!v.ran) return '';
+      if(!v.failed.length) return '<div class="atl-check ok" style="font-size:11px;margin-top:8px;color:#2ea043;display:flex;gap:6px;align-items:flex-start;"><span>✓</span><span>'+esc(L(
+        v.passed+' computation'+(v.passed===1?'':'s')+' verified independently (exact arithmetic).',
+        v.passed+' 件の計算をクライアント側で独立に検算しました（厳密計算・一致）。',
+        v.passed+' Berechnung'+(v.passed===1?'':'en')+' unabhängig verifiziert (exakte Arithmetik).',
+        v.passed+' вычислени'+(v.passed===1?'е':'й')+' проверено независимо (точная арифметика).',
+        v.passed+' cálculo'+(v.passed===1?'':'s')+' verificado(s) de forma independiente (aritmética exacta).'))+'</span></div>';
+      return '<div class="atl-check bad" style="font-size:11px;margin-top:8px;color:#d29922;display:flex;gap:6px;align-items:flex-start;"><span>⚠</span><span>'+esc(L(
+        'An independent re-computation did NOT match ('+v.failed.map(f=>f.label).join('; ')+') — the transcription or a step may be wrong; treat the result with caution.',
+        '独立した再計算が一致しませんでした（'+v.failed.map(f=>f.label).join('; ')+'）。読み取りまたは計算の一部が誤っている可能性があるため、結果は慎重にご確認ください。',
+        'Eine unabhängige Nachrechnung stimmte NICHT überein ('+v.failed.map(f=>f.label).join('; ')+') — Transkription/Schritt evtl. falsch.',
+        'Независимый пересчёт НЕ совпал ('+v.failed.map(f=>f.label).join('; ')+') — возможна ошибка в распознавании или вычислении.',
+        'Un recálculo independiente NO coincidió ('+v.failed.map(f=>f.label).join('; ')+') — la transcripción o un paso puede ser erróneo.'))+'</span></div>'; }
     function _atlExtractPlaces(text){ let t=String(text||'').replace(/`[^`]*`/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');
       const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:\s+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)\s+[A-ZÀ-Þ][\p{L}'’\-]*|\s+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;   /* no '.' in the class → a phrase never bridges a sentence boundary ("Italy. The Colosseum") */
       const seen=new Set(), out=[]; let m;
@@ -30341,6 +30492,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Orchestrator: resolve the answer's places (structured list + text safety-net), MERGE with any existing plan
        pins (never wipes them), pin only confident/unique hits, and return an honest self-audit note. */
     async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
+      /* (#R156) CODE-SIDE GEO GATE — the work order's "地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で
+         検証する / 数学・コード・文書モードでは地点抽出処理自体を呼ばない". A non-geographic content class (math/code/
+         document/photo/language/conceptual) returns immediately: NO place extraction, NO geocoding, NO pins, and NO
+         "0 places / unplaced / ambiguous" note. So a math answer that happens to contain capitalised words like
+         "Problem", "Thus" or "Let U and V" can never be turned into map candidates. */
+      if(ctx.contentClass && !_atlShouldMap(ctx.contentClass)) return '';
       try{
         const struct=(Array.isArray(places)?places:[]).slice(0,16).map(p=>({
           name:String((p&&(p.n||p.name||p.locationName))||'').slice(0,90), country:String((p&&(p.c||p.country))||'').slice(0,60),
@@ -31935,10 +32092,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         case 'control': return doControl(a);
         case 'answer': { let _ah='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
+          /* (#R156) shared spine: a text answer may also carry a content class + verifiable checks (e.g. the model solved
+             an equation in prose). Verify the checks deterministically, show the honest self-check note, and let the SAME
+             class gate mapping below — so a math/code/document text answer never runs place extraction either. */
+          const _acls=_atlContentClass(a.contentClass); try{ const _cv=_atlVerifyChecks(a.checks); _ah+=_atlChecksNoteHtml(_cv); }catch(_){}
           /* (#R150) same code-side reconciliation for the planner's direct `answer`: audit the answer text (safety net
              for an omitted places list), merge with existing pins, honest self-audit + source-concentration note. */
           { const _acit=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
-            try{ _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} }
+            try{ if(_atlShouldMap(_acls)) _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit,contentClass:_acls}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} }
             /* (#R153) the planner's direct `answer` used to render ZERO sources even when the model's hosted web search
                returned citations — the dominant "出展が全くない" (no sources at all) driver. Show the web-verified cards
                when they exist (anchored to the reply → no relevance gate). When the answer was from the model's own
@@ -32009,7 +32170,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
-        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE, TIMELESS knowledge or conceptual explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). SOURCING ROUTING (the user is angry that answers arrive with NO sources): if the answer will make SPECIFIC, CHECKABLE factual claims a reader might want to verify — statistics, dated events, attributions, quotes, "who/when/how many", recent or contested facts — prefer {"type":"analyze"} INSTEAD, because analyze GATHERS and CITES real source links, whereas a bare "answer" cannot attach sources and reads as untrustworthy. Reserve "answer" for genuinely timeless conceptual explanations and IntMap how-to, where there is nothing to cite. FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger headings (differentiated by SIZE and SPACING) with clear separation. Use a heading ONLY for a genuine section title, never to enlarge an ordinary sentence. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'ANSWER: {"type":"answer","text":str,"contentClass"?:str,"checks"?:object[],"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE, TIMELESS knowledge or conceptual explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). CONTENT CLASS + MATH: set "contentClass" to one of "math"|"document"|"code"|"language"|"geographic"|"photo"|"conceptual" so IntMap renders + maps correctly — IntMap maps ONLY when it is "geographic", so a maths, code, grammar or general-knowledge answer NEVER produces map pins (do NOT list "places" for those). Write EVERY formula in STANDARD LaTeX — inline \\( … \\), display/matrices \\[ … \\] with \\frac, pmatrix, ^ and _ (never bare V^{-1}U) — and for any independently checkable numeric/matrix identity emit "checks":[{"type":"matmul","label":"…","a":<matrix>,"b":<matrix>,"expect":<matrix>}|{"type":"equal","label":"…","left":<num|"a/b">,"right":<…>}] using exact fraction strings; IntMap recomputes them exactly and shows a verified/failed note. SOURCING ROUTING (the user is angry that answers arrive with NO sources): if the answer will make SPECIFIC, CHECKABLE factual claims a reader might want to verify — statistics, dated events, attributions, quotes, "who/when/how many", recent or contested facts — prefer {"type":"analyze"} INSTEAD, because analyze GATHERS and CITES real source links, whereas a bare "answer" cannot attach sources and reads as untrustworthy. Reserve "answer" for genuinely timeless conceptual explanations and IntMap how-to, where there is nothing to cite. FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger headings (differentiated by SIZE and SPACING) with clear separation. Use a heading ONLY for a genuine section title, never to enlarge an ordinary sentence. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'AREA MONITORS (saved SERVER-SIDE watches — they re-check an area on a schedule even when the page is closed, and generate an EVIDENCE-BACKED report ONLY when a real change is detected, never on every run): {"type":"monitor","op":"create"|"list"|"open"|"pause"|"resume"|"run"|"delete","name"?:str,"which"?:str,"index"?:int,"intervalMin"?:int,"sources"?:[str]}. op:"create" saves a monitor over the CURRENTLY SELECTED AREA — a radius circle, a drawn area, OR a resolved region outline (the user must have ONE active; if none is active, the action tells them to set one first — do NOT invent an area). Pass "name" and optionally "intervalMin" (minutes, ≥30, default 360) and "sources" (["news"] is the only source for now). op:"list" opens the Monitors tab. op:"open"/"pause"/"resume"/"run"/"delete" act on an EXISTING monitor identified by "which" (its name/area, fuzzy-matched) or "index" (1-based). Use for "この範囲を監視して"/"monitor this area" (create), "監視一覧"/"my monitors" (list), "東京の監視を今すぐ実行/一時停止/削除". Login is required. NEVER claim a monitor was created/paused/run/deleted unless the action actually succeeded (the reply reflects the real result).\n'
@@ -32047,6 +32208,28 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
         +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-grad);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble; (#R132) shared --atlas-grad so bubble+tab stay identical & accent-responsive without the flat default fill */
         +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
+        /* (#R156) UNIFIED RENDERER — code blocks, inline code, display/inline math, tables, blockquotes. NOT scoped to
+           #atlas-panel so the same classes render identically in the sidebar-tab and workspace-window Atlas surfaces.
+           Every wide element (code, math, table) is INDEPENDENTLY horizontally scrollable so the reply column never
+           overflows on mobile ("長い数式や行列はモバイルで横スクロール可能に"). */
+        +'.atl-codewrap{margin:.7em 0;border:1px solid var(--glass-border,rgba(128,128,128,.22));border-radius:10px;overflow:hidden;background:var(--input-bg,rgba(120,120,128,.08));}'
+        +'.atl-codebar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 4px 11px;background:rgba(120,120,128,.14);border-bottom:1px solid var(--glass-border,rgba(128,128,128,.18));}'
+        +'.atl-codelang{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);}'
+        +'.atl-codecopy{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
+        +'.atl-codecopy:hover{color:var(--text-main);border-color:var(--primary-color);}'
+        +'.atl-codecopy.ok{color:#fff;background:var(--primary-color);border-color:var(--primary-color);}'
+        +'.atl-codeblock{margin:0;padding:10px 12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.55;white-space:pre;}'
+        +'.atl-codeblock code{font-family:inherit;white-space:pre;background:none;padding:0;color:var(--text-main);}'
+        +'.atl-code-i{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:rgba(120,120,128,.16);border:1px solid rgba(128,128,128,.16);border-radius:5px;padding:.5px 5px;white-space:pre-wrap;word-break:break-word;}'
+        +'.atl-math-b{margin:.55em 0;overflow-x:auto;overflow-y:hidden;padding:2px 1px 4px;max-width:100%;}'
+        +'.atl-math-b .katex-display{margin:.3em 0;}'
+        +'.atl-math-raw{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;color:var(--text-main);white-space:pre-wrap;}'
+        +'.katex{font-size:1.06em;}'   /* nudge KaTeX up to match the reply body size */
+        +'.atl-tablewrap{margin:.7em 0;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--glass-border,rgba(128,128,128,.2));border-radius:10px;}'
+        +'.atl-md-table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5;}'
+        +'.atl-md-table th,.atl-md-table td{border:1px solid var(--glass-border,rgba(128,128,128,.18));padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap;}'
+        +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:700;}'
+        +'.atl-md-table tbody tr:nth-child(2n){background:rgba(120,120,128,.06);}'
         +'#atlas-panel .atl-dots{display:inline-flex;gap:4px;align-items:center;padding:3px 0;}'
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
@@ -32099,12 +32282,17 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-in:focus{border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(10,132,255,0.18);}'
         /* (#R72) send button ("メッセージ送信ボタンがダサい"): clean filled circle + arrow-up SVG (ChatGPT-style),
            disabled-looking when the input is empty. */
-        +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease;}'   /* (#R148) send + stop buttons = WHITE background + BLACK icon ("白背景黒文字に") — R147 tinted the icon with the accent colour; the user wants it black. Icon is currentColor. */
+        /* (#R156) SEND + STOP = ACCENT COLOUR ("送信ボタン、応答を停止ボタンはアクセントカラーに"), but only ONCE the
+           user has entered something ("文字を入力するまでは今の色"): the base .atl-go is the active state (accent fill,
+           white icon); .idle (empty input) keeps the previous white-bg/black-arrow look; .busy (Stop) is also accent.
+           Accent = var(--primary-color) with a matching white icon so it reads as a filled primary button. */
+        +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var(--primary-color);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease,filter .15s ease;}'
         +'#atlas-panel .atl-go svg{display:block;}'
-        +'#atlas-panel .atl-go:hover{background:#f0f0f4;} #atlas-panel .atl-go:active{transform:scale(0.9);}'
-        +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:#111;}'   /* (#R149) empty input: keep the ↑ arrow SOLID BLACK ("↑の黒色が薄くて透けている→黒に") — R147/R148 used a muted rgba(120,120,128,.75) which read as faded/see-through; only the lighter shadow now marks the idle state */
-        +'#atlas-panel .atl-go.busy{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#111;}'   /* (#R148) Stop-answering button = WHITE background + BLACK square icon (matches Send; the enlarged square distinguishes it) */
-        +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.06);}'
+        +'#atlas-panel .atl-go:hover{filter:brightness(1.07);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
+        +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:#111;border-color:rgba(0,0,0,0.08);}'   /* (#R149/#R156) empty input keeps the previous SOLID-BLACK ↑ on white ("文字を入力するまでは今の色") */
+        +'#atlas-panel .atl-go.idle:hover{background:#f0f0f4;filter:none;}'
+        +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#fff;border-color:transparent;}'   /* (#R156) Stop-answering button = accent fill + white square icon */
+        +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.07);}'
         /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
         +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
         +'#atlas-panel .atl-b.a:hover + .atl-msgt,#atlas-panel .atl-msgt:hover{opacity:1;}'
@@ -32399,7 +32587,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length)); }catch(_){} }
     async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(f=>f&&/^image\//.test(f.type||'')); if(!files.length) return;
       for(const f of files){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} break; }
-        try{ const u=await compressImage(f,1100,0.72); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){} }
+        /* (#R156) HI-FIDELITY encode for OCR/math: the old 1100px / q0.72 JPEG dissolved small text, fraction bars and
+           subscripts (the "小さい文字を失う固定的な1100px・品質0.72圧縮を廃止または適応化する" of the work order). 2000px /
+           q0.9 preserves fine detail; combined with detail:"high" server-side it reads dense documents and equations. */
+        try{ const u=await compressImage(f,2000,0.9); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
     }catch(_){} }
     function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); if(v||imgs.length){ inEl.value=''; _atlImgs=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs); } }   /* (#R149) send text + any pasted/attached images */
@@ -32587,7 +32778,7 @@ window.addEventListener('DOMContentLoaded', () => {
        Thinking; a web-search/brief action = Searching; a compare/stat = Analyzing; a map action = Mapping). The
        `.atl-dots` span is kept inside so the animation + the cancel-scan selector (`.atl-b.a .atl-dots`) still work,
        and setStage is a no-op once real content has replaced the placeholder (so a late call never clobbers a reply). */
-    const _STAGE_TXT={ think:L('Thinking','考え中','Denke nach','Думаю','Pensando'), search:L('Searching','検索中','Suche','Ищу','Buscando'), analyze:L('Analyzing','分析中','Analysiere','Анализирую','Analizando'), map:L('Mapping','地図に描画中','Zeichne Karte','Рисую карту','Dibujando mapa'), write:L('Writing','作成中','Schreibe','Пишу','Escribiendo') };
+    const _STAGE_TXT={ think:L('Thinking','考え中','Denke nach','Думаю','Pensando'), search:L('Searching','検索中','Suche','Ищу','Buscando'), analyze:L('Analyzing','分析中','Analysiere','Анализирую','Analizando'), map:L('Mapping','地図に描画中','Zeichne Karte','Рисую карту','Dibujando mapa'), write:L('Writing','作成中','Schreibe','Пишу','Escribiendo'), read:L('Reading the image','画像を精読中','Lese das Bild','Читаю изображение','Leyendo la imagen'), verify:L('Verifying','検算中','Verifiziere','Проверяю','Verificando') };
     function stageDots(k){ return '<span class="atl-stage">'+esc(_STAGE_TXT[k]||_STAGE_TXT.think)+'<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span></span>'; }
     function setStage(el,k){ try{ if(el&&el.querySelector&&el.querySelector('.atl-dots')) el.innerHTML=stageDots(k); }catch(_){} }
     const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='researchMap'||t==='research_map'||t==='situationMap'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
@@ -32943,9 +33134,58 @@ window.addEventListener('DOMContentLoaded', () => {
       let jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:表示|オン|つけて|有効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:true}],confident:false};
       jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:非表示|オフ|消して|無効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:false}],confident:false};
       return null; }
+    /* (#R156) ================= DEDICATED VISION PIPELINE =================
+       The work order: "通常のAtlasプランナーに、画像読解・計算・JSON計画・地名抽出を一度に処理させる現在の構造を改めてください".
+       An attached image no longer goes through the giant map-oriented planner (whose MAPPING MANDATE pushed every image
+       toward pins). It goes through this dedicated pipeline that runs ONE processing system: CLASSIFY → TRANSCRIBE (with
+       uncertainty flags) → SOLVE/ANALYZE → DETERMINISTICALLY VERIFY (exact-rational recompute of the model's checks) →
+       RENDER (unified Markdown+KaTeX) → MAP ONLY IF geographic. A failed self-check triggers ONE image re-examination
+       round. The same content class + checks metadata are shared by rendering and mapping — not three separate patches. */
+    function _visNorm(d){ if(!d||typeof d!=='object') return {contentClass:'',answer:String(d==null?'':d),checks:[],places:[],uncertain:[],focusPlace:''};
+      if(Array.isArray(d)) d=d[0]||{};
+      return { contentClass:d.contentClass||d.class||d.category||'', transcription:String(d.transcription||''), uncertain:Array.isArray(d.uncertain)?d.uncertain:[], answer:String(d.answer||d.text||d.say||''), checks:Array.isArray(d.checks)?d.checks:[], places:Array.isArray(d.places)?d.places:[], focusPlace:String(d.focusPlace||d.focus||'') }; }
+    function _visionSYS(){ const lang=_langLine();
+      return 'You are Atlas Vision, a rigorous multimodal reader for IntMap (an interactive world map). One or more IMAGES are attached. Read them with maximum care and OUTPUT ONE STRICT JSON OBJECT ONLY — no prose, no markdown fence. Schema: {"contentClass":string,"transcription"?:string,"uncertain"?:[string],"answer":string,"checks"?:object[],"places"?:[{"n":string,"c":string,"k":string}],"focusPlace"?:string}.\n'
+        +'STEP 1 — CLASSIFY the dominant content into exactly one "contentClass": "math" (equations/matrices/proofs/physics/chemistry/statistics), "document" (text/table/form/receipt/handwriting), "code" (source code/terminal), "language" (grammar/translation/writing), "geographic" (real places/maps/landscapes/landmarks/facilities/street scenes/addresses), "photo" (general photo/screenshot/UI/diagram/chart/artwork), or "conceptual" (a general-knowledge question about the image). This class is AUTHORITATIVE — IntMap maps ONLY when it is "geographic".\n'
+        +'STEP 2 — For math/document/code: TRANSCRIBE first, EXACTLY, BEFORE solving, into "transcription". Preserve every matrix, fraction, subscript, superscript, bracket and sign. If ANY digit/symbol is ambiguous (1 vs 7, 0 vs O, a vs α, a faint minus, a fraction bar), LIST it in "uncertain" and state the assumption you made — never silently treat an unreadable glyph as certain, and never invent a value you cannot see.\n'
+        +'STEP 3 — SOLVE / ANALYZE from the transcription and show the working. Use STANDARD LaTeX for EVERY formula: inline as \\( … \\); display, multi-line and matrices as \\[ … \\] with pmatrix/bmatrix, \\frac, ^ and _ — NEVER bare ASCII like V^{-1}U or [x]_V. Use Markdown for structure: "## " section headings, "- " bullets, "| a | b |" pipe tables for tabular data, and ``` fenced blocks for code.\n'
+        +'STEP 4 — VERIFY. Whenever the problem contains an independently checkable numeric/matrix identity, EMIT it in "checks" so IntMap recomputes it EXACTLY on the client and confirms your work. Each check is {"type":"matmul","label":"V·P = U","a":<matrix>,"b":<matrix>,"expect":<matrix>} (asserts a·b equals expect) or {"type":"equal","label":"…","left":<num-or-fraction-string>,"right":<…>}. Matrices are arrays of rows; entries are integers, decimals, or EXACT fraction strings like "1/22" or "-5/22" (prefer exact fractions — never rounded decimals). For a transition-, inverse- or change-of-basis-matrix problem you MUST include the product check (e.g. V·P = U). Emit ONLY checks you believe pass; if your own check would fail, fix the transcription/solution FIRST.\n'
+        +'MAPPING (STRICT — the user was angry that math answers produced map pins): ONLY when contentClass is "geographic" may you fill "places" with the real, mappable spots the image shows/implies, as [{"n":"place name","c":"country","k":"kind"}], plus optionally "focusPlace" (the single main place to fly to). For EVERY other class you MUST OMIT "places" and "focusPlace" entirely — a math problem, document, code, UI screenshot or abstract photo has NO map value. NEVER turn a word like "Problem", "Thus", "Let", "Figure", "Theorem" or a person\'s name into a place.\n'
+        +'HONESTY: if you cannot read the image confidently, SAY SO plainly in "answer" and reflect it in "uncertain" — never fabricate a confident solution, and never claim a verification you did not emit as a check. Write "answer" and its headings in '+lang+'. Numbers, code, LaTeX and place names stay canonical.'; }
+    function _visionPrompt(q){ q=String(q||'').trim();
+      return (q?('The user says: '+q+'\n\n'):'')+'Read the attached image(s) carefully and respond per your instructions: classify the content, transcribe any text/math EXACTLY (flag uncertain glyphs), solve or analyze it with LaTeX + Markdown, emit verifiable checks for any computable result, and include "places" ONLY if the content is genuinely geographic.'; }
+    async function _atlVisionTurn(ai, q, imgs, gen){
+      const opts={task:'vision_read',effortHint:'high',imageDetail:'high',signal:(_abortCtl?_abortCtl.signal:undefined)};
+      try{ ai.innerHTML=stageDots('read'); }catch(_){}
+      let env=null; try{ env=await askAIJSONEnvelope(_visionPrompt(q),_visionSYS(),imgs,opts); }
+      catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
+      if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+      let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks);
+      /* ONE image RE-EXAMINATION round when a deterministic recompute failed (the work order's "検算失敗時は回答をそのまま
+         返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
+      if(vr.ran && vr.failed.length){ try{ if(gen===_runGen) ai.innerHTML=stageDots('verify');
+        const guide='\n\n[SELF-CHECK FAILED] Your emitted check(s) did NOT hold when recomputed EXACTLY on the client: '+vr.failed.map(f=>f.label+' ('+f.detail+')').join('; ')+'. RE-EXAMINE the corresponding region of the image, re-transcribe those exact entries (watch 1/7, 0/O, signs and fraction bars), redo the computation, and return corrected JSON whose checks actually pass. If the image genuinely does not support a passing check, say so honestly in "answer" and omit the failing check.';
+        const env2=await askAIJSONEnvelope(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
+        if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+        if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
+          if(vr2.ran && !vr2.failed.length){ d=d2; vr=vr2; env=env2; }                               /* repaired → verified */
+          else if(vr2.ran && vr2.failed.length<vr.failed.length){ d=d2; vr=vr2; env=env2; } }        /* strictly fewer failures → still an improvement */
+      }catch(_){} }
+      if(gen!==_runGen) return;
+      let html='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
+      if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
+      try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
+      const cls=_atlContentClass(d.contentClass);
+      if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
+        try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls}); }catch(_){}
+        if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) map.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(map.getZoom(),6),duration:900}); } }catch(_){} } }
+      if(gen===_runGen){ ai.innerHTML=html; recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
+    }
     async function run(q,imgs){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
       if(!q&&!imgs.length) return;
-      if(!q&&imgs.length) q=L('Describe and analyze this image, and map any real places it shows or implies.','この画像を説明・分析し、写っている／示唆される実在の場所があれば地図にマッピングしてください。','Beschreibe und analysiere dieses Bild und kartiere reale Orte, die es zeigt oder andeutet.','Опишите и проанализируйте это изображение и нанесите на карту реальные места, которые оно показывает.','Describe y analiza esta imagen y mapea los lugares reales que muestre o implique.');
+      /* (#R156) NEUTRAL default (was "…map any real places it shows or implies", which FORCED map intent onto every
+         image incl. maths). The vision pipeline classifies first and maps only when the content is genuinely geographic. */
+      if(!q&&imgs.length) q=L('Read and analyze this image. If it is a document, a maths/science problem, a table or text, transcribe it accurately and solve or explain it.','この画像を読み取って分析してください。文書・数学／理科の問題・表・テキストであれば、正確に書き起こして解くか説明してください。','Lies und analysiere dieses Bild. Wenn es ein Dokument, eine Mathe-/Naturwissenschaftsaufgabe, eine Tabelle oder Text ist, transkribiere es genau und löse oder erkläre es.','Прочитайте и проанализируйте это изображение. Если это документ, математическая/научная задача, таблица или текст — точно расшифруйте и решите или объясните.','Lee y analiza esta imagen. Si es un documento, un problema de matemáticas/ciencias, una tabla o texto, transcríbelo con precisión y resuélvelo o explícalo.');
       const p=ensure(); p.style.display='flex';
       const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       _lastUserMsg=q;   /* (#R64) replies mirror the language of THIS message, not the UI setting */
@@ -32982,6 +33222,9 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(typeof aiGate==='function') aiGate(); }catch(_){}   /* opens the login modal / shows the daily-limit toast */
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof currentUser!=='undefined'&&currentUser)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
+      /* (#R156) IMAGE → DEDICATED VISION PIPELINE (classify → transcribe → solve → verify → render → map-only-if-geo),
+         NOT the map-oriented generic planner. AI availability is already gated above. */
+      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }
       const ai=bubble('a',stageDots('think'));   /* (#R130) stage-aware placeholder — updates to Searching/Analyzing/Mapping as runActions executes */
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */

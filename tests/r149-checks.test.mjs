@@ -57,7 +57,7 @@ test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
 });
 
 test('R149 #5/#6 send button arrow solid black when idle; bigger stop square', () => {
-  assert.match(html, /\.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;\}/, 'idle icon is #111 (not muted rgba)');
+  assert.match(html, /\.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;border-color:rgba\(0,0,0,0\.08\);\}/, 'idle icon is #111 on white (R156 added a border; active/busy are accent — see r156-checks)');
   assert.ok(!/\.atl-go\.idle\{[^}]*rgba\(120,120,128,0\.75\)/.test(html), 'old faded idle colour removed');
   assert.match(html, /_GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4\.25" y="4\.25" width="15\.5" height="15\.5"/, 'stop square slightly smaller (R150 17.5→15.5)');
 });
@@ -73,7 +73,7 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
   assert.match(html, /let _atlImgs=\[\]/, 'pending image buffer');
   assert.match(html, /inEl\.addEventListener\('paste'/, 'paste handler on the input');
   assert.match(html, /async function _atlAddFiles\(files\)/, 'add-files helper');
-  assert.match(html, /compressImage\(f,1100,0\.72\)/, 'reuses compressImage → JPEG data URL');
+  assert.match(html, /compressImage\(f,2000,0\.9\)/, 'reuses compressImage → JPEG data URL (R156 hi-fi 2000/0.9 for OCR/maths, was 1100/0.72)');
   // run() threads images to the planner call (was hardcoded null)
   assert.match(html, /async function run\(q,imgs\)\{/, 'run accepts images');
   assert.match(html, /buildPrompt\(q,_profile\)\+\(imgs\.length\?[\s\S]*?\),SYS\(\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null)');
@@ -90,7 +90,7 @@ test('R149 #10 mapping-quality commission: reply places get pinned + honest self
   assert.match(html, /but not placed \(couldn/, 'honest not-placed note (R150 wording)');
   // analyze parses a PLACES: trailer (no extra AI call), answer carries a places array
   assert.match(html, /PLACES\\s\*\[:：\]/, 'analyze strips a PLACES: trailer');
-  assert.match(html, /"type":"answer","text":str,"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places');
+  assert.match(html, /"type":"answer","text":str,"contentClass"\?:str,"checks"\?:object\[\],"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places (R156 added contentClass + checks)');
   assert.match(html, /MAPPING MANDATE/, 'planner carries the mapping mandate');
   assert.match(html, /Self-audit before finishing/, 'self-audit instruction');
 });

@@ -46,7 +46,7 @@ test('R150 #4 typography: flat prose gets code-side rhythm (stanza + sentence-en
   // _atlStanza now restructures multi-paragraph prose too — respecting only replies that already have real ## headings.
   assert.ok(!/if\(\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/.test(html), 'R153: the >1-newline bail is gone (was why multi-paragraph prose stayed flat)');
   assert.match(html, /if\(\/\^\\s\*#\{1,6\}\\s\/m\.test\(raw\)\) return raw;/, 'R153: only ALREADY-##-structured replies are left untouched');
-  assert.match(html, /esc\(_dedupText\(_atlStanza\(String\(s\|\|''\)\)\)\)/, 'mdMini runs the stanza pass first');
+  assert.match(html, /esc\(_dedupText\(_atlStanza\(s\)\)\)/, 'mdMini runs the stanza pass first (R156: on the placeholder-protected string)');
   assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.78em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap (R155 .78em)');
 });
 
