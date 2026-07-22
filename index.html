@@ -4128,6 +4128,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   if(isMobile()) sidebar.classList.add('collapsed'); /* start collapsed on phone */
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+    /* (#R159) capture the map anchor BEFORE the flex reflow (which can snap instantly), so the LEFT sidebar never
+       pans the map — desktop solid only (frosted overlays the map; mobile uses the bottom sheet). */
+    const _sbAnchor0=(!document.body.classList.contains('sidebar-glass') && !isMobile()) ? _sbCaptureAnchor('left') : null;
     sidebar.classList.toggle('collapsed');
     try{ applySidebarStyle(true); }catch(_){}   /* frosted: animate the overlay map-padding with the slide (#4) */
     /* SOLID mode: the map-container is a flex child that physically grows/shrinks as the sidebar
@@ -4138,7 +4141,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R158) SOLID mode reflows the flex map-container as the sidebar slides — suppress the per-frame buffer resize and
        snap once at transitionend (no flicker). FROSTED mode overlays the map (fixed size) and glides via setPadding above,
        so it needs no resize at all. */
-    if(!frosted || isMobile()){ try{ window._sbBeginAnim&&window._sbBeginAnim(); }catch(_){} }
+    if(!frosted || isMobile()){ try{ window._sbBeginAnim&&window._sbBeginAnim(null, _sbAnchor0); }catch(_){} }   /* (#R159) desktop solid: anchor (pre-captured) so opening/closing the LEFT sidebar never pans the map */
   });
   /* (#R15) Keyboard shortcut: Esc collapses the sidebar. Ignored while typing in a field, while a modal
      or popup is open (Esc should close those first), or on mobile (it uses the bottom sheet, not a sidebar). */
@@ -4359,11 +4362,36 @@ window.addEventListener('DOMContentLoaded', () => {
      SUPPRESS the per-frame resize while a known sidebar slide is in flight and resize the buffer exactly ONCE at
      transitionend — the canvas CSS-scales its existing buffer for the ~0.4 s (imperceptible) then snaps sharp. Only the
      TIMING of the buffer resize changes; layout, animation curves and camera are untouched. */
-  let _sbSuppressUntil=0, _sbEndTimer=0, _sbOnEnd=null;
-  function _sbFinishAnim(){ _sbSuppressUntil=0; if(_sbEndTimer){ clearTimeout(_sbEndTimer); _sbEndTimer=0; } try{ map&&map.resize(); }catch(_){} const cb=_sbOnEnd; _sbOnEnd=null; if(cb){ try{ cb(); }catch(_){} } }
-  window._sbBeginAnim=function(onEnd){ if(onEnd) _sbOnEnd=onEnd; _sbSuppressUntil=performance.now()+560; if(_sbEndTimer) clearTimeout(_sbEndTimer); _sbEndTimer=setTimeout(_sbFinishAnim,560); };   /* fallback: resize once if transitionend never fires */
+  /* (#R159) The R158 "suppress the per-frame resize, snap ONCE at transitionend" made the open/close feel gross
+     ("開閉の動きがきもくなっている"): the GL buffer CSS-stretched for the whole 0.4 s and then POPPED sharp, and because
+     map.resize() re-centres the geo-centre in the (asymmetrically) regrown container, the map JUMPED sideways at the
+     snap. Replace it with a SMOOTH per-frame rAF resize so the canvas tracks the container continuously (no stretch,
+     no pop), plus an optional EDGE ANCHOR that re-pins one stationary container edge every frame so the map does NOT
+     move at all — the left sidebar must never shift the map ("左サイドバーによって地図の位置は変えなくていい"). */
+  let _sbSuppressUntil=0, _sbEndTimer=0, _sbOnEnd=null, _sbRAF=0, _sbAnimEnd=0, _sbAnchor=null;
+  function _sbStopLoop(){ if(_sbRAF){ try{ cancelAnimationFrame(_sbRAF); }catch(_){} _sbRAF=0; } }
+  /* (#R159) Capture, BEFORE the layout changes, the geo currently under a STATIONARY container edge, stored as an
+     absolute PAGE position. Left sidebar → the RIGHT edge holds still; right sidebar → the LEFT edge. Capturing pre-
+     reflow (and targeting a page position, not a container-local one) makes the anchor correct whether the flex reflow
+     is animated over 0.4 s or snaps instantly. */
+  function _sbCaptureAnchor(side){ try{ if(!map||!map.project) return null; const mc=document.getElementById('map-container'); if(!mc) return null;
+      const r=mc.getBoundingClientRect(); if(!r.width||!r.height) return null;
+      const pageX=(side==='left')?(r.right-1):(r.left+1); const pageY=r.top+Math.round(r.height/2);
+      return { side, pageX, pageY, lngLat:map.unproject([pageX-r.left, pageY-r.top]) }; }catch(_){ return null; } }
+  /* force that geo back to the SAME page position after each resize → the map never visually moves. */
+  function _sbReanchor(){ try{ const a=_sbAnchor; if(!a||!map) return; const mc=document.getElementById('map-container'); if(!mc) return;
+      const r=mc.getBoundingClientRect(); if(!r.width) return; const tx=a.pageX-r.left, ty=a.pageY-r.top;
+      const p=map.project(a.lngLat); const dx=tx-p.x, dy=ty-p.y;
+      if(isFinite(dx)&&isFinite(dy)&&(Math.abs(dx)>0.05||Math.abs(dy)>0.05)) map.panBy([-dx,-dy],{duration:0}); }catch(_){} }
+  function _sbFinishAnim(){ _sbStopLoop(); _sbSuppressUntil=0; _sbAnimEnd=0; if(_sbEndTimer){ clearTimeout(_sbEndTimer); _sbEndTimer=0; } try{ if(map){ map.resize(); _sbReanchor(); } }catch(_){} _sbAnchor=null; const cb=_sbOnEnd; _sbOnEnd=null; if(cb){ try{ cb(); }catch(_){} } }
+  function _sbFrame(){ _sbRAF=0; try{ if(map){ map.resize(); _sbReanchor(); } }catch(_){} if(performance.now()<_sbAnimEnd){ _sbRAF=requestAnimationFrame(_sbFrame); } else { _sbFinishAnim(); } }
+  window._sbBeginAnim=function(onEnd, anchor){ if(onEnd) _sbOnEnd=onEnd;
+    _sbAnchor=(anchor&&typeof anchor==='object')?anchor:(typeof anchor==='string'?_sbCaptureAnchor(anchor):null);   /* object = pre-captured before the reflow (preferred); string = capture now (best-effort) */
+    _sbAnimEnd=performance.now()+480; _sbSuppressUntil=0;   /* run the smooth loop a hair past the 0.4 s CSS slide */
+    if(_sbEndTimer) clearTimeout(_sbEndTimer); _sbEndTimer=setTimeout(_sbFinishAnim,640);   /* safety net if rAF/transitionend stalls */
+    _sbStopLoop(); _sbRAF=requestAnimationFrame(_sbFrame); };
   window.addEventListener('transitionend',e=>{ try{ if(!e||(e.propertyName!=='margin-left'&&e.propertyName!=='margin-right')) return; const t=e.target; if(t&&(t.id==='map-container'||t.id==='sidebar'||t.id==='layer-sidebar-r'||(t.classList&&t.classList.contains('sidebar')))) _sbFinishAnim(); }catch(_){} },true);
-  let _rsRAF=0; const coalescedResize=()=>{ if(performance.now()<_sbSuppressUntil) return; if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };   /* (#R158) skip the per-frame realloc while a sidebar is sliding */
+  let _rsRAF=0; const coalescedResize=()=>{ if(_sbRAF) return; if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };   /* (#R159) our slide loop already resizes every frame — let the observer stand down while it runs */
   if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
 
@@ -8144,7 +8172,7 @@ window.addEventListener('DOMContentLoaded', () => {
          `.map-container{margin-right:var(--lsr-w)}` (also set INLINE by open()) — and the sidebar merely fills
          the vacated strip as an absolute panel. The map's width never depends on the sidebar's flex/transition
          state, so no failure mode of the panel can ever leave it covering the map: worst case is an empty strip. */
-      st.textContent=':root{--lsr-w:min(380px,92vw);}'   /* (#R154) smaller default width ("デフォルト幅をもう少し小さく") — 430→380 */
+      st.textContent=':root{--lsr-w:min(340px,92vw);}'   /* (#R154/#R159) smaller default width ("デフォルト幅をもう少し小さく") — 430→380→340 */
         +'body.lsr-avail .operation-room{position:relative;}'
         /* (#R154) LEFT-EDGE drag-resizer — mirror of the left sidebar's #sb-resizer so the right sidebar is
            left-right adjustable too ("左サイドバーと同様に左右に調整"). Grows as the cursor moves LEFT. Desktop only. */
@@ -8338,7 +8366,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
         const cap=Math.max(300, Math.round(window.innerWidth-lw-320));   /* keep ≥320px of map */
         let saved=parseInt(localStorage.getItem('intmap_lsr_w')||'',10);   /* (#R154) honour a user-dragged width instead of clobbering it every open */
-        const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(380, Math.round(window.innerWidth-lw-320)));   /* (#R154) default cap 430→380 (smaller) */
+        const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(340, Math.round(window.innerWidth-lw-320)));   /* (#R154/#R159) default cap 430→380→340 (smaller) */
         document.documentElement.style.setProperty('--lsr-w', w+'px'); } }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
       /* (#R73) fire any lazy previews that IO missed while the panel was prebuilt off-screen */
@@ -9614,10 +9642,20 @@ window.addEventListener('DOMContentLoaded', () => {
        too, not just the tiny dot ("地名ラベルを押しても反応しない"). */
     map.on('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(isMobile()){ _showMobileNewsPopup(p); return; } if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */ });
     map.on('mousemove','news-labels',e=>{ if(!e.features.length) return; map.getCanvas().style.cursor='pointer'; const f=e.features[0];
+      /* (#R159) hovering the BAND itself must hide the band while the popup shows — the band's icon/text-opacity
+         collapses to 0 when this feature's `hover` state is set (same rule the dot uses). The band sits offset to the
+         right of the dot and swallows the pointer, so the news-dots handler never fires here; set the state directly,
+         reusing the shared `hoveredNewsId` so crossing dot↔band never leaves a stuck-hover. */
+      if(hoveredNewsId!==f.id){
+        if(hoveredNewsId!=null) try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
+        hoveredNewsId=f.id;
+        try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
+      }
       const el=ensureMapTooltip(); el.style.display='block';
       el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       positionTooltip(map.project(f.geometry.coordinates)); });
-    map.on('mouseleave','news-labels',()=>{ map.getCanvas().style.cursor=''; if(mapTooltipEl) mapTooltipEl.style.display='none'; });
+    map.on('mouseleave','news-labels',()=>{ map.getCanvas().style.cursor=''; if(mapTooltipEl) mapTooltipEl.style.display='none';
+      if(hoveredNewsId!=null){ try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
     /* (#R37) MOBILE crosshair → news popup, the same way the DESKTOP cursor reveals the pin under it
        ("モバイル版でも…十字ポインターの位置のニュースは…ポップアップが出るように"). On every settle, look for a news
        pin/band right under the centre crosshair and show the same popup there; tap it to open the article. */
@@ -10299,7 +10337,11 @@ window.addEventListener('DOMContentLoaded', () => {
        open), so follow-ups like "この記事について詳しく"/"translate this"/"背景は？"/"where did this happen" resolve.
        globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
     try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
-    try{ document.getElementById('sidebar').classList.remove('collapsed'); if(map) setTimeout(()=>map.resize(),60); }catch(_){}
+    try{ const _sb=document.getElementById('sidebar'); const _wasCol=_sb&&_sb.classList.contains('collapsed');
+      /* (#R159) opening the sidebar from the news reader must not jump the map either — capture the anchor BEFORE the reflow */
+      const _a=(_wasCol && !isMobile() && !document.body.classList.contains('sidebar-glass')) ? _sbCaptureAnchor('left') : null;
+      if(_sb) _sb.classList.remove('collapsed');
+      if(map){ if(_a && window._sbBeginAnim){ window._sbBeginAnim(null,_a); } else { setTimeout(()=>{ try{ map.resize(); }catch(_){} },60); } } }catch(_){}
     try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
     const sbBar=document.getElementById('sidebar-search-bar'); if(sbBar) sbBar.style.display='none';   /* (#R79e) by ID, not .search-bar (see renderUI note) */
@@ -17780,15 +17822,20 @@ window.addEventListener('DOMContentLoaded', () => {
       if(map && map.setPadding && !isMobile()){
         const sb=document.getElementById('sidebar');
         const collapsed=sb && sb.classList.contains('collapsed');
-        /* (#R78e) workspace mode → the sidebar is its own window, never an overlay, so no optical offset */
-        const pad=(document.body.classList.contains('ws-mode')) ? 0 : ((frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0);
-        /* Match the sidebar's CSS transition (margin-left 0.4s cubic-bezier(0.25,1,0.5,1) ≈ easeOutCubic)
-           so the optical center GLIDES in perfect lock-step with the slide — no lag, no snap (#R7).
-           (#R140) setPadding is INSTANT in MapLibre v5 (2nd arg = eventData, not anim opts) so the old duration/easing
-           here was a silent no-op → the map jumped. Animate via easeTo({padding,…}); instant path keeps setPadding+resize. */
-        const _pad={top:0,right:0,bottom:0,left:pad};
-        if(animate && map.easeTo){ try{ map.easeTo({padding:_pad, duration:400, easing:x=>1-Math.pow(1-x,3)}); }catch(_){} }
-        else { try{ map.setPadding(_pad); }catch(_){} requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} }); }
+        if(frosted){
+          /* FROSTED overlay: the glass sits ON the map (container size unchanged), so glide the optical centre by the
+             sidebar width in lock-step with the 0.4s slide. (#R140) setPadding is instant in MapLibre v5 → animate via easeTo.
+             (#R78e) workspace mode → the sidebar is its own window, never an overlay, so no optical offset. */
+          const pad=(document.body.classList.contains('ws-mode')) ? 0 : (collapsed ? 0 : (sb ? sb.offsetWidth : 440));
+          const _pad={top:0,right:0,bottom:0,left:pad};
+          if(animate && map.easeTo){ try{ map.easeTo({padding:_pad, duration:400, easing:x=>1-Math.pow(1-x,3)}); }catch(_){} }
+          else { try{ map.setPadding(_pad); }catch(_){} requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} }); }
+        } else {
+          /* (#R159) SOLID mode adds NO optical offset — the flex map-container reflows and the toggle's anchored resize
+             loop owns the camera. Do NOT run a redundant easeTo here (it was a 0→0 padding no-op that still drove a full
+             400ms camera cycle fighting the resize). Only reset a stale left-padding left over from a prior frosted mode. */
+          try{ const cur=map.getPadding&&map.getPadding(); if(cur&&cur.left){ map.setPadding({top:0,right:0,bottom:0,left:0}); } }catch(_){}
+        }
       }
     }catch(_){}
   }
@@ -28526,7 +28573,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return '<div class="atl-codewrap"><div class="atl-codebar"><span class="atl-codelang">'+(lbl||'code')+'</span>'
         +'<button class="atl-codecopy" type="button" data-cid="'+id+'">'+esc(L('Copy','コピー','Kopieren','Копировать','Copiar'))+'</button></div>'
         +'<pre class="atl-codeblock"><code id="'+id+'">'+esc(code)+'</code></pre></div>'; }
-    function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>'); }   /* light inline for table cells (bold; inline code/math placeholders survive esc + restore globally) */
+    function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); }   /* (#R159) table cells: strip **bold** markers to plain — Atlas replies carry no bold (inline code/math placeholders survive esc + restore globally) */
     function _atlBuildTable(header, sep, body){
       const cut=r=>String(r).trim().replace(/^\|/,'').replace(/\|$/,'').split(/\|/).map(x=>x.trim());
       const aligns=cut(sep).map(s=>{ const l=/^:/.test(s), r=/:$/.test(s); return (r&&l)?'center':r?'right':l?'left':''; });
@@ -28557,12 +28604,14 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R158) STRONGER design contrast via SIZE / WEIGHT / SPACING / neutral dividers ONLY — still no colour-coding and
            no fabricated headings (R154 constraints kept). Bigger size jumps + heavier weight + more generous rhythm + a more
            visible section hairline give the flat, monotone reply the structure the user asked for ("コントラストに乏しい"). */
-        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.6em 0 .4em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
-        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:2.05em 0 .62em;padding-top:.78em;border-top:1.5px solid rgba(128,128,128,.34);font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
-        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.55em 0 .66em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
+        /* (#R159) headings differentiate by SIZE + SPACING only — no heavy bold weight ("返答のテキストは太字にしない") and
+           no "##" top-rule divider ("区切りの横線はいらない"). Down from 750/800 to a light 600; border-top removed. */
+        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.6em 0 .4em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
+        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:2.05em 0 .62em;font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
+        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.55em 0 .66em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
         /* (#R151/#R154) a whole-line **bold run** is an author-written section lead → modest heading (size+spacing, no colour) */
-        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.5em 0 .46em;font-size:1.28em;line-height:1.3;">$1</div>')
-        .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.5em 0 .46em;font-size:1.28em;line-height:1.3;">$1</div>')
+        .replace(/\*\*([^*]+)\*\*/g,'$1')                                                             /* (#R159) inline **bold** → plain: Atlas reply body carries no bold */
         .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,'$1<i>$2</i>')                      /* (#R156) *italic* (single asterisk; guarded so ** and "2 * 3"/bullets don't misfire) */
         .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.4);padding:3px 0 3px 13px;margin:.7em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
         /* (#R74) markdown links → real (safe) anchors */
@@ -31999,7 +32048,9 @@ window.addEventListener('DOMContentLoaded', () => {
                articles we fed the model); the hosted-search citations come from the provider's annotations. */
             if(_aCites.length){ const wc=linkCards(_aCites.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(wc) html+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+wc; }
             if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
-            if(rest.length){ const rc=linkCards(rest,txt); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados'))+'</div>'+rc; }   /* (#R152/#R153) filter unrelated gathered links (relevance now inside linkCards, applied to the host-cleaned set) + relabel: when nothing was cited/web-verified these were shown as "Sources" (misleading) → "Related articles" */
+            /* (#R159) "その他の収集記事" 欄は完全に不要 — 実出典（Web検証済み/引用）が既にあるときの重複した収集記事の山は出さない。
+               ただし出典が一つも無いときの never-zero フォールバック（関連記事）は保持する。 */
+            if(rest.length && !haveBasis){ const rc=linkCards(rest,txt); if(rc) html+='<div class="atl-src-h">'+L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')+'</div>'+rc; }
           }catch(_){}
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
@@ -32417,7 +32468,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.atl-tablewrap{margin:.7em 0;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--glass-border,rgba(128,128,128,.2));border-radius:10px;}'
         +'.atl-md-table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5;}'
         +'.atl-md-table th,.atl-md-table td{border:1px solid var(--glass-border,rgba(128,128,128,.18));padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap;}'
-        +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:700;}'
+        +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:600;}'   /* (#R159) header row: semibold, not bold */
         +'.atl-md-table tbody tr:nth-child(2n){background:rgba(120,120,128,.06);}'
         +'#atlas-panel .atl-dots{display:inline-flex;gap:4px;align-items:center;padding:3px 0;}'
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
@@ -32988,16 +33039,62 @@ window.addEventListener('DOMContentLoaded', () => {
     function stageDots(k){ return '<span class="atl-stage">'+esc(_STAGE_TXT[k]||_STAGE_TXT.think)+'<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span></span>'; }
     function setStage(el,k){ try{ if(el&&el.querySelector&&el.querySelector('.atl-dots')) el.innerHTML=stageDots(k); }catch(_){} }
     const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='researchMap'||t==='research_map'||t==='situationMap'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
+    /* (#R159) ── COMPOSITE-ANSWER INTEGRATION ─────────────────────────────────────────────────────────────────
+       One request must produce ONE final answer — not the first (failed) analysis and the repaired analysis stacked
+       with a divider, contradicting each other. runActions now RECORDS each action's result on the bubble
+       (ai.__atlResults) instead of blindly concatenating html, and _atlCompose() renders from that list keeping only
+       the BEST result per research/answer GOAL. The repair pass re-runs into the SAME bubble (no divider, no second
+       answer) and its answer inherits the failed original's goal key, so a successful repair REPLACES the failure
+       rather than piling on. Map-only failure never fails the written analysis (the dispatch already returns ok:true
+       for that), and the fail summary no longer leaks internal action names / error codes / repair counts. */
+    const _ATL_ANSWER_TYPES={mapReport:1,newsMap:1,reportMap:1,researchMap:1,research_map:1,situationMap:1,historicalMap:1,historical:1,powerMap:1,allianceMap:1,analyze:1,research:1,synthesize:1,brief:1};
+    function _atlGoalKey(act){ if(!act||!act.type) return ''; if(act.__goalKey) return act.__goalKey;   /* a repair answer inherits the original goal it is fixing */
+      if(_ATL_ANSWER_TYPES[act.type]){ let topic=''; try{ topic=_lnorm(String(act.topic||act.question||act.query||act.place||act.region||act.location||act.era||'')); }catch(_){ topic=''; } return 'answer:'+topic; }
+      return ''; }   /* '' = not a de-dupeable answer (navigate / layer / draw / control … keep all of these) */
+    function _atlGoalScore(res){ const m=(res&&res.meta)||{}; let s=0;
+      if(res&&res.ok) s+=2;
+      if(m.userGoalSatisfied) s+=5;
+      const prod=Array.isArray(m.produced)?m.produced:[];
+      if(prod.indexOf('explanation')>=0) s+=2;
+      if(prod.indexOf('map')>=0) s+=1;
+      if(m.partial||m.unverified) s-=2;
+      return s; }
+    function _atlCompose(ai){ try{
+      const results=(ai&&ai.__atlResults)||[]; const say=(ai&&ai.__atlSay)||'';
+      /* 1) DEDUPE BY GOAL — keep the single best result per answer family (original vs repair vs same-topic retry). */
+      const slot=Object.create(null), keep=[];
+      results.forEach(res=>{ if(!res) return; const key=_atlGoalKey(res.act);
+        if(!key){ keep.push(res); return; }
+        if(!(key in slot)){ slot[key]=keep.length; keep.push(res); }
+        else { const i=slot[key]; if(_atlGoalScore(res)>_atlGoalScore(keep[i])) keep[i]=res; } });   /* repair replaces the failure */
+      /* 2) fails + honesty flags computed from the FINAL (deduped) set — a replaced failure no longer counts */
+      const fails=keep.filter(r=>r&&r.ok===false).map(r=>r.act);
+      const _allFailed=keep.length>0 && keep.every(r=>r&&r.ok===false);
+      const _visTypes={highlight:1,outline:1,draw:1,layer:1,opacity:1,controls:1,mapMetric:1,choropleth:1};
+      const _visFailed=keep.some(r=>r&&r.ok===false&&r.act&&_visTypes[r.act.type]) || keep.some(r=>r&&r.meta&&(r.meta.partial||r.meta.unverified));   /* (#R142) suppress a pre-written success `say` a visual failure contradicts */
+      /* 3) body from kept results (original order), dropping any exact-duplicate html fragment */
+      let body=''; const seen=Object.create(null);
+      keep.forEach(res=>{ const h=(res&&res.html)||''; if(!h||seen[h]) return; seen[h]=1; body+=h; });
+      try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length) body+=mapToggleChip(ks); }catch(_){}   /* single deduped map-toggle chip */
+      /* 4) head — the pre-written `say` (suppressed on all-failed / contradicted visual) + an honest, NAME-FREE summary */
+      let head=(say&&!_allFailed&&!_visFailed)?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';   /* (#R147) render via mdMini so line breaks / headings show */
+      if(fails.length){ head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+'</div>'; }   /* (#R159) no action-name/code leak — the per-action honest body already says what could not be found */
+      if(ai.__atlCancelled) head=_cancelledNote()+head;
+      ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
+      try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */
+    }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
     async function runActions(ai, say, acts, gen){
-      let body=''; const fails=[]; let cancelled=false;
+      const results=[]; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         try{ setStage(ai, _STAGE_OF(a)); }catch(_){}   /* (#R130) reflect the real current action in the indicator */
-        let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
+        let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||''));
+        if(r.ok===false) fails.push(a);
+        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
-        if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); mapped.forEach(k=>{
+        if(mapped.length){ try{ ai.__ovlSnap=Object.assign(ai.__ovlSnap||{}, _ovlSnapshot(mapped)); mapped.forEach(k=>{
           /* (#R127) TRUE INDEPENDENT COEXISTENCE on the DRAW path ("新しいものが追加されたときに古いものが勝手にオフに
              なってしまう"): drawing a new overlay of kind k repaints the SHARED nlq-* canvas — which physically wiped
              the previous owner's content (highlight() clearHl()s first) AND stole ownership, flipping every older
@@ -33008,28 +33105,14 @@ window.addEventListener('DOMContentLoaded', () => {
              (e.g. the arc canvas). */
           try{ const prev=_ovlOwn[k];
             if(prev&&prev!==ai&&document.body.contains(prev)&&prev.__ovlSnap&&prev.__ovlSnap[k]&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,prev.__ovlSnap[k]); } }catch(_){}
-          _ovlOwn[k]=ai; }); }catch(_){} } }catch(_){}   /* (#R118) capture what THIS reply drew, for its own switch; (#R122/#R127) this reply now OWNS the shared canvas; the previous owner keeps its content on a clone */
+          _ovlOwn[k]=ai; }); }catch(_){}
+          ai.__atlMappedKinds=ai.__atlMappedKinds||Object.create(null); mapped.forEach(k=>{ ai.__atlMappedKinds[k]=1; }); } }catch(_){}   /* (#R118/#R159) collect owned overlay kinds → one deduped chip in _atlCompose */
+      /* (#R159) accumulate this pass's results on the bubble so the repair pass merges into ONE goal-validated answer */
+      ai.__atlResults=(ai.__atlResults||[]).concat(results);
+      if(ai.__atlSay==null) ai.__atlSay=say||'';   /* the FIRST say leads; a later repair say never overrides it */
+      if(cancelled) ai.__atlCancelled=true;
       if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
-      /* (#R140) HONEST REPLY ("ハイライトしていないのにハイライトしましたと嘘報告することが多すぎる"): `say` is authored by
-         the planner BEFORE execution, so for a highlight/outline/draw the model writes a past-tense "…をハイライトしました"
-         that leads the reply UNCONDITIONALLY — even when the fail-closed resolver (R116/R130/R132) returned null and the
-         action reported ok:false. Suppress that success sentence when every action failed, OR when any FAILED action is a
-         visual assertion (highlight/outline/draw) — those are exactly the "I drew/highlighted X" claims the user saw lie.
-         The ⚠ "nothing found for X" / "N step(s) could not be completed" warning below then leads honestly. */
-      const _allFailed=acts.length>0&&fails.length>=acts.length;
-      /* (#R142) The planner writes `say` (a past-tense "…をオンにしました／ハイライトしました") BEFORE anything runs, so it must be
-         suppressed whenever execution can contradict it: any VISUAL/STATE action that FAILED (highlight/outline/draw/layer/opacity/
-         controls/mapMetric/choropleth), OR any action that only PARTIALLY succeeded or could NOT be verified on the map
-         (meta.partial / meta.unverified — set by the highlight & layer dispatches above). The per-action honest body then leads
-         ("✦ Kansai ⚠ Not found: Ruritania", "✓ Fires — on ⚠ could not confirm…"). Kills the "嘘のオン/オフ・嘘ハイライト報告". */
-      const _visTypes={highlight:1,outline:1,draw:1,layer:1,opacity:1,controls:1,mapMetric:1,choropleth:1};
-      const _visFailed=fails.some(a=>a&&_visTypes[a.type]) || acts.some(a=>a&&a.__meta&&(a.__meta.partial||a.__meta.unverified));
-      let head=(say&&!_allFailed&&!_visFailed)?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';   /* (#R147) render say via mdMini so line breaks / bold / headings show instead of a flat esc block */
-      if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
-        head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')+'</div>'; }
-      if(cancelled) head=_cancelledNote()+head;
-      ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
-      try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */
+      _atlCompose(ai);
       return fails;
     }
     /* (#R52) DETERMINISTIC interpreter. The user re-reported operations Atlas "said" it did but didn't. A clear,
@@ -33513,8 +33596,13 @@ window.addEventListener('DOMContentLoaded', () => {
               return true; }).slice(0,6);
             if(gen!==_runGen||!fresh.length) break;
             fresh.forEach(a2=>{ const f=_researchFamKey(a2); if(f) _triedFam.add(f); });
-            const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed var(--glass-border,rgba(128,128,128,0.25));'; ai.appendChild(div);
-            const rf=await runActions(div, rplan.say||'', fresh, gen);
+            /* (#R159) the repair FIXES the failed answer — its result must REPLACE the failure, not be appended below a
+               divider (the "最初の分析と修復後の分析が同時表示され矛盾する" bug). Tag each repair answer-producer with the goal
+               key of the pending answer it is fixing so _atlCompose keeps only the best of the two, then re-run into the
+               SAME bubble (no new divider div). */
+            try{ const _pk=(pending.map(_atlGoalKey).filter(k=>k&&k.indexOf('answer:')===0))[0]||'';
+              if(_pk) fresh.forEach(a2=>{ if(_ATL_ANSWER_TYPES[a2&&a2.type]&&!a2.__goalKey) a2.__goalKey=_pk; }); }catch(_){}
+            const rf=await runActions(ai, rplan.say||'', fresh, gen);
             if(gen===_runGen) recordTurn(q+' (repair '+(_rp+1)+')', rplan.say||'', fresh, rf);
             pending=(rf||[]).filter(a2=>a2&&a2.type&&a2.type!=='answer');
             try{ fresh.forEach(a2=>{ if(a2&&a2.__exec&&a2.__exec.status==='partial_or_failed'&&pending.indexOf(a2)<0) pending.push(a2); }); }catch(_){}   /* (#R158) a still-partial repair keeps the loop going for Terra's next decision */

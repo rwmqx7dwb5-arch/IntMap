@@ -51,11 +51,11 @@ test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real c
   ok('window.IntMapSatProto=', 'testable resolve hook exposed');
 });
 
-test('R158 #10 sidebar open/close flicker — per-frame resize suppressed during the slide, one resize at transitionend', () => {
-  ok('window._sbBeginAnim=function(onEnd)', 'a sidebar-slide gate exists');
+test('R158 #10 → R159 sidebar open/close — smooth per-frame resize + edge anchor (no stretch-snap, no map pan)', () => {
+  ok('window._sbBeginAnim=function(onEnd, anchor)', 'the sidebar-slide gate takes a pre-captured anchor (R159)');
   ok("if(!e||(e.propertyName!=='margin-left'&&e.propertyName!=='margin-right')) return;", 'transitionend on the map-box margin ends the animation');
-  ok('const coalescedResize=()=>{ if(performance.now()<_sbSuppressUntil) return;', 'the ResizeObserver skips the per-frame realloc while sliding');
-  ok('if(!frosted || isMobile()){ try{ window._sbBeginAnim&&window._sbBeginAnim(); }catch(_){} }', 'left toggle uses the gate (not a 450ms resize loop)');
+  ok('const coalescedResize=()=>{ if(_sbRAF) return;', 'the ResizeObserver stands down while the R159 slide loop resizes every frame');
+  ok('window._sbBeginAnim(null, _sbAnchor0)', 'left toggle anchors the map (pre-captured) so opening/closing never pans it (R159)');
   gone('if (time - start < 450) requestAnimationFrame(sync);', 'the old per-frame 450ms resize loop is gone');
 });
 
@@ -68,12 +68,12 @@ test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', ()
   ok('function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'files are sent with the message');
 });
 
-test('R158 #1 Atlas typography — stronger size/weight/spacing/divider contrast (no colour, no fabricated headings)', () => {
-  ok('border-top:1.5px solid rgba(128,128,128,.34);font-size:1.56em', 'H2 has a visible neutral hairline + bigger size');
+test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + mobile lift; still monochrome', () => {
+  gone('border-top:1.5px solid rgba(128,128,128,.34)', 'R159 removed the ## hairline divider ("区切りの横線はいらない")');
   ok("font-size:14px;line-height:1.68", 'desktop reply body lifted from 12.5px to 14px');
   ok("style*=\"font-size:14px\"]{font-size:15.5px !important;}", 'mobile still lifts the (now 14px) body');
-  // still monochrome — every mdMini heading keeps --text-main (R154 "色分け廃止" preserved)
-  ok('.replace(/^##\\s*(.+)$/gm,\'<div style="font-weight:800;color:var(--text-main)', 'H2 heading stays --text-main (no colour-coding)');
+  // still monochrome — every mdMini heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight
+  ok('.replace(/^##\\s*(.+)$/gm,\'<div style="font-weight:600;color:var(--text-main)', 'H2 heading is semibold (R159 no bold), still --text-main');
 });
 
 test('R158 #2 Atlas sources — informational answers gather sources (use:[web] forces the search)', () => {

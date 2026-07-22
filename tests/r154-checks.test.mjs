@@ -32,7 +32,7 @@ test('R154 #2 Atlas typography — size/spacing only, no colour, no fabricated h
   // none of the four heading rules may carry --primary-color
   assert.ok(!/margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em;line-height:1\.3\d*;">\$1<\/div>'\)\s*$/m.test(html) || true, 'sanity');
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d/.test(html), 'no heading rule uses --primary-color');
-  assert.match(html, /\.replace\(\/\^#\{3,6\}\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:750;color:var\(--text-main\)/, 'h3 heading is text-main (R158 weight 750, no colour)');
+  assert.match(html, /\.replace\(\/\^#\{3,6\}\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:600;color:var\(--text-main\)/, 'h3 heading is text-main (R159 weight 600 — no bold, no colour)');
   assert.ok(!/out\.push\('## '\+label\)/.test(html), 'no "Label:"→## fabrication');
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'no opening-sentence→bold-lead fabrication');
   assert.match(html, /NO MORE HEADING FABRICATION/, '_atlStanza documents the removal of guesswork');
@@ -86,13 +86,13 @@ test('R154 #8 Layer panel defaults to the right sidebar (normal mode)', () => {
 });
 
 test('R154 #9 Right sidebar resizable + smaller default', () => {
-  assert.match(html, /:root\{--lsr-w:min\(380px,92vw\);\}/, 'default width 430→380');
+  assert.match(html, /:root\{--lsr-w:min\(340px,92vw\);\}/, 'default width 430→380→340 (R159)');
   assert.match(html, /#layer-sidebar-r \.lsr-resizer\{position:absolute;top:0;left:-3px;/, 'left-edge resize handle CSS');
   assert.match(html, /rh\.className='lsr-resizer';/, 'resizer element created in build()');
   assert.match(html, /let w=rsw-\(e\.clientX-rsx\);/, 'grows as the cursor moves left');
   assert.match(html, /localStorage\.setItem\('intmap_lsr_w', String\(sb\.offsetWidth\)\)/, 'persists the dragged width');
   assert.match(html, /let saved=parseInt\(localStorage\.getItem\('intmap_lsr_w'\)\|\|'',10\);/, 'open() honours the saved width');
-  assert.match(html, /\(saved>=260\)\?Math\.min\(saved,cap\):Math\.max\(280,Math\.min\(380/, 'saved width used, else the 380 default');
+  assert.match(html, /\(saved>=260\)\?Math\.min\(saved,cap\):Math\.max\(280,Math\.min\(340/, 'saved width used, else the 340 default (R159)');
 });
 
 test('R154 #10 Layer on/off desync — OFF learned layer is hidden', () => {

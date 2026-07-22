@@ -95,7 +95,8 @@ test('Layer panel: right default only overridden by an explicit choice', () => {
 
 test('Atlas typography: forceful format mandate + sharper heading render', () => {
   assert.match(index, /NEVER write more than ~3 sentences in a row without a "## " heading or a bullet/, 'mandate present');
-  assert.match(index, /border-top:1\.5px solid rgba\(128,128,128,\.34\)/, '## section hairline (R158: stronger neutral divider, placement not colour)');
+  // (#R159) the "## " section hairline divider was removed ("区切りの横線はいらない") — no reply carries a horizontal rule
+  assert.doesNotMatch(index, /border-top:1\.5px solid rgba\(128,128,128,\.34\)/, 'R159 removed the ## section hairline divider');
 });
 
 test('admin safeUrl() rejects dangerous schemes', () => {

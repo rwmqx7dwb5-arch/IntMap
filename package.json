@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "test:security": "node --test tests/security-logic.mjs",
     "test:monitor": "node --test tests/monitor-logic.test.mjs",
-    "test": "node scripts/static-checks.mjs && node --test tests/security-logic.mjs tests/monitor-logic.test.mjs tests/r147-checks.test.mjs tests/r149-checks.test.mjs tests/r150-checks.test.mjs tests/r151-checks.test.mjs tests/r152-checks.test.mjs tests/r153-checks.test.mjs tests/r154-checks.test.mjs tests/r155-checks.test.mjs tests/r156-checks.test.mjs tests/r157-checks.test.mjs tests/r158-checks.test.mjs && playwright test",
+    "test": "node scripts/static-checks.mjs && node --test tests/security-logic.mjs tests/monitor-logic.test.mjs tests/r147-checks.test.mjs tests/r149-checks.test.mjs tests/r150-checks.test.mjs tests/r151-checks.test.mjs tests/r152-checks.test.mjs tests/r153-checks.test.mjs tests/r154-checks.test.mjs tests/r155-checks.test.mjs tests/r156-checks.test.mjs tests/r157-checks.test.mjs tests/r158-checks.test.mjs tests/r159-checks.test.mjs && playwright test",
     "report": "playwright show-report"
   },
   "devDependencies": {

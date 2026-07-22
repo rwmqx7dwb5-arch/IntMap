@@ -5,6 +5,31 @@
 
 ---
 
+## R159 — UX/Atlasバッチ（6件）：**Atlas返答から太字と区切り横線を撤去／「その他の収集記事」欄の削除（never-zeroフォールバックは保持）／右サイドバー既定幅を縮小（380→340）／サイドバー開閉を滑らかに＋左サイドバーで地図を動かさない（エッジアンカー）／ニュースピン帯のホバーでポップアップ表示時に帯を隠す／Atlas複合調査回答の統合（修復は追記でなく置換・目的単位で最良の1回答だけを確定表示・地図失敗と分析失敗の分離・内部処理名/コード/repair回数を非露出）** (tag `#R159`)
+
+**背景（6件）**: (1) Atlas返答テキストの太字と区切りの横線が不要、(2) Atlasの「その他の収集記事」欄が完全に不要、(3) 右サイドバー既定幅をもう少し小さく、(4) 左右サイドバー開閉の動きが「きもい」＋左サイドバーで地図位置を勝手に変えない、(6) ニュースピンの帯をホバーしてポップアップが出るとき帯が消えない、(7) Atlas複合調査回答で「最初の分析」と「修復後の分析」が同一メッセージへ連続追加され互いに矛盾した結果が同時表示される。※(5) MapLibre依存軽減・(8) Atlas無劣化高速化は別バッチ。
+
+### ① Atlas返答＝太字なし・区切り横線なし（委託 #1・`mdMini`／`_atlCellFmt`）
+Atlas本文レンダラ `mdMini` のみが太字/横線の発生源（`.atl-b.a` バブルCSSはfont-weight無し、`_atlStanza` はR154で見出し捏造撤去済）。**改修**: (a) インライン `**bold**`→`<b>` を**プレーン `$1` へ**（本文に太字ゼロ）、`_atlCellFmt`（表セル）と `.atl-md-table thead th`（700→600）も同様に脱・太字。(b) 見出し `#`/`##`/`###`＋whole-line lead の**ウェイトを750/800→600（semibold）**へ＝サイズ＋余白のみで階層を出す（R154「色分けしない」＝`--text-main`はそのまま、今回さらに「太字にしない」）。(c) `##` の**上罫線 `padding-top:.78em;border-top:1.5px solid rgba(128,128,128,.34)` を撤去**＝本文中の横線ゼロ（別レンダラ `md()`＝別パネル用は無改変）。
+
+### ② 「その他の収集記事」欄の削除（委託 #2・analyze 出典描画）
+出典描画で `rest`（引用でも Web検証でもない収集リンク）は従来 `haveBasis?'Other gathered articles/その他の収集記事':'Related articles/関連記事'` を出していた。**実出典が既にあるとき（`haveBasis` true）の「その他の収集記事」の山は重複・冗長**＝削除。`if(rest.length && !haveBasis)` へ絞り、ラベルは「関連記事」に固定＝**引用も検証も無いときの never-zero フォールバック（R151/R154「出典ゼロにしない」）は保持**。
+
+### ③ 右サイドバー既定幅 380→340（委託 #3・`--lsr-w`）
+`#layer-sidebar-r`（右レイヤーパネル）の既定幅を規定する `380` を**2箇所**（CSS `:root{--lsr-w:min(380px→340px,92vw)}` と `open()` の既定キャップ `Math.min(380→340,…)`）で縮小。floor `280`・ドラッグリサイズ clamp（≥260／地図≥320）・`intmap_lsr_w` 永続は無改変（ユーザーがドラッグした幅は従来どおり honour）。
+
+### ④ サイドバー開閉を滑らかに＋左は地図を動かさない（委託 #4・`_sbBeginAnim`／`applySidebarStyle`）
+**真因（R158の副作用）**: R158は「スライド中 per-frame resize を抑止し `transitionend` で1回 resize」にした結果、(a) GLバッファが0.4s間 CSS ストレッチ→末尾で**パチッと確定**、(b) 非対称に再拡大した flex コンテナで `map.resize()` が地図中心を再センタリング＝**横に飛ぶ**、さらに solid モードでも `applySidebarStyle(true)` の `easeTo(padding 0→0)` が毎回空回りしてカメラを400ms駆動＝二重で不安定。**改修**: (1) `_sbBeginAnim(onEnd, anchorSide)` を**毎フレーム rAF resize ループ**へ（`_sbFrame`）＝canvasがコンテナに追従（ストレッチも末尾スナップも無し）。(2) `anchorSide` を渡すと `_sbReanchor` が**静止する側のエッジ（左サイドバー＝右端）を毎フレーム同一地点へ `panBy` で再ピン**＝地図は視覚的に一切動かない（「左サイドバーで地図位置を変えない」）。左トグルは `_sbBeginAnim(null, isMobile()?null:'left')`。(3) `coalescedResize` は `if(_sbRAF) return`（ループ中は ResizeObserver を停止）。(4) `applySidebarStyle` の solid モードから**冗長 easeTo を撤去**（frostedのみpaddingグライド・solidは stale left-padding のリセットのみ、カメラ非駆動）。(5) ニュース記事リーダーからのサイドバー強制オープンも同アンカーで地図非移動に統一。右サイドバーは per-frame resize で滑らかに（map-shrink挙動は現状維持）。
+
+### ⑤ ニュース帯ホバーでポップアップ時に帯を隠す（委託 #6・`news-labels`）
+帯＝`news-labels` シンボルレイヤ、その `icon/text-opacity` は `hover` feature-state が真なら 0（＝ドットをホバーすると帯が消える）。バグ＝**帯自身のホバー（`mousemove 'news-labels'`）がポップアップは出すが `hover` state を立てないため帯が消えない**（帯はドット右にオフセットし pointer を奪う＝`news-dots` ハンドラが発火しない）。**改修**: 帯 `mousemove` でドットと同一の `setFeatureState({hover:true})` を共有 `hoveredNewsId` で立て（ドット↔帯を跨いでも stuck-hover にならない）、帯 `mouseleave` で false へ戻す＝ポップアップ表示中は帯が消え、離れると戻る。CSS/レイヤ定義変更なし。
+
+### ⑥ Atlas複合調査回答の統合（委託 #7・`runActions`／`_atlCompose`／run() repairループ）
+**真因**: `runActions` が各アクション結果を無条件に `body+=r.html` で連結し、repairループは**新 `div`（破線 `border-top`）を `ai.appendChild` して別 `runActions`**＝「最初の（失敗）分析」と「修復後の分析」が横線付きで**同時併存・矛盾表示**。**改修（汎用・特定トピックのハードコード無し）**: (1) `runActions` は各結果を **`ai.__atlResults` に記録**（`{act,ok,html,meta}`）し、新 `_atlCompose(ai)` がそこから描画。(2) `_atlCompose` は **`_atlGoalKey`（回答系アクションを正規化トピックで grouping・repair答は `__goalKey` 継承）で目的単位に de-dupe し、`_atlGoalScore`（ok＋userGoalSatisfied＋produced explanation/map、partial減点）で最良の1件だけ残す**＝修復成功は失敗した元結果を**置換**。(3) repairループは**破線 div を廃止**し `runActions(ai,…)` で**同一バブルへ再実行**＝各 pending 失敗答の goal key を fresh 答へ継承させて置換。(4) fail サマリから **`actLabel`（`mapReport "Taiwan"` 等の内部名/引数）露出を撤去**（per-action の正直な本文が「何が見つからなかったか」を既に説明・repair回数/内部コードも非露出）。(5) **地図描画のみ失敗は分析本文を失敗扱いにしない**（`researchMap` は既に text成功時 `ok:true`＋`produced:['explanation']`＋「地図表示のみ更新できませんでした、説明は有効」を返す設計＝保持）。(6) 地図トグルchip・オーバーレイ所有権（R127クローン退避）・`linkCards`・`.atl-rp-item`・`mapToggleChip` は維持（chipは所有 kind を1回だけ描画）。
+
+### テスト/CI/デプロイ
+`index.html`＋テストのみ変更（**Edge Function 変更なし＝デプロイ不要**）。新規 `tests/r159-checks.test.mjs`（6件＝太字/横線撤去・その他収集記事削除＋never-zero保持・右幅340・滑らか+アンカー・帯hover・複合回答統合＋`_atlGoalScore` の置換ロジック behavioural 検証）。自変更で壊れた **r154 #2/#9・r155・r156 #2・r158 #1/#10** の exact-string assert（見出しウェイト750/800→600・`##` divider撤去・インライン bold→plain・右幅380→340・サイドバー machinery）を新挙動へ更新。node checks **112**・`npm test` 緑（CI条件で確認）。**罠（R152/R154/R156 と同一）**: 文字列変更で旧 exact-string assert が壊れる→全掃引して新挙動へ更新（削除でなく現挙動を assert し直す）。headless preview は `document.hidden`＝`isStyleLoaded` 未完だが camera 数理（resize/panBy/project）は動くのでアンカーは数値検証可。
+
 ## R158 — UX/機能バッチ（10件）：**Atlas/Terra 実行権限の再設計（Terraが意味・対象・方法を決定、IntMapは忠実に実行して機械的結果を返すだけ）／フライトシミュレーター視点瞬間移動バグの根本修正（`calculateCameraOptionsFromTo`＋時間ベース平滑化＋検証）／海の水塗り加工廃止／衛星画像の灰色「no data」タイル撲滅＋高画質化（`addProtocol`で最寄り実タイルをクロップ）／Atlas返答タイポのコントラスト強化＋出典ゼロの解消／添付ボタンを「＋」化しテキストファイルも添付可／Companies時系列ホバーに月日表示／サイドバー開閉フリッカー解消** (tag `#R158`)
 
 **背景（業務委託書10件）**: (1) Atlas返答のテキスト・余白・改行が単調でデザイン的コントラストに乏しい、(2) Atlasに出典が一つも出ないことがある、(3) フライトシミュレーターの海を水で満たす加工の廃止、(4) 画像添付ボタンを「＋」にして画像以外のファイルも添付可能に、(5) **Atlas/Terra実行権限の全面再設計**（GPT-5.6 Terraが意味・対象・方法の最高意思決定者、IntMapコードはTerraの判断を忠実に実行して機械的結果だけを返す装置。コード側の自動補正・対象除外・意味推測を廃止し、部分/全体失敗は構造化結果としてrepairループ経由でTerraへ返す）、(6) **フライトシミュレーターの視点が一瞬遠方へ飛んで戻るバグの根本修正**、(7) Companies時系列でホバー時に年しか出ず月/日が出ない、(8) 衛星画像の読み込み速度・表示画質を高める、(9) 限界までズームした際の灰色「map data not yet available」タイルを衛星タイルのまま表示、(10) 左右サイドバー開閉時の地図フリッカー解消。
