@@ -5,6 +5,22 @@
 
 ---
 
+## R157 — Atlas 自然言語処理の全面再設計：**「GPTが意味を理解する層」と「コードが安全に実行する層」を明確に分離**／ハイライトの概念解決をコード側ハードコード（localPlan→regionGroup）からGPTへ移譲（GPTが概念を実ISO3集合へ展開→コードは検証・実国境描画・実状態検証・正直報告のみ）／画像のみ送信で**架空のユーザー文章を一切生成しない**（既定指示はAPI境界の非表示指示に限定） (tag `#R157`)
+
+**背景（業務委託書）**: 「ゲルマン諸国をハイライトして」が、概念の意味を**GPTに判断させる前に**コード側の地名・国集合リゾルバ（`localPlan` の確定ショートカット → `resolveHlTarget` → `regionGroup`/`GROUP_ALIASES`/`REGION_ALIASES`）へ渡され、「ゲルマン諸国」という一地点が見つからない扱いで失敗した。委託書の核心＝「文化圏・言語圏・政治的分類・歴史的分類・曖昧な国集合をハードコードで網羅する設計そのものが誤り。個別alias追加や正規表現で直すな。自然言語は意味を保持した原文のまま最初にGPTへ渡し、GPTを意味解釈と計画生成の主体とせよ。コードの責任はISO/座標/アクション型の検証・重複除去・権限・描画・実行後検証・正直な報告に限定せよ。既存ISO/UN M49/国境GeoJSON/組織加盟国データは意味推測辞書ではなく、GPT出力を検証して実地理形状へ結び付ける決定論的データとして残せ」。加えて画像UX＝「画像を送っただけで勝手にテキストが添付されて不愉快」。
+
+### ① 単一真因＝localPlanの確定ハイライト・ショートカット（GPTバイパス）
+`localPlan(q)` の `^(.+?)をハイライト` → `{type:'highlight',countries:'<生の概念>'}` **`confident:true`** が、`run()` の「confidentならAI往復なしで即実行」経路に乗り、**GPTを一度も呼ばずに** dispatch の highlight へ生の概念文字列を渡していた。dispatch は `resolveHlTarget('ゲルマン諸国')` → `regionGroup`（M49/alias表）で null → ラダー落下（Nominatim等）→ 失敗。**「概念の意味をコードがGPTより先に決定・拒否する構造」そのもの**。→ localPlan からハイライトの**ターゲット**を解釈する全パスを撤去（生の概念を confident 実行しない）。**残すのは意味解釈を伴わない2つだけ**＝現在のハイライトの色変更（`parseColor` ゲート・ターゲット無し）と解除。あらゆる「…をハイライト」は必ずプランナー（GPT）へ。
+
+### ② GPT主導のターゲット契約＋コード側実行層（`_hlReadGptGroups`/`_hlValidCodeSet`・dispatch highlight 冒頭）
+SYS の highlight スキーマを **`{"type":"highlight","interpretation":str,"targets":[{"name":"<English>","iso3":"<ISO3>"},…]}`** へ変更。GPTが概念（"ゲルマン諸国"/"スラブ諸国"/"英語圏"/"旧植民地"/"主要産油国"/OPEC/G7/内陸国/…）を**自分で**実ISO3集合へ展開する（「IntMapに概念辞書は無い」と明示）。複数集合を別色は `groups:[{label,targets}]`、国集合でない**具体的単一地物**（行政区画/河川/流域/自然地域）は `query:"<地名>"` で従来の `resolveHlTarget` ラダーへ（＝概念でなく確定した地名のみ・GPTの後段）。**コードの唯一の仕事**＝`_hlReadGptGroups` がGPTの targets/groups/iso3/codes を読み、各ISO3を **`_hlValidCodeSet`（`window.countryGeo` 由来の実在コード集合）で検証**（不正コードは拒否・氏名があれば `resolveCountrySync` で救済＝**正確な国名→コードの決定論マッチであり概念推測ではない**）、重複除去、`_codesGeo` で**実国境 MultiPolygon** 構築、`_validGeo` で形状検証、`paintPolys` で描画、`_verifyPolyPaint` で実状態検証、**採用した解釈を凡例＋注記で明示**、無効コードは正直に「スキップ」報告。`regionGroup` はこの経路を**一切通らない**（GPTが `query` を返した確定地名のときだけ後段で稼働）。ただし `countries`（文字列/名前配列）経路は**後方互換の legacy fallback として温存**＝R143 の直接 dispatch テスト（`{highlight,countries:'東西南北欧'}`）は無回帰（`_hlReadGptGroups` は生ISO3配列のみ targets 扱い、名前配列/概念文字列は null＝legacy へ）。
+
+### ③ 画像のみ送信で架空ユーザー文を生成しない（`run()`・`_visionPrompt`）
+真因＝`run()` の `if(!q&&imgs.length) q=L('Read and analyze this image…')` が既定文を **`q` に代入**し、それが (a) ユーザーバブルに `esc(q)` で表示 (b) `_lastUserMsg` に格納 (c) `recordTurn` で履歴保存されていた＝「勝手に添付される」文章の実体。→ この代入を**撤去**。`q` は空のまま＝ユーザーバブルはサムネイルのみ・履歴は空・言語はUI設定。既定指示は **`_visionPrompt` 内でユーザー未入力時のみ** 付与（＝API境界の非表示システム指示に限定・委託書「AI処理上どうしても既定指示が必要ならAPI境界でのみ」）。**ペースト/ドロップ/添付が textarea を一切変更しないのは既存挙動**（`_atlAddFiles` は `_atlImgs` に push するだけ・実ブラウザで `paste` イベント合成→`textareaValueAfterPaste===''`・`defaultPrevented===true` を確認）。R156の高精細Vision/数式/検算/非地理ゲートは無変更。
+
+### テスト/CI/デプロイ
+`index.html` のみ変更（Edge Function 変更なし＝デプロイ不要）。新規 `tests/r157.spec.js`（Playwright 8：概念→実ISO3→実国境・未登録概念（主要産油国）が個別alias無しで動く・多集合2色凡例・**不正ISO拒否**・valid+invalid partial・純関数 `_hlReadGptGroups`（コード検証/氏名救済/名前配列と概念文字列は拒否）・legacy `東西南北欧` 無回帰）＋ `tests/r157-checks.test.mjs`（source 5：localPlan ターゲット撤去・dispatch targets 経路・SYS スキーマ・画像既定文のAPI境界移動・debug spine）。`IntMapAtlasDebug.{hlReadGroups,validCodeSet,hlState}` を公開。`npm test` 緑。**罠（R143/R156と同一）**: Browserペインは `document.hidden`＝`map.isStyleLoaded()` 未完了で `paintPolys` が false を返し dispatch が ok:false（legacy `東西南北欧` も同ペインで同じ ok:false＝環境要因）→ **描画の真偽は WebGL 可能な Playwright で検証**、ペインでは**パイプライン出力**（`polyState()`＝実MultiPolygon/valid・`hlReadGroups` 純関数）で検証。**全一致テスト**（`_hlReadGptGroups` の recovery/decline）はペインで直接確認済。
+
 ## R156 — Atlas 統合品質改修（Vision・数式レンダリング・地理判定）：**画像は専用Visionパイプライン**（分類→転記→求解→**決定論的検算**→統一レンダリング→地理のときだけ地図化）／**KaTeXによるChatGPT品質の数式表示**（統一Markdown+LaTeXレンダラ：コードブロック/表/行列/分数/添字）／**コンテンツ分類が全経路を貫く単一の背骨**（数学/文書/コードは地点抽出を一切呼ばない＝"Problem/Thus/Let U"の誤地名化が構造的に不可能）／**画像は高精細エンコード＋detail:high**／**送信・停止ボタンをアクセントカラー化**（文字入力までは現状色） (tag `#R156`)
 
 **背景（業務委託書）**: 現行は画像を `compressImage(f,1100,0.72)` でJPEG化し、**地図志向の汎用プランナー**（MAPPING MANDATE付き）へ渡す一枚岩構造。よって(1)小さい文字/数式/表の認識精度が未検証で低い、(2)回答表示は `mdMini` の正規表現のみで**数式レンダリング基盤が皆無**、(3)画像回答にも地点マッピング指示が適用され数学問題の `Problem`/`Thus`/`Let U and V` まで地名候補になる、の三重苦。委託書の要求は「単なるプロンプト追加や禁止語登録ではなく、**入力分類→認識→検証→回答生成→表示→地図化を一つの処理系として設計**」。
