@@ -1890,17 +1890,16 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
     .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
-    /* (#R160) Desktop classic mode ALWAYS overlays the sidebar on a FULL-WIDTH map — in BOTH the solid and
-       frosted styles — so opening/closing the sidebar can NEVER resize or recentre the map. The map is a fixed
-       full-bleed backdrop; the sidebar simply slides over it (opaque hides the strip it covers, frosted blurs
-       the map behind it #23). Collapsing REVEALS the covered strip rather than shifting the whole view, so the
-       existing map content never moves ("左サイドバーを開閉すると地図が勝手に動いてしまう" の根絶). There is NO
-       per-frame resize / camera reanchor / optical-padding on toggle anymore — that machinery is deleted.
-       ws-mode (each panel is its own window) keeps its own !important layout and is excluded. */
+    /* Desktop: SOLID keeps the sidebar in normal flex flow (map beside it) — the LEFT sidebar's mechanism is
+       NOT restructured (#R160: reverted a wrong overlay change). A FROSTED mode overlays the sidebar on the map
+       so the glass actually has the map behind it to blur (#23). The "map must not move when the LEFT sidebar
+       toggles" requirement is met WITHOUT changing this layout — see the toggle handler's single stationary-edge
+       pin (no per-frame machinery). */
     @media(min-width:769px){
-      body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }
-      body:not(.ws-mode) .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
-      body:not(.ws-mode) .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
+      .sidebar{ position:relative; }
+      body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }
+      body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
+      body.sidebar-glass .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
     }
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
@@ -1930,18 +1929,17 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
        sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
     .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:1200; }
     .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat{ color:#fff !important; font-weight:600; }
-    /* (#R13c/#R160) Desktop classic mode now ALWAYS overlays the sidebar (solid + frosted), so the left-anchored
-       HUD (coord readout, data/Köppen legends) must clear the open sidebar; a collapsed sidebar → flush left.
-       Desktop-only (mobile's --sidebar-w is 100vw, which would fling these off-screen) and not ws-mode. */
+    /* (#R13c) Only the FROSTED sidebar overlays the map, so ONLY there must the left-anchored HUD (coord readout,
+       data/Köppen legends, country-info) clear it; a collapsed sidebar → flush left. In SOLID mode the sidebar sits
+       beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */
     @media(min-width:769px){
-      body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
-      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
-      body:not(.ws-mode) .data-legend:not([data-dragged]), body:not(.ws-mode) .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
-      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
-      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
-      /* country-info popup (bottom-left) rides the same rail so the overlaying sidebar never hides it. */
-      body:not(.ws-mode) .country-info{ left:calc(var(--sidebar-w) + 24px); }
-      body:not(.ws-mode) .sidebar.collapsed ~ .map-container .country-info{ left:24px; }
+      body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
+      body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
+      body.sidebar-glass .country-info{ left:calc(var(--sidebar-w) + 24px); }
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .country-info{ left:24px; }
     }
 
     /* (#R160) RIGHT layer sidebar now OVERLAYS the map too (it no longer pushes the map-container's margin —
@@ -4146,13 +4144,15 @@ window.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   if(isMobile()) sidebar.classList.add('collapsed'); /* start collapsed on phone */
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-    /* (#R160) The sidebar now OVERLAYS a fixed full-width map (desktop) or is the bottom sheet (mobile), so the
-       map-container never changes size on toggle — the map simply cannot move. No anchor capture, no per-frame
-       resize, no camera reanchor (all of that machinery is gone). Just slide the panel and let the search-pill
-       layout recompute against the sidebar's new open/closed state. */
+    /* (#R160) DELIBERATELY minimal. The LEFT sidebar keeps its ORIGINAL mechanism (solid = flex sibling with the map
+       beside it; frosted = overlay). The toggle touches the map camera NOTHING at all — it only flips `collapsed` and
+       syncs the material classes. The existing ResizeObserver re-fits the canvas on its own. Every "compensation" tried
+       here made things worse: setPadding/easeTo drove the camera, and panBy — on the default GLOBE projection — ROTATES
+       the planet ("地球が回る"). So there is no pin, no padding, no anchor, no per-frame loop, and no map.resize() call
+       from here. The toggle must not move the camera. */
     sidebar.classList.toggle('collapsed');
-    try{ applySidebarStyle(false); }catch(_){}   /* keep the frost/material classes in sync; NO camera padding */
-    try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* nudge ms-narrow (sidebar size is unchanged, so ResizeObserver won't) */
+    try{ applySidebarStyle(false); }catch(_){}   /* material classes only (blur/translucency) — never the camera */
+    try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* recompute the search-pill layout only */
   });
   /* (#R15) Keyboard shortcut: Esc collapses the sidebar. Ignored while typing in a field, while a modal
      or popup is open (Esc should close those first), or on mobile (it uses the bottom sheet, not a sidebar). */
@@ -17860,9 +17860,7 @@ window.addEventListener('DOMContentLoaded', () => {
         let rightLeft=mapR, stackBottom=66;
         document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
         let leftRight=mapL;
-        /* (#R160) the LEFT sidebar now ALWAYS overlays the full-width map on desktop (solid + frosted), so the
-           map rect no longer excludes it — push the pill's left boundary past the open sidebar in every style. */
-        try{ if(!document.body.classList.contains('ws-mode')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')&&getComputedStyle(sb).position==='absolute') leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
+        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
         try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
         const half=110, margin=14;   /* half = half of a comfortable ~220px centered pill */
         const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
