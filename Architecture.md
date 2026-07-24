@@ -17,7 +17,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 **単一HTMLファイルのWebアプリ**（フロントエンド全部入り）です。
 
 - **本体は `index.html`（公開用、約15,000行・約1.4MB）一枚。** ビルド工程なし。ブラウザでそのまま動く。
-- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。
+- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
 - 対応UI言語は **英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es, ベータ)** の5つ（R40でDE/RU復活＋ES追加。`i18n.es` は静的UIを網羅、深層の動的文字列はEN/JPフォールバック）。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
@@ -678,7 +678,14 @@ koppen_mercator_*_4k.png        モバイル用の軽量版（OOMクラッシュ
 _koppen_convert.py              ケッペンTIFF→PNG 変換スクリプト（データ前処理。実行時には不要）
 _rail_convert.py                鉄道データ変換スクリプト（同上）
 
+js/
+  newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
+                                    index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
+                                    `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
+                                    static-checks がドリフトを検出）＝ブラウザとEdge Functionが同じ見出しを同じ地点へ。
+
 supabase/
+  functions/_shared/newsgeo.js      (#R161) 上記の**自動生成ミラー**（Edge Function は functions/ 外を import できない）
   functions/ai-proxy/index.ts       アカウント制AIプロキシ（鍵はサーバー側、1日上限）
   functions/refresh-news/index.ts   ニュース取得＋AI地点解析＋current_news 書き込み（cron）
   functions/monitor-run/index.ts    Area Monitors 定期実行（cron＋ユーザー今すぐ実行）
@@ -698,8 +705,11 @@ supabase/
 3. **地点解析（subject location）**:
    - **AIが第一手段**（en/jp の全記事）。`AI_PROVIDER`（anthropic/openai/gemini）でサーバー保持の鍵を使い、
      見出し＋説明から「出来事の起きた具体的な場所」を返させる。1回あたりバッチ（既定15件）、1実行あたり上限 `AI_CAP=120` 件。
-   - **非AI辞書解析はフォールバック**：`geo_pins` テーブル＋埋め込み辞書（都市/地域/政府所在地メトニム/組織/デモニム）で
-     スコアリング。AI失敗・en/jp 以外・API停止時に使う。
+   - **非AI解析はフォールバック**（AI失敗・en/jp 以外・API停止時）。**#R161 でここが決定論エンジン
+     `_shared/newsgeo.js`（= ブラウザの `js/newsgeo.js` と1バイト同一）に置き換わった**——同名地の曖昧性解決・
+     デートライン抑止・組織/人名トラップ除去まで行う。旧「`geo_pins`＋埋め込み辞書のスコアリング」は
+     その**後段の最終フォールバック**として残置。どちらも `analyzed_by='dict'` を記録。
+     `geo_pins` の運用者追加ピンは `NEWSGEO.register()` でエンジン索引にも合流（built-in より低ランク）。
 4. **重複防止・再解析防止**:
    - `current_news` は `(lang, link)` で upsert → **同じURLは重複保存しない**。
    - 直近72時間の既存行を読み、**すでに `analyzed_by='ai'` の記事は再びAIに送らない**（結果を再利用）。
@@ -712,11 +722,46 @@ supabase/
   1. ローカルキャッシュ（`intmap_news_cache`）があれば即表示。
   2. **FAST PATH**：`loadNewsFromSupabase()` が `current_news` を1回 SELECT → `serverRowToItem()` で整形 → `startNews()` でピン即表示。
      **フロントはニュース地点解析のためにAIを呼ばない**（AIロケートボタンも無い）。
-     - **⚠️ R40で一時停止中**：`const USE_SERVER_NEWS=false`（`window.__IM_USE_SERVER_NEWS`）で FAST PATH をスキップし、**全言語**でライブRSS＋クライアント非AI辞書（`analyzeContext`/`scoreGeo`）のみを使用中（ユーザー要望「一時的に停止」）。`true` に戻せばサーバー事前解析フィードが復活。辞書はDE/RU(`_DERU_GZ`)＋ES(`_ES_GZ`/`_ES_DEM`)を内蔵。
+     - **⚠️ R40で一時停止中**：`const USE_SERVER_NEWS=false`（`window.__IM_USE_SERVER_NEWS`）で FAST PATH をスキップし、**全言語**でライブRSS＋クライアント非AI解析のみを使用中（ユーザー要望「一時的に停止」）。`true` に戻せばサーバー事前解析フィードが復活。
+       ⇒ **つまり本番で実際に効いている地点解析は `analyzeContext()` ただ一つ**。#R161 でその第一手段が
+       `IntMapNewsGeo`（`js/newsgeo.js`）になった（§4.3）。旧 `geoDB`/`scoreGeo` 辞書（DE/RU `_DERU_GZ`、ES
+       `_ES_GZ`/`_ES_DEM` を内蔵）は**エンジンが答えを出さなかった時のフォールバック**として残置し、
+       さらに `_countryFallback()` が最後の砦。
   3. **FALLBACK**：検索・時系列(time-travel)・多言語モード等、サーバーが焼いていないケースのみ、
      ライブRSS（CORSプロキシ経由）を取得し、クライアントの `analyzeContext()`（非AI辞書）で解析。
 - **72時間フィルタ**：`computeFilteredNews()` が72時間より古い記事を表示から除外（保存(saved)・時系列モードは除外しない）。
 - ピンの「主題(Subject) / 発信元(Publisher)」切替は `current_news` の両座標を使う**表示専用トグル**（AI呼び出しなし）。
+
+### 4.3 非AI地点解析エンジン `IntMapNewsGeo` — `js/newsgeo.js` (#R161)
+**決定論**（ネットワーク無し・乱数無し・同じ見出しは常に同じ地点）。旧実装は「見出しに約2000本の正規表現を当て
+最高スコアの語を採る」bag-of-words で、原理的に解けない4クラスの誤ピンがあった。エンジンはそこを構造で解く。
+
+1. **最長一致のスパン消費** — 正規化 n-gram ハッシュ索引（ラテン/キリル文字はトークン n-gram、CJKは文字走査）。
+   長い名前が必ずスパンを取るので、**トラップ項目**（`New York Times` / `Paris Hilton` / `Bank of America` /
+   `Paris Agreement`）が中の地名を丸ごと飲み込む。
+2. **曖昧性解決** — 1つの表記が複数の実在地に対応する場合（`Tripoli`＝リビア/レバノン、`Cambridge`＝英/米、
+   `Springfield`、`Toledo`、`Georgia`…）、同一テキスト中の**国・admin1の手がかり**、**曖昧でない地点との地理的近接**、
+   **著名度prior**で1つに決める。
+3. **階層吸収** — 都市とその国が両方出たら都市を加点し、**親（国）を抑制**（`Kharkiv … Ukraine` → Kharkiv）。
+4. **デートライン/会場の抑止** — 発話動詞の直後に来る地名（`Moscow said` / `Berlin announces`）と
+   `summit in <地名>` の会場は「話した場所」であって事件現場ではないので減点（**他に候補がある時だけ**）。
+   逆に `over/about/について/を巡り` で導かれる地名は**話題＝主題**として加点。
+5. **イベント語の親和** — `strike/earthquake/地震/攻撃` 等の近傍にある地名を加点。
+6. **大文字ガード** — 固有名詞は必ず大文字始まり（`us`≠US、`la guerra`≠LA、`male voters`≠Malé）。
+   頭字語（`US/UK/WHO/LA/DC…`）は**全大文字**を要求（文頭の `Who…` が WHO にならない）。
+7. **常用語の国名**（`Turkey/Chad/Mali/Niger/Guinea/Jordan/Nice`）は**裏付け**（前置詞・イベント語・階層・他の地名の
+   同居）が無ければ**採らない**。
+8. **確信度** — 0〜1（`confidence`）と根拠（`why[]`）を返す。答えを出せなければ `null` を返し、無理に打たない。
+
+**データ**：約200か国（EN/JA＋DE/RU/ES別名・デモニム・首都）／都市・紛争地・海峡等 約900／admin1 約150（米50州・
+日本の県・中国の省・印州・独州・ウクライナ州…）／トラップ・国際機関・武装組織・企業HQ・首脳名・政府機関メトニム 約300。
+`register()` で `geo_pins` 等の運用者データを実行時に合流できる（built-in より低ランク）。
+
+**計測**（`node scripts/newsgeo-eval.mjs`）：ラベル付きコーパス141件で **旧61.0% → 新100%**（誤り55→0）、
+開発後に書いた**ホールドアウト**63件で **旧58.7% → 新100%**。比較対象の「旧」は index.html の実配列
+（`_BUILTIN_GZ`/`_EXTRA_GZ`/`_DEMONYM_GZ`/`_ORG_GZ`/`_DERU_*`/`_ES_*`）から実際に再構成した本物の旧実装。
+実 Google News RSS 229本では**測位率 67%→85%**（未測位の大半は本当に場所の無い経済/科学記事＝正しい挙動）。
+速度は150記事14ms（旧＝記事ごとに約2000正規表現）。
 
 ---
 
@@ -1048,16 +1093,18 @@ supabase/
 
 ## #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
 
-### §7.1 `IntMapGeoEngine` — レンダラー抽象層（業務委託・第1段階＝#R152 / 第2段階＝#R160）
+### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161）
 `window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
 
 - **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
-- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas）**・`events`（on/off/once）。
+- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas＋**#R161**: container/size/setCursor）**・`events`（on/off/once＋**#R161**: onLayer/offLayer＝**レイヤ単位のポインタイベント**）＋**#R161**: `ready()`（描画準備完了）・`layers.getPaint()`（paint 読み戻し）。
 - **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
+- **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
+  - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
 - **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
 - **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②pin/marker と GeoJSON ヘルパ（addChoro/addRaster）を engine へ、③`flyTo`/`fitBounds` 系ディスパッチの移行、④別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑤Cesium Adapter の骨子。
-- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`（facade/adapter/contract/拡幅契約/camera 配線の存在）＋既存スモーク（`smoke.spec` の critical globals＋#map で全体ブートを担保）。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋既存スモーク。
 
 ### その他12件（要点）
 ①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。

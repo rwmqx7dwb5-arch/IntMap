@@ -2756,6 +2756,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<!-- (#R161) IntMap NewsGeo — the DETERMINISTIC (non-AI) news location analyser. Own file (a) because the
+     gazetteer is bulk reference data that would only bloat index.html, and (b) because the SAME file is
+     mirrored to supabase/functions/_shared/newsgeo.js so the browser and the refresh-news Edge Function
+     score a headline identically. Sets window.IntMapNewsGeo; if it fails to load, analyzeContext falls
+     back to the previous in-page gazetteer scorer, so news pins never disappear. -->
+<script src="js/newsgeo.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <!-- (#R156) KaTeX — ChatGPT-quality math rendering for Atlas replies (inline/display math, matrices, fractions,
      sub/superscripts). VERSION-PINNED on jsDelivr (already in the script-src allowlist; style-src/font-src are
@@ -5369,6 +5375,17 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ for(const [type,terms,lng,lat,en,jp] of _ES_GZ){ (merged[type]=merged[type]||[]).push({terms:terms.slice(), loc:[lng,lat], name:{en,jp}}); } }catch(_){}
     try{ for(const [dem,lng,lat,en,jp] of _ES_DEM){ (merged.country=merged.country||[]).push({terms:[dem], loc:[lng,lat], name:{en,jp}, demonym:true}); } }catch(_){}
     geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
+    /* (#R161) hand the ADMIN-CURATED Supabase geo_pins to the NewsGeo engine too, so a place an
+       operator added in admin.html is matchable by the primary locator and not only by the legacy
+       fallback. Registered at a lower rank than the built-in gazetteer (curated rows add coverage,
+       they never override a verified place) and de-duplicated inside register(), which matters
+       because this function re-runs on every geo_pins realtime update. */
+    try{ if(window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
+      const extra=[]; for(const type in geoRaw){ for(const g of (geoRaw[type]||[])){
+        if(!g||!g.loc||!Array.isArray(g.terms)||!g.terms.length) continue;
+        extra.push({ terms:g.terms, lng:g.loc[0], lat:g.loc[1], type, name_en:(g.name&&g.name.en)||g.terms[0], name_jp:(g.name&&g.name.jp)||'' }); } }
+      if(extra.length) window.IntMapNewsGeo.register(extra);
+    } }catch(_){}
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
     geoDB.forEach(g=>{
@@ -7118,6 +7135,18 @@ window.addEventListener('DOMContentLoaded', () => {
           zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }, zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }, zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }, stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
           resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
           setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
+          /* (#R161) Phase-3 contract broadening — everything a self-contained OVERLAY subsystem needs so it
+             can be written against the engine alone: readiness, the drawing surface's container + pixel size,
+             the cursor, per-LAYER pointer events (hover/click on a rendered feature), and paint read-back.
+             All 1:1 pass-throughs, so adopting them is behaviour-neutral; a future Cesium/Earth adapter only
+             has to implement this list to inherit the whole news-pin layer. */
+          styleReady(){ const m=_m(); try{ return !!(m&&m.isStyleLoaded&&m.isStyleLoaded()); }catch(_){ return false; } },
+          getContainer(){ const m=_m(); return (m&&m.getContainer)?m.getContainer():null; },
+          getSize(){ const m=_m(); if(!m) return {width:0,height:0}; try{ const c=m.getContainer(); const cv=m.getCanvas&&m.getCanvas();
+            return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
+          setCursor(c){ const m=_m(); try{ const cv=m&&m.getCanvas&&m.getCanvas(); if(cv) cv.style.cursor=c||''; }catch(_){} },
+          getPaint(id,p){ const m=_m(); try{ return (m&&m.getLayer(id))?m.getPaintProperty(id,p):undefined; }catch(_){ return undefined; } },
+          onLayer(e,layer,c){ const m=_m(); if(m) m.on(e,layer,c); }, offLayer(e,layer,c){ const m=_m(); if(m) m.off(e,layer,c); },
           raw(){ return _m(); } };
         /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
            (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
@@ -7131,12 +7160,19 @@ window.addEventListener('DOMContentLoaded', () => {
             getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
             zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop() },
           coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
+          /* (#R161) is the renderer far enough along that adding sources/layers is safe? */
+          ready:()=>_adapter.styleReady(),
           layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
             /* (#R160) feature-state (hover/selection highlighting) through the engine */
-            setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k) },
-          /* (#R160) render surface — resize / repaint / canvas the renderer owns */
-          render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas() },
-          events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c) },
+            setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),
+            /* (#R161) read a paint property back (theme code needs to know the current value) */
+            getPaint:(id,p)=>_adapter.getPaint(id,p) },
+          /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
+          render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),
+            container:()=>_adapter.getContainer(), size:()=>_adapter.getSize(), setCursor:c=>_adapter.setCursor(c) },
+          events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c),
+            /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
+            onLayer:(e,l,c)=>_adapter.onLayer(e,l,c), offLayer:(e,l,c)=>_adapter.offLayer(e,l,c) },
           raw(){ return _adapter.raw(); }
         };
       })();
@@ -9482,9 +9518,11 @@ window.addEventListener('DOMContentLoaded', () => {
      flips the text + halo colors so the band stays readable in every theme. */
   function refreshNewsPill(){ try{ if(!map) return; ensureLabelPill(true);
       const dark=_newsUIDark();
-      if(map.getLayer('news-labels')){
-        map.setPaintProperty('news-labels','text-color', dark?'#15151a':'#ffffff');
-        map.setPaintProperty('news-labels','text-halo-color', dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.55)');
+      /* (#R161) news band theming through the engine (Phase-3 subsystem migration) */
+      const _GEp=window.IntMapGeoEngine;
+      if(_GEp&&_GEp.layers.has('news-labels')){
+        _GEp.layers.setPaint('news-labels','text-color', dark?'#15151a':'#ffffff');
+        _GEp.layers.setPaint('news-labels','text-halo-color', dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.55)');
       }
     }catch(_){} }
   window.refreshNewsPill=refreshNewsPill;
@@ -9497,14 +9535,19 @@ window.addEventListener('DOMContentLoaded', () => {
   let _ndcT=null;
   function _declutterNewsBands(){
     try{
-      if(!map||!map.getSource('news-points')||!map.getLayer('news-labels')) return;
+      /* (#R161 MapLibre reduction, Phase 3) the whole news-pin overlay now talks to
+         IntMapGeoEngine instead of the raw map — projection, surface size and
+         feature-state are all renderer-agnostic operations. */
+      const GE=window.IntMapGeoEngine; if(!GE) return;
+      if(!GE.layers.hasSource('news-points')||!GE.layers.has('news-labels')) return;
       const feats=newsFeatures||[]; if(!feats.length) return;
-      const cont=map.getContainer(); const W=cont.clientWidth||map.getCanvas().width, H=cont.clientHeight||map.getCanvas().height;
+      const sz=GE.render.size(); const W=sz.width, H=sz.height;
       const M=48;   /* off-screen margin: keep a band as the pin scrolls just past the edge */
       const items=[];
       for(const f of feats){
         const g=f.geometry, p=f.properties||{}; const fid=p.fid; if(!g||g.type!=='Point'||fid==null) continue;
-        let pt; try{ pt=map.project(g.coordinates); }catch(_){ continue; }
+        let pt; try{ pt=GE.coords.project(g.coordinates); }catch(_){ continue; }
+        if(!pt) continue;
         if(pt.x<-M||pt.x>W+M||pt.y<-M||pt.y>H+M){ items.push({fid,off:true}); continue; }
         const txt=String(p.short||p.title||''); const w=Math.min(txt.length,16)*6.4+28;   /* ≈ pill width */
         const pr=(p.mapped==='true')?0:(p.mapped==='publisher')?1:2;
@@ -9514,24 +9557,29 @@ window.addEventListener('DOMContentLoaded', () => {
       const claimed=[]; const win=new Set();
       const hit=(r)=>{ for(const c of claimed){ if(r.x<c.x+c.w && r.x+r.w>c.x && r.y<c.y+c.h && r.y+r.h>c.y) return true; } return false; };
       for(const it of vis){ const r={x:it.x+9,y:it.y-10,w:it.w,h:it.h}; if(!hit(r)){ claimed.push(r); win.add(it.fid); } }
-      for(const it of items){ try{ map.setFeatureState({source:'news-points',id:it.fid},{bnd:win.has(it.fid)}); }catch(_){} }
+      for(const it of items){ try{ GE.layers.setFeatureState({source:'news-points',id:it.fid},{bnd:win.has(it.fid)}); }catch(_){} }
     }catch(_){}
   }
   window._declutterNewsBands=_declutterNewsBands;
   function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
   window.scheduleNewsDeclutter=scheduleNewsDeclutter;
   function setupIntelLayers(){
-    if(!map||!map.isStyleLoaded()) return;
+    /* (#R161 MapLibre reduction, Phase 3) the NEWS overlay is created through IntMapGeoEngine.
+       `GE` falls back to nothing only if the engine has not been constructed yet (it is built in
+       map.on('load') before the first call), in which case we simply return and the existing
+       styledata re-run creates the layers. */
+    const GE=window.IntMapGeoEngine;
+    if(!GE||!GE.ready()) return;
     ensureLabelPill();
-    if(!map.getSource('news-points')){
-      map.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'news-pulse',type:'circle',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],paint:{
+    if(!GE.layers.hasSource('news-points')){
+      GE.layers.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE.layers.add({id:'news-pulse',type:'circle',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,8,4,14,10,22],
         'circle-color':['match',['get','mapped'],'publisher','#5856d6','#007aff'],
         'circle-opacity':0.18,
         'circle-stroke-width':0
       }});
-      map.addLayer({id:'news-dots',type:'circle',source:'news-points',paint:{
+      GE.layers.add({id:'news-dots',type:'circle',source:'news-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],10,7],
         'circle-color':['match',['get','mapped'],
           'true','#007aff',
@@ -9548,7 +9596,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }});
       /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
          (#R15) Shown for publisher-located pins too, not just subject pins. */
-      map.addLayer({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
+      GE.layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
         'text-size':11.5,
         'text-font':['literal',['Noto Sans Regular']],
@@ -9581,46 +9629,46 @@ window.addEventListener('DOMContentLoaded', () => {
         'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]],
         'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]]
       }});
-      map.on('moveend',scheduleNewsDeclutter); map.on('zoomend',scheduleNewsDeclutter);
+      GE.events.on('moveend',scheduleNewsDeclutter); GE.events.on('zoomend',scheduleNewsDeclutter);
       /* If pins were accumulated before map.load, flush them now. */
-      if(newsFeatures.length){ map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
+      if(newsFeatures.length){ GE.layers.setSourceData('news-points',{type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
       try{ refreshNewsPill(); }catch(_){}   /* (#R32) set the band's initial colors for the current theme */
     }
-    if(!map.getSource('dash-points')){
-      map.addSource('dash-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'dash-pulse',type:'circle',source:'dash-points',paint:{
+    if(!GE.layers.hasSource('dash-points')){
+      GE.layers.addSource('dash-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE.layers.add({id:'dash-pulse',type:'circle',source:'dash-points',paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,10,4,18,10,28],
         'circle-color':['get','color'],
         'circle-opacity':0.20,
         'circle-stroke-width':0
       }});
-      map.addLayer({id:'dash-dots',type:'circle',source:'dash-points',paint:{
+      GE.layers.add({id:'dash-dots',type:'circle',source:'dash-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],11,8],
         'circle-color':['get','color'],
         'circle-stroke-width':2,
         'circle-stroke-color':'#ffffff'
       }});
-      if(dashFeatures.length) map.getSource('dash-points').setData({type:'FeatureCollection',features:dashFeatures});
+      if(dashFeatures.length) GE.layers.setSourceData('dash-points',{type:'FeatureCollection',features:dashFeatures});
     }
     if(window._intelHandlersBound) return;
     window._intelHandlersBound=true;
-    /* News hover/click */
-    map.on('mousemove','news-dots',e=>{
+    /* News hover/click — (#R161 Phase 3) bound through IntMapGeoEngine.events.onLayer */
+    GE.events.onLayer('mousemove','news-dots',e=>{
       if(!e.features.length) return;
-      map.getCanvas().style.cursor='pointer';
+      GE.render.setCursor('pointer');
       const f=e.features[0];
       if(hoveredNewsId!==f.id){
-        if(hoveredNewsId!=null) try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
+        if(hoveredNewsId!=null) try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
         hoveredNewsId=f.id;
-        try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
+        try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=ensureMapTooltip(); el.style.display='block';
       el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
-      positionTooltip(map.project(f.geometry.coordinates));
+      positionTooltip(GE.coords.project(f.geometry.coordinates));
     });
-    map.on('mouseleave','news-dots',()=>{
-      if(hoveredNewsId!=null){ try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }
-      map.getCanvas().style.cursor='';
+    GE.events.onLayer('mouseleave','news-dots',()=>{
+      if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }
+      GE.render.setCursor('');
       if(mapTooltipEl) mapTooltipEl.style.display='none';
     });
     /* (#R38) MOBILE: tapping a news pin/band shows a POPUP with a "Read" button rather than jumping straight
@@ -9640,7 +9688,7 @@ window.addEventListener('DOMContentLoaded', () => {
       back.classList.add('show');
     }
     window._showMobileNewsPopup=_showMobileNewsPopup;
-    map.on('click','news-dots',e=>{
+    GE.events.onLayer('click','news-dots',e=>{
       if(!e.features.length) return;
       const p=e.features[0].properties;
       if(isMobile()){ _showMobileNewsPopup(p); return; }
@@ -9649,22 +9697,22 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     /* (#R37) The BAND (news-labels = the place-name pill) is the big, natural tap target — make it clickable
        too, not just the tiny dot ("地名ラベルを押しても反応しない"). */
-    map.on('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(isMobile()){ _showMobileNewsPopup(p); return; } if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */ });
-    map.on('mousemove','news-labels',e=>{ if(!e.features.length) return; map.getCanvas().style.cursor='pointer'; const f=e.features[0];
+    GE.events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(isMobile()){ _showMobileNewsPopup(p); return; } if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */ });
+    GE.events.onLayer('mousemove','news-labels',e=>{ if(!e.features.length) return; GE.render.setCursor('pointer'); const f=e.features[0];
       /* (#R159) hovering the BAND itself must hide the band while the popup shows — the band's icon/text-opacity
          collapses to 0 when this feature's `hover` state is set (same rule the dot uses). The band sits offset to the
          right of the dot and swallows the pointer, so the news-dots handler never fires here; set the state directly,
          reusing the shared `hoveredNewsId` so crossing dot↔band never leaves a stuck-hover. */
       if(hoveredNewsId!==f.id){
-        if(hoveredNewsId!=null) try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
+        if(hoveredNewsId!=null) try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
         hoveredNewsId=f.id;
-        try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
+        try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=ensureMapTooltip(); el.style.display='block';
       el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
-      positionTooltip(map.project(f.geometry.coordinates)); });
-    map.on('mouseleave','news-labels',()=>{ map.getCanvas().style.cursor=''; if(mapTooltipEl) mapTooltipEl.style.display='none';
-      if(hoveredNewsId!=null){ try{map.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
+      positionTooltip(GE.coords.project(f.geometry.coordinates)); });
+    GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(mapTooltipEl) mapTooltipEl.style.display='none';
+      if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
     /* (#R37) MOBILE crosshair → news popup, the same way the DESKTOP cursor reveals the pin under it
        ("モバイル版でも…十字ポインターの位置のニュースは…ポップアップが出るように"). On every settle, look for a news
        pin/band right under the centre crosshair and show the same popup there; tap it to open the article. */
@@ -9897,28 +9945,57 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!best) return null;
     let nm=best.en; try{ const s=(typeof countryStats!=='undefined')&&countryStats[best.code]; if(s){ nm=(s.name&&(s.name[currentLang]||s.name.en))||((currentLang==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||best.en; } }catch(_){}
     return { loc:best.loc, name:nm }; }catch(_){ return null; } }
+  /* (#R161) NewsGeo kind → the place TYPE the rest of the app already speaks
+     (R123 spreads duplicate pins differently for a country vs a city). */
+  const _NG_KIND={ country:'country', admin1:'region', feature:'region', flashpoint:'flashpoint', city:'city', seat:'city', org:'city' };
   function analyzeContext(title,publisher,seed,desc){
     desc=desc||'';
     const short=currentLang==='jp'?(title.length>20?title.slice(0,20)+'…':title):(title.split(' ').slice(0,5).join(' ')+'…');
-    /* ---- Subject: score every geo entry over title+description, keep the best ---- */
-    let best=null, bestScore=0;
-    for(const g of geoDB){
-      const s=scoreGeo(g,title,desc);
-      if(s<=0) continue;
-      if(s>bestScore || (s===bestScore && (!best||(TYPE_LOCAL[g.type]||0)>(TYPE_LOCAL[best.type]||0)))){ best=g; bestScore=s; }
+    let subjectLoc=null, subjectName=null, subjectType=null, subjectConf=0;
+    /* ---- (#R161) PRIMARY: the deterministic NewsGeo engine (js/newsgeo.js).
+       It does what a plain gazetteer scan cannot — resolves same-name places from
+       country/region cues, suppresses dateline ("Blinken in Washington … Gaza"),
+       swallows traps ("Paris Hilton", "New York Times"), and boosts a city whose
+       own country is also named. Falls through to the legacy scorer below when it
+       declines to answer or the file did not load, so behaviour never regresses. */
+    try{
+      const NG=window.IntMapNewsGeo;
+      if(NG&&NG.locate){
+        const r=NG.locate(title,{desc,publisher,lang:currentLang});
+        if(r&&isFinite(r.lng)&&isFinite(r.lat)){
+          subjectLoc=[r.lng,r.lat];
+          subjectName=(currentLang==='jp'?(r.name.jp||r.name.en):(r.name.en||r.name.jp))||null;
+          subjectType=_NG_KIND[r.kind]||'city'; subjectConf=r.confidence||0;
+        }
+      }
+    }catch(_){}
+    /* ---- FALLBACK: the in-page gazetteer scorer (also the only path for the
+       admin-curated geo_pins types the engine has no opinion about). ---- */
+    if(!subjectLoc){
+      let best=null, bestScore=0;
+      for(const g of geoDB){
+        const s=scoreGeo(g,title,desc);
+        if(s<=0) continue;
+        if(s>bestScore || (s===bestScore && (!best||(TYPE_LOCAL[g.type]||0)>(TYPE_LOCAL[best.type]||0)))){ best=g; bestScore=s; }
+      }
+      /* name{} only carries en/jp — for de/ru/es fall back to English instead of
+         `undefined`, which used to surface as a blank pin label. */
+      if(best){ subjectLoc=best.loc; subjectName=best.name[currentLang]||best.name.en||best.name.jp||null; subjectType=best.type; }
     }
-    let subjectLoc=best?best.loc:null, subjectName=best?best.name[currentLang]:null;
-    let subjectType=best?best.type:null;   /* (#R123) remember the place TYPE (country/city/flashpoint/region) so duplicate pins can be spread WITHIN the right area */
     /* (#R107) no gazetteer hit → try the country actually named (real location beats a random scatter). */
     if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; subjectType='country'; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
     const pm=matchPublisher(publisher);
     const pubLoc=pm?pm.loc:null, pubName=pm?((currentLang==='jp'?'発信: ':currentLang==='de'?'Quelle: ':currentLang==='ru'?'Источник: ':currentLang==='es'?'Fuente: ':'Source: ')+pm.label):null;
     /* Remember title/publisher so the toggle/AI passes can re-seed fallbacks later */
-    const res={ subjectLoc, subjectName, subjectType, pubLoc, pubName, short, _title:title, _pub:publisher };
+    const res={ subjectLoc, subjectName, subjectType, subjectConf, pubLoc, pubName, short, _title:title, _pub:publisher };
     applyPinMode(res);
     return res;
   }
+  /* (#R161) Verification seam — the whole non-AI locator is only trustworthy if it can be checked
+     end-to-end from outside, so expose the real function (same pattern as _declutterNewsBands /
+     _atlExtractPlaces). Tests call it with a headline and assert the pin it produces. */
+  window._imAnalyzeContext=analyzeContext;
   /* Single source of truth for the active pin location under the current newsPinMode.
      Subject mode shows ONLY the subject location; Publisher mode shows ONLY the publisher
      location — they never borrow from each other, so flipping the toggle always moves the pin.

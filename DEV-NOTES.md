@@ -5,6 +5,56 @@
 
 ---
 
+## R161 — **非AI依存のニュース地点解析システムの全面再設計（決定論エンジン `IntMapNewsGeo`）／MapLibre依存軽減 Phase 3（ニュースピン・オーバーレイを丸ごとエンジン経由へ）** (tag `#R161`)
+
+**背景（委託2件）**: (1) 以前から続けている **MapLibre依存の軽減**の続き、(2) **非AI依存のニュース地点解析システムを10倍正確に**（網羅性と正確性を徹底的に）。
+※ R40 以降 `USE_SERVER_NEWS=false` のため、**本番で実際に効いている地点解析はクライアントの `analyzeContext()` ただ一つ**＝ここが「非AI地点解析システム」の実体。
+
+### ① 真因＝旧実装は原理的に解けない4クラスの誤ピンを持つ「bag-of-words」だった
+旧 `analyzeContext`/`scoreGeo` は、見出しに **約2000本の正規表現**を当てて最高スコアの語を採る方式。語を数えているだけなので、
+語をいくら足しても直らない誤りが4種類ある——
+1. **同名地の取り違え**（`Tripoli`＝リビア/レバノン、`Cambridge`＝英/米、`Springfield`、`Toledo`、`Georgia`…）
+2. **トラップ**（`Paris Hilton` / `New York Times` / `Bank of America` / `Paris Agreement` / `Berlin Wall` が地名としてヒット）
+3. **デートライン**（`Blinken in Washington warns over Gaza` → Washington に打つ。「話した場所」であって事件現場ではない）
+4. **親子の共倒れ**（`Kharkiv … Ukraine` で Ukraine が票を割る）
+**辞書の増量では1つも直らない**ので、辞書ではなく**解析の構造**を作り直した。
+
+### ② 新エンジン `js/newsgeo.js`（`window.IntMapNewsGeo`）— 決定論・別ファイル・ブラウザ/サーバー共有
+`index.html` は肥大化させない方針（原則13）なので**独立ファイル**。同一ファイルを `supabase/functions/_shared/newsgeo.js` へ
+**自動生成ミラー**（`scripts/sync-newsgeo.mjs`、static-checks がドリフトを検出して落とす）＝**ブラウザとEdge Functionが同じ見出しを同じ地点に置く**ことを機械保証。
+- **最長一致のスパン消費**（正規化 n-gram ハッシュ索引／CJKは文字走査）→ トラップ項目が中の地名を丸ごと飲み込む。
+- **曖昧性解決**＝同一テキスト中の国・admin1 の手がかり＋曖昧でない地点との**地理的近接**＋著名度prior。
+- **階層吸収**＝都市を加点し親（国/州）を抑制。
+- **デートライン/会場の抑止**＝発話動詞の直後の地名（`Moscow said`）と `summit in <地名>` を減点（**他に候補がある時だけ**＝唯一の地名は捨てない）。逆に `over/about/を巡り` で導かれる地名は**話題＝主題**として加点。
+- **イベント語の親和**（`strike/earthquake/地震/攻撃`）。
+- **大文字ガード**＝固有名詞は大文字始まり（`us`≠US、`la guerra`≠LA、`male voters`≠Malé）。頭字語は**全大文字**必須（文頭 `Who…` が WHO にならない）。デモニムは de/es/ru が小文字なので免除。
+- **常用語の国名**（Turkey/Chad/Mali/Niger/Guinea/Jordan/Nice）は**裏付けが無ければ採らない**（`Turkey prices rise before Thanksgiving` は無回答が正しい）。
+- **屈折対応**＝ロシア語は語幹、独/西/英の**被ドック語**（デモニム・組織・人名）も語尾3文字まで削って照合（`russischen`→`russisch`、`Maduros`→`Maduro`）。
+- **確信度**（0〜1）と根拠 `why[]` を返し、**答えを出せなければ `null`**（無理に打たない）。
+- **データ**: 約200か国（EN/JA＋DE/RU/ES別名・デモニム・首都）／都市・紛争地・海峡・地形 約900／admin1 約150／トラップ・国際機関・武装組織・企業HQ・首脳名・政府機関メトニム 約300。`register()` で `geo_pins` の運用者ピンを実行時に合流（built-in より低ランク）。
+
+### ③ 配線（既存機構は壊さない・純粋に前段追加）
+- **クライアント**: `analyzeContext()` は **エンジンを第一手段**にし、`null` のときだけ**旧 `geoDB`/`scoreGeo` 辞書**→さらに `_countryFallback()` という**従来の梯子をそのまま残置**（エンジンが落ちても劣化しない）。`rebuildGeoIndex()` で `geo_pins` をエンジンにも `register()`。**ついでの実バグ修正**＝旧経路は `best.name[currentLang]` を読むため **de/ru/es では subject 名が `undefined`**（空ラベル）だった→ EN へフォールバック。
+- **サーバー** `refresh-news`: 非AI経路をミラー版エンジンへ。AI 第一手段・再解析しない・`analyzed_by` の意味は不変（エンジンも旧辞書も `'dict'`）。旧辞書は最終フォールバックとして残置。
+- **検証シーム**: `window._imAnalyzeContext`（`_declutterNewsBands`/`_atlExtractPlaces` と同じ既存パターン）。
+
+### ④ 計測（「10倍」を主張ではなく数字で）
+`node scripts/newsgeo-eval.mjs`。比較対象の「旧」は**strawman ではなく**、`index.html` に今も存在する実配列（`_BUILTIN_GZ`/`_EXTRA_GZ`/`_DEMONYM_GZ`/`_ORG_GZ`/`_DERU_*`/`_ES_*`）＋`countryStats` 相当の国リストから**旧 `rebuildGeoIndex`＋`scoreGeo` を実際に再構成**したもの。
+- ラベル付きコーパス **141件**（en/ja/de/ru/es・失敗クラス別）: **旧 61.0% → 新 100%**（誤り **55→0**）
+- **ホールドアウト 63件**（エンジン完成後に書き、1回だけ採点＝重みは一切合わせていない）: **旧 58.7% → 新 100%**
+- **実 Google News RSS 229本**（en/ja/biz/de/es）: 測位率 **67% → 85%**。未測位の大半は本当に場所の無い経済/科学記事＝**正しい挙動**。
+- 速度: 150記事 **14ms**（旧＝記事ごとに約2000正規表現）。
+※ホールドアウトもエンジン作者が書いたものなので**楽観寄りの推定**である点は正直に記す。実RSSの測位率が偏りのない外部指標。
+
+### ⑤ MapLibre依存軽減 Phase 3（#R152=骨格 / #R160=契約拡幅＋カメラ / #R161=**サブシステム移行**）
+- **契約拡幅**: `ready()`（描画準備）・`render.container/size/setCursor`・`events.onLayer/offLayer`（**レイヤ単位のポインタイベント**）・`layers.getPaint`（paint 読み戻し）。全て 1:1 パススルー。
+- **移行**: **ニュースピン・オーバーレイを丸ごと**——`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave **全6ハンドラ**。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
+- **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が原理的に不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` は **その1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する（今後のレイヤ系テストにも使える型）。
+
+### テスト/CI/デプロイ
+新規 `tests/r161-checks.test.mjs`（16件：**振る舞い**＝デートライン/曖昧性/階層/トラップ/大文字ガード/常用語/多言語/媒体名除去/無回答/決定論/速度、**計測**＝コーパス≥95%・ホールドアウト≥90%・旧比5倍以上の誤り減、**配線**＝ミラー同期・クライアント/サーバー配線・Phase 3 契約とニュース6ハンドラ移行）＋ `tests/r161.spec.js`（実Chromium 7件）＋ `tests/newsgeo-corpus.mjs` / `tests/newsgeo-holdout.mjs` / `scripts/newsgeo-eval.mjs` / `scripts/sync-newsgeo.mjs`。`scripts/static-checks.mjs` に**ミラー同期チェック**を追加（ドリフトで落ちることを負テストで確認）。`npm test` 緑（static＋node **194**＋Playwright **106**、CI条件 workers=2/retries=2）。**Edge Function `refresh-news` は変更あり＝本番デプロイ必須**。
+**罠/教訓**: (a) `index.html` は **CRLF** なので改行入りの exact-string assert は必ず落ちる（バックスラッシュ n が実改行にならない）→改行は正規表現の空白クラスで書く。(b) 自変更で **r160 #D2 の exact-string assert が破損**（render 名前空間を拡張したため）→現挙動へ更新（R152/R154/R156/R159/R160 と同じ罠、毎回起きる）。(c) 短い別名は事故のもと——`Газ`(Gaza の語幹)は露語の**「ガス」**に、`LA` は西語の**冠詞 `la`** に、`US` は英語の **`us`** に一致する。**語幹は4文字以上／頭字語は全大文字必須**で構造的に封じた。(d) hermetic Playwright は `isStyleLoaded()` が永久 false ＝ レイヤ検証不能→ベースマップ1ソースだけスタブすれば実検証できる。
+
 ## R160 — サイドバー開閉で地図を動かさない＋幅縮小＋設定バグ／MapLibre依存軽減の続き：**左サイドバーは元の横並び（beside-flex）機構を保ったまま「単一の静止エッジ・ピン」で地図を動かさない（機構は勝手に作り変えない）／右サイドバーは地図を押さないオーバーレイ化（地図領域の位置を動かさない）／R158/R159の毎フレームresize＋エッジアンカー『ループ』は全削除／右サイドバー既定幅（340→300）／設定変更で右サイドバーが勝手に開く不具合の修正／IntMapGeoEngine（レンダラ抽象）Phase 2** (tag `#R160`)
 
 > **重要（同日2度の訂正）**: (訂正1) 初版は左サイドバーも「オーバーレイ化」したが、**機構を無断で作り変える**もので却下（「かってに左サイドバーの機構を壊すな」）。(訂正2) 次に「トグル時の単一エッジ・ピン」で地図非移動を試みたが、**既定`globe`投影では`panBy`が地球を回転**させ却下（「地球が回る」「余計な事をしたうえで余計な修正をするな」）。**最終＝左サイドバーは機構もアニメも原状のまま、トグルはカメラに一切触らない**（`map.resize()`はResizeObserver任せ・`getCenter/getBearing`保持で無回転）。右サイドバー・幅・設定・エンジンの各修正は維持。

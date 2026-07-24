@@ -7,13 +7,17 @@
 //  `select * from current_news` (a few ms) and pins appear instantly.
 //
 //    1. Fetch Google News RSS server-side (no CORS, no proxy needed).
-//    2. GEOLOCATE each story's SUBJECT.  (#R29) AI is now the PRIMARY locator
-//       for the English + Japanese editions: every article is sent to the AI
+//    2. GEOLOCATE each story's SUBJECT.  (#R29) AI is the PRIMARY locator for
+//       the English + Japanese editions: every article is sent to the AI
 //       (server-held key — same provider/env convention as ai-proxy) which
-//       returns the specific place the event is ABOUT. The dictionary scorer
-//       (gazetteer from `geo_pins` + embedded places/orgs/demonyms) is the
-//       FALLBACK — used only when the AI fails, is not configured, or for a
-//       non-en/jp article. Already-AI-located articles are NEVER re-analysed.
+//       returns the specific place the event is ABOUT. Already-AI-located
+//       articles are NEVER re-analysed.
+//       (#R161) The NON-AI path is now the shared deterministic engine
+//       `_shared/newsgeo.js` — byte-identical to the browser's js/newsgeo.js —
+//       which resolves same-name places from context, suppresses datelines and
+//       swallows org/person traps. The old bag-of-words dictionary (gazetteer
+//       from `geo_pins` + embedded places/orgs/demonyms) remains behind it as a
+//       last-resort fallback. Both stamp `analyzed_by = 'dict'`.
 //    3. Resolve the publisher HQ from the embedded publisher gazetteer.
 //    4. Upsert into `current_news` (deduped by lang+link — same URL never
 //       stored twice), stamping `analyzed_by` = 'ai' | 'dict' | 'none'.
@@ -33,6 +37,13 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+// (#R161) The DETERMINISTIC (non-AI) locator, byte-identical to the browser's js/newsgeo.js
+// (mirrored by scripts/sync-newsgeo.mjs, CI-enforced). Importing it for its side effect sets
+// globalThis.IntMapNewsGeo. It replaces the old bag-of-words dictionary as the non-AI path, so a
+// story the server scores and a story the browser scores land on the SAME pin.
+import "../_shared/newsgeo.js";
+// deno-lint-ignore no-explicit-any
+const NEWSGEO: any = (globalThis as any).IntMapNewsGeo || null;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -538,6 +549,12 @@ Deno.serve(async (req) => {
   // (#R27/#R28) gazetteer = geo_pins + embedded places (cities/regions/metonyms) + orgs + demonyms.
   // Orgs and demonyms are docked in scoreGeo so an explicit place (geo_pins or embedded) always wins.
   const geo = compileGeo(geoRows || []).concat(compileEmbedded()).concat(compileOrgs()).concat(compileDemonyms());
+  // (#R161) the admin-curated rows also join the deterministic engine's index, at a lower rank
+  // than its built-in gazetteer — exactly what the browser does in rebuildGeoIndex().
+  if (NEWSGEO && geoRows && geoRows.length) {
+    try { NEWSGEO.register(geoRows.map((r: { terms?: string[]; lng: number; lat: number; type?: string; name_en?: string; name_jp?: string }) =>
+      ({ terms: r.terms || [], lng: r.lng, lat: r.lat, type: r.type, name_en: r.name_en, name_jp: r.name_jp }))); } catch (_) { /* non-fatal */ }
+  }
 
   const fetchedAt = new Date().toISOString();
   const CUTOFF_MS = 72 * 3600 * 1000;                 // 72-hour display/storage window (#R29)
@@ -593,7 +610,22 @@ Deno.serve(async (req) => {
           subject_name_en: ex.subject_name_en, subject_name_jp: ex.subject_name_jp, mapped: true, analyzed_by: "ai", _desc: desc };
       }
 
-      // 2) DICTIONARY (fallback) — best-scoring gazetteer entry over title + description.
+      // 2a) (#R161) DETERMINISTIC ENGINE — the primary non-AI locator. Same code, same
+      //     gazetteer and same answer as the browser, so `analyzed_by:'dict'` rows are now
+      //     ambiguity-resolved, dateline-aware and trap-aware instead of first-match-wins.
+      if (NEWSGEO) {
+        try {
+          const r = NEWSGEO.locate(title, { desc, publisher, lang: ed.lang });
+          if (r && Number.isFinite(r.lng) && Number.isFinite(r.lat)) {
+            return { ...base, subject_lng: r.lng, subject_lat: r.lat,
+              subject_name_en: r.name.en || null, subject_name_jp: r.name.jp || r.name.en || null,
+              mapped: true, analyzed_by: "dict", _desc: desc };
+          }
+        } catch (_) { /* fall through to the legacy dictionary below */ }
+      }
+
+      // 2b) LEGACY DICTIONARY (fallback) — best-scoring gazetteer entry over title +
+      //     description. Still the path for the admin-curated `geo_pins` rows.
       let best: GeoEntry | null = null, bestScore = 0;
       for (const g of geo) {
         const s = scoreGeo(g, title, desc);
