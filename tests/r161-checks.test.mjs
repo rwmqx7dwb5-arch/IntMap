@@ -14,9 +14,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { appSource } from './app-source.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+/* (#R162) index.html is no longer the whole app. Read every file the browser
+   loads, so these guards keep their meaning as code moves between files — and
+   so #16's "no news handler is left on the raw map" cannot go silently green
+   just because the handler moved into a js/ module. */
+const html = appSource(new URL('../', import.meta.url));
 const fn = readFileSync(join(ROOT, 'supabase/functions/refresh-news/index.ts'), 'utf8');
 
 await import('../js/newsgeo.js');
