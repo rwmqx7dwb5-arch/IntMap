@@ -264,6 +264,13 @@ try {
       ['window.IntMapHistStates=(function(){', 'js/history.js'],
       ['window.IntMapHistId=(function(){', 'js/history.js'],
       ['window.IntMapLayerPreviews=(function(){', 'js/layer-previews.js'],
+      ['window.IntMapCompanies=(function(){', 'js/companies.js'],
+      ['window.IntMapStatsCompare=(function(){', 'js/stats-compare.js'],
+      ['window.IntMapCompare=(function(){', 'js/compare.js'],
+      ['window.IntMapRouting=(function(){', 'js/routing.js'],
+      ['window.IntMapStreetView=(function(){', 'js/street-view.js'],
+      ['window.IntMapFlightSim=(function(){', 'js/flight-sim.js'],
+      ['window.IntMapTimeBorders=(function(){', 'js/time-borders.js'],
     ]) {
       if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
     }
@@ -279,6 +286,9 @@ try {
 // globals. A file moved into js/ loses them — and because soft dependencies are written as
 // `typeof X !== 'undefined'` and wrapped in try/catch, the loss is SILENT: the feature just
 // stops working. Parser-backed, so it cannot be fooled the way a regex scan can.
+// (#R163) It also fails on the weaker case the closure-name test cannot see: a free identifier
+// that is neither a browser global, nor a closure top-level name, nor anything the app ever
+// assigns to window — i.e. a name that resolves to nothing at runtime.
 try {
   const { checkSplitScope } = await import('./check-split-scope.mjs');
   for (const p of checkSplitScope()) err('split-scope', `${p.file}: ${p.msg}`);

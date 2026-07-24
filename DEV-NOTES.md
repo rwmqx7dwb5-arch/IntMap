@@ -5,6 +5,83 @@
 
 ---
 
+## R163 — **index.html リファクタリング第2弾＝大型フィーチャー7本の分離（4,955行 / 566KB 減）と、ホスト・インターフェース `IM_HOST` の全体規約化** (tag `#R163`)
+
+**委託**: 「Index.htmlをリファクタリングして。」——標準指示13（単一ファイルを段階的に分割し、これ以上肥大化させない）の継続。
+R162 の残件メモが指した通り「monitors のホストオブジェクト `H` を全体規約に昇格すれば大型モジュールが順に出せる」を実行した。
+
+### ① 何を出したか（挙動は変えない「移設」のみ）
+分割候補は**憶測でなくASTで選定**した：クロージャ最上位の全文をacornで列挙し、〔サイズ〕と〔クロージャ変数への自由参照の数〕を
+並べて「**大きくて依存が少ない**」順に採った。結果、7本＝566KB に対し依存は延べ10種類しかなかった。
+
+| 移設先 | 中身 | サイズ | 依存（live=getter / value=束縛し直し） |
+|---|---|---|---|
+| `js/flight-sim.js` | `IntMapFlightSim`（剛体飛行モデル・HUD・ムービングマップ） | 161KB | live: lang, mapType, proj, terrain3D / value: imToast |
+| `js/time-borders.js` | `IntMapTimeBorders`（年代クリックで当時の国境・国名） | 106KB | live: lang / value: applyTheme, countryStats, showCountryDetail |
+| `js/stats-compare.js` | `IntMapStatsCompare`（多国比較・約20指標・WB⇄IMF） | 104KB | live: lang, countryGeo / value: cName, countryStats, imToast, renderCompareFixed, renderStats, resolveCountryId, searchVal |
+| `js/routing.js` | `IntMapRouting`（OSRM/Valhalla/Transitous 実経路） | 74KB | live: lang / value: bringToFront, makeDraggable |
+| `js/compare.js` | `IntMapCompare`（第2地図で並列/スワイプ/X線比較） | 63KB | live: lang, countryGeo, proj / value: countryStats, isMobile, loadCountryData, t |
+| `js/companies.js` | `IntMapCompanies`（企業表＋時価総額・株価系列） | 31KB | **なし**（完全自己完結） |
+| `js/street-view.js` | `IntMapStreetView`（キーレスSV＋svv実カバレッジ） | 28KB | live: lang / value: bringToFront, imToast, makeDraggable |
+
+**index.html: 32,890行 / 3.77MB → 27,935行 / 3.30MB。** R162 と合わせて **36,955行 → 27,935行（−24%）**。
+ビルド工程なし・素の classic `<script src>` のまま。
+
+### ② `IM_HOST`＝ホスト・インターフェースの全体規約化（本ラウンドの本体）
+R162 は monitors 専用のホストオブジェクトを呼び出し側にインラインで書いていた。これを
+**クロージャ先頭の唯一の `const IM_HOST={…}`** に集約し、シグネチャを **`function(map, HOST)`** に統一。
+以後モジュールを1本出すコストは「`IM_HOST` に getter を1つ足す」だけになった（monitors もこれに乗せ替え）。
+
+**メンバーは27個すべて getter**。理由は2つあり、どちらも単独で十分：
+- **LIVE** — `currentLang`/`currentUser`/`currentProj`/`currentMapType`/`terrain3D`/`radiusItems`/`countryGeo` は
+  実行中に再代入される。値でコピーすると**黙って死んだ値を読み続ける**（R162 が実際に踏んだ形）。
+- **LAZY** — getter 本体は読まれるまで評価されない。だから `IM_HOST` を700行台に置いたまま、
+  約13,000行下で宣言される `currentUser` まで名指しできる。**TDZ を一切考えなくてよい**。
+  値渡しメンバーが1つでも混ざると、この性質が壊れる。
+
+**不変値はファクトリ先頭で元の名前に束縛し直す**（`const imToast=HOST.imToast, cName=HOST.cName;`）ので、
+**移設した本体は1バイトも書き換えていない**。書き換えたのは可変値の参照のみ（`currentLang`→`HOST.lang` 等）で、
+その置換は**ASTで自由参照だけを対象に行い、逆変換して元テキストと完全一致することを機械照合**してから採用した。
+
+### ③ 罠1：パラメータ名 `H` は**衝突する**（`HOST` に改名）
+R162 の `H` を踏襲して始めたが、出したばかりの7本の中だけで **`H` が5箇所すでに使われていた**——
+`W,H=r0.width,r0.height`（矩形）、`const H=j.hourly`（気象）、`const H=1/200`（積分ステップ）、
+`const H=window.IntMapHistStates`。ローカルの `H` がパラメータを隠すと、そのスコープの `H.lang` は
+**静かに `undefined`** になる＝R162 と同一の「エラーゼロで機能が消える」形。
+ASTの改名（束縛が本当にパラメータを指す参照だけ）で **`H` → `HOST`** に統一し、
+`check-split-scope.mjs` に **`HOST` を隠す宣言を落とす検査**を追加した（意図的なシャドウを注入して発火を確認済み）。
+
+### ④ 罠2：R162 のスコープ検査には**穴があった**——「別のIIFEの中の名前」への参照
+`check-split-scope.mjs` は「index.html の**クロージャ最上位**の名前を自由参照していないか」だけを見ていた。
+だが**別のIIFEの中で宣言された名前**への参照は、最上位名でもブラウザ組込みでもないので**素通り**する。
+そこで **「実行時に何にも解決しない自由識別子」を落とす検査を追加**したところ、**既存の死んだ参照が3件**出た：
+
+| 参照元 | 名前 | 実体の在処 | 分割前の挙動 |
+|---|---|---|---|
+| `js/compare.js` | `layerDates` | layers IIFE の中 | ガード常に false → 常に固定日付にフォールバック。生きた値は `window._imLayerDates` |
+| `js/time-borders.js` | `whenStyleReady` | layers IIFE の中 | **#R140 の style-ready リトライは一度も動いていない** |
+| `js/flight-sim.js` | `clearHl` | IntMapConsole IIFE の中 | `typeof clearHl==='function'` 常に false |
+
+**3件とも分割前から到達不可能**（宣言のインデントと親IIFEの範囲で確定。分割後も同じく解決しない＝**挙動は完全に同一**）。
+リファクタで挙動を変えないため**今回は修正せず**、`KNOWN_DEAD` に根拠付きで登録した。修正は別ラウンドの課題。
+
+### ⑤ 検証（R162 の最大の教訓＝静的検査は「黙って消えた機能」を原理的に見つけられない）
+`tests/r163.spec.js` を新設し、**実Chromiumで7本すべてを実際に動かす**：
+- ブート時 `window.__imModuleCheck` が「読めなかったファイル」だけでなく**「生成されなかったファクトリ」**も報告
+  （`IntMapModules` 名前空間は最初に読めたファイルが作るので、名前空間の有無では後続ファイルの欠落を検出できない）。
+- 各モジュールの**APIキー集合**を検査＝`map` 欠落時に返る2〜3キーのスタブと区別できる（真の意味での「生きている」判定）。
+- フライトシムは `start()`→`_dbg.step()`×50→スロットル入力→`stop()` で**実際に積分**し、状態ベクトルの変化まで確認。
+- **言語をJPに切り替え、bootで構築済みのモジュールが新しい言語を読むことを確認**＝getter が live である証明
+  （値コピーなら永久に英語のまま・エラーなし）。
+- **結果: R163 spec 8/8、Playwright 全体 115/115、node テスト 195/195、static-checks 緑。**
+
+**別件（本ラウンドの変更ではない・再現確認済み）**: フライトシムの `start()`→`stop()` で
+`ensureLabelPill` ↔ MapLibre の image イベントが相互再入し、`Maximum call stack size exceeded` が未捕捉で3件出る。
+**main（583d9ec）でも同じ手順で再現**するため R163 の回帰ではない。`tests/r163.spec.js` はこの1シグネチャだけを
+根拠コメント付きで除外している（修正したら除外も消すこと）。
+
+---
+
 ## R162 — **index.html のリファクタリング＝自己完結部分の css/ + js/ への分離（4,072行 / 523KB 減）と、「黙って壊れる」分割事故の恒久ガード** (tag `#R162`)
 
 **委託**: 「Index.htmlをリファクタリングして。」——標準指示13（長期方針＝単一ファイルを段階的に分割し、これ以上肥大化させない）に沿って実施。

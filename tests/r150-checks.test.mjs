@@ -27,8 +27,10 @@ test('R150 #6 monitor save root cause — client sets user_id AND the DB default
   // (#R162) IntMapMonitors moved to js/monitors.js, so the session user now arrives through the
   // explicit host interface (H.user, a live getter over currentUser) instead of the closure.
   // Same behaviour — create() still derives user_id client-side rather than omitting it.
-  assert.match(html, /const _uid=\(H\.user&&H\.user\.id\)\|\|null;/, 'create() derives the session user id');
-  assert.match(html, /get user\(\)\{ return currentUser; \}/, 'H.user is a LIVE read of currentUser (login/logout must not go stale)');
+  // (#R163) the host parameter was renamed H → HOST (the old name collided with ordinary `H` locals
+  // for Height/Hourly in the newly-split modules) and the object itself is now the shared IM_HOST.
+  assert.match(html, /const _uid=\(HOST\.user&&HOST\.user\.id\)\|\|null;/, 'create() derives the session user id');
+  assert.match(html, /get user\(\)\{ return currentUser; \}/, 'HOST.user is a LIVE read of currentUser (login/logout must not go stale)');
   assert.match(html, /const row=\{ user_id:_uid, name:/, 'insert row now carries user_id (like feedback/bug_reports/donations)');
   // belt-and-suspenders DB default
   assert.match(migs, /alter column user_id set default auth\.uid\(\)/, 'migration adds a DB default of auth.uid()');
