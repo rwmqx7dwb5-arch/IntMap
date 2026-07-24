@@ -5,6 +5,110 @@
 
 ---
 
+## R168 — **index.html リファクタリング第7弾＝「主題(SUBJECT)」で切る：6モジュール（−2,018行 / −224KB）** (tag `#R168`)
+
+**指示**: 「Index.htmlを徹底的かつ安全にリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。
+
+### ① 「もう出せる塊は無い」は文の話であって主題の話ではなかった
+#R167 は「自己完結したブロックは尽きた」と結論した。**文（statement）単位では正しい**——
+AST で残り929文を測ると1文あたりの自由参照は 10〜36 で、単独で出せる文は1つも無い。
+しかし独立している単位は文ではなく**主題**だった。今回の発見はこの一手に尽きる：
+
+> **種になる関数から出発し、「自分が宣言する名前を外部の誰も読まない文」を吸収し続ける**（私有ヘルパーの推移閉包）。
+> 集合は大きくなるのに、**外部依存の面は増えるどころか減る**。
+
+6つの種（countries / news / companies / tool-panel / auth / community）にこれを適用して
+**102文・224KB・2,018行**。しかも測ってみると **6集合は互いに素**、**全メンバーが宣言文**
+（FunctionDeclaration か VariableDeclaration）で、**副作用を持つ文はゼロ**だった。
+これが下の2つを同時に可能にした。
+
+| モジュール | 文 | サイズ | シム | 新規 getter | RW |
+|---|---|---|---|---|---|
+| `js/countries-ui.js` | 15 | 38KB | 5 | 16 | countryGeo / countryDataLoaded / countryDataPromise |
+| `js/news-ui.js` | 17 | 49KB | 6 | 21 | bookmarks / renderedCount / newsFeatures |
+| `js/companies-ui.js` | 36 | 55KB | 5 | 17 | dashFeatures / _coTimeDeb / _coTimeWired |
+| `js/tool-panel.js` | 8 | 30KB | 3 | 17 | radiusOpacity / toolMode / communityAddArmed / pendingPostLoc ＋既存3 |
+| `js/auth-ui.js` | 15 | 59KB | 3 | 14 | user(`currentUser`) / bookmarks / geoRaw |
+| `js/community.js` | 11 | 12KB | 2 | 16 | commCatFilter / commInView / commSearch / communitySort / replyingTo ＋共有2 |
+
+**index.html 9,709行/0.89MB → 7,691行/0.64MB**。R162〜R168 で 36,955行から **−79%**。
+
+### ② 新機構その1 — 巻き上げシム（index.html が「名前で呼ぶ」関数を初めて出した）
+#R162〜#R167 が出したのは `window.X=(function(){…})()` の形か純データで、index.html 側に名前が残る必要が無かった。
+今回は `renderStats` / `renderUI` / `openAuthModal` … を出す＝**index.html が呼び続ける**。そこで1行のシムを残す：
+
+```js
+function renderStats(){ return IM_COUNTRIES_UI.renderStats.apply(this,arguments); }
+```
+
+- **必ず `function` 宣言**。元の実体も巻き上げ関数宣言だったので、**ファクトリ呼び出しより前**にある呼び出し箇所
+  （`IM_HOST` の getter は約1,300行上）が1バイトも変わらない。`const` にすると TDZ、アローにすると `this` 落ち。
+- **`.apply(this,arguments)`** でレシーバも引数列もそのまま透過。
+- 副産物として**モジュール間の相互参照が自動的に安全**になった（news→`renderStats`、companies→`setupIntelLayers` などが
+  すべて index.html のシム1本に集約される）。
+
+### ③ 新機構その2 — 宣言専用ファクトリを1か所（map 生成直後）でまとめて生成
+6本は**元の文があった位置ではなく、`map` 生成直後の1ブロック**で生成する。安全である理由は3つで、全部機械検証した:
+1. **ファクトリは実行時に何もしない**。`tests/r168-checks #4` が acorn で「最上位文は宣言と `return` だけ」
+   「変数初期化子が何も呼び出さない」を検証＝**#R167 の TDZ 罠が原理的に起こらない**。
+2. **`map` は1回しか代入されない**（これも #3 が検証）ので生成を早めても掴む値は同じ。
+3. **クロージャ評価中に移設名を使う文は5つだけ**で全部このブロックより後ろ（`layerPreviews(…loadCountryData…)` /
+   `window.renderCompanies=` / `window.showCompanyDetail=` / `window._imOpenSetPassword=` / `bootSupabase();`）。
+
+### ④ 規約の拡張 — RWメンバーの所有者は「1ファイル」から「ファイル集合」へ
+#R165〜#R167 はたまたま全RWメンバーの書き手が1つだった。主題ごと出すとそうはならない：
+**半径/計測の値は Atlas コマンドとユーザーが触るツールパネルの両方**が設定し、**ブックマークはニュースフィードと
+アカウントメニューの両方**が触り、**ニュースピン配列は時計を動かしたときとAI地点付与が終わったとき**の両方で入れ替わる。
+1所有者ルールは「事実でないことにする」でしか満たせないので、`tests/r165-checks` の `owner` を **`owners` 配列**へ一般化。
+監査上の性質は不変で今も強制されている：**書いてよいファイルの列挙が明示的かつ網羅的で、列挙した全ファイルが実際に書き、
+それ以外は一切書かない**。RW 10→**29**、IM_HOST 123→**230アクセサ**（getter 201＋setter 29）。
+**重複アクセサ検出も追加**（同名 getter を2回書いても JS は通り、後勝ちで静かに壊れる——実際に最初の生成で
+`user`/`countryGeo`/`toolMode` を二重定義しかけた）。
+
+### ⑤ 書き込みの証明は「index.html に裸の閉包変数から再導出させる」
+setter が無い代入は classic script では**静かに no-op**なので「エラーが出ない」は無証明（#R167 の教訓）。
+`tests/r168.spec.js` は毎回 index.html 側のコードに再計算させる:
+- **measurePoints** … Clear が `HOST.measurePoints=[]` → **index.html の `refreshTool()`** が `tool-source` を作り直す＝線が消える。
+- **radiusKm** … スライダが `HOST.radiusKm=v` → **index.html の `window._radiusFromPoint()`** が裸の `radiusKm` を円に焼き込む
+  → 円の緯度スパンで判定（150km≒2.7°／旧既定1000kmなら≒18°）。
+- **bookmarks** … 追加は `push`（getter だけでも通る）＝**削除の `HOST.bookmarks=filter(…)` が判別子**。
+  Saved タブの中身は **index.html の `computeFilteredNews()`** が決める。
+- **renderedCount** … `HOST.renderedCount+=n`。**index.html のスクロールハンドラ**が次バッチを判断するので、
+  落ちれば同じ30件を再追加して重複する（45件が全部ユニークであることを検証）。
+- **countryGeo / countryDataLoaded** … **index.html の `#cb-countries` ハンドラ**が裸の両変数から `addCountryLayers()` を
+  再実行＝地図ソースを剥がしてもチェックし直せば戻る。
+
+### ⑥ 罠と、証明できなかったもの
+- ⚠ **モンキーパッチ**: 出す関数が他所で再代入され、かつ**集合内から呼ばれている**なら出せない（モジュール内の呼び出しが
+  パッチを迂回する）。抽出スクリプトがこれを検出して `renderUI` で止まった。調べると再代入は **index.html:9353＝
+  `return;` で始まる死んだ IIFE（#R22 で撤去された ACLED カード）の中**で、しかも集合内から `renderUI` を呼ぶ文は無い
+  ＝**二重に安全**と確認して出した（クロージャ全体で再代入される関数宣言はこの1つだけ）。
+- ⚠ **変数はエクスポートできない**（シムは関数にしか作れない）。`extendedDashDB` はこれで候補から外し、宣言を index.html に残した。
+- ⚠ **MapLibre 5 の `source._data` は `setData()` 後も古いまま**。読むのは `source.serialize().data`
+  （`_data` が「features: 0」を返して write-through テストが偽の失敗を出した）。
+- ⚠ **`setMode()`/`setTool()` はトグル**。テストで「タブを開く」つもりの2回目のクリックが**閉じて**しまい、
+  スクロールハンドラが `currentMode` で早期 return していた。テストは必ず `.active`/`.tool-on` を見てから押す。
+- **証明できないものは証明できるふりをしない**（#R167 の規則を継続）: `currentUser`/`geoRaw` は実 Supabase セッションが
+  要る経路でしか書かれず hermetic では到達不能（テストに実資格情報は置かない）。`dashFeatures` は #R139 以降そもそも
+  画面上の帰結が無い。`js/community.js` の DOM は `loadCommunity()` が Supabase を待つうえ**コミュニティフィードのモードは
+  専用ボタンを持たない**（入口はコミュニティピンのクリックだけ＝投稿ゼロならピンもゼロ）。すべて spec 冒頭に理由付きで明記し、
+  ソースレベル（r165/r168-checks）で固定した。空フィードが**分割由来でない**ことは、同じプローブを
+  **main (730b401) でも走らせて確認**（#R166 のフレーク誤帰属の教訓の再適用）。
+
+### ⑦ 巻き添えで直したもの
+- `tests/r167-checks #3`（純データ契約）… 4つの表の再束縛文がモジュール側へ移ったので、
+  「index.html が束縛している」から「**アプリのどこかちょうど1ファイルが束縛している**」へ。
+  非変更のAST検査も **index.html のクロージャ＋js/ 全ファイル**に拡張した（消費側が移ったので、むしろ検査は強くなった）。
+- `tests/r152-checks #2` … `currentMode!=='info'` の行が js/news-ui.js に移り `HOST.mode` になったので両綴りを許容。
+- `tests/r165-checks #2(c)` … 書き込み形を `=` だけでなく `+=`/`++` 等も許容（`HOST.renderedCount+=n`）。
+
+### テスト / CI
+`npm test` = static-checks + `test:checks`（**233件**・`tests/r168-checks.test.mjs` を追加登録）+ Playwright（**151件**）。
+新規: `tests/r168-checks.test.mjs`（8件＝ロード/シム契約/生成位置/宣言専用/裸識別子ゼロ/live getter/split-scope/縮小）、
+`tests/r168.spec.js`（10件＝実ブラウザ）。全件グリーン。
+
+---
+
 ## R167 — **index.html リファクタリング第6弾＝「継ぎ目」で切る：純データ27表＋残りの自己完結15本（−2,101行 / −270KB）** (tag `#R167`)
 
 **指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。

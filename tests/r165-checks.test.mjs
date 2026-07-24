@@ -51,22 +51,52 @@ function code(src) {
    satellite controller when World Explorer takes the screen; #R167 added three more for the news
    timeline (moving the clock replaces the news arrays) and the dashboard cache (a cold start assigns
    the IndexedDB copy back). Adding a row here is a deliberate act: the contract is that a module
-   writes closure state ONLY through a member listed below. */
+   writes closure state ONLY through a member listed below.
+
+   (#R168) `owner` became `owners`, a SET. Up to #R167 every RW member happened to have exactly one
+   writing module, and the test hard-coded that. The seventh split moved whole SUBJECTS out, and some
+   state genuinely has two writers — the radius/measure values are set both by an Atlas command and by
+   the tool panel the user drags; a bookmark is added from the news feed and cleared from the account
+   menu; the news pins are replaced both when the clock moves and when the AI geocoder finishes. A
+   single-owner rule could only be satisfied by pretending otherwise. What matters for auditing is
+   unchanged and still enforced: for every member there is an explicit, exhaustive list of the files
+   allowed to write it, every listed file really does write it, and nothing else writes it at all. */
 const RW = {
-  measurePoints:     { v: 'measurePoints',     owner: 'atlas-console.js', oneLinePair: true },
-  radiusColor:       { v: 'radiusColor',       owner: 'atlas-console.js', oneLinePair: true },
-  radiusKm:          { v: 'radiusKm',          owner: 'atlas-console.js', oneLinePair: true },
-  unitMode:          { v: 'unitMode',          owner: 'atlas-console.js', oneLinePair: true },
-  userTheme:         { v: 'userTheme',         owner: 'atlas-console.js', oneLinePair: true },
+  measurePoints:      { v: 'measurePoints',      owners: ['atlas-console.js', 'tool-panel.js'] },
+  radiusColor:        { v: 'radiusColor',        owners: ['atlas-console.js', 'tool-panel.js'] },
+  radiusKm:           { v: 'radiusKm',           owners: ['atlas-console.js', 'tool-panel.js'] },
+  unitMode:           { v: 'unitMode',           owners: ['atlas-console.js'] },
+  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js'] },
   /* `mode`'s getter sits with the other mutable state (it predates the setter), so only the pairing
      over the same closure variable is required — not that both halves share a line. */
-  mode:              { v: 'currentMode',       owner: 'playground.js',    oneLinePair: false },
-  satPanelDismissed: { v: 'satPanelDismissed', owner: 'playground.js',    oneLinePair: true },
+  mode:               { v: 'currentMode',        owners: ['playground.js'], oneLinePair: false },
+  satPanelDismissed:  { v: 'satPanelDismissed',  owners: ['playground.js'] },
   /* Same exception as `mode`: globalData and newsFeatures were already live getters up with the
      other mutable state before #R167 gave them setters. */
-  globalData:        { v: 'globalData',        owner: 'news-timeline.js', oneLinePair: false },
-  newsFeatures:      { v: 'newsFeatures',      owner: 'news-timeline.js', oneLinePair: false },
-  extendedDashDB:    { v: 'extendedDashDB',    owner: 'dash-extended.js', oneLinePair: true },
+  globalData:         { v: 'globalData',         owners: ['news-timeline.js'], oneLinePair: false },
+  newsFeatures:       { v: 'newsFeatures',       owners: ['news-timeline.js', 'news-ui.js'], oneLinePair: false },
+  extendedDashDB:     { v: 'extendedDashDB',     owners: ['dash-extended.js'] },
+  /* ── (#R168) the seventh split. countryGeo / toolMode / user already had live getters up with the
+     rest of the mutable state, so those three are pairs across the object rather than on one line. ── */
+  countryDataLoaded:  { v: 'countryDataLoaded',  owners: ['countries-ui.js'] },
+  countryDataPromise: { v: 'countryDataPromise', owners: ['countries-ui.js'] },
+  countryGeo:         { v: 'countryGeo',         owners: ['countries-ui.js'], oneLinePair: false },
+  bookmarks:          { v: 'bookmarks',          owners: ['auth-ui.js', 'news-ui.js'] },
+  renderedCount:      { v: 'renderedCount',      owners: ['news-ui.js'] },
+  dashFeatures:       { v: 'dashFeatures',       owners: ['companies-ui.js'] },
+  _coTimeDeb:         { v: '_coTimeDeb',         owners: ['companies-ui.js'] },
+  _coTimeWired:       { v: '_coTimeWired',       owners: ['companies-ui.js'] },
+  radiusOpacity:      { v: 'radiusOpacity',      owners: ['tool-panel.js'] },
+  toolMode:           { v: 'toolMode',           owners: ['tool-panel.js'], oneLinePair: false },
+  communityAddArmed:  { v: 'communityAddArmed',  owners: ['community.js', 'tool-panel.js'] },
+  pendingPostLoc:     { v: 'pendingPostLoc',     owners: ['community.js', 'tool-panel.js'] },
+  user:               { v: 'currentUser',        owners: ['auth-ui.js'], oneLinePair: false },
+  geoRaw:             { v: 'geoRaw',             owners: ['auth-ui.js'] },
+  commCatFilter:      { v: 'commCatFilter',      owners: ['community.js'] },
+  commInView:         { v: 'commInView',         owners: ['community.js'] },
+  commSearch:         { v: 'commSearch',         owners: ['community.js'] },
+  communitySort:      { v: 'communitySort',      owners: ['community.js'] },
+  replyingTo:         { v: 'replyingTo',         owners: ['community.js'] },
 };
 const RW_NAMES = Object.keys(RW);
 
@@ -111,10 +141,18 @@ test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, 
   for (const [name, spec] of Object.entries(RW)) {
     assert.match(body, new RegExp(`get ${name}\\(\\)\\{ return ${spec.v}; \\}`),
       `IM_HOST.${name} must have a getter over ${spec.v}`);
-    if (spec.oneLinePair) {
+    if (spec.oneLinePair !== false) {
       const pair = new RegExp(`get ${name}\\(\\)\\{ return ${spec.v}; \\},\\s*set ${name}\\(v\\)\\{ ${spec.v}=v; \\}`);
       assert.match(body, pair, `IM_HOST.${name} must be a one-line get+set pair over ${spec.v}`);
     }
+  }
+  // (b2) (#R168) and each accessor is declared exactly ONCE — a member that grows a second getter
+  //      (e.g. re-adding the pair for one that already had a live getter) still parses, and the
+  //      later definition silently wins.
+  for (const kind of ['get', 'set']) {
+    const seen = new Map();
+    for (const m of body.matchAll(new RegExp(`\\b${kind}\\s+([A-Za-z_$][\\w$]*)\\s*\\(`, 'g'))) seen.set(m[1], (seen.get(m[1]) || 0) + 1);
+    assert.deepEqual([...seen].filter(([, n]) => n > 1), [], `IM_HOST declares a duplicate ${kind}ter`);
   }
   // (c) the owning module really writes every RW member through the host — if a write disappears,
   //     the member should be demoted to a plain getter (and this list updated consciously).
@@ -122,17 +160,22 @@ test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, 
   //     /[&<>"']/ starts a phantom string and eats the following code — the #R162 lesson), and it
   //     eats exactly the `HOST.measurePoints=` write site. A false positive is impossible here:
   //     the header prose never spells a member as `HOST.<name>=`.
+  //     (#R168) accept every write form, not just `=`: js/news-ui.js advances the lazy-batch counter
+  //     with `HOST.renderedCount+=next.length`, which reads through the getter and writes through the
+  //     setter exactly as a plain assignment would.
   for (const [name, spec] of Object.entries(RW)) {
-    assert.match(rd('js/' + spec.owner), new RegExp(`HOST\\.${name}\\s*=(?!=)`),
-      `js/${spec.owner} must write HOST.${name} somewhere — otherwise demote it to a getter`);
+    for (const owner of spec.owners) {
+      assert.match(rd('js/' + owner), new RegExp(`HOST\\.${name}\\s*(?:=(?!=)|\\+\\+|--|[+\\-*/%&|^]=)`),
+        `js/${owner} must write HOST.${name} somewhere — otherwise drop it from that member's owner list`);
+    }
   }
   // (d) no module writes a host member it does not own: every HOST.* write in every js/ file must
-  //     be an RW member whose declared owner is that same file (the #R164 zero-write contract kept
-  //     explicit for everyone else).
+  //     be an RW member whose declared owner list contains that same file (the #R164 zero-write
+  //     contract kept explicit for everyone else).
   for (const f of readdirSync(new URL('js/', root)).filter((x) => x.endsWith('.js'))) {
     const src = code(rd('js/' + f));
     const writes = [...src.matchAll(/HOST\.([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+\+|--|[+\-*/%&|^]=)/g)].map((m) => m[1]);
-    const bad = writes.filter((w) => !RW[w] || RW[w].owner !== f);
+    const bad = writes.filter((w) => !RW[w] || !RW[w].owners.includes(f));
     assert.deepEqual(bad, [], `js/${f} writes host member(s) it does not own: ${bad.join(', ')}`);
   }
 });
