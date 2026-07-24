@@ -8,9 +8,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = readFileSync(new URL('index.html', root), 'utf8');
+const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 
 test('R157 #1 localPlan no longer decides a highlight TARGET before the model', () => {
   // the confident concept-bypass ("…をハイライト" → {highlight,countries:<raw concept>}) is GONE
