@@ -99,8 +99,9 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
 test('R160 (D2) IntMapGeoEngine facade exposes the broadened contract', () => {
   ok('getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds()', 'camera getters on the facade');
   ok('zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop()', 'zoom controls on the facade');
-  ok('setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k)', 'feature-state on the layers namespace');
-  ok('render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas() }', 'render namespace (resize/repaint/canvas)');
+  ok('setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),', 'feature-state on the layers namespace');
+  // (#R161) the render namespace gained container/size/setCursor — assert the R160 members only
+  ok('render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),', 'render namespace (resize/repaint/canvas)');
 });
 
 test('R160 (D3) Atlas camera-control dispatch (zoom/bearing/pitch) reads AND drives via the engine', () => {

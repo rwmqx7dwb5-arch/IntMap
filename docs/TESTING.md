@@ -14,6 +14,7 @@ loaded by the browser app.
 | Internal QA | `npm run test:qa` | Chromium | no (hermetic) |
 | Everything (the CI gate) | `npm test` | Chromium | no (hermetic) |
 | Production smoke | `PROD_URL=… npx playwright test --config playwright.prod.config.js` | Chromium | **yes** (live site) |
+| News-locator accuracy report | `node scripts/newsgeo-eval.mjs [--miss]` | no | no |
 
 ## Requirements
 
@@ -51,6 +52,29 @@ Serve the app by itself (same as CI serves it — the repo root at `/`):
 
 ```bash
 npm run serve            # http://127.0.0.1:4173/
+```
+
+### Non-AI news locator (`js/newsgeo.js`)
+
+The deterministic news-geolocation engine is measured, not eyeballed. `tests/newsgeo-corpus.mjs` is the
+labelled development set (weights were tuned against it) and `tests/newsgeo-holdout.mjs` was written after
+the engine was finished and is scored once, so it is the honest generalisation number. Both are asserted
+by `tests/r161-checks.test.mjs` #12.
+
+```bash
+node scripts/newsgeo-eval.mjs           # per-class accuracy, old locator vs new
+node scripts/newsgeo-eval.mjs --miss    # every miss, both engines
+```
+
+The "old locator" column is not a strawman: the script reconstructs the previous gazetteer + `scoreGeo`
+from the real arrays still present in `index.html`.
+
+`js/newsgeo.js` is the single source of truth; `supabase/functions/_shared/newsgeo.js` is a generated
+byte-identical copy (an Edge Function cannot import outside `supabase/functions/`). After editing the
+engine, regenerate the mirror — `npm run check:static` fails if the two drift:
+
+```bash
+node scripts/sync-newsgeo.mjs
 ```
 
 ## When a test fails
