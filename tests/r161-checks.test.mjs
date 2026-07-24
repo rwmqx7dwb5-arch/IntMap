@@ -152,25 +152,43 @@ test('#12 accuracy on the labelled corpus AND the held-out set', async () => {
   assert.ok(errNew * 5 <= errOld, `expected ≥5× fewer errors, got ${errOld} → ${errNew}`);
 });
 
-/* ── 12b. curated geo_pins rows must not break ambiguity resolution ───────── */
-/* PRODUCTION BUG (found only after deploy): the browser calls register() with the
-   admin-curated `geo_pins` table, which duplicates places the built-in gazetteer
-   already has — "Lebanon" then had TWO entries at identical coordinates. The
-   resolver counted that as an ambiguous mention, so it stopped seeding the country
-   context, and `Army shells Tripoli in northern Lebanon` fell back to the Libyan
-   capital. Every earlier test ran with an EMPTY registry, so none of them saw it.
-   These cases run with duplicates registered, the way production actually is. */
-test('#12b duplicate registered rows are collapsed, not treated as ambiguity', () => {
-  NG.register([
-    { terms: ['Lebanon', 'レバノン'], lng: 35.8, lat: 33.9, type: 'country', name_en: 'Lebanon', name_jp: 'レバノン' },
-    { terms: ['Tripoli', 'トリポリ'], lng: 13.18, lat: 32.89, type: 'city', name_en: 'Tripoli', name_jp: 'トリポリ' },
-    { terms: ['Ukraine', 'ウクライナ'], lng: 31.0, lat: 49.0, type: 'country', name_en: 'Ukraine', name_jp: 'ウクライナ' },
-    { terms: ['Israel', 'イスラエル'], lng: 34.85, lat: 31.5, type: 'country', name_en: 'Israel', name_jp: 'イスラエル' },
-  ]);
+/* ── 12b. the engine must behave with PRODUCTION's geo_pins loaded ───────── */
+/* PRODUCTION BUG, found by exercising the live site rather than just booting it:
+   `Army shells Tripoli in northern Lebanon` resolved to the LIBYAN Tripoli, and
+   `Toledo cathedral … in central Spain` to Toledo, Ohio — only in production.
+   The browser registers the admin-curated `geo_pins` table into the engine, and
+   those rows duplicate places the built-in gazetteer already has ("Lebanon" and
+   "Spain" each existed twice, at effectively the same point). resolveMentions
+   read `ids.length !== 1` as an AMBIGUOUS mention and skipped it when seeding the
+   geographic context, so the country cue vanished and the ambiguous city fell back
+   to the higher-ranked capital.
+
+   Every other test here runs with an EMPTY registry, i.e. on a gazetteer nobody
+   ships. tests/fixtures/geo-pins-prod.json is the real table (294 rows, public
+   reference data read with the publishable key), so these cases exercise the
+   engine under production's actual preconditions. */
+test('#12b behaves correctly with the real production geo_pins registered', async () => {
+  const { default: rows } = await import('./fixtures/geo-pins-prod.json', { with: { type: 'json' } });
+  assert.ok(rows.length > 250, 'fixture looks truncated: ' + rows.length);
+  const before = NG.stats().entities;
+  NG.register(rows);
+  assert.ok(NG.stats().entities > before, 'fixture did not register');
+
+  /* the two headlines that actually broke in production */
   at('Army shells Tripoli in northern Lebanon', [35.85, 34.44], 150);
+  at('Toledo cathedral restoration begins in central Spain', [-4.02, 39.86], 200);
+  /* …without breaking the readings that were already right */
   at('Tripoli clashes leave 12 dead in Libya', [13.19, 32.89], 150);
+  at('Ohio: Toledo schools closed by winter storm', [-83.55, 41.65], 200);
+  at('Cambridge scientists in England publish fusion result', [0.12, 52.21], 150);
+  at('Massachusetts: Cambridge council approves housing plan', [-71.11, 42.37], 150);
   at('Explosion rocks Kharkiv as Russia steps up strikes on Ukraine', [36.23, 49.99], 150);
-  at('Israeli strikes hit Gaza as ceasefire talks stall', [34.47, 31.5], 150);
+  at('Blinken in Washington warns over Gaza ceasefire talks', [34.47, 31.5], 150);
+  at('ロシア軍がハルキウを砲撃　ウクライナ東部', [36.23, 49.99], 150);
+  none('Turkey prices rise before Thanksgiving dinner');
+  none('Paris Hilton testifies before Congress on youth care');
+  none('Global markets rally on rate cut hopes');
+
   /* a genuinely NEW curated place still adds coverage */
   NG.register([{ terms: ['Zaporizhzhia Nuclear Plant'], lng: 34.59, lat: 47.51, type: 'city', name_en: 'ZNPP', name_jp: 'ZNPP' }]);
   at('Inspectors reach Zaporizhzhia Nuclear Plant', [34.59, 47.51], 150);
