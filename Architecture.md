@@ -661,7 +661,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R163) 27,935行 / 3.30MB（#R162時点は 32,883行/3.77MB）。
+                                (#R164) 22,930行 / 2.65MB（#R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
+                                R162〜R164 で 36,955行から **−38%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
@@ -700,6 +701,16 @@ js/
   street-view.js                    (#R163) `IntMapStreetView`（キーレス埋め込みSV＋svv実カバレッジ）。31KB
   flight-sim.js                     (#R163) `IntMapFlightSim`（剛体飛行モデル・HUD・ムービングマップ）。169KB＝最大
   time-borders.js                   (#R163) `IntMapTimeBorders`（年代クリックで当時の国境・国名に差し替え）。119KB
+  ── 以下 (#R164) の6本（第3弾・545KB）。すべて `(map, IM_HOST)` ファクトリ（§3.1）。
+     選定基準＝**AST実測で「閉包変数への書き込みゼロ」のブロック**（getterだけで出せる）─────────────
+  data-layers.js                    (#R164) レイヤーカタログ＋エンジン本体（レイヤーi18n文字列・約50の通常レイヤー・
+                                    凡例・パネル再編成・不透明度・日付付きレイヤー更新・自己修復 `IntMapLayerAudit`）。312KB＝最大
+  workspace.js                      (#R164) `IntMapWorkspace`（デスクトップの自由配置ウィンドウ・ワークスペース）。90KB
+  widgets.js                        (#R164) `IntMapWidgets2`（ウィジェットボード：FX/金属/暗号資産/地震/今日は何の日 等）。79KB
+  wb-layers.js                      (#R164) `IntMapWB`（世界銀行指標のキャッシュ付き取得＋WDIコロプレス＋Stats最新化）。39KB
+  beta-overlays.js                  (#R164) `IntMapBeta`（ウクライナ前線 DeepState・3D建物・歴史国境スナップ・火山）。30KB
+  cameras.js                        (#R164) ライブカメラレイヤー（Overpass webcams＋TfL/Caltrans等・`#dl-webcams` 行）。27KB。
+                                    **唯一 window.* を公開しないモジュール**＝prod-smoke はDOM行 `#dl-webcams` で検証
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -794,9 +805,24 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 `typeof X!=='undefined'` で守られた参照のうち3件は、**分割前から別のIIFEの中の名前を指していて到達不可能**
 だった（＝ガードは常に false／常にフォールバック）。`check-split-scope.mjs` の `KNOWN_DEAD` に
 根拠付きで登録してある。修正すると挙動が変わるため、リファクタとは別ラウンドで扱う。
-- `js/compare.js` の `layerDates` … 実体は layers IIFE 内。生きた値は `window._imLayerDates`。
-- `js/time-borders.js` の `whenStyleReady` … 実体は layers IIFE 内。**#R140 の style-ready リトライは一度も動いていない**。
+- `js/compare.js` の `layerDates` … 実体は layers IIFE 内（#R164 から js/data-layers.js）。生きた値は `window._imLayerDates`。
+- `js/time-borders.js` の `whenStyleReady` … 実体は layers IIFE 内（同上）。**#R140 の style-ready リトライは一度も動いていない**。
 - `js/flight-sim.js` の `clearHl` … 実体は IntMapConsole IIFE 内。
+- (#R164) `js/widgets.js` の `closeSheet` … 実体は `initMobileUI()` のスコープ内。ガードは分割前から常に false
+  （モバイルシートは自前のハンドラで閉じる）。
+
+### (#R164) 第3弾 — 「書き込みゼロ」ブロックの選定と、bare-IIFE ファクトリ
+#R164 は候補選定に**もう1軸**を足した：ASTで各ブロックの**閉包変数への書き込み（代入/更新）を実測**し、
+**書き込みゼロのブロックだけ**を出した（読み取りは getter で渡せるが、書き込みは setter が要る＝規約が濁る）。
+`IntMapConsole`（879KB）は `measurePoints`/`radiusColor`/`radiusKm`/`unitMode`/`userTheme` の5変数に**書き込む**ため見送り。
+- 出した6本のうち5本は `window.X=(function(){…})()` ではなく**裸のIIFE**。ファクトリは本体をそのまま包み、
+  呼び出し側は代入なしの `window.IntMapModules.x(map,IM_HOST);` になる（workspace のみ戻り値を代入）。
+- `IM_HOST` は 27→**54メンバー**（新規27・全部 getter）。新しい可変メンバー＝`unitMode`/`userTZ`/`mapTooltipEl`/
+  `globalData`/`newsFeatures`/`renderUI`（renderUI の再代入は retired-ACLED ブロック内の死コードだが、getter は無コスト）。
+- `js/cameras.js` は **window.* を一切公開しない唯一のモジュール**（自前で `#dl-webcams` 行を構築）。
+  ブートガードのファクトリ名指し＋prod-smoke の **DOM 行検査**で欠落を検出する。
+- 検査は前ラウンドを踏襲：`tests/r164-checks.test.mjs`（構造の固定＋**HOST 経由の書き込みが無いこと**）と
+  `tests/r164.spec.js`（実Chromium で6本を実動作・JP切替で `kName`/カメラ行/前線行が追従＝getter live 証明）。
 
 ---
 

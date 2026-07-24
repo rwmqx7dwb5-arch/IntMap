@@ -271,6 +271,14 @@ try {
       ['window.IntMapStreetView=(function(){', 'js/street-view.js'],
       ['window.IntMapFlightSim=(function(){', 'js/flight-sim.js'],
       ['window.IntMapTimeBorders=(function(){', 'js/time-borders.js'],
+      // (#R164) the third split. The bare-IIFE modules have no `window.X=(function(){` head, so a
+      // distinctive interior string stands in as the stale-copy needle.
+      ['lyrEU:"EU members"', 'js/data-layers.js'],
+      ['window.IntMapWorkspace=(function(){', 'js/workspace.js'],
+      ['Widget board v3', 'js/widgets.js'],
+      ['refreshStatsLatest', 'js/wb-layers.js'],
+      ['DeepStateMap', 'js/beta-overlays.js'],
+      ['otcmDone', 'js/cameras.js'],
     ]) {
       if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
     }
