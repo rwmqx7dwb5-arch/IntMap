@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · News time-machine timeline strip (#R167)  (#R167)
+ *  IntMap · News time-machine timeline strip  (#R167)
  * ----------------------------------------------------------------------------
  *  The news timeline under the map: year / date / time modes, the scrubber, and the "synced"
  *  badge that ties it to the master clock (window.IntMapTime).

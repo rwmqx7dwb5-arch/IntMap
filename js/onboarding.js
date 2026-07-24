@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Welcome card, guided demo & progress control (#R167)  (#R167)
+ *  IntMap · Welcome card, guided demo & progress control  (#R167)
  * ----------------------------------------------------------------------------
  *  First-run onboarding: the welcome card, the guided map demo reachable from Settings, and
  *  the shared honest progress control (window._imProgCtl) that js/map-tools.js also uses.

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Remaining self-contained map-surface modules (#R167)  (#R167)
+ *  IntMap · Remaining self-contained map-surface modules  (#R167)
  * ----------------------------------------------------------------------------
  *  Seven small window.* modules that live on the map surface and had nothing left to share:
  *  live location, saved annotations, the layer hover popup, layer search, runway search,

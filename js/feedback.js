@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Feedback & bug-report modals (#R167)  (#R167)
+ *  IntMap · Feedback & bug-report modals  (#R167)
  * ----------------------------------------------------------------------------
  *  Two user-facing report surfaces: the star-rated feedback form and the bug reporter that
  *  attaches a diagnostics snapshot (_imDiag). Both post to Supabase through HOST.DB.

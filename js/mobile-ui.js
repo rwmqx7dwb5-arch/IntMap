@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Mobile UI & responsive layout chrome (#R167)  (#R167)
+ *  IntMap · Mobile UI & responsive layout chrome  (#R167)
  * ----------------------------------------------------------------------------
  *  initMobileUI() — the bottom sheet, the FAB column and the mobile tab bar — plus the three
  *  responsive-layout blocks that follow it (map-search reflow, sidebar width, device class).

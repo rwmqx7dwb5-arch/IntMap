@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Dashboard cache & extended info cards (#R167)  (#R167)
+ *  IntMap · Dashboard cache & extended info cards  (#R167)
  * ----------------------------------------------------------------------------
  *  (A) window.IntMapCache — the IndexedDB key/value store several modules share, and
  *  (B) the extended dashboard cards it warms on boot.

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Terms of Service & Privacy Policy (#R167)  (#R167)
+ *  IntMap · Terms of Service & Privacy Policy  (#R167)
  * ----------------------------------------------------------------------------
  *  The legal texts (EN/JP) and the modal that shows them. Self-contained: the only closure
  *  value they read is the language, and nothing outside this block referenced LEGAL_DATE,
