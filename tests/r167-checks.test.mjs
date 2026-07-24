@@ -19,7 +19,7 @@
 // test #5 keeps it that way.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
@@ -127,36 +127,47 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   assert.ok(src.includes('window.SEA_LABELS=['),
     'SEA_LABELS keeps its own global — its consumers already read it off window');
 
-  // (a) every table is exported, and index.html rebinds every one of them.
+  // (a) every table is exported, and the app rebinds every one of them. (#R168) the rebinding
+  //     statement is no longer always in index.html: the country tables went into js/countries-ui.js
+  //     with the code that reads them, the company ones into js/companies-ui.js, RADIUS_PRESETS into
+  //     js/tool-panel.js. Which FILE rebinds a table is not what this contract is about — that it is
+  //     rebound from window.IntMapTables exactly once, and never re-declared inline, is.
+  const consumers = ['index.html', 'js/countries-ui.js', 'js/companies-ui.js', 'js/tool-panel.js'].map((p) => [p, rd(p)]);
   const retAt = src.lastIndexOf('return {');
   const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
   for (const t of TABLES) {
     assert.match(ret, new RegExp(`[{,]${t}[,}]`), `js/tables.js returns ${t}`);
-    assert.match(html, new RegExp(`const \\{[^}]*\\b${t}\\b[^}]*\\}=window\\.IntMapTables;`),
-      `index.html rebinds ${t} from window.IntMapTables`);
-    assert.ok(!new RegExp(`(?:^|\\n)\\s*const ${t}\\s*=`).test(html),
-      `${t} must not be declared inline in index.html again`);
+    const where = consumers.filter(([, s]) => new RegExp(`const \\{[^}]*\\b${t}\\b[^}]*\\}=window\\.IntMapTables;`).test(s)).map(([p]) => p);
+    assert.equal(where.length, 1, `exactly one file must rebind ${t} from window.IntMapTables (found: ${where.join(', ') || 'none'})`);
+    for (const [p, s] of consumers) {
+      assert.ok(!new RegExp(`(?:^|\\n)\\s*const ${t}\\s*=`).test(s), `${t} must not be declared inline in ${p} again`);
+    }
   }
 
   // (b) THE reason a plain value hand-off is safe here: nothing ever writes these objects. A member
-  //     write or a mutating call anywhere in index.html would mean the table is really shared state,
-  //     and it would have to move back or become a host member. Checked with a real parser.
+  //     write or a mutating call anywhere would mean the table is really shared state, and it would
+  //     have to move back or become a host member. Checked with a real parser — over index.html's
+  //     closure AND every js/ module, since #R168 moved consumers of these tables into modules.
   const marker = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
   const open = html.lastIndexOf('<script>', marker), close = html.indexOf('</script>', marker);
-  const ast = acorn.parse(html.slice(open + '<script>'.length, close), { ecmaVersion: 'latest' });
+  const sources = [['index.html', html.slice(open + '<script>'.length, close)]];
+  for (const f of readdirSync(new URL('js/', root)).filter((x) => x.endsWith('.js')).sort()) sources.push(['js/' + f, rd('js/' + f)]);
   const names = new Set(TABLES);
   const MUT = new Set(['push', 'pop', 'splice', 'sort', 'shift', 'unshift', 'reverse', 'fill', 'copyWithin']);
   const writes = [];
-  walk.full(ast, (n) => {
-    if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression'
-        && n.left.object.type === 'Identifier' && names.has(n.left.object.name)) writes.push(n.left.object.name + '.<member>=');
-    if (n.type === 'UnaryExpression' && n.operator === 'delete' && n.argument.type === 'MemberExpression'
-        && n.argument.object.type === 'Identifier' && names.has(n.argument.object.name)) writes.push('delete ' + n.argument.object.name);
-    if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression' && !n.callee.computed
-        && n.callee.object.type === 'Identifier' && names.has(n.callee.object.name) && MUT.has(n.callee.property.name))
-      writes.push(n.callee.object.name + '.' + n.callee.property.name + '()');
-  });
-  assert.deepEqual(writes, [], 'a table in js/tables.js is mutated by index.html: ' + writes.join(', '));
+  for (const [where, js] of sources) {
+    const ast = acorn.parse(js, { ecmaVersion: 'latest' });
+    walk.full(ast, (n) => {
+      if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression'
+          && n.left.object.type === 'Identifier' && names.has(n.left.object.name)) writes.push(where + ': ' + n.left.object.name + '.<member>=');
+      if (n.type === 'UnaryExpression' && n.operator === 'delete' && n.argument.type === 'MemberExpression'
+          && n.argument.object.type === 'Identifier' && names.has(n.argument.object.name)) writes.push(where + ': delete ' + n.argument.object.name);
+      if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression' && !n.callee.computed
+          && n.callee.object.type === 'Identifier' && names.has(n.callee.object.name) && MUT.has(n.callee.property.name))
+        writes.push(where + ': ' + n.callee.object.name + '.' + n.callee.property.name + '()');
+    });
+  }
+  assert.deepEqual(writes, [], 'a table in js/tables.js is mutated: ' + writes.join(', '));
 });
 
 test('R167 #4 INVARIANT: every reassigned closure value these blocks touch is a LIVE host member', () => {

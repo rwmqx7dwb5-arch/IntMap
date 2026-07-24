@@ -661,12 +661,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R167) 9,709行 / 0.89MB（#R166時点は 11,810行/1.14MB、#R165時点は 16,740行/1.73MB、
-                                #R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
-                                R162〜R167 で 36,955行から **−74%**）。
+                                (#R168) 7,691行 / 0.64MB（#R167時点は 9,709行/0.89MB、#R166時点は 11,810行/1.14MB、
+                                #R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、
+                                #R162時点は 32,883行/3.77MB。R162〜R168 で 36,955行から **−79%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
-                                残りは中核（状態・ブート・地図構築・ニュースパイプライン・認証・描画ツリー）で、
-                                互いの依存が濃いため、以後は「大きな塊」ではなく**継ぎ目**を選んで出す（§3.1 #R167）。
+                                #R167 までで「自己完結したブロック」は尽き、#R168 からは**主題（SUBJECT）**単位で切る
+                                ＝種になる関数から「外部が誰も読まない私有ヘルパー」を吸収した集合（§3.1 #R168）。
+                                残るのは真の中核（状態宣言・ブート・地図構築・ニュース取得/キャッシュ/絞り込み・
+                                レイヤー配線・IntMapOS・セッション永続化・描画ツリー）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
                                     JS は `document.styleSheets`/`cssRules` を一切触らないため挙動は完全に同一。
@@ -775,6 +777,35 @@ js/
                                     `IntMapLocate`・注記 `IntMapAnnotations`・レイヤーホバーのポップアップ・
                                     レイヤー検索・滑走路検索 `RunwaySearch`・DEMサンプラ `IntMapTerrain`・
                                     鉄道/海図ラスターオーバーレイ。42KB
+  ── 以下 (#R168) の6本（第7弾・224KB／2,018行）。**主題（SUBJECT）単位**で切った初めての回（§3.1 #R168）。
+     すべて `(map, IM_HOST)` ファクトリで、`map` 生成直後の1か所でまとめて生成し、
+     **index.html が名前で呼び続ける関数には巻き上げシムを残す**（これも初めて）─────────────
+  countries-ui.js                   (#R168) Countries タブの主題。国境/統計ローダ `loadCountryData`（Natural Earth 10m→
+                                    50m→110m）・地図の国レイヤー `addCountryLayers`・順位付き国リスト `renderStats`・
+                                    国カードと詳細本文・Wikipedia 概要キャッシュ。38KB／15文。
+                                    シム5本（renderStats/showCountryDetail/renderCountryDetailBody/
+                                    loadCountryData/addCountryLayers）。RW 3（countryGeo/countryDataLoaded/
+                                    countryDataPromise）
+  news-ui.js                        (#R168) ニュースの**表示層**。地図の news/dash レイヤー構築 `setupIntelLayers`・
+                                    重なりピンの分散 `_spreadDupNewsPins`・フィード描画 `renderUI` と遅延バッチ
+                                    `appendNewsBatch`・記事リーダー（AI翻訳込み）・AI地点付与 `aiGeocodeNews`。49KB／17文。
+                                    ニュースの**データ経路**（取得・キャッシュ・絞り込み）は index.html に残る。
+                                    シム6本。RW 3（bookmarks/renderedCount/newsFeatures）
+  companies-ui.js                   (#R168) Companies タブの主題。企業リストと詳細カード・複数社比較シート
+                                    （棒/表/CSV/時系列）・ロゴ取得と描画・旧ダッシュボード描画。55KB／36文。
+                                    シム5本。RW 3（dashFeatures/_coTimeDeb/_coTimeWired）
+  tool-panel.js                     (#R168) 計測/半径/面積ツールのパネル `updateToolPanel`・その地図フィーチャ生成
+                                    `buildToolFeatures`・地図右クリックのコンテキストメニュー `showContextMenu`。30KB／8文。
+                                    シム3本。RW 7（measurePoints/radiusColor/radiusKm は #R165 で既存＝
+                                    Atlasカーネルとの**共同所有**、radiusOpacity/toolMode/communityAddArmed/
+                                    pendingPostLoc が新規）
+  auth-ui.js                        (#R168) アカウント関連すべて。認証モーダル・アカウントメニュー・パスワード強度と
+                                    HIBP 漏洩照合・パスキー・パスワード設定フロー・お気に入り読込・Realtime購読・
+                                    `bootSupabase()`。59KB／15文。シム3本。RW 3（user＝`currentUser`/bookmarks/geoRaw）。
+                                    `currentUser` は index.html に宣言が残る唯一の真実の源で、書き込みは setter 経由
+  community.js                      (#R168) コミュニティフィードの描画とリスト配線＋コメント/投票/通報のミューテーション。
+                                    12KB／11文。シム2本。RW 7（commCatFilter/commInView/commSearch/communitySort/
+                                    replyingTo と、tool-panel と**共同所有**の communityAddArmed/pendingPostLoc）
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -880,6 +911,90 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 - (#R166) `js/map-ui.js` の `opacities` / `setLayerOpacity` … 同じく layers IIFE の中。**レイヤープリセットの
   不透明度保存は分割前から一度も動いていない**（try/catch が ReferenceError を握り潰し、空の `ops` を保存）。
   修正は挙動変更になるので別ラウンド。
+
+### (#R168) 第7弾 — **主題（SUBJECT）で切る**／巻き上げシム／RW所有者は集合へ
+
+#R167 は「自己完結したブロックは尽きた」と報告した。それは**文（statement）**については正しい。
+AST で残り 929 文を測ると 1文あたりの自由参照は 10〜36 で、単独で出せる文は無い。
+しかし**独立している単位は文ではなく主題**だった：
+
+> **種になる関数から出発し、「宣言する名前を外部の誰も読まない文」を吸収し続ける**（＝私有ヘルパーの推移閉包）。
+> 吸収するたびに集合は大きくなるが、**外部依存の面は増えずに減る**。
+
+この `privateClosure` を6つの種（countries / news / companies / tool-panel / auth / community）に適用したところ、
+**102文・224KB・2,018行**が取り出せ、外部依存は 24〜48、外部書き込みは 3〜7 に収束した。
+**6集合は互いに素**で、**全メンバーが宣言文**（FunctionDeclaration か VariableDeclaration）＝
+副作用を持つ文はゼロだった。これが以下の2つを同時に可能にした。
+
+**新機構① 巻き上げシム（hoisted shim）**。これは **index.html が名前で呼び続ける関数を初めて出した回**。
+出した関数ごとに index.html へ1行のシムを残す：
+
+```js
+function renderStats(){ return IM_COUNTRIES_UI.renderStats.apply(this,arguments); }
+```
+
+- **必ず関数宣言**。元の実体も巻き上げ関数宣言だったので、**ファクトリ呼び出しより前にある呼び出し箇所**
+  （`IM_HOST` の getter は約1,300行上にある）が一切変わらない。`const`/アロー にすると TDZ か `this` 落ちになる。
+- **`.apply(this,arguments)`**。レシーバも引数リストもそのまま透過する。
+- 効果として**モジュール間の相互参照が自動的に安全**になる：news が `renderStats` を、companies が
+  `setupIntelLayers` を呼んでも、行き先は index.html のシム1本に集約される。
+- `tests/r168-checks.test.mjs #2` が「返り値リスト＝シムの集合」「シムは index.html に**ちょうど1つ**」
+  「index.html に実体の再宣言が無い」を固定する。
+
+**新機構② 宣言専用ファクトリ（declaration-only）＋1か所での生成**。6本は
+**`map` 生成直後（index.html 2,209行付近）の1ブロックでまとめて生成**する。元の文があった位置ではない。
+これが安全な理由は3つあり、**すべて機械検証している**：
+1. **ファクトリは実行時に何もしない**。`tests/r168-checks.test.mjs #4` が各ファクトリ本体の最上位文が
+   宣言と `return` だけであること、かつ**変数初期化子が何も呼び出さないこと**を acorn で検証する
+   （＝#R167 の TDZ 罠が原理的に起こらない。閉包の値をファクトリ時点で読まない）。
+2. **`map` は1回しか代入されない**（`tests/r168-checks.test.mjs #3` が代入箇所が1つであることも検証）ので、
+   生成位置を早めても掴む値は同じ。
+3. **クロージャ評価中に移設した名前を使う文は全部で5つしかなく**、いずれも生成ブロックより後ろにある
+   （`layerPreviews(…loadCountryData…)` / `window.renderCompanies=` / `window.showCompanyDetail=` /
+   `window._imOpenSetPassword=` / `bootSupabase();`）。#3 がこの5つの位置関係を固定する。
+   さらに **js/ の他モジュールの生成呼び出しは全部このブロックより後ろ**にある。
+
+**規約の拡張：RWメンバーの所有者は「1ファイル」から「ファイル集合」へ**。#R165〜#R167 はたまたま
+全RWメンバーの書き手が1つだった。主題ごと出すとそうはならない——半径/計測の値は
+**Atlasコマンドとユーザーがドラッグするツールパネルの両方**が設定し、ブックマークは
+**ニュースフィードとアカウントメニューの両方**が触り、ニュースピン配列は**時計を動かしたときと
+AI地点付与が終わったとき**の両方で入れ替わる。1所有者ルールは「事実でないことにする」でしか満たせない。
+そこで `tests/r165-checks.test.mjs` の `owner` を **`owners` 配列**に一般化した。監査上の性質は不変で、
+今も強制されている：**メンバーごとに書いてよいファイルの列挙が明示的かつ網羅的で、
+列挙した全ファイルが実際に書いており、それ以外は一切書かない**。RWは10→**29**、IM_HOST は 123→**230アクセサ**
+（getter 201＋setter 29）。**重複アクセサ検出**も追加した（同名 getter を2回書いても JS は通り、後勝ちで静かに壊れる）。
+
+**証明（`tests/r168.spec.js`・実ブラウザ）**。setter が無い代入は classic script では**静かに no-op**なので、
+「エラーが出ない」は無証明——各アサーションは index.html 側に**裸の閉包変数から再導出**させる：
+- `measurePoints` … ツールパネルの Clear が `HOST.measurePoints=[]` → **index.html の `refreshTool()`** が
+  `tool-source` を作り直す＝地図から線が消える（消えなければ書き込みが届いていない）。
+- `radiusKm` … パネルのスライダが `HOST.radiusKm=v` → **index.html の `window._radiusFromPoint()`** が
+  裸の `radiusKm` を新しい円に焼き込む → 円の緯度スパンで判定（150km≒2.7° / 旧既定1000kmなら≒18°）。
+- `bookmarks` … 追加は `push`（getter だけでも通る）→**削除の `HOST.bookmarks=filter(…)` が判別子**。
+  Saved タブの中身は **index.html の `computeFilteredNews()`** が裸の配列から決める。
+- `renderedCount` … `HOST.renderedCount+=n`。**index.html のスクロールハンドラ**が
+  `renderedCount<newsFiltered.length` で次バッチを判断する＝書き込みが落ちれば同じ30件を再追加して重複する
+  （45件が全部ユニークであることを検証）。
+- `countryGeo`/`countryDataLoaded` … **index.html の `#cb-countries` ハンドラ**が裸の両変数から
+  `addCountryLayers()` を再実行する＝地図ソースを剥がしてもチェックし直せば戻る。
+- ⚠ **MapLibre 5 では `source._data` が `setData()` 後に古いまま**。読むのは `source.serialize().data`。
+
+**証明できないものは証明できるふりをしない**（#R167 の規則を継続）。`currentUser`/`geoRaw` は実 Supabase
+セッションが要る経路でしか書かれず、hermetic では到達不能（テストに実資格情報は置かない）。`dashFeatures` は
+#R139 以降そもそも画面上の帰結が無い。`js/community.js` の DOM は `loadCommunity()` が Supabase を待つうえ
+**コミュニティフィードのモードは専用ボタンを持たない**（コミュニティピンのクリックだけが入口＝投稿ゼロならピンもゼロ）。
+いずれも `tests/r168.spec.js` 冒頭に理由付きで明記し、ソースレベル（r165/r168-checks）で固定した。
+なお community フィードが空なのは**分割由来ではない**ことを、同じプローブを **main (730b401) でも実行して確認**した
+（#R166 のフレーク誤帰属の教訓の再適用）。
+
+**抽出は #R167 と同じく決定論スクリプト**（acorn で範囲確定＝直前コメント塊と行頭インデントを含める →
+自由参照だけ `HOST.x` に書換 → **逆変換して元テキストとバイト一致照合**）。今回追加した安全弁：
+- **モンキーパッチ検出**。出す関数が他所で再代入されていて、かつ**集合内から呼ばれている**なら出せない
+  （モジュール内の呼び出しがパッチを迂回する）。実際に `renderUI` が唯一該当し——調べると
+  再代入は index.html:9353、**`return;` で始まる死んだ IIFE（#R22 で撤去された ACLED カード）の中**で、
+  しかも集合内から `renderUI` を呼ぶ文は無い＝二重に安全と確認して出した。
+- **変数のエクスポートは禁止**（シムは関数にしか作れない）。`extendedDashDB` はこれで候補から外し、
+  宣言を index.html に残して `HOST.extendedDashDB` 経由に留めた。
 
 ### (#R167) 第6弾 — 「大きな塊」ではなく**継ぎ目**を選ぶ／純データ／TDZ
 #R166 までで自己完結した塊は出し尽くし、index.html に残ったのは**中核**（状態・ブート・地図構築・
