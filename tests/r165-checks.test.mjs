@@ -46,8 +46,22 @@ function code(src) {
   return out;
 }
 
-/* The five READ-WRITE host members (#R165) — closure variable name === member name for all five. */
-const RW = ['measurePoints', 'radiusColor', 'radiusKm', 'unitMode', 'userTheme'];
+/* The READ-WRITE host members and who is allowed to write each one. #R165 introduced five (the Atlas
+   kernel); #R166 added two for the Playground hub, which clears the active tab and hides the
+   satellite controller when World Explorer takes the screen. Adding a row here is a deliberate act:
+   the contract is that a module writes closure state ONLY through a member listed below. */
+const RW = {
+  measurePoints:     { v: 'measurePoints',     owner: 'atlas-console.js', oneLinePair: true },
+  radiusColor:       { v: 'radiusColor',       owner: 'atlas-console.js', oneLinePair: true },
+  radiusKm:          { v: 'radiusKm',          owner: 'atlas-console.js', oneLinePair: true },
+  unitMode:          { v: 'unitMode',          owner: 'atlas-console.js', oneLinePair: true },
+  userTheme:         { v: 'userTheme',         owner: 'atlas-console.js', oneLinePair: true },
+  /* `mode`'s getter sits with the other mutable state (it predates the setter), so only the pairing
+     over the same closure variable is required — not that both halves share a line. */
+  mode:              { v: 'currentMode',       owner: 'playground.js',    oneLinePair: false },
+  satPanelDismissed: { v: 'satPanelDismissed', owner: 'playground.js',    oneLinePair: true },
+};
+const RW_NAMES = Object.keys(RW);
 
 /* Closure values the Atlas kernel reads that are REASSIGNED at runtime → live getters, and never a
    bare identifier inside the module. (lang/user/mode/countryGeo/globalData/radiusItems predate this
@@ -72,44 +86,47 @@ test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its or
     'index.html instantiates the kernel with the shared host at the original position');
 });
 
-test('R165 #2 THE RW CONTRACT: exactly five get+set pairs, written through by the kernel alone', () => {
+test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, each with one writer', () => {
   const start = html.indexOf('const IM_HOST={');
   assert.ok(start > 0, 'index.html declares the shared IM_HOST');
   const body = html.slice(start, html.indexOf('\n  };', start));
 
   // (a) the setters that exist are EXACTLY the declared RW list — no more, no fewer.
   const setters = [...body.matchAll(/set\s+([A-Za-z_$][\w$]*)\(v\)\{\s*([A-Za-z_$][\w$]*)=v;\s*\}/g)];
-  assert.deepEqual(setters.map((m) => m[1]).sort(), [...RW].sort(),
-    'the IM_HOST setter list must be exactly the five declared RW members');
+  assert.deepEqual(setters.map((m) => m[1]).sort(), [...RW_NAMES].sort(),
+    'the IM_HOST setter list must be exactly the declared RW members');
   for (const m of setters) {
-    assert.equal(m[1], m[2], `setter ${m[1]} must assign the same-named closure variable`);
+    assert.equal(m[2], RW[m[1]].v, `setter ${m[1]} must assign the declared closure variable`);
   }
-  // (b) each RW member is a get+set PAIR over the same variable, on one line (greppability).
-  for (const name of RW) {
-    const pair = new RegExp(`get ${name}\\(\\)\\{ return ${name}; \\},\\s*set ${name}\\(v\\)\\{ ${name}=v; \\}`);
-    assert.match(body, pair, `IM_HOST.${name} must be a one-line get+set pair over ${name}`);
+  // (b) every RW member is a get+set PAIR over the SAME closure variable — a setter without its
+  //     getter would let a module write a value it cannot read back. Members introduced together
+  //     with their setter also keep both halves on one line (greppability).
+  for (const [name, spec] of Object.entries(RW)) {
+    assert.match(body, new RegExp(`get ${name}\\(\\)\\{ return ${spec.v}; \\}`),
+      `IM_HOST.${name} must have a getter over ${spec.v}`);
+    if (spec.oneLinePair) {
+      const pair = new RegExp(`get ${name}\\(\\)\\{ return ${spec.v}; \\},\\s*set ${name}\\(v\\)\\{ ${spec.v}=v; \\}`);
+      assert.match(body, pair, `IM_HOST.${name} must be a one-line get+set pair over ${spec.v}`);
+    }
   }
-  // (c) the kernel really writes every RW member through the host — if a write disappears, the
-  //     member should be demoted to a plain getter (and this list updated consciously).
+  // (c) the owning module really writes every RW member through the host — if a write disappears,
+  //     the member should be demoted to a plain getter (and this list updated consciously).
   //     Probed on the RAW text: the string-blanking helper is regex-literal-blind (a quote inside
   //     /[&<>"']/ starts a phantom string and eats the following code — the #R162 lesson), and it
   //     eats exactly the `HOST.measurePoints=` write site. A false positive is impossible here:
   //     the header prose never spells a member as `HOST.<name>=`.
-  for (const name of RW) {
-    assert.match(mod, new RegExp(`HOST\\.${name}\\s*=(?!=)`),
-      `js/atlas-console.js must write HOST.${name} somewhere — otherwise demote it to a getter`);
+  for (const [name, spec] of Object.entries(RW)) {
+    assert.match(rd('js/' + spec.owner), new RegExp(`HOST\\.${name}\\s*=(?!=)`),
+      `js/${spec.owner} must write HOST.${name} somewhere — otherwise demote it to a getter`);
   }
-  // (d) nothing else writes through HOST: every HOST.* write in every js/ module targets an RW
-  //     member, and only the kernel writes at all (the #R164 zero-write contract, kept explicit).
+  // (d) no module writes a host member it does not own: every HOST.* write in every js/ file must
+  //     be an RW member whose declared owner is that same file (the #R164 zero-write contract kept
+  //     explicit for everyone else).
   for (const f of readdirSync(new URL('js/', root)).filter((x) => x.endsWith('.js'))) {
     const src = code(rd('js/' + f));
     const writes = [...src.matchAll(/HOST\.([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+\+|--|[+\-*/%&|^]=)/g)].map((m) => m[1]);
-    if (f === 'atlas-console.js') {
-      const bad = writes.filter((w) => !RW.includes(w));
-      assert.deepEqual(bad, [], `js/${f} writes non-RW host members: ${bad.join(', ')}`);
-    } else {
-      assert.deepEqual(writes, [], `js/${f} must not write through HOST at all — only the Atlas kernel has RW members`);
-    }
+    const bad = writes.filter((w) => !RW[w] || RW[w].owner !== f);
+    assert.deepEqual(bad, [], `js/${f} writes host member(s) it does not own: ${bad.join(', ')}`);
   }
 });
 

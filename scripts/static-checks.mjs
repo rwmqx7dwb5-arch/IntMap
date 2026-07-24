@@ -282,6 +282,51 @@ try {
       // (#R165) the Atlas kernel. The call line is `window.IntMapConsole=window.IntMapModules.
       // atlasConsole(map,IM_HOST);` so the old IIFE head below can only mean a stale copy.
       ['window.IntMapConsole=(function(){', 'js/atlas-console.js'],
+      // (#R166) the fifth split — 41 blocks. Where the block opened with `window.X=(function(){`
+      // that head IS the needle; the bare IIFEs get an interior string that a script verified
+      // occurs EXACTLY ONCE across index.html + every js/ file, so a second hit can only be a
+      // stale in-page copy.
+      ['window.IntMapLayers=(function(){', 'js/map-ui.js'],
+      ['window.IntMapLayerSidebar=(function(){', 'js/map-ui.js'],
+      ['window.IntMapTicker=(function(){', 'js/map-ui.js'],
+      ['window.IntMapShare=(function(){', 'js/map-ui.js'],
+      ["'Save current layers as preset'", 'js/map-ui.js'],
+      ["'No boundary available for this place'", 'js/map-ui.js'],
+      ["'Failed to add layer'", 'js/map-ui.js'],
+      ["addEventListener('hashchange'", 'js/map-ui.js'],
+      ["'pg-overlay'", 'js/playground.js'],
+      ['window.ProjView=(function(){', 'js/map-tools.js'],
+      ['window.DrawTool=(function(){', 'js/map-tools.js'],
+      ['window.IntMapIsolate=(function(){', 'js/map-tools.js'],
+      ['window.IntMapRoute=(function(){', 'js/map-tools.js'],
+      ['window.IntMapLOS=(function(){', 'js/map-tools.js'],
+      ['window.IntMapOutline=(function(){', 'js/map-tools.js'],
+      ['window.IntMapMoveShape=(function(){', 'js/map-tools.js'],
+      ['window.IntMapIsochrone=(function(){', 'js/map-tools.js'],
+      ['window.IntMapArc3D=(function(){', 'js/map-tools.js'],
+      ['window.IntMapObjects=(function(){', 'js/map-tools.js'],
+      ['window.Wind=(function(){', 'js/weather.js'],
+      ['window.IntMapWeatherEC=(function(){', 'js/weather.js'],
+      ['window.IntMapWeather=(function(){', 'js/weather.js'],
+      ["'Three Gorges'", 'js/layer-packs.js'],
+      ["'PlateName'", 'js/layer-packs.js'],
+      ["'Standard 1435 mm'", 'js/layer-packs.js'],
+      ["'IND NPL MUS'", 'js/layer-packs.js'],
+      ["'Time zones'", 'js/layer-packs.js'],
+      ["'gxtruecolor'", 'js/layer-packs.js'],
+      ['window.IntMapTimeSeries=(function(){', 'js/analysis-panels.js'],
+      ['window.IntMapAIResearch=(function(){', 'js/analysis-panels.js'],
+      ['window.IntMapEdu=(function(){', 'js/analysis-panels.js'],
+      ["'Densidad de pob.'", 'js/analysis-panels.js'],
+      ["'Columbus reaches the Americas'", 'js/analysis-panels.js'],
+      ['window.IntMapRadiation=(function(){', 'js/sims.js'],
+      ['window.IntMapPopArea=(function(){', 'js/sims.js'],
+      ['window.IntMapSlope=(function(){', 'js/sims.js'],
+      ['window.IntMapRF=(function(){', 'js/sims.js'],
+      ['window.IntMapSun=(function(){', 'js/sims.js'],
+      ['window.IntMapTransitReach=(function(){', 'js/sims.js'],
+      ['window.IntMapDisaster=(function(){', 'js/sims.js'],
+      ['window.IntMapEarthReplay=(function(){', 'js/sims.js'],
     ]) {
       if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
     }

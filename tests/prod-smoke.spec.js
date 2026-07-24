@@ -19,7 +19,17 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   'IntMapLayerPreviews', 'IntMapMaddison', 'IntMapHistStates', 'IntMapHistId',
   'IntMapNewsGeo', 'IntMapI18N', 'IntMapGazetteer', 'IntMapRefData',
   // (#R164) the third split: data-layers / workspace / widgets / wb-layers / beta-overlays.
-  'IntMapLayerAudit', 'IntMapWorkspace', 'IntMapWidgets2', 'IntMapWB', 'IntMapBeta'];
+  'IntMapLayerAudit', 'IntMapWorkspace', 'IntMapWidgets2', 'IntMapWB', 'IntMapBeta',
+  // (#R166) the fifth split — at least one global per new file, so a missing file is caught even
+  // though seven files now carry 41 factories between them.
+  'IntMapLayerSidebar',   // js/map-ui.js
+  'DrawTool',             // js/map-tools.js
+  'Wind',                 // js/weather.js
+  'IntMapBeta2',          // js/layer-packs.js
+  'IntMapAIResearch',     // js/analysis-panels.js
+  'IntMapRadiation'];     // js/sims.js
+// js/playground.js publishes no window.* global of its own — its hub is reached through
+// window._openPlayground, which the test below asserts as a function.
 
 test.describe.configure({ mode: 'serial' });
 
@@ -76,6 +86,13 @@ test('(#R164) prod cameras module built its layer row (it publishes no global)',
   // js/cameras.js is the one #R164 module with no window.* surface: it wires itself into the layer
   // panel as the #dl-webcams row (~900 ms after boot; beforeAll already waited past that).
   await expect(page.locator('#dl-webcams')).toBeAttached();
+});
+
+test('(#R166) prod playground module loaded (it publishes no window global either)', async () => {
+  // js/playground.js only installs window._openPlayground / _pgWorldExplorer from inside its
+  // factory, so a global-name check cannot see it. Assert the entry point is a real function.
+  const ok = await page.evaluate(() => typeof window._openPlayground === 'function' && typeof window._pgWorldExplorer === 'function');
+  expect(ok, 'js/playground.js deployed and its factory ran').toBe(true);
 });
 
 test('prod layer UI initialised and screen not blank', async () => {
