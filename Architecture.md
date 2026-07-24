@@ -661,8 +661,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R164) 22,930行 / 2.65MB（#R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
-                                R162〜R164 で 36,955行から **−38%**）。
+                                (#R165) 16,740行 / 1.73MB（#R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、
+                                #R162時点は 32,883行/3.77MB。R162〜R165 で 36,955行から **−55%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
@@ -711,6 +711,10 @@ js/
   beta-overlays.js                  (#R164) `IntMapBeta`（ウクライナ前線 DeepState・3D建物・歴史国境スナップ・火山）。30KB
   cameras.js                        (#R164) ライブカメラレイヤー（Overpass webcams＋TfL/Caltrans等・`#dl-webcams` 行）。27KB。
                                     **唯一 window.* を公開しないモジュール**＝prod-smoke はDOM行 `#dl-webcams` で検証
+  atlas-console.js                  (#R165) **Atlasカーネル `window.IntMapConsole`**（NLコンソール＝意図ディスパッチ・
+                                    約90アクションカタログ・AIリサーチ/ビジョン・ハイライト/計測/半径実行・返信描画）。941KB＝最大。
+                                    ファクトリ引数＝(map, IM_HOST)。**初の READ-WRITE ホストメンバー**利用モジュール
+                                    （measurePoints/radiusColor/radiusKm/unitMode/userTheme を setter 経由で書く。§3.1 #R165）
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -810,6 +814,30 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 - `js/flight-sim.js` の `clearHl` … 実体は IntMapConsole IIFE 内。
 - (#R164) `js/widgets.js` の `closeSheet` … 実体は `initMobileUI()` のスコープ内。ガードは分割前から常に false
   （モバイルシートは自前のハンドラで閉じる）。
+
+### (#R165) 第4弾 — Atlasカーネルの分離と、READ-WRITE ホストメンバー規約
+#R164 が見送った最大の残件 `IntMapConsole`（879KB・6,231行＝Atlasカーネル）を出した。障害だった
+「**5つの閉包変数への書き込み**」（Atlasアクションが theme/units/radius/measure 状態を設定する）は、
+**IM_HOST に READ-WRITE メンバー**（getter-only 規約の唯一の例外）を導入して解決：
+
+- RWメンバーは `get x(){ return x; }, set x(v){ x=v; }` の**1行ペア**。対象は
+  **measurePoints / radiusColor / radiusKm / unitMode / userTheme の5つだけ**。
+- **変数の実体は index.html に残る＝単一の真実の源**。モジュールの `HOST.x=v` は setter を通って
+  閉包変数に代入されるため、index.html 側コード（applyTheme/updateToolPanel/distHTML …）と
+  モジュール側が**常に同じ live 値**を読む。値のコピーは存在しない。
+- 規約の守り（すべて CI）: `tests/r165-checks.test.mjs` が **RWリストを5メンバーに固定**
+  （setter の集合がこの5つと完全一致・各 setter は同名 getter とペア・カーネルが本当に全5つを
+  `HOST.x=` で書いている・**他のモジュールは HOST への書き込みゼロのまま**）。
+  `tests/r163-checks.test.mjs` #2 は「全メンバー plain getter」から「plain getter または RWペアの
+  setter 半分（同一変数への get とペア必須）」に改定。
+- 実ブラウザ証明は `tests/r165.spec.js`: **write-through**（theme アクション→`HOST.userTheme='dark'`→
+  index.html の applyTheme が `<html data-theme>` を反転／units+measure→ツールパネルがマイル表示で
+  2点の距離を描画）と **live getter**（JP切替後の返信が「テーマ」）。
+  ⚠ `dispatch(a)` は **`a.type`** でアクションを引く（`a.action` は静かに `R(true,'')` の no-op）——
+  spec は必ず返信 html も検証する。
+- 新規 getter: live 3（newsDate/toolMode/userPins）＋安定 27（askAI 系・ツール系ほか）。IM_HOST は
+  54→**88 アクセサ**。残置検出の針は `window.IntMapConsole=(function(){`（呼び出し行は
+  `window.IntMapModules.atlasConsole(map,IM_HOST)` なので旧 IIFE 頭＝残置コピーと確定できる）。
 
 ### (#R164) 第3弾 — 「書き込みゼロ」ブロックの選定と、bare-IIFE ファクトリ
 #R164 は候補選定に**もう1軸**を足した：ASTで各ブロックの**閉包変数への書き込み（代入/更新）を実測**し、

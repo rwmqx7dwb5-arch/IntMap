@@ -77,28 +77,41 @@ test('R163 #1 each module was moved out, loaded, and instantiated at its origina
   }
 });
 
-test('R163 #2 IM_HOST exists and EVERY member is a getter — never a captured value', () => {
+test('R163 #2 IM_HOST exists and EVERY member is an accessor — never a captured value', () => {
   const start = html.indexOf('const IM_HOST={');
   assert.ok(start > 0, 'index.html declares the shared IM_HOST');
   const body = html.slice(start + 'const IM_HOST={'.length, html.indexOf('\n  };', start));
 
-  // Every member must be `get name(){ return x; }`. A shorthand (`imToast,`) or an assignment
-  // (`imToast: imToast`) would capture the value at object-literal time — which is both a stale-read
-  // hazard and a temporal-dead-zone hazard, since IM_HOST sits above most of the declarations.
+  // Every member must be an accessor over the closure variable, never a captured value: a shorthand
+  // (`imToast,`) or an assignment (`imToast: imToast`) would freeze the value at object-literal time
+  // — which is both a stale-read hazard and a temporal-dead-zone hazard, since IM_HOST sits above
+  // most of the declarations. Two accessor forms exist:
+  //   · `get name(){ return x; }`   — the rule (#R163);
+  //   · `set name(v){ x=v; }`      — (#R165) allowed ONLY as the write half of a READ-WRITE pair
+  //     (the Atlas kernel writes five closure variables through the host). Every setter must have a
+  //     matching getter over the SAME variable; tests/r165-checks pins the RW list itself.
   const members = body.split('\n').map((l) => l.trim())
     .filter((l) => l && !l.startsWith('/*') && !l.startsWith('*'));
   let checked = 0;
+  const getters = new Map(), setters = new Map(); // member name -> closure variable
   for (const line of members) {
-    for (const decl of line.split(/,(?=\s*(?:get\b|$))/)) {
+    for (const decl of line.split(/,(?=\s*(?:get\b|set\b|$))/)) {
       const d = decl.trim().replace(/,$/, '');
       if (!d) continue;
       checked++;
-      assert.match(d, /^get\s+[A-Za-z_$][\w$]*\(\)\{\s*return\s+[A-Za-z_$][\w$]*;\s*\}$/,
-        `every IM_HOST member must be a plain getter; found: ${d}`);
+      const g = d.match(/^get\s+([A-Za-z_$][\w$]*)\(\)\{\s*return\s+([A-Za-z_$][\w$]*);\s*\}$/);
+      const s = d.match(/^set\s+([A-Za-z_$][\w$]*)\(v\)\{\s*([A-Za-z_$][\w$]*)=v;\s*\}$/);
+      assert.ok(g || s, `every IM_HOST member must be a plain getter or the setter half of a RW pair; found: ${d}`);
+      if (g) getters.set(g[1], g[2]);
+      if (s) setters.set(s[1], s[2]);
     }
   }
+  for (const [name, variable] of setters) {
+    assert.equal(getters.get(name), variable,
+      `IM_HOST setter "${name}" must pair with a getter over the same closure variable "${variable}"`);
+  }
   // Guard the guard: if a refactor changed the layout so the parse above matched almost nothing,
-  // the loop would pass trivially. IM_HOST carries 27 members today.
+  // the loop would pass trivially. IM_HOST carries 88 accessors today (27 at #R163).
   assert.ok(checked >= 25, `expected to validate the whole host interface; only parsed ${checked} member(s)`);
 });
 
