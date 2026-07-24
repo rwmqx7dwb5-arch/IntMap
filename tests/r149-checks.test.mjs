@@ -10,9 +10,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = readFileSync(new URL('index.html', root), 'utf8');
+const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const aiproxy = readFileSync(new URL('supabase/functions/ai-proxy/index.ts', root), 'utf8');
 
 test('R149 #7 monitor toast root cause: _toast calls the closure fns (not window.imToast) with an alert fallback', () => {

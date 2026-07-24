@@ -5,6 +5,71 @@
 
 ---
 
+## R162 — **index.html のリファクタリング＝自己完結部分の css/ + js/ への分離（4,072行 / 523KB 減）と、「黙って壊れる」分割事故の恒久ガード** (tag `#R162`)
+
+**委託**: 「Index.htmlをリファクタリングして。」——標準指示13（長期方針＝単一ファイルを段階的に分割し、これ以上肥大化させない）に沿って実施。
+
+### ① 何を出したか（挙動は一切変えない「移設」のみ）
+| 移設先 | 中身 | 元 |
+|---|---|---|
+| `css/intmap.css` | スタイルシート全体（229.6KB / 2,077行） | `<style>` ブロック |
+| `js/i18n.js` | EN/JP/DE/RU/ES のUI文字列表（57.0KB） | `const i18n={…}` |
+| `js/gazetteer.js` | 組込み地名表 `_BUILTIN_GZ`＋`_EXTRA_GZ`（29.8KB） | 同名 const |
+| `js/reference-data.js` | `DEFAULT_DASH_CARDS`＋`_dc`／`DATA_SOURCES`（54.4KB） | 同名 const |
+| `js/layer-previews.js` | `IntMapLayerPreviews`（69KB） | 同名 IIFE |
+| `js/history.js` | `IntMapMaddison`／`IntMapHistStates`／`IntMapHistId`（35KB） | 同名 IIFE |
+| `js/monitors.js` | `IntMapMonitors`（49KB） | 同名 IIFE |
+
+**index.html: 36,955行 / 4.28MB → 32,883行 / 3.77MB。** 移設した9ブロックは**1バイトも書き換えず**（スクリプトで切り出し、
+移設後に元テキストとの一致を機械照合済み）。ビルド工程なし・`<script src>` は素の classic script のまま。
+
+### ② 真因メモ：この分割が難しいのは「クロージャ」だから
+index.html のアプリコードは `window.addEventListener('DOMContentLoaded', () => { …33,000行… })` の**中**にある。
+つまり最上位の `let`/`const`/`function` は**グローバルではない**。出した瞬間に消える。
+そこで**依存はファクトリ引数として明示的に渡す**方式にした（`IntMapModules.monitors(map, host)`）。
+
+### ③ **踏んだ罠（最重要）＝ 例外が出ないまま機能だけが消える**
+`js/monitors.js` は `radiusItems` を `typeof … !== 'undefined'` で参照していた。クロージャから出ると
+そのガードが**静かに false** になり、`activeArea()` が「範囲が未選択」に落ちて、
+**エラーゼロのまま「半径を描いて監視」機能だけが消滅**した。`try{}catch{}` も同種の事故を隠す。
+→ Playwright の `tests/monitors.spec.js` が検出（静的検査は全て緑だった）。
+
+さらに**自作の正規表現スコープ解析が「依存なし」と嘘の合格を出していた**——正規表現リテラル `/['"]/` を
+文字列の開始と誤読し、以降のファイル全体を空白化していたため。**正規表現でJSのスコープを解析してはいけない。**
+
+**恒久対策**: `scripts/check-split-scope.mjs`（**acorn による実パーサ**でスコープを解決し、js/*.js の自由変数が
+index.html のクロージャ変数でないことを検証）を新設し、static-checks 経由で **CI 必須**にした。
+これで「黙って壊れる」クラス全体が今後発生しない。
+
+### ④ 可変／不変の区別（分割の肝・Architecture.md §3.1 に手順化）
+- **再代入されない**（`map`＝boot時1回だけ・`countryStats`＝常に in-place・`const`・関数宣言）→ 引数で渡してよい。
+- **再代入される**（`currentLang` 言語切替・`currentUser` ログイン・`currentMode` タブ切替・
+  `radiusItems` は `clearAllRadius()` が配列ごと差し替え）→ **必ず getter**。
+  引数コピーだとクロージャと違って値が固まり、**黙って古い値を読み続ける**。
+  実機確認：JPに切替→ monitors 自身のラベルが `変化を報告`／`高` に変わり、EN に戻すと戻る＝ live 読みである証拠。
+
+### ⑤ 副次的に直したもの（いずれも分割で露見）
+- `scripts/sync-newsgeo.mjs`: Windows チェックアウト（`core.autocrlf=true`）だと banner の `\n` と作業ツリーの CRLF が
+  食い違い、**同期しているミラーを「ドリフト」と誤検出**して `npm test` がローカルで必ず落ちていた（Linux CI では不可視）。
+  改行を正規化して比較するよう修正。
+- `tests/app-source.mjs` を新設し、R147〜R160 の文字列一致テスト13本が **index.html + css/ + js/ を連結した
+  「アプリ全体のソース」**を読むようにした。さもないと「行が別ファイルに動いただけ」で `gone()` 判定が誤って緑になる。
+- `scripts/newsgeo-eval.mjs` は `_BUILTIN_GZ` を index.html から抜いていたので、gazetteer.js も連結して読むよう修正。
+
+### ⑥ 残件（次ラウンド以降の分割候補）
+未分割のモジュールは合計約1.8MB。ボトルネックは**共有カーネル2つに集中**している——
+`currentLang`（24モジュール）と `map`（24モジュール）、次いで `countryStats`(8)・`makeDraggable`(7)・`t`(5)。
+最大の `IntMapConsole`（938KB / 6,231行＝Atlasカーネル）は自由変数34個で、単独では出せない。
+**先に「ホスト・インターフェース」を正式化**（本ラウンドで monitors に導入した `H` を全体の規約に昇格）すれば、
+`IntMapFlightSim`(164KB)・`IntMapTimeBorders`(115KB)・`IntMapStatsCompare`(108KB) 等が順に出せる。
+
+### テスト
+`npm test` = static-checks（+新§8 分割整合／+新§9 スコープ検査）→ node 188件 → Playwright 107件、**全て緑**。
+`tests/r162-checks.test.mjs`（10件）を追加し、分割の不変条件（重複コピー無し・ファクトリ引数一致・
+`map`/`countryStats` の非再代入・可変4値が getter であること）を固定した。
+
+---
+
 ## R161 — **非AI依存のニュース地点解析システムの全面再設計（決定論エンジン `IntMapNewsGeo`）／MapLibre依存軽減 Phase 3（ニュースピン・オーバーレイを丸ごとエンジン経由へ）** (tag `#R161`)
 
 **背景（委託2件）**: (1) 以前から続けている **MapLibre依存の軽減**の続き、(2) **非AI依存のニュース地点解析システムを10倍正確に**（網羅性と正確性を徹底的に）。

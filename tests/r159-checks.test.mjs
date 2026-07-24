@@ -6,9 +6,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = readFileSync(new URL('index.html', root), 'utf8');
+const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const has = (s) => html.includes(s);
 const ok = (s, msg) => assert.ok(has(s), msg || ('missing: ' + s.slice(0, 90)));
 const gone = (s, msg) => assert.ok(!has(s), msg || ('should be removed: ' + s.slice(0, 90)));
