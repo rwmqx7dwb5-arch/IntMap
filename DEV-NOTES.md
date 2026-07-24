@@ -5,6 +5,55 @@
 
 ---
 
+## R165 — **index.html リファクタリング第4弾＝Atlasカーネル（879KB/6,231行）の分離と READ-WRITE ホストメンバー規約** (tag `#R165`)
+
+**指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。
+R164 の残件メモ「次ラウンドは『書き込みは index.html に残す』か『IM_HOST に setter 規約を足す』かの設計判断から」を実行した。
+
+### ① 設計判断＝IM_HOST に READ-WRITE メンバー（getter-only の唯一の例外）
+残件最大の `IntMapConsole`（Atlasカーネル・878.6KB・6,231行・依存53＋書き込み5）を出した。書き込み5変数
+（`measurePoints`/`radiusColor`/`radiusKm`/`unitMode`/`userTheme`）は **index.html 側にも書き込みサイトがある**
+（例: measurePoints はクロージャ全体で6書き込み中カーネルは1）ので「書き込み部だけ残す」は IIFE 中腹の切り貼りに
+なり逐語移設が壊れる——よって **setter 規約**を採った:
+- RWメンバーは `get x(){ return x; }, set x(v){ x=v; }` の**1行ペア・5つだけ**。変数の実体は index.html に
+  残り（単一の真実の源）、モジュールの `HOST.x=v` が setter 経由で閉包変数に代入する。
+- カーネルの書き込みは全て `typeof` ガード付き単純代入（`if(typeof radiusKm!=='undefined') radiusKm=…`）
+  だったので、識別子置換だけで `typeof HOST.radiusKm!=='undefined'`／`HOST.radiusKm=…` として成立する。
+- **規約の締め**: `r165-checks` が RW リストを固定（setter 集合＝この5つと完全一致・同名 getter とペア必須・
+  カーネルが実際に5つ全部 `HOST.x=` で書いている・**他モジュールは HOST 書き込みゼロのまま**）。
+  `r163-checks#2` は「全メンバー plain getter」→「plain getter または RWペアの setter 半分」に改定。
+
+### ② 抽出（挙動を変えない機械移設）
+- `js/atlas-console.js`（941KB＝最大・6,248行）。R163/R164 同様、本体は**1バイトも書き換えず**、可変値の
+  自由参照だけ AST で `HOST.x` へ置換（**144箇所**: lang33/measurePoints27/radiusItems22/globalData20/
+  userPins12/…）し、**逆変換して元テキストと完全一致を機械照合**。`var` 巻き上げによる誤分類と shorthand
+  プロパティ（`{x}`→`x:HOST.x` 要展開）はスクリプトが検知して中断する作りにした（今回は該当ゼロ）。
+- 新規ホストメンバー: RW 5・live getter 3（`newsDate`/`toolMode`/`userPins`）・安定 getter 27（askAI系・
+  ツール系ほか）＝IM_HOST 54→**88 アクセサ**。TDZ は事前に機械確認（安定27は全て関数宣言か呼び出し位置より
+  上の宣言）。
+- 残置検出の針は `window.IntMapConsole=(function(){`（呼び出し行は `…IntMapModules.atlasConsole(map,IM_HOST)`
+  なので旧 IIFE 頭＝残置コピーと確定）。KNOWN_DEAD の `clearHl` 文言を「実体は js/atlas-console.js」に更新。
+- **index.html: 22,930行/2.65MB → 16,740行/1.73MB。** R162〜R165 合計で **36,955行 → 16,740行（−55%）**。
+
+### ③ 検証（今回の要点＝「setter が本当に閉包変数へ届くか」）
+- `tests/r165.spec.js`（実Chromium・5本）: **write-through 証明**＝theme アクション→`HOST.userTheme='dark'`→
+  **index.html の applyTheme（裸の閉包変数を読む）が `<html data-theme>` を反転**／units imperial＋measure
+  Tokyo→Osaka→**index.html の updateToolPanel/distHTML が2点・マイル表示で描画**。live getter 証明＝JP切替後の
+  返信が「テーマ」。設定ミス検出＝`dispatch(a)` は **`a.type`** でアクションを引き `a.action` だと**静かに
+  `R(true,'')` の no-op が返る**（1敗）→ spec は返信 html も必ず検証する形に。
+- `tests/r165-checks.test.mjs`（7本）: ①の規約固定＋移設・読込・ブートガード・split-scope。
+  罠: 文字列ブランカ（`code()`）は**正規表現リテラル内の引用符**（`/[&<>"']/`）を文字列開始と誤読して
+  `HOST.measurePoints=` の書き込みサイトごと食う（R162の教訓と同型）→ **存在検査は生テキストに対して行う**。
+- 既存スイート含め**全緑**（node --test 217本・Playwright 126本、CI相当 `--workers=2`・`PORT=4189`）。
+
+### ④ 残件
+未分割 約1.0MB。最大は衛星パネル IIFE（47KB・書き込み2: `currentMode`/`satPanelDismissed`）、以下 20〜28KB の
+**書き込みゼロ** IIFE 群（`IntMapLayerSidebar`/`DrawTool`/`Wind`/`IntMapRoute`/`IntMapObjects` 等 多数）と
+5〜18KB の小物。RW規約が入ったので書き込みブロックも出せるが、残りは相互依存の濃い配線コード
+（boot/renderUI/setMode/auth/news）が中心＝1本あたりの得は逓減。次ラウンドも「大きくて依存が少ない順」。
+
+---
+
 ## R164 — **index.html リファクタリング第3弾＝「書き込みゼロ」ブロック6本の分離（5,006行 / 546KB 減）** (tag `#R164`)
 
 **指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。

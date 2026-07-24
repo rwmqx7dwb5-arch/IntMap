@@ -166,7 +166,7 @@ function freeIdentifiers(src) {
 const KNOWN_DEAD = new Map([
   ['js/compare.js:layerDates',        'declared inside the layers IIFE ("const layerDates=", since #R164 in js/data-layers.js) — never in IntMapCompare\'s scope, before or after the splits. The guard falls back to the literal dates. Live value is window._imLayerDates.'],
   ['js/time-borders.js:whenStyleReady', 'declared inside the layers IIFE ("function whenStyleReady()", since #R164 in js/data-layers.js) — never in IntMapTimeBorders\' scope, before or after the splits, so the #R140 style-ready retry has never actually run.'],
-  ['js/flight-sim.js:clearHl',        'declared inside the IntMapConsole IIFE — never in IntMapFlightSim\'s scope, before or after #R163. The `typeof clearHl==="function"` guard has always been false.'],
+  ['js/flight-sim.js:clearHl',        'declared inside the IntMapConsole IIFE (since #R165 in js/atlas-console.js) — never in IntMapFlightSim\'s scope, before or after the splits. The `typeof clearHl==="function"` guard has always been false.'],
   ['js/widgets.js:closeSheet',        'declared inside initMobileUI()\'s scope (index.html "function closeSheet()") — never in the widget board\'s scope, before or after #R164. The `typeof closeSheet==="function"` guard has always been false; the mobile sheet closes through its own handlers instead.'],
 ]);
 
