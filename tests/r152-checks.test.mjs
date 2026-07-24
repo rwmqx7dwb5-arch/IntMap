@@ -36,7 +36,10 @@ test('R152 #2 Companies compare dock is the static absolute-overlay (Countries p
   assert.match(html, /\.stats-compare-fixed, \.co-compare-fixed\{ display:none; position:absolute;/, 'shares the Countries dock styling');
   assert.match(html, /\.stats-compare-fixed\.show, \.co-compare-fixed\.show\{ display:block; \}/, 'shown via .show');
   assert.match(html, /function _companiesActive\(\)\{/, 'active-tab test mirrors _countriesActive');
-  assert.match(html, /currentMode!=='info'\)\{ const cof=document\.getElementById\('co-compare-fixed'\)/, 'hidden on tab-switch like Countries');
+  /* (#R168) renderUI moved into js/news-ui.js, where the active tab is read through the host, so the
+     same line now spells it HOST.mode. Both forms are accepted: what is being guarded is that the
+     Companies dock is hidden when the tab is not 'info', not which scope the value came from. */
+  assert.match(html, /(?:currentMode|HOST\.mode)!=='info'\)\{ const cof=document\.getElementById\('co-compare-fixed'\)/, 'hidden on tab-switch like Countries');
   assert.match(html, /\(window\.imShowRank!=='off'\)\?`<span class="stat-rank">/, 'Companies honours the rank setting');
 });
 
