@@ -5,6 +5,58 @@
 
 ---
 
+## R164 — **index.html リファクタリング第3弾＝「書き込みゼロ」ブロック6本の分離（5,006行 / 546KB 減）** (tag `#R164`)
+
+**指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。
+R163 の残件メモ「`IM_HOST` に getter を足すだけで出せるので、依存の少ない順に continue」を実行した。
+
+### ① 選定＝ASTに**「書き込み解析」の軸を追加**（今回の本体）
+R163 までの選定軸〔サイズ〕×〔閉包変数への自由参照数〕に、**〔閉包変数への書き込み（代入/更新）の有無〕**を足した。
+getter は読み取りしか渡せない——書き込むブロックを出すには setter が要り、規約が濁る。実測の結果：
+
+| 移設先 | 中身 | サイズ | 依存(live=getter経由 / それ以外=束縛し直し) | 書き込み |
+|---|---|---|---|---|
+| `js/data-layers.js` | レイヤーカタログ＋エンジン（i18nレイヤー文字列・約50レイヤー・凡例・パネル再編・`IntMapLayerAudit`） | 312KB | live: lang, countryGeo, unitMode, mapTooltipEl ＋ 安定19種 | **0** |
+| `js/workspace.js` | `IntMapWorkspace`（自由配置ウィンドウ） | 90KB | live: lang, mode, globalData, newsFeatures, renderUI ＋ 安定10種 | **0** |
+| `js/widgets.js` | `IntMapWidgets2`（ウィジェットボード） | 79KB | live: lang, mode, userTZ ＋ 安定4種 | **0** |
+| `js/wb-layers.js` | `IntMapWB`（世界銀行コロプレス＋Stats最新化） | 39KB | live: lang, mode ＋ 安定6種 | **0** |
+| `js/beta-overlays.js` | `IntMapBeta`（ウクライナ前線・3D建物・歴史国境・火山） | 30KB | live: lang ＋ 安定3種 | **0** |
+| `js/cameras.js` | ライブカメラ（Overpass webcams 等） | 27KB | live: lang ＋ 安定1種 | **0** |
+
+**`IntMapConsole`（879KB・残件最大）は依存54のうち5変数に書き込む**（`measurePoints`/`radiusColor`/`radiusKm`/
+`unitMode`/`userTheme`）ため今回は見送り＝次ラウンドの課題（setter を足すか、書き込み部だけ index.html に残すか）。
+
+**index.html: 27,936行/3.20MB → 22,930行/2.65MB。** R162〜R164 合計で **36,955行 → 22,930行（−38%）**。
+移設は R163 同様スクリプトで機械実行：本体は**1バイトも書き換えず**、可変値の自由参照だけをASTで
+`HOST.x` に置換（data-layers だけで433箇所）し、**同一セグメントから元テキストを逆組み立てして完全一致を照合**してから採用。
+
+### ② 新パターン＝bare-IIFE ファクトリと「window.* を公開しないモジュール」
+- 6本中5本は `window.X=(function(){…})()` ではなく**裸のIIFE**だった。ファクトリ化は本体を包むだけ、
+  呼び出しは**代入なしの** `window.IntMapModules.x(map,IM_HOST);`（workspace のみ戻り値を代入）。
+  static-checks §8 の「移設元に残った重複コピー」検出は `window.X=(function(){` という頭が使えないので、
+  **ブロック内にしか存在しなかった一意文字列**（`lyrEU:"EU members"` 等）を残置検出の針にした（一意性は抽出スクリプトが機械検証）。
+- `js/cameras.js` は **window.* を一切公開しない唯一のモジュール**（自前で `#dl-webcams` 行を構築して終わり）。
+  「ファイルが本番に出なかった」事故は R163b の思想どおり2段で検出：ブートガードの**ファクトリ名指し**＋
+  prod-smoke の **DOM 行 `#dl-webcams` 検査**（グローバル検査は使えないため）。
+- `IM_HOST` 27→**54メンバー**（全部 getter）。新しい可変メンバー：`unitMode`/`userTZ`/`mapTooltipEl`/`globalData`/
+  `newsFeatures`/`renderUI`。`renderUI` の再代入は retired-ACLED ブロック内の**死コード**だが、getter は無コストなので安全側。
+- 死んだ参照の新規1件：`js/widgets.js` の `closeSheet`（実体は `initMobileUI()` スコープ内・分割前から到達不可）
+  → `KNOWN_DEAD` に根拠付き登録。挙動は完全に同一。
+
+### ③ 検証
+- `tests/r164-checks.test.mjs`（7本）: 移設・読込・ファクトリ呼び出し・**可変値が live getter であることの証明**
+  （実際に再代入されている行が存在することまで確認）・裸の可変識別子ゼロ・**`HOST.x=` 書き込みゼロ**（getter-only 契約）。
+- `tests/r164.spec.js`（6本・実Chromium）: 6本すべて実動作（API面・レイヤー行 ≥100・`#dl-webcams`/`#beta-dl-*` 行・
+  ウィジェット既定ボード）。**JP切替で `kName('Af')` が 熱帯雨林 に、カメラ行が ライブカメラ に追従**＝getter live 証明。
+- 既存スイート含め全緑（並列4ワーカーでは資源枯渇の起動タイムアウトが出るが、CI相当の2ワーカー/1ワーカーで全緑を確認）。
+
+### ④ 残件
+未分割 約1.6MB。最大は `IntMapConsole`（879KB・書き込み5変数）と、クリック/計測ワイヤリング（#336・deps39）、
+`updateToolPanel`/`renderStats` 等の相互依存関数群。次ラウンドは「書き込みは index.html に残して読み取り部だけ出す」か
+「`IM_HOST` に setter 規約を足す」かの設計判断から。
+
+---
+
 ## R163 — **index.html リファクタリング第2弾＝大型フィーチャー7本の分離（4,955行 / 566KB 減）と、ホスト・インターフェース `IM_HOST` の全体規約化** (tag `#R163`)
 
 **委託**: 「Index.htmlをリファクタリングして。」——標準指示13（単一ファイルを段階的に分割し、これ以上肥大化させない）の継続。
