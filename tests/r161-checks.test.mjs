@@ -152,6 +152,30 @@ test('#12 accuracy on the labelled corpus AND the held-out set', async () => {
   assert.ok(errNew * 5 <= errOld, `expected ≥5× fewer errors, got ${errOld} → ${errNew}`);
 });
 
+/* ── 12b. curated geo_pins rows must not break ambiguity resolution ───────── */
+/* PRODUCTION BUG (found only after deploy): the browser calls register() with the
+   admin-curated `geo_pins` table, which duplicates places the built-in gazetteer
+   already has — "Lebanon" then had TWO entries at identical coordinates. The
+   resolver counted that as an ambiguous mention, so it stopped seeding the country
+   context, and `Army shells Tripoli in northern Lebanon` fell back to the Libyan
+   capital. Every earlier test ran with an EMPTY registry, so none of them saw it.
+   These cases run with duplicates registered, the way production actually is. */
+test('#12b duplicate registered rows are collapsed, not treated as ambiguity', () => {
+  NG.register([
+    { terms: ['Lebanon', 'レバノン'], lng: 35.8, lat: 33.9, type: 'country', name_en: 'Lebanon', name_jp: 'レバノン' },
+    { terms: ['Tripoli', 'トリポリ'], lng: 13.18, lat: 32.89, type: 'city', name_en: 'Tripoli', name_jp: 'トリポリ' },
+    { terms: ['Ukraine', 'ウクライナ'], lng: 31.0, lat: 49.0, type: 'country', name_en: 'Ukraine', name_jp: 'ウクライナ' },
+    { terms: ['Israel', 'イスラエル'], lng: 34.85, lat: 31.5, type: 'country', name_en: 'Israel', name_jp: 'イスラエル' },
+  ]);
+  at('Army shells Tripoli in northern Lebanon', [35.85, 34.44], 150);
+  at('Tripoli clashes leave 12 dead in Libya', [13.19, 32.89], 150);
+  at('Explosion rocks Kharkiv as Russia steps up strikes on Ukraine', [36.23, 49.99], 150);
+  at('Israeli strikes hit Gaza as ceasefire talks stall', [34.47, 31.5], 150);
+  /* a genuinely NEW curated place still adds coverage */
+  NG.register([{ terms: ['Zaporizhzhia Nuclear Plant'], lng: 34.59, lat: 47.51, type: 'city', name_en: 'ZNPP', name_jp: 'ZNPP' }]);
+  at('Inspectors reach Zaporizhzhia Nuclear Plant', [34.59, 47.51], 150);
+});
+
 /* ── 13. the shared mirror is byte-identical ──────────────────────────────── */
 test('#13 supabase/functions/_shared/newsgeo.js mirrors js/newsgeo.js', async () => {
   const { inSync } = await import('../scripts/sync-newsgeo.mjs');
