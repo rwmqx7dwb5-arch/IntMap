@@ -310,13 +310,32 @@
   /* ------------------------------------------------------------------ *
    *  5.  Ambiguity resolution — which real place is this surface?
    * ------------------------------------------------------------------ */
+  /* Several index entries can describe the SAME place — a curated `geo_pins`
+     row sits on top of a built-in one, so "Lebanon" ends up with two entries at
+     identical coordinates. That is a DUPLICATE, not an ambiguity, and treating it
+     as one is actively harmful: an "ambiguous" mention stops seeding the country
+     context, so `Army shells Tripoli in northern Lebanon` loses its only cue and
+     falls back to the Libyan capital. Collapse candidates that are within 50 km of
+     each other and keep the richest one (an iso2 beats none, then higher rank). */
+  function collapse(ids) {
+    var first = ENTS[ids[0]], i;
+    for (i = 1; i < ids.length; i++) if (haversine(first.loc, ENTS[ids[i]].loc) > 50) return null;
+    var best = first;
+    for (i = 1; i < ids.length; i++) {
+      var e = ENTS[ids[i]], a = e.iso2 ? 1 : 0, b = best.iso2 ? 1 : 0;
+      if (a > b || (a === b && e.rank > best.rank)) best = e;
+    }
+    return best;
+  }
+
   function resolveMentions(ments) {
     var ctxISO = new Map(), ctxA1 = new Map(), anchors = [];
 
     /* Pass 1 — unambiguous mentions define the geographic context. */
     ments.forEach(function (m) {
-      if (m.ids.length !== 1) return;
-      var e = ENTS[m.ids[0]];
+      var e = m.ids.length === 1 ? ENTS[m.ids[0]] : collapse(m.ids);
+      if (!e) return;
+      m.solo = e;
       if (e.kind === 'trap') return;
       var w = (m.field === 't' ? 2 : 1);
       if (e.iso2) ctxISO.set(e.iso2, (ctxISO.get(e.iso2) || 0) + w);
@@ -326,10 +345,13 @@
 
     /* Pass 2 — pick one entity per mention. */
     ments.forEach(function (m) {
-      if (m.ids.length === 1) { m.ent = ENTS[m.ids[0]]; m.margin = 9; return; }
+      if (m.solo) { m.ent = m.solo; m.margin = 9; return; }
       var best = null, bestS = -1e9, second = -1e9;
       for (var i = 0; i < m.ids.length; i++) {
         var e = ENTS[m.ids[i]], s = e.rank * 2;
+        /* a verified built-in entry (it knows its country) outranks a bare
+           runtime-registered row when everything else is equal */
+        if (e.iso2) s += 2;
         if (e.iso2 && ctxISO.get(e.iso2)) s += 10 + 2 * ctxISO.get(e.iso2);
         if (e.a1key && ctxA1.get(e.a1key)) s += 9;
         if (e.capital) s += 2;
