@@ -17,7 +17,9 @@ const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapLayers', 'IntMapConsole', 'IntMapTi
 const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare', 'IntMapRouting',
   'IntMapStreetView', 'IntMapFlightSim', 'IntMapTimeBorders', 'IntMapMonitors',
   'IntMapLayerPreviews', 'IntMapMaddison', 'IntMapHistStates', 'IntMapHistId',
-  'IntMapNewsGeo', 'IntMapI18N', 'IntMapGazetteer', 'IntMapRefData'];
+  'IntMapNewsGeo', 'IntMapI18N', 'IntMapGazetteer', 'IntMapRefData',
+  // (#R164) the third split: data-layers / workspace / widgets / wb-layers / beta-overlays.
+  'IntMapLayerAudit', 'IntMapWorkspace', 'IntMapWidgets2', 'IntMapWB', 'IntMapBeta'];
 
 test.describe.configure({ mode: 'serial' });
 
@@ -68,6 +70,12 @@ test('(#R163) prod deployed every js/ module file — no factory silently missin
   expect(got.check, 'index.html ran its boot-time module check').toBeTruthy();
   expect(got.check.missing, 'no required module global missing').toEqual([]);
   expect(got.check.missingFactories, 'no module factory missing').toEqual([]);
+});
+
+test('(#R164) prod cameras module built its layer row (it publishes no global)', async () => {
+  // js/cameras.js is the one #R164 module with no window.* surface: it wires itself into the layer
+  // panel as the #dl-webcams row (~900 ms after boot; beforeAll already waited past that).
+  await expect(page.locator('#dl-webcams')).toBeAttached();
 });
 
 test('prod layer UI initialised and screen not blank', async () => {
