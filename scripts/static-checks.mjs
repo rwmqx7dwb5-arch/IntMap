@@ -279,6 +279,9 @@ try {
       ['refreshStatsLatest', 'js/wb-layers.js'],
       ['DeepStateMap', 'js/beta-overlays.js'],
       ['otcmDone', 'js/cameras.js'],
+      // (#R165) the Atlas kernel. The call line is `window.IntMapConsole=window.IntMapModules.
+      // atlasConsole(map,IM_HOST);` so the old IIFE head below can only mean a stale copy.
+      ['window.IntMapConsole=(function(){', 'js/atlas-console.js'],
     ]) {
       if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
     }
