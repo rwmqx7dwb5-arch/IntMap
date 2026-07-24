@@ -661,10 +661,12 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R166) 11,810行 / 1.14MB（#R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、
-                                #R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
-                                R162〜R166 で 36,955行から **−68%**）。
+                                (#R167) 9,709行 / 0.89MB（#R166時点は 11,810行/1.14MB、#R165時点は 16,740行/1.73MB、
+                                #R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
+                                R162〜R167 で 36,955行から **−74%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
+                                残りは中核（状態・ブート・地図構築・ニュースパイプライン・認証・描画ツリー）で、
+                                互いの依存が濃いため、以後は「大きな塊」ではなく**継ぎ目**を選んで出す（§3.1 #R167）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
                                     JS は `document.styleSheets`/`cssRules` を一切触らないため挙動は完全に同一。
@@ -744,6 +746,35 @@ js/
                                     48KB。**2番目の READ-WRITE ホストメンバー利用モジュール**
                                     （`mode`＝`currentMode` と `satPanelDismissed` を setter 経由で書く。§3.1 #R166）。
                                     cameras と同じく `window.*` を公開しない（入口は `window._openPlayground`）
+  ── 以下 (#R167) の8本（第6弾・270KB／2,101行）。**2つの継ぎ目**で出した（§3.1 #R167）：
+     ①純データ（tables.js＝ファクトリ無し・index.html は名前を束縛し直すだけ）
+     ②残りの自己完結ブロック（15ファクトリ・すべて元の位置で呼ぶ）─────────────
+  tables.js                         (#R167) **純データ 27表**（`window.IntMapTables`）＋`window.SEA_LABELS`。91KB。
+                                    国別統計（GDP/HDI/民主主義指数/軍事費/平均寿命/ネット普及率/首都/通貨/言語）・
+                                    DE/RU/ES の地名＋デモニム表・媒体辞書 `sourceDict`・地理レイヤーカタログ
+                                    `geoLayersDB`・衛星プロバイダ・ニュース版・半径プリセット・企業セクター表 等。
+                                    **一度も変更されない**ことをASTで検証済み（tests/r167-checks #3）＝値渡しで安全。
+                                    index.html 側は `const {GDP,HDI,…}=window.IntMapTables;` と束縛し直すだけ
+  legal.js                          (#R167) 利用規約・プライバシーポリシー（EN/JP）とそのモーダル。29KB
+  feedback.js                       (#R167) フィードバックモーダルと不具合レポータ（診断スナップショット `_imDiag`）。19KB。
+                                    **`HOST.DB` は使用時に読む**（`const DB` は呼び出し位置の約1,300行下＝
+                                    ファクトリ時点で束縛するとTDZに落ちる。§3.1 #R167）
+  onboarding.js                     (#R167) ようこそカード・ガイドデモ・共有の進捗コントロール `window._imProgCtl`。19KB
+  mobile-ui.js                      (#R167) `initMobileUI()`（ボトムシート・FAB列・モバイルタブバー）＋
+                                    レスポンシブ配置3本（検索バーの折返し・サイドバー幅・デバイスクラス）。32KB。
+                                    **戻り値を束縛する唯一のファクトリ**（index.html は末尾で `initMobileUI()` を名前で呼ぶ）
+  news-timeline.js                  (#R167) 地図下のニュース時間軸（年/日付/時刻モード・スクラバ・同期バッジ）。18KB。
+                                    **RWホストメンバー2つ**（日付が変わると記事集合ごと入れ替わるので
+                                    `globalData`/`newsFeatures` を setter 経由で書く）
+  dash-extended.js                  (#R167) `window.IntMapCache`（IndexedDB の共有KVストア）＋拡張ダッシュボードカード。21KB。
+                                    **RWホストメンバー1つ**（`extendedDashDB`）。※#R139 で情報ダッシュボードは
+                                    Companies に置き換わったため、この書き込みに現在は画面上の帰結が無い
+                                    （挙動同一を保つため残置。`IntMapCache` の方は beta-overlays / stats-compare /
+                                    滑走路検索が実際に使う）
+  map-extras.js                     (#R167) 地図面に残っていた小さな `window.*` モジュール 7本。現在地追跡
+                                    `IntMapLocate`・注記 `IntMapAnnotations`・レイヤーホバーのポップアップ・
+                                    レイヤー検索・滑走路検索 `RunwaySearch`・DEMサンプラ `IntMapTerrain`・
+                                    鉄道/海図ラスターオーバーレイ。42KB
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -765,7 +796,8 @@ supabase/
 ## 3.1 index.html の分割方式 (#R162) — **今後の分割はこの手順に従うこと**
 
 **前提（これが全ての難しさの源）**: index.html のアプリコードは
-`window.addEventListener('DOMContentLoaded', () => { …約33,000行… })` という**ひとつのクロージャの中**にある。
+`window.addEventListener('DOMContentLoaded', () => { …分割前は約33,000行／#R167 時点で約9,000行… })`
+という**ひとつのクロージャの中**にある。
 したがって最上位の `let`/`const`/`function` は**グローバルではなくクロージャ変数**であり、`window` には載っていない。
 ファイルを js/ に出すと、その変数は**ただ消える**。
 
@@ -849,6 +881,60 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
   不透明度保存は分割前から一度も動いていない**（try/catch が ReferenceError を握り潰し、空の `ops` を保存）。
   修正は挙動変更になるので別ラウンド。
 
+### (#R167) 第6弾 — 「大きな塊」ではなく**継ぎ目**を選ぶ／純データ／TDZ
+#R166 までで自己完結した塊は出し尽くし、index.html に残ったのは**中核**（状態・ブート・地図構築・
+ニュースパイプライン・認証・描画ツリー）で、AST実測でも1文あたりの自由参照が10〜36ある。
+そこで #R167 は**大きさで選ぶのをやめ、2つの継ぎ目で切った**。
+
+**継ぎ目① 純データ（`js/tables.js`・91KB・27表）** — §3.1 手順4の全面適用。ファクトリもホストも使わず、
+`window.IntMapTables` に載せて index.html 側は `const {GDP,HDI,…}=window.IntMapTables;` と束縛し直すだけ。
+- **値渡しが安全な根拠を機械で証明してから出す**。「純データ」は目視の主張ではないので、
+  `tests/r167-checks.test.mjs #3` が index.html 全体をacornで走査し、**メンバー代入・`delete`・
+  破壊的メソッド（push/splice/sort…）が1件も無い**ことを検証する。1件でもあれば共有状態＝出せない。
+- **`window.SEA_LABELS` だけは束縛し直しすら要らない**（元から `window.` 経由で読まれていた）。
+- **表が空でも例外は出ない**のが怖いところ（国カードが「データ無し」に見えるだけ）。だから
+  `tests/r167.spec.js #2` は**値**を検証する（`GDP.USA===27361` / `CAPITAL.JPN==='Tokyo'`）だけでなく、
+  **消費側**まで確かめる：地理レイヤー行が建つこと、そして DE/ES の見出しが非AI locator で
+  実際に測位できること（`_DERU_GZ`/`_ES_GZ` が `geoDB` に合流していないと測位できない）。
+
+**継ぎ目② 残った自己完結ブロック（7ファイル・15ファクトリ）** — #R166 と同じ「主題ごとに束ねる／
+元の位置で呼ぶ」形。`tests/r167-checks.test.mjs #2` が15呼び出しの並びを配列でピン留めする。
+
+**⚠ このラウンド固有の罠＝TDZ（時間的デッドゾーン）**。#R163〜#R166 は安定ヘルパーを
+ファクトリ先頭で束縛していた（`const imToast=HOST.imToast;`）。これが安全だったのは、
+**その全てが巻き上げられる関数宣言だったから**にすぎない。`js/feedback.js` が要る `DB` は
+`const DB=window.sb;`＝**呼び出し位置の約1,300行下で初期化される const** で、ファクトリ実行中に
+`HOST.DB` を読むと **ReferenceError でモーダルごと死ぬ**。
+→ **`DB` だけは束縛せず、使用箇所ごとに `HOST.DB` を読む**。`tests/r167-checks.test.mjs #5` が
+①`js/feedback.js` が `DB` をファクトリ先頭で束縛していないこと、②**8ファイルすべてについて、
+ファクトリ先頭で束縛している名前は index.html の巻き上げ関数宣言（または最上部の const）である**ことを
+検証する＝この罠が次回以降に再発しない形で固定した。
+
+**RWメンバーは7→10**。`globalData`/`newsFeatures`（**js/news-timeline.js** 所有：日付が変われば記事集合ごと
+入れ替わる）と `extendedDashDB`（**js/dash-extended.js** 所有）。
+- **⚠ 書き込みの証明で最も注意すべき点**：モジュールは classic script なので **setter が無い代入は
+  例外にならず静かに無視される**。よって「エラーが出ない」は何の証拠にもならない。
+  `tests/r167.spec.js #5` は index.html 側に**閉包変数から再導出させる**：
+  ①過去日付を選ぶと `loadNewsCache()` が `!newsDate` で復元を拒む＝`globalData` を消し損ねていれば
+  フィードは残る ②ベースマップ切替が `setupIntelLayers()` を再実行し、そこで
+  `if(newsFeatures.length) setSourceData(...)` が**古い配列ならピンを地図に戻してしまう**。
+- **`extendedDashDB` には画面上の帰結が無い**（#R139 で `renderDashboard()` が
+  `try{ return renderCompanies(); }` で始まるようになり、カード一覧は描かれない。唯一の別読者だった
+  dash-pin ホバーも、その死んだ本体しか `dashFeatures` を埋めない）。**挙動同一のために書き込みは残す**が、
+  ブラウザテストでそれを証明できるふりはしない——`tests/r167.spec.js #7` は代わりに、
+  他モジュールが実際に依存する `window.IntMapCache` が**リロードを跨いで IndexedDB に永続する**ことを検証する。
+  RW契約自体は `tests/r165-checks.test.mjs` がソースレベルで固定（setter の存在・同一閉包変数のget/setペア・所有者一意）。
+
+**抽出は決定論的スクリプトで行い、移設が「移動」であることを機械照合した**（手作業の転記をしない）。
+acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 → 自由参照だけを `HOST.x` に書き換え →
+**逆変換して元テキストとバイト一致するか照合**してから採用。移設後は別スクリプトで
+「モジュール本文＝分割前 index.html の該当テキスト」「27表が**値として同一**（JSON比較）」も検証した。
+- 罠: acorn-walk は**代入先の識別子を `Identifier` ではなく `VariablePattern` として配る**。
+  これを見落とすと `globalData=[]` のような**書き込み側だけが裸の名前のまま残る**（最初の実行で実際に発生。
+  `scripts/check-split-scope.mjs` が拾った）。
+- 罠: 逆変換は**プロパティ名の長い順**に行う。`user` は `userTheme` の接頭辞なので宣言順に戻すと
+  `HOST.userTheme` が `currentUserTheme` になり、偽の不一致を報告する。
+
 ### (#R166) 第5弾 — 主題ごとに束ねる（41ブロック→7ファイル）と、呼び出し順の固定
 #R165 までで「大きくて依存が少ない」塊は出し尽くし、残りは **5〜47KB の自己完結ブロックが約40本**という
 長い尾になった。1ファイル1ブロックでは41ファイルになるので、**主題ごとに束ねて7ファイル**にした
@@ -894,7 +980,9 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
   （setter の集合が宣言リストと完全一致・各 setter は同じ閉包変数の getter とペア・**所有モジュールが
   本当に全部を `HOST.x=` で書いている**・**どのモジュールも自分が所有しないメンバーを書かない**）。
   #R165 時点は**5メンバー＝Atlasカーネル専有**。**#R166 で7に拡張**（`mode`＝`currentMode` と
-  `satPanelDismissed`＝js/playground.js の所有）。
+  `satPanelDismissed`＝js/playground.js の所有）。**#R167 で10**（`globalData`/`newsFeatures`＝
+  js/news-timeline.js、`extendedDashDB`＝js/dash-extended.js の所有）。
+  IM_HOST は **123 アクセサ**（getter 113＋setter 10）。
   `tests/r163-checks.test.mjs` #2 は「全メンバー plain getter」から「plain getter または RWペアの
   setter 半分（同一変数への get とペア必須）」に改定。
 - 実ブラウザ証明は `tests/r165.spec.js`: **write-through**（theme アクション→`HOST.userTheme='dark'`→
