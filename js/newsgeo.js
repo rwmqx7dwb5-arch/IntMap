@@ -347,7 +347,7 @@
   /* ------------------------------------------------------------------ *
    *  6.  Scoring — aggregate mentions into one subject
    * ------------------------------------------------------------------ */
-  function score(ments, ctx) {
+  function score(ments) {
     var agg = new Map();
 
     ments.forEach(function (m) {
@@ -421,9 +421,9 @@
            capitalised surface AND real corroboration. With none, the word is
            far more likely to be the ordinary noun — drop it rather than pin. */
         if (!a.caps) return;
-        var corrob = a.prep || a.event || a.childOfPresent || a.topic ||
-          (anyRealPlace && !(agg.size === 1));
-        if (!corrob) return;
+        /* anyRealPlace already implies a NON-weak entity elsewhere in the text
+           (this one is weak), which is corroboration enough. */
+        if (!(a.prep || a.event || a.childOfPresent || a.topic || anyRealPlace)) return;
       }
       if (s <= 0) return;
       out.push({ e: e, s: s, why: why, surface: a.surface });
@@ -474,8 +474,8 @@
       m.ids = keep; return true;
     });
     ments.forEach(features);
-    var ctx = resolveMentions(ments);
-    var ranked = score(ments, ctx);
+    resolveMentions(ments);
+    var ranked = score(ments);
     var top = ranked[0] || null, res = null;
     if (top) {
       var margin = ranked.length > 1 ? (top.s - ranked[1].s) : top.s;
