@@ -48,8 +48,10 @@ function code(src) {
 
 /* The READ-WRITE host members and who is allowed to write each one. #R165 introduced five (the Atlas
    kernel); #R166 added two for the Playground hub, which clears the active tab and hides the
-   satellite controller when World Explorer takes the screen. Adding a row here is a deliberate act:
-   the contract is that a module writes closure state ONLY through a member listed below. */
+   satellite controller when World Explorer takes the screen; #R167 added three more for the news
+   timeline (moving the clock replaces the news arrays) and the dashboard cache (a cold start assigns
+   the IndexedDB copy back). Adding a row here is a deliberate act: the contract is that a module
+   writes closure state ONLY through a member listed below. */
 const RW = {
   measurePoints:     { v: 'measurePoints',     owner: 'atlas-console.js', oneLinePair: true },
   radiusColor:       { v: 'radiusColor',       owner: 'atlas-console.js', oneLinePair: true },
@@ -60,6 +62,11 @@ const RW = {
      over the same closure variable is required — not that both halves share a line. */
   mode:              { v: 'currentMode',       owner: 'playground.js',    oneLinePair: false },
   satPanelDismissed: { v: 'satPanelDismissed', owner: 'playground.js',    oneLinePair: true },
+  /* Same exception as `mode`: globalData and newsFeatures were already live getters up with the
+     other mutable state before #R167 gave them setters. */
+  globalData:        { v: 'globalData',        owner: 'news-timeline.js', oneLinePair: false },
+  newsFeatures:      { v: 'newsFeatures',      owner: 'news-timeline.js', oneLinePair: false },
+  extendedDashDB:    { v: 'extendedDashDB',    owner: 'dash-extended.js', oneLinePair: true },
 };
 const RW_NAMES = Object.keys(RW);
 

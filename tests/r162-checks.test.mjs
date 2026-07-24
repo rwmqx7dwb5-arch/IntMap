@@ -125,7 +125,12 @@ test('R162 #5 INVARIANT: every value passed to a factory is assigned exactly onc
   assert.equal(cs.length, 0, `countryStats must never be reassigned; found: ` + JSON.stringify(cs));
 
   // `geoLayersDB` is const, `loadCountryData` is a function declaration — both unrebindable.
-  assert.ok(/const\s+geoLayersDB\s*=/.test(HTML_CODE), 'geoLayersDB is const');
+  // (#R167) the table itself moved to js/tables.js, so the const is now a destructuring rebind
+  // (`const {geoLayersDB,…}=window.IntMapTables`). Still a const binding, still never reassigned —
+  // which is the property this assertion exists to protect.
+  assert.ok(/const\s+(?:geoLayersDB\s*=|\{[^}]*\bgeoLayersDB\b[^}]*\}\s*=\s*window\.IntMapTables)/.test(HTML_CODE),
+    'geoLayersDB is const');
+  assert.equal(reassignments('geoLayersDB').length, 0, 'geoLayersDB is never reassigned');
   assert.ok(/function\s+loadCountryData\s*\(/.test(HTML_CODE), 'loadCountryData is a function declaration');
 });
 

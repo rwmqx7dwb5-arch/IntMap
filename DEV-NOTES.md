@@ -5,6 +5,97 @@
 
 ---
 
+## R167 — **index.html リファクタリング第6弾＝「継ぎ目」で切る：純データ27表＋残りの自己完結15本（−2,101行 / −270KB）** (tag `#R167`)
+
+**指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。
+
+### ① 戦略の転換 — もう「大きな塊」は無い
+#R166 までで自己完結した塊は出し尽くした。AST で残り 956文を棚卸しすると、index.html に残っているのは
+**中核**（状態・ブート・地図構築・ニュースパイプライン・認証・描画ツリー）で、1文あたりの自由参照が
+10〜36ある濃い相互依存になっている。**大きさで選ぶのをやめ、2つの「継ぎ目」で切った**。
+
+| 継ぎ目 | ファイル | 中身 |
+|---|---|---|
+| ①純データ | `js/tables.js` 91KB | **27表**＋`window.SEA_LABELS`。国別統計9表(GDP/HDI/民主主義指数/軍事費/平均寿命/ネット普及率/首都/通貨/言語)・DE/RU/ES 地名＋デモニム・媒体辞書・地理レイヤーカタログ・衛星プロバイダ・ニュース版・半径プリセット・企業セクター 等 |
+| ②自己完結 | `js/legal.js` 29KB | 規約・プライバシー（EN/JP）とモーダル |
+| | `js/feedback.js` 19KB | フィードバック／不具合レポータ（診断スナップショット） |
+| | `js/onboarding.js` 19KB | ようこそカード・ガイドデモ・共有の進捗コントロール |
+| | `js/mobile-ui.js` 32KB | `initMobileUI()`＋レスポンシブ配置3本 |
+| | `js/news-timeline.js` 18KB | 地図下のニュース時間軸 |
+| | `js/dash-extended.js` 21KB | `window.IntMapCache`（IndexedDB 共有KV）＋拡張ダッシュボード |
+| | `js/map-extras.js` 42KB | 現在地・注記・レイヤーホバー・レイヤー検索・滑走路検索・DEMサンプラ・鉄道/海図オーバーレイ |
+
+**index.html: 11,810行/1.14MB → 9,709行/0.89MB。** R162〜R167 合計で **36,955行 → 9,709行（−74%）**。
+
+### ② 純データを出すときに証明すべきこと（継ぎ目①）
+「純データだから値渡しでいい」は**目視の主張であって根拠ではない**。1か所でも in-place 変更があれば
+共有状態であり、コピーを配った瞬間に静かに壊れる。→ `tests/r167-checks.test.mjs #3` が index.html 全体を
+acorn で走査し、27表に対する**メンバー代入・`delete`・破壊的メソッド(push/splice/sort…)が1件も無い**ことを
+検証する。抽出前にも同じ検査を通してから選定した。
+
+**表が空でも例外は出ない**のが本当の危険（国カードが「データ無し」に見えるだけ）。だから
+`tests/r167.spec.js #2` は名前ではなく**値**を見る（`GDP.USA===27361` / `CAPITAL.JPN==='Tokyo'`）うえ、
+**消費側**まで確かめる：地理レイヤー行が建つこと、そして **DE/ES の見出しが非AI locator で実際に測位できる**こと
+（`_DERU_GZ`/`_ES_GZ` が `rebuildGeoIndex()` 経由で `geoDB` に合流していなければ測位できない）。
+
+### ③ ⚠ このラウンド固有の罠＝**TDZ（時間的デッドゾーン）**
+#R163〜#R166 は安定ヘルパーをファクトリ先頭で束縛していた（`const imToast=HOST.imToast;`）。これが安全だったのは
+**その全部が巻き上げられる関数宣言だったから**にすぎず、規約として意識されていなかった。
+`js/feedback.js` が要る `DB` は `const DB=window.sb;`＝**呼び出し位置の約1,300行下で初期化される const**。
+ファクトリ実行中に `HOST.DB` を読めば **ReferenceError でモーダルごと死ぬ**。
+→ **`DB` だけは束縛せず使用箇所ごとに `HOST.DB` を読む**。`tests/r167-checks.test.mjs #5` が
+①feedback が `DB` を先頭束縛していないこと、②**8ファイルすべてについて、先頭束縛している名前は
+index.html の巻き上げ関数宣言（または最上部の const）である**ことを検証＝罠を規約として固定した。
+
+### ④ RWホストメンバー 7→10 と、書き込み証明の作り方
+`globalData`/`newsFeatures`（**js/news-timeline.js** 所有：日付が変われば記事集合ごと入れ替わる）と
+`extendedDashDB`（**js/dash-extended.js** 所有）を追加。IM_HOST は **123アクセサ**（getter 113＋setter 10）。
+
+**⚠ setter が無い代入は classic script では例外にならず静かに無視される**——「エラーが出ない」は
+何の証拠にもならない。`tests/r167.spec.js #5` は index.html 側に**閉包変数から再導出させる**：
+1. ニュースキャッシュを事前投入して `globalData` を確定的に非空にする（ネットワーク不要）
+2. 過去日付へ移すと `loadNewsCache()` が `!newsDate` で復元を拒む＝`globalData` を消し損ねていればフィードが残る
+3. ベースマップ切替が `setupIntelLayers()` を再実行し、そこの `if(newsFeatures.length) setSourceData(...)` が
+   **古い配列ならピンを地図に戻してしまう**＝`newsFeatures` の書き込み証明
+
+**`extendedDashDB` には現在まったく画面上の帰結が無い**ことが分かった（既存事実・今回は変更しない）:
+#R139 で `renderDashboard()` が `try{ return renderCompanies(); }` で始まるようになり、カード一覧は描かれない。
+唯一の別読者だった dash-pin ホバーも、その死んだ本体しか `dashFeatures` を埋めない。加えて `bootSupabase()` が
+`loadDashFromSupabase()` を await し、**クエリが失敗しても無条件に再代入する**。
+→ **挙動同一のため書き込みは残す**が、ブラウザテストで証明できるふりはしない。`tests/r167.spec.js #7` は代わりに、
+他モジュール（beta-overlays / stats-compare / 滑走路検索）が実際に依存する `window.IntMapCache` が
+**リロードを跨いで IndexedDB に永続する**ことを検証する。RW契約自体は `tests/r165-checks.test.mjs` が
+ソースレベルで固定（setter の存在・同一閉包変数の get/set ペア・所有者一意）。
+
+### ⑤ 抽出は決定論スクリプト＋機械照合（手で転記しない）
+acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 → 自由参照だけを `HOST.x` に書き換え →
+**逆変換して元テキストとバイト一致するか照合**してから採用。移設後は別スクリプトで
+「モジュール本文＝分割前 index.html の該当テキスト」「27表が**値として同一**（JSON比較）」も検証した。
+
+- **⚠罠A**: acorn-walk は**代入先の識別子を `Identifier` ではなく `VariablePattern` として配る**。
+  見落とすと `globalData=[]` のような**書き込み側だけが裸の名前のまま残る**。実際に初回実行で発生し、
+  `scripts/check-split-scope.mjs` が拾った（＝実パーサ検査を CI 必須にしておいた #R162 の判断が効いた）。
+- **⚠罠B**: 逆変換は**プロパティ名の長い順**に行う。`user` は `userTheme` の接頭辞なので宣言順に戻すと
+  `HOST.userTheme` が `currentUserTheme` になり、**偽の不一致**を報告する。
+- **⚠罠C**: 作業ツリーは CRLF（`core.autocrlf=true`）。オフセット計算は LF に正規化して行い、
+  書き出しは CRLF に戻す。混在させると新規ファイルだけ行末が食い違う。
+- ブラウザペインは `document.hidden` のため `map.on('load')` が発火せず `window.__imap` が付かない
+  （#R130 の既知の制約・分割とは無関係）。実検証は Playwright 側で行う。
+
+### ⑥ 検証
+- `npm test`（静的検査＋`node --test` 契約テスト＋Playwright）— **静的検査 197ファイル PASS**、
+  **Playwright 141/141 緑**（既存133＋R167の8）。ローカル全並列は起動タイムアウトでフレークするため
+  `--workers=2`（CI相当）で実行。
+- `scripts/check-split-scope.mjs`（acorn 実パーサ）**OK**＝js/ のどのファイルも index.html の閉包変数を
+  自由変数として参照していない／実行時に何にも解決しない自由識別子も無い（**新たな死んだ参照は0件**）。
+- `tests/r162-checks.test.mjs #5` を1点更新：`geoLayersDB` は分割で
+  `const {geoLayersDB,…}=window.IntMapTables;` という**分割代入の const** になったので、判定を
+  「const 宣言である」＋「一度も再代入されない」の2本に書き換えた（守りたい性質は同じ）。
+- `tests/prod-smoke.spec.js` に第6弾分を追加（`IntMapTables` は**値**まで検証、DOMしか公開しない
+  legal / news-timeline はノードで検証）。
+
+---
+
 ## R166 — **index.html リファクタリング第5弾＝残った41ブロックを「主題ごと」7ファイルに（−5,048行 / −590KB）** (tag `#R166`)
 
 **指示**: 「Index.htmlをリファクタリングして。」＝標準指示13（単一ファイルを段階的に分割）の継続。

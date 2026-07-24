@@ -27,9 +27,19 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   'Wind',                 // js/weather.js
   'IntMapBeta2',          // js/layer-packs.js
   'IntMapAIResearch',     // js/analysis-panels.js
-  'IntMapRadiation'];     // js/sims.js
+  'IntMapRadiation',      // js/sims.js
+  // (#R167) the sixth split — one global per new file. js/tables.js is data, not factories, so it
+  // gets checked the same way: the 27 tables it carries feed the Countries tab and the gazetteer,
+  // and a file that failed to deploy would leave both looking merely "empty".
+  'IntMapTables',         // js/tables.js
+  'RunwaySearch',         // js/map-extras.js
+  'IntMapCache',          // js/dash-extended.js
+  '_imWelcome'];          // js/onboarding.js
 // js/playground.js publishes no window.* global of its own — its hub is reached through
-// window._openPlayground, which the test below asserts as a function.
+// window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
+// js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test
+// below asserts their nodes. All four are also named in index.html's boot guard, which this file
+// asserts is clean (`missingFactories` empty) — that is the real backstop for a missing file.
 
 test.describe.configure({ mode: 'serial' });
 
@@ -93,6 +103,20 @@ test('(#R166) prod playground module loaded (it publishes no window global eithe
   // factory, so a global-name check cannot see it. Assert the entry point is a real function.
   const ok = await page.evaluate(() => typeof window._openPlayground === 'function' && typeof window._pgWorldExplorer === 'function');
   expect(ok, 'js/playground.js deployed and its factory ran').toBe(true);
+});
+
+test('(#R167) prod deployed the DOM-only modules (legal / news timeline) and the tables', async () => {
+  // These four files publish no window.* surface — they mount nodes. Ids read out of the module
+  // sources, not guessed. The tables get a VALUE check: an empty object would satisfy a name check
+  // while leaving every country card blank.
+  await expect(page.locator('#legal-tab-privacy')).toBeAttached();   // js/legal.js
+  await expect(page.locator('#ntl-toggle')).toBeAttached();          // js/news-timeline.js
+  const tables = await page.evaluate(() => {
+    const T = window.IntMapTables || {};
+    return { n: Object.keys(T).length, gdp: T.GDP && T.GDP.USA, cap: T.CAPITAL && T.CAPITAL.JPN };
+  });
+  expect(tables.n, 'js/tables.js deployed with all 27 tables').toBe(27);
+  expect(tables, 'the tables carry real values').toMatchObject({ gdp: 27361, cap: 'Tokyo' });
 });
 
 test('prod layer UI initialised and screen not blank', async () => {

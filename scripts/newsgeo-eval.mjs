@@ -21,9 +21,12 @@ import { HOLDOUT } from '../tests/newsgeo-holdout.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* (#R162) The legacy gazetteer arrays no longer all live in index.html: _BUILTIN_GZ and
    _EXTRA_GZ moved to js/gazetteer.js in the file split, while _DEMONYM_GZ/_ORG_GZ stayed.
-   Concatenate both so this comparison still reconstructs the REAL previous behaviour. */
+   (#R167) The sixth split then moved the rest — _DEMONYM_GZ / _ORG_GZ / _DERU_GZ / _DERU_DEM /
+   _ES_GZ / _ES_DEM are now in js/tables.js. Concatenate all three so this comparison still
+   reconstructs the REAL previous behaviour rather than a strawman. */
 const HTML = readFileSync(join(ROOT, 'index.html'), 'utf8') + '\n' +
-             readFileSync(join(ROOT, 'js', 'gazetteer.js'), 'utf8');
+             readFileSync(join(ROOT, 'js', 'gazetteer.js'), 'utf8') + '\n' +
+             readFileSync(join(ROOT, 'js', 'tables.js'), 'utf8');
 
 /* ---------- extract a literal array from the app source by balanced brackets ---- */
 function pullArray(name) {
