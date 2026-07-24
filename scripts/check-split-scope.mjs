@@ -38,7 +38,9 @@ IDBKeyRange indexedDB matchMedia getComputedStyle alert confirm prompt atob btoa
 closest HTMLElement Element Node NodeList Text OffscreenCanvas ImageData CanvasRenderingContext2D WebGLRenderingContext
 AudioContext SpeechSynthesisUtterance speechSynthesis isSecureContext devicePixelRatio innerWidth innerHeight scrollX scrollY
 CSS Audio Option DOMRect Range getSelection AbortSignal WeakRef SVGElement ClipboardItem escape unescape scrollTo print
-maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity`.split(/\s+/).filter(Boolean));
+maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pmtiles`.split(/\s+/).filter(Boolean));
+/* `pmtiles` is loaded on demand from unpkg by the land-cover pack (js/layer-packs.js) and every use
+   is guarded by `typeof pmtiles!=='undefined'`, so it is a real vendor global, not a lost closure name. */
 
 /* ── 1. names index.html declares at the closure's TOP level ──────────────── */
 function closureTopLevelNames(html) {
@@ -168,6 +170,12 @@ const KNOWN_DEAD = new Map([
   ['js/time-borders.js:whenStyleReady', 'declared inside the layers IIFE ("function whenStyleReady()", since #R164 in js/data-layers.js) — never in IntMapTimeBorders\' scope, before or after the splits, so the #R140 style-ready retry has never actually run.'],
   ['js/flight-sim.js:clearHl',        'declared inside the IntMapConsole IIFE (since #R165 in js/atlas-console.js) — never in IntMapFlightSim\'s scope, before or after the splits. The `typeof clearHl==="function"` guard has always been false.'],
   ['js/widgets.js:closeSheet',        'declared inside initMobileUI()\'s scope (index.html "function closeSheet()") — never in the widget board\'s scope, before or after #R164. The `typeof closeSheet==="function"` guard has always been false; the mobile sheet closes through its own handlers instead.'],
+  /* (#R166) three more of the same shape, surfaced by the fifth split. All three live inside the
+     layers IIFE (js/data-layers.js since #R164) and were referenced from SIBLING top-level IIFEs,
+     so they resolved to nothing in index.html too — the split changes nothing about them. */
+  ['js/map-ui.js:withCountries',      'declared inside the layers IIFE ("function withCountries(cb)", since #R164 in js/data-layers.js) — never in the label-popup block\'s scope, before or after the splits. The `typeof withCountries==="function"` guard has always been false, so the popup always takes the plain `fill()` path.'],
+  ['js/map-ui.js:opacities',          'declared inside the layers IIFE ("const opacities={…}", since #R164 in js/data-layers.js) — never in the layer-presets block\'s scope, before or after the splits. Both reads sit in try/catch, so the ReferenceError is swallowed: a saved preset has always stored an EMPTY opacity map. Real bug, but a pre-existing one; fixing it would change behaviour and belongs in its own round.'],
+  ['js/map-ui.js:setLayerOpacity',    'declared inside the layers IIFE ("function setLayerOpacity(id,v)", since #R164 in js/data-layers.js) — never in the layer-presets block\'s scope. It is only reached through `p.ops`, which is always empty for the reason above, so the call never ran.'],
 ]);
 
 /* ── 3b. (#R163) nothing inside a module may shadow the HOST parameter ────────

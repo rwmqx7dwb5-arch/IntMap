@@ -31,8 +31,12 @@ jobs:
       - run: npm ci
       - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets, action-pinning)
         run: npm run check:static
-      - name: Security-logic + monitor-logic tests (Edge Function invariants; area-monitor comparison engine)
-        run: node --test tests/security-logic.mjs tests/monitor-logic.test.mjs
+      # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
+      # source-level suites ran only on a developer's machine — including the file-split invariants,
+      # which is exactly the kind of guard that must not be optional. `npm run test:checks` is the
+      # same list `npm test` uses, so the two can no longer drift. ~2 s for 200+ tests.
+      - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
+        run: npm run test:checks
 
   browser:
     name: Browser smoke + internal QA

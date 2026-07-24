@@ -661,8 +661,9 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R165) 16,740行 / 1.73MB（#R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、
-                                #R162時点は 32,883行/3.77MB。R162〜R165 で 36,955行から **−55%**）。
+                                (#R166) 11,810行 / 1.14MB（#R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、
+                                #R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。
+                                R162〜R166 で 36,955行から **−68%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
@@ -715,6 +716,34 @@ js/
                                     約90アクションカタログ・AIリサーチ/ビジョン・ハイライト/計測/半径実行・返信描画）。941KB＝最大。
                                     ファクトリ引数＝(map, IM_HOST)。**初の READ-WRITE ホストメンバー**利用モジュール
                                     （measurePoints/radiusColor/radiusKm/unitMode/userTheme を setter 経由で書く。§3.1 #R165）
+  ── 以下 (#R166) の7本（第5弾・590KB／5,048行）。**1ファイル＝1ブロックではなく「主題ごとに束ねる」**
+     （41ブロックを7ファイルに）。各ファイルが複数のファクトリを持ち、**どのファクトリも元のブロックが
+     あった位置でそのまま呼ばれる**＝実行順は不変（§3.1 #R166）─────────────
+  map-ui.js                         (#R166) 地図まわりのUI 8本。レイヤーレジストリ `IntMapLayers`・右サイドバー
+                                    `IntMapLayerSidebar`・ニュースティッカー `IntMapTicker`・レイヤープリセット・
+                                    ラベルクリックのポップアップ（`window._imPlacePopup`）・GeoJSONアップロード・
+                                    URLハッシュ（共有可能ビュー）・共有パネル `IntMapShare`。101KB
+  map-tools.js                      (#R166) 地図上の対話ツール 10本。投影ビューア `ProjView`・作図 `DrawTool`・
+                                    国の分離表示 `IntMapIsolate`・海上A*航路 `IntMapRoute`・可視線 `IntMapLOS`・
+                                    領域アウトライン `IntMapOutline`・図形移動 `IntMapMoveShape`・到達圏
+                                    `IntMapIsochrone`・大圏3D弧 `IntMapArc3D`・汎用オブジェクト一覧 `IntMapObjects`。127KB
+  sims.js                           (#R166) 実データからのシミュレーション 8本。放射性プルーム `IntMapRadiation`・
+                                    範囲人口 `IntMapPopArea`・傾斜/斜面 `IntMapSlope`・電波到達 `IntMapRF`・
+                                    昼夜ターミネータ `IntMapSun`・公共交通到達 `IntMapTransitReach`・災害ハザード
+                                    `IntMapDisaster`・地球リプレイ `IntMapEarthReplay`。89KB
+  layer-packs.js                    (#R166) レイヤーパック 6本（レイヤーパネルへ行を追加する自己完結ブロック）。
+                                    地球・大気・空域（ダム/火山/オーロラ/ADIZ）`IntMapLayers9`・土地被覆
+                                    /エコリージョン/プレート・ベータパック2 `IntMapBeta2`・宗教/言語コロプレス・
+                                    実タイムゾーン境界＋現地時刻・NASA GIBS 科学ラスター。91KB
+  analysis-panels.js                (#R166) 解析パネル 5本。時系列チャート `IntMapTimeSeries`・AIリサーチ
+                                    `IntMapAIResearch`・2レイヤー相関/散布図・世界史イベント年表・地理クイズ
+                                    `IntMapEdu`。95KB
+  weather.js                        (#R166) 気象 3本。風の粒子アニメーション `Wind`・予報パネル
+                                    `IntMapWeatherEC`・地点天気 `IntMapWeather`。52KB
+  playground.js                     (#R166) プレイグラウンド（beta）。World Explorer／パンデミック／ネーションシム。
+                                    48KB。**2番目の READ-WRITE ホストメンバー利用モジュール**
+                                    （`mode`＝`currentMode` と `satPanelDismissed` を setter 経由で書く。§3.1 #R166）。
+                                    cameras と同じく `window.*` を公開しない（入口は `window._openPlayground`）
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -814,6 +843,42 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 - `js/flight-sim.js` の `clearHl` … 実体は IntMapConsole IIFE 内。
 - (#R164) `js/widgets.js` の `closeSheet` … 実体は `initMobileUI()` のスコープ内。ガードは分割前から常に false
   （モバイルシートは自前のハンドラで閉じる）。
+- (#R166) `js/map-ui.js` の `withCountries` … 実体は layers IIFE（現 js/data-layers.js）。ラベルポップアップの
+  `typeof withCountries==='function'` は分割前から常に false ＝常に素の `fill()` 経路。
+- (#R166) `js/map-ui.js` の `opacities` / `setLayerOpacity` … 同じく layers IIFE の中。**レイヤープリセットの
+  不透明度保存は分割前から一度も動いていない**（try/catch が ReferenceError を握り潰し、空の `ops` を保存）。
+  修正は挙動変更になるので別ラウンド。
+
+### (#R166) 第5弾 — 主題ごとに束ねる（41ブロック→7ファイル）と、呼び出し順の固定
+#R165 までで「大きくて依存が少ない」塊は出し尽くし、残りは **5〜47KB の自己完結ブロックが約40本**という
+長い尾になった。1ファイル1ブロックでは41ファイルになるので、**主題ごとに束ねて7ファイル**にした
+（`map-ui` / `map-tools` / `sims` / `layer-packs` / `analysis-panels` / `weather` / `playground`）。
+
+- **1ファイルに複数ファクトリ**。`js/history.js`（#R162 の3ファクトリ）の形を全面採用。
+- **ブロック全文をそのままファクトリで包み、代入なしで呼ぶ**：`window.X=(function(){…})();` という文ごと
+  包むので**移設本文は1バイトも変わらない**（#R163 のように `window.X=` を剥がして戻り値を代入する形は取らない）。
+  残置検出の針も `window.X=(function(){` がそのまま使える。
+- **⚠ この束ね方だけが持つ危険＝呼び出し順**。1ファイルに集まると「まとめて上で呼べばいい」と見えるが、
+  これらのブロックは**共有コンテナ（レイヤー行・パネルのボタン列）に append する**ので相対順序が
+  ユーザーに見える。→ **41本すべてを元のブロック位置で呼ぶ**ことを守り、
+  `tests/r166-checks.test.mjs #2` が **index.html 中の41呼び出しの並び順を配列で固定**している。
+- ホストメンバーは **88→104**（新規 getter 16・RW 2）。新しい可変 getter は `namesOn`/`bordersOn`/`geoDB`/
+  `satPanelDismissed`、残りは安定ヘルパー（`ringArea`/`areaHTML`/`fmtLL`/`hasTurf`/`demElevAt`/
+  `demElevBilinear`/`_demZoomForSpan`/`warmDEMTiles`/`layerCbInfo`/`renderLayerFavs`/`removePin`/
+  `setupIntelLayers`）。
+- **RWメンバーは5→7**。`js/playground.js` が2番目の書き込みモジュール：World Explorer は画面を占有するので
+  **アクティブタブを外し（`HOST.mode=null`）衛星コントローラを畳む（`HOST.satPanelDismissed=true`）**。
+  `tests/r165-checks.test.mjs` の RW 契約は「**メンバーごとに所有モジュールを宣言し、js/ のどのファイルも
+  自分が所有しないメンバーを書かない**」に一般化した（他の全モジュールは従来どおり書き込みゼロ）。
+- **#R166 で見つかった既存の死んだ参照 3件**（#R163 と同型・**分割前から到達不能**なので挙動は同一）:
+  `withCountries` / `opacities` / `setLayerOpacity`。いずれも実体は layers IIFE（現 js/data-layers.js）の中で、
+  参照側は兄弟IIFE。**レイヤープリセットは保存時に不透明度を1つも保存できていない**（`opacities` 参照が
+  ReferenceError → try/catch で握り潰され空の `{}` が保存される）＝実在のバグだが**分割前から**同じで、
+  直すと挙動が変わるため別ラウンド扱い。`check-split-scope.mjs` の `KNOWN_DEAD` に根拠付きで登録。
+- **#R166 で観測した既存の不安定**: World Explorer 起動時に MapLibre が国境 FeatureCollection をワーカーへ
+  再送し、その再帰シリアライザが稀に `RangeError: Maximum call stack size exceeded` を投げる。
+  **同じ操作列を分割前の main で6回・分割後で6回**流して 5/6 対 6/6 ＝ **分割由来ではない**ことを確認済み
+  （`tests/r166.spec.js #7` はこの1種類だけを除外し、他のエラーは従来どおり失敗させる）。MapLibre 側の別件。
 
 ### (#R165) 第4弾 — Atlasカーネルの分離と、READ-WRITE ホストメンバー規約
 #R164 が見送った最大の残件 `IntMapConsole`（879KB・6,231行＝Atlasカーネル）を出した。障害だった
@@ -825,9 +890,11 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 - **変数の実体は index.html に残る＝単一の真実の源**。モジュールの `HOST.x=v` は setter を通って
   閉包変数に代入されるため、index.html 側コード（applyTheme/updateToolPanel/distHTML …）と
   モジュール側が**常に同じ live 値**を読む。値のコピーは存在しない。
-- 規約の守り（すべて CI）: `tests/r165-checks.test.mjs` が **RWリストを5メンバーに固定**
-  （setter の集合がこの5つと完全一致・各 setter は同名 getter とペア・カーネルが本当に全5つを
-  `HOST.x=` で書いている・**他のモジュールは HOST への書き込みゼロのまま**）。
+- 規約の守り（すべて CI）: `tests/r165-checks.test.mjs` が **RWリストを固定**
+  （setter の集合が宣言リストと完全一致・各 setter は同じ閉包変数の getter とペア・**所有モジュールが
+  本当に全部を `HOST.x=` で書いている**・**どのモジュールも自分が所有しないメンバーを書かない**）。
+  #R165 時点は**5メンバー＝Atlasカーネル専有**。**#R166 で7に拡張**（`mode`＝`currentMode` と
+  `satPanelDismissed`＝js/playground.js の所有）。
   `tests/r163-checks.test.mjs` #2 は「全メンバー plain getter」から「plain getter または RWペアの
   setter 半分（同一変数への get とペア必須）」に改定。
 - 実ブラウザ証明は `tests/r165.spec.js`: **write-through**（theme アクション→`HOST.userTheme='dark'`→
