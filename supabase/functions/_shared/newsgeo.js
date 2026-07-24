@@ -390,10 +390,14 @@
 
     /* Is there a candidate that is NOT a speaker/venue? Only then is the
        dateline dock safe — otherwise we would throw away the only place. */
-    var anyClean = false, anyRealPlace = false;
+    var anyClean = false, anyRealPlace = false, anyMarkedSubject = false;
     agg.forEach(function (a) {
       if (!a.spoke) anyClean = true;
       if (!a.e.weak && !a.e.dock && a.e.kind !== 'org') anyRealPlace = true;
+      /* an alternative that is EXPLICITLY marked as the subject — "…over Taiwan",
+         "…in Sudan", "clashes in Bamako" — is what makes a venue definitively not
+         the story. A bare country actor ("US-China trade talks in Geneva") is not. */
+      if (!a.spoke && (a.topic || a.prep || a.event)) anyMarkedSubject = true;
     });
 
     var out = [];
@@ -412,7 +416,7 @@
       if (e.dock) { s -= 3; why.push('indirect'); }
       if (a.childOfPresent) { s += 5; why.push('hierarchy'); }
       if (a.absorbed) { s -= 9; why.push('parent-of-named-child'); }
-      if (a.spoke && anyClean) { s -= 6; why.push('dateline'); }
+      if (a.spoke && anyClean) { s -= (anyMarkedSubject ? 6 : 3); why.push('dateline'); }
       if (a.address) { s -= 4; why.push('addressee'); }
       if (a.honor) { s -= 5; why.push('person-title'); }
       if (e.weak) {
@@ -610,7 +614,7 @@
     'MG|46.9|-19.0|47.51|-18.88|Madagascar|マダガスカル|Antananarivo|アンタナナリボ|Мадагаскар|Malagasy',
     'MW|34.3|-13.3|33.79|-13.96|Malawi|マラウイ|Lilongwe|リロングウェ|Малави|Malawian',
     'MY|101.9|4.2|101.69|3.14|Malaysia|マレーシア|Kuala Lumpur|クアラルンプール|Malasia;Малайзи|Malaysian;Malaysians;malaysisch;малайзийск',
-    'MV|73.5|3.2|73.51|4.18|Maldives|モルディブ|Malé|マレ|Мальдив|Maldivian',
+    'MV|73.5|3.2|73.51|4.18|Maldives|モルディブ|Malé!|マレ|Мальдив|Maldivian',
     'ML|-4.0|17.6|-8.0|12.65|Mali!|マリ|Bamako|バマコ|Мали|Malian;malisch',
     'MT|14.4|35.9|14.51|35.9|Malta|マルタ|Valletta|バレッタ|Мальт|Maltese',
     'MH|171.2|7.1|171.38|7.09|Marshall Islands|マーシャル諸島|Majuro|マジュロ||Marshallese',
@@ -1398,7 +1402,8 @@
     'Sydney Sweeney|x||', 'Florence Pugh|x||', 'Milan Kundera|x||', 'Denzel Washington|x||',
     'Charlotte Tilbury|x||', 'Austin Butler|x||', 'Madison Square Garden|x||', 'Victoria Beckham|x||',
     'Georgia Meloni;Giorgia Meloni|x||', 'Chad Michael|x||', 'India Today;India Inc|x||',
-    'Alexandria Ocasio-Cortez|x||', 'Cambridge Analytica|x||', 'Oxford University Press|x||',
+    'Alexandria Ocasio-Cortez|x||', 'Georgia Tech;Georgia Institute of Technology|x||',
+    'Austin Powers|x||', 'Florence Nightingale|x||', 'Cambridge Analytica|x||', 'Oxford University Press|x||',
     'Havana syndrome|x||', 'Stockholm syndrome|x||', 'Dutch disease|x||', 'Spanish flu|x||',
     'Mexican standoff|x||', 'Roman Empire|x||', 'Turkey shoot|x||', 'Nice guy|x||',
     /* --- international organisations → their seat --- */
@@ -1407,7 +1412,7 @@
     'European Commission;European Parliament;European Council;欧州委員会;欧州議会;Еврокомисси|o|Brussels|European Union|欧州連合',
     'IMF;International Monetary Fund;国際通貨基金;МВФ|o|Washington|IMF|IMF',
     'World Bank;世界銀行;Weltbank;Всемирный банк|o|Washington|World Bank|世界銀行',
-    'Federal Reserve;the Fed;Fed;FOMC;連邦準備制度;米連邦準備制度;ФРС|o|Washington|Federal Reserve|連邦準備制度',
+    'Federal Reserve;the Fed;Fed chair;Fed officials;Fed meeting;Fed rate;FOMC;連邦準備制度;米連邦準備制度;ФРС|o|Washington|Federal Reserve|連邦準備制度',
     'WHO;World Health Organization;世界保健機関;ВОЗ|o|Geneva|WHO|WHO',
     'WTO;World Trade Organization;世界貿易機関;ВТО|o|Geneva|WTO|WTO',
     'UNHCR;Human Rights Council;国連人権理事会|o|Geneva|UNHCR|UNHCR',
@@ -1447,7 +1452,7 @@
     'Tigray People’s Liberation Front;TPLF|o|Mekelle|TPLF (Tigray)|TPLF（ティグレ）',
     'Cartel de Sinaloa;Sinaloa cartel|o|Sinaloa|Sinaloa cartel|シナロア・カルテル',
     /* --- companies → headquarters city (docked: only when nothing else places) --- */
-    'Apple Inc;アップル|o|Cupertino|Apple|アップル', 'Google;Alphabet Inc;グーグル|o|Mountain View|Google|グーグル',
+    'Apple Inc;アップル|o|Cupertino|Apple|アップル', 'Google;Alphabet;Alphabet Inc;グーグル|o|Mountain View|Google|グーグル',
     'Microsoft;マイクロソフト|o|Redmond|Microsoft|マイクロソフト', 'Amazon.com;Amazon Web Services;AWS|o|Seattle|Amazon|アマゾン',
     'Meta Platforms;Facebook|o|Palo Alto|Meta|メタ', 'Nvidia;エヌビディア|o|Santa Clara|Nvidia|エヌビディア',
     'Tesla;テスラ|o|Austin|Tesla|テスラ', 'SpaceX|o|Austin|SpaceX|スペースX',
@@ -1478,7 +1483,7 @@
     'Moderna|o|Cambridge (MA)|Moderna|モデルナ', 'Johnson & Johnson|o|Newark|Johnson & Johnson|J&J',
     'Novo Nordisk|o|Copenhagen|Novo Nordisk|ノボノルディスク', 'AstraZeneca|o|Cambridge|AstraZeneca|アストラゼネカ',
     'Netflix|o|Los Angeles|Netflix|ネットフリックス', 'Disney;ディズニー|o|Los Angeles|Disney|ディズニー',
-    'Uber|o|San Francisco|Uber|ウーバー', 'Salesforce|o|San Francisco|Salesforce|セールスフォース',
+    'Salesforce|o|San Francisco|Salesforce|セールスフォース',
     'Exxon;ExxonMobil|o|Houston|ExxonMobil|エクソンモービル', 'Chevron|o|Houston|Chevron|シェブロン',
     'Ford Motor|o|Detroit|Ford|フォード', 'General Motors;GM Motors|o|Detroit|General Motors|GM',
     'Honda;ホンダ|o|Tokyo|Honda|ホンダ', 'Nissan;日産|o|Yokohama|Nissan|日産',
@@ -1549,7 +1554,7 @@
     'Albanese|o|Canberra|Australia|オーストラリア',
     'Carney;Trudeau|o|Ottawa|Canada|カナダ',
     'Ramaphosa|o|Pretoria|South Africa|南アフリカ',
-    'Mohammed bin Salman;MBS;ムハンマド皇太子|o|Riyadh|Saudi Arabia|サウジアラビア',
+    'Mohammed bin Salman;ムハンマド皇太子|o|Riyadh|Saudi Arabia|サウジアラビア',
     'Sisi;シシ|o|Cairo|Egypt|エジプト',
     'von der Leyen;フォンデアライエン|o|Brussels|European Union|欧州連合',
     'Guterres;グテレス|o|New York|United Nations|国連',
@@ -1596,8 +1601,9 @@
       }
       if (f[3] && f[7]) {
         var cap = addEnt({ kind: 'city', iso2: iso, parentIso: iso, capital: true,
-          loc: [num(f[3]), num(f[4])], name: { en: f[7], jp: f[8] || f[7] }, rank: 7 });
-        indexSurface(f[7], cap.id); indexSurface(f[8], cap.id);
+          loc: [num(f[3]), num(f[4])], name: { en: cleanName(f[7]), jp: f[8] || cleanName(f[7]) },
+          rank: 7, weak: weakName(f[7]) });
+        indexSurface(cap.name.en, cap.id); indexSurface(f[8], cap.id);
         var ca = capAlt.get(iso);
         if (ca) for (r = 0; r < ca.length; r++) if (ca[r]) indexSurface(ca[r], cap.id);
       }

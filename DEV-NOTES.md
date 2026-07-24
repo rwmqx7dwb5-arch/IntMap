@@ -42,7 +42,7 @@
 `node scripts/newsgeo-eval.mjs`。比較対象の「旧」は**strawman ではなく**、`index.html` に今も存在する実配列（`_BUILTIN_GZ`/`_EXTRA_GZ`/`_DEMONYM_GZ`/`_ORG_GZ`/`_DERU_*`/`_ES_*`）＋`countryStats` 相当の国リストから**旧 `rebuildGeoIndex`＋`scoreGeo` を実際に再構成**したもの。
 - ラベル付きコーパス **141件**（en/ja/de/ru/es・失敗クラス別）: **旧 61.0% → 新 100%**（誤り **55→0**）
 - **ホールドアウト 63件**（エンジン完成後に書き、1回だけ採点＝重みは一切合わせていない）: **旧 58.7% → 新 100%**
-- **実 Google News RSS 229本**（en/ja/biz/de/es）: 測位率 **67% → 85%**。未測位の大半は本当に場所の無い経済/科学記事＝**正しい挙動**。
+- **実 Google News RSS 229本**（en/ja/biz/de/es・生フィードなので実行ごとに内容が変わる）: 測位率 **約67% → 約81%**。未測位の大半は本当に場所の無い経済/科学記事＝**打たないのが正しい挙動**。
 - 速度: 150記事 **14ms**（旧＝記事ごとに約2000正規表現）。
 ※ホールドアウトもエンジン作者が書いたものなので**楽観寄りの推定**である点は正直に記す。実RSSの測位率が偏りのない外部指標。
 
@@ -52,7 +52,7 @@
 - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が原理的に不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` は **その1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する（今後のレイヤ系テストにも使える型）。
 
 ### テスト/CI/デプロイ
-新規 `tests/r161-checks.test.mjs`（16件：**振る舞い**＝デートライン/曖昧性/階層/トラップ/大文字ガード/常用語/多言語/媒体名除去/無回答/決定論/速度、**計測**＝コーパス≥95%・ホールドアウト≥90%・旧比5倍以上の誤り減、**配線**＝ミラー同期・クライアント/サーバー配線・Phase 3 契約とニュース6ハンドラ移行）＋ `tests/r161.spec.js`（実Chromium 7件）＋ `tests/newsgeo-corpus.mjs` / `tests/newsgeo-holdout.mjs` / `scripts/newsgeo-eval.mjs` / `scripts/sync-newsgeo.mjs`。`scripts/static-checks.mjs` に**ミラー同期チェック**を追加（ドリフトで落ちることを負テストで確認）。`npm test` 緑（static＋node **194**＋Playwright **106**、CI条件 workers=2/retries=2）。**Edge Function `refresh-news` は変更あり＝本番デプロイ必須**。
+新規 `tests/r161-checks.test.mjs`（16件：**振る舞い**＝デートライン/曖昧性/階層/トラップ/大文字ガード/常用語/多言語/媒体名除去/無回答/決定論/速度、**計測**＝コーパス≥95%・ホールドアウト≥90%・旧比5倍以上の誤り減、**配線**＝ミラー同期・クライアント/サーバー配線・Phase 3 契約とニュース6ハンドラ移行）＋ `tests/r161.spec.js`（実Chromium 7件）＋ `tests/newsgeo-corpus.mjs` / `tests/newsgeo-holdout.mjs` / `scripts/newsgeo-eval.mjs` / `scripts/sync-newsgeo.mjs`。`scripts/static-checks.mjs` に**ミラー同期チェック**を追加（ドリフトで落ちることを負テストで確認）。`npm test` 緑（static＋node **178**＋Playwright **107**、CI条件 workers=2/retries=2）。**Edge Function `refresh-news` は変更あり＝本番デプロイ必須**。
 **罠/教訓**: (a) `index.html` は **CRLF** なので改行入りの exact-string assert は必ず落ちる（バックスラッシュ n が実改行にならない）→改行は正規表現の空白クラスで書く。(b) 自変更で **r160 #D2 の exact-string assert が破損**（render 名前空間を拡張したため）→現挙動へ更新（R152/R154/R156/R159/R160 と同じ罠、毎回起きる）。(c) 短い別名は事故のもと——`Газ`(Gaza の語幹)は露語の**「ガス」**に、`LA` は西語の**冠詞 `la`** に、`US` は英語の **`us`** に一致する。**語幹は4文字以上／頭字語は全大文字必須**で構造的に封じた。(d) hermetic Playwright は `isStyleLoaded()` が永久 false ＝ レイヤ検証不能→ベースマップ1ソースだけスタブすれば実検証できる。
 
 ## R160 — サイドバー開閉で地図を動かさない＋幅縮小＋設定バグ／MapLibre依存軽減の続き：**左サイドバーは元の横並び（beside-flex）機構を保ったまま「単一の静止エッジ・ピン」で地図を動かさない（機構は勝手に作り変えない）／右サイドバーは地図を押さないオーバーレイ化（地図領域の位置を動かさない）／R158/R159の毎フレームresize＋エッジアンカー『ループ』は全削除／右サイドバー既定幅（340→300）／設定変更で右サイドバーが勝手に開く不具合の修正／IntMapGeoEngine（レンダラ抽象）Phase 2** (tag `#R160`)
