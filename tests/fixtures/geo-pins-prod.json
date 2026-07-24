@@ -1,0 +1,3277 @@
+[
+ {
+  "type": "city",
+  "terms": [
+   "Abu Dhabi",
+   "アブダビ"
+  ],
+  "name_en": "Abu Dhabi",
+  "name_jp": "アブダビ",
+  "lng": 54.37,
+  "lat": 24.45
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Abuja",
+   "アブジャ"
+  ],
+  "name_en": "Abuja",
+  "name_jp": "アブジャ",
+  "lng": 7.49,
+  "lat": 9.07
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Accra",
+   "アクラ"
+  ],
+  "name_en": "Accra",
+  "name_jp": "アクラ",
+  "lng": -0.19,
+  "lat": 5.6
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Addis Ababa",
+   "アディスアベバ"
+  ],
+  "name_en": "Addis Ababa",
+  "name_jp": "アディスアベバ",
+  "lng": 38.74,
+  "lat": 9.03
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Alexandria",
+   "アレキサンドリア"
+  ],
+  "name_en": "Alexandria",
+  "name_jp": "アレキサンドリア",
+  "lng": 29.92,
+  "lat": 31.2
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Algiers",
+   "アルジェ"
+  ],
+  "name_en": "Algiers",
+  "name_jp": "アルジェ",
+  "lng": 3.06,
+  "lat": 36.75
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Amman",
+   "アンマン"
+  ],
+  "name_en": "Amman",
+  "name_jp": "アンマン",
+  "lng": 35.93,
+  "lat": 31.95
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Amsterdam",
+   "アムステルダム"
+  ],
+  "name_en": "Amsterdam",
+  "name_jp": "アムステルダム",
+  "lng": 4.9,
+  "lat": 52.37
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Ankara",
+   "アンカラ"
+  ],
+  "name_en": "Ankara",
+  "name_jp": "アンカラ",
+  "lng": 32.86,
+  "lat": 39.93
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Athens",
+   "アテネ"
+  ],
+  "name_en": "Athens",
+  "name_jp": "アテネ",
+  "lng": 23.72,
+  "lat": 37.98
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Atlanta",
+   "アトランタ"
+  ],
+  "name_en": "Atlanta",
+  "name_jp": "アトランタ",
+  "lng": -84.38,
+  "lat": 33.74
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Auckland",
+   "オークランド"
+  ],
+  "name_en": "Auckland",
+  "name_jp": "オークランド",
+  "lng": 174.76,
+  "lat": -36.85
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Baghdad",
+   "バグダッド"
+  ],
+  "name_en": "Baghdad",
+  "name_jp": "バグダッド",
+  "lng": 44.36,
+  "lat": 33.31
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Bangkok",
+   "バンコク"
+  ],
+  "name_en": "Bangkok",
+  "name_jp": "バンコク",
+  "lng": 100.5,
+  "lat": 13.76
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Barcelona",
+   "バルセロナ"
+  ],
+  "name_en": "Barcelona",
+  "name_jp": "バルセロナ",
+  "lng": 2.17,
+  "lat": 41.39
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Beijing",
+   "北京"
+  ],
+  "name_en": "Beijing",
+  "name_jp": "北京",
+  "lng": 116.4,
+  "lat": 39.9
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Beirut",
+   "ベイルート"
+  ],
+  "name_en": "Beirut",
+  "name_jp": "ベイルート",
+  "lng": 35.51,
+  "lat": 33.89
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Belgrade",
+   "ベオグラード"
+  ],
+  "name_en": "Belgrade",
+  "name_jp": "ベオグラード",
+  "lng": 20.46,
+  "lat": 44.79
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Bengaluru",
+   "Bangalore",
+   "ベンガルール",
+   "バンガロール"
+  ],
+  "name_en": "Bengaluru",
+  "name_jp": "ベンガルール",
+  "lng": 77.59,
+  "lat": 12.97
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Berlin",
+   "ベルリン"
+  ],
+  "name_en": "Berlin",
+  "name_jp": "ベルリン",
+  "lng": 13.4,
+  "lat": 52.52
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Bogota",
+   "ボゴタ"
+  ],
+  "name_en": "Bogotá",
+  "name_jp": "ボゴタ",
+  "lng": -74.07,
+  "lat": 4.71
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Boston",
+   "ボストン"
+  ],
+  "name_en": "Boston",
+  "name_jp": "ボストン",
+  "lng": -71.06,
+  "lat": 42.36
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Brasilia",
+   "ブラジリア"
+  ],
+  "name_en": "Brasília",
+  "name_jp": "ブラジリア",
+  "lng": -47.93,
+  "lat": -15.78
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Brussels",
+   "ブリュッセル"
+  ],
+  "name_en": "Brussels",
+  "name_jp": "ブリュッセル",
+  "lng": 4.35,
+  "lat": 50.85
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Bucharest",
+   "ブカレスト"
+  ],
+  "name_en": "Bucharest",
+  "name_jp": "ブカレスト",
+  "lng": 26.1,
+  "lat": 44.43
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Budapest",
+   "ブダペスト"
+  ],
+  "name_en": "Budapest",
+  "name_jp": "ブダペスト",
+  "lng": 19.04,
+  "lat": 47.5
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Buenos Aires",
+   "ブエノスアイレス"
+  ],
+  "name_en": "Buenos Aires",
+  "name_jp": "ブエノスアイレス",
+  "lng": -58.38,
+  "lat": -34.61
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Busan",
+   "釜山"
+  ],
+  "name_en": "Busan",
+  "name_jp": "釜山",
+  "lng": 129.07,
+  "lat": 35.18
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Cairo",
+   "カイロ"
+  ],
+  "name_en": "Cairo",
+  "name_jp": "カイロ",
+  "lng": 31.24,
+  "lat": 30.04
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Canberra",
+   "キャンベラ"
+  ],
+  "name_en": "Canberra",
+  "name_jp": "キャンベラ",
+  "lng": 149.13,
+  "lat": -35.28
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Cape Town",
+   "ケープタウン"
+  ],
+  "name_en": "Cape Town",
+  "name_jp": "ケープタウン",
+  "lng": 18.42,
+  "lat": -33.92
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Caracas",
+   "カラカス"
+  ],
+  "name_en": "Caracas",
+  "name_jp": "カラカス",
+  "lng": -66.92,
+  "lat": 10.48
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Casablanca",
+   "カサブランカ"
+  ],
+  "name_en": "Casablanca",
+  "name_jp": "カサブランカ",
+  "lng": -7.59,
+  "lat": 33.57
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Chengdu",
+   "成都"
+  ],
+  "name_en": "Chengdu",
+  "name_jp": "成都",
+  "lng": 104.07,
+  "lat": 30.67
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Chennai",
+   "チェンナイ"
+  ],
+  "name_en": "Chennai",
+  "name_jp": "チェンナイ",
+  "lng": 80.27,
+  "lat": 13.08
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Chicago",
+   "シカゴ"
+  ],
+  "name_en": "Chicago",
+  "name_jp": "シカゴ",
+  "lng": -87.63,
+  "lat": 41.88
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Colombo",
+   "コロンボ"
+  ],
+  "name_en": "Colombo",
+  "name_jp": "コロンボ",
+  "lng": 79.86,
+  "lat": 6.93
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Copenhagen",
+   "コペンハーゲン"
+  ],
+  "name_en": "Copenhagen",
+  "name_jp": "コペンハーゲン",
+  "lng": 12.57,
+  "lat": 55.68
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Dallas",
+   "ダラス"
+  ],
+  "name_en": "Dallas",
+  "name_jp": "ダラス",
+  "lng": -96.8,
+  "lat": 32.78
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Damascus",
+   "ダマスカス"
+  ],
+  "name_en": "Damascus",
+  "name_jp": "ダマスカス",
+  "lng": 36.3,
+  "lat": 33.51
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Dhaka",
+   "ダッカ"
+  ],
+  "name_en": "Dhaka",
+  "name_jp": "ダッカ",
+  "lng": 90.4,
+  "lat": 23.81
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Doha",
+   "ドーハ"
+  ],
+  "name_en": "Doha",
+  "name_jp": "ドーハ",
+  "lng": 51.53,
+  "lat": 25.28
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Dubai",
+   "ドバイ"
+  ],
+  "name_en": "Dubai",
+  "name_jp": "ドバイ",
+  "lng": 55.27,
+  "lat": 25.2
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Dublin",
+   "ダブリン"
+  ],
+  "name_en": "Dublin",
+  "name_jp": "ダブリン",
+  "lng": -6.27,
+  "lat": 53.35
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Edinburgh",
+   "エディンバラ"
+  ],
+  "name_en": "Edinburgh",
+  "name_jp": "エディンバラ",
+  "lng": -3.19,
+  "lat": 55.95
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Frankfurt",
+   "フランクフルト"
+  ],
+  "name_en": "Frankfurt",
+  "name_jp": "フランクフルト",
+  "lng": 8.68,
+  "lat": 50.11
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Geneva",
+   "ジュネーブ"
+  ],
+  "name_en": "Geneva",
+  "name_jp": "ジュネーブ",
+  "lng": 6.14,
+  "lat": 46.2
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Guangzhou",
+   "広州"
+  ],
+  "name_en": "Guangzhou",
+  "name_jp": "広州",
+  "lng": 113.27,
+  "lat": 23.13
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Hamburg",
+   "ハンブルク"
+  ],
+  "name_en": "Hamburg",
+  "name_jp": "ハンブルク",
+  "lng": 10,
+  "lat": 53.55
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Hanoi",
+   "ハノイ"
+  ],
+  "name_en": "Hanoi",
+  "name_jp": "ハノイ",
+  "lng": 105.85,
+  "lat": 21.03
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Havana",
+   "ハバナ"
+  ],
+  "name_en": "Havana",
+  "name_jp": "ハバナ",
+  "lng": -82.36,
+  "lat": 23.13
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Helsinki",
+   "ヘルシンキ"
+  ],
+  "name_en": "Helsinki",
+  "name_jp": "ヘルシンキ",
+  "lng": 24.94,
+  "lat": 60.17
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Hiroshima",
+   "広島"
+  ],
+  "name_en": "Hiroshima",
+  "name_jp": "広島",
+  "lng": 132.46,
+  "lat": 34.39
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Ho Chi Minh",
+   "Saigon",
+   "ホーチミン",
+   "サイゴン"
+  ],
+  "name_en": "Ho Chi Minh City",
+  "name_jp": "ホーチミン",
+  "lng": 106.66,
+  "lat": 10.78
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Hong Kong",
+   "香港",
+   "HK"
+  ],
+  "name_en": "Hong Kong",
+  "name_jp": "香港",
+  "lng": 114.16,
+  "lat": 22.31
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Honolulu",
+   "ホノルル"
+  ],
+  "name_en": "Honolulu",
+  "name_jp": "ホノルル",
+  "lng": -157.86,
+  "lat": 21.31
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Houston",
+   "ヒューストン"
+  ],
+  "name_en": "Houston",
+  "name_jp": "ヒューストン",
+  "lng": -95.37,
+  "lat": 29.76
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Islamabad",
+   "イスラマバード"
+  ],
+  "name_en": "Islamabad",
+  "name_jp": "イスラマバード",
+  "lng": 73.06,
+  "lat": 33.69
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Istanbul",
+   "イスタンブール"
+  ],
+  "name_en": "Istanbul",
+  "name_jp": "イスタンブール",
+  "lng": 28.98,
+  "lat": 41.01
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Jakarta",
+   "ジャカルタ"
+  ],
+  "name_en": "Jakarta",
+  "name_jp": "ジャカルタ",
+  "lng": 106.85,
+  "lat": -6.21
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Jerusalem",
+   "エルサレム"
+  ],
+  "name_en": "Jerusalem",
+  "name_jp": "エルサレム",
+  "lng": 35.21,
+  "lat": 31.78
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Johannesburg",
+   "ヨハネスブルグ"
+  ],
+  "name_en": "Johannesburg",
+  "name_jp": "ヨハネスブルグ",
+  "lng": 28.05,
+  "lat": -26.2
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kabul",
+   "カブール"
+  ],
+  "name_en": "Kabul",
+  "name_jp": "カブール",
+  "lng": 69.21,
+  "lat": 34.53
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Karachi",
+   "カラチ"
+  ],
+  "name_en": "Karachi",
+  "name_jp": "カラチ",
+  "lng": 67,
+  "lat": 24.86
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kathmandu",
+   "カトマンズ"
+  ],
+  "name_en": "Kathmandu",
+  "name_jp": "カトマンズ",
+  "lng": 85.32,
+  "lat": 27.71
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Khartoum",
+   "ハルツーム"
+  ],
+  "name_en": "Khartoum",
+  "name_jp": "ハルツーム",
+  "lng": 32.55,
+  "lat": 15.5
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kolkata",
+   "コルカタ"
+  ],
+  "name_en": "Kolkata",
+  "name_jp": "コルカタ",
+  "lng": 88.36,
+  "lat": 22.57
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kuala Lumpur",
+   "クアラルンプール"
+  ],
+  "name_en": "Kuala Lumpur",
+  "name_jp": "クアラルンプール",
+  "lng": 101.69,
+  "lat": 3.14
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kyiv",
+   "Kiev",
+   "キエフ",
+   "キーウ"
+  ],
+  "name_en": "Kyiv",
+  "name_jp": "キーウ",
+  "lng": 30.52,
+  "lat": 50.45
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Kyoto",
+   "京都"
+  ],
+  "name_en": "Kyoto",
+  "name_jp": "京都",
+  "lng": 135.77,
+  "lat": 35.01
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Lagos",
+   "ラゴス"
+  ],
+  "name_en": "Lagos",
+  "name_jp": "ラゴス",
+  "lng": 3.38,
+  "lat": 6.45
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Lima",
+   "リマ"
+  ],
+  "name_en": "Lima",
+  "name_jp": "リマ",
+  "lng": -77.04,
+  "lat": -12.05
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Lisbon",
+   "リスボン"
+  ],
+  "name_en": "Lisbon",
+  "name_jp": "リスボン",
+  "lng": -9.14,
+  "lat": 38.72
+ },
+ {
+  "type": "city",
+  "terms": [
+   "London",
+   "ロンドン"
+  ],
+  "name_en": "London",
+  "name_jp": "ロンドン",
+  "lng": -0.12,
+  "lat": 51.5
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Los Angeles",
+   "LA",
+   "ロサンゼルス"
+  ],
+  "name_en": "Los Angeles",
+  "name_jp": "ロサンゼルス",
+  "lng": -118.24,
+  "lat": 34.05
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Macau",
+   "Macao",
+   "マカオ"
+  ],
+  "name_en": "Macau",
+  "name_jp": "マカオ",
+  "lng": 113.55,
+  "lat": 22.2
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Madrid",
+   "マドリード"
+  ],
+  "name_en": "Madrid",
+  "name_jp": "マドリード",
+  "lng": -3.7,
+  "lat": 40.42
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Manila",
+   "マニラ"
+  ],
+  "name_en": "Manila",
+  "name_jp": "マニラ",
+  "lng": 120.98,
+  "lat": 14.6
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Melbourne",
+   "メルボルン"
+  ],
+  "name_en": "Melbourne",
+  "name_jp": "メルボルン",
+  "lng": 144.96,
+  "lat": -37.81
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Mexico City",
+   "メキシコシティ"
+  ],
+  "name_en": "Mexico City",
+  "name_jp": "メキシコシティ",
+  "lng": -99.13,
+  "lat": 19.43
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Miami",
+   "マイアミ"
+  ],
+  "name_en": "Miami",
+  "name_jp": "マイアミ",
+  "lng": -80.19,
+  "lat": 25.76
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Milan",
+   "ミラノ"
+  ],
+  "name_en": "Milan",
+  "name_jp": "ミラノ",
+  "lng": 9.19,
+  "lat": 45.46
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Minsk",
+   "ミンスク"
+  ],
+  "name_en": "Minsk",
+  "name_jp": "ミンスク",
+  "lng": 27.57,
+  "lat": 53.9
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Montreal",
+   "モントリオール"
+  ],
+  "name_en": "Montreal",
+  "name_jp": "モントリオール",
+  "lng": -73.57,
+  "lat": 45.5
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Moscow",
+   "モスクワ"
+  ],
+  "name_en": "Moscow",
+  "name_jp": "モスクワ",
+  "lng": 37.61,
+  "lat": 55.75
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Mumbai",
+   "ムンバイ"
+  ],
+  "name_en": "Mumbai",
+  "name_jp": "ムンバイ",
+  "lng": 72.83,
+  "lat": 19.07
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Munich",
+   "ミュンヘン"
+  ],
+  "name_en": "Munich",
+  "name_jp": "ミュンヘン",
+  "lng": 11.58,
+  "lat": 48.14
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Nagasaki",
+   "長崎"
+  ],
+  "name_en": "Nagasaki",
+  "name_jp": "長崎",
+  "lng": 129.87,
+  "lat": 32.74
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Nairobi",
+   "ナイロビ"
+  ],
+  "name_en": "Nairobi",
+  "name_jp": "ナイロビ",
+  "lng": 36.82,
+  "lat": -1.29
+ },
+ {
+  "type": "city",
+  "terms": [
+   "New Delhi",
+   "Delhi",
+   "デリー",
+   "ニューデリー"
+  ],
+  "name_en": "New Delhi",
+  "name_jp": "デリー",
+  "lng": 77.21,
+  "lat": 28.61
+ },
+ {
+  "type": "city",
+  "terms": [
+   "New York",
+   "NYC",
+   "ニューヨーク"
+  ],
+  "name_en": "New York",
+  "name_jp": "ニューヨーク",
+  "lng": -74,
+  "lat": 40.71
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Okinawa",
+   "沖縄"
+  ],
+  "name_en": "Okinawa",
+  "name_jp": "沖縄",
+  "lng": 127.94,
+  "lat": 26.21
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Osaka",
+   "大阪"
+  ],
+  "name_en": "Osaka",
+  "name_jp": "大阪",
+  "lng": 135.5,
+  "lat": 34.69
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Oslo",
+   "オスロ"
+  ],
+  "name_en": "Oslo",
+  "name_jp": "オスロ",
+  "lng": 10.75,
+  "lat": 59.91
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Ottawa",
+   "オタワ"
+  ],
+  "name_en": "Ottawa",
+  "name_jp": "オタワ",
+  "lng": -75.7,
+  "lat": 45.42
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Paris",
+   "パリ"
+  ],
+  "name_en": "Paris",
+  "name_jp": "パリ",
+  "lng": 2.35,
+  "lat": 48.85
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Phnom Penh",
+   "プノンペン"
+  ],
+  "name_en": "Phnom Penh",
+  "name_jp": "プノンペン",
+  "lng": 104.92,
+  "lat": 11.56
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Prague",
+   "プラハ"
+  ],
+  "name_en": "Prague",
+  "name_jp": "プラハ",
+  "lng": 14.42,
+  "lat": 50.08
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Pretoria",
+   "プレトリア"
+  ],
+  "name_en": "Pretoria",
+  "name_jp": "プレトリア",
+  "lng": 28.19,
+  "lat": -25.75
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Pyongyang",
+   "平壌"
+  ],
+  "name_en": "Pyongyang",
+  "name_jp": "平壌",
+  "lng": 125.76,
+  "lat": 39.04
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Rabat",
+   "ラバト"
+  ],
+  "name_en": "Rabat",
+  "name_jp": "ラバト",
+  "lng": -6.84,
+  "lat": 34.02
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Reykjavik",
+   "レイキャビク"
+  ],
+  "name_en": "Reykjavik",
+  "name_jp": "レイキャビク",
+  "lng": -21.94,
+  "lat": 64.13
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Riga",
+   "リガ"
+  ],
+  "name_en": "Riga",
+  "name_jp": "リガ",
+  "lng": 24.1,
+  "lat": 56.95
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Rio de Janeiro",
+   "リオデジャネイロ"
+  ],
+  "name_en": "Rio de Janeiro",
+  "name_jp": "リオデジャネイロ",
+  "lng": -43.2,
+  "lat": -22.91
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Riyadh",
+   "リヤド"
+  ],
+  "name_en": "Riyadh",
+  "name_jp": "リヤド",
+  "lng": 46.72,
+  "lat": 24.71
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Rome",
+   "ローマ"
+  ],
+  "name_en": "Rome",
+  "name_jp": "ローマ",
+  "lng": 12.48,
+  "lat": 41.9
+ },
+ {
+  "type": "city",
+  "terms": [
+   "San Francisco",
+   "サンフランシスコ"
+  ],
+  "name_en": "San Francisco",
+  "name_jp": "サンフランシスコ",
+  "lng": -122.42,
+  "lat": 37.77
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Santiago",
+   "サンティアゴ"
+  ],
+  "name_en": "Santiago",
+  "name_jp": "サンティアゴ",
+  "lng": -70.65,
+  "lat": -33.45
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Sao Paulo",
+   "サンパウロ"
+  ],
+  "name_en": "São Paulo",
+  "name_jp": "サンパウロ",
+  "lng": -46.63,
+  "lat": -23.55
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Sapporo",
+   "札幌"
+  ],
+  "name_en": "Sapporo",
+  "name_jp": "札幌",
+  "lng": 141.35,
+  "lat": 43.06
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Seattle",
+   "シアトル"
+  ],
+  "name_en": "Seattle",
+  "name_jp": "シアトル",
+  "lng": -122.33,
+  "lat": 47.61
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Seoul",
+   "ソウル"
+  ],
+  "name_en": "Seoul",
+  "name_jp": "ソウル",
+  "lng": 126.97,
+  "lat": 37.56
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Shanghai",
+   "上海"
+  ],
+  "name_en": "Shanghai",
+  "name_jp": "上海",
+  "lng": 121.47,
+  "lat": 31.23
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Shenzhen",
+   "深圳"
+  ],
+  "name_en": "Shenzhen",
+  "name_jp": "深圳",
+  "lng": 114.05,
+  "lat": 22.54
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Singapore",
+   "シンガポール"
+  ],
+  "name_en": "Singapore",
+  "name_jp": "シンガポール",
+  "lng": 103.82,
+  "lat": 1.35
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Sofia",
+   "ソフィア"
+  ],
+  "name_en": "Sofia",
+  "name_jp": "ソフィア",
+  "lng": 23.32,
+  "lat": 42.7
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Saint Petersburg",
+   "St. Petersburg",
+   "サンクトペテルブルク"
+  ],
+  "name_en": "St. Petersburg",
+  "name_jp": "サンクトペテルブルク",
+  "lng": 30.31,
+  "lat": 59.94
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Stockholm",
+   "ストックホルム"
+  ],
+  "name_en": "Stockholm",
+  "name_jp": "ストックホルム",
+  "lng": 18.07,
+  "lat": 59.33
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Sydney",
+   "シドニー"
+  ],
+  "name_en": "Sydney",
+  "name_jp": "シドニー",
+  "lng": 151.21,
+  "lat": -33.87
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Taipei",
+   "台北"
+  ],
+  "name_en": "Taipei",
+  "name_jp": "台北",
+  "lng": 121.56,
+  "lat": 25.03
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tallinn",
+   "タリン"
+  ],
+  "name_en": "Tallinn",
+  "name_jp": "タリン",
+  "lng": 24.75,
+  "lat": 59.43
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tehran",
+   "テヘラン"
+  ],
+  "name_en": "Tehran",
+  "name_jp": "テヘラン",
+  "lng": 51.38,
+  "lat": 35.68
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tel Aviv",
+   "テルアビブ"
+  ],
+  "name_en": "Tel Aviv",
+  "name_jp": "テルアビブ",
+  "lng": 34.78,
+  "lat": 32.08
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tokyo",
+   "東京"
+  ],
+  "name_en": "Tokyo",
+  "name_jp": "東京",
+  "lng": 139.69,
+  "lat": 35.68
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Toronto",
+   "トロント"
+  ],
+  "name_en": "Toronto",
+  "name_jp": "トロント",
+  "lng": -79.38,
+  "lat": 43.65
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tripoli",
+   "トリポリ"
+  ],
+  "name_en": "Tripoli",
+  "name_jp": "トリポリ",
+  "lng": 13.18,
+  "lat": 32.89
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Tunis",
+   "チュニス"
+  ],
+  "name_en": "Tunis",
+  "name_jp": "チュニス",
+  "lng": 10.18,
+  "lat": 36.81
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Vancouver",
+   "バンクーバー"
+  ],
+  "name_en": "Vancouver",
+  "name_jp": "バンクーバー",
+  "lng": -123.12,
+  "lat": 49.28
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Vienna",
+   "ウィーン"
+  ],
+  "name_en": "Vienna",
+  "name_jp": "ウィーン",
+  "lng": 16.37,
+  "lat": 48.21
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Vientiane",
+   "ビエンチャン"
+  ],
+  "name_en": "Vientiane",
+  "name_jp": "ビエンチャン",
+  "lng": 102.63,
+  "lat": 17.97
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Vilnius",
+   "ビリニュス"
+  ],
+  "name_en": "Vilnius",
+  "name_jp": "ビリニュス",
+  "lng": 25.28,
+  "lat": 54.69
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Vladivostok",
+   "ウラジオストク"
+  ],
+  "name_en": "Vladivostok",
+  "name_jp": "ウラジオストク",
+  "lng": 131.88,
+  "lat": 43.12
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Warsaw",
+   "ワルシャワ"
+  ],
+  "name_en": "Warsaw",
+  "name_jp": "ワルシャワ",
+  "lng": 21.01,
+  "lat": 52.23
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Washington",
+   "ワシントン"
+  ],
+  "name_en": "Washington D.C.",
+  "name_jp": "ワシントンD.C.",
+  "lng": -77.03,
+  "lat": 38.9
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Wellington",
+   "ウェリントン"
+  ],
+  "name_en": "Wellington",
+  "name_jp": "ウェリントン",
+  "lng": 174.78,
+  "lat": -41.29
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Yangon",
+   "ヤンゴン"
+  ],
+  "name_en": "Yangon",
+  "name_jp": "ヤンゴン",
+  "lng": 96.16,
+  "lat": 16.84
+ },
+ {
+  "type": "city",
+  "terms": [
+   "Zurich",
+   "チューリッヒ"
+  ],
+  "name_en": "Zurich",
+  "name_jp": "チューリッヒ",
+  "lng": 8.55,
+  "lat": 47.37
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Afghanistan",
+   "アフガニスタン"
+  ],
+  "name_en": "Afghanistan",
+  "name_jp": "アフガニスタン",
+  "lng": 67.71,
+  "lat": 33.94
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Algeria",
+   "アルジェリア"
+  ],
+  "name_en": "Algeria",
+  "name_jp": "アルジェリア",
+  "lng": 1.66,
+  "lat": 28.03
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Angola",
+   "アンゴラ"
+  ],
+  "name_en": "Angola",
+  "name_jp": "アンゴラ",
+  "lng": 17.87,
+  "lat": -11.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Argentina",
+   "アルゼンチン"
+  ],
+  "name_en": "Argentina",
+  "name_jp": "アルゼンチン",
+  "lng": -63.62,
+  "lat": -38.42
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Armenia",
+   "アルメニア"
+  ],
+  "name_en": "Armenia",
+  "name_jp": "アルメニア",
+  "lng": 45.04,
+  "lat": 40.07
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Australia",
+   "オーストラリア"
+  ],
+  "name_en": "Australia",
+  "name_jp": "オーストラリア",
+  "lng": 133.78,
+  "lat": -25.27
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Austria",
+   "オーストリア"
+  ],
+  "name_en": "Austria",
+  "name_jp": "オーストリア",
+  "lng": 14.6,
+  "lat": 47.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Azerbaijan",
+   "アゼルバイジャン"
+  ],
+  "name_en": "Azerbaijan",
+  "name_jp": "アゼルバイジャン",
+  "lng": 47.58,
+  "lat": 40.14
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Bangladesh",
+   "バングラデシュ"
+  ],
+  "name_en": "Bangladesh",
+  "name_jp": "バングラデシュ",
+  "lng": 90.4,
+  "lat": 23.7
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Belarus",
+   "ベラルーシ"
+  ],
+  "name_en": "Belarus",
+  "name_jp": "ベラルーシ",
+  "lng": 28,
+  "lat": 53.7
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Belgium",
+   "ベルギー"
+  ],
+  "name_en": "Belgium",
+  "name_jp": "ベルギー",
+  "lng": 4.5,
+  "lat": 50.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Bolivia",
+   "ボリビア"
+  ],
+  "name_en": "Bolivia",
+  "name_jp": "ボリビア",
+  "lng": -63.59,
+  "lat": -16.29
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Brazil",
+   "ブラジル"
+  ],
+  "name_en": "Brazil",
+  "name_jp": "ブラジル",
+  "lng": -51.93,
+  "lat": -14.24
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Brunei",
+   "ブルネイ"
+  ],
+  "name_en": "Brunei",
+  "name_jp": "ブルネイ",
+  "lng": 114.73,
+  "lat": 4.54
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Bulgaria",
+   "ブルガリア"
+  ],
+  "name_en": "Bulgaria",
+  "name_jp": "ブルガリア",
+  "lng": 25.5,
+  "lat": 42.7
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Burkina Faso",
+   "ブルキナファソ"
+  ],
+  "name_en": "Burkina Faso",
+  "name_jp": "ブルキナファソ",
+  "lng": -1.56,
+  "lat": 12.24
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Cambodia",
+   "カンボジア"
+  ],
+  "name_en": "Cambodia",
+  "name_jp": "カンボジア",
+  "lng": 104.99,
+  "lat": 12.57
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Cameroon",
+   "カメルーン"
+  ],
+  "name_en": "Cameroon",
+  "name_jp": "カメルーン",
+  "lng": 12.35,
+  "lat": 7.37
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Canada",
+   "カナダ"
+  ],
+  "name_en": "Canada",
+  "name_jp": "カナダ",
+  "lng": -106.35,
+  "lat": 56.13
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Chad",
+   "チャド"
+  ],
+  "name_en": "Chad",
+  "name_jp": "チャド",
+  "lng": 18.73,
+  "lat": 15.45
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Chile",
+   "チリ"
+  ],
+  "name_en": "Chile",
+  "name_jp": "チリ",
+  "lng": -71.54,
+  "lat": -35.68
+ },
+ {
+  "type": "country",
+  "terms": [
+   "China",
+   "中国",
+   "中華人民共和国"
+  ],
+  "name_en": "China",
+  "name_jp": "中国",
+  "lng": 104,
+  "lat": 35
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Colombia",
+   "コロンビア"
+  ],
+  "name_en": "Colombia",
+  "name_jp": "コロンビア",
+  "lng": -74.3,
+  "lat": 4.57
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Republic of the Congo",
+   "Congo-Brazzaville",
+   "コンゴ共和国"
+  ],
+  "name_en": "Congo",
+  "name_jp": "コンゴ共和国",
+  "lng": 15.83,
+  "lat": -0.23
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Croatia",
+   "クロアチア"
+  ],
+  "name_en": "Croatia",
+  "name_jp": "クロアチア",
+  "lng": 15.2,
+  "lat": 45.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Cuba",
+   "キューバ"
+  ],
+  "name_en": "Cuba",
+  "name_jp": "キューバ",
+  "lng": -77.78,
+  "lat": 21.52
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Czechia",
+   "Czech",
+   "チェコ"
+  ],
+  "name_en": "Czechia",
+  "name_jp": "チェコ",
+  "lng": 15.5,
+  "lat": 49.8
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Denmark",
+   "デンマーク"
+  ],
+  "name_en": "Denmark",
+  "name_jp": "デンマーク",
+  "lng": 9.5,
+  "lat": 56
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Democratic Republic of the Congo",
+   "DRC",
+   "コンゴ民主"
+  ],
+  "name_en": "DRC",
+  "name_jp": "コンゴ民主共和国",
+  "lng": 21.76,
+  "lat": -4.04
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Ecuador",
+   "エクアドル"
+  ],
+  "name_en": "Ecuador",
+  "name_jp": "エクアドル",
+  "lng": -78.18,
+  "lat": -1.83
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Egypt",
+   "エジプト"
+  ],
+  "name_en": "Egypt",
+  "name_jp": "エジプト",
+  "lng": 30.8,
+  "lat": 26.82
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Eritrea",
+   "エリトリア"
+  ],
+  "name_en": "Eritrea",
+  "name_jp": "エリトリア",
+  "lng": 39.78,
+  "lat": 15.18
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Ethiopia",
+   "エチオピア"
+  ],
+  "name_en": "Ethiopia",
+  "name_jp": "エチオピア",
+  "lng": 40.49,
+  "lat": 9.15
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Finland",
+   "フィンランド"
+  ],
+  "name_en": "Finland",
+  "name_jp": "フィンランド",
+  "lng": 26,
+  "lat": 64
+ },
+ {
+  "type": "country",
+  "terms": [
+   "France",
+   "フランス"
+  ],
+  "name_en": "France",
+  "name_jp": "フランス",
+  "lng": 2.5,
+  "lat": 46.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Georgia",
+   "ジョージア"
+  ],
+  "name_en": "Georgia",
+  "name_jp": "ジョージア",
+  "lng": 43.36,
+  "lat": 42.32
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Germany",
+   "ドイツ"
+  ],
+  "name_en": "Germany",
+  "name_jp": "ドイツ",
+  "lng": 10.5,
+  "lat": 51.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Ghana",
+   "ガーナ"
+  ],
+  "name_en": "Ghana",
+  "name_jp": "ガーナ",
+  "lng": -1.02,
+  "lat": 7.95
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Greece",
+   "ギリシャ"
+  ],
+  "name_en": "Greece",
+  "name_jp": "ギリシャ",
+  "lng": 21.8,
+  "lat": 39.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Guatemala",
+   "グアテマラ"
+  ],
+  "name_en": "Guatemala",
+  "name_jp": "グアテマラ",
+  "lng": -90.23,
+  "lat": 15.78
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Honduras",
+   "ホンジュラス"
+  ],
+  "name_en": "Honduras",
+  "name_jp": "ホンジュラス",
+  "lng": -86.24,
+  "lat": 15.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Hungary",
+   "ハンガリー"
+  ],
+  "name_en": "Hungary",
+  "name_jp": "ハンガリー",
+  "lng": 19.5,
+  "lat": 47.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Iceland",
+   "アイスランド"
+  ],
+  "name_en": "Iceland",
+  "name_jp": "アイスランド",
+  "lng": -19,
+  "lat": 65
+ },
+ {
+  "type": "country",
+  "terms": [
+   "India",
+   "インド"
+  ],
+  "name_en": "India",
+  "name_jp": "インド",
+  "lng": 78.9,
+  "lat": 20.6
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Indonesia",
+   "インドネシア"
+  ],
+  "name_en": "Indonesia",
+  "name_jp": "インドネシア",
+  "lng": 113.92,
+  "lat": -0.79
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Iran",
+   "イラン"
+  ],
+  "name_en": "Iran",
+  "name_jp": "イラン",
+  "lng": 53.7,
+  "lat": 32.4
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Iraq",
+   "イラク"
+  ],
+  "name_en": "Iraq",
+  "name_jp": "イラク",
+  "lng": 43.7,
+  "lat": 33.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Ireland",
+   "アイルランド"
+  ],
+  "name_en": "Ireland",
+  "name_jp": "アイルランド",
+  "lng": -8,
+  "lat": 53.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Israel",
+   "イスラエル"
+  ],
+  "name_en": "Israel",
+  "name_jp": "イスラエル",
+  "lng": 34.85,
+  "lat": 31.05
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Italy",
+   "イタリア"
+  ],
+  "name_en": "Italy",
+  "name_jp": "イタリア",
+  "lng": 12.6,
+  "lat": 41.9
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Japan",
+   "日本"
+  ],
+  "name_en": "Japan",
+  "name_jp": "日本",
+  "lng": 138,
+  "lat": 36
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Kazakhstan",
+   "カザフスタン"
+  ],
+  "name_en": "Kazakhstan",
+  "name_jp": "カザフスタン",
+  "lng": 66.92,
+  "lat": 48.02
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Kenya",
+   "ケニア"
+  ],
+  "name_en": "Kenya",
+  "name_jp": "ケニア",
+  "lng": 37.91,
+  "lat": -0.02
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Kyrgyzstan",
+   "キルギス"
+  ],
+  "name_en": "Kyrgyzstan",
+  "name_jp": "キルギス",
+  "lng": 74.77,
+  "lat": 41.2
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Laos",
+   "ラオス"
+  ],
+  "name_en": "Laos",
+  "name_jp": "ラオス",
+  "lng": 102.5,
+  "lat": 19.86
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Lebanon",
+   "レバノン"
+  ],
+  "name_en": "Lebanon",
+  "name_jp": "レバノン",
+  "lng": 35.8,
+  "lat": 33.9
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Libya",
+   "リビア"
+  ],
+  "name_en": "Libya",
+  "name_jp": "リビア",
+  "lng": 17.23,
+  "lat": 26.34
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Madagascar",
+   "マダガスカル"
+  ],
+  "name_en": "Madagascar",
+  "name_jp": "マダガスカル",
+  "lng": 46.87,
+  "lat": -18.77
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Malaysia",
+   "マレーシア"
+  ],
+  "name_en": "Malaysia",
+  "name_jp": "マレーシア",
+  "lng": 101.98,
+  "lat": 4.21
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Mali",
+   "マリ"
+  ],
+  "name_en": "Mali",
+  "name_jp": "マリ",
+  "lng": -3.99,
+  "lat": 17.57
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Mexico",
+   "メキシコ"
+  ],
+  "name_en": "Mexico",
+  "name_jp": "メキシコ",
+  "lng": -102.55,
+  "lat": 23.63
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Mongolia",
+   "モンゴル"
+  ],
+  "name_en": "Mongolia",
+  "name_jp": "モンゴル",
+  "lng": 103.8,
+  "lat": 46.9
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Morocco",
+   "モロッコ"
+  ],
+  "name_en": "Morocco",
+  "name_jp": "モロッコ",
+  "lng": -7.09,
+  "lat": 31.79
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Mozambique",
+   "モザンビーク"
+  ],
+  "name_en": "Mozambique",
+  "name_jp": "モザンビーク",
+  "lng": 35.53,
+  "lat": -18.67
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Myanmar",
+   "Burma",
+   "ミャンマー"
+  ],
+  "name_en": "Myanmar",
+  "name_jp": "ミャンマー",
+  "lng": 95.96,
+  "lat": 21.91
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Nepal",
+   "ネパール"
+  ],
+  "name_en": "Nepal",
+  "name_jp": "ネパール",
+  "lng": 84.12,
+  "lat": 28.39
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Netherlands",
+   "オランダ"
+  ],
+  "name_en": "Netherlands",
+  "name_jp": "オランダ",
+  "lng": 5.3,
+  "lat": 52.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "New Zealand",
+   "ニュージーランド"
+  ],
+  "name_en": "New Zealand",
+  "name_jp": "ニュージーランド",
+  "lng": 172,
+  "lat": -41
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Niger",
+   "ニジェール"
+  ],
+  "name_en": "Niger",
+  "name_jp": "ニジェール",
+  "lng": 8.08,
+  "lat": 17.61
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Nigeria",
+   "ナイジェリア"
+  ],
+  "name_en": "Nigeria",
+  "name_jp": "ナイジェリア",
+  "lng": 8.68,
+  "lat": 9.08
+ },
+ {
+  "type": "country",
+  "terms": [
+   "North Korea",
+   "DPRK",
+   "北朝鮮"
+  ],
+  "name_en": "North Korea",
+  "name_jp": "北朝鮮",
+  "lng": 127.5,
+  "lat": 40.3
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Norway",
+   "ノルウェー"
+  ],
+  "name_en": "Norway",
+  "name_jp": "ノルウェー",
+  "lng": 8.5,
+  "lat": 60.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Pakistan",
+   "パキスタン"
+  ],
+  "name_en": "Pakistan",
+  "name_jp": "パキスタン",
+  "lng": 69.3,
+  "lat": 30.4
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Palestine",
+   "パレスチナ"
+  ],
+  "name_en": "Palestine",
+  "name_jp": "パレスチナ",
+  "lng": 35.1,
+  "lat": 31.95
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Panama",
+   "パナマ"
+  ],
+  "name_en": "Panama",
+  "name_jp": "パナマ",
+  "lng": -80.78,
+  "lat": 8.54
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Paraguay",
+   "パラグアイ"
+  ],
+  "name_en": "Paraguay",
+  "name_jp": "パラグアイ",
+  "lng": -58.44,
+  "lat": -23.44
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Peru",
+   "ペルー"
+  ],
+  "name_en": "Peru",
+  "name_jp": "ペルー",
+  "lng": -75.02,
+  "lat": -9.19
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Philippines",
+   "フィリピン"
+  ],
+  "name_en": "Philippines",
+  "name_jp": "フィリピン",
+  "lng": 121.77,
+  "lat": 12.88
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Poland",
+   "ポーランド"
+  ],
+  "name_en": "Poland",
+  "name_jp": "ポーランド",
+  "lng": 19.1,
+  "lat": 51.9
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Portugal",
+   "ポルトガル"
+  ],
+  "name_en": "Portugal",
+  "name_jp": "ポルトガル",
+  "lng": -8.2,
+  "lat": 39.4
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Romania",
+   "ルーマニア"
+  ],
+  "name_en": "Romania",
+  "name_jp": "ルーマニア",
+  "lng": 24.97,
+  "lat": 45.94
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Russia",
+   "ロシア"
+  ],
+  "name_en": "Russia",
+  "name_jp": "ロシア",
+  "lng": 100,
+  "lat": 62
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Rwanda",
+   "ルワンダ"
+  ],
+  "name_en": "Rwanda",
+  "name_jp": "ルワンダ",
+  "lng": 29.87,
+  "lat": -1.94
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Saudi Arabia",
+   "サウジアラビア"
+  ],
+  "name_en": "Saudi Arabia",
+  "name_jp": "サウジアラビア",
+  "lng": 45.1,
+  "lat": 23.9
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Senegal",
+   "セネガル"
+  ],
+  "name_en": "Senegal",
+  "name_jp": "セネガル",
+  "lng": -14.45,
+  "lat": 14.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Serbia",
+   "セルビア"
+  ],
+  "name_en": "Serbia",
+  "name_jp": "セルビア",
+  "lng": 20.9,
+  "lat": 44
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Slovakia",
+   "スロバキア"
+  ],
+  "name_en": "Slovakia",
+  "name_jp": "スロバキア",
+  "lng": 19.7,
+  "lat": 48.7
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Slovenia",
+   "スロベニア"
+  ],
+  "name_en": "Slovenia",
+  "name_jp": "スロベニア",
+  "lng": 14.99,
+  "lat": 46.15
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Somalia",
+   "ソマリア"
+  ],
+  "name_en": "Somalia",
+  "name_jp": "ソマリア",
+  "lng": 46.2,
+  "lat": 5.15
+ },
+ {
+  "type": "country",
+  "terms": [
+   "South Africa",
+   "南アフリカ"
+  ],
+  "name_en": "South Africa",
+  "name_jp": "南アフリカ",
+  "lng": 25.08,
+  "lat": -29
+ },
+ {
+  "type": "country",
+  "terms": [
+   "South Korea",
+   "ROK",
+   "Korea",
+   "韓国"
+  ],
+  "name_en": "South Korea",
+  "name_jp": "韓国",
+  "lng": 127.8,
+  "lat": 36
+ },
+ {
+  "type": "country",
+  "terms": [
+   "South Sudan",
+   "南スーダン"
+  ],
+  "name_en": "South Sudan",
+  "name_jp": "南スーダン",
+  "lng": 30,
+  "lat": 7.86
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Spain",
+   "スペイン"
+  ],
+  "name_en": "Spain",
+  "name_jp": "スペイン",
+  "lng": -3.7,
+  "lat": 40.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Sri Lanka",
+   "スリランカ"
+  ],
+  "name_en": "Sri Lanka",
+  "name_jp": "スリランカ",
+  "lng": 80.77,
+  "lat": 7.87
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Sudan",
+   "スーダン"
+  ],
+  "name_en": "Sudan",
+  "name_jp": "スーダン",
+  "lng": 30.22,
+  "lat": 12.86
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Sweden",
+   "スウェーデン"
+  ],
+  "name_en": "Sweden",
+  "name_jp": "スウェーデン",
+  "lng": 18.6,
+  "lat": 60.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Switzerland",
+   "スイス"
+  ],
+  "name_en": "Switzerland",
+  "name_jp": "スイス",
+  "lng": 8.2,
+  "lat": 46.8
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Syria",
+   "シリア"
+  ],
+  "name_en": "Syria",
+  "name_jp": "シリア",
+  "lng": 38,
+  "lat": 34.8
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Taiwan",
+   "台湾"
+  ],
+  "name_en": "Taiwan",
+  "name_jp": "台湾",
+  "lng": 121,
+  "lat": 23.7
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Tajikistan",
+   "タジキスタン"
+  ],
+  "name_en": "Tajikistan",
+  "name_jp": "タジキスタン",
+  "lng": 71.28,
+  "lat": 38.86
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Tanzania",
+   "タンザニア"
+  ],
+  "name_en": "Tanzania",
+  "name_jp": "タンザニア",
+  "lng": 34.89,
+  "lat": -6.37
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Thailand",
+   "タイ"
+  ],
+  "name_en": "Thailand",
+  "name_jp": "タイ",
+  "lng": 100.99,
+  "lat": 15.87
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Tunisia",
+   "チュニジア"
+  ],
+  "name_en": "Tunisia",
+  "name_jp": "チュニジア",
+  "lng": 9.54,
+  "lat": 33.89
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Turkey",
+   "Türkiye",
+   "トルコ"
+  ],
+  "name_en": "Türkiye",
+  "name_jp": "トルコ",
+  "lng": 35.2,
+  "lat": 39
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Turkmenistan",
+   "トルクメニスタン"
+  ],
+  "name_en": "Turkmenistan",
+  "name_jp": "トルクメニスタン",
+  "lng": 59.56,
+  "lat": 38.97
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Uganda",
+   "ウガンダ"
+  ],
+  "name_en": "Uganda",
+  "name_jp": "ウガンダ",
+  "lng": 32.29,
+  "lat": 1.37
+ },
+ {
+  "type": "country",
+  "terms": [
+   "United Kingdom",
+   "UK",
+   "Britain",
+   "英国",
+   "イギリス"
+  ],
+  "name_en": "UK",
+  "name_jp": "英国",
+  "lng": -2.5,
+  "lat": 54
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Ukraine",
+   "ウクライナ"
+  ],
+  "name_en": "Ukraine",
+  "name_jp": "ウクライナ",
+  "lng": 31.2,
+  "lat": 49
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Uruguay",
+   "ウルグアイ"
+  ],
+  "name_en": "Uruguay",
+  "name_jp": "ウルグアイ",
+  "lng": -55.77,
+  "lat": -32.52
+ },
+ {
+  "type": "country",
+  "terms": [
+   "United States",
+   "USA",
+   "U.S.",
+   "America",
+   "アメリカ",
+   "米国"
+  ],
+  "name_en": "USA",
+  "name_jp": "米国",
+  "lng": -98.5,
+  "lat": 39.8
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Uzbekistan",
+   "ウズベキスタン"
+  ],
+  "name_en": "Uzbekistan",
+  "name_jp": "ウズベキスタン",
+  "lng": 64.59,
+  "lat": 41.38
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Venezuela",
+   "ベネズエラ"
+  ],
+  "name_en": "Venezuela",
+  "name_jp": "ベネズエラ",
+  "lng": -66.59,
+  "lat": 6.42
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Vietnam",
+   "ベトナム"
+  ],
+  "name_en": "Vietnam",
+  "name_jp": "ベトナム",
+  "lng": 108.3,
+  "lat": 14.1
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Yemen",
+   "イエメン"
+  ],
+  "name_en": "Yemen",
+  "name_jp": "イエメン",
+  "lng": 47.6,
+  "lat": 15.5
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Zambia",
+   "ザンビア"
+  ],
+  "name_en": "Zambia",
+  "name_jp": "ザンビア",
+  "lng": 27.85,
+  "lat": -13.13
+ },
+ {
+  "type": "country",
+  "terms": [
+   "Zimbabwe",
+   "ジンバブエ"
+  ],
+  "name_en": "Zimbabwe",
+  "name_jp": "ジンバブエ",
+  "lng": 29.15,
+  "lat": -19.02
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Avdiivka",
+   "アウディーイウカ"
+  ],
+  "name_en": "Avdiivka",
+  "name_jp": "アウディーイウカ",
+  "lng": 37.74,
+  "lat": 48.14
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Bab",
+   "Bab-el-Mandeb",
+   "Mandeb",
+   "バブ・エル・マンデブ"
+  ],
+  "name_en": "Bab-el-Mandeb",
+  "name_jp": "バブ・エル・マンデブ",
+  "lng": 43.35,
+  "lat": 12.6
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Bakhmut",
+   "バフムート"
+  ],
+  "name_en": "Bakhmut",
+  "name_jp": "バフムート",
+  "lng": 37.99,
+  "lat": 48.59
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Belgorod",
+   "ベルゴロド"
+  ],
+  "name_en": "Belgorod",
+  "name_jp": "ベルゴロド",
+  "lng": 36.59,
+  "lat": 50.6
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Bosphorus",
+   "ボスポラス"
+  ],
+  "name_en": "Bosphorus",
+  "name_jp": "ボスポラス",
+  "lng": 29.02,
+  "lat": 41.1
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Crimea",
+   "クリミア"
+  ],
+  "name_en": "Crimea",
+  "name_jp": "クリミア",
+  "lng": 34.1,
+  "lat": 45.05
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Darfur",
+   "ダルフール"
+  ],
+  "name_en": "Darfur",
+  "name_jp": "ダルフール",
+  "lng": 24.2,
+  "lat": 13.5
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "DMZ",
+   "板門店",
+   "Panmunjom"
+  ],
+  "name_en": "DMZ",
+  "name_jp": "DMZ",
+  "lng": 126.68,
+  "lat": 37.96
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Donetsk",
+   "ドネツク"
+  ],
+  "name_en": "Donetsk",
+  "name_jp": "ドネツク",
+  "lng": 37.8,
+  "lat": 48
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "East China Sea",
+   "東シナ海"
+  ],
+  "name_en": "East China Sea",
+  "name_jp": "東シナ海",
+  "lng": 125,
+  "lat": 30
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Gaza",
+   "ガザ"
+  ],
+  "name_en": "Gaza",
+  "name_jp": "ガザ",
+  "lng": 34.47,
+  "lat": 31.5
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Gibraltar",
+   "ジブラルタル"
+  ],
+  "name_en": "Gibraltar",
+  "name_jp": "ジブラルタル",
+  "lng": -5.35,
+  "lat": 36.14
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Hormuz",
+   "ホルムズ"
+  ],
+  "name_en": "Hormuz",
+  "name_jp": "ホルムズ海峡",
+  "lng": 56.25,
+  "lat": 26.56
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Kashmir",
+   "カシミール"
+  ],
+  "name_en": "Kashmir",
+  "name_jp": "カシミール",
+  "lng": 74.5,
+  "lat": 34.1
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Khan Younis",
+   "ハンユニス"
+  ],
+  "name_en": "Khan Younis",
+  "name_jp": "ハンユニス",
+  "lng": 34.3,
+  "lat": 31.34
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Kharkiv",
+   "ハルキウ"
+  ],
+  "name_en": "Kharkiv",
+  "name_jp": "ハルキウ",
+  "lng": 36.25,
+  "lat": 49.99
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Kursk",
+   "クルスク"
+  ],
+  "name_en": "Kursk",
+  "name_jp": "クルスク",
+  "lng": 36.19,
+  "lat": 51.73
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Malacca",
+   "マラッカ"
+  ],
+  "name_en": "Malacca",
+  "name_jp": "マラッカ海峡",
+  "lng": 103.83,
+  "lat": 1.25
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Mariupol",
+   "マリウポリ"
+  ],
+  "name_en": "Mariupol",
+  "name_jp": "マリウポリ",
+  "lng": 37.55,
+  "lat": 47.1
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Odesa",
+   "Odessa",
+   "オデッサ",
+   "オデーサ"
+  ],
+  "name_en": "Odesa",
+  "name_jp": "オデーサ",
+  "lng": 30.74,
+  "lat": 46.48
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Panama Canal",
+   "パナマ運河"
+  ],
+  "name_en": "Panama Canal",
+  "name_jp": "パナマ運河",
+  "lng": -79.68,
+  "lat": 9.08
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Paracel",
+   "西沙",
+   "パラセル"
+  ],
+  "name_en": "Paracel Is.",
+  "name_jp": "西沙諸島",
+  "lng": 112,
+  "lat": 16.5
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Rafah",
+   "ラファ"
+  ],
+  "name_en": "Rafah",
+  "name_jp": "ラファ",
+  "lng": 34.24,
+  "lat": 31.28
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Red Sea",
+   "紅海"
+  ],
+  "name_en": "Red Sea",
+  "name_jp": "紅海",
+  "lng": 38,
+  "lat": 20
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Senkaku",
+   "Diaoyu",
+   "尖閣"
+  ],
+  "name_en": "Senkaku",
+  "name_jp": "尖閣諸島",
+  "lng": 123.5,
+  "lat": 25.74
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "South China Sea",
+   "南シナ海",
+   "南海"
+  ],
+  "name_en": "South China Sea",
+  "name_jp": "南シナ海",
+  "lng": 114,
+  "lat": 15
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Spratly",
+   "南沙",
+   "スプラトリー"
+  ],
+  "name_en": "Spratly Is.",
+  "name_jp": "南沙諸島",
+  "lng": 114,
+  "lat": 9.5
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Suez",
+   "スエズ"
+  ],
+  "name_en": "Suez",
+  "name_jp": "スエズ運河",
+  "lng": 32.32,
+  "lat": 30.58
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Taiwan Strait",
+   "台湾海峡"
+  ],
+  "name_en": "Taiwan Strait",
+  "name_jp": "台湾海峡",
+  "lng": 119.6,
+  "lat": 24.4
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "Tigray",
+   "ティグレ"
+  ],
+  "name_en": "Tigray",
+  "name_jp": "ティグレ",
+  "lng": 38.6,
+  "lat": 13.5
+ },
+ {
+  "type": "flashpoint",
+  "terms": [
+   "West Bank",
+   "ヨルダン川西岸"
+  ],
+  "name_en": "West Bank",
+  "name_jp": "ヨルダン川西岸",
+  "lng": 35.3,
+  "lat": 31.95
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Africa",
+   "アフリカ"
+  ],
+  "name_en": "Africa",
+  "name_jp": "アフリカ",
+  "lng": 20,
+  "lat": 5
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Antarctica",
+   "南極"
+  ],
+  "name_en": "Antarctica",
+  "name_jp": "南極",
+  "lng": 0,
+  "lat": -85
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Arctic",
+   "北極"
+  ],
+  "name_en": "Arctic",
+  "name_jp": "北極",
+  "lng": 0,
+  "lat": 85
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Asia",
+   "アジア"
+  ],
+  "name_en": "Asia",
+  "name_jp": "アジア",
+  "lng": 100,
+  "lat": 30
+ },
+ {
+  "type": "region",
+  "terms": [
+   "EU",
+   "European Union",
+   "欧州連合"
+  ],
+  "name_en": "EU",
+  "name_jp": "EU",
+  "lng": 10,
+  "lat": 50
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Europe",
+   "ヨーロッパ",
+   "欧州"
+  ],
+  "name_en": "Europe",
+  "name_jp": "欧州",
+  "lng": 15,
+  "lat": 50
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Latin America",
+   "ラテンアメリカ",
+   "中南米"
+  ],
+  "name_en": "Latin America",
+  "name_jp": "中南米",
+  "lng": -65,
+  "lat": -15
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Middle East",
+   "中東"
+  ],
+  "name_en": "Middle East",
+  "name_jp": "中東",
+  "lng": 45,
+  "lat": 30
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Sahel",
+   "サヘル"
+  ],
+  "name_en": "Sahel",
+  "name_jp": "サヘル",
+  "lng": 10,
+  "lat": 14
+ },
+ {
+  "type": "region",
+  "terms": [
+   "Sub-Saharan",
+   "サブサハラ"
+  ],
+  "name_en": "Sub-Saharan Africa",
+  "name_jp": "サブサハラ",
+  "lng": 20,
+  "lat": 0
+ }
+]
