@@ -9,6 +9,16 @@ const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntM
 
 const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapLayers', 'IntMapConsole', 'IntMapTime'];
 
+// (#R163) Globals that only exist if their js/ file was really deployed AND its factory ran.
+// Since #R162/#R163 the app is index.html + css/ + js/, so "the page booted" no longer implies
+// "everything shipped": a js/ file missing from the deployment leaves the page working and one
+// feature silently gone — the same failure shape the split has to defend against, one layer up.
+// index.html's boot guard records the outcome in window.__imModuleCheck; assert both.
+const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare', 'IntMapRouting',
+  'IntMapStreetView', 'IntMapFlightSim', 'IntMapTimeBorders', 'IntMapMonitors',
+  'IntMapLayerPreviews', 'IntMapMaddison', 'IntMapHistStates', 'IntMapHistId',
+  'IntMapNewsGeo', 'IntMapI18N', 'IntMapGazetteer', 'IntMapRefData'];
+
 test.describe.configure({ mode: 'serial' });
 
 let page, diag, response;
@@ -46,6 +56,18 @@ test('prod critical modules + map container present', async () => {
   );
   expect(present).toEqual(CRITICAL_GLOBALS);
   await expect(page.locator('#map')).toBeVisible();
+});
+
+test('(#R163) prod deployed every js/ module file — no factory silently missing', async () => {
+  const got = await page.evaluate((globals) => ({
+    present: globals.filter((g) => typeof window[g] !== 'undefined'),
+    check: window.__imModuleCheck || null,
+  }), MODULE_GLOBALS);
+  const missing = MODULE_GLOBALS.filter((g) => !got.present.includes(g));
+  expect(missing, `module global(s) absent in production — the js/ file did not deploy: ${missing.join(', ')}`).toEqual([]);
+  expect(got.check, 'index.html ran its boot-time module check').toBeTruthy();
+  expect(got.check.missing, 'no required module global missing').toEqual([]);
+  expect(got.check.missingFactories, 'no module factory missing').toEqual([]);
 });
 
 test('prod layer UI initialised and screen not blank', async () => {
