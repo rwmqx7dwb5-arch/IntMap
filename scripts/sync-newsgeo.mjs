@@ -23,8 +23,13 @@ const BANNER =
   '   Source of truth: js/newsgeo.js.  Regenerate with:  node scripts/sync-newsgeo.mjs\n' +
   '   (scripts/static-checks.mjs fails the build if this copy drifts.) */\n';
 
+/* (#R162) Compare LINE-ENDING-AGNOSTICALLY. On a Windows checkout (core.autocrlf=true) git
+   hands both files back with CRLF, while BANNER above is written with \n — so a mirror that
+   was byte-perfect in the repo still looked "drifted" and failed `npm test` locally. Linux CI
+   never saw it. Drift detection is unaffected: only \r\n is normalised, never real content. */
+const norm = (s) => s.replace(/\r\n/g, '\n');
 export function expected() { return BANNER + readFileSync(SRC, 'utf8'); }
-export function inSync() { return existsSync(DST) && readFileSync(DST, 'utf8') === expected(); }
+export function inSync() { return existsSync(DST) && norm(readFileSync(DST, 'utf8')) === norm(expected()); }
 
 if (process.argv[1] && process.argv[1].endsWith('sync-newsgeo.mjs')) {
   if (process.argv.includes('--check')) {

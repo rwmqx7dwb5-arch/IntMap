@@ -16,9 +16,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = readFileSync(new URL('index.html', root), 'utf8');
+const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 
 test('R152 #1 Köppen rows are single-line (nowrap) with an always-visible code + ellipsised name', () => {
   assert.match(html, /\.kl-item\{[^}]*white-space:nowrap;/, 'kl-item nowrap (kills the 2-line wrap)');

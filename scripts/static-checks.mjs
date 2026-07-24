@@ -230,6 +230,62 @@ try {
   err('newsgeo-mirror', 'could not verify the newsgeo mirror: ' + (e && e.message));
 }
 
+// ── 8. (#R162) index.html file-split integrity ───────────────────────────────
+// index.html is being split into css/ + js/ (standing rule 13). Two ways that goes wrong
+// silently: (a) a module file exists but nothing loads it — the app then boots with the
+// global missing and only fails when that feature is first touched; (b) code is copied out
+// but the original is left behind, so two divergent copies ship and the in-page one wins.
+// Guard both mechanically.
+{
+  const idx = ALL.find((x) => x.rel === 'index.html');
+  if (idx) {
+    const t = read(idx);
+    const loaded = new Set([...t.matchAll(/<script\s+src="(js\/[^"]+)"/g)].map((m) => m[1]));
+    for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
+      if (!loaded.has(f.rel)) err('split', `${f.rel} exists but index.html never loads it (<script src="${f.rel}">)`);
+    }
+    // Every factory a module file defines must actually be instantiated by index.html.
+    for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
+      for (const m of read(f).matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)) {
+        if (!t.includes(`window.IntMapModules.${m[1]}(`)) {
+          err('split', `${f.rel} defines factory IntMapModules.${m[1]} but index.html never calls it`);
+        }
+      }
+    }
+    // Nothing that moved out may still be defined in index.html (no stale duplicate).
+    for (const [needle, movedTo] of [
+      ['const i18n={', 'js/i18n.js'],
+      ['const _BUILTIN_GZ=[', 'js/gazetteer.js'],
+      ['const _EXTRA_GZ=[', 'js/gazetteer.js'],
+      ['const DEFAULT_DASH_CARDS=[', 'js/reference-data.js'],
+      ['const DATA_SOURCES=[', 'js/reference-data.js'],
+      ['window.IntMapMonitors=(function(){', 'js/monitors.js'],
+      ['window.IntMapMaddison=(function(){', 'js/history.js'],
+      ['window.IntMapHistStates=(function(){', 'js/history.js'],
+      ['window.IntMapHistId=(function(){', 'js/history.js'],
+      ['window.IntMapLayerPreviews=(function(){', 'js/layer-previews.js'],
+    ]) {
+      if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
+    }
+    // The stylesheet moved out; a re-inlined <style> block would resurrect the 230 KB.
+    if (/<style>[\s\S]{4000,}?<\/style>/.test(t)) {
+      err('split', 'index.html contains a large inline <style> block again — the stylesheet belongs in css/intmap.css');
+    }
+  }
+}
+
+// ── 9. (#R162) no split-out file may inherit an index.html closure variable ──
+// The app code lives inside one DOMContentLoaded closure, so its top-level names are NOT
+// globals. A file moved into js/ loses them — and because soft dependencies are written as
+// `typeof X !== 'undefined'` and wrapped in try/catch, the loss is SILENT: the feature just
+// stops working. Parser-backed, so it cannot be fooled the way a regex scan can.
+try {
+  const { checkSplitScope } = await import('./check-split-scope.mjs');
+  for (const p of checkSplitScope()) err('split-scope', `${p.file}: ${p.msg}`);
+} catch (e) {
+  err('split-scope', 'could not run the split-scope check: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

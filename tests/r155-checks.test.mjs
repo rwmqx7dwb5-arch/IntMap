@@ -6,9 +6,10 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('..', import.meta.url);
-const index = readFileSync(new URL('index.html', root), 'utf8');
+const index = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const admin = readFileSync(new URL('admin.html', root), 'utf8');
 
 // ── index.html: auth features ───────────────────────────────────────────────

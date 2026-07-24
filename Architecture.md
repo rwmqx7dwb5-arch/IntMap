@@ -660,7 +660,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 ## 3. ファイル構成と各ファイルの役割 (Files)
 
 ```
-index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し・i18n 全部入り）
+index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
+                                (#R162) 32,883行 / 3.77MB。**自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
+css/
+  intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
+                                    JS は `document.styleSheets`/`cssRules` を一切触らないため挙動は完全に同一。
 admin.html                      管理コンソール（geo_pins / dashboard_cards / コミュニティ通報 / feedback の管理）
 sw.js                           Service Worker（タイル等のキャッシュ・オフライン補助）
 CONSTITUTION.md                 標準指示（最優先のルール集）
@@ -679,6 +683,14 @@ _koppen_convert.py              ケッペンTIFF→PNG 変換スクリプト（�
 _rail_convert.py                鉄道データ変換スクリプト（同上）
 
 js/
+  i18n.js                           (#R162) EN/JP/DE/RU/ES のUI文字列表（純データ・実行時に不変）。`window.IntMapI18N`。
+                                    index.html 側は `const i18n=window.IntMapI18N;` で従来どおり束縛し直すだけ。
+  gazetteer.js                      (#R162) 非AI locator の組込み地名表（`_BUILTIN_GZ`＋`_EXTRA_GZ`）。`window.IntMapGazetteer`。
+  reference-data.js                 (#R162) ダッシュボードカード（`DEFAULT_DASH_CARDS`＋`_dc`）とデータ出典表
+                                    （`DATA_SOURCES`）。`window.IntMapRefData`。
+  layer-previews.js                 (#R162) `IntMapLayerPreviews`。ファクトリ引数＝(countryStats, geoLayersDB, loadCountryData)
+  history.js                        (#R162) `IntMapMaddison` / `IntMapHistStates` / `IntMapHistId`（歴史GDP・旧国家・旧国名）
+  monitors.js                       (#R162) `IntMapMonitors`（Area Monitors）。ファクトリ引数＝(map, host)。§3.1 参照
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -694,6 +706,45 @@ supabase/
   supabase_bug_reports.sql          bug_reports スキーマ＋RLS（一度だけ実行）
   .temp/linked-project.json         supabase CLI のリンク先（project ref）
 ```
+
+---
+
+## 3.1 index.html の分割方式 (#R162) — **今後の分割はこの手順に従うこと**
+
+**前提（これが全ての難しさの源）**: index.html のアプリコードは
+`window.addEventListener('DOMContentLoaded', () => { …約33,000行… })` という**ひとつのクロージャの中**にある。
+したがって最上位の `let`/`const`/`function` は**グローバルではなくクロージャ変数**であり、`window` には載っていない。
+ファイルを js/ に出すと、その変数は**ただ消える**。
+
+**なぜ危険か（#R162 で実際に踏んだ）**: このコードベースは軟らかい依存を
+`typeof X !== 'undefined'` で守り、処理を `try{}catch{}` で包む。よって参照が消えても**例外は出ない**——
+分岐が黙って丸ごとスキップされるだけ。実際 `js/monitors.js` は `radiusItems` を失い、
+`activeArea()` が「範囲が未選択」に落ちて、**エラーゼロのまま半径→監視の機能だけが消えた**。
+Playwright の monitors テストが拾わなければ本番に出ていた。
+
+**手順**
+1. **依存を機械的に確定する。** 正規表現でスコープ解析をしてはいけない（#R162 では自作スキャナが正規表現リテラル
+   `/['"]/` を文字列開始と誤読し、以降を全部空白化して「依存なし」と**嘘の合格**を出した）。
+   `scripts/check-split-scope.mjs`（acorn による実パーサ）を使う。static-checks 経由で CI 必須。
+2. **依存は明示的に渡す。** 出したモジュールは**ファクトリ**にし、index.html の元の位置で呼ぶ：
+   `window.IntMapMonitors = window.IntMapModules.monitors(map, host);`
+3. **可変か不変かで渡し方を変える**（**最重要**）
+   - **再代入されない値**（`map`＝boot時に1回だけ代入 / `countryStats`＝常に in-place 変更 /
+     `const` / 関数宣言）→ そのまま引数で渡してよい。
+   - **再代入される値**（`currentLang` 言語切替 / `currentUser` ログイン / `currentMode` タブ切替 /
+     `radiusItems` は `clearAllRadius()` 等が**配列ごと差し替える**）→ **必ず getter** で渡す。
+     引数でコピーするとクロージャと違って**値が固まり、黙って古い値を読み続ける**。
+4. **純データ**（i18n・地名表・出典表）は `window.IntMapXxx` に置き、index.html 側で `const x = window.IntMapXxx;`
+   と束縛し直すだけでよい（実行時に変更されないことが条件）。
+5. 読み込みは**素の `<script src>`（classic script）**。`type="module"` は使わない——
+   DOMContentLoaded より前に同期実行される必要があり、**ビルド工程を持たない**方針も維持する。
+
+**守り（すべて CI）**
+- `scripts/check-split-scope.mjs` … js/*.html のどのファイルも index.html のクロージャ変数を**自由変数として参照していない**ことを実パーサで検証。
+- static-checks §8 … 未読込のモジュール／呼ばれていないファクトリ／**移設元に残った重複コピー**／`<style>` の再インライン化を検出。
+- `tests/r162-checks.test.mjs` … 上記3の不変条件（`map`/`countryStats` は再代入されない・可変4値は getter である）を固定。
+- `tests/app-source.mjs` … R1xx の文字列一致テスト群は index.html だけでなく **css/ + js/ を連結した「アプリ全体のソース」**を読む。
+  さもないと「行が別ファイルに動いただけ」で `gone()` 系の判定が**誤って緑**になる。
 
 ---
 

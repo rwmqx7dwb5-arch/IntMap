@@ -15,9 +15,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = readFileSync(new URL('index.html', root), 'utf8');
+const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 
 test('R154 #1 Köppen legend width hugs the content per language', () => {
   assert.match(html, /\.koppen-legend\{[^}]*width:220px; min-width:180px; max-width:460px;/, 'fixed 264px lock replaced by a dynamic width (172–340 clamp)');
