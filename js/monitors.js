@@ -20,22 +20,22 @@
  *  "no CSS-in-JS template literal" rule.
  * ========================================================================== */
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.monitors=function(map,H){
-    /* (#R162) H is the HOST INTERFACE — the index.html closure values this module used to
+window.IntMapModules.monitors=function(map,HOST){
+    /* (#R162) HOST is the HOST INTERFACE — the index.html closure values this module used to
        inherit implicitly. It matters that the four state reads (lang/user/mode/radiusItems)
        are GETTERS on H and not captured parameters: all four are reassigned at runtime (the
        language switch, login/logout, the tab change, and clearAllRadius/removeRadiusItem
        which rebind the array), so a captured copy would silently go stale — the module would
        keep "working" while reading a dead value. The six functions below are plain function
        declarations in index.html and are never rebound, so they are handed over by value. */
-    const requireLogin=H.requireLogin, openAuthModal=H.openAuthModal, distHTML=H.distHTML,
-          imToast=H.imToast, aiToast=H.aiToast, satToast=H.satToast;
+    const requireLogin=HOST.requireLogin, openAuthModal=HOST.openAuthModal, distHTML=HOST.distHTML,
+          imToast=HOST.imToast, aiToast=HOST.aiToast, satToast=HOST.satToast;
     const DB=window.sb;
     const FN_URL=((window.SUPABASE_URL||'').replace(/\/$/,''))+'/functions/v1/monitor-run';
     const S=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.html(v==null?'':String(v)) : String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }catch(_){ return ''; } };
     const URLS=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.url(v) : (/^https?:\/\//i.test(String(v||''))?String(v):'#'); }catch(_){ return '#'; } };
-    const ML=(en,jp,de,ru,es)=>{ const l=(H.lang||'en'); return l==='jp'?jp:l==='de'?de:l==='ru'?ru:l==='es'?(es||en):en; };
-    const _loggedIn=()=> !!H.user;
+    const ML=(en,jp,de,ru,es)=>{ const l=(HOST.lang||'en'); return l==='jp'?jp:l==='de'?de:l==='ru'?ru:l==='es'?(es||en):en; };
+    const _loggedIn=()=> !!HOST.user;
     const _promptLogin=()=>{ try{ if(typeof requireLogin==='function') return requireLogin(); if(typeof openAuthModal==='function') openAuthModal(); }catch(_){} };
 
     /* ---- status / severity vocab (5 languages) ---- */
@@ -71,7 +71,7 @@ window.IntMapModules.monitors=function(map,H){
 
     /* ---- small helpers ---- */
     function _fmtWhen(iso){ if(!iso) return '—'; try{ const d=new Date(iso), now=Date.now(), diff=(now-d.getTime())/1000;
-      const rel=(n,u1,uj)=>{ const l=(H.lang||'en'); return l==='jp'?(Math.round(n)+uj):(Math.round(n)+' '+u1+(Math.round(n)===1?'':'s')+' '+ML('ago','','','','')); };
+      const rel=(n,u1,uj)=>{ const l=(HOST.lang||'en'); return l==='jp'?(Math.round(n)+uj):(Math.round(n)+' '+u1+(Math.round(n)===1?'':'s')+' '+ML('ago','','','','')); };
       if(Math.abs(diff)<60) return ML('just now','たった今','gerade eben','только что','ahora mismo');
       if(diff<3600) return ML(Math.round(diff/60)+' min ago',Math.round(diff/60)+'分前','vor '+Math.round(diff/60)+' Min','мин назад',Math.round(diff/60)+' min');
       if(diff<86400) return ML(Math.round(diff/3600)+'h ago',Math.round(diff/3600)+'時間前','vor '+Math.round(diff/3600)+' Std',Math.round(diff/3600)+'ч назад','hace '+Math.round(diff/3600)+' h');
@@ -101,8 +101,8 @@ window.IntMapModules.monitors=function(map,H){
     /* ---- the unified "active area" accessor: radius > drawn > resolved region ---- */
     function activeArea(){
       try{
-        if(H.radiusItems && H.radiusItems.length){
-          const c=H.radiusItems.find(r=>r.id===window._activeRadiusId)||H.radiusItems[H.radiusItems.length-1];
+        if(HOST.radiusItems && HOST.radiusItems.length){
+          const c=HOST.radiusItems.find(r=>r.id===window._activeRadiusId)||HOST.radiusItems[HOST.radiusItems.length-1];
           if(c&&c.center&&isFinite(c.radiusKm)){ const geom=_circlePoly(c.center,c.radiusKm);
             return { geometry_kind:'circle', center_lng:c.center[0], center_lat:c.center[1], radius_km:c.radiusKm, geometry:geom, bbox:_bboxOf(geom),
               label:_distLabel(c.radiusKm)+' · '+c.center[1].toFixed(2)+', '+c.center[0].toFixed(2) }; }
@@ -156,7 +156,7 @@ window.IntMapModules.monitors=function(map,H){
          (service_role sets user_id explicitly), never through the logged-in client. Set it here exactly like
          every other user-owned insert (feedback / bug_reports / donations). A belt-and-suspenders DB
          `default auth.uid()` is added in migration 20260721140000 too. */
-      const _uid=(H.user&&H.user.id)||null;
+      const _uid=(HOST.user&&HOST.user.id)||null;
       if(!_uid){ _promptLogin(); return {ok:false,error:'login'}; }
       const row={ user_id:_uid, name:String(opts.name||area.label||ML('Area monitor','エリア監視','Gebietsmonitor','Монитор области','Monitor de área')).slice(0,120),
         geometry:area.geometry, geometry_kind:area.geometry_kind||'polygon',
@@ -366,7 +366,7 @@ window.IntMapModules.monitors=function(map,H){
     function _closeSheetIfMobile(){ try{ if(window.__setDetent && window.matchMedia('(max-width:768px)').matches) window.__setDetent('peek'); }catch(_){} }
 
     /* ---- realtime: refresh the list when a run finishes / a report lands (if the tab is open) ---- */
-    (function subscribe(){ try{ if(!DB||!DB.channel) return; let t=null; const bump=()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ if(H.mode==='monitors') render(); }catch(_){} },600); };
+    (function subscribe(){ try{ if(!DB||!DB.channel) return; let t=null; const bump=()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ if(HOST.mode==='monitors') render(); }catch(_){} },600); };
       DB.channel('im-monitors').on('postgres_changes',{event:'*',schema:'public',table:'area_monitors'},bump).on('postgres_changes',{event:'*',schema:'public',table:'monitor_reports'},bump).subscribe();
     }catch(_){} })();
 

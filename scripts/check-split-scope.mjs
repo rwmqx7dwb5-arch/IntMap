@@ -37,6 +37,7 @@ Uint32Array Float32Array Float64Array BigInt64Array BigUint64Array ArrayBuffer D
 IDBKeyRange indexedDB matchMedia getComputedStyle alert confirm prompt atob btoa caches screen self top parent frames
 closest HTMLElement Element Node NodeList Text OffscreenCanvas ImageData CanvasRenderingContext2D WebGLRenderingContext
 AudioContext SpeechSynthesisUtterance speechSynthesis isSecureContext devicePixelRatio innerWidth innerHeight scrollX scrollY
+CSS Audio Option DOMRect Range getSelection AbortSignal WeakRef SVGElement ClipboardItem escape unescape scrollTo print
 maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity`.split(/\s+/).filter(Boolean));
 
 /* ── 1. names index.html declares at the closure's TOP level ──────────────── */
@@ -154,7 +155,53 @@ function freeIdentifiers(src) {
   return free;
 }
 
-/* ── 3. run ───────────────────────────────────────────────────────────────── */
+/* ── 3. (#R163) names that are DEAD in the original too ───────────────────────
+ *  index.html has a handful of `typeof X !== 'undefined'` guards whose X was ALREADY
+ *  unreachable before any split: it is declared inside a SIBLING IIFE, so the block that
+ *  reads it never had it in scope. Moving such a block into js/ changes nothing — the
+ *  reference resolves to nothing in both places — but the check below would otherwise
+ *  report it as a new hole. Each entry is verified against the pre-split file and must say
+ *  where the name really lives. Do NOT add to this list to silence a genuine dependency.
+ */
+const KNOWN_DEAD = new Map([
+  ['js/compare.js:layerDates',        'declared inside the layers IIFE (index.html "const layerDates=") — never in IntMapCompare\'s scope, before or after #R163. The guard falls back to the literal dates. Live value is window._imLayerDates.'],
+  ['js/time-borders.js:whenStyleReady', 'declared inside the layers IIFE (index.html "function whenStyleReady()") — never in IntMapTimeBorders\' scope, before or after #R163, so the #R140 style-ready retry has never actually run.'],
+  ['js/flight-sim.js:clearHl',        'declared inside the IntMapConsole IIFE — never in IntMapFlightSim\'s scope, before or after #R163. The `typeof clearHl==="function"` guard has always been false.'],
+]);
+
+/* ── 3b. (#R163) nothing inside a module may shadow the HOST parameter ────────
+ *  Every split-out module is `window.IntMapModules.x=function(map,HOST){…}` and reads the
+ *  index.html closure values as HOST.lang, HOST.countryStats, … A nested binding called HOST
+ *  would silently redirect those reads to the wrong object — undefined, no error, feature gone:
+ *  the #R162 failure mode again. (#R163 renamed the parameter from H to HOST precisely because
+ *  `H` collided with five ordinary locals — Height, Hourly, a step size — across the new files.)
+ */
+function hostShadows(src) {
+  const out = [];
+  const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true });
+  const pat = (p, cb) => { if (!p) return;
+    if (p.type === 'Identifier') cb(p);
+    else if (p.type === 'ObjectPattern') p.properties.forEach((x) => pat(x.value || x.argument, cb));
+    else if (p.type === 'ArrayPattern') p.elements.forEach((e) => pat(e, cb));
+    else if (p.type === 'AssignmentPattern') pat(p.left, cb);
+    else if (p.type === 'RestElement') pat(p.argument, cb); };
+  (function walk(n, inFactory) {
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) { n.forEach((x) => walk(x, inFactory)); return; }
+    let nowIn = inFactory;
+    if (/Function/.test(n.type)) {
+      const isFactory = (n.params || []).some((p) => p.type === 'Identifier' && p.name === 'HOST');
+      if (isFactory) nowIn = true;
+      else if (inFactory) (n.params || []).forEach((p) => pat(p, (id) => { if (id.name === 'HOST') out.push(id.loc.start.line); }));
+    }
+    if (nowIn && n.type === 'VariableDeclaration') n.declarations.forEach((d) => pat(d.id, (id) => { if (id.name === 'HOST') out.push(id.loc.start.line); }));
+    if (nowIn && (n.type === 'FunctionDeclaration' || n.type === 'ClassDeclaration') && n.id && n.id.name === 'HOST') out.push(n.id.loc.start.line);
+    for (const k of Object.keys(n)) { if (k === 'loc' || k === 'start' || k === 'end' || k === 'type') continue; walk(n[k], nowIn); }
+  })(ast, false);
+  return out;
+}
+
+/* ── 4. run ───────────────────────────────────────────────────────────────── */
 export function checkSplitScope() {
   const problems = [];
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
@@ -163,12 +210,32 @@ export function checkSplitScope() {
 
   const jsDir = join(ROOT, 'js');
   if (!existsSync(jsDir)) return problems;
-  for (const f of readdirSync(jsDir).filter((x) => x.endsWith('.js')).sort()) {
+  const jsFiles = readdirSync(jsDir).filter((x) => x.endsWith('.js')).sort();
+  /* Everything the app itself publishes as a runtime global, from index.html and from js/. */
+  const published = new Set();
+  const collectGlobals = (src) => {
+    for (const m of src.matchAll(/window\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) published.add(m[1]);
+    for (const m of src.matchAll(/window\[\s*['"]([^'"]+)['"]\s*\]\s*=(?!=)/g)) published.add(m[1]);
+  };
+  collectGlobals(html);
+  for (const f of jsFiles) collectGlobals(readFileSync(join(jsDir, f), 'utf8'));
+
+  for (const f of jsFiles) {
     const src = readFileSync(join(jsDir, f), 'utf8');
     let free;
-    try { free = freeIdentifiers(acorn.parse ? src : src); } catch (e) { problems.push({ file: 'js/' + f, msg: 'parse error: ' + e.message }); continue; }
+    try { free = freeIdentifiers(src); } catch (e) { problems.push({ file: 'js/' + f, msg: 'parse error: ' + e.message }); continue; }
+    for (const line of hostShadows(src)) {
+      problems.push({ file: 'js/' + f, msg: `a binding named "HOST" on line ${line} shadows the module's host parameter — every HOST.x read in that scope silently becomes undefined; rename the local` });
+    }
     for (const [name, line] of free) {
-      if (closure.has(name)) problems.push({ file: 'js/' + f, msg: `free identifier "${name}" (line ${line}) is a closure variable of index.html — pass it in explicitly; inherited it silently reads as undefined` });
+      if (closure.has(name)) {
+        problems.push({ file: 'js/' + f, msg: `free identifier "${name}" (line ${line}) is a closure variable of index.html — pass it in explicitly; inherited it silently reads as undefined` });
+      } else if (!published.has(name) && !KNOWN_DEAD.has(`js/${f}:${name}`)) {
+        /* Neither a browser/vendor global, nor a closure top-level name, nor something the app
+           ever assigns to window: at runtime this is a bare unresolvable identifier. Usually it
+           means the name lives inside ANOTHER IIFE and the reference is (or has become) dead. */
+        problems.push({ file: 'js/' + f, msg: `free identifier "${name}" (line ${line}) resolves to nothing at runtime — it is not a browser global, not a closure top-level name, and the app never assigns window.${name}` });
+      }
     }
   }
   return problems;

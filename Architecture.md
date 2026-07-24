@@ -661,7 +661,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R162) 32,883行 / 3.77MB。**自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
+                                (#R163) 27,935行 / 3.30MB（#R162時点は 32,883行/3.77MB）。
+                                **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
                                     JS は `document.styleSheets`/`cssRules` を一切触らないため挙動は完全に同一。
@@ -690,7 +691,15 @@ js/
                                     （`DATA_SOURCES`）。`window.IntMapRefData`。
   layer-previews.js                 (#R162) `IntMapLayerPreviews`。ファクトリ引数＝(countryStats, geoLayersDB, loadCountryData)
   history.js                        (#R162) `IntMapMaddison` / `IntMapHistStates` / `IntMapHistId`（歴史GDP・旧国家・旧国名）
-  monitors.js                       (#R162) `IntMapMonitors`（Area Monitors）。ファクトリ引数＝(map, host)。§3.1 参照
+  monitors.js                       (#R162) `IntMapMonitors`（Area Monitors）。ファクトリ引数＝(map, HOST)。§3.1 参照
+  ── 以下 (#R163) の7本。すべて `(map, IM_HOST)` ファクトリ（§3.1）─────────────────
+  companies.js                      (#R163) `IntMapCompanies`（企業表＋キーレス時価総額算出・株価系列）。34KB
+  stats-compare.js                  (#R163) `IntMapStatsCompare`（多国比較・約20指標・WB⇄IMF切替・時系列チャート）。112KB
+  compare.js                        (#R163) `IntMapCompare`（第2のMapLibreインスタンスによる並列/スワイプ/X線比較）。67KB
+  routing.js                        (#R163) `IntMapRouting`（OSRM/Valhalla/Transitous の実経路・車線案内・GPX出力）。80KB
+  street-view.js                    (#R163) `IntMapStreetView`（キーレス埋め込みSV＋svv実カバレッジ）。31KB
+  flight-sim.js                     (#R163) `IntMapFlightSim`（剛体飛行モデル・HUD・ムービングマップ）。169KB＝最大
+  time-borders.js                   (#R163) `IntMapTimeBorders`（年代クリックで当時の国境・国名に差し替え）。119KB
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -727,7 +736,7 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
    `/['"]/` を文字列開始と誤読し、以降を全部空白化して「依存なし」と**嘘の合格**を出した）。
    `scripts/check-split-scope.mjs`（acorn による実パーサ）を使う。static-checks 経由で CI 必須。
 2. **依存は明示的に渡す。** 出したモジュールは**ファクトリ**にし、index.html の元の位置で呼ぶ：
-   `window.IntMapMonitors = window.IntMapModules.monitors(map, host);`
+   `window.IntMapMonitors = window.IntMapModules.monitors(map, IM_HOST);`
 3. **可変か不変かで渡し方を変える**（**最重要**）
    - **再代入されない値**（`map`＝boot時に1回だけ代入 / `countryStats`＝常に in-place 変更 /
      `const` / 関数宣言）→ そのまま引数で渡してよい。
@@ -739,12 +748,55 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 5. 読み込みは**素の `<script src>`（classic script）**。`type="module"` は使わない——
    DOMContentLoaded より前に同期実行される必要があり、**ビルド工程を持たない**方針も維持する。
 
+### (#R163) `IM_HOST` — ホスト・インターフェースの全体規約への昇格
+
+#R162 は monitors 専用のホストオブジェクトを呼び出し側にインラインで書いていた。#R163 でこれを
+**index.html クロージャ先頭の唯一の `const IM_HOST={…}`** に昇格し、**分割モジュールの標準シグネチャを
+`function(map, HOST)` に統一**した。以後モジュールを1本出すコストは「`IM_HOST` に getter を1つ足す」だけ。
+
+- **メンバーは全て getter**。理由は2つあり、どちらも単独で十分な根拠になる。
+  - **LIVE**: 上記手順3の可変値（`currentLang`/`currentUser`/`currentProj`/`currentMapType`/`terrain3D`/
+    `radiusItems`/`countryGeo`）は実行中に再代入される。コピーで渡すと**黙って死んだ値を読み続ける**。
+  - **LAZY**: getter の本体は読まれるまで評価されない。だから `IM_HOST` をクロージャの上部
+    （700行台）に置いたまま、はるか下（`currentUser` は約13,000行下）で宣言される値も名指しできる。
+    **TDZ を一切気にしなくてよい**。値渡しのメンバーが1つでも混ざると、この性質が壊れる。
+- **`map` だけは第1引数**（boot時1回だけ代入・全モジュール本体が裸の `map` を使う）。
+- **不変値はファクトリ先頭で元の名前に束縛し直す**：`const imToast=HOST.imToast, cName=HOST.cName;`。
+  こうすると**移設した本体は1バイトも書き換えずに済む**。書き換えるのは可変値の参照だけ
+  （`currentLang` → `HOST.lang` 等）で、その置換は**ASTで自由参照だけを対象に行い、
+  逆変換して元テキストと完全一致することを機械照合**してから採用する。
+- **パラメータ名は `H` ではなく `HOST`**。#R163 で `H` を試したところ、出したばかりの7本の中だけで
+  **5箇所の `H`（Height / Hourly / 積分ステップ）と衝突**していた。ローカルの `H` がパラメータを隠すと
+  そのスコープの `H.lang` は静かに `undefined` になる——#R162 と同じ「エラーゼロで機能が消える」形。
+  `scripts/check-split-scope.mjs` が **`HOST` を隠す宣言を CI で落とす**。
+
+**分割候補の見つけ方**: クロージャ最上位の文をASTで列挙し、サイズと「クロージャ変数への自由参照の数」を
+並べる。**依存が少なく大きいものから出す**。#R163 の7本は 566KB で依存は延べ10種類しかなかった。
+
 **守り（すべて CI）**
-- `scripts/check-split-scope.mjs` … js/*.html のどのファイルも index.html のクロージャ変数を**自由変数として参照していない**ことを実パーサで検証。
+- `scripts/check-split-scope.mjs` … 実パーサ(acorn)で3種を検証。
+  ① js/*.js のどのファイルも index.html のクロージャ変数を**自由変数として参照していない**。
+  ② (#R163) **実行時に何にも解決しない自由識別子**がない＝ブラウザ組込みでもクロージャ最上位名でも
+     `window.X` でもない名前。①は「クロージャ最上位名」しか見ないので、**別のIIFEの中で宣言された名前への
+     参照はすり抜けていた**。#R163 でこれを追加したところ既存の**3件の死んだ参照**が出た（下記）。
+  ③ (#R163) モジュール内に **`HOST` を隠す宣言がない**。
 - static-checks §8 … 未読込のモジュール／呼ばれていないファクトリ／**移設元に残った重複コピー**／`<style>` の再インライン化を検出。
-- `tests/r162-checks.test.mjs` … 上記3の不変条件（`map`/`countryStats` は再代入されない・可変4値は getter である）を固定。
+- `tests/r162-checks.test.mjs` / `tests/r163-checks.test.mjs` … 手順3の不変条件を固定
+  （`map`/`countryStats` は再代入されない・可変値は **`IM_HOST` の getter である**・
+  **モジュール内に可変値の裸の識別子が残っていない**・boot ガードが全ファクトリを名指ししている）。
+- `tests/r163.spec.js` … **実ブラウザで7本すべてを実際に動かす**。静的検査は #R162 の
+  「エラーゼロのまま機能だけ消える」を原理的に検出できない。特に**言語をJPに切り替えて、
+  bootで構築済みのモジュールが新しい言語を読むこと**を確認＝getter が live である証明。
 - `tests/app-source.mjs` … R1xx の文字列一致テスト群は index.html だけでなく **css/ + js/ を連結した「アプリ全体のソース」**を読む。
   さもないと「行が別ファイルに動いただけ」で `gone()` 系の判定が**誤って緑**になる。
+
+**(#R163) 分割で見つかった既存の死んだ参照（挙動は分割前と完全に同一・今回は修正していない）**:
+`typeof X!=='undefined'` で守られた参照のうち3件は、**分割前から別のIIFEの中の名前を指していて到達不可能**
+だった（＝ガードは常に false／常にフォールバック）。`check-split-scope.mjs` の `KNOWN_DEAD` に
+根拠付きで登録してある。修正すると挙動が変わるため、リファクタとは別ラウンドで扱う。
+- `js/compare.js` の `layerDates` … 実体は layers IIFE 内。生きた値は `window._imLayerDates`。
+- `js/time-borders.js` の `whenStyleReady` … 実体は layers IIFE 内。**#R140 の style-ready リトライは一度も動いていない**。
+- `js/flight-sim.js` の `clearHl` … 実体は IntMapConsole IIFE 内。
 
 ---
 
