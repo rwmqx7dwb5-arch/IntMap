@@ -87,7 +87,8 @@ test('R162 #4 each factory is instantiated with exactly its declared dependencie
     'window.IntMapMaddison=window.IntMapModules.maddison();': ['js/history.js', 'maddison', []],
     'window.IntMapHistStates=window.IntMapModules.histStates(countryStats);': ['js/history.js', 'histStates', ['countryStats']],
     'window.IntMapHistId=window.IntMapModules.histId(countryStats);': ['js/history.js', 'histId', ['countryStats']],
-    'window.IntMapMonitors=window.IntMapModules.monitors(map,{': ['js/monitors.js', 'monitors', ['map', 'H']],
+    // (#R163) the private host object became the shared IM_HOST and the parameter was renamed H → HOST
+    'window.IntMapMonitors=window.IntMapModules.monitors(map,IM_HOST);': ['js/monitors.js', 'monitors', ['map', 'HOST']],
     'window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);':
       ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'geoLayersDB', 'loadCountryData']],
   };
@@ -133,16 +134,18 @@ test('R162 #5b INVARIANT: mutable host values reach monitors as GETTERS, never c
   // Once moved out of the closure that guard silently evaluated false, so activeArea() fell
   // through to "no area selected" — the radius→monitor path was lost with NO error. These four
   // are all rebound at runtime, so a captured parameter would reintroduce exactly that failure.
-  const call = html.slice(html.indexOf('window.IntMapModules.monitors(map,{'));
+  // (#R163) these four moved from monitors' own inline host object into the shared IM_HOST, and the
+  // module parameter was renamed H → HOST. Same invariant, one object: still getters, never copies.
+  const host = html.slice(html.indexOf('const IM_HOST={'), html.indexOf('const IM_HOST={') + 3000);
   for (const [prop, src] of [['lang', 'currentLang'], ['user', 'currentUser'], ['mode', 'currentMode'], ['radiusItems', 'radiusItems']]) {
-    assert.ok(new RegExp(`get\\s+${prop}\\(\\)\\s*\\{\\s*return\\s+${src};`).test(call),
+    assert.ok(new RegExp(`get\\s+${prop}\\(\\)\\s*\\{\\s*return\\s+${src};`).test(host),
       `${prop} must be a live getter over ${src}, not a captured value`);
   }
   const mon = rd('js/monitors.js');
   for (const stale of ["typeof radiusItems!=='undefined'", "typeof currentLang!=='undefined'", "typeof currentUser!=='undefined'", "typeof currentMode!=='undefined'"]) {
     assert.ok(!mon.includes(stale), `monitors.js must not probe the vanished closure binding (${stale})`);
   }
-  assert.ok(mon.includes('H.radiusItems') && mon.includes('H.lang') && mon.includes('H.user') && mon.includes('H.mode'),
+  assert.ok(mon.includes('HOST.radiusItems') && mon.includes('HOST.lang') && mon.includes('HOST.user') && mon.includes('HOST.mode'),
     'monitors.js reads the mutable state through the host interface');
 });
 
