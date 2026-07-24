@@ -65,6 +65,10 @@ const MODULES = {
   community:   { file: 'js/community.js',    k: 'IM_COMMUNITY',    exports: ['renderCommunity', 'wireCommList'] },
 };
 const NAMES = Object.keys(MODULES);
+/* Escape EVERY regex metacharacter, not just `$`. Exported names here are ordinary identifiers, so
+   in practice only `$` can occur — but a partial escape is the kind of thing that is right until the
+   day it isn't, and CodeQL flags it (js/incomplete-sanitization) rather than guess. */
+const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const shimOf = (m, n) => `function ${n}(){ return ${MODULES[m].k}.${n}.apply(this,arguments); }`;
 const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(map,IM_HOST);`;
 
@@ -122,7 +126,7 @@ test('R168 #2 THE SHIM CONTRACT: every exported name is a hoisted forwarding dec
       assert.equal(html.split(shim).length - 1, 1, `index.html holds exactly one shim for ${n}: ${shim}`);
 
       // (d) and index.html no longer declares the real thing anywhere.
-      const inline = [...code(html).matchAll(new RegExp(`(?:^|[^.\\w$])(?:async\\s+function|function|const|let|var)\\s+${n.replace(/\$/g, '\\$')}(?![\\w$])`, 'g'))];
+      const inline = [...code(html).matchAll(new RegExp(`(?:^|[^.\\w$])(?:async\\s+function|function|const|let|var)\\s+${rx(n)}(?![\\w$])`, 'g'))];
       assert.equal(inline.length, 1, `${n} must exist in index.html only as its shim (found ${inline.length} declarations)`);
     }
   }
