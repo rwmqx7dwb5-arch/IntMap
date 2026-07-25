@@ -215,6 +215,53 @@ test('every Companies figure is printed with the date it is from', async ({ page
   expect(dated.length, 'market cap, price, P/E, revenue, net income and employees must all be dated').toBeGreaterThanOrEqual(5);
 });
 
+test('a live price is stamped with the quote\'s OWN time, not the fetch time', async ({ page }) => {
+  test.setTimeout(120000);
+  // The keyless Yahoo feed reaches the browser through a CORS-proxy ladder that is regularly
+  // unavailable (verified against production: direct Yahoo is CORS-blocked, corsproxy.io answers
+  // 400/503, allorigins fails — the news RSS is down the same way). When it is, Companies correctly
+  // falls back to the reported snapshot and stamps it with the dataset's compile date. That is the
+  // honest outcome, but it means the LIVE branch never runs, so this stubs one batched spark
+  // response with a known quote timestamp and checks the stamp is that timestamp — the difference
+  // between "priced at 14:32" and "we fetched something at 14:32" is the whole point of priceTexact.
+  const QUOTE_MS = Date.UTC(2026, 6, 24, 20, 0, 0);          // a fixed, recognisable quote time
+  await page.route('**/v8/finance/spark**', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    headers: { 'access-control-allow-origin': '*' },
+    body: JSON.stringify({
+      spark: {
+        result: [{ symbol: 'AAPL', response: [{ timestamp: [QUOTE_MS / 1000], indicators: { quote: [{ close: [225.5] }] }, meta: { regularMarketPrice: 225.5 } }] }],
+      },
+    }),
+  }));
+  await boot(page);
+  await page.evaluate(() => window.IntMapOS.exec('tab.info', { source: 'test' }));
+  await page.waitForSelector('.co-row', { timeout: 30000 });
+  await page.waitForFunction(() => window.IntMapCompanies.DATA.some(c => c.price > 0), null, { timeout: 40000 });
+
+  const r = await page.evaluate((ms) => {
+    const c = window.IntMapCompanies.DATA.find(x => x.tk === 'AAPL');
+    const d = new Date(ms);
+    const two = n => (n < 10 ? '0' : '') + n;
+    return {
+      price: c.price, exact: !!c.priceTexact, t: c.priceT, want: ms,
+      expectLocal: d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()) + ' ' + two(d.getHours()) + ':' + two(d.getMinutes()),
+    };
+  }, QUOTE_MS);
+  expect(r.price).toBe(225.5);
+  expect(r.exact, 'the stamp must be flagged as the quote time, not the fetch time').toBe(true);
+  expect(r.t).toBe(QUOTE_MS);
+
+  // …and it must reach the UI, rendered in the viewer's local time. The list re-render is debounced
+  // (~350 ms after prices land), so poll rather than reading the instant the model updates.
+  const chipOf = () => page.evaluate(() => {
+    const row = [...document.querySelectorAll('.co-row')].find(r => r.getAttribute('data-tk') === 'AAPL');
+    return row ? (row.querySelector('.co-asof')?.textContent.trim() || null) : null;
+  });
+  await expect.poll(chipOf, { timeout: 20000, message: 'the row chip must switch from the snapshot date to the quote time' })
+    .toBe(r.expectLocal);
+});
+
 test('the flight simulator pre-flight screen defaults to an airborne start', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
