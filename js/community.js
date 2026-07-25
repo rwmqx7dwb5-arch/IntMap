@@ -10,7 +10,11 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.community=function(map,HOST){
+window.IntMapModules.community=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   function openImageLightbox(src){
     const old=document.getElementById('img-lightbox'); if(old) old.remove();
     const lb=document.createElement('div'); lb.id='img-lightbox';
@@ -22,7 +26,7 @@ window.IntMapModules.community=function(map,HOST){
 
   function renderCommunity(){
     const cont=document.getElementById('community-feed');
-    if(map&&map.isStyleLoaded()) HOST.setupCommunityLayer();
+    if(_imCanDraw()) HOST.setupCommunityLayer();
     const jp=HOST.lang==='jp';
     const sortBtn=(k,lbl)=>`<button data-sort="${k}" class="${HOST.communitySort===k?'active':''}">${lbl}</button>`;
     const catChip=(id,lbl,color)=>`<button class="comm-cat-chip ${HOST.commCatFilter===id?'active':''}" data-catf="${id}" style="--cc:${color}">${lbl}</button>`;

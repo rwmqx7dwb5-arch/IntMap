@@ -389,7 +389,7 @@ window.IntMapModules.widgets=function(map,HOST){
         navigator.geolocation.getCurrentPosition(
           p=>{ geoPos={lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()}; cb&&cb(); },
           ()=>{ geoDenied=true; cb&&cb(); },
-          {enableHighAccuracy:false,maximumAge:5*60*1000,timeout:9000}); }catch(_){ cb&&cb(); } }
+          {enableHighAccuracy:true,maximumAge:0,timeout:20000}); }catch(_){ cb&&cb(); } }   /* (#R170) high accuracy, fresh fix; geoPos is still reused for 10 min by widgetLoc() so this asks the device once */
     async function widgetLoc(){
       const mine=()=>({lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'});
       if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return mine();

@@ -12,7 +12,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.cameras=function(map,HOST){
+window.IntMapModules.cameras=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   (function(){
@@ -33,7 +37,7 @@ window.IntMapModules.cameras=function(map,HOST){
     function _stopRefresh(){ if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; } }
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
     function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
-    function ensure(){ try{ if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc()});
       if(!map.getLayer('webcams-pt')){
         map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});

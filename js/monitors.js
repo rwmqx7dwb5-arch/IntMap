@@ -20,7 +20,11 @@
  *  "no CSS-in-JS template literal" rule.
  * ========================================================================== */
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.monitors=function(map,HOST){
+window.IntMapModules.monitors=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
     /* (#R162) HOST is the HOST INTERFACE — the index.html closure values this module used to
        inherit implicitly. It matters that the four state reads (lang/user/mode/radiusItems)
        are GETTERS on H and not captured parameters: all four are reassigned at runtime (the
@@ -118,7 +122,7 @@ window.IntMapModules.monitors=function(map,HOST){
       const geom={type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; return { geometry_kind:'polygon', geometry:geom, bbox:[w,s,e,n], label:ML('Current map view','現在の地図表示','Aktuelle Kartenansicht','Текущий вид карты','Vista actual del mapa') }; }catch(_){ return null; } }
 
     /* ---- map overlay for a monitor area + change points ---- */
-    function _ensureLayers(){ try{ if(!map||!map.getStyle||!map.isStyleLoaded||!map.isStyleLoaded()) return false;
+    function _ensureLayers(){ try{ if(!map||!map.getStyle||!_imCanDraw()) return false;
       if(!map.getSource('im-mon-area')){ map.addSource('im-mon-area',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'im-mon-area-fill',type:'fill',source:'im-mon-area',paint:{'fill-color':'#0a84ff','fill-opacity':0.10}});
         map.addLayer({id:'im-mon-area-line',type:'line',source:'im-mon-area',paint:{'line-color':'#0a84ff','line-width':2,'line-dasharray':[2,1.5]}}); }

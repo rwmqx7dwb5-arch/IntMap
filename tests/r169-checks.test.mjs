@@ -307,6 +307,14 @@ test('R169 #9 the head defects found while auditing index.html are fixed', () =>
   // (c) the anti-stale-version guard compares the build stamp it ships with against the newest one
   //     this device has seen. A stamp that never advances makes the guard inert; both stamps were
   //     last touched in #R121 / #R133.
-  assert.match(html, /window\.INTMAP_BUILD='2026-07-25-R169';/, 'INTMAP_BUILD is stamped for this round');
-  assert.match(html, /window\.__imBuild='R169';/, '__imBuild is stamped for this round');
+  //     (#R170) This asserted the literal R169 strings, which contradicts the point being made: a stamp
+  //     that never advances makes the guard inert, so pinning one VALUE forever guarantees exactly the
+  //     defect. Assert the SHAPE and that it has not gone backwards past the round that fixed this.
+  const ib = html.match(/window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/);
+  assert.ok(ib, 'INTMAP_BUILD must be a date-ordered `YYYY-MM-DD-R<n>` stamp');
+  assert.ok(ib[1] >= '2026-07-25', `INTMAP_BUILD went backwards (${ib[1]}) — the anti-stale guard compares these`);
+  assert.ok(Number(ib[2]) >= 169, `INTMAP_BUILD round went backwards (R${ib[2]})`);
+  const mb = html.match(/window\.__imBuild='R(\d+)';/);
+  assert.ok(mb, '__imBuild must be an `R<n>` stamp');
+  assert.equal(mb[1], ib[2], 'the two build stamps must name the SAME round');
 });

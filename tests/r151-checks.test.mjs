@@ -59,7 +59,9 @@ test('R151 #4 toolbar: Radius under Measure menu, Screenshot + link under one Sh
   assert.match(html, /window\._closeShareMenu=/, 'share menu close helper wired');
   assert.match(html, /shareMenuBtn:"Share"/, 'Share menu label (EN)');
   // the measure-menu trigger now reflects an active Radius too
-  assert.match(html, /toolMode==='radius'\|\|!!\(window\.DrawTool/, 'measure trigger reflects active radius');
+  // (#R170) the 3-D volume tool joined the same Measure menu, so it lights the trigger too. The R151
+  // contract being pinned here is "an active radius lights the Measure trigger", not the exact list.
+  assert.match(html, /toolMode==='radius'\|\|toolMode==='volume'\|\|!!\(window\.DrawTool/, 'measure trigger reflects active radius (and, since #R170, the 3-D volume tool)');
 });
 
 test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-heading', () => {

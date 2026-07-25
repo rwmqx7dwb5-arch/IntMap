@@ -10,7 +10,11 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.locate=function(map,HOST){
+window.IntMapModules.locate=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const imToast=HOST.imToast;
   /* ===== (#R137) Live "my location" marker — an ACCENT dot + an accuracy circle (居る可能性のある円) that FOLLOW the
      user via navigator.geolocation.watchPosition. Driven by the mobile locate FAB and the Atlas 'locate' action.
@@ -20,7 +24,7 @@ window.IntMapModules.locate=function(map,HOST){
     let watchId=null, last=null, active=false, wired=false;
     const M=()=>window.__imap||(typeof map!=='undefined'?map:null);
     function accent(){ try{ const c=(getComputedStyle(document.documentElement).getPropertyValue('--primary-color')||'').trim(); return c||'#0a84ff'; }catch(_){ return '#0a84ff'; } }
-    function ensure(){ const m=M(); if(!m||!m.isStyleLoaded||!m.isStyleLoaded()) return false;
+    function ensure(){ const m=M(); if(!m||!_imCanDraw()) return false;
       try{
         if(!m.getSource(SRC_ACC)){ m.addSource(SRC_ACC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           m.addLayer({id:'imloc-acc-fill',type:'fill',source:SRC_ACC,paint:{'fill-color':accent(),'fill-opacity':0.12}});
@@ -62,8 +66,11 @@ window.IntMapModules.locate=function(map,HOST){
           ? (HOST.lang==='jp'?'位置情報がブロックされています。ブラウザ設定で許可してください。':HOST.lang==='de'?'Standort blockiert — im Browser erlauben.':HOST.lang==='ru'?'Геолокация заблокирована — разрешите в браузере.':HOST.lang==='es'?'Ubicación bloqueada — actívala en el navegador.':'Location blocked — enable it in your browser settings.')
           : (HOST.lang==='jp'?'位置情報を取得できませんでした':HOST.lang==='de'?'Standort nicht verfügbar':HOST.lang==='ru'?'Не удалось получить геолокацию':HOST.lang==='es'?'No se pudo obtener la ubicación':'Couldn\'t get your location'))); } }catch(_){}
         if(!last){ active=false; } _syncFab(); };
-      try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:9000,maximumAge:5000}); }catch(_){}
-      if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:2000}); }catch(_){} }
+      /* (#R170) maximumAge 5000/2000 → 0 and a longer first-fix budget: a cached fix is by definition the LAST
+         one the device computed (possibly a coarse network fix from another app), so accepting one threw away the
+         accuracy enableHighAccuracy had just asked for. The watch keeps refining as the GPS converges. */
+      try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:20000,maximumAge:0}); }catch(_){}
+      if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:25000,maximumAge:0}); }catch(_){} }
     }
     function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false; _syncFab(); clear(); }
     /* FAB tap: first tap starts + flies; while active it re-centres on the last known fix. */
@@ -72,7 +79,11 @@ window.IntMapModules.locate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.annotations=function(map,HOST){
+window.IntMapModules.annotations=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* ===== (#R9b/#55) Persistent measurement annotations — finalise a measure/area/radius as a pin-less
      line/polygon that stays on the map; small popup to rename / recolor / delete; multiple allowed. ===== */
   window.IntMapAnnotations=(function(){
@@ -80,7 +91,7 @@ window.IntMapModules.annotations=function(map,HOST){
     const SRC='annot-src'; let seq=0, popup=null; const items=[];
     const jp=()=>HOST.lang==='jp';
     function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op}}))}; }
-    function ensure(){ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       try{ map.addSource(SRC,{type:'geojson',data:fc()});
         map.addLayer({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});
         map.addLayer({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':2.6}});
@@ -364,7 +375,11 @@ window.IntMapModules.terrain=function(map,HOST){
     return { sampler, loadTile }; })();
 };
 
-window.IntMapModules.railSeaOverlays=function(map,HOST){
+window.IntMapModules.railSeaOverlays=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const satToast=HOST.satToast;
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
@@ -380,7 +395,7 @@ window.IntMapModules.railSeaOverlays=function(map,HOST){
     const state={}; LIST.forEach(L=>state[L.id]=false);
     const lbl=(L)=>L.label[HOST.lang]||L.label.en;
     const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-    function ensure(L){ try{ if(!map.isStyleLoaded()) return false;
+    function ensure(L){ try{ if(!_imCanDraw()) return false;
       if(!map.getSource('ox-'+L.id)) map.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
       if(!map.getLayer('oxl-'+L.id)) map.addLayer({id:'oxl-'+L.id,type:'raster',source:'ox-'+L.id,layout:{visibility:'none'},paint:{'raster-opacity':0.92,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(_){ return false; } }

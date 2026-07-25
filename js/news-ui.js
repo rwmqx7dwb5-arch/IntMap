@@ -12,6 +12,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.newsUi=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const saveBookmarks=()=>localStorage.setItem('intmap_bookmarks',JSON.stringify(HOST.bookmarks));
 
   const tzOpt=()=>(HOST.userTZ==='auto'?undefined:HOST.userTZ);
@@ -33,7 +37,11 @@ window.IntMapModules.newsUi=function(map,HOST){
        map.on('load') before the first call), in which case we simply return and the existing
        styledata re-run creates the layers. */
     const GE=window.IntMapGeoEngine;
-    if(!GE||!GE.ready()) return;
+    /* (#R170) ready() → canDraw(). ready() means "the renderer has fully settled, tiles and all", which is
+       false for most of the time a user spends panning — so the news pin layer, like every dl-* layer, was
+       waiting for an idle frame it might not get for seconds. Creating sources/layers only needs a parsed
+       style, which is what canDraw() answers. */
+    if(!GE||!GE.canDraw()) return;
     HOST.ensureLabelPill();
     if(!GE.layers.hasSource('news-points')){
       GE.layers.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
@@ -188,7 +196,7 @@ window.IntMapModules.newsUi=function(map,HOST){
       if(HOST.mapTooltipEl){ HOST.mapTooltipEl.style.display='none'; HOST.mapTooltipEl.style.pointerEvents='none'; }
       if(_xhrNewsId!=null){ try{map.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; _xhrLink=null; _xhrProps=null; }
       return;
-      if(!HOST.isMobile()||!map||!map.isStyleLoaded()||!map.getLayer('news-dots')) return;
+      if(!HOST.isMobile()||!_imCanDraw()||!map.getLayer('news-dots')) return;
       if(HOST.toolMode||document.body.classList.contains('pg-we')){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; return; }
       const c=map.project(map.getCenter()); const R=22;
       const layers=['news-labels','news-dots'].filter(l=>map.getLayer(l));

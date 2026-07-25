@@ -19,7 +19,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.layerRegistry=function(map,HOST){
+window.IntMapModules.layerRegistry=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const demElevAt=HOST.demElevAt;
   window.IntMapLayers=(function(){
@@ -575,14 +579,18 @@ window.IntMapModules.layerPresets=function(map,HOST){
   })();
 };
 
-window.IntMapModules.labelPopup=function(map,HOST){
+window.IntMapModules.labelPopup=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile;
   (function(){
     if(!map) return;
     let popup=null, wired=false;
     function firstSym(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
-    function ensureHL(){ if(map.getSource('place-hl-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ensureHL(){ if(map.getSource('place-hl-src')) return true; if(!_imCanDraw()) return false;
       try{ map.addSource('place-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); const before=firstSym();
         map.addLayer({id:'place-hl-fill',type:'fill',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ff3b30','fill-opacity':0.30}},before);
         map.addLayer({id:'place-hl-line',type:'line',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'line-color':'#ff3b30','line-width':1.8,'line-opacity':0.9}},before);
@@ -718,7 +726,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
       }catch(_){} });
     }
     function tryWire(n){ if(map.getLayer('ofm-country')){ wire(); return; } if((n||0)<300) setTimeout(()=>tryWire((n||0)+1),200); }
-    if(map.isStyleLoaded()) tryWire(0); else map.on('load',()=>tryWire(0));
+    if(_imCanDraw()) tryWire(0); else map.on('load',()=>tryWire(0));
     /* (#R101) RE-ARM the label-click wiring on every style/source update. The old bounded 12 s retry could give up
        before the (sometimes slow) OpenFreeMap label layers finished loading — and because BOTH the per-layer
        handlers AND the padded-hit fallback live inside wire(), that left place-name labels completely UNCLICKABLE
@@ -788,7 +796,11 @@ window.IntMapModules.geojsonUpload=function(map,HOST){
   })();
 };
 
-window.IntMapModules.viewHash=function(map,HOST){
+window.IntMapModules.viewHash=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   (function(){
     if(!map) return;
     let restoring=false, t=null;
@@ -870,7 +882,7 @@ window.IntMapModules.viewHash=function(map,HOST){
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
        always matches what's actually on. */
     document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))){ clearTimeout(t); t=setTimeout(save,300); } });
-    if(map.isStyleLoaded()) restore(); else map.on('load',restore);
+    if(_imCanDraw()) restore(); else map.on('load',restore);
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
 };
