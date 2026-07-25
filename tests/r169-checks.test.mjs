@@ -291,11 +291,15 @@ test('R169 #8 index.html shrank and no module body came back inline', () => {
 
 test('R169 #9 the head defects found while auditing index.html are fixed', () => {
   // (a) a stray second </script> closed nothing — a leftover from an old edit that the browser
-  //     silently tolerates. One open <script> ⇒ one close. Counted on the markup only: an HTML
-  //     comment (the CSP note) and the document.write fallback both spell the word deliberately.
-  const markup = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.equal((markup.match(/<script\b/g) || []).length, (markup.match(/<\/script>/g) || []).length,
-    'index.html has as many </script> as <script> tags');
+  //     silently tolerates. One open <script> ⇒ one close. Tags INSIDE an HTML comment don't count
+  //     (the CSP note spells `<script src=evil-host>` on purpose); the ranges are computed and the
+  //     matches filtered by offset rather than stripped out of the string, because a single-pass
+  //     removal of a multi-character delimiter is exactly the "incomplete sanitization" shape.
+  const comments = [...html.matchAll(/<!--[\s\S]*?-->/g)].map((m) => [m.index, m.index + m[0].length]);
+  const outside = (i) => !comments.some(([a, b]) => i >= a && i < b);
+  const opens = [...html.matchAll(/<script\b/g)].filter((m) => outside(m.index)).length;
+  const closes = [...html.matchAll(/<\/script>/g)].filter((m) => outside(m.index)).length;
+  assert.equal(opens, closes, `index.html has as many </script> (${closes}) as <script> (${opens}) tags`);
   // (b) the MapLibre stylesheet was linked twice, byte-identical — a second request for a file the
   //     browser already had.
   const cssLinks = (html.match(/maplibre-gl@[\d.]+\/dist\/maplibre-gl\.css/g) || []).length;
