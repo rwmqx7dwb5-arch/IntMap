@@ -213,8 +213,11 @@ test('#14 index.html loads the engine and uses it FIRST in analyzeContext', () =
   /* the legacy scorer must still be reachable as the fallback */
   /* line-ending tolerant: index.html is stored with CRLF */
   assert.ok(/if\(!subjectLoc\)\{\s+let best=null, bestScore=0;/.test(html), 'legacy gazetteer fallback removed');
-  /* de/ru/es used to render an undefined subject name */
-  assert.ok(html.includes('best.name[currentLang]||best.name.en||best.name.jp||null'), 'legacy name fallback missing');
+  /* de/ru/es used to render an undefined subject name.
+     (#R169) analyzeContext moved into js/news-context.js, where the closure read `currentLang`
+     became the host read `HOST.lang` — accept either spelling so the guard tracks the code. */
+  assert.ok(html.includes('best.name[currentLang]||best.name.en||best.name.jp||null')
+    || html.includes('best.name[HOST.lang]||best.name.en||best.name.jp||null'), 'legacy name fallback missing');
   /* admin-curated geo_pins still contribute */
   assert.ok(html.includes('window.IntMapNewsGeo.register(extra)'), 'geo_pins are not registered with the engine');
 });
