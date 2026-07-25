@@ -97,7 +97,42 @@ const RW = {
   commSearch:         { v: 'commSearch',         owners: ['community.js'] },
   communitySort:      { v: 'communitySort',      owners: ['community.js'] },
   replyingTo:         { v: 'replyingTo',         owners: ['community.js'] },
+  /* ── (#R169) the eighth split. Same rule: the module that OWNS the subject is the one allowed to
+     write that subject's state. Members whose getter already existed higher up (they were read-only
+     for earlier modules) get only the write half here, so `oneLinePair:false` for those six. ── */
+  satActive:          { v: 'satActive',          owners: ['satellite.js'] },
+  satAutoBackoff:     { v: 'satAutoBackoff',     owners: ['satellite.js'] },
+  satErrCount:        { v: 'satErrCount',        owners: ['satellite.js'] },
+  satLastGood:        { v: 'satLastGood',        owners: ['satellite.js'] },
+  searchMarker:       { v: 'searchMarker',       owners: ['search-geocode.js'] },
+  panelDrag:          { v: 'panelDrag',          owners: ['window-manager.js'] },
+  readerOpen:         { v: 'readerOpen',         owners: ['article-reader.js'] },
+  readerCurrent:      { v: 'readerCurrent',      owners: ['article-reader.js'] },
+  composeCat:         { v: 'composeCat',         owners: ['community-board.js'] },
+  composeEditId:      { v: 'composeEditId',      owners: ['community-board.js'] },
+  pendingImg:         { v: 'pendingImg',         owners: ['community-board.js'] },
+  /* the readout owns the cursor position, the elevation request sequence and its debounce timer */
+  _crLat:             { v: '_crLat',             owners: ['map-readout.js'] },
+  _crLng:             { v: '_crLng',             owners: ['map-readout.js'] },
+  _elevSeq:           { v: '_elevSeq',           owners: ['map-readout.js'] },
+  elevTimer:          { v: 'elevTimer',          owners: ['map-readout.js'] },
+  lastElev:           { v: 'lastElev',           owners: ['map-readout.js'] },
+  lastLayerVal:       { v: 'lastLayerVal',       owners: ['map-readout.js'] },
+  /* write halves only — the getter for each of these was already there for an earlier module */
+  commCaps:           { v: 'commCaps',           owners: ['community-board.js'], oneLinePair: false },
+  communityPosts:     { v: 'communityPosts',     owners: ['community-board.js'], oneLinePair: false },
+  geoDB:              { v: 'geoDB',              owners: ['news-context.js'],    oneLinePair: false },
+  isGridOn:           { v: 'isGridOn',           owners: ['map-readout.js'],     oneLinePair: false },
+  measureSnapClose:   { v: 'measureSnapClose',   owners: ['map-readout.js'],     oneLinePair: false },
+  newsFiltered:       { v: 'newsFiltered',       owners: ['news-feed.js'],       oneLinePair: false },
 };
+/* #R169 added a second writer to six members that already existed. */
+RW.satPanelDismissed.owners.push('satellite.js');
+RW.globalData.owners.push('news-feed.js');
+RW.newsFeatures.owners.push('news-feed.js');
+RW.renderedCount.owners.push('news-feed.js');
+RW.pendingPostLoc.owners.push('community-board.js');
+RW.toolMode.owners.push('map-readout.js');
 const RW_NAMES = Object.keys(RW);
 
 /* Closure values the Atlas kernel reads that are REASSIGNED at runtime → live getters, and never a
@@ -163,9 +198,13 @@ test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, 
   //     (#R168) accept every write form, not just `=`: js/news-ui.js advances the lazy-batch counter
   //     with `HOST.renderedCount+=next.length`, which reads through the getter and writes through the
   //     setter exactly as a plain assignment would.
+  //     (#R169) accept a PREFIX increment too (`++HOST._elevSeq` in js/map-readout.js stamps the
+  //     elevation-request sequence). Until this round the postfix-only pattern would have let a
+  //     prefix write slip past check (d) as well — the "nothing writes a member it does not own"
+  //     guard — so the same widened pattern is used in both places.
   for (const [name, spec] of Object.entries(RW)) {
     for (const owner of spec.owners) {
-      assert.match(rd('js/' + owner), new RegExp(`HOST\\.${name}\\s*(?:=(?!=)|\\+\\+|--|[+\\-*/%&|^]=)`),
+      assert.match(rd('js/' + owner), new RegExp(`(?:\\+\\+|--)HOST\\.${name}\\b|HOST\\.${name}\\s*(?:=(?!=)|\\+\\+|--|[+\\-*/%&|^]=)`),
         `js/${owner} must write HOST.${name} somewhere — otherwise drop it from that member's owner list`);
     }
   }
@@ -174,7 +213,7 @@ test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, 
   //     contract kept explicit for everyone else).
   for (const f of readdirSync(new URL('js/', root)).filter((x) => x.endsWith('.js'))) {
     const src = code(rd('js/' + f));
-    const writes = [...src.matchAll(/HOST\.([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+\+|--|[+\-*/%&|^]=)/g)].map((m) => m[1]);
+    const writes = [...src.matchAll(/(?:\+\+|--)HOST\.([A-Za-z_$][\w$]*)\b|HOST\.([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+\+|--|[+\-*/%&|^]=)/g)].map((m) => m[1] || m[2]);
     const bad = writes.filter((w) => !RW[w] || !RW[w].owners.includes(f));
     assert.deepEqual(bad, [], `js/${f} writes host member(s) it does not own: ${bad.join(', ')}`);
   }

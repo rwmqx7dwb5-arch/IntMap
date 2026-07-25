@@ -5,9 +5,19 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-21 (R151 — Companies空比較ヒント＋株価バッチ化(spark)＋全史キャッシュ／Atlasトグル拡充(globe・compare)／**ケッペンは全区分表示で停止＋行幅固定(scrollbar-gutter)**／通常モードMeasure・Share集約／Atlasタイポ(独立太字→見出し)／**モニター削除でハイライト消去**／衛星3D飛行プリフェッチ強化＋3D手動move先読み／**SVオンでcoverage自動**／**Atlas出典からSNS/短縮/動画除去**／Terra本番検証(analyzed_by=ai 354)。DEV-NOTES R151 参照)
+> Last reviewed: 2026-07-25 (R169)
 >
-> **R41 の要点**：`whenStyleReady()` が永久ハングし得た問題を修正（idle/loadのみ待機→ポーリング＋ハード解決）＋自己修復をハートビート化（「チェックしても出ない／消したのに残る・再読込で治る」の真因）。相関/散布図の残差マップを再実装（先にモーダルを閉じる＋RdBu連続配色＋指標33→51）。ウェブカムを**実装**（検証済みの24時間ライブYouTube配信25件をポップアップ内に埋め込み再生。検索リンクのハリボテを廃止）。**タイムゾーンレイヤー**新設（Natural Earth境界＋各ゾーンの現在時刻を毎分更新）。GIBSラスターに色スケール凡例。鉄道線を濃色＋白枕木で視認性向上。水域/地形ラベルを別チェック（`cb-geolabels`）化＋河川ラベルを `waterway` 由来に修正（位置ズレ解消）。天気ポップアップの華氏完全対応＋移動可能化。ウィジェット36→41。i18n：RUのレイヤーグループ見出し欠落＋国詳細(Stats)のES欠落を修正、非AIニュース地点辞書を多言語強化。
+> ### この文書の読み方 (#R169 で整理)
+>
+> - **§1–§18 は「今どうなっているか」だけ**を書く。過去の経緯・根本原因・ラウンドごとの差分は
+>   `DEV-NOTES.md` の担当であり、ここには**変更ログを書かない**。
+> - 本文中の `(#Rxxx)` は「**いつその事実になったか**」を示す出典タグであって、変更ログではない。
+>   詳細を追いたいときは `DEV-NOTES.md` の同じラウンド番号を読む。
+> - **§19 はラウンド別補足**。過去のラウンドで「仕様として残す価値がある」と判断した長い注記を、
+>   §1–§18 の流れを壊さないようにここへ集めてある（**新しい順**）。
+> - 数字（行数・KB・レイヤー行数など）を書くときは**その場で実測した値**にする。#R169 の時点で
+>   古い数字が3か所（§1 の「約15,000行」・§3 の内訳・§14 の「レイヤー行≈72個」）残っていた。
+> - 実装を変えたら、この仕様書も同じコミットで更新すること。
 
 ---
 
@@ -16,7 +26,8 @@
 IntMap は、世界のニュース・気候・人口・経済・地政学データを一枚の地図に重ねて表示する、
 **単一HTMLファイルのWebアプリ**（フロントエンド全部入り）です。
 
-- **本体は `index.html`（公開用、約15,000行・約1.4MB）一枚。** ビルド工程なし。ブラウザでそのまま動く。
+- **本体は `index.html`（公開用、5,744行・0.49MB）一枚。** ビルド工程なし。ブラウザでそのまま動く。
+  （#R162〜#R169 で `css/` と `js/` へ分離した結果。分割前は 36,955行/4.3MB。手順と規約は §3.1）
 - 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
@@ -661,14 +672,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R168) 7,691行 / 0.64MB（#R167時点は 9,709行/0.89MB、#R166時点は 11,810行/1.14MB、
-                                #R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、#R163時点は 27,936行/3.20MB、
-                                #R162時点は 32,883行/3.77MB。R162〜R168 で 36,955行から **−79%**）。
+                                (#R169) 5,744行 / 0.49MB（#R168時点は 7,691行/0.64MB、#R167時点は 9,709行/0.89MB、
+                                #R166時点は 11,810行/1.14MB、#R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、
+                                #R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。R162〜R169 で 36,955行から **−84%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
-                                #R167 までで「自己完結したブロック」は尽き、#R168 からは**主題（SUBJECT）**単位で切る
-                                ＝種になる関数から「外部が誰も読まない私有ヘルパー」を吸収した集合（§3.1 #R168）。
-                                残るのは真の中核（状態宣言・ブート・地図構築・ニュース取得/キャッシュ/絞り込み・
-                                レイヤー配線・IntMapOS・セッション永続化・描画ツリー）。
+                                #R167 までで「自己完結したブロック」は尽き、#R168 は**主題（SUBJECT）**単位、
+                                #R169 は**宣言か実行か**という軸で切った（§3.1 #R168 / #R169）。
+                                残るのは**実際に走る文**だけ＝状態宣言・ブート・地図構築・DOM配線・
+                                `map.on()` ハンドラ・IntMapOS・セッション永続化・`IM_HOST`・約90本の巻き上げシム。
 css/
   intmap.css                        (#R162) アプリのスタイルシート全体（旧 index.html の `<style>` を**逐語**移設）。
                                     JS は `document.styleSheets`/`cssRules` を一切触らないため挙動は完全に同一。
@@ -806,6 +817,31 @@ js/
   community.js                      (#R168) コミュニティフィードの描画とリスト配線＋コメント/投票/通報のミューテーション。
                                     12KB／11文。シム2本。RW 7（commCatFilter/commInView/commSearch/communitySort/
                                     replyingTo と、tool-panel と**共同所有**の communityAddArmed/pendingPostLoc）
+
+  ── 以下 (#R169) の11本（第8弾・192KB／index.html から −1,947行・−155KB）。**切り口が違う**：主題ではなく
+     「**宣言だけの文**（関数・表）」を集めた＝ファクトリは何も実行しないので、11本まとめて
+     `map` 生成直後に生成でき、index.html には巻き上げシムだけが残る（§3.1 #R169）─────────────
+  satellite.js                      (#R169) 衛星画像のコントローラ（プロバイダ表・BYOK鍵・日付ステップ・
+                                    二重バッファのクロスフェード・タイル/認証エラー時の自動フォールバック）。19KB
+  ai-core.js                        (#R169) Atlas AI のトランスポート層（`aiCallServerFull`＝ai-proxy 呼び出し・
+                                    プロバイダエラー分類・1日上限とその表示・AI設定パネル・`askAI`/`askAIJSON`）。24KB
+  place-labels.js                   (#R169) 地名/海洋ラベル（`ensurePlaceLabels`＝`ofm-*` シンボル群の生成・
+                                    安定ラベルの収穫・`applyLabelLang`＝`name:<lang>` 切替・地理レイヤー）。28KB
+  window-manager.js                 (#R169) フローティングパネルの共通機構（`makeDraggable`／`addEdgeResize`／
+                                    `registerWindow`／`bringToFront`）。11KB
+  search-geocode.js                 (#R169) 検索ボックス（自然文の前処理・ローカル地名のあいまい一致・
+                                    2ジオコーダ並列＋ハードタイムアウト・結果カード・`gotoPlace`）。15KB
+  news-context.js                   (#R169) 記事→地点/媒体の解決（`analyzeContext`＝IntMapNewsGeo 優先＋
+                                    レガシー辞書フォールバック・`rebuildGeoIndex`・媒体マッチャ）。16KB
+  news-feed.js                      (#R169) ニュース取得（版・RSS取り込み・キャッシュ・Supabase高速経路・
+                                    タイトル翻訳）。18KB
+  article-reader.js                 (#R169) サイドバー内リーダー。**#R11 以降どこからも呼ばれていない**
+                                    （ファイル冒頭に所見を明記。再配線するか削除するかは製品判断）。8KB
+  community-board.js                (#R169) コミュニティ板の中身（カード/スレッド/コメントのHTML・投稿モーダル・
+                                    地図レイヤー・Supabase 読み書き）。21KB
+  map-readout.js                    (#R169) 地図の読み出し系（座標/標高/レイヤー値/コンパスの表示・DEMサンプラ・
+                                    グリッド（経緯線）・計測チップ・`handleMapClick`）。27KB
+  elevation-profile.js              (#R169) 標高断面パネル（Draw ツールから開く）。7KB
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -827,7 +863,7 @@ supabase/
 ## 3.1 index.html の分割方式 (#R162) — **今後の分割はこの手順に従うこと**
 
 **前提（これが全ての難しさの源）**: index.html のアプリコードは
-`window.addEventListener('DOMContentLoaded', () => { …分割前は約33,000行／#R167 時点で約9,000行… })`
+`window.addEventListener('DOMContentLoaded', () => { …分割前は約33,000行／#R169 時点で約4,900行… })`
 という**ひとつのクロージャの中**にある。
 したがって最上位の `let`/`const`/`function` は**グローバルではなくクロージャ変数**であり、`window` には載っていない。
 ファイルを js/ に出すと、その変数は**ただ消える**。
@@ -911,6 +947,41 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 - (#R166) `js/map-ui.js` の `opacities` / `setLayerOpacity` … 同じく layers IIFE の中。**レイヤープリセットの
   不透明度保存は分割前から一度も動いていない**（try/catch が ReferenceError を握り潰し、空の `ops` を保存）。
   修正は挙動変更になるので別ラウンド。
+
+### (#R169) 第8弾 — **「宣言」と「実行」で切る**／11本まとめて生成／90本の巻き上げシム
+
+#R168 で「主題」も出し切り、残った 6,894行・857文のクロージャは**どの文も他の文と絡んでいる**。
+そこで切り口を変えた。**どの文が一緒にいるか**ではなく、**その文は走るのか、宣言するだけなのか**で切る。
+
+- 857文をパーサで分類すると **277KB が純粋な宣言**（関数宣言／リテラル・関数だけで初期化される
+  `const`・`let`）で、**208KB が実行する文**（DOM配線・`map.on()`・ブート手順）だった。
+- **宣言は「いつ評価しても観測できる違いが無い」**。だから 11本のファクトリを**まとめて `map` 生成直後に
+  生成**してよく、`(#R167)` で踏んだ TDZ も、`(#R166)` で気にした呼び出し順も、原理的に発生しない。
+- **実行する文は1文も動かしていない。** 位置も順序もそのまま index.html に残る。
+  → **このラウンドは副作用を1つも並べ替えていない**、というのが最大の安全性の根拠。
+
+**この切り口で新たに必要になったもの**
+
+1. **巻き上げシムが約90本に増える。** 出した関数のうち index.html がまだ名前で呼ぶものは
+   `function n(){ return IM_X.n.apply(this,arguments); }` を残す（`const` は TDZ、アローは `this` 落ち。#R168 と同じ理由）。
+2. **`IM_HOST` が 201→253メンバー**（うち read-write は 29→52）。
+   RW が増えたのは「**主題の私有状態でも、宣言だけを出すと変数の宣言文は index.html に残る**」ため
+   （例: `let elevTimer, lastElev, _elevSeq, _crLng, _crLat, lastLayerVal;` は1文で6名前を宣言していて、
+   そのうち2つは index.html 側の `map.on()` ハンドラも書く。文は分割しない方針なので、
+   宣言は残して RW メンバーで書き通す）。
+3. **検証（tests/r169-checks.test.mjs）**
+   - **#4 宣言だけであることをパーサで証明**：ファクトリ直下に実行文が無い＋初期化子が何も呼ばない。
+   - **#3 位置**：11本の呼び出しが `map` 生成後に1ブロックで並ぶ＋**呼び出しより前に走る文から、
+     出した名前へ到達する呼び出し経路が無い**ことを**コールグラフを辿って**確認（直接呼び出しだけ見ると
+     1段挟んだ経路を見落とす）。
+   - **#2 シム契約**：エクスポート名ごとに index.html のシムはちょうど1つ・本体はもう index.html に無い。
+   - **#5 バレ識別子ゼロ**／**#7 `check-split-scope.mjs`**（#R162 以来の必須ゲート）。
+   - r165-checks の RW 契約に **prefix `++HOST.x` も書き込みとして数える**修正を入れた
+     （`++HOST._elevSeq` が今まで「所有者でないモジュールの書き込み」検査をすり抜けていた）。
+
+**このラウンドで見つけた事実（コードは変えていない）**: `openArticleInSidebar`（サイドバー内リーダー）は
+**#R11 の「Read を外部リンクに戻す」以降、どこからも呼ばれていない**。削除も再配線も製品判断なので、
+`js/article-reader.js` の冒頭に所見を書いて**そのまま**出した。DEV-NOTES R169 参照。
 
 ### (#R168) 第7弾 — **主題（SUBJECT）で切る**／巻き上げシム／RW所有者は集合へ
 
@@ -1229,16 +1300,11 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
     Web付き呼び出しは90秒（タイムアウト時はツール無し40秒で1回再試行）、空応答（reasoningが予算を食い切る）は予算増で1回再試行、
     `insufficient_quota`/支出上限は `provider_quota`（ハード）扱い。**リクエスト形の拒否がAI機能全体を殺せない**構造。
     比較（compareStats）は `metrics` パラメータをSYSカタログに明記＋5言語シノニム解決（defense→軍事費$等）で**指名指標どおり**開く。
-    **#R117 Luna性能引き出し**: ①**リペアパス**＝プランの一部アクションが実行失敗すると、失敗内容(type+params)を添えて別アプローチの再プラン→同じ返信に追記実行（**#R118で最大2巡**・試行済みコールの再発行禁止）。②**複雑度適応**＝長文/多節リクエストはクライアントが `effortHint:"high"` を送り、プロキシは **atlas_plan/analysis に限り** reasoning effort を high へ（出力予算+5000）。旧実装は effort≠medium を一律 low に潰していたバグも修正。③水域クエリ（…湾/…海/Bay/Sea等）は実ポリゴン再試行の上で**AIトレース輪郭へ絶対に落ちない**（誤った場所への幻覚ハイライト根絶、正直な「見つかりません」優先）。④Atlas返信のMarkdown見出しが階層サイズ（#15px/##13.5px/###12.5px、本文サイズ不変）。
-    **#R119 レイヤーデータ契約 = `window.IntMapLayers`**（Atlasを操作コンソールから**分析エンジン**へ）: 全レイヤー共通の register/state/**sampleAt(lng,lat)**/featuresIn(bounds)/legend/time/source。登録13（temp/sst/wind/precip/snow/aod/no2/co=Open-Meteoライブ実値・climate=Köppenピクセル・elevation=DEM・webcams/news/volcanoes=表示中フィーチャ抽出）。消費側: stateContextの実データ行＋**`layerData`アクション**＋**analyzeへの自動証拠注入**。新レイヤーは追加と同時にここへ登録すること。関連: analyze `scope:"drawn-area"`（範囲内ニュース+レイヤー実値+WorldPop人口）、`satelliteCompare`アクション（衛星2日付比較をスレッド内で）、`IntMapConsole.runDirect(label,acts)`（外部機能→Atlasスレッド）、生成系アクションの`objectIds`→`_wctx.lastObjects`、IntMapOSカーネル**29コマンド**（layer.on/off・compare.open・flightsim.setup・workspace.enter/exit等）。
-    **#R120 レイヤーデータ契約の拡張（登録13→30）**: ①**GIBSラスタのピクセル→物理値逆引き**＝表示タイルと同じURLの実タイルをcanvasで読み、ピクセル色をR42実測のカラーマップ勾配（SCALES）へ線分射影→凡例レンジの実値に逆変換（LST 46°C/海氷90%/SSTアノマリー±/NDVI等14ラスタ。透明=データ無し・勾配から遠い色=null＝正直）。②**aircraft/ships**＝表示中のADS-B機・AIS船のfeaturesIn+件数summary（コールサイン/船名も返る）。③**choropleth**＝表示中の国別コロプレス（コア7種=choroValueAt、WBベータ5種=フィーチャproperties直読み）の地点値。SYSのlayerData記述も拡張済み。④**objectIds対象拡大**: drawPolygonのポリゴン（`_imHlPolys`にid付与・IntMapObjectsに kind:'poly' として列挙=改名/色変更/削除/フォーカス可）、outline（kind:'outline'、IntMapOutline.current/focus新設）、GeoJSONアップロード（`window._imNoteObjects`フック→`_wctx.lastObjects`）。objectアクションのkindに poly/outline 追加。
-    **#R122 大量要望バッチ（FS開発一時停止）**: Atlas＝メッセージ別トグル所有権(`_ovlOwn`+`_refreshMapChips`)で各返信のオンオフ独立化・入力改行保持(pre-wrap)・返答時にユーザーメッセージを上端へ自動スクロール・リペア3巡・近似輪郭(`aiRegionPoly`40-90頂点+`_cleanAiRing`検証+退化リトライ)。**状態永続化**=`intmap_session2`(レイヤー/タブ/年代/base/3D)をリロード復元(座標はhash)。**経路根治**=破綻したOSM線路グラフ`railRoute`を無効化しMOTIS実GTFS非対応地域は正直に経路なし(OSRM道路は存続)。**地形移動/isolate**=`IntMapMoveShape`(メルカトル面積保存ドラッグ="true size")+非国isolate(enterGeom)+moveボタン、地名ハイライトはアクセント色。**Compare**=Countries選択時`previewOnMap`即ハイライト・時系列の開始/終了年セレクタ(mChart窓クリップ+署名にtsFrom/tsTo)・旅行中の地図クリックは`resolveHist`で歴史エンティティ選択。**Countries**=指標しきい値フィルタ(≥/≤・複数AND)。**範囲人口**にLOS方式進行バー。**レイヤー**=FSU+Historical borders(β)削除・Aurora凡例に予測時刻・Köppenデフォルト100%+ラベルクリック貫通防止・新βWB6種(R&D/観光/難民/CO₂/特許/女性議員)・ws起動時ニュース点滅解消(隠れ窓onWrapスキップ)。**UI**=右上バー通常モードもws幾何+ダーク選択白背景・地名ポップアップ不透過・分類名の全大文字廃止・タブ4文字自動フィット(モバイルAtlasグラデ維持)・左パネル展開時の検索バー位置・通常モードにws移動ボタン(デスクトップのみ)・ログイン配色/Google実ロゴ・Support文字・ニュースピン同一地点分散・FS開始時レイヤー退避。**プライバシー**=OpenAIコンテンツ共有条項(§4, LEGAL_DATE 2026-07-17)。
-    **#R123 UI/バグ一括**: モバイルのレイヤー名選択時太字除去・分類名拡大・右上バー縦gap一致・**サイドバー見出し2行固定**(1行目IntMap+言語/2行目WS/Login/Feedback/Settings)。isolate/moveは**領域あり地名のみ**(山/川/海は非表示)、Moveのメルカトル補正はflatのみ。**Aurora radius幾何級数**(→R124で不足判明)。**ニュースピン領域内分散**(place TYPEをgazetteer→pin伝播、country=国ポリ棄却サンプリング/city=型別ディスク)。範囲人口=WorldPopポーリング延長+Draw対応。**Compare昔年代クリック**=`TB.currentFC()`PIP(描画非依存)+データ無しera正直報告。**Compare時系列=利用可能年のみ**(serMap実在年を蓄積)。**ユーゴ一括ハイライト**=`regionGroup`が末尾集合接尾辞strip。**Others(beta)+8**(PM2.5/クリーン調理/女性労働/高等教育/農村/GNI/栄養不足/ハイテク)。
-    **#R124 再報告根治+新規**: **タブ文字揺れ**=`_fitTabFont`をfonts.ready後1回のみ。**Move on Globe**=剛体大円回転(Rodrigues)で真形状保存(flatはメルカトル面積補正)。**Auroraズーム消失**=ヒートマップをズームでフェードout+**密度非依存ソフト円グロー(l9-aurora-glow)**へハンドオフ。**ニュースピン実配線**=サーバ経路でsubject名から国型導出(_isCountrySubject)+ヒューリスティックを最大リング重心化。**範囲人口大面積**=WorldPop 100,000km²上限を`turf.bboxClip`でタイル分割+合算(実測380k km²→56.4M/6タイル)+実Progress。**Objects popup不透過**(--card-bg)。モバイル分類名16px/700。**Compare国追加ts同期**=`toggleCountry`差分適用(トレイ↔開いた比較ビュー)。**地図クリック国選択トグル化**(再クリック解除)。**Others(beta)+6**(固定BB/65歳以上/思春期出生/病床/研究者/過体重)。据置=Atlasトグル独立化(共有canvas→メッセージ別層の専用ラウンド)・era植民地resolveHist・あいまい地域/AI輪郭(ai-proxy検証制約)・経路10-10(GTFS収録依存)。
-    **#R125 再報告根治+経路優先**: **Move on Globe傾き**=大円回転後に到着点鉛直軸まわり北整列ツイストを追加(tilt 1.15°→0.01°・辺長不変)+**右ドラッグで図形回転**(globe=鉛直軸スピン/flat=計量フレーム回転・5言語ピル)。**Compare昔年代クリック完全化**=era名の宗主接尾辞strip照合("India (UK)"→British Raj)+PIPがhidden国に当たると**吸収中の旧国家に解決**(Korea 1914→大日本帝国)+沿岸PIPミスは最近接eraリング≤0.7°スナップ(Istanbul 1914→Ottoman)。**Atlasトグル真の独立共存**=所有者がいる種別は奪わず**メッセージ別クローン層(atlm<n>-*)**へ描画(feature-state nlq/choroVもスナップショット捕捉→クローンに再適用、_ovlAdoptは元ソースとモジュール状態(_hl/_choroState)も復元、styledata再構築+LRU上限14)。**Others(beta)+6**(都市人口/観光客/送金/自殺率/飲酒量/殺人率)。**経路(ユーザー優先指示)**=都市間日本レール・ブリッジ(上記#R125詳細)。据置=ICBM第一段階以降・物理シミュ5種・経路10-10の残段階(大型指示書)。
-    **#R126 経路10-10コア+タイムマシン国境根治**: **経路**=RouteStore(routeSetId・共有グローバル廃止・Atlasカードはdata-rset/data-rctxで過去メッセージも独立動作)+requestId/Abortプール(古い応答はcancelledで描画しない)+計算/描画分離(_paintスタッシュ+styledata再描画)+エラー型8種を5言語別文言+破損transit形状の直線代替廃止(shapeGapノート)+死んだrailRoute削除+**経路経由CORSプロキシ全廃**+**OSRM偽経路ガード**(waypoint snap>30km→no_route+距離表示。実測Lisbon→NYが5,534km先Cascaisへスナップし"Ok"を返していた)+入力編集で旧座標無効化+日付変更線fitBounds+**出発/到着時刻UI**(arriveBy)+地図クリック逆ジオコード+**同名地名の近接優先**(Potsdam根治、ビュー近傍≤300km→人口順)。**タイムマシン国境が出ないことがある**=apply()がソース存在だけで早期return（レイヤー欠損だとensure()に永遠に到達せず不可視）→imtb-line存在も確認+取得失敗時4s再試行。**Others(beta)+6**(軍事費%GDP/出生率/人口密度/教育支出/喫煙率/農業就業率、160行)。
-    **#R121 レイヤーデータ契約の完成度上げ（登録30→34）**: ①**choropleth画面外サンプリング**＝共有PIP（`window._imPipGeo`、穴あきPolygon/MultiPolygon対応）で、コア7種=countryGeo→countryStats直読み・WBベータ5種=ソースデータPIP・**bx系約40種のWBコロプレスを新規統合**（`window._imBxChoroValueAt/_imBxChoroOn`、所有モジュール側で公開＝契約規約どおり）。表示中の全コロプレス系統の値を「 | 」連結で返す（実測: 日本オフスクリーンで HDI 0.920 | 寿命84.0 | ジニ32.3）。②**earthquakes/datacenters/pharma** を featuresIn+summary で登録（地震は件数+最大M、名前は M{mag}+place）。③**thermal（火災）実ピクセル検出**＝FIRMS/GIBS WMS GetMap を**製品別に**取得し α>60 を和集合マスクで計数→「N fire pixels within ~15 km」/「none detected」（実測: 北豪アーネムランド29px・アンゴラ212px・海上0）。④**thermalレイヤー本体の根本修正**: 合成LAYERS=のWMSは**1製品でも当日データ欠損だと全体がServiceExceptionで空になる**（実測: SNPP欠損で当該レイヤーが全滅していた）→ 日別に小さなGetMapでプローブし、失敗製品を例外メッセージから除外した実描画可能サブセットでソース構築。⑤`window.__imBuild` ビルドマーカー（file://リロードのキャッシュ滞留診断用）。
-    **#R118 Atlas文脈・UI・ブリッジ**: ①**メッセージ別オーバーレイ・スナップショット**＝各返信の「地図に表示中」トグルは**その返信が描いた内容**を復元（`__ovlSnap`+`_ovlAdopt`＝モジュール状態へ採用。旧仕様は常に最新描画を開閉していた）。②入力欄=textarea（Enter送信/Shift+Enter改行/5行自動拡張）。③解体組織ハイライトに**年代基底**を明記・記憶（`_GROUP_META`→`_wctx.highlight`。「それは何年のもの？」にタイムトラベル日付を答えない）＋明確化質問は1回まで＋空の「使用データ:」非表示。④**逆同期ブリッジ第1弾**: `IntMapStatsCompare.state()`／`IntMapObjects.list/get/remove`＋`object`アクション（id/kind+indexで削除・フォーカス・改名）／開いている記事の**本文**が `_imReader.body` 経由でAtlasに届く／旧IntMapAIResearchはmoduleCatalogから除外。⑤**`population`アクション**＝WorldPop 100mグリッド(2020)で描画範囲・円・地名境界・place+radiusKmの人口を正確集計（`IntMapPopArea`、測定ツールにもボタン、出典・プライバシー記載）。
+    **#R117 以降の各ラウンドの差分は `DEV-NOTES.md` に集約 (#R169)。** ここには#R117〜#R126の
+    ラウンド別変更ログが10段落ぶら下がっていた（Atlasだけでなく経路・Compare・レイヤー・UIの話まで、
+    しかも R117→R119→R118→R120→R122→R123→R124→R125→R126→R121→R118 という順で）。
+    仕様として残す価値があった `window.IntMapLayers`（レイヤー・データ契約）は **§7 へ移設**、
+    残りは DEV-NOTES R117〜R126 に同じ内容がある。
 - **ニュース地点解析AI** — `refresh-news` が**同じ鍵・同じ AI_PROVIDER 規約**でサーバー側実行（ユーザー枠は消費しない＝運用者の鍵）。
 - フロントに見えるのは結果だけ。鍵・モデル選択UIはユーザーに見せない。
 
@@ -1296,6 +1362,16 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 - **Active layers**：`_refreshActiveLayers()` がオン中のレイヤーをチップ表示。常に上部。トグル時はスクロールを補正して**行が動かない**ようにする。
 - **Globe専用**：`updateOcclusion()` で裏面ピンを隠す。
 - **ウィジェット**：サイドバーのカード群（`intmap_widgets3` に定義保存）。FX・ランダム国など。「Add widget」で追加。
+- **レイヤー・データ契約 `window.IntMapLayers`**（#R119 導入 / #R120・#R121 拡張。#R169 で §5 からここへ移設）
+  ——Atlas を「操作コンソール」から「分析エンジン」へ変えるための、全レイヤー共通のインターフェース。
+  - API＝`register` / `state` / **`sampleAt(lng,lat)`** / `featuresIn(bounds)` / `legend` / `time` / `source`。
+  - **新しいレイヤーを足したら、同じ変更の中でここへ登録すること**（これが契約の本体）。登録は約34系統：
+    Open-Meteo のライブ実値（temp/sst/wind/precip/snow/aod/no2/co）、Köppen のピクセル、DEM 標高、
+    表示中フィーチャの抽出（webcams/news/volcanoes/aircraft/ships/earthquakes/datacenters/pharma）、
+    **GIBSラスタのピクセル→物理値逆引き**（表示中と同じタイルを canvas で読み、色をカラーマップ勾配へ
+    線分射影して凡例レンジの実値に戻す。透明＝データ無し・勾配から遠い色＝`null`＝正直に「不明」）、
+    **コロプレスの画面外サンプリング**（共有PIP `window._imPipGeo`。コア7種＋WBベータ＋bx系約40種）。
+  - 消費側＝Atlas の stateContext に入る実データ行・`layerData` アクション・`analyze` への自動証拠注入。
 
 ---
 
@@ -1409,264 +1485,9 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
    初回は手動で1回 POST して `current_news` を埋める。
 7. **静的ホスティング**：`index.html` / `admin.html` / `data/` / `koppen_*.png` / `sw.js` を静的配信（OneDrive 直配信 or 任意の静的ホスト）。
 8. **OAuth/メール認証**：Supabase 認証で Google/Apple/メールを設定（任意）。
-9. **動作確認**：ページを開き、(a) レイヤー行≈72個、(b) コンソールエラー0、(c) News タブでピンが即表示、
-   (d) ログイン→AI機能が動く、を確認。
-
----
-
-## #R127 補足（再報告根治・上記各モジュールの現状）
-
-- **範囲人口 `IntMapPopArea`**: WorldPop 100m グリッド集計。95,000km² 超は `turf.bboxClip` でサブ上限セルにタイル分割→合算。**#R127**: 旧80セル上限を **340**（≈30M km²＝どの単一国も収容）に引き上げ（米本土48州=189/東南アジア海域=195セルは旧コードで throw していた）。各タイルは `_tileWithRetry`（60s×2回）で一過性のレート制限/タイムアウトを再試行し、**失敗タイルを0として黙殺しない**＝全失敗は throw、一部失敗は `partial:true`（件数明示・キャッシュしない）。実測: 欧州451k km²→8/8タイル・87,805,246人。
-- **Atlas 地図オーバーレイのメッセージ別トグル**: 種別ごとに共有 `nlq-*` キャンバスを1メッセージが所有（`_ovlOwn`）。**#R127**: 新描画が共有キャンバスを奪う **`runActions` の描画経路**で、所有権再設定の前に**旧所有者をそのスナップショットから自前のクローン層（`atlm<n>-*`）へ退避**（`_ovlCloneShow`＝R125で手動クリック経路が検証済の同一機構）。→ 新旧が共存し両チップともON（「新規追加で古いものが勝手にオフ」を根治）。
-- **ニュースピンの重複分散 `_spreadDupNewsPins`**: 同一アンカーに積み重なるピンを領域内に散布。**#R127**: `regionFor` が**最大リング（本土）のbbox+ポリゴン**も返し、全体bbox幅>180°（日付変更線アーティファクト＝米/露/フィジー/NZ）なら**本土リングでサンプル**（旧: 全体bbox=幅358.9°で44回中2回しかヒットせず0.12°の点に退化）。各ピンの原座標を `__oc` に保持して散布を**冪等化**し、`countryGeo` ロード完了時に `_respreadNews()` で再散布（コールドロード競合を根治）。実測: 米本土リングで30/30配置・経度41.5°×緯度17.5°。
-- **モバイル通常モードのレイヤー分類名**: `.m-sheet .lyr-head`。**#R127**: 16px（行15.5pxとの差+0.5px）で埋没していたため **18.5px/700**（行比+3px）に、上下マージン27/11pxで明快なセクションヘッダに。
-
-## #R128 補足（再報告4件の根治・上記各モジュールの現状）
-
-- **範囲人口 `IntMapPopArea`（大面積失敗の根治）**: 真の失敗モードは**`fetch()`にタイムアウトが無い**こと＝WorldPop公開APIが負荷時に接続をストールさせると`Promise.all`バッチ全体が数分凍結し「失敗」。**#R128**: `_fetchT`＝AbortController付きfetch（create 30s/poll 18s中断）、固定バッチ→**staggered worker pool**、**CONC 4→2**（多タイルの持続負荷でレート制限されるため）、retry 2→4・長バックオフ、単一ポリゴンもリトライ経由、極小クリップ片(<0.05km²)スキップ。正直partialは維持。実測: 290,851km²→6/6タイル・25,316,807人・64秒（ハング根治）。
-- **昔年代クリックの決定論解決 `IntMapTimeBorders.resolveHist`**: 全CShapes era featureは`properties._gw`（Gleditsch-Wardコード）を持つが両呼出元で捨てられていた。**#R128**: `data/cshapes.js`由来の**`_GW2ISO`表（235件・単一継承コードのみ）**を追加し、step2.4＝`_gw`→現代キャリアを**境界/名前非依存**で直接解決（step1帝国・`_VANISHED`の後、BEC/PIPの前）。改名/**領土変化**国の長い尾（独帝国のポズナン/アルザス→DEU、植民地→現代後継）をPIPフォールバックに頼らず根治。多継承帝国(A-H 300/CSK 315/YUG 345)とTibet(711)は非収載でstep1/`_VANISHED`優先、`_histHidden`ガードで能動的帝国下の後継はstep3bへ委譲。実測: ポズナン→DEU（PIP=POL）。
-- **レイヤー分類名（通常モード）**: 通常/デスクトップ`.lyr-head`・`.layer-group-title`。**#R128**: 12.5px/600/muted（配下の行`.layer-option`13px/500/text-mainより小さく薄く、見出しが下位に見えた）→**15.5px/700/text-main**・上マージン14pxで明快なヘッダに（モバイル18.5px `!important`は不変）。
-- **歴史データ拡充（継続）**: (旗) `_VANISHED`の3消滅国（Tibet/East Turkestan/Manchukuo）にインラインSVG旗を追加し`resolveHist` step2b が`out.flag`を渡すよう配線（従来は旗皆無）。`IntMapHistId`のHUNに戴冠紋章旗`F_HUNK`。(統計) `IntMapHistStates` JEM（大日本帝国）に`popEst:105M/gdpEst:230/estSrc`（pre-1945後継sum崩壊の帝国推計override）。(Wiki) `_ERA_WIKI` +14（残ソ連構成共和国9＋AFG/YEM/ERI/PSE、全て実在確認）。(名) `IntMapHistId`にKOR（大韓帝国）/ETH（エチオピア帝国・帝政三色旗）の年代identity。
-
-## #R129 補足（範囲人口Progress・戦間期ユーゴ・モバイル分類名・Countriesクリック国選択・歴史拡充）
-
-- **範囲人口 Progress バー（数十%→0%再スタートの根治）**: `IntMapPopArea` のコア（`done/cells.length`）は単調で正しい。UIの2ドライバ（時間ベースの漸近ランプ Driver A ／ 実タイル進捗 onProg Driver B）の**引き継ぎが非単調**だったのが原因＝大面積で最初のタイル完了に5-30秒かかる間にランプが数十%まで登り、onProg発火時に`1/タイル数`(≈3%)へ**逆戻り**していた。**#R129**: 表示フラクションの最大値を保持する `_sp`（`Math.max(shown, …)`）で単調化し、実進捗をランプ引き継ぎ点より**上の帯 `[hand,1]` に再マップ**。measure/area パネル(`#tp-pop-btn`)と自由描画パネル(`_estimateDrawPop`)の両方。実測（ロジック検証）: ランプ51.6%→引き継ぎ後52.5→…→100%、逆戻り0回。
-- **戦間期ユーゴスラビア王国 `IntMapHistStates`（クリック国選択の断片化を根治）**: CShapesは戦間期ユーゴを1ポリゴン「Yugoslavia」(gwcode 345)で描くが registry が SFRY(1945+)のみで**戦間期にエントリ無し**→クリックが現代の Serbia/Croatia/Slovenia… に**断片化**（オーストリア=ハンガリー/チェコスロバキアは単一エンティティに解決されるのに、である）。**#R129**: **Kingdom of Yugoslavia**（`code:'YGK'`, 1918-12-01〜1945-11-28, 5言語名・王国旗`F_YUGK`・`wiki:'Kingdom of Yugoslavia'`）を追加。`madCode:'YUG'` で Maddison の連続YUG系列を再利用（後継国に戦前データが無いため）。SFRYと時間的に不重複＝`activeAt()`が同時に両方を返さないので同一名衝突なし。`agg` に `madCode` サポート、`_eraLocName` は**存続期間一致を優先**（1925ラベルがSFRY名に化けない）。実測: ベオグラード/ザグレブ/リュブリャナ/サラエボ/スコピエ 1925 → すべて **Kingdom of Yugoslavia**（データ 1925=13.4M/$23.5B・1938=16.1M/$32B, Maddison実値）。SFRY(1960)・A-H(1914)・チェコスロバキア(1925)は不変。
-- **Compare クリック国選択の当時ポリゴン優先（`_pickResolve` ／ 新Countries picker）**: **#R129**: era PIP を**最小面積の内包地物**に（簡略化された当時ポリゴンが国境で重なるケースで大きな隣国を誤取得しない＝ポーランド東部Kresy→USSR誤判定を防止）。従来は最初の内包地物を採用していた。
-- **Countries 初期画面のクリック国選択ボタン**: 検索欄の右にクロスヘア（`#csearch-pick`／ws-mode `#csearch-pick-ws`、5言語 `pickCountryMap`、`flex:0 0 auto`で改行なし）。従来は開いた比較ウィンドウ内の◎のみで、初期画面のマップクリックは**現代ポリゴンの `showCountryDetail`**＝タイムトラベル中も現代国を選んでいた。**#R129**: 新picker は `resolveHist` で**era対応**解決（王国・植民地・帝国）→`_toggleCompare` で比較セットへ。`window.__scpPick` を立てて既定の country-fill / handleMapClick を抑止、ESC/再クリック/タブ離脱で解除。`renderUI` が Countries タブ時のみ `.on-tab` 表示。
-- **歴史データ拡充（継続）**: (名/旗/統計) 上記 Kingdom of Yugoslavia（王国旗・5言語名・Maddison実データ）。(Wiki) `_ERA_WIKI` にアルバニア(共和国1925-28/王国1928-39/社会主義人民共和国1946-91)・アイスランド王国・モンテネグロ王国・ネパール王国・スウェーデン=ノルウェー連合・ラオス王国を追加（全て en.wikipedia 実在をAPI確認）。
-- **#R130 素のマップクリックのera対応化（昔年代クリックの真の根治）**: R122〜R129はクロスヘアpicker/`resolveHist`（既に正しかった）を直していたが、ユーザーの実ジェスチャー＝**素のマップクリック**は era非対応の `country-fill` click ハンドラ（`resolveCountryId`→現代countryGeo）が処理していた。→タイムトラベル中は picker と同一の `TB.currentFC()` 最小面積PIP→`resolveHist` を通し**現代ポリゴンに絶対フォールバックしない**（都市ラベル下は場所優先、コードあれば `showCountryDetail(era)`、コードなし実在エンティティは `_imPlacePopup`）。hover も旅行中は現代国の強調/情報を出さない。実測: 1925 ルヴフ/ヴィリニュス/ポズナン→**POL**、ヴロツワフ→DEU(Weimar)、ダンツィヒ→Free City of Danzig。
-- **#R130 消滅国4件を `_VANISHED` に昇格（wrong-carrier根治）**: `_GW2ISO`（step2.4）が East Germany(gw265)/South Vietnam(817)/South Yemen(680)/Danzig(291) を現代キャリアに畳み、クリックで**現代旗＋間違ったera記事**になっていた（東独→西独記事等）。`_VANISHED`（step2b, gwcodeより先発火）に4件＋インラインSVG旗（F_DDR/F_RVN/F_PDRY/F_DANZIG）を追加し identity/旗/Wikipedia を正す。`IntMapHistId` に West Germany(1949-90)・Pahlavi Iran(F_IRPAHL, Persia を to:1925短縮)・Francoist Spain(F_ESPF)。`agg()` が空欄だった capital/currency/languages を `_STINFO`（15カ国）でマージ。`_ERA_WIKI` に Cambodia/Oman/Trucial States、`_ERA_LOC` に南北ベトナム/南北イエメン。
-- **#R130 Atlasハイライトのweb検索検証**: ラダーは Nominatim importance と web盲目AIトレースを無検証で信頼し「塗れば✦成功」だった。ai-proxy に `geo_verify` タスク（webMode:required・JSON・低予算）追加→**デプロイ済**。client `geoVerify(name)` が権威座標を取得（9sタイムアウト・キャッシュ・**fail-open**）→`_nomExtent(place,anchor)` の近接ボーナスで8候補から検証点に最近を選抜（同名語撃退）＋未信頼ラング（Nominatim水域/adminポリ・AIトレース・codeAtPoint）で `_geoAgrees` により明白な位置不一致を棄却（`_gvStrong`=webUsed必須でなければ棄却せず既存挙動維持）。報告に「✓ location web-verified」。
-- **#R130 その他UI**: Objectsボタンを左下FAB→右上ツールバー `#btn-tool-objects`（`objectsBtn` 5言語、`tickFab`が配線・カウント同期・オブジェクト有時のみ表示、FABはモバイル限定）。サイドバーAtlasの`addEdgeResize`辺リサイズを `_inWsWin2` に `atl-tab` skip追加で無効化（width:100%と競合しての「変なことになる」を根治）。Atlas thinking を `stageDots/setStage/_STAGE_OF` で実作業表示（Thinking/Searching/Analyzing/Mapping/Writing・5言語）。通常モード Measure/Radius の使用中(`#…​.tool-on`)を白背景黒文字（Grid/Draw不変）。左タブ News/Info/Countries active=白背景黒文字・Atlas active=`.atl-b.u`と同じアクセントグラデ。地図の国名ラベル3層（ofm-country/imtb-lbl/imtb-lbl2）の `text-transform:uppercase` 撤去で全大文字廃止。位置情報許可ボタン=1回grantで全ウィジェット再描画＋太字解除。
-
-## #R131 補足（`analyze` の鮮度検証・日付/証拠の意味づけ・多国カバレッジ・Web検証引用）
-
-「中央アジア直近72時間の監視判断」誤答（対象期間外の7/7事件を直接的証拠に使用・記事公開日を事件発生日と混同・見出しから国家間衝突と断定・燃料報道の過剰解釈・5か国中3か国のみで結論）を、**推論処理を増やさず**（AI呼び出しは従来どおり 1回・reasoning effort は medium 据置）、既存の Hosted Web Search / meta.webUsed / 引用annotation / 並列検索を**正しく接続**して根治。
-
-- **鮮度重要質問の Web検証強制（`_analyzeFreshness`）**: `analyze` は常に `webMode:"auto"`（検索は任意）だった。明示的時間窓（`_FRESH_NUM`＝「72時間/48h/直近N日」等）・最新/現在/直近（`_FRESH_NOW`）・監視/警戒/脅威度（`_FRESH_MON`）・ファクトチェック（`_FRESH_FC`）・直接的証拠/確認済（`_FRESH_DIRECT`）を5言語で検出し、`freshness.critical` なら `webMode:"required"`（検索を強制）。安定知識質問（文化/歴史/科学）は `false`＝従来どおり `auto`（応答時間・回数不変）。実測: 監視/最新/現職/FC/N時間=critical、文化/歴史/GDP比較=非critical。
-- **実クロック＋要求ウィンドウ（`_nowContext`）**: 旧プロンプトは `toISOString()` の**UTC日付のみ**（JST 0-8時は前日）で時刻もウィンドウも無し。`Intl.DateTimeFormat('sv-SE', {timeZone})` で**ローカル現在時刻＋タイムゾーン**を渡し、明示窓があれば `Requested evidence window: <now−窓> through <now>` を `[TIME CONTEXT]` に付す（テスト用に nowMs 注入可）。
-- **日付種別を明示した構造化証拠（`_analyzeEvidence`/`_evidenceBlock`）**: 3つの無日付見出しダンプ（loaded/GDELT/Google News）を、**1つの `[NEWS EVIDENCE]`**（新着順・`[eN]`ID・`article_date`＋`date_type`（publication_date／gdelt_seen_date）＋`event_date: unknown`）へ統合。各フェッチャ（`_gdeltNews`/`_gnewsNews`/`_newsData`）の srcSink push に `dateType`/`origin` を付与。モデルは**記事日付を事件日と誤認できない**。
-- **多国検索が最初の国へ縮まない**: 旧コードは `topicEn` を `codes[0]` の英名で上書き＝「中央アジア(5か国)」が Kazakhstan のみ検索。→**地域**GDELT＋**要求国のOR**GDELT（`("Kazakhstan" OR … OR "Uzbekistan")`）＋ユーザー言語Google News の3系統（GDELT2件はGDELT自IPレート配慮でジョブ内直列）。`[REQUESTED COVERAGE]` で要求国一覧を渡し、証拠が無い国は明示させる（単一国は従来挙動不変）。
-- **分析プロンプト全面改訂（`_analysisSystemPrompt`）**: 公開日/GDELT seen date ≠ 事件日／見出しは lead であり当事者・因果・国内 vs 国家間・分類を推定しない／深刻な見出し=escalationの証拠ではない／「問題を報じる記事」≠「危機が発生」／監視判断は対象窓内に確認済み事件が無ければ**低アラート（維持）を優先**／定例外交会合は短期リスクの**弱い反証**／直接的証拠・未確認兆候・背景・反証を**分離**／多国は情報不足国を明示／**ユーザー指定の出力形式を語数制限（~230語目安）より優先**／誤った "sorted newest-first" 記述を撤去。
-- **webUsed で暫定表示（最優先2）**: `freshness.critical && !meta.webUsed`（検索が走らなかった／タイムアウトでtool-free fallback）なら回答下に**暫定評価バナー**（5言語）＝見出し中心の暫定評価で確認済み直接証拠ではない旨。`webUsed` 実行時のみ「使用データ」に「ライブWeb検証」を加える（未実行を検証済みと偽らない）。
-- **ai-proxy: Web検索引用の保持＋返却（最優先3・デプロイ済）**: `callOpenAI` が Responses API の `output_text.annotations`（`url_citation`）を捨てていた。`{url,title,startIndex,endIndex}` を抽出（重複除去）→ callOpenAI 返却値＋成功レスポンス top-level `citations` に追加。client `aiCallServer` が `window._aiLastCitations` へ格納。`analyze` のソースカードは **①Web検証済み（url_citation）→②モデルが引用した収集記事→③その他の収集記事** に分離表示（収集しただけを回答根拠と同列に並べない）。
-- **プランナー**: `analyze` 説明に「名前付き多国地域／明示国セットは `place` に加え `countries` に**実際の構成国**（英名・地理知識）を入れ、`question` は完全な質問を保持」を追加（中央アジア専用コードは足さない）。
-- **回帰テスト（`window.IntMapAtlasQA`）**: 時計（2026-07-18 05:00 JST）と3見出し fixture（Kyrgyz-Uzbek国境27名拘束=seen 07-16／Kyrgyz-Tajik燃料=07-15／EU-中央アジア定例対話=07-16）を固定し、freshnessCritical・webMode=required・72h窓算出・全項目 event_date:unknown・date_type種別・国境記事がlead扱い・5か国カバレッジ明示・プロンプト各規則・単一AI呼び出しを**19項目全PASS**でヘッドレス検証。
-
-## #R132 補足（汎用地域解決基盤 `IntMapRegionResolver`・Atlasタブ色・Objects直下ポップアップ・昔年代クリック・FS中ハイライト非表示・歴史Wiki拡充）
-
-- **汎用地域解決基盤 `window.IntMapRegionResolver`**: 未登録の自然/非公式/歴史/経済地域名（East European Plain・関東平野・パンノニア平原・チベット高原・レバント・ドンバス・サヘル・肥沃な三日月地帯…）を、**AIに境界座標を書かせず**実データで解決する汎用基盤。`resolveHlTarget` の**fuzzyテール**（旧 `aiRegionUnits`/`aiRegionPoly` の幻覚経路）をログイン時のみ本基盤へ置換（ログアウトは従来経路へ fail-open）。
-  - **サーバ**: `ai-proxy` に `geo_resolve` タスク（`JSON_TASKS`・`reasoning:"medium"`・`max_output:1800`・`webMode:required`強制）。**構造化メタデータのみ**を返す（`canonicalName/aliases/featureType/ambiguous+candidates/expectedCountries/representativePoint/expectedBbox/geometryStrategy/osmName/adminUnits/mustInclude/mustExclude/boundaryAnchors(時計回り)/confidence/sources`）。最終ポリゴンの頂点列は返さない。
-  - **クライアント配管**: `aiCallServerFull()`＝呼び出し単位の `{text,meta,citations}` エンベロープ＋`opts.signal`（実Abort）。`askAIEnvelope`/`askAIJSONEnvelope`。`aiCallServer` は薄いラッパで全既存呼び出し不変。`geoVerify` は 9秒 Promise.race を廃止し**本物の AbortController**（タイムアウトで fetch 中断・`meta.webUsed` はエンベロープから）。
-  - **解決ラダー（実データ最優先）**: `country`→`admin_union`（`composeRegion`）→`osm_polygon`（`_nomExtent` を representativePoint でアンカー）→`derived_anchors`（Web検証済みアンカーの順序リング→`turf.kinks`自己交差check→凸包、expectedBbox クリップ、`webUsed`必須）。**bboxを境界として塗る処理は撤去**（bboxは検索/選別/fit/検証のみ）。
-  - **検証ゲート `_rrValidate`（fail-closed）**: Polygon/MultiPolygon・座標有効・全世界blob棄却・面積下限・expectedBbox重なり≥0.12・mustInclude内包≥60%・mustExclude侵入≤15%・expectedCountries一致（`codeAtPoint`）。R130の中心距離方式（巨大ポリゴンほど許容も巨大）を置換。通らなければ描画せず正直に失敗。
-  - **曖昧性**: `ambiguous+candidates` を返し、ハイライトdispatchが候補提示（`lastCountry` 一致時のみ自動確定）。
-  - **キャッシュ**: セッション `Map` ＋ IndexedDB `intmap_regionresolver`（`_RR_ALGO`＋TTL 成功90日/否定7日）。
-  - **AI回数**: fuzzyテール=`geo_verify`（安価）＋`geo_resolve`（medium）各1回・以降キャッシュ0。
-  - **Atlas表示**: 「実際のOSM境界データから描画」「N行政区画の実境界を合成」「⬡ Web検証済み境界アンカーから構築した近似範囲」「曖昧なため未描画—候補提示」を返答に明示。
-  - **デバッグ/テスト**: `window.IntMapRegionResolverDebug.last`／`window.IntMapRegionResolverTest.run()`（純粋関数13項目・**実測13/13 PASS**）。
-- **Atlasタブ色（`#R114/#R130`再修正）**: 共有トークン `--atlas-grad = linear-gradient(135deg, var(--primary-color), #5e5ce6 56%, #bf5af2)`（アクセント先頭の3ストップ）で**デフォルトアクセントでも単色化しない**＆任意アクセント追随。アクティブタブ・非アクティブ枠(`::before`)・ユーザー吹き出し `.atl-b.u`・モバイルを統一。
-- **Objectsポップアップ直下化**: `IntMapObjects.open()` に `_placePanel()`＝`#btn-tool-objects` の rect に右揃え＋直下(+8px)。モバイルFAB時はFAB直上。`data-dragged` 尊重・画面内クランプ。
-- **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
-- **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
-- **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
-
----
-
-## #R157 補足（Atlas 自然言語処理の全面再設計＝「GPTが意味を理解する層」と「コードが安全に実行する層」の明確な分離）
-
-**設計原則（現状仕様）**: Atlas のハイライト系ターゲットは **意味の解釈をGPTが担い、コードは検証・実行のみを担う**。ユーザーの自然言語は意味を保持した原文のまま最初にプランナー（GPT）へ渡る。`localPlan`/`regionGroup`/`GROUP_ALIASES`/`REGION_ALIASES`/正規表現が**GPTより先に概念の意味を決定・改変・拒否する経路は存在しない**。既存の ISO/UN M49/国境 GeoJSON/組織加盟国データは**意味推測辞書ではなく**、GPT出力を検証して実地理形状へ結び付ける**決定論的データ**として残る。
-
-- **① localPlan からハイライト・ターゲットの解釈を撤去**: 旧 `^(.+?)をハイライト` → `{highlight,countries:'<生概念>'}` `confident:true`（GPTを一度も呼ばず dispatch へ生概念を渡していた単一真因）を廃止。localPlan に残る highlight ショートカットは**意味解釈を伴わない2つのみ**＝現ハイライトの色変更（`parseColor` ゲート・ターゲット無し）と解除。あらゆる「…をハイライト」は必ず GPT プランナーへ。
-- **② GPT主導のターゲット契約**: SYS の highlight スキーマ＝`{"type":"highlight","interpretation":str,"targets":[{"name":"<English>","iso3":"<ISO3>"},…]}`。GPTが概念（文化圏/言語圏/政治・歴史的分類/曖昧な国集合＝ゲルマン諸国・スラブ諸国・英語圏・旧植民地・主要産油国・OPEC・G7 等）を**自分で実ISO3集合へ展開**する（「IntMapに概念辞書は無い」と明示）。複数集合を別色＝`groups:[{label,targets}]`。国集合でない**具体的単一地物**（行政区画/河川/流域/自然地域）＝`query:"<地名>"` で従来の `resolveHlTarget` ラダー（＝概念でなく確定地名のみ・GPTの後段でのみ稼働）。
-- **③ コード側実行層（`_hlReadGptGroups`/`_hlValidCodeSet`・dispatch highlight 冒頭）**: GPTの targets/groups/iso3/codes を読み、各ISO3を **`_hlValidCodeSet`（`window.countryGeo` 由来の実在コード集合）で検証**（不正コードは拒否・氏名があれば `resolveCountrySync` で救済＝正確な国名→コードの決定論マッチ）、重複除去、`_codesGeo` で**実国境 MultiPolygon** 構築、`_validGeo` で形状検証、`paintPolys` 描画、`_verifyPolyPaint` で実状態検証、**採用した解釈を凡例＋注記で明示**、無効コードは「スキップ」正直報告、全無効は `ok:false`。`regionGroup` はこの経路を通らない。`countries`（文字列/名前配列）経路は**legacy fallback として温存**（R143 直接 dispatch テスト無回帰。`_hlReadGptGroups` は生ISO3配列のみ targets 扱い＝名前配列/概念文字列は null で legacy へ）。
-- **④ 画像のみ送信で架空ユーザー文を生成しない**: `run()` の `if(!q&&imgs.length) q=L('Read and analyze…')`（既定文をユーザーバブル/履歴へ露出させていた真因）を撤去。`q` は空のまま＝ユーザーバブルはサムネイルのみ・履歴は空。既定指示は `_visionPrompt` 内でユーザー未入力時のみ付与＝**API境界の非表示システム指示に限定**。ペースト/ドロップ/添付が textarea を変更しないのは既存挙動（`_atlAddFiles`＝`_atlImgs` に push のみ）。R156 の Vision/数式/検算/非地理ゲートは無変更。
-- **公開/テストAPI**: `IntMapAtlasDebug.{hlReadGroups,validCodeSet,hlState}` 追加（純関数＝mapなしでCI検証可）。データソース変更なし（`window.countryGeo`/`countryStats` 再利用）。Edge Function 変更なし。テスト: `tests/r157.spec.js`（Playwright 8）＋ `tests/r157-checks.test.mjs`（source 5）。**罠**: Browserペインは `document.hidden`＝`isStyleLoaded()` 未完了で `paintPolys` が false→dispatch ok:false（legacy `東西南北欧` も同ペインで同挙動＝環境要因）。描画真偽は WebGL 可能な Playwright で検証、ペインでは `polyState()`/`hlReadGroups` の**パイプライン出力**で検証（R143/R156 と同一の罠）。
-
----
-
-## #R154 補足（UX/機能バッチ10件）
-
-`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r154-checks.test.mjs`(node 10)＋自変更で壊れた r149/r150/r152/r153 assert 更新。`npm test` 緑（static＋node **109**＋Playwright **80**・pageerror 0）。主要修正をハーネス実測で検証（クリーンポートで Playwright 80/80、汚染ポートの11失敗は同時実行セッションとの資源競合と確認）。
-
-- **① ケッペン幅（7回目・真因＝固定幅）**: 264px 固定は日本語（最長行~137px）で **~80px 死に幅**（「テキスト以上に横幅伸ばして…行の幅変わってない」）、独語で数語クリップ（「狭すぎる」）。→**内容ハグ**: `_fitKoppenLegend` がオフスクリーンspanで最長行を実測し、行クローム＋予約gutter を加えた px 幅を直接セット（clamp 176–324・右余白内）。CSS 固定ロックを `width:210px(fallback);min-width:172px;max-width:340px` に。実測 border-box: JP 207/EN 276/DE 317/RU 307/ES 303px・**全言語クリップ0**。幅は build/表示/リサイズ時のみ決定論再計算＝縦ドラッグで不変。下端マージン 12→8px。モバイルは既存 `!important` 幅で保護。
-- **② Atlasタイポ（色分け廃止＋捏造停止）**: (a) mdMini 全見出しの `color:var(--primary-color)` を撤廃＝**`--text-main`＋サイズ(# 1.6/## 1.34/### 1.12/行全体太字 1.16em)＋余白のみ**で階層化（「目次を色分けするのはやめる／サイズと配置で勝負」）。(b) `_atlStanza` の**見出し捏造を全廃**（先頭文→太字リード・文頭 `Label:`→`##` を削除＝「大きくする箇所がおかしい／判定がおかしい」の真因）。拡大は**モデルが書いた `##`／行全体太字のみ**。整形は安全なもの（長 run-on の~2文stanza分割・list正規化・段落余白）のみ。プロンプトに「見出しは真の節タイトルのみ・普通の文を拡大するな」。
-- **③ SV Coverage 線（4回目）**: 画面ストローク≈nativeStroke×(tileSize/256)なので **`tileSize:128→64`**（z+3 fetch・~4×縮小＝**~0.9px ヘアライン**・native/overzoom いずれでも単調に細い）＋ `raster-opacity 0.9→0.62`。maxzoom は据置。
-- **④ Atls出典（「全くない」の真因）**: `_atlCleanUrl` が**復号不能 Google News リダイレクトを丸ごと drop**（近年の不透明RSS→ニュース1バッチ全滅→出典ゼロ）。→ **リンク保持**（クリックで実記事へ）し `linkCards` は**発行元名（`src`）でドメイン表示**（"news.google.com" 表記回避）。SNS/短縮/動画 drop・関連度・異script保持は不変。
-- **⑤ Draw で Elevation profile**: `_elevationProfile`（measure/area＋`measurePoints` 固定）から**再利用コア `_profileFromCoords([lng,lat][])`** を抽出（measure/area は委譲＝挙動不変）。DrawTool `renderPanel()` に `📈` ボタン（`simplified.length>=2`）→ 描いた線を同一 DEM パイプラインで断面化。5言語 `elevProfile` 既存。
-- **⑥ AQI/UVI iOS再構築**: カード全体をカテゴリ色グラデで塗り（`_wgtColor` が inline `!important` でガラス上書き制圧）、**輝度で文字色分岐**（淡色→暗文字/濃色→白）＝全段コントラスト確保。数値36px。**AQI 6段階**（4→6・Very unhealthy/Hazardous 追加）。カテゴリ名5言語（`_WL`）。データ源不変。
-- **⑦ Atls音声入力**: `.atl-inbar` に `.atl-mic`＋Web Speech API。認識言語=UI言語、結果は入力欄に挿入（確認後送信）、録音中赤パルス、非対応で非表示。5言語タイトル。
-- **⑧ Layerパネル既定=右**: `window.imLayerPanel 'classic'→'right'`（保存済み classic は優先）。
-- **⑨ 右サイドバー左右調整＋既定縮小**: 左 `#sb-resizer` 鏡写しの**左端ハンドル `.lsr-resizer`**（左移動で拡大）＋`localStorage 'intmap_lsr_w'` 永続。`open()` は**保存幅優先**（従来は毎回上書き＝ドラッグ無効化）。既定幅 **430→380px**。地図 ≥320px。
-- **⑩ オフレイヤー残存表示**: 真因＝**OFF→hide 自己修復が自動学習レイヤーに欠落**（`.setStyle` 皆無・reconcile は ON 再発火のみ）。`_auditLearned` を**両方向対応**（`!cb.checked` 早期return撤廃）＝OFF かつ painted なら hide（`_ownedByCheckedOther` で他 checked が正当に描くidは除外）。二次＝ECMWF ロード失敗で `state[id].on=false` も戻す（styledata 再attach 復活を防止）。
-
----
-
-## #R153 補足（UX/機能バッチ8件・再報告の根本原因）
-
-`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r153-checks.test.mjs`(node 9)＋自変更で壊れた r149/r150/r151/r152 assert 更新。`npm test` 緑（static＋node 99＋Playwright 80・pageerror 0）。全修正をハーネス実測で検証。
-
-- **① ケッペン凡例（6回目）**: R152 の `nowrap`+200px+ellipsis が **EN30区分中11名をクリップ**（実測: EN名は幅216px要）＋自然高519pxが768ノート可用~514pxを5px超過＝EF到達不能。修正: 幅 **200→264px**（EN/JP/RU/ES全収・独語最長2-3のみ hover）／行 `padding:0.5px→0`＋`line-height:1.2` で**自然高489px**（全区分既定表示・EF到達）／**RU/ES 気候名を KNAME に追加**（従来 en フォールバック）。`_fitKoppenLegend`(min(内容高,vp)) は無変更＝内容高を下げるのが真因。
-- **② Measure/Share ポップアップ**: 「無条件透過するな」+「無条件不透過するな」＝**条件付き要求**。`background:var(--card-bg)`(常時不透過) → **`var(--glass-fill)`＋標準blur**＝外観設定(#R33)に従い Solid で不透過(--card-bg)・glass で frost。他ポップアップと同型。
-- **③ Atlasタイポ（3回目・描画側の真因）**: `_atlStanza` の **`>1改行→return raw`** が最頻ケース(複数段落フラット散文)を素通り。→**全面再構造化**: 段落分割・文単位 `Label:`/`背景：`→`## 見出し`・先頭文→太字リード・段落は空行 join(余白)・長連続文は~2文stanza・**CJK加重**。既 `##` 構造化済は不介入。リード 1.22→1.3em、余白 1.05→1.2em。決定論的＝IntMapAtlasDebug。
-- **④ SV Coverage 線（3回目）**: Google svv は各ネイティブzoomで一定幅描画→z19超で拡大肥大。**`tileSize:256→128`**（全zoomで~2×ダウンスケール→細線）＋**`maxzoom:19→21`**（z20/z21タイル実在をpixel実測で確認）。
-- **⑤ Companies 深い履歴**: Yahoo keyless 床は銘柄依存 1962-1985（R152到達済）・Stooqは PoW化で不可＝捏造せず。上積み＝比較 Time-series 既定 **10→20年**（深い履歴を即表示）。ピッカーは1962床維持。
-- **⑥ Atlas出典（両面再報告）**: (a) mapReport/events の**インライン `記事↗` が生URL**（アグリゲータ/SNS）＝フィルタ迂回。(b) **planner `answer` が出典を一切描画しない**（「全くない」主因）。修正: **単一 `_atlCleanUrl`** を linkCards＋両インラインリンクで共通使用／linkCards は **host-clean→関連度** の順（空バグ解消）／`answer` に web-verified 出典追加／関連度は**異script保持**。
-- **⑦ Companies 真パリティ**: 最大の手抜き＝**TS指標ピッカーが無効**（常に株価指数）。→**{Market cap 絶対$ / Share price 指数} トグルがチャート駆動**＋十字ツールチップ、generic ピッカーはTSで非表示。`/8`→`/10`（2箇所）。**ws窓に検索欄**（`#info-search-bar`＋`_companiesSearchVal`＋`#co-compare-fixed`バンドル・5言語 `filterCompaniesPh`）。**詳細に実株価スパークライン**（`priceSeriesFine`）。HQ地図/Focusは企業＝非地理のため意図的非採用。
-- **⑧ ワークスペース地図ポップアップ**: `_inWsWin()` の `panel.closest('.ws-win')` が、ws-modeで地図窓へ移設された `#map-container` 内の全ポップアップを誤判定→ドラッグkill。**`panel.parentElement` が `.ws-body`（窓の直接コンテンツ）か**に変更＝本体パネルは保護・地図ポップアップは復活。`_inWsWin2`(resize)も同修正。
-
----
-
-## #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
-
-### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161）
-`window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
-
-- **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
-- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas＋**#R161**: container/size/setCursor）**・`events`（on/off/once＋**#R161**: onLayer/offLayer＝**レイヤ単位のポインタイベント**）＋**#R161**: `ready()`（描画準備完了）・`layers.getPaint()`（paint 読み戻し）。
-- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
-- **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
-  - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
-- **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
-- **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子。
-- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋既存スモーク。
-
-### その他12件（要点）
-①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。
-
-**重大教訓**: static-checks は**同一スコープ重複 `const` を検出不能**（`_ATL_STOP` 二重宣言でアプリ全体ブート不能＝全Playwright timeout）。**commit前に実 chromium で critical globals を必ず確認**。
-
----
-
-## #R151 補足（UX/機能バッチ11件：ケッペン全区分停止＋行幅固定／Measure・Share集約／SV coverage自動／モニター削除でハイライト消去／Companies株価バッチ＋全史キャッシュ／Atlas出典SNS除去／Atlasトグル拡充／Terra本番検証）
-
-- **ケッペン凡例（#3・R150を上書き）**: `_fitKoppenLegend` を **`min(自然内容高, ビューポート上限)`** に（内容高は inline `height`/`max-height` を一時中和して `getBoundingClientRect` で実測→復元）。**内容<画面＝最終区分で停止**（空白ゼロ＝「すべて表示されたら止まる」）、**内容>画面＝画面下端で停止＋内側 `.kl-scroll`**。行幅固定＝`.kl-scroll{ scrollbar-gutter:stable }`（スクロールバー出没で~15px 揺れ→行 reflow が真因）。R150 の「ビューポート基準で必ず下端」は空白を生む＝要求転換で上書き。r149/r150 の #3 テストを二挙動（短vp下端／高vp内容停止）へ更新。
-- **通常モード Measure/Share 集約（#4）**: Radius を `#measure-dropdown` 内へ（Distance/area・Draw・Radius）。Screenshot＋リンクを新 `.share-menu-container`（🔗 Share ▾＝Screenshot・共有/リンク・`right:0`）へ。**ID温存**（`btn-tool-radius`/`btn-screenshot`/`btn-share`）で既存ハンドラ・モバイル `data-proxy` 不変。`shareMenuBtn`/`shareLinkBtn`/`coCompareEmpty` を5言語追加。
-- **SV coverage 自動（#8）**: `IntMapStreetView.open()` が coverage OFF 時に `coverage(true)`＋`_covAuto`（手動状態温存）、`close()`（✕も集約）で自動分のみ OFF。パノラマを開くと水色の実カバレッジ線が即表示。
-- **モニター削除でハイライト消去（#6）**: `showOnMap(area,points,monId)` に `_shownMonId` 記録（全呼出元に id）、`remove()` 成功時 `_shownMonId===id`（or 未追跡）で `clearMap()`。UI/Atlas 両経路が同一 `remove` を通る。
-- **Companies 深い歴史＋低遅延（#10）**: `_spark(syms,range,interval)` で Yahoo `v8/finance/spark` を~40銘柄バッチ（旧＝1銘柄1req）→ `loadPrices` 即着色＋未解決のみ従来チャートfallback。`_histAll()` が `spark range=max 1mo` を一度取得し `{tk:{year:年末終値}}` キャッシュ→ `setYear` 年スクラブをネット無し即時（未網羅のみ per-year fallback）・`priceSeries` も同キャッシュ。両response shape対応。
-- **Atlas出典の信頼性（#11）**: `_atlBadSourceHost`（`_SNS_RE`＝X/Twitter/FB/IG/Threads/TikTok/Reddit/YouTube/t.me/bit.ly…）で全出典カード経路（`linkCards`＝analyze/answer/mapReport）から SNS/UGC/短縮/動画を除外。`_analysisSystemPrompt` に「SNS等は出典にしない・各URLは主張を直接支持する具体ページのみ」明記。`IntMapAtlasDebug.badSourceHost/linkCards` 公開。
-- **Atlasトグル拡充（#2）**: 既存(layer/base/grid/3D/国情報/SV/borders/labels/roads/ticker)に **globe（地球儀 on/off）・compare** を `_FEAT_TOG` 追加＋projection/compare dispatch に `_featTogHtml`。
-- **タイポ（#5）**: mdMini で**行全体が `**太字**` の行を実見出し**へ（モデルは `##` より太字を多用＝モデル非依存の階層）＋段落余白 .72→.85em。answer/analysis プロンプトの FORMAT指示は既存。
-- **衛星（#7）**: `predictivePrefetch(aggressive)`＝飛行で RING 3→7・斜め角先読み・傾斜時は横一段浅も warm、飛行ループ 380→300ms＋aggressive。**3D手動 pan/rotate（pitch>25）でも `move` ごとにスロットル先読み**（従来 moveend のみ＝連続移動で先読み皆無）。既存最適化(2/5ホスト分散・native-max DEM z15・fade0・8192キャッシュ・pixelRatio上限)温存。
-- **Companies 空比較ヒント（#1）**: Countries同型は既存＋**空状態ヒント**「Tap company rows to select and compare.」（`coCompareEmpty` 5言語・`renderCoCompareFixed` が `scf-empty`）。
-- **Terra（#9）**: `AI_MODEL` secret＋`OPENAI_DEFAULT_MODEL=gpt-5.6-terra`（コメント整合・再deploy）・Luna は model_not_found のみ。**本番検証＝`current_news.analyzed_by='ai'` が 354 件**（refresh-news cron は fallback無でTerra直呼び＝ai>0 が到達の実証）。
-- テスト: `tests/r151-checks.test.mjs`(node 11) ＋ `tests/r151.spec.js`(Playwright 6)。r149/r150 のケッペン#3を R151 仕様へ、r149/r150-checks の exact-string を .85em/prefetch cadence へ更新。`npm test` 緑（node 79・Playwright 80・pageerror 0）。
-
-## #R150 補足（UX/機能バッチ10件：モニター保存の真因user_id欠落／ケッペン下端伸縮／Atlas曖昧性ゲート統一／調査回答マッピングのコード側検証／Terra採用／衛星飛行プリフェッチ）
-
-- **モニター保存（#6）**: `IntMapMonitors.create()` の挿入行が `user_id` を欠落（`area_monitors.user_id` は `not null`＋insert RLS `user_id=auth.uid()`）→ UIからの作成は毎回失敗し「Could not save the monitor.」。修正＝client が `row.user_id=currentUser.id`（他の user-owned insert と同型）＋ migration `20260721140000` で `alter column user_id set default auth.uid()`（本番適用済み・冪等）。**この機能は service_role 経由でしか検証されておらず、ログインclientの挿入経路は未検証だった**のが盲点。
-- **ケッペン凡例（#3）**: `_fitKoppenLegend` の `maxHeight` を**ビューポート基準**(`innerHeight - top - 12`、content-box分減算)に。従来の**内容高クランプは伸縮を阻害**（背の高い画面/区分少で画面下端まで引けない＝「一番下まで伸ばせない」）。CSS `max-height:calc(100dvh - 84px)` は温存、内側 `.kl-scroll` が全区分を担保。
-- **Atlas地理対象の曖昧性ゲート（#7）**: 共有 `_hlAmbigConfirm` で**単一の確認**を生成し、multi-region/single 両経路が**描画前にゲート**（曖昧が1つでもあれば `R(false,…,{meta:{partial:true}})` で停止＝何も塗らない・planner say 抑止）。従来は塗った成功の隣に `gAmbig`/`ambig` を警告として追記＝「候補確認・部分実行・成功報告・失敗警告」の同時表示が真因。個別地名ハードコード無し＝`resolveHlTarget` の `ambiguous` 判定に駆動。
-- **調査回答マッピングのコード側検証（#10）**: PURE基盤（`IntMapAtlasDebug` 公開でhermeticテスト可）＝`_atlExtractPlaces`(本文抽出=省略時安全網)／`_atlAuditSources`＋`_atlRegDomain`＋`_atlIsOfficial`(出典正規化・単一集中検出・官公庁/一次優先)／`_atlMappingVerdict`(mapped/unplaced/ambiguous)／`_atlGeocodeStrict`(同名≥2でambiguous・place型＋名称一致のみ・座標推測なし)。orchestrator `_pinReplyPlaces` は**既存ピンとMERGE**(clearしない・スキップ廃止・空catch廃止→console.warn＋正直な注記)。
-- **Atlas使用モデル（#9）**: `refresh-news`（同キー・同AI_MODEL・**モデルfallback無**）で `AI_MODEL=gpt-5.6-terra` → ai 61/63(en)・104/116(jp)成功＝**Terra再検証で到達可**。`AI_MODEL` secret=terra・ai-proxy default=terra・`FALLBACK_MODEL=luna`。
-- **タイポ（#4）**: `_atlStanza`(改行無し長塊を~2文stanzaへ)＋mdMiniで文末＋単一改行→ソフト段落余白。構造化済みは不介入。
-- **衛星3D飛行（#8）**: `predictivePrefetch` が `moveend` のみ発火→**飛行中(連続移動)は先読み皆無**が真因。`window._imPredictivePrefetch` 公開＋飛行ループで~2.6回/秒スロットル呼出。`sat-labels` を Esri 2ホストでラウンドロビン。既存最適化(2/5ホスト分散・native-max DEM・fade0・8192キャッシュ)温存。
-- **停止四角(#5)** rect 17.5→15.5。**Companies(#1)** は既に Countries 同型・`.co-logo-box` 32→30px で国旗枠と画素一致。**SVオフ(#2)** にも `_featTogHtml('streetview')`。
-- テスト: `tests/r150-checks.test.mjs`(node 12・ソース保証) ＋ `tests/r150.spec.js`(Playwright 7・業務委託の全ケースを純関数でruntime検証)。r147/r149-checksをR150差分へ更新。PR #23。
-
-## #R143 補足（Atlas地理対象解決の汎用基盤：UN M49国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答）
-
-「東西南北欧をハイライトして」で **西欧未描画・4地域同色・南欧が巨大な三角形・国境でなく雑な近似図形・未完了なのに完了報告・曖昧性の長文説明が地図操作を妨害** が同時発生。**真因＝ヨーロッパのサブ地域（西欧/東欧/南欧/北欧）が「国集合」なのにコードは `REGION_BBOX` の粗い矩形/AIポリゴンでしか解決できず**、多地域の色分け・凡例・描画前検証も無かったこと。Europe専用ハックではなく**Atlas全体の汎用基盤**として、パイプラインを **解釈→地理対象解決→実行計画→描画→実状態検証→返答** に統一。全て `index.html` 加算（単一HTML温存）。`npm test` 緑（静的＋security/monitor logic＋**Playwright 44/44**、内 `IntMapRegionResolverTest` に純検証~30件・新 `tests/r143.spec.js` 10件）。
-
-- **① UN M49 国集合（地理対象解決）**: `REGION_GROUPS` に **UN M49 のサブ地域を実 ISO3 リストで追加**（western/eastern/southern/northern europe＝**互いに素な4分割**、north/south america・caribbean・north/west/east/central/southern africa・western asia・oceania サブ地域…）＋ `europe`/`oceania` は下位の和。`regionGroup` は既存の `GROUP_ALIASES` に加え **5言語 `REGION_ALIASES` も参照**（西欧/Westeuropa/западная европа… が自動で国集合へ。国集合でない自然地域＝Sahara/Alps 等は null で従来のポリゴン経路へ）。→ `resolveHlTarget` の**グループ段（国コード）で確定**し、Nominatim/AI/矩形の不安定経路を回避＝**正式な国境 GeoJSON で描画**。標準定義があるので**不要な確認をしない**（曖昧性の壁は出ない）。
-- **② 複数地域＝グループ別色＋凡例**: highlight dispatch に**多地域分岐**（2つ以上の対象・明示単色なし・河川/流域でない・かつ少なくとも1つが国集合/地域）。各対象を**カテゴリ配色 `_HL_PALETTE` の別色**で `nlq-poly-src` に描画（国集合は `_codesGeo(codes)` で **`window.countryGeo` の実国境から MultiPolygon** 構築・内部境界は `comp:1` で淡く）、返信に**色スウォッチ凡例**（`_hlLegendHtml`：地域名＋か国数＋根拠）。単一対象/単色指定/純国リストは従来の単色 feature-state 経路（無変更）。表示名は **`M49_LABELS`（5言語）で localize**（`_hlPolys` 内部名は正準英語キー＝安定・テスト可）。
-- **③ 描画前ジオメトリ検証（ハリボテ拒否）**: `_validGeo(geo,{trusted})` が **未閉リング・退化した少頂点「巨大三角形」・異常な長辺・自己交差・全世界blob・極小スライバー・非ポリゴン**を描画前に拒否。実国境/OSM/構成境界は `trusted` で粗近似ヒューリスティックを免除、AI/派生/ソフト箱は全検査。多地域・単地域の**両経路**で適用（拒否は正直に「不正な形状のため未描画」）。`_bboxSoftPoly` も**厳密閉リング化**（`sin(2π)≠0` の隙間を解消）。
-- **④ 実状態検証＋正直返答**: 描画後に `_verifyPolyPaint(n)` で **source/layer/feature数** を確認。返信は**実行結果から合成**＝描画できた対象（凡例＋根拠）と **失敗（見つからず／不正形状で拒否／曖昧）を明確に分離**、部分失敗は `meta.partial` で**プランナーの実行前 `say` を抑止**（R140/R142 の say-gate）。
-- **④' (#R158) Terra＝意味/対象/方法の最高意思決定者、IntMap＝忠実な実行装置**: コード側の**自動補正・対象除外・意味推測を廃止**。`_hlReadGptGroups` は Terra の識別子をそのまま実行し、無効/空ISO3は**補正せず**（`resolveCountrySync` 救済を撤去）`unresolved:[{name,iso3,reason,availableIdentifiers}]` として返す（候補は**報告のみ・適用しない**）。dispatch は**構造化実行結果** `{status,action,resolved,unresolved,renderState,capabilities}`（委託書JSONスキーマ）を `R(ok,html,{meta,exec})` で返し（`cg.miss`/`_validGeo` 失敗も unresolved に観測記録）、`runActions` が `a.__exec` に保存、run() の**既存2周repairループ**が `partial_or_failed` を `pending` に投入＋`[EXECUTION RESULT …]` を repair プロンプトに添付＝**Terra自身が**修正/再検索/確認/部分採用を決める。スキーマ/型/セキュリティ/描画検証は**Terraの意味判断を覆さない観測層**として維持。`regionGroup`/legacy `countries` 経路は無改変（R143無回帰）。全アクション共通の契約（highlight が第一実装）。
-- **⑤ 堅牢性（style待機・遅延上書き・再描画）**: 世代トークン `_hlGen`＝**新しいハイライトが古い非同期解決の上書きを阻止**、描画は最大 8×0.7s のバウンド再試行、`styledata` 再描画は既存の `paintPolys` ハンドラが継続。
-- **⑥ 複合展開（頑健化）**: `_expandRegionCompound` が **「東西南北欧」→4 M49 キー**、「南北アメリカ」→2、を決定的に展開。さらに**方向欧の2語以上の共起時は M49 に正準化**（＝「北欧」は単独では北欧5国だが、四方位欧の集合内では M49 Northern Europe＝隙間なし4分割）。
-- **公開/テストAPI**: `IntMapAtlasDebug.{regionGroup,validGeo,codesGeo,expandCompound,paletteColor,legendHtml,polyState}`（純関数＝mapなしでCI検証可）。データソース変更なし（既存 `window.countryGeo` の再利用）。
-
----
-
-## #R142 補足（UX/正直化バッチ17件：SV実Coverage再修正／Atlas正直化・全幅・Stop／シート同期／Companies順位・時間・比較・拡充／WS読込・レイヤー復帰／東西独国境／Radius整理／News媒体Wikipedia）
-
-ユーザー指摘**17件**を根本原因から修正（`index.html`＋データ `data/cshapes.js`・加算的/微修正・単一HTML温存）。着手前に並列サブエージェント6本で実地調査。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 26/26**・pageerror 0）。DOM/データ/純関数は localhost プレビューで実測。詳細は DEV-NOTES R142。
-
-- **SV実Coverage再修正（#1）**: `_nearestCoverage` の `null`（タイル遮断＝プライバシー堅牢環境）で無言のクリック点配置＝R140前と同症状→`_loadTile` に **CORSプロキシ・フォールバック**、探索半径 40→115px・z≥14、null は正直トースト（偽マーカー無し）。実測 Times Square 実スナップ。
-- **Atlas正直化（#2/#3/#9/#17）**: プランナー実行前 `say` を **視覚/状態アクション失敗 or `meta.partial/unverified` で抑止**（say-gate 拡張）。`highlight()` は feature 未ロード時 `false` 返却、highlight dispatch は部分ミスで `meta.partial`、layer dispatch は無描画で `meta.unverified`。`OVL_OF.missile` に `'blast'`、layer インライン再トグルを OFF 分岐でも出力。`toggleLayer` が **`cb` 返却**→インライン操作は `r.cb` 再利用（曖昧再解決廃止＝既定状態が実 checkbox 値）。
-- **Atlas UI（#8/#15）**: `.atl-chat` 側 padding 14→8px 等で**サイドバー全幅**。送信ボタンは応答中**赤 Stop スクエア**＝`_setGoBusy`/`_stopRun`（`_runGen++`＋`AbortController`・planner/repair の `askAIJSON` に `signal`）、`run()` を try/finally で全終了経路復帰。
-- **モバイルシート同期（#4）**: `setDetent` の settle `easeTo({padding})` 直前で **残存 `_padRAF` を cancel**（v5 `setPadding`=`jumpTo`→`stop()` が settle を中断していた）。
-- **Companies（#5/#6/#7/#13）**: 順位＝**現在指標のVALUE順位（方向非依存・最大=1）**（両レンダラ・名前ソートは正準指標フォールバック）。**タイムマシン対応**＝`IntMapCompanies.setYear(year)`（keyless v8 chart 月次年末終値→`c.hp`・`mcap()`/`priceOf()` 歴史化・`_coWireTime` 購読・正直バナー・設立前—）。**比較**＝`coCompareSet`＋行シングルクリック選択/ダブルで詳細＋sticky トレイ＋`showCoCompare`（6指標×N社横バー・時間対応）。**拡充**＝US上場27社追加（→147社・123 live）＋**TSMC(TSM) live 化**（25.93B÷5=5.186B ADS）。手法＝安定な**株数×取得価格=snapshot** 自己整合（±5×ガード通過）。新 window.*: `_coToggleCompare/_coClearCompare/_coShowCompare`。新 API: `IntMapCompanies.{setYear,priceOf,histYear}`。
-- **ワークスペース（#10/#11）**: `enable()` に**ローディングオーバーレイ**（`_wsLoadingOn/Off`・2×rAF後に重いビルド・finally 消灯）。`disable()` で**レイヤーパネルを通常復帰**（インライン幾何クリア＋`apply()`＋`_placeActiveSection`）。**副次真因修正**＝R141 Monitors 窓が `defRects()` 未登録→`clampRect(undefined)` throw（毎デスクトップ ws 起動で握り潰し破損）→`monitors:flo(3)` 追加＋`clampRect` に `r=r||[]` ガード。
-- **東西独国境（#12）**: `data/cshapes.js` の内独国境が両側独立簡略化で重なり→**西独=difference(統一 788, 東独 789)**（`polygon-clipping` で offline 再生成・overlap 0・共有頂点60・新 ring1991）。西独era を再ポイント。ビルドツール `polygon-clipping`（非コミット）。
-- **Radius整理（#14）**: プリセット＋色/透明度を `<details>`「Style & presets」開示（既定折畳・全ID温存）、スライダー＋統計は常時表示。
-- **News媒体Wikipedia（#16）**: `.news-pub` を `role="link"` 化→`<lang>.wikipedia.org/.../Special:Search&go=Go`（jp→ja・404回避・`IntMapSafe.url`）。
-
----
-
-## #R140 補足（既知バグ6件バッチ根本修正：SV透過＋実Coverage／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期）
-
-ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の加算的/微修正（単一HTML・ビルド無し温存）。`npm test` 緑（静的89＋security-logic 10＋Playwright 18/18・pageerror 0）。詳細は DEV-NOTES R140。
-
-- **① SVポップアップを無条件で不透明化**: `#streetview-panel` の base を `var(--popup-bg)`（rgba 0.72/0.74・backdrop-filter無し＝地図が透ける）→完全不透明 `var(--card-bg)` へ。head/nav の半透明はこの不透明ベースに合成される。
-- **② SV Coverage を実データで考慮**（前身の「⑤SVカバレッジ＝ベースマップ道路を水色化」を置換）: `open()` が素のクリック点に置くだけでGoogleの実パノラマ位置を偽っていた真因を修正。Googleの**実SVカバレッジ・タイル** `mts{0-3}.google.com/vt?…lyrs=svv&style=40,18`（ACAO:*・キー/UA/Referer不要・空域=68B）を(a)Coverageモードの**実オーバーレイ**に、(b)新 `IntMapStreetView.nearestCoverage()`＝現在ズームで3×3タイルを画素サンプリング（canvas getImageData・プロキシ不要）し**最寄coverage画素へスナップ**、無ければ正直に「ここにSV無し」（`imToast`5言語）、読取不能は素点フォールバック、(c)マーカーのドラッグ終了も同スナップ。実測: Times Sq 27m・Westminster 15m吸着、Pacific/Sahara=covered:false。出典・プライバシー（JP/EN）にカバレッジ・タイル追記。
-- **③④ タイムマシン国境の間欠不表示/不更新**: `IntMapTimeBorders.apply(fc)` の style未ロード時フォールバックがワンショット `map.once('idle')`（busyマップで永久未発火＝R41で潰した同型バグの残存）→ **`whenStyleReady()`（poll＋~6s hard-resolve）＋seqガード**へ。年変更ショートサーキット2箇所にも ensure()失敗時の一回リトライ。
-- **⑤ Atlas嘘ハイライト**: 返信が**実行前プランナの `say`**（過去形「ハイライトしました」）を無条件先頭表示していた→**全滅時 or 視覚アクション（highlight/outline/draw）失敗時は `say` 抑止**し既存の正直な警告を先頭化（`runActions`）。
-- **⑥ モバイル・ボトムシート同期＝R139修正がno-op**: maplibre 5.24.0 で `setPadding(e,t)=jumpTo({padding:e},t)`＝**瞬時**（第2引数はeventData）→R139の `{duration,easing}` は黙殺され padding が跳んでいた。**`map.easeTo({padding,460ms,同cubic-bezier})`** でロックステップ化、ライブは最新値rAF＋`dragStart`で `map.stop()`。デスクトップ・サイドバーの同型no-opも `easeTo` 化。実ソースで `setPadding=jumpTo`／`easeTo`のpadding対応を確認。
-
----
-
-## #R139 補足（Companiesタブ新設＝Information廃止／モバイル描画・レイヤーFAB・ボトムシート同期／範囲人口の進行バー正直化／現在地ボタン・時刻タブ精緻化）
-
-ユーザー要望11件。全て `index.html` の追加/微修正（既存機能削除は明示指示の Information タブのみ・単一HTML温存）。`npm test` 緑（静的91＋security-logic＋Playwright 18/18）。詳細は DEV-NOTES R139。R138（IntMapSafe 等）の上に stack。
-
-- **Companies タブ（Information 廃止→置換）**: `window.IntMapCompanies`＝**厳選120社**（`ticker,name,nJp,cc,sector,domain,founded,employees,revB,niB,sharesB,mcapSnapB` の配列）。**時価総額はライブ**＝米国上場銘柄は `shares×live price`（下部ティッカーと同じ keyless Yahoo v8 chart＋CORSプロキシラダー・並行5・5分キャッシュ・進捗で再描画）、非米上場は報告値スナップショット。**サニティガード**＝ライブ mcap がスナップショットの0.2〜5倍を外れたら誤取得（銘柄取り違え/通貨/株数誤り）とみなしスナップショットへフォールバック（ランキングを壊さない）。`renderCompanies` は Countries と同形式（`.stats-toolbar` ソートプルダウン＝時価総額/売上/純利益/P-E/従業員/株価/設立/名称＋数値フィルタ＋`.stat-rank` 順位）を `#info-dashboard` に描画。**国旗のあった位置にロゴ**＝`logo.clearbit.com`→Google favicon→モノグラムの `onerror` カスケード。行クリックで `showCompanyDetail` オーバーレイ（全指標＋サイトリンク）。`renderDashboard()` は先頭で `renderCompanies()` に委譲（全呼出元＝タブ/ws窓/検索/Supabase/キャッシュが Companies を描画・旧ダッシュボードは dead code 化）。タブ `#btn-info`（id温存・mode文字列 `'info'` 温存）を `tabCompanies` へ改称（5言語）。Atlas＝`IntMapOS 'tab.info'` ラベル改称＋NL `companies/company/企業→tab.info`。CO_SECTORS/CO_CC は5言語。出典・プライバシーに Yahoo（企業株価）・Clearbit/Google（ロゴ）を追記。
-- **範囲人口の進行バー正直化（`window._imProgCtl`）**: 真因＝WorldPop 単一リクエストは進捗%が無い（task=created/finished のみ）のに、UIは**指数イーズアウト `0.92*(1-exp(-el/9))`＝100%手前で減速し無意味**だった。修正＝共有 `_imProgCtl(box)`＝`busy()` で**不定形アニメsweep（%非表示）**、実分数が判明した瞬間 `set(f)` で**実線形（単調）**（大面積のタイル分割は tiles-done/total、radius は circles-done/N・各円の内部タイルは帯へマップ）。measure/radius/Draw の3ドライバの偽ランプ＋`_setProg` を撤去。CSS `.tp-prog.indet .tp-prog-fill`（`imProgSweep` キーフレーム）。
-- **モバイル描画（`DrawTool`）**: 真因＝(1) MapLibre がタップから合成する `click` が開始直後のストロークを `finish()` して1点で終了、(2) ヒントが「タップ」なのに実装は press-drag 必須。修正＝`_touchTs` で touch 直後の合成 click を無視、bare tap は `armed` に**再arm**（死んだ1点stateを残さない）、ヒントを coarse pointer 判定で「押したままなぞる／指を離して確定」に（5言語）。
-- **モバイル レイヤーFAB着色（task5）**: `m-fab-map` の `.on` を**衛星ベースマップ→アクティブ層有無**へ。`_refreshActiveLayers` が `window._imActiveLayerCount` を publish し変化時に `window._imSyncMobile()`。`syncControls` は `(window._imActiveLayerCount||0)>0` で着色。
-- **現在地ボタン着色（task7）**: `IntMapLocate` の `.on` を**「追跡中」→「地図中心が現在地に一致」**へ。`_mapCenterAtFix`＝`map.project` の**画面ピクセル距離≤44px**（ズーム非依存）。`move`/`moveend` と各fix・start/stop で `_syncFab`。
-- **ボトムシート↔地図同期（task8）**: スナップ時の `map.setPadding` を **300ms/既定イージング → 460ms＋シートCSSと同一 cubic-bezier(0.32,0.72,0,1)**（新 `_cubicBezier` Newton-Raphson評価器）でロックステップ。ドラッグ中のライブ padding ゲートを **5px→2px**（中心が指を追従）。
-- **タイムマシン時刻タブ精緻化（task9）**: `_applyTimeOfDay` は **Year/Date で選んだ日付**に時刻を載せ、**今日は現在時刻以降を選べない**（`allowFuture:false`＋`_timeMaxMins`＝今日は now分・過去日は1439）。スライダ max と `#ntl-time` の max を `applyMode('time')`/`refreshUI` で追従（実測: 今日=727分キャップ、1990年=1439）。
-- **Countries順位デフォルトON＋iOS風数字（task3）**: `_showRank` を `!=='off'`（既定表示）、設定既定 'on'、`.stat-rank` を `ui-rounded/SF Pro Rounded`・weight600・tabular-nums。**Companies は順位を常時表示**（時価総額ランキングのため）。
-- **ニュース白黒ボタン・地点ピルaccent（task1/2）**: R137で既済を実測再確認（`.btn-read` `#fff`/`#000`、`.loc-chip` accent）。
-- 新 window.*: `IntMapCompanies`, `renderCompanies`, `showCompanyDetail`, `setCoSort`, `toggleCoSortDir`, `_coSf*`, `_imProgCtl`, `_imActiveLayerCount`, `_imLocSyncFab`。
-
----
-
-## #R137 補足（モバイルUI微調整／Countries順位表示／現在地ライブマーカー／タイムマシン時刻タブ／Atlas逐語重複除去）
-
-ユーザー要望10件。全て `index.html` の追加/微修正のみ（既存機能削除なし・単一HTML温存）。詳細は DEV-NOTES R137。
-
-- **モバイル選択タブ = 白/黒**: `@media(max-width:768px) .mode-btn.active` を accent 塗り→`#fff`/`#000`（デスクトップ R130 と統一）。Atlas タブは高特異度ルールで accent グラデ維持。
-- **ニュースカード**: `.btn-read`（記事を読む）＝白背景/黒文字（`.mnp-read` も）、`.loc-chip`（地点ピル）＝`var(--primary-color)`（旧ハードコード青グラデ→accent 追従）。`.unmapped`/`.publisher` の状態色は据置。
-- **Countries カード**: モバイル `.stat-row` 縦 padding 15→8px。左端に順位番号 `.stat-rank`（19px・tabular-nums・行の最左）＝`renderStats` が `window.imShowRank==='on'` 時に `i+1`（現ソート/フィルタ順）を先頭差込。設定 `#setting-showrank`（Layout & panels・既定 off）→`window.imShowRank`（load/save/open/apply・`intmap_settings` 同期）・5言語 i18n。
-- **現在地 FAB＋ライブマーカー**: `#m-fab-locate`（`.m-fab`＝Map/Tools/Compass と同一UI・compass 直下）→ `window.IntMapLocate`。MapLibre レイヤー `imloc-dot`(accent 点+白縁)/`imloc-dot-halo`/`imloc-acc-fill`+`imloc-acc-line`（`turf.circle` 精度円）を `watchPosition` で毎fix更新＝**点も円もユーザー移動に追従**。accent は `getComputedStyle('--primary-color')` を都度読取、style スワップに `styledata` で再アサート。Atlas `locate` も成功時に `IntMapLocate.start({fly:false})` 併発。新 window.*: `IntMapLocate`。
-- **タイムマシン コンパクト（モバイル）**: `@media(max-width:768px)` 拡張＝`.news-timeline .ntl-body` 幅 314→`min(290px,100vw-20)`・gap 5px、`.ntl-bigval` 26→20px、mode/now/inputs/scale/synced/chip 縮小。
-- **タイムマシン 時刻タブ**: `.ntl-modes` に `#ntl-mode-time`（時刻/Time/Zeit/Время/Hora）＋`#ntl-time`。`.ntl-mode.on` を accent→**白/黒**。`applyMode('time')`＝スライダ `0..1439`(分)・時刻ピッカー。書込 `_applyTimeOfDay`＝現在選択日（ライブなら今日）に時刻を載せ `IntMapTime.set(base,{allowFuture:true})`。**時刻依存の利用可能データ＝昼夜ターミネータ**が同期（Earth-Replay `_terminatorFC` 流用の `imtm-night` レイヤーを Time タブ表示中のみ描画）。iso(日)不変でニュース再取得スパム無し。
-- **Atlas 逐語重複除去**: 全AI自然文整形 `mdMini` 冒頭に純関数 `_dedupText`（段落＋文を正規化キー・長さ閾値15で去重・末尾空白保持で再結合＝略語/小数を壊さない）。node で10ケース実測。
-- **検証**: `npm test` 緑（静的83＋Playwright 11/11）。DOM/計算スタイル/純関数をヘッドレス実測（map は `document.hidden`/WebGL未init）。**新教訓: hidden ペインは CSS トランジション未進行 → 既存要素に class 後付け→`getComputedStyle` は遷移開始値を読む。ルール検証は fresh 要素生成で。媒体クエリは特異度を上げない（`.ntl-body` 後方グローバルに負けるので `.news-timeline` 前置で勝たせた）。**
-
----
-
-## #R136 補足（昔年代クリックの塗り不一致／Atlasハイライト精度／歴史データ拡充）
-
-- **昔年代クリックの Compare ハイライトが誤国**（「1920sポーランドをクリック→ポーランド判定なのにドイツがハイライト」）: 真因は**検出と塗りが別ロジック**だったこと。検出 `resolveHist` は era feature の `_gw`（Gleditsch-Ward, 1925 Poland=290→POL）で正しく解決するが、Compare の塗り `IntMapTimeBorders.geomForCode(code)` は `_gw` を使わず **MODERN 国外形の内部点を多数決**しており、1925 の modern ポーランド西部（当時 Weimar ドイツ）に票が集まって **Germany のポリゴンを返していた**。修正＝`geomForCode` を**検出と同一解決に統一**（新 `_eraCodeIndex`＝各 era feature を `resolveHist` で解決した `code→features` マップ／`_unionGeom` で合成）。ただし**被覆ガード** `_bbCoverFrac`＝index結果が modern 国 bbox の30%未満なら「吸収された国の断片」（1925 RUS=Karafuto 欠片）として従来の多数決へフォールバック（RUS→ソ連全域を維持）。実測: 1925/1914/1938 で POL→ポーランド・DEU→ドイツ・RUS→ソ連 extent、SUN 等の多継承 former state は hbRe 早期パスで不変。
-- **Atlas「○○をハイライト」の見当違い**（ログアウト時の Nominatim 経路＝Web検証なしの欠陥を `IntMapAtlasDebug.resolveHl` プローブで実測特定）: `_nomExtent` に (a)`accept-language`（UI言語+en＝英語exonym「Tuscany/Persia」が地域のローカル名と突き合う） (b)**完全名一致ボーナスを重要度でゲート**（上位重要度から0.25以内でのみ0.5・下は0.08＝低重要度の同名村が Iran/伊トスカーナを食わない・大阪湾の近接タイブレークは温存） (c)**微小集落ガード**（anchor無しで hamlet/suburb 等かつ重要度<0.35 は正直な miss）。`resolveCountrySync` は**非主権ミクロ地物（`sov===false`）をゆるい部分一致で拾わない**（「Patagonia」→氷原コードSPIを解消）。`resolveHlTarget` に **curated macro-region ガード `_curatedOk`**（curated 名は範囲外の同名／範囲15%未満の微小sub-feature を棄却し gazetteer 箱へ＝Patagonia→南米、Sahel→ベルト全体）。`REGION_BBOX`＋Manchuria/Anatolia(Asia Minor)/the Levant 等＋5言語エイリアス。
-- **歴史データ拡充**: 1943 CShapes 全169 feature を `resolveHist` 監査→植民地/自治領の**modern記事フォールバック**を特定し、**en.wikipedia API で実在検証**した上で `_ERA_WIKI` に植民地期記事12件（GMB/SLE/MUS/MDV/FJI/CPV/GNB/GNQ/TLS/SLB/PNG/KWT・各独立年で終端）を追加。**`_VANISHED` に Dominion of Newfoundland**（`_GW2ISO(21)=CAN` に畳まれていた自治領）を独立identity化＝5言語名＋Union Jack 旗（新 `F_UNIONJACK`）＋`Dominion_of_Newfoundland` wiki（統計なし＝code=null の正直表示、Danzig型）。
-- **検証**: ヘッドレスでデータ層を全項目実測（地図描画は `document.hidden`/WebGL未initで不可＝R129〜R132と同様データ層で担保）。`npm test` 緑（静的83＋Playwright 11/11・AtlasQA 40/40・RegionResolver 13/13）。
-
----
-
-## #R135 補足（Atlas 時間軸リサーチ・マッピング＝`researchMap`／Request Profile／能力レジストリ／意味的リトライ）
-
-**直接原因**: `mapReport` はプランナー上「調査結果を地図に出す汎用アクション」に見えるが、実装は **GDELT/Google News/読込済みニュースから現在の具体的事件を抽出する“ライブニュース専用”機能**。表示年1900で「当時のオホーツク海はどんな状況？地図で教えて」が `mapReport` に送られ、ライブニュース不在で失敗→repairが**表記だけ変えた再試行**（オホーツク海→Sea of Okhotsk→Okhotsk Sea）→**世界全体の1900年同盟地図へ範囲拡張**→ライブ不足警告の反復、という連鎖を起こした。これを**特定地名のハードコードではなく汎用の仕組み**で防止。
-
-- **Request Profile（`_requestProfile(q)`・純粋関数）**: プランナー呼出前に軽量な構造を生成＝`{temporalMode:historical|current|mixed|unspecified, targetYear, temporalSource:explicit|map-state|conversation|none, geoKind:water|region|city|historical-entity|unknown, evidenceMode:historical|live|mixed|none, outputs:{explanation,map,comparison}}`。**時間軸の優先順位**＝①入力内の明示年 ②「当時／この時代／そのころ」＋タイムマシン有効なら**表示年（`IntMapTime.year()`）** ③会話年（`_wctx.year`） ④表示年（非明示・非現在語） ⑤なし。**「今／最新／current」等は表示年より優先**して current に落とす（1900表示中でも「今のニュース」はライブへ）。`buildPrompt()` に **`[REQUEST PROFILE]` ブロック**（機械可読ヒント＋強制ルール）を `[CURRENT MAP STATE]` に続けて注入。
-- **`mapReport` の責務明確化**: 実装は不変（後方互換）。SYSでの意味を **「current/recent・dated・ライブニュース裏付けの事件のみ」** に限定し、過去年代・歴史背景・当時の勢力/交易/戦略的重要性・現在ニュースを要求しない安定知識には**使わない**ことを明記。
-- **`researchMap`（新アクション・historical/current/mixed）**: `{type:"researchMap",topic,place,temporalMode,year,evidenceMode}`。**文章と地図を独立生成**（§11）＝地図描画に失敗しても説明は返す。証拠は**モードで切替**（§6）＝historical は確立された歴史知識＋Wikipedia（**ライブニュース不使用**）、current はGDELT/Google News/読込済み、mixed は両方を明確に分離。`ai-proxy` の新タスク **`research_map`**（`JSON_TASKS`・`reasoning:medium`・`max_output:2600`・webMode は Profile 由来＝historical は topic の任意Web検証のみで現在ニュース非注入）が `{title,explanation,temporalBasis,items[],limitations[]}` を返す。**AIに座標を書かせない**＝`locationName+country` をクライアントで geocode。地図フォールバック（§8）＝実extent/bbox→中心→関連地点ピン。海域はポリゴン取得を成功条件にしない（`placeExtent`＋既存 `IntMapRegionResolver` を再利用）。
-- **能力レジストリ `ATLAS_ACTION_CAPABILITIES`（§7）**: 各アクションの本来能力（temporalModes/evidenceModes/outputs/geoKinds/topics）を小さく定義。
-- **実行前プラン検証 `_validatePlan(acts,profile,q)`（§7）**: 実行前に不適合アクションを**書換／追加**（repairで事後修復しない）＝①historical質問がライブ専用 `mapReport` へ→`researchMap`(historical, year保持) ②海域/地域/都市の局所質問が世界同盟地図(`historicalMap`, 非alliance)へ→`researchMap` ③説明要求なのにナビのみ→`researchMap` を追加。同盟/大戦/冷戦などの真の勢力図 `historicalMap` は温存。
-- **意味的リトライ制御（§10・§13）**: repair を **JSON完全一致でなく意味キー**で制御。`_researchFamKey`＝family+temporalMode（target非依存）で **翻訳だけの再試行を1回に畳む**。repair アクションも `_validatePlan` を通す（historical→live や 局所→世界 を禁止）。`_isWorldExpansion` で世界/大陸への範囲拡張を拒否。repair は **最大2巡**（旧3）、「近くの著名地／粗い対象」誘導を撤去し**元対象を保持したまま一段だけ拡張**に限定。地図描画失敗を回答失敗として扱わない。
-- **構造化結果 meta（§9）**: `R(ok,html,{meta})` に `{code(NO_LIVE_EVIDENCE/NO_HISTORICAL_EVIDENCE/PLACE_NOT_FOUND/NO_MAPPABLE_ITEMS…), category, retryable, semanticTarget, temporalMode, produced[], userGoalSatisfied}`。`runActions` が各アクションの結果を `_atlasOutcomes` へ収集。
-- **事後 Goal Validation（§12）**: `_goalValidation(profile,outcomes)`＝`{actionSucceeded,mapRendered,explanationProduced,geographicRelevance,temporalMatch,userGoalSatisfied}`。**「世界同盟地図の描画に成功＝オホーツク海の状況説明に成功」とは判定しない**。
-- **複合回答の統合（#R159・`runActions`／`_atlCompose`）**: `runActions` は各アクション結果を無条件連結せず **`ai.__atlResults` に記録**し、`_atlCompose(ai)` が **`_atlGoalKey`（回答系を正規化トピックで grouping・repair答は `__goalKey` 継承）＋`_atlGoalScore`（ok＋userGoalSatisfied＋produced explanation/map・partial減点）で目的単位に最良の1件だけ確定表示**。repairループは**破線dividerの別 `div` を廃止**し `runActions(ai,…)` で同一バブルへ再実行＝**成功した修復が失敗した元回答を置換**（「最初の分析＋修復後の分析の矛盾併存」を解消）。fail サマリから `actLabel`（`mapReport "Taiwan"` 等の内部名/コード/repair回数）露出を撤去。地図描画のみの失敗は分析本文を失敗扱いにしない（`researchMap` は text成功時 `ok:true`＋`produced:['explanation']`＋「地図表示のみ更新不可」を返す）。
-- **Atlas返答タイポ（#R159）**: `mdMini` は本文に**太字を出さない**（インライン `**`＋表セル→プレーン、見出し `#/##/###`＋lead は 750/800→**600 semibold**、`.atl-md-table thead th` 700→600）＋**`##` の上罫線 divider を撤去**（横線ゼロ）。色は `--text-main` のまま（R154）。
-- **デバッグ（§17）**: `window.IntMapAtlasDebug.lastPlan()`＝`{requestProfile,originalPlan,validatedPlan,rejectedActions,actionOutcomes,semanticRetries,scopeChanges,finalGoalValidation}`（通常UI非表示）。
-- **テスト**: `window.IntMapAtlasQA.run()` に R135 の純関数テスト21件を追加（**実測40/40 PASS**・従来19＋新21）＝時間軸判定（当時/1900、今→current、比較→mixed、明示1750、会話年）・地理kind・プラン検証（mapReport historical→researchMap／海域 historicalMap→researchMap／WWI同盟図温存／current mapReport温存／ナビのみ→researchMap追加）・翻訳リトライキー畳込・世界拡張ブロック・レジストリ・profileブロック・goal validation。実サイト（1900表示）で「当時のオホーツク海…」の Profile＝`historical/1900/map-state/water/explanation+map`、検証で `mapReport→researchMap(year=1900)` を実測確認。
+9. **動作確認**：ページを開き、(a) レイヤー行（`.lyr-row`）が100個以上（#R169 実測 143個）、(b) コンソールエラー0、
+   (c) News タブでピンが即表示、(d) ログイン→AI機能が動く、を確認。
+   （(a) と (b) は `npm run test:smoke` が同じことを自動で確かめる。§15）
 
 ---
 
@@ -1786,5 +1607,272 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 - **定期実行**＝pg_cron（refresh-news 同型・`net.http_post` でヘッダに秘密・`docs/AREA-MONITORS.md` にSQL）。
 - **UI/Atlas**（`index.html` 加算）＝**Monitorsタブ**（通常/モバイル/Workspace・5言語）、`window.IntMapMonitors`（一覧/作成ダイアログ/詳細/レポート＝結論・主な変化→evidence chip・数値比較・根拠一覧(出典リンク)・変化地点を地図表示・取得できなかったデータ・制約・日時/status）。Atlas `{"type":"monitor","op":…}`＝**返信は実DB結果のみ**（偽の成功報告なし）。全描画 `IntMapSafe`（XSS-inert 実証）。
 - **コスト制御**＝変化なしはAI非呼出／新規のみAIへ送信（履歴dedup）／run毎cap（evidence60・AI入力40・110s wall-clock・55s AI timeout）／plan別monitor上限・最短間隔30分・手動クールダウン30s／保持（run 100・evidence 12run）。
+
+
+---
+
+## 19. ラウンド別補足 (Round appendices)
+
+> #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
+> R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
+> 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R157 補足（Atlas 自然言語処理の全面再設計＝「GPTが意味を理解する層」と「コードが安全に実行する層」の明確な分離）
+
+**設計原則（現状仕様）**: Atlas のハイライト系ターゲットは **意味の解釈をGPTが担い、コードは検証・実行のみを担う**。ユーザーの自然言語は意味を保持した原文のまま最初にプランナー（GPT）へ渡る。`localPlan`/`regionGroup`/`GROUP_ALIASES`/`REGION_ALIASES`/正規表現が**GPTより先に概念の意味を決定・改変・拒否する経路は存在しない**。既存の ISO/UN M49/国境 GeoJSON/組織加盟国データは**意味推測辞書ではなく**、GPT出力を検証して実地理形状へ結び付ける**決定論的データ**として残る。
+
+- **① localPlan からハイライト・ターゲットの解釈を撤去**: 旧 `^(.+?)をハイライト` → `{highlight,countries:'<生概念>'}` `confident:true`（GPTを一度も呼ばず dispatch へ生概念を渡していた単一真因）を廃止。localPlan に残る highlight ショートカットは**意味解釈を伴わない2つのみ**＝現ハイライトの色変更（`parseColor` ゲート・ターゲット無し）と解除。あらゆる「…をハイライト」は必ず GPT プランナーへ。
+- **② GPT主導のターゲット契約**: SYS の highlight スキーマ＝`{"type":"highlight","interpretation":str,"targets":[{"name":"<English>","iso3":"<ISO3>"},…]}`。GPTが概念（文化圏/言語圏/政治・歴史的分類/曖昧な国集合＝ゲルマン諸国・スラブ諸国・英語圏・旧植民地・主要産油国・OPEC・G7 等）を**自分で実ISO3集合へ展開**する（「IntMapに概念辞書は無い」と明示）。複数集合を別色＝`groups:[{label,targets}]`。国集合でない**具体的単一地物**（行政区画/河川/流域/自然地域）＝`query:"<地名>"` で従来の `resolveHlTarget` ラダー（＝概念でなく確定地名のみ・GPTの後段でのみ稼働）。
+- **③ コード側実行層（`_hlReadGptGroups`/`_hlValidCodeSet`・dispatch highlight 冒頭）**: GPTの targets/groups/iso3/codes を読み、各ISO3を **`_hlValidCodeSet`（`window.countryGeo` 由来の実在コード集合）で検証**（不正コードは拒否・氏名があれば `resolveCountrySync` で救済＝正確な国名→コードの決定論マッチ）、重複除去、`_codesGeo` で**実国境 MultiPolygon** 構築、`_validGeo` で形状検証、`paintPolys` 描画、`_verifyPolyPaint` で実状態検証、**採用した解釈を凡例＋注記で明示**、無効コードは「スキップ」正直報告、全無効は `ok:false`。`regionGroup` はこの経路を通らない。`countries`（文字列/名前配列）経路は**legacy fallback として温存**（R143 直接 dispatch テスト無回帰。`_hlReadGptGroups` は生ISO3配列のみ targets 扱い＝名前配列/概念文字列は null で legacy へ）。
+- **④ 画像のみ送信で架空ユーザー文を生成しない**: `run()` の `if(!q&&imgs.length) q=L('Read and analyze…')`（既定文をユーザーバブル/履歴へ露出させていた真因）を撤去。`q` は空のまま＝ユーザーバブルはサムネイルのみ・履歴は空。既定指示は `_visionPrompt` 内でユーザー未入力時のみ付与＝**API境界の非表示システム指示に限定**。ペースト/ドロップ/添付が textarea を変更しないのは既存挙動（`_atlAddFiles`＝`_atlImgs` に push のみ）。R156 の Vision/数式/検算/非地理ゲートは無変更。
+- **公開/テストAPI**: `IntMapAtlasDebug.{hlReadGroups,validCodeSet,hlState}` 追加（純関数＝mapなしでCI検証可）。データソース変更なし（`window.countryGeo`/`countryStats` 再利用）。Edge Function 変更なし。テスト: `tests/r157.spec.js`（Playwright 8）＋ `tests/r157-checks.test.mjs`（source 5）。**罠**: Browserペインは `document.hidden`＝`isStyleLoaded()` 未完了で `paintPolys` が false→dispatch ok:false（legacy `東西南北欧` も同ペインで同挙動＝環境要因）。描画真偽は WebGL 可能な Playwright で検証、ペインでは `polyState()`/`hlReadGroups` の**パイプライン出力**で検証（R143/R156 と同一の罠）。
+
+---
+
+### #R154 補足（UX/機能バッチ10件）
+
+`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r154-checks.test.mjs`(node 10)＋自変更で壊れた r149/r150/r152/r153 assert 更新。`npm test` 緑（static＋node **109**＋Playwright **80**・pageerror 0）。主要修正をハーネス実測で検証（クリーンポートで Playwright 80/80、汚染ポートの11失敗は同時実行セッションとの資源競合と確認）。
+
+- **① ケッペン幅（7回目・真因＝固定幅）**: 264px 固定は日本語（最長行~137px）で **~80px 死に幅**（「テキスト以上に横幅伸ばして…行の幅変わってない」）、独語で数語クリップ（「狭すぎる」）。→**内容ハグ**: `_fitKoppenLegend` がオフスクリーンspanで最長行を実測し、行クローム＋予約gutter を加えた px 幅を直接セット（clamp 176–324・右余白内）。CSS 固定ロックを `width:210px(fallback);min-width:172px;max-width:340px` に。実測 border-box: JP 207/EN 276/DE 317/RU 307/ES 303px・**全言語クリップ0**。幅は build/表示/リサイズ時のみ決定論再計算＝縦ドラッグで不変。下端マージン 12→8px。モバイルは既存 `!important` 幅で保護。
+- **② Atlasタイポ（色分け廃止＋捏造停止）**: (a) mdMini 全見出しの `color:var(--primary-color)` を撤廃＝**`--text-main`＋サイズ(# 1.6/## 1.34/### 1.12/行全体太字 1.16em)＋余白のみ**で階層化（「目次を色分けするのはやめる／サイズと配置で勝負」）。(b) `_atlStanza` の**見出し捏造を全廃**（先頭文→太字リード・文頭 `Label:`→`##` を削除＝「大きくする箇所がおかしい／判定がおかしい」の真因）。拡大は**モデルが書いた `##`／行全体太字のみ**。整形は安全なもの（長 run-on の~2文stanza分割・list正規化・段落余白）のみ。プロンプトに「見出しは真の節タイトルのみ・普通の文を拡大するな」。
+- **③ SV Coverage 線（4回目）**: 画面ストローク≈nativeStroke×(tileSize/256)なので **`tileSize:128→64`**（z+3 fetch・~4×縮小＝**~0.9px ヘアライン**・native/overzoom いずれでも単調に細い）＋ `raster-opacity 0.9→0.62`。maxzoom は据置。
+- **④ Atls出典（「全くない」の真因）**: `_atlCleanUrl` が**復号不能 Google News リダイレクトを丸ごと drop**（近年の不透明RSS→ニュース1バッチ全滅→出典ゼロ）。→ **リンク保持**（クリックで実記事へ）し `linkCards` は**発行元名（`src`）でドメイン表示**（"news.google.com" 表記回避）。SNS/短縮/動画 drop・関連度・異script保持は不変。
+- **⑤ Draw で Elevation profile**: `_elevationProfile`（measure/area＋`measurePoints` 固定）から**再利用コア `_profileFromCoords([lng,lat][])`** を抽出（measure/area は委譲＝挙動不変）。DrawTool `renderPanel()` に `📈` ボタン（`simplified.length>=2`）→ 描いた線を同一 DEM パイプラインで断面化。5言語 `elevProfile` 既存。
+- **⑥ AQI/UVI iOS再構築**: カード全体をカテゴリ色グラデで塗り（`_wgtColor` が inline `!important` でガラス上書き制圧）、**輝度で文字色分岐**（淡色→暗文字/濃色→白）＝全段コントラスト確保。数値36px。**AQI 6段階**（4→6・Very unhealthy/Hazardous 追加）。カテゴリ名5言語（`_WL`）。データ源不変。
+- **⑦ Atls音声入力**: `.atl-inbar` に `.atl-mic`＋Web Speech API。認識言語=UI言語、結果は入力欄に挿入（確認後送信）、録音中赤パルス、非対応で非表示。5言語タイトル。
+- **⑧ Layerパネル既定=右**: `window.imLayerPanel 'classic'→'right'`（保存済み classic は優先）。
+- **⑨ 右サイドバー左右調整＋既定縮小**: 左 `#sb-resizer` 鏡写しの**左端ハンドル `.lsr-resizer`**（左移動で拡大）＋`localStorage 'intmap_lsr_w'` 永続。`open()` は**保存幅優先**（従来は毎回上書き＝ドラッグ無効化）。既定幅 **430→380px**。地図 ≥320px。
+- **⑩ オフレイヤー残存表示**: 真因＝**OFF→hide 自己修復が自動学習レイヤーに欠落**（`.setStyle` 皆無・reconcile は ON 再発火のみ）。`_auditLearned` を**両方向対応**（`!cb.checked` 早期return撤廃）＝OFF かつ painted なら hide（`_ownedByCheckedOther` で他 checked が正当に描くidは除外）。二次＝ECMWF ロード失敗で `state[id].on=false` も戻す（styledata 再attach 復活を防止）。
+
+---
+
+### #R153 補足（UX/機能バッチ8件・再報告の根本原因）
+
+`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r153-checks.test.mjs`(node 9)＋自変更で壊れた r149/r150/r151/r152 assert 更新。`npm test` 緑（static＋node 99＋Playwright 80・pageerror 0）。全修正をハーネス実測で検証。
+
+- **① ケッペン凡例（6回目）**: R152 の `nowrap`+200px+ellipsis が **EN30区分中11名をクリップ**（実測: EN名は幅216px要）＋自然高519pxが768ノート可用~514pxを5px超過＝EF到達不能。修正: 幅 **200→264px**（EN/JP/RU/ES全収・独語最長2-3のみ hover）／行 `padding:0.5px→0`＋`line-height:1.2` で**自然高489px**（全区分既定表示・EF到達）／**RU/ES 気候名を KNAME に追加**（従来 en フォールバック）。`_fitKoppenLegend`(min(内容高,vp)) は無変更＝内容高を下げるのが真因。
+- **② Measure/Share ポップアップ**: 「無条件透過するな」+「無条件不透過するな」＝**条件付き要求**。`background:var(--card-bg)`(常時不透過) → **`var(--glass-fill)`＋標準blur**＝外観設定(#R33)に従い Solid で不透過(--card-bg)・glass で frost。他ポップアップと同型。
+- **③ Atlasタイポ（3回目・描画側の真因）**: `_atlStanza` の **`>1改行→return raw`** が最頻ケース(複数段落フラット散文)を素通り。→**全面再構造化**: 段落分割・文単位 `Label:`/`背景：`→`## 見出し`・先頭文→太字リード・段落は空行 join(余白)・長連続文は~2文stanza・**CJK加重**。既 `##` 構造化済は不介入。リード 1.22→1.3em、余白 1.05→1.2em。決定論的＝IntMapAtlasDebug。
+- **④ SV Coverage 線（3回目）**: Google svv は各ネイティブzoomで一定幅描画→z19超で拡大肥大。**`tileSize:256→128`**（全zoomで~2×ダウンスケール→細線）＋**`maxzoom:19→21`**（z20/z21タイル実在をpixel実測で確認）。
+- **⑤ Companies 深い履歴**: Yahoo keyless 床は銘柄依存 1962-1985（R152到達済）・Stooqは PoW化で不可＝捏造せず。上積み＝比較 Time-series 既定 **10→20年**（深い履歴を即表示）。ピッカーは1962床維持。
+- **⑥ Atlas出典（両面再報告）**: (a) mapReport/events の**インライン `記事↗` が生URL**（アグリゲータ/SNS）＝フィルタ迂回。(b) **planner `answer` が出典を一切描画しない**（「全くない」主因）。修正: **単一 `_atlCleanUrl`** を linkCards＋両インラインリンクで共通使用／linkCards は **host-clean→関連度** の順（空バグ解消）／`answer` に web-verified 出典追加／関連度は**異script保持**。
+- **⑦ Companies 真パリティ**: 最大の手抜き＝**TS指標ピッカーが無効**（常に株価指数）。→**{Market cap 絶対$ / Share price 指数} トグルがチャート駆動**＋十字ツールチップ、generic ピッカーはTSで非表示。`/8`→`/10`（2箇所）。**ws窓に検索欄**（`#info-search-bar`＋`_companiesSearchVal`＋`#co-compare-fixed`バンドル・5言語 `filterCompaniesPh`）。**詳細に実株価スパークライン**（`priceSeriesFine`）。HQ地図/Focusは企業＝非地理のため意図的非採用。
+- **⑧ ワークスペース地図ポップアップ**: `_inWsWin()` の `panel.closest('.ws-win')` が、ws-modeで地図窓へ移設された `#map-container` 内の全ポップアップを誤判定→ドラッグkill。**`panel.parentElement` が `.ws-body`（窓の直接コンテンツ）か**に変更＝本体パネルは保護・地図ポップアップは復活。`_inWsWin2`(resize)も同修正。
+
+---
+
+### #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
+
+#### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161）
+`window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
+
+- **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
+- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas＋**#R161**: container/size/setCursor）**・`events`（on/off/once＋**#R161**: onLayer/offLayer＝**レイヤ単位のポインタイベント**）＋**#R161**: `ready()`（描画準備完了）・`layers.getPaint()`（paint 読み戻し）。
+- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
+- **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
+  - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
+- **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
+- **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋既存スモーク。
+
+#### その他12件（要点）
+①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。
+
+**重大教訓**: static-checks は**同一スコープ重複 `const` を検出不能**（`_ATL_STOP` 二重宣言でアプリ全体ブート不能＝全Playwright timeout）。**commit前に実 chromium で critical globals を必ず確認**。
+
+---
+
+### #R151 補足（UX/機能バッチ11件：ケッペン全区分停止＋行幅固定／Measure・Share集約／SV coverage自動／モニター削除でハイライト消去／Companies株価バッチ＋全史キャッシュ／Atlas出典SNS除去／Atlasトグル拡充／Terra本番検証）
+
+- **ケッペン凡例（#3・R150を上書き）**: `_fitKoppenLegend` を **`min(自然内容高, ビューポート上限)`** に（内容高は inline `height`/`max-height` を一時中和して `getBoundingClientRect` で実測→復元）。**内容<画面＝最終区分で停止**（空白ゼロ＝「すべて表示されたら止まる」）、**内容>画面＝画面下端で停止＋内側 `.kl-scroll`**。行幅固定＝`.kl-scroll{ scrollbar-gutter:stable }`（スクロールバー出没で~15px 揺れ→行 reflow が真因）。R150 の「ビューポート基準で必ず下端」は空白を生む＝要求転換で上書き。r149/r150 の #3 テストを二挙動（短vp下端／高vp内容停止）へ更新。
+- **通常モード Measure/Share 集約（#4）**: Radius を `#measure-dropdown` 内へ（Distance/area・Draw・Radius）。Screenshot＋リンクを新 `.share-menu-container`（🔗 Share ▾＝Screenshot・共有/リンク・`right:0`）へ。**ID温存**（`btn-tool-radius`/`btn-screenshot`/`btn-share`）で既存ハンドラ・モバイル `data-proxy` 不変。`shareMenuBtn`/`shareLinkBtn`/`coCompareEmpty` を5言語追加。
+- **SV coverage 自動（#8）**: `IntMapStreetView.open()` が coverage OFF 時に `coverage(true)`＋`_covAuto`（手動状態温存）、`close()`（✕も集約）で自動分のみ OFF。パノラマを開くと水色の実カバレッジ線が即表示。
+- **モニター削除でハイライト消去（#6）**: `showOnMap(area,points,monId)` に `_shownMonId` 記録（全呼出元に id）、`remove()` 成功時 `_shownMonId===id`（or 未追跡）で `clearMap()`。UI/Atlas 両経路が同一 `remove` を通る。
+- **Companies 深い歴史＋低遅延（#10）**: `_spark(syms,range,interval)` で Yahoo `v8/finance/spark` を~40銘柄バッチ（旧＝1銘柄1req）→ `loadPrices` 即着色＋未解決のみ従来チャートfallback。`_histAll()` が `spark range=max 1mo` を一度取得し `{tk:{year:年末終値}}` キャッシュ→ `setYear` 年スクラブをネット無し即時（未網羅のみ per-year fallback）・`priceSeries` も同キャッシュ。両response shape対応。
+- **Atlas出典の信頼性（#11）**: `_atlBadSourceHost`（`_SNS_RE`＝X/Twitter/FB/IG/Threads/TikTok/Reddit/YouTube/t.me/bit.ly…）で全出典カード経路（`linkCards`＝analyze/answer/mapReport）から SNS/UGC/短縮/動画を除外。`_analysisSystemPrompt` に「SNS等は出典にしない・各URLは主張を直接支持する具体ページのみ」明記。`IntMapAtlasDebug.badSourceHost/linkCards` 公開。
+- **Atlasトグル拡充（#2）**: 既存(layer/base/grid/3D/国情報/SV/borders/labels/roads/ticker)に **globe（地球儀 on/off）・compare** を `_FEAT_TOG` 追加＋projection/compare dispatch に `_featTogHtml`。
+- **タイポ（#5）**: mdMini で**行全体が `**太字**` の行を実見出し**へ（モデルは `##` より太字を多用＝モデル非依存の階層）＋段落余白 .72→.85em。answer/analysis プロンプトの FORMAT指示は既存。
+- **衛星（#7）**: `predictivePrefetch(aggressive)`＝飛行で RING 3→7・斜め角先読み・傾斜時は横一段浅も warm、飛行ループ 380→300ms＋aggressive。**3D手動 pan/rotate（pitch>25）でも `move` ごとにスロットル先読み**（従来 moveend のみ＝連続移動で先読み皆無）。既存最適化(2/5ホスト分散・native-max DEM z15・fade0・8192キャッシュ・pixelRatio上限)温存。
+- **Companies 空比較ヒント（#1）**: Countries同型は既存＋**空状態ヒント**「Tap company rows to select and compare.」（`coCompareEmpty` 5言語・`renderCoCompareFixed` が `scf-empty`）。
+- **Terra（#9）**: `AI_MODEL` secret＋`OPENAI_DEFAULT_MODEL=gpt-5.6-terra`（コメント整合・再deploy）・Luna は model_not_found のみ。**本番検証＝`current_news.analyzed_by='ai'` が 354 件**（refresh-news cron は fallback無でTerra直呼び＝ai>0 が到達の実証）。
+- テスト: `tests/r151-checks.test.mjs`(node 11) ＋ `tests/r151.spec.js`(Playwright 6)。r149/r150 のケッペン#3を R151 仕様へ、r149/r150-checks の exact-string を .85em/prefetch cadence へ更新。`npm test` 緑（node 79・Playwright 80・pageerror 0）。
+
+### #R150 補足（UX/機能バッチ10件：モニター保存の真因user_id欠落／ケッペン下端伸縮／Atlas曖昧性ゲート統一／調査回答マッピングのコード側検証／Terra採用／衛星飛行プリフェッチ）
+
+- **モニター保存（#6）**: `IntMapMonitors.create()` の挿入行が `user_id` を欠落（`area_monitors.user_id` は `not null`＋insert RLS `user_id=auth.uid()`）→ UIからの作成は毎回失敗し「Could not save the monitor.」。修正＝client が `row.user_id=currentUser.id`（他の user-owned insert と同型）＋ migration `20260721140000` で `alter column user_id set default auth.uid()`（本番適用済み・冪等）。**この機能は service_role 経由でしか検証されておらず、ログインclientの挿入経路は未検証だった**のが盲点。
+- **ケッペン凡例（#3）**: `_fitKoppenLegend` の `maxHeight` を**ビューポート基準**(`innerHeight - top - 12`、content-box分減算)に。従来の**内容高クランプは伸縮を阻害**（背の高い画面/区分少で画面下端まで引けない＝「一番下まで伸ばせない」）。CSS `max-height:calc(100dvh - 84px)` は温存、内側 `.kl-scroll` が全区分を担保。
+- **Atlas地理対象の曖昧性ゲート（#7）**: 共有 `_hlAmbigConfirm` で**単一の確認**を生成し、multi-region/single 両経路が**描画前にゲート**（曖昧が1つでもあれば `R(false,…,{meta:{partial:true}})` で停止＝何も塗らない・planner say 抑止）。従来は塗った成功の隣に `gAmbig`/`ambig` を警告として追記＝「候補確認・部分実行・成功報告・失敗警告」の同時表示が真因。個別地名ハードコード無し＝`resolveHlTarget` の `ambiguous` 判定に駆動。
+- **調査回答マッピングのコード側検証（#10）**: PURE基盤（`IntMapAtlasDebug` 公開でhermeticテスト可）＝`_atlExtractPlaces`(本文抽出=省略時安全網)／`_atlAuditSources`＋`_atlRegDomain`＋`_atlIsOfficial`(出典正規化・単一集中検出・官公庁/一次優先)／`_atlMappingVerdict`(mapped/unplaced/ambiguous)／`_atlGeocodeStrict`(同名≥2でambiguous・place型＋名称一致のみ・座標推測なし)。orchestrator `_pinReplyPlaces` は**既存ピンとMERGE**(clearしない・スキップ廃止・空catch廃止→console.warn＋正直な注記)。
+- **Atlas使用モデル（#9）**: `refresh-news`（同キー・同AI_MODEL・**モデルfallback無**）で `AI_MODEL=gpt-5.6-terra` → ai 61/63(en)・104/116(jp)成功＝**Terra再検証で到達可**。`AI_MODEL` secret=terra・ai-proxy default=terra・`FALLBACK_MODEL=luna`。
+- **タイポ（#4）**: `_atlStanza`(改行無し長塊を~2文stanzaへ)＋mdMiniで文末＋単一改行→ソフト段落余白。構造化済みは不介入。
+- **衛星3D飛行（#8）**: `predictivePrefetch` が `moveend` のみ発火→**飛行中(連続移動)は先読み皆無**が真因。`window._imPredictivePrefetch` 公開＋飛行ループで~2.6回/秒スロットル呼出。`sat-labels` を Esri 2ホストでラウンドロビン。既存最適化(2/5ホスト分散・native-max DEM・fade0・8192キャッシュ)温存。
+- **停止四角(#5)** rect 17.5→15.5。**Companies(#1)** は既に Countries 同型・`.co-logo-box` 32→30px で国旗枠と画素一致。**SVオフ(#2)** にも `_featTogHtml('streetview')`。
+- テスト: `tests/r150-checks.test.mjs`(node 12・ソース保証) ＋ `tests/r150.spec.js`(Playwright 7・業務委託の全ケースを純関数でruntime検証)。r147/r149-checksをR150差分へ更新。PR #23。
+
+### #R143 補足（Atlas地理対象解決の汎用基盤：UN M49国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答）
+
+「東西南北欧をハイライトして」で **西欧未描画・4地域同色・南欧が巨大な三角形・国境でなく雑な近似図形・未完了なのに完了報告・曖昧性の長文説明が地図操作を妨害** が同時発生。**真因＝ヨーロッパのサブ地域（西欧/東欧/南欧/北欧）が「国集合」なのにコードは `REGION_BBOX` の粗い矩形/AIポリゴンでしか解決できず**、多地域の色分け・凡例・描画前検証も無かったこと。Europe専用ハックではなく**Atlas全体の汎用基盤**として、パイプラインを **解釈→地理対象解決→実行計画→描画→実状態検証→返答** に統一。全て `index.html` 加算（単一HTML温存）。`npm test` 緑（静的＋security/monitor logic＋**Playwright 44/44**、内 `IntMapRegionResolverTest` に純検証~30件・新 `tests/r143.spec.js` 10件）。
+
+- **① UN M49 国集合（地理対象解決）**: `REGION_GROUPS` に **UN M49 のサブ地域を実 ISO3 リストで追加**（western/eastern/southern/northern europe＝**互いに素な4分割**、north/south america・caribbean・north/west/east/central/southern africa・western asia・oceania サブ地域…）＋ `europe`/`oceania` は下位の和。`regionGroup` は既存の `GROUP_ALIASES` に加え **5言語 `REGION_ALIASES` も参照**（西欧/Westeuropa/западная европа… が自動で国集合へ。国集合でない自然地域＝Sahara/Alps 等は null で従来のポリゴン経路へ）。→ `resolveHlTarget` の**グループ段（国コード）で確定**し、Nominatim/AI/矩形の不安定経路を回避＝**正式な国境 GeoJSON で描画**。標準定義があるので**不要な確認をしない**（曖昧性の壁は出ない）。
+- **② 複数地域＝グループ別色＋凡例**: highlight dispatch に**多地域分岐**（2つ以上の対象・明示単色なし・河川/流域でない・かつ少なくとも1つが国集合/地域）。各対象を**カテゴリ配色 `_HL_PALETTE` の別色**で `nlq-poly-src` に描画（国集合は `_codesGeo(codes)` で **`window.countryGeo` の実国境から MultiPolygon** 構築・内部境界は `comp:1` で淡く）、返信に**色スウォッチ凡例**（`_hlLegendHtml`：地域名＋か国数＋根拠）。単一対象/単色指定/純国リストは従来の単色 feature-state 経路（無変更）。表示名は **`M49_LABELS`（5言語）で localize**（`_hlPolys` 内部名は正準英語キー＝安定・テスト可）。
+- **③ 描画前ジオメトリ検証（ハリボテ拒否）**: `_validGeo(geo,{trusted})` が **未閉リング・退化した少頂点「巨大三角形」・異常な長辺・自己交差・全世界blob・極小スライバー・非ポリゴン**を描画前に拒否。実国境/OSM/構成境界は `trusted` で粗近似ヒューリスティックを免除、AI/派生/ソフト箱は全検査。多地域・単地域の**両経路**で適用（拒否は正直に「不正な形状のため未描画」）。`_bboxSoftPoly` も**厳密閉リング化**（`sin(2π)≠0` の隙間を解消）。
+- **④ 実状態検証＋正直返答**: 描画後に `_verifyPolyPaint(n)` で **source/layer/feature数** を確認。返信は**実行結果から合成**＝描画できた対象（凡例＋根拠）と **失敗（見つからず／不正形状で拒否／曖昧）を明確に分離**、部分失敗は `meta.partial` で**プランナーの実行前 `say` を抑止**（R140/R142 の say-gate）。
+- **④' (#R158) Terra＝意味/対象/方法の最高意思決定者、IntMap＝忠実な実行装置**: コード側の**自動補正・対象除外・意味推測を廃止**。`_hlReadGptGroups` は Terra の識別子をそのまま実行し、無効/空ISO3は**補正せず**（`resolveCountrySync` 救済を撤去）`unresolved:[{name,iso3,reason,availableIdentifiers}]` として返す（候補は**報告のみ・適用しない**）。dispatch は**構造化実行結果** `{status,action,resolved,unresolved,renderState,capabilities}`（委託書JSONスキーマ）を `R(ok,html,{meta,exec})` で返し（`cg.miss`/`_validGeo` 失敗も unresolved に観測記録）、`runActions` が `a.__exec` に保存、run() の**既存2周repairループ**が `partial_or_failed` を `pending` に投入＋`[EXECUTION RESULT …]` を repair プロンプトに添付＝**Terra自身が**修正/再検索/確認/部分採用を決める。スキーマ/型/セキュリティ/描画検証は**Terraの意味判断を覆さない観測層**として維持。`regionGroup`/legacy `countries` 経路は無改変（R143無回帰）。全アクション共通の契約（highlight が第一実装）。
+- **⑤ 堅牢性（style待機・遅延上書き・再描画）**: 世代トークン `_hlGen`＝**新しいハイライトが古い非同期解決の上書きを阻止**、描画は最大 8×0.7s のバウンド再試行、`styledata` 再描画は既存の `paintPolys` ハンドラが継続。
+- **⑥ 複合展開（頑健化）**: `_expandRegionCompound` が **「東西南北欧」→4 M49 キー**、「南北アメリカ」→2、を決定的に展開。さらに**方向欧の2語以上の共起時は M49 に正準化**（＝「北欧」は単独では北欧5国だが、四方位欧の集合内では M49 Northern Europe＝隙間なし4分割）。
+- **公開/テストAPI**: `IntMapAtlasDebug.{regionGroup,validGeo,codesGeo,expandCompound,paletteColor,legendHtml,polyState}`（純関数＝mapなしでCI検証可）。データソース変更なし（既存 `window.countryGeo` の再利用）。
+
+---
+
+### #R142 補足（UX/正直化バッチ17件：SV実Coverage再修正／Atlas正直化・全幅・Stop／シート同期／Companies順位・時間・比較・拡充／WS読込・レイヤー復帰／東西独国境／Radius整理／News媒体Wikipedia）
+
+ユーザー指摘**17件**を根本原因から修正（`index.html`＋データ `data/cshapes.js`・加算的/微修正・単一HTML温存）。着手前に並列サブエージェント6本で実地調査。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 26/26**・pageerror 0）。DOM/データ/純関数は localhost プレビューで実測。詳細は DEV-NOTES R142。
+
+- **SV実Coverage再修正（#1）**: `_nearestCoverage` の `null`（タイル遮断＝プライバシー堅牢環境）で無言のクリック点配置＝R140前と同症状→`_loadTile` に **CORSプロキシ・フォールバック**、探索半径 40→115px・z≥14、null は正直トースト（偽マーカー無し）。実測 Times Square 実スナップ。
+- **Atlas正直化（#2/#3/#9/#17）**: プランナー実行前 `say` を **視覚/状態アクション失敗 or `meta.partial/unverified` で抑止**（say-gate 拡張）。`highlight()` は feature 未ロード時 `false` 返却、highlight dispatch は部分ミスで `meta.partial`、layer dispatch は無描画で `meta.unverified`。`OVL_OF.missile` に `'blast'`、layer インライン再トグルを OFF 分岐でも出力。`toggleLayer` が **`cb` 返却**→インライン操作は `r.cb` 再利用（曖昧再解決廃止＝既定状態が実 checkbox 値）。
+- **Atlas UI（#8/#15）**: `.atl-chat` 側 padding 14→8px 等で**サイドバー全幅**。送信ボタンは応答中**赤 Stop スクエア**＝`_setGoBusy`/`_stopRun`（`_runGen++`＋`AbortController`・planner/repair の `askAIJSON` に `signal`）、`run()` を try/finally で全終了経路復帰。
+- **モバイルシート同期（#4）**: `setDetent` の settle `easeTo({padding})` 直前で **残存 `_padRAF` を cancel**（v5 `setPadding`=`jumpTo`→`stop()` が settle を中断していた）。
+- **Companies（#5/#6/#7/#13）**: 順位＝**現在指標のVALUE順位（方向非依存・最大=1）**（両レンダラ・名前ソートは正準指標フォールバック）。**タイムマシン対応**＝`IntMapCompanies.setYear(year)`（keyless v8 chart 月次年末終値→`c.hp`・`mcap()`/`priceOf()` 歴史化・`_coWireTime` 購読・正直バナー・設立前—）。**比較**＝`coCompareSet`＋行シングルクリック選択/ダブルで詳細＋sticky トレイ＋`showCoCompare`（6指標×N社横バー・時間対応）。**拡充**＝US上場27社追加（→147社・123 live）＋**TSMC(TSM) live 化**（25.93B÷5=5.186B ADS）。手法＝安定な**株数×取得価格=snapshot** 自己整合（±5×ガード通過）。新 window.*: `_coToggleCompare/_coClearCompare/_coShowCompare`。新 API: `IntMapCompanies.{setYear,priceOf,histYear}`。
+- **ワークスペース（#10/#11）**: `enable()` に**ローディングオーバーレイ**（`_wsLoadingOn/Off`・2×rAF後に重いビルド・finally 消灯）。`disable()` で**レイヤーパネルを通常復帰**（インライン幾何クリア＋`apply()`＋`_placeActiveSection`）。**副次真因修正**＝R141 Monitors 窓が `defRects()` 未登録→`clampRect(undefined)` throw（毎デスクトップ ws 起動で握り潰し破損）→`monitors:flo(3)` 追加＋`clampRect` に `r=r||[]` ガード。
+- **東西独国境（#12）**: `data/cshapes.js` の内独国境が両側独立簡略化で重なり→**西独=difference(統一 788, 東独 789)**（`polygon-clipping` で offline 再生成・overlap 0・共有頂点60・新 ring1991）。西独era を再ポイント。ビルドツール `polygon-clipping`（非コミット）。
+- **Radius整理（#14）**: プリセット＋色/透明度を `<details>`「Style & presets」開示（既定折畳・全ID温存）、スライダー＋統計は常時表示。
+- **News媒体Wikipedia（#16）**: `.news-pub` を `role="link"` 化→`<lang>.wikipedia.org/.../Special:Search&go=Go`（jp→ja・404回避・`IntMapSafe.url`）。
+
+---
+
+### #R140 補足（既知バグ6件バッチ根本修正：SV透過＋実Coverage／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期）
+
+ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の加算的/微修正（単一HTML・ビルド無し温存）。`npm test` 緑（静的89＋security-logic 10＋Playwright 18/18・pageerror 0）。詳細は DEV-NOTES R140。
+
+- **① SVポップアップを無条件で不透明化**: `#streetview-panel` の base を `var(--popup-bg)`（rgba 0.72/0.74・backdrop-filter無し＝地図が透ける）→完全不透明 `var(--card-bg)` へ。head/nav の半透明はこの不透明ベースに合成される。
+- **② SV Coverage を実データで考慮**（前身の「⑤SVカバレッジ＝ベースマップ道路を水色化」を置換）: `open()` が素のクリック点に置くだけでGoogleの実パノラマ位置を偽っていた真因を修正。Googleの**実SVカバレッジ・タイル** `mts{0-3}.google.com/vt?…lyrs=svv&style=40,18`（ACAO:*・キー/UA/Referer不要・空域=68B）を(a)Coverageモードの**実オーバーレイ**に、(b)新 `IntMapStreetView.nearestCoverage()`＝現在ズームで3×3タイルを画素サンプリング（canvas getImageData・プロキシ不要）し**最寄coverage画素へスナップ**、無ければ正直に「ここにSV無し」（`imToast`5言語）、読取不能は素点フォールバック、(c)マーカーのドラッグ終了も同スナップ。実測: Times Sq 27m・Westminster 15m吸着、Pacific/Sahara=covered:false。出典・プライバシー（JP/EN）にカバレッジ・タイル追記。
+- **③④ タイムマシン国境の間欠不表示/不更新**: `IntMapTimeBorders.apply(fc)` の style未ロード時フォールバックがワンショット `map.once('idle')`（busyマップで永久未発火＝R41で潰した同型バグの残存）→ **`whenStyleReady()`（poll＋~6s hard-resolve）＋seqガード**へ。年変更ショートサーキット2箇所にも ensure()失敗時の一回リトライ。
+- **⑤ Atlas嘘ハイライト**: 返信が**実行前プランナの `say`**（過去形「ハイライトしました」）を無条件先頭表示していた→**全滅時 or 視覚アクション（highlight/outline/draw）失敗時は `say` 抑止**し既存の正直な警告を先頭化（`runActions`）。
+- **⑥ モバイル・ボトムシート同期＝R139修正がno-op**: maplibre 5.24.0 で `setPadding(e,t)=jumpTo({padding:e},t)`＝**瞬時**（第2引数はeventData）→R139の `{duration,easing}` は黙殺され padding が跳んでいた。**`map.easeTo({padding,460ms,同cubic-bezier})`** でロックステップ化、ライブは最新値rAF＋`dragStart`で `map.stop()`。デスクトップ・サイドバーの同型no-opも `easeTo` 化。実ソースで `setPadding=jumpTo`／`easeTo`のpadding対応を確認。
+
+---
+
+### #R139 補足（Companiesタブ新設＝Information廃止／モバイル描画・レイヤーFAB・ボトムシート同期／範囲人口の進行バー正直化／現在地ボタン・時刻タブ精緻化）
+
+ユーザー要望11件。全て `index.html` の追加/微修正（既存機能削除は明示指示の Information タブのみ・単一HTML温存）。`npm test` 緑（静的91＋security-logic＋Playwright 18/18）。詳細は DEV-NOTES R139。R138（IntMapSafe 等）の上に stack。
+
+- **Companies タブ（Information 廃止→置換）**: `window.IntMapCompanies`＝**厳選120社**（`ticker,name,nJp,cc,sector,domain,founded,employees,revB,niB,sharesB,mcapSnapB` の配列）。**時価総額はライブ**＝米国上場銘柄は `shares×live price`（下部ティッカーと同じ keyless Yahoo v8 chart＋CORSプロキシラダー・並行5・5分キャッシュ・進捗で再描画）、非米上場は報告値スナップショット。**サニティガード**＝ライブ mcap がスナップショットの0.2〜5倍を外れたら誤取得（銘柄取り違え/通貨/株数誤り）とみなしスナップショットへフォールバック（ランキングを壊さない）。`renderCompanies` は Countries と同形式（`.stats-toolbar` ソートプルダウン＝時価総額/売上/純利益/P-E/従業員/株価/設立/名称＋数値フィルタ＋`.stat-rank` 順位）を `#info-dashboard` に描画。**国旗のあった位置にロゴ**＝`logo.clearbit.com`→Google favicon→モノグラムの `onerror` カスケード。行クリックで `showCompanyDetail` オーバーレイ（全指標＋サイトリンク）。`renderDashboard()` は先頭で `renderCompanies()` に委譲（全呼出元＝タブ/ws窓/検索/Supabase/キャッシュが Companies を描画・旧ダッシュボードは dead code 化）。タブ `#btn-info`（id温存・mode文字列 `'info'` 温存）を `tabCompanies` へ改称（5言語）。Atlas＝`IntMapOS 'tab.info'` ラベル改称＋NL `companies/company/企業→tab.info`。CO_SECTORS/CO_CC は5言語。出典・プライバシーに Yahoo（企業株価）・Clearbit/Google（ロゴ）を追記。
+- **範囲人口の進行バー正直化（`window._imProgCtl`）**: 真因＝WorldPop 単一リクエストは進捗%が無い（task=created/finished のみ）のに、UIは**指数イーズアウト `0.92*(1-exp(-el/9))`＝100%手前で減速し無意味**だった。修正＝共有 `_imProgCtl(box)`＝`busy()` で**不定形アニメsweep（%非表示）**、実分数が判明した瞬間 `set(f)` で**実線形（単調）**（大面積のタイル分割は tiles-done/total、radius は circles-done/N・各円の内部タイルは帯へマップ）。measure/radius/Draw の3ドライバの偽ランプ＋`_setProg` を撤去。CSS `.tp-prog.indet .tp-prog-fill`（`imProgSweep` キーフレーム）。
+- **モバイル描画（`DrawTool`）**: 真因＝(1) MapLibre がタップから合成する `click` が開始直後のストロークを `finish()` して1点で終了、(2) ヒントが「タップ」なのに実装は press-drag 必須。修正＝`_touchTs` で touch 直後の合成 click を無視、bare tap は `armed` に**再arm**（死んだ1点stateを残さない）、ヒントを coarse pointer 判定で「押したままなぞる／指を離して確定」に（5言語）。
+- **モバイル レイヤーFAB着色（task5）**: `m-fab-map` の `.on` を**衛星ベースマップ→アクティブ層有無**へ。`_refreshActiveLayers` が `window._imActiveLayerCount` を publish し変化時に `window._imSyncMobile()`。`syncControls` は `(window._imActiveLayerCount||0)>0` で着色。
+- **現在地ボタン着色（task7）**: `IntMapLocate` の `.on` を**「追跡中」→「地図中心が現在地に一致」**へ。`_mapCenterAtFix`＝`map.project` の**画面ピクセル距離≤44px**（ズーム非依存）。`move`/`moveend` と各fix・start/stop で `_syncFab`。
+- **ボトムシート↔地図同期（task8）**: スナップ時の `map.setPadding` を **300ms/既定イージング → 460ms＋シートCSSと同一 cubic-bezier(0.32,0.72,0,1)**（新 `_cubicBezier` Newton-Raphson評価器）でロックステップ。ドラッグ中のライブ padding ゲートを **5px→2px**（中心が指を追従）。
+- **タイムマシン時刻タブ精緻化（task9）**: `_applyTimeOfDay` は **Year/Date で選んだ日付**に時刻を載せ、**今日は現在時刻以降を選べない**（`allowFuture:false`＋`_timeMaxMins`＝今日は now分・過去日は1439）。スライダ max と `#ntl-time` の max を `applyMode('time')`/`refreshUI` で追従（実測: 今日=727分キャップ、1990年=1439）。
+- **Countries順位デフォルトON＋iOS風数字（task3）**: `_showRank` を `!=='off'`（既定表示）、設定既定 'on'、`.stat-rank` を `ui-rounded/SF Pro Rounded`・weight600・tabular-nums。**Companies は順位を常時表示**（時価総額ランキングのため）。
+- **ニュース白黒ボタン・地点ピルaccent（task1/2）**: R137で既済を実測再確認（`.btn-read` `#fff`/`#000`、`.loc-chip` accent）。
+- 新 window.*: `IntMapCompanies`, `renderCompanies`, `showCompanyDetail`, `setCoSort`, `toggleCoSortDir`, `_coSf*`, `_imProgCtl`, `_imActiveLayerCount`, `_imLocSyncFab`。
+
+---
+
+### #R137 補足（モバイルUI微調整／Countries順位表示／現在地ライブマーカー／タイムマシン時刻タブ／Atlas逐語重複除去）
+
+ユーザー要望10件。全て `index.html` の追加/微修正のみ（既存機能削除なし・単一HTML温存）。詳細は DEV-NOTES R137。
+
+- **モバイル選択タブ = 白/黒**: `@media(max-width:768px) .mode-btn.active` を accent 塗り→`#fff`/`#000`（デスクトップ R130 と統一）。Atlas タブは高特異度ルールで accent グラデ維持。
+- **ニュースカード**: `.btn-read`（記事を読む）＝白背景/黒文字（`.mnp-read` も）、`.loc-chip`（地点ピル）＝`var(--primary-color)`（旧ハードコード青グラデ→accent 追従）。`.unmapped`/`.publisher` の状態色は据置。
+- **Countries カード**: モバイル `.stat-row` 縦 padding 15→8px。左端に順位番号 `.stat-rank`（19px・tabular-nums・行の最左）＝`renderStats` が `window.imShowRank==='on'` 時に `i+1`（現ソート/フィルタ順）を先頭差込。設定 `#setting-showrank`（Layout & panels・既定 off）→`window.imShowRank`（load/save/open/apply・`intmap_settings` 同期）・5言語 i18n。
+- **現在地 FAB＋ライブマーカー**: `#m-fab-locate`（`.m-fab`＝Map/Tools/Compass と同一UI・compass 直下）→ `window.IntMapLocate`。MapLibre レイヤー `imloc-dot`(accent 点+白縁)/`imloc-dot-halo`/`imloc-acc-fill`+`imloc-acc-line`（`turf.circle` 精度円）を `watchPosition` で毎fix更新＝**点も円もユーザー移動に追従**。accent は `getComputedStyle('--primary-color')` を都度読取、style スワップに `styledata` で再アサート。Atlas `locate` も成功時に `IntMapLocate.start({fly:false})` 併発。新 window.*: `IntMapLocate`。
+- **タイムマシン コンパクト（モバイル）**: `@media(max-width:768px)` 拡張＝`.news-timeline .ntl-body` 幅 314→`min(290px,100vw-20)`・gap 5px、`.ntl-bigval` 26→20px、mode/now/inputs/scale/synced/chip 縮小。
+- **タイムマシン 時刻タブ**: `.ntl-modes` に `#ntl-mode-time`（時刻/Time/Zeit/Время/Hora）＋`#ntl-time`。`.ntl-mode.on` を accent→**白/黒**。`applyMode('time')`＝スライダ `0..1439`(分)・時刻ピッカー。書込 `_applyTimeOfDay`＝現在選択日（ライブなら今日）に時刻を載せ `IntMapTime.set(base,{allowFuture:true})`。**時刻依存の利用可能データ＝昼夜ターミネータ**が同期（Earth-Replay `_terminatorFC` 流用の `imtm-night` レイヤーを Time タブ表示中のみ描画）。iso(日)不変でニュース再取得スパム無し。
+- **Atlas 逐語重複除去**: 全AI自然文整形 `mdMini` 冒頭に純関数 `_dedupText`（段落＋文を正規化キー・長さ閾値15で去重・末尾空白保持で再結合＝略語/小数を壊さない）。node で10ケース実測。
+- **検証**: `npm test` 緑（静的83＋Playwright 11/11）。DOM/計算スタイル/純関数をヘッドレス実測（map は `document.hidden`/WebGL未init）。**新教訓: hidden ペインは CSS トランジション未進行 → 既存要素に class 後付け→`getComputedStyle` は遷移開始値を読む。ルール検証は fresh 要素生成で。媒体クエリは特異度を上げない（`.ntl-body` 後方グローバルに負けるので `.news-timeline` 前置で勝たせた）。**
+
+---
+
+### #R136 補足（昔年代クリックの塗り不一致／Atlasハイライト精度／歴史データ拡充）
+
+- **昔年代クリックの Compare ハイライトが誤国**（「1920sポーランドをクリック→ポーランド判定なのにドイツがハイライト」）: 真因は**検出と塗りが別ロジック**だったこと。検出 `resolveHist` は era feature の `_gw`（Gleditsch-Ward, 1925 Poland=290→POL）で正しく解決するが、Compare の塗り `IntMapTimeBorders.geomForCode(code)` は `_gw` を使わず **MODERN 国外形の内部点を多数決**しており、1925 の modern ポーランド西部（当時 Weimar ドイツ）に票が集まって **Germany のポリゴンを返していた**。修正＝`geomForCode` を**検出と同一解決に統一**（新 `_eraCodeIndex`＝各 era feature を `resolveHist` で解決した `code→features` マップ／`_unionGeom` で合成）。ただし**被覆ガード** `_bbCoverFrac`＝index結果が modern 国 bbox の30%未満なら「吸収された国の断片」（1925 RUS=Karafuto 欠片）として従来の多数決へフォールバック（RUS→ソ連全域を維持）。実測: 1925/1914/1938 で POL→ポーランド・DEU→ドイツ・RUS→ソ連 extent、SUN 等の多継承 former state は hbRe 早期パスで不変。
+- **Atlas「○○をハイライト」の見当違い**（ログアウト時の Nominatim 経路＝Web検証なしの欠陥を `IntMapAtlasDebug.resolveHl` プローブで実測特定）: `_nomExtent` に (a)`accept-language`（UI言語+en＝英語exonym「Tuscany/Persia」が地域のローカル名と突き合う） (b)**完全名一致ボーナスを重要度でゲート**（上位重要度から0.25以内でのみ0.5・下は0.08＝低重要度の同名村が Iran/伊トスカーナを食わない・大阪湾の近接タイブレークは温存） (c)**微小集落ガード**（anchor無しで hamlet/suburb 等かつ重要度<0.35 は正直な miss）。`resolveCountrySync` は**非主権ミクロ地物（`sov===false`）をゆるい部分一致で拾わない**（「Patagonia」→氷原コードSPIを解消）。`resolveHlTarget` に **curated macro-region ガード `_curatedOk`**（curated 名は範囲外の同名／範囲15%未満の微小sub-feature を棄却し gazetteer 箱へ＝Patagonia→南米、Sahel→ベルト全体）。`REGION_BBOX`＋Manchuria/Anatolia(Asia Minor)/the Levant 等＋5言語エイリアス。
+- **歴史データ拡充**: 1943 CShapes 全169 feature を `resolveHist` 監査→植民地/自治領の**modern記事フォールバック**を特定し、**en.wikipedia API で実在検証**した上で `_ERA_WIKI` に植民地期記事12件（GMB/SLE/MUS/MDV/FJI/CPV/GNB/GNQ/TLS/SLB/PNG/KWT・各独立年で終端）を追加。**`_VANISHED` に Dominion of Newfoundland**（`_GW2ISO(21)=CAN` に畳まれていた自治領）を独立identity化＝5言語名＋Union Jack 旗（新 `F_UNIONJACK`）＋`Dominion_of_Newfoundland` wiki（統計なし＝code=null の正直表示、Danzig型）。
+- **検証**: ヘッドレスでデータ層を全項目実測（地図描画は `document.hidden`/WebGL未initで不可＝R129〜R132と同様データ層で担保）。`npm test` 緑（静的83＋Playwright 11/11・AtlasQA 40/40・RegionResolver 13/13）。
+
+---
+
+### #R135 補足（Atlas 時間軸リサーチ・マッピング＝`researchMap`／Request Profile／能力レジストリ／意味的リトライ）
+
+**直接原因**: `mapReport` はプランナー上「調査結果を地図に出す汎用アクション」に見えるが、実装は **GDELT/Google News/読込済みニュースから現在の具体的事件を抽出する“ライブニュース専用”機能**。表示年1900で「当時のオホーツク海はどんな状況？地図で教えて」が `mapReport` に送られ、ライブニュース不在で失敗→repairが**表記だけ変えた再試行**（オホーツク海→Sea of Okhotsk→Okhotsk Sea）→**世界全体の1900年同盟地図へ範囲拡張**→ライブ不足警告の反復、という連鎖を起こした。これを**特定地名のハードコードではなく汎用の仕組み**で防止。
+
+- **Request Profile（`_requestProfile(q)`・純粋関数）**: プランナー呼出前に軽量な構造を生成＝`{temporalMode:historical|current|mixed|unspecified, targetYear, temporalSource:explicit|map-state|conversation|none, geoKind:water|region|city|historical-entity|unknown, evidenceMode:historical|live|mixed|none, outputs:{explanation,map,comparison}}`。**時間軸の優先順位**＝①入力内の明示年 ②「当時／この時代／そのころ」＋タイムマシン有効なら**表示年（`IntMapTime.year()`）** ③会話年（`_wctx.year`） ④表示年（非明示・非現在語） ⑤なし。**「今／最新／current」等は表示年より優先**して current に落とす（1900表示中でも「今のニュース」はライブへ）。`buildPrompt()` に **`[REQUEST PROFILE]` ブロック**（機械可読ヒント＋強制ルール）を `[CURRENT MAP STATE]` に続けて注入。
+- **`mapReport` の責務明確化**: 実装は不変（後方互換）。SYSでの意味を **「current/recent・dated・ライブニュース裏付けの事件のみ」** に限定し、過去年代・歴史背景・当時の勢力/交易/戦略的重要性・現在ニュースを要求しない安定知識には**使わない**ことを明記。
+- **`researchMap`（新アクション・historical/current/mixed）**: `{type:"researchMap",topic,place,temporalMode,year,evidenceMode}`。**文章と地図を独立生成**（§11）＝地図描画に失敗しても説明は返す。証拠は**モードで切替**（§6）＝historical は確立された歴史知識＋Wikipedia（**ライブニュース不使用**）、current はGDELT/Google News/読込済み、mixed は両方を明確に分離。`ai-proxy` の新タスク **`research_map`**（`JSON_TASKS`・`reasoning:medium`・`max_output:2600`・webMode は Profile 由来＝historical は topic の任意Web検証のみで現在ニュース非注入）が `{title,explanation,temporalBasis,items[],limitations[]}` を返す。**AIに座標を書かせない**＝`locationName+country` をクライアントで geocode。地図フォールバック（§8）＝実extent/bbox→中心→関連地点ピン。海域はポリゴン取得を成功条件にしない（`placeExtent`＋既存 `IntMapRegionResolver` を再利用）。
+- **能力レジストリ `ATLAS_ACTION_CAPABILITIES`（§7）**: 各アクションの本来能力（temporalModes/evidenceModes/outputs/geoKinds/topics）を小さく定義。
+- **実行前プラン検証 `_validatePlan(acts,profile,q)`（§7）**: 実行前に不適合アクションを**書換／追加**（repairで事後修復しない）＝①historical質問がライブ専用 `mapReport` へ→`researchMap`(historical, year保持) ②海域/地域/都市の局所質問が世界同盟地図(`historicalMap`, 非alliance)へ→`researchMap` ③説明要求なのにナビのみ→`researchMap` を追加。同盟/大戦/冷戦などの真の勢力図 `historicalMap` は温存。
+- **意味的リトライ制御（§10・§13）**: repair を **JSON完全一致でなく意味キー**で制御。`_researchFamKey`＝family+temporalMode（target非依存）で **翻訳だけの再試行を1回に畳む**。repair アクションも `_validatePlan` を通す（historical→live や 局所→世界 を禁止）。`_isWorldExpansion` で世界/大陸への範囲拡張を拒否。repair は **最大2巡**（旧3）、「近くの著名地／粗い対象」誘導を撤去し**元対象を保持したまま一段だけ拡張**に限定。地図描画失敗を回答失敗として扱わない。
+- **構造化結果 meta（§9）**: `R(ok,html,{meta})` に `{code(NO_LIVE_EVIDENCE/NO_HISTORICAL_EVIDENCE/PLACE_NOT_FOUND/NO_MAPPABLE_ITEMS…), category, retryable, semanticTarget, temporalMode, produced[], userGoalSatisfied}`。`runActions` が各アクションの結果を `_atlasOutcomes` へ収集。
+- **事後 Goal Validation（§12）**: `_goalValidation(profile,outcomes)`＝`{actionSucceeded,mapRendered,explanationProduced,geographicRelevance,temporalMatch,userGoalSatisfied}`。**「世界同盟地図の描画に成功＝オホーツク海の状況説明に成功」とは判定しない**。
+- **複合回答の統合（#R159・`runActions`／`_atlCompose`）**: `runActions` は各アクション結果を無条件連結せず **`ai.__atlResults` に記録**し、`_atlCompose(ai)` が **`_atlGoalKey`（回答系を正規化トピックで grouping・repair答は `__goalKey` 継承）＋`_atlGoalScore`（ok＋userGoalSatisfied＋produced explanation/map・partial減点）で目的単位に最良の1件だけ確定表示**。repairループは**破線dividerの別 `div` を廃止**し `runActions(ai,…)` で同一バブルへ再実行＝**成功した修復が失敗した元回答を置換**（「最初の分析＋修復後の分析の矛盾併存」を解消）。fail サマリから `actLabel`（`mapReport "Taiwan"` 等の内部名/コード/repair回数）露出を撤去。地図描画のみの失敗は分析本文を失敗扱いにしない（`researchMap` は text成功時 `ok:true`＋`produced:['explanation']`＋「地図表示のみ更新不可」を返す）。
+- **Atlas返答タイポ（#R159）**: `mdMini` は本文に**太字を出さない**（インライン `**`＋表セル→プレーン、見出し `#/##/###`＋lead は 750/800→**600 semibold**、`.atl-md-table thead th` 700→600）＋**`##` の上罫線 divider を撤去**（横線ゼロ）。色は `--text-main` のまま（R154）。
+- **デバッグ（§17）**: `window.IntMapAtlasDebug.lastPlan()`＝`{requestProfile,originalPlan,validatedPlan,rejectedActions,actionOutcomes,semanticRetries,scopeChanges,finalGoalValidation}`（通常UI非表示）。
+- **テスト**: `window.IntMapAtlasQA.run()` に R135 の純関数テスト21件を追加（**実測40/40 PASS**・従来19＋新21）＝時間軸判定（当時/1900、今→current、比較→mixed、明示1750、会話年）・地理kind・プラン検証（mapReport historical→researchMap／海域 historicalMap→researchMap／WWI同盟図温存／current mapReport温存／ナビのみ→researchMap追加）・翻訳リトライキー畳込・世界拡張ブロック・レジストリ・profileブロック・goal validation。実サイト（1900表示）で「当時のオホーツク海…」の Profile＝`historical/1900/map-state/water/explanation+map`、検証で `mapReport→researchMap(year=1900)` を実測確認。
+
+---
+
+### #R132 補足（汎用地域解決基盤 `IntMapRegionResolver`・Atlasタブ色・Objects直下ポップアップ・昔年代クリック・FS中ハイライト非表示・歴史Wiki拡充）
+
+- **汎用地域解決基盤 `window.IntMapRegionResolver`**: 未登録の自然/非公式/歴史/経済地域名（East European Plain・関東平野・パンノニア平原・チベット高原・レバント・ドンバス・サヘル・肥沃な三日月地帯…）を、**AIに境界座標を書かせず**実データで解決する汎用基盤。`resolveHlTarget` の**fuzzyテール**（旧 `aiRegionUnits`/`aiRegionPoly` の幻覚経路）をログイン時のみ本基盤へ置換（ログアウトは従来経路へ fail-open）。
+  - **サーバ**: `ai-proxy` に `geo_resolve` タスク（`JSON_TASKS`・`reasoning:"medium"`・`max_output:1800`・`webMode:required`強制）。**構造化メタデータのみ**を返す（`canonicalName/aliases/featureType/ambiguous+candidates/expectedCountries/representativePoint/expectedBbox/geometryStrategy/osmName/adminUnits/mustInclude/mustExclude/boundaryAnchors(時計回り)/confidence/sources`）。最終ポリゴンの頂点列は返さない。
+  - **クライアント配管**: `aiCallServerFull()`＝呼び出し単位の `{text,meta,citations}` エンベロープ＋`opts.signal`（実Abort）。`askAIEnvelope`/`askAIJSONEnvelope`。`aiCallServer` は薄いラッパで全既存呼び出し不変。`geoVerify` は 9秒 Promise.race を廃止し**本物の AbortController**（タイムアウトで fetch 中断・`meta.webUsed` はエンベロープから）。
+  - **解決ラダー（実データ最優先）**: `country`→`admin_union`（`composeRegion`）→`osm_polygon`（`_nomExtent` を representativePoint でアンカー）→`derived_anchors`（Web検証済みアンカーの順序リング→`turf.kinks`自己交差check→凸包、expectedBbox クリップ、`webUsed`必須）。**bboxを境界として塗る処理は撤去**（bboxは検索/選別/fit/検証のみ）。
+  - **検証ゲート `_rrValidate`（fail-closed）**: Polygon/MultiPolygon・座標有効・全世界blob棄却・面積下限・expectedBbox重なり≥0.12・mustInclude内包≥60%・mustExclude侵入≤15%・expectedCountries一致（`codeAtPoint`）。R130の中心距離方式（巨大ポリゴンほど許容も巨大）を置換。通らなければ描画せず正直に失敗。
+  - **曖昧性**: `ambiguous+candidates` を返し、ハイライトdispatchが候補提示（`lastCountry` 一致時のみ自動確定）。
+  - **キャッシュ**: セッション `Map` ＋ IndexedDB `intmap_regionresolver`（`_RR_ALGO`＋TTL 成功90日/否定7日）。
+  - **AI回数**: fuzzyテール=`geo_verify`（安価）＋`geo_resolve`（medium）各1回・以降キャッシュ0。
+  - **Atlas表示**: 「実際のOSM境界データから描画」「N行政区画の実境界を合成」「⬡ Web検証済み境界アンカーから構築した近似範囲」「曖昧なため未描画—候補提示」を返答に明示。
+  - **デバッグ/テスト**: `window.IntMapRegionResolverDebug.last`／`window.IntMapRegionResolverTest.run()`（純粋関数13項目・**実測13/13 PASS**）。
+- **Atlasタブ色（`#R114/#R130`再修正）**: 共有トークン `--atlas-grad = linear-gradient(135deg, var(--primary-color), #5e5ce6 56%, #bf5af2)`（アクセント先頭の3ストップ）で**デフォルトアクセントでも単色化しない**＆任意アクセント追随。アクティブタブ・非アクティブ枠(`::before`)・ユーザー吹き出し `.atl-b.u`・モバイルを統一。
+- **Objectsポップアップ直下化**: `IntMapObjects.open()` に `_placePanel()`＝`#btn-tool-objects` の rect に右揃え＋直下(+8px)。モバイルFAB時はFAB直上。`data-dragged` 尊重・画面内クランプ。
+- **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
+- **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
+- **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+### #R131 補足（`analyze` の鮮度検証・日付/証拠の意味づけ・多国カバレッジ・Web検証引用）
+
+「中央アジア直近72時間の監視判断」誤答（対象期間外の7/7事件を直接的証拠に使用・記事公開日を事件発生日と混同・見出しから国家間衝突と断定・燃料報道の過剰解釈・5か国中3か国のみで結論）を、**推論処理を増やさず**（AI呼び出しは従来どおり 1回・reasoning effort は medium 据置）、既存の Hosted Web Search / meta.webUsed / 引用annotation / 並列検索を**正しく接続**して根治。
+
+- **鮮度重要質問の Web検証強制（`_analyzeFreshness`）**: `analyze` は常に `webMode:"auto"`（検索は任意）だった。明示的時間窓（`_FRESH_NUM`＝「72時間/48h/直近N日」等）・最新/現在/直近（`_FRESH_NOW`）・監視/警戒/脅威度（`_FRESH_MON`）・ファクトチェック（`_FRESH_FC`）・直接的証拠/確認済（`_FRESH_DIRECT`）を5言語で検出し、`freshness.critical` なら `webMode:"required"`（検索を強制）。安定知識質問（文化/歴史/科学）は `false`＝従来どおり `auto`（応答時間・回数不変）。実測: 監視/最新/現職/FC/N時間=critical、文化/歴史/GDP比較=非critical。
+- **実クロック＋要求ウィンドウ（`_nowContext`）**: 旧プロンプトは `toISOString()` の**UTC日付のみ**（JST 0-8時は前日）で時刻もウィンドウも無し。`Intl.DateTimeFormat('sv-SE', {timeZone})` で**ローカル現在時刻＋タイムゾーン**を渡し、明示窓があれば `Requested evidence window: <now−窓> through <now>` を `[TIME CONTEXT]` に付す（テスト用に nowMs 注入可）。
+- **日付種別を明示した構造化証拠（`_analyzeEvidence`/`_evidenceBlock`）**: 3つの無日付見出しダンプ（loaded/GDELT/Google News）を、**1つの `[NEWS EVIDENCE]`**（新着順・`[eN]`ID・`article_date`＋`date_type`（publication_date／gdelt_seen_date）＋`event_date: unknown`）へ統合。各フェッチャ（`_gdeltNews`/`_gnewsNews`/`_newsData`）の srcSink push に `dateType`/`origin` を付与。モデルは**記事日付を事件日と誤認できない**。
+- **多国検索が最初の国へ縮まない**: 旧コードは `topicEn` を `codes[0]` の英名で上書き＝「中央アジア(5か国)」が Kazakhstan のみ検索。→**地域**GDELT＋**要求国のOR**GDELT（`("Kazakhstan" OR … OR "Uzbekistan")`）＋ユーザー言語Google News の3系統（GDELT2件はGDELT自IPレート配慮でジョブ内直列）。`[REQUESTED COVERAGE]` で要求国一覧を渡し、証拠が無い国は明示させる（単一国は従来挙動不変）。
+- **分析プロンプト全面改訂（`_analysisSystemPrompt`）**: 公開日/GDELT seen date ≠ 事件日／見出しは lead であり当事者・因果・国内 vs 国家間・分類を推定しない／深刻な見出し=escalationの証拠ではない／「問題を報じる記事」≠「危機が発生」／監視判断は対象窓内に確認済み事件が無ければ**低アラート（維持）を優先**／定例外交会合は短期リスクの**弱い反証**／直接的証拠・未確認兆候・背景・反証を**分離**／多国は情報不足国を明示／**ユーザー指定の出力形式を語数制限（~230語目安）より優先**／誤った "sorted newest-first" 記述を撤去。
+- **webUsed で暫定表示（最優先2）**: `freshness.critical && !meta.webUsed`（検索が走らなかった／タイムアウトでtool-free fallback）なら回答下に**暫定評価バナー**（5言語）＝見出し中心の暫定評価で確認済み直接証拠ではない旨。`webUsed` 実行時のみ「使用データ」に「ライブWeb検証」を加える（未実行を検証済みと偽らない）。
+- **ai-proxy: Web検索引用の保持＋返却（最優先3・デプロイ済）**: `callOpenAI` が Responses API の `output_text.annotations`（`url_citation`）を捨てていた。`{url,title,startIndex,endIndex}` を抽出（重複除去）→ callOpenAI 返却値＋成功レスポンス top-level `citations` に追加。client `aiCallServer` が `window._aiLastCitations` へ格納。`analyze` のソースカードは **①Web検証済み（url_citation）→②モデルが引用した収集記事→③その他の収集記事** に分離表示（収集しただけを回答根拠と同列に並べない）。
+- **プランナー**: `analyze` 説明に「名前付き多国地域／明示国セットは `place` に加え `countries` に**実際の構成国**（英名・地理知識）を入れ、`question` は完全な質問を保持」を追加（中央アジア専用コードは足さない）。
+- **回帰テスト（`window.IntMapAtlasQA`）**: 時計（2026-07-18 05:00 JST）と3見出し fixture（Kyrgyz-Uzbek国境27名拘束=seen 07-16／Kyrgyz-Tajik燃料=07-15／EU-中央アジア定例対話=07-16）を固定し、freshnessCritical・webMode=required・72h窓算出・全項目 event_date:unknown・date_type種別・国境記事がlead扱い・5か国カバレッジ明示・プロンプト各規則・単一AI呼び出しを**19項目全PASS**でヘッドレス検証。
+
+### #R129 補足（範囲人口Progress・戦間期ユーゴ・モバイル分類名・Countriesクリック国選択・歴史拡充）
+
+- **範囲人口 Progress バー（数十%→0%再スタートの根治）**: `IntMapPopArea` のコア（`done/cells.length`）は単調で正しい。UIの2ドライバ（時間ベースの漸近ランプ Driver A ／ 実タイル進捗 onProg Driver B）の**引き継ぎが非単調**だったのが原因＝大面積で最初のタイル完了に5-30秒かかる間にランプが数十%まで登り、onProg発火時に`1/タイル数`(≈3%)へ**逆戻り**していた。**#R129**: 表示フラクションの最大値を保持する `_sp`（`Math.max(shown, …)`）で単調化し、実進捗をランプ引き継ぎ点より**上の帯 `[hand,1]` に再マップ**。measure/area パネル(`#tp-pop-btn`)と自由描画パネル(`_estimateDrawPop`)の両方。実測（ロジック検証）: ランプ51.6%→引き継ぎ後52.5→…→100%、逆戻り0回。
+- **戦間期ユーゴスラビア王国 `IntMapHistStates`（クリック国選択の断片化を根治）**: CShapesは戦間期ユーゴを1ポリゴン「Yugoslavia」(gwcode 345)で描くが registry が SFRY(1945+)のみで**戦間期にエントリ無し**→クリックが現代の Serbia/Croatia/Slovenia… に**断片化**（オーストリア=ハンガリー/チェコスロバキアは単一エンティティに解決されるのに、である）。**#R129**: **Kingdom of Yugoslavia**（`code:'YGK'`, 1918-12-01〜1945-11-28, 5言語名・王国旗`F_YUGK`・`wiki:'Kingdom of Yugoslavia'`）を追加。`madCode:'YUG'` で Maddison の連続YUG系列を再利用（後継国に戦前データが無いため）。SFRYと時間的に不重複＝`activeAt()`が同時に両方を返さないので同一名衝突なし。`agg` に `madCode` サポート、`_eraLocName` は**存続期間一致を優先**（1925ラベルがSFRY名に化けない）。実測: ベオグラード/ザグレブ/リュブリャナ/サラエボ/スコピエ 1925 → すべて **Kingdom of Yugoslavia**（データ 1925=13.4M/$23.5B・1938=16.1M/$32B, Maddison実値）。SFRY(1960)・A-H(1914)・チェコスロバキア(1925)は不変。
+- **Compare クリック国選択の当時ポリゴン優先（`_pickResolve` ／ 新Countries picker）**: **#R129**: era PIP を**最小面積の内包地物**に（簡略化された当時ポリゴンが国境で重なるケースで大きな隣国を誤取得しない＝ポーランド東部Kresy→USSR誤判定を防止）。従来は最初の内包地物を採用していた。
+- **Countries 初期画面のクリック国選択ボタン**: 検索欄の右にクロスヘア（`#csearch-pick`／ws-mode `#csearch-pick-ws`、5言語 `pickCountryMap`、`flex:0 0 auto`で改行なし）。従来は開いた比較ウィンドウ内の◎のみで、初期画面のマップクリックは**現代ポリゴンの `showCountryDetail`**＝タイムトラベル中も現代国を選んでいた。**#R129**: 新picker は `resolveHist` で**era対応**解決（王国・植民地・帝国）→`_toggleCompare` で比較セットへ。`window.__scpPick` を立てて既定の country-fill / handleMapClick を抑止、ESC/再クリック/タブ離脱で解除。`renderUI` が Countries タブ時のみ `.on-tab` 表示。
+- **歴史データ拡充（継続）**: (名/旗/統計) 上記 Kingdom of Yugoslavia（王国旗・5言語名・Maddison実データ）。(Wiki) `_ERA_WIKI` にアルバニア(共和国1925-28/王国1928-39/社会主義人民共和国1946-91)・アイスランド王国・モンテネグロ王国・ネパール王国・スウェーデン=ノルウェー連合・ラオス王国を追加（全て en.wikipedia 実在をAPI確認）。
+- **#R130 素のマップクリックのera対応化（昔年代クリックの真の根治）**: R122〜R129はクロスヘアpicker/`resolveHist`（既に正しかった）を直していたが、ユーザーの実ジェスチャー＝**素のマップクリック**は era非対応の `country-fill` click ハンドラ（`resolveCountryId`→現代countryGeo）が処理していた。→タイムトラベル中は picker と同一の `TB.currentFC()` 最小面積PIP→`resolveHist` を通し**現代ポリゴンに絶対フォールバックしない**（都市ラベル下は場所優先、コードあれば `showCountryDetail(era)`、コードなし実在エンティティは `_imPlacePopup`）。hover も旅行中は現代国の強調/情報を出さない。実測: 1925 ルヴフ/ヴィリニュス/ポズナン→**POL**、ヴロツワフ→DEU(Weimar)、ダンツィヒ→Free City of Danzig。
+- **#R130 消滅国4件を `_VANISHED` に昇格（wrong-carrier根治）**: `_GW2ISO`（step2.4）が East Germany(gw265)/South Vietnam(817)/South Yemen(680)/Danzig(291) を現代キャリアに畳み、クリックで**現代旗＋間違ったera記事**になっていた（東独→西独記事等）。`_VANISHED`（step2b, gwcodeより先発火）に4件＋インラインSVG旗（F_DDR/F_RVN/F_PDRY/F_DANZIG）を追加し identity/旗/Wikipedia を正す。`IntMapHistId` に West Germany(1949-90)・Pahlavi Iran(F_IRPAHL, Persia を to:1925短縮)・Francoist Spain(F_ESPF)。`agg()` が空欄だった capital/currency/languages を `_STINFO`（15カ国）でマージ。`_ERA_WIKI` に Cambodia/Oman/Trucial States、`_ERA_LOC` に南北ベトナム/南北イエメン。
+- **#R130 Atlasハイライトのweb検索検証**: ラダーは Nominatim importance と web盲目AIトレースを無検証で信頼し「塗れば✦成功」だった。ai-proxy に `geo_verify` タスク（webMode:required・JSON・低予算）追加→**デプロイ済**。client `geoVerify(name)` が権威座標を取得（9sタイムアウト・キャッシュ・**fail-open**）→`_nomExtent(place,anchor)` の近接ボーナスで8候補から検証点に最近を選抜（同名語撃退）＋未信頼ラング（Nominatim水域/adminポリ・AIトレース・codeAtPoint）で `_geoAgrees` により明白な位置不一致を棄却（`_gvStrong`=webUsed必須でなければ棄却せず既存挙動維持）。報告に「✓ location web-verified」。
+- **#R130 その他UI**: Objectsボタンを左下FAB→右上ツールバー `#btn-tool-objects`（`objectsBtn` 5言語、`tickFab`が配線・カウント同期・オブジェクト有時のみ表示、FABはモバイル限定）。サイドバーAtlasの`addEdgeResize`辺リサイズを `_inWsWin2` に `atl-tab` skip追加で無効化（width:100%と競合しての「変なことになる」を根治）。Atlas thinking を `stageDots/setStage/_STAGE_OF` で実作業表示（Thinking/Searching/Analyzing/Mapping/Writing・5言語）。通常モード Measure/Radius の使用中(`#…​.tool-on`)を白背景黒文字（Grid/Draw不変）。左タブ News/Info/Countries active=白背景黒文字・Atlas active=`.atl-b.u`と同じアクセントグラデ。地図の国名ラベル3層（ofm-country/imtb-lbl/imtb-lbl2）の `text-transform:uppercase` 撤去で全大文字廃止。位置情報許可ボタン=1回grantで全ウィジェット再描画＋太字解除。
+
+### #R128 補足（再報告4件の根治・上記各モジュールの現状）
+
+- **範囲人口 `IntMapPopArea`（大面積失敗の根治）**: 真の失敗モードは**`fetch()`にタイムアウトが無い**こと＝WorldPop公開APIが負荷時に接続をストールさせると`Promise.all`バッチ全体が数分凍結し「失敗」。**#R128**: `_fetchT`＝AbortController付きfetch（create 30s/poll 18s中断）、固定バッチ→**staggered worker pool**、**CONC 4→2**（多タイルの持続負荷でレート制限されるため）、retry 2→4・長バックオフ、単一ポリゴンもリトライ経由、極小クリップ片(<0.05km²)スキップ。正直partialは維持。実測: 290,851km²→6/6タイル・25,316,807人・64秒（ハング根治）。
+- **昔年代クリックの決定論解決 `IntMapTimeBorders.resolveHist`**: 全CShapes era featureは`properties._gw`（Gleditsch-Wardコード）を持つが両呼出元で捨てられていた。**#R128**: `data/cshapes.js`由来の**`_GW2ISO`表（235件・単一継承コードのみ）**を追加し、step2.4＝`_gw`→現代キャリアを**境界/名前非依存**で直接解決（step1帝国・`_VANISHED`の後、BEC/PIPの前）。改名/**領土変化**国の長い尾（独帝国のポズナン/アルザス→DEU、植民地→現代後継）をPIPフォールバックに頼らず根治。多継承帝国(A-H 300/CSK 315/YUG 345)とTibet(711)は非収載でstep1/`_VANISHED`優先、`_histHidden`ガードで能動的帝国下の後継はstep3bへ委譲。実測: ポズナン→DEU（PIP=POL）。
+- **レイヤー分類名（通常モード）**: 通常/デスクトップ`.lyr-head`・`.layer-group-title`。**#R128**: 12.5px/600/muted（配下の行`.layer-option`13px/500/text-mainより小さく薄く、見出しが下位に見えた）→**15.5px/700/text-main**・上マージン14pxで明快なヘッダに（モバイル18.5px `!important`は不変）。
+- **歴史データ拡充（継続）**: (旗) `_VANISHED`の3消滅国（Tibet/East Turkestan/Manchukuo）にインラインSVG旗を追加し`resolveHist` step2b が`out.flag`を渡すよう配線（従来は旗皆無）。`IntMapHistId`のHUNに戴冠紋章旗`F_HUNK`。(統計) `IntMapHistStates` JEM（大日本帝国）に`popEst:105M/gdpEst:230/estSrc`（pre-1945後継sum崩壊の帝国推計override）。(Wiki) `_ERA_WIKI` +14（残ソ連構成共和国9＋AFG/YEM/ERI/PSE、全て実在確認）。(名) `IntMapHistId`にKOR（大韓帝国）/ETH（エチオピア帝国・帝政三色旗）の年代identity。
+
+### #R127 補足（再報告根治・上記各モジュールの現状）
+
+- **範囲人口 `IntMapPopArea`**: WorldPop 100m グリッド集計。95,000km² 超は `turf.bboxClip` でサブ上限セルにタイル分割→合算。**#R127**: 旧80セル上限を **340**（≈30M km²＝どの単一国も収容）に引き上げ（米本土48州=189/東南アジア海域=195セルは旧コードで throw していた）。各タイルは `_tileWithRetry`（60s×2回）で一過性のレート制限/タイムアウトを再試行し、**失敗タイルを0として黙殺しない**＝全失敗は throw、一部失敗は `partial:true`（件数明示・キャッシュしない）。実測: 欧州451k km²→8/8タイル・87,805,246人。
+- **Atlas 地図オーバーレイのメッセージ別トグル**: 種別ごとに共有 `nlq-*` キャンバスを1メッセージが所有（`_ovlOwn`）。**#R127**: 新描画が共有キャンバスを奪う **`runActions` の描画経路**で、所有権再設定の前に**旧所有者をそのスナップショットから自前のクローン層（`atlm<n>-*`）へ退避**（`_ovlCloneShow`＝R125で手動クリック経路が検証済の同一機構）。→ 新旧が共存し両チップともON（「新規追加で古いものが勝手にオフ」を根治）。
+- **ニュースピンの重複分散 `_spreadDupNewsPins`**: 同一アンカーに積み重なるピンを領域内に散布。**#R127**: `regionFor` が**最大リング（本土）のbbox+ポリゴン**も返し、全体bbox幅>180°（日付変更線アーティファクト＝米/露/フィジー/NZ）なら**本土リングでサンプル**（旧: 全体bbox=幅358.9°で44回中2回しかヒットせず0.12°の点に退化）。各ピンの原座標を `__oc` に保持して散布を**冪等化**し、`countryGeo` ロード完了時に `_respreadNews()` で再散布（コールドロード競合を根治）。実測: 米本土リングで30/30配置・経度41.5°×緯度17.5°。
+- **モバイル通常モードのレイヤー分類名**: `.m-sheet .lyr-head`。**#R127**: 16px（行15.5pxとの差+0.5px）で埋没していたため **18.5px/700**（行比+3px）に、上下マージン27/11pxで明快なセクションヘッダに。
+
+---
 
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*

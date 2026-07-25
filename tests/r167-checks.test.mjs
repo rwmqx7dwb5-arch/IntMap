@@ -132,7 +132,11 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   //     with the code that reads them, the company ones into js/companies-ui.js, RADIUS_PRESETS into
   //     js/tool-panel.js. Which FILE rebinds a table is not what this contract is about — that it is
   //     rebound from window.IntMapTables exactly once, and never re-declared inline, is.
-  const consumers = ['index.html', 'js/countries-ui.js', 'js/companies-ui.js', 'js/tool-panel.js'].map((p) => [p, rd(p)]);
+  //     (#R169) the same again: the publisher/demonym gazetteers went into js/news-context.js with
+  //     analyzeContext, the satellite provider table into js/satellite.js, the news editions into
+  //     js/news-feed.js and the community categories into js/community-board.js.
+  const consumers = ['index.html', 'js/countries-ui.js', 'js/companies-ui.js', 'js/tool-panel.js',
+    'js/news-context.js', 'js/satellite.js', 'js/news-feed.js', 'js/community-board.js'].map((p) => [p, rd(p)]);
   const retAt = src.lastIndexOf('return {');
   const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
   for (const t of TABLES) {

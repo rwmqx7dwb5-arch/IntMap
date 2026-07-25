@@ -2,6 +2,141 @@
 
 > A living record of *why* things are the way they are, so future sessions (human or AI) have context.
 > Keep this in sync with the code. Inline code comments reference task tags like `(#NN)`.
+>
+> ### この文書の構成 (#R169 で明文化)
+>
+> このファイルは**歴史的な事情で2つの部分がつながっている**。読む前に順序を知らないと混乱するので、
+> ここに書いておく（#R169 まで、どこにも書かれていなかった）。
+>
+> 1. **上半分（このすぐ下 〜 「R86」まで）＝ 新しい順**。1ラウンド1見出し `## R<番号> — 要約`。
+>    **新しいラウンドはファイルの先頭に足す**（標準指示 9「prepend」）。
+> 2. **下半分（`## 1. What IntMap is` 以降）＝ 古い順**。プロジェクト初期の元ノートで、
+>    番号付きの節（`## 1.` 〜）と Round 1〜85 が**古い順**に並ぶ。境界には目印を置いた。
+>
+> 役割分担：**このファイルが「いつ・なぜ・どう直したか」、`Architecture.md` が「今どうなっているか」**。
+> 仕様として残す価値のある長い注記は Architecture.md §19（ラウンド別補足）にある。
+>
+> **既知の欠落**: **R114 / R115 / R116 のラウンド見出しがこのファイルには無い**（R117 の次が R113）。
+> その3ラウンドの内容は `Architecture.md` §5（`gpt-5.6-luna` 移行・フォールバック階段・比較指標）と
+> R116/R117 以降の本文中の参照に残っている。当時の記録そのものは失われているため、
+> **後から書き足して「あったこと」にはしない**。
+
+---
+
+## R169 — **index.html リファクタリング第8弾＝「宣言」と「実行」で切る：11モジュール（−1,947行 / −155KB）＋ Architecture / DEV-NOTES の整理** (tag `#R169`)
+
+指示は2つ：**index.html を徹底的にリファクタリング**、**Architecture.md と DEV-NOTES.md の書き方の乱れ・事実との齟齬を整理**。
+
+### 1. 切り口を変えた（ここが今回の本質）
+
+#R168 で「主題」も出し切り、残ったのは **6,894行・857文のひとつの `DOMContentLoaded` クロージャ**。
+自動クラスタリングにかけると最大の塊が **1430行目〜7420行目にまたがる45KB** になる——つまり
+**もう「まとまって座っている文の集合」は存在しない**。ここで「大きい塊を探す」のをやめた。
+
+新しい軸は **その文は走るのか、宣言するだけなのか**。857文をacornで分類すると：
+
+| 種別 | 量 | 性質 |
+|---|---|---|
+| **純粋な宣言**（関数宣言／リテラル・関数だけで初期化される const・let） | **277KB / 444文** | 呼ばれるまで何も起きない |
+| **実行する文**（DOM配線・`map.on()`・ブート手順・IIFE） | 208KB / 413文 | 位置と順序に意味がある |
+
+**宣言は、いつ評価しても観測できる違いが無い。** だから宣言だけを集めたファクトリは
+**11本まとめて `map` 生成直後に生成してよい**——#R167 で踏んだ TDZ も、#R166 で神経を使った
+呼び出し順も、原理的に起こらない。そして **実行する文は1文も動かしていない**：
+このラウンドは**副作用を1つも並べ替えていない**。これが最大の安全性の根拠。
+
+**出した11本**（合計192KB。すべて `window.IntMapModules.<name>(map, IM_HOST)`）:
+`satellite.js`（衛星コントローラ 19KB）/ `ai-core.js`（Atlas AIトランスポート 24KB）/
+`place-labels.js`（地名・海洋ラベル 28KB）/ `window-manager.js`（ドラッグ/リサイズ/z順 11KB）/
+`search-geocode.js`（検索・ジオコード 15KB）/ `news-context.js`（記事→地点解決 16KB）/
+`news-feed.js`（ニュース取得 18KB）/ `article-reader.js`（サイドバーリーダー 8KB）/
+`community-board.js`（コミュニティ板 21KB）/ `map-readout.js`（座標/標高/レイヤー値/グリッド 27KB）/
+`elevation-profile.js`（標高断面 7KB）。
+
+**index.html: 7,691行/659KB → 5,744行/504KB**（#R162 からの累計 36,955行 → **−84%**）。
+
+### 2. この切り口で新しく必要になったもの
+
+- **巻き上げシムが合計108本**。`function n(){ return IM_X.n.apply(this,arguments); }`。
+  `const` は TDZ、アローは `this` 落ち——#R168 と同じ理由でこの形しか使えない。
+- **`IM_HOST` 201→253メンバー、うち RW が 29→52**。RW が増えたのは
+  「**私有状態でも、宣言だけを出すと変数の宣言文は index.html に残る**」ため。例:
+  `let elevTimer, lastElev, _elevSeq, _crLng, _crLat, lastLayerVal;` は1文で6つ宣言していて、
+  そのうち2つは index.html 側の `map.on('mouseout')` ハンドラも書く。**文は分割しない**方針なので、
+  宣言は残して RW メンバーで書き通す。
+- **罠1: オブジェクトの短縮プロパティ**。抽出スクリプトが自由識別子を `HOST.x` に書き換えるとき、
+  `{id, center, radiusKm, color}` の `radiusKm` は**キーと値が同じノード**なので、素直に置換すると
+  `{…, HOST.radiusKm, …}` という**構文エラー**になった。`{radiusKm: HOST.radiusKm}` に展開する必要がある。
+- **罠2: 既存のシムを新モジュールに吸い込む**。#R168 のシム（`function wireCommList(){ return IM_COMMUNITY…}`）
+  は「私有ヘルパー」に見えるので自動選定が拾ってしまう。シムは**分割済みモジュールへの橋**であって
+  新しい主題の一部ではないので、明示的に除外する。
+- **`++HOST.x` は書き込みである**。`++HOST._elevSeq`（標高リクエストの通し番号）は
+  r165-checks の「所有していないホストメンバーに書くモジュールは無い」検査の正規表現
+  （postfix のみ）を**すり抜けていた**。前置インクリメントも数えるよう修正——今回の発見だが、
+  穴自体は #R165 からあった。
+
+### 3. 検証
+
+- `tests/r169-checks.test.mjs`（9件）: ①11ファイル読込＋ファクトリ1つずつ＋ブートガード名指し
+  ②シム契約（エクスポート名ごとにシムはちょうど1つ・本体は index.html に無い）
+  ③**位置**——11本が `map` 生成後に1ブロック、かつ**それより前に走る文からコールグラフを辿って
+  出した名前に到達しない**（直接呼び出しだけ見ると1段挟んだ経路を見落とす）
+  ④**宣言だけであることをacornで証明**（ファクトリ直下に実行文ゼロ・初期化子が何も呼ばない）
+  ⑤バレ識別子ゼロ ⑥live getter の裏取り ⑦`check-split-scope.mjs` ⑧index.html 縮小＋本体の残留なし
+  ⑨head の不具合修正（下記）。
+- `tests/r169.spec.js`（11件・実ブラウザ）: ニュース取得→フィード30枚、`analyzeContext` が
+  実際に東京を解決、**書き通し2件**（スクロールで2バッチ目=45枚・重複ゼロ＝`renderedCount`/`newsFiltered`、
+  グリッドを2回押して確実に消える＝`isGridOn`）、検索がローカル地名で答える、
+  `window.__sat`/`window.__ai` がモジュールの実体を返す、ラベルレイヤー3種、
+  言語切替に追従、コンソールエラー0。
+- **証明しないものは書かない**: `community-board.js`（Supabase必須）・`elevation-profile.js`（実DEM必須）・
+  `article-reader.js`（到達不能）は spec 冒頭に理由を明記して**ブラウザでの主張をしていない**。
+- `npm test` 全緑（静的チェック / node 242件 / Playwright 162件）。
+
+### 4. index.html の head にあった実害のある3つ
+
+分割の作業中にファイル全体を読み直して見つけた、分割とは独立の不具合：
+
+1. **`</script>` が1つ余分**。ブラウザが黙って許容していただけの、古い編集の残骸。
+2. **MapLibre のスタイルシートが同じURLで2回 `<link>` されていた**（バイト単位で同一）。
+3. **ビルドスタンプが進んでいなかった**。`window.INTMAP_BUILD` は #R133 の
+   `'2026-07-18-R133'`、`window.__imBuild` は #R121 の `'R121-b'` のまま。
+   INTMAP_BUILD は「この端末が見た最新ビルドより古いものが来たら＝キャッシュの先祖返り」を
+   検出する #R16 のガードの**基準値そのもの**なので、進まない限りガードは事実上無効。
+   両方を `R169` 相当に更新（r169-checks #9 でピン留め）。
+
+### 5. 見つけたが**直していない**こと（製品判断が要る）
+
+**サイドバー内の記事リーダーは #R11 以降どこからも呼ばれていない。**
+`openArticleInSidebar` → `fetchReadable` → `renderReader` → `IM_NEWS_UI.renderReaderMode` という
+実装は全部生きているのに、**入口が無い**。`git log -S` で追うと #R11「revert Read->external」で
+ニュースカードの Read ボタンを外部リンクに戻したときに入口が消えている（約150ラウンド前）。
+到達不能コードだが、**消すのはリファクタリングの判断ではなく製品の判断**なので、
+`js/article-reader.js` の冒頭に所見を書いて**そのまま**出した。再配線するか削除するかは要判断。
+
+### 6. Architecture.md / DEV-NOTES.md の整理
+
+**Architecture.md**
+- 冒頭に**「この文書の読み方」**を追加＝「§1–§18 は今の姿だけ、変更ログは DEV-NOTES」という役割分担を明文化。
+  代わりに、冒頭に貼り付いたままだった **R151 の Last reviewed と R41 のラウンド要約**を撤去。
+- **事実と違っていた数字を実測値に**：§1「約15,000行・約1.4MB」（#R165 当時の値）→ 5,744行/0.49MB、
+  §3 の内訳、§14 の動作確認「レイヤー行≈72個」→ **≈130個**（`npm run test:smoke` が同じ値を検査している）。
+- **§5 に埋まっていたラウンド別変更ログ10段落を撤去**。AI の節なのに経路・Compare・レイヤー・UI の話まで入り、
+  しかも R117→R119→R118→R120→R122→R123→R124→R125→R126→R121→R118 という順で並んでいた。
+  内容は DEV-NOTES R117〜R126 に同じものがある。仕様として残す価値のある
+  **`window.IntMapLayers`（レイヤー・データ契約）だけ §7 へ移設**。
+- **§14 と §15 の間に18個バラバラの順序で挟まっていた `#Rxxx 補足` を §19 に集約**し、**新しい順**に並べ直した
+  （R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135→R132→R131→R129→R128→R127 だった）。
+  見出しも `##` → `###` に下げて §19 の子にした。
+- §3 / §3.1 に #R169 の11本と手順を追記。
+
+**DEV-NOTES.md**
+- 冒頭に**「この文書の構成」**を追加。このファイルは**上半分が新しい順（R168→R86）、
+  下半分が古い順（番号付きノート＋Round 1〜85）**という2部構成なのに、それがどこにも書かれていなかった。
+  境界にも目印の見出しを置いた。**並べ替えはしない**——4,000行ぶんの相互参照（「上で述べた」等）が全部ずれるため。
+- **R161b を R161 の上へ移動**（`b` の方が新しいのに下にあった＝新しい順の唯一の破れ）。
+- **R114 / R115 / R116 のラウンド見出しがこのファイルに存在しない**（R117 の次が R113）ことを
+  「既知の欠落」として明記。当時の記録は失われているので、**後から書き足して「あったこと」にはしない**。
 
 ---
 
@@ -515,6 +650,22 @@ index.html のクロージャ変数でないことを検証）を新設し、sta
 
 ---
 
+## R161b — **本番のみで再現した誤ピンの修正：`geo_pins` 重複が「曖昧」と誤判定され国の文脈が消えていた** (tag `#R161b`)
+
+**症状（本番検証で発見）**: `Army shells Tripoli in northern Lebanon` が**リビアの**トリポリに刺さる。ローカルでは正しくレバノン。
+
+**真因**: クライアントは `rebuildGeoIndex()` で **Supabase `geo_pins` を `register()`** する（#R161）。`geo_pins` には内蔵辞書と**同じ場所**の行があり、本番では `Lebanon` が**同一座標の2エンティティ**になっていた。`resolveMentions` の pass 1 は `ids.length !== 1` を「曖昧」とみなして**文脈シードから除外**するため、**`ctxISO` に `LB` が入らない**→ `Tripoli` の曖昧性解決から唯一の国の手がかりが消え、rank の高いリビア首都（capital ボーナス付き）が勝つ。**同一座標の重複は「曖昧」ではない**のに曖昧扱いしていたのが誤り。
+
+**修正**: `collapse(ids)` を追加——候補が全て**50km以内**なら重複とみなして1つに畳み、**最も情報量の多い候補**（iso2 を持つ方を優先、次に rank）を代表にする。畳めた場合は pass 1 で文脈シードに使い、pass 2 でもそのまま採用。加えて genuinely 別地点どうしの競合では **iso2 を持つ内蔵エントリに +2**（「運用者データはカバレッジを足すが、検証済みの地点を上書きしない」という #R161 の設計方針をスコアにも反映）。
+
+**影響範囲**: 同じクラスの誤ピンは `Toledo cathedral … in central Spain`（`Spain` も重複）→ **オハイオ州トレド**でも起きていた。両方とも本修正で解消。
+
+**なぜテストが取り逃したか（重要）**: #R161 のテストは全て **register 済みデータが空**の状態で走っていた＝**誰も配っていない辞書**で緑になっていた。`tests/fixtures/geo-pins-prod.json`（**本番の `geo_pins` 294行そのもの**・公開参照データ）を追加し、`tests/r161-checks.test.mjs` **#12b** で**本番と同じ前提**（実データ register 済み）のまま曖昧性解決・階層・トラップ・新規curated地点を検証する。ラベル付きコーパス/ホールドアウトは 100% のまま（回帰なし）。
+
+**なお** `Sudan war: RSF shells El Fasher in Darfur` が `Darfur`（より広い地域）を返すのは geo_pins の有無に関係なく同一＝**本件とは無関係**（誤りではなく粒度が粗いだけ）。切り分けずに「本番バグ」と決めつけないこと。
+
+**教訓**: 実行時に外部データを合流させる仕組みを入れたら、**テストもその外部データが入った状態で回す**こと。空の registry で緑でも本番の前提を検証したことにならない。本番検証を「ページが開くか」で終わらせず、**実際の判定を1件ずつ叩いた**ことで発見できた。
+
 ## R161 — **非AI依存のニュース地点解析システムの全面再設計（決定論エンジン `IntMapNewsGeo`）／MapLibre依存軽減 Phase 3（ニュースピン・オーバーレイを丸ごとエンジン経由へ）** (tag `#R161`)
 
 **背景（委託2件）**: (1) 以前から続けている **MapLibre依存の軽減**の続き、(2) **非AI依存のニュース地点解析システムを10倍正確に**（網羅性と正確性を徹底的に）。
@@ -564,22 +715,6 @@ index.html のクロージャ変数でないことを検証）を新設し、sta
 ### テスト/CI/デプロイ
 新規 `tests/r161-checks.test.mjs`（16件：**振る舞い**＝デートライン/曖昧性/階層/トラップ/大文字ガード/常用語/多言語/媒体名除去/無回答/決定論/速度、**計測**＝コーパス≥95%・ホールドアウト≥90%・旧比5倍以上の誤り減、**配線**＝ミラー同期・クライアント/サーバー配線・Phase 3 契約とニュース6ハンドラ移行）＋ `tests/r161.spec.js`（実Chromium 7件）＋ `tests/newsgeo-corpus.mjs` / `tests/newsgeo-holdout.mjs` / `scripts/newsgeo-eval.mjs` / `scripts/sync-newsgeo.mjs`。`scripts/static-checks.mjs` に**ミラー同期チェック**を追加（ドリフトで落ちることを負テストで確認）。`npm test` 緑（static＋node **178**＋Playwright **107**、CI条件 workers=2/retries=2）。**Edge Function `refresh-news` は変更あり＝本番デプロイ必須**。
 **罠/教訓**: (a) `index.html` は **CRLF** なので改行入りの exact-string assert は必ず落ちる（バックスラッシュ n が実改行にならない）→改行は正規表現の空白クラスで書く。(b) 自変更で **r160 #D2 の exact-string assert が破損**（render 名前空間を拡張したため）→現挙動へ更新（R152/R154/R156/R159/R160 と同じ罠、毎回起きる）。(c) 短い別名は事故のもと——`Газ`(Gaza の語幹)は露語の**「ガス」**に、`LA` は西語の**冠詞 `la`** に、`US` は英語の **`us`** に一致する。**語幹は4文字以上／頭字語は全大文字必須**で構造的に封じた。(d) hermetic Playwright は `isStyleLoaded()` が永久 false ＝ レイヤ検証不能→ベースマップ1ソースだけスタブすれば実検証できる。
-
-## R161b — **本番のみで再現した誤ピンの修正：`geo_pins` 重複が「曖昧」と誤判定され国の文脈が消えていた** (tag `#R161b`)
-
-**症状（本番検証で発見）**: `Army shells Tripoli in northern Lebanon` が**リビアの**トリポリに刺さる。ローカルでは正しくレバノン。
-
-**真因**: クライアントは `rebuildGeoIndex()` で **Supabase `geo_pins` を `register()`** する（#R161）。`geo_pins` には内蔵辞書と**同じ場所**の行があり、本番では `Lebanon` が**同一座標の2エンティティ**になっていた。`resolveMentions` の pass 1 は `ids.length !== 1` を「曖昧」とみなして**文脈シードから除外**するため、**`ctxISO` に `LB` が入らない**→ `Tripoli` の曖昧性解決から唯一の国の手がかりが消え、rank の高いリビア首都（capital ボーナス付き）が勝つ。**同一座標の重複は「曖昧」ではない**のに曖昧扱いしていたのが誤り。
-
-**修正**: `collapse(ids)` を追加——候補が全て**50km以内**なら重複とみなして1つに畳み、**最も情報量の多い候補**（iso2 を持つ方を優先、次に rank）を代表にする。畳めた場合は pass 1 で文脈シードに使い、pass 2 でもそのまま採用。加えて genuinely 別地点どうしの競合では **iso2 を持つ内蔵エントリに +2**（「運用者データはカバレッジを足すが、検証済みの地点を上書きしない」という #R161 の設計方針をスコアにも反映）。
-
-**影響範囲**: 同じクラスの誤ピンは `Toledo cathedral … in central Spain`（`Spain` も重複）→ **オハイオ州トレド**でも起きていた。両方とも本修正で解消。
-
-**なぜテストが取り逃したか（重要）**: #R161 のテストは全て **register 済みデータが空**の状態で走っていた＝**誰も配っていない辞書**で緑になっていた。`tests/fixtures/geo-pins-prod.json`（**本番の `geo_pins` 294行そのもの**・公開参照データ）を追加し、`tests/r161-checks.test.mjs` **#12b** で**本番と同じ前提**（実データ register 済み）のまま曖昧性解決・階層・トラップ・新規curated地点を検証する。ラベル付きコーパス/ホールドアウトは 100% のまま（回帰なし）。
-
-**なお** `Sudan war: RSF shells El Fasher in Darfur` が `Darfur`（より広い地域）を返すのは geo_pins の有無に関係なく同一＝**本件とは無関係**（誤りではなく粒度が粗いだけ）。切り分けずに「本番バグ」と決めつけないこと。
-
-**教訓**: 実行時に外部データを合流させる仕組みを入れたら、**テストもその外部データが入った状態で回す**こと。空の registry で緑でも本番の前提を検証したことにならない。本番検証を「ページが開くか」で終わらせず、**実際の判定を1件ずつ叩いた**ことで発見できた。
 
 ## R160 — サイドバー開閉で地図を動かさない＋幅縮小＋設定バグ／MapLibre依存軽減の続き：**左サイドバーは元の横並び（beside-flex）機構を保ったまま「単一の静止エッジ・ピン」で地図を動かさない（機構は勝手に作り変えない）／右サイドバーは地図を押さないオーバーレイ化（地図領域の位置を動かさない）／R158/R159の毎フレームresize＋エッジアンカー『ループ』は全削除／右サイドバー既定幅（340→300）／設定変更で右サイドバーが勝手に開く不具合の修正／IntMapGeoEngine（レンダラ抽象）Phase 2** (tag `#R160`)
 
@@ -2770,6 +2905,15 @@ Batch from a big feature wishlist; these three shipped solid this round (others 
 - **Multi-point route optimisation / TSP (`#R86c`).** Atlas `optimizeRoute`/`tsp`/`multiStop` — give ≥2 places (or drop pins): `_tspOrder` orders them shortest-first (nearest-neighbour + 2-opt on great-circle distance, first stop fixed as start), then the tour is DRIVEN on the OSM road network (OSRM via `IntMapRouting.route` with waypoints). Reply shows the numbered order + total time/distance. Deterministic NL (EN "optimize route through A, B, C / shortest order to visit …"; JP "A・B・Cを最短で回る / …を効率よく巡る順番"). Verified: colinear A,C,B→A,B,C; scrambled Osaka/Tokyo/Kyoto/Nagoya/Yokohama → Osaka→Kyoto→Nagoya→Yokohama→Tokyo, 548 km/7h33m via OSRM; NL patterns match, negatives excluded.
 - **Route lines coloured BY MODE on the map (`#R86d`).** Bug report: "経路の線、路線や徒歩などの種別での色分けがされていません" — on the map a transit route was drawn in ONE flat colour regardless of leg type (walk vs subway vs rail vs bus), even though the reply note claimed "乗車区間はモード別に色分けして地図表示" and the itinerary detail list already showed a per-leg colour bar. Root cause: R86b coloured each geometry by its ALTERNATIVE (`ALT_PAL`), and `_buildItin` DROPPED the per-leg mode colour — it computed `const col=_modeColor(l.mode)` but pushed only `{coords,walk}` into `lines`, never `col`. Fix (2 lines): `_buildItin` now keeps `col` on each line object; `_drawAlts` paints the **selected** route's legs by their MODE colour (`ln.col` → walk grey-dotted `#7a7f87`, subway `#ff6d00`, tram/light-rail `#00a152`, bus `#7b1fa2`, ferry `#0097a7`, rail `#1558d6`) so it now MATCHES the leg list, while **unselected** alternatives keep their single dimmed `ALT_PAL` colour — so R86b's distinct-per-alternative view is fully preserved (best of both, exactly like Google/Apple Maps: selected route shows line colours, alternatives are dim). `selectAlt(i)` re-paints alt *i* per-mode. Intercity-rail (`_renderRail`) and single-mode drive/walk/cycle already coloured by type — untouched. No data-source/Privacy/ToS change (pure rendering). **Verified** with a faithful V8 harness of the byte-identical `_buildItin`/`_drawAlts`/`_modeColor`: selected 5-leg trip → `grey,orange,grey,purple,grey` (3 distinct hues, was 5× flat blue); unselected alt → all its one palette colour; switching selection re-colours the rail leg to rail-blue. (Live map paint still can't be exercised in the hidden headless tab — `isStyleLoaded` gate — like every map layer.)
 - **Still sequenced (not this round — each is a large feature; cramming would re-introduce facades):** universal object list, unified disaster simulator, slope/aspect analysis, sun/shadow, RF/coverage, Earth Replay.
+
+---
+
+## ここから下は**古い順**（Round 1〜85 と、プロジェクト初期の番号付きノート） — 目印 (#R169)
+
+> 上（ここより前）は **R168 → R86 の新しい順**。ここから下は当時のまま**古い順**で、
+> `## 1. What IntMap is` から始まる番号付きの節と Round 1〜85 が続く。
+> 順序が途中で反転するのはこの1か所だけ。並べ替えると 4,000行ぶんの相互参照
+> （「上で述べた」「前ラウンドの」など）が全部ずれるので、**並べ替えずに目印を置く**方を選んだ。
 
 ---
 
