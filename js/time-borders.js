@@ -14,7 +14,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.timeBorders=function(map,HOST){
+window.IntMapModules.timeBorders=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
   return (function(){
     if(typeof map==='undefined'||!map||!window.IntMapTime) return {};
@@ -244,7 +248,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
         if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
         const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
-    function ensure(){ try{ if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · historical-basemaps (aourednik)'});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
@@ -677,7 +681,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
-    map.on('styledata',()=>{ if(active&&shownY!=null&&map.isStyleLoaded()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
+    map.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed

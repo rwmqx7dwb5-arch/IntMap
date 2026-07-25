@@ -18,7 +18,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.earthSky=function(map,HOST){
+window.IntMapModules.earthSky=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
@@ -43,7 +47,7 @@ window.IntMapModules.earthSky=function(map,HOST){
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html).addTo(map); }catch(_){}
     }
     let wired=false;
-    function ensureLayers(){ if(!map.isStyleLoaded()) return false;
+    function ensureLayers(){ if(!_imCanDraw()) return false;
       try{
         if(!map.getSource('l9-dams')){ map.addSource('l9-dams',{type:'geojson',data:ptFC(DAMS,'dam')});
           map.addLayer({id:'l9-dams-pt',type:'circle',source:'l9-dams',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,7,7],'circle-color':'#34c7ff','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
@@ -133,7 +137,11 @@ window.IntMapModules.earthSky=function(map,HOST){
   })();
 };
 
-window.IntMapModules.landCover=function(map,HOST){
+window.IntMapModules.landCover=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, t=HOST.t, isMobile=HOST.isMobile;
   (function(){
@@ -143,7 +151,7 @@ window.IntMapModules.landCover=function(map,HOST){
     const state={worldcover:false,ecoregions:false,plates:false};
     const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
     /* ---- ESA WorldCover (raster) ---- */
-    function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!map.isStyleLoaded()) return false;
+    function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!_imCanDraw()) return false;
       /* (#R18) maxzoom 13→14: ESA WorldCover is 10 m/px (≈ native z14), so this keeps the classes crisp one
          zoom deeper instead of upscaling a z13 tile ("画質も高めて"). At normal regional zooms the tile
          count is unchanged (maxzoom only bites when zoomed right in), so it doesn't slow the common case;
@@ -157,7 +165,7 @@ window.IntMapModules.landCover=function(map,HOST){
         map.addLayer({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}}); return true; }catch(_){ return false; } }   /* (#R40) Land cover default opacity 100% (was 0.85) per request */
     /* ---- Tectonic plates (geojson) ---- */
     let platesLoaded=false, platesLoading=false;
-    function ensurePlateLayers(){ if(map.getSource('eco-plates')) return true; if(!map.isStyleLoaded()) return false;
+    function ensurePlateLayers(){ if(map.getSource('eco-plates')) return true; if(!_imCanDraw()) return false;
       try{ map.addSource('eco-plates',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addSource('eco-plates-b',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'eco-plates-fill',type:'fill',source:'eco-plates',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','_color'],'#e8590c'],'fill-opacity':0.18}});
         map.addLayer({id:'eco-plates-line',type:'line',source:'eco-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.5,'line-opacity':0.92}});
@@ -271,7 +279,11 @@ window.IntMapModules.landCover=function(map,HOST){
   })();
 };
 
-window.IntMapModules.betaPack2=function(map,HOST){
+window.IntMapModules.betaPack2=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
   (function(){
@@ -314,7 +326,7 @@ window.IntMapModules.betaPack2=function(map,HOST){
       map.on('mouseleave',layerId,()=>{ map.getCanvas().style.cursor=''; });
     }
     /* ---------- point/line layer toggles ---------- */
-    function ptEnsure(key,src,ids){ if(map.getSource(src)) return true; if(!map.isStyleLoaded()) return false;
+    function ptEnsure(key,src,ids){ if(map.getSource(src)) return true; if(!_imCanDraw()) return false;
       try{
         map.addSource(src,{type:'geojson',data:cache[key]||{type:'FeatureCollection',features:[]}});
         map.addLayer({id:ids[0],type:'circle',source:src,layout:{visibility:'none'},paint:{
@@ -342,7 +354,7 @@ window.IntMapModules.betaPack2=function(map,HOST){
             if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。':'Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.'; el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
-    function railEnsure(){ if(map.getSource('rail-src')) return true; if(!map.isStyleLoaded()) return false;
+    function railEnsure(){ if(map.getSource('rail-src')) return true; if(!_imCanDraw()) return false;
       try{
         map.addSource('rail-src',{type:'geojson',data:cache.rail||{type:'FeatureCollection',features:[]},attribution:'Natural Earth'});
         map.addLayer({id:'rail-ln',type:'line',source:'rail-src',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#868e96'],'line-width':['interpolate',['linear'],['zoom'],2,0.7,6,1.5,10,2.6],'line-opacity':0.9}},before());
@@ -396,7 +408,7 @@ window.IntMapModules.betaPack2=function(map,HOST){
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
       const build=async()=>{
-        if(!map.isStyleLoaded()){ map.once('idle',build); return; }
+        if(!_imCanDraw()){ map.once('idle',build); return; }
         if(map.getSource(W.src)){ show(); legend(); return; }
         try{ await loadCountryData(); }catch(_){}
         if(!HOST.countryGeo||!Array.isArray(HOST.countryGeo.features)){ setTimeout(build,1200); return; }
@@ -482,7 +494,11 @@ window.IntMapModules.betaPack2=function(map,HOST){
   })();
 };
 
-window.IntMapModules.religionLang=function(map,HOST){
+window.IntMapModules.religionLang=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
   (function(){
@@ -561,7 +577,7 @@ window.IntMapModules.religionLang=function(map,HOST){
       }catch(_){} }
     function toggle(key,on){ state[key]=on;
       if(!on){ setVis(key,false); try{ window._hideGenericLegend&&window._hideGenericLegend('cat-'+key); }catch(_){} return; }
-      if(!map.isStyleLoaded()){ map.once('idle',()=>toggle(key,true)); return; }
+      if(!_imCanDraw()){ map.once('idle',()=>toggle(key,true)); return; }
       build(key);
     }
     const CLBL={religion:['宗教分布','Religion distribution'],language:['言語分布','Language distribution']};
@@ -579,7 +595,11 @@ window.IntMapModules.religionLang=function(map,HOST){
   })();
 };
 
-window.IntMapModules.timeZones=function(map,HOST){
+window.IntMapModules.timeZones=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   (function(){
@@ -606,7 +626,7 @@ window.IntMapModules.timeZones=function(map,HOST){
     function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
     function toggle(v){ on=v;
       if(v){
-        const go=()=>{ let tries=0; const apply=()=>{ if(!map.isStyleLoaded()){ if(tries++<60) setTimeout(apply,150); else map.once('idle',apply); return; } addLayers(); setVis(true);
+        const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else map.once('idle',apply); return; } addLayers(); setVis(true);
           try{ window._registerLayerOpacity&&window._registerLayerOpacity('tz',[lbl(),lbl(),lbl(),lbl()],['tzl-fill'],'dl-tz'); }catch(_){}
           try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=setInterval(refreshTimes,60000); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
         if(geo) go();
@@ -614,7 +634,7 @@ window.IntMapModules.timeZones=function(map,HOST){
           fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
         else go();
       } else { setVis(false); if(timer){ clearInterval(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
-    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(map.isStyleLoaded()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
+    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
       const lab=document.createElement('label'); lab.className='layer-option';
@@ -630,7 +650,11 @@ window.IntMapModules.timeZones=function(map,HOST){
   })();
 };
 
-window.IntMapModules.gibsScience=function(map,HOST){
+window.IntMapModules.gibsScience=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   (function(){
     if(!map) return;
     const GDATE=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -724,7 +748,7 @@ window.IntMapModules.gibsScience=function(map,HOST){
     const srcId=(L)=>'gxsrc-'+L.id, layId=(L)=>'gxlyr-'+L.id;
     const beforeLabels=()=>['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
     const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
-    function ensure(L){ try{ if(!map.isStyleLoaded()) return false;
+    function ensure(L){ try{ if(!_imCanDraw()) return false;
       if(!map.getSource(srcId(L))) map.addSource(srcId(L),{type:'raster',tiles:[urlFor(L)],tileSize:256,maxzoom:L.max,attribution:'NASA EOSDIS GIBS'});
       if(!map.getLayer(layId(L))) map.addLayer({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(e){ return false; } }

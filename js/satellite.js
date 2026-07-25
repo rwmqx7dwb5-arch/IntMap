@@ -8,7 +8,11 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satellite=function(map,HOST){
+window.IntMapModules.satellite=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const saveSatKeys=()=>{ try{ localStorage.setItem('intmap_sat_keys',JSON.stringify(HOST.satKeys)); }catch(_){} };
   const satProviderById=(id)=>HOST.SAT_PROVIDERS.find(p=>p.id===id);
   /* BYOK/paid satellite providers require Pro AND a saved key; free providers are always usable. */
@@ -25,7 +29,7 @@ window.IntMapModules.satellite=function(map,HOST){
     clearTimeout(satToast._t); satToast._t=setTimeout(()=>el.classList.remove('show'),4400);
   }
   /* Self-rescheduling style-ready guard (same pattern that fixed the layer race). */
-  function satReady(cb,n){ n=n||0; if(map&&map.isStyleLoaded()){ try{cb();}catch(_){ } return; } if(n>80) return; setTimeout(()=>satReady(cb,n+1),160); }
+  function satReady(cb,n){ n=n||0; if(_imCanDraw()){ try{cb();}catch(_){ } return; } if(n>80) return; setTimeout(()=>satReady(cb,n+1),160); }
   function satBuildTiles(p){
     const da=p.dateMode==='year'?HOST.satState.year:HOST.satState.day;
     if(p.tier==='pro'){ const k=HOST.satKeys[p.keyName]; if(!k||!String(k).trim()) return null; return p.tiles(da,String(k).trim()); }

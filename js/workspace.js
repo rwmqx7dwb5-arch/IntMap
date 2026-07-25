@@ -733,8 +733,11 @@ window.IntMapModules.workspace=function(map,HOST){
            ように") — a mode switch is a whole-app transition, so leaving the modal floating over it felt broken. */
         try{ const m=document.getElementById('settings-modal'); if(m) m.style.display='none'; }catch(_){} });
       syncModeBtn(); }
-    /* (#R101) DESKTOP DEFAULT = workspace ON (unless the user explicitly turned it off, i.e. saved on:0). */
-    const _wantWS=()=>{ try{ const s=state(); if(s.on===0||s.on===false) return false; if(s.on===1||s.on===true) return true; return !isMob(); }catch(_){ return false; } };
+    /* (#R170) DESKTOP DEFAULT = NORMAL mode ("デスクトップ版は通常モードをデフォルトに"), reversing the #R101
+       default. Workspace mode is now strictly opt-in: only an explicitly saved on:1 enters it, so a first-time
+       desktop visitor lands on the normal sidebar layout with the Countries tab open (see the fresh-boot tab
+       default in index.html). Anyone who already switched it on keeps their workspace — their saved on:1 wins. */
+    const _wantWS=()=>{ try{ const s=state(); return (s.on===1||s.on===true); }catch(_){ return false; } };
     /* (#R101) ANTI-FLICKER: pre-hide the normal-mode sidebar SYNCHRONOUSLY (before first paint) whenever we intend to
        enter workspace mode, so the page never flashes the normal layout before the windows build ("一度通常モードに
        なってからワークスペースに戻る挙動が気持ち悪い"). enable() removes .ws-boot once the windows exist; a safety

@@ -11,6 +11,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.companiesUi=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* =============================================================================
    * WEBGL PIN INFRASTRUCTURE — pins are rendered as native MapLibre circle layers
    * on the WebGL canvas. The map projection math runs on the GPU at the exact
@@ -138,7 +142,7 @@ window.IntMapModules.companiesUi=function(map,HOST){
       cos.forEach((c,i)=>{ const v=_coVal(c,k); const col=_CO_CMP_PAL[i%_CO_CMP_PAL.length]; let fill='';
         if(isFinite(v)){ const pv=(v-lo)/span*100; const l=Math.min(zero,pv), w=Math.max(1,Math.abs(pv-zero)); fill='<span class="scp-bfill" style="left:'+l.toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+col+'"></span>'; }
         const zl=(lo<0)?'<span class="scp-zline" style="left:'+zero.toFixed(2)+'%"></span>':'';
-        h+='<div class="scp-brow"><span class="scp-bnm">'+IntMapSafe.html(HOST._coName(c))+'</span><span class="scp-btrack">'+zl+fill+'</span><span class="scp-bval">'+(isFinite(v)?IntMapSafe.html(_coMetric(c,k)):'—')+'</span></div>'; });
+        h+='<div class="scp-brow"><span class="scp-bnm">'+IntMapSafe.html(HOST._coName(c))+'</span><span class="scp-btrack">'+zl+fill+'</span><span class="scp-bval">'+(isFinite(v)?(IntMapSafe.html(_coMetric(c,k))+_coAsOfChip(c,k)):'—')+'</span></div>'; });   /* (#R170) as-of stamp on every compared value */
       h+='</div>'; });
     return h||'<div class="co-ts-note">'+HOST._coL('No data for the selected metrics.','選択した指標のデータがありません。','Keine Daten.','Нет данных.','Sin datos.')+'</div>'; }
 
@@ -146,12 +150,13 @@ window.IntMapModules.companiesUi=function(map,HOST){
     let h='<div class="scp-ttools"><button data-cmpcsv="1">'+HOST._coL('Export CSV','CSV書き出し','CSV-Export','Экспорт CSV','Exportar CSV')+'</button></div><div class="scp-tblwrap"><table class="scp-tbl"><thead><tr><th>'+HOST._coL('Company','企業','Firma','Компания','Empresa')+'</th>'+ths+'</tr></thead><tbody>';
     let rows=cos.slice(); const sk=_coCmpSort.key;   /* (#R147) sort rows by the active metric column, blanks last */
     if(sk&&met.indexOf(sk)>=0){ const d=_coCmpSort.dir; rows.sort((a,b)=>{ const va=_coVal(a,sk),vb=_coVal(b,sk),fa=isFinite(va),fb=isFinite(vb); if(!fa&&!fb) return 0; if(!fa) return 1; if(!fb) return -1; return (va-vb)*d; }); }
-    rows.forEach(c=>{ h+='<tr><td>'+IntMapSafe.html(HOST._coName(c))+'</td>'+met.map(k=>'<td>'+IntMapSafe.html(_coMetric(c,k))+'</td>').join('')+'</tr>'; });
+    rows.forEach(c=>{ h+='<tr><td>'+IntMapSafe.html(HOST._coName(c))+'</td>'+met.map(k=>'<td>'+IntMapSafe.html(_coMetric(c,k))+_coAsOfChip(c,k)+'</td>').join('')+'</tr>'; });   /* (#R170) as-of stamp per cell */
     return h+'</tbody></table></div>'; }
 
   function _coCmpCsv(cos,met){ const esc=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-    const rows=[[HOST._coL('Company','企業','Firma','Компания','Empresa')].concat(met.map(k=>_coCmpMetLbl(k)))];
-    cos.forEach(c=>rows.push([HOST._coName(c)].concat(met.map(k=>{ const v=_coVal(c,k); return isFinite(v)?v:''; }))));
+    const rows=[[HOST._coL('Company','企業','Firma','Компания','Empresa')].concat(met.map(k=>_coCmpMetLbl(k))).concat(met.map(k=>_coCmpMetLbl(k)+' — '+HOST._coL('as of','時点','Stand','на дату','a fecha')))];
+    /* (#R170) the CSV gets an "as of" column beside every metric — the exported numbers must carry their dates too. */
+    cos.forEach(c=>rows.push([HOST._coName(c)].concat(met.map(k=>{ const v=_coVal(c,k); return isFinite(v)?v:''; })).concat(met.map(k=>_coAsOf(c,k)))));
     const csv='﻿'+rows.map(r=>r.map(esc).join(',')).join('\r\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download='companies-compare.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ try{ a.remove(); URL.revokeObjectURL(url); }catch(_){} },200); }
 
@@ -229,6 +234,72 @@ window.IntMapModules.companiesUi=function(map,HOST){
 
   function _coMetric(c,key){ const _pr=IntMapCompanies.priceOf(c); switch(key){ case 'rev':return HOST.fmtMoney(c.rev); case 'ni':return (c.ni<0?'-':'')+HOST.fmtMoney(Math.abs(c.ni)); case 'emp':return (c.emp?c.emp.toLocaleString():'—'); case 'fnd':return ''+c.fnd; case 'price':return _pr>0?('$'+_pr.toFixed(2)):'—'; case 'pe':{ const v=_coVal(c,'pe'); return (isFinite(v)&&v>0)?v.toFixed(1):'—'; } case 'mcap':{ const m=IntMapCompanies.mcap(c); return isFinite(m)?HOST.fmtMoney(m):'—'; } default:{ const m=IntMapCompanies.mcap(c); return isFinite(m)?HOST.fmtMoney(m):'—'; } } }
 
+  /* ===== (#R170) AS-OF STAMPS — 「Companiesのすべての数値に、その情報の年や年月、日時を書くように」 =====
+     Every number the Companies tab prints now says WHEN it is from. The stamp is derived, never guessed:
+
+       market cap / share price   time-machine year → "year-end <YYYY>";
+                                  live              → the quote's own date+time (or, if the feed gave no quote
+                                                      time, the fetch time — said as "fetched", not as a quote);
+                                  no live listing   → the curated snapshot's compile date.
+       revenue / net income /     the curated fiscal-year basis (IntMapCompanies.CURATED_FY). Deliberately a
+       employees                  BASIS, not a shared date: fiscal years end on different days per company.
+       P/E                        a live cap over a curated FY profit — so it honestly shows BOTH dates.
+       founded                    already a year; no stamp needed.
+
+     _coAsOf returns the short chip text; _coAsOfTitle the full sentence for the tooltip. */
+  function _2(n){ return (n<10?'0':'')+n; }
+  function _coDT(ms,withTime){ try{ const d=new Date(ms); if(!isFinite(d.getTime())) return '';
+      const s=d.getFullYear()+'-'+_2(d.getMonth()+1)+'-'+_2(d.getDate());
+      return withTime?(s+' '+_2(d.getHours())+':'+_2(d.getMinutes())):s; }catch(_){ return ''; } }
+  function _coYearEnd(y){ return HOST._coL('year-end '+y, y+'年末', 'Jahresende '+y, 'конец '+y, 'fin de '+y); }
+  function _coAsOf(c,key){ try{
+    const hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;
+    const FY=IntMapCompanies.CURATED_FY, SNAP=IntMapCompanies.CURATED_ASOF;
+    switch(key){
+      case 'rev': case 'ni': case 'emp': return FY;
+      case 'fnd': return '';
+      case 'price': case 'mcap': {
+        if(hy!=null) return _coYearEnd(hy);
+        const t=IntMapCompanies.priceAsOf(c);
+        if(t) return _coDT(t,true);
+        return (key==='mcap')?SNAP:'';   /* snapshot cap = compiled that day; a name with no live price has no price date */
+      }
+      case 'pe': {
+        if(!isFinite(_coVal(c,'pe'))) return '';
+        const t=(hy!=null)?_coYearEnd(hy):(IntMapCompanies.priceAsOf(c)?_coDT(IntMapCompanies.priceAsOf(c),true):SNAP);
+        return t+' / '+FY;   /* cap date / profit fiscal year — the ratio mixes two vintages, so it shows both */
+      }
+      default: return '';
+    } }catch(_){ return ''; } }
+  function _coAsOfTitle(c,key){ try{
+    const hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;
+    const FY=IntMapCompanies.CURATED_FY, SNAP=IntMapCompanies.CURATED_ASOF;
+    const L=HOST._coL;
+    if(key==='rev'||key==='ni'||key==='emp')
+      return L('Latest reported annual figures, '+FY+' basis (each company\'s own fiscal-year end). Dataset compiled '+SNAP+'.',
+               '直近の通期報告値（'+FY+'基準・会計年度末は企業ごとに異なります）。データ収録日 '+SNAP+'。',
+               'Zuletzt berichtete Jahreszahlen, Basis '+FY+' (Geschäftsjahresende je Unternehmen verschieden). Datensatz vom '+SNAP+'.',
+               'Последние годовые отчётные данные, база '+FY+' (конец финансового года у каждой компании свой). Набор данных от '+SNAP+'.',
+               'Últimas cifras anuales reportadas, base '+FY+' (cada empresa cierra su ejercicio en su propia fecha). Datos compilados el '+SNAP+'.');
+    if(key==='price'||key==='mcap'||key==='pe'){
+      if(hy!=null) return L('Share price at the '+hy+' year-end close; share counts are current.',
+                            hy+'年の年末終値ベース。株数は現在値です。','Kurs zum Jahresschluss '+hy+'; Aktienzahl aktuell.',
+                            'Цена на закрытие '+hy+' года; число акций текущее.','Precio al cierre de '+hy+'; número de acciones actual.');
+      const t=IntMapCompanies.priceAsOf(c);
+      if(t) return IntMapCompanies.priceAsOfExact(c)
+        ? L('Quote time '+_coDT(t,true)+' (your local time).','気配値時刻 '+_coDT(t,true)+'（端末のローカル時刻）。','Kurszeit '+_coDT(t,true)+' (Ortszeit).','Время котировки '+_coDT(t,true)+' (местное).','Hora de la cotización '+_coDT(t,true)+' (hora local).')
+        : L('Fetched '+_coDT(t,true)+' (the feed gave no quote time).','取得時刻 '+_coDT(t,true)+'（配信元が気配値時刻を返さなかったため）。','Abgerufen '+_coDT(t,true)+' (keine Kurszeit geliefert).','Получено '+_coDT(t,true)+' (источник не указал время котировки).','Obtenido '+_coDT(t,true)+' (la fuente no dio hora).');
+      return L('Reported market-cap snapshot, compiled '+SNAP+' (no live US listing for this name).',
+               '報告ベースの時価総額スナップショット（収録日 '+SNAP+'）。この銘柄は米国市場でのライブ価格がありません。',
+               'Berichteter Marktkapitalisierungs-Snapshot vom '+SNAP+' (keine Live-US-Notierung).',
+               'Отчётный снимок капитализации от '+SNAP+' (нет живой котировки в США).',
+               'Instantánea de capitalización reportada, compilada el '+SNAP+' (sin cotización en vivo en EE. UU.).');
+    }
+    return ''; }catch(_){ return ''; } }
+  /* the stamp as a chip, ready to append after a value */
+  function _coAsOfChip(c,key){ const s=_coAsOf(c,key); if(!s) return '';
+    return '<span class="co-asof" title="'+IntMapSafe.html(_coAsOfTitle(c,key))+'">'+IntMapSafe.html(s)+'</span>'; }
+
   const _coLogoCache=new Map();
 
   function _coLogoInner(dom,nm,hue){
@@ -281,14 +352,17 @@ window.IntMapModules.companiesUi=function(map,HOST){
       return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${HOST._sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${HOST._sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${HOST.coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${HOST._sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
     let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setCoSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${HOST.coSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleCoSortDir()" title="${HOST.t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${sfPanel}`;
     const _hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;   /* (#R142) time-machine year (null = present) */
-    html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${HOST.lang==='jp'?'年':''}</b> · ${HOST._coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')}</div>`:`<div class="stats-timebanner co-banner">${HOST._coL('Market cap live where available · figures: latest reported','時価総額は可能な限りライブ · 指標は最新の報告値','Marktkap. live, wo verfügbar · Angaben: zuletzt berichtet','Капитализация в реальном времени, где возможно · показатели: последние отчётные','Cap. en vivo cuando es posible · cifras: últimas reportadas')}</div>`;
+    /* (#R170) the banner now names the exact vintages the per-row chips use, instead of a vague
+       "latest reported" — header and rows must tell the same story. */
+    const _FY=IntMapCompanies.CURATED_FY, _SNAP=IntMapCompanies.CURATED_ASOF;
+    html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${HOST.lang==='jp'?'年':''}</b> · ${HOST._coL('market cap at the '+_hy+' year-end close · current share counts · revenue / profit / employees on a '+_FY+' basis','時価総額は'+_hy+'年の年末終値ベース · 株数は現在値 · 売上・利益・従業員数は'+_FY+'基準','Marktkap. zum Jahresschluss '+_hy+' · heutige Aktienzahl · Umsatz/Gewinn/Mitarbeiter auf Basis '+_FY,'капитализация на закрытие '+_hy+' года · число акций текущее · выручка/прибыль/сотрудники — база '+_FY,'cap. al cierre de '+_hy+' · acciones actuales · ingresos/beneficio/empleados base '+_FY)}</div>`:`<div class="stats-timebanner co-banner">${HOST._coL('Market cap and share price live where available — each value is stamped with its quote time · revenue / profit / employees on a '+_FY+' basis · reported snapshots compiled '+_SNAP,'時価総額・株価は可能な限りライブ（各値に取得時刻を表示） · 売上・利益・従業員数は'+_FY+'基準 · 報告ベースのスナップショットは'+_SNAP+'収録','Marktkap. und Kurs live, wo verfügbar — jeder Wert mit Kurszeit · Umsatz/Gewinn/Mitarbeiter Basis '+_FY+' · berichtete Snapshots vom '+_SNAP,'Капитализация и цена — в реальном времени, где возможно (у каждого значения указано время) · выручка/прибыль/сотрудники — база '+_FY+' · отчётные снимки от '+_SNAP,'Cap. y precio en vivo cuando es posible — cada valor lleva su hora · ingresos/beneficio/empleados base '+_FY+' · instantáneas reportadas del '+_SNAP)}</div>`;
     if(!arr.length) html+=`<div class="empty-msg">${HOST.t('noMatch')}</div>`;
     arr.forEach((c,i)=>{ const nm=HOST._coName(c);
       const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
       const logo=_coLogoInner(c.dom,nm,hue);   /* (#R147) cached-logo builder — no flicker */
-      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
+      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div></div>`;
     });
     const st0=feed.scrollTop;
     feed.innerHTML=html;
@@ -310,13 +384,15 @@ window.IntMapModules.companiesUi=function(map,HOST){
     const nm=HOST._coName(c); const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
     const mc=IntMapCompanies.mcap(c), live=IntMapCompanies.isLive(c);
     const peV=_coVal(c,'pe');
-    const rows=[ [HOST._coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil'), HOST.fmtMoney(mc)+' · '+(live?HOST._coL('live','ライブ','live','в реальном времени','en vivo'):HOST._coL('reported','報告値','berichtet','отчёт','reportado'))],
-      [HOST._coL('Share price','株価','Aktienkurs','Цена акции','Precio acción'), c.price>0?('$'+c.price.toFixed(2)):'—'],
-      [HOST._coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E'), (isFinite(peV)&&peV>0)?peV.toFixed(1):'—'],
-      [HOST._coL('Revenue','売上高','Umsatz','Выручка','Ingresos'), HOST.fmtMoney(c.rev)],
-      [HOST._coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto'), (c.ni<0?'-':'')+HOST.fmtMoney(Math.abs(c.ni))],
-      [HOST._coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados'), c.emp?c.emp.toLocaleString():'—'],
-      [HOST._coL('Founded','設立年','Gegründet','Год основания','Fundada'), ''+c.fnd],
+    /* (#R170) 3rd element = the metric key, so every numeric row can carry its own as-of stamp. */
+    const _hp=IntMapCompanies.priceOf(c);
+    const rows=[ [HOST._coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil'), (isFinite(mc)?HOST.fmtMoney(mc):'—')+' · '+(live?HOST._coL('live','ライブ','live','в реальном времени','en vivo'):HOST._coL('reported','報告値','berichtet','отчёт','reportado')), 'mcap'],
+      [HOST._coL('Share price','株価','Aktienkurs','Цена акции','Precio acción'), _hp>0?('$'+_hp.toFixed(2)):'—', 'price'],
+      [HOST._coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E'), (isFinite(peV)&&peV>0)?peV.toFixed(1):'—', 'pe'],
+      [HOST._coL('Revenue','売上高','Umsatz','Выручка','Ingresos'), HOST.fmtMoney(c.rev), 'rev'],
+      [HOST._coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto'), (c.ni<0?'-':'')+HOST.fmtMoney(Math.abs(c.ni)), 'ni'],
+      [HOST._coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados'), c.emp?c.emp.toLocaleString():'—', 'emp'],
+      [HOST._coL('Founded','設立年','Gegründet','Год основания','Fundada'), ''+c.fnd, 'fnd'],
       [HOST._coL('Sector','セクター','Sektor','Сектор','Sector'), _coSec(c.sec)],
       [HOST._coL('Headquarters','本社','Hauptsitz','Штаб-квартира','Sede'), (_coFlag(c.cc)?_coFlag(c.cc)+' ':'')+_coCountry(c.cc)] ];
     const site='https://'+c.dom;
@@ -324,7 +400,7 @@ window.IntMapModules.companiesUi=function(map,HOST){
       `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue)}</span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
       `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button></div>`+
-      `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}</b></div>`).join('')}</div>`+
+      `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}${r[2]?_coAsOfChip(c,r[2]):''}</b></div>`).join('')}</div>`+
       (c.sh>0?`<div class="co-detail-spark" id="co-detail-spark"><div class="co-spark-note">${HOST._coL('Loading share-price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')}</div></div>`:'')+
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
     document.body.appendChild(ov);
@@ -408,7 +484,7 @@ window.IntMapModules.companiesUi=function(map,HOST){
     }}));
     /* Ensure pin layers exist NOW. Without this, on first tab-switch the source may not yet
        have been created → pins appeared with a delay. */
-    if(map&&map.isStyleLoaded()) HOST.setupIntelLayers();
+    if(_imCanDraw()) HOST.setupIntelLayers();
     if(map&&map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:HOST.dashFeatures});
     /* Sidebar cards */
     let cards='<div class="dash-cards-container">';

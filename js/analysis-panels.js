@@ -18,7 +18,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.timeSeries=function(map,HOST){
+window.IntMapModules.timeSeries=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   window.IntMapTimeSeries=(function(){
     const jp=()=>HOST.lang==='jp';
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
@@ -292,7 +296,11 @@ window.IntMapModules.aiResearch=function(map,HOST){
   })();
 };
 
-window.IntMapModules.correlate=function(map,HOST){
+window.IntMapModules.correlate=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats, t=HOST.t, loadCountryData=HOST.loadCountryData, addCountryLayers=HOST.addCountryLayers;
   (function(){
@@ -443,7 +451,7 @@ window.IntMapModules.correlate=function(map,HOST){
     }
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
-    function ensureCountriesSrc(cb){ try{ if(map.getSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!map.getSource('countries')&&map.isStyleLoaded()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
+    function ensureCountriesSrc(cb){ try{ if(map.getSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!map.getSource('countries')&&_imCanDraw()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
     /* (#R41) Diverging RdBu ramp — the residual map now uses a GRADED multi-hue scale (deep red → orange →
        light → light blue → deep blue), not the old two flat colors with faint alpha ("青と赤二色だけで塗れと
        なんかいっていない"). n∈[-1,1]: +1 = far ABOVE the fit (deep blue), −1 = far BELOW (deep red), 0 ≈ on the
@@ -489,7 +497,11 @@ window.IntMapModules.correlate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.worldEvents=function(map,HOST){
+window.IntMapModules.worldEvents=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const renderDashboard=HOST.renderDashboard, setupIntelLayers=HOST.setupIntelLayers;
   (function(){
@@ -643,7 +655,7 @@ window.IntMapModules.worldEvents=function(map,HOST){
       const list=EVENTS_DB.filter(e=> e.y>=yMin && e.y<=yMax && (!q || ((e.en+' '+e.jp+' '+e.den+' '+e.djp+' '+e.y+' '+e.tp).toLowerCase().includes(q)))).sort((a,b)=>b.y-a.y);
       /* pins */
       try{
-        if(map&&map.isStyleLoaded()) setupIntelLayers();
+        if(_imCanDraw()) setupIntelLayers();
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:(jp?e.jp:e.en)+' ('+e.y+')',body:jp?e.djp:e.den,layerRef:''}}));
         if(map&&map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:feats});
       }catch(_){}

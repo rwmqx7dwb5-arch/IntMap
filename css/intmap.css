@@ -232,6 +232,12 @@
     .co-detail-rows{ display:flex; flex-direction:column; }
     .co-drow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 2px; border-bottom:1px solid rgba(128,128,128,0.16); font-size:13.5px; }
     .co-drow:last-child{ border-bottom:none; }
+    /* (#R170) as-of stamp printed under every Companies figure ("すべての数値に、その情報の年や年月、日時を書く").
+       Its own line, small and muted, so it dates the value without competing with it. */
+    .co-asof{ display:block; font-size:9.5px; font-weight:400; line-height:1.25; color:var(--text-muted); opacity:0.8; font-variant-numeric:tabular-nums; white-space:nowrap; margin-top:1px; letter-spacing:0.01em; }
+    .co-drow b .co-asof{ text-align:right; }
+    .scp-bval .co-asof{ text-align:right; }
+    .scp-tbl td .co-asof{ text-align:left; }
     .co-drow span{ color:var(--text-muted); } .co-drow b{ font-variant-numeric:tabular-nums; text-align:right; }
     .co-detail-link{ display:inline-block; margin-top:12px; font-size:13px; color:var(--primary-color); text-decoration:none; font-weight:600; }
     .co-detail-link:hover{ text-decoration:underline; }
@@ -377,6 +383,12 @@
     }
     .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
+    /* (#R170) Measure ▸ 3-D volume — the altitude band. Two number fields side by side so the "from … to …"
+       reads as one range; they re-extrude the box on every keystroke. */
+    .v3d-alt{ display:flex; gap:8px; margin:2px 0 6px; }
+    .v3d-alt label{ flex:1; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); }
+    .v3d-alt input{ flex:1; min-width:0; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:5px 6px; font-size:12.5px; font-variant-numeric:tabular-nums; }
+    .v3d-alt input:focus{ outline:none; border-color:var(--primary-color); }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
     .tp-foot-btns{ display:flex; gap:6px; } .tp-foot-btns .tp-clear{ flex:1; }
     /* (#R9) AI buttons stay clickable without a key so pressing them shows the "add a key in Settings"
@@ -843,7 +855,9 @@
     .nrp-iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; background:#fff; }
     .nrp-webnote{ position:absolute; top:0; left:0; right:0; padding:14px 16px; font-size:12px; color:var(--text-muted); background:var(--card-bg); z-index:1; line-height:1.5; }
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
-    .map-search{ position:absolute; top:24px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
+       (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
+    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(10,132,255,0.18); }
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }

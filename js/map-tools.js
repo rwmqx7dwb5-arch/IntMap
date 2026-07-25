@@ -19,7 +19,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.projView=function(map,HOST){
+window.IntMapModules.projView=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   window.ProjView=(function(){
     const RAD=Math.PI/180, EARTH_KM=6371;
     let host=null, cv=null, ctx=null, sel=null, titleEl=null, entry=null, mEntry=null;
@@ -364,14 +368,18 @@ window.IntMapModules.drawTool=function(map,HOST){
   })();
 };
 
-window.IntMapModules.isolate=function(map,HOST){
+window.IntMapModules.isolate=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, loadCountryData=HOST.loadCountryData;
   window.IntMapIsolate=(function(){
     if(!map) return { enter(){}, exit(){}, active:()=>false };
     const jp=()=>HOST.lang==='jp'; let active=false, btn=null;
     function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
-    function ensure(){ if(map.getSource('iso-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ if(map.getSource('iso-src')) return true; if(!_imCanDraw()) return false;
       try{ map.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
         return true;
@@ -456,7 +464,11 @@ window.IntMapModules.isolate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.seaRoute=function(map,HOST){
+window.IntMapModules.seaRoute=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t, fmtLL=HOST.fmtLL, makeDraggable=HOST.makeDraggable;
   window.IntMapRoute=(function(){
@@ -551,7 +563,7 @@ window.IntMapModules.seaRoute=function(map,HOST){
     function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/6)); let nearCoast=0; for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); const cv=grid.cell[c.y*W+c.x]; if(cv===2) return false; if(inNoGo(lng,lat)) return false; if(cv===1) nearCoast++; } return nearCoast<=Math.max(2,Math.floor(n*0.5)); }
     function stringPull(path){ if(path.length<3) return path; const out=[path[0]]; let i=0; while(i<path.length-1){ let j=path.length-1; for(;j>i+1;j--){ if(Math.abs(path[j][0]-path[i][0])>170) continue; if(seaLineClear(path[i],path[j])) break; } out.push(path[j]); i=j; } return out; }
     /* --- layers --- */
-    function ensureLayers(){ if(map.getSource('route-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ensureLayers(){ if(map.getSource('route-src')) return true; if(!_imCanDraw()) return false;
       try{ map.addSource('route-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'route-nogo',type:'fill',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'fill-color':'#ff3b30','fill-opacity':0.16}});
         map.addLayer({id:'route-nogo-line',type:'line',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'line-color':'#ff3b30','line-dasharray':[2,2],'line-width':1.2,'line-opacity':0.7}});
@@ -627,7 +639,11 @@ window.IntMapModules.seaRoute=function(map,HOST){
   })();
 };
 
-window.IntMapModules.los=function(map,HOST){
+window.IntMapModules.los=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const hasTurf=HOST.hasTurf, isMobile=HOST.isMobile, _demZoomForSpan=HOST._demZoomForSpan, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear, demElevAt=HOST.demElevAt, t=HOST.t, makeDraggable=HOST.makeDraggable;
   window.IntMapLOS=(function(){
@@ -641,7 +657,7 @@ window.IntMapModules.los=function(map,HOST){
       const pct=Math.round(Math.max(0,Math.min(1,frac))*100);
       body.innerHTML='<div style="margin-bottom:5px;">'+label+' <b>'+pct+'%</b></div>'+
         '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></div></div>'; }
-    function ensureLayers(){ if(map.getSource('los-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ensureLayers(){ if(map.getSource('los-src')) return true; if(!_imCanDraw()) return false;
       try{ map.addSource('los-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         /* (#R13) Per the user's spec: REACHABLE range = RED fill, radar BLIND SPOTS = GREEN fill
            (the previous build had these inverted). Cover is drawn first so the green shadow reads on top. */

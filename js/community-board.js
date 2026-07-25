@@ -8,7 +8,11 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.communityBoard=function(map,HOST){
+window.IntMapModules.communityBoard=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const commCatById=(id)=>HOST.COMM_CATEGORIES.find(c=>c.id===id)||HOST.COMM_CATEGORIES[0];
   const commCatLabel=(id)=>{ const c=commCatById(id); return c.label[HOST.lang]||c.label.en; };
   /* Deterministic avatar (colored initial) from a display name. */
@@ -32,7 +36,7 @@ window.IntMapModules.communityBoard=function(map,HOST){
   /* "Hot" ranking — recent + upvoted + discussed floats to the top (Reddit-style decay). */
   function hotScore(p){ const ageH=(Date.now()-p.ts)/3.6e6; return ((p.votes||0)+0.5*((p.comments||[]).length)+1)/Math.pow(ageH+2,1.3); }
   function setupCommunityLayer(){
-    if(!map||!map.isStyleLoaded()) return;
+    if(!_imCanDraw()) return;
     if(!map.getSource('community-points')){
       /* Color pins by post category (falls back to green for un-categorised). */
       const catColor=['match',['get','cat']].concat(HOST.COMM_CATEGORIES.flatMap(c=>[c.id,c.color])).concat(['#34c759']);

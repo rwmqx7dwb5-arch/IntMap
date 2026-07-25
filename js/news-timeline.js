@@ -9,7 +9,11 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.newsTimeline=function(map,HOST){
+window.IntMapModules.newsTimeline=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const ymdISO=HOST.ymdISO, fetchData=HOST.fetchData;
   /* ================ END GROUP 4 (Pro removed) ================ */
 
@@ -43,7 +47,7 @@ window.IntMapModules.newsTimeline=function(map,HOST){
       window.IntMapTime.set(base,{allowFuture:false,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
-    function _tmTerminator(show){ try{ const m=window.__imap||(typeof map!=='undefined'?map:null); if(!m||!m.isStyleLoaded||!m.isStyleLoaded()) return;
+    function _tmTerminator(show){ try{ const m=window.__imap||(typeof map!=='undefined'?map:null); if(!m||!_imCanDraw()) return;
       const has=!!(m.getSource&&m.getSource('imtm-night'));
       if(!show){ if(has){ try{ m.getSource('imtm-night').setData({type:'FeatureCollection',features:[]}); }catch(_){} } return; }
       if(!has){ try{ m.addSource('imtm-night',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); m.addLayer({id:'imtm-night',type:'fill',source:'imtm-night',paint:{'fill-color':'#04070f','fill-opacity':0.33}}); }catch(_){ return; } }

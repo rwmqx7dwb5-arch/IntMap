@@ -48,7 +48,7 @@ window.IntMapModules.toolPanel=function(map,HOST){
         try{ const gc=turf.greatCircle(turf.point(last),turf.point(HOST.liveCursor),{npoints:32}); gc.properties={...(gc.properties||{}),preview:true}; f.push(gc); }
         catch(e){ f.push({type:'Feature',geometry:{type:'LineString',coordinates:[last,HOST.liveCursor]},properties:{preview:true}}); }
       }
-    } else if(HOST.toolMode==='area'){
+    } else if(HOST.toolMode==='area'||HOST.toolMode==='volume'){   /* (#R170) the 3-D volume footprint previews like an area ring */
       if(HOST.measurePoints.length>=3){
         /* Great-circle polygon, antimeridian + pole safe (#5): build the ring in continuous lon,
            then split into pieces that each stay inside [-180,180] (no seam-jump fill bug). */
@@ -82,7 +82,7 @@ window.IntMapModules.toolPanel=function(map,HOST){
 
   function updateToolPanel(){
     const p=document.getElementById('tool-panel'); if(!HOST.toolMode){ p.style.display='none'; return; } p.style.display='block';
-    const titles={measure:'📏 '+HOST.t('measure'),area:'📐 '+HOST.t('areaTool'),radius:'⭕ '+HOST.t('radius')}; let body='';
+    const titles={measure:'📏 '+HOST.t('measure'),area:'📐 '+HOST.t('areaTool'),radius:'⭕ '+HOST.t('radius'),volume:'🧊 '+HOST.t('vol3dTool')}; let body='';
     if(HOST.toolMode==='measure'){
       const tot=HOST.hasTurf()?HOST.totalDistance(HOST.measurePoints):0; let brg='';
       if(HOST.measurePoints.length>=2){
@@ -97,6 +97,32 @@ window.IntMapModules.toolPanel=function(map,HOST){
     } else if(HOST.toolMode==='area'){
       const pe=HOST.hasTurf()?ringPerimeter(HOST.measurePoints):0, ar=(HOST.hasTurf()&&HOST.measurePoints.length>=3)?HOST.ringArea(HOST.measurePoints):0;
       body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('perimeter')}</span><b>${HOST.distHTML(pe)}</b></div><div class="tp-row"><span>${HOST.t('area')}</span><b>${ar?HOST.areaHTML(ar):'—'}</b></div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>${HOST.measurePoints.length>=3?`<button class="ai-action-btn" id="tp-pop-btn">${HOST.t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">📍 ${HOST.t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${HOST.t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-profile">📈 ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
+    } else if(HOST.toolMode==='volume'){
+      /* (#R170) 3-D VOLUME — trace a footprint, give it a base and a top ALTITUDE, and the box is drawn
+         at true scale in the air. The two altitude fields are metres above SEA LEVEL in both terrain
+         states (js/volume3d.js compensates when 3-D terrain is on); the ground row shows the elevation
+         it subtracted, so the number the user typed and the box they see are never in disagreement. */
+      const V=window.IntMapVolume3D, pts=HOST.measurePoints;
+      try{ if(V) V.setRing(pts); }catch(_){}   /* (#R170) the map clicks own the footprint; push it to the renderer here */
+      const st=V?V.state():{points:0,base:1000,top:3000};
+      const _L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+      const ar=(HOST.hasTurf()&&pts.length>=3)?HOST.ringArea(pts):0;
+      const gnd=(V&&V.ground()!=null)
+        ? `<div class="tp-row"><span>${_L('Ground below','地表面の標高','Boden darunter','Высота земли','Suelo debajo')}</span><b>${V.fmtAlt(V.ground())}</b></div>`
+        : '';
+      const warn=(V&&V.terrainOn()&&V.ground()==null&&pts.length>=3)
+        ? `<div class="tp-hint">${_L('Reading the terrain elevation…','地表面の標高を取得中…','Geländehöhe wird gelesen…','Чтение высоты рельефа…','Leyendo la altitud del terreno…')}</div>` : '';
+      body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${pts.length}</b></div>`
+        +`<div class="tp-row"><span>${HOST.t('area')}</span><b>${ar?HOST.areaHTML(ar):'—'}</b></div>`
+        +`<div class="tp-sub">${_L('Altitude band (m above sea level)','高度の範囲（海抜メートル）','Höhenband (m über NN)','Диапазон высот (м над уровнем моря)','Franja de altitud (m sobre el nivel del mar)')}</div>`
+        +`<div class="v3d-alt"><label>${_L('from','下端','von','от','desde')}<input type="number" id="v3d-base" step="100" value="${Math.round(st.base)}"></label>`
+        +`<label>${_L('to','上端','bis','до','hasta')}<input type="number" id="v3d-top" step="100" value="${Math.round(st.top)}"></label></div>`
+        +`<div class="tp-row"><span>${_L('Thickness','厚さ','Dicke','Толщина','Grosor')}</span><b>${V?V.fmtAlt(V.thicknessM()):'—'}</b></div>`
+        +gnd
+        +`<div class="tp-row"><span>${_L('Volume','体積','Volumen','Объём','Volumen')}</span><b>${V?V.fmtVolume():'—'}</b></div>`
+        +warn
+        +(pts.length<3?`<div class="tp-hint">${_L('Click 3 or more points on the map to trace the footprint.','地図を3点以上クリックして底面を描いてください。','Klicke 3 oder mehr Punkte, um die Grundfläche zu zeichnen.','Отметьте 3 и более точек, чтобы задать основание.','Haz clic en 3 o más puntos para trazar la base.')}</div>`
+          :`<button class="ai-action-btn" id="v3d-keep">✓ ${_L('Keep on map','地図に残す','Auf der Karte behalten','Оставить на карте','Mantener en el mapa')}</button>`);
     } else if(HOST.toolMode==='radius'){
       let opts=`<option value="">${HOST.t('presetNone')}</option>`;
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[HOST.lang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
@@ -163,8 +189,19 @@ window.IntMapModules.toolPanel=function(map,HOST){
             showRes(tot,yr,src,N>1); pb2.style.display='none'; return; }
           box.style.display='none'; pb2.disabled=false; pbL(HOST.t('popInArea'));
         }catch(e){ box.style.display='none'; pb2.disabled=false; pbL(HOST.t('popFail')); setTimeout(()=>{ try{ pbL(HOST.t('popInArea')); }catch(_){} },2600); } }; }
-    const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ HOST.measurePoints=[]; if(HOST.toolMode==='area'){ HOST.toolMode='measure'; try{ HOST._syncToolBtns(); }catch(_){} } HOST.hideMeasureTip(); HOST.refreshTool(); updateToolPanel(); };
+    const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ HOST.measurePoints=[]; if(HOST.toolMode==='area'){ HOST.toolMode='measure'; try{ HOST._syncToolBtns(); }catch(_){} }
+      try{ if(HOST.toolMode==='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.clear(); }catch(_){}   /* (#R170) drop the extruded box with its footprint */
+      HOST.hideMeasureTip(); HOST.refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
+    if(HOST.toolMode==='volume'){
+      /* (#R170) live altitude editing: every keystroke re-extrudes, so the box grows/shrinks as you type.
+         Only the two numbers are re-read — the footprint comes from measurePoints, which the map clicks own. */
+      const V=window.IntMapVolume3D;
+      const bI=p.querySelector('#v3d-base'), tI=p.querySelector('#v3d-top');
+      const apply=()=>{ if(!V) return; V.setAltitudes(bI&&bI.value, tI&&tI.value); updateToolPanel(); };
+      if(bI) bI.oninput=apply; if(tI) tI.oninput=apply;
+      const kp=p.querySelector('#v3d-keep'); if(kp) kp.onclick=()=>{ try{ if(V) V.keep(); }catch(_){} };
+    }
     if(HOST.toolMode==='radius'){
       const r=p.querySelector('#radius-range'), n=p.querySelector('#radius-num'), op=p.querySelector('#radius-op'), pre=p.querySelector('#radius-preset'), col=p.querySelector('#radius-color');
       /* (#R11) When a circle is "active" (just dropped, esp. from a pin / map-click popup), the slider /

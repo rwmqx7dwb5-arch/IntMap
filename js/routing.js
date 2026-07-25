@@ -14,7 +14,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.routing=function(map,HOST){
+window.IntMapModules.routing=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const bringToFront=HOST.bringToFront, makeDraggable=HOST.makeDraggable;
   return (function(){
     if(typeof map==='undefined'||!map) return { route(){ return Promise.resolve({ok:false}); }, clear(){} };
@@ -48,7 +52,7 @@ window.IntMapModules.routing=function(map,HOST){
       const rd=()=>{ let shift=0,result=0,b; do{ b=str.charCodeAt(index++)-63; result+=(b&0x1f)*Math.pow(2,shift); shift+=5; }while(b>=0x20);
         return (result%2===1)?(-(result+1)/2):(result/2); };
       while(index<str.length){ lat+=rd(); lng+=rd(); coords.push([lng/factor,lat/factor]); } return coords; }
-    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imroute-cas',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
       map.addLayer({id:'imroute-walk',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#7a7f87'],'line-width':['coalesce',['get','w'],4],'line-dasharray':[0,2],'line-opacity':['coalesce',['get','op'],0.95]}});

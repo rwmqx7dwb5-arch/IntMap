@@ -15,7 +15,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.radiation=function(map,HOST){
+window.IntMapModules.radiation=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   window.IntMapRadiation=(function(){
     if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
@@ -48,7 +52,7 @@ window.IntMapModules.radiation=function(map,HOST){
       {min:2,c:'#b7f7b0',n:['Trace deposition','微量沈着','Spuren','Следы','Trazas'],mSv:'<0.1'} ];
     async function fetchJSON(url){ const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
       for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
-    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imrad-dep',type:'fill',source:DEP,paint:{'fill-color':['get','c'],'fill-opacity':0.5}});
       map.addLayer({id:'imrad-dep-line',type:'line',source:DEP,paint:{'line-color':['get','c'],'line-width':0.4,'line-opacity':0.5}});
@@ -296,14 +300,18 @@ window.IntMapModules.popArea=function(map,HOST){
   })();
 };
 
-window.IntMapModules.slope=function(map,HOST){
+window.IntMapModules.slope=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   window.IntMapSlope=(function(){
     if(typeof map==='undefined'||!map) return { toggle(){}, run(){}, clear(){}, setMode(){} };
     const SRC='imslope-src'; let on=false, mode='slope', busy=false, moveT=null, lastKey='';
     const SL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
     function aspectColor(a){ return 'hsl('+Math.round(a)+',72%,55%)'; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
       return true; }catch(_){ return false; } }
@@ -351,7 +359,11 @@ window.IntMapModules.slope=function(map,HOST){
     return { toggle, run, clear:()=>toggle(false), setMode }; })();
 };
 
-window.IntMapModules.rf=function(map,HOST){
+window.IntMapModules.rf=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapRF=(function(){
@@ -363,7 +375,7 @@ window.IntMapModules.rf=function(map,HOST){
     function dest(lng,lat,brg,dkm){ const dr=dkm/6371, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(brg)); const lo2=lo+Math.atan2(Math.sin(brg)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
     function horizonKm(h){ return 4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2)); }   /* 4/3-earth radio horizon, RX at 2 m */
     function fsplKm(){ const budget=txDbm-(-100)+3;   /* RX sensitivity −100 dBm, small antenna gain */ const d=Math.pow(10,(budget-32.44-20*Math.log10(freq))/20); return isFinite(d)?d:60; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imrf-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#12b886','fill-opacity':0.32}});
       map.addLayer({id:'imrf-line',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#0ca678','line-width':1.6}});
@@ -425,7 +437,11 @@ window.IntMapModules.rf=function(map,HOST){
     return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
-window.IntMapModules.sun=function(map,HOST){
+window.IntMapModules.sun=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapSun=(function(){
@@ -451,7 +467,7 @@ window.IntMapModules.sun=function(map,HOST){
       if(cosH>1) return {polar:'night'}; if(cosH<-1) return {polar:'day'};
       const w0=Math.acos(cosH), a=J0+(w0+lw)/(2*Math.PI)+n, Jset=solarTransitJ(a), Jrise=Jnoon-(Jset-Jnoon);
       return { rise:toDate(Jrise), set:toDate(Jset), noon:toDate(Jnoon) }; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':0.30}});
       return true; }catch(_){ return false; } }
@@ -508,14 +524,18 @@ window.IntMapModules.sun=function(map,HOST){
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes }; })();
 };
 
-window.IntMapModules.transitReach=function(map,HOST){
+window.IntMapModules.transitReach=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   window.IntMapTransitReach=(function(){
     if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, open(){}, clear(){} };
     const SRC='imtr-src'; let busy=false;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imtr-area',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#1558d6','fill-opacity':0.14}});
       map.addLayer({id:'imtr-area-l',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#1558d6','line-width':1.4,'line-dasharray':[2,1.5]}});
@@ -575,7 +595,11 @@ window.IntMapModules.transitReach=function(map,HOST){
     return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
-window.IntMapModules.disaster=function(map,HOST){
+window.IntMapModules.disaster=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapDisaster=(function(){
@@ -583,7 +607,7 @@ window.IntMapModules.disaster=function(map,HOST){
     const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
     const DZ=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
       map.addLayer({id:'imdis-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
@@ -670,7 +694,11 @@ window.IntMapModules.disaster=function(map,HOST){
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
-window.IntMapModules.earthReplay=function(map,HOST){
+window.IntMapModules.earthReplay=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapEarthReplay=(function(){
@@ -688,7 +716,7 @@ window.IntMapModules.earthReplay=function(map,HOST){
       const darkPole=dec>0?-90:90;   /* dec>0 = N summer → S pole dark */
       const ring=pts.concat([[180,darkPole],[-180,darkPole],[pts[0][0],pts[0][1]]]);
       return { type:'Feature', geometry:{type:'Polygon',coordinates:[ring]}, properties:{} }; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imrep-night',type:'fill',source:SRC,paint:{'fill-color':'#04070f','fill-opacity':0.42}});
       return true; }catch(_){ return false; } }

@@ -213,7 +213,26 @@ window.IntMapModules.companies=function(map,HOST){
       ['1211.HK','BYD','BYD','CHN','auto','byd.com',1995,900000,107,5,0,110],
       ['RMS.PA','Hermès','エルメス','FRA','consumer','hermes.com',1837,22000,15,4,0,250]
     ];
-    const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
+    const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0,priceT:0}));
+    /* ===== (#R170) DATA VINTAGE — 「Companiesのすべての数値に、その情報の年や年月、日時を書くように」 =====
+       Every figure this module produces falls into exactly one of three classes, and each one now carries the
+       date of the information it represents rather than being presented as timeless:
+
+         LIVE       share price, and the market cap computed from it. Dated with the quote's OWN timestamp
+                    (the last close timestamp the Yahoo response carries, or meta.regularMarketTime on the
+                    per-symbol path); only if the response omits both do we fall back to the fetch time, and
+                    priceTexact records which of the two it was, so the UI never claims more precision than it has.
+         HISTORICAL time-machine year: that calendar year's year-end close (see setYear).
+         CURATED    the RAW table above — revenue, net income, employees, founded, and the reported market-cap
+                    snapshot used for names with no live US listing.
+
+       CURATED_ASOF is the date the table entered this repository (git: R139, 2026-07-20) — i.e. when the figures
+       were compiled, which is the only vintage that is true of the whole table. CURATED_FY is the fiscal-year
+       basis of the annual figures; it is a BASIS, not a common end date, because each company's fiscal year ends
+       on its own date (Apple FY2024 ended 2024-09-28, Microsoft's 2024-06-30, NVIDIA's 2024-01-28 — all three
+       match this table). The UI states it that way instead of implying one shared reporting date. */
+    const CURATED_ASOF='2026-07-20';
+    const CURATED_FY='FY2024';
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     async function _fjson(u){ for(const p of PROX){ try{ const r=await fetch(p(u)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
     /* (#R151) BATCHED multi-symbol quote via Yahoo's keyless "spark" endpoint — ONE request for up to ~40 tickers instead
@@ -266,21 +285,25 @@ window.IntMapModules.companies=function(map,HOST){
     /* SANITY GUARD: a live market cap that deviates by more than ~5× from the reported snapshot means a bad fetch
        (wrong symbol / stale proxy response / currency mismatch) or an off share count — reject it and keep the honest
        reported figure rather than corrupt the ranking. Genuine price movement stays live. */
-    function _applyPrice(c,p){ if(!(p>0)) return false; const cand=c.sh*p; if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; return true; } return false; }
+    /* (#R170) tMs = the quote's OWN timestamp when the response supplies one (exact), else 0 → we stamp the fetch
+       time and mark it inexact, so the UI can say "fetched HH:MM" rather than pretend it is the quote time. */
+    function _applyPrice(c,p,tMs){ if(!(p>0)) return false; const cand=c.sh*p; if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; c.priceT=(tMs>0?tMs:Date.now()); c.priceTexact=(tMs>0); return true; } return false; }
     async function loadPrices(onUpdate){
       const now=Date.now(); if(_loading) return; if(_loaded && (now-_loaded)<120000) return;   /* (#R152) 5min→2min: fresher live prices (低遅延) — a batched spark refresh is cheap */
       _loading=true; const live=DATA.filter(c=>c.sh>0); const byTk={}; live.forEach(c=>byTk[c.tk]=c);
       /* (#R151) FAST PATH: one batched spark request per ~40 names → the whole board prices in a few round-trips (低遅延). */
       let missing=live;
       try{ const sp=await _spark(live.map(c=>c.tk),'1d','1d'); const done=new Set();
-        sp.forEach((v,tk)=>{ const c=byTk[tk]; if(!c) return; let p=+v.price; if(!(p>0)&&Array.isArray(v.close)){ for(let k=v.close.length-1;k>=0;k--){ if(+v.close[k]>0){ p=+v.close[k]; break; } } } if(_applyPrice(c,p)) done.add(tk); });
+        sp.forEach((v,tk)=>{ const c=byTk[tk]; if(!c) return; let p=+v.price; if(!(p>0)&&Array.isArray(v.close)){ for(let k=v.close.length-1;k>=0;k--){ if(+v.close[k]>0){ p=+v.close[k]; break; } } }
+          const tms=(Array.isArray(v.ts)&&v.ts.length)?(+v.ts[v.ts.length-1]*1000):0;   /* (#R170) the last close's real timestamp */
+          if(_applyPrice(c,p,tms)) done.add(tk); });
         missing=live.filter(c=>!done.has(c.tk)); if(onUpdate){ try{ onUpdate(); }catch(_){} } }catch(_){}
       /* FALLBACK: per-symbol chart for any the batch didn't resolve (proxy hiccup / symbol quirk). */
       let idx=0, upd=0; const CONC=6;
       async function w(){ for(;;){ const i=idx++; if(i>=missing.length) return; const c=missing[i];
         try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?range=1d&interval=1d');
           const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
-          if(m&&_applyPrice(c,+m.regularMarketPrice)){ if((++upd%8===0)&&onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
+          if(m&&_applyPrice(c,+m.regularMarketPrice,(+m.regularMarketTime||0)*1000)){ if((++upd%8===0)&&onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }   /* (#R170) Yahoo's own quote time */
       try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
       _loaded=Date.now(); _loading=false; if(onUpdate){ try{ onUpdate(); }catch(_){} }
     }
@@ -323,6 +346,11 @@ window.IntMapModules.companies=function(map,HOST){
         if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const y=new Date(ts[i]*1000).getUTCFullYear(); byYear[y]=+q[i]; } } }   /* later month overwrites → year-end close */
       }catch(_){}
       _histCache[key]=byYear; return byYear; }
-    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, priceSeries, priceSeriesFine, histYear:()=>_hy };
+    /* (#R170) the vintage of every class of figure, so the UI can date each number it prints. */
+    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, priceSeries, priceSeriesFine, histYear:()=>_hy,
+      CURATED_ASOF, CURATED_FY,
+      /* ms timestamp behind a company's LIVE price (0 = no live price for this name), and whether it is the
+         quote's own time (true) or merely when we fetched it (false). */
+      priceAsOf:c=>((c&&c.price>0&&c.priceT)||0), priceAsOfExact:c=>!!(c&&c.priceTexact) };
   })();
 };

@@ -24,6 +24,17 @@ test.beforeAll(async ({ browser }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction((g) => g.every((k) => typeof window[k] !== 'undefined'), CRITICAL, { timeout: 45_000 });
   await page.waitForTimeout(500);
+  // (#R170) #2 asserts on COMPUTED styles from the Atlas reply stylesheet, which Atlas injects when its
+  // panel is first built (ensure() → ensureStyle()). Until #R170 the desktop booted straight into
+  // workspace mode, where the Atlas window is constructed at boot, so the stylesheet happened to be
+  // present without anyone opening Atlas. Desktop now defaults to normal mode, so open Atlas the way a
+  // user does and wait for the stylesheet — that is the precondition this test always needed, rather
+  // than an incidental side effect of the old default. (Verified in a browser: opening the tab injects
+  // the CSS and a reply rendered in the tab feed computes overflow-x:auto exactly as before.)
+  await page.evaluate(() => { try { window.IntMapOS.exec('tab.atlas', { source: 'test' }); } catch (_) { } });
+  await page.waitForFunction(() => [...document.styleSheets].some(sh => {
+    try { return [...sh.cssRules].some(r => r.selectorText === '.atl-math-b'); } catch (_) { return false; }
+  }), null, { timeout: 20_000 });
 });
 test.afterAll(async () => { await page?.context()?.close(); });
 
