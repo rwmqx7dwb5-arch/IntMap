@@ -8,7 +8,11 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.placeLabels=function(map,HOST){
+window.IntMapModules.placeLabels=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
      hard-coded English; pull the right language out of geoLayersDB instead). */
   /* Fallback names for geo-layer checkboxes whose layer was pulled out of geoLayersDB (e.g. Rimland,
@@ -37,7 +41,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
      names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
   function ensurePlaceLabels(){
-    if(!map||!map.isStyleLoaded()) return;
+    if(!_imCanDraw()) return;
     try{
       /* Use the TileJSON URL (not a hardcoded tile path) — OpenFreeMap serves versioned tiles, so
          the bare /planet/{z}/{x}/{y}.pbf path 404s at real zooms and labels never appear. */
@@ -234,7 +238,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
   function ensureGeoLayers(){
     if(!map) return;
     /* Style may not be ready yet (e.g. right after setProjection on load). Retry until it is. */
-    if(!map.isStyleLoaded()){ clearTimeout(ensureGeoLayers._t); ensureGeoLayers._t=setTimeout(ensureGeoLayers,160); return; }
+    if(!_imCanDraw()){ clearTimeout(ensureGeoLayers._t); ensureGeoLayers._t=setTimeout(ensureGeoLayers,160); return; }
     for(const[key,data] of Object.entries(HOST.geoLayersDB)){
       if(map.getSource(key)) continue;
       try{ map.addSource(key,{type:'geojson',data:buildGeoFC(data)}); }catch(e){ continue; }
@@ -262,7 +266,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
     if(!map)return;
     /* (#R13c) If the style is mid-load, a toggle-OFF would silently no-op and the layer would STAY on
        ("消したはずのレイヤーが残る"). Re-run once the style settles so the on/off state always lands. */
-    if(!map.isStyleLoaded()){ try{ map.once('idle',()=>{ try{ updateGeoLayers(); }catch(_){} }); }catch(_){} return; }
+    if(!_imCanDraw()){ try{ map.once('idle',()=>{ try{ updateGeoLayers(); }catch(_){} }); }catch(_){} return; }
     const isDark=document.documentElement.getAttribute('data-theme')==='dark';
     for(const key of Object.keys(HOST.geoLayersDB)){
       const cb=document.querySelector(`input[data-layer="${key}"]`);

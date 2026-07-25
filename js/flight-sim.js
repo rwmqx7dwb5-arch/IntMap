@@ -24,6 +24,10 @@ window.IntMapModules.flightSim=function(map,HOST){
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     let acKey='f35', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) camera state; default aircraft = F-35 (#R98) */
+    /* (#R170) 「終了地点から再飛行するように」 — where the previous flight ENDED (crash site or touchdown point),
+       with the heading it ended on. Persisted so it survives a reload, and offered as a start location in the
+       pre-flight screen. Written once per flight in showResult(). */
+    let lastEnd=null; try{ const _le=JSON.parse(localStorage.getItem('intmap_fs_last')||'null'); if(_le&&isFinite(_le.lng)&&isFinite(_le.lat)) lastEnd=_le; }catch(_){}
     let minimap=null, mmOn=true, mmT=0;   /* (#R96) moving-map / nav-display (track-up mini map) state */
     let resultShown=false;   /* (#R98) a flight ends on a crash or a completed landing → the result screen (path map + fly-again/exit) */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
@@ -635,7 +639,13 @@ window.IntMapModules.flightSim=function(map,HOST){
             im.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+(((ty%tp)+tp)%tp)+'/'+(((tx%tp)+tp)%tp); }
         } else { cx.fillStyle='#8fb8e0'; cx.font='12px ui-monospace,monospace'; cx.fillText(LL('(flight too short to map)','(経路が短すぎます)','(zu kurz)','(слишком коротко)','(muy corto)'),18,H/2); }
       }catch(_){}
-      const flyOpts=st._opts||{};
+      /* (#R170) remember where this flight ENDED, and make "Fly again" resume from there instead of teleporting
+         back to the original airport. st._opts still carries the aircraft; the airport-specific fields (elev and
+         the runway line) are dropped because they described the ORIGINAL field, not this end point. */
+      try{ lastEnd={ lng:+st.lng, lat:+st.lat, hdg:_fsHdg(), t:Date.now(), ok:ok };
+        localStorage.setItem('intmap_fs_last',JSON.stringify(lastEnd)); }catch(_){}
+      const flyOpts=Object.assign({},st._opts||{},{ aircraft:acKey, lng:lastEnd?lastEnd.lng:undefined, lat:lastEnd?lastEnd.lat:undefined,
+        hdg:lastEnd?lastEnd.hdg:undefined, fromEnd:!!lastEnd, elev:null, rwy:null });
       ov.querySelector('.fsr-again').onclick=()=>{ ov.remove(); stop(); setTimeout(()=>{ try{ setup(flyOpts); }catch(_){} },80); };
       ov.querySelector('.fsr-exit').onclick=()=>{ ov.remove(); stop(); };
     }
@@ -661,23 +671,31 @@ window.IntMapModules.flightSim=function(map,HOST){
         document.head.appendChild(s); }
       const selAc=(opts.aircraft&&AIRCRAFT[opts.aircraft])?opts.aircraft:acKey;
       const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&(a.name[HOST.lang]||a.name.en))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('');
-      const apOpts='<option value="__here">'+LL('📍 Current map view','📍 現在の地図の中心','📍 Aktuelle Kartenmitte','📍 Центр карты','📍 Vista actual')+'</option>'+AIRPORTS.map((a,i)=>'<option value="'+i+'">'+a[1]+' ('+a[0]+')</option>').join('');
+      /* (#R170) the previous flight's end point is a first-class start location, listed first and preselected
+         when we got here from "Fly again" — that IS 「終了地点から再飛行」. It is offered on a fresh launch too
+         (it persists), so "carry on from where I came down" doesn't require going through the result screen. */
+      const _lastOpt=lastEnd?('<option value="__last">'+LL('📍 Last flight end point','📍 前回の終了地点','📍 Letzter Endpunkt','📍 Конец прошлого полёта','📍 Fin del vuelo anterior')+' ('+lastEnd.lat.toFixed(2)+', '+lastEnd.lng.toFixed(2)+')</option>'):'';
+      const apOpts=_lastOpt+'<option value="__here">'+LL('📍 Current map view','📍 現在の地図の中心','📍 Aktuelle Kartenmitte','📍 Центр карты','📍 Vista actual')+'</option>'+AIRPORTS.map((a,i)=>'<option value="'+i+'">'+a[1]+' ('+a[0]+')</option>').join('');
       const ov=document.createElement('div'); ov.id='fs-setup';
       ov.innerHTML='<div class="fss-card"><div class="fss-h">✈ '+LL('Flight Simulator','フライトシミュレーター','Flugsimulator','Авиасимулятор','Simulador de vuelo')+'</div>'
         +'<div class="fss-lbl">'+LL('Aircraft','機体','Flugzeug','Самолёт','Aeronave')+'</div><div class="fss-grid">'+acRows+'</div>'
         +'<div class="fss-lbl">'+LL('Start location','開始地点','Startort','Место старта','Ubicación')+'</div><select class="fss-sel">'+apOpts+'</select>'
         +'<div class="fss-lbl">'+LL('Start mode','開始状態','Startmodus','Режим старта','Modo')+'</div><div class="fss-mode">'
-          +'<button class="fss-m on" data-m="ground">🛫 '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
-          +'<button class="fss-m" data-m="air">🛩 '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
+          /* (#R170) AIRBORNE is the default (「フライトシミュレーターは、空中で開始をデフォルトに」) — the .on class
+             moved from the runway button to this one, matching the `mode:'air'` initial state below. */
+          +'<button class="fss-m" data-m="ground">🛫 '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
+          +'<button class="fss-m on" data-m="air">🛩 '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
         +'<div class="fss-btns"><button class="fss-cancel">'+LL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar')+'</button><button class="fss-go">'+LL('START ▸','スタート ▸','START ▸','СТАРТ ▸','INICIAR ▸')+'</button></div></div>';
       document.body.appendChild(ov);
-      const state={ ac:selAc, loc:(opts.lng!=null?'__here':'__here'), mode:'ground' };
+      const state={ ac:selAc, loc:((opts.fromEnd&&lastEnd)?'__last':'__here'), mode:'air' };   /* (#R170) airborne default + resume from the last end point */
+      try{ const _s0=ov.querySelector('.fss-sel'); if(_s0) _s0.value=state.loc; }catch(_){}
       ov.querySelectorAll('.fss-ac').forEach(b=>b.onclick=()=>{ state.ac=b.getAttribute('data-ac'); ov.querySelectorAll('.fss-ac').forEach(x=>x.classList.toggle('on',x===b)); });
       const sel=ov.querySelector('.fss-sel'); sel.onchange=()=>{ state.loc=sel.value; };
       ov.querySelectorAll('.fss-m').forEach(b=>b.onclick=()=>{ state.mode=b.getAttribute('data-m'); ov.querySelectorAll('.fss-m').forEach(x=>x.classList.toggle('on',x===b)); });
       ov.querySelector('.fss-cancel').onclick=()=>ov.remove();
       ov.querySelector('.fss-go').onclick=async()=>{ const o={ aircraft:state.ac }; let icao=null;
-        if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; icao=a[0]; } }
+        if(state.loc==='__last'&&lastEnd){ o.lng=lastEnd.lng; o.lat=lastEnd.lat; if(isFinite(lastEnd.hdg)) o.hdg=lastEnd.hdg; }   /* (#R170) resume from where the last flight ended */
+        else if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; icao=a[0]; } }
         else if(opts.lng!=null){ o.lng=+opts.lng; o.lat=+opts.lat; }
         if(state.mode==='ground') o.onGround=true; else o.alt=(o.elev!=null?o.elev+2500:2500);
         /* (#R119) REAL RUNWAY spawn: fetch the airport's actual runways (OurAirports, both-end coordinates),
@@ -739,7 +757,12 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
-      /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead. */
+      /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead.
+         (#R170) …and now GUARANTEE it ("フライトシミュレーターは、FlatではなくGlobeの地図を使うように"): #R98 only
+         stopped forcing mercator, so whoever took off while the map was in Flat view flew a flat Earth — the
+         horizon never curved and the camera had no globe to bank against. Switch to globe on entry; stop()
+         restores whichever projection was active before the flight (both directions — see below). */
+      try{ if(HOST.proj!=='globe'&&window.IntMapOS) IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }catch(_){}
       /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
          pale horizon haze and distance fog; restored on exit. */
       try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
@@ -800,7 +823,9 @@ window.IntMapModules.flightSim=function(map,HOST){
         try{ if(map.setSky) map.setSky(pv.sky||undefined); }catch(_){}   /* (#R99) restore the pre-flight sky */
         if(pv.base!=='sat'&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
         if(!pv.terr&&typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
-        if(pv.proj==='globe'&&typeof HOST.proj!=='undefined'&&HOST.proj!=='globe'&&window.IntMapOS){ IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }
+        /* (#R170) restore BOTH ways. The old line only knew how to put the globe back; now that entry forces
+           globe, a pilot who took off from the Flat view would otherwise be silently left on the globe. */
+        if(typeof HOST.proj!=='undefined'&&pv.proj!==HOST.proj&&window.IntMapOS){ IntMapOS.exec(pv.proj==='globe'?'view.proj.globe':'view.proj.flat',{source:'flightsim'}); }
       } }catch(_){}
       prevView=null;
       if(prevCam){ try{ map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(map.setRoll) map.setRoll(0); map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }

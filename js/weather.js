@@ -16,7 +16,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.wind=function(map,HOST){
+window.IntMapModules.wind=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast, isMobile=HOST.isMobile;
   window.Wind=(function(){
@@ -131,7 +135,7 @@ window.IntMapModules.wind=function(map,HOST){
     function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     const BLANK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
     function ensureFieldLayer(){
-      if(!map || !map.isStyleLoaded()) return false;
+      if(!_imCanDraw()) return false;
       if(!map.getSource(FIELD_SRC)){
         try{ map.addSource(FIELD_SRC,{type:'image',url:BLANK,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
           map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':0,'raster-opacity-transition':{duration:350},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
@@ -241,7 +245,11 @@ window.IntMapModules.wind=function(map,HOST){
   })();
 };
 
-window.IntMapModules.weatherEC=function(map,HOST){
+window.IntMapModules.weatherEC=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast, t=HOST.t, makeDraggable=HOST.makeDraggable;
   window.IntMapWeatherEC=(function(){
@@ -317,7 +325,7 @@ window.IntMapModules.weatherEC=function(map,HOST){
       state[id].on=on;
       try{ ensureTimeLegend(); syncTimeLegend(); }catch(_){}   /* (#R15c) show the time legend while any ECMWF layer is on */
       loadSDK().then(()=>{ if(!registerProto()) return;
-        const go=()=>{ if(!map.isStyleLoaded()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
+        const go=()=>{ if(!_imCanDraw()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
       }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} try{ state[id].on=false; }catch(_){}   /* (#R154) also clear the STATE, not just the checkbox — otherwise the on('styledata') re-attach + applyTime re-show a layer whose box is OFF after a load failure */ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
     }
@@ -328,7 +336,7 @@ window.IntMapModules.weatherEC=function(map,HOST){
     function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(jp()?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
     function updateTimeLabel(){ const el=document.getElementById('ec-validtime'); if(el) el.textContent=(jp()?'ECMWF 有効時刻: ':'ECMWF valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=document.getElementById('ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
     /* re-attach after a style swap */
-    map.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!map.isStyleLoaded())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
+    map.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!_imCanDraw())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:260px;max-height:78vh;overflow-y:auto;';
       const rows=LAYERS.map(l=>'<div class="lyr-row'+(state[l.id].on?' on':'')+'" style="margin:2px 0;"><label class="layer-option" style="display:flex;align-items:center;gap:7px;"><input type="checkbox" id="'+l.id+'-cb"'+(state[l.id].on?' checked':'')+'> <span>'+ecLbl(l)+'</span></label><input type="range" class="ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'" style="width:100%;accent-color:var(--primary-color);'+(state[l.id].on?'':'display:none;')+'"></div>').join('');

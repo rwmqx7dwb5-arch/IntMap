@@ -12,7 +12,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.betaOverlays=function(map,HOST){
+window.IntMapModules.betaOverlays=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile, satToast=HOST.satToast;
   (function(){
@@ -25,7 +29,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     /* ---------- Ukraine frontline (DeepState — curl-verified 200 + Access-Control-Allow-Origin:*) ---------- */
     const UKR_IDS=['ukr-fill','ukr-line','ukr-front'];
     let ukrFC=null, ukrTimer=null;
-    function ukrEnsure(){ if(map.getSource('ukr-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ukrEnsure(){ if(map.getSource('ukr-src')) return true; if(!_imCanDraw()) return false;
       try{
         map.addSource('ukr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'DeepStateMap'});
         const before=map.getLayer('tool-poly')?'tool-poly':undefined;
@@ -129,7 +133,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     }
 
     /* ---------- 3D city buildings (OpenFreeMap `building` source-layer → fill-extrusion) ---------- */
-    function bldgEnsure(){ if(map.getLayer('ofm-bldg-3d')) return true; if(!map.isStyleLoaded()) return false;
+    function bldgEnsure(){ if(map.getLayer('ofm-bldg-3d')) return true; if(!_imCanDraw()) return false;
       try{
         if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
         const before=map.getLayer('ofm-country')?'ofm-country':(map.getLayer('tool-poly')?'tool-poly':undefined);
@@ -157,7 +161,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     const HB_YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     let hbYear=1920; const hbCache=new Map();
     const HB_PAL=['#e6a176','#7eb6e8','#9fd29a','#e8a4c2','#cbb1e6','#ffd78a','#9adfd2','#e8938c','#b9c98a','#a7b8d9','#dcc4a1','#90c7e0'];
-    function hbEnsure(){ if(map.getSource('hb-src')) return true; if(!map.isStyleLoaded()) return false;
+    function hbEnsure(){ if(map.getSource('hb-src')) return true; if(!_imCanDraw()) return false;
       try{
         map.addSource('hb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
         const before=map.getLayer('tool-poly')?'tool-poly':undefined;
@@ -255,7 +259,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
        (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
     const VL_IDS=['volc2-pt','volc2-lbl'];
     let volcFC=null, volcLoading=false;
-    function volcEnsure(){ if(map.getSource('volc2-src')) return true; if(!map.isStyleLoaded()) return false;
+    function volcEnsure(){ if(map.getSource('volc2-src')) return true; if(!_imCanDraw()) return false;
       try{
         map.addSource('volc2-src',{type:'geojson',data:volcFC||{type:'FeatureCollection',features:[]},attribution:'Smithsonian GVP'});
         const before=map.getLayer('tool-poly')?'tool-poly':undefined;

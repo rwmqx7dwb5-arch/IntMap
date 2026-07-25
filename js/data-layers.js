@@ -978,7 +978,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     function withCountries(cb){
       loadCountryData().then(()=>{
         function tryAdd(){
-          if(map&&map.isStyleLoaded()&&HOST.countryGeo&&!map.getSource('countries')){
+          if(_canDraw()&&HOST.countryGeo&&!map.getSource('countries')){   /* (#R170) parsed style is all addCountryLayers needs */
             try{ addCountryLayers(); }catch(e){ console.warn('addCountryLayers failed (will retry)',e); }
           }
         }
@@ -992,13 +992,25 @@ window.IntMapModules.dataLayers=function(map,HOST){
         })();
       });
     }
-    /* Helper: returns a promise that resolves when the map style is loaded */
+    /* Helper: resolves as soon as it is SAFE TO ADD sources/layers — not when the map has fully settled.
+       (#R170) That distinction is the whole point. This gate used to test map.isStyleLoaded(), which in
+       MapLibre means "style parsed AND every source cache loaded", so it stayed false for most of the time
+       the user was panning (measured 86% of a 12 s pan). Every layer that adds inside whenStyleReady()
+       therefore waited for the map to fall idle, or for the 6 s hard-resolve below — measured toggle-ON →
+       painted: 4497 ms / 3171 ms while busy vs 189 ms while idle. Same click, wildly different latency:
+       the reported 「レイヤーをオンオフしても、時間差で表示されたり表示されなかったりする」.
+       HOST.canDraw() answers the question actually being asked (is the style object parsed?), which is all
+       addSource/addLayer need. The listeners + poll + hard-resolve below are kept unchanged as the safety
+       net for the genuine not-yet-parsed window (first load, and a real setStyle() base-map swap). */
+    /* function DECLARATION, not a const: it is called from withCountries() further UP this file, and a
+       `const` here would leave those calls in the temporal dead zone (the #R167 trap). */
+    function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!map.isStyleLoaded(); }catch(__){ return false; } } }
     function whenStyleReady(){
       return new Promise(res=>{
         let done=false;
         const fin=()=>{ if(done) return; done=true; try{ map.off('idle',ck); map.off('styledata',ck); map.off('load',ck); }catch(_){} res(); };
-        const ck=()=>{ if(map.isStyleLoaded()) fin(); };
-        if(map.isStyleLoaded()){ res(); return; }
+        const ck=()=>{ if(_canDraw()) fin(); };
+        if(_canDraw()){ res(); return; }
         map.on('idle',ck); map.on('styledata',ck); map.on('load',ck);
         /* (#R41) ROOT CAUSE of "レイヤー/ラベルをチェックしても表示されない・ブラウザ再読み込みで治る": the old version
            waited ONLY on idle/load. If ANOTHER source is still loading or erroring, the map never reaches a clean
@@ -1007,7 +1019,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
            between the sync check and the listener registration), and as a last resort resolve anyway after ~6 s —
            addSource/addLayer work fine as long as the style object exists, so a slightly-early add beats a layer
            that never appears. */
-        let n=0; (function poll(){ if(done) return; if(map.isStyleLoaded()||n++>40) fin(); else setTimeout(poll,150); })();
+        let n=0; (function poll(){ if(done) return; if(_canDraw()||n++>40) fin(); else setTimeout(poll,150); })();
       });
     }
     /* Hover a choropleth country → tooltip with its name + the metric value. */
@@ -2634,7 +2646,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
        each dl- checkbox and, if it's unchecked yet its layer is still painted, runs the real hide path. It
        NEVER turns anything on, so it can't cause "勝手にオンになる". */
     window._sweepOrphanLayers=function(){
-      if(!map||!map.isStyleLoaded()||window._imDemoActive) return;
+      if(!_canDraw()||window._imDemoActive) return;   /* (#R170) reads getStyle().layers — a parsed style suffices */
       try{
         const visSet=new Set();
         map.getStyle().layers.forEach(l=>{ try{ if((map.getLayoutProperty(l.id,'visibility')||'visible')==='visible') visSet.add(l.id); }catch(_){} });
@@ -2859,7 +2871,10 @@ window.IntMapModules.dataLayers=function(map,HOST){
           log.push({id:cb.id,t:Date.now(),fix:'rearm-learned'}); if(log.length>60) log.shift();
           rearm(cb); } }catch(_){} }
       function audit(){ try{
-        if(!map||!map.isStyleLoaded||!map.isStyleLoaded()) return;
+        /* (#R170) was gated on isStyleLoaded() — false ~86% of the time while browsing, so the self-heal that
+           exists precisely to fix "box on, nothing painted" was itself mostly asleep. It reads getLayer() +
+           visibility, which need only a parsed style. */
+        if(!_canDraw()) return;
         document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
           if(userTouched(cb)){ sus[cb.id]=0; return; }   /* (#R85) defer to a very recent user toggle — never race it */
           const vis=painted(ids);

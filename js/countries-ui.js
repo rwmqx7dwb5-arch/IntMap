@@ -11,7 +11,11 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.countriesUi=function(map,HOST){
+window.IntMapModules.countriesUi=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
+     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
+     isStyleLoaded() test only if the host is somehow absent. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const GDP_YEAR='2023', POP_YEAR='2024';
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
@@ -69,7 +73,7 @@ window.IntMapModules.countriesUi=function(map,HOST){
            FAILED load, clear the cached promise + flags so the very next call (a click) transparently retries
            the fetch. On success, latch as before. */
         const ok=!!(HOST.countryGeo&&HOST.countryGeo.features&&HOST.countryGeo.features.length);
-        if(ok){ HOST.countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers();
+        if(ok){ HOST.countryDataLoaded=true; if(_imCanDraw()) addCountryLayers();
           /* (#R25/#28) now that countryStats exists, rebuild the geo index so the auto-country/capital
              entries join the gazetteer → the non-AI news locator gains full global coverage. */
           try{ HOST.rebuildGeoIndex(); }catch(_){}
@@ -86,7 +90,7 @@ window.IntMapModules.countriesUi=function(map,HOST){
   let hoveredCid=null;
 
   function addCountryLayers(){
-    if(!map||!map.isStyleLoaded()||!HOST.countryGeo||map.getSource('countries')) return;
+    if(!_imCanDraw()||!HOST.countryGeo||map.getSource('countries')) return;
     map.addSource('countries',{type:'geojson',data:HOST.countryGeo,promoteId:'__code'});
     map.addLayer({id:'country-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#007aff','fill-opacity':['case',['boolean',['feature-state','hover'],false],0.30,0]}},'tool-poly');
     map.addLayer({id:'country-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#007aff','line-opacity':0.7,'line-width':['case',['boolean',['feature-state','hover'],false],2.4,0.6]}},'tool-poly');

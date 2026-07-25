@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-25 (R169)
+> Last reviewed: 2026-07-26 (R170)
 >
 > ### この文書の読み方 (#R169 で整理)
 >
@@ -672,9 +672,9 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ```
 index.html                      公開用SPA本体（UI・地図・レイヤー・ニュース・AI呼び出し）。**ビルド無し**は不変。
-                                (#R169) 5,744行 / 0.49MB（#R168時点は 7,691行/0.64MB、#R167時点は 9,709行/0.89MB、
+                                (#R170) 5,824行 / 0.53MB（#R169時点は 5,744行/0.49MB（#R168時点は 7,691行/0.64MB、#R167時点は 9,709行/0.89MB、
                                 #R166時点は 11,810行/1.14MB、#R165時点は 16,740行/1.73MB、#R164時点は 22,930行/2.65MB、
-                                #R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。R162〜R169 で 36,955行から **−84%**）。
+                                #R163時点は 27,936行/3.20MB、#R162時点は 32,883行/3.77MB。R162〜R170 で 36,955行から **−84%**）。
                                 **自己完結が証明できた部分は css/ と js/ に分離済み**（§3.1）。
                                 #R167 までで「自己完結したブロック」は尽き、#R168 は**主題（SUBJECT）**単位、
                                 #R169 は**宣言か実行か**という軸で切った（§3.1 #R168 / #R169）。
@@ -842,6 +842,12 @@ js/
   map-readout.js                    (#R169) 地図の読み出し系（座標/標高/レイヤー値/コンパスの表示・DEMサンプラ・
                                     グリッド（経緯線）・計測チップ・`handleMapClick`）。27KB
   elevation-profile.js              (#R169) 標高断面パネル（Draw ツールから開く）。7KB
+  ── 以下 (#R170)。既存の分割とは性格が違い、**新機能を最初から js/ に置いた**もの ─────────────
+  volume3d.js                       (#R170) Measure ▸ 3-D 立体（`IntMapVolume3D`）。底面リング＋海抜の上下端から
+                                    実尺の直方体を空中に描く。**`IntMapGeoEngine` だけで書かれ、生 `map` を
+                                    一切参照しない**（§7.1）。3D地形 ON のとき MapLibre の押し出しは地表面基準に
+                                    なるため、DEM 標高を差し引いて「海抜」の意味を保つ。7KB
+
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
                                     `supabase/functions/_shared/newsgeo.js` にミラー（`scripts/sync-newsgeo.mjs`／
@@ -1617,6 +1623,81 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
 
+### #R170 補足（レイヤー表示遅延の根本原因＝「描けるか」と「落ち着いたか」の混同 / Measure ▸ 3-D 立体 / Companies の日付表記）
+
+**① レイヤーのオンオフが「時間差で表示されたりされなかったり」する — 真因は述語の取り違え**
+
+このアプリには「今 addSource/addLayer してよいか？」を尋ねる箇所が **約80個**あり、全部が `map.isStyleLoaded()` で答えていた。
+だが MapLibre の `isStyleLoaded()` の意味は **「スタイルが解析済み **かつ** 全ソースキャッシュが読込完了」** であって、
+「レイヤーを足してよいか」ではない。タイルはユーザーがパン/ズームしている間ずっと流れているので、この述語は
+**通常操作中はほぼ常に false**——実測で **12秒のパン中、14サンプル中12回（86%）が false**、false の連続は最大約2秒。
+
+結果として `ensureX(){ if(!map.isStyleLoaded()) return false; … }` と `whenStyleReady()` は
+「まだ作れない」と誤答し、レイヤー生成は idle 待ち（または `whenStyleReady` の6秒ハード解決）まで先送りされていた。
+実測した「チェック→実際に描かれるまで」は次のとおり:
+
+| 状況 | 修正前 | 修正後 |
+|---|---|---|
+| 地図が忙しい（`isStyleLoaded()`=false） | **4,497 ms / 3,171 ms** | **95 ms / 107 ms** |
+| たまたま idle だった | 189 ms | 71 ms |
+
+同じクリックが**運次第で 0.2 秒にも 4.5 秒にもなる**——これが報告された「時間差で表示されたりされなかったり」の正体。
+オフ側にはこのゲートが無い（`setVis(...,false)` を直接呼ぶ）ため**オフだけ即時**という非対称も説明が付く。
+
+**修正**: `index.html` に **`canDraw()`** を1つ置き、全箇所をこれに移した（`IM_HOST.canDraw` / `window.IntMapCanDraw` /
+`IntMapGeoEngine.canDraw()` の3経路で到達可能）。判定は ①`isStyleLoaded()` が true なら true（高速路） →
+②解析済みフラグ → ③`getStyle().layers` が非空（公開APIのフォールバック）。**タイルは見ない**。
+`setStyle()` によるベースマップ切替中は解析済みフラグが本当に落ちるので、**守るべき窓は守ったまま**通常のタイル往来では
+開くようになった。同じ理由で、`audit()`（レイヤーの自己修復）と `IntMapGeoEngine.ready()` を使っていたニュースピン生成も
+`canDraw` に移した——**「チェックは入っているのに描かれていない」を直す仕組み自体が、直すべき状況でだけ眠っていた**。
+
+- **踏んだ罠**: 移行スクリプトはヘルパ `_imCanDraw()` を各ファイルの**最初のファクトリにだけ**挿入した。`js/sims.js`（8本）
+  `js/layer-packs.js`（6本）など複数ファクトリを持つファイルでは残りが**実行時に何にも解決しない自由識別子**になる。
+  #R163 で入れた `scripts/check-split-scope.mjs`（acorn 実パーサ）が7ファイルで検出。`tests/r170-checks.test.mjs` が
+  「`_imCanDraw()` を呼ぶファクトリは同じファクトリ内で宣言している」を恒久的に固定する。
+
+**② Measure ▸ 3-D 立体（`js/volume3d.js` / `IntMapVolume3D`）**
+
+底面を地図上でなぞり、**海抜の下端・上端（m）**を入力すると、その範囲が**実尺**で空中に描かれる。
+体積＝底面積×厚み、地表面標高、厚みをパネルに表示。Atlas からは `{"type":"volume3d","place","km","base","top"}`。
+
+- **高度の基準（黙って間違えやすい唯一の点）**: MapLibre 5.24 に `fill-extrusion-*-alignment` は**存在しない**
+  （設定すると例外）。同一カメラの富士山で実測すると、**3D地形 OFF では base=5000 が海抜5,000m**、
+  **ON にすると同じ箱が DEM 標高ぶん（山頂で≈3,698m）跳ね上がる**＝数値の意味が地形トグルで変わる。
+  それでは計測ツールにならないので、**ユーザーの数値は常に海抜**と決め、地形 ON のときだけ底面重心の DEM 標高を
+  差し引いて渡す。パネルには差し引いた地表面標高を出す。
+- **DEM は「0」を返してから本当の値になる**: 地形 ON 直後 `queryTerrainElevation` は約2秒間 **0** を返し、その後
+  実標高（富士山で 0→3,662m）に変わる。**0 は「読み込み中」と「海抜0m」の両方**なので値では判別できない。
+  読み値が動いたら描き直す短いポーリングで解決している。
+- **engine 依存の初期化順**: モジュール工場は `map` 生成直後（`IntMapGeoEngine` 構築より**前**）に走るため、
+  構築時に `IntMapGeoEngine.events.on(...)` しても**何にも繋がらない**（実ブラウザで検出：地形を切り替えても
+  ground が null のままだった）。エンジンが現れるまで待って一度だけ配線する。
+
+**③ Companies のすべての数値に日付**
+
+数値を3種類に分け、それぞれ**その数値が表す時点**を必ず添える（一覧・詳細・比較バー・比較表・CSV 書き出し）。
+ライブ＝**気配値自身のタイムスタンプ**（Yahoo が返さない場合のみ取得時刻＋「取得」表記に落とす）、
+タイムマシン＝その年の**年末終値**、キュレーション表（売上・純利益・従業員数・非米国銘柄のスナップショット時価総額）＝
+`CURATED_FY='FY2024'`（**会計年度末は企業ごとに異なるため「基準」であって共通の日付ではない**）と
+`CURATED_ASOF='2026-07-20'`（表がこのリポジトリに入った日＝git で確認できる事実）。P/E は
+**ライブ株価 ÷ 通期利益**なので両方の日付を出す。
+
+**④ 既定値・その他**
+
+ティッカー既定オフ（設定の表示は #R63 以来「Off (default)」だったが実際の既定は #R101 以降オンだった＝表示と実装の不一致も解消）／
+デスクトップ既定を通常モード＋Countries 選択（ワークスペースは明示的に `on:1` を保存した人だけ・**1回だけ**出す
+`tabInit` フラグ付きなので、全タブを閉じた人を毎回上書きしない）／フライトシムは Globe 強制（終了時は**両方向に**復元）・
+空中開始が既定・「もう一度飛ぶ」は**終了地点から**（`intmap_fs_last` に永続、開始地点セレクトにも出る）／
+検索バー top:24px→10px（右上コントロールと同じ行）／位置情報は全経路 `enableHighAccuracy:true` + `maximumAge:0`。
+
+- **既存テストが拾った副作用**: `tests/r156.spec.js` は Atlas の返信スタイルシート（`.atl-math-b` の `overflow-x`）を
+  見ているが、そのCSSは Atlas パネル構築時にしか注入されない。**デスクトップ既定がワークスペースだったので、
+  誰も Atlas を開かなくても起動時に注入されていた**だけだった。既定変更で前提が消えたので、テスト側に
+  「Atlas を開く」という**本来必要だった前提**を明示させた（製品側は無回帰＝タブを開けば従来どおり `auto` になることを
+  実ブラウザで確認済み）。
+
+---
+
 ### #R157 補足（Atlas 自然言語処理の全面再設計＝「GPTが意味を理解する層」と「コードが安全に実行する層」の明確な分離）
 
 **設計原則（現状仕様）**: Atlas のハイライト系ターゲットは **意味の解釈をGPTが担い、コードは検証・実行のみを担う**。ユーザーの自然言語は意味を保持した原文のまま最初にプランナー（GPT）へ渡る。`localPlan`/`regionGroup`/`GROUP_ALIASES`/`REGION_ALIASES`/正規表現が**GPTより先に概念の意味を決定・改変・拒否する経路は存在しない**。既存の ISO/UN M49/国境 GeoJSON/組織加盟国データは**意味推測辞書ではなく**、GPT出力を検証して実地理形状へ結び付ける**決定論的データ**として残る。
@@ -1663,18 +1744,34 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 
 ### #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
 
-#### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161）
+#### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161 / 第4段階＝#R170）
 `window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
 
 - **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
 - **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection＋**#R160**: getZoom/getCenter/getBearing/getPitch/getBounds/zoomTo/zoomIn/zoomOut/stop）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決＋**#R160**: setFeatureState/removeFeatureState）・**`render`（#R160: resize/triggerRepaint/canvas＋**#R161**: container/size/setCursor）**・`events`（on/off/once＋**#R161**: onLayer/offLayer＝**レイヤ単位のポインタイベント**）＋**#R161**: `ready()`（描画準備完了）・`layers.getPaint()`（paint 読み戻し）。
-- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
+- **#R170 第4段階＝「描けるか」と「落ち着いたか」の分離＋実尺 3-D 押し出し**:
+  - **`canDraw()` を契約に追加**（`ready()` とは別物）。`ready()`＝`isStyleLoaded()`＝**スタイル解析済み かつ 全ソースのタイル読込完了**。
+    ところが「addSource/addLayer してよいか」に必要なのは**スタイルが解析済みであること だけ**で、タイルは無関係。
+    実測すると、ユーザーがパン/ズームしている間 `isStyleLoaded()` は**12秒間で14サンプル中12回 false（86%）**——
+    つまりアプリ全体が「今はレイヤーを作れない」と誤答し続けていた。**レンダラーはこの2つを区別できなければならない**
+    という要求として契約に入れた（MapLibre は解析済みフラグ、別エンジンは自前のシーン準備状態で答える）。実害と
+    数値は §19 #R170 と DEV-NOTES を参照。
+  - **`capabilities.extrusion3d` ＋ `layers.addExtrusion()` / `layers.setExtrusionRange(id, baseM, topM)`**＝
+    **メートル実尺の 3-D 押し出し**。Measure ▸ 3-D 立体（`js/volume3d.js`）が必要としたもので、
+    「本物の距離単位で立体を出せないエンジン」は capabilities でそう申告できる。
+  - **`js/volume3d.js` は engine だけで書かれた 2 本目のサブシステム**（1本目は #R161 のニュースピン）。
+    ただし #R161 と違い**最初から engine 前提で新規に書いた**ので、移行漏れという概念が無い。
+  - **注意（#R170 で実測）**: MapLibre 5.24 に `fill-extrusion-*-alignment` は**無い**（設定すると例外）。
+    そのため `fill-extrusion-base/height` の基準は**3D地形 OFF＝海抜／ON＝地表面**と状態で変わる
+    （同一カメラの富士山で実測：ON にすると箱が DEM 標高ぶん≈3,698m 跳ね上がる）。`volume3d.js` は
+    地形 ON のとき DEM 標高を差し引くことで**ユーザーの入力を常に「海抜」に固定**している。
+- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`・#R170 で `extrusion3d:true` を追加）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
 - **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
   - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
 - **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
 - **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子。
-- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋既存スモーク。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js` がその最初の実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky`/`setMaxPitch` を `terrain` 名前空間として契約化（#R170 で `volume3d` が `HOST.terrain3D` 経由の間接参照に留めた部分）。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋**`tests/r170-checks.test.mjs`（`canDraw`/`extrusion3d`/`addExtrusion`/`setExtrusionRange` の契約・Cesium 側の同期・`volume3d.js` が生 `map` を呼ばないこと）**＋**`tests/r170.spec.js`（実ブラウザ：地形 ON/OFF で `fill-extrusion-base` が実際に DEM ぶん補正される）**＋既存スモーク。
 
 #### その他12件（要点）
 ①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。

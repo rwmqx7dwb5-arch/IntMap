@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R169';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */
+window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R169';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-07-25-R169';
+  window.INTMAP_BUILD='2026-07-26-R170';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -284,7 +284,8 @@ window.__imBuild='R169';   /* (#R121) build marker — bump when verifying that 
           <div class="measure-dropdown" id="measure-dropdown">
             <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area">📏 Distance / area</button>
             <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
-            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+            <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
           </div>
         </div>
         <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
@@ -653,7 +654,8 @@ window.__imBuild='R169';   /* (#R121) build marker — bump when verifying that 
     <div class="m-tool-grid">
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-volume"><span class="ico">🧊</span><span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) -->
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
     </div>
@@ -744,6 +746,7 @@ window.__imBuild='R169';   /* (#R121) build marker — bump when verifying that 
 <script src="js/news-ui.js"></script>
 <script src="js/companies-ui.js"></script>
 <script src="js/tool-panel.js"></script>
+<script src="js/volume3d.js"></script>   <!-- (#R170) Measure ▸ 3-D volume — built entirely on IntMapGeoEngine -->
 <script src="js/auth-ui.js"></script>
 <script src="js/community.js"></script>
 <!-- (#R169) the eighth split: eleven more SUBJECT modules. Every statement in them is a DECLARATION,
@@ -827,6 +830,32 @@ window.addEventListener('DOMContentLoaded', () => {
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false, geoLabelsOn=true;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */
   let map=null, markersArray=[], forceHoverLayers=new Set();
+  /* ===== (#R170) canDraw() — the ONE predicate the whole app uses before touching the style =====
+     "Is it safe to addSource / addLayer RIGHT NOW?" This is NOT the same question as
+     `map.isStyleLoaded()`, and conflating the two was the root cause of the reported
+     「レイヤーをオンオフしても、時間差で表示されたり表示されなかったりする」.
+
+     MapLibre's isStyleLoaded() means *the style is parsed AND every source cache is fully loaded*.
+     Tiles stream continuously while a user pans/zooms, so it is FALSE most of the time during
+     ordinary browsing — measured on this app: FALSE for 12 of 14 samples (86%) across a 12 s pan,
+     with contiguous false runs of ~2 s. Every `ensureX(){ if(!map.isStyleLoaded()) return false; … }`
+     guard and whenStyleReady() therefore refused to build the layer and fell back to waiting for the
+     map to go idle (or whenStyleReady's 6 s hard-resolve). Measured toggle-ON → layer painted:
+     **4497 ms / 3171 ms when the map was busy vs 189 ms when it happened to be idle** — i.e. the same
+     click either paints instantly or seconds later, purely by luck. Toggle-OFF has no such gate, so
+     off is instant while on lags: exactly the reported asymmetry.
+
+     addSource/addLayer only need the STYLE OBJECT to be parsed; in-flight tiles are irrelevant
+     (verified: adding a source+layer while isStyleLoaded()===false succeeds and the layer is live).
+     During a real setStyle() swap (Map ⇄ Satellite) the parsed flag genuinely goes false and back,
+     so the guard still protects that window — it just stops firing on ordinary tile traffic. */
+  function canDraw(){
+    if(!map) return false;
+    try{ if(map.isStyleLoaded()) return true; }catch(_){}
+    try{ if(map.style && map.style._loaded===true) return true; }catch(_){}                              /* fast path */
+    try{ const s=map.getStyle(); return !!(s && s.layers && s.layers.length); }catch(_){ return false; } /* public fallback */
+  }
+  window.IntMapCanDraw=canDraw;   /* also reachable from js/ modules that hold no HOST (see IM_HOST.canDraw) */
   let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp', statsSortDir='desc';   /* (#R11) no tab auto-selected; (#R102) Countries sort direction (desc/asc) */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
   let activeDashCategories=new Set(['mil','tech','maritime','geo']);
@@ -895,6 +924,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* datasets — countryGeo is REPLACED when the boundary file lands; countryStats is filled in place */
     get countryGeo(){ return countryGeo; },         get countryStats(){ return countryStats; },
     /* stable helpers (function declarations / consts — never rebound, but still getters for the reasons above) */
+    /* (#R170) canDraw = "is it safe to addSource/addLayer right now?" — see the declaration above for why
+     * that is NOT the same question as map.isStyleLoaded(). */
+    get canDraw(){ return canDraw; },
     get isMobile(){ return isMobile; },             get t(){ return t; },
     get cName(){ return cName; },                   get searchVal(){ return searchVal; },
     get loadCountryData(){ return loadCountryData; }, get resolveCountryId(){ return resolveCountryId; },
@@ -1205,7 +1237,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
        chosen map color always lands. */
-    if(!map||!map.isStyleLoaded()){
+    if(!canDraw()){   /* (#R170) a parsed style is all the base-map visibility set below needs */
       /* (#R34) Even while the style is still loading, do an IMMEDIATE best-effort base flip so a Map/Sat
          tap never feels dead ("切り替えができない/反応が極めて悪い"). The full applyTheme re-runs on idle. */
       if(map){ try{
@@ -1649,6 +1681,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function _coCmpEnsureCss(){ return IM_COMPANIES_UI._coCmpEnsureCss.apply(this,arguments); }
   function _coCmpRender(){ return IM_COMPANIES_UI._coCmpRender.apply(this,arguments); }
   const IM_TOOL_PANEL=window.IntMapModules.toolPanel(map,IM_HOST);
+  /* (#R170) Measure ▸ 3-D volume. Built AFTER IntMapGeoEngine exists (it talks to nothing else), and exposed
+     globally because the tool panel, exitTool and the Atlas volume3d action all drive the same single box. */
+  window.IntMapVolume3D=window.IntMapModules.volume3d(map,IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
@@ -2321,11 +2356,12 @@ window.addEventListener('DOMContentLoaded', () => {
   function _syncToolBtns(){
     ['measure','radius'].forEach(m=>{ const b=document.getElementById('btn-tool-'+m); if(b) b.classList.toggle('tool-on', toolMode===m); });
     const trig=document.getElementById('btn-measure-menu');
-    if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||toolMode==='radius'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));   /* (#R151) Radius now lives in the Measure menu → its trigger reflects an active radius too */
+    if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||toolMode==='radius'||toolMode==='volume'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));   /* (#R170) +volume */   /* (#R151) Radius now lives in the Measure menu → its trigger reflects an active radius too */
     try{ window._mAddPointUpdate&&window._mAddPointUpdate(); }catch(_){}   /* show/hide the mobile "+Add point" button with the tool state (#R13) */
   }
   window._syncToolBtns=_syncToolBtns;
   function exitTool(){
+    try{ if(toolMode==='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.clear(); }catch(_){}   /* (#R170) closing the tool removes its 3-D box */
     toolMode=null; liveCursor=null; measureSnapClose=false;
     _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
@@ -2334,6 +2370,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function setTool(mode){
     if(toolMode===mode){ exitTool(); return; }
+    try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.clear(); }catch(_){}   /* (#R170) */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
@@ -2504,7 +2541,9 @@ window.addEventListener('DOMContentLoaded', () => {
       window.IntMapGeoEngine=(function(){
         function _m(){ return window.__imap||(typeof map!=='undefined'?map:null); }
         const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
-          rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true };
+          rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
+          /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
+          extrusion3d:true };
         /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
         const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
           flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
@@ -2535,6 +2574,20 @@ window.addEventListener('DOMContentLoaded', () => {
              All 1:1 pass-throughs, so adopting them is behaviour-neutral; a future Cesium/Earth adapter only
              has to implement this list to inherit the whole news-pin layer. */
           styleReady(){ const m=_m(); try{ return !!(m&&m.isStyleLoaded&&m.isStyleLoaded()); }catch(_){ return false; } },
+          /* (#R170) canDraw — "the style is PARSED, so addSource/addLayer are safe" — deliberately DISTINCT from
+             styleReady ("everything, including every tile, has settled"). Overlay subsystems want the former;
+             only code that must wait for a quiet frame (screenshots, paint sampling) wants the latter. Making a
+             renderer distinguish the two is a hard requirement of the contract now, not an implementation detail:
+             MapLibre answers it from the parsed-style flag, a Cesium/Earth adapter from its own scene readiness. */
+          canDraw(){ try{ return !!(window.IntMapCanDraw&&window.IntMapCanDraw()); }catch(_){ return this.styleReady(); } },
+          /* (#R170) 3-D EXTRUSION — real-scale volumes standing in the air (base/height in METRES above the
+             ground plane). Needed by the Measure ▸ 3-D volume tool; a future Earth adapter maps it onto its own
+             primitive. Kept as its own contract entry (not just "a fill layer") because an engine without real
+             metric extrusion must be able to say so via capabilities.extrusion3d. */
+          addExtrusion(d,before){ const m=_m(); if(!m||m.getLayer(d.id)) return false;
+            try{ m.addLayer(Object.assign({type:'fill-extrusion'},d), (before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+          setExtrusionRange(id,baseM,topM){ const m=_m(); if(!(m&&m.getLayer(id))) return false;
+            try{ m.setPaintProperty(id,'fill-extrusion-base',baseM); m.setPaintProperty(id,'fill-extrusion-height',topM); return true; }catch(_){ return false; } },
           getContainer(){ const m=_m(); return (m&&m.getContainer)?m.getContainer():null; },
           getSize(){ const m=_m(); if(!m) return {width:0,height:0}; try{ const c=m.getContainer(); const cv=m.getCanvas&&m.getCanvas();
             return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
@@ -2544,7 +2597,7 @@ window.addEventListener('DOMContentLoaded', () => {
           raw(){ return _m(); } };
         /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
            (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
-        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true } };
+        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true } };
         let _adapter=MapLibreAdapter;
         return {
           id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
@@ -2554,9 +2607,14 @@ window.addEventListener('DOMContentLoaded', () => {
             getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
             zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop() },
           coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
-          /* (#R161) is the renderer far enough along that adding sources/layers is safe? */
+          /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
+             far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the
+             second with the first is what made freshly-ticked layers appear seconds late. */
           ready:()=>_adapter.styleReady(),
+          canDraw:()=>_adapter.canDraw(),
           layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
+            /* (#R170) real-scale 3-D volumes (metres above ground) */
+            addExtrusion:(d,b)=>_adapter.addExtrusion(d,b), setExtrusionRange:(id,a,b)=>_adapter.setExtrusionRange(id,a,b),
             /* (#R160) feature-state (hover/selection highlighting) through the engine */
             setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),
             /* (#R161) read a paint property back (theme code needs to know the current value) */
@@ -2629,7 +2687,10 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
   { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=(e)=>setGrid(e.target.checked); }   /* (#R10/#R38) Grid in Layers — drive state FROM the box (idempotent) so a re-asserted change can't re-enable it */
   document.getElementById('btn-tool-measure').onclick=()=>{ setTool('measure'); if(window._closeMeasureMenu)window._closeMeasureMenu(); };
-  document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
+  document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
+  /* (#R170) 3-D volume — same Measure menu, same point-collection path as Distance/Area (measurePoints); the
+     altitude band and the extrusion live in js/volume3d.js. */
+  { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }; }
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
@@ -2859,7 +2920,7 @@ window.addEventListener('DOMContentLoaded', () => {
       applyTheme();
     }catch(_){} };
     if(bordersOn){
-      if(!map||!map.isStyleLoaded()){ map&&map.once&&map.once('idle',mkBorders); }
+      if(!canDraw()){ map&&map.once&&map.once('idle',mkBorders); }
       mkBorders();
       [250,700,1600,3200].forEach(ms=>setTimeout(mkBorders,ms));
     } else { mkBorders(); }
@@ -2868,7 +2929,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R29) ROBUST: a basemap style swap (Map↔Sat) drops the `countries` source + `country-fill` layer,
        but countryDataLoaded stays true — so the old `else applyCountryVisibility()` path was a no-op and
        Countries(info) "使えなくなっていた". Always RE-ENSURE the layers exist before showing them. */
-    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && map && map.isStyleLoaded() && !map.getSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
+    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && canDraw() && !map.getSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
     if(countryInfoOn && !countryDataLoaded){ loadCountryData().then(ensure); } else ensure();
     if(!countryInfoOn) hideCountryInfo(); });
 
@@ -2881,7 +2942,7 @@ window.addEventListener('DOMContentLoaded', () => {
      ("国境線が実際とずれる" → accurate where possible). Same reliable `ofm` path as state/road/rail (no
      countryGeo dependency → also fixes "borders only after reload"). */
   function ensureBordersLayer(){ try{
-    if(!map||!map.isStyleLoaded()) return false;
+    if(!canDraw()) return false;
     ensurePlaceLabels(); if(!map.getSource('ofm')) return false;
     if(!map.getLayer('borders-only-line')){
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>map.getLayer(id)) || (map.getLayer('tool-poly')?'tool-poly':undefined);
@@ -2894,7 +2955,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.ensureBordersLayer=ensureBordersLayer;
   function ensureRefLayers(){
     try{
-      if(!map||!map.isStyleLoaded()) return false;
+      if(!canDraw()) return false;
       ensurePlaceLabels();                                  /* guarantees the `ofm` vector source exists */
       if(!map.getSource('ofm')) return false;
       const before = map.getLayer('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
@@ -2928,7 +2989,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(map&&map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); if(map&&map.getLayer(layerId+'-dash')) map.setLayoutProperty(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
-      if(cb.checked && (!map||!map.isStyleLoaded())){ map&&map.once&&map.once('idle',apply); }
+      if(cb.checked && !canDraw()){ map&&map.once&&map.once('idle',apply); }
       apply();
       if(cb.checked){ [250,700,1600,3200].forEach(ms=>setTimeout(apply,ms)); }
     }); }
@@ -3582,7 +3643,7 @@ window.addEventListener('DOMContentLoaded', () => {
       n++;
       try{
         if(typeof currentMapType==='undefined' || currentMapType!==mode){ clearInterval(window._baseReassertT); return; }
-        if(map && map.isStyleLoaded() && map.getLayer('layer-sat')){
+        if(canDraw() && map.getLayer('layer-sat')){
           const wantSat=(mode==='sat'), isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible');
           if(wantSat!==isSat) applyTheme(); else { clearInterval(window._baseReassertT); }
         }
@@ -3719,11 +3780,11 @@ window.addEventListener('DOMContentLoaded', () => {
      (those ride the URL hash). Now the ACTIVE LAYERS, the open TAB, the time-machine YEAR, the base map (Map/Satellite)
      and 3-D terrain are saved to localStorage and restored on load. Map lat/lng/zoom/projection stay in the hash. ===== */
   (function(){
-    const KEY='intmap_session2'; let _restoring=true, _saveT=null;
+    const KEY='intmap_session2'; let _restoring=true, _saveT=null, _tabInit=false;
     function _snapshot(){ try{
       const layers=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(cb.checked&&cb.id) layers.push(cb.id); });
       let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
-      return { v:2, layers, mode:(typeof currentMode!=='undefined'?currentMode:null),
+      return { v:2, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
         base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
         year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
     function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
@@ -3733,7 +3794,25 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
     try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>_save()); }catch(_){}
-    function _restore(){ let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ _restoring=false; return; }
+    /* (#R170) DESKTOP BOOT → open the Countries tab ("デスクトップ版は通常モードをデフォルトに。（Countries が選択
+       された状態で）"). #R11 deliberately left every tab deselected; that stays true for mobile (the tab is a bottom
+       sheet, so auto-opening one would cover the map) and for workspace mode (which has its own windows).
+       It fires ONCE per browser profile and records `tabInit` in the session snapshot, so:
+         · a first-time desktop visitor lands on Countries;
+         · so does an existing desktop user whose saved session has no tab — the #R101 workspace default meant
+           currentMode was never set, and without this they would drop into an empty sidebar after the switch;
+         · but a user who then deselects every tab is NOT overridden on the next reload (tabInit is already true).
+       `if(!currentMode)` additionally means it can never stomp a tab the restore below already opened. */
+    function _defaultTab(){ try{
+      _tabInit=true; setTimeout(_save,1800);   /* persist the "already offered" flag once _restoring has cleared */
+      if(currentMode) return;
+      if(typeof isMobile==='function' ? isMobile() : window.innerWidth<=768) return;
+      if(document.body.classList.contains('ws-mode')) return;
+      if(window.IntMapOS) IntMapOS.exec('tab.stats',{source:'default'});
+    }catch(_){} }
+    function _restore(){ let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ setTimeout(_defaultTab,500); setTimeout(()=>{ _restoring=false; },1600); return; }
+      _tabInit=!!s.tabInit;
+      if(!s.mode&&!_tabInit) setTimeout(_defaultTab,500);
       /* base map + 3-D first (they swap the style) */
       try{ if(s.base==='sat'&&currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof terrain3D!=='undefined'&&terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
@@ -4060,7 +4139,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== Right-click pins ===================== */
   let userPins=[], activePinId=null, pinSeq=0;
   function setupPinLayers(){
-    if(!map||!map.isStyleLoaded()) return;
+    if(!canDraw()) return;
     if(!map.getSource('user-pins')){
       map.addSource('user-pins',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
       map.addLayer({id:'user-pin-shadow',type:'circle',source:'user-pins',paint:{'circle-radius':12,'circle-color':'#000','circle-opacity':0.18,'circle-blur':0.6}});
@@ -4355,7 +4434,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
   /* Push community pins when style first loads, so they appear without needing to enter the tab */
   if(map){
-    if(map.isStyleLoaded()){ try{ setupCommunityLayer(); }catch(_){} }
+    if(canDraw()){ try{ setupCommunityLayer(); }catch(_){} }
     map.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     map.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     /* "In view" filter: as you pan, re-filter the feed + pins to the visible map area. */
@@ -4539,8 +4618,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
-  /* (#R101) desktop default: ticker ON. Mobile hides the bar via CSS regardless; a saved 'off' still wins (see loadSettings). */
-  window.imTicker=(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)?'off':'on';
+  /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
+     lie: the Settings dropdown has said "Off (default)" since #R63 while #R101 actually defaulted desktop to ON.
+     A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
+  window.imTicker='off';
   window.imNewsCountries=[]; window.imLayerFavs=[];
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {NEWS_COUNTRY_FEEDS}=window.IntMapTables;
@@ -5308,7 +5389,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
     let card=null, open=false, events=[], pinsOn=true;
     const TYPE_COL={'Battles':'#ff3b30','Explosions/Remote violence':'#ff9500','Violence against civilians':'#af52de','Protests':'#0a84ff','Riots':'#ffd60a','Strategic developments':'#8e8e93'};
-    function ensureLayer(){ if(map.getSource('acled-src')) return true; if(!map.isStyleLoaded()) return false;
+    function ensureLayer(){ if(map.getSource('acled-src')) return true; if(!canDraw()) return false;
       try{
         map.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
         const before=map.getLayer('tool-poly')?'tool-poly':undefined;
