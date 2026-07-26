@@ -34,7 +34,12 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   'IntMapTables',         // js/tables.js
   'RunwaySearch',         // js/map-extras.js
   'IntMapCache',          // js/dash-extended.js
-  '_imWelcome'];          // js/onboarding.js
+  '_imWelcome',           // js/onboarding.js
+  // (#R171) the two files written straight into js/ as new features rather than split out of
+  // index.html. Same rule, same reason: without a global named here, a file that failed to deploy
+  // leaves the app working and one feature silently missing.
+  'IntMapVolume3D',       // js/volume3d.js  (#R170, never listed here)
+  'IntMapTilt'];          // js/view-controls.js
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

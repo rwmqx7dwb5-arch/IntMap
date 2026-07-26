@@ -795,7 +795,11 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
                  /* (#R168) the six subject modules of the seventh split. */
                  'countriesUi','newsUi','companiesUi','toolPanel','authUi','community',
                  /* (#R169) the eleven subject modules of the eighth split. */
-                 'satellite','aiCore','placeLabels','windowManager','searchGeocode','newsContext','newsFeed','articleReader','communityBoard','mapReadout','elevationProfile'].filter(function(k){ return typeof M[k]!=='function'; });
+                 'satellite','aiCore','placeLabels','windowManager','searchGeocode','newsContext','newsFeed','articleReader','communityBoard','mapReadout','elevationProfile',
+                 /* (#R171) The two files written straight into js/ rather than split out of here. volume3d
+                    shipped in #R170 without ever being named here, so a js/volume3d.js that failed to deploy
+                    would have gone unreported — exactly the silent loss this guard exists to catch. */
+                 'volume3d','viewControls'].filter(function(k){ return typeof M[k]!=='function'; });
     if(miss.length) console.error('[IntMap] required module file(s) failed to load: '+miss.join(', ')+' — check the js/ directory is deployed');
     if(missFac.length) console.error('[IntMap] module factories missing: '+missFac.join(', ')+' — the matching js/ file did not load');
     window.__imModuleCheck={ missing:miss, missingFactories:missFac }; })();
