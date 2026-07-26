@@ -338,6 +338,35 @@ test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
   expect(st.fill).toBe('#ff3b30');
 });
 
+test('the elevation profile still puts its cursor on the map through the engine', async ({ page }) => {
+  test.setTimeout(180000);
+  await boot(page);
+  // #R169 deliberately made no browser claim about js/elevation-profile.js (it needs a real DEM).
+  // This round moved its addSource/addLayer/setData onto the engine, so that claim is now needed:
+  // the layer it creates is the only visible consequence of the migration.
+  await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7, 35.36], zoom: 10 }); await new Promise(r => setTimeout(r, 1500)); });
+  await page.click('#btn-measure-menu');
+  await page.click('#btn-tool-measure');
+  const c = await page.locator('canvas.maplibregl-canvas').boundingBox();
+  await page.mouse.click(c.x + c.width * 0.40, c.y + c.height * 0.50);
+  await page.waitForTimeout(200);
+  await page.mouse.click(c.x + c.width * 0.60, c.y + c.height * 0.55);
+  await page.waitForTimeout(400);
+  await page.click('#tp-profile');
+  await page.waitForSelector('#elev-svg', { timeout: 60000 });
+  await page.evaluate(() => { const s = document.getElementById('elev-svg'), b = s.getBoundingClientRect();
+    s.dispatchEvent(new MouseEvent('mousemove', { clientX: b.x + b.width / 2, clientY: b.y + b.height / 2, bubbles: true })); });
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(() => ({
+    src: !!window.__imap.getSource('elev-cursor'),
+    lyr: !!window.__imap.getLayer('elev-cursor-pt'),
+    feats: (() => { try { return window.__imap.getSource('elev-cursor').serialize().data.features.length; } catch (_) { return -1; } })(),
+  }));
+  expect(r.src, 'the cursor source is added through the engine').toBe(true);
+  expect(r.lyr).toBe(true);
+  expect(r.feats, 'hovering the chart marks the spot on the map').toBe(1);
+});
+
 test('the migrated modules still drive the map through the engine', async ({ page }) => {
   test.setTimeout(150000);
   await boot(page);
