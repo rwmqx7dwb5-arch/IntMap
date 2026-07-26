@@ -221,9 +221,9 @@ test('the ten modules cleared this round stay clear of the renderer', () => {
 
 test('the count of renderer-independent modules only goes up', () => {
   const clean = JS_FILES.filter(f => rawMapUses(f).length === 0);
-  // 24 after this round (14 that never touched it + volume3d + view-controls + the ten cleared here,
-  // minus the ones already counted). Pinned as a floor so the direction of travel is one-way.
-  assert.ok(clean.length >= 24, `only ${clean.length} of ${JS_FILES.length} modules are renderer-independent — this must not go backwards`);
+  // 26 of 55 after this round (the 14 that never touched the renderer, volume3d (#R170), the new
+  // view-controls, and the ten cleared here). Pinned as a floor so the direction of travel is one-way.
+  assert.ok(clean.length >= 26, `only ${clean.length} of ${JS_FILES.length} modules are renderer-independent — this must not go backwards`);
 });
 
 test('the engine contract declares what this round needed, and Cesium answers for it too', () => {

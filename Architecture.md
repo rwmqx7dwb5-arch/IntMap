@@ -1873,7 +1873,7 @@ z12 付近から先は素の Mercator」と定義されている**からで、`g
     #R170 までは `map.dragPan` を直接触っていた＝レンダラー非依存のツールには書けない呼び出しだった。
   - **`js/view-controls.js` は engine だけで書かれた3本目**（1本目 #R161 ニュースピン、2本目 #R170 volume3d）。
   - **モジュール10本を移行**（`ai-core` / `community` / `companies-ui` / `news-feed` / `news-timeline` / `feedback` /
-    `onboarding` / `elevation-profile` / `search-geocode` / `workspace`）＝生 `map` 参照ゼロのモジュールが **24/52 本**に。
+    `onboarding` / `elevation-profile` / `search-geocode` / `workspace`）＝生 `map` 参照ゼロのモジュールが **26/55 本**に。
     検査は**パーサ**で行う（`js/workspace.js` は `map.setPadding(...)` を**コメントで説明している**だけで呼んでいないし、
     `map[key]` は別物のルックアップ表）。`tests/r171-checks.test.mjs` が本数を下限として固定する。
   - **移行中に見つけた潜在的な罠**: `js/search-geocode.js` に `const map={…}` というローカルがあり、**工場が受け取る

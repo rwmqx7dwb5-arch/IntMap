@@ -111,7 +111,7 @@ Atlas の `volume3d` にも `shape`/`color`/`opacity` を追加（SYS カタロ�
 - **`input.setDragPan(on)`**＝ジェスチャの受け渡し（§2）。
 - **`js/view-controls.js` は engine だけで書かれた3本目**（1本目 #R161 ニュースピン、2本目 #R170 volume3d）。
 - **モジュール10本から生 `map` を追い出した**（`ai-core`/`community`/`companies-ui`/`news-feed`/`news-timeline`/
-  `feedback`/`onboarding`/`elevation-profile`/`search-geocode`/`workspace`）＝レンダラー非依存が **24/52本**。
+  `feedback`/`onboarding`/`elevation-profile`/`search-geocode`/`workspace`）＝レンダラー非依存が **26/55本**。
   **検査はパーサで行う**：`js/workspace.js` は `map.setPadding(...)` を**コメントで説明している**だけだし、
   `map[key]` は無関係なルックアップ表（実際に自作の AST 検査が最初にそれを誤検出した）。
 - **⚠ 移行中に見つけた潜在的な罠**: `js/search-geocode.js` に `const map={…}` というローカルがあり、
