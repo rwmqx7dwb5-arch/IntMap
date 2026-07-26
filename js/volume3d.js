@@ -202,7 +202,11 @@ window.IntMapModules.volume3d=function(map,HOST){
     function onDown(e){ if(!armed||e.button!==0) return; e.preventDefault(); e.stopPropagation(); _begin(_ll(e.clientX,e.clientY)); }
     function onMove(e){ if(!drawing) return; const cv=_canvas(); if(!cv) return; const r=cv.getBoundingClientRect();
       _extend(_ll(e.clientX,e.clientY),{x:e.clientX-r.left,y:e.clientY-r.top}); }
+    /* A stroke that ends where no mouseup can reach us — the pointer released outside the window, the
+       tab lost focus mid-drag, a touch cancelled — would otherwise leave the map's pan switched off.
+       Same defence the flight sim uses for held keys (#R95). */
     function onUp(){ _end(); }
+    function onLost(){ if(drawing) _end(); }
     function onTouchStart(e){ if(!armed||e.touches.length!==1) return; e.preventDefault(); _begin(_ll(e.touches[0].clientX,e.touches[0].clientY)); }
     function onTouchMove(e){ if(!drawing||e.touches.length!==1) return; e.preventDefault(); const cv=_canvas(); if(!cv) return;
       const r=cv.getBoundingClientRect(), t=e.touches[0]; _extend(_ll(t.clientX,t.clientY),{x:t.clientX-r.left,y:t.clientY-r.top}); }
@@ -213,9 +217,11 @@ window.IntMapModules.volume3d=function(map,HOST){
       if(on){ if(_cv) return; _cv=cv;
         cv.addEventListener('mousedown',onDown,true); window.addEventListener('mousemove',onMove,true); window.addEventListener('mouseup',onUp,true);
         cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false});
+        window.addEventListener('blur',onLost); window.addEventListener('pointercancel',onLost,true); cv.addEventListener('touchcancel',onLost,{passive:false});
       } else if(_cv){
         _cv.removeEventListener('mousedown',onDown,true); window.removeEventListener('mousemove',onMove,true); window.removeEventListener('mouseup',onUp,true);
         _cv.removeEventListener('touchstart',onTouchStart); _cv.removeEventListener('touchmove',onTouchMove); _cv.removeEventListener('touchend',onTouchEnd);
+        window.removeEventListener('blur',onLost); window.removeEventListener('pointercancel',onLost,true); _cv.removeEventListener('touchcancel',onLost);
         _cv=null; }
     }
     /* Switching shape starts a fresh footprint: a circle is not "the polygon with rounder corners", and
