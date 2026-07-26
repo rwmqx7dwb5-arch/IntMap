@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsFeed=function(map,HOST){
+window.IntMapModules.newsFeed=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -34,7 +34,8 @@ window.IntMapModules.newsFeed=function(map,HOST){
     HOST._spreadDupNewsPins(HOST.newsFeatures);   /* (#R122) fan out pins sharing an anchor so each is individually clickable */
     if(_imCanDraw()) HOST.setupIntelLayers();
     /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
-    if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} }
+    /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
+    try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} } }catch(_){}
     HOST.appendNewsBatch(); HOST.updateOcclusion();
     maybeAutoEnrich();
   }

@@ -383,12 +383,27 @@
     }
     .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
-    /* (#R170) Measure ▸ 3-D volume — the altitude band. Two number fields side by side so the "from … to …"
-       reads as one range; they re-extrude the box on every keystroke. */
-    .v3d-alt{ display:flex; gap:8px; margin:2px 0 6px; }
-    .v3d-alt label{ flex:1; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); }
-    .v3d-alt input{ flex:1; min-width:0; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:5px 6px; font-size:12.5px; font-variant-numeric:tabular-nums; }
+    /* (#R170) Measure ▸ 3-D volume — the altitude band. Two number fields so the "from … to …" reads as
+       one range; they re-extrude the box on every keystroke.
+       (#R171) LAID OUT AS A GRID, label ABOVE field. Measured before: with the label beside the input each
+       flex item's min-content was ~180 px, so the pair needed 368 px inside a 282 px panel and the "to"
+       field was cut off by the panel edge — the reported "UIが壊れている". A 1fr 1fr grid with min-width:0
+       on both the cell and the input cannot overflow at any panel width. */
+    .v3d-alt{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2px 0 6px; }
+    .v3d-alt label{ min-width:0; display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--text-muted); }
+    .v3d-alt input{ width:100%; min-width:0; box-sizing:border-box; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:6px 7px; font-size:12.5px; font-variant-numeric:tabular-nums; }
     .v3d-alt input:focus{ outline:none; border-color:var(--primary-color); }
+    /* (#R171) footprint shape picker — four ways to draw the base, not just clicked straight edges */
+    .v3d-shapes{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:2px 0 9px; }
+    .v3d-shape{ min-width:0; padding:6px 4px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:8px; background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:.13s; }
+    .v3d-shape:hover{ background:rgba(128,128,128,0.14); }
+    .v3d-shape.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    /* (#R171) colour + opacity, same controls as the radius tool's style row — one row each so a narrow
+       panel never wraps a slider away from its label */
+    .v3d-style{ display:flex; align-items:center; gap:8px; margin:7px 0 0; }
+    .v3d-style .v3d-slbl{ flex:0 0 auto; font-size:11px; color:var(--text-muted); min-width:52px; }
+    .v3d-style input[type="color"]{ width:26px; height:26px; padding:0; border:1px solid rgba(128,128,128,0.3); border-radius:6px; background:none; cursor:pointer; flex:0 0 auto; }
+    .v3d-style .rad-presets{ display:flex; gap:4px; flex:0 0 auto; }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
     .tp-foot-btns{ display:flex; gap:6px; } .tp-foot-btns .tp-clear{ flex:1; }
     /* (#R9) AI buttons stay clickable without a key so pressing them shows the "add a key in Settings"
@@ -493,6 +508,7 @@
     .coord-readout .cr-elev{ color:var(--text-muted); }
     .coord-readout .cr-sat{ color:var(--primary-color); font-weight:600; }
     .coord-readout .cr-wind{ color:#5ec8ff; font-weight:600; }
+    .coord-readout .cr-eye{ color:var(--text-muted); }   /* (#R171) camera altitude — same weight as the ground elevation next to it */
     /* ===== Satellite imagery engine UI ===== */
     .sat-controller{ display:none; position:absolute; top:180px; right:24px; z-index:999; width:250px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); font-size:12px; }
     .satc-head{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; margin-bottom:10px; color:var(--text-main); }
@@ -1757,7 +1773,7 @@
        the unified glass fill (which would be white-on-white in Solid mode). Shifted clear of the
        sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
     .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:1200; }
-    .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat{ color:#fff !important; font-weight:600; }
+    .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat, .coord-readout .cr-eye{ color:#fff !important; font-weight:600; }
     /* (#R13c) Only the FROSTED sidebar overlays the map, so ONLY there must the left-anchored HUD (coord readout,
        data/Köppen legends, country-info) clear it; a collapsed sidebar → flush left. In SOLID mode the sidebar sits
        beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */

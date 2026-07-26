@@ -846,7 +846,12 @@ js/
   volume3d.js                       (#R170) Measure ▸ 3-D 立体（`IntMapVolume3D`）。底面リング＋海抜の上下端から
                                     実尺の直方体を空中に描く。**`IntMapGeoEngine` だけで書かれ、生 `map` を
                                     一切参照しない**（§7.1）。3D地形 ON のとき MapLibre の押し出しは地表面基準に
-                                    なるため、DEM 標高を差し引いて「海抜」の意味を保つ。7KB
+                                    なるため、DEM 標高を差し引いて「海抜」の意味を保つ。
+                                    (#R171) 底面は**多角形／フリーハンド／円／長方形**の4通り。ストローク系の3つは
+                                    描画中だけ engine の `input.setDragPan(false)` でドラッグを預かる。11KB
+  view-controls.js                  (#R171) 視点まわりの2つの設定＝`IntMapTilt`（地図の傾きの上限）と
+                                    `IntMapEyeAlt`（常時表示欄の視点高度）。**engine だけで書かれた3本目**
+                                    （生 `map` を一切参照しない）。5KB
 
   newsgeo.js                        (#R161) **非AIニュース地点解析エンジン `IntMapNewsGeo`**（決定論・単一の真実の源）。
                                     index.html から `<script src="js/newsgeo.js">` で読み込み、同一ファイルを
@@ -1385,8 +1390,12 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 
 - **サイドバー**（左）：タブ（News / Companies / Countries / Atlas ※旧 Information タブは R139 で Companies に置換）、検索、ニュースフィード／企業ランキング／Atlas。
 - **マップ上コントロール**（右上）：Map/Sat、Flat/Globe/3D/コンパス、Grid、Measure、Radius、Layers。
+  コンパスの**右クリック**で方位・仰角・ズームを数値入力（デスクトップのみ）。傾き上限が「無制限」のときは
+  仰角欄が **0〜360°** を受け付け、180°超は方位を反転した等価な視線に解決される (#R171)。
 - **ポップアップ類**：国情報カード(`country-info`)、国詳細(`country-popup`)、ピン/地名ポップアップ、凡例(ドラッグ可)。
 - **設定モーダル**：言語・タイムゾーン・単位・テーマ・ニュース言語・衛星鍵(任意)・AI利用状況・出典・規約/プライバシー。
+  **「地図の動作」セクション**には (#R171) **地図の傾きの上限**（標準78° / 無制限＝レンダラーの全域 0–180°）と
+  **常時表示欄に視点の高度**（既定オフ）が入る。どちらも Atlas からも操作できる（`tiltLimit` / `eyeAltitude`）。
 - **iOS風の作法**：セグメントコントロール、角丸カード、ボトムシート、初回ウェルカムカード(`_imWelcome`)。
 - **初回ウェルカムカード(R29)**：旧「自動でレイヤーをON/OFFするデモ」（バグと誤認された）を廃し、
   iOS風の説明カードに変更。レイヤー紹介ツアー(`_imStartDemo`)は明示ボタン（カード内・設定内）からの任意起動に。
@@ -1623,6 +1632,83 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
 
+### #R171 補足（フライトシムが球にならなかった真因＝MapLibre の globe は z12 から Mercator / Measure ▸ 3-D 立体の作り直し / 傾きの上限 / 視点高度）
+
+**① 「フライトシミュレーターは Flat ではなく Globe を使うように（追記：まだそうなっていない）」— 真因は投影の定義**
+
+#R170 で `IntMapOS.exec('view.proj.globe')` を start() に入れ、テストも「globe に切り替える」ことを固定していた。
+それでもコックピットは平面のままだった。**MapLibre 5 の `globe` 投影は「ズームアウト時は vertical-perspective、
+z12 付近から先は素の Mercator」と定義されている**からで、`getProjection().type` は最後まで `'globe'` を返す。
+
+同一カメラ・pitch 0 で ±60° 緯線のたわみ（px）を実測:
+
+| projection | z10 | z11 | z12 | z15 |
+|---|---|---|---|---|
+| `globe` | 741 | 753 | **0** | **0** |
+| `vertical-perspective` | — | — | 759 | **764** |
+| `mercator` | 0 | 0 | 0 | 0 |
+
+フライトシムのカメラは `calculateCameraOptionsFromTo` に**固定 1.8km の前方注視点**を渡して作るので、飛行中ずっと
+**z≈14–15 に貼り付く**。つまり「globe に切り替える」行は**飛行が始まった瞬間から最後まで無効**だった。
+修正は `camera.setProjection('globe-true')`（= vertical-perspective ＝**どのズームでも曲がった地球**）。
+
+- **終了時の復元は無条件にした**。入場時に設定するのは**アプリの状態が記録していない投影 SPEC** なので、
+  #R170 の `pv.proj!==HOST.proj` ガードだと**もともと Globe だった人は復元がスキップされ**、通常の地図が
+  全ズーム球のまま残ってしまう。
+- **テストの書き方**: `getProjection().type==='globe'` を見るテストは**バグが存在する間ずっと緑**だった。
+  `tests/r171.spec.js` は代わりに**曲率そのもの**（緯線のたわみ）を測り、まず「素の globe は z12 で 0 になる」ことを
+  固定してから、「シムが実際に飛ぶズームで曲率が残る」ことを要求する。
+
+**② Measure ▸ 3-D 立体（数値が入力できない／UIが壊れている／色と透明度／直線しか描けない）**
+
+- **数値入力の真因**: 高度欄の `oninput` が `updateToolPanel()` を呼び、それがパネルの `innerHTML` を書き直す
+  ＝**入力中の要素そのものを破壊していた**。実測：「2500」と打つと値は `2` で止まり、1打鍵目で
+  `document.activeElement` が `BODY` に戻る。導出値（点数・面積・厚さ・体積・地表面）は**その場で書き換える**
+  `sync()` に分離し、入力欄には二度と触らない。
+- **UI崩れの真因**: `.v3d-alt` がラベルと入力を**横並び**にしていたため各セルの min-content が約180px、
+  2つで368px＝**282pxのパネルからはみ出して「to」欄が切れていた**。ラベルを入力の**上**に置く
+  `grid-template-columns:1fr 1fr` ＋ `min-width:0` に変更（どんな幅でも溢れない）。
+- **入力の途中状態**: `+''` は 0 なので、`isFinite(+b)` は「欄を消して打ち直す」瞬間に **0m を書き込んでいた**。
+  空・`-`・`.` は「まだ数値ではない」として現在値を保つ。**上下の入れ替えも廃止**（編集のたびに
+  base/top がカーソルの下で入れ替わっていた）＝帯は描画時に min..max を取る。
+- **底面は4通り**: 多角形（クリック）／フリーハンド（ドラッグでなぞる・RDP で簡略化）／円（中心からドラッグ・
+  **地上メートル**で作るので高緯度でも真円）／長方形（対角ドラッグ・辺は分割して投影に追従）。
+  ストローク中は engine の `input.setDragPan(false)` でドラッグを預かり、**終了時に MapLibre が合成する click** で
+  余計な頂点が増えないよう `handleMapClick` 側にもガードを入れた。
+- **色・透明度**を Radius ツールと同じ形の行で追加。レイヤーの色は `['coalesce',['get','color'],…]` をやめて
+  **素の値**にした（式のままだと**レイヤー自身の paint プロパティが生成時の色で凍る**＝読み戻しが嘘をつく）。
+- Atlas の `volume3d` にも `shape`/`color`/`opacity` を追加（SYS カタログも同時更新）。
+
+**③ 地図の傾きの上限（設定）**
+
+起動時の `map.setMaxPitch(78)` が唯一の上限だった。設定で**レンダラーの全域**まで開ける（`camera.tiltRange()` から読む）。
+実測で MapLibre 5.24 の上限は **180**（超えると例外）、下限は 0。**0–180° は「傾き」の全域**（真下→水平線→真上）で、
+180°より先は**方位を反転した同じ視線**にすぎない。だから「360°どこまでも」は `IntMapTilt.fromAngle()` が
+（pitch, bearing）に解決する形で表現し、**コンパス右クリックの仰角欄が 0〜360 を受け付ける**。
+
+- **やらなかったこと**: ドラッグ・ジェスチャの乗っ取り。180°を跨いで回り続けさせるには MapLibre の
+  dragRotate を自前で作り直す（＝慣性を失う）必要があり、**動いている機構を勝手に作り変えるな**（#R160 で二度
+  叱られた）に反する。ドラッグはカメラが向けるすべての方向に届く。
+- 標準へ戻したときに**視点が到達不能な角度に取り残されない**よう、78°超なら ease で戻す。
+  Atlas の `pitch`/`tilt` アクションもリテラル 85 をやめて `IntMapTilt.ceiling()` を読む。
+
+**④ 常時表示欄の視点高度（設定）／⑤ フライトシムはサウンド無しが既定**
+
+- 読み出しは `camera.altitude()`（§7.1 第5段階）。**カーソルが地図の外にあっても表示は残る**
+  ——視点高度はカーソルではなくカメラの性質で、そこは「常時表示欄」だから。単位設定に従う（地表標高チップと同じ）。
+- 音は既定でミュートし、**AudioContext そのものを作らない**（ゼロゲインで鳴らし続けるのは「サウンド無し」ではない）。
+  HUD の SOUND キーは実状態を表示し、選択は `intmap_fs_sound` に記憶する（＝「既定」の意味）。
+
+**⑥ 既存テスト3件が反応（すべてテスト側・製品は無回帰）**
+
+`r152`/`r160` の Atlas pitch 検査は `GE.easeTo({pitch:tp,duration:600})` という**リテラル**を固定していた
+（上限がユーザー設定になった今、そこに `Math.min(85,…)` が**あってはいけない**）。`r170` の2件は
+`clear()`→`release()`、投影復元の無条件化という**意図した変更**。主張は変えず、表現だけ追随させた。
+
+加えて `tests/r170.spec.js` の 3-D 立体テストが**元々フレーク**だった（main で3回中3回失敗／ブランチで3回中2回失敗）。
+原因は #R170 自身が書いた教訓そのもの——`ground != null` を待っていたが、**DEM は本物の値の前に 0 を返す**ので
+待ちが即座に成立し、補正前の箱を読んでいた。富士山で 0m はあり得ないので `ground > 0` を待つよう直した（3回中3回緑）。
+
 ### #R170 補足（レイヤー表示遅延の根本原因＝「描けるか」と「落ち着いたか」の混同 / Measure ▸ 3-D 立体 / Companies の日付表記）
 
 **① レイヤーのオンオフが「時間差で表示されたりされなかったり」する — 真因は述語の取り違え**
@@ -1744,7 +1830,7 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 
 ### #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
 
-#### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161 / 第4段階＝#R170）
+#### §7.1 `IntMapGeoEngine` — レンダラー抽象層（第1段階＝#R152 / 第2段階＝#R160 / 第3段階＝#R161 / 第4段階＝#R170 / 第5段階＝#R171）
 `window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
 
 - **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
@@ -1765,13 +1851,41 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
     そのため `fill-extrusion-base/height` の基準は**3D地形 OFF＝海抜／ON＝地表面**と状態で変わる
     （同一カメラの富士山で実測：ON にすると箱が DEM 標高ぶん≈3,698m 跳ね上がる）。`volume3d.js` は
     地形 ON のとき DEM 標高を差し引くことで**ユーザーの入力を常に「海抜」に固定**している。
+- **#R171 第5段階＝カメラの姿勢・投影・視点高度の契約化と、モジュール10本のレンダラー離れ**:
+  - **`capabilities.globeAllZooms`**。MapLibre の `globe` 投影は**低ズームでは vertical-perspective、z12 付近から先は素の Mercator**
+    と定義されている（実測：同一カメラで ±60° 緯線のたわみ＝z10 741px → z11 753px → **z12 0px → z15 0px**）。つまり
+    「globe にした」＝「球になった」ではない。曲がった地球を**ズームに関係なく**要求できるかどうかは別の能力なので、
+    `camera.setProjection('globe-true')`（= vertical-perspective）とセットで capabilities に分けた。
+    実害は §19 #R171（フライトシミュレーターが平面だった真因）。
+  - **`capabilities.tiltRange`**＝レンダラーが本当に許す傾きの範囲。実測で MapLibre 5.24 は `setMaxPitch` が **≤180 のみ受理**
+    （超えると例外 `maxPitch must be less than or equal to 180`）・`setMinPitch` は 0 未満で例外。設定 UI が
+    エンジンに無い上限を提示しないよう、上限は**必ずここから読む**（`camera.tiltRange()`）。
+  - **`camera.getProjection()` / `setBearing` / `setPitch` / `getRoll` / `setRoll` / `getMaxPitch` / `setMaxPitch` / `getMinPitch`**
+    ＝カメラ姿勢一式。今回の3機能（傾き上限・視点高度・フライトシムの球）が全部これで書かれている。
+  - **`camera.altitude()`**＝**視点そのものの海抜高度（m）**。MapLibre 5.24 には公開ゲッターが無い
+    （`getFreeCameraOptions` は存在せず、`transform.getCameraAltitude()` は null を返す）ので、アダプタが
+    レンダラー自身の幾何から導く：カメラは地図中心から `cameraToCenterDistance` **ピクセル**の位置にあるので、
+    それを**地上メートルに直して cos(pitch) を掛ける**。1px あたりの地上メートルはズームから計算せず
+    **中心の 100px を unproject して実測**するので、globe でも mercator でも正しい。別APIでの裏取り＝
+    `calculateCameraOptionsFromTo` に「目標より 900m 上」と与えると読み戻しは 900.0001m。
+    90°を超えて傾けるとカメラは実際に中心の地表面より**下**に回り込むので、負値はその事実を表す。
+  - **`input.setDragPan(on)`**＝**ジェスチャの受け渡し**。図形をなぞるツールは描画中レンダラーのパンを止める必要があり、
+    #R170 までは `map.dragPan` を直接触っていた＝レンダラー非依存のツールには書けない呼び出しだった。
+  - **`js/view-controls.js` は engine だけで書かれた3本目**（1本目 #R161 ニュースピン、2本目 #R170 volume3d）。
+  - **モジュール10本を移行**（`ai-core` / `community` / `companies-ui` / `news-feed` / `news-timeline` / `feedback` /
+    `onboarding` / `elevation-profile` / `search-geocode` / `workspace`）＝生 `map` 参照ゼロのモジュールが **24/52 本**に。
+    検査は**パーサ**で行う（`js/workspace.js` は `map.setPadding(...)` を**コメントで説明している**だけで呼んでいないし、
+    `map[key]` は別物のルックアップ表）。`tests/r171-checks.test.mjs` が本数を下限として固定する。
+  - **移行中に見つけた潜在的な罠**: `js/search-geocode.js` に `const map={…}` というローカルがあり、**工場が受け取る
+    レンダラーを覆い隠していた**（#R163 で踏んだのと同じ形）。このファイルはもうレンダラーを使わないので無害だが、
+    次に誰かがカメラ呼び出しを足したら静かに壊れるので改名した。
 - **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`・#R170 で `extrusion3d:true` を追加）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
 - **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
   - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
 - **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
 - **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120・`flyTo`/`fitBounds` の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js` がその最初の実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky`/`setMaxPitch` を `terrain` 名前空間として契約化（#R170 で `volume3d` が `HOST.terrain3D` 経由の間接参照に留めた部分）。
-- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋**`tests/r170-checks.test.mjs`（`canDraw`/`extrusion3d`/`addExtrusion`/`setExtrusionRange` の契約・Cesium 側の同期・`volume3d.js` が生 `map` を呼ばないこと）**＋**`tests/r170.spec.js`（実ブラウザ：地形 ON/OFF で `fill-extrusion-base` が実際に DEM ぶん補正される）**＋既存スモーク。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js`、#R171 の `view-controls.js` がその実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky` を `terrain` 名前空間として契約化（`setMaxPitch` は #R171 で `camera` に入った）、⑧生 `map` 参照が**少ない順**に残りのモジュールを潰していく（#R171 は 10 本＝残り 2桁台のファイルから着手した）。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋**`tests/r170-checks.test.mjs`（`canDraw`/`extrusion3d`/`addExtrusion`/`setExtrusionRange` の契約・Cesium 側の同期・`volume3d.js` が生 `map` を呼ばないこと）**＋**`tests/r170.spec.js`（実ブラウザ：地形 ON/OFF で `fill-extrusion-base` が実際に DEM ぶん補正される）**＋**`tests/r171-checks.test.mjs`（第5段階の契約・Cesium 側の同期・移行10本＋新モジュールに生 `map` が無いことを**パーサ**で確認・レンダラー非依存モジュール数の下限）**＋**`tests/r171.spec.js`（実ブラウザ：`globe` が z12 で平面になることを実測し、フライトシムが飛ぶズームで曲率が残ることを要求／視点高度がズーム2段で1/4・傾き60°で cos60 になること）**＋既存スモーク。
 
 #### その他12件（要点）
 ①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。

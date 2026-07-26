@@ -21,11 +21,20 @@
  *  above sea level, and when terrain is on we subtract the ground elevation under the footprint
  *  before handing the values to the renderer. The panel shows the ground elevation it used.
  *
+ *  ── Shapes (#R171) ──────────────────────────────────────────────────────────────────────────
+ *  「直線の描画しかできないのはよくない。」 The footprint used to be nothing but the measure tool's
+ *  clicked vertices, so every edge was a straight line and a round or organic area was impossible.
+ *  Four shapes now feed the same extrusion: POLYGON (click vertices, as before), FREEHAND (press and
+ *  drag to trace a curve), CIRCLE (drag out a radius) and RECTANGLE (drag a corner). The last three
+ *  own the drag while they are armed, which they take through the engine's input contract rather than
+ *  by reaching for the renderer's pan handler.
+ *
  *  ── Renderer independence ───────────────────────────────────────────────────────────────────
- *  Written entirely against window.IntMapGeoEngine (#R152/#R160/#R161/#R170) — it never touches
+ *  Written entirely against window.IntMapGeoEngine (#R152/#R160/#R161/#R170/#R171) — it never touches
  *  the MapLibre map. That makes it the first feature built end-to-end on the engine facade, and
- *  the reason `extrusion3d`, `addExtrusion`, `setExtrusionRange` and `canDraw` were added to the
- *  contract this round. A future Earth/Cesium adapter inherits the whole tool by implementing them.
+ *  the reason `extrusion3d`, `addExtrusion`, `setExtrusionRange`, `canDraw` and (this round) the
+ *  `input.setDragPan` gesture hand-over were added to the contract.
+ *  A future Earth/Cesium adapter inherits the whole tool by implementing them.
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
@@ -39,6 +48,8 @@ window.IntMapModules.volume3d=function(map,HOST){
     let ring=[], baseM=1000, topM=3000, color='#0a84ff', opacity=0.45;
     let groundM=null;        /* DEM elevation under the footprint centroid (null = unknown / terrain off) */
     let lastRenderErr=null;
+    let shape='polygon';     /* polygon | freehand | circle | rect (#R171) */
+    let onShapeDone=null;    /* the panel's redraw hook — a drag ends without any click the panel would see */
 
     const has3DTerrain=()=>{ try{ return !!HOST.terrain3D; }catch(_){ return false; } };
     const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
@@ -52,7 +63,7 @@ window.IntMapModules.volume3d=function(map,HOST){
       let x=0,y=0; ring.forEach(p=>{ x+=p[0]; y+=p[1]; }); return [x/ring.length, y/ring.length]; }
     /* footprint area in m² — the same turf ring area the Area tool reports, so the two agree */
     function areaM2(){ try{ return (HOST.hasTurf()&&ring.length>=3)?(HOST.ringArea(ring)*1e6):0; }catch(_){ return 0; } }
-    function thicknessM(){ return Math.max(0, topM-baseM); }
+    function thicknessM(){ return Math.abs(topM-baseM); }
     function volumeM3(){ return areaM2()*thicknessM(); }
 
     /* ---- ground elevation under the footprint ----------------------------------------------- */
@@ -85,15 +96,19 @@ window.IntMapModules.volume3d=function(map,HOST){
       try{
         if(!E.layers.hasSource(SRC)) E.layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!E.layers.has(LYR)){
+          /* (#R171) a PLAIN colour, not ['coalesce',['get','color'],…]. There is only ever one box, and the
+             expression form left the layer's own paint property frozen at the colour it was created with —
+             so anything reading the renderer back (a test, a future adapter) was told the wrong colour even
+             though the feature property made it render right. One value, one source of truth. */
           const ok=E.layers.addExtrusion({ id:LYR, source:SRC, paint:{
-            'fill-extrusion-color':['coalesce',['get','color'],color],
+            'fill-extrusion-color':color,
             'fill-extrusion-opacity':opacity,
             'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
           if(!ok) return false;
         }
         /* a thin outline on the footprint so the box is locatable on the ground even edge-on */
         if(!E.layers.has(EDGE)) E.layers.add({ id:EDGE, type:'line', source:SRC,
-          paint:{ 'line-color':['coalesce',['get','color'],color], 'line-width':1.6, 'line-opacity':0.9 } });
+          paint:{ 'line-color':color, 'line-width':1.6, 'line-opacity':0.9 } });
         return true;
       }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
     }
@@ -106,7 +121,7 @@ window.IntMapModules.volume3d=function(map,HOST){
       if(!ensure()) return false;
       groundM=has3DTerrain()?readGround():null;
       const off=(has3DTerrain()&&groundM!=null)?groundM:0;
-      const rb=Math.max(0, baseM-off), rh=Math.max(rb+0.5, topM-off);   /* never a zero/inverted box */
+      const rb=Math.max(0, loM()-off), rh=Math.max(rb+0.5, hiM()-off);   /* never a zero/inverted box */
       try{
         E.layers.setSourceData(SRC,{type:'FeatureCollection',features:[
           {type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{color}} ]});
@@ -121,18 +136,126 @@ window.IntMapModules.volume3d=function(map,HOST){
     function remove(){ const E=GE(); if(!E) return;
       try{ E.layers.remove(LYR); E.layers.remove(EDGE); E.layers.removeSource(SRC); }catch(_){} }
 
+    /* ---- shapes (#R171) --------------------------------------------------------------------
+       Every shape ends up as the same thing — a ring of lng/lat — so the extrusion, the area, the
+       volume and "Keep on map" are shared and none of them has to know how it was drawn. */
+    const R_EARTH=6371008.8, D2R=Math.PI/180, R2D=180/Math.PI;
+    /* metres between two lng/lat, on the sphere (the footprint is measured in real ground metres, so a
+       circle dragged out at 60°N is a real circle on the ground, not an ellipse in degrees) */
+    function distM(a,b){ const la1=a[1]*D2R, la2=b[1]*D2R, dla=(b[1]-a[1])*D2R, dlo=(b[0]-a[0])*D2R;
+      const h=Math.sin(dla/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;
+      return 2*R_EARTH*Math.asin(Math.min(1,Math.sqrt(h))); }
+    /* the point `distM` metres from `c` on bearing `brg` — the standard spherical destination formula */
+    function destM(c,distMetres,brg){ const d=distMetres/R_EARTH, b=brg*D2R, la1=c[1]*D2R, lo1=c[0]*D2R;
+      const la2=Math.asin(Math.sin(la1)*Math.cos(d)+Math.cos(la1)*Math.sin(d)*Math.cos(b));
+      const lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la1), Math.cos(d)-Math.sin(la1)*Math.sin(la2));
+      return [((lo2*R2D+540)%360)-180, la2*R2D]; }
+    function circleRing(centre,radiusMetres,n){ n=n||96; const out=[];
+      for(let i=0;i<n;i++) out.push(destM(centre,Math.max(1,radiusMetres),i*360/n));
+      return out; }
+    /* Densified so the sides follow the projection instead of cutting across a curved globe. */
+    function rectRing(a,b,perSide){ perSide=perSide||16;
+      const w=[a[0],b[0]], s=[a[1],b[1]];
+      const x0=Math.min(w[0],w[1]), x1=Math.max(w[0],w[1]), y0=Math.min(s[0],s[1]), y1=Math.max(s[0],s[1]);
+      const corners=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]], out=[];
+      for(let i=0;i<4;i++){ const p=corners[i], q=corners[(i+1)%4];
+        for(let k=0;k<perSide;k++){ const f=k/perSide; out.push([p[0]+(q[0]-p[0])*f, p[1]+(q[1]-p[1])*f]); } }
+      return out; }
+    /* Ramer-Douglas-Peucker, the same simplification the freehand Draw tool uses — a traced curve keeps
+       its shape with a fraction of the vertices, so the extrusion stays cheap to re-paint while typing. */
+    function _perp(p,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy; if(L<1e-18) return Math.hypot(p[0]-a[0],p[1]-a[1]);
+      let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L; t=Math.max(0,Math.min(1,t)); return Math.hypot(p[0]-(a[0]+t*dx),p[1]-(a[1]+t*dy)); }
+    function rdp(pts,eps){ if(pts.length<3||eps<=0) return pts.slice();
+      const keep=new Array(pts.length).fill(false); keep[0]=keep[pts.length-1]=true; const stk=[[0,pts.length-1]];
+      while(stk.length){ const sg=stk.pop(), s=sg[0], e=sg[1]; let dmax=0, idx=-1;
+        for(let i=s+1;i<e;i++){ const d=_perp(pts[i],pts[s],pts[e]); if(d>dmax){ dmax=d; idx=i; } }
+        if(dmax>eps&&idx>-1){ keep[idx]=true; stk.push([s,idx]); stk.push([idx,e]); } }
+      const out=[]; for(let i=0;i<pts.length;i++) if(keep[i]) out.push(pts[i]); return out; }
+    function smoothRing(pts){ if(pts.length<8) return pts.slice();
+      let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9; pts.forEach(p=>{ mnx=Math.min(mnx,p[0]); mxx=Math.max(mxx,p[0]); mny=Math.min(mny,p[1]); mxy=Math.max(mxy,p[1]); });
+      const eps=Math.hypot(mxx-mnx,mxy-mny)*0.004;   /* scaled to the drawing's own size → identical at any zoom */
+      const s=rdp(pts,eps); return s.length>=3?s:pts.slice(); }
+
+    /* ---- the drag gesture (freehand / circle / rectangle) ----------------------------------- */
+    /* The polygon shape is driven by the map's own clicks (handleMapClick → measurePoints, unchanged).
+       The other three are STROKES, so this module takes the drag for the length of one — through the
+       engine's input contract, never by touching the renderer's pan handler. */
+    let armed=false, drawing=false, anchor=null, trace=[], _cv=null, _lastPx=null;
+    const ownsGesture=()=>armed;
+    function _canvas(){ try{ return GE().render.canvas(); }catch(_){ return null; } }
+    function _ll(clientX,clientY){ const cv=_canvas(); if(!cv) return null;
+      const r=cv.getBoundingClientRect(); const p=GE().coords.unproject([clientX-r.left, clientY-r.top]);
+      return p?[p.lng, Math.max(-88,Math.min(88,p.lat))]:null; }
+    function _grab(on){ try{ GE().input.setDragPan(!on); }catch(_){}
+      try{ GE().render.setCursor(on?'crosshair':''); }catch(_){} }
+    function _begin(ll){ if(!ll) return; drawing=true; anchor=ll; trace=[ll]; _lastPx=null; _grab(true); }
+    function _extend(ll,px){ if(!drawing||!ll) return;
+      if(shape==='freehand'){
+        if(_lastPx&&Math.hypot(px.x-_lastPx.x,px.y-_lastPx.y)<4) return;   /* one sample per ~4 px of travel */
+        _lastPx={x:px.x,y:px.y}; trace.push(ll); if(trace.length>=3) setRing(smoothRing(trace));
+      } else if(shape==='circle'){ setRing(circleRing(anchor,distM(anchor,ll)));
+      } else if(shape==='rect'){ setRing(rectRing(anchor,ll)); } }
+    function _end(){ if(!drawing) return; drawing=false; _grab(false);
+      if(shape==='freehand'&&trace.length>=3) setRing(smoothRing(trace));
+      /* A stroke produces no map click, so nothing else would tell the panel its numbers changed. */
+      try{ if(onShapeDone) onShapeDone(); }catch(_){} }
+    function onDown(e){ if(!armed||e.button!==0) return; e.preventDefault(); e.stopPropagation(); _begin(_ll(e.clientX,e.clientY)); }
+    function onMove(e){ if(!drawing) return; const cv=_canvas(); if(!cv) return; const r=cv.getBoundingClientRect();
+      _extend(_ll(e.clientX,e.clientY),{x:e.clientX-r.left,y:e.clientY-r.top}); }
+    function onUp(){ _end(); }
+    function onTouchStart(e){ if(!armed||e.touches.length!==1) return; e.preventDefault(); _begin(_ll(e.touches[0].clientX,e.touches[0].clientY)); }
+    function onTouchMove(e){ if(!drawing||e.touches.length!==1) return; e.preventDefault(); const cv=_canvas(); if(!cv) return;
+      const r=cv.getBoundingClientRect(), t=e.touches[0]; _extend(_ll(t.clientX,t.clientY),{x:t.clientX-r.left,y:t.clientY-r.top}); }
+    function onTouchEnd(e){ if(drawing) e.preventDefault(); _end(); }
+    function _wire(on){
+      const cv=_canvas(); if(!cv) return;
+      if(on&&cv!==_cv) _wire(false);
+      if(on){ if(_cv) return; _cv=cv;
+        cv.addEventListener('mousedown',onDown,true); window.addEventListener('mousemove',onMove,true); window.addEventListener('mouseup',onUp,true);
+        cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false});
+      } else if(_cv){
+        _cv.removeEventListener('mousedown',onDown,true); window.removeEventListener('mousemove',onMove,true); window.removeEventListener('mouseup',onUp,true);
+        _cv.removeEventListener('touchstart',onTouchStart); _cv.removeEventListener('touchmove',onTouchMove); _cv.removeEventListener('touchend',onTouchEnd);
+        _cv=null; }
+    }
+    /* Switching shape starts a fresh footprint: a circle is not "the polygon with rounder corners", and
+       silently re-interpreting the old points as the new shape would draw something nobody asked for. */
+    function setShape(kind){ const k=['polygon','freehand','circle','rect'].indexOf(String(kind))>=0?String(kind):'polygon';
+      if(k===shape) return shape;
+      shape=k; ring=[]; trace=[]; drawing=false;
+      armed=(shape!=='polygon'); _wire(armed); if(!armed) _grab(false);
+      hide(); return shape; }
+    /* Called when the tool itself opens/closes — clear() alone must not unwire, because the panel's
+       Clear button uses it and the user still expects to be able to draw afterwards. */
+    function release(){ clear(); armed=false; drawing=false; _wire(false); _grab(false); shape='polygon'; }
+
     /* ---- public API ------------------------------------------------------------------------ */
     /* Every setter re-paints, so the box tracks the numbers as they are typed. */
     function setRing(pts){ ring=(pts||[]).map(p=>[+p[0],+p[1]]); return paint(); }
+    /* A field being TYPED into is not a number yet. '' (cleared to retype), '-' and '1e' are all states a
+       real keyboard passes through, and `+''` is 0, so the old isFinite(+b) test silently rewrote a field
+       the user had just emptied to 0 m. Anything that is not a finished number leaves the value alone. */
+    function _num(v,cur){ if(v==null) return cur; const s=String(v).trim();
+      if(s===''||s==='-'||s==='+'||s==='.'||s==='-.') return cur;
+      const n=Number(s); return isFinite(n)?n:cur; }
     function setAltitudes(b,t){
       /* -430 m = the Dead Sea shore, the lowest dry land on Earth; 100 km = the Kármán line. Clamping
          to a real range keeps a stray keystroke from asking the renderer for a 10^9 m tower. */
-      let nb=isFinite(+b)?+b:baseM, nt=isFinite(+t)?+t:topM;
-      nb=clamp(nb,-430,100000); nt=clamp(nt,-430,100000);
-      if(nt<nb){ const s=nb; nb=nt; nt=s; }          /* tolerate "3000 to 1000" — the user means the band */
-      baseM=nb; topM=nt; return paint(); }
-    function setStyle(col,op){ if(col) color=col; if(op!=null&&isFinite(+op)) opacity=clamp(+op,0.05,0.95); return paint(); }
-    function clear(){ ring=[]; groundM=null; hide(); }
+      baseM=clamp(_num(b,baseM),-430,100000); topM=clamp(_num(t,topM),-430,100000);
+      /* (#R171) NO SWAPPING HERE. #R170 swapped an inverted pair so "3000 to 1000" still meant the band —
+         but the pair is inverted on the way through EVERY edit ("1000" → clear the top field → type "5" →
+         base and top swap under the cursor), which was half of "まともに数値入力ができない". The band is
+         min..max at paint time instead, so an out-of-order pair still draws the right box and the two
+         fields keep saying exactly what was typed into them. */
+      return paint(); }
+    const loM=()=>Math.min(baseM,topM), hiM=()=>Math.max(baseM,topM);
+    function setStyle(col,op){ if(col) color=col; if(op!=null&&isFinite(+op)) opacity=clamp(+op,0.05,0.95);
+      /* The colour lives on the LAYERS (see ensure), so a live change has to be pushed to both of them —
+         the box and its ground outline. paint() below re-asserts the opacity and the geometry. */
+      try{ const E=GE(); if(E&&E.layers.has(LYR)) E.layers.setPaint(LYR,'fill-extrusion-color',color);
+        if(E&&E.layers.has(EDGE)) E.layers.setPaint(EDGE,'line-color',color); }catch(_){}
+      return paint(); }
+    function clear(){ ring=[]; trace=[]; groundM=null; hide(); }
 
     /* "Keep on map": hand the footprint to the shared annotation store the measure/area/radius tools
        use, tagged with the altitude band so the saved shape still says what it represented. The
@@ -143,7 +266,7 @@ window.IntMapModules.volume3d=function(map,HOST){
       try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{
           color, op:0.18,
           name:L('3-D volume','3D立体','3-D-Volumen','3-D объём','Volumen 3-D'),
-          value:Math.round(baseM).toLocaleString()+'–'+Math.round(topM).toLocaleString()+' m · '+fmtVolume() });
+          value:Math.round(loM()).toLocaleString()+'–'+Math.round(hiM()).toLocaleString()+' m · '+fmtVolume() });
         return true; }catch(_){ return false; } }
 
     /* ---- formatting (shared with the tool panel) -------------------------------------------- */
@@ -173,12 +296,16 @@ window.IntMapModules.volume3d=function(map,HOST){
     })(0);
 
     return { setRing, setAltitudes, setStyle, clear, remove, paint,
-      ring:()=>ring.slice(), base:()=>baseM, top:()=>topM, color:()=>color, opacity:()=>opacity,
+      /* (#R171) shapes + gesture ownership */
+      setShape, shape:()=>shape, release, ownsGesture, onDone:fn=>{ onShapeDone=fn; },
+      circleRing, rectRing, smoothRing, distM,
+      ring:()=>ring.slice(), base:()=>baseM, top:()=>topM, low:loM, high:hiM, color:()=>color, opacity:()=>opacity,
       ground:()=>groundM, terrainOn:has3DTerrain,
       areaM2, thicknessM, volumeM3, fmtVolume, fmtAlt, keep,
       /* diagnostics — Atlas + tests read these instead of poking at the renderer */
-      state:()=>({ points:ring.length, base:baseM, top:topM, thickness:thicknessM(), areaM2:areaM2(),
-        volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(),
+      state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing,
+        thickness:thicknessM(), areaM2:areaM2(),
+        volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
         painted:(()=>{ try{ return !!(GE()&&GE().layers.has(LYR)&&GE().layers.isVisible(LYR)); }catch(_){ return false; } })(),
         err:lastRenderErr }) };
   })();

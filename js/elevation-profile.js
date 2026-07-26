@@ -13,8 +13,13 @@ window.IntMapModules.elevationProfile=function(map,HOST){
   /* ===== (#R9b/#46) Elevation cross-section under a measured line (area uses its perimeter). Below 0 m
      gets a faint blue band so sub-sea segments are obvious. Samples the cached terrarium DEM. ===== */
   /* (#R11) Map cursor that mirrors the hovered point on the elevation chart. */
-  function _elevCursor(coord){ try{ if(!map.getSource('elev-cursor')){ map.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addLayer({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
-    map.getSource('elev-cursor').setData({type:'FeatureCollection',features:coord?[{type:'Feature',geometry:{type:'Point',coordinates:coord},properties:{}}]:[]}); }catch(_){} }
+  /* (#R171) source + layer through IntMapGeoEngine — this file no longer names the renderer.
+     canDraw() rather than ready(): adding a layer only needs a parsed style (#R170). */
+  function _elevCursor(coord){ try{ const E=window.IntMapGeoEngine; if(!E) return;
+    if(!E.layers.hasSource('elev-cursor')){ if(!E.canDraw()) return;
+      E.layers.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      E.layers.add({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
+    E.layers.setSourceData('elev-cursor',{type:'FeatureCollection',features:coord?[{type:'Feature',geometry:{type:'Point',coordinates:coord},properties:{}}]:[]}); }catch(_){} }
   function _openProfilePanel(samples,dist){
     let p=document.getElementById('elev-profile-panel');
     if(!p){ p=document.createElement('div'); p.id='elev-profile-panel'; p.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(p); }

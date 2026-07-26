@@ -247,6 +247,9 @@ window.IntMapModules.aiCore=function(map,HOST){
     if(busy){ if(!btn.dataset.olabel) btn.dataset.olabel=btn.textContent; btn.disabled=true; btn.innerHTML='<span class="ai-spin"></span><span>'+aiEsc(label||btn.dataset.olabel)+'</span>'; }
     else { btn.disabled=false; if(btn.dataset.olabel!=null){ btn.textContent=btn.dataset.olabel; delete btn.dataset.olabel; } }
   }
-  function aiWaitMapIdle(timeout){ return new Promise(res=>{ if(!map){ res(); return; } let done=false; const fin=()=>{ if(done)return; done=true; try{ map.off('idle',fin); }catch(_){} res(); }; try{ map.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
+  /* (#R171) through the engine's event contract — this file no longer names the renderer at all. */
+  function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
+    const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
+    try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
   return { aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
 };
