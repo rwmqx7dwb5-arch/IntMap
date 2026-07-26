@@ -109,5 +109,10 @@ test('R160 (D3) Atlas camera-control dispatch (zoom/bearing/pitch) reads AND dri
   ok('const GE=IntMapGeoEngine.camera; if(a.to!=null){ tz=+a.to; GE.zoomTo(tz,{duration:600}); }', 'zoom case routes through the engine');
   ok('GE.getZoom()-1; GE.zoomOut();', 'zoom-out reads + drives through the engine');
   ok('(a.delta!=null?(GE.getBearing()+(+a.delta)):0)); GE.easeTo({bearing:tb', 'bearing case reads getBearing + drives easeTo through the engine');
-  ok('(a.delta!=null?(GE.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); GE.easeTo({pitch:tp,duration:600});', 'pitch case reads getPitch + drives easeTo through the engine');
+  /* (#R171) The literal call shape here was pinning the CLAMP as well as the routing: the tilt ceiling is a
+     user setting now (Settings ▸ Map tilt limit), so a hard-coded Math.min(85,…) is exactly what must NOT be
+     there, and easeTo takes an options object because an angle past the top also changes the bearing. The
+     claim this test exists to make — "reads through the engine, drives through the engine" — is unchanged. */
+  ok('(a.delta!=null?(GE.getPitch()+(+a.delta)):(a.on===false?0:60))', 'pitch case reads getPitch through the engine');
+  ok('GE.easeTo(opt); }catch(_){}', 'pitch case drives easeTo through the engine');
 });

@@ -166,6 +166,10 @@ window.IntMapModules.mapReadout=function(map,HOST){
        covering the map (#29). */
     try{ if(HOST.isMobile() && window._minimizeOpenLegends) window._minimizeOpenLegends(); }catch(_){}
     if(!HOST.toolMode||!HOST.hasTurf())return;
+    /* (#R171) The 3-D volume tool's freehand / circle / rectangle shapes own the drag, and MapLibre
+       synthesises a `click` at the end of every one of them. Without this the stroke's release would
+       also drop a stray polygon vertex into measurePoints. */
+    try{ if(HOST.toolMode==='volume'&&window.IntMapVolume3D&&window.IntMapVolume3D.ownsGesture()) return; }catch(_){}
     /* (#R11) On mobile, measuring is center-fixed: a tap does NOT add a point — only the "Add point"
        button (which calls this with viaBtn=true) adds the map-center coordinate. */
     if(HOST.isMobile() && !viaBtn) return;
@@ -207,9 +211,17 @@ window.IntMapModules.mapReadout=function(map,HOST){
   function renderCoordReadout(lng,lat){
     const el=document.getElementById('coord-readout'); if(!el) return;
     if(lng!=null){ HOST._crLng=lng; HOST._crLat=lat; }
-    if(HOST._crLng==null){ el.style.display='none'; return; }
+    /* (#R171) The EYE altitude is a property of the camera, not of the cursor, so it is the one chip
+       that still has something true to say when the pointer is off the map. When the option is on the
+       readout therefore stays up — it is the "always-on" readout, and the request was for the viewpoint
+       altitude to be in it ("常時表示欄に、視点位置の高度も出るように"). */
+    const eye=(()=>{ try{ return window.IntMapEyeAlt?window.IntMapEyeAlt.text():''; }catch(_){ return ''; } })();
+    if(HOST._crLng==null){
+      if(!eye){ el.style.display='none'; return; }
+      el.style.display='flex'; el.innerHTML=`<span class="cr-eye">${eye}</span>`; return; }
     const parts=[];
     parts.push(`<span>${fmtLL(HOST._crLng,HOST._crLat)}</span>`); parts.push(`<span class="cr-elev">${HOST.lastElev||'·····'}</span>`);
+    if(eye) parts.push(`<span class="cr-eye">${eye}</span>`);
     if(HOST.lastLayerVal) parts.push(`<span class="cr-sat">${HOST.lastLayerVal}</span>`);
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
     /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */

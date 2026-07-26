@@ -10,7 +10,7 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.community=function(map,HOST){
+window.IntMapModules.community=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -69,8 +69,10 @@ window.IntMapModules.community=function(map,HOST){
 
   /* Per-card event wiring (run after every list render). */
   function wireCommList(cont){
-    cont.querySelectorAll('.comm-post-loc').forEach(el=>el.onclick=()=>{ if(map) map.flyTo({center:[+el.dataset.lng,+el.dataset.lat],zoom:5,speed:1.2}); });
-    cont.querySelectorAll('.locate-btn').forEach(b=>b.onclick=()=>{ const p=HOST.communityPosts.find(p=>p.id===b.dataset.id); if(p&&map) map.flyTo({center:[p.lng,p.lat],zoom:5,speed:1.2}); });
+    /* (#R171) camera through IntMapGeoEngine — this file no longer names the renderer. */
+    const _fly=(lng,lat)=>{ try{ const E=window.IntMapGeoEngine; if(E) E.camera.flyTo({center:[lng,lat],zoom:5,speed:1.2}); }catch(_){} };
+    cont.querySelectorAll('.comm-post-loc').forEach(el=>el.onclick=()=>_fly(+el.dataset.lng,+el.dataset.lat));
+    cont.querySelectorAll('.locate-btn').forEach(b=>b.onclick=()=>{ const p=HOST.communityPosts.find(p=>p.id===b.dataset.id); if(p) _fly(p.lng,p.lat); });
     cont.querySelectorAll('.cmt-toggle').forEach(b=>b.onclick=()=>{ const id=b.dataset.id; HOST.commCollapsed[id]=!HOST.commCollapsed[id]; const w=cont.querySelector(`[data-cwrap="${id}"]`); if(w) w.classList.toggle('collapsed',!!HOST.commCollapsed[id]); });
     cont.querySelectorAll('.comm-post-img').forEach(im=>im.onclick=()=>openImageLightbox(im.src));
     cont.querySelectorAll('.vote-btn').forEach(b=>b.onclick=async()=>{

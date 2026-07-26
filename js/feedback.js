@@ -95,7 +95,8 @@ window.IntMapModules.feedback=function(map,HOST){
       proj:(typeof HOST.proj!=='undefined'?HOST.proj:null), mapType:(typeof HOST.mapType!=='undefined'?HOST.mapType:null),
       ua:(navigator.userAgent||'').slice(0,250), errors:(window.__imErrors||[]).slice(-12) };
     try{ d.layers=Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked')).map(cb=>{ const l=cb.closest('label')||cb.closest('.lyr-row'); const sp=l&&l.querySelector('span'); return (sp?sp.textContent:cb.id||'?').trim(); }).filter(Boolean).slice(0,40); }catch(_){ d.layers=[]; }
-    try{ d.view=(map?[+map.getCenter().lng.toFixed(3),+map.getCenter().lat.toFixed(3),+map.getZoom().toFixed(2)]:null); }catch(_){}
+    /* (#R171) camera through IntMapGeoEngine — this file no longer names the renderer. */
+    try{ const E=window.IntMapGeoEngine, c=E&&E.camera.getCenter(); d.view=c?[+c.lng.toFixed(3),+c.lat.toFixed(3),+E.camera.getZoom().toFixed(2)]:null; }catch(_){}
     return d;
   }
   (function(){

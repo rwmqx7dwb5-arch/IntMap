@@ -144,7 +144,14 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
 
   // terrain ON → MapLibre measures from the ground, so the module must subtract the DEM height
   await page.click('#btn-view-3d');
-  await page.waitForFunction(() => window.IntMapVolume3D.state().ground != null, null, { timeout: 30000 });
+  /* (#R171) Wait for the DEM to have actually ANSWERED, not merely for a non-null reading. This test fell
+     into the very trap #R170's notes describe: queryTerrainElevation returns 0 for the first moment after
+     terrain is switched on, and 0 is both "still loading" and "sea level" — so `ground != null` was
+     satisfied instantly, and the assertions below then read the box while it was still uncompensated.
+     Measured on main: 3 failures in 3 runs here, and 2 in 3 on the branch, for that reason alone.
+     Over Mt Fuji a reading of 0 m is not plausible, so a positive value IS the "settled" signal, and
+     chaseGround() re-paints within a second of the real tile arriving. */
+  await page.waitForFunction(() => window.IntMapVolume3D.state().ground > 0, null, { timeout: 30000 });
   const on = await page.evaluate(() => ({
     st: window.IntMapVolume3D.state(),
     base: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-base'),

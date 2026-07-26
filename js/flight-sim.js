@@ -121,13 +121,23 @@ window.IntMapModules.flightSim=function(map,HOST){
        overspeed clacker and GPWS voice callouts. Built on the START gesture (autoplay-safe). Mute on the HUD deck. */
     const fsAudio=(function(){
       const MASTER_VOL=0.425;   /* (#R102) master flight-sim volume — halved to 50% of the previous 0.85 per request */
-      let ctx=null, on=false, muted=false, master=null, engGain=null, engHi=null, engHiGain=null, engLP=null;
+      /* (#R171) SILENT BY DEFAULT ("フライトシミュレーターは、サウンドなしをデフォルトに"). The engine tone,
+         wind, stall horn and GPWS voice all still exist — the SOUND button on the HUD deck turns them on —
+         but a first flight is quiet. The pilot's choice is remembered so turning it on is a one-time act,
+         which is what "default" means: it applies until someone decides otherwise. */
+      const SND_KEY='intmap_fs_sound';
+      const _mutedInit=()=>{ try{ return localStorage.getItem(SND_KEY)!=='on'; }catch(_){ return true; } };
+      let ctx=null, on=false, muted=_mutedInit(), master=null, engGain=null, engHi=null, engHiGain=null, engLP=null;
       let windBP=null, windGain=null, stallGain=null, buffetGain=null, buffetLFOg=null, clackLFOg=null;
       const engOscs=[];
       let prevGear=null, prevFlaps=null, prevGround=null, lastGpws=0, calloutState={};
       function noiseBuf(sec){ const n=Math.floor(ctx.sampleRate*(sec||2)); const b=ctx.createBuffer(1,n,ctx.sampleRate); const d=b.getChannelData(0); let last=0; for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.5; } return b; }
-      function start(){ if(on) return; try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC(); }catch(_){ ctx=null; return; }
-        on=true; prevGear=null; prevFlaps=null; prevGround=null; lastGpws=0; calloutState={};
+      /* (#R171) The synth graph is built ON DEMAND, not on every take-off. Silence is now the default, and a
+         muted flight that still opened an AudioContext and ran a dozen oscillators into a zeroed gain would be
+         "no sound" in name only — the tab would show as playing audio and the browser would keep the audio
+         hardware awake. So start() only builds the graph when sound is actually wanted, and un-muting mid-flight
+         builds it then (that click is the user gesture autoplay policy needs). */
+      function build(){ if(ctx) return; try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC(); }catch(_){ ctx=null; return; }
         try{
           master=ctx.createGain(); master.gain.value=0.0001; master.connect(ctx.destination);
           engLP=ctx.createBiquadFilter(); engLP.type='lowpass'; engLP.frequency.value=1200; engLP.connect(master);
@@ -148,6 +158,8 @@ window.IntMapModules.flightSim=function(map,HOST){
           master.gain.setTargetAtTime(muted?0.0001:MASTER_VOL, ctx.currentTime, 0.3);
         }catch(_){}
         try{ if(ctx&&ctx.state==='suspended') ctx.resume(); }catch(_){} }
+      function start(){ if(on) return; on=true; prevGear=null; prevFlaps=null; prevGround=null; lastGpws=0; calloutState={};
+        if(!muted) build(); }
       function stop(){ if(!on) return; on=false; try{ if(master&&ctx) master.gain.setTargetAtTime(0.0001,ctx.currentTime,0.15); }catch(_){}
         const c=ctx; setTimeout(()=>{ try{ c&&c.close(); }catch(_){} },300); ctx=null; engOscs.length=0; }
       function servo(dur){ if(!on||!ctx||muted) return; try{ const t=ctx.currentTime; const o=ctx.createOscillator(); o.type='sawtooth'; const g=ctx.createGain(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=650;
@@ -188,7 +200,11 @@ window.IntMapModules.flightSim=function(map,HOST){
           else if(agl<300 && descent>18 && now-lastGpws>2600){ lastGpws=now; speak('sink rate'); }
           else if(agl<130 && st.gear<0.5 && st.V<ac.Vne*0.55 && now-lastGpws>3200){ lastGpws=now; speak('too low, gear'); } }
       }catch(_){} }
-      function toggleMute(){ muted=!muted; try{ if(master&&ctx) master.gain.setTargetAtTime(muted?0.0001:MASTER_VOL,ctx.currentTime,0.1); }catch(_){} return muted; }
+      function toggleMute(){ muted=!muted; try{ localStorage.setItem(SND_KEY,muted?'off':'on'); }catch(_){}   /* (#R171) remember the pilot's choice */
+        if(!muted&&on&&!ctx) build();   /* (#R171) first un-mute of a silent flight — build the synth now, riding this click */
+        try{ if(master&&ctx) master.gain.setTargetAtTime(muted?0.0001:MASTER_VOL,ctx.currentTime,0.1); }catch(_){}
+        try{ if(muted&&'speechSynthesis'in window) window.speechSynthesis.cancel(); }catch(_){}   /* silence a GPWS callout already in the air */
+        return muted; }
       return { start, stop, update, toggleMute, isMuted:()=>muted, active:()=>on };
     })();
     function css(){ if(styled) return; styled=true; const s=document.createElement('style'); s.id='fs-style';
@@ -370,7 +386,9 @@ window.IntMapModules.flightSim=function(map,HOST){
         +'<button class="fs-act" data-act="m">🗺<small>'+LL('MAP','地図','KARTE','КАРТА','MAPA')+'</small></button>'
         +'<button class="fs-act" data-act="v">⊞<small>'+LL('CAM LVL','視点水平','KAM-HOR','КАМ-ГОР','CÁM NIV')+'</small></button>'
         +'<button class="fs-act" data-act="p">⏸<small>'+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
-        +'<button class="fs-act on" data-act="mute">🔊<small>'+LL('SOUND','サウンド','TON','ЗВУК','SONIDO')+'</small></button>'
+        /* (#R171) the SOUND key shows the REAL audio state — silence is the default now, so hard-coding "on"
+           here would have made the deck lie about it on every flight. */
+        +'<button class="fs-act'+(fsAudio.isMuted()?'':' on')+'" data-act="mute">'+(fsAudio.isMuted()?'🔇':'🔊')+'<small>'+LL('SOUND','サウンド','TON','ЗВУК','SONIDO')+'</small></button>'
         +'<button class="fs-act" data-act="r">⟳<small>'+LL('RESET','リセット','RESET','СБРОС','REINICIO')+'</small></button>'
       +'</div>'
       +'<div class="fs-minimap"><div class="fs-mm-map"></div>'
@@ -758,11 +776,17 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
       /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead.
-         (#R170) …and now GUARANTEE it ("フライトシミュレーターは、FlatではなくGlobeの地図を使うように"): #R98 only
-         stopped forcing mercator, so whoever took off while the map was in Flat view flew a flat Earth — the
-         horizon never curved and the camera had no globe to bank against. Switch to globe on entry; stop()
-         restores whichever projection was active before the flight (both directions — see below). */
+         (#R170) …and force the Globe view on entry, so a pilot who took off from the Flat view flies a globe too.
+         (#R171) …and that STILL was not a globe ("まだそうなっていない"), because in MapLibre 5 the `globe`
+         projection is DEFINED as vertical-perspective while zoomed out and plain MERCATOR from about z12 up.
+         Measured here (bow of the ±60° parallel in px, same camera): z10 741 → z11 753 → **z12 0 → z15 0**.
+         The sim's camera comes from calculateCameraOptionsFromTo with a fixed 1.8 km look-ahead, which pins it
+         at z≈14-15 for the whole flight — so every previous "switch to globe" was a no-op the moment the flight
+         actually started, and the cockpit really did show a flat Earth.
+         The fix is the projection that is curved at EVERY zoom (measured bow 764 px at z15): 'globe-true'
+         (vertical-perspective). Asked for through the engine so the sim never names a MapLibre projection. */
       try{ if(HOST.proj!=='globe'&&window.IntMapOS) IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }catch(_){}
+      try{ const GE=window.IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.setProjection) GE.camera.setProjection('globe-true'); }catch(_){}
       /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
          pale horizon haze and distance fog; restored on exit. */
       try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
@@ -824,8 +848,11 @@ window.IntMapModules.flightSim=function(map,HOST){
         if(pv.base!=='sat'&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
         if(!pv.terr&&typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
         /* (#R170) restore BOTH ways. The old line only knew how to put the globe back; now that entry forces
-           globe, a pilot who took off from the Flat view would otherwise be silently left on the globe. */
-        if(typeof HOST.proj!=='undefined'&&pv.proj!==HOST.proj&&window.IntMapOS){ IntMapOS.exec(pv.proj==='globe'?'view.proj.globe':'view.proj.flat',{source:'flightsim'}); }
+           globe, a pilot who took off from the Flat view would otherwise be silently left on the globe.
+           (#R171) …and restore UNCONDITIONALLY. Entry now sets a projection SPEC (vertical-perspective) that no
+           app state records, so `pv.proj!==HOST.proj` is false for a pilot who was already on the globe — and
+           the map would have been left on the all-zoom globe for good, silently changing the normal view. */
+        if(typeof HOST.proj!=='undefined'&&window.IntMapOS){ IntMapOS.exec(pv.proj==='flat'?'view.proj.flat':'view.proj.globe',{source:'flightsim'}); }
       } }catch(_){}
       prevView=null;
       if(prevCam){ try{ map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(map.setRoll) map.setRoll(0); map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }

@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */
+window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-07-26-R170';
+  window.INTMAP_BUILD='2026-07-26-R171';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -284,7 +284,7 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
           <div class="measure-dropdown" id="measure-dropdown">
             <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area">📏 Distance / area</button>
             <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
-            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
             <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
           </div>
         </div>
@@ -433,6 +433,12 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
     <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centerd)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
+    <!-- (#R171) Tilt ceiling. Standard is the long-standing 78°; Unlimited hands over the renderer's whole
+         range (0-180°, i.e. straight down → horizon → straight up). -->
+    <div class="setting-group"><label data-i18n="lblTiltLimit">Map tilt limit</label><select id="setting-tilt-limit"><option value="standard" data-i18n="tiltStandard">Standard — up to 78° (default)</option><option value="unlimited" data-i18n="tiltUnlimited">Unlimited — the full 0–180° range</option></select>
+      <div class="sat-keys-hint" data-i18n="tiltHint">Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.</div></div>
+    <!-- (#R171) Viewpoint altitude in the always-on readout (bottom-left corner of the map). -->
+    <div class="setting-group"><label data-i18n="lblEyeAlt">Viewpoint altitude in the readout</label><select id="setting-eye-alt"><option value="off" data-i18n="eyeAltOff">Off (default)</option><option value="on" data-i18n="eyeAltOn">On — show the camera's altitude</option></select></div>
     <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
     
     <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
@@ -654,7 +660,7 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
     <div class="m-tool-grid">
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-volume"><span class="ico">🧊</span><span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) -->
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
@@ -747,6 +753,7 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
 <script src="js/companies-ui.js"></script>
 <script src="js/tool-panel.js"></script>
 <script src="js/volume3d.js"></script>   <!-- (#R170) Measure ▸ 3-D volume — built entirely on IntMapGeoEngine -->
+<script src="js/view-controls.js"></script>   <!-- (#R171) tilt limit + eye-altitude readout — also engine-only -->
 <script src="js/auth-ui.js"></script>
 <script src="js/community.js"></script>
 <!-- (#R169) the eighth split: eleven more SUBJECT modules. Every statement in them is a DECLARATION,
@@ -788,7 +795,11 @@ window.__imBuild='R170';   /* (#R121) build marker — bump when verifying that 
                  /* (#R168) the six subject modules of the seventh split. */
                  'countriesUi','newsUi','companiesUi','toolPanel','authUi','community',
                  /* (#R169) the eleven subject modules of the eighth split. */
-                 'satellite','aiCore','placeLabels','windowManager','searchGeocode','newsContext','newsFeed','articleReader','communityBoard','mapReadout','elevationProfile'].filter(function(k){ return typeof M[k]!=='function'; });
+                 'satellite','aiCore','placeLabels','windowManager','searchGeocode','newsContext','newsFeed','articleReader','communityBoard','mapReadout','elevationProfile',
+                 /* (#R171) The two files written straight into js/ rather than split out of here. volume3d
+                    shipped in #R170 without ever being named here, so a js/volume3d.js that failed to deploy
+                    would have gone unreported — exactly the silent loss this guard exists to catch. */
+                 'volume3d','viewControls'].filter(function(k){ return typeof M[k]!=='function'; });
     if(miss.length) console.error('[IntMap] required module file(s) failed to load: '+miss.join(', ')+' — check the js/ directory is deployed');
     if(missFac.length) console.error('[IntMap] module factories missing: '+missFac.join(', ')+' — the matching js/ file did not load');
     window.__imModuleCheck={ missing:miss, missingFactories:missFac }; })();
@@ -1684,6 +1695,9 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R170) Measure ▸ 3-D volume. Built AFTER IntMapGeoEngine exists (it talks to nothing else), and exposed
      globally because the tool panel, exitTool and the Atlas volume3d action all drive the same single box. */
   window.IntMapVolume3D=window.IntMapModules.volume3d(map,IM_HOST);
+  /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
+     Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
+  window.IntMapModules.viewControls(map,IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
@@ -1824,6 +1838,9 @@ window.addEventListener('DOMContentLoaded', () => {
     map.scrollZoom.setWheelZoomRate(1/300);   /* default 1/450 → a touch more responsive */
     map.scrollZoom.setZoomRate(1/90);         /* trackpad pinch */
     map.setMaxPitch(78);                       /* default 60 → Earth-like oblique views */
+    /* (#R171) 78° is now the STANDARD ceiling, not the only one — Settings ▸ Map behaviour ▸ "Map tilt limit"
+       can hand over the renderer's whole 0-180° range. window.IntMapTilt re-applies the saved choice on top of
+       this line once IntMapGeoEngine exists (js/view-controls.js), so this stays the value a fresh profile gets. */
     if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
     if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
   }catch(_){} }
@@ -2361,7 +2378,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window._syncToolBtns=_syncToolBtns;
   function exitTool(){
-    try{ if(toolMode==='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.clear(); }catch(_){}   /* (#R170) closing the tool removes its 3-D box */
+    try{ if(toolMode==='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170) closing the tool removes its 3-D box; (#R171) release() also hands the drag gesture back */
     toolMode=null; liveCursor=null; measureSnapClose=false;
     _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
@@ -2370,7 +2387,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function setTool(mode){
     if(toolMode===mode){ exitTool(); return; }
-    try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.clear(); }catch(_){}   /* (#R170) */
+    try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170/#R171) */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
@@ -2543,13 +2560,70 @@ window.addEventListener('DOMContentLoaded', () => {
         const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
           rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
           /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
-          extrusion3d:true };
+          extrusion3d:true,
+          /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
+             NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
+             MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
+             z12 0 → z15 0, i.e. flat. The flight sim lives at z≈14-15, so "we set globe" was a no-op for the
+             entire flight — the reason the cockpit still showed a flat Earth after #R170. `globeAllZooms` means
+             the renderer can be asked for a genuinely curved Earth regardless of zoom (setProjection('globe-true')).
+             An engine that only has the zoom-dependent variety must report false so a caller can say so honestly. */
+          globeAllZooms:true,
+          /* (#R171) the renderer's true tilt range, in degrees, for the "unlimited tilt" setting to be honest about.
+             MEASURED, not assumed: setMaxPitch accepts ≤180 and throws "maxPitch must be less than or equal to 180"
+             above it; setMinPitch throws below 0. 0-180 is therefore the whole of camera tilt — straight down,
+             through the horizon, to straight up — and anything beyond it is the same direction with the bearing
+             turned around (which is exactly how the wrap in js/map-extras.js keeps tilting past the end). */
+          tiltRange:[0,180],
+          /* (#R171) the eye's own altitude above sea level (see cameraAltitude below) */
+          cameraAltitude:true };
         /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
         const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
           flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
           fitBounds(b,o){ const m=_m(); if(m) m.fitBounds(b,o); }, setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
           getCamera(){ const m=_m(); if(!m) return null; try{ return { center:m.getCenter(), zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch() }; }catch(_){ return null; } },
-          setProjection(mode){ const m=_m(); if(m&&m.setProjection) m.setProjection(mode==='globe'?{type:'globe'}:{type:'mercator'}); },
+          /* (#R171) three modes now, because MapLibre's "globe" is only a globe SOME of the time:
+               'flat'        → mercator
+               'globe'       → the zoom-dependent globe (curved when zoomed out, mercator from z≈12) = the app's Globe button
+               'globe-true'  → vertical-perspective: a curved Earth at EVERY zoom (measured: bow 764 px at z15)
+             Unknown values fall back to mercator, exactly as before. */
+          setProjection(mode){ const m=_m(); if(!(m&&m.setProjection)) return false;
+            const spec=(mode==='globe-true')?{type:'vertical-perspective'}:(mode==='globe')?{type:'globe'}:{type:'mercator'};
+            try{ m.setProjection(spec); return true; }catch(_){ /* an older renderer may not know vertical-perspective — the plain globe is the closest it has */
+              if(mode==='globe-true'){ try{ m.setProjection({type:'globe'}); return true; }catch(__){} } return false; } },
+          getProjection(){ const m=_m(); try{ return (m&&m.getProjection)?m.getProjection():null; }catch(_){ return null; } },
+          /* (#R171) camera ATTITUDE — bearing / pitch / roll and the tilt limits. The unlimited-tilt setting and
+             the flight sim both need these, and both are written against the engine, so they belong in the contract. */
+          setBearing(b){ const m=_m(); if(m&&m.setBearing) m.setBearing(b); }, setPitch(p){ const m=_m(); if(m&&m.setPitch) m.setPitch(p); },
+          getRoll(){ const m=_m(); try{ return m&&m.getRoll?m.getRoll():0; }catch(_){ return 0; } }, setRoll(r){ const m=_m(); try{ if(m&&m.setRoll) m.setRoll(r); }catch(_){} },
+          getMaxPitch(){ const m=_m(); try{ return (m&&m.getMaxPitch)?m.getMaxPitch():60; }catch(_){ return 60; } },
+          setMaxPitch(v){ const m=_m(); if(!(m&&m.setMaxPitch)) return false; try{ m.setMaxPitch(v); return true; }catch(_){ return false; } },
+          getMinPitch(){ const m=_m(); try{ return (m&&m.getMinPitch)?m.getMinPitch():0; }catch(_){ return 0; } },
+          /* (#R171) THE EYE'S OWN ALTITUDE above sea level, in metres — what the readout option shows.
+             MapLibre 5.24 has no public getter for it (getFreeCameraOptions does not exist here; transform
+             .getCameraAltitude() returns null), so the adapter derives it from the renderer's own geometry:
+             the camera sits `cameraToCenterDistance` PIXELS from the map centre along the view ray, so its
+             height above the centre's ground plane is that distance in ground METRES times cos(pitch). The
+             metres-per-pixel is measured off the renderer itself (unproject two points 100 px apart at the
+             centre row) rather than assumed from the zoom, so it stays true in globe as well as mercator.
+             Verified against an independent API: asking calculateCameraOptionsFromTo for an eye 900 m above
+             its target reads back as 900.0001 m. Past 90° of pitch the camera really has swung BELOW the
+             centre's ground plane, and the negative value it returns says so rather than pretending. */
+          cameraAltitude(){ const m=_m(); if(!m) return null;
+            try{
+              const cv=m.getCanvas&&m.getCanvas(); if(!cv) return null;
+              const w=cv.clientWidth||cv.width, h=cv.clientHeight||cv.height; if(!(w>0&&h>0)) return null;
+              const R=6371008.8, r=Math.PI/180;
+              const a=m.unproject([w/2-50,h/2]), b=m.unproject([w/2+50,h/2]); if(!a||!b) return null;
+              const cosd=Math.sin(a.lat*r)*Math.sin(b.lat*r)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lng-a.lng)*r);
+              const mpp=R*Math.acos(Math.max(-1,Math.min(1,cosd)))/100; if(!isFinite(mpp)||mpp<=0) return null;
+              /* MapLibre's own camera→centre distance when it is readable (fov is a renderer detail, so ask the
+                 renderer); the default-fov identity 1.5×height only stands in as a fallback. */
+              let c2c=1.5*h; try{ const v=m.transform&&m.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
+              const ground=(m.getCameraTargetElevation)?(+m.getCameraTargetElevation()||0):0;
+              const alt=c2c*mpp*Math.cos((m.getPitch()||0)*r)+ground;
+              return isFinite(alt)?alt:null;
+            }catch(_){ return null; } },
           project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
           terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
           queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
@@ -2588,6 +2662,11 @@ window.addEventListener('DOMContentLoaded', () => {
             try{ m.addLayer(Object.assign({type:'fill-extrusion'},d), (before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
           setExtrusionRange(id,baseM,topM){ const m=_m(); if(!(m&&m.getLayer(id))) return false;
             try{ m.setPaintProperty(id,'fill-extrusion-base',baseM); m.setPaintProperty(id,'fill-extrusion-height',topM); return true; }catch(_){ return false; } },
+          /* (#R171) INPUT — hand the drag gesture to a tool for the length of a stroke. A tool that traces a
+             shape has to stop the renderer panning underneath it; #R170's DrawTool reached straight for
+             map.dragPan for this, which is precisely the kind of call a renderer-independent tool cannot make.
+             Named for the intent ("the tool owns the drag now"), not for MapLibre's handler objects. */
+          setDragPan(on){ const m=_m(); try{ if(m&&m.dragPan){ on?m.dragPan.enable():m.dragPan.disable(); return true; } }catch(_){} return false; },
           getContainer(){ const m=_m(); return (m&&m.getContainer)?m.getContainer():null; },
           getSize(){ const m=_m(); if(!m) return {width:0,height:0}; try{ const c=m.getContainer(); const cv=m.getCanvas&&m.getCanvas();
             return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
@@ -2597,7 +2676,10 @@ window.addEventListener('DOMContentLoaded', () => {
           raw(){ return _m(); } };
         /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
            (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
-        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true } };
+        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
+          /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
+             own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for. */
+          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true } };
         let _adapter=MapLibreAdapter;
         return {
           id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
@@ -2605,7 +2687,14 @@ window.addEventListener('DOMContentLoaded', () => {
           camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo),
             /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
             getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
-            zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop() },
+            zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop(),
+            /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */
+            getProjection:()=>_adapter.getProjection(),
+            setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
+            getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
+            /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
+            tiltRange:()=>{ const c=_adapter.capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
+            altitude:()=>_adapter.cameraAltitude() },
           coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
           /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
              far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the
@@ -2622,6 +2711,8 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
           render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),
             container:()=>_adapter.getContainer(), size:()=>_adapter.getSize(), setCursor:c=>_adapter.setCursor(c) },
+          /* (#R171) gesture ownership — a drawing tool suspends the renderer's own pan for the stroke */
+          input:{ setDragPan:on=>_adapter.setDragPan(on) },
           events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c),
             /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
             onLayer:(e,l,c)=>_adapter.onLayer(e,l,c), offLayer:(e,l,c)=>_adapter.offLayer(e,l,c) },
@@ -2687,9 +2778,9 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
   { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=(e)=>setGrid(e.target.checked); }   /* (#R10/#R38) Grid in Layers — drive state FROM the box (idempotent) so a re-asserted change can't re-enable it */
   document.getElementById('btn-tool-measure').onclick=()=>{ setTool('measure'); if(window._closeMeasureMenu)window._closeMeasureMenu(); };
-  document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
-  /* (#R170) 3-D volume — same Measure menu, same point-collection path as Distance/Area (measurePoints); the
-     altitude band and the extrusion live in js/volume3d.js. */
+  document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
+  /* (#R170) 3-D volume — same Measure menu, same point-collection path as Distance/Area (measurePoints); the
+     altitude band and the extrusion live in js/volume3d.js. */
   { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }; }
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
@@ -2721,7 +2812,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof _imTouchPrimary==='function' && _imTouchPrimary()) return; }catch(_){}   /* desktop only, per the request */
       if(pop){ closePop(); return; }
       const b=Math.round(((map.getBearing()%360)+360)%360), p=Math.round(map.getPitch()||0), z=Math.round((map.getZoom()||0)*10)/10;
-      const maxP=Math.round((map.getMaxPitch&&map.getMaxPitch())||85);
+      /* (#R171) With the tilt limit set to Unlimited this field takes ANY angle from 0 to 360: past 180° the
+         camera comes back down the far side with the bearing reversed (IntMapTilt.fromAngle), which is the
+         one place "keep tilting round" is expressible without re-implementing the drag gesture. */
+      const _unl=(()=>{ try{ return !!(window.IntMapTilt&&window.IntMapTilt.isUnlimited()); }catch(_){ return false; } })();
+      const maxP=_unl?360:Math.round((map.getMaxPitch&&map.getMaxPitch())||85);
       pop=document.createElement('div'); pop.className='compass-num-pop';
       pop.innerHTML='<div class="cnp-t">'+CL('Set view','視点を設定','Ansicht einstellen','Задать вид','Definir vista')+'</div>'
         +'<label>'+CL('Bearing','方位','Richtung','Азимут','Rumbo')+' (°)<input type="number" id="cnp-bear" min="0" max="360" step="1" value="'+b+'"></label>'
@@ -2731,7 +2826,11 @@ window.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(pop);
       const r=btn.getBoundingClientRect(); pop.style.top=Math.round(r.bottom+6)+'px'; pop.style.left=Math.round(Math.max(8,Math.min(r.left, window.innerWidth-pop.offsetWidth-10)))+'px';
       const apply=()=>{ const bb=parseFloat(pop.querySelector('#cnp-bear').value), pp=parseFloat(pop.querySelector('#cnp-pitch').value), zz=parseFloat(pop.querySelector('#cnp-zoom').value);
-        const opt={duration:500}; if(isFinite(bb)) opt.bearing=((bb%360)+360)%360; if(isFinite(pp)) opt.pitch=Math.max(0,Math.min(maxP,pp)); if(isFinite(zz)) opt.zoom=Math.max(0,Math.min(22,zz)); try{ map.easeTo(opt); }catch(_){} closePop(); };
+        const opt={duration:500}; if(isFinite(bb)) opt.bearing=((bb%360)+360)%360; if(isFinite(pp)) opt.pitch=Math.max(0,Math.min(maxP,pp)); if(isFinite(zz)) opt.zoom=Math.max(0,Math.min(22,zz));
+        /* (#R171) an angle past the top is the same view aimed the other way — resolve it into a real
+           (pitch, bearing) pair rather than clamping it flat against the ceiling. */
+        if(_unl&&isFinite(pp)&&pp>180){ try{ const r=window.IntMapTilt.fromAngle(pp, isFinite(bb)?bb:map.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }catch(_){} }
+        try{ map.easeTo(opt); }catch(_){} closePop(); };
       pop.querySelector('#cnp-apply').onclick=apply;
       pop.querySelector('#cnp-reset').onclick=()=>{ try{ map.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
       pop.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); apply(); } });
@@ -4050,6 +4149,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(ps){ ps.value=Math.round((window.imNavPanSens||1)*100); if(pv) pv.textContent=ps.value+'%'; ps.oninput=()=>{ if(pv) pv.textContent=ps.value+'%'; }; }
       if(is){ is.value=Math.round((window.imNavInertia==null?1:window.imNavInertia)*100); if(iv) iv.textContent=is.value+'%'; is.oninput=()=>{ if(iv) iv.textContent=is.value+'%'; }; }
     }catch(_){}
+    /* (#R171) tilt ceiling + viewpoint-altitude readout reflect the SAVED state (each subsystem owns it) */
+    try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) tl.value=window.IntMapTilt.isUnlimited()?'unlimited':'standard';
+      const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; }catch(_){}
     settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
@@ -4081,6 +4183,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(is) window.imNavInertia=Math.max(0,Math.min(1.5,(+is.value||100)/100));   /* (#R23) 0 → no inertia */
       window._applyNavSens&&window._applyNavSens();
     }catch(_){}
+    /* (#R171) tilt ceiling + viewpoint altitude — both take effect immediately and persist themselves */
+    try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) window.IntMapTilt.set(tl.value==='unlimited'); }catch(_){}
+    try{ const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) window.IntMapEyeAlt.set(ea.value==='on'); }catch(_){}
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
     settingsDirty=false; modal.style.display='none'; applyTheme(); if(toolMode)updateToolPanel();
     renderUI();
@@ -4537,6 +4642,10 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
     lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
     lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centerd)", flatPanFree:"Free pan (wrap around the world)",
+    /* (#R171) tilt ceiling + viewpoint altitude */
+    lblTiltLimit:"Map tilt limit", tiltStandard:"Standard — up to 78° (default)", tiltUnlimited:"Unlimited — the full 0–180° range",
+    tiltHint:"Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.",
+    lblEyeAlt:"Viewpoint altitude in the readout", eyeAltOff:"Off (default)", eyeAltOn:"On — show the camera's altitude",
     lblNewsCountries:"News by country media", newsCountriesHint:"Pull headlines from the media of the countries you pick (multiple allowed).",
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
@@ -4548,6 +4657,10 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
     lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
+    /* (#R171) 傾きの上限・視点高度 */
+    lblTiltLimit:"地図の傾きの制限", tiltStandard:"標準 — 78°まで（既定）", tiltUnlimited:"無制限 — 0〜180°の全範囲",
+    tiltHint:"無制限にすると、地平線を越えて真上を向くところまで倒せます。180°を超えた角度は方位を反転した同じ視線になるため、方位磁針を右クリックすれば0〜360°の任意の角度を数値で指定できます。",
+    lblEyeAlt:"常時表示欄に視点の高度", eyeAltOff:"オフ（既定）", eyeAltOn:"オン — 視点位置の高度を表示",
     lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国のメディアの見出しを取得します（複数選択可）。",
     lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
     screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",

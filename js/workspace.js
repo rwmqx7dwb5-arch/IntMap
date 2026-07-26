@@ -52,9 +52,9 @@ window.IntMapModules.workspace=function(map,HOST){
           }catch(_){} },
         /* (#R78f) closing the News window must stop its map pins + the "summarize view" button ("永遠に地図に
            ニュース記事や要約ボタンがあるまま。news windowを閉じたらやめろ") */
-        onHide:()=>{ try{ if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; }catch(_){} },
+        onHide:()=>{ try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); }catch(_){} try{ const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; }catch(_){} },
         onShow:()=>{ /* restore pins directly (setMode('news') no-ops when currentMode is already 'news') */
-          try{ if(map&&map.getSource('news-points')&&typeof HOST.newsFeatures!=='undefined') map.getSource('news-points').setData({type:'FeatureCollection',features:HOST.newsFeatures}); }catch(_){}
+          try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')&&typeof HOST.newsFeatures!=='undefined') E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); }catch(_){}
           try{ const b=document.getElementById('ai-view-summary-btn'); if(b&&(HOST.mode==='news'||HOST.mode==='saved')) b.style.display=''; }catch(_){} } },
       /* (#R79b) Countries window now carries its OWN search bar + the compare dock (#stats-compare-fixed),
          stacked in the window body, so its search & country-comparison features work in workspace mode. */
@@ -714,7 +714,7 @@ window.IntMapModules.workspace=function(map,HOST){
       /* (#R122) after leaving ws-mode, the map must reflect the NORMAL sidebar — clear the news pins the ws News
          window may have left on the map unless the sidebar is actually on News/Saved ("オフ時にもニュースウィンドウ
          がオンのときの地図表示になる"). */
-      try{ const _m=(typeof HOST.mode!=='undefined')?HOST.mode:null; if(_m!=='news'&&_m!=='saved'){ if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; } }catch(_){}
+      try{ const _m=(typeof HOST.mode!=='undefined')?HOST.mode:null; if(_m!=='news'&&_m!=='saved'){ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; } }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
       try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
     }
