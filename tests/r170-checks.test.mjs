@@ -119,7 +119,12 @@ test('flight sim: airborne start is the default and the globe is forced', () => 
   assert.match(fs, /<button class="fss-m on" data-m="air">/, 'the Airborne button must carry the selected class');
   assert.ok(!/<button class="fss-m on" data-m="ground">/.test(fs), 'the runway button must no longer be preselected');
   assert.match(fs, /IntMapOS\.exec\('view\.proj\.globe',\{source:'flightsim'\}\)/, 'start() must switch to the globe');
-  assert.match(fs, /pv\.proj!==HOST\.proj&&window\.IntMapOS/, 'stop() must restore the pre-flight projection in BOTH directions');
+  /* (#R171) The restore is UNCONDITIONAL now, so the old `pv.proj!==HOST.proj` guard is gone on purpose:
+     entry also sets a projection SPEC (the all-zoom globe) that no app state records, and the guard would
+     skip the restore for a pilot who was already on the globe — leaving the normal map permanently changed.
+     The claim this line makes ("stop() puts BOTH the flat and the globe view back") is unchanged and now
+     stronger; tests/r171-checks.test.mjs asserts the guard's absence, and tests/r171.spec.js flies it. */
+  assert.match(fs, /pv\.proj==='flat'\?'view\.proj\.flat':'view\.proj\.globe'/, 'stop() must restore the pre-flight projection in BOTH directions');
 });
 
 test('flight sim: "fly again" resumes from where the flight ended', () => {
@@ -154,7 +159,9 @@ test('the 3-D volume tool is wired from menu to renderer', () => {
   assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\(map,IM_HOST\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');
-  assert.match(INDEX, /toolMode==='volume'&&window\.IntMapVolume3D\) window\.IntMapVolume3D\.clear\(\)/, 'exitTool must drop the box');
+  /* (#R171) release() = clear() plus handing the drag gesture back, now that the freehand / circle /
+     rectangle shapes take the drag while they are armed. Closing the tool must do both. */
+  assert.match(INDEX, /toolMode==='volume'&&window\.IntMapVolume3D\) window\.IntMapVolume3D\.release\(\)/, 'exitTool must drop the box');
   const tp = R('js/tool-panel.js');
   assert.match(tp, /HOST\.toolMode==='area'\|\|HOST\.toolMode==='volume'/, 'the footprint must preview like an area ring');
   assert.match(tp, /volume:'🧊 '\+HOST\.t\('vol3dTool'\)/, 'the panel needs a localized title');

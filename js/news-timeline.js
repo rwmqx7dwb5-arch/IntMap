@@ -9,7 +9,7 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.newsTimeline=function(map,HOST){
+window.IntMapModules.newsTimeline=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -180,7 +180,8 @@ window.IntMapModules.newsTimeline=function(map,HOST){
              never keep showing today's news, then re-fetch (buildItems filters to the target date). Runs for ALL modes
              now (was news/saved only), so pins on the map also reflect the date, not the last-loaded latest set. */
           HOST.globalData=[];
-          try{ if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); HOST.newsFeatures=[]; } }catch(_){}
+          /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
+          try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); HOST.newsFeatures=[]; } }catch(_){}
           try{ fetchData(); }catch(_){}
         },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */

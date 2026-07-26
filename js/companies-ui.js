@@ -485,7 +485,8 @@ window.IntMapModules.companiesUi=function(map,HOST){
     /* Ensure pin layers exist NOW. Without this, on first tab-switch the source may not yet
        have been created → pins appeared with a delay. */
     if(_imCanDraw()) HOST.setupIntelLayers();
-    if(map&&map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:HOST.dashFeatures});
+    /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
+    try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('dash-points')) E.layers.setSourceData('dash-points',{type:'FeatureCollection',features:HOST.dashFeatures}); }catch(_){}
     /* Sidebar cards */
     let cards='<div class="dash-cards-container">';
     filtered.forEach(info=>{

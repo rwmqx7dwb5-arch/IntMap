@@ -69,7 +69,8 @@ window.IntMapModules.onboarding=function(map,HOST){
          ran while the map was still busy (the demo starts ~1.4s after load), the checkbox could end up OFF
          while the raster stayed VISIBLE — a true orphan ("オンなのにactive layersに出ず消せない"). Hiding the
          actual layers here guarantees the demo can never strand one. */
-      try{ ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(map.getLayer&&map.getLayer(l)) map.setLayoutProperty(l,'visibility','none'); }); }catch(_){}
+      /* (#R171) layer visibility through IntMapGeoEngine — this file no longer names the renderer. */
+      try{ const E=window.IntMapGeoEngine; if(E) ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(E.layers.has(l)) E.layers.setVisible(l,false); }); }catch(_){}
       window._imDemoActive=false;
       /* (#R27) Re-assert place labels after the demo so the default names aren't left hidden by the
          demo's layer cycling ("デフォルトで地名ラベルが出ない"). */

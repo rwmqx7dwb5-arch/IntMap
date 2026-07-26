@@ -42,8 +42,8 @@ window.IntMapModules.searchGeocode=function(map,HOST){
     const mJpHigh=ql.match(/^(.+?)(が|の)?(最大|最多|最高)(?:の国)?$/);
     if(mJpHigh){
       const w=mJpHigh[1].trim();
-      const map={'人口':'pop','GDP':'gdp','面積':'area','軍事費':'milSpend','HDI':'hdi'};
-      const sk=map[w]; if(sk){ const top=Object.values(HOST.countryStats).filter(s=>s[sk]!=null).sort((a,b)=>b[sk]-a[sk])[0]; if(top) return top.nameEn; }
+      const SUPERLATIVE={'人口':'pop','GDP':'gdp','面積':'area','軍事費':'milSpend','HDI':'hdi'};   /* (#R171) renamed off `map`: a local called `map` SHADOWS the renderer the factory is handed — the #R163 trap, now inert here only because this file no longer uses the renderer at all */
+      const sk=SUPERLATIVE[w]; if(sk){ const top=Object.values(HOST.countryStats).filter(s=>s[sk]!=null).sort((a,b)=>b[sk]-a[sk])[0]; if(top) return top.nameEn; }
     }
     return q;
   }
@@ -126,19 +126,21 @@ window.IntMapModules.searchGeocode=function(map,HOST){
   function closeSearchCard(){
     if(HOST.searchMarker){ HOST.searchMarker.remove(); HOST.searchMarker=null; }
     if(searchCardEl){ searchCardEl.remove(); searchCardEl=null; }
-    if(searchCardOnMove && map){ map.off('move',searchCardOnMove); searchCardOnMove=null; }
+    /* (#R171) events / camera / projection through IntMapGeoEngine — this file no longer names the renderer. */
+    if(searchCardOnMove){ try{ const E=window.IntMapGeoEngine; if(E) E.events.off('move',searchCardOnMove); }catch(_){} searchCardOnMove=null; }
     searchCardData=null;
   }
   function positionSearchCard(){
-    if(!searchCardEl||!searchCardData||!map) return;
-    const pt=map.project([searchCardData.lng,searchCardData.lat]);
+    if(!searchCardEl||!searchCardData) return;
+    const E=window.IntMapGeoEngine; if(!E) return;
+    const pt=E.coords.project([searchCardData.lng,searchCardData.lat]); if(!pt) return;
     searchCardEl.style.left=pt.x+'px';
     searchCardEl.style.top=pt.y+'px';
   }
   async function gotoPlace(lng,lat,displayName,raw){
-    if(!map)return;
+    const GEO=window.IntMapGeoEngine; if(!GEO)return;
     closeSearchCard();
-    map.flyTo({center:[lng,lat],zoom:9,speed:1.4});
+    GEO.camera.flyTo({center:[lng,lat],zoom:9,speed:1.4});
     /* Build custom HTML pin element */
     const pinEl=document.createElement('div');
     pinEl.className='search-pin';
@@ -175,7 +177,7 @@ window.IntMapModules.searchGeocode=function(map,HOST){
     /* (#R36) rAF-coalesce the per-move reposition (mobile pan/zoom smoothness #13): `move` can fire several
        times per frame during inertia, and positionSearchCard does layout (getBoundingClientRect + style writes);
        collapse it to at most once per frame so it never piles up work mid-gesture. */
-    let _scRAF=0; searchCardOnMove=()=>{ if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); }; map.on('move',searchCardOnMove);
+    let _scRAF=0; searchCardOnMove=()=>{ if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); }; GEO.events.on('move',searchCardOnMove);
     positionSearchCard();
     /* Async elevation / depth */
     try{

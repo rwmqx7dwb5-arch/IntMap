@@ -107,7 +107,10 @@ test('R152 #13 IntMapGeoEngine renderer abstraction + MapLibre adapter + Cesium 
   assert.match(html, /camera:\{ flyTo:o=>_adapter\.flyTo\(o\)/, 'camera facade delegates to the adapter');
   assert.match(html, /use\(a\)\{ if\(a&&a\.id\) _adapter=a;/, 'a future renderer can be swapped in');
   // Atlas camera execution routes through the engine (R160 aliases `const GE=IntMapGeoEngine.camera` in these cases)
-  assert.match(html, /const GE=IntMapGeoEngine\.camera;[\s\S]*?GE\.easeTo\(\{pitch:tp,duration:600\}\)/, 'Atlas pitch routes through the engine');
+  /* (#R171) The pitch case now builds its easeTo options first, because the tilt ceiling is a user setting
+     and an angle past the top also turns the bearing around — so the literal `GE.easeTo({pitch:tp,…})` is
+     gone while the claim (Atlas drives the camera through the engine) is unchanged. */
+  assert.match(html, /const GE=IntMapGeoEngine\.camera;[\s\S]*?GE\.easeTo\(opt\)/, 'Atlas pitch routes through the engine');
   assert.match(html, /GE\.easeTo\(\{bearing:tb/, 'Atlas bearing routes through the engine');
 });
 
