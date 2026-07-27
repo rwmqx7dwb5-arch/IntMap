@@ -10,6 +10,11 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.mobileUI=function(map,HOST){
+  /* (#R172) CAMERA + EVENTS THROUGH IntMapGeoEngine — this module no longer names the renderer.
+     Everything it did to the map was camera work: read the bearing/pitch for the compass, pad the view
+     for the bottom sheet, cancel an in-flight ease when the finger grabs it again, and resize. */
+  const _GE=()=>window.IntMapGeoEngine;
+  const _cam=()=>{ try{ const E=_GE(); return (E&&E.camera)?E.camera:null; }catch(_){ return null; } };
   /* =====================================================================
    *  iOS-native mobile UI controller — built from scratch.
    *  Only active at <=768px; desktop layout is left completely untouched.
@@ -74,9 +79,9 @@ window.IntMapModules.mobileUI=function(map,HOST){
     const fabCompass=document.getElementById('m-fab-compass');
     const compassSvg=fabCompass?fabCompass.querySelector('.m-compass-svg'):null;
     if(fabCompass) fabCompass.addEventListener('click',()=>{ const r=document.getElementById('btn-compass'); if(r) r.click(); });
-    function updateCompass(){ if(!map||!fabCompass) return; let b=0,p=0; try{ b=map.getBearing()||0; p=map.getPitch()||0; }catch(_){}
+    function updateCompass(){ if(!_cam()||!fabCompass) return; let b=0,p=0; try{ b=_cam().getBearing()||0; p=_cam().getPitch()||0; }catch(_){}
       fabCompass.classList.toggle('show', Math.abs(b)>1 || p>1); if(compassSvg) compassSvg.style.transform='rotate('+(-b)+'deg)'; }
-    if(map){ try{ map.on('rotate',updateCompass); map.on('pitch',updateCompass); map.on('moveend',updateCompass); }catch(_){} }
+    try{ const E=_GE(); if(E){ E.events.on('rotate',updateCompass); E.events.on('pitch',updateCompass); E.events.on('moveend',updateCompass); } }catch(_){}
 
     /* ---- (#R137) locate FAB: fly to my location + show the accent dot / accuracy circle (they follow me) ---- */
     { const fabLoc=document.getElementById('m-fab-locate');
@@ -163,7 +168,7 @@ window.IntMapModules.mobileUI=function(map,HOST){
          centre offset from the settled sheet until the next drag ("ボトムシートを移動した際に地図中心がずれる・再び動かすと
          直る"). Cancel the pending rAF and sync the live-pad bookkeeping so nothing can interrupt the settle. */
       if(_padRAF){ try{ cancelAnimationFrame(_padRAF); }catch(_){} _padRAF=0; } _lastPad=_padPending=covered;
-      if(map){ try{ if(animate&&map.easeTo) map.easeTo({padding:_pad, duration:460, easing:_sheetEase}); else if(map.setPadding) map.setPadding(_pad); }catch(_){} }
+      try{ const C=_cam(); if(C){ if(animate) C.easeTo({padding:_pad, duration:460, easing:_sheetEase}); else C.setPadding(_pad); } }catch(_){}
     }
     window.__setDetent=setDetent;
 
@@ -176,14 +181,14 @@ window.IntMapModules.mobileUI=function(map,HOST){
     function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
-      if(!(map&&map.setPadding)) return;
+      if(!_cam()) return;
       /* (#R140) map padding is rAF-coalesced for perf (setPadding reprojects the whole camera), but R139 applied the
          value captured when the rAF was SCHEDULED — the OLDEST move in the frame — so during a fast flick the camera
          trailed the finger by the whole flick. Store the NEWEST covered value and read it inside the rAF; the sheet
          transform is written synchronously in dragMove, so sheet+map now stay within one frame (~16ms) of each other. */
       _padPending=covered;
-      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; try{ map.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} }); }
-    function dragStart(y){ try{ if(map&&map.stop) map.stop(); }catch(_){}   /* (#R140) cancel any in-flight snap easeTo so a re-grab mid-animation hands control straight back to the finger */
+      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} }); }
+    function dragStart(y){ try{ const C=_cam(); if(C) C.stop(); }catch(_){}   /* (#R140) cancel any in-flight snap easeTo so a re-grab mid-animation hands control straight back to the finger */
       dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; _padPending=-1; sidebar.classList.add('sheet-dragging'); }   /* (#R107) PEEK is now the lowest detent — the MINI (logo-hidden) stop is disabled per request */
     function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
@@ -239,7 +244,7 @@ window.IntMapModules.mobileUI=function(map,HOST){
       /* (#R15b) Entering the mobile layout (first load OR crossing 768px) snaps to PEEK — the requested
          default — synchronously, so there's no half→peek flash and no dependency on the rAF below firing. */
       if(isM){ recompute(); setDetent(crossed?'peek':currentDetent,false); if(crossed){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
-      else{ document.body.classList.remove('sheet-full'); if(map&&map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} } }
+      else{ document.body.classList.remove('sheet-full'); try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} }
     }
     syncResponsive();                                                     // initial layout at load width
     /* (#R15) Default the sheet to PEEK on load: the News/Information/Stats/Community tab row stays visible
@@ -255,6 +260,9 @@ window.IntMapModules.mobileUI=function(map,HOST){
 
 window.IntMapModules.layoutReflow=function(map,HOST){
   const applySidebarStyle=HOST.applySidebarStyle;
+  /* (#R172) the resize below goes through IntMapGeoEngine too — this is a SEPARATE factory closure from
+     mobileUI above, so it needs its own handle (the split-scope check catches exactly this). */
+  const _GE=()=>window.IntMapGeoEngine;
   /* (#R21) Narrow-desktop watcher: body.ms-narrow drops the search pill to a second row whenever
      the visible map area is too narrow for pill + view buttons side-by-side. */
   (function(){
@@ -348,7 +356,7 @@ window.IntMapModules.layoutReflow=function(map,HOST){
       h.addEventListener('pointermove',e=>{ if(!drag) return;
         let w=sw+(e.clientX-sx); w=Math.max(320,Math.min(window.innerWidth-60,w));   /* (#R62) "地図がほぼ隠れるレベルまで広げられるように" — cap only at window−60px */
         setW(w);
-        try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} });
+        try{ const E=_GE(); if(E) E.render.resize(); }catch(_){} });
       h.addEventListener('pointerup',()=>{ if(!drag) return; drag=false;
         document.body.style.userSelect=''; sb.style.transition=''; h.style.background='';
         try{ localStorage.setItem('intmap_sidebar_w',String(sb.offsetWidth)); }catch(_){}

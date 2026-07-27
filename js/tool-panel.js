@@ -22,6 +22,9 @@ window.IntMapModules.toolPanel=function(map,HOST){
      so these are picked for contrast against terrain and satellite imagery rather than copied from the
      radius set — blue, orange, green, magenta. The colour picker beside them takes anything else. */
   const V3D_COLORS=['#0a84ff','#ff9500','#34c759','#ff2d55'];
+  /* (#R172) the altitude units the band can be typed in — metres are wrong for most of what this tool is
+     good for (a 10-14 km airway, a 35,786 km geostationary shell, a 400 ft drone ceiling). */
+  const V3D_UNITS=['m','km','ft','mi'];
 
   function buildToolFeatures(){
     /* radius circles (saved) — antimeridian + pole safe (#6,#5) */
@@ -111,8 +114,11 @@ window.IntMapModules.toolPanel=function(map,HOST){
       const V=window.IntMapVolume3D;
       const _L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
       const drag=!!(V&&V.ownsGesture&&V.ownsGesture());
-      /* Only the click-vertex shape takes its footprint from measurePoints; a stroke shape owns its own. */
-      if(V&&!drag){ try{ V.setRing(HOST.measurePoints); }catch(_){} }
+      /* Only the click-vertex shape takes its footprint from measurePoints; a stroke shape owns its own.
+         (#R172) …and it goes through syncClicks, which refuses to replace a ring it did not create. The old
+         setRing() call ran on EVERY panel re-render, so an Atlas-drawn volume lost its footprint the moment
+         anything refreshed the panel — the box stayed on screen while the panel read "Points 0". */
+      if(V&&!drag){ try{ V.syncClicks(HOST.measurePoints); }catch(_){} }
       const st=V?V.state():{points:0,base:1000,top:3000,shape:'polygon',color:'#0a84ff',opacity:0.45};
       const SHAPES=[['polygon',_L('Polygon','多角形','Polygon','Полигон','Polígono')],
                     ['freehand',_L('Freehand','フリーハンド','Freihand','От руки','A mano')],
@@ -126,11 +132,14 @@ window.IntMapModules.toolPanel=function(map,HOST){
       body=shapeRow
         +`<div class="tp-row"><span>${HOST.t('points')}</span><b id="v3d-pts">${st.points}</b></div>`
         +`<div class="tp-row"><span>${HOST.t('area')}</span><b id="v3d-area">—</b></div>`
-        +`<div class="tp-sub">${_L('Altitude band (m above sea level)','高度の範囲（海抜メートル）','Höhenband (m über NN)','Диапазон высот (м над уровнем моря)','Franja de altitud (m sobre el nivel del mar)')}</div>`
+        /* (#R172) the band's unit is the user's choice now — the heading says which one is in the fields */
+        +`<div class="v3d-band"><span class="tp-sub" style="margin:0;min-width:0;">${_L('Altitude band above sea level','高度の範囲（海抜）','Höhenband über NN','Диапазон высот над уровнем моря','Franja de altitud sobre el nivel del mar')}</span>`
+        +`<select id="v3d-unit" class="v3d-unitsel">${V3D_UNITS.map(u=>`<option value="${u}"${st.unit===u?' selected':''}>${u}</option>`).join('')}</select></div>`
         /* (#R171) the fields are STACKED under their labels in a 2-column grid with min-width:0 — laid out
-           side by side they were 160 px each inside a 282 px panel and the second one was cut off. */
-        +`<div class="v3d-alt"><label><span>${_L('from','下端','von','от','desde')}</span><input type="number" id="v3d-base" step="100" inputmode="numeric" value="${Math.round(st.base)}"></label>`
-        +`<label><span>${_L('to','上端','bis','до','hasta')}</span><input type="number" id="v3d-top" step="100" inputmode="numeric" value="${Math.round(st.top)}"></label></div>`
+           side by side they were 160 px each inside a 282 px panel and the second one was cut off.
+           (#R172) no min/max: the altitude has no ceiling any more ("上限の高度は無しに"). */
+        +`<div class="v3d-alt"><label><span>${_L('from','下端','von','от','desde')}</span><input type="number" id="v3d-base" step="${V?V.fieldStep():100}" inputmode="decimal" value="${V?V.fieldValue(st.base):Math.round(st.base)}"></label>`
+        +`<label><span>${_L('to','上端','bis','до','hasta')}</span><input type="number" id="v3d-top" step="${V?V.fieldStep():100}" inputmode="decimal" value="${V?V.fieldValue(st.top):Math.round(st.top)}"></label></div>`
         +`<div class="tp-row"><span>${_L('Thickness','厚さ','Dicke','Толщина','Grosor')}</span><b id="v3d-thick">—</b></div>`
         +`<div class="tp-row" id="v3d-gnd-row" style="display:none;"><span>${_L('Ground below','地表面の標高','Boden darunter','Высота земли','Suelo debajo')}</span><b id="v3d-gnd">—</b></div>`
         +`<div class="tp-row"><span>${_L('Volume','体積','Volumen','Объём','Volumen')}</span><b id="v3d-vol">—</b></div>`
@@ -140,6 +149,8 @@ window.IntMapModules.toolPanel=function(map,HOST){
         +`<input type="color" id="v3d-color" value="${st.color}" title="${_L('Custom color','カスタム色','Eigene Farbe','Свой цвет','Color personalizado')}"></div>`
         +`<div class="v3d-style"><span class="v3d-slbl">${HOST.t('opacity')}</span>`
         +`<input type="range" id="v3d-op" min="0.05" max="0.95" step="0.05" value="${st.opacity}" style="flex:1;min-width:0;accent-color:var(--primary-color);"></div>`
+        /* (#R172) a closed body: a bottom face and interior sheets, instead of a lid on four walls */
+        +`<label class="v3d-solid"><input type="checkbox" id="v3d-solid"${st.solid?' checked':''}><span>${_L('Solid (floor + filled interior)','中身を詰める（底面あり）','Massiv (Boden + Füllung)','Сплошной (дно и заполнение)','Sólido (base e interior)')}</span></label>`
         +`<div class="tp-hint" id="v3d-hint">${HINTS[st.shape]||HINTS.polygon}</div>`
         +`<button class="ai-action-btn" id="v3d-keep" style="display:none;">✓ ${_L('Keep on map','地図に残す','Auf der Karte behalten','Оставить на карте','Mantener en el mapa')}</button>`;
     } else if(HOST.toolMode==='radius'){
@@ -237,13 +248,27 @@ window.IntMapModules.toolPanel=function(map,HOST){
       sync();
       /* A stroke shape finishes without any map click, so the module tells the panel directly. */
       try{ if(V&&V.onDone) V.onDone(sync); }catch(_){}
-      const applyAlt=()=>{ if(!V) return; V.setAltitudes(bI&&bI.value, tI&&tI.value); sync(); };
+      /* (#R172) the fields are in the CHOSEN UNIT; the model is always metres. A half-typed value ('', '-',
+         '.') must still reach setAltitudes unchanged so its _num() guard can keep the old number — converting
+         it here first would turn '' into 0 m and re-introduce exactly the bug #R171 fixed. */
+      const _toM=(raw)=>{ const s=String(raw==null?'':raw).trim();
+        if(s===''||s==='-'||s==='+'||s==='.'||s==='-.') return s;      /* not a number yet — pass it through */
+        const n=Number(s); return isFinite(n)?V.fromUnit(n):s; };
+      const applyAlt=()=>{ if(!V) return; V.setAltitudes(_toM(bI&&bI.value), _toM(tI&&tI.value)); sync(); };
       if(bI) bI.oninput=applyAlt; if(tI) tI.oninput=applyAlt;
       /* On blur / Enter, write the value the model actually holds back into the field — that is where the
          clamp becomes visible, and it is late enough that it can never fight the keyboard. */
-      const settle=(el,get)=>{ if(!el) return; const w=()=>{ try{ el.value=Math.round(get()); }catch(_){} };
+      const settle=(el,get)=>{ if(!el) return; const w=()=>{ try{ el.value=V.fieldValue(get()); }catch(_){} };
         el.onchange=w; el.onblur=w; el.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); applyAlt(); w(); el.blur(); } }; };
       settle(bI, ()=>V.base()); settle(tI, ()=>V.top());
+      /* unit picker — the band is unchanged, only how it is written. Rewrite both fields in the new unit
+         (and their step), then refresh the derived rows; nothing about the volume moves. */
+      { const uS=p.querySelector('#v3d-unit');
+        if(uS) uS.onchange=()=>{ if(!V) return; V.setUnit(uS.value);
+          try{ if(bI){ bI.value=V.fieldValue(V.base()); bI.step=V.fieldStep(); }
+               if(tI){ tI.value=V.fieldValue(V.top()); tI.step=V.fieldStep(); } }catch(_){}
+          sync(); }; }
+      { const sS=p.querySelector('#v3d-solid'); if(sS) sS.onchange=()=>{ if(V) V.setSolid(sS.checked); }; }
       /* shape picker — switching starts a fresh footprint (see setShape) */
       p.querySelectorAll('.v3d-shape').forEach(b=>{ b.onclick=()=>{ if(!V) return;
         V.setShape(b.getAttribute('data-shape'));

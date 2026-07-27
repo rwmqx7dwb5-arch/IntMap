@@ -393,6 +393,15 @@
     .v3d-alt label{ min-width:0; display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--text-muted); }
     .v3d-alt input{ width:100%; min-width:0; box-sizing:border-box; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:6px 7px; font-size:12.5px; font-variant-numeric:tabular-nums; }
     .v3d-alt input:focus{ outline:none; border-color:var(--primary-color); }
+    /* (#R172) the band heading carries the unit picker. min-width:0 on the label so the select never pushes
+       it out of a 282 px panel — the same rule the fields above needed. */
+    .v3d-band{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; }
+    .v3d-band .tp-sub{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; }
+    .v3d-unitsel{ flex:0 0 auto; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:3px 5px; font-size:11.5px; }
+    .v3d-unitsel:focus{ outline:none; border-color:var(--primary-color); }
+    /* (#R172) "solid" toggle — a floor and interior sheets, so the body is not a lid on four walls */
+    .v3d-solid{ display:flex; align-items:center; gap:7px; margin:8px 0 0; font-size:11.5px; color:var(--text-muted); cursor:pointer; }
+    .v3d-solid input{ accent-color:var(--primary-color); flex:0 0 auto; }
     /* (#R171) footprint shape picker — four ways to draw the base, not just clicked straight edges */
     .v3d-shapes{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:2px 0 9px; }
     .v3d-shape{ min-width:0; padding:6px 4px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:8px; background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:.13s; }

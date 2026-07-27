@@ -51,12 +51,19 @@ function rawMapUses(file) {
 
 /* ─── 1. the flight sim's globe ─────────────────────────────────────────────────────────────── */
 
-test('the flight sim asks for the ALL-ZOOM globe, not the zoom-dependent one', () => {
+/* (#R172) SUPERSEDED, and kept here as the record of why. #R171 asserted that the sim asks for
+   'globe-true'; it did, and the cockpit then rendered a white void with no world in it at all —
+   MapLibre cannot draw at cockpit zoom under that projection with a DEM on. The requirement that
+   survives is the one that was always the point: the sim must not name a renderer projection
+   itself, and it must leave the app on its GLOBE. The measured, visual claim lives in
+   tests/r172.spec.js, which checks that the cockpit shows GROUND. */
+test('the flight sim goes through the engine and lands on the app Globe, never on a raw projection spec', () => {
   const src = stripComments(R('js/flight-sim.js'));
-  assert.match(src, /setProjection\(\s*['"]globe-true['"]\s*\)/,
-    "start() must ask the engine for 'globe-true' — MapLibre's plain globe is mercator from z≈12, which is where the sim flies");
   assert.ok(!/setProjection\(\s*\{\s*type\s*:/.test(src),
-    'the sim must not name a renderer projection spec directly — it goes through IntMapGeoEngine');
+    'the sim must not name a renderer projection spec directly — it goes through IntMapGeoEngine / IntMapOS');
+  assert.ok(!/setProjection\(\s*['"]globe-true['"]\s*\)/.test(src),
+    "'globe-true' blanks the cockpit (vertical-perspective + 3-D terrain draws nothing) — #R172 removed it");
+  assert.match(src, /IntMapOS\.exec\('view\.proj\.globe'/, 'entry still forces the app Globe view');
 });
 
 test('leaving the sim restores the projection unconditionally', () => {
@@ -186,10 +193,17 @@ test('the viewpoint-altitude readout is a real setting, in five languages, and s
 });
 
 test('the eye altitude is derived from the renderer, not guessed from the zoom', () => {
-  const adapter = INDEX.slice(INDEX.indexOf('cameraAltitude(){'), INDEX.indexOf('cameraAltitude(){') + 1400);
-  assert.match(adapter, /m\.unproject\(\[w\/2-50,h\/2\]\)/, 'metres-per-pixel is MEASURED off the renderer, so it stays true in globe as well as mercator');
+  /* (#R172) the metres-per-pixel no longer comes from unprojecting two screen points: past 90° of pitch
+     the centre row is SKY, and the reading was ~100 km out — see eyePosition() in the adapter. It comes
+     from the renderer's own map scale instead, which is defined at every pitch. */
+  const i = INDEX.indexOf('eyePosition(){');
+  const adapter = INDEX.slice(i, i + 2600);
+  assert.ok(i > 0, 'the adapter must expose the viewpoint position');
+  assert.match(adapter, /transform&&m\.transform\.worldSize/, "metres-per-pixel comes from the renderer's own map scale, valid at any pitch");
   assert.match(adapter, /cameraToCenterDistance/, "the camera→centre distance comes from the renderer when it is readable (fov is the renderer's business)");
   assert.match(adapter, /getCameraTargetElevation/, 'the terrain under the centre is added, so the number is above SEA LEVEL');
+  assert.match(INDEX, /cameraAltitude\(\)\{ const e=this\.eyePosition\(\); return e\?e\.alt:null; \}/,
+    'the altitude is one component of the position, not a second derivation that can drift from it');
 });
 
 /* ─── 5. Atlas is the control plane (the #R115 rule: uncatalogued = nonexistent) ─────────────── */
@@ -227,9 +241,9 @@ test('the count of renderer-independent modules only goes up', () => {
 });
 
 test('the engine contract declares what this round needed, and Cesium answers for it too', () => {
-  const caps = INDEX.slice(INDEX.indexOf('const MAPLIBRE_CAPS='), INDEX.indexOf('const MAPLIBRE_CAPS=') + 2200);
+  const caps = INDEX.slice(INDEX.indexOf('const MAPLIBRE_CAPS='), INDEX.indexOf('const MapLibreAdapter='));
   for (const k of ['globeAllZooms', 'tiltRange', 'cameraAltitude']) assert.ok(caps.includes(k), `capability ${k} missing`);
-  const cesium = INDEX.slice(INDEX.indexOf('const CESIUM_CONTRACT='), INDEX.indexOf('const CESIUM_CONTRACT=') + 900);
+  const cesium = INDEX.slice(INDEX.indexOf('const CESIUM_CONTRACT='), INDEX.indexOf('const CESIUM_CONTRACT=') + 1400);
   for (const k of ['globeAllZooms', 'tiltRange', 'cameraAltitude']) assert.ok(cesium.includes(k), `the Cesium contract must answer for ${k}`);
   for (const m of ['getProjection:', 'setBearing:', 'setPitch:', 'getMaxPitch:', 'setMaxPitch:', 'tiltRange:', 'altitude:']) {
     assert.ok(INDEX.includes(m), `the camera facade must expose ${m}`);

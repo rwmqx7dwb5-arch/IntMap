@@ -49,6 +49,12 @@ window.IntMapModules.viewControls=function(map,HOST){
        order — see the lazy wiring at the bottom of this file), so the caller can retry. */
     function apply(){ const E=GE(); if(!E||!E.camera||!E.camera.setMaxPitch) return false;
       const ok=E.camera.setMaxPitch(ceiling());
+      /* (#R172) UNPIN THE VIEW TARGET while the ceiling is lifted. MapLibre pins the point the camera looks at
+         to the ground, and with it pinned the eye's own height is fixed by zoom+pitch — so tilting HAS to swing
+         the viewpoint, and past 90° the camera ends up underground (measured: eye −8,140 m at pitch 120). The
+         flight simulator has unpinned it since #R95 for exactly this reason. Pinned again the moment the user
+         goes back to Standard, so nothing outside this setting changes. */
+      try{ if(!window.__fsCamActive){ if(E.camera.setCenterClamped) E.camera.setCenterClamped(!unlimited); pivot(); } }catch(_){}
       /* Going back to Standard while leaning past it would leave the camera at an angle the user
          can no longer reach — MapLibre keeps the current pitch, it only stops NEW ones. Bring it
          back into range so the setting and the view agree. */
@@ -68,8 +74,42 @@ window.IntMapModules.viewControls=function(map,HOST){
       const p=+pitch||0, b=(((+bearing||0)%360)+360)%360, r=(((+refBearing||0)%360)+360)%360;
       return (Math.abs(((b-r+540)%360)-180)>90) ? (360-p) : p; }
 
-    return { isUnlimited:()=>unlimited, set, apply, ceiling, engineMax, standard:()=>STANDARD, fromAngle, toAngle,
-      state:()=>({ unlimited, ceiling:ceiling(), engineMax:engineMax(),
+    /* =======================================================================================
+     *  (#R172) EYE-ANCHORED TILT — 「Unlimited map tiltにした場合、視点の位置は一切変えないように。」
+     * ---------------------------------------------------------------------------------------
+     *  Turning the setting ON never moved anything (measured: centre, zoom, bearing, pitch and
+     *  eye altitude all identical before and after). What moves is TILTING once it is on, and it
+     *  moves a lot, because MapLibre's pitch orbits the camera around the MAP CENTRE rather than
+     *  pivoting it where it stands. Measured at z12 over Tokyo: pitch 78° → eye 3,385 m; drag on
+     *  to 120° → eye −8,140 m. The viewpoint has swung a whole arc and ended up under the ground.
+     *  That is the "視点の位置が変わる" this fixes — with the ceiling lifted you can lean far past
+     *  the horizon, so the arc is no longer a small nudge.
+     *
+     *  The gesture itself is untouched (#R160: do not rebuild working mechanisms). MapLibre still
+     *  computes the pitch from the drag; this only puts the EYE back where the drag started, so the
+     *  camera turns its head instead of orbiting. Off unless the user asked for unlimited tilt, so
+     *  standard behaviour is byte-identical.
+     * =====================================================================================*/
+    function _cam(){ const E=GE(); return (E&&E.camera)?E.camera:null; }
+    let _pivot=null;   /* what the engine was last told; null = never asked */
+    /* Ask the engine to pivot the tilt about the VIEWPOINT while the ceiling is lifted, and about the
+       look-at target (its normal behaviour) otherwise. The engine owns the how — see setTiltPivot in the
+       MapLibre adapter, and the trap recorded there: correcting the camera from a 'pitch' EVENT kills the
+       gesture, because MapLibre's jumpTo starts with stop(). */
+    function pivot(force){ const c=_cam(); if(!c||!c.setTiltPivot) return false;
+      const want=unlimited?'eye':'target'; if(_pivot===want&&!force) return true;
+      const ok=c.setTiltPivot(want); if(ok) _pivot=want; return ok; }
+    /* force: the flight simulator takes the pivot away for the length of a flight (it drives the camera itself
+       every frame) and calls this on the way out, so the cached value cannot be trusted at that moment. */
+    function wireTilt(){ return pivot(true); }
+
+    /* Tilt to an absolute angle. With the pivot set the engine keeps the eye still on its own, so this is
+       simply "set the pitch" — the numeric tilt field on the compass and Atlas's tilt action both land here. */
+    function tiltTo(deg){ const c=_cam(); if(!c) return false;
+      try{ c.setPitch(Math.max(0,Math.min(ceiling(),+deg||0))); return true; }catch(_){ return false; } }
+
+    return { isUnlimited:()=>unlimited, set, apply, ceiling, engineMax, standard:()=>STANDARD, fromAngle, toAngle, wireTilt, tiltTo,
+      state:()=>({ unlimited, ceiling:ceiling(), engineMax:engineMax(), pivot:_pivot,
         applied:(()=>{ try{ return GE().camera.getMaxPitch(); }catch(_){ return null; } })() }) };
   })();
 
@@ -119,7 +159,7 @@ window.IntMapModules.viewControls=function(map,HOST){
      (#R170 learned this the hard way: wiring at construction time silently bound nothing). Wait
      for it, then push the saved choices at the renderer exactly once. */
   (function waitForEngine(n){
-    if(GE()&&GE().camera){ try{ window.IntMapTilt.apply(); }catch(_){} try{ if(window.IntMapEyeAlt.isOn()) window.IntMapEyeAlt.wire(); }catch(_){} return; }
+    if(GE()&&GE().camera){ try{ window.IntMapTilt.apply(); }catch(_){} try{ window.IntMapTilt.wireTilt(); }catch(_){} try{ if(window.IntMapEyeAlt.isOn()) window.IntMapEyeAlt.wire(); }catch(_){} return; }
     if((n||0)<200) setTimeout(()=>waitForEngine((n||0)+1),100);
   })(0);
 };
