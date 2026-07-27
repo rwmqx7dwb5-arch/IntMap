@@ -49,7 +49,10 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   expect(during.active).toBe(true);
   expect(during.proj, 'the sim flies the app Globe — never a raw projection spec').toContain('globe');
   expect(during.terrain, 'a flight simulator without a DEM has nothing to fly over').toBe(true);
-  expect(during.zoom).toBeGreaterThan(12);
+  /* (#R173) …and it no longer has to choose. The cockpit flies below the globe→mercator crossover now
+     (the look distance is solved on the sphere rather than pinned at 1.8 km), so the zoom assertion is
+     inverted — what this test is really for is the pixel count below, which is what #R171 lost. */
+  expect(during.zoom).toBeLessThan(11.1);
 
   const vp = page.viewportSize();
   const colours = await groundDetail(page, { x: 0, y: Math.round(vp.height * 0.55), width: vp.width, height: Math.round(vp.height * 0.4) });
@@ -123,12 +126,15 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
     V.setAltitudes(35786000, 35800000);
     const geo = [V.base(), V.top()];
     V.setAltitudes(1000, 3000);
-    return { floor: s.floor, slabs: s.slabs, solid: s.solid, points: s.points, asKm, asFt, geo, limits: V.limits() };
+    return { body: s.body, shell: s.shell, canSolid: s.canSolid, solid: s.solid, points: s.points, asKm, asFt, geo, limits: V.limits() };
   });
   expect(st.points, 'circleRing(…,64) is 64 vertices; closedRing() adds the repeat only when it hands the ring to the renderer').toBe(64);
   expect(st.solid, 'the body is closed by default').toBe(true);
-  expect(st.floor, 'there is a bottom face').toBe(true);
-  expect(st.slabs, 'and interior sheets').toBeGreaterThan(0);
+  // (#R173) the closed body is now ONE mesh drawn by the engine's solid contract — a floor and a filled
+  // interior that a fill-extrusion cannot express — so what is asserted is that the solid is what draws.
+  expect(st.canSolid, 'the renderer can draw a closed body').toBe(true);
+  expect(st.body, 'and it is the closed body that is painted').toBe(true);
+  expect(st.shell, 'the open shell is not painted at the same time').toBe(false);
   expect(st.asKm, '1000 m is 1 km').toBe(1);
   expect(st.asFt, '1000 m is 3281 ft').toBe(3281);
   expect(st.geo, 'a 35,786 km band is not clamped away').toEqual([35786000, 35800000]);
@@ -136,8 +142,8 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
 
   // turning the body off leaves only the shell
   const hollow = await page.evaluate(() => { window.IntMapVolume3D.setSolid(false); return window.IntMapVolume3D.state(); });
-  expect(hollow.floor).toBe(false);
-  expect(hollow.slabs).toBe(0);
+  expect(hollow.body, 'Solid off puts the closed body away…').toBe(false);
+  expect(hollow.shell, '…and leaves the open shell').toBe(true);
 });
 
 test('every footprint shape draws, not only the polygon', async ({ page }) => {
