@@ -12,6 +12,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(map,HOST){
+  /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
+  const _GE=()=>window.IntMapGeoEngine;
+  const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
+  const _EV=()=>{ const E=_GE(); return E?E.events:null; };
+  const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -90,22 +95,23 @@ window.IntMapModules.countriesUi=function(map,HOST){
   let hoveredCid=null;
 
   function addCountryLayers(){
-    if(!_imCanDraw()||!HOST.countryGeo||map.getSource('countries')) return;
-    map.addSource('countries',{type:'geojson',data:HOST.countryGeo,promoteId:'__code'});
-    map.addLayer({id:'country-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#007aff','fill-opacity':['case',['boolean',['feature-state','hover'],false],0.30,0]}},'tool-poly');
-    map.addLayer({id:'country-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#007aff','line-opacity':0.7,'line-width':['case',['boolean',['feature-state','hover'],false],2.4,0.6]}},'tool-poly');
+    /* the engine is built inside map.on('load'); a call that beats it must not throw (#R172) */
+    if(!_LY()||!_imCanDraw()||!HOST.countryGeo||_LY().hasSource('countries')) return;
+    _LY().addSource('countries',{type:'geojson',data:HOST.countryGeo,promoteId:'__code'});
+    _LY().add({id:'country-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#007aff','fill-opacity':['case',['boolean',['feature-state','hover'],false],0.30,0]}},'tool-poly');
+    _LY().add({id:'country-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#007aff','line-opacity':0.7,'line-width':['case',['boolean',['feature-state','hover'],false],2.4,0.6]}},'tool-poly');
     /* (#R26) Create the always-on country-BORDERS line HERE (when the countries source first exists), not
        only inside the cb-borders change handler — that lazy-create meant borders were checked-by-default but
        NOT drawn on load until you re-toggled them ("デフォルト選択されているのに表示されない"). applyTheme()
        sets its visibility from bordersOn (default true). */
     try{ HOST.ensureBordersLayer(); }catch(_){}   /* (#R40) borders-only-line now comes from the OFM boundary layer (accurate, basemap-aligned) — created here too in case Countries(info) initializes first */
-    map.on('mousemove','country-fill',(e)=>{ if(!HOST.countryInfoOn||HOST.toolMode||!e.features.length)return;
+    _EV().onLayer('mousemove','country-fill',(e)=>{ if(!HOST.countryInfoOn||HOST.toolMode||!e.features.length)return;
       /* (#R130) during time-travel do NOT highlight / read out the MODERN country under the cursor — that showed
          modern Ukraine/Lithuania info while hovering interwar Poland. The era name labels identify countries; the
          click handler above resolves the era entity on demand. */
-      if(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active()){ if(hoveredCid!==null){ try{ map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); }catch(_){} hoveredCid=null; } return; }
-      const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
-    map.on('mouseleave','country-fill',()=>{ if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; HOST.hideCountryInfo(); });
+      if(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active()){ if(hoveredCid!==null){ try{ _LY().setFeatureState({source:'countries',id:hoveredCid},{hover:false}); }catch(_){} hoveredCid=null; } return; }
+      const f=e.features[0]; if(hoveredCid!==null)_LY().setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; _LY().setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
+    _EV().onLayer('mouseleave','country-fill',()=>{ if(hoveredCid!==null)_LY().setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; HOST.hideCountryInfo(); });
     /* (#R130) ROOT CAUSE of the long-standing "昔の年代でも地図クリック国選択が現代国境になる" re-report (survived
        R122–R129): every prior round fixed the era-aware CROSSHAIR pickers (#scp-pick / #csearch-pick) + the resolveHist
        ladder — which were already correct — but the gesture the user actually performs, a PLAIN click on a country
@@ -114,14 +120,14 @@ window.IntMapModules.countriesUi=function(map,HOST){
        Kraków only looked "right" because their modern carrier is still POL — hence the intermittent, 1920s-Poland
        feel). Now, during travel, the plain click routes through the SAME era PIP → resolveHist path the pickers use
        and NEVER falls back to the modern polygon. */
-    map.on('click','country-fill',(e)=>{ if(!(HOST.countryInfoOn&&!HOST.toolMode&&!window.__scpPick&&e.features.length)) return;
+    _EV().onLayer('click','country-fill',(e)=>{ if(!(HOST.countryInfoOn&&!HOST.toolMode&&!window.__scpPick&&e.features.length)) return;
       const TB=window.IntMapTimeBorders;
       if(TB&&TB.active&&TB.active()){
         try{
           /* defer to a specific place label under the click (city / water / peak / river) so a city still opens as a
              PLACE, exactly like the era name-label handler (_clk) does — only bare country land opens the country. */
-          const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-          if(specific.length&&e.point&&map.queryRenderedFeatures(e.point,{layers:specific}).length) return;
+          const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!_LY().has(id); }catch(_){ return false; } });
+          if(specific.length&&e.point&&_GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return;
           const ll=e.lngLat; let nm=null, geom=null; const fc=TB.currentFC&&TB.currentFC();
           if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([ll.lng,ll.lat]); let bA=Infinity;
             for(const ff of fc.features){ try{ if(ff.geometry&&turf.booleanPointInPolygon(tp,ff)){ const bb=turf.bbox(ff); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bA){ bA=a; nm=ff.properties&&(ff.properties.NAME||ff.properties.name); geom=ff.geometry; } } }catch(_){} } }
@@ -278,7 +284,7 @@ window.IntMapModules.countriesUi=function(map,HOST){
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
     _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
-    if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
+    if(s && s.latlng){ try{ _CM().flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0}); }catch(_){} }
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
     if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+HOST.cName(s,fallback); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the

@@ -2564,11 +2564,18 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
              NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
              MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
-             z12 0 → z15 0, i.e. flat. The flight sim lives at z≈14-15, so "we set globe" was a no-op for the
-             entire flight — the reason the cockpit still showed a flat Earth after #R170. `globeAllZooms` means
-             the renderer can be asked for a genuinely curved Earth regardless of zoom (setProjection('globe-true')).
-             An engine that only has the zoom-dependent variety must report false so a caller can say so honestly. */
-          globeAllZooms:true,
+             z12 0 → z15 0, i.e. flat.
+             (#R172) …and the answer for MapLibre is FALSE. #R171 set this to true and pointed the flight sim at
+             'globe-true' (vertical-perspective); the cockpit then rendered NOTHING — a white void where the world
+             should be. Measured with the flight camera FROZEN (z15.2, pitch 90.6, 9 s settle, same frame, A/B/A/B):
+             'globe' draws the full terrain, coastline and sky; 'vertical-perspective' draws no ground at all. Away
+             from the sim the same projection renders correctly at z14 with 3-D terrain OFF, and loses roads/labels
+             with it ON — so the incompatibility is CURVED PROJECTION × 3-D TERRAIN, and a flight simulator cannot
+             give up terrain. Pushing the crossover up instead of naming the projection ('globe' as an explicit
+             ['interpolate',…,17,'vertical-perspective',18,'mercator']) blanks it in exactly the same way, so this
+             is the regime, not the spelling. Hence: this renderer CAN be a globe, but not at cockpit zoom with a
+             DEM on it, and setProjection('globe-true') below refuses rather than blanking the map. */
+          globeAllZooms:false,
           /* (#R171) the renderer's true tilt range, in degrees, for the "unlimited tilt" setting to be honest about.
              MEASURED, not assumed: setMaxPitch accepts ≤180 and throws "maxPitch must be less than or equal to 180"
              above it; setMinPitch throws below 0. 0-180 is therefore the whole of camera tilt — straight down,
@@ -2576,18 +2583,34 @@ window.addEventListener('DOMContentLoaded', () => {
              turned around (which is exactly how the wrap in js/map-extras.js keeps tilting past the end). */
           tiltRange:[0,180],
           /* (#R171) the eye's own altitude above sea level (see cameraAltitude below) */
-          cameraAltitude:true };
+          cameraAltitude:true,
+          /* (#R172) the engine can READ the viewpoint's position and PUT IT BACK (eyePosition/setEye), which is
+             what "tilting must not move the viewpoint" needs: MapLibre's pitch orbits the eye around the map
+             centre, so leaning from 78° to 120° swings the eye from +3,385 m to −8,140 m — it goes under the
+             world. An engine without this pair cannot honour the unlimited-tilt setting's promise. */
+          eyeControl:true };
         /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
         const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
           flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
           fitBounds(b,o){ const m=_m(); if(m) m.fitBounds(b,o); }, setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
+          /* (#R172) "what camera shows this box?" — the answer WITHOUT moving, so a caller can fly to it
+             itself (widgets fit a whole country that way). A pass-through; null when the engine has no
+             such query, and the caller falls back to fitBounds. */
+          cameraForBounds(b,o){ const m=_m(); try{ return (m&&m.cameraForBounds)?m.cameraForBounds(b,o):null; }catch(_){ return null; } },
+          getPadding(){ const m=_m(); try{ return (m&&m.getPadding)?m.getPadding():null; }catch(_){ return null; } },
           getCamera(){ const m=_m(); if(!m) return null; try{ return { center:m.getCenter(), zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch() }; }catch(_){ return null; } },
           /* (#R171) three modes now, because MapLibre's "globe" is only a globe SOME of the time:
                'flat'        → mercator
                'globe'       → the zoom-dependent globe (curved when zoomed out, mercator from z≈12) = the app's Globe button
-               'globe-true'  → vertical-perspective: a curved Earth at EVERY zoom (measured: bow 764 px at z15)
-             Unknown values fall back to mercator, exactly as before. */
+               'globe-true'  → a curved Earth at EVERY zoom
+             Unknown values fall back to mercator, exactly as before.
+             (#R172) 'globe-true' now REFUSES (returns false, changes nothing) when the engine cannot honour it —
+             see capabilities.globeAllZooms. On MapLibre it maps to vertical-perspective, which renders an empty
+             white void once 3-D terrain is on, and the flight sim shipped exactly that. A contract method that
+             can only be kept some of the time must say no rather than wreck the view; the caller then reports
+             honestly instead of the user discovering it as a blank cockpit. */
           setProjection(mode){ const m=_m(); if(!(m&&m.setProjection)) return false;
+            if(mode==='globe-true'&&!MAPLIBRE_CAPS.globeAllZooms) return false;
             const spec=(mode==='globe-true')?{type:'vertical-perspective'}:(mode==='globe')?{type:'globe'}:{type:'mercator'};
             try{ m.setProjection(spec); return true; }catch(_){ /* an older renderer may not know vertical-perspective — the plain globe is the closest it has */
               if(mode==='globe-true'){ try{ m.setProjection({type:'globe'}); return true; }catch(__){} } return false; } },
@@ -2609,21 +2632,142 @@ window.addEventListener('DOMContentLoaded', () => {
              Verified against an independent API: asking calculateCameraOptionsFromTo for an eye 900 m above
              its target reads back as 900.0001 m. Past 90° of pitch the camera really has swung BELOW the
              centre's ground plane, and the negative value it returns says so rather than pretending. */
-          cameraAltitude(){ const m=_m(); if(!m) return null;
+          cameraAltitude(){ const e=this.eyePosition(); return e?e.alt:null; },
+          /* (#R172) WHERE THE VIEWPOINT IS — the same geometry as cameraAltitude, carried all the way to a
+             position: {lng, lat, alt, distance}. `distance` is the eye→centre distance in ground metres, i.e.
+             the number that fixes the zoom. Needed because "keep the viewpoint still while tilting" (Settings ▸
+             unlimited tilt) can only be expressed if the engine can say where the viewpoint IS and put it back.
+             The eye sits OPPOSITE the bearing from the map centre, `distance·sin(pitch)` along the ground and
+             `distance·cos(pitch)` above it; past 90° of pitch the cosine turns negative because the eye really
+             has swung below the centre's ground plane. */
+          eyePosition(){ const m=_m(); if(!m) return null;
             try{
               const cv=m.getCanvas&&m.getCanvas(); if(!cv) return null;
               const w=cv.clientWidth||cv.width, h=cv.clientHeight||cv.height; if(!(w>0&&h>0)) return null;
-              const R=6371008.8, r=Math.PI/180;
-              const a=m.unproject([w/2-50,h/2]), b=m.unproject([w/2+50,h/2]); if(!a||!b) return null;
-              const cosd=Math.sin(a.lat*r)*Math.sin(b.lat*r)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lng-a.lng)*r);
-              const mpp=R*Math.acos(Math.max(-1,Math.min(1,cosd)))/100; if(!isFinite(mpp)||mpp<=0) return null;
+              const R=6371008.8, r=Math.PI/180, c=m.getCenter();
+              /* GROUND METRES PER PIXEL at the map centre.
+                 (#R171) measured this by unprojecting two screen points 100 px apart on the centre row.
+                 (#R172) that reads the SKY once the pitch passes the horizon (the centre row no longer touches
+                 the ground), and the eye then comes out ~100 km off — the reason unlimited tilt could not be
+                 anchored. Take it from the renderer's own map scale instead, which is defined at every pitch:
+                 one world wrap is 2πR·cos(lat) metres and `worldSize` pixels. Cross-checked against the old
+                 measurement where that one is valid: identical from z8 up, 0.03 % apart at z3, in mercator and
+                 globe alike. `worldSize` is tileSize·2^zoom, computed here when the renderer does not expose it. */
+              let world=0; try{ const v=m.transform&&m.transform.worldSize; if(isFinite(v)&&v>0) world=v; }catch(_){}
+              if(!world) world=512*Math.pow(2,m.getZoom()||0);
+              const mpp=(2*Math.PI*R*Math.cos((c.lat||0)*r))/world; if(!isFinite(mpp)||mpp<=0) return null;
               /* MapLibre's own camera→centre distance when it is readable (fov is a renderer detail, so ask the
                  renderer); the default-fov identity 1.5×height only stands in as a fallback. */
               let c2c=1.5*h; try{ const v=m.transform&&m.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
+              const dist=c2c*mpp; if(!isFinite(dist)||dist<=0) return null;
+              const pit=(m.getPitch()||0)*r, brg=(m.getBearing()||0)*r;
               const ground=(m.getCameraTargetElevation)?(+m.getCameraTargetElevation()||0):0;
-              const alt=c2c*mpp*Math.cos((m.getPitch()||0)*r)+ground;
-              return isFinite(alt)?alt:null;
+              const alt=dist*Math.cos(pit)+ground, horiz=dist*Math.sin(pit);
+              const mLat=110574, mLng=(111320*Math.cos(c.lat*r))||1;
+              const lat=c.lat-horiz*Math.cos(brg)/mLat, lng=c.lng-horiz*Math.sin(brg)/mLng;
+              return (isFinite(alt)&&isFinite(lat)&&isFinite(lng))?{lng,lat,alt,distance:dist}:null;
             }catch(_){ return null; } },
+          /* (#R172) …and the inverse: put the viewpoint AT {lng,lat,alt} looking along {bearing,pitch}, keeping
+             `distance` (so the zoom does not change). Built on calculateCameraOptionsFromTo — the same call the
+             flight simulator has used for its cockpit since #R158 — by aiming a target `distance` away along the
+             view direction; the renderer then derives centre+zoom+pitch from eye→target, which is exactly the
+             "pivot about the eye" a person means by tilting their head. */
+          setEye(o){ const m=_m(); if(!(m&&o&&m.calculateCameraOptionsFromTo)) return false;
+            try{
+              const r=Math.PI/180, D=Math.max(1,+o.distance||1000), br=(+o.bearing||0)*r, pit=(+o.pitch||0)*r;
+              const horiz=D*Math.sin(pit), drop=D*Math.cos(pit);
+              const mLat=110574, mLng=(111320*Math.cos(o.lat*r))||1;
+              const tLat=o.lat+horiz*Math.cos(br)/mLat, tLng=o.lng+horiz*Math.sin(br)/mLng;
+              if(!(isFinite(tLat)&&isFinite(tLng))||Math.abs(tLat)>89.5) return false;
+              const cam=m.calculateCameraOptionsFromTo({lng:o.lng,lat:o.lat},o.alt,{lng:tLng,lat:tLat},o.alt-drop);
+              if(!(cam&&cam.center&&isFinite(cam.zoom)&&isFinite(cam.center.lat)&&isFinite(cam.center.lng))) return false;
+              if(o.roll!=null&&isFinite(o.roll)) cam.roll=o.roll;
+              m.jumpTo(cam); return true;
+            }catch(_){ return false; } },
+          /* (#R172) is the RENDERER running a camera animation of its own right now? Lets a caller tell a user
+             gesture apart from a programmatic flyTo/easeTo without reaching for MapLibre's isEasing(). */
+          isAnimating(){ const m=_m(); try{ return !!(m&&m.isEasing&&m.isEasing()); }catch(_){ return false; } },
+          /* (#R172) does the point the camera looks at STICK TO THE GROUND? MapLibre pins it there by default,
+             which is why jumpTo silently drops the `elevation` that calculateCameraOptionsFromTo returns
+             (measured: asked for 8,531 m, read back 0 m) — and with the target pinned to the ground the eye's
+             own height is a function of zoom and pitch alone, so it cannot be held still while you tilt, and
+             beyond 90° of pitch the camera goes UNDER the world. Unpinning it is the precondition for both
+             eye-anchored tilt and the flight simulator's above-90° cockpit; it belongs in the contract because
+             an engine whose camera is positional to begin with has nothing to unpin. */
+          setCenterClamped(on){ const m=_m(); try{ if(m&&m.setCenterClampedToGround){ m.setCenterClampedToGround(!!on); return true; } }catch(_){} return false; },
+          /* (#R172) WHAT DOES TILTING PIVOT AROUND?
+               'target' → the point on the map you are looking at (MapLibre's own behaviour, the default)
+               'eye'    → the viewpoint itself: the camera turns its head and does not move
+             Stated as an INTENT, not a mechanism, because engines differ on which one is free: a positional
+             camera (Cesium) pivots about the eye natively and would implement 'target' by orbiting, while
+             MapLibre is the other way round and needs the compensation below.
+             How, and why it is NOT done by correcting the camera afterwards: MapLibre's jumpTo begins with
+             stop(), which aborts an in-progress gesture — traced on a twelve-step ctrl-drag, the pitch stream
+             went "S49.0 49.0 58.0 67.0 76.0 78.0 …" untouched but "S49.2 E S49.4 49.4 E" once a correcting
+             jumpTo was in the loop: the drag died on the first correction. The supported hook is
+             `transformCameraUpdate`, which MapLibre calls with the PROPOSED camera before applying it, so the
+             correction rides along with the gesture instead of fighting it.
+             The geometry: the eye is `dist·sin(pitch)` back along the bearing from the target and
+             `dist·cos(pitch)` above it. Holding the eye and the distance (i.e. the zoom) fixed while the pitch
+             changes gives the new target directly — and the target's ELEVATION is what carries the difference,
+             which is why setCenterClamped(false) is a precondition (MapLibre pins that elevation to the ground
+             otherwise, and a pinned target makes the eye's height a function of zoom and pitch alone). */
+          setTiltPivot(mode){ const m=_m(); if(!m) return false;
+            if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; } return true; }
+            const R=6371008.8, r=Math.PI/180;
+            let c2c=1050; try{ const v=m.transform&&m.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
+            let tile=512; try{ const v=m.transform&&m.transform.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
+            const mpp=(lat,zoom)=>(2*Math.PI*R*Math.cos(lat*r))/(tile*Math.pow(2,zoom));
+            /* The PROPOSED camera lives in its own running state (MapLibre keeps a `_requestedCameraState` while
+               a transformCameraUpdate hook is installed) and does NOT receive our override — so "did this update
+               also move the centre?" has to be asked of the proposal's own history, not of the applied map, or
+               every frame after the first correction looks like travel. Measured both ways: comparing against the
+               applied centre made a tilt drag drift 5.3 km; comparing like with like holds it at 0. */
+            let req=null;
+            try{
+              m.transformCameraUpdate=(t)=>{
+                let cur, was;
+                try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
+                     /* "before" is read from the LIVE map, not from a cache of what we returned last time:
+                        MapLibre runs _elevateCameraIfInsideTerrain and its constraints after us, so a cached
+                        value slowly diverges from what was actually applied (measured: 392 m of drift over a
+                        116° drag, 8 m when read live). */
+                     const c=m.getCenter();
+                     was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch(),
+                           elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
+                }catch(_){ return {}; }
+                const last=req; req=cur;
+                if(!isFinite(cur.pitch)||Math.abs(cur.pitch-was.pitch)<1e-4) return {};
+                /* ONLY when the update is a pure tilt. A flyTo that also travels somewhere is asking to look at
+                   a PLACE, and re-anchoring the eye would land it short — measured: "fly to Paris, pitch 55"
+                   arrived 4.3 km off centre. Tilt gestures and easeTo({pitch}) leave the centre alone, so this
+                   one test separates "turn your head" from "go there" without having to guess at easing state
+                   (drag INERTIA is an easeTo too, and it must stay anchored). */
+                if(!last||Math.abs(cur.lng-last.lng)>1e-9||Math.abs(cur.lat-last.lat)>1e-9) return {};
+                try{ if(window.__fsCamActive) return {}; }catch(_){}
+                const d0=c2c*mpp(was.lat,was.zoom); if(!isFinite(d0)||d0<=0) return {};
+                /* where the eye WAS, before this update */
+                const p0=was.pitch*r, b0=was.bearing*r;
+                const eAlt=d0*Math.cos(p0)+was.elevation, h0=d0*Math.sin(p0);
+                const eLat=was.lat-h0*Math.cos(b0)/110574, eLng=was.lng-h0*Math.sin(b0)/((111320*Math.cos(was.lat*r))||1);
+                /* …and where the target has to be for the eye to stay there at the NEW tilt.
+                   Solved, not assumed: the renderer's metres-per-pixel is taken at the TARGET's latitude, and
+                   the target is what we are solving for, so the two chase each other. Three passes converge
+                   far below a pixel; one pass left ~33 m of slip per frame at z12 (≈400 m over a full drag),
+                   which is exactly the 0.2 % that a 16 km look distance shifts the latitude by. */
+                const p1=cur.pitch*r, b1=cur.bearing*r;
+                let lat=eLat, lng=eLng, d1=c2c*mpp(eLat,cur.zoom);
+                for(let i=0;i<3;i++){ d1=c2c*mpp(lat,cur.zoom); if(!isFinite(d1)||d1<=0) return {};
+                  const h1=d1*Math.sin(p1);
+                  lat=eLat+h1*Math.cos(b1)/110574; lng=eLng+h1*Math.sin(b1)/((111320*Math.cos(eLat*r))||1); }
+                const elevation=eAlt-d1*Math.cos(p1);
+                if(!(isFinite(lat)&&isFinite(lng)&&isFinite(elevation))||Math.abs(lat)>89.5) return {};
+                /* a real LngLat, not a pair: the renderer hands the override straight to Transform.setCenter */
+                let ctr; try{ ctr=new maplibregl.LngLat(lng,lat); }catch(_){ ctr={lng,lat}; }
+                return { center:ctr, elevation };
+              };
+            }catch(_){ return false; }
+            return true; },
           project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
           terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
           queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
@@ -2678,8 +2822,9 @@ window.addEventListener('DOMContentLoaded', () => {
            (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
         const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
           /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
-             own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for. */
-          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true } };
+             own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
+             (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
+          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true } };
         let _adapter=MapLibreAdapter;
         return {
           id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
@@ -2688,13 +2833,21 @@ window.addEventListener('DOMContentLoaded', () => {
             /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
             getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
             zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop(),
+            /* (#R172) the camera that would show a box, and the current padding — both read-only */
+            forBounds:(b,o)=>_adapter.cameraForBounds?_adapter.cameraForBounds(b,o):null, getPadding:()=>_adapter.getPadding?_adapter.getPadding():null,
             /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */
             getProjection:()=>_adapter.getProjection(),
             setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
             getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
             /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
             tiltRange:()=>{ const c=_adapter.capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
-            altitude:()=>_adapter.cameraAltitude() },
+            altitude:()=>_adapter.cameraAltitude(),
+            /* (#R172) the VIEWPOINT itself — read it, put it back, and tell a gesture from an animation */
+            eye:()=>_adapter.eyePosition?_adapter.eyePosition():null,
+            setEye:o=>_adapter.setEye?_adapter.setEye(o):false,
+            setCenterClamped:v=>_adapter.setCenterClamped?_adapter.setCenterClamped(v):false,
+            setTiltPivot:mo=>_adapter.setTiltPivot?_adapter.setTiltPivot(mo):false,
+            isAnimating:()=>_adapter.isAnimating?_adapter.isAnimating():false },
           coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
           /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
              far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the

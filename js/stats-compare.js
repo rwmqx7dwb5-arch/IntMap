@@ -16,6 +16,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.statsCompare=function(map,HOST){
+  /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
+  const _GE=()=>window.IntMapGeoEngine;
+  const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
+  const _EV=()=>{ const E=_GE(); return E?E.events:null; };
+  const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
   const cName=HOST.cName, countryStats=HOST.countryStats, imToast=HOST.imToast, renderCompareFixed=HOST.renderCompareFixed, renderStats=HOST.renderStats, resolveCountryId=HOST.resolveCountryId, searchVal=HOST.searchVal;
   return (function(){
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
@@ -479,7 +484,7 @@ window.IntMapModules.statsCompare=function(map,HOST){
              Polish-Kresy click grabbing the USSR polygon). Matches the popup path's majority/smallest-area logic. */
           try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]); let bestA=Infinity;
             for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ const bb=turf.bbox(f); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bestA){ bestA=a; nm=f.properties&&(f.properties.NAME||f.properties.name); } } }catch(_){} } } }catch(_){}
-          if(!nm){ try{ const pt=map.project([lngLat.lng,lngLat.lat]); const hit=map.queryRenderedFeatures(pt,{layers:['imtb-fill']}); nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name); }catch(_){} }
+          if(!nm){ try{ const pt=_GE().coords.project([lngLat.lng,lngLat.lat]); const hit=_GE().coords.queryRenderedFeatures(pt,{layers:['imtb-fill']}); nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name); }catch(_){} }
           /* (#R125) COASTAL near-miss rescue: simplified era coastlines can exclude a shoreline city (Istanbul sits
              outside the 1914 Ottoman polygon), so the PIP above finds nothing and the pick used to fall through to
              the MODERN borders ("クリック判定は現在の国境…まだ不完全"). Snap to the era feature whose ring passes
@@ -515,8 +520,8 @@ window.IntMapModules.statsCompare=function(map,HOST){
       codes.push(cd); try{ render(); }catch(_){} try{ imToast('✓ '+nm); }catch(_){} }
     function _setPick(on){ _picking=!!on; window.__scpPick=_picking;
       const b=host&&host.querySelector('#scp-pick'); if(b) b.classList.toggle('on',_picking);
-      try{ const cv=map&&map.getCanvas&&map.getCanvas(); if(cv) cv.style.cursor=_picking?'crosshair':''; }catch(_){}
-      if(_picking&&!_pickBound){ try{ map.on('click',_pickClick); _pickBound=true; }catch(_){} }
+      try{ _GE().render.setCursor(_picking?'crosshair':''); }catch(_){}
+      if(_picking&&!_pickBound){ try{ _EV().on('click',_pickClick); _pickBound=true; }catch(_){} }
       if(_picking&&!_pickKey){ _pickKey=(ev)=>{ if(ev.key==='Escape') _setPick(false); }; try{ document.addEventListener('keydown',_pickKey); }catch(_){} }
       else if(!_picking&&_pickKey){ try{ document.removeEventListener('keydown',_pickKey); }catch(_){} _pickKey=null; }
       if(_picking){ try{ imToast(LL('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} } }
@@ -906,11 +911,12 @@ window.IntMapModules.statsCompare=function(map,HOST){
        categorical fill built directly from window.countryGeo — needs no layer toggle and never disturbs Atlas's
        own highlight/choropleth layers. Country codes[i] gets PAL[i], exactly matching the chips/bars/table. */
     function ensureCmpMap(){ if(typeof map==='undefined'||!map) return false; const g=window.countryGeo||(typeof HOST.countryGeo!=='undefined'?HOST.countryGeo:null); if(!g||!g.features) return false;
-      try{ if(!map.getSource('imcmp-src')) map.addSource('imcmp-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
-      if(map.getLayer('imcmp-fill')) return true;
-      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      try{ map.addLayer({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.5}},before);
-        map.addLayer({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1.6,'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
+      try{ if(!_LY().hasSource('imcmp-src')) _LY().addSource('imcmp-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
+      if(!_LY()) return false;   /* engine not built yet (#R172) */
+      if(_LY().has('imcmp-fill')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!_LY().has(id); }catch(_){ return false; } });
+      try{ _LY().add({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.5}},before);
+        _LY().add({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1.6,'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
     /* (#R94h/#R94n) while travelling, paint each compared country's ERA polygon (its borders THAT year) rather
        than the modern one, so the Compare highlight matches history — the German Empire's 1910 extent (≠ modern
        Germany), 1910 France (no Alsace-Lorraine), and former states like the USSR that have no modern polygon
@@ -922,17 +928,17 @@ window.IntMapModules.statsCompare=function(map,HOST){
         if(traveling&&TB.geomForCode){ try{ geom=TB.geomForCode(cd); }catch(_){} }
         if(!geom) geom=modernOf[String(cd)]||null;
         if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:col}}); });
-      try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ _LY().setSourceData('imcmp-src',{type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length>0; }
     function paintOnMap(){ return _paintCodes(codes); }
     /* (#R122) live preview from the Countries-tab selection tray (compareSet) BEFORE the compare view opens — the
        same imcmp-src / palette, so selecting a country in Countries highlights it on the map immediately. */
     function previewOnMap(list){ return _paintCodes(Array.isArray(list)?list:[]); }
-    function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearMap(){ try{ _LY().setSourceData('imcmp-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* re-apply after a base-style swap (globe/flat/satellite reload wipes runtime sources) */
     /* (#R94k) only re-paint while the comparison is actually OPEN — otherwise a styledata after "Back to
        statistics" (codes[] is still populated) re-painted the cleared map colouring. */
-    try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ if(codes&&codes.length&&document.getElementById('scp-view')){ setTimeout(()=>{ try{ if(document.getElementById('scp-view')) paintOnMap(); }catch(_){} },160); } }); }catch(_){}
+    try{ if(_EV()) _EV().on('styledata',()=>{ if(codes&&codes.length&&document.getElementById('scp-view')){ setTimeout(()=>{ try{ if(document.getElementById('scp-view')) paintOnMap(); }catch(_){} },160); } }); }catch(_){}
     /* (#R94) re-render the OPEN comparison when the master clock moves — bars/table/focus follow the year. */
     let _ttReb=null;
     try{ if(window.IntMapTime) window.IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
