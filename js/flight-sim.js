@@ -775,18 +775,24 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
+      /* (#R172) take the tilt PIVOT back for the flight. With unlimited tilt on, the engine installs a
+         per-update camera hook that keeps the viewpoint still while the user tilts; the sim is the sole camera
+         controller (#R158) and writes the whole camera every frame, so it wants that hook out of the path
+         entirely rather than relying on it to no-op. stop() hands it back to js/view-controls.js. */
+      try{ const GE=window.IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.setTiltPivot) GE.camera.setTiltPivot('target'); }catch(_){}
       /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead.
          (#R170) …and force the Globe view on entry, so a pilot who took off from the Flat view flies a globe too.
-         (#R171) …and that STILL was not a globe ("まだそうなっていない"), because in MapLibre 5 the `globe`
-         projection is DEFINED as vertical-perspective while zoomed out and plain MERCATOR from about z12 up.
-         Measured here (bow of the ±60° parallel in px, same camera): z10 741 → z11 753 → **z12 0 → z15 0**.
-         The sim's camera comes from calculateCameraOptionsFromTo with a fixed 1.8 km look-ahead, which pins it
-         at z≈14-15 for the whole flight — so every previous "switch to globe" was a no-op the moment the flight
-         actually started, and the cockpit really did show a flat Earth.
-         The fix is the projection that is curved at EVERY zoom (measured bow 764 px at z15): 'globe-true'
-         (vertical-perspective). Asked for through the engine so the sim never names a MapLibre projection. */
+         (#R171) …and then ALSO asked the engine for 'globe-true' (vertical-perspective), because MapLibre's
+         `globe` renders as plain mercator from about z12 up and the cockpit sits at z≈15.
+         (#R172) THAT LINE IS GONE — it is what "フライトシミュレーターが完全に破損している" was. Reproduced and
+         attributed by flying both trees: on #R170 the cockpit shows Mt Fuji, terrain, sea and a blue sky; on
+         #R171 it is a WHITE VOID with nothing in it but the HUD. Confirmed again with the camera frozen
+         mid-flight (z15.2, pitch 90.6, 9 s settle) flipping only the projection, A/B/A/B: 'globe' draws the
+         world every time, 'vertical-perspective' draws nothing every time. The renderer can do a curved Earth
+         at cockpit zoom OR a DEM under the aeroplane, not both — and a flight simulator does not trade away its
+         terrain, which is the mountain you are about to hit. So the sim asks for the app's GLOBE (the honest
+         "Globe, not Flat"), and the engine now refuses 'globe-true' outright instead of blanking the map. */
       try{ if(HOST.proj!=='globe'&&window.IntMapOS) IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }catch(_){}
-      try{ const GE=window.IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.setProjection) GE.camera.setProjection('globe-true'); }catch(_){}
       /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
          pale horizon haze and distance fog; restored on exit. */
       try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
@@ -827,6 +833,10 @@ window.IntMapModules.flightSim=function(map,HOST){
       window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
       window.__fsCamActive=false;
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
+      /* (#R172) …and hand the camera back to whoever owned it before the flight. The unlimited-tilt setting
+         also unpins the ground-clamp (js/view-controls.js) and installs the eye pivot; the line above would
+         otherwise silently undo it for anyone who has that setting on. One re-apply puts the owner in charge. */
+      try{ if(window.IntMapTilt){ window.IntMapTilt.apply(); window.IntMapTilt.wireTilt(); } }catch(_){}
       try{ if(map&&map.getLayer&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); if(map&&map.getSource&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
       for(const k in keys) keys[k]=false;
       try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */

@@ -15,6 +15,16 @@ window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.widgets=function(map,HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats, fmtMoney=HOST.fmtMoney, imToast=HOST.imToast, isMobile=HOST.isMobile;
+  /* (#R172) CAMERA THROUGH IntMapGeoEngine — this module no longer names the renderer.
+     Every use here was a camera read or a camera move (centre, zoom, flyTo, fitBounds, cameraForBounds),
+     so the whole file migrates behind five one-line helpers; `cameraForBounds`/`getPadding` were added to
+     the contract this round for exactly this call site. */
+  const _GE=()=>window.IntMapGeoEngine;
+  const camCentre=()=>{ try{ const E=_GE(); return E?E.camera.getCenter():null; }catch(_){ return null; } };
+  const camZoom=()=>{ try{ const E=_GE(); const z=E?E.camera.getZoom():null; return (z==null||!isFinite(z))?null:z; }catch(_){ return null; } };
+  const camFly=o=>{ try{ const E=_GE(); if(E) E.camera.flyTo(o); }catch(_){} };
+  const camFit=(b,o)=>{ try{ const E=_GE(); if(E) E.camera.fitBounds(b,o); }catch(_){} };
+  const camForBounds=(b,o)=>{ try{ const E=_GE(); return E?E.camera.forBounds(b,o):null; }catch(_){ return null; } };
   (function(){
     /* (#R20) Widget board v3 — big expansion ("ウィジェットの選択肢を大幅拡充して"):
        configurable FX pairs, data "as of" stamps on every financial widget, Recent Earthquakes
@@ -347,7 +357,7 @@ window.IntMapModules.widgets=function(map,HOST){
       /* (#R40) pure-computation widgets */
       active.filter(e=>e.t==='dayprog').forEach(e=>{ try{ const a=new Date(now); a.setHours(0,0,0,0); const fr=Math.min(1,Math.max(0,(now-a)/864e5)); const leftMin=Math.round((864e5-(now-a))/60000); const h=Math.floor(leftMin/60), m=leftMin%60;
         setV(e.u,(fr*100).toFixed(1)+'%<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);margin-top:7px;overflow:hidden;"><div style="height:100%;width:'+(fr*100).toFixed(1)+'%;background:var(--primary-color);border-radius:4px;"></div></div>', (jp()?('残り '+h+'時間'+m+'分'):(h+'h '+m+'m left'))); }catch(_){} });
-      active.filter(e=>e.t==='season').forEach(e=>{ try{ const lat=(map&&map.getCenter)?map.getCenter().lat:35; const mo=now.getMonth();
+      active.filter(e=>e.t==='season').forEach(e=>{ try{ const _c0=camCentre(); const lat=_c0?_c0.lat:35; const mo=now.getMonth();
         const nSeason=['winter','winter','spring','spring','spring','summer','summer','summer','autumn','autumn','autumn','winter'][mo];
         const seas=(lat<0)?({winter:'summer',summer:'winter',spring:'autumn',autumn:'spring'})[nSeason]:nSeason;
         const ICON={winter:'❄️',spring:'🌸',summer:'☀️',autumn:'🍂'}, NMjp={winter:'冬',spring:'春',summer:'夏',autumn:'秋'}, NMen={winter:'Winter',spring:'Spring',summer:'Summer',autumn:'Autumn'};
@@ -357,17 +367,17 @@ window.IntMapModules.widgets=function(map,HOST){
         setV(e.u,'W'+wk, (jp()?('第'+doy+'日 · 残り'+left+'日'):('day '+doy+' · '+left+' left'))); }catch(_){} });
       active.filter(e=>e.t==='unixclock').forEach(e=>{ try{ const s=Math.floor(Date.now()/1000);
         setV(e.u,'<span style="font-size:19px;">'+s.toLocaleString()+'</span>', (jp()?'秒（1970-01-01 UTCから）':'seconds since 1970-01-01 UTC')); }catch(_){} });
-      active.filter(e=>e.t==='mapcenter').forEach(e=>{ try{ const c=(map&&map.getCenter)?map.getCenter():null; if(c) setV(e.u,'<span style="font-size:16px;">'+c.lat.toFixed(3)+'°, '+c.lng.toFixed(3)+'°</span>', (jp()?'ズーム ':'zoom ')+((map&&map.getZoom)?map.getZoom().toFixed(1):'')); }catch(_){} });
+      active.filter(e=>e.t==='mapcenter').forEach(e=>{ try{ const c=camCentre(); if(c){ const _z=camZoom(); setV(e.u,'<span style="font-size:16px;">'+c.lat.toFixed(3)+'°, '+c.lng.toFixed(3)+'°</span>', (jp()?'ズーム ':'zoom ')+(_z!=null?_z.toFixed(1):'')); } }catch(_){} });
       active.filter(e=>e.t==='fullmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toFull=((syn/2)-phase+syn)%syn; const days=Math.round(toFull);
         setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌕 '+days+(jp()?'日後':'d')), (jp()?'次の満月まで':'until the next full moon')); }catch(_){} });
       /* (#R41) pure-computation map-aware widgets */
       active.filter(e=>e.t==='newmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toNew=(syn-phase)%syn; const days=Math.round(toNew);
         setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌑 '+days+(jp()?'日後':'d')), (jp()?'次の新月まで':'until the next new moon')); }catch(_){} });
-      active.filter(e=>e.t==='daylength').forEach(e=>{ try{ const lat=(map&&map.getCenter)?map.getCenter().lat:35; const st=new Date(now.getFullYear(),0,0); const doy=Math.floor((now-st)/864e5);
+      active.filter(e=>e.t==='daylength').forEach(e=>{ try{ const _c1=camCentre(); const lat=_c1?_c1.lat:35; const st=new Date(now.getFullYear(),0,0); const doy=Math.floor((now-st)/864e5);
         const decl=-23.44*Math.cos((360/365)*(doy+10)*Math.PI/180); const cosH=-Math.tan(lat*Math.PI/180)*Math.tan(decl*Math.PI/180);
         let hrs; if(cosH<=-1) hrs=24; else if(cosH>=1) hrs=0; else hrs=(2*Math.acos(cosH)*180/Math.PI)/15; const h=Math.floor(hrs), m=Math.round((hrs-h)*60);
         setV(e.u,'🌞 '+h+'h '+(m<10?'0':'')+m+'m', (jp()?'緯度 ':'lat ')+lat.toFixed(1)+'° · '+(jp()?'日照':'daylight')); }catch(_){} });
-      active.filter(e=>e.t==='mapscale').forEach(e=>{ try{ if(!map||!map.getCenter) return; const lat=map.getCenter().lat, z=map.getZoom();
+      active.filter(e=>e.t==='mapscale').forEach(e=>{ try{ const _c2=camCentre(), _z2=camZoom(); if(!_c2||_z2==null) return; const lat=_c2.lat, z=_z2;
         const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); const v=(mpp>=1000)?((mpp/1000).toFixed(1)+' km/px'):(mpp>=1?Math.round(mpp)+' m/px':(mpp*100).toFixed(0)+' cm/px');
         const bar=mpp*100, barStr=bar>=1000?(bar/1000).toFixed(1)+' km':Math.round(bar)+' m';
         setV(e.u,'<span style="font-size:18px;">'+v+'</span>', (jp()?'100pxバー ≈ ':'100-px bar ≈ ')+barStr+' · z'+z.toFixed(1)); }catch(_){} });
@@ -421,7 +431,7 @@ window.IntMapModules.widgets=function(map,HOST){
       }catch(_){ setV(e.u,'—', una()); } }
     /* (#R41) Weather at the MAP CENTER — distinct from the geolocation 'weather' widget; needs no permission
        and follows wherever the user pans (refreshed on the data tick). */
-    async function refreshMapWeather(e){ try{ const c=(map&&map.getCenter)?map.getCenter():null; if(!c){ setV(e.u,'—',una()); return; }
+    async function refreshMapWeather(e){ try{ const c=camCentre(); if(!c){ setV(e.u,'—',una()); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto',{cache:'no-store'});
         const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
@@ -466,7 +476,7 @@ window.IntMapModules.widgets=function(map,HOST){
     async function refreshIss(e){ try{ const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const j=await r.json();
         setV(e.u,'🛰 '+(+j.latitude).toFixed(1)+'°, '+(+j.longitude).toFixed(1)+'°',
           '<span class="iss-fly" style="color:var(--primary-color);cursor:pointer;font-weight:600;">'+(jp()?'地図で見る →':'Fly there →')+'</span> · '+Math.round(j.altitude)+' km · '+asOf((j.timestamp||0)*1000));
-        const fl=document.querySelector('#wgts-'+e.u+' .iss-fly'); if(fl) fl.onclick=()=>{ try{ map&&map.flyTo({center:[+j.longitude,+j.latitude],zoom:3}); }catch(_){} };
+        const fl=document.querySelector('#wgts-'+e.u+' .iss-fly'); if(fl) fl.onclick=()=>{ camFly({center:[+j.longitude,+j.latitude],zoom:3}); };
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshWikiFeat(e){ try{ const now=new Date();
         const ymd=now.getFullYear()+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+String(now.getDate()).padStart(2,'0');
@@ -506,7 +516,7 @@ window.IntMapModules.widgets=function(map,HOST){
             '<span style="font-weight:800;'+(big?'font-size:24px;':'font-size:13px;')+'color:'+(p.mag>=6?'#ff3b30':p.mag>=5?'#ff9500':'var(--text-main)')+';">M'+p.mag.toFixed(1)+'</span> '+
             '<span style="font-size:'+(big?'12px':'11px')+';">'+(p.place||'')+' · '+ago+'h</span></div>'; };
         setV(e.u,row(qs[0],true)+(qs[1]?row(qs[1],false):'')+(qs[2]?row(qs[2],false):''), asOf(j.metadata&&j.metadata.generated)+' · USGS');
-        document.querySelectorAll('#wgtv-'+e.u+' .wq-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); map&&map.flyTo({center:[lng,lat],zoom:5}); }catch(_){} });
+        document.querySelectorAll('#wgtv-'+e.u+' .wq-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); camFly({center:[lng,lat],zoom:5}); }catch(_){} });
       }catch(_){ setV(e.u,'—', una()); } }
     let otdList=null, otdDay='';
     async function refreshOtd(e){ try{
@@ -560,10 +570,10 @@ window.IntMapModules.widgets=function(map,HOST){
           try{ const cg=window.countryGeo; const ft=cg&&cg.features&&cg.features.find(f=>String(f.id)===String(s.code));
             if(ft&&ft.geometry&&typeof turf!=='undefined'){ const bb=turf.bbox(ft);
               if(bb&&bb.every(isFinite)&&(bb[2]-bb[0])<180&&(bb[3]-bb[1])<170){
-                const cam=map.cameraForBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5});
-                if(cam&&cam.center){ map.flyTo(flyOpts(cam.center,cam.zoom)); done=true; }
-                else { map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5,speed:0.7,essential:true}); done=true; } } } }catch(_){}
-          if(!done){ const ll=s.latlng; if(ll) map.flyTo(flyOpts([ll[1],ll[0]],4)); }
+                const cam=camForBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5});
+                if(cam&&cam.center){ camFly(flyOpts(cam.center,cam.zoom)); done=true; }
+                else { camFit([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5,speed:0.7,essential:true}); done=true; } } } }catch(_){}
+          if(!done){ const ll=s.latlng; if(ll) camFly(flyOpts([ll[1],ll[0]],4)); }
           try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){}
         }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }

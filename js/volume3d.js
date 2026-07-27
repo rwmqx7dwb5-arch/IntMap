@@ -41,7 +41,9 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.volume3d=function(map,HOST){
   return (function(){
-    const SRC='imv3d-src', LYR='imv3d-vol', EDGE='imv3d-edge';
+    const SRC='imv3d-src', LYR='imv3d-vol', EDGE='imv3d-edge', FLOOR='imv3d-floor';
+    const SLAB=n=>'imv3d-slab-'+n;   /* (#R172) the interior slabs — see fillLayers() */
+    const SLABS=8;
     const GE=()=>window.IntMapGeoEngine;
 
     /* the live volume: a closed ring (lng/lat, no repeated last point) + two ALTITUDES in metres AMSL */
@@ -50,6 +52,12 @@ window.IntMapModules.volume3d=function(map,HOST){
     let lastRenderErr=null;
     let shape='polygon';     /* polygon | freehand | circle | rect (#R171) */
     let onShapeDone=null;    /* the panel's redraw hook — a drag ends without any click the panel would see */
+    let solid=true;          /* (#R172) closed bottom + filled interior — see fillLayers() */
+    /* (#R172) who owns the current footprint. The panel re-pushes the measure tool's clicked vertices on every
+       re-render, which used to wipe a ring that came from anywhere else — an Atlas-drawn volume lost its
+       footprint (and the panel then read "Points 0" under a box that was still on screen) the next time
+       anything refreshed the panel. Clicked rings are marked, and only those are re-pushed. */
+    let ringFromClicks=false;
 
     const has3DTerrain=()=>{ try{ return !!HOST.terrain3D; }catch(_){ return false; } };
     const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
@@ -92,6 +100,18 @@ window.IntMapModules.volume3d=function(map,HOST){
       },400); }
 
     /* ---- rendering ------------------------------------------------------------------------- */
+    /* (#R172) A fill-extrusion is a LID AND FOUR WALLS — it has no floor, and it encloses nothing.
+       Measured on this app with a 5 km-thick red cylinder at 0.85 opacity: from outside-above it looks
+       like a solid; standing INSIDE it you see the far wall (so the walls are not back-face culled) but
+       the space you are standing in is empty; and there is no downward face anywhere. That is exactly
+       「下の面は色がついていない。多面体内部の空間も無色になっている。」
+       This closes it with primitives the renderer actually has:
+         FLOOR  — a thin slab sitting on the base altitude, so the solid has a bottom face;
+         SLAB×n — evenly spaced thin horizontal sheets through the band, so looking through the body
+                  accumulates colour with DEPTH instead of just front-wall-over-back-wall. A 2 km band
+                  crossed near its edge and one crossed through the middle no longer look identical.
+       Every one of them is the same footprint at a different altitude, driven from the same ring, so the
+       measurement (area, thickness, volume) is untouched — this is how the volume is DRAWN, not what it is. */
     function ensure(){ const E=GE(); if(!E||!E.canDraw()) return false;
       try{
         if(!E.layers.hasSource(SRC)) E.layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -106,11 +126,35 @@ window.IntMapModules.volume3d=function(map,HOST){
             'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
           if(!ok) return false;
         }
+        if(!E.layers.has(FLOOR)) E.layers.addExtrusion({ id:FLOOR, source:SRC, paint:{
+          'fill-extrusion-color':color, 'fill-extrusion-opacity':Math.min(0.95,opacity*1.35),
+          'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
+        for(let i=0;i<SLABS;i++) if(!E.layers.has(SLAB(i))) E.layers.addExtrusion({ id:SLAB(i), source:SRC, paint:{
+          'fill-extrusion-color':color, 'fill-extrusion-opacity':0,
+          'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
         /* a thin outline on the footprint so the box is locatable on the ground even edge-on */
         if(!E.layers.has(EDGE)) E.layers.add({ id:EDGE, type:'line', source:SRC,
           paint:{ 'line-color':color, 'line-width':1.6, 'line-opacity':0.9 } });
         return true;
       }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
+    }
+    /* Position the floor and the interior sheets inside [rb,rh] (renderer-space metres). The sheets are
+       thin relative to the band, so a thick volume is not turned into a stack of visible pancakes; their
+       opacity is derived from the box's own so the two always read as one body. */
+    function fillLayers(E,rb,rh){
+      const thick=Math.max(0.5,rh-rb);
+      const skin=Math.max(0.6, Math.min(thick*0.01, 60));      /* floor thickness: 1 % of the band, capped */
+      const each=Math.max(0.4, Math.min(thick*0.004, 30));     /* one interior sheet */
+      const op=solid?Math.min(0.95,opacity*1.35):0;
+      try{ E.layers.setExtrusionRange(FLOOR, rb, rb+skin);
+        E.layers.setPaint(FLOOR,'fill-extrusion-opacity',op);
+        E.layers.setVisible(FLOOR,solid); }catch(_){}
+      for(let i=0;i<SLABS;i++){
+        const f=(i+1)/(SLABS+1), y=rb+thick*f;
+        try{ E.layers.setExtrusionRange(SLAB(i), y, y+each);
+          E.layers.setPaint(SLAB(i),'fill-extrusion-opacity',solid?Math.min(0.9,opacity*0.55):0);
+          E.layers.setVisible(SLAB(i),solid); }catch(_){}
+      }
     }
 
     /* Push the current ring + altitudes to the renderer. See the altitude-reference note at the top:
@@ -128,13 +172,17 @@ window.IntMapModules.volume3d=function(map,HOST){
         E.layers.setExtrusionRange(LYR, rb, rh);
         E.layers.setPaint(LYR,'fill-extrusion-opacity',opacity);
         E.layers.setVisible(LYR,true); E.layers.setVisible(EDGE,true);
+        fillLayers(E,rb,rh);   /* (#R172) bottom face + interior sheets */
         if(has3DTerrain()&&!noChase) chaseGround();   /* the DEM may still be streaming — see chaseGround */
         lastRenderErr=null; return true;
       }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
     }
-    function hide(){ const E=GE(); if(!E) return; try{ E.layers.setVisible(LYR,false); E.layers.setVisible(EDGE,false); }catch(_){} }
+    function hide(){ const E=GE(); if(!E) return; try{ E.layers.setVisible(LYR,false); E.layers.setVisible(EDGE,false);
+      E.layers.setVisible(FLOOR,false); for(let i=0;i<SLABS;i++) E.layers.setVisible(SLAB(i),false); }catch(_){} }
     function remove(){ const E=GE(); if(!E) return;
-      try{ E.layers.remove(LYR); E.layers.remove(EDGE); E.layers.removeSource(SRC); }catch(_){} }
+      try{ E.layers.remove(LYR); E.layers.remove(EDGE); E.layers.remove(FLOOR);
+        for(let i=0;i<SLABS;i++) E.layers.remove(SLAB(i));
+        E.layers.removeSource(SRC); }catch(_){} }
 
     /* ---- shapes (#R171) --------------------------------------------------------------------
        Every shape ends up as the same thing — a ring of lng/lat — so the extrusion, the area, the
@@ -237,17 +285,28 @@ window.IntMapModules.volume3d=function(map,HOST){
 
     /* ---- public API ------------------------------------------------------------------------ */
     /* Every setter re-paints, so the box tracks the numbers as they are typed. */
-    function setRing(pts){ ring=(pts||[]).map(p=>[+p[0],+p[1]]); return paint(); }
+    function setRing(pts){ ring=(pts||[]).map(p=>[+p[0],+p[1]]); ringFromClicks=false; return paint(); }
+    /* (#R172) the click-vertex flow's own entry point. The panel re-renders constantly (every keystroke in a
+       neighbouring field, every tool refresh) and used to push the measure tool's vertex list straight into
+       setRing each time — so a footprint that came from anywhere else (Atlas, a traced stroke, a restored
+       shape) was silently replaced by an empty list. Now only a ring this function created is refreshed by it. */
+    function syncClicks(pts){ const n=(pts||[]).length;
+      if(!n&&!ringFromClicks) return false;          /* nothing clicked and the ring is not ours — leave it alone */
+      ring=(pts||[]).map(p=>[+p[0],+p[1]]); ringFromClicks=true; return paint(); }
     /* A field being TYPED into is not a number yet. '' (cleared to retype), '-' and '1e' are all states a
        real keyboard passes through, and `+''` is 0, so the old isFinite(+b) test silently rewrote a field
        the user had just emptied to 0 m. Anything that is not a finished number leaves the value alone. */
     function _num(v,cur){ if(v==null) return cur; const s=String(v).trim();
       if(s===''||s==='-'||s==='+'||s==='.'||s==='-.') return cur;
       const n=Number(s); return isFinite(n)?n:cur; }
+    /* (#R172) NO CEILING (「上限の高度は無しに」). #R171 clamped both ends to the Kármán line at 100 km, which
+       made the tool unable to say anything about the exosphere, a satellite orbit, or the Moon's distance —
+       all perfectly reasonable things to want a real-scale band for. The only limits left are the renderer's:
+       MAX_M is where MapLibre's extrusion still draws (measured, see tests/r172.spec.js), and the floor is the
+       centre of the Earth, past which "an altitude above sea level" stops meaning anything. */
+    const MAX_M=1e9, MIN_M=-6371000;
     function setAltitudes(b,t){
-      /* -430 m = the Dead Sea shore, the lowest dry land on Earth; 100 km = the Kármán line. Clamping
-         to a real range keeps a stray keystroke from asking the renderer for a 10^9 m tower. */
-      baseM=clamp(_num(b,baseM),-430,100000); topM=clamp(_num(t,topM),-430,100000);
+      baseM=clamp(_num(b,baseM),MIN_M,MAX_M); topM=clamp(_num(t,topM),MIN_M,MAX_M);
       /* (#R171) NO SWAPPING HERE. #R170 swapped an inverted pair so "3000 to 1000" still meant the band —
          but the pair is inverted on the way through EVERY edit ("1000" → clear the top field → type "5" →
          base and top swap under the cursor), which was half of "まともに数値入力ができない". The band is
@@ -259,7 +318,11 @@ window.IntMapModules.volume3d=function(map,HOST){
       /* The colour lives on the LAYERS (see ensure), so a live change has to be pushed to both of them —
          the box and its ground outline. paint() below re-asserts the opacity and the geometry. */
       try{ const E=GE(); if(E&&E.layers.has(LYR)) E.layers.setPaint(LYR,'fill-extrusion-color',color);
-        if(E&&E.layers.has(EDGE)) E.layers.setPaint(EDGE,'line-color',color); }catch(_){}
+        if(E&&E.layers.has(EDGE)) E.layers.setPaint(EDGE,'line-color',color);
+        /* (#R172) …and the floor and the interior sheets, or the solid would be two colours at once */
+        if(E&&E.layers.has(FLOOR)) E.layers.setPaint(FLOOR,'fill-extrusion-color',color);
+        for(let i=0;i<SLABS;i++) if(E&&E.layers.has(SLAB(i))) E.layers.setPaint(SLAB(i),'fill-extrusion-color',color);
+      }catch(_){}
       return paint(); }
     function clear(){ ring=[]; trace=[]; groundM=null; hide(); }
 
@@ -272,14 +335,35 @@ window.IntMapModules.volume3d=function(map,HOST){
       try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{
           color, op:0.18,
           name:L('3-D volume','3D立体','3-D-Volumen','3-D объём','Volumen 3-D'),
-          value:Math.round(loM()).toLocaleString()+'–'+Math.round(hiM()).toLocaleString()+' m · '+fmtVolume() });
+          value:fmtAlt(loM())+'–'+fmtAlt(hiM())+' · '+fmtVolume() });   /* (#R172) in the unit the user chose */
         return true; }catch(_){ return false; } }
+
+    /* ---- units (#R172) ---------------------------------------------------------------------
+       「単位はm以外にkm等も選べるように。」 The altitude fields are the only place the user types a LENGTH
+       into this tool, and metres are the wrong unit for most of what it is good for — a 10-14 km airway
+       band, a 35,786 km geostationary shell, a 400 ft drone ceiling. The model stays in metres (one truth);
+       the unit is a presentation choice that converts on the way in and on the way out, so switching it
+       never changes the volume, only how it is written. */
+    const UNITS={ m:1, km:1000, ft:0.3048, mi:1609.344 };
+    let unit='m';
+    function setUnit(u){ if(UNITS[u]) unit=u; return unit; }
+    const toUnit=m=>(+m||0)/UNITS[unit];              /* metres → the display unit */
+    const fromUnit=v=>(+v||0)*UNITS[unit];            /* the display unit → metres */
+    /* enough decimals that a metre-scale edit is not rounded away in a big unit, none where it would be noise */
+    function _dp(){ return unit==='m'?0:unit==='ft'?0:3; }
+    function fieldValue(m){ const v=toUnit(m); const d=_dp();
+      return d?(+v.toFixed(d)):Math.round(v); }
+    function fieldStep(){ return unit==='m'?100:unit==='ft'?500:unit==='km'?0.1:0.1; }
 
     /* ---- formatting (shared with the tool panel) -------------------------------------------- */
     function fmtVolume(){ const v=volumeM3(); if(!(v>0)) return '—';
-      if(v>=1e9) return (v/1e9).toLocaleString(undefined,{maximumFractionDigits:2})+' km³';
-      return Math.round(v).toLocaleString()+' m³'; }
-    function fmtAlt(m){ return Math.round(m).toLocaleString()+' m'; }
+      const per=UNITS[unit]*UNITS[unit]*UNITS[unit], u=v/per;
+      /* metres get the long-standing auto-flip to km³ once the number stops being readable; a unit the user
+         chose on purpose is never silently swapped for another one. */
+      if(unit==='m'&&v>=1e9) return (v/1e9).toLocaleString(undefined,{maximumFractionDigits:2})+' km³';
+      return (u>=100?Math.round(u):+u.toPrecision(4)).toLocaleString(undefined,{maximumFractionDigits:4})+' '+unit+'³'; }
+    function fmtAlt(m){ const v=toUnit(m), d=_dp();
+      return (d?(+v.toFixed(d)):Math.round(v)).toLocaleString(undefined,{maximumFractionDigits:d})+' '+unit; }
 
     /* ---- keep the box alive across style swaps ---------------------------------------------- */
     /* A base-map change (Map ⇄ Satellite) can rebuild the style; re-add and re-paint when it settles.
@@ -301,18 +385,23 @@ window.IntMapModules.volume3d=function(map,HOST){
       if((n||0)<200) setTimeout(()=>wire((n||0)+1),100);
     })(0);
 
-    return { setRing, setAltitudes, setStyle, clear, remove, paint,
+    return { setRing, syncClicks, setAltitudes, setStyle, clear, remove, paint,
       /* (#R171) shapes + gesture ownership */
       setShape, shape:()=>shape, release, ownsGesture, onDone:fn=>{ onShapeDone=fn; },
       circleRing, rectRing, smoothRing, distM,
+      /* (#R172) units + the closed solid */
+      setUnit, unit:()=>unit, units:()=>Object.keys(UNITS), toUnit, fromUnit, fieldValue, fieldStep,
+      setSolid(v){ solid=!!v; return paint(); }, isSolid:()=>solid, limits:()=>({min:MIN_M,max:MAX_M}),
       ring:()=>ring.slice(), base:()=>baseM, top:()=>topM, low:loM, high:hiM, color:()=>color, opacity:()=>opacity,
       ground:()=>groundM, terrainOn:has3DTerrain,
       areaM2, thicknessM, volumeM3, fmtVolume, fmtAlt, keep,
       /* diagnostics — Atlas + tests read these instead of poking at the renderer */
       state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing,
-        thickness:thicknessM(), areaM2:areaM2(),
+        thickness:thicknessM(), areaM2:areaM2(), unit, solid, fromClicks:ringFromClicks,
         volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
         painted:(()=>{ try{ return !!(GE()&&GE().layers.has(LYR)&&GE().layers.isVisible(LYR)); }catch(_){ return false; } })(),
+        floor:(()=>{ try{ return !!(GE()&&GE().layers.has(FLOOR)&&GE().layers.isVisible(FLOOR)); }catch(_){ return false; } })(),
+        slabs:(()=>{ try{ let n=0; for(let i=0;i<SLABS;i++) if(GE().layers.has(SLAB(i))&&GE().layers.isVisible(SLAB(i))) n++; return n; }catch(_){ return 0; } })(),
         err:lastRenderErr }) };
   })();
 };

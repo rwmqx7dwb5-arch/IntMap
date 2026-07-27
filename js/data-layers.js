@@ -1905,6 +1905,16 @@ window.IntMapModules.dataLayers=function(map,HOST){
           el.appendChild(fr);
           const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}
           s.addEventListener('change',()=>{ try{ trafficFilters[id]=s.value; }catch(_){} try{ refreshTrafficLayer(id); }catch(_){} });
+          /* (#R172) aircraft can stand at their real altitude; the flat glyph is still one click away for
+             anyone who wants a plain top-down picture. Lives next to the filter, same row, same legend. */
+          if(id==='planes'){
+            const a3=document.createElement('label'); a3.style.cssText='display:flex;align-items:center;gap:5px;cursor:pointer;';
+            const _aL=HOST.lang==='jp'?'実際の高度で表示':HOST.lang==='de'?'In echter Höhe':HOST.lang==='ru'?'На реальной высоте':HOST.lang==='es'?'A su altitud real':'At real altitude';
+            a3.innerHTML='<input type="checkbox" class="gl-alt3d" style="accent-color:var(--primary-color);">'+_aL;
+            fr.appendChild(a3);
+            const c3=a3.querySelector('.gl-alt3d'); try{ c3.checked=planes3DOn(); }catch(_){}
+            c3.addEventListener('change',()=>{ try{ setPlanes3D(c3.checked); }catch(_){} });
+          }
         }
       } else { el.querySelector('h4').textContent=nm; }
       /* (#R40) attach the 1-line "what is this data" explanation to the generic legend too (it was only on the
@@ -1973,6 +1983,13 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let planesData=[], shipsData=[], planesTimer=null, shipsTimer=null;
     let planesTime=0, planesSynthetic=false;   /* live-feed snapshot time (ms) + synthetic-fallback flag */
     let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
+    let _planes3DZoom=null, _planes3DZoomT=null;   /* (#R172) rebuild the lifted glyphs when the scale changes */
+    /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
+       (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
+    function planesLayerOn(){ try{
+      const a=map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible';
+      const b=map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible';
+      return !!(a||b); }catch(_){ return false; } }
     /* Aircraft military operator hints (very rough — based on callsign prefixes) */
     const MILITARY_CALLSIGN_PREFIXES=['RCH','REACH','SAM','EVAC','MUSCLE','HOMR','BLUE','RNGR','NATO','PAT','RFR','SPAR','THUG','SHELL','GRZLY','CLAMP','POPS','HAWG','SLAY','DUKE','LOBO','GUMP','HUSKY','HUNTR','BAND','TYRN','MAGMA','KING','CAMEL'];
     function classifyAircraft(callsign){
@@ -2038,7 +2055,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       return el;
     }
     function updatePlanesZoomHint(){
-      const on=map&&map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible';
+      const on=!!(map&&planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
       const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM);
       if(on&&map.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
@@ -2186,12 +2203,101 @@ window.IntMapModules.dataLayers=function(map,HOST){
         if(nk!==aisKey){ aisKey=nk; try{ aisKey?localStorage.setItem('intmap_ais_key',aisKey):localStorage.removeItem('intmap_ais_key'); }catch(_){}
           if(map&&map.getLayer('lyr-ships')&&map.getLayoutProperty('lyr-ships','visibility')==='visible'){ stopAIS(); startShips(); updateShipsZoomHint(); } } });
     })();
+    /* ===== (#R172) AIRCRAFT AT THEIR REAL ALTITUDE ==========================================
+       「Live aircraft trafficは、飛行中の高度に応じて、実際にIntMapの空間でもその高度に描画して。」
+       The glyphs were a `symbol` layer, which MapLibre pins to the map SURFACE — a jet at 11 km and one
+       taxiing sat at exactly the same height, and tilting the map showed no difference at all.
+       MapLibre 5.24 has NO way to lift a symbol: `symbol-z-offset` / `symbol-elevation-reference` are
+       absent from this build (checked in the dist — the properties simply do not exist), so the only
+       primitive that takes a real altitude is `fill-extrusion`. Each aircraft therefore becomes a small
+       aeroplane-shaped POLYGON built in ground metres, turned to its ADS-B track and extruded at its
+       reported altitude, plus a hairline post down to its ground position so the height is readable and
+       the aircraft stays tied to the point it is over.
+       Honest about the one exaggeration: a real 60 m airframe is far under a pixel at these zooms, so the
+       glyph has a MINIMUM on-screen size (it never shrinks below ~13 px) — the POSITION is real data, the
+       silhouette's size is a symbol, exactly as the flat glyph always was.
+       Altitude reference: the same trap the 3-D volume tool documents — with 3-D terrain on, the
+       renderer's metres are above the GROUND, otherwise above SEA LEVEL. Airborne aircraft get the ground
+       under the map centre subtracted so their altitude means AMSL either way; aircraft ON the ground are
+       left at 0 so they sit on the terrain instead of hovering over it. */
+    let planes3D=true; try{ planes3D=localStorage.getItem('intmap_planes3d')!=='0'; }catch(_){}
+    let _planes3DStats={features:0,lifted:0,maxAlt:0,offsetM:0};
+    const PLANE3D_SRC='src-planes-3d', PLANE3D_LYR='lyr-planes-3d', PLANE3D_POST='lyr-planes-post';
+    /* ground metres per screen pixel at the map centre — the same figure IntMapGeoEngine derives for the
+       camera, computed here from the renderer's own map scale so it is defined at any pitch. */
+    function _mppCentre(){ try{ const R=6371008.8, r=Math.PI/180, c=map.getCenter();
+      let w=0; try{ const v=map.transform&&map.transform.worldSize; if(isFinite(v)&&v>0) w=v; }catch(_){}
+      if(!w) w=512*Math.pow(2,map.getZoom()||0);
+      const m=(2*Math.PI*R*Math.cos((c.lat||0)*r))/w; return (isFinite(m)&&m>0)?m:50; }catch(_){ return 50; } }
+    /* the DEM height under the map centre (0 when 3-D terrain is off — then the renderer's metres already
+       mean altitude above sea level and nothing has to be taken off) */
+    function _groundOffset(){ try{ if(!HOST.terrain3D) return 0;
+      const c=map.getCenter(); const g=map.queryTerrainElevation?map.queryTerrainElevation({lng:c.lng,lat:c.lat}):null;
+      return (g==null||!isFinite(g))?0:+g; }catch(_){ return 0; } }
+    /* An aeroplane silhouette in ground metres, centred on [lng,lat] and turned to `hdg` (°, clockwise from
+       north). Same outline as the 2-D glyph so the layer does not change character when it goes 3-D. */
+    const _PLANE_OUTLINE=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],[-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
+    function planeRing(lng,lat,hdg,halfM){
+      const r=Math.PI/180, s=halfM/19, th=(+hdg||0)*r, cs=Math.cos(th), sn=Math.sin(th);
+      const mLat=110574, mLng=(111320*Math.cos(lat*r))||1, out=[];
+      for(const p of _PLANE_OUTLINE){
+        /* the outline is drawn nose-up in screen space (+y = south); rotate it into a compass track */
+        const ex=p[0]*s, ey=-p[1]*s;                          /* east, north offsets in metres, track 0 */
+        const e=ex*cs+ey*sn, n=-ex*sn+ey*cs;
+        out.push([lng+e/mLng, lat+n/mLat]);
+      }
+      out.push(out[0]); return out; }
+    function squareRing(lng,lat,halfM){ const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(lat*r))||1;
+      const dx=halfM/mLng, dy=halfM/mLat;
+      return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
+    function refreshPlanes3D(list){
+      if(!map||!map.getSource(PLANE3D_SRC)) return;
+      const mpp=_mppCentre(), off=_groundOffset();
+      const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
+      const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
+      const thick=Math.max(30, 2.2*mpp);               /* give the glyph body so it is not a zero-height sheet */
+      const feats=[];
+      for(const d of list){
+        if(d.lng==null||d.lat==null) continue;
+        const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
+        const props={ type:d.type, alt, top:alt+thick, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
+          acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
+          vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
+          squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0), category:(d.category!=null?d.category:null) };
+        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]}, properties:props });
+        if(!d.onGround&&alt>0) feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[squareRing(d.lng,d.lat,post)]},
+          properties:{ type:d.type, alt:0, top:alt, post:1 } });
+      }
+      try{ map.getSource(PLANE3D_SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      /* what was actually handed over, kept here rather than read back out of the renderer: MapLibre 5 does
+         not expose a GeoJSON source's data, and a reader that guessed at its internals reported "0 features"
+         while the screen was full of aircraft. */
+      _planes3DStats={ features:feats.length,
+        lifted:feats.filter(f=>!f.properties.post&&(+f.properties.alt||0)>0).length,
+        maxAlt:Math.round(feats.reduce((m2,f)=>(!f.properties.post&&+f.properties.alt>m2)?+f.properties.alt:m2,0)),
+        offsetM:Math.round(off) };
+    }
+    function planes3DOn(){ return planes3D; }
+    function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem('intmap_planes3d',planes3D?'1':'0'); }catch(_){}
+      try{ const on=map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible';
+        const on3=map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible';
+        if(on||on3) applyPlanesMode(true); }catch(_){}
+      return planes3D; }
+    /* One representation at a time — the flat glyph and the lifted body are the same aircraft. */
+    function applyPlanesMode(visible){
+      try{ if(map.getLayer('lyr-planes')) map.setLayoutProperty('lyr-planes','visibility',(visible&&!planes3D)?'visible':'none');
+        if(map.getLayer(PLANE3D_LYR)) map.setLayoutProperty(PLANE3D_LYR,'visibility',(visible&&planes3D)?'visible':'none');
+        if(map.getLayer(PLANE3D_POST)) map.setLayoutProperty(PLANE3D_POST,'visibility',(visible&&planes3D)?'visible':'none');
+      }catch(_){}
+      if(visible&&planes3D) refreshTrafficLayer('planes');
+    }
     function refreshTrafficLayer(id){
       if(!map) return;
       const filt=trafficFilters[id];
       const src=map.getSource('src-'+id); if(!src) return;
       const data=id==='planes'?planesData:shipsData;
       const filtered=filt==='all'?data:data.filter(d=>d.type===filt);
+      if(id==='planes') refreshPlanes3D(filtered);   /* (#R172) the lifted bodies ride the same filter */
       const features=filtered.map(d=>{
         const props = id==='planes'
           ? { type:d.type, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'', acType:d.acType||'', desc:d.desc||'',
@@ -2280,6 +2386,24 @@ window.IntMapModules.dataLayers=function(map,HOST){
           'icon-allow-overlap':true,
           'icon-ignore-placement':true
         },paint:{'icon-opacity':opacities.planes}},beforeId);
+        /* (#R172) the same aircraft, standing at their reported altitude. Two layers off one source: the
+           post first so the body always draws over it. */
+        if(!map.getSource(PLANE3D_SRC)) map.addSource(PLANE3D_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(!map.getLayer(PLANE3D_POST)) map.addLayer({id:PLANE3D_POST,type:'fill-extrusion',source:PLANE3D_SRC,
+          filter:['==',['get','post'],1], layout:{visibility:'none'},
+          paint:{ 'fill-extrusion-color':['match',['get','type'],'military','#ff3b30','#1e90ff'],
+            'fill-extrusion-opacity':Math.min(0.5,opacities.planes*0.5),
+            'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
+        if(!map.getLayer(PLANE3D_LYR)) map.addLayer({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
+          filter:['!=',['get','post'],1], layout:{visibility:'none'},
+          paint:{ 'fill-extrusion-color':['match',['get','type'],'military','#ff3b30','#1e90ff'],
+            'fill-extrusion-opacity':opacities.planes,
+            'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
+        /* the glyph's on-screen size is derived from the zoom, so rebuild the geometry when it changes */
+        if(!_planes3DZoom){ _planes3DZoom=()=>{ if(!planes3D) return;
+          if(!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible')) return;
+          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){} },160); };
+          map.on('zoomend',_planes3DZoom); map.on('terrain',_planes3DZoom); }
       } else {
         ensureShipIcons();
         /* Ships = a ship glyph rotated to heading/COG (real AIS). */
@@ -2296,16 +2420,25 @@ window.IntMapModules.dataLayers=function(map,HOST){
       map.on('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML(id,f.properties); positionTooltip(map.project(f.geometry.coordinates)); });
       map.on('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
       map.on('mouseleave','lyr-'+id,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      /* (#R172) the lifted bodies answer the same hover — the aircraft is the same aircraft whichever way
+         it is drawn, so the tooltip is the identical one (it is fed from the same ADS-B properties). */
+      if(id==='planes'){
+        map.on('mouseenter',PLANE3D_LYR,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer';
+          const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML('planes',f.properties); positionTooltip(e.point); });
+        map.on('mousemove',PLANE3D_LYR,(e)=>{ positionTooltip(e.point); });
+        map.on('mouseleave',PLANE3D_LYR,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      }
     }
     function startTraffic(id){
       setupTrafficLayer(id);
       setVis('lyr-'+id,true);
       if(id==='planes'){
+        applyPlanesMode(true);   /* (#R172) flat glyphs OR lifted bodies — never both */
         fetchPlanes();
         if(planesTimer) clearInterval(planesTimer);
         planesTimer=setInterval(fetchPlanes,20000); /* live ADS-B refresh */
         /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
-        if(!_planesMove){ _planesMove=()=>{ if(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; map.on('moveend',_planesMove); map.on('zoom',updatePlanesZoomHint); }
+        if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; map.on('moveend',_planesMove); map.on('zoom',updatePlanesZoomHint); }
         updatePlanesZoomHint();
       } else {
         startShips();
@@ -2316,7 +2449,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     }
     function stopTraffic(id){
       setVis('lyr-'+id,false);
-      if(id==='planes'){ if(planesTimer){ clearInterval(planesTimer); planesTimer=null; } updatePlanesZoomHint(); }
+      if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); planesTimer=null; } updatePlanesZoomHint(); }
       if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === EEZ via MarineRegions WMS === */
@@ -2683,6 +2816,13 @@ window.IntMapModules.dataLayers=function(map,HOST){
     /* Expose for the lyr-row dt-/ft- handlers above */
     window.refreshDatedLayer=refreshDatedLayer;
     window.refreshTrafficLayer=refreshTrafficLayer;
+    /* (#R172) aircraft altitude rendering — Atlas + the tests drive it through this, never through the layer ids */
+    window.IntMapPlanes3D={ isOn:planes3DOn, set:setPlanes3D,
+      state:()=>{ const s2=_planes3DStats;
+        return { on:planes3DOn(), planes:planesData.length, features:s2.features, lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
+          visible:(()=>{ try{ return !!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
+          flatVisible:(()=>{ try{ return !!(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
+          synthetic:planesSynthetic }; } };
     /* Unified time slider (#8): drive the day-based weather layers from the global news date.
        GIBS imagery lags ~2 days, so clamp future-ish dates back to the freshest processed day. */
     window.setGlobalLayerDate=function(iso){
@@ -2704,7 +2844,10 @@ window.IntMapModules.dataLayers=function(map,HOST){
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',v); }
       else if(id==='eu'){ if(map.getLayer('eu-fill'))map.setPaintProperty('eu-fill','fill-opacity',v); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
-      else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
+      else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v);
+        /* (#R172) the lifted bodies follow the same opacity slider; the posts stay fainter than the aircraft */
+        try{ if(map.getLayer(PLANE3D_LYR))map.setPaintProperty(PLANE3D_LYR,'fill-extrusion-opacity',v);
+          if(map.getLayer(PLANE3D_POST))map.setPaintProperty(PLANE3D_POST,'fill-extrusion-opacity',Math.min(0.5,v*0.5)); }catch(_){} }
       else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
       else if(id==='hillshade'){ if(map.getLayer('lyr-hillshade'))map.setPaintProperty('lyr-hillshade','hillshade-exaggeration',Math.max(0.05,v)); }
       else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }

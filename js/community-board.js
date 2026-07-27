@@ -9,6 +9,11 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.communityBoard=function(map,HOST){
+  /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
+  const _GE=()=>window.IntMapGeoEngine;
+  const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
+  const _EV=()=>{ const E=_GE(); return E?E.events:null; };
+  const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -37,42 +42,43 @@ window.IntMapModules.communityBoard=function(map,HOST){
   function hotScore(p){ const ageH=(Date.now()-p.ts)/3.6e6; return ((p.votes||0)+0.5*((p.comments||[]).length)+1)/Math.pow(ageH+2,1.3); }
   function setupCommunityLayer(){
     if(!_imCanDraw()) return;
-    if(!map.getSource('community-points')){
+    if(!_LY()) return;   /* engine not built yet (#R172) — the caller retries */
+    if(!_LY().hasSource('community-points')){
       /* Color pins by post category (falls back to green for un-categorised). */
       const catColor=['match',['get','cat']].concat(HOST.COMM_CATEGORIES.flatMap(c=>[c.id,c.color])).concat(['#34c759']);
-      map.addSource('community-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'community-pulse',type:'circle',source:'community-points',paint:{
+      _LY().addSource('community-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      _LY().add({id:'community-pulse',type:'circle',source:'community-points',paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,8,4,14,10,20],
         'circle-color':catColor,'circle-opacity':0.2,'circle-stroke-width':0
       }});
-      map.addLayer({id:'community-dots',type:'circle',source:'community-points',paint:{
+      _LY().add({id:'community-dots',type:'circle',source:'community-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],11,8],
         'circle-color':catColor,'circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'
       }});
-      map.addLayer({id:'community-labels',type:'symbol',source:'community-points',layout:{
+      _LY().add({id:'community-labels',type:'symbol',source:'community-points',layout:{
         'text-field':['get','short'],'text-size':11,'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left','text-offset':[1.1,0],'text-allow-overlap':false,'text-optional':true,'text-max-width':14
       },paint:{'text-color':'#0a6b32','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0,'text-opacity':0.95}});
       let hoverComm=null;
-      map.on('mousemove','community-dots',e=>{
+      _EV().onLayer('mousemove','community-dots',e=>{
         if(!e.features.length) return;
-        map.getCanvas().style.cursor='pointer';
+        _GE().render.setCursor('pointer');
         const f=e.features[0];
         if(hoverComm!==f.id){
-          if(hoverComm!=null) try{map.setFeatureState({source:'community-points',id:hoverComm},{hover:false});}catch(_){}
+          if(hoverComm!=null) try{_LY().setFeatureState({source:'community-points',id:hoverComm},{hover:false});}catch(_){}
           hoverComm=f.id;
-          try{map.setFeatureState({source:'community-points',id:hoverComm},{hover:true});}catch(_){}
+          try{_LY().setFeatureState({source:'community-points',id:hoverComm},{hover:true});}catch(_){}
         }
         const el=HOST.ensureMapTooltip(); el.style.display='block';
         const p=f.properties;
         el.innerHTML=`<div style="color:#34c759;font-weight:600;font-size:13px;">💬 ${IntMapSafe.html(p.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);font-size:11px;">${IntMapSafe.html(p.body||'')}</div>`;   /* (#R138 SEC) community post title/body are user-generated → escape (stored XSS on pin hover) */
         HOST.positionTooltip(e.point);
       });
-      map.on('mouseleave','community-dots',()=>{
-        if(hoverComm!=null){ try{map.setFeatureState({source:'community-points',id:hoverComm},{hover:false});}catch(_){} hoverComm=null; }
-        map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
+      _EV().onLayer('mouseleave','community-dots',()=>{
+        if(hoverComm!=null){ try{_LY().setFeatureState({source:'community-points',id:hoverComm},{hover:false});}catch(_){} hoverComm=null; }
+        _GE().render.setCursor(''); if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
       });
-      map.on('click','community-dots',e=>{
+      _EV().onLayer('click','community-dots',e=>{
         if(!e.features.length) return;
         const id=e.features[0].properties.fid;
         if(HOST.mode!=='community'){ HOST.setMode('community','btn-community'); }
@@ -86,7 +92,7 @@ window.IntMapModules.communityBoard=function(map,HOST){
     let list=HOST.communityPosts.slice();
     if(HOST.commCatFilter!=='all') list=list.filter(p=>(p.category||'general')===HOST.commCatFilter);
     if(HOST.commSearch){ const q=HOST.commSearch.toLowerCase(); list=list.filter(p=>((p.title||'')+' '+(p.body||'')+' '+(p.author||'')).toLowerCase().includes(q)); }
-    if(HOST.commInView && map){ try{ const b=map.getBounds(); list=list.filter(p=>b.contains([p.lng,p.lat])); }catch(_){} }
+    if(HOST.commInView){ try{ const b=_CM().getBounds(); if(b) list=list.filter(p=>b.contains([p.lng,p.lat])); }catch(_){} }
     return list;
   }
   /* Escape + auto-link URLs (body/comment text). */
