@@ -44,6 +44,10 @@ import '../js/atlas-console.js';
 import '../js/map-ui.js';
 import '../js/playground.js';
 import '../js/map-tools.js';
+import '../js/viewshed.js';                 /* (#R176) IntMapModules.los, moved out of map-tools.js */
+import '../js/terrain-water.js';            /* (#R176) sculpt the terrain, route the water */
+import '../js/seismic.js';                  /* (#R176) P/S/surface waves through IASP91 */
+import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 import '../js/weather.js';
 import '../js/layer-packs.js';
 import '../js/analysis-panels.js';

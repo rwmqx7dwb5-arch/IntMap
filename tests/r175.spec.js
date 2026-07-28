@@ -198,7 +198,10 @@ test('the Vite bundle boots the whole app', async ({ page }) => {
   expect(s.modules.missingFactories, 'no module factory is missing from the bundle').toEqual([]);
   expect(s.vendor).toEqual({ maplibregl: 'object', mlcontour: 'object', turf: 'object', topojson: 'object', supabase: 'object', sb: true });
   expect(s.intMapGlobals, 'the whole IntMap surface is published').toBeGreaterThan(75);
-  expect(s.build).toBe('2026-07-28-R175');
+  // (#R176) What this line is checking is that the bundle carries the stamp at all — pinning the round
+  // that happened to be current when it was written makes it fail on every subsequent round instead.
+  // The exact value is pinned once, in that round's own checks file.
+  expect(s.build, 'the bundle carries a dated round stamp').toMatch(/^\d{4}-\d{2}-\d{2}-R\d+$/);
   expect(errors, 'the built page throws nothing on boot').toEqual([]);
   // the lazy chunks arrive without blocking boot
   await page.waitForFunction(() => typeof window.katex === 'object' && typeof window.html2canvas === 'function', null, { timeout: 30000 });

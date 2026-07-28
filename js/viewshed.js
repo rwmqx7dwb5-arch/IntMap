@@ -1,0 +1,356 @@
+/* ============================================================================
+ *  IntMap · Line of sight — the high-precision terrain viewshed  (#R176)
+ * ----------------------------------------------------------------------------
+ *  「Line of sightを超高精度化して。」
+ *
+ *  What the previous engine (in js/map-tools.js since #R11, last tuned #R22) actually computed, and
+ *  why each of those things put a floor under its accuracy:
+ *
+ *    1. It walked 900 rays outward and STOPPED each one at the first ridge that broke the sightline,
+ *       then joined those 900 stopping points into ONE polygon. A valley that drops behind a ridge and
+ *       rises back into view further out — the normal shape of real terrain — could not be drawn at all,
+ *       because a star polygon has exactly one boundary per bearing. Everything past the first ridge was
+ *       declared shadow whether it was or not.
+ *    2. The coverage edge was a 900-gon: at 60 km the gap between neighbouring rays is 419 m, so the
+ *       boundary was straight-line-interpolated across two thirds of a kilometre of unexamined ground.
+ *    3. The observer could see, but nothing could be seen: a 30 m mast and a 30 m tower on the far hill
+ *       are not the same problem, and only the first one existed.
+ *    4. Refraction was hard-wired to the radio 4/3-earth. Optical sight lines (k ≈ 1.13) and true
+ *       geometry (k = 1) were not expressible, so "can I SEE that mountain" was answered with the
+ *       radio-propagation constant.
+ *    5. Grazing a ridge by a metre counted as a clean path. For radio it is not: the first Fresnel zone
+ *       is metres to tens of metres wide and has to be ~60 % clear, and what little energy does get past
+ *       a ridge arrives diffracted, at a loss that is computable rather than a binary "no".
+ *
+ *  This engine answers per RASTER CELL instead of per bearing, so a ray may go in and out of view as
+ *  many times as the ground makes it; it samples the terrain along each ray at the DEM's own resolution;
+ *  it takes an observer height AND a target height; the effective-earth factor is a parameter; and when
+ *  a frequency is given it also reports first-Fresnel obstruction and single-knife-edge diffraction loss
+ *  (ITU-R P.526). Every number it shows — cell size, ray count, DEM zoom, sample count — is the one it
+ *  actually used, never a nominal setting (standing instruction 4).
+ *
+ *  Renderer independence: the overlay is one `image` source whose four corners are the Mercator bounding
+ *  box, and the grid is built in MERCATOR units, so the raster lands on the map with no resampling and
+ *  no equirectangular skew (60 m over 120 km at mid latitude, which would have been visible at this
+ *  resolution). Same red = reachable / green = shadow legend as before.
+ * ==========================================================================*/
+window.IntMapModules=window.IntMapModules||{};
+window.IntMapModules.los=function(map,HOST){
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate. */
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  const isMobile=HOST.isMobile, _demZoomForSpan=HOST._demZoomForSpan, warmDEMTiles=HOST.warmDEMTiles,
+        demElevBilinear=HOST.demElevBilinear, demElevAt=HOST.demElevAt, t=HOST.t, makeDraggable=HOST.makeDraggable;
+
+  window.IntMapLOS=(function(){
+    if(!map) return { open(){}, clear(){}, run(){}, state:()=>({}) };
+    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+
+    const SRC='los-src', IMGSRC='los-img-src', IMGLYR='los-img';
+    const R_EARTH=6371008.8, D=Math.PI/180, CIRC=2*Math.PI*R_EARTH;
+    /* Mercator, MapLibre's own — the raster is built in these units so the image quad is exact */
+    const mX=lng=>(180+lng)/360;
+    const mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
+    const lngOf=x=>x*360-180;
+    const latOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
+
+    let site=null, panel=null, runSeq=0, last=null;
+    /* (#R18) a NEW site reuses the SAME numbers — 「一度数値を設定したら、新地点を押しても同じ数値になるように」 */
+    let losH=30,            /* observer/antenna height above ground, m */
+        losT=0,             /* target height above ground, m (0 = the ground itself) */
+        losR=60,            /* range, km */
+        losK=1.3333,        /* effective-earth-radius factor */
+        losF=0;             /* MHz; 0 = geometry only (no Fresnel, no diffraction) */
+    const DIFF_DB=25;       /* knife-edge loss below which the shadow is still called usable */
+
+    /* ---- the physics ------------------------------------------------------------------------- */
+    /* Curvature and refraction together: a ray over an earth of radius k·R falls d²/(2kR) below the
+       tangent plane. k = 1 is pure geometry, k ≈ 1.13 the usual optical value, k = 4/3 the radio one. */
+    const dropAt=(d,k)=>d*d/(2*k*R_EARTH);
+    /* First Fresnel-zone radius at an obstacle d1 from one end and d2 from the other. */
+    const fresnel1=(lam,d1,d2)=>Math.sqrt(lam*d1*d2/Math.max(1e-9,d1+d2));
+    /* ITU-R P.526 single knife-edge diffraction loss, dB, for Fresnel-Kirchhoff parameter v. */
+    function knifeEdgeDb(v){ if(v<=-0.78) return 0; return 6.9+20*Math.log10(Math.sqrt((v-0.1)*(v-0.1)+1)+v-0.1); }
+    /* How far the sight line reaches before the earth itself gets in the way: √(2kR·h) from each end,
+       added. `h` is height above the surface the far end sits on — so this takes the observer's height
+       ABOVE SEA LEVEL, not its height above the ground it stands on. Getting that wrong is not a rounding
+       error: a 10 m mast on Mt Fuji reads 13 km with the local height and 253 km with the real one, and
+       Fuji is in fact visible from about 250 km away. */
+    const horizonM=(hObsAsl,hTgt,k)=>Math.sqrt(Math.max(0,2*k*R_EARTH*Math.max(0,hObsAsl)))+Math.sqrt(Math.max(0,2*k*R_EARTH*Math.max(0,hTgt)));
+
+    /* ---- layers ------------------------------------------------------------------------------ */
+    function ensureLayers(){ if(!_imCanDraw()) return false;
+      try{
+        if(!map.getSource(SRC)) map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(!map.getLayer('los-site')) map.addLayer({id:'los-site',type:'circle',source:SRC,filter:['==',['get','kind'],'site'],
+          paint:{'circle-radius':6,'circle-color':'#ffd23f','circle-stroke-color':'#3a2a00','circle-stroke-width':2}});
+        return true;
+      }catch(_){ return false; } }
+    function setSite(){ try{ if(ensureLayers()) map.getSource(SRC).setData({type:'FeatureCollection',
+      features: site?[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]:[] }); }catch(_){} }
+    /* The overlay is ONE image, so precision is the raster's, not a polygon's. Rebuilt (not patched)
+       on every run — an image source keeps its texture until it is handed a new one. */
+    function paint(dataUrl, coords){
+      try{
+        if(!_imCanDraw()) return;
+        const s=map.getSource(IMGSRC);
+        if(s&&s.updateImage){ s.updateImage({url:dataUrl,coordinates:coords}); }
+        else {
+          if(s){ try{ if(map.getLayer(IMGLYR)) map.removeLayer(IMGLYR); map.removeSource(IMGSRC); }catch(_){} }
+          map.addSource(IMGSRC,{type:'image',url:dataUrl,coordinates:coords});
+          const before=(()=>{ for(const id of ['los-site','pl-outline-fill']){ try{ if(map.getLayer(id)) return id; }catch(_){} } return undefined; })();
+          map.addLayer({id:IMGLYR,type:'raster',source:IMGSRC,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before);
+        }
+      }catch(_){}
+    }
+    function wipe(){ try{ if(map.getLayer(IMGLYR)) map.removeLayer(IMGLYR); }catch(_){}
+      try{ if(map.getSource(IMGSRC)) map.removeSource(IMGSRC); }catch(_){} }
+
+    /* ---- progress ---------------------------------------------------------------------------- */
+    function setProgress(frac,label){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;
+      const pct=Math.round(Math.max(0,Math.min(1,frac))*100);
+      body.innerHTML='<div style="margin-bottom:5px;">'+label+' <b>'+pct+'%</b></div>'+
+        '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></div></div>'; }
+
+    /* ---- the analysis ------------------------------------------------------------------------ */
+    async function analyze(opt){
+      if(!site) return null;
+      opt=opt||{};
+      const obsH=(opt.obsH!=null?+opt.obsH:losH), tgtH=(opt.tgtH!=null?+opt.tgtH:losT),
+            rangeKm=Math.min(400,Math.max(1,(opt.rangeKm!=null?+opt.rangeKm:losR))),
+            kFac=Math.max(0.5,Math.min(5,(opt.k!=null?+opt.k:losK))),
+            fMHz=Math.max(0,(opt.mhz!=null?+opt.mhz:losF));
+      losH=obsH; losT=tgtH; losR=rangeKm; losK=kFac; losF=fMHz;
+      const my=++runSeq, live=()=>my===runSeq;
+      const mob=(typeof isMobile==='function'&&isMobile());
+      const tick=()=>new Promise(r=>setTimeout(r,0));
+      const loadLbl=L('Loading terrain DEM…','地形DEMを取得中…','Gelände-DEM wird geladen…','Загрузка рельефа…','Cargando el DEM…');
+      const calcLbl=L('Computing sightlines…','視通を計算中…','Sichtlinien werden berechnet…','Расчёт линий видимости…','Calculando líneas de vista…');
+      setProgress(0,loadLbl);
+
+      /* GEOMETRY OF THE GRID — everything in Mercator units so the raster lands exactly on the map. */
+      const lng0=site[0], lat0=site[1], rangeM=rangeKm*1000;
+      /* geodesic destination, used both for the bounding box and for the ray march */
+      const la1=lat0*D, lo1=lng0*D, sLa1=Math.sin(la1), cLa1=Math.cos(la1);
+      function dest(brgDeg,dM){ const dR=dM/R_EARTH, br=brgDeg*D, sDR=Math.sin(dR), cDR=Math.cos(dR);
+        const la2=Math.asin(sLa1*cDR+cLa1*sDR*Math.cos(br));
+        const lo2=lo1+Math.atan2(Math.sin(br)*sDR*cLa1, cDR-sLa1*Math.sin(la2));
+        let lg=lo2/D; lg=((lg+540)%360)-180; return [lg, la2/D]; }
+      const north=dest(0,rangeM)[1], south=dest(180,rangeM)[1], east=dest(90,rangeM)[0], west=dest(270,rangeM)[0];
+      if(!(isFinite(north)&&isFinite(south)&&isFinite(east)&&isFinite(west))||Math.abs(north)>84.5||Math.abs(south)>84.5) return {err:'poles'};
+      /* Mercator bbox, then a SQUARE-in-Mercator grid (square in Mercator is square on the ground here). */
+      const yN=mY(north), yS=mY(south);
+      let xW=mX(west), xE=mX(east); if(xE<xW) xE+=1;                     /* antimeridian */
+      const spanX=xE-xW, spanY=yS-yN;
+      const NX=mob?480:1400, NY=Math.max(16,Math.round(NX*spanY/Math.max(1e-12,spanX)));
+      const dx=spanX/NX, dy=spanY/NY;
+
+      /* DEM zoom: the finest the tile budget allows. terrarium's native maximum is z15.
+         THE BUDGET IS THE TILE CACHE, not the network. app-body.js keeps a hard LRU cap of 560 decoded
+         tiles on desktop / 140 on mobile (#R19, a real mobile OOM vector — 「重い動作をすると頻繁に
+         ブラウザが落ちます」). Asking for more tiles than that does not fetch more terrain, it EVICTS
+         the tiles the sweep is still reading: measured at a 900-tile budget, a 60 km run came back with
+         11,282 no-data samples and the next run never finished, because warmDEMTiles polls for tiles
+         that eviction keeps removing. Stay under the cap and the same run is exact. */
+      let z=Math.min(mob?13:15,_demZoomForSpan(rangeKm)+(mob?0:(rangeKm<=12?2:1)));
+      const budget=mob?130:500, latA=Math.abs(lat0);
+      const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*D))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };
+      while(z>5 && estTiles(z)>budget) z--;
+
+      /* RAY BUDGET — the radial step and the gap between neighbouring rays at the far edge are made
+         equal, so the terrain is examined at one spacing in every direction. rays·steps = π·steps². */
+      const SAMPLE_CAP=mob?460000:2600000;
+      const steps=Math.max(120,Math.min(1600,Math.floor(Math.sqrt(SAMPLE_CAP/Math.PI))));
+      const rays=Math.max(360,Math.floor(SAMPLE_CAP/steps));
+      const stepM=rangeM/steps;
+      const cellM=(spanX/NX)*CIRC*Math.cos(lat0*D);                       /* raster cell size on the ground */
+
+      /* ---- warm the DEM ---------------------------------------------------------------------- */
+      /* A coarse lattice is enough to name the tiles; the rays then read them bilinearly. */
+      const warm=[]; const WN=Math.min(160,Math.max(40,Math.ceil(2*rangeKm/ (40075*Math.cos(latA*D)/Math.pow(2,z)) )+2));
+      for(let j=0;j<=WN;j++) for(let i=0;i<=WN;i++) warm.push([lngOf(xW+spanX*i/WN), latOf(yN+spanY*j/WN)]);
+      await warmDEMTiles(warm, z, 45000, f=>{ if(live()) setProgress(f*0.55, loadLbl); });
+      if(!live()) return null;
+
+      const g0=(()=>{ let v=demElevBilinear(lng0,lat0,z); if(v==null) v=demElevAt(lng0,lat0,null,z); return v; })();
+      if(g0==null) return {err:'nodem'};
+      const obsElev=g0+obsH;
+      const lam=fMHz>0?(299.792458/fMHz):0;                               /* wavelength, m */
+
+      /* ---- the sweep -------------------------------------------------------------------------- */
+      /* Per ray: march outward keeping the greatest elevation angle any TERRAIN so far subtends. A
+         sample is visible when its own angle (terrain + target height) reaches that horizon. The ray is
+         never truncated, so a valley that comes back into view is drawn — the defect that made the old
+         star polygon wrong wherever terrain is not monotonic. */
+      const VIS=1, FRES=2, DIFF=3, SHADOW=0;
+      const cls=new Uint8Array(NX*NY);                                     /* 0 = untouched/shadow */
+      const seen=new Uint8Array(NX*NY);
+      let visCells=0, testCells=0, maxVisM=0, demMissing=0;
+      /* the profile of one ray, reused */
+      const pTerr=new Float32Array(steps+1), pAng=new Float32Array(steps+1);
+      for(let a=0;a<rays;a++){
+        const brg=a*360/rays;
+        let hznAng=-Infinity, hznIdx=-1, hznH=0, hznD=0;
+        /* the tangential gap at this distance decides how many cells one sample stands for */
+        for(let s=1;s<=steps;s++){
+          const d=s*stepM, p=dest(brg,d);
+          let h=demElevBilinear(p[0],p[1],z); if(h==null){ h=demElevAt(p[0],p[1],null,z); }
+          /* NO DATA IS NOT SEA LEVEL. Substituting 0 for a missing sample invents a hole in the terrain
+             and reports everything behind it as visible; the honest answer is to leave the cell blank and
+             count it. The horizon is not updated either — an unknown ridge cannot be claimed to block. */
+          if(h==null){ demMissing++; continue; }
+          const drop=dropAt(d,kFac);
+          const hTerr=h-drop;                                              /* apparent terrain height */
+          const angTerr=Math.atan2(hTerr-obsElev,d);
+          const angTgt=tgtH?Math.atan2(hTerr+tgtH-obsElev,d):angTerr;
+          pTerr[s]=hTerr; pAng[s]=angTerr;
+          let c;
+          if(angTgt>=hznAng-1e-12){ c=VIS; }
+          else {
+            c=SHADOW;
+            if(lam>0&&hznIdx>0){
+              /* the controlling ridge, and how far the direct line clears it */
+              const d1=hznD, d2=d-d1;
+              if(d2>0){
+                const lineAt=obsElev+((hTerr+tgtH)-obsElev)*(d1/d);
+                const clearance=lineAt-hznH;                               /* >0 = the line passes above */
+                const F1=fresnel1(lam,d1,d2);
+                if(clearance>0){ if(clearance<0.6*F1) c=FRES; else c=VIS; }
+                else {
+                  const v=(-clearance)*Math.sqrt(2/lam*(1/d1+1/d2));
+                  if(knifeEdgeDb(v)<=DIFF_DB) c=DIFF;
+                }
+              }
+            }
+          }
+          if(angTerr>hznAng){ hznAng=angTerr; hznIdx=s; hznH=hTerr; hznD=d; }
+          if(c===VIS&&d>maxVisM) maxVisM=d;
+          /* splat into the raster, widening with distance so neighbouring rays leave no gap */
+          const gx=(mX(p[0])-xW+1)%1, gy=mY(p[1])-yN;
+          let ci=Math.floor(((gx<0?gx+1:gx))/dx), cj=Math.floor(gy/dy);
+          if(ci<0||cj<0||ci>=NX||cj>=NY) continue;
+          const gapCells=Math.min(4,Math.max(0,Math.round(0.5*(2*Math.PI*d/rays)/Math.max(1e-6,cellM))));
+          for(let oj=-gapCells;oj<=gapCells;oj++){ const jj=cj+oj; if(jj<0||jj>=NY) continue;
+            for(let oi=-gapCells;oi<=gapCells;oi++){ const ii=ci+oi; if(ii<0||ii>=NX) continue;
+              const idx=jj*NX+ii;
+              if(!seen[idx]){ seen[idx]=1; testCells++; }
+              if(c>cls[idx]) cls[idx]=c;                                   /* best answer any ray gave */
+            } }
+        }
+        if((a&127)===127){ setProgress(0.55+0.40*(a/rays), calcLbl); await tick(); if(!live()) return null; }
+      }
+      for(let i=0;i<cls.length;i++) if(cls[i]===VIS) visCells++;
+
+      /* ---- raster ----------------------------------------------------------------------------- */
+      setProgress(0.97, calcLbl);
+      const cv=document.createElement('canvas'); cv.width=NX; cv.height=NY;
+      const ctx=cv.getContext('2d'); const img=ctx.createImageData(NX,NY); const px=img.data;
+      /* same legend as every round since #R13: red = reachable, green = terrain shadow */
+      const COL={ 1:[255,45,45,77], 2:[255,176,32,92], 3:[176,107,255,84], 0:[31,214,95,92] };
+      for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){ const idx=j*NX+i, o=idx*4;
+        if(!seen[idx]) continue;                                           /* outside the disk */
+        const c=COL[cls[idx]]; px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=c[3]; }
+      ctx.putImageData(img,0,0);
+      if(!live()) return null;
+      const coords=[[lngOf(xW),latOf(yN)],[lngOf(xE),latOf(yN)],[lngOf(xE),latOf(yS)],[lngOf(xW),latOf(yS)]];
+      paint(cv.toDataURL('image/png'), coords);
+      setSite();
+
+      const cellKm2=(cellM/1000)*(cellM/1000);
+      const res={ areaKm2: visCells*cellKm2, diskKm2: Math.PI*rangeKm*rangeKm,
+        pct: testCells?(100*visCells/testCells):0, maxVisKm: maxVisM/1000,
+        horizonKm: horizonM(obsElev,tgtH,kFac)/1000, groundM:g0, cellM, demZ:z, rays, steps, stepM,
+        samples: rays*steps, demMissing, obsH, tgtH, rangeKm, k:kFac, mhz:fMHz, nx:NX, ny:NY };
+      last=res;
+      return res;
+    }
+
+    /* ---- panel -------------------------------------------------------------------------------- */
+    const IN='width:74px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;box-sizing:border-box;';
+    const ROW='font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;';
+    function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel';
+      (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
+    function fmtKm(v){ return (v>=100?Math.round(v):v.toFixed(1))+' km'; }
+    function render(){
+      const p=panel; if(!p) return;
+      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Line of sight','見通し線解析','Sichtlinie','Линия видимости','Línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+        +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
+        +'<label style="'+ROW+'">'+L('Antenna height (m)','アンテナ高 (m)','Antennenhöhe (m)','Высота антенны (м)','Altura de antena (m)')+'<input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="'+IN+'"></label>'
+        +'<label style="'+ROW+'">'+L('Target height (m)','対象物の高さ (m)','Zielhöhe (m)','Высота цели (м)','Altura del objetivo (m)')+'<input id="los-t" type="number" value="'+losT+'" min="0" step="1" style="'+IN+'"></label>'
+        +'<label style="'+ROW+'">'+L('Range (km)','射程 (km)','Reichweite (km)','Дальность (км)','Alcance (km)')+'<input id="los-r" type="number" value="'+losR+'" min="1" max="400" step="5" style="'+IN+'"></label>'
+        +'<label style="'+ROW+'">'+L('Refraction','大気屈折','Refraktion','Рефракция','Refracción')
+          +'<select id="los-k" style="'+IN+'width:96px;">'
+          +'<option value="1">'+L('none (k=1)','なし (k=1)','keine (k=1)','нет (k=1)','ninguna (k=1)')+'</option>'
+          +'<option value="1.13">'+L('optical 1.13','光学 1.13','optisch 1,13','оптическая 1,13','óptica 1,13')+'</option>'
+          +'<option value="1.3333">'+L('radio 4/3','電波 4/3','Funk 4/3','радио 4/3','radio 4/3')+'</option>'
+          +'</select></label>'
+        +'<label style="'+ROW+'">'+L('Frequency (MHz)','周波数 (MHz)','Frequenz (MHz)','Частота (МГц)','Frecuencia (MHz)')+'<input id="los-f" type="number" value="'+(losF||'')+'" min="0" max="100000" step="10" placeholder="—" style="'+IN+'"></label>'
+        +'</div>'
+        +'<button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+L('Analyze','解析する','Analysieren','Анализ','Analizar')+'</button>'
+        +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+L('Clear','消去','Löschen','Очистить','Borrar')+'</button>'
+        +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.55;">'
+        +L('Set the heights and range, then analyze. Leave the frequency empty for pure geometry; give one to also get first-Fresnel and diffraction.',
+           '高さと射程を設定して解析。周波数を空欄にすると純粋な幾何計算、入力するとフレネルゾーンと回折も判定します。',
+           'Höhen und Reichweite setzen, dann analysieren. Frequenz leer = reine Geometrie; mit Frequenz auch Fresnel und Beugung.',
+           'Задайте высоты и дальность, затем анализ. Пустая частота = чистая геометрия; с частотой ещё зона Френеля и дифракция.',
+           'Fije las alturas y el alcance y analice. Frecuencia vacía = geometría pura; con frecuencia también Fresnel y difracción.')+'</div>';
+      const k=p.querySelector('#los-k'); if(k) k.value=String(losK===1?1:losK===1.13?1.13:1.3333);
+      p.querySelector('.tp-close').onclick=()=>{ runSeq++; site=null; setSite(); wipe(); p.style.display='none'; };
+      p.querySelector('#los-go').onclick=()=>run();
+      p.querySelector('#los-clr').onclick=()=>clear();
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+    }
+    function readInputs(){ const p=panel; if(!p) return {};
+      return { obsH:Math.max(0,+p.querySelector('#los-h').value||0),
+               tgtH:Math.max(0,+p.querySelector('#los-t').value||0),
+               rangeKm:Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)),
+               k:+p.querySelector('#los-k').value||1.3333,
+               mhz:Math.max(0,+p.querySelector('#los-f').value||0) }; }
+    function report(r){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;
+      if(!r||r.err){ body.innerHTML=(r&&r.err==='poles')
+          ? L('That range reaches past the map’s poles — reduce it.','その射程は地図の極を越えます。短くしてください。','Diese Reichweite überschreitet die Pole — verkleinern.','Дальность выходит за полюса — уменьшите.','Ese alcance pasa de los polos — redúzcalo.')
+          : L('Could not load enough terrain data — wait a moment and press Analyze again.','地形データを十分に取得できませんでした。少し待ってもう一度「解析する」を押してください。','Zu wenig Geländedaten — bitte erneut analysieren.','Недостаточно данных рельефа — попробуйте ещё раз.','No se pudo cargar suficiente terreno — inténtelo de nuevo.');
+        return; }
+      const legend='<b style="color:#ff4d4d;">'+L('Red = reachable','赤＝到達範囲','Rot = erreichbar','Красный = виден','Rojo = alcanzable')+'</b>'
+        +' · <b style="color:#1fd65f;">'+L('green = terrain shadow','緑＝地形の死角','grün = Geländeschatten','зелёный = теневая зона','verde = sombra del terreno')+'</b>'
+        +(r.mhz>0?(' · <b style="color:#ffb020;">'+L('amber = Fresnel-obstructed','橙＝フレネルゾーン欠損','gelb = Fresnel gestört','жёлтый = зона Френеля перекрыта','ámbar = Fresnel obstruido')
+          +'</b> · <b style="color:#b06bff;">'+L('violet = usable by diffraction (≤'+DIFF_DB+' dB)','紫＝回折で到達 (≤'+DIFF_DB+' dB)','violett = per Beugung nutzbar (≤'+DIFF_DB+' dB)','фиолетовый = за счёт дифракции (≤'+DIFF_DB+' дБ)','violeta = por difracción (≤'+DIFF_DB+' dB)')+'</b>'):'');
+      const num=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
+      body.innerHTML=legend
+        +'<div style="margin-top:6px;">'+L('Reachable area','到達面積','Erreichbare Fläche','Площадь покрытия','Área alcanzable')+': <b>'+num(r.areaKm2)+' km²</b> ('+r.pct.toFixed(1)+'% '+L('of the disk','の円内','der Scheibe','круга','del disco')+')'
+        +'<br>'+L('Farthest sight line','最遠の視通','Weiteste Sichtlinie','Дальняя видимость','Vista más lejana')+': <b>'+fmtKm(r.maxVisKm)+'</b> · '
+        +L('earth horizon','地球の見通し限界','Erdhorizont','горизонт Земли','horizonte terrestre')+' '+fmtKm(r.horizonKm)
+        +'<br>'+L('Ground at the site','設置点の地面','Boden am Standort','Земля на точке','Suelo en el sitio')+': '+num(r.groundM)+' m'
+        +'</div>'
+        +'<div style="margin-top:6px;opacity:0.85;">'+L('Precision','精度','Genauigkeit','Точность','Precisión')+': '
+        +num(r.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+num(r.rays)+' '+L('rays','本の放射線','Strahlen','лучей','rayos')
+        +' × '+num(r.steps)+' '+L('steps','段','Schritte','шагов','pasos')+' ('+num(r.stepM)+' m) · '+num(r.samples)+' '+L('samples','標本','Proben','проб','muestras')
+        +' · DEM z'+r.demZ+(r.demMissing?(' · '+num(r.demMissing)+' '+L('gaps','欠測','Lücken','пропусков','huecos')):'')+'</div>'
+        +'<div style="margin-top:5px;opacity:0.7;">'+L('Change the values and press Analyze to re-run at this site; right-click the map to move it.','数値を変えて「解析する」で同地点を再計算。地図を右クリックで移動できます。','Werte ändern und erneut analysieren; Rechtsklick verschiebt den Standort.','Измените значения и повторите анализ; правый клик переносит точку.','Cambie los valores y analice de nuevo; clic derecho para mover el punto.')+'</div>';
+    }
+    async function run(o){ if(!site) return null;
+      const inputs=Object.assign({},readInputs(),o||{});
+      setProgress(0,L('Starting…','開始…','Start…','Запуск…','Iniciando…'));
+      let r=null; try{ r=await analyze(inputs); }catch(_){ r=null; }
+      if(r) report(r); else if(r===null&&runSeq) report(null);
+      return r; }
+    function open(lngLat,o){ site=[lngLat.lng,lngLat.lat];
+      const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:250px;';
+      render(); setSite();
+      if(o&&o.run) run(o);
+      return true; }
+    /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run. */
+    function clear(){ runSeq++; wipe(); setSite();
+      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=L('Cleared. Press Analyze to re-run here, or right-click the map to move the site.','消去しました。「解析する」で再計算、または地図を右クリックで再配置。','Gelöscht. Erneut analysieren oder Standort per Rechtsklick verschieben.','Очищено. Нажмите «Анализ» или перенесите точку правым кликом.','Borrado. Analice de nuevo o mueva el punto con clic derecho.');
+      return true; }
+    window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none'){ render(); if(last) report(last); } });
+
+    return { open, clear, run, analyze,
+      setParams:(h,r,tg,k,f)=>{ if(h!=null) losH=Math.max(0,+h||0); if(r!=null) losR=Math.min(400,Math.max(1,+r||60));
+        if(tg!=null) losT=Math.max(0,+tg||0); if(k!=null) losK=Math.max(0.5,Math.min(5,+k||1.3333)); if(f!=null) losF=Math.max(0,+f||0);
+        if(panel&&panel.style.display!=='none') render(); return true; },
+      state:()=>({ site:site?site.slice():null, obsH:losH, tgtH:losT, rangeKm:losR, k:losK, mhz:losF,
+        open:!!(panel&&panel.style.display!=='none'), last:last?Object.assign({},last):null }),
+      /* the physics, exposed so it can be tested without a map */
+      _phys:{ dropAt, fresnel1, knifeEdgeDb, horizonM } };
+  })();
+};

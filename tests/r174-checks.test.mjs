@@ -50,11 +50,15 @@ test('the tilt anchor lets a zoom move the camera', () => {
   const idx = appShell(root);
   const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 12000);
   const code = stripComments(hook);
+  /* (#R176) SUPERSEDED AGAIN IN MECHANISM, KEPT IN INTENT. The solve now runs in MERCATOR units —
+     the metres-per-degree conversion these assertions named was a tangent plane, true at z12 where
+     every round measured and wrong by 22,218 km at z3. The question is unchanged: does a zoom still
+     move the camera? */
   assert.match(code, /Math\.pow\(2,was\.zoom-cur\.zoom\)/, 'the zoom ratio is computed…');
-  assert.match(code, /const eAlt=\(d0\*Math\.cos\(p0\)\+was\.elevation\)\*k/, '…and applied to the anchored eye');
-  assert.match(code, /d1=c2c\*mpp\(lat,cur\.zoom\)/, 'so the solve can run at the PROPOSED zoom');
-  /* d0 — where the eye WAS — is still measured at the applied zoom; it is the d1 SOLVE that moved. */
-  assert.match(code, /const d0=c2c\*mpp\(was\.lat,was\.zoom\)/, 'the starting distance is still the applied one');
+  assert.match(code, /Ez=k\*Cz\+d1\*Math\.cos\(p0\)/, '…and applied to the anchored eye');
+  assert.match(code, /const Tx=Ex\+d1\*Math\.sin\(p1\)\*Math\.sin\(b1\)/, 'so the solve runs at the PROPOSED look distance');
+  /* d0 — where the eye WAS — is still taken at the applied zoom; it is the d1 SOLVE that moved. */
+  assert.match(code, /const d0=dPix\/\(tile\*Math\.pow\(2,was\.zoom\)\)/, 'the starting distance is still the applied one');
   assert.doesNotMatch(code, /d1=c2c\*mpp\(lat,was\.zoom\)/, 'the frozen-distance solve is gone');
 });
 
@@ -121,8 +125,11 @@ test('the drone planner is wired into the app', () => {
   const idx = appShell(root);
   assert.match(idx, /import '\.\.\/js\/drone-nav\.js';/, 'the file is loaded by the Vite entry (#R175)');
   assert.match(idx, /window\.IntMapModules\.droneNav\(map,IM_HOST\)/, 'and instantiated');
-  assert.match(idx, /id="btn-tool-drone"/, 'the Measure menu offers it');
-  assert.match(idx, /data-proxy="btn-tool-drone"/, 'and so does the mobile tools sheet');
+  /* (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the launcher was removed from the Measure menu
+     AND from the mobile tools sheet. The planner itself is untouched: the assertions above (loaded,
+     instantiated) and the Atlas ones below are what keep the feature alive. */
+  assert.doesNotMatch(idx, /id="btn-tool-drone"/, 'the Measure menu does NOT offer it');
+  assert.doesNotMatch(idx, /data-proxy="btn-tool-drone"/, 'and neither does the mobile tools sheet');
 });
 
 test('the planner reads REAL terrain and keeps AMSL and AGL apart', () => {
@@ -172,7 +179,8 @@ test('the drone planner is operable from Atlas AND catalogued (#R115)', () => {
   assert.ok(atlas.includes("case 'drone':"), 'Atlas implements it');
   assert.ok(atlas.includes('{"type":"drone"'), 'and advertises it in the SYS catalogue');
   assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"\|"drone"/, 'the tool switch lists it too');
-  assert.match(atlas, /\/drone\|ドローン\|无人机\|무인기\/\.test\(n\)\?'btn-tool-drone'/, 'with a branch behind the name');
+  /* (#R176) …and with no button left to click, the `tool` switch calls the planner directly. */
+  assert.match(atlas, /if\(\/drone\|ドローン\|无人机\|무인기\/\.test\(n\)\)\{[^}]*window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'with a branch behind the name');
 });
 
 test('the new UI strings exist in all five languages', () => {

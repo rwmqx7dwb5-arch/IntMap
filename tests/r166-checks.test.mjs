@@ -56,7 +56,11 @@ function code(src) {
 const MOVED = {
   'js/map-ui.js': ['layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup', 'geojsonUpload', 'viewHash', 'share'],
   'js/playground.js': ['playground'],
-  'js/map-tools.js': ['projView', 'drawTool', 'isolate', 'seaRoute', 'los', 'outline', 'moveShape', 'isochrone', 'arc3d', 'objectList'],
+  /* (#R176) `los` left this file for js/viewshed.js when the star-polygon viewshed became a raster
+     one — the factory name, the (map,HOST) signature and the single call site are all unchanged, so
+     the invariants this test guards still hold; only its address moved. */
+  'js/map-tools.js': ['projView', 'drawTool', 'isolate', 'seaRoute', 'outline', 'moveShape', 'isochrone', 'arc3d', 'objectList'],
+  'js/viewshed.js': ['los'],
   'js/weather.js': ['wind', 'weatherEC', 'weatherPanel'],
   'js/layer-packs.js': ['earthSky', 'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience'],
   'js/analysis-panels.js': ['timeSeries', 'aiResearch', 'correlate', 'worldEvents', 'edu'],

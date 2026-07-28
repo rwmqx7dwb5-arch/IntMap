@@ -38,10 +38,18 @@ const jsFiles = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).s
 test('R175 ①: the tilt hook dollies — the target scales with the look distance', () => {
   assert.match(body, /const k=\(isFinite\(cur\.zoom\)&&isFinite\(was\.zoom\)\)\?Math\.pow\(2,was\.zoom-cur\.zoom\):1;/,
     'the proposed/applied look-distance ratio must be derived from the zoom difference');
-  assert.match(body, /const eAlt=\(d0\*Math\.cos\(p0\)\+was\.elevation\)\*k, h0=d0\*Math\.sin\(p0\)\*k;/,
-    'the anchored eye must be pre-scaled by k, so a pure zoom is a dolly and a pure tilt is unchanged');
-  assert.match(body, /d1=c2c\*mpp\(lat,cur\.zoom\)/,
-    'the solve must run at the PROPOSED zoom now that the eye is pre-scaled (#R174 froze it at was.zoom)');
+  /* (#R176) SUPERSEDED IN MECHANISM, KEPT IN INTENT — the same shape as the note #R175 left on
+     #R174's version of this test. The whole solve moved out of metres-per-degree into MERCATOR units,
+     because the tangent plane it stood on is only true while the look distance is small next to the
+     Earth (16 km at z12, 8,573 km at z3 — measured drift 22,218 km). In merc units the dolly is free:
+     k·d0 IS d1, so "pre-scale the eye by k" and "take the old attitude at the new look distance" are
+     the same expression, and a pure zoom is still the identity. */
+  assert.match(body, /const d0=dPix\/\(tile\*Math\.pow\(2,was\.zoom\)\), d1=dPix\/\(tile\*Math\.pow\(2,cur\.zoom\)\);/,
+    'both look distances come from the zoom, in merc units');
+  assert.match(body, /Ez=k\*Cz\+d1\*Math\.cos\(p0\);/,
+    'the anchored eye is still scaled by k, so a pure zoom is a dolly and a pure tilt is unchanged');
+  assert.match(body, /const Tx=Ex\+d1\*Math\.sin\(p1\)\*Math\.sin\(b1\),/,
+    'and the target is solved at the PROPOSED look distance (#R174 froze it at was.zoom)');
   assert.doesNotMatch(body, /d1=c2c\*mpp\(lat,was\.zoom\)/,
     'the #R174 frozen-distance solve must be gone — it is what made the report come back');
 });
@@ -196,5 +204,9 @@ test('R175 ③: production publishes the build output, not the sources', () => {
 });
 
 test('R175 ③: the build stamp was bumped', () => {
-  assert.match(index, /window\.INTMAP_BUILD='2026-07-28-R175'/, 'the anti-stale-version stamp must move every round');
+  /* (#R176) The point of this test is that the stamp MOVES, so pinning R175's own value would make it
+     stop testing anything the round after. It now asserts the negative — the stamp is no longer R175's
+     — and the current round pins the exact value in its own checks file. */
+  assert.doesNotMatch(index, /window\.INTMAP_BUILD='2026-07-28-R175'/, 'the anti-stale-version stamp must move every round');
+  assert.match(index, /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R\d+'/, 'and must still be a dated round stamp');
 });
