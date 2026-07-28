@@ -104,7 +104,9 @@ test('an aircraft can be picked where it is DRAWN, not where its shadow falls', 
   assert.match(INDEX, /projectAltitude\(ll,altM\)\{/, 'the engine can project a point that is up in the air');
   assert.match(INDEX, /t\.getMatrixForModel\(\{lng,lat\},\+altM\|\|0\)/, 'through the renderer’s own model matrix, so the globe is right too');
   assert.match(d, /map\.on\('mousemove',_planesHover\)/, 'hover uses it');
-  assert.match(d, /const d=pickPlane\(e\.point\);\r?\n\s+if\(d&&d\.icao24\)\{ selectPlane/, 'and so does the click');
+  assert.match(d, /let d=pickPlane\(e\.point\), props=null;/, 'and so does the click');
+  assert.ok(!/map\.on\('click',ly,/.test(d),
+    'ONE click handler: two of them each toggled, so a click that satisfied both selected and deselected in the same event');
 });
 
 test('the clicked aircraft draws the track this browser has actually observed', () => {
