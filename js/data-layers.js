@@ -2554,14 +2554,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
           map.on('mousemove',ly,(e)=>{ positionTooltip(e.point); });
           map.on('mouseleave',ly,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
         });
-        ['lyr-planes',PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
-          map.on('click',ly,(e)=>{ if(!e.features||!e.features.length) return;
-            try{ e.originalEvent&&(e.originalEvent.__imPlaneHit=true); }catch(_){}
-            const k=(e.features[0].properties||{}).icao24||'';
-            selectPlane(k===selectedPlane?null:k);
-            if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
-              el.innerHTML=trafficTooltipHTML('planes',e.features[0].properties); positionTooltip(e.point); } });
-        });
+
         /* The pick above, wired to the pointer: hovering a lifted aircraft shows the same tooltip and
            clicking it selects it, wherever on screen it is drawn. A click that hits neither the pick nor
            the footprint clears the selection — asked of the renderer rather than of a flag set by the layer
@@ -2582,13 +2575,26 @@ window.IntMapModules.dataLayers=function(map,HOST){
             try{ if(map.queryRenderedFeatures(e.point,{layers:[PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l))}).length) return; }catch(_){}
             if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
         }; map.on('mousemove',_planesHover); }
+        /* ONE click handler, deliberately. It began as two — a layer-scoped one for the renderer's own
+           footprint hit and a map-level one for the pick — and each of them TOGGLED, so a click that
+           satisfied both selected the aircraft and immediately deselected it. Caught on production with
+           41 real aircraft: the pick found the aeroplane, the click reported nothing selected. One
+           handler, one decision: the pick first (that is where the aeroplane is drawn), then the
+           renderer's footprint (the post and the flat glyph are real things to click at), else clear. */
         if(!_planesClear){ _planesClear=(e)=>{
-          const d=pickPlane(e.point);
-          if(d&&d.icao24){ selectPlane(d.icao24===selectedPlane?null:d.icao24); return; }
-          if(!selectedPlane) return;
-          try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l));
-            if(ls.length&&map.queryRenderedFeatures(e.point,{layers:ls}).length) return; }catch(_){}
-          selectPlane(null); }; map.on('click',_planesClear); }
+          let d=pickPlane(e.point), props=null;
+          if(!d){ try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l));
+              const f=ls.length?map.queryRenderedFeatures(e.point,{layers:ls}):[];
+              if(f&&f.length){ props=f[0].properties||{}; d=planesData.find(x=>x.icao24===(props.icao24||''))||null; } }catch(_){} }
+          if(d&&d.icao24){
+            selectPlane(d.icao24===selectedPlane?null:d.icao24);
+            if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
+              el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
+                reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
+                heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
+              positionTooltip(e.point); }
+            return; }
+          if(selectedPlane) selectPlane(null); }; map.on('click',_planesClear); }
       }
     }
     function startTraffic(id){
