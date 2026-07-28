@@ -20,7 +20,11 @@
  *  "no CSS-in-JS template literal" rule.
  * ========================================================================== */
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.monitors=function(map,HOST){
+window.IntMapModules.monitors=function(map,HOST){
+  /* (#R173) 脱MapLibre 第7段階 — the monitor's map work goes through the engine facade, never the raw
+     renderer. Every call it needed was already in the contract; the `map` parameter stays only because
+     every module file shares one factory signature. */
+  const GE=()=>window.IntMapGeoEngine;
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -118,27 +122,27 @@ window.IntMapModules.monitors=function(map,HOST){
       }catch(_){}
       return null;
     }
-    function mapViewArea(){ try{ if(!map||!map.getBounds) return null; const b=map.getBounds(),w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth();
+    function mapViewArea(){ try{ const b=GE().camera.getBounds(); if(!b) return null; const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth();
       const geom={type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; return { geometry_kind:'polygon', geometry:geom, bbox:[w,s,e,n], label:ML('Current map view','現在の地図表示','Aktuelle Kartenansicht','Текущий вид карты','Vista actual del mapa') }; }catch(_){ return null; } }
 
     /* ---- map overlay for a monitor area + change points ---- */
-    function _ensureLayers(){ try{ if(!map||!map.getStyle||!_imCanDraw()) return false;
-      if(!map.getSource('im-mon-area')){ map.addSource('im-mon-area',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'im-mon-area-fill',type:'fill',source:'im-mon-area',paint:{'fill-color':'#0a84ff','fill-opacity':0.10}});
-        map.addLayer({id:'im-mon-area-line',type:'line',source:'im-mon-area',paint:{'line-color':'#0a84ff','line-width':2,'line-dasharray':[2,1.5]}}); }
-      if(!map.getSource('im-mon-pts')){ map.addSource('im-mon-pts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'im-mon-pts-c',type:'circle',source:'im-mon-pts',paint:{'circle-radius':7,'circle-color':'#ff375f','circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.9}}); }
+    function _ensureLayers(){ try{ if(!GE()||!_imCanDraw()) return false;
+      if(!GE().layers.hasSource('im-mon-area')){ GE().layers.addSource('im-mon-area',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'im-mon-area-fill',type:'fill',source:'im-mon-area',paint:{'fill-color':'#0a84ff','fill-opacity':0.10}});
+        GE().layers.add({id:'im-mon-area-line',type:'line',source:'im-mon-area',paint:{'line-color':'#0a84ff','line-width':2,'line-dasharray':[2,1.5]}}); }
+      if(!GE().layers.hasSource('im-mon-pts')){ GE().layers.addSource('im-mon-pts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'im-mon-pts-c',type:'circle',source:'im-mon-pts',paint:{'circle-radius':7,'circle-color':'#ff375f','circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.9}}); }
       return true; }catch(_){ return false; } }
     /* (#R151) track WHICH monitor's area is currently painted so deleting it can clear the highlight
        ("モニターで監視を作成した際のハイライトが、モニター削除後も残ってしまった"). */
     let _shownMonId=null;
     function showOnMap(area,points,monId){ try{ if(!_ensureLayers()) return; _shownMonId=(monId!=null?monId:null); const af=[]; if(area&&area.geometry) af.push({type:'Feature',geometry:area.geometry,properties:{}});
-      map.getSource('im-mon-area').setData({type:'FeatureCollection',features:af});
+      GE().layers.setSourceData('im-mon-area',{type:'FeatureCollection',features:af});
       const pf=(points||[]).filter(p=>isFinite(p.lng)&&isFinite(p.lat)).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{label:p.label||''}}));
-      map.getSource('im-mon-pts').setData({type:'FeatureCollection',features:pf});
-      if(area&&area.bbox){ try{ map.fitBounds([[area.bbox[0],area.bbox[1]],[area.bbox[2],area.bbox[3]]],{padding:80,maxZoom:9,duration:800}); }catch(_){} }
+      GE().layers.setSourceData('im-mon-pts',{type:'FeatureCollection',features:pf});
+      if(area&&area.bbox){ try{ GE().camera.fitBounds([[area.bbox[0],area.bbox[1]],[area.bbox[2],area.bbox[3]]],{padding:80,maxZoom:9,duration:800}); }catch(_){} }
     }catch(_){} }
-    function clearMap(){ _shownMonId=null; try{ if(map.getSource('im-mon-area')) map.getSource('im-mon-area').setData({type:'FeatureCollection',features:[]}); if(map.getSource('im-mon-pts')) map.getSource('im-mon-pts').setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearMap(){ _shownMonId=null; try{ GE().layers.setSourceData('im-mon-area',{type:'FeatureCollection',features:[]}); GE().layers.setSourceData('im-mon-pts',{type:'FeatureCollection',features:[]}); }catch(_){} }
 
     /* ---- data access (RLS scopes to the owner) ---- */
     async function _list(){ const {data,error}=await DB.from('area_monitors').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[]; }

@@ -56,13 +56,19 @@ test('the flight simulator flies a curved Earth, and gives the view back on exit
   await page.waitForTimeout(3500);
 
   const during = await page.evaluate(() => ({ zoom: window.__imap.getZoom(), active: window.IntMapFlightSim.active(),
+    globeness: window.IntMapGeoEngine.camera.globeness(),
     proj: JSON.stringify(window.__imap.getProjection()) }));
   expect(during.active).toBe(true);
-  expect(during.zoom, 'the sim really is at the zoom where the plain globe would be mercator').toBeGreaterThan(12);
-  /* (#R172) the curvature expectation is GONE, and this is the record of why. #R171 satisfied it with
-     vertical-perspective, which at cockpit zoom with 3-D terrain on renders NOTHING — the flight sim
-     shipped as a white void. What the sim owes the user is the app's Globe view and a world to fly over;
-     tests/r172.spec.js measures the second half in pixels. */
+  /* (#R172) the curvature expectation was DROPPED here, and this is the record of why: #R171 satisfied it
+     with vertical-perspective, which at cockpit zoom with 3-D terrain on rendered NOTHING — the sim shipped
+     as a white void.
+     (#R173) it is back, by the route #R171 and #R172 both missed. The cockpit sat at z15 only because its
+     look-at target was pinned 1.8 km ahead; the distance is the zoom in disguise, and solving it on the
+     sphere instead lands the same camera inside the renderer's spherical regime. So the assertion that used
+     to fix the sim at "the zoom where the plain globe is mercator" now fixes the opposite — with the
+     white-void trap still guarded by tests/r172.spec.js, which counts ground pixels. */
+  expect(during.zoom, 'the cockpit now flies below the globe→mercator crossover').toBeLessThan(11.1);
+  expect(during.globeness, 'and the Earth really is a sphere while it does').toBeGreaterThan(0.99);
   expect(during.proj, 'the sim flies the app Globe').toContain('globe');
 
   await page.evaluate(() => window.IntMapFlightSim.stop());

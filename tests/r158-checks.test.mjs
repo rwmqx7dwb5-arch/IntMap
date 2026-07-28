@@ -30,12 +30,18 @@ test('R158 #3 flight-sim sea water-FILL removed; physics floor kept', () => {
   ok('if(st._overOcean && terr<0){ terr=0;', 'physics sea-surface floor kept');
 });
 
-test('R158 #6 flight-sim camera teleport — FromTo + smoothing + validation + clearance + pinned MapLibre', () => {
-  ok('cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt);', 'eye→fixed-distance-target look (stable center+zoom)');
+test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + validation + clearance + pinned MapLibre', () => {
+  /* (#R173) The DEFENCE is unchanged — a look-ahead target keeps centre and zoom stable at every attitude,
+     the pitch is low-passed, the quaternion is normalised, every camera is validated and an abnormal
+     one-frame jump is skipped. What changed is who computes the camera: _cockpitCam solves it on the round
+     Earth (the look distance is no longer a fixed 1.8 km, because that distance is what decided whether
+     MapLibre drew a sphere or a plane), and the jump guard scales with the arm it is watching. Same
+     assertions, following the code that is there. */
+  ok('const cam=_cockpitCam(eLng,eLat,camAlt,bearing,pitch,roll);', 'the camera comes from one solved look-ahead geometry');
   ok('const _pk=1-Math.exp(-Math.max(0.001,dt)/0.055); st._cP+=(pitchT-st._cP)*_pk;', 'time-based pitch low-pass (no 1-frame spike)');
   ok('if(_qn>1e-9&&Math.abs(_qn-1)>1e-6) st.q=', 'attitude quaternion normalised');
-  ok('let okCam=!!(cam&&cam.center&&_fin(cam.center.lng)', 'every camera output validated (NaN/Inf/range)');
-  ok('if(_dC>9000||_dZ>3){ okCam=false;', 'abnormal one-frame jump is skipped (safety net)');
+  ok('const sane=!!(cam&&cam.center&&_fin(cam.center[0])', 'every camera output validated (NaN/Inf/range)');
+  ok('if(_dC>Math.max(9000,0.6*_D)||_dZ>3){ okCam=false;', 'abnormal one-frame jump is skipped (safety net)');
   ok('const camAlt=Math.max(st.alt, _grd+2.5);', 'camera eye altitude floored above smoothed terrain (decoupled from aircraft)');
   ok('try{ if(map&&map.stop) map.stop(); }catch(_){} try{ window.__fsCamSkips=0', 'flight start halts other camera animations (sole controller)');
   ok('https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js', 'MapLibre pinned to an exact version');
