@@ -21,7 +21,11 @@ const boot = async page => {
 
 /* How much of the lower half of the viewport is NOT the background wash? A cockpit looking at
    terrain is full of distinct colours; the #R171 white void had almost none. Counted on the PNG,
-   because a WebGL canvas without preserveDrawingBuffer reads back black through drawImage. */
+   because a WebGL canvas without preserveDrawingBuffer reads back black through drawImage.
+   (#R173) The PATCH is small on purpose. Decoding a full-width screenshot inside the page allocates
+   an image plus its ImageData on top of a cockpit that is already the heaviest thing this app draws,
+   and on a CI runner without a GPU that was enough to crash the tab outright ("Target crashed",
+   three times in a row). A few hundred square pixels of ground answer the same question. */
 const groundDetail = async (page, clip) => {
   const png = (await page.screenshot({ clip })).toString('base64');
   return page.evaluate(async b64 => {
@@ -58,10 +62,11 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   expect(during.zoom).toBeLessThan(11.1);
 
   const vp = page.viewportSize();
-  const colours = await groundDetail(page, { x: 0, y: Math.round(vp.height * 0.55), width: vp.width, height: Math.round(vp.height * 0.4) });
-  // Measured on the restored build: ~1,300 distinct binned colours of terrain and imagery.
-  // The #R171 cockpit was a single fog colour with the HUD over it.
-  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(120);
+  const colours = await groundDetail(page, { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
+    width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) });
+  // Measured on the restored build: hundreds of distinct binned colours of terrain and imagery in this
+  // patch. The #R171 cockpit was a single fog colour with the HUD over it, which counts about three.
+  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
 
   // …and the engine refuses to go back to the projection that blanked it
   const refused = await page.evaluate(() => window.IntMapGeoEngine.camera.setProjection('globe-true'));

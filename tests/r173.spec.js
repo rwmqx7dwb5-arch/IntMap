@@ -48,9 +48,12 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
   expect(Math.abs(s.eyeAlt - s.alt), 'the viewpoint is at the aircraft').toBeLessThan(120);
   expect(s.sky, 'the sim paints its own sky (the globe switches MapLibre’s off)').toBe(true);
 
-  // the cockpit contains a WORLD (#R172's lesson: measure pixels, not projection names)
+  /* the cockpit contains a WORLD (#R172's lesson: measure pixels, not projection names).
+     A small patch, decoded in the page: a full-width screenshot decoded on top of a live cockpit
+     crashed the tab on a GPU-less CI runner, and a few hundred square pixels of ground say the same. */
   const vp = page.viewportSize();
-  const png = (await page.screenshot({ clip: { x: 0, y: Math.round(vp.height * 0.55), width: vp.width, height: Math.round(vp.height * 0.4) } })).toString('base64');
+  const png = (await page.screenshot({ clip: { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
+    width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) } })).toString('base64');
   const colours = await page.evaluate(async b64 => {
     const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
     const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
@@ -59,7 +62,7 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
     for (let i = 0; i < d.length; i += 4) seen.add((d[i] >> 3) + ',' + (d[i + 1] >> 3) + ',' + (d[i + 2] >> 3));
     return seen.size;
   }, png);
-  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(120);
+  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
 
   // near the ground the map goes back to the flat regime, where the imagery is sharpest
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
