@@ -46,6 +46,12 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   await boot(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.30, alt: 3500, hdg: 90 }));
   await page.waitForTimeout(9000);
+  /* (#R173) PAUSE before the heavy reads. What is asserted is a property of the frame on screen, and a
+     paused cockpit stops rewriting the camera every frame — on a GPU-less runner that was the difference
+     between seven minutes and seconds. */
+  await page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
+  await page.waitForTimeout(2500);
 
   const during = await page.evaluate(() => ({
     active: window.IntMapFlightSim.active(),

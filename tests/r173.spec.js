@@ -21,6 +21,13 @@ const boot = async page => {
 const eye = page => page.evaluate(() => { const E = window.IntMapGeoEngine.camera.eye();
   return { lng: E.lng, lat: E.lat, alt: E.alt }; });
 const metres = (a, b) => Math.hypot((b.lng - a.lng) * 91000, (b.lat - a.lat) * 111320);
+/* the sim's own pause (the P key), so the camera stops being rewritten every frame */
+const pause = async page => { await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+    /* the release matters: the sim ignores a key that is already held, so a keydown on its own
+       pauses once and every later one is swallowed */
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
+  await page.waitForTimeout(2500); };
 
 test('the flight simulator flies a globe: the horizon sits at the true dip below eye level', async ({ page }) => {
   /* Generous, because a cockpit is the heaviest thing this app draws and CI has no GPU. Measured in
@@ -31,6 +38,11 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
   await boot(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.05, alt: 6000, hdg: 0 }));
   await page.waitForTimeout(9000);
+  /* PAUSE before measuring. Everything asserted below is a property of the camera and the frame on
+     screen, not of the aeroplane moving — and a paused cockpit stops re-writing the whole camera 60
+     times a second, which is what made a GPU-less runner take seven minutes to answer a page.evaluate
+     (it answers in seconds here). The physics is frozen, the view is not. */
+  await pause(page);
 
   const s = await page.evaluate(() => {
     const m = window.__imap, S = window.IntMapFlightSim._st();
@@ -65,9 +77,10 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
   expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
 
   // near the ground the map goes back to the flat regime, where the imagery is sharpest
+  await pause(page);                                        // …flying again for the descent
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
     for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
-  await page.waitForTimeout(4000);
+  await page.waitForTimeout(5000);                          // the camera follows the altitude every frame
   const low = await page.evaluate(() => ({ globeness: window.IntMapGeoEngine.camera.globeness(),
     zoom: window.__imap.getZoom(), alt: window.IntMapFlightSim._st().alt,
     eyeAlt: window.IntMapGeoEngine.camera.altitude() }));
@@ -162,10 +175,13 @@ test('the 3-D volume is a closed body — one solid, with a floor', async ({ pag
 test('a lifted aircraft can be hovered and clicked where it is drawn, and its track appears', async ({ page }) => {
   test.setTimeout(180000);
   let tick = 0;
-  await page.route('**/api.airplanes.live/**', route => route.fulfill({ status: 200, contentType: 'application/json',
-    body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
-      lat: 35.60 + (tick) * 0.02, lon: 139.60 + (tick++) * 0.03, alt_baro: 36000, alt_geom: 36100,
-      gs: 480, track: 55, seen: 1, dbFlags: 0 }] }) }));
+  /* the stub flies for four fixes and then holds station: the track needs movement, the pick needs
+     the aeroplane to still be where it was projected a moment ago. */
+  await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 4);
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
+        lat: 35.60 + t * 0.02, lon: 139.60 + t * 0.03, alt_baro: 36000, alt_geom: 36100,
+        gs: 480, track: 55, seen: 1, dbFlags: 0 }] }) }); });
   await boot(page);
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.72, 35.68], zoom: 9.5, pitch: 60, bearing: 0 }));
