@@ -44,7 +44,7 @@ test('MapLibre\'s plain globe really does go flat at flight-sim zoom (the reason
   expect(rows.find(r => r.z === 15).bow).toBe(0);
 });
 
-test('the flight simulator flies a curved Earth, and gives the view back on exit', async ({ page }) => {
+test('the flight simulator flies the app Globe, and gives the view back on exit', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
   // take off from the FLAT view — the case #R170 set out to cover
@@ -59,16 +59,17 @@ test('the flight simulator flies a curved Earth, and gives the view back on exit
     globeness: window.IntMapGeoEngine.camera.globeness(),
     proj: JSON.stringify(window.__imap.getProjection()) }));
   expect(during.active).toBe(true);
-  /* (#R172) the curvature expectation was DROPPED here, and this is the record of why: #R171 satisfied it
-     with vertical-perspective, which at cockpit zoom with 3-D terrain on rendered NOTHING — the sim shipped
-     as a white void.
-     (#R173) it is back, by the route #R171 and #R172 both missed. The cockpit sat at z15 only because its
-     look-at target was pinned 1.8 km ahead; the distance is the zoom in disguise, and solving it on the
-     sphere instead lands the same camera inside the renderer's spherical regime. So the assertion that used
-     to fix the sim at "the zoom where the plain globe is mercator" now fixes the opposite — with the
-     white-void trap still guarded by tests/r172.spec.js, which counts ground pixels. */
-  expect(during.zoom, 'the cockpit now flies below the globe→mercator crossover').toBeLessThan(11.1);
-  expect(during.globeness, 'and the Earth really is a sphere while it does').toBeGreaterThan(0.99);
+  /* THE CURVATURE EXPECTATION HAS BEEN THROUGH THREE ROUNDS; here is the whole record, because each one
+     was paid for. #R171 satisfied it with vertical-perspective, which at cockpit zoom with 3-D terrain on
+     rendered NOTHING — the sim shipped as a white void. #R173 satisfied it by solving the look distance on
+     the sphere, which lands the camera inside the renderer's spherical regime at z10.8 — and MapLibre's
+     spherical camera CANNOT look above the horizon, so the map froze at 85.4° while the pilot looked to
+     165° (measured, #R174). (#R174) So it is withdrawn: the sim flies the app Globe at cockpit zoom, which
+     the renderer draws as plain mercator, because looking up and the renderer's own sky are worth more than
+     a curved horizon. What this test guards is what survived all three rounds — the sim really is on the
+     app's Globe, and it gives the view back. The white-void trap is guarded by tests/r172.spec.js, which
+     counts ground pixels, and the looking-up guarantee by tests/r174.spec.js. */
+  expect(during.zoom, 'the cockpit sits at working zoom, where the DEM and the sky both work').toBeGreaterThan(11.1);
   expect(during.proj, 'the sim flies the app Globe').toContain('globe');
 
   await page.evaluate(() => window.IntMapFlightSim.stop());

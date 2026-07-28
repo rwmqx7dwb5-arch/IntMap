@@ -149,8 +149,9 @@ window.IntMapModules.toolPanel=function(map,HOST){
         +`<input type="color" id="v3d-color" value="${st.color}" title="${_L('Custom color','カスタム色','Eigene Farbe','Свой цвет','Color personalizado')}"></div>`
         +`<div class="v3d-style"><span class="v3d-slbl">${HOST.t('opacity')}</span>`
         +`<input type="range" id="v3d-op" min="0.05" max="0.95" step="0.05" value="${st.opacity}" style="flex:1;min-width:0;accent-color:var(--primary-color);"></div>`
-        /* (#R172) a closed body: a bottom face and interior sheets, instead of a lid on four walls */
-        +`<label class="v3d-solid"><input type="checkbox" id="v3d-solid"${st.solid?' checked':''}><span>${_L('Solid (floor + filled interior)','中身を詰める（底面あり）','Massiv (Boden + Füllung)','Сплошной (дно и заполнение)','Sólido (base e interior)')}</span></label>`
+        /* (#R174) The "Solid" checkbox is GONE ("わざわざSolidを選択制なんてするな") — a volume is a closed
+           body, full stop. In its place, the thing a clicked polygon actually lacked: an END. */
+        +`<button class="ai-action-btn" id="v3d-seal" style="display:none;"></button>`
         +`<div class="tp-hint" id="v3d-hint">${HINTS[st.shape]||HINTS.polygon}</div>`
         +`<button class="ai-action-btn" id="v3d-keep" style="display:none;">✓ ${_L('Keep on map','地図に残す','Auf der Karte behalten','Оставить на карте','Mantener en el mapa')}</button>`;
     } else if(HOST.toolMode==='radius'){
@@ -243,7 +244,17 @@ window.IntMapModules.toolPanel=function(map,HOST){
         if(gr){ if(st.ground!=null){ gr.style.display=''; set('#v3d-gnd', V.fmtAlt(st.ground)); } else gr.style.display='none'; }
         const hint=p.querySelector('#v3d-hint');
         if(hint&&st.terrain&&st.ground==null&&st.points>=3) hint.textContent=_L('Reading the terrain elevation…','地表面の標高を取得中…','Geländehöhe wird gelesen…','Чтение высоты рельефа…','Leyendo la altitud del terreno…');
+        else if(hint&&st.sealed) hint.textContent=_L('Footprint finished — map clicks no longer add points.','底面の描画を完了しました。地図をクリックしても点は追加されません。','Grundfläche fertig — Klicks fügen keine Punkte mehr hinzu.','Основание готово — клики больше не добавляют точки.','Base terminada: los clics ya no añaden puntos.');
         const kp2=p.querySelector('#v3d-keep'); if(kp2) kp2.style.display=st.points>=3?'':'none';
+        /* (#R174) the polygon's full stop. Shown only for the clicked shape (a stroke ends when the finger
+           lifts) and only once there is a footprint to finish; pressing it again re-opens it, so nothing
+           the button does is irreversible. */
+        const sb=p.querySelector('#v3d-seal');
+        if(sb){ const show=(st.shape==='polygon')&&(st.points>=3||st.sealed);
+          sb.style.display=show?'':'none';
+          sb.textContent=st.sealed
+            ? '✎ '+_L('Resume drawing','描画を再開','Weiterzeichnen','Продолжить рисование','Seguir dibujando')
+            : '✓ '+_L('Finish drawing','描画を完了','Zeichnen beenden','Завершить рисование','Terminar el dibujo'); }
       };
       sync();
       /* A stroke shape finishes without any map click, so the module tells the panel directly. */
@@ -268,7 +279,7 @@ window.IntMapModules.toolPanel=function(map,HOST){
           try{ if(bI){ bI.value=V.fieldValue(V.base()); bI.step=V.fieldStep(); }
                if(tI){ tI.value=V.fieldValue(V.top()); tI.step=V.fieldStep(); } }catch(_){}
           sync(); }; }
-      { const sS=p.querySelector('#v3d-solid'); if(sS) sS.onchange=()=>{ if(V) V.setSolid(sS.checked); }; }
+      { const sb=p.querySelector('#v3d-seal'); if(sb) sb.onclick=()=>{ if(!V) return; V.seal(!V.isSealed()); sync(); }; }
       /* shape picker — switching starts a fresh footprint (see setShape) */
       p.querySelectorAll('.v3d-shape').forEach(b=>{ b.onclick=()=>{ if(!V) return;
         V.setShape(b.getAttribute('data-shape'));

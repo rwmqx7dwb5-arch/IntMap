@@ -170,6 +170,9 @@ window.IntMapModules.mapReadout=function(map,HOST){
        synthesises a `click` at the end of every one of them. Without this the stroke's release would
        also drop a stray polygon vertex into measurePoints. */
     try{ if(HOST.toolMode==='volume'&&window.IntMapVolume3D&&window.IntMapVolume3D.ownsGesture()) return; }catch(_){}
+    /* (#R174) …and once the polygon's "drawing complete" button has been pressed, the footprint is finished:
+       a click on the map is a click on the map again, not another vertex. Reopened by the same button. */
+    try{ if(HOST.toolMode==='volume'&&window.IntMapVolume3D&&window.IntMapVolume3D.isSealed&&window.IntMapVolume3D.isSealed()) return; }catch(_){}
     /* (#R11) On mobile, measuring is center-fixed: a tap does NOT add a point — only the "Add point"
        button (which calls this with viaBtn=true) adds the map-center coordinate. */
     if(HOST.isMobile() && !viaBtn) return;
