@@ -223,4 +223,16 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
 
   await page.mouse.click(60, 700); await page.waitForTimeout(900);
   expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'clicking away puts it back').toBeNull();
+
+  /* …and the aeroplane's FOOTPRINT — the post standing under it — selects it too. This is the case that
+     caught a real defect on production: the pick and the renderer's own footprint hit were two separate
+     click handlers and each of them TOGGLED, so a click that satisfied both selected the aircraft and
+     deselected it in the same event. One handler, one decision. */
+  const post = await page.evaluate(() => { const m = window.__imap;
+    /* the aircraft's own footprint: where the renderer answers a point query for it (its ground position) */
+    const f = m.queryRenderedFeatures({ layers: ['lyr-planes-3d'] }).find(x => (x.properties || {}).icao24 === 'ABC123');
+    const r = f.geometry.coordinates[0], c = r.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
+    const g = m.project([c[0] / r.length, c[1] / r.length]); return { x: Math.round(g.x), y: Math.round(g.y) }; });
+  await page.mouse.click(post.x, post.y); await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'the post under an aircraft selects it').toBe('ABC123');
 });
