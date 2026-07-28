@@ -29,6 +29,17 @@
  *  own the drag while they are armed, which they take through the engine's input contract rather than
  *  by reaching for the renderer's pan handler.
  *
+ *  ── What #R174 changed ─────────────────────────────────────────────────────────────────────
+ *  「3-D VolumeはPolygonで描画時、描画完了ボタンを置くように。また、下の面は色がついていない。わざわざ
+ *    Solidを選択制なんてするなボケ。しかもズームしたら立体が消える！」 Three of those are one bug and one
+ *  is a missing control:
+ *    · the body vanished from z12 up — and with it the bottom face — because the elevation argument of
+ *      MapLibre's `projectTileFor3D` is METRES on the globe but MERCATOR UNITS on the flat map, and
+ *      js/solid3d.js passed metres either way (measured, see the note in that file). Fixed there.
+ *    · "Solid" is no longer a checkbox. A volume is a closed body; the open shell is only what a
+ *      renderer without solids falls back to.
+ *    · the clicked polygon now has a "drawing complete" button — see `sealed`.
+ *
  *  ── Renderer independence ───────────────────────────────────────────────────────────────────
  *  Written entirely against window.IntMapGeoEngine (#R152/#R160/#R161/#R170/#R171) — it never touches
  *  the MapLibre map. That makes it the first feature built end-to-end on the engine facade, and
@@ -50,7 +61,15 @@ window.IntMapModules.volume3d=function(map,HOST){
     let lastRenderErr=null;
     let shape='polygon';     /* polygon | freehand | circle | rect (#R171) */
     let onShapeDone=null;    /* the panel's redraw hook — a drag ends without any click the panel would see */
-    let solid=true;          /* (#R173) the CLOSED body (floor + filled interior); false = the open shell */
+    /* (#R174) 「わざわざSolidを選択制なんてするな」 — the closed body is not an option any more, it is what a
+       3-D volume IS. The open shell survives only as the fallback for a renderer that cannot draw a solid
+       (canSolid() below); nothing in the UI, in Atlas or in the SYS catalog offers the choice. */
+    /* (#R174) 「3-D VolumeはPolygonで描画時、描画完了ボタンを置くように。」 A traced stroke ends when the
+       finger lifts, but a clicked polygon has no natural end — every later click on the map kept adding a
+       vertex, so there was no way to say "that is the shape". `sealed` is that full stop: the footprint
+       stops taking clicks, and the same button re-opens it. Purely about INPUT — the ring, the volume and
+       everything derived from it are untouched. */
+    let sealed=false;
     /* (#R172) who owns the current footprint. The panel re-pushes the measure tool's clicked vertices on every
        re-render, which used to wipe a ring that came from anywhere else — an Atlas-drawn volume lost its
        footprint (and the panel then read "Points 0" under a box that was still on screen) the next time
@@ -146,7 +165,7 @@ window.IntMapModules.volume3d=function(map,HOST){
       const rb=Math.max(0, loM()-off), rh=Math.max(rb+0.5, hiM()-off);   /* never a zero/inverted box */
       /* asked of the LAYER, not just of the capability: if the renderer declined to create the solid for
          any reason (an old context, a style reload mid-flight) the open shell must draw rather than nothing. */
-      const asSolid=solid&&canSolid()&&E.layers.has(BODY);
+      const asSolid=canSolid()&&E.layers.has(BODY);
       try{
         E.layers.setSourceData(SRC,{type:'FeatureCollection',features:[
           {type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{color}} ]});
@@ -261,12 +280,15 @@ window.IntMapModules.volume3d=function(map,HOST){
        silently re-interpreting the old points as the new shape would draw something nobody asked for. */
     function setShape(kind){ const k=['polygon','freehand','circle','rect'].indexOf(String(kind))>=0?String(kind):'polygon';
       if(k===shape) return shape;
-      shape=k; ring=[]; trace=[]; drawing=false;
+      shape=k; ring=[]; trace=[]; drawing=false; sealed=false;
       armed=(shape!=='polygon'); _wire(armed); if(!armed) _grab(false);
       hide(); return shape; }
     /* Called when the tool itself opens/closes — clear() alone must not unwire, because the panel's
        Clear button uses it and the user still expects to be able to draw afterwards. */
     function release(){ clear(); armed=false; drawing=false; _wire(false); _grab(false); shape='polygon'; }
+    /* (#R174) the "drawing complete" full stop. `seal(false)` re-opens the footprint for more clicks, so
+       nothing is lost by pressing it. Only the click-vertex shape has anything to seal. */
+    function seal(v){ sealed=(v==null)?true:!!v; return sealed; }
 
     /* ---- public API ------------------------------------------------------------------------ */
     /* Every setter re-paints, so the box tracks the numbers as they are typed. */
@@ -307,7 +329,7 @@ window.IntMapModules.volume3d=function(map,HOST){
         if(E&&E.layers.has(EDGE)) E.layers.setPaint(EDGE,'line-color',color);
       }catch(_){}
       return paint(); }
-    function clear(){ ring=[]; trace=[]; groundM=null; hide(); }
+    function clear(){ ring=[]; trace=[]; groundM=null; sealed=false; hide(); }
 
     /* "Keep on map": hand the footprint to the shared annotation store the measure/area/radius tools
        use, tagged with the altitude band so the saved shape still says what it represented. The
@@ -372,15 +394,17 @@ window.IntMapModules.volume3d=function(map,HOST){
       /* (#R171) shapes + gesture ownership */
       setShape, shape:()=>shape, release, ownsGesture, onDone:fn=>{ onShapeDone=fn; },
       circleRing, rectRing, smoothRing, distM,
-      /* (#R172) units + the closed solid */
+      /* (#R174) the polygon's full stop */
+      seal, isSealed:()=>sealed,
+      /* (#R172) units */
       setUnit, unit:()=>unit, units:()=>Object.keys(UNITS), toUnit, fromUnit, fieldValue, fieldStep,
-      setSolid(v){ solid=!!v; return paint(); }, isSolid:()=>solid, limits:()=>({min:MIN_M,max:MAX_M}),
+      limits:()=>({min:MIN_M,max:MAX_M}),
       ring:()=>ring.slice(), base:()=>baseM, top:()=>topM, low:loM, high:hiM, color:()=>color, opacity:()=>opacity,
       ground:()=>groundM, terrainOn:has3DTerrain,
       areaM2, thicknessM, volumeM3, fmtVolume, fmtAlt, keep,
       /* diagnostics — Atlas + tests read these instead of poking at the renderer */
-      state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing,
-        thickness:thicknessM(), areaM2:areaM2(), unit, solid, fromClicks:ringFromClicks,
+      state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing, sealed,
+        thickness:thicknessM(), areaM2:areaM2(), unit, fromClicks:ringFromClicks,
         volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
         /* (#R173) "painted" is true for EITHER representation — the closed body and the open shell are the
            same volume drawn two ways, and a caller asking "is it on screen?" must not have to know which. */

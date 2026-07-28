@@ -62,10 +62,11 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   expect(during.active).toBe(true);
   expect(during.proj, 'the sim flies the app Globe — never a raw projection spec').toContain('globe');
   expect(during.terrain, 'a flight simulator without a DEM has nothing to fly over').toBe(true);
-  /* (#R173) …and it no longer has to choose. The cockpit flies below the globe→mercator crossover now
-     (the look distance is solved on the sphere rather than pinned at 1.8 km), so the zoom assertion is
-     inverted — what this test is really for is the pixel count below, which is what #R171 lost. */
-  expect(during.zoom).toBeLessThan(11.1);
+  /* (#R174) The #R173 solve was withdrawn — the spherical regime it put the camera in cannot look above
+     the horizon (measured: the map froze at 85.4° while the pilot looked to 165°). The cockpit is back at
+     working zoom, which is where the DEM and the renderer's own sky both work. What this test is really
+     for is the pixel count below, which is what #R171 lost. */
+  expect(during.zoom).toBeGreaterThan(11.1);
 
   const vp = page.viewportSize();
   const colours = await groundDetail(page, { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
@@ -143,8 +144,10 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
     return { body: s.body, shell: s.shell, canSolid: s.canSolid, solid: s.solid, points: s.points, asKm, asFt, geo, limits: V.limits() };
   });
   expect(st.points, 'circleRing(…,64) is 64 vertices; closedRing() adds the repeat only when it hands the ring to the renderer').toBe(64);
-  expect(st.solid, 'the body is closed by default').toBe(true);
-  // (#R173) the closed body is now ONE mesh drawn by the engine's solid contract — a floor and a filled
+  /* (#R174) there is no `solid` flag any more — a volume IS a closed body (「わざわざSolidを選択制なんて
+     するな」), and the open shell survives only as the fallback for a renderer without solids. So what is
+     asserted is the body itself, which is the thing that was ever worth asserting. */
+  // (#R173) the closed body is ONE mesh drawn by the engine's solid contract — a floor and a filled
   // interior that a fill-extrusion cannot express — so what is asserted is that the solid is what draws.
   expect(st.canSolid, 'the renderer can draw a closed body').toBe(true);
   expect(st.body, 'and it is the closed body that is painted').toBe(true);
@@ -154,10 +157,12 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
   expect(st.geo, 'a 35,786 km band is not clamped away').toEqual([35786000, 35800000]);
   expect(st.limits.max).toBeGreaterThan(1e8);
 
-  // turning the body off leaves only the shell
-  const hollow = await page.evaluate(() => { window.IntMapVolume3D.setSolid(false); return window.IntMapVolume3D.state(); });
-  expect(hollow.body, 'Solid off puts the closed body away…').toBe(false);
-  expect(hollow.shell, '…and leaves the open shell').toBe(true);
+  // (#R174) …and there is no way, anywhere, to ask for the open shell instead
+  const gone = await page.evaluate(() => ({ api: typeof window.IntMapVolume3D.setSolid,
+    flag: 'solid' in window.IntMapVolume3D.state(), box: !!document.querySelector('#v3d-solid') }));
+  expect(gone.api, 'the module no longer offers the choice').toBe('undefined');
+  expect(gone.flag, 'nor reports one').toBe(false);
+  expect(gone.box, 'and the panel has no checkbox for it').toBe(false);
 });
 
 test('every footprint shape draws, not only the polygon', async ({ page }) => {

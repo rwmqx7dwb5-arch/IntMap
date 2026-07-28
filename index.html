@@ -286,6 +286,7 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
             <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
             <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
             <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
+            <button class="view-btn" id="btn-tool-drone" data-i18n="droneBtn" title="Plan a drone flight over the real terrain">🛸 Drone</button><!-- (#R174) drone flight planning -->
           </div>
         </div>
         <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
@@ -662,6 +663,7 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-volume"><span class="ico">🧊</span><span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) -->
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-drone"><span class="ico">🛸</span><span data-i18n="droneBtn">Drone</span></button><!-- (#R174) -->
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
     </div>
@@ -755,6 +757,7 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
 <script src="js/solid3d.js"></script>   <!-- (#R173) closed 3-D bodies for IntMapGeoEngine.layers.addSolid (MapLibre adapter internals) -->
 <script src="js/volume3d.js"></script>   <!-- (#R170) Measure ▸ 3-D volume — built entirely on IntMapGeoEngine -->
 <script src="js/view-controls.js"></script>   <!-- (#R171) tilt limit + eye-altitude readout — also engine-only -->
+<script src="js/drone-nav.js"></script>   <!-- (#R174) drone flight planning — terrain-aware routes, engine-only rendering -->
 <script src="js/auth-ui.js"></script>
 <script src="js/community.js"></script>
 <!-- (#R169) the eighth split: eleven more SUBJECT modules. Every statement in them is a DECLARATION,
@@ -1699,6 +1702,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
   window.IntMapModules.viewControls(map,IM_HOST);
+  /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
+     through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
+     does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
+  window.IntMapModules.droneNav(map,IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
@@ -2795,9 +2802,17 @@ window.addEventListener('DOMContentLoaded', () => {
                    the target is what we are solving for, so the two chase each other. Three passes converge
                    far below a pixel; one pass left ~33 m of slip per frame at z12 (≈400 m over a full drag),
                    which is exactly the 0.2 % that a 16 km look distance shifts the latitude by. */
+                /* (#R174) …AT THE LOOK DISTANCE THE MAP ALREADY HAS — `was.zoom`, never the proposal's.
+                   This hook holds the eye still while the ATTITUDE changes; solving at the PROPOSED zoom
+                   held it still while the ZOOM changed too, and zoom is the one thing that is supposed to
+                   move the camera. Measured at pitch 60 with the ceiling lifted: z12→z16 left the eye at
+                   8,373 m every step (「ある程度からズームインできない」) and z17 hung the tab. Frozen at
+                   the applied zoom, an unchanged attitude makes the solve the IDENTITY, so a pure zoom
+                   passes through and earlier tilt corrections survive. After: z12→z18 walks the eye
+                   8,373→131 m, no hang, and tilting at z18 still leaves it put. Architecture §19 #R174 ②. */
                 const p1=cur.pitch*r, b1=cur.bearing*r;
-                let lat=eLat, lng=eLng, d1=c2c*mpp(eLat,cur.zoom);
-                for(let i=0;i<3;i++){ d1=c2c*mpp(lat,cur.zoom); if(!isFinite(d1)||d1<=0) return {};
+                let lat=eLat, lng=eLng, d1=d0;
+                for(let i=0;i<3;i++){ d1=c2c*mpp(lat,was.zoom); if(!isFinite(d1)||d1<=0) return {};
                   const h1=d1*Math.sin(p1);
                   lat=eLat+h1*Math.cos(b1)/110574; lng=eLng+h1*Math.sin(b1)/((111320*Math.cos(eLat*r))||1); }
                 const elevation=eAlt-d1*Math.cos(p1);

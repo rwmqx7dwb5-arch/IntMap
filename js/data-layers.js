@@ -1985,6 +1985,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
     let _planes3DZoom=null, _planes3DZoomT=null;   /* (#R172) rebuild the lifted glyphs when the scale changes */
     let _planesClear=null, _planesHover=null, _pickHover=false, _pickAt=0;   /* (#R173) picking a lifted aircraft */
+    let _planesDbl=null, _planesClearT=null;   /* (#R174) a double-click is a ZOOM, not "you clicked empty sky" */
     /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
        (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
     function planesLayerOn(){ try{
@@ -2272,11 +2273,18 @@ window.IntMapModules.dataLayers=function(map,HOST){
       const feats=[];
       if(pts.length>=2){
         feats.push({type:'Feature',geometry:{type:'LineString',coordinates:pts.map(p=>[p[0],p[1]])},properties:{kind:'line'}});
-        const mpp=_mppCentre(), off=_groundOffset(), half=Math.max(25,1.6*mpp), thick=Math.max(20,1.6*mpp);
+        _gndFresh();
+        const mpp=_mppCentre(), half=Math.max(25,1.6*mpp), thick=Math.max(20,1.6*mpp);
         for(let i=1;i<pts.length;i++){
           const a=pts[i-1], b=pts[i];
+          /* the ground under THIS leg (see _groundAt) — a single centre reading put a mountain under an
+             aeroplane 40 km out to sea, and the clamp below then deleted the leg */
+          const off=_groundAt((a[0]+b[0])/2,(a[1]+b[1])/2);
           const alt=Math.max(0,((a[2]+b[2])/2)-off);
-          if(!(alt>0)) continue;                       /* on the ground: the flat line already shows it */
+          /* (#R174) NEVER DROPPED. A leg at or below the local ground used to be skipped outright, which is
+             how a whole track vanished while its aircraft stayed on screen. A track that runs along the
+             ground is a real thing that happened and it gets drawn like one — at 0, with the same thickness
+             the rest of the track has, exactly as the aircraft glyph is already treated. */
           feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[legRing(a,b,half)]},
             properties:{kind:'leg',alt,top:alt+thick}});
         }
@@ -2300,11 +2308,14 @@ window.IntMapModules.dataLayers=function(map,HOST){
     function pickPlane(pt){
       if(!planes3D||!pt) return null;
       const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-      const off=_groundOffset(); let best=null, bestD=PICK_PX*PICK_PX;
+      /* (#R174) the SAME per-aircraft ground the drawing uses — a pick that used a different offset would
+         look for the aeroplane somewhere it is not */
+      _gndFresh(); let best=null, bestD=PICK_PX*PICK_PX;
       const filt=trafficFilters.planes;
       for(const d of planesData){
         if(d.lng==null||d.lat==null) continue;
         if(filt&&filt!=='all'&&d.type!==filt) continue;
+        const off=_groundAt(d.lng,d.lat);
         const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
         const p=pa([d.lng,d.lat],alt); if(!p) continue;
         const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
@@ -2327,9 +2338,29 @@ window.IntMapModules.dataLayers=function(map,HOST){
       const m=(2*Math.PI*R*Math.cos((c.lat||0)*r))/w; return (isFinite(m)&&m>0)?m:50; }catch(_){ return 50; } }
     /* the DEM height under the map centre (0 when 3-D terrain is off — then the renderer's metres already
        mean altitude above sea level and nothing has to be taken off) */
+    /* (#R174) …UNDER THAT AIRCRAFT, not under the map centre. THIS is 「ズームインすると軌跡が消える」, and it
+       is nothing to do with the zoom gesture — the zoom just moves the centre onto higher ground and refines
+       the DEM under it. With 3-D terrain on, one ground elevation was read at the map CENTRE and subtracted
+       from every aircraft on screen, however far away it was. Reproduced over Mt Fuji with a stubbed
+       aircraft at 5,000 ft (1,524 m AMSL) and the centre standing at 2,827 m: the subtraction went negative,
+       clamped to 0 — and the TRACK then dropped every single leg (`if(!(alt>0)) continue`) while the
+       aircraft glyph survived, because that one is pushed whatever its altitude. Measured at eight zoom
+       steps from z10.5 to z14.3: legCount 0 at every one, with the aeroplane plainly drawn on screen.
+       That is exactly the reported symptom — the machine stays, its trail goes.
+       So the offset is now read where the thing actually is. Memoised per ~100 m cell for the length of one
+       refresh, because a busy sky is hundreds of aircraft and this runs on every poll and every zoom. */
+    let _gndMemo=null;
+    function _groundAt(lng,lat){ try{ if(!HOST.terrain3D||!map.queryTerrainElevation) return 0;
+      if(!_gndMemo) _gndMemo=new Map();
+      const k=lng.toFixed(3)+','+lat.toFixed(3);
+      if(_gndMemo.has(k)) return _gndMemo.get(k);
+      const g=map.queryTerrainElevation({lng,lat});
+      const v=(g==null||!isFinite(g))?0:+g;
+      _gndMemo.set(k,v); return v; }catch(_){ return 0; } }
+    function _gndFresh(){ _gndMemo=null; }
+    /* kept for the diagnostics readout only — "what would the old single offset have been" */
     function _groundOffset(){ try{ if(!HOST.terrain3D) return 0;
-      const c=map.getCenter(); const g=map.queryTerrainElevation?map.queryTerrainElevation({lng:c.lng,lat:c.lat}):null;
-      return (g==null||!isFinite(g))?0:+g; }catch(_){ return 0; } }
+      const c=map.getCenter(); return _groundAt(c.lng,c.lat); }catch(_){ return 0; } }
     /* An aeroplane silhouette in ground metres, centred on [lng,lat] and turned to `hdg` (°, clockwise from
        north). Same outline as the 2-D glyph so the layer does not change character when it goes 3-D. */
     const _PLANE_OUTLINE=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],[-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
@@ -2348,13 +2379,15 @@ window.IntMapModules.dataLayers=function(map,HOST){
       return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
     function refreshPlanes3D(list){
       if(!map||!map.getSource(PLANE3D_SRC)) return;
-      const mpp=_mppCentre(), off=_groundOffset();
+      _gndFresh();
+      const mpp=_mppCentre();
       const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
       const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
       const thick=Math.max(30, 2.2*mpp);               /* give the glyph body so it is not a zero-height sheet */
       const feats=[];
       for(const d of list){
         if(d.lng==null||d.lat==null) continue;
+        const off=_groundAt(d.lng,d.lat);              /* (#R174) the ground under THIS aircraft */
         const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
         const props={ type:d.type, alt, top:alt+thick, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
           acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
@@ -2371,7 +2404,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       _planes3DStats={ features:feats.length,
         lifted:feats.filter(f=>!f.properties.post&&(+f.properties.alt||0)>0).length,
         maxAlt:Math.round(feats.reduce((m2,f)=>(!f.properties.post&&+f.properties.alt>m2)?+f.properties.alt:m2,0)),
-        offsetM:Math.round(off) };
+        offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
     function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem('intmap_planes3d',planes3D?'1':'0'); }catch(_){}
@@ -2525,7 +2558,10 @@ window.IntMapModules.dataLayers=function(map,HOST){
         /* the glyph's on-screen size is derived from the zoom, so rebuild the geometry when it changes */
         if(!_planes3DZoom){ _planes3DZoom=()=>{ if(!planes3D) return;
           if(!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible')) return;
-          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){} },160); };
+          /* (#R174) the TRACK's ribbons are sized from the scale too (see drawTrack), and only the glyphs
+             were being rebuilt — a track drawn at z8 kept its kilometre-wide legs all the way in. */
+          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){}
+            try{ if(selectedPlane) drawTrack(selectedPlane); }catch(_){} },160); };
           map.on('zoomend',_planes3DZoom); map.on('terrain',_planes3DZoom); }
       } else {
         ensureShipIcons();
@@ -2581,12 +2617,28 @@ window.IntMapModules.dataLayers=function(map,HOST){
            41 real aircraft: the pick found the aeroplane, the click reported nothing selected. One
            handler, one decision: the pick first (that is where the aeroplane is drawn), then the
            renderer's footprint (the post and the flat glyph are real things to click at), else clear. */
+        /* (#R174) 「Live air traffic でズームインすると、軌跡が消える」 — REPRODUCED, and it was this handler.
+           Double-click IS how you zoom in on a map, and MapLibre delivers a double-click as two ordinary
+           `click` events before its own `dblclick`. Both of them landed here, found no aircraft under the
+           pointer, and cleared the selection — so the track vanished the instant the zoom began. Measured
+           against a stubbed feed: wheel zoom z11 → z12.9 kept the selection and its 6 legs; one
+           double-click at the same spot left `selected: null, legs: 0`.
+           Two guards, and neither of them touches the zoom gesture:
+             · the SECOND click of a double-click (originalEvent.detail ≥ 2) is ignored outright — it would
+               otherwise also toggle OFF an aircraft that the first click had just selected;
+             · clearing is DEFERRED past MapLibre's double-click window and cancelled by `dblclick`, so a
+               click on empty map still deselects, one frame later than before.
+           Selecting stays instantaneous: a click that actually hits an aeroplane is never deferred. */
+        if(!_planesDbl){ _planesDbl=()=>{ if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; } };
+          map.on('dblclick',_planesDbl); }
         if(!_planesClear){ _planesClear=(e)=>{
+          try{ if(e&&e.originalEvent&&(e.originalEvent.detail|0)>=2) return; }catch(_){}
           let d=pickPlane(e.point), props=null;
           if(!d){ try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l));
               const f=ls.length?map.queryRenderedFeatures(e.point,{layers:ls}):[];
               if(f&&f.length){ props=f[0].properties||{}; d=planesData.find(x=>x.icao24===(props.icao24||''))||null; } }catch(_){} }
           if(d&&d.icao24){
+            if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
             selectPlane(d.icao24===selectedPlane?null:d.icao24);
             if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
               el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
@@ -2594,7 +2646,8 @@ window.IntMapModules.dataLayers=function(map,HOST){
                 heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
               positionTooltip(e.point); }
             return; }
-          if(selectedPlane) selectPlane(null); }; map.on('click',_planesClear); }
+          if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
+        }; map.on('click',_planesClear); }
       }
     }
     function startTraffic(id){
@@ -2992,7 +3045,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
       screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
         const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-        const off=_groundOffset(), alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
+        const off=_groundAt(d.lng,d.lat), alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
         return pa([d.lng,d.lat],alt); },
       pickAt:pt=>{ const d=pickPlane(pt); return d?d.icao24:null; },
       trackStats:k=>trackStats(k||selectedPlane),

@@ -40,6 +40,9 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.solid3d=function(){
   const R=6371008.8, D2R=Math.PI/180;
+  /* the WGS84 equatorial circumference MapLibre's mercator is built on — one mercator unit of altitude at
+     latitude φ is MERC_CIRC·cos φ metres (see the altitude-unit note in render) */
+  const MERC_CIRC=2*Math.PI*6378137;
   /* mercator [0..1] from lng/lat — the coordinate space MapLibre hands custom layers */
   function merc(lng,lat){
     const x=(180+lng)/360;
@@ -82,11 +85,12 @@ in vec2 a_pos;      /* mercator [0..1] */
 in float a_alt;     /* metres above sea level (or above ground when terrain is on) */
 in vec3 a_local;    /* east / north / up metres, about the footprint centroid */
 in vec3 a_norm;     /* outward normal in the same metric frame */
+uniform float u_altScale;   /* metres → whatever THIS variant's prelude wants (see render) */
 out vec3 v_local;
 out vec3 v_norm;
 void main(){
   v_local=a_local; v_norm=a_norm;
-  gl_Position=projectTileFor3D(a_pos, a_alt);
+  gl_Position=projectTileFor3D(a_pos, a_alt*u_altScale);
 }`;
   const FRAG=`
 precision highp float;
@@ -124,7 +128,7 @@ void main(){
     const loc=n=>gl.getUniformLocation(p,n);
     return { p, a:{ pos:gl.getAttribLocation(p,'a_pos'), alt:gl.getAttribLocation(p,'a_alt'),
                     local:gl.getAttribLocation(p,'a_local'), norm:gl.getAttribLocation(p,'a_norm') },
-             u:{ eye:loc('u_eye'), color:loc('u_color'), alpha:loc('u_alpha'),
+             u:{ eye:loc('u_eye'), color:loc('u_color'), alpha:loc('u_alpha'), altScale:loc('u_altScale'),
                  mat:loc('u_projection_matrix'), fallback:loc('u_projection_fallback_matrix'),
                  tileCoords:loc('u_projection_tile_mercator_coords'), clip:loc('u_projection_clipping_plane'),
                  transition:loc('u_projection_transition') } };
@@ -223,6 +227,18 @@ void main(){
         gl.uniform3f(prog.u.eye,ex,ey,ez);
         gl.uniform3f(prog.u.color,S.color[0],S.color[1],S.color[2]);
         gl.uniform1f(prog.u.alpha,S.alpha);
+        /* (#R174) THE ALTITUDE UNIT IS NOT THE SAME IN BOTH PRELUDES — this is why the body vanished the
+           moment you zoomed in (「しかもズームしたら立体が消える！」).
+           `projectTileFor3D(pos, elevation)` takes METRES in the globe prelude and MERCATOR UNITS in the
+           mercator one, and this file handed it metres either way. The app's globe is plain mercator from
+           z12 up, so from z12 every vertex was pushed to a clip-space z past the far plane and discarded.
+           Measured directly against the renderer's own answer for (139.76, 35.68) at 3,000 m: at z12 the
+           true screen position is y=183, metres-as-elevation lands it at y=1,902 with ndc z=1.0139 (outside
+           [-1,1] → clipped), and altitude/(2πR·cos φ) lands it at y=184, ndc z=0.984. Same at z13 (−39 vs
+           −38) and z15 (−6,766 vs −6,722). One scale factor, chosen by the variant the renderer reports. */
+        gl.uniform1f(prog.u.altScale, (vname==='mercator')
+          ? 1/Math.max(1, MERC_CIRC*Math.cos(((S.origin&&S.origin.lat)||0)*D2R))
+          : 1);
         const bind=(buf,loc,size)=>{ if(loc<0) return; gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0); };
         bind(bPos,prog.a.pos,2); bind(bAlt,prog.a.alt,1); bind(bLocal,prog.a.local,3); bind(bNorm,prog.a.norm,3);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);
