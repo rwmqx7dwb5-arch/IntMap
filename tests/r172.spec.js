@@ -35,7 +35,10 @@ const groundDetail = async (page, clip) => {
 };
 
 test('the flight simulator shows a WORLD, not a white void', async ({ page }) => {
-  test.setTimeout(180000);
+  /* (#R173) 420 s, not 180: the cockpit now draws the spherical regime, which is heavier — measured in
+     headless software GL at 3 fps against the flat cockpit's 5 — and a machine without a GPU spends
+     minutes on what a GPU does in seconds. The assertions below are unchanged. */
+  test.setTimeout(420000);
   await boot(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.30, alt: 3500, hdg: 90 }));
   await page.waitForTimeout(9000);

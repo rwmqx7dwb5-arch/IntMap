@@ -23,7 +23,11 @@ const eye = page => page.evaluate(() => { const E = window.IntMapGeoEngine.camer
 const metres = (a, b) => Math.hypot((b.lng - a.lng) * 91000, (b.lat - a.lat) * 111320);
 
 test('the flight simulator flies a globe: the horizon sits at the true dip below eye level', async ({ page }) => {
-  test.setTimeout(180000);
+  /* Generous, because a cockpit is the heaviest thing this app draws and CI has no GPU. Measured in
+     headless software GL: the flat cockpit ran at 5 fps and the spherical one at 3 — the extra cost is
+     real (more of what is in front of the aeroplane is actually drawn), and on a machine rendering in
+     software it pushes a fixed-wall-clock test past three minutes. On a GPU the same test takes ~1 min. */
+  test.setTimeout(420000);
   await boot(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.05, alt: 6000, hdg: 0 }));
   await page.waitForTimeout(9000);
@@ -59,7 +63,7 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
 
   // near the ground the map goes back to the flat regime, where the imagery is sharpest
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
-    for (let i = 0; i < 60; i++) { S.alt = a0 + (t - a0) * (i + 1) / 60; await new Promise(r => setTimeout(r, 40)); } });
+    for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
   await page.waitForTimeout(4000);
   const low = await page.evaluate(() => ({ globeness: window.IntMapGeoEngine.camera.globeness(),
     zoom: window.__imap.getZoom(), alt: window.IntMapFlightSim._st().alt,
