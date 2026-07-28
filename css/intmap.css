@@ -845,6 +845,32 @@
       .cp-intro-img{ width:104px; }
     }
     /* Pin popup (anchored DOM element near pin location) */
+    /* (#R175) LIVE AIRCRAFT detail card (js/aircraft-detail.js). It IS a .country-popup — same shell, same
+       drag, same mobile bottom sheet — so only the aircraft-specific rows are described here. */
+    .ac-popup{ width:344px; z-index:2210; }
+    .acp-photo{ display:block; width:100%; border-radius:12px; overflow:hidden; margin:0 0 6px; background:var(--input-bg); }
+    .acp-photo img{ display:block; width:100%; height:auto; }
+    .acp-photo-none{ display:flex; align-items:center; justify-content:center; text-align:center; min-height:74px; padding:14px 12px; font-size:12px; color:var(--text-muted); }
+    .acp-credit{ font-size:10.5px; color:var(--text-muted); margin:0 0 10px; }
+    .acp-badges{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 4px; }
+    .acp-badge{ font-size:10.5px; font-weight:700; border-radius:999px; padding:3px 9px; }
+    .acp-badge.mil{ color:var(--info-mil); background:color-mix(in srgb, var(--info-mil) 14%, transparent); }
+    .acp-badge.civ{ color:var(--info-energy); background:color-mix(in srgb, var(--info-energy) 14%, transparent); }
+    .acp-badge.emg{ color:#fff; background:#ff3b30; }
+    .acp-sec{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); margin:12px 0 4px; padding-top:7px; border-top:1px solid rgba(128,128,128,0.16); }
+    .acp-row{ display:flex; gap:10px; align-items:baseline; justify-content:space-between; font-size:12px; padding:2px 0; }
+    .acp-k{ color:var(--text-muted); flex:0 1 auto; }
+    .acp-v{ font-variant-numeric:tabular-nums; text-align:right; flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+    .acp-track{ font-size:11.5px; color:#c9a227; margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .acp-mini{ font-size:11px; font-weight:600; color:var(--text-main); background:var(--input-bg); border:1px solid rgba(128,128,128,0.22); border-radius:8px; padding:3px 9px; cursor:pointer; }
+    .acp-mini:hover{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    .acp-fly{ display:flex; flex-direction:column; gap:2px; width:100%; margin-top:14px; padding:11px 14px; border:none; border-radius:12px; cursor:pointer; text-align:left; color:#fff; background:var(--primary-color); }
+    .acp-fly:hover{ filter:brightness(1.08); }
+    .acp-fly-h{ font-size:13.5px; font-weight:700; }
+    .acp-fly-s{ font-size:11px; opacity:.86; font-variant-numeric:tabular-nums; }
+    .acp-note{ font-size:10.5px; color:var(--text-muted); margin-top:6px; }
+    .acp-src{ font-size:10px; color:var(--text-muted); margin-top:10px; padding-top:6px; border-top:1px solid rgba(128,128,128,0.16); }
+    @media (max-width:768px){ .ac-popup{ width:calc(100vw - 24px); } }
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }
@@ -853,7 +879,11 @@
     .pin-popup-actions button:hover{ background:var(--primary-color); color:#fff; }
     /* WebGL-pin hover tooltip — follows the cursor in screen space. Pins themselves are rendered on the WebGL canvas so they CANNOT drift. */
     .map-tooltip{ position:absolute; display:none; pointer-events:none; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); z-index:1500; width:280px; max-width:80vw; transform:translate(-50%,calc(-100% - 18px)); }
-    .map-tooltip::after{ content:''; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%) rotate(45deg); width:10px; height:10px; background:var(--popup-bg); border-right:1px solid rgba(128,128,128,0.15); border-bottom:1px solid rgba(128,128,128,0.15); }
+    .map-tooltip::after{ content:''; position:absolute; bottom:-6px; left:var(--tip-ax,50%); transform:translateX(-50%) rotate(45deg); width:10px; height:10px; background:var(--popup-bg); border-right:1px solid rgba(128,128,128,0.15); border-bottom:1px solid rgba(128,128,128,0.15); }
+    /* (#R175) …and the same tooltip UNDER its anchor, for the case where it does not fit above (see
+       positionTooltip). Only the direction changes: the arrow moves to the top edge and points up. */
+    .map-tooltip.map-tooltip-below{ transform:translate(-50%,18px); }
+    .map-tooltip.map-tooltip-below::after{ bottom:auto; top:-6px; border-right:none; border-bottom:none; border-left:1px solid rgba(128,128,128,0.15); border-top:1px solid rgba(128,128,128,0.15); }
     /* Legacy news reader styles kept (unused but referenced) */
     .news-reader{ display:none; }
     .news-reader.active{ display:none; }

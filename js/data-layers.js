@@ -2088,7 +2088,22 @@ window.IntMapModules.dataLayers=function(map,HOST){
         vrate: (typeof a.baro_rate==='number'?a.baro_rate*FPM:(typeof a.geom_rate==='number'?a.geom_rate*FPM:null)),
         squawk:a.squawk||'', onGround, category:(a.category||null),
         lastContact: a.seen!=null ? Math.floor(nowMs/1000 - a.seen) : Math.floor(nowMs/1000),
-        type: mil?'military':'civilian'
+        type: mil?'military':'civilian',
+        /* (#R175) …and the REST of what the feed already sends. The hover tooltip only ever had room for
+           eight fields, so these were parsed away and thrown out on every poll; the detail card behind a
+           click (js/aircraft-detail.js) shows them, and the flight simulator starts from the true airspeed
+           rather than the ground speed because of them. Nothing here is derived or guessed — every value
+           is a field airplanes.live reports, converted into the units this file already uses. */
+        ias:(typeof a.ias==='number'?a.ias:null), tas:(typeof a.tas==='number'?a.tas:null),
+        mach:(typeof a.mach==='number'?a.mach:null), oat:(typeof a.oat==='number'?a.oat:null),
+        navAlt:(typeof a.nav_altitude_mcp==='number'?a.nav_altitude_mcp*FT:null),
+        navQnh:(typeof a.nav_qnh==='number'?a.nav_qnh:null),
+        roll:(typeof a.roll==='number'?a.roll:null),
+        trueHdg:(typeof a.true_heading==='number'?a.true_heading:null),
+        magHdg:(typeof a.mag_heading==='number'?a.mag_heading:null),
+        windDir:(typeof a.wd==='number'?a.wd:null), windSpd:(typeof a.ws==='number'?a.ws:null),
+        rssi:(typeof a.rssi==='number'?a.rssi:null), messages:(typeof a.messages==='number'?a.messages:null),
+        src:(a.type||''), emergency:((a.emergency&&a.emergency!=='none')?a.emergency:'')
       };
     }
     async function fetchPlanes(){
@@ -2255,6 +2270,12 @@ window.IntMapModules.dataLayers=function(map,HOST){
       const cut=now-TRACK_TTL;
       for(const k in planeTracks){ const a=planeTracks[k]; if(!a.length||a[a.length-1][3]<cut) delete planeTracks[k]; }
       if(selectedPlane) drawTrack(selectedPlane);
+      /* (#R175) …and an open detail card is refreshed from the SAME poll, so the altitude and speed on the
+         card are never older than the aircraft on the map. Only the airframe the card is showing. */
+      try{ const P=window.IntMapAircraftPanel;
+        if(P&&P.isOpen()){ const k=P.current();
+          const d=k?list.find(x=>String(x.icao24||'').toUpperCase()===k):null;
+          if(d) P.update(d,{track:_trackCard(d.icao24)}); } }catch(_){}
     }
     /* a strip of ground metres along a leg, so the 3-D track is a ribbon rather than a zero-width sheet */
     function legRing(a,b,halfM){
@@ -2328,7 +2349,23 @@ window.IntMapModules.dataLayers=function(map,HOST){
       selectedPlane=(k&&planeTracks[k])?k:(k||null);
       drawTrack(selectedPlane);
       try{ refreshTrafficLayer('planes'); }catch(_){}   /* the glyph highlights itself via `sel` */
+      /* (#R175) the detail card follows the selection: deselecting an aircraft closes its card, and the
+         card's own Show/Hide button lands back here, so the two can never disagree about what is selected. */
+      try{ const P=window.IntMapAircraftPanel;
+        if(P&&P.isOpen()){ if(!selectedPlane&&P.current()) P.close();
+          else if(selectedPlane&&P.current()===selectedPlane.toUpperCase()) P.setTrack(_trackCard(selectedPlane)); } }catch(_){}
       return selectedPlane;
+    }
+    /* (#R175) what the detail card needs to know about the observed track: how much of it there is, and
+       whether it is on screen right now. */
+    function _trackCard(k){ const st=trackStats(k); return { fixes:st.fixes, minutes:st.minutes, on:(k===selectedPlane) }; }
+    /* (#R175) open the aircraft detail card — the photograph + every ADS-B field + "fly from here".
+       `d` is the internal plane record, which is the only shape that carries the full feed (the rendered
+       feature's properties are the tooltip subset), so a footprint hit that cannot find one falls back to
+       the properties rather than opening a half-empty card. */
+    function openPlaneCard(d){
+      try{ const P=window.IntMapAircraftPanel; if(!P||!d||!d.icao24) return false;
+        return P.open(d,{ track:_trackCard(d.icao24), onToggleTrack:(k)=>{ selectPlane(k===selectedPlane?null:k); } }); }catch(_){ return false; }
     }
     /* ground metres per screen pixel at the map centre — the same figure IntMapGeoEngine derives for the
        camera, computed here from the renderer's own map scale so it is defined at any pitch. */
@@ -2640,11 +2677,17 @@ window.IntMapModules.dataLayers=function(map,HOST){
           if(d&&d.icao24){
             if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
             selectPlane(d.icao24===selectedPlane?null:d.icao24);
-            if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
-              el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
-                reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
-                heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
-              positionTooltip(e.point); }
+            /* (#R175) a click now opens the DETAIL CARD — the airframe's own photograph, every ADS-B field
+               the feed carries, and "fly from these conditions". The pinned tooltip stays as the fallback
+               for the case where js/aircraft-detail.js did not load, so the click never becomes a no-op;
+               when the card does open it takes the tooltip's place rather than sitting on top of it. */
+            if(selectedPlane){
+              if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
+              else { const el=ensureMapTooltip(); el.style.display='block';
+                el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
+                  reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
+                  heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
+                positionTooltip(e.point); } }
             return; }
           if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
         }; map.on('click',_planesClear); }

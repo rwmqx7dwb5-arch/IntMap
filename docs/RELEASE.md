@@ -11,8 +11,9 @@ work branch → Pull Request → CI (green) → staging check → merge to main 
 **Current state (as of R144): production publishes via the CI-gated GitHub Actions workflow**
 (`.github/workflows/deploy.yml`). Pages **Source = “GitHub Actions”** and the repo variable
 **`ENABLE_PAGES_DEPLOY = true`** are both set, so every push to `main` runs build → static
-checks → hermetic browser tests → publish the exact committed tree (`git archive HEAD`) →
-post-deploy smoke against the live URL. Confirm a deploy landed with
+checks → hermetic browser tests → **build the site with Vite and publish `dist/`** (#R175; it
+published the exact committed tree via `git archive HEAD` until then) → post-deploy smoke
+against the live URL. Confirm a deploy landed with
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` — its `sha` must equal
 `git rev-parse origin/main`. (The older “Deploy from a branch” default is no longer in use; if
 `ENABLE_PAGES_DEPLOY` is ever unset the jobs skip green and Pages would fall back to it.)
@@ -63,8 +64,19 @@ never be mistaken for production. Production never shows it.
 ## Production deploy
 
 - **Active (current):** `deploy.yml` runs on push to `main` (Source = GitHub Actions,
-  `ENABLE_PAGES_DEPLOY = true`), re-runs static + browser tests, publishes the **exact committed
-  tree** plus a `build-info.json` stamp, then runs the post-deploy smoke against the live URL.
+  `ENABLE_PAGES_DEPLOY = true`), re-runs static + browser tests, then runs `npm run build` and
+  publishes **`dist/`** plus a `build-info.json` stamp, and finally runs the post-deploy smoke
+  against the live URL.
+- **(#R175) What is published is now a BUILD, not the repo tree.** `dist/` is the Vite output:
+  one hashed, minified, code-split bundle per entry, the CSS extracted and hashed, and the
+  root static assets (`sw.js`, `admin.html`, `data/`, the Köppen rasters, the flag webfont, the
+  Google verification file) copied verbatim by the `intmap-copy-static` plugin in
+  `vite.config.js`. The deploy asserts `dist/index.html` and `dist/sw.js` exist before
+  uploading, so an empty or half-copied build fails the job instead of blanking the site. The
+  browser gate that runs just above it tests a build of the same commit, so nothing reaches
+  production that the tests did not see.
+- **If a deploy ever needs to be reasoned about offline:** `npm ci && npm run build` from the
+  deployed commit reproduces `dist/` byte-for-byte apart from the content hashes.
 - **Fallback:** if `ENABLE_PAGES_DEPLOY` is unset, `deploy.yml` skips green and Pages reverts to
   “Deploy from a branch”. The steps below are how the gated path was turned on (kept for reference).
 

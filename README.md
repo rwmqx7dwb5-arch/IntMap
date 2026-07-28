@@ -51,7 +51,7 @@ Layers cover areas including:
 * Historical countries and borders
 * International organizations and regional groupings
 * Military expenditure, nuclear sites, front lines, and strategic infrastructure
-* Live aircraft and optional live ship traffic
+* Live aircraft and optional live ship traffic — click an aircraft for a photograph of that airframe, its full ADS-B readout, and a one-click flight from its own position, altitude, heading and airspeed
 * Satellite and Earth-observation data
 
 Layers can be combined rather than viewed in isolation. For example, you can place population density over terrain, compare railway networks with economic indicators, or examine a current event alongside the geography and infrastructure surrounding it.
@@ -145,6 +145,8 @@ IntMap also includes less serious, experimental ways to explore the world.
 ### Flight Simulator
 
 Fly an aircraft directly over the same globe, terrain, and geographic environment used by IntMap.
+
+You can also start a flight from a real aeroplane: click any aircraft in the live traffic layer and take off from exactly where it is, at its reported altitude, on its heading, at its airspeed.
 
 The simulator is under active development and is not intended to match a dedicated professional flight simulator. Desktop use is recommended.
 
@@ -248,6 +250,7 @@ Sources include organizations and projects such as:
 * Open-Meteo
 * GDELT
 * Google News
+* airplanes.live (community ADS-B) and Planespotters.net (aircraft photography)
 * Other weather, satellite, geographic, and statistical providers
 
 The complete current list is available under **Settings → Data & attribution**.

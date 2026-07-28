@@ -36,11 +36,16 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
+  // (#R175) The tests run against the BUILT site, not the sources. IntMap is a Vite build now, and the
+  // thing that has to keep working is what GitHub Pages publishes — the bundled, minified, hashed tree
+  // in dist/. Testing the sources instead would leave every build-only failure (a bad chunk split, a
+  // missing static asset, a module that only resolves through the dev server) to be found in
+  // production. `vite build` is ~10 s, so the whole suite still starts in well under a minute.
   webServer: {
-    command: `node scripts/serve.mjs --port ${PORT}`,
+    command: `npm run build && node scripts/serve.mjs --port ${PORT} --root dist`,
     url: BASE,
     reuseExistingServer: !isCI,
-    timeout: 30_000,
+    timeout: 180_000,
     stdout: 'ignore',
     stderr: 'pipe',
   },

@@ -1,9 +1,15 @@
 # Testing IntMap
 
-IntMap ships as a static site (`index.html` + assets). This tooling adds automated
-checks around it **without changing how the app is built or served**. Everything here
-lives in `package.json`, `scripts/`, `tests/`, and `playwright.config.js`; none of it is
-loaded by the browser app.
+IntMap ships as a static site — `index.html` + assets, with **no server of its own**. Since
+#R175 that static site is produced by a Vite build (`npm run build` → `dist/`) instead of
+being the repo tree itself. Everything in this document lives in `package.json`, `scripts/`,
+`tests/`, `vite.config.js` and `playwright.config.js`.
+
+> **The browser tests run against `dist/`, not the sources.** `playwright.config.js` builds
+> first and serves the build output, because what has to keep working is what GitHub Pages
+> publishes. A build-only failure — a bad chunk split, a static asset the build forgot to
+> copy, a module that only resolves through the dev server — would otherwise be discovered in
+> production. The build takes ~10 s, so the suite still starts in well under a minute.
 
 ## What runs
 
@@ -19,8 +25,11 @@ loaded by the browser app.
 ## Requirements
 
 - **Node.js ≥ 20** (CI and the pinned local version use Node 24 — see `.nvmrc`).
-- That is all. The static server is dependency-free (`scripts/serve.mjs`); the only
-  dev-dependencies are `@playwright/test` (browser tests) and `js-yaml` (workflow linting).
+- That is all. `npm ci` installs both halves of `package.json`: `dependencies` are the
+  libraries the browser ships (MapLibre, Turf, TopoJSON, Supabase, KaTeX, html2canvas — all
+  version-pinned, all bundled by Vite since #R175), and `devDependencies` are the build and
+  CI tooling (`vite`, `@playwright/test`, `acorn`, `js-yaml`). The static server that serves
+  the build output (`scripts/serve.mjs`) is still dependency-free.
 
 ## First-time setup
 
@@ -48,11 +57,22 @@ npx playwright test -g "map container"
 npx playwright test tests/smoke.spec.js
 ```
 
-Serve the app by itself (same as CI serves it — the repo root at `/`):
+Serve the app by itself (same as CI serves it — the **build output** at `/`):
 
 ```bash
-npm run serve            # http://127.0.0.1:4173/
+npm run serve            # builds, then http://127.0.0.1:4173/
 ```
+
+`npm run serve` still means "give me the real site on 4173" — it just runs `vite build` first.
+Two shortcuts around it:
+
+```bash
+npm run dev              # Vite dev server + HMR, straight from the sources (no build)
+npm run preview          # serve an existing dist/ without rebuilding it
+```
+
+Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
+`file://` is still unsupported, and now doubly so: the entry is an ES module.
 
 ### Non-AI news locator (`js/newsgeo.js`)
 

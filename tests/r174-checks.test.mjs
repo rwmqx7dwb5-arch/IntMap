@@ -9,8 +9,10 @@
 //   6. the drone planner exists, is catalogued for Atlas, and speaks five languages
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 
+const root = new URL('../', import.meta.url);
 const R = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 /* comments are prose here — every one of these files documents its own traps at length, and a naive
    substring search would happily match the explanation of a bug instead of the code that fixes it */
@@ -37,12 +39,23 @@ test('the cockpit camera can look up: no axis clamp, no padding compensation', (
 
 /* ─── 2. eye-anchored tilt ─────────────────────────────────────────────────────────────────── */
 
-test('the tilt anchor solves at the applied zoom, so zooming still moves the camera', () => {
-  const idx = R('index.html');
+test('the tilt anchor lets a zoom move the camera', () => {
+  /* (#R175) SUPERSEDED IN MECHANISM, KEPT IN INTENT. #R174 made zoom work again by freezing the solve
+     at the APPLIED zoom — and that is why the same report came back: freezing the distance also froze
+     the look-at TARGET's altitude, which after any tilt is a point in the sky, so "approach the
+     target" walked the eye towards the air (measured at pitch 110: 8,373 → 12,955 m while zooming IN).
+     The fix pre-scales the anchored eye by the zoom ratio and solves at the proposed zoom, which is
+     the identity for a pure tilt and a true dolly for a zoom. The assertion below is the same
+     QUESTION #R174 asked — does a zoom still move the camera — expressed against that solution. */
+  const idx = appShell(root);
   const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 12000);
   const code = stripComments(hook);
-  assert.match(code, /d1=c2c\*mpp\(lat,was\.zoom\)/, 'the look distance is frozen at the APPLIED zoom');
-  assert.doesNotMatch(code, /mpp\([^)]*,cur\.zoom\)/, 'never the proposed one — that is what swallowed zoom');
+  assert.match(code, /Math\.pow\(2,was\.zoom-cur\.zoom\)/, 'the zoom ratio is computed…');
+  assert.match(code, /const eAlt=\(d0\*Math\.cos\(p0\)\+was\.elevation\)\*k/, '…and applied to the anchored eye');
+  assert.match(code, /d1=c2c\*mpp\(lat,cur\.zoom\)/, 'so the solve can run at the PROPOSED zoom');
+  /* d0 — where the eye WAS — is still measured at the applied zoom; it is the d1 SOLVE that moved. */
+  assert.match(code, /const d0=c2c\*mpp\(was\.lat,was\.zoom\)/, 'the starting distance is still the applied one');
+  assert.doesNotMatch(code, /d1=c2c\*mpp\(lat,was\.zoom\)/, 'the frozen-distance solve is gone');
 });
 
 /* ─── 3. the aircraft track ────────────────────────────────────────────────────────────────── */
@@ -105,8 +118,8 @@ test('the volume tool has a finish-drawing button and no Solid choice', () => {
 /* ─── 6. the drone planner ─────────────────────────────────────────────────────────────────── */
 
 test('the drone planner is wired into the app', () => {
-  const idx = R('index.html');
-  assert.match(idx, /<script src="js\/drone-nav\.js"><\/script>/, 'the file is loaded');
+  const idx = appShell(root);
+  assert.match(idx, /import '\.\.\/js\/drone-nav\.js';/, 'the file is loaded by the Vite entry (#R175)');
   assert.match(idx, /window\.IntMapModules\.droneNav\(map,IM_HOST\)/, 'and instantiated');
   assert.match(idx, /id="btn-tool-drone"/, 'the Measure menu offers it');
   assert.match(idx, /data-proxy="btn-tool-drone"/, 'and so does the mobile tools sheet');
