@@ -1893,9 +1893,20 @@ window.addEventListener('DOMContentLoaded', () => {
               const dist=c2c*mpp; if(!isFinite(dist)||dist<=0) return null;
               const pit=(m.getPitch()||0)*r, brg=(m.getBearing()||0)*r;
               const ground=(m.getCameraTargetElevation)?(+m.getCameraTargetElevation()||0):0;
-              const alt=dist*Math.cos(pit)+ground, horiz=dist*Math.sin(pit);
-              const mLat=110574, mLng=(111320*Math.cos(c.lat*r))||1;
-              const lat=c.lat-horiz*Math.cos(brg)/mLat, lng=c.lng-horiz*Math.sin(brg)/mLng;
+              const alt=dist*Math.cos(pit)+ground;
+              /* (#R176) THE GROUND POSITION UNDER THE EYE, in the renderer's own coordinates.
+                 This used to step `dist·sin(pitch)` metres off the centre and divide by 110,574 m/° and
+                 111,320·cos(lat) m/° — a tangent plane, true only while the look distance is small next to
+                 the Earth. It is 16 km at z12 and 8,573 km at z3, and at z3 that division put the eye tens of
+                 degrees from where the renderer has it. The same mistake is what made unlimited tilt swing
+                 the viewpoint (see setTiltPivot), and this function is what MEASURED that tilt — an error
+                 cannot be seen with the yardstick that shares it. One merc unit is `worldSize` pixels, so
+                 the horizontal offset is cameraToCenterDistance/worldSize merc units, exact at any zoom. */
+              const dM=(c2c/world)*Math.sin(pit);
+              const _mY=la=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+la*r/2)))/360;
+              const ex=(180+c.lng)/360-dM*Math.sin(brg), ey=_mY(c.lat)+dM*Math.cos(brg);
+              const lng=((((ex*360-180)+180)%360+360)%360)-180;
+              const lat=360/Math.PI*Math.atan(Math.exp((180-ey*360)*r))-90;
               return (isFinite(alt)&&isFinite(lat)&&isFinite(lng))?{lng,lat,alt,distance:dist}:null;
             }catch(_){ return null; } },
           /* (#R172) …and the inverse: put the viewpoint AT {lng,lat,alt} looking along {bearing,pitch}, keeping
@@ -1943,12 +1954,50 @@ window.addEventListener('DOMContentLoaded', () => {
              changes gives the new target directly — and the target's ELEVATION is what carries the difference,
              which is why setCenterClamped(false) is a precondition (MapLibre pins that elevation to the ground
              otherwise, and a pinned target makes the eye's height a function of zoom and pitch alone). */
+          /* (#R176) …AND THAT GEOMETRY IS MERCATOR, NOT A TANGENT PLANE.
+             #R172-#R175 all solved this hook in METRES, converting with 110,574 m/° of latitude and
+             111,320·cos(lat) m/° of longitude — a plane laid on the map at the centre. That is only true while
+             the look distance is small next to the Earth. It is 16 km at z12, which is where every one of those
+             rounds measured, and 8,573 km at z3 — a third of the way round the planet, where a tangent plane
+             means nothing. Measured on a real ctrl-drag with the ceiling lifted:
+
+                 globe z3  Tokyo    viewpoint drift 22,218 km   worst single-frame jump 23,152 km
+                 globe z5                            349 km                            29 km
+                 globe z8                          5,603 m                            432 m
+                 globe z12                            75 m                              5 m
+                 globe z12 bearing 45                124 m                             12 m
+                 flat  z6  Tromsø (69.6°N)        58,506 m                          4,691 m
+
+             The centre marched 35°N → 85°N over eleven frames, then the old `Math.abs(lat)>89.5` guard fired,
+             returned {} — which #R173 already recorded as "applies the proposal verbatim and wipes every
+             correction before it" — and SNAPPED the centre back to 35°N. That discontinuity is the
+             「挙動もぎこちない」; the drift is the 「視点の位置を変えるな…変わる」.
+
+             Why four rounds reported 0 m: they measured the eye with the SAME flat formula the correction used.
+             An error is invisible to its own yardstick. The numbers above are measured in the renderer's own
+             coordinates instead — where the camera actually is in the world it draws.
+
+             The renderer's camera model is MERCATOR UNITS. Both transform.getCameraLngLat() and
+             transform.recalculateZoomAndCenter() work there, the latter with the explicit note "stay in pixels
+             … to avoid instability at extreme latitudes". The camera sits `cameraToCenterDistance / worldSize`
+             merc units from the centre along (−sin p·sin b, +sin p·cos b, +cos p), and altitude enters as
+             z = metres / circumferenceAtLatitude(centre). In those units the whole solve is LINEAR: exact at
+             every zoom and every latitude, no iteration, and — the part that matters most — no case in which it
+             cannot answer, so the frame that used to snap no longer exists. */
           setTiltPivot(mode){ const m=_m(); if(!m) return false;
             if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; } return true; }
-            const R=6371008.8, r=Math.PI/180;
-            let c2c=1050; try{ const v=m.transform&&m.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
-            let tile=512; try{ const v=m.transform&&m.transform.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
-            const mpp=(lat,zoom)=>(2*Math.PI*R*Math.cos(lat*r))/(tile*Math.pow(2,zoom));
+            const R=6371008.8, r=Math.PI/180, CIRC=2*Math.PI*R;
+            /* the Mercator projection, MapLibre's own (mercatorXfromLng / mercatorYfromLat and their inverses) */
+            const mX=lng=>(180+lng)/360;
+            const mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*r/2)))/360;
+            const lngOf=x=>{ const v=x*360-180; return ((v+180)%360+360)%360-180; };
+            const latOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*r))-90;
+            /* merc units per METRE of altitude at a latitude — MercatorCoordinate.fromLngLat scales z by
+               1/circumferenceAtLatitude, so altitude is measured against the parallel it sits on. */
+            const mpm=lat=>{ const c=CIRC*Math.cos(lat*r); return (isFinite(c)&&Math.abs(c)>1)?1/c:0; };
+            /* the Mercator world ends at ±85.051129°; a centre outside it is not a place. CLAMPED, never
+               declined — declining is what produced the snap. */
+            const YLO=mY(85.051129), YHI=mY(-85.051129);
             /* The PROPOSED camera lives in its own running state (MapLibre keeps a `_requestedCameraState` while
                a transformCameraUpdate hook is installed) and does NOT receive our override — so "did this update
                also move the centre?" has to be asked of the proposal's own history, not of the applied map, or
@@ -2010,41 +2059,47 @@ window.addEventListener('DOMContentLoaded', () => {
                    Solving with an unchanged pitch is the IDENTITY (the eye is derived from the applied camera
                    and immediately solved back into it), so answering always costs nothing and closes the hole. */
                 try{ if(window.__fsCamActive) return {}; }catch(_){}
-                const d0=c2c*mpp(was.lat,was.zoom); if(!isFinite(d0)||d0<=0) return {};
-                /* where the eye WAS, before this update */
-                const p0=was.pitch*r, b0=was.bearing*r;
+                /* THE LOOK DISTANCE IN MERC UNITS. cameraToCenterDistance is in PIXELS and depends only on the
+                   canvas height and the field of view, and one merc unit is `worldSize` pixels — so the whole
+                   camera offset is this one number, with no metres anywhere. Read from the PROPOSED transform
+                   so a resize mid-gesture cannot use a stale canvas height. */
+                let dPix=1050; try{ const v=t.cameraToCenterDistance; if(isFinite(v)&&v>0) dPix=v;
+                  else { const w=m.transform&&m.transform.cameraToCenterDistance; if(isFinite(w)&&w>0) dPix=w; } }catch(_){}
+                let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
+                const d0=dPix/(tile*Math.pow(2,was.zoom)), d1=dPix/(tile*Math.pow(2,cur.zoom));
+                if(!(isFinite(d0)&&d0>0&&isFinite(d1)&&d1>0)) return {};
+                /* where the eye WAS, before this update — the applied centre plus the camera offset */
+                const p0=was.pitch*r, b0=was.bearing*r, p1=cur.pitch*r, b1=cur.bearing*r;
+                const Cx=mX(was.lng), Cy=mY(was.lat), Cz=was.elevation*mpm(was.lat);
+                if(!(isFinite(Cx)&&isFinite(Cy)&&isFinite(Cz))) return {};
                 /* (#R175) …and where a ZOOM in the same update puts it. MapLibre's zoom is a DOLLY along the
                    view ray, which — with the target free — is the eye/target pair scaled by `k` about the map
                    point under the centre: every offset and every altitude shrinks by the same factor. Anchor
                    the SCALED eye and the solve below stays the identity for a pure zoom (centre unchanged,
-                   elevation·k) while still holding the eye still for a pure tilt (k = 1). */
-                const eAlt=(d0*Math.cos(p0)+was.elevation)*k, h0=d0*Math.sin(p0)*k;
-                const eLat=was.lat-h0*Math.cos(b0)/110574, eLng=was.lng-h0*Math.sin(b0)/((111320*Math.cos(was.lat*r))||1);
-                /* …and where the target has to be for the eye to stay there at the NEW tilt.
-                   Solved, not assumed: the renderer's metres-per-pixel is taken at the TARGET's latitude, and
-                   the target is what we are solving for, so the two chase each other. Three passes converge
-                   far below a pixel; one pass left ~33 m of slip per frame at z12 (≈400 m over a full drag),
-                   which is exactly the 0.2 % that a 16 km look distance shifts the latitude by. */
-                /* (#R174) …AT THE LOOK DISTANCE THE MAP ALREADY HAS — `was.zoom`, never the proposal's.
-                   This hook holds the eye still while the ATTITUDE changes; solving at the PROPOSED zoom
-                   held it still while the ZOOM changed too, and zoom is the one thing that is supposed to
-                   move the camera. Measured at pitch 60 with the ceiling lifted: z12→z16 left the eye at
-                   8,373 m every step (「ある程度からズームインできない」) and z17 hung the tab.
-                   (#R175) FREEZING the distance was the wrong half of that fix, and it is why the same
-                   report came back. It made a pure zoom pass through, but it also froze the TARGET's
-                   altitude — and after any tilt that target is up in the sky (6,914 m at pitch 85, 14,099 m
-                   at 110 from z12 over Tokyo), so "get closer to the target" walked the eye towards a point
-                   in the air. Measured with the wheel: pitch 85 → 8,373 m stalling at 7,205 m over 2.3
-                   zoom levels and converging on 6,914; pitch 110 → the eye climbed 8,373 → 12,955 m, i.e.
-                   zooming in moved AWAY from the ground. Solve at the PROPOSED zoom with the eye pre-scaled
-                   by `k` above: identical to #R174 for a pure tilt, and a true dolly for a zoom. */
-                const p1=cur.pitch*r, b1=cur.bearing*r;
-                let lat=eLat, lng=eLng, d1=d0;
-                for(let i=0;i<3;i++){ d1=c2c*mpp(lat,cur.zoom); if(!isFinite(d1)||d1<=0) return {};
-                  const h1=d1*Math.sin(p1);
-                  lat=eLat+h1*Math.cos(b1)/110574; lng=eLng+h1*Math.sin(b1)/((111320*Math.cos(eLat*r))||1); }
-                const elevation=eAlt-d1*Math.cos(p1);
-                if(!(isFinite(lat)&&isFinite(lng)&&isFinite(elevation))||Math.abs(lat)>89.5) return {};
+                   elevation·k) while still holding the eye still for a pure tilt (k = 1).
+                   (#R176) In merc units that scaling is free: k·d0 IS d1, so the dollied eye is just the old
+                   attitude taken at the new look distance. The two statements #R174 and #R175 argued over —
+                   "hold the eye while the attitude changes" and "a zoom is a dolly" — are the same equation
+                   here, which is why neither has to be traded against the other any more. */
+                const Ex=Cx-d1*Math.sin(p0)*Math.sin(b0),
+                      Ey=Cy+d1*Math.sin(p0)*Math.cos(b0),
+                      Ez=k*Cz+d1*Math.cos(p0);
+                /* …and where the target has to be for the eye to stay exactly there at the NEW attitude.
+                   One subtraction per axis. #R172-#R175 needed three iterations here because metres-per-pixel
+                   was taken at the TARGET's latitude while the target was the unknown; in merc units nothing
+                   depends on latitude, so there is nothing to converge. */
+                const Tx=Ex+d1*Math.sin(p1)*Math.sin(b1),
+                      Ty=Ey-d1*Math.sin(p1)*Math.cos(b1),
+                      Tz=Ez-d1*Math.cos(p1);
+                if(!(isFinite(Tx)&&isFinite(Ty)&&isFinite(Tz))) return {};
+                /* Past the edge of the Mercator world the tilt cannot be honoured with the eye where it is.
+                   CLAMP and keep answering: #R173 established that a declined frame applies the proposal
+                   verbatim and wipes every correction before it, so a bail-out here is a guaranteed jump —
+                   that is exactly the 23,152 km snap the 89.5° guard used to produce at z3. */
+                const lat=latOf(Math.min(YHI,Math.max(YLO,Ty))), lng=lngOf(Tx);
+                /* altitude reads back against the parallel the NEW centre sits on (the renderer's convention) */
+                const s=mpm(lat); const elevation=s?Tz/s:0;
+                if(!(isFinite(lat)&&isFinite(lng)&&isFinite(elevation))) return {};
                 /* a real LngLat, not a pair: the renderer hands the override straight to Transform.setCenter */
                 let ctr; try{ ctr=new maplibregl.LngLat(lng,lat); }catch(_){ ctr={lng,lat}; }
                 return { center:ctr, elevation };
@@ -4885,8 +4940,14 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
      and the terrain DEM is cast in 96 rays (earth-curvature-corrected) → terrain-blocked dead zones are
      filled red, the visible coverage outlined green. Uses the same cached terrarium DEM as the readout. ===== */
-  /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
+  /* (#R166) moved to js/map-tools.js, then (#R176) to js/viewshed.js — see Architecture.md §3.1. */
   window.IntMapModules.los(map,IM_HOST);
+
+  /* ===== (#R176) The three simulators the round was asked for. Each is self-contained in its own file
+     and reached from the map's right-click menu and from Atlas (never from the Measure menu). ===== */
+  window.IntMapModules.terrainWater(map,IM_HOST);   /* sculpt the ground, drop water, watch it route */
+  window.IntMapModules.seismic(map,IM_HOST);        /* P/S/surface wavefronts, arrivals, intensity */
+  window.IntMapModules.insolation(map,IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
 
   /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
      avoids land, follows open water (a near-coast cost penalty keeps it off the 0 m coastline, per

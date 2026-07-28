@@ -15,7 +15,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.radiation=function(map,HOST){
+window.IntMapModules.radiation=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -300,7 +300,7 @@ window.IntMapModules.popArea=function(map,HOST){
   })();
 };
 
-window.IntMapModules.slope=function(map,HOST){
+window.IntMapModules.slope=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -359,7 +359,7 @@ window.IntMapModules.slope=function(map,HOST){
     return { toggle, run, clear:()=>toggle(false), setMode }; })();
 };
 
-window.IntMapModules.rf=function(map,HOST){
+window.IntMapModules.rf=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -437,7 +437,7 @@ window.IntMapModules.rf=function(map,HOST){
     return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
-window.IntMapModules.sun=function(map,HOST){
+window.IntMapModules.sun=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -449,6 +449,8 @@ window.IntMapModules.sun=function(map,HOST){
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
     const SN=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    /* (#R176) shared style for the three engine buttons added below */
+    const SBTN='flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
     const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
     function sunPos(date,lat,lng){ const lw=rad*-lng, phi=rad*lat, d=toDays(date);
       const M=rad*(357.5291+0.98560028*d), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI;
@@ -499,7 +501,8 @@ window.IntMapModules.sun=function(map,HOST){
       const rd=panel.querySelector('.sun-read'); if(rd){ const dir=['N','NE','E','SE','S','SW','W','NW'][Math.round(sp.azCompass/45)%8];
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
-    function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows(); }
+    function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows();
+      try{ drawTerrain(); }catch(_){}   /* (#R176) the terrain shadow follows the same clock as the buildings' */ }
     function syncInputs(){ if(!panel) return; const di=panel.querySelector('.sun-date'), ti=panel.querySelector('.sun-time'), tl=panel.querySelector('.sun-slider');
       try{ if(di) di.value=when.toISOString().slice(0,10); }catch(_){} const mins=when.getHours()*60+when.getMinutes(); if(tl) tl.value=mins; if(ti) ti.textContent=fmtT(when); }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='sun-panel';
@@ -509,22 +512,101 @@ window.IntMapModules.sun=function(map,HOST){
         +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
         +'<div class="sun-read" style="font-size:12px;color:var(--text-main);"></div>'
-        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+SN('Shadows are cast by OSM buildings in view (zoom in past ~z15). Sun path from the SunCalc algorithm for the map centre; 3D building faces are lit from the sun.','影は表示中のOSM建物から算出（z15以上に拡大）。太陽の位置はSunCalcアルゴリズムで地図中心について計算、3D建物は太陽方向から陰影付け。','Schatten aus OSM-Gebäuden.','Тени от зданий OSM.','Sombras de edificios OSM.')+'</div></div>';
+        /* (#R176) 「影・日照時間エンジン」 — the terrain's own shadow, the whole-day shadow union and the
+           annual sunlight budget at a point. The heavy work is js/insolation.js; this panel owns the
+           controls so there is ONE sun tool, not two (the user's choice for this round). */
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'
+          +'<button class="sun-terr" style="'+SBTN+'">⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+'</button>'
+          +'<button class="sun-solst" style="'+SBTN+'">❄ '+SN('Winter-solstice shade','冬至の影','Wintersonnenwende','Зимнее солнцестояние','Solsticio de invierno')+'</button>'
+          +'<button class="sun-point" style="'+SBTN+'">◎ '+SN('Sunlight at a point','地点の日照時間','Sonnenstunden am Punkt','Часы солнца в точке','Horas de sol en un punto')+'</button>'
+        +'</div>'
+        +'<div class="sun-eng" style="font-size:11.5px;color:var(--text-main);line-height:1.55;"></div>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+SN('Shadows are cast by OSM buildings in view (zoom in past ~z15) and, with the terrain button on, by the real elevation model. Sun path from the SunCalc algorithm; 3D building faces are lit from the sun. The point analysis reads a 360° horizon off the DEM (curvature + refraction) and steps a whole year against it; the irradiance is CLEAR-SKY, not a weather forecast.','影は表示中のOSM建物から算出（z15以上に拡大）、「地形の影」を押すと実標高データによる山影も加わります。太陽の位置はSunCalcアルゴリズム、3D建物は太陽方向から陰影付け。地点解析はDEMから360°の地平線（地球曲率＋大気屈折を考慮）を求め、1年分の太陽位置と比較します。日射量は快晴時の値で、天気予報ではありません。','Schatten aus OSM-Gebäuden und – mit der Geländetaste – aus dem echten Höhenmodell. Die Punktanalyse liest einen 360°-Horizont aus dem DEM und prüft ein ganzes Jahr dagegen; die Einstrahlung gilt für klaren Himmel.','Тени от зданий OSM и, с кнопкой рельефа, от реальной модели высот. Анализ точки строит горизонт 360° по DEM и проверяет весь год; инсоляция — для ясного неба.','Sombras de edificios OSM y, con el botón de terreno, del modelo real de elevación. El análisis de punto obtiene un horizonte de 360° del DEM y recorre un año entero; la irradiancia es de cielo despejado.')+'</div></div>';
       document.body.appendChild(panel);
       panel.querySelector('.sun-close').onclick=()=>close();
+      panel.querySelector('.sun-terr').onclick=()=>toggleTerrain();
+      panel.querySelector('.sun-solst').onclick=()=>solsticeShade();
+      panel.querySelector('.sun-point').onclick=()=>pickPoint();
       panel.querySelector('.sun-now').onclick=()=>setTime(new Date());
       panel.querySelector('.sun-date').onchange=e=>{ const p=e.target.value.split('-'); const nd=new Date(when); nd.setFullYear(+p[0],+p[1]-1,+p[2]); setTime(nd); };
-      panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(drawShadows,120); };
+      panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },120); };
       const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); },700); } };
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sun-head')); }catch(_){}
       return panel; }
-    map.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(drawShadows,500); } });
-    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); drawShadows(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
-    return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes }; })();
+    /* ===== (#R176) the terrain/annual half of the engine — thin controls over js/insolation.js ===== */
+    let terrainOn=false, engBusy=false, pickH=null;
+    const ENG=()=>window.IntMapInsolation;
+    function engSay(h){ const e=panel&&panel.querySelector('.sun-eng'); if(e) e.innerHTML=h; }
+    function syncTerrBtn(){ const b=panel&&panel.querySelector('.sun-terr'); if(!b) return;
+      b.style.background=terrainOn?'var(--primary-color)':'var(--input-bg)'; b.style.color=terrainOn?'#fff':'var(--text-main)'; }
+    const nf=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
+    async function drawTerrain(){ if(!terrainOn||engBusy||!ENG()) return; engBusy=true;
+      try{ const r=await ENG().shade(when,{refit:true});
+        if(r) engSay('⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+': '
+          +nf(r.shadedFrac*100,1)+'% '+SN('of the view','が影','der Ansicht','вида','de la vista')
+          +' · '+SN('sun','太陽','Sonne','солнце','sol')+' '+nf(r.altDeg,1)+'° / '+nf(r.azDeg)+'°'
+          +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas')+' · DEM z'+r.z);
+      }catch(_){ } engBusy=false; }
+    function toggleTerrain(){ terrainOn=!terrainOn; syncTerrBtn();
+      if(terrainOn){ engSay(SN('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…')); drawTerrain(); }
+      else { try{ ENG()&&ENG().clear(); }catch(_){} engSay(''); } }
+    async function solsticeShade(){ if(engBusy||!ENG()) return; engBusy=true;
+      engSay(SN('Stepping through the solstice day…','冬至の1日を計算中…','Sonnenwendtag wird durchlaufen…','Расчёт дня солнцестояния…','Recorriendo el solsticio…'));
+      try{
+        const lat=map.getCenter().lat, y=when.getFullYear();
+        const d=new Date(y, lat>=0?11:5, 21, 12, 0, 0);               /* the SHORT day for this hemisphere */
+        const r=await ENG().dayShadow(d,{refit:true});
+        terrainOn=true; syncTerrBtn();
+        if(r) engSay('❄ '+SN('Never sunlit on','日照ゼロ（','Nie besonnt am ','Без солнца ','Sin sol el ')+r.day+SN('','）',': ',': ',': ')+' — <b>'+nf(r.neverSunFrac*100,1)+'%</b> '
+          +SN('of the view','の面積','der Ansicht','вида','de la vista')+' · '+r.steps+' '+SN('sun positions','時刻で判定','Sonnenstände','положений','posiciones')
+          +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas'));
+      }catch(_){ } engBusy=false; }
+    function endPick(){ try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
+    function pickPoint(){ endPick(); try{ map.getCanvas().style.cursor='crosshair'; }catch(_){}
+      engSay(SN('Click the point to analyse.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
+      pickH=async e=>{ endPick(); await analysePoint(e.lngLat.lng,e.lngLat.lat); };
+      try{ map.once('click',pickH); }catch(_){} }
+    async function analysePoint(lng,lat){ if(engBusy||!ENG()) return null; engBusy=true;
+      engSay(SN('Building the 360° horizon and stepping a year…','360°の地平線と1年分を計算中…','360°-Horizont und ein Jahr…','Горизонт 360° и целый год…','Horizonte de 360° y un año…'));
+      let a=null;
+      try{ a=await ENG().analyse(lng,lat,{});
+        const d=await ENG().dayAt(lng,lat,when,{});
+        const hhmm=t=>{ try{ return t?t.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}):'—'; }catch(_){ return '—'; } };
+        engSay('◎ '+lat.toFixed(4)+', '+lng.toFixed(4)+' · '+nf(a.groundM)+' m'
+          +'<br><b>'+nf(a.annualHours)+' h</b> '+SN('of sun a year','の年間日照','Sonne pro Jahr','солнца в год','de sol al año')
+          +' ('+SN('open horizon would give','遮蔽なしなら','ohne Horizont','без горизонта','sin horizonte')+' '+nf(a.annualOpenHours)+' h · −'+nf(a.lossPct,1)+'%)'
+          +'<br>'+SN('Winter solstice','冬至','Wintersonnenwende','Зимнее солнцестояние','Solsticio de invierno')+' <b>'+nf(a.winterSolstice,1)+' h</b>'
+          +' · '+SN('summer','夏至','Sommer','лето','verano')+' '+nf(a.summerSolstice,1)+' h'
+          +' · '+SN('equinox','春分','Tagundnachtgleiche','равноденствие','equinoccio')+' '+nf(a.equinox,1)+' h'
+          +(a.zeroSunDays?('<br><b>'+a.zeroSunDays+'</b> '+SN('days a year with no sun at all','日は終日日が当たりません','Tage ohne Sonne','дней без солнца','días sin sol')):'')
+          +'<br>'+SN('Usable for PV','発電可能時間','PV-nutzbar','Пригодно для СЭС','Útil para FV')+' (>'+10+'°): <b>'+nf(a.pvHours)+' h</b> · '
+          +SN('clear-sky beam','快晴時の直達日射','klarer Himmel','ясное небо','cielo despejado')+' '+nf(a.beamKWhM2)+' kWh/m²'
+          +'<br>'+SN('Today','この日','Heute','Сегодня','Hoy')+': '+hhmm(d.first)+' → '+hhmm(d.last)+' ('+nf(d.hours,1)+' h) · '
+          +SN('highest ridge','最も高い稜線','höchster Grat','высший гребень','cresta más alta')+' '+nf(a.maxHorizonDeg.deg,1)+'° @ '+nf(a.maxHorizonDeg.azimuth)+'°'
+          +'<br><span style="opacity:0.72;">'+SN('horizon scanned to','地平線の探索半径','Horizont bis','горизонт до','horizonte hasta')+' '+nf(a.radiusKm)+' km · DEM z'+a.demZ+' · '+a.year+'</span>');
+      }catch(_){ engSay(SN('Could not read enough terrain here.','この地点の地形データを取得できませんでした。','Zu wenig Geländedaten.','Недостаточно данных рельефа.','Terreno insuficiente aquí.')); }
+      engBusy=false; return a; }
+
+    map.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },500); } });
+    /* (#R176) This panel bakes every label at construction and was built once, so switching language
+       left it in the old one — measured: the three new buttons stayed English after a switch to JP.
+       Nothing here holds state that `when` and the module-level flags do not, so the honest fix is to
+       throw the panel away and let ensurePanel() rebuild it in the new language. */
+    window.addEventListener('intmap-lang',()=>{ if(!panel) return;
+      const wasOpen=panel.style.display!=='none';
+      if(playing){ clearInterval(playing); playing=0; }
+      try{ panel.remove(); }catch(_){} panel=null;
+      if(wasOpen) open(); });
+    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
+    return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,
+      /* (#R176) the new half, so Atlas and the tests can drive it */
+      terrainShadow:(on)=>{ const want=(on==null)?!terrainOn:!!on; if(want!==terrainOn) toggleTerrain(); return terrainOn; },
+      solsticeShade, analysePoint,
+      state:()=>({ open:!!(panel&&panel.style.display!=='none'), when:when.toISOString(), terrainOn }) }; })();
 };
 
-window.IntMapModules.transitReach=function(map,HOST){
+window.IntMapModules.transitReach=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -595,7 +677,7 @@ window.IntMapModules.transitReach=function(map,HOST){
     return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
-window.IntMapModules.disaster=function(map,HOST){
+window.IntMapModules.disaster=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -694,7 +776,7 @@ window.IntMapModules.disaster=function(map,HOST){
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
-window.IntMapModules.earthReplay=function(map,HOST){
+window.IntMapModules.earthReplay=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
