@@ -181,6 +181,19 @@ test('the new UI strings exist in all five languages', () => {
   five(callAt(tp, "_L('Resume drawing'"));
 });
 
+test('every route that enters the planner is sanitised at the door (#R174 SEC)', () => {
+  const d = stripComments(R('js/drone-nav.js'));
+  assert.match(d, /function sanitizeRoute\(r\)/, 'one door for a whole route');
+  assert.match(d, /function sanitizeSpec\(sp\)/, '…and one for the aircraft limits');
+  /* the three ways in that never touch the panel's own number fields */
+  assert.match(d, /routes=Array\.isArray\(j\)\?j\.map\(sanitizeRoute\)\.filter\(Boolean\):\[\]/, 'localStorage');
+  assert.match(d, /const clean=sanitizeRoute\(r\);/, 'setRoute()');
+  assert.match(d, /route\.spec=sanitizeSpec\(Object\.assign\(\{\},route\.spec,patch\|\|\{\}\)\)/, 'setSpec()');
+  /* …and the sink escapes anyway — CodeQL found it there, and one of the two being right is not a design */
+  assert.match(d, /value="\$\{esc\(route\.spec\[f\.k\]\)\}"/, 'the spec field escapes at the sink');
+  assert.match(d, /value="\$\{esc\(Math\.round\(_fin\(w\.alt,0\)\)\)\}"/, 'and so does the waypoint altitude');
+});
+
 test('the planner owns no camera and hijacks no gesture', () => {
   const d = stripComments(R('js/drone-nav.js'));
   assert.doesNotMatch(d, /setDragPan|dragPan|jumpTo\(/, 'it never takes the map’s input or writes the whole camera');

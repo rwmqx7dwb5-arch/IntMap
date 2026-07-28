@@ -339,6 +339,45 @@ test('the drone planner answers with the real terrain, and says exactly what fai
   expect(errs, 'no page errors along the way').toEqual([]);
 });
 
+/* (#R174 SEC) CodeQL caught this on the PR: a route can arrive from localStorage or from
+   IntMapDrone.setRoute/setSpec without ever passing the panel's numeric inputs, and its spec values reached
+   an `value="…"` attribute raw. Sanitised at the door AND escaped at the sink — one of the two being right
+   is not a design. */
+test('a hostile route cannot inject markup into the planner panel', async ({ page }) => {
+  test.setTimeout(120000);
+  await boot(page);
+  const PAYLOAD = '"><img src=x onerror="window.__pwned=1">';
+  // 1. straight through the public API
+  await page.evaluate(p => { const D = window.IntMapDrone; D.open();
+    D.setRoute({ id: p, name: p, presetId: p, spec: { cruiseSpeed: p, maxAgl: p, batteryWh: p },
+      wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p, hold: p }] }); D.open(); }, PAYLOAD);
+  await page.waitForTimeout(600);
+  // 2. and through the store, which is the path the API cannot police
+  await page.evaluate(p => { localStorage.setItem('intmap_drone_routes', JSON.stringify([
+    { id: p, name: p, spec: { cruiseSpeed: p }, wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p }] }])); }, PAYLOAD);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!window.IntMapDrone, null, { timeout: 60000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.IntMapDrone.open());
+  await page.waitForTimeout(800);
+
+  const r = await page.evaluate(() => ({ pwned: !!window.__pwned,
+    imgs: document.querySelectorAll('#drone-panel img').length,
+    spec: window.IntMapDrone.spec(),
+    /* the stored route is what carried the payload across the reload; the panel lists it by name */
+    savedName: (window.IntMapDrone.routes()[0] || {}).name,
+    savedShown: (document.querySelector('#drone-panel .dn-open') || {}).textContent,
+    saved: window.IntMapDrone.routes().length }));
+  expect(r.pwned, 'no script ran').toBe(false);
+  expect(r.imgs, 'no element was injected into the panel').toBe(0);
+  // the numbers really are numbers, not strings that happen to render
+  Object.values(r.spec).forEach(v => expect(typeof v, 'every aircraft limit is a number').toBe('number'));
+  expect(isFinite(r.spec.cruiseSpeed)).toBe(true);
+  expect(r.saved, 'the stored route was accepted, not thrown away').toBe(1);
+  expect(r.savedName, 'the name survives intact in the model').toContain('<img');
+  expect(r.savedShown, '…and is shown as TEXT, which is the whole point').toContain('<img');
+});
+
 test('the drone planner is reachable from Atlas and fits a phone', async ({ page }) => {
   test.setTimeout(180000);
   await page.setViewportSize({ width: 390, height: 780 });

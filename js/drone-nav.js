@@ -150,15 +150,35 @@ window.IntMapModules.droneNav=function(map,HOST){
   function newRoute(){ return { id:'dr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     name:L('New route','新しい経路','Neue Route','Новый маршрут','Nueva ruta'),
     spec:DEFAULT_SPEC(), presetId:'prosumer', wp:[], created:Date.now(), updated:Date.now() }; }
-  function loadStore(){ try{ const j=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(j)) routes=j.filter(r=>r&&r.id&&Array.isArray(r.wp)); }catch(_){ routes=[]; } }
+  /* ---- the boundary ------------------------------------------------------------------------
+     (#R174 SEC) A route can arrive from three places that are NOT the panel's own number fields:
+     localStorage, IntMapDrone.setRoute() and IntMapDrone.setSpec(). Everything the panel writes into
+     markup has to be a number or an escaped string, and the honest place to guarantee that is where the
+     data comes IN — not at each of the two dozen interpolations that read it back out. CodeQL found the
+     hole the other way round (spec values reached an `value="…"` attribute raw); this closes it at the
+     door, and the render site escapes as well, because one of the two being right is not a design. */
+  function _fin(v,dflt){ const n=Number(v); return isFinite(n)?n:dflt; }
+  function sanitizeSpec(sp){ const base=DEFAULT_SPEC(), out={};
+    SPEC_FIELDS.forEach(f=>{ const v=_fin(sp&&sp[f.k], base[f.k]);
+      out[f.k]=Math.max(f.min,Math.min(f.max,v)); });
+    return out; }
+  function sanitizeRoute(r){ if(!r||typeof r!=='object') return null;
+    const wp=(Array.isArray(r.wp)?r.wp:[]).filter(p=>p&&isFinite(+p.lng)&&isFinite(+p.lat)).slice(0,400)
+      .map(p=>({ lng:+p.lng, lat:+p.lat, alt:_fin(p.alt,0), ref:(p.ref==='amsl'?'amsl':'agl'),
+        hold:Math.max(0,Math.min(3600,_fin(p.hold,0))) }));
+    return { id:String(r.id||newRoute().id).slice(0,64), name:String(r.name==null?'':r.name).slice(0,60)||newRoute().name,
+      spec:sanitizeSpec(r.spec), presetId:(PRESETS.some(p=>p.id===r.presetId)?r.presetId:'custom'),
+      wp, created:_fin(r.created,Date.now()), updated:_fin(r.updated,Date.now()) }; }
+  function loadStore(){ try{ const j=JSON.parse(localStorage.getItem(KEY)||'[]');
+    routes=Array.isArray(j)?j.map(sanitizeRoute).filter(Boolean):[]; }catch(_){ routes=[]; } }
   function saveStore(){ try{ localStorage.setItem(KEY,JSON.stringify(routes.slice(0,60))); return true; }catch(_){ return false; } }
   function saveRoute(){ if(!route) return false; route.updated=Date.now();
     const i=routes.findIndex(r=>r.id===route.id);
-    const copy=JSON.parse(JSON.stringify(route));
+    const copy=sanitizeRoute(route); if(!copy) return false;
     if(i>=0) routes[i]=copy; else routes.unshift(copy);
     return saveStore(); }
   function openRoute(id){ const r=routes.find(x=>x.id===id); if(!r) return false;
-    route=JSON.parse(JSON.stringify(r)); lastResult=null; return true; }
+    route=sanitizeRoute(r); lastResult=null; return true; }
   function deleteRoute(id){ const i=routes.findIndex(x=>x.id===id); if(i<0) return false;
     routes.splice(i,1); saveStore();
     if(route&&route.id===id){ route=newRoute(); lastResult=null; draw(null); }
@@ -564,7 +584,7 @@ window.IntMapModules.droneNav=function(map,HOST){
       return `<div class="dn-wp" data-i="${i}">
         <span class="dn-wp-n">${i+1}</span>
         <span class="dn-wp-ll">${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}</span>
-        <input type="number" class="dn-wp-alt" data-i="${i}" step="1" inputmode="decimal" value="${Math.round(+w.alt||0)}">
+        <input type="number" class="dn-wp-alt" data-i="${i}" step="1" inputmode="decimal" value="${esc(Math.round(_fin(w.alt,0)))}">
         <span class="dn-wp-ref">${w.ref==='amsl'?'AMSL':'AGL'}</span>
         <span class="dn-wp-both">${amsl==null?'':(fmtM(amsl)+' AMSL · '+fmtM(agl)+' AGL')}</span>
         <span class="dn-wp-btns"><button type="button" data-up="${i}" title="↑">↑</button><button type="button" data-down="${i}" title="↓">↓</button><button type="button" data-del="${i}" title="✕">✕</button></span>
@@ -582,7 +602,7 @@ window.IntMapModules.droneNav=function(map,HOST){
       ? `<div class="dn-vio-h">${L('Conditions not met','飛行条件を満たさない点','Nicht erfüllte Bedingungen','Невыполненные условия','Condiciones no cumplidas')} (${st.violations.length})</div>`
         +st.violations.map(v=>`<div class="dn-vio dn-${esc(v.severity)}" data-at="${v.at}"><b>${esc(kindLabel(v.kind))}</b> <span class="dn-vio-at">${v.toKm?('· '+v.fromKm.toFixed(2)+'–'+v.toKm.toFixed(2)+' km'):''}</span><br>${esc(v.text)}</div>`).join('')
       : `<div class="dn-ok">✓ ${L('Every condition is met.','すべての飛行条件を満たしています。','Alle Bedingungen erfüllt.','Все условия выполнены.','Se cumplen todas las condiciones.')}</div>`);
-    const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${route.spec[f.k]}"><i>${f.unit}</i></label>`).join('');
+    const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${esc(route.spec[f.k])}"><i>${f.unit}</i></label>`).join('');
     const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button type="button" class="dn-del" data-drop="${esc(r.id)}">✕</button></div>`).join('')}</div>`:'';
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
@@ -725,11 +745,12 @@ window.IntMapModules.droneNav=function(map,HOST){
     /* the route model */
     newRoute(){ route=newRoute(); lastResult=null; draw(null); return route; },
     route:()=>route?JSON.parse(JSON.stringify(route)):null,
-    setRoute(r){ if(!r||!Array.isArray(r.wp)) return false; route=JSON.parse(JSON.stringify(r));
-      if(!route.spec) route.spec=DEFAULT_SPEC(); if(!route.id) route.id=newRoute().id; lastResult=null; return true; },
+    setRoute(r){ if(!r||!Array.isArray(r.wp)) return false; const clean=sanitizeRoute(r);
+      if(!clean) return false; route=clean; lastResult=null; return true; },
     addWaypoint(lng,lat,alt,ref){ const n=addWaypoint(lng,lat,alt,ref); if(panelOpen()) render(); return n; },
     setWaypoint, removeWaypoint, moveWaypoint, clearRoute,
-    setSpec(patch){ if(!route) route=newRoute(); Object.assign(route.spec,patch||{}); route.presetId='custom'; lastResult=null; return route.spec; },
+    setSpec(patch){ if(!route) route=newRoute();
+      route.spec=sanitizeSpec(Object.assign({},route.spec,patch||{})); route.presetId='custom'; lastResult=null; return route.spec; },
     spec:()=>route?Object.assign({},route.spec):null,
     presets:()=>PRESETS.map(p=>({ id:p.id, name:presetName(p), spec:Object.assign({},p.spec) })),
     usePreset(id){ const x=PRESETS.find(q=>q.id===id); if(!x||!route) return false;
