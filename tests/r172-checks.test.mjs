@@ -17,13 +17,17 @@
 //   · renderer independence keeps going up, checked with a PARSER (prose says `map.` too).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
 const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const INDEX = R('index.html');
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js'));
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js — so INDEX
+   is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
+   JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
+const INDEX = appShell(new URL('../', import.meta.url));
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
 const stripComments = src => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* Real `map.<x>` member reads, via the parser — a regex cannot do this in either direction

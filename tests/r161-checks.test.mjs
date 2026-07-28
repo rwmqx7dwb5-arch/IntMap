@@ -207,7 +207,7 @@ test('#13 supabase/functions/_shared/newsgeo.js mirrors js/newsgeo.js', async ()
 
 /* ── 14. client wiring ────────────────────────────────────────────────────── */
 test('#14 index.html loads the engine and uses it FIRST in analyzeContext', () => {
-  assert.ok(html.includes('<script src="js/newsgeo.js"></script>'), 'engine script tag missing');
+  assert.ok(html.includes("import '../js/newsgeo.js';"), 'engine not imported by the Vite entry (#R175)');
   assert.ok(html.includes('const NG=window.IntMapNewsGeo;'), 'analyzeContext does not read the engine');
   assert.ok(html.includes("subjectType=_NG_KIND[r.kind]||'city'"), 'engine result not mapped to a place type');
   /* the legacy scorer must still be reachable as the fallback */

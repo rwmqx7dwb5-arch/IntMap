@@ -16,11 +16,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { appSource } from './app-source.mjs';
+import { appSource, appShell } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
-const html = rd('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
+   appShell() concatenates them so every assertion below keeps meaning what it meant. */
+const html = appShell(root);
 const app = appSource(root);
 
 /* Strip comments and string literals so identifier scanning is not fooled by prose or data. */
@@ -54,7 +56,8 @@ test('R162 #1 index.html loads every extracted file, before the main script body
   const mainAt = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
   assert.ok(mainAt > 0, 'the main DOMContentLoaded body still exists');
   for (const f of need) {
-    const tag = `<script src="${f}"></script>`;
+    /* (#R175) the tag became an import in src/main.js — same question, new mechanism. */
+    const tag = `import '../${f}';`;
     assert.ok(html.includes(tag), `index.html loads ${f}`);
     assert.ok(html.indexOf(tag) < mainAt, `${f} is loaded BEFORE the main script body runs`);
     assert.ok(existsSync(new URL(f, root)), `${f} exists on disk`);

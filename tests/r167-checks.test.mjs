@@ -19,6 +19,7 @@
 // test #5 keeps it that way.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
@@ -26,7 +27,9 @@ import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
-const html = rd('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
+   appShell() concatenates them so every assertion below keeps meaning what it meant. */
+const html = appShell(root);
 
 /* Blank out comments and string/template literals so identifier scanning reads CODE only — the
    module headers document the rewrites in prose, which would otherwise register as violations. */
@@ -92,10 +95,10 @@ const LIVE = {
 };
 
 test('R167 #1 all eight files are loaded and every factory they define is instantiated', () => {
-  assert.ok(html.includes('<script src="js/tables.js"></script>'), 'index.html loads js/tables.js');
+  assert.ok(html.includes("import '../js/tables.js';"), 'src/main.js imports js/tables.js (#R175)');
   for (const [file, facs] of Object.entries(MOVED)) {
     const src = rd(file);
-    assert.ok(html.includes(`<script src="${file}"></script>`), `index.html loads ${file}`);
+    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
@@ -135,7 +138,8 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   //     (#R169) the same again: the publisher/demonym gazetteers went into js/news-context.js with
   //     analyzeContext, the satellite provider table into js/satellite.js, the news editions into
   //     js/news-feed.js and the community categories into js/community-board.js.
-  const consumers = ['index.html', 'js/countries-ui.js', 'js/companies-ui.js', 'js/tool-panel.js',
+  //     (#R175) 'index.html' became 'js/app-body.js' — the same code, in the file it now lives in.
+  const consumers = ['js/app-body.js', 'js/countries-ui.js', 'js/companies-ui.js', 'js/tool-panel.js',
     'js/news-context.js', 'js/satellite.js', 'js/news-feed.js', 'js/community-board.js'].map((p) => [p, rd(p)]);
   const retAt = src.lastIndexOf('return {');
   const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
@@ -152,9 +156,9 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   //     write or a mutating call anywhere would mean the table is really shared state, and it would
   //     have to move back or become a host member. Checked with a real parser — over index.html's
   //     closure AND every js/ module, since #R168 moved consumers of these tables into modules.
-  const marker = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
-  const open = html.lastIndexOf('<script>', marker), close = html.indexOf('</script>', marker);
-  const sources = [['index.html', html.slice(open + '<script>'.length, close)]];
+  /* (#R175) the closure used to be sliced out of index.html's last inline <script>; it is
+     js/app-body.js now, so the js/ sweep below already covers it — one source list, no HTML slicing. */
+  const sources = [];
   for (const f of readdirSync(new URL('js/', root)).filter((x) => x.endsWith('.js')).sort()) sources.push(['js/' + f, rd('js/' + f)]);
   const names = new Set(TABLES);
   const MUT = new Set(['push', 'pop', 'splice', 'sort', 'shift', 'unshift', 'reverse', 'fill', 'copyWithin']);

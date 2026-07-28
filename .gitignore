@@ -37,3 +37,7 @@ supabase/functions/**/.env
 *.dump.gpg
 *.sql.gpg
 
+
+# ── Vite build output (added R175) ───────────────────────────────────────────
+# `npm run build` emits the deployable tree here; GitHub Pages publishes it from CI.
+dist/
