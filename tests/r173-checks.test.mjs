@@ -34,33 +34,35 @@ function rawMapUses(file) {
 
 /* ─── 1. the flight simulator flies a real sphere ───────────────────────────────────────────── */
 
-test('the cockpit camera is solved on the round Earth, not aimed at a fixed distance', () => {
+/* (#R174) THE ROUND-EARTH COCKPIT WAS WITHDRAWN, and these three tests are rewritten rather than
+   deleted, because what replaced them is the point. #R173 aimed the map's view axis below the horizon
+   (the only place MapLibre's spherical camera is representable) and put the pilot's real line of sight
+   back with the projection's centre offset. MEASURED while pulling the nose up: the pilot's view went
+   92° → 165° while the map's pitch stayed at 85.4° for every frame, and the padding compensating for it
+   reached 1,077 px on a 720 px-tall window — c2c·tan(Δ) diverges, so no value works. The sim is back on
+   the #R158/#R172 eye→target camera, whose pitch comes out of the geometry and therefore passes 90°. */
+
+test('the cockpit camera is the eye→target one, which can look up (#R173 solve withdrawn in #R174)', () => {
   const src = stripComments(R('js/flight-sim.js'));
-  assert.match(src, /function _cockpitCam\(eLng,eLat,altM,bearing,pitchWanted,roll\)/, 'one function owns the camera');
-  assert.match(src, /const d=\(s\*s-1\)\/Math\.max\(1e-12, s\*c\+Math\.sqrt\(disc\)\)/,
-    'the look distance is SOLVED (written so two nearly equal terms are never subtracted), not a literal');
-  assert.match(src, /const axis=Math\.min\(pitchWanted, 90-dip-_AXIS_MARGIN\)/,
-    'the map axis is aimed below the horizon — where MapLibre can represent a spherical camera at all');
-  assert.match(src, /const pad=\{ top:Math\.max\(0,2\*sy\), bottom:Math\.max\(0,-2\*sy\), left:Math\.max\(0,-2\*sx\), right:Math\.max\(0,2\*sx\) \}/,
-    'the difference between that axis and the pilot’s line of sight rides in the projection’s centre offset');
-  assert.ok(!/_D=1800/.test(src), 'the fixed 1.8 km look-ahead is gone — it is what pinned the sim to z15 and a flat map');
-  assert.match(src, /const _D_FLOOR=1800/, '…but 1.8 km survives as the floor the solve collapses to on the ground');
+  assert.doesNotMatch(src, /_cockpitCam|_AXIS_MARGIN/, 'the clamped-axis solve is gone');
+  assert.match(src, /const _D_LOOK=1800/, 'the look-ahead is a fixed distance again');
+  assert.match(src, /calculateCameraOptionsFromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/,
+    'centre and zoom come from the eye→target pair, stable at every attitude');
+  assert.match(src, /setMaxPitch\(179\)/, 'and the renderer is allowed past the vertical');
 });
 
-test('the simulator restores what it borrows', () => {
+test('the simulator restores what it borrows — and no longer borrows the projection centre', () => {
   const src = stripComments(R('js/flight-sim.js'));
-  assert.match(src, /pad:\(map\.getPadding\?map\.getPadding\(\):null\)/, 'the padding is remembered on entry');
-  assert.match(src, /map\.setPadding\(pv\.pad\|\|\{top:0,bottom:0,left:0,right:0\}\)/, '…and given back on exit');
-  assert.match(src, /function _fsSkyOff\(\)/, 'the sim’s own sky element is removed');
+  assert.doesNotMatch(src, /getPadding|setPadding/, 'padding is never touched, so there is nothing to give back');
+  assert.match(src, /map\.setMaxPitch\(pv\.maxPitch\|\|60\)/, 'the tilt ceiling is still restored');
+  assert.match(src, /map\.setSky\(pv\.sky\|\|undefined\)/, '…and so is the pre-flight sky');
 });
 
-test('the sim paints its own sky, because the renderer stops painting one', () => {
+test('the sky belongs to the renderer — the sim paints none (#R174)', () => {
   const src = stripComments(R('js/flight-sim.js'));
-  assert.match(src, /function _fsSkyDraw\(camAlt,pitch,roll\)/, 'a sky that follows the camera');
-  assert.match(src, /Math\.acos\(Math\.max\(-1,Math\.min\(1,R\/\(R\+Math\.max\(0,\+camAlt\|\|0\)\)\)\)\)/,
-    'the horizon sits at the DIP angle, which is what makes it a globe and not a plane');
-  assert.match(src, /GE\.camera\.globeness\(\)/, 'and it scales with how spherical the view actually is, so there is no seam');
-  assert.match(src, /'atmosphere-blend':0/, "MapLibre's from-space scattering is off — flown from inside the air it saturates to white");
+  assert.doesNotMatch(src, /_fsSkyDraw|_fsSkyOn|_fsSkyOff|_skyTop/, '「空を勝手に描くな」');
+  assert.match(src, /setSky\(\{'sky-color':'#3f78c2'/, 'the #R99 spec is what a cockpit sees');
+  assert.match(src, /'atmosphere-blend':\['interpolate'/, 'atmosphere is a zoom ramp again, not switched off');
 });
 
 /* ─── 2. the 3-D volume is a closed body ────────────────────────────────────────────────────── */
@@ -80,7 +82,11 @@ test('the volume is drawn as one closed mesh — floor included, no interior she
   assert.match(s, /gl\.cullFace\(gl\.FRONT\); gl\.drawElements/, 'far side first…');
   assert.match(s, /gl\.cullFace\(gl\.BACK\);  gl\.drawElements/, '…then the near side, so the body composites as glass');
   assert.match(s, /gl\.depthMask\(false\)/, 'depth is TESTED against the world but not written, or the body hides itself');
-  assert.match(s, /projectTileFor3D\(a_pos, a_alt\)/, 'projected through MapLibre’s own prelude, so it is right on the globe too');
+  /* (#R174) …through the prelude, but with the altitude scaled to the units THAT prelude takes: metres on
+     the globe, mercator units on the flat map. Passing metres either way clipped the whole body away from
+     z12 up, which is where the app's globe becomes plain mercator. */
+  assert.match(s, /projectTileFor3D\(a_pos, a_alt\*u_altScale\)/, 'projected through MapLibre’s own prelude');
+  assert.match(s, /vname==='mercator'/, '…with the elevation unit chosen by the reported variant');
 });
 
 /* ─── 3. unlimited tilt keeps the viewpoint ─────────────────────────────────────────────────── */

@@ -1985,6 +1985,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
     let _planes3DZoom=null, _planes3DZoomT=null;   /* (#R172) rebuild the lifted glyphs when the scale changes */
     let _planesClear=null, _planesHover=null, _pickHover=false, _pickAt=0;   /* (#R173) picking a lifted aircraft */
+    let _planesDbl=null, _planesClearT=null;   /* (#R174) a double-click is a ZOOM, not "you clicked empty sky" */
     /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
        (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
     function planesLayerOn(){ try{
@@ -2525,7 +2526,10 @@ window.IntMapModules.dataLayers=function(map,HOST){
         /* the glyph's on-screen size is derived from the zoom, so rebuild the geometry when it changes */
         if(!_planes3DZoom){ _planes3DZoom=()=>{ if(!planes3D) return;
           if(!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible')) return;
-          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){} },160); };
+          /* (#R174) the TRACK's ribbons are sized from the scale too (see drawTrack), and only the glyphs
+             were being rebuilt — a track drawn at z8 kept its kilometre-wide legs all the way in. */
+          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){}
+            try{ if(selectedPlane) drawTrack(selectedPlane); }catch(_){} },160); };
           map.on('zoomend',_planes3DZoom); map.on('terrain',_planes3DZoom); }
       } else {
         ensureShipIcons();
@@ -2581,12 +2585,28 @@ window.IntMapModules.dataLayers=function(map,HOST){
            41 real aircraft: the pick found the aeroplane, the click reported nothing selected. One
            handler, one decision: the pick first (that is where the aeroplane is drawn), then the
            renderer's footprint (the post and the flat glyph are real things to click at), else clear. */
+        /* (#R174) 「Live air traffic でズームインすると、軌跡が消える」 — REPRODUCED, and it was this handler.
+           Double-click IS how you zoom in on a map, and MapLibre delivers a double-click as two ordinary
+           `click` events before its own `dblclick`. Both of them landed here, found no aircraft under the
+           pointer, and cleared the selection — so the track vanished the instant the zoom began. Measured
+           against a stubbed feed: wheel zoom z11 → z12.9 kept the selection and its 6 legs; one
+           double-click at the same spot left `selected: null, legs: 0`.
+           Two guards, and neither of them touches the zoom gesture:
+             · the SECOND click of a double-click (originalEvent.detail ≥ 2) is ignored outright — it would
+               otherwise also toggle OFF an aircraft that the first click had just selected;
+             · clearing is DEFERRED past MapLibre's double-click window and cancelled by `dblclick`, so a
+               click on empty map still deselects, one frame later than before.
+           Selecting stays instantaneous: a click that actually hits an aeroplane is never deferred. */
+        if(!_planesDbl){ _planesDbl=()=>{ if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; } };
+          map.on('dblclick',_planesDbl); }
         if(!_planesClear){ _planesClear=(e)=>{
+          try{ if(e&&e.originalEvent&&(e.originalEvent.detail|0)>=2) return; }catch(_){}
           let d=pickPlane(e.point), props=null;
           if(!d){ try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l));
               const f=ls.length?map.queryRenderedFeatures(e.point,{layers:ls}):[];
               if(f&&f.length){ props=f[0].properties||{}; d=planesData.find(x=>x.icao24===(props.icao24||''))||null; } }catch(_){} }
           if(d&&d.icao24){
+            if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
             selectPlane(d.icao24===selectedPlane?null:d.icao24);
             if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
               el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
@@ -2594,7 +2614,8 @@ window.IntMapModules.dataLayers=function(map,HOST){
                 heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
               positionTooltip(e.point); }
             return; }
-          if(selectedPlane) selectPlane(null); }; map.on('click',_planesClear); }
+          if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
+        }; map.on('click',_planesClear); }
       }
     }
     function startTraffic(id){

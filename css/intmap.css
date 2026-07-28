@@ -400,8 +400,7 @@
     .v3d-unitsel{ flex:0 0 auto; background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:6px; padding:3px 5px; font-size:11.5px; }
     .v3d-unitsel:focus{ outline:none; border-color:var(--primary-color); }
     /* (#R172) "solid" toggle — a floor and interior sheets, so the body is not a lid on four walls */
-    .v3d-solid{ display:flex; align-items:center; gap:7px; margin:8px 0 0; font-size:11.5px; color:var(--text-muted); cursor:pointer; }
-    .v3d-solid input{ accent-color:var(--primary-color); flex:0 0 auto; }
+    /* (#R174) the "Solid" checkbox is gone — a 3-D volume is a closed body, not a choice. */
     /* (#R171) footprint shape picker — four ways to draw the base, not just clicked straight edges */
     .v3d-shapes{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:2px 0 9px; }
     .v3d-shape{ min-width:0; padding:6px 4px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:8px; background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:.13s; }
@@ -413,6 +412,49 @@
     .v3d-style .v3d-slbl{ flex:0 0 auto; font-size:11px; color:var(--text-muted); min-width:52px; }
     .v3d-style input[type="color"]{ width:26px; height:26px; padding:0; border:1px solid rgba(128,128,128,0.3); border-radius:6px; background:none; cursor:pointer; flex:0 0 auto; }
     .v3d-style .rad-presets{ display:flex; gap:4px; flex:0 0 auto; }
+    /* ── (#R174) DRONE NAVIGATION panel (js/drone-nav.js). Built out of the same .tool-panel chrome as
+       Measure / Radius / 3-D volume, so it is one more of the app's tools rather than a second UI. The
+       whole panel scrolls, every control is ≥30 px tall for touch, and the waypoint row collapses to two
+       lines on a narrow screen instead of clipping its coordinates. ── */
+    #drone-panel{ font-size:12px; }
+    #drone-panel .dn-name{ width:100%; box-sizing:border-box; margin:2px 0 6px; padding:6px 8px; border-radius:7px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:600; }
+    #drone-panel .dn-sec{ margin:11px 0 5px; font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+    #drone-panel .dn-refbox{ margin-left:auto; text-transform:none; letter-spacing:0; }
+    #drone-panel .dn-specs{ display:grid; grid-template-columns:1fr; gap:4px; margin-top:5px; }
+    #drone-panel .dn-spec{ display:grid; grid-template-columns:1fr 72px 30px; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+    #drone-panel .dn-spec input{ min-width:0; box-sizing:border-box; padding:4px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-spec i{ font-style:normal; font-size:10px; color:var(--text-muted); }
+    #drone-panel .dn-wps{ display:flex; flex-direction:column; gap:3px; }
+    #drone-panel .dn-wp{ display:grid; grid-template-columns:18px 1fr 62px 34px; grid-template-areas:"n ll alt ref" "n both both btn"; align-items:center; gap:4px 6px; padding:4px 3px; border-top:1px solid rgba(128,128,128,0.12); }
+    #drone-panel .dn-wp-n{ grid-area:n; width:18px; height:18px; border-radius:50%; background:var(--primary-color); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    #drone-panel .dn-wp-ll{ grid-area:ll; font-size:11px; font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #drone-panel .dn-wp-alt{ grid-area:alt; min-width:0; box-sizing:border-box; padding:3px 5px; border-radius:6px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-wp-ref{ grid-area:ref; font-size:9.5px; font-weight:700; color:var(--text-muted); }
+    #drone-panel .dn-wp-both{ grid-area:both; font-size:10px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-wp-btns{ grid-area:btn; display:flex; gap:2px; justify-content:flex-end; }
+    #drone-panel .dn-wp-btns button{ width:20px; height:20px; padding:0; border:none; border-radius:5px; background:rgba(128,128,128,0.16); color:var(--text-main); font-size:10px; cursor:pointer; }
+    #drone-panel .dn-wp-btns button:hover{ background:rgba(128,128,128,0.3); }
+    #drone-panel .dn-btns{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:8px; }
+    #drone-panel .dn-btns .ai-action-btn,#drone-panel .dn-btns .tp-clear{ margin:0; width:100%; }
+    #drone-panel .dn-btns .ai-action-btn.on{ background:var(--primary-color); color:#fff; }
+    #drone-panel .dn-profile{ width:100%; height:auto; margin-top:8px; border-radius:8px; background:rgba(128,128,128,0.06); }
+    #drone-panel .dn-profile-lbl{ font-size:9.5px; color:var(--text-muted); text-align:center; margin-top:2px; }
+    #drone-panel .dn-vio-h{ margin:10px 0 4px; font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); }
+    #drone-panel .dn-vio{ font-size:11px; line-height:1.45; padding:6px 8px; margin-bottom:4px; border-radius:7px; border-left:3px solid var(--text-muted); background:rgba(128,128,128,0.08); cursor:pointer; }
+    #drone-panel .dn-vio.dn-critical{ border-left-color:#ff453a; background:rgba(255,69,58,0.12); }
+    #drone-panel .dn-vio.dn-error{ border-left-color:#ff453a; background:rgba(255,69,58,0.08); }
+    #drone-panel .dn-vio.dn-warn{ border-left-color:#ff9f0a; background:rgba(255,159,10,0.09); }
+    #drone-panel .dn-vio.dn-info{ border-left-color:#0a84ff; background:rgba(10,132,255,0.08); }
+    #drone-panel .dn-vio-at{ font-size:10px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-ok{ font-size:11.5px; color:#34c759; font-weight:600; padding:6px 2px; }
+    #drone-panel .dn-saved-row{ display:flex; align-items:center; gap:6px; padding:3px 0; border-top:1px solid rgba(128,128,128,0.12); }
+    #drone-panel .dn-open{ flex:1; min-width:0; text-align:left; border:none; background:none; color:var(--text-main); font-size:11.5px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #drone-panel .dn-saved-row span{ font-size:10px; color:var(--text-muted); }
+    #drone-panel .dn-del{ width:20px; height:20px; padding:0; border:none; border-radius:5px; background:rgba(128,128,128,0.16); color:var(--text-main); font-size:10px; cursor:pointer; }
+    @media(max-width:640px){ #drone-panel{ left:8px !important; right:8px !important; width:auto !important; top:64px !important; max-height:calc(100vh - 150px) !important; }
+      #drone-panel .dn-btns{ grid-template-columns:1fr 1fr; }
+      #drone-panel .dn-wp-btns button{ width:26px; height:26px; font-size:11px; }
+      #drone-panel .dn-spec{ grid-template-columns:1fr 84px 28px; } }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
     .tp-foot-btns{ display:flex; gap:6px; } .tp-foot-btns .tp-clear{ flex:1; }
     /* (#R9) AI buttons stay clickable without a key so pressing them shows the "add a key in Settings"

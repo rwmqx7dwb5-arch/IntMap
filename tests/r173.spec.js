@@ -29,7 +29,7 @@ const pause = async page => { await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
   await page.waitForTimeout(2500); };
 
-test('the flight simulator flies a globe: the horizon sits at the true dip below eye level', async ({ page }) => {
+test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R173 globe withdrawn in #R174)', async ({ page }) => {
   /* Generous, because a cockpit is the heaviest thing this app draws and CI has no GPU. Measured in
      headless software GL: the flat cockpit ran at 5 fps and the spherical one at 3 — the extra cost is
      real (more of what is in front of the aeroplane is actually drawn), and on a machine rendering in
@@ -53,12 +53,17 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
   expect(s.active).toBe(true);
   expect(s.terrain, 'a flight simulator does not trade away its DEM').toBe(true);
   expect(s.proj, 'the sim flies the app Globe, never a raw projection spec').toContain('globe');
-  // THE point of the round: at 6 km the renderer must actually be in its spherical regime.
-  expect(s.globeness, 'the Earth is a sphere at cruise, not a plane').toBeGreaterThan(0.99);
-  expect(s.zoom, 'which is only true below the globe→mercator crossover').toBeLessThan(11.1);
-  // …and the camera is still where the aeroplane is, which is what makes it honest rather than a trick.
+  /* (#R174) THE POINT OF #R173 WAS WITHDRAWN, and this is where the record belongs. Putting the camera
+     in the renderer's spherical regime meant the map could not look above the horizon at all — measured
+     while pulling the nose up, the map's pitch stayed at 85.4° for every frame from 92° to 165° of view
+     angle, with 1,077 px of padding compensating on a 720 px window. A flight simulator that cannot look
+     up is not one, so the cockpit is back at working zoom and the sky is the renderer's again. What this
+     test still guards — and what was always the valuable half — is that the cockpit contains a WORLD, that
+     the viewpoint is AT the aeroplane, and that the DEM is under it. Looking up is guarded by
+     tests/r174.spec.js. */
+  expect(s.zoom, 'the cockpit sits where the DEM and the sky both work').toBeGreaterThan(11.1);
   expect(Math.abs(s.eyeAlt - s.alt), 'the viewpoint is at the aircraft').toBeLessThan(120);
-  expect(s.sky, 'the sim paints its own sky (the globe switches MapLibre’s off)').toBe(true);
+  expect(s.sky, 'and the sim paints no sky of its own — that is the renderer’s job').toBe(false);
 
   /* the cockpit contains a WORLD (#R172's lesson: measure pixels, not projection names).
      A small patch, decoded in the page: a full-width screenshot decoded on top of a live cockpit
@@ -87,6 +92,7 @@ test('the flight simulator flies a globe: the horizon sits at the true dip below
   expect(low.alt).toBeLessThan(1200);
   expect(low.globeness, 'on approach the curvature is invisible and the detail is what matters').toBeLessThan(0.5);
   expect(Math.abs(low.eyeAlt - low.alt), 'and the viewpoint is still at the aircraft').toBeLessThan(120);
+  expect(low.zoom, 'still at working zoom on the descent').toBeGreaterThan(11.1);
   await page.evaluate(() => window.IntMapFlightSim.stop());
 });
 

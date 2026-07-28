@@ -162,7 +162,10 @@ test('every new switch is operable from Atlas AND catalogued', () => {
   assert.ok(atlas.includes('{"type":"planeAltitude"'), 'planeAltitude must appear in the SYS catalogue');
   assert.match(atlas, /\bplaneAltitude:\{ lbl:/, 'and offer an inline on/off switch in the reply');
   assert.match(atlas, /"unit"\?:"m"\|"km"\|"ft"\|"mi"/, 'the volume action must advertise the unit');
-  assert.match(atlas, /"solid"\?:bool/, '…and the closed-body option');
+  /* (#R174) the closed-body OPTION is gone — "わざわざSolidを選択制なんてするな". A volume is a closed body,
+     so there is nothing left to catalogue, and an advertised parameter with no control behind it is the
+     exact failure this test exists to catch. Asserted in the negative so it cannot creep back. */
+  assert.doesNotMatch(atlas, /"solid"\?:bool/, 'the solid/hollow choice was withdrawn in #R174');
   assert.match(atlas, /\/volume\|立体\|体積\/\.test\(n\)\?'btn-tool-volume'/,
     '{"type":"tool","name":"volume"} has been advertised since #R170 with no branch behind it — it fell through and did nothing');
 });
@@ -180,7 +183,9 @@ test('the new UI strings exist in all five languages', () => {
     }
     assert.fail(`unterminated _L( for ${needle}`);
   };
-  for (const needle of ['Solid (floor + filled interior)', 'Altitude band above sea level']) {
+  /* (#R174) 'Solid (floor + filled interior)' is gone with the checkbox it labelled — a volume is a
+     closed body, not a choice. The button that replaced it in that slot is checked here instead. */
+  for (const needle of ['Finish drawing', 'Altitude band above sea level']) {
     const call = callAt(tp, needle);
     assert.equal((call.match(/','/g) || []).length, 4, `${needle} must carry all five languages, got: ${call.slice(0, 160)}`);
   }
