@@ -230,6 +230,21 @@ z12.5 179,050 → z13 254,042（修正前は z12 で 9,152 ＝地上の輪郭線
 
 ---
 
+### 6. CI の CodeQL が拾った実バグ（自分で入れたもの）
+
+PR の CodeQL が **high severity 1件**を出した。`js/drone-nav.js` の `p.innerHTML=` に
+**`value="${route.spec[f.k]}"` が素で入っていた**。パネルの数値入力を通ればここは常に数値だが、
+**経路は他に3つの入口から入ってくる**——`localStorage`、`IntMapDrone.setRoute()`、`IntMapDrone.setSpec()`。
+どれもパネルの入力欄を通らない。
+
+直し方は**入口で正規化**（`sanitizeRoute` / `sanitizeSpec`＝全機体条件を有限数へ丸めて各項目の範囲内に収め、
+ウェイポイントは `lng/lat` が有限のものだけ、`ref` は agl|amsl のみ、名前は文字列60字）**かつ出口でエスケープ**。
+片方だけ正しいのは設計とは言わない。回帰テストは実ブラウザで、API からと localStorage 経由（リロードを跨ぐ）の
+両方に `"><img src=x onerror=...>` を流し込み、**スクリプトが走らない・パネルに要素が1つも挿入されない・
+機体条件が全部 number である・名前はテキストとして表示される**ことを確認する。
+
+---
+
 ### テスト
 
 - `tests/r174-checks.test.mjs`（14件・node --test）＝上の**根本原因を1つずつ固定**する静的検査
