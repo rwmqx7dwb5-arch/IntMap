@@ -24,13 +24,16 @@
 // r165-checks.test.mjs; the real-browser proofs live in r168.spec.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 import * as acorn from 'acorn';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
-const html = rd('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
+   appShell() concatenates them so every assertion below keeps meaning what it meant. */
+const html = appShell(root);
 
 /* Blank comments + string/template literals so identifier scanning reads CODE only. */
 function code(src) {
@@ -89,7 +92,7 @@ test('R168 #1 all six files are loaded and every factory is declared and instant
   for (const m of NAMES) {
     const { file } = MODULES[m];
     const src = rd(file);
-    assert.ok(html.includes(`<script src="${file}"></script>`), `index.html loads ${file}`);
+    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     assert.ok(src.includes(`window.IntMapModules.${m}=function(map,HOST){`),

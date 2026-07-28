@@ -16,7 +16,31 @@
  * ==========================================================================*/
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
-/** index.html + css/intmap.css + every js/*.js, concatenated. */
+/**
+ * (#R175) THE PAGE — what `index.html` alone used to be.
+ *
+ * Every split suite from #R162 to #R174 asks its questions of "the page": does it load each module,
+ * does it instantiate each factory, does IM_HOST expose that value as a live getter. Until this round
+ * the page was one file. The Vite migration split it into three, none of which lost anything:
+ *
+ *   index.html      the markup, the head, the one module tag
+ *   src/main.js     the loader — what the fifty-eight <script src> tags used to be
+ *   js/app-body.js  the program — the DOMContentLoaded closure that WAS the bottom of index.html
+ *
+ * So those suites read this instead of `index.html`. Not a loosening: pointed at the new index.html
+ * they would all pass vacuously (it no longer contains the code they assert about), and a whole
+ * generation of split invariants would go quiet in exactly the way they were written to prevent.
+ */
+export function appShell(root) {
+  const parts = [];
+  for (const rel of ['index.html', 'src/main.js', 'src/vendor.js', 'js/app-body.js']) {
+    const u = new URL(rel, root);
+    if (existsSync(u)) parts.push(readFileSync(u, 'utf8'));
+  }
+  return parts.join('\n');
+}
+
+/** index.html + css/intmap.css + every js/*.js + src/*.js, concatenated. */
 export function appSource(root) {
   const parts = [readFileSync(new URL('index.html', root), 'utf8')];
 
@@ -27,6 +51,15 @@ export function appSource(root) {
   if (existsSync(jsDir)) {
     for (const f of readdirSync(jsDir).filter((f) => f.endsWith('.js')).sort()) {
       parts.push(readFileSync(new URL(f, jsDir), 'utf8'));
+    }
+  }
+  /* (#R175) …and src/, the Vite entry. Code left index.html again this round — the Supabase client
+     creation and the required-module guard are in src/vendor.js and src/main.js now — so a source
+     assertion that only looked at index.html + js/ would silently stop covering them. */
+  const srcDir = new URL('src/', root);
+  if (existsSync(srcDir)) {
+    for (const f of readdirSync(srcDir).filter((f) => f.endsWith('.js')).sort()) {
+      parts.push(readFileSync(new URL(f, srcDir), 'utf8'));
     }
   }
   return parts.join('\n');

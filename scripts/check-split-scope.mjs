@@ -42,19 +42,16 @@ maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pm
 /* `pmtiles` is loaded on demand from unpkg by the land-cover pack (js/layer-packs.js) and every use
    is guarded by `typeof pmtiles!=='undefined'`, so it is a real vendor global, not a lost closure name. */
 
-/* ── 1. names index.html declares at the closure's TOP level ──────────────── */
-function closureTopLevelNames(html) {
+/* ── 1. names the app body declares at the closure's TOP level ────────────────
+   (#R175) The closure moved: it was the last inline <script> in index.html and it is now
+   js/app-body.js, imported last by src/main.js (the Vite entry). Nothing else about this check
+   changes — the closure is the same single `window.addEventListener('DOMContentLoaded', …)`
+   expression it always was, so it is parsed straight from that file instead of being sliced out
+   of the HTML first. Being a module now makes the check MORE important, not less: a module's
+   top-level names were never global either. */
+function closureTopLevelNames(js) {
   const names = new Set();
-  // Find the <script> block that holds the main closure and parse it as a whole program,
-  // then pick out the DOMContentLoaded handler — far more robust than slicing text.
-  const marker = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
-  if (marker < 0) throw new Error('main DOMContentLoaded closure not found in index.html');
-  const open = html.lastIndexOf('<script>', marker);
-  const close = html.indexOf('</script>', marker);
-  if (open < 0 || close < 0) throw new Error('could not delimit the main <script> block');
-  const js = html.slice(open + '<script>'.length, close);
-
-  const ast = acorn.parse(js, { ecmaVersion: 'latest' });
+  const ast = acorn.parse(js, { ecmaVersion: 'latest', sourceType: 'module' });
   let fn = null;
   for (const s of ast.body) {
     if (s.type !== 'ExpressionStatement' || s.expression.type !== 'CallExpression') continue;
@@ -63,7 +60,7 @@ function closureTopLevelNames(html) {
       c.arguments[0] && c.arguments[0].value === 'DOMContentLoaded';
     if (isDCL && c.arguments[1] && /Function/.test(c.arguments[1].type)) fn = c.arguments[1];
   }
-  if (!fn) throw new Error('DOMContentLoaded handler not found in the main script block');
+  if (!fn) throw new Error('DOMContentLoaded handler not found in js/app-body.js');
   const stmts = fn.body && fn.body.body ? fn.body.body : [];
   const collectPattern = (p) => {
     if (!p) return;
@@ -211,15 +208,21 @@ function hostShadows(src) {
 }
 
 /* ── 4. run ───────────────────────────────────────────────────────────────── */
+/* (#R175) the app body — the closure every other js/ file must NOT inherit from. It is a js/ file
+   itself now, so it is both the source of `closure` and the one file excluded from the sweep. */
+const APP_BODY = 'app-body.js';
+
 export function checkSplitScope() {
   const problems = [];
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
-  const closure = closureTopLevelNames(html);
-  if (!closure) return [{ file: 'index.html', msg: 'could not parse the main closure — scope check skipped' }];
+  const bodyPath = join(ROOT, 'js', APP_BODY);
+  if (!existsSync(bodyPath)) return [{ file: 'js/' + APP_BODY, msg: 'the app body is missing — scope check cannot run' }];
+  const closure = closureTopLevelNames(readFileSync(bodyPath, 'utf8'));
+  if (!closure) return [{ file: 'js/' + APP_BODY, msg: 'could not parse the main closure — scope check skipped' }];
 
   const jsDir = join(ROOT, 'js');
   if (!existsSync(jsDir)) return problems;
-  const jsFiles = readdirSync(jsDir).filter((x) => x.endsWith('.js')).sort();
+  const jsFiles = readdirSync(jsDir).filter((x) => x.endsWith('.js') && x !== APP_BODY).sort();
   /* Everything the app itself publishes as a runtime global, from index.html and from js/. */
   const published = new Set();
   const collectGlobals = (src) => {
@@ -227,6 +230,7 @@ export function checkSplitScope() {
     for (const m of src.matchAll(/window\[\s*['"]([^'"]+)['"]\s*\]\s*=(?!=)/g)) published.add(m[1]);
   };
   collectGlobals(html);
+  collectGlobals(readFileSync(bodyPath, 'utf8'));   /* (#R175) the body still publishes most of them */
   for (const f of jsFiles) collectGlobals(readFileSync(join(jsDir, f), 'utf8'));
 
   for (const f of jsFiles) {
@@ -238,7 +242,7 @@ export function checkSplitScope() {
     }
     for (const [name, line] of free) {
       if (closure.has(name)) {
-        problems.push({ file: 'js/' + f, msg: `free identifier "${name}" (line ${line}) is a closure variable of index.html — pass it in explicitly; inherited it silently reads as undefined` });
+        problems.push({ file: 'js/' + f, msg: `free identifier "${name}" (line ${line}) is a closure variable of js/app-body.js — pass it in explicitly; inherited it silently reads as undefined` });
       } else if (!published.has(name) && !KNOWN_DEAD.has(`js/${f}:${name}`)) {
         /* Neither a browser/vendor global, nor a closure top-level name, nor something the app
            ever assigns to window: at runtime this is a bare unresolvable identifier. Usually it

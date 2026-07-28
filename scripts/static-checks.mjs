@@ -16,7 +16,9 @@ const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
 
 // Directories never worth scanning.
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'playwright-report', 'test-results', '.cache', '.playwright', 'coverage']);
+/* (#R175) `dist` is the Vite build output — generated, minified, gitignored. Linting it would flag the
+   bundler's own output and time out on the source maps; the SOURCES are what these checks are about. */
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'playwright-report', 'test-results', '.cache', '.playwright', 'coverage', 'dist']);
 // Binary / large-asset extensions we do not read as text.
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.pdf', '.zip', '.gz', '.tif', '.tiff', '.mp4', '.mov']);
 const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.json', '.yml', '.yaml', '.md', '.css', '.py', '.txt', '.xml', '.svg', '.sql', '.toml']);
@@ -236,23 +238,38 @@ try {
 // global missing and only fails when that feature is first touched; (b) code is copied out
 // but the original is left behind, so two divergent copies ship and the in-page one wins.
 // Guard both mechanically.
+// (#R175) Both halves moved when the build landed: the js/ files are now imported by the Vite entry
+// src/main.js instead of carrying a <script src> tag each, and the code that instantiates their
+// factories is js/app-body.js (index.html's old inline body). The QUESTIONS are unchanged — is every
+// module reachable, is every factory actually called, is there a stale duplicate — only the file each
+// one is asked of has changed. Asking the old files would make all three checks vacuously pass, which
+// is the worst possible outcome for guards whose whole job is to catch a silent loss.
 {
   const idx = ALL.find((x) => x.rel === 'index.html');
-  if (idx) {
-    const t = read(idx);
-    const loaded = new Set([...t.matchAll(/<script\s+src="(js\/[^"]+)"/g)].map((m) => m[1]));
+  const entry = ALL.find((x) => x.rel === 'src/main.js');
+  const bodyF = ALL.find((x) => x.rel === 'js/app-body.js');
+  if (!entry) err('split', 'src/main.js is missing — nothing imports the js/ modules');
+  if (!bodyF) err('split', 'js/app-body.js is missing — the application body is gone');
+  if (idx && entry && bodyF) {
+    const t = read(bodyF) + '\n' + read(idx);          // where factories are called from
+    const e = read(entry);
+    const imported = new Set([...e.matchAll(/import\s+'\.\.\/(js\/[^']+)'/g)].map((m) => m[1]));
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      if (!loaded.has(f.rel)) err('split', `${f.rel} exists but index.html never loads it (<script src="${f.rel}">)`);
+      if (!imported.has(f.rel)) err('split', `${f.rel} exists but src/main.js never imports it (import '../${f.rel}';)`);
     }
-    // Every factory a module file defines must actually be instantiated by index.html.
+    // …and nothing may be imported that no longer exists (a dangling import breaks the whole bundle).
+    for (const rel of imported) {
+      if (!ALL.some((x) => x.rel === rel)) err('split', `src/main.js imports ${rel}, which does not exist`);
+    }
+    // Every factory a module file defines must actually be instantiated.
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
       for (const m of read(f).matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)) {
         if (!t.includes(`window.IntMapModules.${m[1]}(`)) {
-          err('split', `${f.rel} defines factory IntMapModules.${m[1]} but index.html never calls it`);
+          err('split', `${f.rel} defines factory IntMapModules.${m[1]} but nothing ever calls it`);
         }
       }
     }
-    // Nothing that moved out may still be defined in index.html (no stale duplicate).
+    // Nothing that moved out may still be defined in the app body (no stale duplicate).
     for (const [needle, movedTo] of [
       ['const i18n={', 'js/i18n.js'],
       ['const _BUILTIN_GZ=[', 'js/gazetteer.js'],
@@ -328,11 +345,17 @@ try {
       ['window.IntMapDisaster=(function(){', 'js/sims.js'],
       ['window.IntMapEarthReplay=(function(){', 'js/sims.js'],
     ]) {
-      if (t.includes(needle)) err('split', `index.html still defines "${needle}" — it moved to ${movedTo}; delete the in-page copy`);
+      if (read(bodyF).includes(needle)) err('split', `js/app-body.js still defines "${needle}" — it moved to ${movedTo}; delete the duplicate`);
     }
     // The stylesheet moved out; a re-inlined <style> block would resurrect the 230 KB.
-    if (/<style>[\s\S]{4000,}?<\/style>/.test(t)) {
+    if (/<style>[\s\S]{4000,}?<\/style>/.test(read(idx))) {
       err('split', 'index.html contains a large inline <style> block again — the stylesheet belongs in css/intmap.css');
+    }
+    // (#R175) …and the program itself may not move back INTO the page. index.html is markup, styles and
+    // one module tag now; an inline <script> big enough to be code again is the regression to catch,
+    // because a bundler cannot see inside one (that is why the 496 KB body was moved out at all).
+    for (const m of read(idx).matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+      if (m[1].length > 20000) err('split', `index.html has a ${Math.round(m[1].length / 1024)} KB inline <script> — application code belongs in js/ where the build can minify it`);
     }
   }
 }

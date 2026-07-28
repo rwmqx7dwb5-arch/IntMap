@@ -40,7 +40,8 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   // leaves the app working and one feature silently missing.
   'IntMapVolume3D',       // js/volume3d.js  (#R170, never listed here)
   'IntMapTilt',           // js/view-controls.js
-  'IntMapDrone'];         // js/drone-nav.js (#R174) — a whole feature, invisible if the file is missing
+  'IntMapDrone',          // js/drone-nav.js (#R174) — a whole feature, invisible if the file is missing
+  'IntMapAircraftPanel']; // js/aircraft-detail.js (#R175) — the live-aircraft detail card
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

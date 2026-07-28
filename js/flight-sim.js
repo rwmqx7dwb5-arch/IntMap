@@ -23,6 +23,11 @@ window.IntMapModules.flightSim=function(map,HOST){
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
+    /* (#R175) SPAWN CLEARANCE, in one place. An airborne start is normally lifted to ground +1,500 m and
+       held above ground +1,200 m until the DEM has settled (#R95) — the pre-flight card gives no altitude,
+       so without that a spawn over the Alps loads inside a mountain. A caller that DOES know the altitude
+       passes `keepAlt` and gets a bare anti-terrain floor instead. Default unchanged for every old path. */
+    const _clrLift=()=>(st&&st._keepAlt)?30:1500, _clrMin=()=>(st&&st._keepAlt)?30:1200;
     let acKey='f35', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) camera state; default aircraft = F-35 (#R98) */
     /* (#R170) 「終了地点から再飛行するように」 — where the previous flight ENDED (crash site or touchdown point),
        with the heading it ended on. Persisted so it survives a reload, and offered as a start location in the
@@ -752,6 +757,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       paused=false; stabilizeCam=false; camMode='cockpit';
       resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0; st._dist=0; st._lastPt=[st.lng,st.lat];   /* (#R98/#R99/#R100) flight-path recording + pause-time exclusion + full-res distance accumulation */
       st._rwy=(opts.rwy&&opts.rwy.A&&opts.rwy.B)?opts.rwy:null;   /* (#R119) the REAL runway line (both thresholds) — landing corridor + PAPI */
+      st._keepAlt=!!opts.keepAlt;   /* (#R175) the caller supplied a real altitude — see _clrLift/_clrMin */
       st.fuel=(ac.fuelKg>0)?ac.fuelKg:null;   /* (#R120) full usable fuel at engine start (null = engineless glider) */
       /* (#R119) LIVE WINDS ALOFT at the spawn area (Open-Meteo, m/s, surface + 5 pressure levels). The physics
          uses AIR-relative velocity, so a real head/cross/tailwind now affects take-off run, drift, approach and
@@ -809,8 +815,14 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
       /* (#R95) spawn clearance is settled once the DEM loads (see _settleTerr in stepFixed). If the ground is already
          known under us, lift now; otherwise defer so we never read a false 0 m over the mountains. */
+      /* (#R175) …unless the CALLER already knows the altitude. `keepAlt` is opt-in and nothing that existed
+         before this round passes it, so every previous path (the pre-flight card, Atlas, "fly again")
+         behaves byte-identically. It exists because the live-aircraft card starts a flight at a REAL
+         aeroplane's reported altitude (js/aircraft-detail.js): a 737 on approach at 250 m is the whole
+         point of that button, and the blanket +1,500 m clearance would silently discard it. The floor does
+         not disappear — it becomes ground +30 m, so a late DEM read can still never spawn inside a hill. */
       { const tr0=_terrRead(st.lng,st.lat), plaus0=tr0.ok&&(st._fieldElev==null||Math.abs(tr0.v-st._fieldElev)<150);   /* (#R117) a half-loaded DEM can read e.g. −1439 m at Haneda — never settle the runway onto garbage */
-        if(plaus0){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+1500); } else st._settleTerr=true; }
+        if(plaus0){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+_clrLift()); } else st._settleTerr=true; }
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
       try{ _FSBLOCK.forEach(ev=>window.addEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) map features become display-only (see _fsBlocker) */
       /* (#R102) FULLSCREEN WITHIN IntMap — the map is lifted above all app chrome (see .fs-flying CSS), covering the whole
@@ -1242,7 +1254,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       if(st._settleTerr){ const _plaus=tr.ok&&(st._fieldElev==null||!st.groundStart||Math.abs(tr.v-st._fieldElev)<150);   /* (#R117) reject implausible half-loaded DEM reads vs the known field elevation */
         if(_plaus){ st._settleTerr=false; st._terrF=tr.v; terr=tr.v;   /* (#R117) seed the rate-limited ground at the first confirmed read */
           if(st.groundStart){ st.alt=terr+1.2; st.groundStart=false; st.onGround=true; st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* (#R97) settle a ground start ONTO the runway (not +1500) */
-          else if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
+          else if(st.alt<terr+_clrMin()){ st.alt=terr+_clrLift(); try{ computeTrim(); }catch(_){} } }   /* (#R175) …ground +30 m when the caller supplied the altitude (keepAlt) */
         else if(st.groundStart){
           /* (#R118) SETTLE TIMEOUT — at LOWI the DEM read a flat 0 m forever (rejected by the ±150 m gate), so the
              aircraft stayed "parked" while the throttle silently accelerated it down the runway with NO way to
@@ -1427,6 +1439,13 @@ window.IntMapModules.flightSim=function(map,HOST){
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
     function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ st.V=AIRCRAFT[k].Vcruise; st.om=[0,0,0]; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
-    return { start, stop, setup, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), airports:()=>AIRPORTS.slice(), _st:()=>st,
+    /* (#R175) THE FLIGHT ENVELOPE, READ-ONLY. js/aircraft-detail.js starts a flight from a real ADS-B
+       aircraft's own position, altitude, heading and airspeed, and has to land those numbers inside the
+       chosen machine's limits (a 240 m/s airliner start is fine, the same figure in a Cessna is not).
+       Handing the spec out is the alternative to copying Vstall/Vne/ceil into a second file where they
+       would rot; the copy is defensive so no caller can reach in and change the model. */
+    function spec(k){ const a=AIRCRAFT[k]; if(!a) return null;
+      return { key:k, name:Object.assign({},a.name), icon:a.icon||'', Vstall:a.Vstall, Vcruise:a.Vcruise, Vne:a.Vne, ceil:a.ceil, prop:!!a.prop, ab:!!a.ab }; }
+    return { start, stop, setup, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), spec, airports:()=>AIRPORTS.slice(), _st:()=>st,
       _dbg:{ step:(dt)=>{ try{ return physics(dt||0.02); }catch(e){ return {err:String(e)}; } }, key:(k,v)=>{ keys[String(k).toLowerCase()]=!!v; }, clearKeys:()=>{ for(const k in keys) keys[k]=false; }, trim:()=>{ try{ computeTrim(); }catch(_){} } } }; })();
 };

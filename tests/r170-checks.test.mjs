@@ -20,12 +20,16 @@
 //   · the Companies vintage constants exist and every displayed metric has an as-of branch.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 
 const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const INDEX = R('index.html');
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js'));
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js — so INDEX
+   is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
+   JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
+const INDEX = appShell(new URL('../', import.meta.url));
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
 function stripComments(src) {
@@ -155,7 +159,8 @@ test('the place-search pill sits at the top of the map', () => {
 /* ---------------------------------------------------------------- 3-D volume tool */
 
 test('the 3-D volume tool is wired from menu to renderer', () => {
-  assert.match(INDEX, /<script src="js\/volume3d\.js">/, 'the module must be loaded');
+  /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
+  assert.match(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'the module must be loaded by the Vite entry');
   assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\(map,IM_HOST\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');

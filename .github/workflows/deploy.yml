@@ -45,15 +45,24 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser smoke + internal QA (gate)
         run: npx playwright test tests/smoke.spec.js tests/internal-qa.spec.js
-      - name: Assemble site (exact committed tree + build stamp)
+      # (#R175) The site is a Vite build now, so what ships is dist/ — bundled, minified, hashed and
+      # code-split — not the committed sources. `vite build` is deterministic from the checked-out
+      # tree, and the browser gate above already ran against a build of this same commit (Playwright's
+      # webServer builds first), so this cannot publish something the tests never saw.
+      - name: Build the site (Vite)
+        run: npm run build
+      - name: Assemble site (build output + build stamp)
         run: |
           set -euo pipefail
           rm -rf _site && mkdir -p _site
-          git archive HEAD | tar -x -C _site
+          cp -r dist/. _site/
+          test -f _site/index.html || { echo "::error::dist/index.html missing — the build produced no site"; exit 1; }
+          test -f _site/sw.js      || { echo "::error::dist/sw.js missing — static assets were not copied"; exit 1; }
           printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s" }\n' \
             "${GITHUB_SHA}" "${GITHUB_REF_NAME}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
             > _site/build-info.json
           echo "Published build-info.json:" && cat _site/build-info.json
+          echo "Site contents:" && ls -la _site | head -30
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

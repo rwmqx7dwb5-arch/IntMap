@@ -25,14 +25,21 @@
 // The RW contract (which module may WRITE which host member) lives in r165-checks.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 import * as acorn from 'acorn';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
-const html = rd('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
+   appShell() concatenates them so every assertion below keeps meaning what it meant. */
+const html = appShell(root);
 const lf = html.replace(/\r\n/g, '\n');   // index.html is CRLF in the working tree
+/* (#R175) two different subjects, so two different sources: `lf` is THE PAGE (index.html +
+   src/main.js + js/app-body.js, concatenated by appShell) for every question about the program, and
+   INDEX_FILE is the HTML FILE itself for the questions about its markup and its size. */
+const INDEX_FILE = rd('index.html').replace(/\r\n/g, '\n');
 
 /* Blank comments + string/template literals so identifier scanning reads CODE only. */
 function code(src) {
@@ -98,7 +105,7 @@ test('R169 #1 all eleven files are loaded and every factory is declared and inst
   for (const m of NAMES) {
     const { file } = MODULES[m];
     const src = rd(file);
-    assert.ok(html.includes(`<script src="${file}"></script>`), `index.html loads ${file}`);
+    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     assert.ok(src.includes(`window.IntMapModules.${m}=function(map,HOST){`),
@@ -160,11 +167,11 @@ test('R169 #3 POSITION: the eleven calls sit together after the map is built, be
   // exist. Checked transitively: parse the closure, find every call that runs at closure-evaluation
   // time (i.e. not inside a function body) BEFORE the first factory call, then follow the call graph
   // of the functions those calls reach. A hit would be a temporal-dead-zone crash at boot.
-  const marker = lf.lastIndexOf("window.addEventListener('DOMContentLoaded'");
-  const open = lf.lastIndexOf('<script>', marker), close = lf.indexOf('</script>', marker);
-  const js = lf.slice(open + '<script>'.length, close);
-  const ast = acorn.parse(js, { ecmaVersion: 'latest', locations: true });
-  const fn = ast.body[0].expression.arguments[1];
+  /* (#R175) the closure is a file of its own now, so there is nothing to slice out of the HTML. */
+  const js = rd('js/app-body.js').replace(/\r\n/g, '\n');
+  const ast = acorn.parse(js, { ecmaVersion: 'latest', locations: true, sourceType: 'module' });
+  const dcl = ast.body.find((n) => n.type === 'ExpressionStatement' && n.expression.type === 'CallExpression');
+  const fn = dcl.expression.arguments[1];
   const stmts = fn.body.body;
   const firstCallLine = js.slice(0, js.indexOf(callOf(NAMES[0]))).split('\n').length;
   const moved = new Set(NAMES.flatMap((m) => MODULES[m].exports));
@@ -269,9 +276,13 @@ test('R169 #7 the parser-backed split-scope check still passes across all eleven
 });
 
 test('R169 #8 index.html shrank and no module body came back inline', () => {
-  const lines = html.split('\n').length;
+  /* (#R175) the file, not the page. index.html was 6,319 lines before this round and is markup again
+     now — the 496 KB body moved to js/app-body.js so the bundler can minify it. The ceiling stays at
+     the #R169 figure rather than being tightened to today's, because what this asserts is "it did not
+     grow back", and a ceiling that tracks the current size asserts nothing. */
+  const lines = INDEX_FILE.split('\n').length;
   assert.ok(lines < 6_200, `index.html should be well under the pre-R169 7,690 lines; it is ${lines}`);
-  assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
+  assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(INDEX_FILE), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside the biggest bodies, so the needle
   // cannot accidentally match the one-line shim that legitimately carries the name.
@@ -295,15 +306,20 @@ test('R169 #9 the head defects found while auditing index.html are fixed', () =>
   //     (the CSP note spells `<script src=evil-host>` on purpose); the ranges are computed and the
   //     matches filtered by offset rather than stripped out of the string, because a single-pass
   //     removal of a multi-character delimiter is exactly the "incomplete sanitization" shape.
-  const comments = [...html.matchAll(/<!--[\s\S]*?-->/g)].map((m) => [m.index, m.index + m[0].length]);
+  /* (#R175) …asked of the HTML FILE, which is the only thing that has <script> tags at all now. */
+  const comments = [...INDEX_FILE.matchAll(/<!--[\s\S]*?-->/g)].map((m) => [m.index, m.index + m[0].length]);
   const outside = (i) => !comments.some(([a, b]) => i >= a && i < b);
-  const opens = [...html.matchAll(/<script\b/g)].filter((m) => outside(m.index)).length;
-  const closes = [...html.matchAll(/<\/script>/g)].filter((m) => outside(m.index)).length;
+  const opens = [...INDEX_FILE.matchAll(/<script\b/g)].filter((m) => outside(m.index)).length;
+  const closes = [...INDEX_FILE.matchAll(/<\/script>/g)].filter((m) => outside(m.index)).length;
   assert.equal(opens, closes, `index.html has as many </script> (${closes}) as <script> (${opens}) tags`);
   // (b) the MapLibre stylesheet was linked twice, byte-identical — a second request for a file the
   //     browser already had.
-  const cssLinks = (html.match(/maplibre-gl@[\d.]+\/dist\/maplibre-gl\.css/g) || []).length;
-  assert.equal(cssLinks, 1, 'the MapLibre stylesheet is linked exactly once');
+  /* (#R175) the stylesheet is no longer a <link> at all — it is an import in src/vendor.js, which
+     the bundler emits once. The defect this guards against (asking for the same file twice) is
+     therefore asserted where it can now happen: exactly one import, and no CDN link left behind. */
+  const cssImports = (rd('src/vendor.js').match(/maplibre-gl\/dist\/maplibre-gl\.css/g) || []).length;
+  assert.equal(cssImports, 1, 'the MapLibre stylesheet is imported exactly once');
+  assert.ok(!/maplibre-gl@[\d.]+\/dist\/maplibre-gl\.css/.test(INDEX_FILE), 'and the CDN link is gone');
   // (c) the anti-stale-version guard compares the build stamp it ships with against the newest one
   //     this device has seen. A stamp that never advances makes the guard inert; both stamps were
   //     last touched in #R121 / #R133.

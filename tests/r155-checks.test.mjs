@@ -14,7 +14,8 @@ const admin = readFileSync(new URL('admin.html', root), 'utf8');
 
 // ── index.html: auth features ───────────────────────────────────────────────
 test('passkeys: experimental flag + sign-in + enroll wired', () => {
-  assert.match(index, /experimental:\{passkey:true\}/, 'passkey experimental flag on the client');
+  /* (#R175) the client is created in src/vendor.js now (bundled SDK, no CDN race) — same options. */
+  assert.match(index, /experimental:\s*\{\s*passkey:\s*true\s*\}/, 'passkey experimental flag on the client');
   assert.match(index, /signInWithPasskey\(/, 'passkey sign-in');
   assert.match(index, /registerPasskey\(/, 'passkey enroll');
   assert.match(index, /passkey\.delete\(/, 'passkey delete');

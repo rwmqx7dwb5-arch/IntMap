@@ -18,13 +18,17 @@
 //     this round stay cleared — checked with a PARSER, because `map.` also appears in prose.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
 const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const INDEX = R('index.html');
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js'));
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js — so INDEX
+   is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
+   JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
+const INDEX = appShell(new URL('../', import.meta.url));
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
 
 function stripComments(src) {
   return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
@@ -252,7 +256,8 @@ test('the engine contract declares what this round needed, and Cesium answers fo
 });
 
 test('the module list, script tag and boot call for view-controls all agree', () => {
-  assert.match(INDEX, /<script src="js\/view-controls\.js"><\/script>/, 'the file must be loaded');
+  /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
+  assert.match(INDEX, /import '\.\.\/js\/view-controls\.js';/, 'the file must be loaded by the Vite entry');
   assert.match(INDEX, /window\.IntMapModules\.viewControls\(map,IM_HOST\)/, 'the factory must be instantiated with the other module factories');
   const src = R('js/view-controls.js');
   assert.match(src, /window\.IntMapModules\.viewControls=function\(map,HOST\)/, 'factory shape');

@@ -17,9 +17,16 @@ const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const aiproxy = readFileSync(new URL('supabase/functions/ai-proxy/index.ts', root), 'utf8');
 
-test('R156 #1 KaTeX is loaded (pinned CDN) + math renderer with graceful fallback', () => {
-  assert.match(html, /<link rel="stylesheet" href="https:\/\/cdn\.jsdelivr\.net\/npm\/katex@0\.16\.11\/dist\/katex\.min\.css"/, 'KaTeX CSS pinned on jsDelivr (already in the CSP script-src allowlist)');
-  assert.match(html, /<script defer src="https:\/\/cdn\.jsdelivr\.net\/npm\/katex@0\.16\.11\/dist\/katex\.min\.js"/, 'KaTeX JS pinned + deferred');
+test('R156 #1 KaTeX is loaded (pinned, self-hosted) + math renderer with graceful fallback', () => {
+  /* (#R175) KaTeX left the CDN for npm at the SAME pin, and left the critical path with it: the two
+     jsDelivr tags became a dynamic import in src/vendor.js, so it arrives in its own chunk from our
+     own origin. `defer` and the graceful fallback below were always the contract — an asynchronously
+     available global that the renderer feature-detects — and a dynamic import keeps exactly that. */
+  const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
+  assert.equal(pkg.dependencies.katex, '0.16.11', 'KaTeX pinned to an exact version');
+  assert.match(html, /import\('katex'\)/, 'loaded off the critical path, as the deferred tag was');
+  assert.match(html, /import\('katex\/dist\/katex\.min\.css'\)/, 'and its stylesheet with it');
+  assert.ok(!/cdn\.jsdelivr\.net\/npm\/katex@/.test(html), 'no CDN copy is left behind to load twice');
   assert.match(html, /function _atlKatex\(tex, display\)\{/, 'math renderer helper');
   assert.match(html, /window\.katex && typeof window\.katex\.renderToString==='function'/, 'feature-detects KaTeX before using it');
   assert.match(html, /renderToString\(tex,\{displayMode:!!display,throwOnError:false/, 'throwOnError:false — one bad formula never breaks the reply');

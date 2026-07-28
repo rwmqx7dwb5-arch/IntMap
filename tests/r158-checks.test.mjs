@@ -45,7 +45,11 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
   ok('if(_dC>9000||_dZ>3){ okCam=false;', 'abnormal one-frame jump is skipped (safety net)');
   ok('const camAlt=Math.max(st.alt, _grd+2.5);', 'camera eye altitude floored above smoothed terrain (decoupled from aircraft)');
   ok('try{ if(map&&map.stop) map.stop(); }catch(_){} try{ window.__fsCamSkips=0', 'flight start halts other camera animations (sole controller)');
-  ok('https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js', 'MapLibre pinned to an exact version');
+  /* (#R175) the pin survived the move to npm — and matters for the same reason it was made in #R158:
+     the camera APIs this flight-sim fix rides on are exact-version behaviour, not a documented API. */
+  const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
+  assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'MapLibre pinned to an exact version');
+  assert.ok(!/unpkg\.com\/maplibre-gl@/.test(html), 'and the unpinnable CDN copy is gone');
   gone('cam=map.calculateCameraOptionsFromCameraLngLatAltRotation', 'the near-horizontal-unstable rotation API is no longer the primary path');
 });
 

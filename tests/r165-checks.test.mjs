@@ -16,12 +16,15 @@
 //     IM_HOST — never a bare identifier (the #R162 silent-loss shape).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
-const html = rd('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
+   appShell() concatenates them so every assertion below keeps meaning what it meant. */
+const html = appShell(root);
 const mod = rd('js/atlas-console.js');
 
 /* Blank out comments and string/template literals so identifier scanning reads CODE only. */
@@ -149,7 +152,7 @@ const LIVE = {
 test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its original spot', () => {
   assert.ok(!html.includes('window.IntMapConsole=(function(){'),
     'index.html must not still define IntMapConsole inline — a leftover in-page copy would win');
-  assert.ok(html.includes('<script src="js/atlas-console.js"></script>'), 'index.html loads js/atlas-console.js');
+  assert.ok(html.includes("import '../js/atlas-console.js';"), 'src/main.js imports js/atlas-console.js (#R175)');
   assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
     'js/atlas-console.js extends IntMapModules without clobbering what earlier files put there');
   assert.ok(mod.includes('window.IntMapModules.atlasConsole=function(map,HOST){'),

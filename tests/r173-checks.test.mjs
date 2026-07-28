@@ -6,6 +6,7 @@
 // EVERY proposal, and the engine gained the three contract entries the round needed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { appShell } from './app-source.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import * as acorn from 'acorn';
@@ -13,7 +14,10 @@ import * as walk from 'acorn-walk';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const R = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const INDEX = R('index.html');
+/* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js — so INDEX
+   is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
+   JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
+const INDEX = appShell(new URL('../', import.meta.url));
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* the same parser-based detector the earlier rounds use: a real `map.<x>` member access, never a
@@ -97,7 +101,13 @@ test('the eye anchor answers every proposal, not only the ones that change the p
     'declining a no-op frame applied the PROPOSED camera and wiped the anchor — measured: the eye fell 18.6 km on the last frame');
   assert.match(hook, /const movedFromLast=/, 'travel is judged against the previous proposal…');
   assert.match(hook, /const movedFromApplied=/, '…and against the camera actually on screen, because the proposal is re-cloned between gestures');
-  assert.match(hook, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\) return \{\}/, 'a real journey is still left alone');
+  /* (#R175) the SHAPE of the travel branch changed; the invariant it protects did not. A travelling
+     frame still never has its centre overridden — that is what kept "fly to Paris, pitch 55" from
+     landing 4.3 km short. What it may now do is carry the look-at target's ALTITUDE through a zoom,
+     which is what stopped the camera converging on a point in the sky (see tests/r175-checks). */
+  const travel = hook.slice(hook.indexOf('if(movedFromApplied&&(movedFromLast||!last)'), hook.indexOf('try{ if(window.__fsCamActive)'));
+  assert.match(travel, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)/, 'a real journey is still recognised as travel');
+  assert.ok(travel.length > 0 && !/center/.test(travel), 'and a journey never has its centre overridden');
   assert.match(hook, /window\.__fsCamActive/, 'never while the flight sim owns the camera');
 });
 
