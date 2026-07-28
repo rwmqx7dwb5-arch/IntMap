@@ -41,9 +41,7 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.volume3d=function(map,HOST){
   return (function(){
-    const SRC='imv3d-src', LYR='imv3d-vol', EDGE='imv3d-edge', FLOOR='imv3d-floor';
-    const SLAB=n=>'imv3d-slab-'+n;   /* (#R172) the interior slabs — see fillLayers() */
-    const SLABS=8;
+    const SRC='imv3d-src', LYR='imv3d-vol', EDGE='imv3d-edge', BODY='imv3d-body';
     const GE=()=>window.IntMapGeoEngine;
 
     /* the live volume: a closed ring (lng/lat, no repeated last point) + two ALTITUDES in metres AMSL */
@@ -52,7 +50,7 @@ window.IntMapModules.volume3d=function(map,HOST){
     let lastRenderErr=null;
     let shape='polygon';     /* polygon | freehand | circle | rect (#R171) */
     let onShapeDone=null;    /* the panel's redraw hook — a drag ends without any click the panel would see */
-    let solid=true;          /* (#R172) closed bottom + filled interior — see fillLayers() */
+    let solid=true;          /* (#R173) the CLOSED body (floor + filled interior); false = the open shell */
     /* (#R172) who owns the current footprint. The panel re-pushes the measure tool's clicked vertices on every
        re-render, which used to wipe a ring that came from anywhere else — an Atlas-drawn volume lost its
        footprint (and the panel then read "Points 0" under a box that was still on screen) the next time
@@ -100,21 +98,22 @@ window.IntMapModules.volume3d=function(map,HOST){
       },400); }
 
     /* ---- rendering ------------------------------------------------------------------------- */
-    /* (#R172) A fill-extrusion is a LID AND FOUR WALLS — it has no floor, and it encloses nothing.
-       Measured on this app with a 5 km-thick red cylinder at 0.85 opacity: from outside-above it looks
-       like a solid; standing INSIDE it you see the far wall (so the walls are not back-face culled) but
-       the space you are standing in is empty; and there is no downward face anywhere. That is exactly
-       「下の面は色がついていない。多面体内部の空間も無色になっている。」
-       This closes it with primitives the renderer actually has:
-         FLOOR  — a thin slab sitting on the base altitude, so the solid has a bottom face;
-         SLAB×n — evenly spaced thin horizontal sheets through the band, so looking through the body
-                  accumulates colour with DEPTH instead of just front-wall-over-back-wall. A 2 km band
-                  crossed near its edge and one crossed through the middle no longer look identical.
-       Every one of them is the same footprint at a different altitude, driven from the same ring, so the
-       measurement (area, thickness, volume) is untouched — this is how the volume is DRAWN, not what it is. */
+    /* (#R173) ONE CLOSED BODY, not a stack of layers.
+       「下の面は色がついていない。多面体内部の空間も無色になっている。内部にシートなんていうあほなことを
+       するな。」 — and the sheets #R172 put inside were worse than useless: `fill-extrusion` WRITES DEPTH,
+       so a floor slab and eight horizontal sheets drawn inside the body all sat behind its near wall and
+       were discarded by the depth test before they ever reached the screen. The body was still a lid and
+       four walls with nothing in it, which is all a fill-extrusion can ever be.
+       The engine now has a contract for the thing itself — `layers.addSolid` / `setSolid` — and the
+       MapLibre adapter answers it with a real closed prism: a triangulated TOP cap, a triangulated BOTTOM
+       cap and the walls between them, drawn far-side-then-near-side with each fragment's opacity taken
+       from the path length through the face (1/|n·v|). So it has a floor, it is filled, and it still
+       measures exactly the same: this is how the volume is DRAWN, never what it IS.
+       `solid` false keeps the old open shell (the extrusion), for anyone who wants to see through it. */
     function ensure(){ const E=GE(); if(!E||!E.canDraw()) return false;
       try{
         if(!E.layers.hasSource(SRC)) E.layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(canSolid()&&!E.layers.has(BODY)) E.layers.addSolid(BODY);
         if(!E.layers.has(LYR)){
           /* (#R171) a PLAIN colour, not ['coalesce',['get','color'],…]. There is only ever one box, and the
              expression form left the layer's own paint property frozen at the colour it was created with —
@@ -126,36 +125,15 @@ window.IntMapModules.volume3d=function(map,HOST){
             'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
           if(!ok) return false;
         }
-        if(!E.layers.has(FLOOR)) E.layers.addExtrusion({ id:FLOOR, source:SRC, paint:{
-          'fill-extrusion-color':color, 'fill-extrusion-opacity':Math.min(0.95,opacity*1.35),
-          'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
-        for(let i=0;i<SLABS;i++) if(!E.layers.has(SLAB(i))) E.layers.addExtrusion({ id:SLAB(i), source:SRC, paint:{
-          'fill-extrusion-color':color, 'fill-extrusion-opacity':0,
-          'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
         /* a thin outline on the footprint so the box is locatable on the ground even edge-on */
         if(!E.layers.has(EDGE)) E.layers.add({ id:EDGE, type:'line', source:SRC,
           paint:{ 'line-color':color, 'line-width':1.6, 'line-opacity':0.9 } });
         return true;
       }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
     }
-    /* Position the floor and the interior sheets inside [rb,rh] (renderer-space metres). The sheets are
-       thin relative to the band, so a thick volume is not turned into a stack of visible pancakes; their
-       opacity is derived from the box's own so the two always read as one body. */
-    function fillLayers(E,rb,rh){
-      const thick=Math.max(0.5,rh-rb);
-      const skin=Math.max(0.6, Math.min(thick*0.01, 60));      /* floor thickness: 1 % of the band, capped */
-      const each=Math.max(0.4, Math.min(thick*0.004, 30));     /* one interior sheet */
-      const op=solid?Math.min(0.95,opacity*1.35):0;
-      try{ E.layers.setExtrusionRange(FLOOR, rb, rb+skin);
-        E.layers.setPaint(FLOOR,'fill-extrusion-opacity',op);
-        E.layers.setVisible(FLOOR,solid); }catch(_){}
-      for(let i=0;i<SLABS;i++){
-        const f=(i+1)/(SLABS+1), y=rb+thick*f;
-        try{ E.layers.setExtrusionRange(SLAB(i), y, y+each);
-          E.layers.setPaint(SLAB(i),'fill-extrusion-opacity',solid?Math.min(0.9,opacity*0.55):0);
-          E.layers.setVisible(SLAB(i),solid); }catch(_){}
-      }
-    }
+    /* Does this renderer have closed bodies at all? An engine without them still gets the open shell,
+       which is what every version before #R173 drew. */
+    function canSolid(){ try{ const E=GE(); return !!(E&&E.can('solid3d')&&E.layers.addSolid); }catch(_){ return false; } }
 
     /* Push the current ring + altitudes to the renderer. See the altitude-reference note at the top:
        with terrain on we hand over HEIGHT-ABOVE-GROUND, so the box lands at the requested ALTITUDE. */
@@ -166,22 +144,29 @@ window.IntMapModules.volume3d=function(map,HOST){
       groundM=has3DTerrain()?readGround():null;
       const off=(has3DTerrain()&&groundM!=null)?groundM:0;
       const rb=Math.max(0, loM()-off), rh=Math.max(rb+0.5, hiM()-off);   /* never a zero/inverted box */
+      /* asked of the LAYER, not just of the capability: if the renderer declined to create the solid for
+         any reason (an old context, a style reload mid-flight) the open shell must draw rather than nothing. */
+      const asSolid=solid&&canSolid()&&E.layers.has(BODY);
       try{
         E.layers.setSourceData(SRC,{type:'FeatureCollection',features:[
           {type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{color}} ]});
         E.layers.setExtrusionRange(LYR, rb, rh);
         E.layers.setPaint(LYR,'fill-extrusion-opacity',opacity);
-        E.layers.setVisible(LYR,true); E.layers.setVisible(EDGE,true);
-        fillLayers(E,rb,rh);   /* (#R172) bottom face + interior sheets */
+        E.layers.setVisible(LYR,!asSolid);           /* one representation at a time — the same body */
+        E.layers.setVisible(EDGE,true);
+        if(canSolid()){
+          E.layers.setSolid(BODY,{ ring:r, base:rb, top:rh, color, opacity });
+          E.layers.setVisible(BODY,asSolid);
+        }
         if(has3DTerrain()&&!noChase) chaseGround();   /* the DEM may still be streaming — see chaseGround */
         lastRenderErr=null; return true;
       }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
     }
     function hide(){ const E=GE(); if(!E) return; try{ E.layers.setVisible(LYR,false); E.layers.setVisible(EDGE,false);
-      E.layers.setVisible(FLOOR,false); for(let i=0;i<SLABS;i++) E.layers.setVisible(SLAB(i),false); }catch(_){} }
+      if(E.layers.has(BODY)) E.layers.setVisible(BODY,false); }catch(_){} }
     function remove(){ const E=GE(); if(!E) return;
-      try{ E.layers.remove(LYR); E.layers.remove(EDGE); E.layers.remove(FLOOR);
-        for(let i=0;i<SLABS;i++) E.layers.remove(SLAB(i));
+      try{ E.layers.remove(LYR); E.layers.remove(EDGE);
+        if(E.layers.removeSolid) E.layers.removeSolid(BODY);
         E.layers.removeSource(SRC); }catch(_){} }
 
     /* ---- shapes (#R171) --------------------------------------------------------------------
@@ -317,11 +302,9 @@ window.IntMapModules.volume3d=function(map,HOST){
     function setStyle(col,op){ if(col) color=col; if(op!=null&&isFinite(+op)) opacity=clamp(+op,0.05,0.95);
       /* The colour lives on the LAYERS (see ensure), so a live change has to be pushed to both of them —
          the box and its ground outline. paint() below re-asserts the opacity and the geometry. */
+      try{ const E=GE(); if(E&&E.layers.has(BODY)) E.layers.setSolid(BODY,{color,opacity}); }catch(_){}
       try{ const E=GE(); if(E&&E.layers.has(LYR)) E.layers.setPaint(LYR,'fill-extrusion-color',color);
         if(E&&E.layers.has(EDGE)) E.layers.setPaint(EDGE,'line-color',color);
-        /* (#R172) …and the floor and the interior sheets, or the solid would be two colours at once */
-        if(E&&E.layers.has(FLOOR)) E.layers.setPaint(FLOOR,'fill-extrusion-color',color);
-        for(let i=0;i<SLABS;i++) if(E&&E.layers.has(SLAB(i))) E.layers.setPaint(SLAB(i),'fill-extrusion-color',color);
       }catch(_){}
       return paint(); }
     function clear(){ ring=[]; trace=[]; groundM=null; hide(); }
@@ -399,9 +382,12 @@ window.IntMapModules.volume3d=function(map,HOST){
       state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing,
         thickness:thicknessM(), areaM2:areaM2(), unit, solid, fromClicks:ringFromClicks,
         volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
-        painted:(()=>{ try{ return !!(GE()&&GE().layers.has(LYR)&&GE().layers.isVisible(LYR)); }catch(_){ return false; } })(),
-        floor:(()=>{ try{ return !!(GE()&&GE().layers.has(FLOOR)&&GE().layers.isVisible(FLOOR)); }catch(_){ return false; } })(),
-        slabs:(()=>{ try{ let n=0; for(let i=0;i<SLABS;i++) if(GE().layers.has(SLAB(i))&&GE().layers.isVisible(SLAB(i))) n++; return n; }catch(_){ return 0; } })(),
+        /* (#R173) "painted" is true for EITHER representation — the closed body and the open shell are the
+           same volume drawn two ways, and a caller asking "is it on screen?" must not have to know which. */
+        painted:(()=>{ try{ const E=GE(); return !!(E&&((E.layers.has(LYR)&&E.layers.isVisible(LYR))||(E.layers.has(BODY)&&E.layers.isVisible(BODY)))); }catch(_){ return false; } })(),
+        body:(()=>{ try{ const E=GE(); return !!(E&&E.layers.has(BODY)&&E.layers.isVisible(BODY)); }catch(_){ return false; } })(),
+        shell:(()=>{ try{ const E=GE(); return !!(E&&E.layers.has(LYR)&&E.layers.isVisible(LYR)); }catch(_){ return false; } })(),
+        canSolid:canSolid(),
         err:lastRenderErr }) };
   })();
 };

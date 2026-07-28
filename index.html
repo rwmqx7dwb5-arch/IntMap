@@ -752,6 +752,7 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
 <script src="js/news-ui.js"></script>
 <script src="js/companies-ui.js"></script>
 <script src="js/tool-panel.js"></script>
+<script src="js/solid3d.js"></script>   <!-- (#R173) closed 3-D bodies for IntMapGeoEngine.layers.addSolid (MapLibre adapter internals) -->
 <script src="js/volume3d.js"></script>   <!-- (#R170) Measure ▸ 3-D volume — built entirely on IntMapGeoEngine -->
 <script src="js/view-controls.js"></script>   <!-- (#R171) tilt limit + eye-altitude readout — also engine-only -->
 <script src="js/auth-ui.js"></script>
@@ -799,7 +800,7 @@ window.__imBuild='R171';   /* (#R121) build marker — bump when verifying that 
                  /* (#R171) The two files written straight into js/ rather than split out of here. volume3d
                     shipped in #R170 without ever being named here, so a js/volume3d.js that failed to deploy
                     would have gone unreported — exactly the silent loss this guard exists to catch. */
-                 'volume3d','viewControls'].filter(function(k){ return typeof M[k]!=='function'; });
+                 'volume3d','viewControls','solid3d'].filter(function(k){ return typeof M[k]!=='function'; });
     if(miss.length) console.error('[IntMap] required module file(s) failed to load: '+miss.join(', ')+' — check the js/ directory is deployed');
     if(missFac.length) console.error('[IntMap] module factories missing: '+missFac.join(', ')+' — the matching js/ file did not load');
     window.__imModuleCheck={ missing:miss, missingFactories:missFac }; })();
@@ -2561,6 +2562,11 @@ window.addEventListener('DOMContentLoaded', () => {
           rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
           /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
           extrusion3d:true,
+          /* (#R173) can the renderer draw a CLOSED body — a floor, and an interior that is filled rather
+             than hollow? `extrusion3d` cannot: fill-extrusion is a lid and walls with no downward face at
+             all, which is why 「下の面は色がついていない・多面体内部の空間も無色」 could not be answered by
+             adding more extrusions. MapLibre can, through a custom GL layer (js/solid3d.js). */
+          solid3d:true,
           /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
              NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
              MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
@@ -2589,6 +2595,10 @@ window.addEventListener('DOMContentLoaded', () => {
              centre, so leaning from 78° to 120° swings the eye from +3,385 m to −8,140 m — it goes under the
              world. An engine without this pair cannot honour the unlimited-tilt setting's promise. */
           eyeControl:true };
+        /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
+        const _solids={};
+        /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
+        let _pd=null, _pdAt=0;
         /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
         const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
           flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
@@ -2615,6 +2625,16 @@ window.addEventListener('DOMContentLoaded', () => {
             try{ m.setProjection(spec); return true; }catch(_){ /* an older renderer may not know vertical-perspective — the plain globe is the closest it has */
               if(mode==='globe-true'){ try{ m.setProjection({type:'globe'}); return true; }catch(__){} } return false; } },
           getProjection(){ const m=_m(); try{ return (m&&m.getProjection)?m.getProjection():null; }catch(_){ return null; } },
+          /* (#R173) HOW SPHERICAL IS THE VIEW RIGHT NOW — 0 = a flat plane, 1 = a globe, and everything in
+             between while an engine cross-fades. This is NOT the same question as getProjection(): MapLibre's
+             `globe` is defined as ['interpolate',['linear'],['zoom'],11,'vertical-perspective',12,'mercator'],
+             so the same "globe" spec draws a sphere at z11 and a plane at z12 — the fact that cost #R170–#R172
+             three rounds. Anything that has to know whether the horizon is curved (the flight simulator's own
+             sky, which MapLibre stops drawing exactly as the sphere takes over) must ask this, not the name.
+             The renderer's own transition value when it exposes one, else the projection type as 0/1. */
+          globeness(){ const m=_m(); try{ const v=m&&m.style&&m.style.projection&&m.style.projection.transitionState;
+              if(typeof v==='number'&&isFinite(v)) return Math.max(0,Math.min(1,v)); }catch(_){}
+            try{ const t=(m&&m.getProjection&&m.getProjection()||{}).type; return (t==='mercator'||t==='flat')?0:1; }catch(_){ return 0; } },
           /* (#R171) camera ATTITUDE — bearing / pitch / roll and the tilt limits. The unlimited-tilt setting and
              the flight sim both need these, and both are written against the engine, so they belong in the contract. */
           setBearing(b){ const m=_m(); if(m&&m.setBearing) m.setBearing(b); }, setPitch(p){ const m=_m(); if(m&&m.setPitch) m.setPitch(p); },
@@ -2737,13 +2757,33 @@ window.addEventListener('DOMContentLoaded', () => {
                            elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
                 }catch(_){ return {}; }
                 const last=req; req=cur;
-                if(!isFinite(cur.pitch)||Math.abs(cur.pitch-was.pitch)<1e-4) return {};
-                /* ONLY when the update is a pure tilt. A flyTo that also travels somewhere is asking to look at
+                if(!isFinite(cur.pitch)) return {};
+                /* ONLY when the update is not a journey. A flyTo that travels somewhere is asking to look at
                    a PLACE, and re-anchoring the eye would land it short — measured: "fly to Paris, pitch 55"
                    arrived 4.3 km off centre. Tilt gestures and easeTo({pitch}) leave the centre alone, so this
                    one test separates "turn your head" from "go there" without having to guess at easing state
                    (drag INERTIA is an easeTo too, and it must stay anchored). */
-                if(!last||Math.abs(cur.lng-last.lng)>1e-9||Math.abs(cur.lat-last.lat)>1e-9) return {};
+                /* (#R173) "did the centre move?" has to be asked of BOTH histories. The proposal lives in
+                   MapLibre's `_requestedCameraState`, which is thrown away and re-cloned from the APPLIED
+                   transform between interactions — so after one anchored tilt, the next gesture's very first
+                   proposal carries our corrected centre and looks like a 16 km journey next to the previous
+                   proposal's. Measured: tilt to 120° (anchored, eye still), then easeTo({pitch:60}) — declined
+                   as "travel" and the eye climbed 18.6 km. A frame is travel only when the centre differs from
+                   the previous proposal AND from the camera actually on screen; matching either one means the
+                   map is where we put it and this is an attitude change, not a journey. */
+                const movedFromLast=!!last&&(Math.abs(cur.lng-last.lng)>1e-9||Math.abs(cur.lat-last.lat)>1e-9);
+                const movedFromApplied=Math.abs(cur.lng-was.lng)>1e-9||Math.abs(cur.lat-was.lat)>1e-9;
+                if(movedFromApplied&&(movedFromLast||!last)) return {};
+                /* (#R173) …and it must answer EVERY such update, including the ones that change nothing.
+                   #R172 returned {} whenever the pitch had not moved since the last frame, and that is what
+                   「視点の位置は一切変えない」 was still failing on: _applyUpdatedTransform starts from the
+                   PROPOSED transform — whose centre and elevation never carry our corrections — so a frame
+                   this hook declines applies the proposal verbatim and wipes every correction before it.
+                   Traced on a 50°→180° ctrl-drag: eleven frames anchored the eye perfectly at 12,059 m and
+                   then the twelfth, a repeat of pitch 180 with nothing to do, put the elevation back to 0 and
+                   dropped the eye to −18,606 m. The same last-frame snap-back moved easeTo({pitch}) by 18.6 km.
+                   Solving with an unchanged pitch is the IDENTITY (the eye is derived from the applied camera
+                   and immediately solved back into it), so answering always costs nothing and closes the hole. */
                 try{ if(window.__fsCamActive) return {}; }catch(_){}
                 const d0=c2c*mpp(was.lat,was.zoom); if(!isFinite(d0)||d0<=0) return {};
                 /* where the eye WAS, before this update */
@@ -2769,6 +2809,32 @@ window.addEventListener('DOMContentLoaded', () => {
             }catch(_){ return false; }
             return true; },
           project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
+          /* (#R173) WHERE ON SCREEN IS A POINT THAT IS UP IN THE AIR? project() answers only for the ground,
+             and MapLibre's own hit-testing has the same blind spot: queryRenderedFeatures on a fill-extrusion
+             answers at the FOOTPRINT, not at the body — measured on an aircraft at 11,003 m with the glyph
+             drawn at y=272 and its ground point at y=388, the only pixel that reported a feature was 388, at
+             every zoom and in both regimes. So nothing lifted into the air could be hovered or clicked where
+             it is drawn. This projects a real (lng, lat, altitude) through the renderer's own matrices —
+             transform.getMatrixForModel + the custom-layer projection data, the supported path for placing
+             3-D content — so it is right on the globe as well as on the flat map.
+             Returns null when the point is behind the camera. */
+          projectAltitude(ll,altM){ const m=_m(); if(!m) return null;
+            try{
+              const t=m.transform; if(!(t&&t.getMatrixForModel&&t.getProjectionDataForCustomLayer)) return null;
+              const lng=(ll&&ll.lng!=null)?ll.lng:(ll?ll[0]:0), lat=(ll&&ll.lat!=null)?ll.lat:(ll?ll[1]:0);
+              const M=t.getMatrixForModel({lng,lat},+altM||0);           /* model origin = the point itself */
+              /* the projection data is per-CAMERA, not per-point, and building it allocates matrices — a
+                 hover that asks for 600 aircraft would otherwise rebuild it 600 times in one mouse move.
+                 Held for a few milliseconds, which is less than a frame. */
+              const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+              if(!_pd||now-_pdAt>6){ _pd=t.getProjectionDataForCustomLayer(true); _pdAt=now; }
+              const A=(_pd||{}).mainMatrix; if(!(A&&M)) return null;
+              const x=M[12],y=M[13],z=M[14];
+              const cx=A[0]*x+A[4]*y+A[8]*z+A[12], cy=A[1]*x+A[5]*y+A[9]*z+A[13], cw=A[3]*x+A[7]*y+A[11]*z+A[15];
+              if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)) return null;   /* behind the camera / degenerate */
+              const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
+              return { x:(cx/cw*0.5+0.5)*W, y:(0.5-cy/cw*0.5)*H };
+            }catch(_){ return null; } },
           terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
           queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
           hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)) m.addSource(id,d); },
@@ -2806,6 +2872,24 @@ window.addEventListener('DOMContentLoaded', () => {
             try{ m.addLayer(Object.assign({type:'fill-extrusion'},d), (before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
           setExtrusionRange(id,baseM,topM){ const m=_m(); if(!(m&&m.getLayer(id))) return false;
             try{ m.setPaintProperty(id,'fill-extrusion-base',baseM); m.setPaintProperty(id,'fill-extrusion-height',topM); return true; }catch(_){ return false; } },
+          /* (#R173) A CLOSED, FILLED BODY — distinct from addExtrusion, because an extrusion is a lid and
+             walls and can express neither a floor nor an interior. Asked for as an intent (a solid between
+             two altitudes over a footprint); MapLibre answers it with a `custom` layer that draws the whole
+             prism as one mesh (js/solid3d.js), a Cesium-class engine would answer with its own primitive,
+             and an engine that cannot must say so via capabilities.solid3d. */
+          addSolid(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
+            try{ if(!(window.IntMapModules&&window.IntMapModules.solid3d)) return false;
+              /* the mesh is written in GLSL 3.00 with 32-bit indices. MapLibre 5 still transpiles ITS own
+                 shaders down to WebGL1, so a context without WebGL2 is possible — say no there and the
+                 caller falls back to the open shell rather than drawing nothing. */
+              const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
+              const L=(_solids[id]||(_solids[id]=window.IntMapModules.solid3d().makeLayer(id)));
+              m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+          setSolid(id,o){ const L=_solids[id]; if(!L) return false;
+            try{ /* the eye is what makes the absorption an absorption — see the shader's 1/|n·v| */
+              if(o&&!o.eye){ const e=this.eyePosition(); if(e) o=Object.assign({},o,{eye:e}); }
+              L._set(o); return true; }catch(_){ return false; } },
+          removeSolid(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _solids[id]; return true; },
           /* (#R171) INPUT — hand the drag gesture to a tool for the length of a stroke. A tool that traces a
              shape has to stop the renderer panning underneath it; #R170's DrawTool reached straight for
              map.dragPan for this, which is precisely the kind of call a renderer-independent tool cannot make.
@@ -2824,7 +2908,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
              own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
              (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
-          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true } };
+          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true } };
         let _adapter=MapLibreAdapter;
         return {
           id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
@@ -2837,6 +2921,8 @@ window.addEventListener('DOMContentLoaded', () => {
             forBounds:(b,o)=>_adapter.cameraForBounds?_adapter.cameraForBounds(b,o):null, getPadding:()=>_adapter.getPadding?_adapter.getPadding():null,
             /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */
             getProjection:()=>_adapter.getProjection(),
+            /* (#R173) 0 = flat, 1 = a sphere — see the adapter; the projection's NAME does not answer this */
+            globeness:()=>_adapter.globeness?_adapter.globeness():0,
             setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
             getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
             /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
@@ -2848,7 +2934,9 @@ window.addEventListener('DOMContentLoaded', () => {
             setCenterClamped:v=>_adapter.setCenterClamped?_adapter.setCenterClamped(v):false,
             setTiltPivot:mo=>_adapter.setTiltPivot?_adapter.setTiltPivot(mo):false,
             isAnimating:()=>_adapter.isAnimating?_adapter.isAnimating():false },
-          coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
+          coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o),
+            /* (#R173) the screen position of a point AT ALTITUDE — what picking anything lifted needs */
+            projectAltitude:(ll,a)=>_adapter.projectAltitude?_adapter.projectAltitude(ll,a):null },
           /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
              far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the
              second with the first is what made freshly-ticked layers appear seconds late. */
@@ -2857,6 +2945,9 @@ window.addEventListener('DOMContentLoaded', () => {
           layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
             /* (#R170) real-scale 3-D volumes (metres above ground) */
             addExtrusion:(d,b)=>_adapter.addExtrusion(d,b), setExtrusionRange:(id,a,b)=>_adapter.setExtrusionRange(id,a,b),
+            /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
+            addSolid:(id,b)=>_adapter.addSolid?_adapter.addSolid(id,b):false, setSolid:(id,o)=>_adapter.setSolid?_adapter.setSolid(id,o):false,
+            removeSolid:id=>_adapter.removeSolid?_adapter.removeSolid(id):false,
             /* (#R160) feature-state (hover/selection highlighting) through the engine */
             setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),
             /* (#R161) read a paint property back (theme code needs to know the current value) */

@@ -213,6 +213,10 @@ window.IntMapModules.flightSim=function(map,HOST){
            lifted to cover the whole viewport above all app chrome, map controls are hidden, and a HUD vignette frames it.
            (#R102) z-index raised to 6000+ so the cockpit sits ABOVE the workspace-mode top menu bar (5990) and ticker (5985). */
         +'body.fs-flying{overflow:hidden !important;}'
+        /* (#R173) the sim's own sky — a plain element BEHIND the WebGL canvas (the canvas is transparent where
+           the renderer draws nothing). It is inserted as the map container's first child, so DOM order alone
+           keeps terrain, sea and imagery over it; see _fsSkyDraw for the horizon geometry. */
+        +'#map .fs-sky{position:absolute;inset:0;pointer-events:none;z-index:0;}'
         +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6000 !important;border-radius:0 !important;}'
         /* (#R102) WORKSPACE MODE: the map lives inside a .ws-win (z-index:900) whose stacking context TRAPS the promoted
            #map-container — so the fullscreen map was hidden behind the sibling windows/ticker/menu ("開始すると画面が
@@ -772,7 +776,9 @@ window.IntMapModules.flightSim=function(map,HOST){
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
          camera can look forward to the horizon. State is remembered and restored on exit. */
-      try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
+      /* (#R173) …and the PADDING, because the cockpit camera now carries its line of sight in the projection's
+         centre offset (see _cockpitCam) and would otherwise hand the map back permanently off-centre. */
+      try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60), pad:(map.getPadding?map.getPadding():null) }; }catch(_){ prevView=null; }
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
       /* (#R172) take the tilt PIVOT back for the flight. With unlimited tilt on, the engine installs a
@@ -796,7 +802,16 @@ window.IntMapModules.flightSim=function(map,HOST){
       /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
          pale horizon haze and distance fog; restored on exit. */
       try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
-      try{ if(map.setSky) map.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
+      /* (#R173) THE SIM OWNS THE SKY NOW — the renderer's two sky mechanisms both fail this camera:
+         · the `sky` LAYER is multiplied out by globeness (`fragColor = mix(fragColor, vec4(0), u_sky_blend)`),
+           so it disappears exactly when the Earth becomes a sphere, and where it does still draw it anchors
+           itself to the transform's own horizon — which the cockpit's centre offset has moved;
+         · the `atmosphere` pass that replaces it is a from-SPACE scattering integral, and flown from inside
+           the air it saturates to white (measured at atmosphere-blend 0.1 / 0.6 / 1.0 — all three).
+         So both are made transparent for the flight and _fsSkyDraw paints one sky that is right in both
+         regimes. The FOG values are left alone: they feed the terrain shader, which is what hazes the far
+         mountains, and that still works. Everything is restored on exit (prevView.sky). */
+      try{ if(map.setSky) map.setSky({'sky-color':'rgba(0,0,0,0)','sky-horizon-blend':0.75,'horizon-color':'rgba(0,0,0,0)','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':0}); }catch(_){}
       try{ if(typeof HOST.mapType==='undefined'||HOST.mapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
@@ -810,6 +825,7 @@ window.IntMapModules.flightSim=function(map,HOST){
          IntMap viewport. The browser `requestFullscreen()` (desktop/OS fullscreen) was REMOVED per request ("デスクトップ
          での全画面という意味ではない"). Resize the map after the container changes size. */
       try{ document.body.classList.add('fs-flying'); }catch(_){}
+      try{ _fsSkyOn(); }catch(_){}   /* (#R173) the sim's own sky, behind the map — see _fsSkyDraw */
       try{ _fsStashLayers(); }catch(_){}   /* (#R122) hide every data layer / highlight / outline while flying (place-name labels stay); restored on exit */
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
@@ -847,6 +863,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       if(hud){ hud.remove(); hud=null; }
       /* (#R85c) leave fullscreen + restore the normal layout */
       try{ document.body.classList.remove('fs-flying'); }catch(_){}
+      try{ _fsSkyOff(); }catch(_){}   /* (#R173) take the sim's sky back out of the map container */
       try{ _fsRestoreLayers(); }catch(_){}   /* (#R122) re-enable every layer/highlight that was on before the flight */
       try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(_){}
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },140);
@@ -854,6 +871,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       /* (#R85b) restore the pre-flight view (basemap / projection / 3-D / max pitch) */
       try{ const pv=prevView; if(pv){
         if(map.setMaxPitch) map.setMaxPitch(pv.maxPitch||60);
+        try{ if(map.setPadding) map.setPadding(pv.pad||{top:0,bottom:0,left:0,right:0}); }catch(_){}   /* (#R173) give the centre back */
         try{ if(map.setSky) map.setSky(pv.sky||undefined); }catch(_){}   /* (#R99) restore the pre-flight sky */
         if(pv.base!=='sat'&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
         if(!pv.terr&&typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
@@ -1313,6 +1331,139 @@ window.IntMapModules.flightSim=function(map,HOST){
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
       if(!flags){ flags=stepFixed(Math.max(1e-4,st._acc),ac); st._acc=0; }   /* frame shorter than one step */
       return flags; }
+    /* ===== (#R173) HOW FAR AHEAD THE CAMERA LOOKS = whether the Earth is round ==========================
+       「フライトシミュレーターは、FlatではなくGlobeの地図を使うように。（高高度なのにもかかわらず、地平線が
+       平らなのはおかしい。どう見てもFLATを使っている。）」 — and the horizon really was dead straight.
+
+       MapLibre's `globe` is not a projection, it is an INTERPOLATION, and its own definition (read out of
+       maplibre-gl 5.24: `['interpolate',['linear'],['zoom'],11,'vertical-perspective',12,'mercator']`) says
+       the Earth is a sphere at z11 and a flat plane from z12 up. #R171 found that and tried to force
+       'vertical-perspective' at cockpit zoom; the world vanished (#R172). Neither round looked at the third
+       term of the equation: WHY the cockpit sits at z15 at all.
+
+       It sits there because the camera is derived from calculateCameraOptionsFromTo(eye → target) and the
+       target was pinned a FIXED 1.8 km ahead (#R158). Zoom is nothing but that distance in disguise —
+       zoom = log2(2πR·cos φ · cameraToCenterDistance / (tileSize · D)) — so pushing the look-at point out to
+       ~43 km lands the same camera at z10.8, inside the renderer's spherical regime. It is the same camera:
+       the eye is at {eye, alt} and the view direction is (bearing, pitch) either way, and the eye altitude
+       measured after the jump is unchanged (3,499 m at D=1.8 km vs 3,484 m at D=43 km — the 15 m is the
+       latitude the target moved to, not the aeroplane).
+
+       DETAIL IS NOT THE PRICE. MapLibre 5 picks a zoom PER TILE from that tile's own distance to the camera
+       (createCalculateTileZoomFunction: centreZoom + log2(distToCentre/distToTile)), and the centre zoom is
+       itself log2(K/distToCentre) — the two cancel, so the look distance drops out. Measured over Mt Fuji at
+       3,500 m with the imagery given 14 s to settle: D=1.8 km loaded 11 satellite tiles, deepest z13; D=43 km
+       loaded 61, deepest **z16**. The long look is not a compromise, it is sharper, because the frustum's
+       tile budget is spent on what is actually in front of the aeroplane.
+
+       …but the look distance alone is NOT enough, because MapLibre's spherical camera is parameterised as
+       (a point ON the sphere, a distance, a pitch) — and it only draws while that camera is ABOVE the sphere
+       in its own model, i.e. while the view axis actually MEETS the sphere. Measured at 3,500 m, sweeping the
+       pitch with the look distance held at 43 km: 89° → 665 distinct colours (a world), 90° → 193, 91° and up
+       → 98 (nothing at all). THAT is what blanked #R171's cockpit, not the projection's name: a cockpit at
+       cruise looks along or ABOVE the horizon, and no (surface point, distance, pitch) triple describes it.
+
+       So the map's view axis is aimed a few degrees BELOW the horizon — where the sphere is representable —
+       and the real view direction is put back with the projection's CENTRE OFFSET (padding), which shifts the
+       image without moving the camera. The distance is then solved, not guessed, so that the renderer's own
+       spherical camera lands at the aeroplane's true altitude: with the eye at radius s = 1+h/R and the axis
+       c = cos(axis) off the local nadir,
+
+           d = (s²−1) / (s·c + √(s²c² − s² + 1))        (the near intersection, written so the two nearly
+                                                          equal terms are never subtracted)
+           pitch_map = acos((s²−1−d²) / 2d)              (MapLibre's pitch is measured at the CENTRE, not here)
+           arc       = asin(d·sin(axis))                 (how far ahead of the aeroplane the centre lies)
+
+       Everything follows from that: distance d·R sets the zoom, the zoom decides the regime (spherical to
+       z11, flat from z12), and the aeroplane's height decides the distance — so the map becomes a sphere as
+       the aircraft climbs and a crisp flat map on approach, with MapLibre's own globeness cross-fading the
+       two. No band to tune, no literal: at 3,500 m the solve gives 42.6 km (z10.8, fully spherical), at
+       300 m it gives 4.9 km (z13.9, flat), and on the runway it collapses onto the 1.8 km floor #R158 chose.
+       Verified end to end: the eye reads back at the altitude asked for in BOTH regimes, and the horizon
+       lands at the true dip below eye level (1.9° at 3,500 m, 3.4° at 11 km) instead of exactly at it. */
+    const _AXIS_MARGIN=3;    /* ° below the horizon the MAP's axis is aimed — the sphere's representable side */
+    const _D_FLOOR=1800;     /* #R158's look distance: what the solve collapses to on the ground */
+    function _cockpitCam(eLng,eLat,altM,bearing,pitchWanted,roll){
+      const R=6371008.8, D2R=Math.PI/180;
+      let Hpx=800; try{ const cv=map.getCanvas(); Hpx=cv.clientHeight||Hpx; }catch(_){}
+      let c2c=1.5*Hpx; try{ const v=map.transform&&map.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
+      let tile=512; try{ const v=map.transform&&map.transform.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
+      const h=Math.max(1,+altM||1), s=1+h/R;
+      const dip=Math.acos(Math.max(-1,Math.min(1,R/(R+h))))/D2R;              /* horizon depression, ° */
+      const axis=Math.min(pitchWanted, 90-dip-_AXIS_MARGIN);                  /* where the MAP looks */
+      const c=Math.cos(axis*D2R), disc=Math.max(0,s*s*c*c-s*s+1);
+      const d=(s*s-1)/Math.max(1e-12, s*c+Math.sqrt(disc));
+      const p=Math.acos(Math.max(-1,Math.min(1,(s*s-1-d*d)/(2*d))))/D2R;      /* MapLibre's pitch */
+      const arc=Math.asin(Math.max(-1,Math.min(1,d*Math.sin(axis*D2R))));     /* eye → centre, radians */
+      const Dsolved=d*R, D=Math.max(_D_FLOOR,Dsolved);
+      /* ground range to the centre. The floor only bites on the ground, where the solved distance shrinks to
+         metres; scaling the arc with it is the same as D·sin(axis) there, and stays exact when it does not. */
+      const g=(Dsolved>1?arc*R*(D/Dsolved):D*Math.sin(p*D2R));
+      const mLat=110574, mLng=(111320*Math.cos(eLat*D2R))||1;
+      const cLat=eLat+g*Math.cos(bearing*D2R)/mLat, cLng=eLng+g*Math.sin(bearing*D2R)/mLng;
+      if(!(isFinite(cLat)&&isFinite(cLng))||Math.abs(cLat)>89.5) return null;
+      const world=(2*Math.PI*R*Math.cos(cLat*D2R))/(D/c2c);
+      const zoom=Math.log2(world/tile);
+      /* the eye's height above the centre's ground plane — 0-ish once the solve owns the distance, and the
+         exact make-up when the floor takes over near the ground (the flat transform reads it, the spherical
+         one gets the same answer from the geometry above). */
+      const elevation=h-D*Math.cos(p*D2R);
+      /* THE LENS SHIFT. The axis is `pitchWanted − axis` below where the pilot is looking, so the image is
+         pushed back down by that angle: c2c·tan(Δ) pixels, along the AIRCRAFT's vertical — roll is applied
+         after pitch in MapLibre's view matrix, so screen-up is the aeroplane's up and the offset turns with
+         the bank. Capped at three quarters of the frame; past that the aeroplane is looking at sky and there
+         is no horizon left to get right. */
+      const dAng=Math.max(0,pitchWanted-axis);
+      const S=Math.min(0.75*Hpx, c2c*Math.tan(Math.min(60,dAng)*D2R));
+      const sx=S*Math.sin((+roll||0)*D2R), sy=S*Math.cos((+roll||0)*D2R);
+      const pad={ top:Math.max(0,2*sy), bottom:Math.max(0,-2*sy), left:Math.max(0,-2*sx), right:Math.max(0,2*sx) };
+      if(!(isFinite(zoom)&&isFinite(p)&&isFinite(elevation))) return null;
+      return { center:[cLng,cLat], zoom:Math.max(0,Math.min(22,zoom)), bearing, pitch:p, elevation, padding:pad, _D:D, _dip:dip, _axis:axis };
+    }
+    /* ===== (#R173) THE SKY, once the Earth is a sphere =================================================
+       MapLibre's `sky` layer is switched OFF by the globe: its fragment shader ends with
+       `fragColor = mix(fragColor, vec4(0.0), u_sky_blend)` and u_sky_blend IS globeness — so at the moment
+       the horizon starts to curve, the blue gradient the sim has set since #R99 fades to nothing. What
+       replaces it is the `atmosphere` pass, a from-space scattering integral: flown from INSIDE the air at
+       6 km it saturates (tried 0.1 / 0.6 / 1.0 — the cockpit went white each time, because the ray's optical
+       depth near the ground is enormous and `1-exp(-x)` pins at 1).
+       The canvas is transparent where the renderer draws nothing (verified: painting the map container red
+       turned the whole sky red), so the sim paints its OWN sky BEHIND the map and MapLibre's terrain, sea and
+       imagery draw over it — no renderer internals touched, nothing to restore but one element.
+       The horizon is not guessed: on a sphere it lies the DIP ANGLE below level, δ = acos(R/(R+h)), and a
+       point δ off the view axis lands cameraToCenterDistance·tan(pitch−90°+δ) pixels from the centre of the
+       screen. That is why the line sinks as the aeroplane climbs (70 px at 11 km) and stays put at pitch 90
+       when the map is flat (δ→0 gives exactly MapLibre's own mercator horizon), and it rides the camera roll
+       because the gradient is turned with it. */
+    let skyEl=null, _skyLast='';
+    function _fsSkyOn(){ try{ if(skyEl) return; const c=map.getContainer&&map.getContainer(); if(!c) return;
+      skyEl=document.createElement('div'); skyEl.className='fs-sky'; skyEl.setAttribute('aria-hidden','true');
+      c.insertBefore(skyEl,c.firstChild); }catch(_){ skyEl=null; } }
+    function _fsSkyOff(){ try{ if(skyEl) skyEl.remove(); }catch(_){} skyEl=null; _skyLast=''; }
+    /* sky-colour with height: the same #3f78c2 the sky layer uses at low level, darkening toward space as the
+       air thins out (nothing is left to scatter at 80 km). Honest and cheap — one lerp, no model. */
+    function _skyTop(altM){ const t=Math.max(0,Math.min(1,(+altM||0)/80000)), e=t*t;
+      const mix=(a,b)=>Math.round(a+(b-a)*e);
+      return 'rgb('+mix(0x3f,4)+','+mix(0x78,7)+','+mix(0xc2,20)+')'; }
+    function _fsSkyDraw(camAlt,pitch,roll){
+      if(!skyEl) return;
+      let W=1280,H=800; try{ const cv=map.getCanvas(); W=cv.clientWidth||W; H=cv.clientHeight||H; }catch(_){}
+      let c2c=1.5*H; try{ const v=map.transform&&map.transform.cameraToCenterDistance; if(isFinite(v)&&v>0) c2c=v; }catch(_){}
+      const R=6371008.8, D2R=Math.PI/180;
+      /* how far below level the ground ends. On a sphere that is the dip angle; on a flat map the plane runs
+         to a vanishing line at exactly eye level (dip 0) — so scale it by how spherical the view actually is
+         (engine contract, #R173), and the painted horizon lands on the renderer's every frame of the
+         cross-fade instead of leaving a seam through the middle of the sky. */
+      let gl=1; try{ const GE=window.IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.globeness) gl=GE.camera.globeness(); }catch(_){}
+      const dip=Math.acos(Math.max(-1,Math.min(1,R/(R+Math.max(0,+camAlt||0)))))/D2R*Math.max(0,Math.min(1,gl));
+      const off=Math.max(-4*H,Math.min(4*H, c2c*Math.tan(Math.max(-89.5,Math.min(89.5,(+pitch||0)-90+dip))*D2R)));
+      const ang=180+(+roll||0);                                                          /* CSS 180° = top → bottom */
+      const L=Math.abs(W*Math.sin(ang*D2R))+Math.abs(H*Math.cos(ang*D2R));
+      /* the same gradient MapLibre's own sky layer draws below (sky-horizon-blend 0.75 of half the frame),
+         so the two are indistinguishable wherever both are on screen */
+      const d=L/2+off, blend=Math.max(40,H*0.375);
+      const css='linear-gradient('+ang.toFixed(1)+'deg,'+_skyTop(camAlt)+' 0px,'+_skyTop(camAlt)+' '+Math.max(0,d-blend).toFixed(0)+'px,#cfe0ee '+Math.max(0,d).toFixed(0)+'px,#dbe6f0 '+Math.max(0,d+6).toFixed(0)+'px,#dbe6f0 100%)';
+      if(css!==_skyLast){ _skyLast=css; skyEl.style.background=css; } }
     function loop(){ if(!on||resultShown) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
       if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
       try{ st._overOcean=_isOpenOcean(st.lng,st.lat); }catch(_){ st._overOcean=false; }   /* (#R152) refresh open-ocean flag ONCE per frame (cached per cell) — read by stepFixed's sea-surface floor */
@@ -1355,20 +1506,35 @@ window.IntMapModules.flightSim=function(map,HOST){
          DEM refresh can't put the eye inside the ground. */
       const _grd=(st._terrF!=null&&isFinite(st._terrF))?st._terrF:((st.lastTerr!=null&&isFinite(st.lastTerr))?st.lastTerr:0);
       const camAlt=Math.max(st.alt, _grd+2.5);
-      /* target: a FIXED 1.8 km ahead along the SMOOTHED nose (rebuilt from the smoothed bearing/pitch) → stable center+zoom. */
-      const _D=1800, _elR=(90-pitch)*D2R, _cE=Math.cos(_elR), _sE=Math.sin(_elR), _bR=bearing*D2R;
-      const _nx=_cE*Math.cos(_bR), _ny=_cE*Math.sin(_bR), _nz=_sE;   /* down-positive nz (matches fwd[2]) */
-      const tLat=eLat+_D*_nx/mLatM, tLng=eLng+_D*_ny/mLonM, tAlt=camAlt-_D*_nz;
+      /* (#R173) the map camera that shows what the pilot is looking at — solved on the round Earth so the
+         renderer can be a sphere at all (see _cockpitCam). It replaces the eye→target pair fed to
+         calculateCameraOptionsFromTo since #R158: same idea (a look-ahead point, so centre and zoom stay
+         stable at every attitude), but the distance is now solved rather than fixed, and the difference
+         between the map's axis and the pilot's line of sight is carried by the projection's centre offset. */
+      const cam=_cockpitCam(eLng,eLat,camAlt,bearing,pitch,roll);
+      const _D=cam?cam._D:_D_FLOOR;
       try{ if(map.isEasing&&map.isEasing()) map.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
-      let cam=null; try{ if(map.calculateCameraOptionsFromTo) cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
       const _fin=v=>typeof v==='number'&&isFinite(v);
-      let okCam=!!(cam&&cam.center&&_fin(cam.center.lng)&&_fin(cam.center.lat)&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing==null?0:cam.bearing)&&_fin(cam.pitch==null?0:cam.pitch)&&_fin(roll)&&Math.abs(cam.center.lat)<=89.5);
+      const sane=!!(cam&&cam.center&&_fin(cam.center[0])&&_fin(cam.center[1])&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing)&&_fin(cam.pitch)&&_fin(roll)&&Math.abs(cam.center[1])<=89.5);
+      let okCam=sane;
+      if(sane) cam.center={lng:cam.center[0],lat:cam.center[1]};
       if(okCam&&st._camPrev){ const _dC=Math.hypot((cam.center.lng-st._camPrev.lng)*mLonM,(cam.center.lat-st._camPrev.lat)*mLatM), _dZ=Math.abs(cam.zoom-st._camPrev.zoom);
-        if(_dC>9000||_dZ>3){ okCam=false; try{ window.__fsCamSkips=(window.__fsCamSkips||0)+1; }catch(_){} } }   /* abnormal one-frame jump → skip (never happens with FromTo geometry; a real defence, not a mask) */
+        /* (#R173) the centre rides at the END of the look-ahead arm, so a legal turn sweeps it by D·Δbearing —
+           at the globe distance a hard roll moves it further than the old flat 9 km and every frame of the turn
+           was being thrown away. The guard is against a TELEPORT, so scale it with the arm it is watching. */
+        if(_dC>Math.max(9000,0.6*_D)||_dZ>3){ okCam=false; st._camSkip=(st._camSkip||0)+1; try{ window.__fsCamSkips=(window.__fsCamSkips||0)+1; }catch(_){} } }   /* abnormal one-frame jump → skip (never happens with FromTo geometry; a real defence, not a mask) */
+      /* (#R173) …but a SANE camera is never skipped for more than a few frames in a row. The comparison is
+         against the last ACCEPTED camera, so a genuinely large move (a reset, a respawn, an altitude that
+         really did change) made every following frame look like a teleport too and the view froze for good —
+         measured: 979 consecutive skips with the aeroplane at 718 m and the camera still showing 11.8 km.
+         Three frames swallows a one-frame glitch; nothing visible survives it. NaN/Inf is still never used. */
+      if(!okCam&&sane&&(st._camSkip||0)>3) okCam=true;
+      if(okCam) st._camSkip=0;
       if(okCam){ cam.roll=roll; st._cam=cam; st._camPrev={lng:cam.center.lng,lat:cam.center.lat,zoom:cam.zoom};
         try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
       else if(!cam){   /* FromTo unavailable (very old MapLibre) — last-resort validated direct camera */
         try{ if(_fin(bearing)&&_fin(pitch)) map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} }
+      try{ _fsSkyDraw(camAlt,pitch,roll); }catch(_){}   /* (#R173) the sky the globe switched off */
       /* okCam===false with cam!=null → skip this frame, keeping the last good camera (no teleport, no freeze — next frame's
          slightly-advanced geometry resolves cleanly). */
       try{ updateMinimap(dt); }catch(_){}

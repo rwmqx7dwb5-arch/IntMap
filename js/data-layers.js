@@ -1984,6 +1984,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let planesTime=0, planesSynthetic=false;   /* live-feed snapshot time (ms) + synthetic-fallback flag */
     let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
     let _planes3DZoom=null, _planes3DZoomT=null;   /* (#R172) rebuild the lifted glyphs when the scale changes */
+    let _planesClear=null, _planesHover=null, _pickHover=false, _pickAt=0;   /* (#R173) picking a lifted aircraft */
     /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
        (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
     function planesLayerOn(){ try{
@@ -2102,6 +2103,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
           planesTime=(j.now||Date.now());
           planesSynthetic=false;
           planesData=ac.filter(a=>a.lat!=null&&a.lon!=null).slice(0,1800).map(a=>adsbToPlane(a,planesTime));
+          recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
           refreshTrafficLayer('planes'); return;
         }
       }catch(e){ console.warn('airplanes.live fetch failed',e); }
@@ -2223,6 +2225,100 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let planes3D=true; try{ planes3D=localStorage.getItem('intmap_planes3d')!=='0'; }catch(_){}
     let _planes3DStats={features:0,lifted:0,maxAlt:0,offsetM:0};
     const PLANE3D_SRC='src-planes-3d', PLANE3D_LYR='lyr-planes-3d', PLANE3D_POST='lyr-planes-post';
+    /* ===== (#R173) THE TRACK OF A CLICKED AIRCRAFT =========================================
+       「クリックした航空機はそれまでの軌跡も出るように。」 The track is REAL and it is OURS: every
+       ADS-B poll (one every 20 s) is written into planeTracks, so what a click draws is the path this
+       browser has actually watched the aeroplane fly since the layer was switched on — never an
+       interpolation, never a guess about where it was before we were looking. The feed has no public
+       history endpoint, and inventing one would be exactly the fabrication this project forbids, so the
+       readout says how long the recorded track is and how many fixes it has.
+       In 3-D the track is drawn where it happened: each leg is a thin ribbon extruded at the pair's own
+       reported altitude, so a climb is visibly a climb. Flat mode keeps a plain line on the ground. */
+    const TRACK_SRC='src-plane-track', TRACK_LINE='lyr-plane-track', TRACK_3D='lyr-plane-track-3d';
+    const TRACK_MAX=400;            /* fixes per aircraft (~2 h at one poll every 20 s) */
+    const TRACK_TTL=20*60000;       /* forget an aircraft 20 min after its last fix */
+    const planeTracks=Object.create(null);
+    let selectedPlane=null;         /* icao24 of the aircraft whose track is on screen */
+    function recordTracks(list,tMs){
+      const now=+tMs||Date.now();
+      for(const d of list){
+        const k=d.icao24; if(!k||d.lng==null||d.lat==null) continue;
+        const alt=d.onGround?0:(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0));
+        const arr=planeTracks[k]||(planeTracks[k]=[]);
+        const last=arr[arr.length-1];
+        /* skip a fix that repeats the previous one — a parked aircraft would otherwise fill the buffer */
+        if(last&&Math.abs(last[0]-d.lng)<1e-6&&Math.abs(last[1]-d.lat)<1e-6&&Math.abs(last[2]-alt)<1) { last[3]=now; continue; }
+        arr.push([d.lng,d.lat,alt,now]);
+        if(arr.length>TRACK_MAX) arr.splice(0,arr.length-TRACK_MAX);
+      }
+      const cut=now-TRACK_TTL;
+      for(const k in planeTracks){ const a=planeTracks[k]; if(!a.length||a[a.length-1][3]<cut) delete planeTracks[k]; }
+      if(selectedPlane) drawTrack(selectedPlane);
+    }
+    /* a strip of ground metres along a leg, so the 3-D track is a ribbon rather than a zero-width sheet */
+    function legRing(a,b,halfM){
+      const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(((a[1]+b[1])/2)*r))||1;
+      let dx=(b[0]-a[0])*mLng, dy=(b[1]-a[1])*mLat; const len=Math.hypot(dx,dy)||1; dx/=len; dy/=len;
+      const nx=-dy*halfM, ny=dx*halfM;
+      const P=(p,ox,oy)=>[p[0]+ox/mLng, p[1]+oy/mLat];
+      const ring=[P(a,nx,ny),P(b,nx,ny),P(b,-nx,-ny),P(a,-nx,-ny)]; ring.push(ring[0]); return ring;
+    }
+    function trackStats(k){ const a=planeTracks[k]||[]; if(a.length<2) return {fixes:a.length,minutes:0,maxAlt:0};
+      return { fixes:a.length, minutes:Math.round((a[a.length-1][3]-a[0][3])/60000),
+        maxAlt:Math.round(a.reduce((m2,p)=>p[2]>m2?p[2]:m2,0)) }; }
+    function drawTrack(k){
+      if(!map||!map.getSource(TRACK_SRC)) return;
+      const pts=(k&&planeTracks[k])||[];
+      const feats=[];
+      if(pts.length>=2){
+        feats.push({type:'Feature',geometry:{type:'LineString',coordinates:pts.map(p=>[p[0],p[1]])},properties:{kind:'line'}});
+        const mpp=_mppCentre(), off=_groundOffset(), half=Math.max(25,1.6*mpp), thick=Math.max(20,1.6*mpp);
+        for(let i=1;i<pts.length;i++){
+          const a=pts[i-1], b=pts[i];
+          const alt=Math.max(0,((a[2]+b[2])/2)-off);
+          if(!(alt>0)) continue;                       /* on the ground: the flat line already shows it */
+          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[legRing(a,b,half)]},
+            properties:{kind:'leg',alt,top:alt+thick}});
+        }
+      }
+      try{ map.getSource(TRACK_SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      const on=!!(k&&pts.length>=2);
+      try{ if(map.getLayer(TRACK_LINE)) map.setLayoutProperty(TRACK_LINE,'visibility',(on&&!planes3D)?'visible':'none');
+        if(map.getLayer(TRACK_3D)) map.setLayoutProperty(TRACK_3D,'visibility',(on&&planes3D)?'visible':'none'); }catch(_){}
+    }
+    /* ===== (#R173) PICKING AN AIRCRAFT THAT IS UP IN THE AIR =================================
+       「立体時もホバーやクリックができるように。」 MapLibre answers queryRenderedFeatures on a
+       fill-extrusion at its FOOTPRINT: measured with one stubbed aircraft at 11,003 m, the glyph drawn at
+       y=272 and its ground point at y=388, the only row on the whole screen that reported the feature was
+       388 — at z9.5, z11.5 and z13.5 alike. So the lifted aircraft could not be hovered or clicked where
+       it is drawn; only the patch of ground it happened to be over could.
+       The pick is therefore done here, against the aircraft's real position: the engine projects
+       (lng, lat, altitude) through the renderer's own model matrices (coords.projectAltitude), and the
+       nearest aircraft within a finger-sized radius wins. The ground footprint keeps working too — the
+       post is a real thing to click at — so both ways of aiming at an aeroplane select the same one. */
+    const PICK_PX=16;
+    function pickPlane(pt){
+      if(!planes3D||!pt) return null;
+      const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
+      const off=_groundOffset(); let best=null, bestD=PICK_PX*PICK_PX;
+      const filt=trafficFilters.planes;
+      for(const d of planesData){
+        if(d.lng==null||d.lat==null) continue;
+        if(filt&&filt!=='all'&&d.type!==filt) continue;
+        const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
+        const p=pa([d.lng,d.lat],alt); if(!p) continue;
+        const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
+        if(q<bestD){ bestD=q; best=d; }
+      }
+      return best;
+    }
+    /* Select / deselect the aircraft whose track is shown. Returns the icao24 now selected (or null). */
+    function selectPlane(k){
+      selectedPlane=(k&&planeTracks[k])?k:(k||null);
+      drawTrack(selectedPlane);
+      try{ refreshTrafficLayer('planes'); }catch(_){}   /* the glyph highlights itself via `sel` */
+      return selectedPlane;
+    }
     /* ground metres per screen pixel at the map centre — the same figure IntMapGeoEngine derives for the
        camera, computed here from the renderer's own map scale so it is defined at any pitch. */
     function _mppCentre(){ try{ const R=6371008.8, r=Math.PI/180, c=map.getCenter();
@@ -2260,7 +2356,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       for(const d of list){
         if(d.lng==null||d.lat==null) continue;
         const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        const props={ type:d.type, alt, top:alt+thick, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
+        const props={ type:d.type, alt, top:alt+thick, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
           acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
           vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
           squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0), category:(d.category!=null?d.category:null) };
@@ -2289,6 +2385,8 @@ window.IntMapModules.dataLayers=function(map,HOST){
         if(map.getLayer(PLANE3D_LYR)) map.setLayoutProperty(PLANE3D_LYR,'visibility',(visible&&planes3D)?'visible':'none');
         if(map.getLayer(PLANE3D_POST)) map.setLayoutProperty(PLANE3D_POST,'visibility',(visible&&planes3D)?'visible':'none');
       }catch(_){}
+      if(!visible) selectPlane(null);            /* (#R173) the layer went off — the track goes with it */
+      else drawTrack(selectedPlane);             /* …and it follows the flat/3-D switch */
       if(visible&&planes3D) refreshTrafficLayer('planes');
     }
     function refreshTrafficLayer(id){
@@ -2300,7 +2398,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(id==='planes') refreshPlanes3D(filtered);   /* (#R172) the lifted bodies ride the same filter */
       const features=filtered.map(d=>{
         const props = id==='planes'
-          ? { type:d.type, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'', acType:d.acType||'', desc:d.desc||'',
+          ? { type:d.type, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'', acType:d.acType||'', desc:d.desc||'',
               baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
               vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
               squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||d.tpos||0), category:(d.category!=null?d.category:null) }
@@ -2326,6 +2424,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       };
       try{ if(!map.hasImage('plane-civ')) map.addImage('plane-civ',make('#1e90ff')); }catch(_){}
       try{ if(!map.hasImage('plane-mil')) map.addImage('plane-mil',make('#ff3b30')); }catch(_){}
+      try{ if(!map.hasImage('plane-sel')) map.addImage('plane-sel',make('#ffd23f')); }catch(_){}   /* (#R173) the clicked aircraft */
     }
     function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-US'); }catch(_){ return ''; } }
     function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec));
@@ -2369,6 +2468,19 @@ window.IntMapModules.dataLayers=function(map,HOST){
         row(jp?'昇降率':'Vert. rate',vr)+
         row(jp?'スコーク':'Squawk',p.squawk)+
         typeChip+
+        /* (#R173) what a click will draw, and how much of it there is. Named "observed" because that is
+           exactly what it is — the fixes this browser has received, not a history we do not have. */
+        (()=>{ const k=p.icao24||''; const st=trackStats(k);
+          const en=`Observed track: ${st.fixes} fixes · ${st.minutes} min`;
+          const ja=`観測した軌跡: ${st.fixes}点 · ${st.minutes}分`;
+          const de=`Beobachtete Spur: ${st.fixes} Punkte · ${st.minutes} min`;
+          const ru=`Наблюдаемый трек: ${st.fixes} точек · ${st.minutes} мин`;
+          const es=`Traza observada: ${st.fixes} puntos · ${st.minutes} min`;
+          const lbl=HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+          const tip=k===selectedPlane
+            ? (HOST.lang==='jp'?'クリックで軌跡を消す':HOST.lang==='de'?'Klicken zum Ausblenden':HOST.lang==='ru'?'Нажмите, чтобы скрыть':HOST.lang==='es'?'Clic para ocultar':'Click to hide')
+            : (HOST.lang==='jp'?'クリックで軌跡を表示':HOST.lang==='de'?'Klicken für die Spur':HOST.lang==='ru'?'Нажмите, чтобы показать':HOST.lang==='es'?'Clic para mostrar':'Click to show');
+          return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
         `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ（実データ取得不可）':'Simulated placeholder (live feed unavailable)'):(jp?'最終受信':'Last seen')+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
     }
     function setupTrafficLayer(id){
@@ -2379,7 +2491,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
         /* Aircraft = a real plane glyph rotated to its track (not a dot). */
         map.addLayer({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
           visibility:'none',
-          'icon-image':['match',['get','type'],'military','plane-mil','plane-civ'],
+          'icon-image':['case',['==',['get','sel'],1],'plane-sel',['match',['get','type'],'military','plane-mil','plane-civ']],
           'icon-size':['interpolate',['linear'],['zoom'],2,0.4,5,0.58,9,0.78],
           'icon-rotate':['coalesce',['get','heading'],0],
           'icon-rotation-alignment':'map',
@@ -2396,9 +2508,20 @@ window.IntMapModules.dataLayers=function(map,HOST){
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         if(!map.getLayer(PLANE3D_LYR)) map.addLayer({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['!=',['get','post'],1], layout:{visibility:'none'},
-          paint:{ 'fill-extrusion-color':['match',['get','type'],'military','#ff3b30','#1e90ff'],
+          paint:{ /* (#R173) the selected aircraft is the one whose track is drawn — say so in its colour */
+            'fill-extrusion-color':['case',['==',['get','sel'],1],'#ffd23f',['match',['get','type'],'military','#ff3b30','#1e90ff']],
             'fill-extrusion-opacity':opacities.planes,
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
+        /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as
+           altitude ribbons for the 3-D representation. One source feeds both; only one is ever visible. */
+        if(!map.getSource(TRACK_SRC)) map.addSource(TRACK_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(!map.getLayer(TRACK_LINE)) map.addLayer({id:TRACK_LINE,type:'line',source:TRACK_SRC,
+          filter:['==',['get','kind'],'line'], layout:{visibility:'none','line-cap':'round','line-join':'round'},
+          paint:{'line-color':'#ffd23f','line-width':['interpolate',['linear'],['zoom'],4,1.4,10,2.6],'line-opacity':0.95}},beforeId);
+        if(!map.getLayer(TRACK_3D)) map.addLayer({id:TRACK_3D,type:'fill-extrusion',source:TRACK_SRC,
+          filter:['==',['get','kind'],'leg'], layout:{visibility:'none'},
+          paint:{'fill-extrusion-color':'#ffd23f','fill-extrusion-opacity':0.75,
+            'fill-extrusion-base':['get','alt'],'fill-extrusion-height':['get','top']}},beforeId);
         /* the glyph's on-screen size is derived from the zoom, so rebuild the geometry when it changes */
         if(!_planes3DZoom){ _planes3DZoom=()=>{ if(!planes3D) return;
           if(!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible')) return;
@@ -2421,12 +2544,51 @@ window.IntMapModules.dataLayers=function(map,HOST){
       map.on('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
       map.on('mouseleave','lyr-'+id,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
       /* (#R172) the lifted bodies answer the same hover — the aircraft is the same aircraft whichever way
-         it is drawn, so the tooltip is the identical one (it is fed from the same ADS-B properties). */
+         it is drawn, so the tooltip is the identical one (it is fed from the same ADS-B properties).
+         (#R173) …and the same CLICK. Both representations, and the post under a lifted aircraft, select it
+         and draw its track; clicking the map anywhere else clears the selection. */
       if(id==='planes'){
-        map.on('mouseenter',PLANE3D_LYR,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer';
-          const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML('planes',f.properties); positionTooltip(e.point); });
-        map.on('mousemove',PLANE3D_LYR,(e)=>{ positionTooltip(e.point); });
-        map.on('mouseleave',PLANE3D_LYR,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+        [PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
+          map.on('mouseenter',ly,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer';
+            const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML('planes',f.properties); positionTooltip(e.point); });
+          map.on('mousemove',ly,(e)=>{ positionTooltip(e.point); });
+          map.on('mouseleave',ly,()=>{ map.getCanvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+        });
+        ['lyr-planes',PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
+          map.on('click',ly,(e)=>{ if(!e.features||!e.features.length) return;
+            try{ e.originalEvent&&(e.originalEvent.__imPlaneHit=true); }catch(_){}
+            const k=(e.features[0].properties||{}).icao24||'';
+            selectPlane(k===selectedPlane?null:k);
+            if(selectedPlane){ const el=ensureMapTooltip(); el.style.display='block';
+              el.innerHTML=trafficTooltipHTML('planes',e.features[0].properties); positionTooltip(e.point); } });
+        });
+        /* The pick above, wired to the pointer: hovering a lifted aircraft shows the same tooltip and
+           clicking it selects it, wherever on screen it is drawn. A click that hits neither the pick nor
+           the footprint clears the selection — asked of the renderer rather than of a flag set by the layer
+           handlers, so it does not depend on which listener MapLibre calls first. */
+        if(!_planesHover){ _planesHover=(e)=>{
+          if(!planes3D||!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible')) return;
+          /* one pick per frame at most: a pointer emits far more moves than the screen has frames, and the
+             pick walks every aircraft in the viewport (hundreds over a busy sky). */
+          const _t=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+          if(_t-_pickAt<16) return; _pickAt=_t;
+          const d=pickPlane(e.point);
+          if(d){ map.getCanvas().style.cursor='pointer'; const el=ensureMapTooltip(); el.style.display='block';
+            el.innerHTML=trafficTooltipHTML('planes',{ type:d.type, sel:(d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
+              acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel, heading:d.heading,
+              vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
+            positionTooltip(e.point); _pickHover=true; }
+          else if(_pickHover){ _pickHover=false; map.getCanvas().style.cursor='';
+            try{ if(map.queryRenderedFeatures(e.point,{layers:[PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l))}).length) return; }catch(_){}
+            if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
+        }; map.on('mousemove',_planesHover); }
+        if(!_planesClear){ _planesClear=(e)=>{
+          const d=pickPlane(e.point);
+          if(d&&d.icao24){ selectPlane(d.icao24===selectedPlane?null:d.icao24); return; }
+          if(!selectedPlane) return;
+          try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>map.getLayer(l));
+            if(ls.length&&map.queryRenderedFeatures(e.point,{layers:ls}).length) return; }catch(_){}
+          selectPlane(null); }; map.on('click',_planesClear); }
       }
     }
     function startTraffic(id){
@@ -2818,10 +2980,28 @@ window.IntMapModules.dataLayers=function(map,HOST){
     window.refreshTrafficLayer=refreshTrafficLayer;
     /* (#R172) aircraft altitude rendering — Atlas + the tests drive it through this, never through the layer ids */
     window.IntMapPlanes3D={ isOn:planes3DOn, set:setPlanes3D,
+      /* (#R173) the clicked aircraft's track, also reachable by callsign / registration / ICAO24 so Atlas
+         and the tests drive exactly what a click drives (#R82: everything is operable from Atlas). */
+      select:selectPlane, selected:()=>selectedPlane, track:k=>((planeTracks[k||selectedPlane]||[]).slice()),
+      /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
+      screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
+        const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
+        const off=_groundOffset(), alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
+        return pa([d.lng,d.lat],alt); },
+      pickAt:pt=>{ const d=pickPlane(pt); return d?d.icao24:null; },
+      trackStats:k=>trackStats(k||selectedPlane),
+      find:q=>{ const s2=String(q||'').trim().toUpperCase(); if(!s2) return null;
+        const hit=planesData.find(d=>(d.icao24||'').toUpperCase()===s2)
+          ||planesData.find(d=>(d.callsign||'').trim().toUpperCase()===s2)
+          ||planesData.find(d=>(d.reg||'').toUpperCase()===s2)
+          ||planesData.find(d=>((d.callsign||'')+' '+(d.reg||'')).toUpperCase().indexOf(s2)>=0);
+        return hit?hit.icao24:null; },
       state:()=>{ const s2=_planes3DStats;
         return { on:planes3DOn(), planes:planesData.length, features:s2.features, lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
           visible:(()=>{ try{ return !!(map.getLayer(PLANE3D_LYR)&&map.getLayoutProperty(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
           flatVisible:(()=>{ try{ return !!(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
+          selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
+          trackVisible:(()=>{ try{ const l=planes3D?TRACK_3D:TRACK_LINE; return !!(map.getLayer(l)&&map.getLayoutProperty(l,'visibility')==='visible'); }catch(_){ return false; } })(),
           synthetic:planesSynthetic }; } };
     /* Unified time slider (#8): drive the day-based weather layers from the global news date.
        GIBS imagery lags ~2 days, so clamp future-ish dates back to the freshest processed day. */

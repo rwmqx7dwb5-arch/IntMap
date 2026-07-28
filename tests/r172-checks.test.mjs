@@ -82,7 +82,7 @@ test('the tilt pivot is expressed as an intent and implemented on the pre-apply 
 });
 
 test('the pivot only fires on a PURE tilt, or "fly to Paris tilted" lands short', () => {
-  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 4200);
+  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 7000);
   assert.match(hook, /Math\.abs\(cur\.lng-last\.lng\)>1e-9\|\|Math\.abs\(cur\.lat-last\.lat\)>1e-9/,
     'an update that also travels is a journey, not a tilt (measured: Paris arrived 4.3 km off centre without this)');
   assert.match(hook, /const last=req; req=cur;/,
@@ -102,12 +102,18 @@ test('the viewpoint can be read and put back, and the scale is valid at any pitc
 
 /* ─── 3. the 3-D volume ─────────────────────────────────────────────────────────────────────── */
 
+/* (#R173) The CLAIM is unchanged — the volume must be a closed body with a floor and a filled interior.
+   The MECHANISM is not: #R172 built it out of a floor slab and eight interior sheets, and those were
+   never visible, because fill-extrusion writes depth and everything inside the body failed the depth
+   test behind its own near wall. R173 draws the whole prism as one closed mesh through the engine's
+   solid contract, so the assertions follow the code that is there now rather than pretending the old
+   layer ids still exist. */
 test('the volume is a closed body: a floor and a filled interior', () => {
   const v = stripComments(R('js/volume3d.js'));
-  assert.match(v, /const SLAB=n=>'imv3d-slab-'\+n/, 'interior sheets exist');
-  assert.match(v, /FLOOR='imv3d-floor'/, 'and a bottom face');
-  assert.match(v, /function fillLayers\(E,rb,rh\)/, 'both are positioned inside the band, from the same ring');
-  assert.match(v, /E\.layers\.setPaint\(FLOOR,'fill-extrusion-color',color\)/, 'the floor follows the colour, or the body is two colours at once');
+  assert.match(v, /BODY='imv3d-body'/, 'the closed body has its own layer');
+  assert.match(v, /E\.layers\.addSolid\(BODY\)/, 'asked of the engine as a SOLID, not as another extrusion');
+  assert.match(v, /E\.layers\.setSolid\(BODY,\{ ring:r, base:rb, top:rh, color, opacity \}\)/, 'from the same ring and the same band');
+  assert.ok(!/imv3d-slab-/.test(v), 'and no interior sheets — 「内部にシートなんていうあほなことをするな」');
   assert.deepEqual(rawMapUses('volume3d.js'), [], 'the tool stays engine-only');
 });
 

@@ -21,7 +21,11 @@ const boot = async page => {
 
 /* How much of the lower half of the viewport is NOT the background wash? A cockpit looking at
    terrain is full of distinct colours; the #R171 white void had almost none. Counted on the PNG,
-   because a WebGL canvas without preserveDrawingBuffer reads back black through drawImage. */
+   because a WebGL canvas without preserveDrawingBuffer reads back black through drawImage.
+   (#R173) The PATCH is small on purpose. Decoding a full-width screenshot inside the page allocates
+   an image plus its ImageData on top of a cockpit that is already the heaviest thing this app draws,
+   and on a CI runner without a GPU that was enough to crash the tab outright ("Target crashed",
+   three times in a row). A few hundred square pixels of ground answer the same question. */
 const groundDetail = async (page, clip) => {
   const png = (await page.screenshot({ clip })).toString('base64');
   return page.evaluate(async b64 => {
@@ -35,10 +39,19 @@ const groundDetail = async (page, clip) => {
 };
 
 test('the flight simulator shows a WORLD, not a white void', async ({ page }) => {
-  test.setTimeout(180000);
+  /* (#R173) 420 s, not 180: the cockpit now draws the spherical regime, which is heavier — measured in
+     headless software GL at 3 fps against the flat cockpit's 5 — and a machine without a GPU spends
+     minutes on what a GPU does in seconds. The assertions below are unchanged. */
+  test.setTimeout(420000);
   await boot(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.30, alt: 3500, hdg: 90 }));
   await page.waitForTimeout(9000);
+  /* (#R173) PAUSE before the heavy reads. What is asserted is a property of the frame on screen, and a
+     paused cockpit stops rewriting the camera every frame — on a GPU-less runner that was the difference
+     between seven minutes and seconds. */
+  await page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
+  await page.waitForTimeout(2500);
 
   const during = await page.evaluate(() => ({
     active: window.IntMapFlightSim.active(),
@@ -49,13 +62,17 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   expect(during.active).toBe(true);
   expect(during.proj, 'the sim flies the app Globe — never a raw projection spec').toContain('globe');
   expect(during.terrain, 'a flight simulator without a DEM has nothing to fly over').toBe(true);
-  expect(during.zoom).toBeGreaterThan(12);
+  /* (#R173) …and it no longer has to choose. The cockpit flies below the globe→mercator crossover now
+     (the look distance is solved on the sphere rather than pinned at 1.8 km), so the zoom assertion is
+     inverted — what this test is really for is the pixel count below, which is what #R171 lost. */
+  expect(during.zoom).toBeLessThan(11.1);
 
   const vp = page.viewportSize();
-  const colours = await groundDetail(page, { x: 0, y: Math.round(vp.height * 0.55), width: vp.width, height: Math.round(vp.height * 0.4) });
-  // Measured on the restored build: ~1,300 distinct binned colours of terrain and imagery.
-  // The #R171 cockpit was a single fog colour with the HUD over it.
-  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(120);
+  const colours = await groundDetail(page, { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
+    width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) });
+  // Measured on the restored build: hundreds of distinct binned colours of terrain and imagery in this
+  // patch. The #R171 cockpit was a single fog colour with the HUD over it, which counts about three.
+  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
 
   // …and the engine refuses to go back to the projection that blanked it
   const refused = await page.evaluate(() => window.IntMapGeoEngine.camera.setProjection('globe-true'));
@@ -123,12 +140,15 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
     V.setAltitudes(35786000, 35800000);
     const geo = [V.base(), V.top()];
     V.setAltitudes(1000, 3000);
-    return { floor: s.floor, slabs: s.slabs, solid: s.solid, points: s.points, asKm, asFt, geo, limits: V.limits() };
+    return { body: s.body, shell: s.shell, canSolid: s.canSolid, solid: s.solid, points: s.points, asKm, asFt, geo, limits: V.limits() };
   });
   expect(st.points, 'circleRing(…,64) is 64 vertices; closedRing() adds the repeat only when it hands the ring to the renderer').toBe(64);
   expect(st.solid, 'the body is closed by default').toBe(true);
-  expect(st.floor, 'there is a bottom face').toBe(true);
-  expect(st.slabs, 'and interior sheets').toBeGreaterThan(0);
+  // (#R173) the closed body is now ONE mesh drawn by the engine's solid contract — a floor and a filled
+  // interior that a fill-extrusion cannot express — so what is asserted is that the solid is what draws.
+  expect(st.canSolid, 'the renderer can draw a closed body').toBe(true);
+  expect(st.body, 'and it is the closed body that is painted').toBe(true);
+  expect(st.shell, 'the open shell is not painted at the same time').toBe(false);
   expect(st.asKm, '1000 m is 1 km').toBe(1);
   expect(st.asFt, '1000 m is 3281 ft').toBe(3281);
   expect(st.geo, 'a 35,786 km band is not clamped away').toEqual([35786000, 35800000]);
@@ -136,8 +156,8 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
 
   // turning the body off leaves only the shell
   const hollow = await page.evaluate(() => { window.IntMapVolume3D.setSolid(false); return window.IntMapVolume3D.state(); });
-  expect(hollow.floor).toBe(false);
-  expect(hollow.slabs).toBe(0);
+  expect(hollow.body, 'Solid off puts the closed body away…').toBe(false);
+  expect(hollow.shell, '…and leaves the open shell').toBe(true);
 });
 
 test('every footprint shape draws, not only the polygon', async ({ page }) => {

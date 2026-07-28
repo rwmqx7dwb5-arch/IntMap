@@ -15,6 +15,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.streetView=function(map,HOST){
+  /* (#R173) 脱MapLibre 第7段階 — this module is written against the engine facade, never the raw renderer.
+     Every call below already existed in the contract (#R152/#R160/#R161); the parameter is kept only
+     because the factory signature is shared by all module files. */
+  const GE=()=>window.IntMapGeoEngine;
   const bringToFront=HOST.bringToFront, imToast=HOST.imToast, makeDraggable=HOST.makeDraggable;
   return (function(){
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
@@ -79,7 +83,7 @@ window.IntMapModules.streetView=function(map,HOST){
             _snapPano(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _svLinks=res.links||[]; _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _svLinks=[]; _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); else _coverageUnverifiedToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _coverageUnverifiedToast(); _reloadEmbed(); }); }); }
         if(!_svDragging) _hereMarker.setLngLat([+lng,+lat]); _hereMarker.setRotation(_hereHdg);
         if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
-      try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
+      try{ const b=GE().camera.getBounds(); if(b&&!b.contains([+lng,+lat])) GE().camera.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
       _updHeadingLabel(); }
     function _updHeadingLabel(){ try{ if(panel){ const h=panel.querySelector('.sv-hdg'); if(h) h.innerHTML=_compass(_hereHdg); } }catch(_){} }
     function _reloadEmbed(){ try{ if(iframe&&_hereLL) iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+(_hereLL.lat).toFixed(6)+','+(_hereLL.lng).toFixed(6)+'&cbp=11,'+_hereHdg+',0,0,0&output=svembed'; }catch(_){} }
@@ -161,10 +165,10 @@ window.IntMapModules.streetView=function(map,HOST){
     const _COV_SRC='sv-cov-src', _COV_LYR='sv-cov-lyr';
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
-        if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:64,minzoom:0,maxzoom:21,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});   /* (#R154) STILL "太すぎる" after R153's tileSize:128. The svv stroke on screen ≈ nativeStroke × (tileSize/256), so tileSize:64 makes MapLibre fetch the tile THREE zooms deeper and draw its 256px image into a 64px slot → the line is downscaled ~4× (was ~2× at 128) ≈ 0.9px — a true hairline, monotonically thinner than 128 regardless of whether Google serves the deep tile natively or upscaled. */
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.62,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased edges → fat; dropped both. raster-resampling:linear keeps the downscaled edges smooth (crisp, not blurry). cyan tint via saturation + hue-rotate. (#R154) raster-opacity 0.9→0.62 so the hairline reads even lighter (geometry unchanged, perceived weight down). */
+        if(!GE().layers.hasSource(_COV_SRC)) GE().layers.addSource(_COV_SRC,{type:'raster',tileSize:64,minzoom:0,maxzoom:21,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});   /* (#R154) STILL "太すぎる" after R153's tileSize:128. The svv stroke on screen ≈ nativeStroke × (tileSize/256), so tileSize:64 makes MapLibre fetch the tile THREE zooms deeper and draw its 256px image into a 64px slot → the line is downscaled ~4× (was ~2× at 128) ≈ 0.9px — a true hairline, monotonically thinner than 128 regardless of whether Google serves the deep tile natively or upscaled. */
+        if(!GE().layers.has(_COV_LYR)) GE().layers.add({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.62,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased edges → fat; dropped both. raster-resampling:linear keeps the downscaled edges smooth (crisp, not blurry). cyan tint via saturation + hue-rotate. (#R154) raster-opacity 0.9→0.62 so the hairline reads even lighter (geometry unchanged, perceived weight down). */
         return true; }catch(_){ return false; } }
-    function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
+    function removeCoverageTiles(){ try{ GE().layers.remove(_COV_LYR); }catch(_){} try{ GE().layers.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
        COVERED lng/lat — {covered:true,lng,lat}, or {covered:false} when none is within the search radius, or null when
        the tiles couldn't be read at all. (#R145) Google's svv tiles do NOT reliably send Access-Control-Allow-Origin, so
@@ -196,7 +200,7 @@ window.IntMapModules.streetView=function(map,HOST){
       im.onerror=()=>{ if(!done) go(); };
       go(); }); }
     async function _nearestCoverage(lng,lat){ try{
-        const z=Math.min(18,Math.max(14,Math.round((map&&map.getZoom&&map.getZoom())||14))), n=Math.pow(2,z), R=_COV_R;   /* (#R142) sample at z≥14 so pixels are fine enough that the widened radius stays a sensible metric distance */
+        const z=Math.min(18,Math.max(14,Math.round(GE().camera.getZoom()||14))), n=Math.pow(2,z), R=_COV_R;   /* (#R142) sample at z≥14 so pixels are fine enough that the widened radius stays a sensible metric distance */
         const wp=_llToPx(lng,lat,z), cxp=Math.floor(wp.x), cyp=Math.floor(wp.y); const tx=Math.floor(cxp/_COV_TS), ty=Math.floor(cyp/_COV_TS);
         if(ty<0||ty>=n) return {covered:false};
         const cv=document.createElement('canvas'); cv.width=768; cv.height=768; const ctx=cv.getContext('2d',{willReadFrequently:true});
@@ -217,16 +221,16 @@ window.IntMapModules.streetView=function(map,HOST){
     function coverage(on){ if(on===undefined) on=!_cov; on=!!on; if(on===_cov) return _cov; _cov=on;
       if(on){ addCoverageTiles();
         _covClick=e=>{ try{ open({lng:e.lngLat.lng,lat:e.lngLat.lat}); }catch(_){} };
-        try{ map.on('click',_covClick); map.getCanvas().style.cursor='crosshair'; }catch(_){}
+        try{ GE().events.on('click',_covClick); GE().render.setCursor('crosshair'); }catch(_){}
         _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
         _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:1350;background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
         _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
         document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
-        if(!_covStyled){ _covStyled=true; try{ map.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
+        if(!_covStyled){ _covStyled=true; try{ GE().events.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
       } else {
         removeCoverageTiles();
-        if(_covClick){ try{ map.off('click',_covClick); }catch(_){} _covClick=null; }
-        try{ map.getCanvas().style.cursor=''; }catch(_){}
+        if(_covClick){ try{ GE().events.off('click',_covClick); }catch(_){} _covClick=null; }
+        try{ GE().render.setCursor(''); }catch(_){}
         if(_covHint){ _covHint.remove(); _covHint=null; } }
       return _cov; }
     return { open, close, coverage, coverageOn:()=>_cov, nearestCoverage:_nearestCoverage, nearestPano:_nearestPano };
