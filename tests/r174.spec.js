@@ -90,6 +90,61 @@ test('with the tilt ceiling lifted, zooming in still moves the viewpoint', async
   expect(d.pitch, 'the tilt really happened').toBeGreaterThan(100);
 });
 
+/* THE REPORTED BUG: 「Live air traffic でズームインすると、軌跡が消える」.
+   It is not the zoom gesture, and it is not the double-click (that is a real but SEPARATE defect, guarded
+   by the next test). With 3-D terrain on, ONE ground elevation was read at the map CENTRE and subtracted
+   from every aircraft on screen. Zooming in walks the centre onto higher ground and refines the DEM under
+   it; the moment the centre stands higher than an aircraft's altitude, the subtraction goes negative, is
+   clamped to 0 — and the track then DROPPED every leg (`if(!(alt>0)) continue`) while the aircraft glyph
+   survived, because that one is pushed whatever its altitude. The machine stays, its trail goes.
+   Measured over Mt Fuji with the aircraft at 5,000 ft: 0 legs at every zoom from z10.5 to z14.3. */
+test('the track survives zooming in over high ground with 3-D terrain on', async ({ page }) => {
+  test.setTimeout(240000);
+  let tick = 0;
+  await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 8);
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
+        lat: 35.36 + t * 0.004, lon: 138.68 + t * 0.006, alt_baro: 5000, alt_geom: 5000,
+        gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
+  await boot(page);
+  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
+  await page.evaluate(() => { const b = document.getElementById('btn-view-3d'); if (b && !b.classList.contains('active')) b.click(); });
+  await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.38], zoom: 10.5, pitch: 45, bearing: 0 }));
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.waitForTimeout(3000);
+  for (let i = 0; i < 5; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
+
+  /* Capture what the module hands the renderer. queryRenderedFeatures cannot answer this: with terrain on
+     it reports 0 for the aircraft too, while the aeroplane is plainly drawn on screen. */
+  await page.evaluate(() => { const m = window.__imap; window.__cap = {};
+    for (const [k, id] of [['track', 'src-plane-track'], ['planes', 'src-planes-3d']]) {
+      const s = m.getSource(id); if (!s) continue; const orig = s.setData.bind(s);
+      s.setData = d => { try { window.__cap[k] = JSON.parse(JSON.stringify(d)); } catch (_) {} return orig(d); }; } });
+  await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));
+  await page.waitForTimeout(1500);
+
+  const snap = () => page.evaluate(() => { const m = window.__imap, c = m.getCenter();
+    const g = m.queryTerrainElevation ? m.queryTerrainElevation({ lng: c.lng, lat: c.lat }) : null;
+    const t = window.__cap.track, p = window.__cap.planes;
+    return { zoom: +m.getZoom().toFixed(2), centreGround: g == null ? null : Math.round(g),
+      legs: t ? t.features.filter(f => f.properties.kind === 'leg').length : -1,
+      bodies: p ? p.features.filter(f => !f.properties.post).length : -1 }; });
+
+  const box = await page.evaluate(() => { const c = document.getElementById('map').getBoundingClientRect();
+    return { x: Math.round(c.x + c.width / 2), y: Math.round(c.y + c.height / 2) }; });
+  await page.mouse.move(box.x, box.y);
+  const seen = [await snap()];
+  for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, -300); await page.waitForTimeout(1400); seen.push(await snap()); }
+
+  expect(seen[0].centreGround, 'the map centre really is standing on high ground').toBeGreaterThan(1500);
+  for (const s of seen) {
+    expect(s.bodies, `the aircraft is drawn at z${s.zoom}`).toBe(1);
+    expect(s.legs, `and so is its track at z${s.zoom} — this was 0 at every step`).toBeGreaterThan(4);
+  }
+  expect(seen[seen.length - 1].zoom, 'the zoom really did go in').toBeGreaterThan(seen[0].zoom + 2);
+});
+
 test('a double-click zoom keeps the aircraft track on screen', async ({ page }) => {
   test.setTimeout(180000);
   let tick = 0;

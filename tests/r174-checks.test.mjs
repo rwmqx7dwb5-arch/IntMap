@@ -47,7 +47,21 @@ test('the tilt anchor solves at the applied zoom, so zooming still moves the cam
 
 /* ─── 3. the aircraft track ────────────────────────────────────────────────────────────────── */
 
-test('a double-click zoom no longer clears the selected aircraft', () => {
+test('the ground offset is read under each aircraft, not under the map centre', () => {
+  const code = stripComments(R('js/data-layers.js'));
+  /* THE reported bug. One centre reading subtracted from every aircraft on screen meant that as soon as the
+     centre stood on ground higher than an aircraft's altitude, the difference clamped to 0 — and the track
+     dropped every leg while the glyph survived. Measured over Mt Fuji: 0 legs at every zoom from z10.5 to
+     z14.3, with the aeroplane plainly on screen. */
+  assert.match(code, /function _groundAt\(lng,lat\)/, 'the ground is read at a POINT');
+  assert.match(code, /const off=_groundAt\(d\.lng,d\.lat\)/, 'under each aircraft…');
+  assert.match(code, /const off=_groundAt\(\(a\[0\]\+b\[0\]\)\/2,\(a\[1\]\+b\[1\]\)\/2\)/, '…and under each track leg');
+  assert.doesNotMatch(code, /if\(!\(alt>0\)\) continue;/, 'a leg at ground level is DRAWN, never dropped');
+  /* the pick must use the same offset the drawing does, or a click looks where the aircraft is not */
+  assert.match(code, /_gndFresh\(\); let best=null, bestD=PICK_PX\*PICK_PX/, 'the pick shares the per-aircraft ground');
+});
+
+test('a double-click zoom no longer clears the selected aircraft (a separate defect, found on the way)', () => {
   const dl = R('js/data-layers.js'), code = stripComments(dl);
   assert.match(code, /originalEvent&&\(e\.originalEvent\.detail\|0\)>=2\) return/,
     'the second click of a double-click is ignored outright');
