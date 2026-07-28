@@ -99,7 +99,7 @@ window.IntMapModules.seismic=function(map,HOST){
         const rHi=Math.min(r,rTop), rLo=(going<0)?rBot:rTop;
         if(going<0){
           if(d>=rBot){                                          /* turns inside this shell */
-            if(d>=r) { /* already at/над the turning radius — reflect here */ going=1; continue; }
+            if(d>=r) { /* already at or above the turning radius — turn here */ going=1; continue; }
             const x1=Math.sqrt(Math.max(0,r*r-d*d));
             delta+=Math.atan2(x1,d)*2; time+=2*x1/vv;           /* down to the turn and back up */
             going=1; continue;
