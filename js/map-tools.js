@@ -19,7 +19,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.projView=function(map,HOST){
+window.IntMapModules.projView=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -368,7 +368,7 @@ window.IntMapModules.drawTool=function(map,HOST){
   })();
 };
 
-window.IntMapModules.isolate=function(map,HOST){
+window.IntMapModules.isolate=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -464,7 +464,7 @@ window.IntMapModules.isolate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.seaRoute=function(map,HOST){
+window.IntMapModules.seaRoute=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -639,131 +639,12 @@ window.IntMapModules.seaRoute=function(map,HOST){
   })();
 };
 
-window.IntMapModules.los=function(map,HOST){
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
-  /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
-  const hasTurf=HOST.hasTurf, isMobile=HOST.isMobile, _demZoomForSpan=HOST._demZoomForSpan, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear, demElevAt=HOST.demElevAt, t=HOST.t, makeDraggable=HOST.makeDraggable;
-  window.IntMapLOS=(function(){
-    if(!map) return { open(){}, clear(){} };
-    const jp=()=>HOST.lang==='jp';
-    let site=null, panel=null, busy=false;
-    /* (#R18) Persist the last antenna height / range so a NEW site reuses the SAME values
-       ("一度数値を設定したら、新地点を押しても同じ数値になるように"). */
-    let losH=30, losR=60;
-    function setProgress(frac,label){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;
-      const pct=Math.round(Math.max(0,Math.min(1,frac))*100);
-      body.innerHTML='<div style="margin-bottom:5px;">'+label+' <b>'+pct+'%</b></div>'+
-        '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></div></div>'; }
-    function ensureLayers(){ if(map.getSource('los-src')) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource('los-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        /* (#R13) Per the user's spec: REACHABLE range = RED fill, radar BLIND SPOTS = GREEN fill
-           (the previous build had these inverted). Cover is drawn first so the green shadow reads on top. */
-        map.addLayer({id:'los-cover',type:'fill',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'fill-color':'#ff2d2d','fill-opacity':0.30}});
-        map.addLayer({id:'los-shadow',type:'fill',source:'los-src',filter:['==',['get','kind'],'shadow'],paint:{'fill-color':'#1fd65f','fill-opacity':0.36}});
-        map.addLayer({id:'los-cover-line',type:'line',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'line-color':'#ff6b6b','line-width':1.1,'line-opacity':0.8}});
-        map.addLayer({id:'los-site',type:'circle',source:'los-src',filter:['==',['get','kind'],'site'],paint:{'circle-radius':6,'circle-color':'#ffd23f','circle-stroke-color':'#3a2a00','circle-stroke-width':2}});
-        return true; }catch(_){ return false; } }
-    function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
-    /* (#R19) Rebuilt around three reported failures:
-         1) "パソコンでもブラウザがフリーズ" — everything heavy is now CHUNKED with event-loop yields
-            (and the per-sample 256×256 getImageData hot spot is gone — see _demPix), so the page
-            stays responsive for the whole run.
-         2) "同地点でも数値を変えたら、再度analyzeを実行できるように" — the old `busy` flag stayed true
-            forever if any step threw mid-run. Replaced by a GENERATION counter: pressing Analyze
-            always starts a fresh run and silently cancels the previous one; Clear keeps the site so
-            the same point can be re-analyzed with new values.
-         3) "もっと詳細な地形分析を" — desktop 480 rays (0.75°) × 260 steps (was 360×200), still bilinear
-            DEM + 4/3-earth refraction; the DEM zoom obeys a hard TILE BUDGET (small ranges get full z13
-            detail; huge ranges step down instead of fetching 600+ tiles → bounded time AND memory). */
-    let runSeq=0;
-    async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()) return;
-      losH=obsHeight; losR=rangeKm;   /* (#R18) remember for the next site */
-      const my=++runSeq, live=()=>my===runSeq;
-      const mob=(typeof isMobile==='function'&&isMobile());
-      /* (#R20) finer still: desktop 600 rays (0.6°) × 320 steps; mobile stays at the safe 360×170.
-         (#R21) desktop 720 rays (0.5°) × 420 steps (~302k samples) — the chunked loops + per-tile
-         single decode keep it smooth, and the budget below still bounds the network cost. */
-      const RAYS=mob?360:900, STEPS=mob?170:480, R=6371000, REFF=R*4/3;   /* (#R22) desktop 720×420→900×480 (0.4° rays) for finer terrain analysis; mobile unchanged for RAM safety */
-      const body=panel&&panel.querySelector('#los-body');
-      const tick=()=>new Promise(r=>setTimeout(r,0));
-      const loadLbl=jp()?'地形DEMを取得中…':'Loading terrain DEM…', calcLbl=jp()?'視通を計算中…':'Computing sightlines…';
-      setProgress(0, loadLbl);
-      /* (#R20) small ranges may climb to z14 on desktop; (#R21) tiny ranges (≲12 km) now reach
-         z15 = terrarium's NATIVE maximum — the finest terrain data that exists. */
-      let z=Math.min(mob?13:15,_demZoomForSpan(rangeKm)+(mob?0:(rangeKm<=12?2:1)));
-      const budget=mob?110:520, latA=Math.abs(site[1]);
-      const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*Math.PI/180))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };
-      while(z>5 && estTiles(z)>budget) z--;
-      /* inline spherical destination — 125k turf.destination calls were themselves a stall */
-      const toR=Math.PI/180, la1=site[1]*toR, lo1=site[0]*toR, sLa1=Math.sin(la1), cLa1=Math.cos(la1);
-      const dest=(brg,dKm)=>{ const dR=dKm/6371, br=brg*toR, sDR=Math.sin(dR), cDR=Math.cos(dR);
-        const la2=Math.asin(sLa1*cDR + cLa1*sDR*Math.cos(br));
-        const lo2=lo1+Math.atan2(Math.sin(br)*sDR*cLa1, cDR-sLa1*Math.sin(la2));
-        let lg=lo2/toR; lg=((lg+540)%360)-180; return [lg, la2/toR]; };
-      const pts=new Array(RAYS*STEPS);
-      for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ pts[a*STEPS+s-1]=dest(brg, rangeKm*s/STEPS); }
-        if((a&63)===63){ await tick(); if(!live()) return; } }
-      const all=[site].concat(pts);
-      /* tile-load progress 0→80%, sampling 80→95%, sightlines 95→100% */
-      await warmDEMTiles(all, z, 30000, (f)=>{ if(live()) setProgress(f*0.80, loadLbl); });
-      if(!live()) return;
-      const elevs=new Array(all.length); let okCount=0;
-      const CH=9000;
-      for(let i=0;i<all.length;i+=CH){ const end=Math.min(all.length,i+CH);
-        for(let k=i;k<end;k++){ const p=all[k]; let v=demElevBilinear(p[0],p[1],z); if(v==null) v=demElevAt(p[0],p[1],null,z); elevs[k]=v; if(v!=null) okCount++; }
-        setProgress(0.80+0.15*(end/all.length), calcLbl);
-        await tick(); if(!live()) return; }
-      if(okCount < all.length*0.3){ if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度「解析する」を押してください。':'Could not load enough terrain data — wait a moment and press Analyze again.'; return; }
-      const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
-      const visEnds=new Array(RAYS);
-      for(let a=0;a<RAYS;a++){
-        /* First-horizon (radar-shadow) model: walk outward; a sample is visible only while its elevation
-           angle from the antenna stays at/above every nearer sample's angle. The 4/3-earth drop makes the
-           horizon physically correct for microwaves. Stop at the first ridge that occludes. */
-        let maxA=-Infinity, vd=rangeKm/STEPS;
-        for(let s=1;s<=STEPS;s++){ const terr=elevs[a*STEPS+s], d=rangeKm*s/STEPS, dm=d*1000, drop=dm*dm/(2*REFF), hd=((terr==null?0:terr)-drop)-obsElev, ang=Math.atan2(hd,dm);
-          if(ang>=maxA-1e-9){ maxA=ang; vd=d; } else break; }
-        visEnds[a]=dest(a*360/RAYS, vd);
-        if((a&127)===127){ setProgress(0.95+0.05*(a/RAYS), calcLbl); await tick(); if(!live()) return; } }
-      visEnds.push(visEnds[0]);
-      let cover=null, shadow=null;
-      try{ cover=turf.polygon([visEnds]); }catch(_){}
-      try{ const disk=turf.circle(site,rangeKm,{units:'kilometers',steps:360}); if(cover) shadow=turf.difference(disk,cover); }catch(_){}
-      if(!live()) return;
-      const feats=[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}];
-      if(cover) feats.push({type:'Feature',geometry:cover.geometry,properties:{kind:'cover'}});
-      if(shadow) feats.push({type:'Feature',geometry:shadow.geometry,properties:{kind:'shadow'}});
-      setData(feats);
-      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。数値を変えて「解析する」を押せば同地点で再計算できます。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked). Change the values and press Analyze to re-run at this site.';
-    }
-    function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
-    function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+(jp()?'見通し線解析':'Line of sight')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
-        +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
-        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'アンテナ高 (m)':'Antenna height (m)')+' <input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="width:72px;"></label>'
-        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'射程 (km)':'Range (km)')+' <input id="los-r" type="number" value="'+losR+'" min="1" max="400" step="5" style="width:72px;"></label>'
-        +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyze')+'</button>'
-        +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
-        +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyze. May take a moment (DEM sampling).')+'</div>';
-      /* ✕ now also wipes the overlay — the "can't remove it" bug was that closing the panel left the
-         shadow painted with no way to clear it. Clearing on close fixes that. */
-      p.querySelector('.tp-close').onclick=()=>{ runSeq++; setData([]); p.style.display='none'; };   /* close = cancel + wipe overlay incl. site dot */
-      p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); losH=h; losR=r; analyze(h,r); };
-      p.querySelector('#los-clr').onclick=()=>clear();
-      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
-      setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
-    }
-    /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run, so "Analyze"
-       still works at the same point with new values (the old site=null made re-analysis impossible). */
-    function clear(){ runSeq++; setData(site?[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]:[]);
-      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。数値を変えて「解析する」で再計算、または地図を右クリックで再配置。':'Cleared. Press Analyze to re-run here (new values OK), or right-click the map to move the site.'; }
-    return { open, clear };
-  })();
-};
-
+/* (#R176) IntMapModules.los MOVED OUT of this file to js/viewshed.js.
+ * It was the 900-ray first-horizon star polygon; 「Line of sightを超高精度化して」 replaced it with a
+ * raster viewshed that answers per cell, so it grew past what belongs in a grab-bag of map tools and
+ * this file is 125 lines lighter for it (standing instruction 13). The factory name and the
+ * window.IntMapLOS API it publishes are unchanged, so every call site — the map right-click menu and
+ * the Atlas los/viewshed actions — is untouched. */
 window.IntMapModules.outline=function(map,HOST){
   window.IntMapOutline=(function(){
     if(typeof map==='undefined'||!map) return { show(){}, clear(){} };

@@ -251,7 +251,9 @@ test('the drone planner answers with the real terrain, and says exactly what fai
   page.on('pageerror', e => errs.push(String(e).slice(0, 200)));
   await boot(page);
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.42], zoom: 10, pitch: 55, bearing: 0 }));
-  await page.evaluate(() => document.getElementById('btn-tool-drone').click());
+  /* (#R176) the toolbar button is gone — the planner opens through its own API, the way Atlas opens it */
+  expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone')), 'no drone button anywhere').toBe(false);
+  await page.evaluate(() => window.IntMapDrone.open());
   await page.waitForTimeout(600);
   expect(await page.evaluate(() => window.IntMapDrone.state().open)).toBe(true);
 

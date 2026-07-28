@@ -736,10 +736,9 @@ window.IntMapModules.droneNav=function(map,HOST){
   loadStore();
   try{ map.on('click',onMapClick); map.on('zoomend',onZoom); map.on('terrain',onZoom); }catch(_){}
   window.addEventListener('intmap-lang',()=>{ if(panelOpen()) render(); });
-  function wireButton(){ const b=document.getElementById('btn-tool-drone'); if(b&&!b._dn){ b._dn=1;
-      b.onclick=()=>{ toggle(); try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} }; } }
-  if(document.readyState!=='loading') setTimeout(wireButton,0); else document.addEventListener('DOMContentLoaded',()=>setTimeout(wireButton,0));
-  setTimeout(wireButton,1200);
+  /* (#R176) No toolbar button any more — 「DronesはMeasureに置くな。どこにも置くな。」. The three
+     setTimeout(wireButton) probes that used to hunt for #btn-tool-drone are gone with it; the planner is
+     opened by IntMapDroneNav.open()/toggle() below, which is what the Atlas `drone` and `tool` actions call. */
 
   const API={ open, close, toggle, isOpen:panelOpen,
     /* the route model */
