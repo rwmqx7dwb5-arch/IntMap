@@ -178,12 +178,16 @@ window.IntMapModules.insolation=function(map,HOST){
         const c=map.getCenter(); const acc=new Uint8Array(g.NX*g.NY).fill(1);
         const d0=new Date(date); d0.setHours(0,0,0,0);
         let steps=0, anySun=false;
+        /* up to 96 sweeps over a quarter-million cells — yield between them, or the tab locks for
+           seconds. #R19 was told about exactly that ("Line of sightを使うとパソコンでもブラウザがフリーズ"). */
+        const tick=()=>new Promise(r=>setTimeout(r,0));
         for(let mnt=0;mnt<1440;mnt+=15){
           const t=new Date(d0.getTime()+mnt*60000);
           const sp=sunPos(t,c.lat,c.lng); if(sp.altDeg<=0.5) continue;
           anySun=true; steps++;
           const mask=shadowMask(g,sp.azCompass,sp.altDeg);
           for(let k=0;k<acc.length;k++) if(!mask[k]) acc[k]=0;         /* lit at least once → not in the union */
+          if((steps&3)===0) await tick();
         }
         if(!anySun) acc.fill(1);
         let never=0; for(let k=0;k<acc.length;k++) if(acc[k]) never++;
@@ -247,7 +251,9 @@ window.IntMapModules.insolation=function(map,HOST){
       let annualH=0, annualFlatH=0, zeroDays=0, pvH=0, beamWh=0;
       const start=new Date(Date.UTC(year,0,1,0,0,0));
       const days=((year%4===0&&year%100!==0)||year%400===0)?366:365;
+      const tick=()=>new Promise(r=>setTimeout(r,0));
       for(let d=0;d<days;d++){
+        if((d&63)===63) await tick();       /* 52,560 sun positions — keep the page answering */
         const base=new Date(start.getTime()+d*86400000);
         let lit=0, flat=0, pv=0;
         for(let mnt=0;mnt<1440;mnt+=stepMin){
