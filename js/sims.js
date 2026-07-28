@@ -588,6 +588,15 @@ window.IntMapModules.sun=function(map,HOST){
       engBusy=false; return a; }
 
     map.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },500); } });
+    /* (#R176) This panel bakes every label at construction and was built once, so switching language
+       left it in the old one — measured: the three new buttons stayed English after a switch to JP.
+       Nothing here holds state that `when` and the module-level flags do not, so the honest fix is to
+       throw the panel away and let ensurePanel() rebuild it in the new language. */
+    window.addEventListener('intmap-lang',()=>{ if(!panel) return;
+      const wasOpen=panel.style.display!=='none';
+      if(playing){ clearInterval(playing); playing=0; }
+      try{ panel.remove(); }catch(_){} panel=null;
+      if(wasOpen) open(); });
     function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
     function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,

@@ -164,6 +164,10 @@ test('R176 ⑥: terrain shade is a sweep, and the year is read off a real horizo
   assert.match(sims, /panel\.querySelector\('\.sun-solst'\)\.onclick=\(\)=>solsticeShade\(\);/, 'and so is the solstice button');
   assert.match(sims, /terrainShadow:\(on\)=>\{/, 'exposed so Atlas and tests can drive it');
   assert.ok(/PV/.test(sims) && /発電可能時間/.test(sims), 'and the PV-usable hours are reported');
+  /* the Sun panel bakes every label at construction and was built once, so a language switch left it
+     in the old one — measured: the three new buttons stayed English after switching to JP */
+  assert.match(sims, /window\.addEventListener\('intmap-lang',\(\)=>\{ if\(!panel\) return;[\s\S]{0,220}panel=null;/,
+    'the panel is rebuilt when the language changes');
 });
 
 /* ── the wiring every new feature owes the app (standing instructions 3 and 4, and the Atlas rule) ── */
