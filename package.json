@@ -20,9 +20,9 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
+    "@playwright/test": "^1.62.0",
     "acorn": "^8.17.0",
     "acorn-walk": "^8.3.5",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^5.2.2"
   }
 }
