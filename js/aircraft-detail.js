@@ -274,7 +274,13 @@ window.IntMapModules.aircraftDetail=function(map,HOST){
     if(!cur) return; const e=ensureEl();
     const h=e.querySelector('#acp-title');
     if(h) h.innerHTML='✈ '+S(cur.callsign||cur.reg||cur.icao24||'—');
-    const b=e.querySelector('#acp-body'); if(b) b.innerHTML=bodyHTML(cur,photo,pending);
+    const b=e.querySelector('#acp-body'); if(!b) return;
+    /* The live feed re-renders this card every 20 s. The card is taller than its box and scrolls, so
+       rebuilding the body would jump a reader back to the top three times a minute — keep where they
+       are. (The scroller is the .country-popup shell, which is what has overflow-y.) */
+    const top=e.scrollTop;
+    b.innerHTML=bodyHTML(cur,photo,pending);
+    if(top) e.scrollTop=top;
   }
 
   function place(){
