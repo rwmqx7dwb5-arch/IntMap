@@ -862,7 +862,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__imSatProto=true;
     /* debug/test hook — resolve a tile and report byte length + mode (native/cropped/raw). Lets an E2E test assert that a
        known placeholder area (open ocean, rural) comes back as real cropped imagery, and a city as native, against LIVE Esri. */
-    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX };
+    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX,
+      /* (#R178) the HiDPI decision and the stitched tile, so an E2E test can prove against LIVE Esri
+         that a 2× screen really gets 512 px of imagery per 256-unit tile — and that a 1× screen is
+         left exactly as it was. Reporting the decision separately matters: "no @2x tile" is the right
+         answer on a 1× display and a bug on a 2× one, and only the flag tells them apart. */
+      hiDPI:()=>_satHiDPI, dpr:()=>(window.devicePixelRatio||1),
+      tile2x:async(z,y,x)=>{ try{ const b=await _sat2x(z|0,y|0,x|0,null);
+        return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap)}:{ok:false}; }
+        catch(e){ return {ok:false, err:String(e&&e.message||e)}; } } };
   } }catch(_){}
   try{
     /* (#R178) even the primary view is built through the contract. It could not be while the engine

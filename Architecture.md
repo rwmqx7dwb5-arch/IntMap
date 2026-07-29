@@ -41,7 +41,17 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   - 実測（同一マシン・キャッシュ無効・中央値3回）: **DOMContentLoaded 925→257ms、地図描画完了 1,196→471ms、
     リクエスト 109→37本**（自オリジン 60→10本）。
   （#R162〜#R169 の分離は §3.1。分割前は 36,955行/4.3MB）
-- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
+- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R178 で依存脱却が完了**——
+  レンダラの名を出してよいファイルは **`js/geo-engine.js` ただ1つ**（アダプタ＋`IntMapGeoEngine` ファサード。
+  #R152 以来 `js/app-body.js` の `map.on('load')` の中にあったが、モジュール側が engine を使うようになった以上
+  **モジュールのファクトリが走る時点で存在していなければならない**ため独立ファイルへ切り出し、`src/main.js` が
+  最初に import する）。他の js/ 全ファイルは `const GE=()=>window.IntMapGeoEngine;` 経由。
+  **AST 実測で 2,037箇所 / 31ファイル / 86 API → 0**（`npm run check:engine` が CI で固定。構文解析なので
+  コメント中の "the map. When…" では誤検知せず、ローカル変数 `map` も依存とみなさない）。
+  置換表は `scripts/decouple-codemod.mjs`、検査は `scripts/engine-coupling.mjs`。
+  Cesium は**第2エンジンとして `CESIUM_CONTRACT` を宣言済み**（実装アダプタは未導入）＝
+  「同じ契約を満たす2本目の `js/geo-engine-*.js` を書き、設定で選ぶ」だけになった。
+  以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
 - 対応UI言語は **英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es, ベータ)** の5つ（R40でDE/RU復活＋ES追加。`i18n.es` は静的UIを網羅、深層の動的文字列はEN/JPフォールバック）。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
