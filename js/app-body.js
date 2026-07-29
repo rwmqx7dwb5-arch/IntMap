@@ -1868,8 +1868,15 @@ window.addEventListener('DOMContentLoaded', () => {
           return 1050; }
         /* WHERE THE EYE IS for a camera state {lng,lat,zoom,pitch,bearing,elevation}, as a place:
            {lng, lat, alt in metres above sea level, distance in ground metres to the point it looks
-           at}. `k` scales the LOOK DISTANCE — pass 2^(z0−z1) to get the eye after a dolly of that
-           much, which is #R175's "a zoom is a dolly" expressed where it is exactly true. */
+           at}. Pass k = 1 to ask where the eye IS.
+           `k` = 2^(z0−z1) asks where a ZOOM of that much would put it, and #R175 settled what that
+           means: a zoom is a SIMILARITY about the map point under the centre — the eye AND the point
+           it looks at both scale by k — not a dolly towards a target left where it was. The
+           difference only shows once something has tilted, because only then is the target off the
+           ground: measured at pitch 110, z12 Tokyo, wheel-zooming 2.3 levels with the target held at
+           14,099 m, the eye CONVERGED on it (8,373 → 12,955 m — it climbed while zooming in, which
+           is #R174's bug exactly). So the altitude scales by k here too, not just the look distance;
+           for a pure zoom the solve then returns elevation·k and the eye descends by exactly k. */
         function gEye(cam,c2c,tile,sphere,k){
           k=(isFinite(k)&&k>0)?k:1;
           const p=(cam.pitch||0)*GEO_RAD, b=(cam.bearing||0)*GEO_RAD;
@@ -1887,7 +1894,9 @@ window.addEventListener('DOMContentLoaded', () => {
           const d=k*c2c/world, circ=GEO_CIRC*Math.cos(cam.lat*GEO_RAD);
           if(!(isFinite(d)&&d>0&&isFinite(circ))) return null;
           const ex=gmX(cam.lng)-d*Math.sin(p)*Math.sin(b), ey=gmY(cam.lat)+d*Math.sin(p)*Math.cos(b);
-          const alt=(+cam.elevation||0)+d*circ*Math.cos(p);
+          /* k multiplies the TARGET's height as well as the look distance — that is what makes the
+             zoom a similarity rather than a convergence (see the note above). k = 1 leaves it alone. */
+          const alt=k*(+cam.elevation||0)+d*circ*Math.cos(p);
           if(!(isFinite(ex)&&isFinite(ey)&&isFinite(alt))) return null;
           return { lng:glngOf(ex), lat:glatOf(Math.min(GEO_YHI,Math.max(GEO_YLO,ey))), alt, distance:d*circ };
         }
