@@ -74,3 +74,59 @@ test('every terrarium DEM alias is cached by the service worker (#R178)', async 
   expect(cap, 'the cache cap is declared').toBeTruthy();
   expect(Number(cap[1]), 'a tilted z15 view is already several hundred DEM tiles').toBeGreaterThanOrEqual(12000);
 });
+
+/* ── ③ the prefetch warms the level the protocol will actually fetch ────────────────────────────
+   On a HiDPI display each tile is served by stitching the four children one level deeper, so the
+   widest prefetch ring was warming a level that is now only the fallback.
+
+   Asserted on the level the prefetcher CHOSE, not on the network traffic: once the protocol is
+   stitching, the render path fetches children one level below the displayed zoom and those outnumber
+   the ring (measured at map z11 on a 2x screen — 18 requests at z12 from the ring, 41 at z13 from the
+   children), so a modal-zoom inference reads the wrong number. Run at both device scales, because a
+   bias applied unconditionally would spend a 1x user's bandwidth on detail their screen cannot show. */
+for (const dsf of [1, 2]) {
+  test.describe(`at ${dsf}x device scale`, () => {
+    test.use({ deviceScaleFactor: dsf });
+    test(`the satellite prefetch targets the level the protocol fetches (#R178, ${dsf}x)`, async ({ page }) => {
+      test.setTimeout(180000);
+      await page.route('**/World_Imagery/MapServer/tile/**', route =>
+        route.fulfill({ status: 200, contentType: 'image/jpeg', body: Buffer.alloc(9000, 7) }));
+      await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => !!window.__imap && !!window.IntMapSatProto, null, { timeout: 60000 });
+      const r = await page.evaluate(async () => {
+        const wait = ms => new Promise(res => setTimeout(res, ms));
+        window.__imap.jumpTo({ center: [139.767, 35.681], zoom: 11, pitch: 0, bearing: 0 });
+        window.IntMapOS.exec('view.base.sat', { source: 'test' });
+        await wait(3000);
+        window._imPredictivePrefetch.lastLevel = null;
+        window.__imap.jumpTo({ center: [139.9, 35.681], zoom: 11 });   /* a pan triggers the directional prefetch */
+        for (let i = 0; i < 30 && !window._imPredictivePrefetch.lastLevel; i++) await wait(200);
+        return { hi: window.IntMapSatProto.hiDPI(), dpr: window.IntMapSatProto.dpr(),
+                 chose: window._imPredictivePrefetch.lastLevel };
+      });
+      expect(r.hi, `dpr ${r.dpr} decides @2x as ${dsf >= 1.5}`).toBe(dsf >= 1.5);
+      expect(r.chose, 'the prefetch ran').toBeTruthy();
+      expect(r.chose.n, 'and asked for tiles').toBeGreaterThan(0);
+      expect(r.chose.bias, `the level bias must be ${r.hi ? 1 : 0} on this display`).toBe(r.hi ? 1 : 0);
+      expect(r.chose.z, 'so it warms exactly the level the protocol will fetch')
+        .toBe(r.chose.mapZoom + (r.hi ? 1 : 0));
+      /* …and ONLY for the provider that stitches. Switching to a plain XYZ provider must drop the bias,
+         or its prefetch would warm a level nothing fetches — this same defect, pointed the other way. */
+      const other = await page.evaluate(async () => {
+        const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+        const S = window.__sat;
+        const alt = (S && S.providers || []).find((x) => x.id !== 'esri' && x.tier === 'free');
+        if (!S || !alt) return { skipped: true };
+        S.select(alt.id);
+        await wait(1800);
+        window._imPredictivePrefetch.lastLevel = null;
+        window.__imap.jumpTo({ center: [139.6, 35.6], zoom: 8 });
+        for (let i = 0; i < 30 && !window._imPredictivePrefetch.lastLevel; i++) await wait(200);
+        return { provider: alt.id, chose: window._imPredictivePrefetch.lastLevel };
+      });
+      expect(other.skipped, 'there is a second free provider to switch to').toBeUndefined();
+      expect(other.chose, `the prefetch ran for ${other.provider}`).toBeTruthy();
+      expect(other.chose.bias, `a plain XYZ provider (${other.provider}) must not be biased`).toBe(0);
+    });
+  });
+}
