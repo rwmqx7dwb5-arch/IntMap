@@ -8,7 +8,8 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satellite=function(map,HOST){
+window.IntMapModules.satellite=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -44,46 +45,46 @@ window.IntMapModules.satellite=function(map,HOST){
     if(p.id==='esri'){ satShowBase(animate); return; }
     const tiles=satBuildTiles(p);
     if(!tiles){ satToast(HOST.t('satLocked')); satRevertToFallback(); return; }
-    if(map.getLayer('layer-sat')) map.setPaintProperty('layer-sat','raster-opacity',1); /* solid fallback under the buffer */
+    if(GE().layers.has('layer-sat')) GE().layers.setPaint('layer-sat','raster-opacity',1); /* solid fallback under the buffer */
     const target=(HOST.satActive===0)?1:0, srcId='sat-src-'+target, lyrId='sat-fx-'+target;
-    try{ if(map.getLayer(lyrId)) map.removeLayer(lyrId); if(map.getSource(srcId)) map.removeSource(srcId); }catch(_){}
+    try{ if(GE().layers.has(lyrId)) GE().layers.remove(lyrId); if(GE().layers.hasSource(srcId)) GE().layers.removeSource(srcId); }catch(_){}
     try{
-      map.addSource(srcId,{type:'raster',tiles:tiles,tileSize:256,maxzoom:p.maxzoom||19,attribution:p.attribution||''});
-      const before=map.getLayer('layer-sat-labels')?'layer-sat-labels':undefined;
-      map.addLayer({id:lyrId,type:'raster',source:srcId,layout:{visibility:'visible'},
+      GE().layers.addSource(srcId,{type:'raster',tiles:tiles,tileSize:256,maxzoom:p.maxzoom||19,attribution:p.attribution||''});
+      const before=GE().layers.has('layer-sat-labels')?'layer-sat-labels':undefined;
+      GE().layers.add({id:lyrId,type:'raster',source:srcId,layout:{visibility:'visible'},
         paint:{'raster-opacity':animate?0:HOST.satState.opacity,'raster-opacity-transition':{duration:animate?450:0}}},before);
     }catch(e){ console.warn('satApply add failed',e); return; }
     const prev=HOST.satActive;
     const finish=()=>{
-      if(map.getLayer(lyrId)) map.setPaintProperty(lyrId,'raster-opacity',HOST.satState.opacity);
+      if(GE().layers.has(lyrId)) GE().layers.setPaint(lyrId,'raster-opacity',HOST.satState.opacity);
       if(prev!==-1 && prev!==target){
         const pl='sat-fx-'+prev, ps='sat-src-'+prev;
-        if(map.getLayer(pl)){ map.setPaintProperty(pl,'raster-opacity-transition',{duration:450}); map.setPaintProperty(pl,'raster-opacity',0); }
-        setTimeout(()=>{ if(HOST.satActive!==prev){ try{ if(map.getLayer(pl)) map.removeLayer(pl); if(map.getSource(ps)) map.removeSource(ps); }catch(_){} } },520);
+        if(GE().layers.has(pl)){ GE().layers.setPaint(pl,'raster-opacity-transition',{duration:450}); GE().layers.setPaint(pl,'raster-opacity',0); }
+        setTimeout(()=>{ if(HOST.satActive!==prev){ try{ if(GE().layers.has(pl)) GE().layers.remove(pl); if(GE().layers.hasSource(ps)) GE().layers.removeSource(ps); }catch(_){} } },520);
       }
       HOST.satActive=target; HOST.satLastGood=HOST.satState.providerId; HOST.satErrCount=0;
     };
     if(!animate){ finish(); return; }
     let done=false;
-    const onData=(e)=>{ if(e&&e.sourceId===srcId&&e.isSourceLoaded){ if(done)return; done=true; map.off('sourcedata',onData); finish(); } };
-    map.on('sourcedata',onData);
-    setTimeout(()=>{ if(!done){ done=true; map.off('sourcedata',onData); finish(); } },1900);
+    const onData=(e)=>{ if(e&&e.sourceId===srcId&&e.isSourceLoaded){ if(done)return; done=true; GE().events.off('sourcedata',onData); finish(); } };
+    GE().events.on('sourcedata',onData);
+    setTimeout(()=>{ if(!done){ done=true; GE().events.off('sourcedata',onData); finish(); } },1900);
   }
   function satShowBase(animate){
     if(HOST.satActive!==-1){
       const a=HOST.satActive, pl='sat-fx-'+a, ps='sat-src-'+a;
-      if(map.getLayer(pl)){ map.setPaintProperty(pl,'raster-opacity-transition',{duration:animate?450:0}); map.setPaintProperty(pl,'raster-opacity',0); }
-      setTimeout(()=>{ if(HOST.satState.providerId==='esri'){ try{ if(map.getLayer(pl)) map.removeLayer(pl); if(map.getSource(ps)) map.removeSource(ps); }catch(_){} } },animate?520:0);
+      if(GE().layers.has(pl)){ GE().layers.setPaint(pl,'raster-opacity-transition',{duration:animate?450:0}); GE().layers.setPaint(pl,'raster-opacity',0); }
+      setTimeout(()=>{ if(HOST.satState.providerId==='esri'){ try{ if(GE().layers.has(pl)) GE().layers.remove(pl); if(GE().layers.hasSource(ps)) GE().layers.removeSource(ps); }catch(_){} } },animate?520:0);
       HOST.satActive=-1;
     }
-    if(map.getLayer('layer-sat')) map.setPaintProperty('layer-sat','raster-opacity',HOST.satState.opacity);
+    if(GE().layers.has('layer-sat')) GE().layers.setPaint('layer-sat','raster-opacity',HOST.satState.opacity);
     HOST.satLastGood='esri';
   }
   function satSetOpacity(v){
     HOST.satState.opacity=v;
     const p=satProviderById(HOST.satState.providerId);
-    if(p&&p.id==='esri'){ if(map.getLayer('layer-sat')) map.setPaintProperty('layer-sat','raster-opacity',v); }
-    else if(HOST.satActive!==-1&&map.getLayer('sat-fx-'+HOST.satActive)){ map.setPaintProperty('sat-fx-'+HOST.satActive,'raster-opacity',v); }
+    if(p&&p.id==='esri'){ if(GE().layers.has('layer-sat')) GE().layers.setPaint('layer-sat','raster-opacity',v); }
+    else if(HOST.satActive!==-1&&GE().layers.has('sat-fx-'+HOST.satActive)){ GE().layers.setPaint('sat-fx-'+HOST.satActive,'raster-opacity',v); }
   }
   function satSelectProvider(id){
     const p=satProviderById(id); if(!p) return;
@@ -180,13 +181,13 @@ window.IntMapModules.satellite=function(map,HOST){
   }
   function satSetup(){
     if(!map) return;
-    if(!satSetup._wired){ satSetup._wired=true; try{ map.on('error',satOnError); }catch(_){}
+    if(!satSetup._wired){ satSetup._wired=true; try{ GE().events.on('error',satOnError); }catch(_){}
       /* (#R24) auto-dismiss the FLOATING satellite controller when the user starts operating elsewhere
          ("それ以外の場所を操作し始めたら自動で消える"); it re-opens via the Satellite button (which resets
          satPanelDismissed). On mobile it lives inside the sheet (not floating), so leave that one alone. */
       const _satDismiss=()=>{ try{ const p=document.getElementById('sat-controller');
         if(p && p.style.display==='block' && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){ HOST.satPanelDismissed=true; p.style.display='none'; } }catch(_){} };
-      try{ map.on('dragstart',_satDismiss); map.on('zoomstart',(e)=>{ if(e&&e.originalEvent) _satDismiss(); }); }catch(_){}
+      try{ GE().events.on('dragstart',_satDismiss); GE().events.on('zoomstart',(e)=>{ if(e&&e.originalEvent) _satDismiss(); }); }catch(_){}
       document.addEventListener('pointerdown',(e)=>{ try{ const p=document.getElementById('sat-controller');
         if(p && p.style.display==='block' && e.target && !e.target.closest('#sat-controller') && !e.target.closest('#btn-view-sat')) _satDismiss(); }catch(_){} }, true);
     }
@@ -225,8 +226,8 @@ window.IntMapModules.satellite=function(map,HOST){
   function aiCaptureCanvas(maxDim){
     return new Promise(res=>{
       if(!map){ res(null); return; }
-      let done=false; const grab=()=>{ if(done)return; done=true; try{ res(aiDownscaleDataURL(map.getCanvas(),maxDim)); }catch(_){ res(null); } };
-      try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); }
+      let done=false; const grab=()=>{ if(done)return; done=true; try{ res(aiDownscaleDataURL(GE().render.canvas(),maxDim)); }catch(_){ res(null); } };
+      try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); }
       setTimeout(grab,900); /* safety net if no render event fires */
     });
   }

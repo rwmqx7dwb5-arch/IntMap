@@ -39,6 +39,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.seismic=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
 
@@ -274,20 +275,20 @@ window.IntMapModules.seismic=function(map,HOST){
     const MAXT=2400;
 
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource(SRC)) map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('seis-ring')) map.addLayer({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
+      if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('seis-ring')) GE().layers.add({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
         paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.92}});
-      if(!map.getLayer('seis-mmi')) map.addLayer({id:'seis-mmi',type:'line',source:SRC,filter:['==',['get','kind'],'mmi'],
+      if(!GE().layers.has('seis-mmi')) GE().layers.add({id:'seis-mmi',type:'line',source:SRC,filter:['==',['get','kind'],'mmi'],
         paint:{'line-color':['get','col'],'line-width':1.4,'line-opacity':0.75,'line-dasharray':[3,2]}});
-      if(!map.getLayer('seis-mmi-lbl')) map.addLayer({id:'seis-mmi-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'mmilbl'],
+      if(!GE().layers.has('seis-mmi-lbl')) GE().layers.add({id:'seis-mmi-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'mmilbl'],
         layout:{'text-field':['get','label'],'text-size':11,'text-allow-overlap':true},
         paint:{'text-color':['get','col'],'text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
-      if(!map.getLayer('seis-sta')) map.addLayer({id:'seis-sta',type:'circle',source:SRC,filter:['==',['get','kind'],'station'],
+      if(!GE().layers.has('seis-sta')) GE().layers.add({id:'seis-sta',type:'circle',source:SRC,filter:['==',['get','kind'],'station'],
         paint:{'circle-radius':5,'circle-color':'#ffffff','circle-stroke-color':'#222','circle-stroke-width':1.6}});
-      if(!map.getLayer('seis-epi')) map.addLayer({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
+      if(!GE().layers.has('seis-epi')) GE().layers.add({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
         paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.4}});
       return true; }catch(_){ return false; } }
-    function setData(f){ try{ if(ensure()) map.getSource(SRC).setData({type:'FeatureCollection',features:f||[]}); }catch(_){} }
+    function setData(f){ try{ if(ensure()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:f||[]}); }catch(_){} }
 
     /* the radius at which MMI falls through each integer — the spatial answer to 「推定震度」 */
     function mmiRings(){ const out=[]; if(!epi) return out;
@@ -416,13 +417,13 @@ window.IntMapModules.seismic=function(map,HOST){
       return out.slice(0,12);
     }
     let pickH=null;
-    function endPick(){ picking=false; try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
-    function startPick(){ endPick(); picking=true; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){}
-      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; endPick(); draw(); }; try{ map.once('click',pickH); }catch(_){} }
+    function endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    function startPick(){ endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
+      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; endPick(); draw(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function onClick(e){ if(!opened||picking||!epi) return;
       stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
       if(stations.length>6) stations.shift(); draw(); }
-    map.on('click',onClick);
+    GE().events.on('click',onClick);
 
     /* A real event, from the USGS feed the app already uses (and already declares in the privacy page). */
     async function loadReal(){
@@ -436,7 +437,7 @@ window.IntMapModules.seismic=function(map,HOST){
         depthKm=Math.max(0,Math.round(f.geometry.coordinates[2]||10));
         mw=Math.round(f.properties.mag*10)/10;
         const d=panel.querySelector('.sq-d'), m=panel.querySelector('.sq-m'); if(d) d.value=depthKm; if(m) m.value=mw;
-        try{ map.flyTo({center:epi,zoom:3,duration:900}); }catch(_){}
+        try{ GE().camera.flyTo({center:epi,zoom:3,duration:900}); }catch(_){}
         tSec=0; const tl=panel.querySelector('.sq-t'); if(tl) tl.value=0;
         draw();
         if(o) o.insertAdjacentHTML('afterbegin','<div style="margin-bottom:5px;">📡 '+String(f.properties.place||'').replace(/[<>&]/g,'')+'</div>');

@@ -14,7 +14,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.routing=function(map,HOST){
+window.IntMapModules.routing=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -52,16 +53,16 @@ window.IntMapModules.routing=function(map,HOST){
       const rd=()=>{ let shift=0,result=0,b; do{ b=str.charCodeAt(index++)-63; result+=(b&0x1f)*Math.pow(2,shift); shift+=5; }while(b>=0x20);
         return (result%2===1)?(-(result+1)/2):(result/2); };
       while(index<str.length){ lat+=rd(); lng+=rd(); coords.push([lng/factor,lat/factor]); } return coords; }
-    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imroute-cas',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
-      map.addLayer({id:'imroute-walk',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#7a7f87'],'line-width':['coalesce',['get','w'],4],'line-dasharray':[0,2],'line-opacity':['coalesce',['get','op'],0.95]}});
-      map.addLayer({id:'imroute-rail',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['!=',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#1a73e8'],'line-width':['coalesce',['get','w'],5],'line-opacity':['coalesce',['get','op'],1]}});
-      map.addLayer({id:'imroute-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],9]],layout:{},paint:{'line-color':'#1a73e8','line-width':4.5}});   /* legacy no-op filter kept for _OVL id */
-      map.addLayer({id:'imroute-transfer',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['==',['get','k'],'stop']],paint:{'circle-radius':4.6,'circle-color':'#fff','circle-stroke-color':['coalesce',['get','col'],'#1a73e8'],'circle-stroke-width':2.6}});
-      map.addLayer({id:'imroute-pt',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['!=',['get','k'],'stop']],paint:{'circle-radius':6.5,'circle-color':['coalesce',['get','color'],'#1a73e8'],'circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+    function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imroute-cas',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
+      GE().layers.add({id:'imroute-walk',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#7a7f87'],'line-width':['coalesce',['get','w'],4],'line-dasharray':[0,2],'line-opacity':['coalesce',['get','op'],0.95]}});
+      GE().layers.add({id:'imroute-rail',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['!=',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#1a73e8'],'line-width':['coalesce',['get','w'],5],'line-opacity':['coalesce',['get','op'],1]}});
+      GE().layers.add({id:'imroute-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],9]],layout:{},paint:{'line-color':'#1a73e8','line-width':4.5}});   /* legacy no-op filter kept for _OVL id */
+      GE().layers.add({id:'imroute-transfer',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['==',['get','k'],'stop']],paint:{'circle-radius':4.6,'circle-color':'#fff','circle-stroke-color':['coalesce',['get','col'],'#1a73e8'],'circle-stroke-width':2.6}});
+      GE().layers.add({id:'imroute-pt',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['!=',['get','k'],'stop']],paint:{'circle-radius':6.5,'circle-color':['coalesce',['get','color'],'#1a73e8'],'circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
-    function clear(){ _lastPaint=null; _abortInflight(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clear(){ _lastPaint=null; _abortInflight(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     const PROFILES={ driving:['router.project-osrm.org','driving'], car:['router.project-osrm.org','driving'], drive:['router.project-osrm.org','driving'],
       walking:['routing.openstreetmap.de/routed-foot','foot'], walk:['routing.openstreetmap.de/routed-foot','foot'], foot:['routing.openstreetmap.de/routed-foot','foot'],
       cycling:['routing.openstreetmap.de/routed-bike','bike'], cycle:['routing.openstreetmap.de/routed-bike','bike'], bike:['routing.openstreetmap.de/routed-bike','bike'] };
@@ -100,8 +101,8 @@ window.IntMapModules.routing=function(map,HOST){
       return (isFinite(a)&&c>=a)?[[a,b],[c,d]]:null; }
     function _paint(feats,fitCoords,maxZoom){ _lastPaint={feats:feats,fit:fitCoords||null,mz:maxZoom||14};
       if(!ensureLayers()) return false;   /* stashed — styledata repaints (and fits, once) when the style is ready */
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      if(fitCoords){ try{ const bb=_bounds(fitCoords); if(bb) map.fitBounds(bb,{padding:70,maxZoom:maxZoom||14,duration:900}); }catch(_){} }
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
+      if(fitCoords){ try{ const bb=_bounds(fitCoords); if(bb) GE().camera.fitBounds(bb,{padding:70,maxZoom:maxZoom||14,duration:900}); }catch(_){} }
       _lastPaint.fit=null;   /* fit only once — a later style-swap repaint must not re-fly the camera */
       return true; }
     function _drawAlts(sel,setId){ const rs=_rsets.get(setId||_rsActive); if(!rs||!rs.alts.length) return;
@@ -123,8 +124,8 @@ window.IntMapModules.routing=function(map,HOST){
       if(!coords||coords.length<2) return true;
       const hi={type:'Feature',geometry:{type:'LineString',coordinates:coords},properties:{col:'#ffd23f',walk:0,w:9,op:1}};
       const base=(_lastPaint&&_lastPaint.feats)?_lastPaint.feats:[];   /* (#R132) use our OWN paint store, not MapLibre's {geojson:…}-wrapped source._data */
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:base.concat([hi])}); }catch(_){}
-      try{ const bb=_bounds(coords); if(bb) map.fitBounds(bb,{padding:120,maxZoom:16,duration:800}); }catch(_){}
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:base.concat([hi])}); }catch(_){}
+      try{ const bb=_bounds(coords); if(bb) GE().camera.fitBounds(bb,{padding:120,maxZoom:16,duration:800}); }catch(_){}
       return true; }catch(_){ return false; } }
     /* (#R132) 経路10-10 §3.3/§7.1-7.2/§10: road ALTERNATIVES — coarse-grid overlap so near-identical OSRM alternatives
        collapse to one (keep the faster), then rank fastest-first and give each a meaningful differentiator label. */
@@ -423,7 +424,7 @@ window.IntMapModules.routing=function(map,HOST){
         distance:b0.distance,duration:b0.duration,steps:b0.steps,
         alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color}))}; }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
-    try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
+    try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
        directions panel: editable start/destination, one-tap mode switch (drive/walk/cycle), swap, live recompute,
        distance + time, and a scrollable turn-by-turn list. ===== */
@@ -432,7 +433,7 @@ window.IntMapModules.routing=function(map,HOST){
     /* (#R126) 経路10-10 §6.3/§6.4: SAME-NAME disambiguation — fetch several candidates and prefer the one near the
        current map view (then the most populous), instead of blindly taking hit #1 ("Potsdam" from a Germany view
        geocoded to Potsdam NY, USA). refLL (optional) = the point to bias toward (map centre / other endpoint). */
-    function _mapCtr(){ try{ const c=map.getCenter(); return [c.lng,c.lat]; }catch(_){ return null; } }
+    function _mapCtr(){ try{ const c=GE().camera.getCenter(); return [c.lng,c.lat]; }catch(_){ return null; } }
     function _pickNear(cands,refLL){ if(!cands.length) return null; const ref=refLL||_mapCtr(); if(!ref) return cands[0];
       const scored=cands.map(c=>({c,d:_hav(ref,[c.lng,c.lat])}));
       const near=scored.filter(s=>s.d<=300).sort((a,b)=>a.d-b.d);
@@ -543,7 +544,7 @@ window.IntMapModules.routing=function(map,HOST){
     function _syncAvoid(){ if(!panel) return; const row=panel.querySelector('.rp-avoid'); if(row) row.style.display=(pMode==='driving')?'flex':'none';
       panel.querySelectorAll('.rp-av').forEach(b=>{ const on=pAvoid.has(b.getAttribute('data-av')); b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; b.style.borderColor=on?'var(--primary-color)':'var(--glass-border,rgba(128,128,128,0.28))'; }); }
     function _syncModes(){ if(!panel) return; panel.querySelectorAll('.rp-mode').forEach(b=>{ const on=b.getAttribute('data-m')===pMode; b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; }); _syncAvoid(); }
-    function _startPick(which){ _endPick(); pickTarget=which; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){}
+    function _startPick(which){ _endPick(); pickTarget=which; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickHandler=async e=>{ const ll={lng:e.lngLat.lng,lat:e.lngLat.lat}; const g={lng:ll.lng,lat:ll.lat,name:ll.lat.toFixed(4)+', '+ll.lng.toFixed(4)};
         const tgt=pickTarget;
         if(tgt==='from'){ pFrom=g; if(panel) panel.querySelector('.rp-from').value=g.name; } else { pTo=g; if(panel) panel.querySelector('.rp-to').value=g.name; }
@@ -554,8 +555,8 @@ window.IntMapModules.routing=function(map,HOST){
           if(j&&j.display_name){ const nm=j.display_name.split(',').slice(0,2).join(', ');
             const still=(tgt==='from')?(pFrom===g):(pTo===g);   /* only if the user hasn't changed the field since */
             if(still){ g.name=nm; const el=panel&&panel.querySelector(tgt==='from'?'.rp-from':'.rp-to'); if(el) el.value=nm; } } }catch(_){} };
-      try{ map.once('click',pickHandler); }catch(_){} }
-    function _endPick(){ pickTarget=null; try{ if(pickHandler) map.off('click',pickHandler); }catch(_){} pickHandler=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
+      try{ GE().events.once('click',pickHandler); }catch(_){} }
+    function _endPick(){ pickTarget=null; try{ if(pickHandler) GE().events.off('click',pickHandler); }catch(_){} pickHandler=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
     async function recompute(){ if(!panel) return; const sum=panel.querySelector('.rp-summary'), st=panel.querySelector('.rp-steps');
       if(!pFrom||!pTo){ if(sum) sum.textContent=''; if(st) st.innerHTML='<div style="color:var(--text-muted);font-size:11.5px;padding:8px 0;">'+LL('Enter a start and destination.','出発地と目的地を入力してください。','Start und Ziel eingeben.','Введите начало и цель.','Introduce origen y destino.')+'</div>'; return; }
       if(sum) sum.innerHTML='<span style="color:var(--text-muted);">'+LL('Routing…','経路計算中…','Route…','Прокладка…','Calculando…')+'</span>'; if(st) st.innerHTML='';

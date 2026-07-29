@@ -19,6 +19,10 @@
  *  registered in time — the same guarantee the inline tag had.
  * ==========================================================================*/
 window.addEventListener('DOMContentLoaded', () => {
+  /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
+     split module already uses. A getter, not the object: the engine is built inside map.on('load'),
+     i.e. long after this line runs (#R170 learned that the hard way). */
+  const GE=()=>window.IntMapGeoEngine;
   /* ===== State ===== */
   let userTheme='auto', userTZ='auto', currentMapType='map', currentProj='globe', currentLang='en';
   /* (#R7-i18n) Read the SAVED language up-front, before any legend / option / popup is built. Many
@@ -64,12 +68,11 @@ window.addEventListener('DOMContentLoaded', () => {
      (verified: adding a source+layer while isStyleLoaded()===false succeeds and the layer is live).
      During a real setStyle() swap (Map ⇄ Satellite) the parsed flag genuinely goes false and back,
      so the guard still protects that window — it just stops firing on ordinary tile traffic. */
-  function canDraw(){
-    if(!map) return false;
-    try{ if(map.isStyleLoaded()) return true; }catch(_){}
-    try{ if(map.style && map.style._loaded===true) return true; }catch(_){}                              /* fast path */
-    try{ const s=map.getStyle(); return !!(s && s.layers && s.layers.length); }catch(_){ return false; } /* public fallback */
-  }
+  /* (#R178) …and the test itself now lives in the engine (adapter.styleParsed): the fast path was
+     reading `map.style._loaded`, a private field of a MapLibre class. This stays as the app's named
+     predicate — every call site and window.IntMapCanDraw keep working — but it no longer knows what
+     a style object looks like. */
+  function canDraw(){ try{ const E=GE(); return !!(E&&E.hasRenderer()&&E.canDraw()); }catch(_){ return false; } }
   window.IntMapCanDraw=canDraw;   /* also reachable from js/ modules that hold no HOST (see IM_HOST.canDraw) */
   let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp', statsSortDir='desc';   /* (#R11) no tab auto-selected; (#R102) Countries sort direction (desc/asc) */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
@@ -400,7 +403,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
     try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}     /* (#R8c) lets modules (wind time pill, etc.) re-localize */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
-    try{ applyTheme(); if(map&&!map.isStyleLoaded()) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
+    try{ applyTheme(); if(!GE().ready()) GE().events.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
     try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
     try{ if(typeof renderNewsLangChecks==='function') renderNewsLangChecks(); }catch(_){}
     renderUI();
@@ -418,23 +421,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
-    if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
+    if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
-    ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',traveling?'visible':'none'); });
+    ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
-    if(map.getLayer('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } map.setLayoutProperty('ofm-country','visibility','none'); }
-      else if(_imbOfmWas!==null){ map.setLayoutProperty('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
+    if(GE().layers.has('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=GE().layers.getLayout('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } GE().layers.setLayout('ofm-country','visibility','none'); }
+      else if(_imbOfmWas!==null){ GE().layers.setLayout('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
     /* (#R94l) the CARTO *_all raster base BAKES modern borders + labels into the tiles — hiding vector layers
        can't remove them. Force the label-free variant DIRECTLY while travelling (don't rely on applyTheme's
        timing, which was why the era borders never appeared), and RAISE the era layers above the raster. */
     try{ const sat=(typeof currentMapType!=='undefined'&&currentMapType==='sat');
       const mc=(window.imMapColor||'auto'); const mapLight=(mc==='light')?true:(mc==='dark')?false:(document.documentElement.getAttribute('data-theme')==='light');
       if(traveling&&!sat){
-        if(map.getLayer('layer-dark'))     map.setLayoutProperty('layer-dark','visibility','none');
-        if(map.getLayer('layer-light'))    map.setLayoutProperty('layer-light','visibility','none');
-        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',mapLight?'none':'visible');
-        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',mapLight?'visible':'none');
+        if(GE().layers.has('layer-dark'))     GE().layers.setLayout('layer-dark','visibility','none');
+        if(GE().layers.has('layer-light'))    GE().layers.setLayout('layer-light','visibility','none');
+        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',mapLight?'none':'visible');
+        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',mapLight?'visible':'none');
       }
     }catch(_){}
   }catch(_){} };
@@ -458,17 +461,17 @@ window.addEventListener('DOMContentLoaded', () => {
       if(map){ try{
         const _l=(window.imMapColor==='light')||(window.imMapColor!=='dark'&&((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches)));
         const _sat=currentMapType==='sat';
-        if(map.getLayer('layer-sat'))      map.setLayoutProperty('layer-sat','visibility',_sat?'visible':'none');
-        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
-        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
-      }catch(_){} map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
+        if(GE().layers.has('layer-sat'))      GE().layers.setLayout('layer-sat','visibility',_sat?'visible':'none');
+        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
+        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
+      }catch(_){} GE().events.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
       return;
     }
     /* Map base color can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
     try{ window.refreshNewsPill&&window.refreshNewsPill(); }catch(_){}   /* (#R32) flip the news band color with the theme */
-    map.setLayoutProperty('layer-sat','visibility',sat?'visible':'none');
+    GE().layers.setLayout('layer-sat','visibility',sat?'visible':'none');
     /* Place labels: nicer crisp VECTOR labels (OpenFreeMap) replace the old Esri raster labels in
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
        reliable CartoDB English labels stay as the default for EN map view. */
@@ -479,24 +482,24 @@ window.addEventListener('DOMContentLoaded', () => {
        imtb-line / imtb-lbl. */
     const _travelingBase = !!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const showCartoLabels = namesOn && !vecMap && !_travelingBase;   /* labeled carto basemap */
-    if(map.getLayer('layer-sat-labels')) map.setLayoutProperty('layer-sat-labels','visibility','none');  /* Esri labels retired */
-    map.setLayoutProperty('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
+    if(GE().layers.has('layer-sat-labels')) GE().layers.setLayout('layer-sat-labels','visibility','none');  /* Esri labels retired */
+    GE().layers.setLayout('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
-    try{ window._applyBorders(); }catch(_){ if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none'); }
-    if(map.getLayer('grid-labels')){ map.setPaintProperty('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); map.setPaintProperty('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
-    if(map.getLayer('grid-labels-cross')){ map.setPaintProperty('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); map.setPaintProperty('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
-    if(map.getLayer('grid-lines')){ map.setPaintProperty('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
+    try{ window._applyBorders(); }catch(_){ if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility', bordersOn?'visible':'none'); }
+    if(GE().layers.has('grid-labels')){ GE().layers.setPaint('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); GE().layers.setPaint('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
+    if(GE().layers.has('grid-labels-cross')){ GE().layers.setPaint('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); GE().layers.setPaint('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
+    if(GE().layers.has('grid-lines')){ GE().layers.setPaint('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
     /* Satellite imagery engine: panel + cross-fade buffer visibility follow the mode. */
     const satCont=document.getElementById('map-container'), satPanel=document.getElementById('sat-controller');
     /* (#R101) mobile: the panel is docked in the tools sheet → keep it available. desktop: show only when the
        user has explicitly opened it (satPanelDismissed=false), never merely because the basemap is Satellite. */
     if(satPanel){ const _satMob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; satPanel.style.display=(sat&&(_satMob||!satPanelDismissed))?'block':'none'; }
     if(satCont) satCont.classList.toggle('sat-on',sat);
-    [0,1].forEach(i=>{ const L='sat-fx-'+i; if(map.getLayer(L)) map.setLayoutProperty(L,'visibility',(sat&&i===satActive)?'visible':'none'); });
+    [0,1].forEach(i=>{ const L='sat-fx-'+i; if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',(sat&&i===satActive)?'visible':'none'); });
     if(sat){ try{ satRenderController(); }catch(_){} }
     try{ satRefreshReadout(); }catch(_){}
   }
@@ -514,8 +517,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const _stabIdx={water:new Map()};
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size};
-    if(dump==='peaks'){ try{ o.z=+map.getZoom().toFixed(2); o.c=[+map.getCenter().lng.toFixed(6),+map.getCenter().lat.toFixed(6)];
-      o.rp=map.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?map.project(c):null; }catch(_){}
+    if(dump==='peaks'){ try{ o.z=+GE().camera.getZoom().toFixed(2); o.c=[+GE().camera.getCenter().lng.toFixed(6),+GE().camera.getCenter().lat.toFixed(6)];
+      o.rp=GE().coords.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?GE().coords.project(c):null; }catch(_){}
         return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
     else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,10).map(f=>({n:(f.properties||{}).name,mz:(f.properties||{}).mz,cls:(f.properties||{}).class,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
     return o; };   /* diagnostics (read-only) */
@@ -544,7 +547,7 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ window.__sat={ providers:SAT_PROVIDERS, state:satState, keys:()=>satKeys, build:satBuildTiles, hasKey:satHasKey,
     render:satRenderController, apply:satApply, select:satSelectProvider, setOpacity:satSetOpacity, step:satStepDay,
     chip:satChipHTML, capture:satCaptureLabel, renderKeys:satRenderKeyInputs, saveKeys:satSaveKeyInputs,
-    mapReady:()=>{ try{ return !!(map&&map.isStyleLoaded()); }catch(e){ return 'err:'+e.message; } } }; }catch(_){}
+    mapReady:()=>{ try{ return !!(GE().ready()); }catch(e){ return 'err:'+e.message; } } }; }catch(_){}
 
   /* =====================================================================
    *  AI ENGINE — account-based, first-party (#R27; BYOK retired, its dead client
@@ -617,14 +620,14 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!va||!vb) return {err:t('aiVisPickDates')};
     const save={ day:satState.day, year:satState.year, opacity:satState.opacity };
     /* hide map overlays so the captured frame is imagery, not pins/grid */
-    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-    const vis=overlays.map(id=>{ try{ return map.getLayoutProperty(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
-    overlays.forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','none'); }catch(_){} });
+    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+    const vis=overlays.map(id=>{ try{ return GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
+    overlays.forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','none'); }catch(_){} });
     satState.opacity=1;
     let imgA=null,imgB=null,err=null;
     try{ imgA=await aiCaptureSatAt(p,va); imgB=await aiCaptureSatAt(p,vb); }catch(e){ err=e; }
     satState.day=save.day; satState.year=save.year; satState.opacity=save.opacity;
-    overlays.forEach((id,k)=>{ try{ map.setLayoutProperty(id,'visibility',vis[k]); }catch(_){} });
+    overlays.forEach((id,k)=>{ try{ GE().layers.setLayout(id,'visibility',vis[k]); }catch(_){} });
     try{ satApply(false); satRefreshReadout(); }catch(_){}
     if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
     return {imgA,imgB}; };
@@ -733,8 +736,8 @@ window.addEventListener('DOMContentLoaded', () => {
         case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof userTheme!=='undefined'?userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof userTheme!=='undefined'){ userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast('🎨 '+nx); }catch(_){} }catch(_){} break; }
         case (K==='f'): { try{ if(document.fullscreenElement){ document.exitFullscreen&&document.exitFullscreen().catch(()=>{}); } else { const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){} break; }
         case (k==='0'): click('btn-compass'); break;
-        case (k==='+'||k==='='): try{ map&&map.zoomIn(); }catch(_){} break;
-        case (k==='-'||k==='_'): try{ map&&map.zoomOut(); }catch(_){} break;
+        case (k==='+'||k==='='): try{ GE().camera.zoomIn(); }catch(_){} break;
+        case (k==='-'||k==='_'): try{ GE().camera.zoomOut(); }catch(_){} break;
         default: done=false;
       }
       if(done) e.preventDefault();
@@ -753,7 +756,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
+  try{ GE().scene.setImageConcurrency(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
   /* (#R158) SATELLITE TILE PROTOCOL — "限界までズームしても灰色タイルを出さない／同じズームでも高画質". Esri World_Imagery's
      native max zoom varies by place (z19 city / z18 rural / z17 desert / z16 open sea); past it Esri returns an HTTP-200
      grey "Map data not yet available" tile — a FIXED ~2.5 KB JPEG that MapLibre can't distinguish from real imagery, so it
@@ -762,7 +765,7 @@ window.addEventListener('DOMContentLoaded', () => {
      (high-quality) — the sea/desert/rural view stays genuine imagery while cities keep their crisp native z19. Real tiles
      pass straight through (one fetch, decoded in MapLibre's worker as before), results are cached, and ANY error falls back
      to the raw bytes so the map is never worse than before. Also lets the flight sim drop its blue water-fill (#R158). */
-  try{ if(maplibregl.addProtocol && typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
+  try{ if(typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
     const _SAT_HOSTS=['https://server.arcgisonline.com','https://services.arcgisonline.com'];
     const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]+'/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;
     const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
@@ -794,9 +797,64 @@ window.addEventListener('DOMContentLoaded', () => {
       if(real){ try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
       return {buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
     }
-    maplibregl.addProtocol('imapsat', async (params, abortController)=>{
+    /* ══ (#R178) THE IMAGERY IS HALF-RESOLUTION ON EVERY HIDPI SCREEN ═══════════════════════════
+       MapLibre picks the tile zoom from `coveringZoomLevel(zoom + log2(512/tileSize))` — read it in
+       src/geo/projection/covering_tiles.ts — and `pixelRatio` is not in that expression. The canvas
+       IS rendered at devicePixelRatio (see the Map options above), so on a 2× display one 256-pixel
+       Esri tile is stretched across 512 device pixels: the satellite view has been running at half
+       the resolution the screen can show, at every zoom, since the layer existed. Zooming in one
+       level is the only way a user could get that detail back, and that changes the framing.
+
+       The standard remedy is a "@2x" tile, and Esri has no @2x endpoint — but it does have the next
+       zoom level, and four of those children ARE the @2x tile. So stitch them: one 512×512 image for
+       the same geographic extent, which is exactly the pixel density the display asks for.
+
+       It costs 4× the tile bytes for a given view — and that is not waste, it is the same amount of
+       data the display would need at any honest resolution (zooming in one level costs the same 4×).
+       Kept off where that trade would be wrong: phones (RAM and radio), 1× screens (nothing to gain),
+       Data Saver, and 2G. Any child that is missing or is Esri's grey placeholder abandons the whole
+       attempt and the original single-tile path answers, so this can only ever add detail.
+
+       No re-encode: MapLibre's image request accepts an ImageBitmap straight from a protocol handler
+       ("User using addProtocol can directly return HTMLImageElement/ImageBitmap", image_request.ts),
+       so the stitched tile never becomes JPEG bytes again. The ancestor-crop path below returns a
+       bitmap now too, which drops a full JPEG encode per tile over ocean and desert. */
+    const _satHiDPI=(function(){
+      try{
+        if(isMobile()) return false;
+        if(!((window.devicePixelRatio||1)>=1.5)) return false;
+        if(typeof createImageBitmap!=='function') return false;
+        const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+        if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return false;
+        return true;
+      }catch(_){ return false; }
+    })();
+    function _canvas2d(w,h){
+      if(typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(w,h);
+      const c=document.createElement('canvas'); c.width=w; c.height=h; return c;
+    }
+    async function _toBitmap(c){ return c.transferToImageBitmap?c.transferToImageBitmap():await createImageBitmap(c); }
+    /* the four z+1 children as ONE 512×512 tile, or null when they are not all real imagery */
+    async function _sat2x(z,y,x,signal){
+      if(!_satHiDPI||z>=19) return null;
+      const q=[[0,0],[1,0],[0,1],[1,1]];
+      let kids;
+      try{ kids=await Promise.all(q.map(([dx,dy])=>_satFetch(z+1,2*y+dy,2*x+dx,signal))); }catch(_){ return null; }
+      if(!kids.every(k=>k&&!k.placeholder)) return null;
+      let bmps=null;
+      try{
+        bmps=await Promise.all(kids.map(k=>createImageBitmap(new Blob([k.buf]))));
+        const c=_canvas2d(512,512), ctx=c.getContext('2d');
+        ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        q.forEach(([dx,dy],i)=>ctx.drawImage(bmps[i],dx*256,dy*256,256,256));
+        return await _toBitmap(c);
+      }catch(_){ return null; }
+      finally{ if(bmps) bmps.forEach(b=>{ try{ b&&b.close&&b.close(); }catch(_){} }); }
+    }
+    GE().scene.addProtocol('imapsat', async (params, abortController)=>{
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
+      try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
       let first=null;
       try{ const res=await _satResolve(z,y,x,signal); return {data: res.buf.slice(0)}; }
       catch(e){ if(first&&first.buf) return {data: first.buf.slice(0)}; throw e; }
@@ -804,10 +862,21 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__imSatProto=true;
     /* debug/test hook — resolve a tile and report byte length + mode (native/cropped/raw). Lets an E2E test assert that a
        known placeholder area (open ocean, rural) comes back as real cropped imagery, and a city as native, against LIVE Esri. */
-    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX };
+    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX,
+      /* (#R178) the HiDPI decision and the stitched tile, so an E2E test can prove against LIVE Esri
+         that a 2× screen really gets 512 px of imagery per 256-unit tile — and that a 1× screen is
+         left exactly as it was. Reporting the decision separately matters: "no @2x tile" is the right
+         answer on a 1× display and a bug on a 2× one, and only the flag tells them apart. */
+      hiDPI:()=>_satHiDPI, dpr:()=>(window.devicePixelRatio||1),
+      tile2x:async(z,y,x)=>{ try{ const b=await _sat2x(z|0,y|0,x|0,null);
+        return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap)}:{ok:false}; }
+        catch(e){ return {ok:false, err:String(e&&e.message||e)}; } } };
   } }catch(_){}
   try{
-    map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
+    /* (#R178) even the primary view is built through the contract. It could not be while the engine
+       was created inside this map's own 'load' handler; js/geo-engine.js is imported before anything
+       else now, so `maplibregl` is named in exactly one file in the project. */
+    map=GE().ui.createView({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
          horizon read jagged without it; MSAA smooths every polygon + terrain edge for a clear quality
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
@@ -862,6 +931,12 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'tool-snap',type:'circle',source:'tool-source',filter:['==',['get','snap'],true],paint:{'circle-radius':16,'circle-color':'rgba(0,122,255,0.18)','circle-stroke-width':2.5,'circle-stroke-color':'#0a84ff'}},
           {id:'tool-point',type:'circle',source:'tool-source',filter:['==','$type','Point'],paint:{'circle-radius':['case',['==',['get','snap'],true],8,6],'circle-color':['case',['==',['get','snap'],true],'#0a84ff',['coalesce',['get','color'],'#ff3b30']],'circle-stroke-width':2,'circle-stroke-color':'#fff'}} ] } });
   }catch(e){ console.warn('MapLibre init failed:',e); }
+  /* (#R178) HAND THE RENDERER TO THE ENGINE THE MOMENT IT EXISTS. This used to happen inside
+     map.on('load'), which was fine while the engine was built there too — but every module below is
+     now written against IntMapGeoEngine, and their factories run immediately. The engine reads the
+     map through window.__imap, so publishing it here (rather than one event later) is what makes
+     `GE()` answer for real from the first factory onward instead of quietly no-op'ing until 'load'. */
+  try{ window.__imap=map; }catch(_){}
 
   /* ── (#R168) SEVENTH SPLIT — six SUBJECT modules carved out of the core (Architecture.md §3.1 #R168).
    *  #R167 emptied the file of self-contained BLOCKS; what remained was one dense core in which no
@@ -1036,8 +1111,8 @@ window.addEventListener('DOMContentLoaded', () => {
      machinery (`_sbBeginAnim`/`_sbReanchor`/`_sbCaptureAnchor`/`_sbFinishAnim`) is DELETED — it was the "余計な事"
      that fought a problem which no longer exists, and it was itself what jerked the map around. We keep only a
      coalesced resize for GENUINE viewport/container size changes (window resize, devtools, rotation). */
-  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };
-  if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
+  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ GE().render.resize(); }catch(_){} }); };
+  if('ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
   /* (#R160) Back-compat shim: a couple of callers still do `_sbBeginAnim(onEnd)` to "reveal the panel, then
      notify". There is no camera animation to run anymore (the map doesn't move), so just coalesce a resize in
@@ -1047,14 +1122,20 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Google-Earth-style navigation feel: stepless wheel zoom centerd on the cursor, a little
      snappier than the default, plus a low-angle tilt limit so you can lean into the horizon. */
   if(map){ try{
-    map.scrollZoom.setWheelZoomRate(1/300);   /* default 1/450 → a touch more responsive */
-    map.scrollZoom.setZoomRate(1/90);         /* trackpad pinch */
-    map.setMaxPitch(78);                       /* default 60 → Earth-like oblique views */
-    /* (#R171) 78° is now the STANDARD ceiling, not the only one — Settings ▸ Map behaviour ▸ "Map tilt limit"
-       can hand over the renderer's whole 0-180° range. window.IntMapTilt re-applies the saved choice on top of
-       this line once IntMapGeoEngine exists (js/view-controls.js), so this stays the value a fresh profile gets. */
-    if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
-    if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
+    GE().input.setZoomRate(1/300,true);       /* default 1/450 → a touch more responsive */
+    GE().input.setZoomRate(1/90);             /* trackpad pinch */
+    /* (#R171) 78° is the STANDARD ceiling, not the only one — Settings ▸ Map behaviour ▸ "Map tilt limit"
+       can hand over the renderer's whole 0-180° range.
+       (#R178) …and this line no longer WRITES it. It used to set 78 outright and win by accident of
+       ordering: window.IntMapTilt polled for IntMapGeoEngine, which did not exist until map.on('load'),
+       which is after here. The engine is imported before the map now, so the tilt module applied the
+       saved "unlimited" first and this line silently took it back — measured, the ceiling read 78 after
+       a reload with the setting on. There is one owner of the ceiling, and it is the tilt module;
+       asking it to apply gives 78 for a fresh profile and 180 for a saved choice, from one place. */
+    if(window.IntMapTilt&&window.IntMapTilt.apply) window.IntMapTilt.apply();
+    else GE().camera.setMaxPitch(78);
+    GE().input.set('keyboard',true);
+    GE().input.set('dragRotate',true);
   }catch(_){} }
   /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
      The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
@@ -1074,22 +1155,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
       const iner=Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
       try{
-        map.scrollZoom.enable();
-        map.scrollZoom.setWheelZoomRate(z*(1/300));   /* 1.0 = the long-standing default feel */
-        map.scrollZoom.setZoomRate(z*(1/90));         /* trackpad pinch */
+        GE().input.set('scrollZoom',true);
+        GE().input.setZoomRate(z*(1/300),true);   /* 1.0 = the long-standing default feel */
+        GE().input.setZoomRate(z*(1/90));         /* trackpad pinch */
       }catch(_){}
       /* (#R22/#R23) iOS-like momentum, now with a dedicated INERTIA control ("慣性を0から既定まで調整可能に"):
          Pan scales the fling speed, Inertia scales the glide DURATION and can disable it entirely (0). On a
          1:1 touch/mouse drag the glide is the only thing these sliders can change — so this is also what makes
          the Pan/Inertia sliders visibly affect MOBILE behavior. */
       try{
-        if(iner<=0.02){ map.dragPan.enable({ linearity:1, maxSpeed:1, deceleration:100000 }); }   /* glide off → stops on release */
-        else { map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.3,iner)) }); }
+        if(iner<=0.02){ GE().input.set('dragPan',true); }   /* glide off → stops on release */
+        else { GE().input.set('dragPan',true); }
       }catch(_){}
-      try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
+      try{ GE().input.set('touchZoomRotate',true); }catch(_){}
       /* (#R25/#21) Take over double-tap zoom so its amount follows the Zoom slider on touch (built-in is a
          fixed +1). The custom dblclick handler does the sensitivity-scaled easeTo. */
-      try{ map.doubleClickZoom.disable(); }catch(_){}
+      try{ GE().input.set('doubleClickZoom',false); }catch(_){}
     };
     window._applyNavSens();
     /* (#R27) MOBILE PINCH-ZOOM sensitivity. MapLibre exposes no pinch-rate API, so the slider used to do
@@ -1098,29 +1179,29 @@ window.addEventListener('DOMContentLoaded', () => {
        CHANGED the setting (sens !== 1) — at the default, MapLibre's native pinch is left fully intact, so
        there is zero regression risk for everyone who never touched the slider. */
     (function(){
-      const cv=map.getCanvasContainer&&map.getCanvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
+      const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
       let active=false, startDist=0, startZoom=0;
       const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return map.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
+      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return GE().coords.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
       cv.addEventListener('touchstart',(e)=>{
         if(sens()===1) return;                                 /* default feel → MapLibre handles it */
-        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=map.getZoom();
-          try{ map.touchZoomRotate.disable(); }catch(_){} }
+        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom();
+          try{ GE().input.set('touchZoomRotate',false); }catch(_){} }
       },{passive:true});
       cv.addEventListener('touchmove',(e)=>{
         if(!active||!e.touches||e.touches.length!==2) return;
         const d=dist(e.touches); if(startDist<=0) return;
         const z=startZoom + Math.log2(d/startDist)*sens();
-        try{ map.easeTo({zoom:Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
+        try{ GE().camera.easeTo({zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
         if(e.cancelable) e.preventDefault();
       },{passive:false});
-      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ map.touchZoomRotate.enable(); }catch(_){} } };
+      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ GE().input.set('touchZoomRotate',true); }catch(_){} } };
       cv.addEventListener('touchend',end); cv.addEventListener('touchcancel',end);
     })();
     /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
        dragPan with defaults, which would silently drop the user's inertia choice. */
-    try{ map.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
+    try{ GE().events.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
   }
   /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
      最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
@@ -1150,7 +1231,7 @@ window.addEventListener('DOMContentLoaded', () => {
        "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
        label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
        re-raising. Now require EVERY label layer to sit above EVERY data layer. */
-    function inPlace(){ try{ const ls=map.getStyle().layers.map(l=>l.id);
+    function inPlace(){ try{ const ls=GE().scene.getStyle().layers.map(l=>l.id);
       let lowestStack=Infinity, highestData=-1;
       ls.forEach((id,i)=>{ if(STACK.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
       if(lowestStack===Infinity) return true;     /* no labels present yet */
@@ -1162,13 +1243,13 @@ window.addEventListener('DOMContentLoaded', () => {
        user's own overlays (tools/drawings/mask) back above the labels in their existing order. Result:
        data BELOW labels BELOW your own drawings — labels are visible over EVERY data layer, every time. */
     function raise(){ try{ if(inPlace()) return;
-      STACK.forEach(id=>{ if(map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* labels → top */
-      const ls=map.getStyle().layers.map(l=>l.id);
-      ls.forEach(id=>{ if(isOwn(id) && map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* own overlays back above labels */
+      STACK.forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
+      const ls=GE().scene.getStyle().layers.map(l=>l.id);
+      ls.forEach(id=>{ if(isOwn(id) && GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* own overlays back above labels */
     }catch(_){} }
     window._raiseLabelLayers=raise;
     let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
-    map.on('idle',sched); map.on('styledata',sched);
+    GE().events.on('idle',sched); GE().events.on('styledata',sched);
   })(); }
 
   /* (#R21) Mobile memory-pressure guard: Chrome-on-Android exposes performance.memory; when the JS
@@ -1215,8 +1296,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const p=satProviderById(satState.providerId); if(!p) return;
     let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
     if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
-    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(map.getZoom()))), n=Math.pow(2,z);
-    const c=map.getCenter(), b=map.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
+    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom()))), n=Math.pow(2,z);
+    const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
     let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
@@ -1235,7 +1316,7 @@ window.addEventListener('DOMContentLoaded', () => {
        already resident (the user asked for "Unthinkable Speed" satellite). */
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
-    if(aggressive){ try{ if((map.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
+    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
     if(!urls.length) return;
     const _mob=(typeof isMobile==='function'&&isMobile());
     const uniq=[...new Set(urls)].slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
@@ -1243,12 +1324,12 @@ window.addEventListener('DOMContentLoaded', () => {
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
   registerTileSW();
-  if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  if(map) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
   /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
      tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
      the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
   let _movePfT=0;
-  if(map) map.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((map.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
+  if(map) GE().events.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
   /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
@@ -1265,7 +1346,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Globe: hide markers on the far hemisphere. Use a unit-vector DOT PRODUCT (no per-marker acos)
        and only touch the DOM when a marker's visibility actually flips — this removes the layout
        thrash that made globe pan/zoom stutter on mobile (#3). */
-    const c=map.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
+    const c=GE().camera.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
     const cx=Math.cos(cla)*Math.cos(clo), cy=Math.cos(cla)*Math.sin(clo), cz=Math.sin(cla);
     const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of center ⇒ on the near side */
     markersArray.forEach(m=>{ const ll=m.getLngLat(), la=ll.lat*r, lo=ll.lng*r, cla2=Math.cos(la);
@@ -1316,7 +1397,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   /* Re-emit every geo source's data so on-map labels follow the active language (#1). */
-  function refreshGeoLabels(){ if(!map) return; for(const key of Object.keys(geoLayersDB)){ const src=map.getSource(key); if(src){ try{ src.setData(buildGeoFC(geoLayersDB[key])); }catch(_){} } } }
+  function refreshGeoLabels(){ for(const key of Object.keys(geoLayersDB)){ try{ if(GE().layers.hasSource(key)) GE().layers.setSourceData(key,buildGeoFC(geoLayersDB[key])); }catch(_){} } }
   window.refreshGeoLabels=refreshGeoLabels;
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window.triggerLayerHover=function(k,h){ if(!k)return; if(h)forceHoverLayers.add(k); else forceHoverLayers.delete(k); updateGeoLayers(); };
@@ -1335,7 +1416,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* refresh anything currently showing GDP */
       try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
-      try{ if(map&&map.getLayer('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
+      try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
     }catch(_){} }
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
@@ -1350,7 +1431,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })();
     return gdpPPPPromise;
   }
-  function applyCountryVisibility(){ if(!map||!map.getLayer('country-fill'))return; const v=countryInfoOn?'visible':'none'; map.setLayoutProperty('country-fill','visibility',v); map.setLayoutProperty('country-line','visibility',v); }
+  function applyCountryVisibility(){ if(!map||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none'; GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
   const cName=(s,f)=>(currentLang==='jp'&&s&&s.nameJp)?s.nameJp:(s&&s.nameEn)||f||'—';
@@ -1560,7 +1641,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){} });
     return out;
   }
-  function refreshTool(){ if(map&&map.getSource('tool-source')) map.getSource('tool-source').setData({type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
+  function refreshTool(){ if(GE().layers.hasSource('tool-source')) GE().layers.setSourceData('tool-source',{type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
 
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   function hideMeasureTip(){ document.getElementById('measure-tooltip').style.display='none'; }
@@ -1602,7 +1683,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170/#R171) */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
-    document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
+    document.getElementById('map-container').classList.add('tool-active'); if(map)GE().input.set('doubleClickZoom',false);
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
   }
   /* (#R169) moved verbatim to js/window-manager.js — see Architecture.md §3.1. */
@@ -1660,7 +1741,7 @@ window.addEventListener('DOMContentLoaded', () => {
   async function aiSummarizeView(){
     if(!aiGate()) return;
     if(!map) return;
-    const b=map.getBounds(); if(!b) return;
+    const b=GE().camera.getBounds(); if(!b) return;
     const seen=new Set(), picked=[];
     const src=(newsFeatures&&newsFeatures.length)
       ? newsFeatures.map(f=>({c:f.geometry&&f.geometry.coordinates, p:f.properties||{}}))
@@ -1692,13 +1773,13 @@ window.addEventListener('DOMContentLoaded', () => {
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
   function prefetchDEMViewport(){
     if(!map||isMobile()) return;
-    try{ const z=demZoomForMap(); const b=map.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
+    try{ const z=demZoomForMap(); const b=GE().camera.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
       for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
     }catch(_){}
   }
   let _demPrefetchT=null;
-  if(map){ map.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
-           map.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
+  if(map){ GE().events.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
+           GE().events.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
 
   /* ===== (#R119) IntMapLayers — the COMMON LAYER DATA CONTRACT ("Atlasが表示中レイヤーの実値を読める仕組み").
@@ -1716,17 +1797,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Map event wiring ===== */
   if(map){
-    map.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
+    GE().events.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
     /* (#R25 / #21) Double-tap / double-click zoom now respects the Zoom-sensitivity setting — this is the
        ONE zoom gesture whose amount we CAN tune on touch (MapLibre exposes no pinch-rate API, so continuous
        pinch stays 1:1 — a documented platform limit). The built-in doubleClickZoom is disabled in
        _applyNavSens so this is the sole double-tap zoom path. */
-    map.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
+    GE().events.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
       if(typeof toolMode!=='undefined' && toolMode) return;
       try{ const s=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
-        map.easeTo({zoom:map.getZoom()+s, around:(e&&e.lngLat)||map.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
+        GE().camera.easeTo({zoom:GE().camera.getZoom()+s, around:(e&&e.lngLat)||GE().camera.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
     });
-    map.on('mousemove',(e)=>{
+    GE().events.on('mousemove',(e)=>{
       updateCoord(e.lngLat.lng,e.lngLat.lat);
       if(!toolMode||!hasTurf())return;
       const c=[e.lngLat.lng,Math.max(-88,Math.min(88,e.lngLat.lat))];   /* polar-safe (#10) */
@@ -1736,7 +1817,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Detect hover over the first vertex → snap-to-close (#47) */
         const wasSnap=measureSnapClose; measureSnapClose=false;
         if(measurePoints.length>=3){
-          try{ const ps=map.project(measurePoints[0]); if(Math.hypot(ps.x-e.point.x,ps.y-e.point.y)<SNAP_PX) measureSnapClose=true; }catch(_){}
+          try{ const ps=GE().coords.project(measurePoints[0]); if(Math.hypot(ps.x-e.point.x,ps.y-e.point.y)<SNAP_PX) measureSnapClose=true; }catch(_){}
         }
         const tip=document.getElementById('measure-tooltip');
         if(measureSnapClose){ tip.classList.add('closing'); const ar=ringArea(measurePoints); showMeasureTip(e.point,`✓ ${t('measureClickClose')} · ${ar?areaTXT(ar):''}`); }
@@ -1747,792 +1828,40 @@ window.addEventListener('DOMContentLoaded', () => {
         refreshTool();
       }
     });
-    map.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
+    GE().events.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
     /* Coalesce occlusion updates to one per animation frame so dragging/spinning the globe stays smooth. */
     let _occRAF=0; const occOnMove=()=>{ if(_occRAF) return; _occRAF=requestAnimationFrame(()=>{ _occRAF=0; updateOcclusion(); }); };
     /* (#R33) Smoother MOBILE pan/zoom ("カクツク"): skip the per-frame occlusion recompute during a gesture on
        phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move. */
     const _occMob=()=>{ try{ return isMobile(); }catch(_){ return false; } };
-    map.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); map.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
-    map.on('rotate',updateCompass); map.on('pitch',updateCompass);
-    map.on('moveend',refreshGrid); map.on('zoomend',refreshGrid);
-    map.on('load',()=>{
-      try{ if(!/[?&]flat\b/.test(location.search)) map.setProjection({type:'globe'}); }catch(e){}
-      try{ window.__imap=map; }catch(_){}
-      /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
-         A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
-         later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
-         operations behind it — camera, coordinate transforms, source/layer add-remove-visibility-opacity, GeoJSON data,
-         events — each delegating 1:1 to the current `map`, so behaviour / performance / mobile are byte-identical. It is
-         PURELY ADDITIVE: existing MapLibre calls keep working; new common code should call IntMapGeoEngine instead of
-         `map` directly. A Cesium CONTRACT (capabilities only, NO SDK, NO keys) is declared for the next phase. The raw()
-         escape hatch returns the live MapLibre map for the many features not yet generalised (deliberately not forced). ===== */
-      window.IntMapGeoEngine=(function(){
-        function _m(){ return window.__imap||(typeof map!=='undefined'?map:null); }
-        const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
-          rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
-          /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
-          extrusion3d:true,
-          /* (#R173) can the renderer draw a CLOSED body — a floor, and an interior that is filled rather
-             than hollow? `extrusion3d` cannot: fill-extrusion is a lid and walls with no downward face at
-             all, which is why 「下の面は色がついていない・多面体内部の空間も無色」 could not be answered by
-             adding more extrusions. MapLibre can, through a custom GL layer (js/solid3d.js). */
-          solid3d:true,
-          /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
-             NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
-             MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
-             z12 0 → z15 0, i.e. flat.
-             (#R172) …and the answer for MapLibre is FALSE. #R171 set this to true and pointed the flight sim at
-             'globe-true' (vertical-perspective); the cockpit then rendered NOTHING — a white void where the world
-             should be. Measured with the flight camera FROZEN (z15.2, pitch 90.6, 9 s settle, same frame, A/B/A/B):
-             'globe' draws the full terrain, coastline and sky; 'vertical-perspective' draws no ground at all. Away
-             from the sim the same projection renders correctly at z14 with 3-D terrain OFF, and loses roads/labels
-             with it ON — so the incompatibility is CURVED PROJECTION × 3-D TERRAIN, and a flight simulator cannot
-             give up terrain. Pushing the crossover up instead of naming the projection ('globe' as an explicit
-             ['interpolate',…,17,'vertical-perspective',18,'mercator']) blanks it in exactly the same way, so this
-             is the regime, not the spelling. Hence: this renderer CAN be a globe, but not at cockpit zoom with a
-             DEM on it, and setProjection('globe-true') below refuses rather than blanking the map. */
-          globeAllZooms:false,
-          /* (#R171) the renderer's true tilt range, in degrees, for the "unlimited tilt" setting to be honest about.
-             MEASURED, not assumed: setMaxPitch accepts ≤180 and throws "maxPitch must be less than or equal to 180"
-             above it; setMinPitch throws below 0. 0-180 is therefore the whole of camera tilt — straight down,
-             through the horizon, to straight up — and anything beyond it is the same direction with the bearing
-             turned around (which is exactly how the wrap in js/map-extras.js keeps tilting past the end). */
-          tiltRange:[0,180],
-          /* (#R171) the eye's own altitude above sea level (see cameraAltitude below) */
-          cameraAltitude:true,
-          /* (#R172) the engine can READ the viewpoint's position and PUT IT BACK (eyePosition/setEye), which is
-             what "tilting must not move the viewpoint" needs: MapLibre's pitch orbits the eye around the map
-             centre, so leaning from 78° to 120° swings the eye from +3,385 m to −8,140 m — it goes under the
-             world. An engine without this pair cannot honour the unlimited-tilt setting's promise. */
-          eyeControl:true };
-        /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
-        const _solids={};
-        /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
-        let _pd=null, _pdAt=0;
-
-        /* ═══════════════════════════════════════════════════════════════════════════════════════
-           (#R177) WHERE THE CAMERA IS — ONE transcription of the renderer's own geometry.
-           ---------------------------------------------------------------------------------------
-           #R172-#R176 each wrote this geometry twice: once in the tilt correction and once in the
-           thing that measured it. Every round the two copies agreed with each other and disagreed
-           with the renderer, so every round reported 0 m and the report came back. #R176's own note
-           says "an error cannot be seen with the yardstick that shares it" and then built the new
-           yardstick out of the new correction. So: this is the single definition, and the test
-           (tests/r177.spec.js) checks it against transform.cameraPosition — the vector MapLibre
-           derives by inverting the matrix it actually draws with, which shares no code with it.
-
-           MEASURED on the #R176 build with that ruler, over a real ctrl-drag to 54° of pitch:
-
-               globe z3  Tokyo    eye 8,573 km → 1,948 km altitude     drift 7,115 km
-               globe z6  Tokyo        1,072 km →   610 km                    475 km
-               globe z10 Tokyo         67.0 km →  39.4 km                     27.6 km
-               flat  z6  Tromsø         453 km →   388 km                     64.4 km
-               z12 Tokyo             16,522 m → 16,588 m                     193 m
-
-           THE RENDERER HAS TWO CAMERA MODELS, not one, and `globe` owns both (it swaps by zoom —
-           #R173's globeness). Transcribed from MapLibre 5.24's _calcMatrices:
-
-             MERCATOR   cameraPosition = [worldPx, worldPx, METRES]. The eye sits c2c/worldSize merc
-                        units back along the bearing, and its HEIGHT is that same number times
-                        circumferenceAtLatitude(CENTRE) — which is why holding the eye's merc-z
-                        constant (what #R176 did) does not hold its altitude: the centre marches
-                        north as you tilt and the unit shrinks with cos(centre.lat). That is the
-                        64 km at Tromsø, where 3.3° of centre travel is a 16 % change of scale.
-
-             SPHERE     cameraPosition = Ry(lng)·Rx(−lat)·([0,0,1] + Rz(−b)·Rx(p)·[0,0,dg]) in EARTH
-                        RADII, with dg = c2c / (worldSize/2π/cos(centre.lat)). The pivot is pinned to
-                        the SURFACE — elevation does not enter it at all — so the eye's distance from
-                        the Earth's centre is sqrt(1 + dg² + 2·dg·cos p) wherever the centre is.
-                        A mercator plane cannot describe this at all, which is the 7,115 km at z3.
-           ═══════════════════════════════════════════════════════════════════════════════════════ */
-        const GEO_R=6371008.8, GEO_RAD=Math.PI/180, GEO_CIRC=2*Math.PI*GEO_R;
-        const gmX=lng=>(180+lng)/360;
-        const gmY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*GEO_RAD/2)))/360;
-        const glngOf=x=>{ const v=x*360-180; return ((v+180)%360+360)%360-180; };
-        const glatOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*GEO_RAD))-90;
-        /* the Mercator world ends at ±85.051129°; a centre outside it is not a place */
-        const GEO_YLO=gmY(85.051129), GEO_YHI=gmY(-85.051129);
-        /* glMatrix's vec3.rotateX / vec3.rotateY about the origin — MapLibre's own helpers */
-        const grotX=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[0], v[1]*c-v[2]*s, v[1]*s+v[2]*c]; };
-        const grotY=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[2]*s+v[0]*c, v[1], v[2]*c-v[0]*s]; };
-        /* IS THE SPHERE ON SCREEN? MapLibre's `globe` is a wrapper holding a vertical-perspective
-           transform AND a mercator one, swapping by zoom; `isGlobeRendering` is its own name for
-           which is drawing, and the clone handed to transformCameraUpdate carries it. A plain
-           mercator transform has no such property, which reads false — correctly. */
-        const gSpherical=t=>{ try{ return !!(t&&t.isGlobeRendering); }catch(_){ return false; } };
-        /* the canvas-and-fov constant, in pixels; never latitude- or zoom-dependent */
-        function gC2C(t,m){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){}
-          if(isFinite(v)&&v>0) return v;
-          try{ const w=m&&m.transform&&m.transform.cameraToCenterDistance; if(isFinite(w)&&w>0) return w; }catch(_){}
-          return 1050; }
-        /* WHERE THE EYE IS for a camera state {lng,lat,zoom,pitch,bearing,elevation}, as a place:
-           {lng, lat, alt in metres above sea level, distance in ground metres to the point it looks
-           at}. Pass k = 1 to ask where the eye IS.
-           `k` = 2^(z0−z1) asks where a ZOOM of that much would put it, and #R175 settled what that
-           means: a zoom is a SIMILARITY about the map point under the centre — the eye AND the point
-           it looks at both scale by k — not a dolly towards a target left where it was. The
-           difference only shows once something has tilted, because only then is the target off the
-           ground: measured at pitch 110, z12 Tokyo, wheel-zooming 2.3 levels with the target held at
-           14,099 m, the eye CONVERGED on it (8,373 → 12,955 m — it climbed while zooming in, which
-           is #R174's bug exactly). So the altitude scales by k here too, not just the look distance;
-           for a pure zoom the solve then returns elevation·k and the eye descends by exactly k. */
-        function gEye(cam,c2c,tile,sphere,k){
-          k=(isFinite(k)&&k>0)?k:1;
-          const p=(cam.pitch||0)*GEO_RAD, b=(cam.bearing||0)*GEO_RAD;
-          const world=tile*Math.pow(2,cam.zoom);
-          if(!(isFinite(world)&&world>0)) return null;
-          if(sphere){
-            const dg=k*(c2c*2*Math.PI*Math.cos(cam.lat*GEO_RAD))/world;
-            if(!(isFinite(dg)&&dg>0)) return null;
-            const u=[-dg*Math.sin(p)*Math.sin(b), -dg*Math.sin(p)*Math.cos(b), 1+dg*Math.cos(p)];
-            const E=grotY(grotX(u,-cam.lat*GEO_RAD), cam.lng*GEO_RAD);
-            const r=Math.hypot(E[0],E[1],E[2]); if(!(isFinite(r)&&r>0)) return null;
-            return { lng:Math.atan2(E[0],E[2])/GEO_RAD, lat:Math.asin(Math.max(-1,Math.min(1,E[1]/r)))/GEO_RAD,
-                     alt:(r-1)*GEO_R, distance:dg*GEO_R };
-          }
-          const d=k*c2c/world, circ=GEO_CIRC*Math.cos(cam.lat*GEO_RAD);
-          if(!(isFinite(d)&&d>0&&isFinite(circ))) return null;
-          const ex=gmX(cam.lng)-d*Math.sin(p)*Math.sin(b), ey=gmY(cam.lat)+d*Math.sin(p)*Math.cos(b);
-          /* k multiplies the TARGET's height as well as the look distance — that is what makes the
-             zoom a similarity rather than a convergence (see the note above). k = 1 leaves it alone. */
-          const alt=k*(+cam.elevation||0)+d*circ*Math.cos(p);
-          if(!(isFinite(ex)&&isFinite(ey)&&isFinite(alt))) return null;
-          return { lng:glngOf(ex), lat:glatOf(Math.min(GEO_YHI,Math.max(GEO_YLO,ey))), alt, distance:d*circ };
-        }
-        /* …AND THE INVERSE: the camera state that puts the eye AT `anchor` while looking along
-           (pitch, bearing). What carries the change differs between the two models, and neither is
-           a choice:
-             MERCATOR the look-at target's ELEVATION is free, so the zoom is untouched. One
-                      subtraction per axis, and the height comes out in metres against the NEW
-                      centre's parallel — the term #R176 held constant in the wrong unit.
-             SPHERE   the pivot is welded to the surface, so that degree of freedom does not exist
-                      and the LOOK DISTANCE — the zoom — is what a tilt has to spend. It is fully
-                      determined: |eye| fixes dg, dg and the attitude fix the centre, and the centre
-                      fixes the zoom. A pure zoom still comes back as the identity, because k·dg is
-                      just dg at the new scale, so #R175's dolly survives untouched.
-           Clamped, never declined: #R173 established that a frame this hook refuses is applied
-           verbatim and wipes every correction before it — that is a guaranteed jump. */
-        const GEO_LATMAX=85.051129*GEO_RAD;
-        function gSolve(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,zLim){
-          const p=(pitch||0)*GEO_RAD, b=(bearing||0)*GEO_RAD, cp=Math.cos(p);
-          if(sphere){
-            const r=1+anchor.alt/GEO_R; if(!(isFinite(r)&&r>0.2)) return null;
-            const cl=Math.cos(anchor.lat*GEO_RAD), sl=Math.sin(anchor.lat*GEO_RAD);
-            const E=[cl*Math.sin(anchor.lng*GEO_RAD)*r, sl*r, cl*Math.cos(anchor.lng*GEO_RAD)*r];
-            /* modulo, NOT a while-loop: `while(v>π) v-=2π` never terminates on an infinity, and this
-               runs inside the render loop where a hang is a frozen map, not an exception */
-            const wrap=a=>{ if(!isFinite(a)) return 0; const v=(a+Math.PI)%(2*Math.PI); return (v<0?v+2*Math.PI:v)-Math.PI; };
-            const hl=(hint&&isFinite(hint.lat)?hint.lat:0)*GEO_RAD;
-            /* GIVEN a look distance, where the centre has to be. Ry spins about the pole and cannot
-               touch E_y, so the latitude falls out of that one component; the longitude then follows
-               from the other two. Two branches solve the latitude — take the one nearest the camera we
-               were handed, so consecutive frames stay on the same branch (a branch flip is a snap).
-               `hit` says whether it was reachable at all. */
-            const centreFor=(dg,Ev)=>{
-              const u=[-dg*Math.sin(p)*Math.sin(b), -dg*Math.sin(p)*Math.cos(b), 1+dg*cp];
-              const Ru=Math.hypot(u[1],u[2]); if(!(Ru>1e-12)) return null;
-              const th=Math.atan2(u[1],u[2]);
-              const raw=Ev[1]/Ru, s=Math.max(-1,Math.min(1,raw)), asn=Math.asin(s);
-              /* TWO latitudes satisfy E_y, and picking the wrong one is a snap. #R177 first chose by
-                 nearness to the proposed centre, which is a HEURISTIC and ties: at pitch 178 the two
-                 candidates sat 1.586 and 1.553 rad from the hint, the choice flipped between frames,
-                 and the viewpoint moved 1,553 km in one. So do not guess — build BOTH cameras and
-                 keep the one whose eye actually lands closer to where the eye is meant to be. That is
-                 the thing being solved for, so it can neither tie meaningfully nor flip. */
-              const build=(latRaw)=>{
-                const inRange=Math.abs(latRaw)<=GEO_LATMAX;
-                const lat=Math.max(-GEO_LATMAX,Math.min(GEO_LATMAX,latRaw));
-                const w=grotX(u,-lat), den=w[0]*w[0]+w[2]*w[2];
-                const lng=(den>1e-18)?Math.atan2(w[2]*Ev[0]-w[0]*Ev[2], w[0]*Ev[0]+w[2]*Ev[2])
-                                    : (hint&&isFinite(hint.lng)?hint.lng*GEO_RAD:0);
-                const back=grotY(grotX(u,-lat),lng);            /* the eye this camera really gives */
-                const err=Math.hypot(back[0]-Ev[0],back[1]-Ev[1],back[2]-Ev[2]);
-                return { lat, lng, err:isFinite(err)?err:Infinity, ok:inRange&&Math.abs(raw)<=1 };
-              };
-              const A=build(wrap(asn-th)), B=build(wrap(Math.PI-asn-th));
-              /* an out-of-range latitude is not a solution at all, so prefer a reachable one even if
-                 the clamped other happens to score better */
-              if(A.ok!==B.ok) return A.ok?A:B;
-              return (B.err<A.err)?B:A;
-            };
-            const zLo=(zLim&&isFinite(zLim[0]))?zLim[0]:0, zHi=(zLim&&isFinite(zLim[1]))?zLim[1]:24;
-            /* THE WHOLE SOLVE, for an eye at radius `rr` along the direction the anchor points.
-               rr = r is "hold the viewpoint exactly"; smaller values are the same viewpoint pulled in
-               towards the surface along its own line. |eye|² = 1 + dg² + 2·dg·cos p fixes the look
-               distance, the look distance and the attitude fix the centre, and the centre fixes the
-               zoom — so every rr either resolves to a real camera or does not. */
-            const solveAt=(rr)=>{
-              const dg=-cp+Math.sqrt(Math.max(0,cp*cp-1+rr*rr));
-              if(!(isFinite(dg)&&dg>1e-12)) return null;
-              const f=rr/r, Ev=[E[0]*f,E[1]*f,E[2]*f];
-              const c=centreFor(dg,Ev); if(!c) return null;
-              const z=Math.log2(((c2c*2*Math.PI*Math.cos(c.lat))/dg)/tile);
-              return { lat:c.lat, lng:c.lng, z, ok:c.ok&&isFinite(z)&&z>=zLo&&z<=zHi };
-            };
-            /* ── NOT EVERY VIEWPOINT IS HOLDABLE ON A SPHERE ────────────────────────────────────
-               MapLibre's camera is (centre, zoom, pitch, bearing) with the pivot WELDED to the
-               surface, so "the eye stays here" is three equations in three unknowns and it simply
-               runs out of range: measured at globe z4 over Tokyo, the eye is held exactly to pitch
-               84 — the centre walking 35.7°N → 85.0°N and the zoom 4 → 0 as it goes — and at 86°
-               the zoom the geometry wants is BELOW the map's own minimum. That is a property of the
-               parameterisation, not a bug to code away.
-
-               Two rules for what happens past it:
-                 · NEVER emit a camera outside the renderer's range. An unconstrained solve answered
-                   z −0.167 at 85.0511°N for pitch 120, and the next camera change FROZE the page
-                   inside MapLibre's tile cover (plain MapLibre at the same pitch is fine, so that
-                   camera was ours).
-                 · AND NEVER STEP — 「挙動もぎこちない」 is the other half of the report. Clamping the
-                   zoom AFTER solving does step, because the solve then works from an eye radius its
-                   own look distance cannot reach, and the latitude pins while the longitude goes
-                   ill-conditioned: measured 4,225 km at pitch 88 and 8,956 km at pitch 140.
-
-               So instead of clamping the ANSWER, clamp the QUESTION: keep the viewpoint's direction
-               and find the largest radius along it that resolves to a camera in range. Feasibility is
-               monotone in rr (pulling the eye towards the surface only ever shortens the look distance
-               and raises the zoom), so a bisection finds the boundary, and AT the boundary it returns
-               the exact solve — which is what makes the hand-over continuous instead of a step. */
-            let sol=solveAt(r);
-            if(sol&&sol.ok) return { lng:sol.lng/GEO_RAD, lat:sol.lat/GEO_RAD, zoom:sol.z, elevation:0, held:true };
-            let lo=1+1e-9, hi=r, best=null;
-            if(!(hi>lo)){ const s0=solveAt(r); if(!s0) return null;
-              return { lng:s0.lng/GEO_RAD, lat:s0.lat/GEO_RAD, zoom:Math.min(zHi,Math.max(zLo,s0.z)), elevation:0, held:false }; }
-            for(let it=0;it<28;it++){
-              const mid=(lo+hi)/2, sm=solveAt(mid);
-              if(sm&&sm.ok){ best=sm; lo=mid; } else hi=mid;
-            }
-            /* …and when NOTHING along the line resolves — tilted so far that even an eye on the
-               surface wants a zoom below the map's minimum (measured: pitch 146 at globe z4, with the
-               pivot already pinned at 85.051° so cos(lat) is small and the world with it) — any answer
-               is arbitrary, so make the arbitrary answer the one that MOVES LEAST: leave the
-               proposal's own centre and zoom alone. Forcing a clamped camera there was the last
-               remaining step, 1,246 km in one frame. */
-            if(!best) return { elevation:0, held:false };
-            if(!(isFinite(best.lat)&&isFinite(best.lng)&&isFinite(best.z))) return null;
-            return { lng:best.lng/GEO_RAD, lat:best.lat/GEO_RAD, zoom:best.z, elevation:0, held:false };
-          }
-          const world=tile*Math.pow(2,zoom); const d=c2c/world;
-          if(!(isFinite(d)&&d>0)) return null;
-          const tx=gmX(anchor.lng)+d*Math.sin(p)*Math.sin(b), ty=gmY(anchor.lat)-d*Math.sin(p)*Math.cos(b);
-          if(!(isFinite(tx)&&isFinite(ty))) return null;
-          const lat=glatOf(Math.min(GEO_YHI,Math.max(GEO_YLO,ty))), lng=glngOf(tx);
-          const look=d*GEO_CIRC*Math.cos(lat*GEO_RAD);          /* eye→target distance, metres */
-          let elevation=anchor.alt-look*cp;
-          /* HOW FAR THE TARGET MAY BE FROM SEA LEVEL, in the renderer's own arithmetic. MapLibre
-             sizes its frustum from `cameraToCenterDistance + elevation·pixelPerMeter / cos(pitch)`,
-             so an elevation worth many thousands of look-distances is a camera it cannot pick tiles
-             for — measured, 1,488 km at z12 (89 look-distances) FROZE the page rather than throwing.
-             The honest geometry never needs more than one look-distance either side of the eye
-             (|elevation − alt| = look·|cos p|), so this only ever binds on a camera that has already
-             gone wrong; when it binds the eye is no longer exactly held, which beats a frozen map. */
-          const cap=50*Math.abs(look);
-          if(isFinite(cap)&&cap>0&&Math.abs(elevation)>cap) elevation=Math.sign(elevation)*cap;
-          if(!(isFinite(lat)&&isFinite(lng)&&isFinite(elevation))) return null;
-          return { lng, lat, elevation, held:true };
-        }
-        /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
-        const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
-          flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
-          fitBounds(b,o){ const m=_m(); if(m) m.fitBounds(b,o); }, setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
-          /* (#R172) "what camera shows this box?" — the answer WITHOUT moving, so a caller can fly to it
-             itself (widgets fit a whole country that way). A pass-through; null when the engine has no
-             such query, and the caller falls back to fitBounds. */
-          cameraForBounds(b,o){ const m=_m(); try{ return (m&&m.cameraForBounds)?m.cameraForBounds(b,o):null; }catch(_){ return null; } },
-          getPadding(){ const m=_m(); try{ return (m&&m.getPadding)?m.getPadding():null; }catch(_){ return null; } },
-          getCamera(){ const m=_m(); if(!m) return null; try{ return { center:m.getCenter(), zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch() }; }catch(_){ return null; } },
-          /* (#R171) three modes now, because MapLibre's "globe" is only a globe SOME of the time:
-               'flat'        → mercator
-               'globe'       → the zoom-dependent globe (curved when zoomed out, mercator from z≈12) = the app's Globe button
-               'globe-true'  → a curved Earth at EVERY zoom
-             Unknown values fall back to mercator, exactly as before.
-             (#R172) 'globe-true' now REFUSES (returns false, changes nothing) when the engine cannot honour it —
-             see capabilities.globeAllZooms. On MapLibre it maps to vertical-perspective, which renders an empty
-             white void once 3-D terrain is on, and the flight sim shipped exactly that. A contract method that
-             can only be kept some of the time must say no rather than wreck the view; the caller then reports
-             honestly instead of the user discovering it as a blank cockpit. */
-          setProjection(mode){ const m=_m(); if(!(m&&m.setProjection)) return false;
-            if(mode==='globe-true'&&!MAPLIBRE_CAPS.globeAllZooms) return false;
-            const spec=(mode==='globe-true')?{type:'vertical-perspective'}:(mode==='globe')?{type:'globe'}:{type:'mercator'};
-            try{ m.setProjection(spec); return true; }catch(_){ /* an older renderer may not know vertical-perspective — the plain globe is the closest it has */
-              if(mode==='globe-true'){ try{ m.setProjection({type:'globe'}); return true; }catch(__){} } return false; } },
-          getProjection(){ const m=_m(); try{ return (m&&m.getProjection)?m.getProjection():null; }catch(_){ return null; } },
-          /* (#R173) HOW SPHERICAL IS THE VIEW RIGHT NOW — 0 = a flat plane, 1 = a globe, and everything in
-             between while an engine cross-fades. This is NOT the same question as getProjection(): MapLibre's
-             `globe` is defined as ['interpolate',['linear'],['zoom'],11,'vertical-perspective',12,'mercator'],
-             so the same "globe" spec draws a sphere at z11 and a plane at z12 — the fact that cost #R170–#R172
-             three rounds. Anything that has to know whether the horizon is curved (the flight simulator's own
-             sky, which MapLibre stops drawing exactly as the sphere takes over) must ask this, not the name.
-             The renderer's own transition value when it exposes one, else the projection type as 0/1. */
-          globeness(){ const m=_m(); try{ const v=m&&m.style&&m.style.projection&&m.style.projection.transitionState;
-              if(typeof v==='number'&&isFinite(v)) return Math.max(0,Math.min(1,v)); }catch(_){}
-            try{ const t=(m&&m.getProjection&&m.getProjection()||{}).type; return (t==='mercator'||t==='flat')?0:1; }catch(_){ return 0; } },
-          /* (#R171) camera ATTITUDE — bearing / pitch / roll and the tilt limits. The unlimited-tilt setting and
-             the flight sim both need these, and both are written against the engine, so they belong in the contract. */
-          setBearing(b){ const m=_m(); if(m&&m.setBearing) m.setBearing(b); }, setPitch(p){ const m=_m(); if(m&&m.setPitch) m.setPitch(p); },
-          getRoll(){ const m=_m(); try{ return m&&m.getRoll?m.getRoll():0; }catch(_){ return 0; } }, setRoll(r){ const m=_m(); try{ if(m&&m.setRoll) m.setRoll(r); }catch(_){} },
-          getMaxPitch(){ const m=_m(); try{ return (m&&m.getMaxPitch)?m.getMaxPitch():60; }catch(_){ return 60; } },
-          setMaxPitch(v){ const m=_m(); if(!(m&&m.setMaxPitch)) return false; try{ m.setMaxPitch(v); return true; }catch(_){ return false; } },
-          getMinPitch(){ const m=_m(); try{ return (m&&m.getMinPitch)?m.getMinPitch():0; }catch(_){ return 0; } },
-          /* (#R171) THE EYE'S OWN ALTITUDE above sea level, in metres — what the readout option shows.
-             MapLibre 5.24 has no public getter for it (getFreeCameraOptions does not exist here; transform
-             .getCameraAltitude() returns null), so the adapter derives it from the renderer's own geometry:
-             the camera sits `cameraToCenterDistance` PIXELS from the map centre along the view ray, so its
-             height above the centre's ground plane is that distance in ground METRES times cos(pitch). The
-             metres-per-pixel is measured off the renderer itself (unproject two points 100 px apart at the
-             centre row) rather than assumed from the zoom, so it stays true in globe as well as mercator.
-             Verified against an independent API: asking calculateCameraOptionsFromTo for an eye 900 m above
-             its target reads back as 900.0001 m. Past 90° of pitch the camera really has swung BELOW the
-             centre's ground plane, and the negative value it returns says so rather than pretending. */
-          cameraAltitude(){ const e=this.eyePosition(); return e?e.alt:null; },
-          /* (#R172) WHERE THE VIEWPOINT IS — the same geometry as cameraAltitude, carried all the way to a
-             position: {lng, lat, alt, distance}. `distance` is the eye→centre distance in ground metres, i.e.
-             the number that fixes the zoom. Needed because "keep the viewpoint still while tilting" (Settings ▸
-             unlimited tilt) can only be expressed if the engine can say where the viewpoint IS and put it back.
-             The eye sits OPPOSITE the bearing from the map centre, `distance·sin(pitch)` along the ground and
-             `distance·cos(pitch)` above it; past 90° of pitch the cosine turns negative because the eye really
-             has swung below the centre's ground plane. */
-          /* (#R177) …and it now asks gEye, the ONE transcription of the renderer's camera geometry
-             (see the block above the adapter). #R171-#R176 all wrote a second copy here, which is
-             precisely what hid four rounds of drift: this function was the yardstick for the tilt
-             correction AND shared its equation. It is also what feeds the always-on 「視点」 chip and
-             the 3-D solid shader's camera, so it was reporting a viewpoint the renderer did not have
-             — 8,573 km at globe z3, where the eye is on a SPHERE and this answered on a plane. */
-          eyePosition(){ const m=_m(); if(!m) return null;
-            try{
-              const c=m.getCenter(); if(!c) return null;
-              const t=m.transform;
-              let tile=512; try{ const v=t&&t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
-              const cam={ lng:c.lng, lat:c.lat, zoom:m.getZoom()||0, pitch:m.getPitch()||0, bearing:m.getBearing()||0,
-                          elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
-              return gEye(cam,gC2C(t,m),tile,gSpherical(t),1);
-            }catch(_){ return null; } },
-          /* (#R172) …and the inverse: put the viewpoint AT {lng,lat,alt} looking along {bearing,pitch}, keeping
-             `distance` (so the zoom does not change). Built on calculateCameraOptionsFromTo — the same call the
-             flight simulator has used for its cockpit since #R158 — by aiming a target `distance` away along the
-             view direction; the renderer then derives centre+zoom+pitch from eye→target, which is exactly the
-             "pivot about the eye" a person means by tilting their head. */
-          setEye(o){ const m=_m(); if(!(m&&o&&m.calculateCameraOptionsFromTo)) return false;
-            try{
-              const r=Math.PI/180, D=Math.max(1,+o.distance||1000), br=(+o.bearing||0)*r, pit=(+o.pitch||0)*r;
-              const horiz=D*Math.sin(pit), drop=D*Math.cos(pit);
-              /* (#R177) step to the look-at point in MERCATOR units, not on a tangent plane. The old
-                 110,574 m/° and 111,320·cos(lat) m/° are only true while `distance` is small next to the
-                 Earth — fine for the flight simulator's few kilometres, wrong by tens of degrees for the
-                 hundreds of km a zoomed-out caller asks for, and the |lat|>89.5 bail-out then refused
-                 outright rather than answering. Same conversion the renderer uses; exact at every latitude. */
-              const circ=2*Math.PI*6371008.8*Math.cos(o.lat*r);
-              const dM=circ?horiz/circ:0;                     /* merc units of ground travel */
-              /* north is DECREASING mercator y, east is increasing x */
-              const my=(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+o.lat*r/2)))/360-dM*Math.cos(br);
-              const mx=(180+o.lng)/360+dM*Math.sin(br);
-              const YLO=(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+85.051129*r/2)))/360;
-              const YHI=(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4-85.051129*r/2)))/360;
-              const tLat=360/Math.PI*Math.atan(Math.exp((180-Math.min(YHI,Math.max(YLO,my))*360)*r))-90;
-              const tLng=((((mx*360-180)+180)%360+360)%360)-180;
-              if(!(isFinite(tLat)&&isFinite(tLng))) return false;
-              const cam=m.calculateCameraOptionsFromTo({lng:o.lng,lat:o.lat},o.alt,{lng:tLng,lat:tLat},o.alt-drop);
-              if(!(cam&&cam.center&&isFinite(cam.zoom)&&isFinite(cam.center.lat)&&isFinite(cam.center.lng))) return false;
-              if(o.roll!=null&&isFinite(o.roll)) cam.roll=o.roll;
-              m.jumpTo(cam); return true;
-            }catch(_){ return false; } },
-          /* (#R172) is the RENDERER running a camera animation of its own right now? Lets a caller tell a user
-             gesture apart from a programmatic flyTo/easeTo without reaching for MapLibre's isEasing(). */
-          isAnimating(){ const m=_m(); try{ return !!(m&&m.isEasing&&m.isEasing()); }catch(_){ return false; } },
-          /* (#R172) does the point the camera looks at STICK TO THE GROUND? MapLibre pins it there by default,
-             which is why jumpTo silently drops the `elevation` that calculateCameraOptionsFromTo returns
-             (measured: asked for 8,531 m, read back 0 m) — and with the target pinned to the ground the eye's
-             own height is a function of zoom and pitch alone, so it cannot be held still while you tilt, and
-             beyond 90° of pitch the camera goes UNDER the world. Unpinning it is the precondition for both
-             eye-anchored tilt and the flight simulator's above-90° cockpit; it belongs in the contract because
-             an engine whose camera is positional to begin with has nothing to unpin. */
-          setCenterClamped(on){ const m=_m(); try{ if(m&&m.setCenterClampedToGround){ m.setCenterClampedToGround(!!on); return true; } }catch(_){} return false; },
-          /* (#R172) WHAT DOES TILTING PIVOT AROUND?
-               'target' → the point on the map you are looking at (MapLibre's own behaviour, the default)
-               'eye'    → the viewpoint itself: the camera turns its head and does not move
-             Stated as an INTENT, not a mechanism, because engines differ on which one is free: a positional
-             camera (Cesium) pivots about the eye natively and would implement 'target' by orbiting, while
-             MapLibre is the other way round and needs the compensation below.
-             How, and why it is NOT done by correcting the camera afterwards: MapLibre's jumpTo begins with
-             stop(), which aborts an in-progress gesture — traced on a twelve-step ctrl-drag, the pitch stream
-             went "S49.0 49.0 58.0 67.0 76.0 78.0 …" untouched but "S49.2 E S49.4 49.4 E" once a correcting
-             jumpTo was in the loop: the drag died on the first correction. The supported hook is
-             `transformCameraUpdate`, which MapLibre calls with the PROPOSED camera before applying it, so the
-             correction rides along with the gesture instead of fighting it.
-             The geometry: the eye is `dist·sin(pitch)` back along the bearing from the target and
-             `dist·cos(pitch)` above it. Holding the eye and the distance (i.e. the zoom) fixed while the pitch
-             changes gives the new target directly — and the target's ELEVATION is what carries the difference,
-             which is why setCenterClamped(false) is a precondition (MapLibre pins that elevation to the ground
-             otherwise, and a pinned target makes the eye's height a function of zoom and pitch alone). */
-          /* (#R176) …AND THAT GEOMETRY IS MERCATOR, NOT A TANGENT PLANE — true, and still not enough.
-             #R172-#R175 solved this hook in METRES (110,574 m/° of latitude, 111,320·cos(lat) m/° of longitude
-             — a plane laid on the map at the centre); #R176 moved it to Mercator units, which is right for one
-             of the renderer's two camera models and wrong for the other.
-
-             (#R177) THE RENDERER HAS TWO CAMERA MODELS AND `globe` USES BOTH.
-             Measured on the #R176 build with transform.cameraPosition — the vector MapLibre gets by inverting
-             the matrix it draws with, which shares no code with any of these corrections:
-
-                 globe z3  Tokyo    drift 7,115 km   eye altitude 8,573 km → 1,948 km during one drag
-                 globe z6  Tokyo            475 km                1,072 km →   610 km
-                 globe z10 Tokyo           27.6 km                 67.0 km →  39.4 km
-                 flat  z6  Tromsø          64.4 km                  453 km →   388 km
-                 z12 Tokyo                   193 m               16,522 m → 16,588 m
-
-             …while the ruler #R176 shipped read 0 m in every one of those cases, because it was the fix's own
-             equation. 「高度が明らかに変わっている」 is the middle column, exactly.
-
-             The two errors it was hiding:
-               · Below z12 the app is on the SPHERE (MapLibre's `globe` is vertical-perspective there and plain
-                 mercator above), and a vertical-perspective camera pivots about a point welded to the SURFACE.
-                 No mercator-plane algebra describes it — hence kilometres, not metres, of drift.
-               · Even in mercator, holding the eye's merc-z constant is not holding its ALTITUDE: merc-z is
-                 metres ÷ circumferenceAtLatitude(CENTRE), and the centre marches 3.3° north over a tilt at
-                 Tromsø, shrinking that unit 16 %. 453 km × 16 % is the 64 km.
-
-             So the geometry now lives ONCE, in gEye/gSolve above the adapter, transcribed from _calcMatrices for
-             both models — and this hook is the caller. What carries a tilt differs by model and is forced, not
-             chosen: mercator spends the target's ELEVATION (which is why setCenterClamped(false) is a
-             precondition), the sphere has no such freedom — its pivot is on the surface, so the eye's distance
-             from the Earth's centre is fixed by dg and pitch alone — and spends the LOOK DISTANCE, i.e. the
-             ZOOM. A pure zoom is still the identity in both, so #R175's dolly is untouched.
-
-             How, and why it is NOT done by correcting the camera afterwards: MapLibre's jumpTo begins with
-             stop(), which aborts an in-progress gesture — traced on a twelve-step ctrl-drag, the pitch stream
-             went "S49.0 49.0 58.0 67.0 76.0 78.0 …" untouched but "S49.2 E S49.4 49.4 E" once a correcting
-             jumpTo was in the loop: the drag died on the first correction. `transformCameraUpdate` gets the
-             PROPOSED camera before it is applied, so the correction rides along with the gesture. */
-          setTiltPivot(mode){ const m=_m(); if(!m) return false;
-            if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; } return true; }
-            /* The PROPOSED camera lives in its own running state (MapLibre keeps a `_requestedCameraState` while
-               a transformCameraUpdate hook is installed) and does NOT receive our override — so "did this update
-               also move the centre?" has to be asked of the proposal's own history, not of the applied map, or
-               every frame after the first correction looks like travel. Measured both ways: comparing against the
-               applied centre made a tilt drag drift 5.3 km; comparing like with like holds it at 0. */
-            let req=null;
-            try{
-              m.transformCameraUpdate=(t)=>{
-                let cur, was;
-                try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
-                     /* "before" is read from the LIVE map, not from a cache of what we returned last time:
-                        MapLibre runs _elevateCameraIfInsideTerrain and its constraints after us, so a cached
-                        value slowly diverges from what was actually applied (measured: 392 m of drift over a
-                        116° drag, 8 m when read live). */
-                     const c=m.getCenter();
-                     was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch(),
-                           elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
-                }catch(_){ return {}; }
-                const last=req; req=cur;
-                if(!isFinite(cur.pitch)) return {};
-                /* ONLY when the update is not a journey. A flyTo that travels somewhere is asking to look at
-                   a PLACE, and re-anchoring the eye would land it short — measured: "fly to Paris, pitch 55"
-                   arrived 4.3 km off centre. Tilt gestures and easeTo({pitch}) leave the centre alone, so this
-                   one test separates "turn your head" from "go there" without having to guess at easing state
-                   (drag INERTIA is an easeTo too, and it must stay anchored). */
-                /* (#R173) "did the centre move?" has to be asked of BOTH histories. The proposal lives in
-                   MapLibre's `_requestedCameraState`, which is thrown away and re-cloned from the APPLIED
-                   transform between interactions — so after one anchored tilt, the next gesture's very first
-                   proposal carries our corrected centre and looks like a 16 km journey next to the previous
-                   proposal's. Measured: tilt to 120° (anchored, eye still), then easeTo({pitch:60}) — declined
-                   as "travel" and the eye climbed 18.6 km. A frame is travel only when the centre differs from
-                   the previous proposal AND from the camera actually on screen; matching either one means the
-                   map is where we put it and this is an attitude change, not a journey. */
-                const movedFromLast=!!last&&(Math.abs(cur.lng-last.lng)>1e-9||Math.abs(cur.lat-last.lat)>1e-9);
-                const movedFromApplied=Math.abs(cur.lng-was.lng)>1e-9||Math.abs(cur.lat-was.lat)>1e-9;
-                /* (#R175) HOW FAR THIS UPDATE DOLLIES — the look distance is c2c·metres-per-pixel and
-                   metres-per-pixel halves per zoom level, so the ratio is 2^(Δzoom) at any latitude.
-                   (#R177) …and Δ FROM WHAT is the same question #R173 answered for the centre: the
-                   proposal lives in `_requestedCameraState`, which never receives our overrides. The
-                   sphere branch below now returns a ZOOM, so the applied zoom diverges from the
-                   proposed one exactly as the centre already did — and comparing across that gap
-                   reads every frame of a plain tilt as a 2.3 % zoom (measured on a globe z3 drag:
-                   cur z3 against was z2.967, six frames running). Ask the proposal's own history;
-                   fall back to the applied zoom only on the first frame, where the proposal has just
-                   been cloned from it and the two agree by construction. */
-                /* (#R177) …and "Δ from WHAT" has to be asked of BOTH histories, exactly as #R173
-                   established for the centre. Once the sphere branch returns a zoom, the applied zoom
-                   and the proposed one diverge, and WHICH of them the proposal was derived from
-                   depends on the gesture:
-                     · a DRAG keeps one running `_requestedCameraState`, so the proposal's zoom is
-                       unchanged frame to frame while the applied zoom moves under it — the answer is
-                       in `last`. (Measured against the applied zoom instead: a plain globe z3 tilt
-                       read as a 2.3 % dolly on every frame, cur z3 against was z2.967.)
-                     · `setPitch`/`jumpTo` re-clone the proposal FROM the applied camera, so the
-                       proposal's zoom is the corrected one and `last` is a round stale — the answer
-                       is in `was`. (Measured against `last` instead: a 0-180° sweep at globe z4 held
-                       the viewpoint only to pitch 2, while a real ctrl-drag held it perfectly.)
-                   Matching EITHER reference means nobody asked to zoom; only differing from both is
-                   a real one. */
-                const zSame=(!!last&&Math.abs(cur.zoom-last.zoom)<1e-9)||Math.abs(cur.zoom-was.zoom)<1e-9;
-                const zRef=zSame?cur.zoom:((last&&isFinite(last.zoom))?last.zoom:was.zoom);
-                const k=(isFinite(cur.zoom)&&isFinite(zRef))?Math.pow(2,zRef-cur.zoom):1;
-                const zoomed=isFinite(k)&&k>0&&Math.abs(k-1)>1e-12;
-                /* (#R177) which of the renderer's two camera models is on screen for THIS proposal */
-                const sphere=gSpherical(t);
-                let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
-                const c2c=gC2C(t,m);
-                /* (#R177) A STALE TARGET ALTITUDE IS A HAZARD BY ITSELF, whatever this frame decides.
-                   MapLibre sizes its frustum from `cameraToCenterDistance + elevation·pixelPerMeter`,
-                   and a target left thousands of look-distances up is the shape of camera that froze
-                   the renderer. It gets there by inheritance, not by any one solve: a tilt past the
-                   horizon legitimately wants its mercator target 8,538 km up at z3, and if the frames
-                   after it DECLINE (nothing to correct) the number survives into a z15 camera where
-                   it is 7,822 look-distances. `isGlobeRendering` follows the RENDER, so the frame
-                   that crosses the swap cannot be relied on to clean up either. So bound it here,
-                   once, against the camera actually on screen — and hand that back on every path
-                   below, including the ones that otherwise change nothing. */
-                let capEl=null;
-                if(was.elevation){
-                  /* against the camera being PROPOSED, not the one being left: 16,373 km is a
-                     proportionate target at z3 with a 10,570 km look distance and an absurd one at
-                     z15 with a 2 km one, and the frame that carries it across is exactly the frame
-                     that declines (at z3/pitch 175 the eye is below the surface, so the sphere solve
-                     has no answer and rightly says so). Not conditioned on the model either: on the
-                     sphere the number is inert, so bounding it there costs nothing and saves the
-                     mercator camera that inherits it. */
-                  const lookNow=(c2c/(tile*Math.pow(2,cur.zoom)))*GEO_CIRC*Math.cos(cur.lat*GEO_RAD);
-                  const capNow=50*Math.abs(lookNow);
-                  if(isFinite(capNow)&&capNow>0&&Math.abs(was.elevation)>capNow) capEl=Math.sign(was.elevation)*capNow;
-                }
-                const NOOP=()=>(capEl!=null?{ elevation:capEl }:{});
-                if(movedFromApplied&&(movedFromLast||!last)){
-                  /* Travel — a flyTo/pan is asking to look at a PLACE, so the centre is left alone (#R173).
-                     (#R175) But a journey that also ZOOMS still has to carry the look-at target's altitude
-                     with it, for the same reason the anchored branch below does: the target is only on the
-                     ground while nothing has tilted, and a target left at a fixed altitude while the look
-                     distance shrinks is one the camera converges ON. Wheel zoom is exactly this shape —
-                     MapLibre zooms around the POINTER, so the centre moves and every frame lands here. */
-                  /* (#R177) On the SPHERE there is nothing to carry: the pivot is the surface point, so
-                     the target's elevation moves the camera not at all. Zero it on EVERY such frame,
-                     zooming or not — a declined frame leaves the previous value in place, and a
-                     mercator-era one that rode along this way is what froze the renderer (see gSolve).
-                     Inert here by construction, so it costs nothing. */
-                  if(sphere) return { elevation:0 };
-                  if(!zoomed) return NOOP();
-                  if(!was.elevation) return NOOP();
-                  /* (#R177) …and bounded by the same rule the anchored branch uses. Unbounded, a
-                     target altitude carried in from an extreme tilt survives every pan: measured
-                     16,373 km at z15 — 7,822 look-distances — which is the shape of camera that
-                     froze the renderer. */
-                  const look=(c2c/(tile*Math.pow(2,cur.zoom)))*GEO_CIRC*Math.cos(cur.lat*GEO_RAD);
-                  let el=was.elevation*k;
-                  const cap=50*Math.abs(look);
-                  if(isFinite(cap)&&cap>0&&Math.abs(el)>cap) el=Math.sign(el)*cap;
-                  return isFinite(el)?{ elevation:el }:{};
-                }
-                /* (#R173) …and it must answer EVERY such update, including the ones that change nothing.
-                   #R172 returned {} whenever the pitch had not moved since the last frame, and that is what
-                   「視点の位置は一切変えない」 was still failing on: _applyUpdatedTransform starts from the
-                   PROPOSED transform — whose centre and elevation never carry our corrections — so a frame
-                   this hook declines applies the proposal verbatim and wipes every correction before it.
-                   Traced on a 50°→180° ctrl-drag: eleven frames anchored the eye perfectly at 12,059 m and
-                   then the twelfth, a repeat of pitch 180 with nothing to do, put the elevation back to 0 and
-                   dropped the eye to −18,606 m. The same last-frame snap-back moved easeTo({pitch}) by 18.6 km.
-                   Solving with an unchanged pitch is the IDENTITY (the eye is derived from the applied camera
-                   and immediately solved back into it), so answering always costs nothing and closes the hole. */
-                try{ if(window.__fsCamActive) return NOOP(); }catch(_){}
-                /* WHERE THE EYE IS NOW — the applied camera run through the renderer's own geometry, with the
-                   look distance already scaled by `k` so that a zoom in the same update lands as the DOLLY it
-                   is (#R175). Both statements the last three rounds traded against each other — "hold the eye
-                   while the attitude changes" and "a zoom is a dolly" — are this one call. */
-                const anchor=gEye(was,c2c,tile,sphere,k);
-                if(!anchor) return NOOP();
-                /* …and the camera that puts it back there at the NEW attitude. Never declines: #R173 proved a
-                   refused frame is applied verbatim and wipes every correction before it — that is what the old
-                   |lat|>89.5 guard did when it produced a 23,152 km single-frame snap at z3 (「挙動もぎこちない」).
-                   Out-of-range answers are CLAMPED, and `hint` keeps the sphere's two-branch latitude solve on
-                   the branch nearest the proposal so it cannot flip between frames. */
-                let zLim=null; try{ zLim=[m.getMinZoom(),m.getMaxZoom()]; }catch(_){}
-                const sol=gSolve(anchor,cur.pitch,cur.bearing,c2c,tile,cur.zoom,sphere,cur,zLim);
-                if(!sol) return NOOP();
-                const out={ elevation:sol.elevation };
-                /* a real LngLat, not a pair: the renderer hands the override straight to
-                   Transform.setCenter. Omitted when the solve has no centre to offer — past the reach
-                   of the sphere's parameterisation the least-moving answer is the proposal's own. */
-                if(isFinite(sol.lng)&&isFinite(sol.lat)){
-                  try{ out.center=new maplibregl.LngLat(sol.lng,sol.lat); }catch(_){ out.center={lng:sol.lng,lat:sol.lat}; }
-                }
-                /* only the sphere returns a zoom, and only because its pivot leaves no other freedom */
-                if(sol.zoom!=null&&isFinite(sol.zoom)) out.zoom=sol.zoom;
-                return out;
-              };
-            }catch(_){ return false; }
-            return true; },
-          project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
-          /* (#R173) WHERE ON SCREEN IS A POINT THAT IS UP IN THE AIR? project() answers only for the ground,
-             and MapLibre's own hit-testing has the same blind spot: queryRenderedFeatures on a fill-extrusion
-             answers at the FOOTPRINT, not at the body — measured on an aircraft at 11,003 m with the glyph
-             drawn at y=272 and its ground point at y=388, the only pixel that reported a feature was 388, at
-             every zoom and in both regimes. So nothing lifted into the air could be hovered or clicked where
-             it is drawn. This projects a real (lng, lat, altitude) through the renderer's own matrices —
-             transform.getMatrixForModel + the custom-layer projection data, the supported path for placing
-             3-D content — so it is right on the globe as well as on the flat map.
-             Returns null when the point is behind the camera. */
-          projectAltitude(ll,altM){ const m=_m(); if(!m) return null;
-            try{
-              const t=m.transform; if(!(t&&t.getMatrixForModel&&t.getProjectionDataForCustomLayer)) return null;
-              const lng=(ll&&ll.lng!=null)?ll.lng:(ll?ll[0]:0), lat=(ll&&ll.lat!=null)?ll.lat:(ll?ll[1]:0);
-              const M=t.getMatrixForModel({lng,lat},+altM||0);           /* model origin = the point itself */
-              /* the projection data is per-CAMERA, not per-point, and building it allocates matrices — a
-                 hover that asks for 600 aircraft would otherwise rebuild it 600 times in one mouse move.
-                 Held for a few milliseconds, which is less than a frame. */
-              const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-              if(!_pd||now-_pdAt>6){ _pd=t.getProjectionDataForCustomLayer(true); _pdAt=now; }
-              const A=(_pd||{}).mainMatrix; if(!(A&&M)) return null;
-              const x=M[12],y=M[13],z=M[14];
-              const cx=A[0]*x+A[4]*y+A[8]*z+A[12], cy=A[1]*x+A[5]*y+A[9]*z+A[13], cw=A[3]*x+A[7]*y+A[11]*z+A[15];
-              if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)) return null;   /* behind the camera / degenerate */
-              const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
-              return { x:(cx/cw*0.5+0.5)*W, y:(0.5-cy/cw*0.5)*H };
-            }catch(_){ return null; } },
-          terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
-          queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
-          hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)) m.addSource(id,d); },
-          setSourceData(id,data){ const m=_m(); const s=m&&m.getSource(id); if(s&&s.setData) s.setData(data); }, removeSource(id){ const m=_m(); try{ if(m&&m.getSource(id)) m.removeSource(id); }catch(_){} },
-          hasLayer(id){ const m=_m(); return !!(m&&m.getLayer(id)); }, addLayer(d,b){ const m=_m(); if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
-          setVisible(id,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }, isVisible(id){ const m=_m(); if(!(m&&m.getLayer(id))) return false; try{ return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return true; } },
-          setPaint(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setPaintProperty(id,p,v); }, setLayout(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,p,v); },
-          setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) m.setPaintProperty(id,p,v); },
-          on(e,c){ const m=_m(); if(m) m.on(e,c); }, off(e,c){ const m=_m(); if(m) m.off(e,c); }, once(e,c){ const m=_m(); if(m) m.once(e,c); },
-          /* (#R160) Phase-2 contract broadening — the common camera getters, zoom controls, render + feature-state ops
-             that call sites still reach for on the raw map. Each is a 1:1 pass-through (byte-identical behaviour), so
-             adopting them anywhere is safe, and a future adapter (Cesium/Earth) only has to implement these. */
-          getZoom(){ const m=_m(); return m?m.getZoom():null; }, getCenter(){ const m=_m(); return m?m.getCenter():null; },
-          getBearing(){ const m=_m(); return m?m.getBearing():0; }, getPitch(){ const m=_m(); return m?m.getPitch():0; }, getBounds(){ const m=_m(); return m?m.getBounds():null; },
-          zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }, zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }, zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }, stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
-          resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
-          setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
-          /* (#R161) Phase-3 contract broadening — everything a self-contained OVERLAY subsystem needs so it
-             can be written against the engine alone: readiness, the drawing surface's container + pixel size,
-             the cursor, per-LAYER pointer events (hover/click on a rendered feature), and paint read-back.
-             All 1:1 pass-throughs, so adopting them is behaviour-neutral; a future Cesium/Earth adapter only
-             has to implement this list to inherit the whole news-pin layer. */
-          styleReady(){ const m=_m(); try{ return !!(m&&m.isStyleLoaded&&m.isStyleLoaded()); }catch(_){ return false; } },
-          /* (#R170) canDraw — "the style is PARSED, so addSource/addLayer are safe" — deliberately DISTINCT from
-             styleReady ("everything, including every tile, has settled"). Overlay subsystems want the former;
-             only code that must wait for a quiet frame (screenshots, paint sampling) wants the latter. Making a
-             renderer distinguish the two is a hard requirement of the contract now, not an implementation detail:
-             MapLibre answers it from the parsed-style flag, a Cesium/Earth adapter from its own scene readiness. */
-          canDraw(){ try{ return !!(window.IntMapCanDraw&&window.IntMapCanDraw()); }catch(_){ return this.styleReady(); } },
-          /* (#R170) 3-D EXTRUSION — real-scale volumes standing in the air (base/height in METRES above the
-             ground plane). Needed by the Measure ▸ 3-D volume tool; a future Earth adapter maps it onto its own
-             primitive. Kept as its own contract entry (not just "a fill layer") because an engine without real
-             metric extrusion must be able to say so via capabilities.extrusion3d. */
-          addExtrusion(d,before){ const m=_m(); if(!m||m.getLayer(d.id)) return false;
-            try{ m.addLayer(Object.assign({type:'fill-extrusion'},d), (before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
-          setExtrusionRange(id,baseM,topM){ const m=_m(); if(!(m&&m.getLayer(id))) return false;
-            try{ m.setPaintProperty(id,'fill-extrusion-base',baseM); m.setPaintProperty(id,'fill-extrusion-height',topM); return true; }catch(_){ return false; } },
-          /* (#R173) A CLOSED, FILLED BODY — distinct from addExtrusion, because an extrusion is a lid and
-             walls and can express neither a floor nor an interior. Asked for as an intent (a solid between
-             two altitudes over a footprint); MapLibre answers it with a `custom` layer that draws the whole
-             prism as one mesh (js/solid3d.js), a Cesium-class engine would answer with its own primitive,
-             and an engine that cannot must say so via capabilities.solid3d. */
-          addSolid(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-            try{ if(!(window.IntMapModules&&window.IntMapModules.solid3d)) return false;
-              /* the mesh is written in GLSL 3.00 with 32-bit indices. MapLibre 5 still transpiles ITS own
-                 shaders down to WebGL1, so a context without WebGL2 is possible — say no there and the
-                 caller falls back to the open shell rather than drawing nothing. */
-              const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
-              const L=(_solids[id]||(_solids[id]=window.IntMapModules.solid3d().makeLayer(id)));
-              m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
-          setSolid(id,o){ const L=_solids[id]; if(!L) return false;
-            try{ /* the eye is what makes the absorption an absorption — see the shader's 1/|n·v| */
-              if(o&&!o.eye){ const e=this.eyePosition(); if(e) o=Object.assign({},o,{eye:e}); }
-              L._set(o); return true; }catch(_){ return false; } },
-          removeSolid(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _solids[id]; return true; },
-          /* (#R171) INPUT — hand the drag gesture to a tool for the length of a stroke. A tool that traces a
-             shape has to stop the renderer panning underneath it; #R170's DrawTool reached straight for
-             map.dragPan for this, which is precisely the kind of call a renderer-independent tool cannot make.
-             Named for the intent ("the tool owns the drag now"), not for MapLibre's handler objects. */
-          setDragPan(on){ const m=_m(); try{ if(m&&m.dragPan){ on?m.dragPan.enable():m.dragPan.disable(); return true; } }catch(_){} return false; },
-          getContainer(){ const m=_m(); return (m&&m.getContainer)?m.getContainer():null; },
-          getSize(){ const m=_m(); if(!m) return {width:0,height:0}; try{ const c=m.getContainer(); const cv=m.getCanvas&&m.getCanvas();
-            return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
-          setCursor(c){ const m=_m(); try{ const cv=m&&m.getCanvas&&m.getCanvas(); if(cv) cv.style.cursor=c||''; }catch(_){} },
-          getPaint(id,p){ const m=_m(); try{ return (m&&m.getLayer(id))?m.getPaintProperty(id,p):undefined; }catch(_){ return undefined; } },
-          onLayer(e,layer,c){ const m=_m(); if(m) m.on(e,layer,c); }, offLayer(e,layer,c){ const m=_m(); if(m) m.off(e,layer,c); },
-          raw(){ return _m(); } };
-        /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
-           (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
-        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
-          /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
-             own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
-             (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
-          globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true } };
-        let _adapter=MapLibreAdapter;
-        return {
-          id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
-          adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; }, contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
-          camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo),
-            /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
-            getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
-            zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop(),
-            /* (#R172) the camera that would show a box, and the current padding — both read-only */
-            forBounds:(b,o)=>_adapter.cameraForBounds?_adapter.cameraForBounds(b,o):null, getPadding:()=>_adapter.getPadding?_adapter.getPadding():null,
-            /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */
-            getProjection:()=>_adapter.getProjection(),
-            /* (#R173) 0 = flat, 1 = a sphere — see the adapter; the projection's NAME does not answer this */
-            globeness:()=>_adapter.globeness?_adapter.globeness():0,
-            setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
-            getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
-            /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
-            tiltRange:()=>{ const c=_adapter.capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
-            altitude:()=>_adapter.cameraAltitude(),
-            /* (#R172) the VIEWPOINT itself — read it, put it back, and tell a gesture from an animation */
-            eye:()=>_adapter.eyePosition?_adapter.eyePosition():null,
-            setEye:o=>_adapter.setEye?_adapter.setEye(o):false,
-            setCenterClamped:v=>_adapter.setCenterClamped?_adapter.setCenterClamped(v):false,
-            setTiltPivot:mo=>_adapter.setTiltPivot?_adapter.setTiltPivot(mo):false,
-            isAnimating:()=>_adapter.isAnimating?_adapter.isAnimating():false },
-          coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o),
-            /* (#R173) the screen position of a point AT ALTITUDE — what picking anything lifted needs */
-            projectAltitude:(ll,a)=>_adapter.projectAltitude?_adapter.projectAltitude(ll,a):null },
-          /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
-             far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the
-             second with the first is what made freshly-ticked layers appear seconds late. */
-          ready:()=>_adapter.styleReady(),
-          canDraw:()=>_adapter.canDraw(),
-          layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
-            /* (#R170) real-scale 3-D volumes (metres above ground) */
-            addExtrusion:(d,b)=>_adapter.addExtrusion(d,b), setExtrusionRange:(id,a,b)=>_adapter.setExtrusionRange(id,a,b),
-            /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
-            addSolid:(id,b)=>_adapter.addSolid?_adapter.addSolid(id,b):false, setSolid:(id,o)=>_adapter.setSolid?_adapter.setSolid(id,o):false,
-            removeSolid:id=>_adapter.removeSolid?_adapter.removeSolid(id):false,
-            /* (#R160) feature-state (hover/selection highlighting) through the engine */
-            setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),
-            /* (#R161) read a paint property back (theme code needs to know the current value) */
-            getPaint:(id,p)=>_adapter.getPaint(id,p) },
-          /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
-          render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),
-            container:()=>_adapter.getContainer(), size:()=>_adapter.getSize(), setCursor:c=>_adapter.setCursor(c) },
-          /* (#R171) gesture ownership — a drawing tool suspends the renderer's own pan for the stroke */
-          input:{ setDragPan:on=>_adapter.setDragPan(on) },
-          events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c),
-            /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
-            onLayer:(e,l,c)=>_adapter.onLayer(e,l,c), offLayer:(e,l,c)=>_adapter.offLayer(e,l,c) },
-          raw(){ return _adapter.raw(); }
-        };
-      })();
+    GE().events.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
+    GE().events.on('rotate',updateCompass); GE().events.on('pitch',updateCompass);
+    GE().events.on('moveend',refreshGrid); GE().events.on('zoomend',refreshGrid);
+    GE().events.on('load',()=>{
+      /* (#R178) the contract takes a MODE ('flat' | 'globe' | 'globe-true'), not a MapLibre projection
+         spec — the point of the seam is that "a globe" is a request, and each engine decides what
+         object expresses it. __imap is published at construction now (see there), not here. */
+      try{ if(!/[?&]flat\b/.test(location.search)) GE().camera.setProjection('globe'); }catch(e){}
       ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
-      map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
+      GE().events.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
       /* (#R26) "デフォルト選択なのに地名ラベル/国境が出ない、再チェックで初めて出る": both default ON but
          occasionally weren't DRAWN on first load (OFM vector source + country data settle after the first
          idle). Re-assert the place labels + borders visibility a few times, and the moment the OFM source's
          tiles arrive — so names/borders appear on load without the user toggling them. */
       const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._applyBorders(); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
-      map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
+      GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
        context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
        browser restore the context, and on restore we force a fresh repaint + re-assert our layers. */
-    try{ const _cv=map.getCanvas&&map.getCanvas(); if(_cv&&_cv.addEventListener){
+    try{ const _cv=GE().render.canvas&&GE().render.canvas(); if(_cv&&_cv.addEventListener){
       _cv.addEventListener('webglcontextlost',(ev)=>{ try{ ev.preventDefault(); }catch(_){} },false);
-      _cv.addEventListener('webglcontextrestored',()=>{ try{ map.resize(); map.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
+      _cv.addEventListener('webglcontextrestored',()=>{ try{ GE().render.resize(); GE().render.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
     } }catch(_){}
-    map.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
-    map.on('contextmenu',(e)=>{ e.preventDefault();
+    GE().events.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
+    GE().events.on('contextmenu',(e)=>{ e.preventDefault();
       let pt=e.point, ll=e.lngLat;
       /* (#R16) On mobile the interaction is center-fixed (crosshair). A long-press anywhere acts on the
          CROSSHAIR point and the menu opens there (always on-screen) — the old behavior opened it under the
@@ -2541,7 +1870,7 @@ window.addEventListener('DOMContentLoaded', () => {
       showContextMenu(pt, ll); });
     /* Long-press → context menu on touch devices */
     (function(){
-      const canvas=map.getCanvas(); let pressTimer=null, startPt=null, fired=false;
+      const canvas=GE().render.canvas(); let pressTimer=null, startPt=null, fired=false;
       canvas.addEventListener('touchstart',(e)=>{
         if(e.touches.length!==1) return;
         const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
@@ -2551,7 +1880,7 @@ window.addEventListener('DOMContentLoaded', () => {
            while a measurement tool is active (per the user), so long-press is again the way to reach the
            right-click menu on touch when idle. Suppressed while a tool is active (the button handles that). */
         if(typeof toolMode!=='undefined' && toolMode) return;
-        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=map.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
+        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=GE().coords.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
       },{passive:true});
       const cancel=(e)=>{
         if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
@@ -2567,7 +1896,7 @@ window.addEventListener('DOMContentLoaded', () => {
       canvas.addEventListener('touchcancel',cancel,{passive:true});
     })();
     /* Reposition pin popup on every render — keeps it pinned to lng/lat with no drift */
-    map.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
+    GE().events.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
   }
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
   { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=(e)=>setGrid(e.target.checked); }   /* (#R10/#R38) Grid in Layers — drive state FROM the box (idempotent) so a re-asserted change can't re-enable it */
@@ -2594,7 +1923,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ['btn-screenshot','btn-share'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>window._closeShareMenu&&window._closeShareMenu()); });
   })();
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
-  document.getElementById('btn-compass').onclick=()=>map&&map.easeTo({bearing:0,pitch:0,duration:500});
+  document.getElementById('btn-compass').onclick=()=>GE().camera.easeTo({bearing:0,pitch:0,duration:500});
   /* (#R152) DESKTOP: right-click the compass → a popup to type an EXACT bearing / pitch (elevation) / zoom, applied to
      the current view ("方位磁針ボタンを右クリックしたら、方角、視点の仰角等を数値で打ち込めるポップアップ"). Left-click still resets north. */
   (function(){ const btn=document.getElementById('btn-compass'); if(!btn) return; let pop=null;
@@ -2605,12 +1934,12 @@ window.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('contextmenu',(e)=>{ e.preventDefault(); if(!map) return;
       try{ if(typeof _imTouchPrimary==='function' && _imTouchPrimary()) return; }catch(_){}   /* desktop only, per the request */
       if(pop){ closePop(); return; }
-      const b=Math.round(((map.getBearing()%360)+360)%360), p=Math.round(map.getPitch()||0), z=Math.round((map.getZoom()||0)*10)/10;
+      const b=Math.round(((GE().camera.getBearing()%360)+360)%360), p=Math.round(GE().camera.getPitch()||0), z=Math.round((GE().camera.getZoom()||0)*10)/10;
       /* (#R171) With the tilt limit set to Unlimited this field takes ANY angle from 0 to 360: past 180° the
          camera comes back down the far side with the bearing reversed (IntMapTilt.fromAngle), which is the
          one place "keep tilting round" is expressible without re-implementing the drag gesture. */
       const _unl=(()=>{ try{ return !!(window.IntMapTilt&&window.IntMapTilt.isUnlimited()); }catch(_){ return false; } })();
-      const maxP=_unl?360:Math.round((map.getMaxPitch&&map.getMaxPitch())||85);
+      const maxP=_unl?360:Math.round((GE().camera.getMaxPitch&&GE().camera.getMaxPitch())||85);
       pop=document.createElement('div'); pop.className='compass-num-pop';
       pop.innerHTML='<div class="cnp-t">'+CL('Set view','視点を設定','Ansicht einstellen','Задать вид','Definir vista')+'</div>'
         +'<label>'+CL('Bearing','方位','Richtung','Азимут','Rumbo')+' (°)<input type="number" id="cnp-bear" min="0" max="360" step="1" value="'+b+'"></label>'
@@ -2623,10 +1952,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const opt={duration:500}; if(isFinite(bb)) opt.bearing=((bb%360)+360)%360; if(isFinite(pp)) opt.pitch=Math.max(0,Math.min(maxP,pp)); if(isFinite(zz)) opt.zoom=Math.max(0,Math.min(22,zz));
         /* (#R171) an angle past the top is the same view aimed the other way — resolve it into a real
            (pitch, bearing) pair rather than clamping it flat against the ceiling. */
-        if(_unl&&isFinite(pp)&&pp>180){ try{ const r=window.IntMapTilt.fromAngle(pp, isFinite(bb)?bb:map.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }catch(_){} }
-        try{ map.easeTo(opt); }catch(_){} closePop(); };
+        if(_unl&&isFinite(pp)&&pp>180){ try{ const r=window.IntMapTilt.fromAngle(pp, isFinite(bb)?bb:GE().camera.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }catch(_){} }
+        try{ GE().camera.easeTo(opt); }catch(_){} closePop(); };
       pop.querySelector('#cnp-apply').onclick=apply;
-      pop.querySelector('#cnp-reset').onclick=()=>{ try{ map.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
+      pop.querySelector('#cnp-reset').onclick=()=>{ try{ GE().camera.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
       pop.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); apply(); } });
       setTimeout(()=>{ document.addEventListener('mousedown',onDoc,true); document.addEventListener('keydown',onKey,true); const f=pop.querySelector('#cnp-bear'); if(f){ f.focus(); f.select(); } },0);
     });
@@ -2707,8 +2036,8 @@ window.addEventListener('DOMContentLoaded', () => {
          レイヤーが消えない" still happened when the controlling checkbox couldn't be resolved (custom/legacy
          legends) or its change handler didn't fully hide. So ALSO hide every map layer that matches this id
          directly, regardless of the checkbox. Idempotent + specific (exact ids + lyr-/-fill/-line variants). */
-      try{ if(map&&map.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
-        map.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ map.setLayoutProperty(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
+      try{ if(GE().scene.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
+        GE().scene.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ GE().layers.setLayout(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
     }
     /* always close the legend element itself + re-tile, so the × is never a dead button */
     if(lg){ try{ lg.style.display='none'; }catch(_){} }
@@ -2813,7 +2142,7 @@ window.addEventListener('DOMContentLoaded', () => {
       applyTheme();
     }catch(_){} };
     if(bordersOn){
-      if(!canDraw()){ map&&map.once&&map.once('idle',mkBorders); }
+      if(!canDraw()){ GE().events.once('idle',mkBorders); }
       mkBorders();
       [250,700,1600,3200].forEach(ms=>setTimeout(mkBorders,ms));
     } else { mkBorders(); }
@@ -2822,7 +2151,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R29) ROBUST: a basemap style swap (Map↔Sat) drops the `countries` source + `country-fill` layer,
        but countryDataLoaded stays true — so the old `else applyCountryVisibility()` path was a no-op and
        Countries(info) "使えなくなっていた". Always RE-ENSURE the layers exist before showing them. */
-    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && canDraw() && !map.getSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
+    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && canDraw() && !GE().layers.hasSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
     if(countryInfoOn && !countryDataLoaded){ loadCountryData().then(ensure); } else ensure();
     if(!countryInfoOn) hideCountryInfo(); });
 
@@ -2836,10 +2165,10 @@ window.addEventListener('DOMContentLoaded', () => {
      countryGeo dependency → also fixes "borders only after reload"). */
   function ensureBordersLayer(){ try{
     if(!canDraw()) return false;
-    ensurePlaceLabels(); if(!map.getSource('ofm')) return false;
-    if(!map.getLayer('borders-only-line')){
-      const before=['ofm-country','ofm-city','ofm-other'].find(id=>map.getLayer(id)) || (map.getLayer('tool-poly')?'tool-poly':undefined);
-      map.addLayer({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
+    ensurePlaceLabels(); if(!GE().layers.hasSource('ofm')) return false;
+    if(!GE().layers.has('borders-only-line')){
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id)) || (GE().layers.has('tool-poly')?'tool-poly':undefined);
+      GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
         layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
         paint:{'line-color':'rgba(150,150,150,0.85)','line-opacity':0.9,'line-width':['interpolate',['linear'],['zoom'],1,0.5,4,0.9,8,1.5,12,2.2]}}, before);
@@ -2850,24 +2179,24 @@ window.addEventListener('DOMContentLoaded', () => {
     try{
       if(!canDraw()) return false;
       ensurePlaceLabels();                                  /* guarantees the `ofm` vector source exists */
-      if(!map.getSource('ofm')) return false;
-      const before = map.getLayer('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
-      if(!map.getLayer('ref-admin1')) map.addLayer({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
+      if(!GE().layers.hasSource('ofm')) return false;
+      const before = GE().layers.has('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
+      if(!GE().layers.has('ref-admin1')) GE().layers.add({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
         layout:{visibility:'none','line-join':'round'},
         paint:{'line-color':'#b07fd6','line-opacity':0.65,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.4,7,1.1,11,1.8]}}, before);
-      if(!map.getLayer('ref-roads')) map.addLayer({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
+      if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
         paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
       /* (#R41) Railways: gray was still hard to see ("灰色は視認性が悪すぎる"). Render the standard two-part rail
          symbol that reads on BOTH light AND dark basemaps: a strong dark SOLID base (visible on light terrain)
          with WHITE cross-tie dashes on top (visible on dark/satellite). */
-      if(!map.getLayer('ref-rail')) map.addLayer({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
+      if(!GE().layers.has('ref-rail')) GE().layers.add({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
         paint:{'line-color':'#2b2f36','line-opacity':0.96,'line-width':['interpolate',['linear'],['zoom'],5,1.1,9,2.2,12,3.6,15,5.2]}}, before);
-      if(!map.getLayer('ref-rail-dash')) map.addLayer({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
+      if(!GE().layers.has('ref-rail-dash')) GE().layers.add({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
         paint:{'line-color':'#f4f6fa','line-opacity':0.95,'line-dasharray':[1.4,3.2],'line-width':['interpolate',['linear'],['zoom'],6,1,9,1.8,12,2.8,15,4]}}, before);
@@ -2879,16 +2208,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R38) Apply from the LIVE box state, and re-assert several times + when the OFM vector tiles arrive.
        Root of "Roads/Railways/State borders をチェックしても表示されない、再読み込みで治る": the `ofm` source/layer
        often settled AFTER the single 400ms retry, so the visibility set hit nothing and never re-ran. */
-    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(map&&map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); if(map&&map.getLayer(layerId+'-dash')) map.setLayoutProperty(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
+    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
-      if(cb.checked && !canDraw()){ map&&map.once&&map.once('idle',apply); }
+      if(cb.checked && !canDraw()){ GE().events.once('idle',apply); }
       apply();
       if(cb.checked){ [250,700,1600,3200].forEach(ms=>setTimeout(apply,ms)); }
     }); }
   _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
-  try{ if(map&&map.on) map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
+  try{ GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
     try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){} } }); }catch(_){}
   /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
@@ -2896,7 +2225,7 @@ window.addEventListener('DOMContentLoaded', () => {
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
      hash, so this only sets the initial default — unchecking one still sticks for the session. */
   (function(){ const fire=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&!c.__defFired){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
-    try{ if(map){ if(map.isStyleLoaded()) setTimeout(fire,300); if(map.on) map.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); } else setTimeout(fire,1600); }catch(_){} })();
+    try{ if(GE().ready()) setTimeout(fire,300); GE().events.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); }catch(_){} })();
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
@@ -2945,8 +2274,8 @@ window.addEventListener('DOMContentLoaded', () => {
      legible. A subtle 1px border defines it against same-tone backgrounds. */
   function ensureLabelPill(force){
     if(!map) return;
-    if(force && map.hasImage('news-pill')){ try{ map.removeImage('news-pill'); }catch(_){} }
-    if(map.hasImage('news-pill')) return;
+    if(force && GE().scene.hasImage('news-pill')){ try{ GE().scene.removeImage('news-pill'); }catch(_){} }
+    if(GE().scene.hasImage('news-pill')) return;
     try{
       const dark=_newsUIDark();
       const dpr=2, w=40, h=30, r=12;
@@ -2958,7 +2287,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctx.lineWidth=1; ctx.strokeStyle = dark ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.40)';
       rr(0.5,0.5,w-1,h-1,r); ctx.stroke();
       const data=ctx.getImageData(0,0,w*dpr,h*dpr).data;
-      map.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
+      GE().scene.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
         pixelRatio:dpr, stretchX:[[r*dpr,(w-r)*dpr]], stretchY:[[r*dpr,(h-r)*dpr]], content:[8*dpr,6*dpr,(w-8)*dpr,(h-6)*dpr]
       });
     }catch(_){}
@@ -3012,8 +2341,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window._declutterNewsBands=_declutterNewsBands;
   function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
   window.scheduleNewsDeclutter=scheduleNewsDeclutter;
-  window.highlightDashMarker=function(id,on){ if(map&&map.getSource('dash-points')){ try{ map.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
-  function clearIntelSources(){ if(map){ if(map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); if(map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
+  window.highlightDashMarker=function(id,on){ if(GE().layers.hasSource('dash-points')){ try{ GE().layers.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
+  function clearIntelSources(){ if(map){ if(GE().layers.hasSource('news-points')) GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
   /* (#R122/#R123) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city point, e.g.
      everything filed under "USA" lands on one dot), so pins stack and only the top one is clickable.
      (#R123) FIX "対象領域に分散的に配置できていない": the R122 version fanned every cluster over a FIXED small spiral,
@@ -3029,10 +2358,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R127) re-run the duplicate spread on the CURRENT pins — called once the async country borders finish loading.
      A cold-load race left a country cluster as a tight blob because regionFor() had no polygon yet; the pins kept
      their ORIGINAL anchors in __oc, so re-spreading now fills the real territory. No-op unless news pins are live. */
-  function _respreadNews(){ try{ if(!map||!map.getSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
+  function _respreadNews(){ try{ if(!map||!GE().layers.hasSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
     const _m=(typeof currentMode!=='undefined')?currentMode:null; if(_m!=='news'&&_m!=='saved') return;
     _spreadDupNewsPins(newsFeatures);
-    try{ map.getSource('news-points').setData({type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
+    try{ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
     try{ scheduleNewsDeclutter(); }catch(_){}
   }catch(_){} }
   try{ window._respreadNews=_respreadNews; }catch(_){}
@@ -3081,7 +2410,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
-  window.flyToLoc=function(lng,lat){ if(map)map.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
+  window.flyToLoc=function(lng,lat){ if(map)GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
   window.toggleDashCat=function(cat){ if(activeDashCategories.has(cat))activeDashCategories.delete(cat); else activeDashCategories.add(cat); renderDashboard(); };
   /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
      a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
@@ -3301,9 +2630,9 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__countryPick=function(on){ const nv=(on==null)?!picking:!!on;
       _btns().forEach(b=>b.classList.toggle('on',nv));
       if(nv===picking) return; picking=nv; window.__scpPick=picking;
-      try{ const cv=map&&map.getCanvas&&map.getCanvas(); if(cv) cv.style.cursor=picking?'crosshair':''; }catch(_){}
-      if(picking&&!bound){ try{ map.on('click',onClick); bound=onClick; }catch(_){} }
-      if(!picking&&bound){ try{ map.off('click',bound); }catch(_){} bound=null; }
+      try{ const cv=GE().render.canvas&&GE().render.canvas(); if(cv) cv.style.cursor=picking?'crosshair':''; }catch(_){}
+      if(picking&&!bound){ try{ GE().events.on('click',onClick); bound=onClick; }catch(_){} }
+      if(!picking&&bound){ try{ GE().events.off('click',bound); }catch(_){} bound=null; }
       if(picking&&!keyH){ keyH=(ev)=>{ if(ev.key==='Escape') window.__countryPick(false); }; try{ document.addEventListener('keydown',keyH); }catch(_){} }
       else if(!picking&&keyH){ try{ document.removeEventListener('keydown',keyH); }catch(_){} keyH=null; }
       if(picking){ try{ imToast(_pl('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} }
@@ -3532,7 +2861,7 @@ window.addEventListener('DOMContentLoaded', () => {
     return null;
   }
   let _coordFlyT=null;
-  function coordFly(ll){ if(!ll||!map) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ map.flyTo({center:ll, zoom:Math.max(map.getZoom?map.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
+  function coordFly(ll){ if(!ll||!map) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ GE().camera.flyTo({center:ll, zoom:Math.max(GE().camera.getZoom?GE().camera.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
   searchInput.addEventListener('input',()=>{ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats')renderStats(searchVal()); else if(currentMode==='info')renderDashboard(); });
   function runSearch(){ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats'){ renderStats(searchVal()); return; } if(currentMode==='info'){ renderDashboard(); return; } if(currentMode==='saved'){ startNews(); return; } activeSearchQuery=searchInput.value.trim(); globalData=[]; fetchData(); }
   document.getElementById('btn-search').onclick=runSearch;
@@ -3555,8 +2884,8 @@ window.addEventListener('DOMContentLoaded', () => {
       n++;
       try{
         if(typeof currentMapType==='undefined' || currentMapType!==mode){ clearInterval(window._baseReassertT); return; }
-        if(canDraw() && map.getLayer('layer-sat')){
-          const wantSat=(mode==='sat'), isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible');
+        if(canDraw() && GE().layers.has('layer-sat')){
+          const wantSat=(mode==='sat'), isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible');
           if(wantSat!==isSat) applyTheme(); else { clearInterval(window._baseReassertT); }
         }
       }catch(_){}
@@ -3607,10 +2936,10 @@ window.addEventListener('DOMContentLoaded', () => {
     return OS;
   })();
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
-  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
+  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
   /* (#R101) switching to Satellite no longer force-opens the provider/date panel (satPanelDismissed stays true on
      desktop). The panel is rendered ready; it opens only when the user re-clicks the active Satellite button. */
-  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
+  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
   document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
   /* (#R101) already on Satellite → toggle the provider/date panel (desktop). Otherwise switch to Satellite. */
   document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
@@ -3618,25 +2947,25 @@ window.addEventListener('DOMContentLoaded', () => {
     IntMapOS.exec('view.base.sat',{source:'ui'}); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
-  if(map) map.on('styledata',()=>{ try{ if(!map.isStyleLoaded()||!map.getLayer('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
+  if(map) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
   /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
   /* projection — TRUE kernel commands (UI + Atlas both call these). */
-  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
+  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
   document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
   document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
   function ensureTerrainSource(){
-    if(map.getSource('terrain-dem')) return true;
+    if(GE().layers.hasSource('terrain-dem')) return true;
     /* Three host aliases for the SAME AWS terrarium DEM tiles. The browser opens a separate connection
        pool per hostname, so round-robining across them ~triples concurrent DEM throughput while tilted
        in 3D — the elevation tiles were the under-fetch bottleneck (user saw <10 Mbps) (#2,#18). */
-    try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:[
+    try{ GE().layers.addSource('terrain-dem',{type:'raster-dem',tiles:[
         /* (#R7) Five host aliases for the SAME AWS terrarium DEM bucket. Each distinct hostname gets its
            own browser connection pool, so round-robining ~5× the concurrent DEM fetches over HTTP/1.1
            S3 — the DEM tiles were the 3D under-fetch bottleneck the user measured (<10 Mbps). */
@@ -3661,16 +2990,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if(on){
       if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':currentLang==='de'?'3D-Gelände konnte nicht geladen werden':currentLang==='ru'?'Не удалось загрузить 3D-рельеф':currentLang==='es'?'No se pudo cargar el terreno 3D':'Could not load 3D terrain'); }catch(_){} return; }
       terrain3D=true; syncBtns();
-      try{ map.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
+      try{ GE().scene.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
       /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
          (and fog isn't supported on globe, which otherwise spams console warnings). */
-      if(currentProj!=='globe'){ try{ map.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
+      if(currentProj!=='globe'){ try{ GE().scene.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
       /* (#R7-3D-notilt) Do NOT move the camera when 3D is enabled. The user asked that selecting 3D
          change nothing on screen — terrain is attached so relief appears the moment THEY tilt
          (right-drag / two-finger), but we never auto-pitch or auto-zoom. */
     } else {
       terrain3D=false; syncBtns();
-      try{ map.setTerrain(null); }catch(e){}
+      try{ GE().scene.setTerrain(null); }catch(e){}
       /* leave the camera exactly where it is — no forced flatten (don't move on toggle). */
     }
   }
@@ -3739,7 +3068,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
-    try{ if(map){ map.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
+    try{ if(map){ GE().events.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
   })();
   /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
@@ -3806,7 +3135,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ['ticker.off', ()=>{ window.imTicker='off'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · off','ui'],
     ['settings.open',()=>{ const b=document.getElementById('btn-open-settings')||document.querySelector('[id*=open-settings]'); if(b) b.click(); }, 'Settings · open','ui'],
     ['isolate.exit',()=>{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }, 'Isolate · exit','map'],
-    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=map&&map.getCenter&&map.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
+    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
   ];
   REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
 
@@ -4058,24 +3387,24 @@ window.addEventListener('DOMContentLoaded', () => {
   let userPins=[], activePinId=null, pinSeq=0;
   function setupPinLayers(){
     if(!canDraw()) return;
-    if(!map.getSource('user-pins')){
-      map.addSource('user-pins',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'user-pin-shadow',type:'circle',source:'user-pins',paint:{'circle-radius':12,'circle-color':'#000','circle-opacity':0.18,'circle-blur':0.6}});
-      map.addLayer({id:'user-pin-dot',type:'circle',source:'user-pins',paint:{'circle-radius':['case',['boolean',['feature-state','hover'],false],10,8],'circle-color':'#ff3b30','circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'}});
+    if(!GE().layers.hasSource('user-pins')){
+      GE().layers.addSource('user-pins',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE().layers.add({id:'user-pin-shadow',type:'circle',source:'user-pins',paint:{'circle-radius':12,'circle-color':'#000','circle-opacity':0.18,'circle-blur':0.6}});
+      GE().layers.add({id:'user-pin-dot',type:'circle',source:'user-pins',paint:{'circle-radius':['case',['boolean',['feature-state','hover'],false],10,8],'circle-color':'#ff3b30','circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'}});
     }
     if(window._pinHandlersBound) return;
     window._pinHandlersBound=true;
-    map.on('mouseenter','user-pin-dot',()=>{ map.getCanvas().style.cursor='pointer'; });
-    map.on('mouseleave','user-pin-dot',()=>{ map.getCanvas().style.cursor=''; });
-    map.on('click','user-pin-dot',(e)=>{
+    GE().events.onLayer('mouseenter','user-pin-dot',()=>{ GE().render.canvas().style.cursor='pointer'; });
+    GE().events.onLayer('mouseleave','user-pin-dot',()=>{ GE().render.canvas().style.cursor=''; });
+    GE().events.onLayer('click','user-pin-dot',(e)=>{
       if(!e.features.length) return;
       e.preventDefault();
       const fid=e.features[0].properties.fid; openPinPopup(fid);
     });
   }
   function refreshPins(){
-    if(!map||!map.getSource('user-pins')) return;
-    map.getSource('user-pins').setData({type:'FeatureCollection',features:userPins.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{fid:p.id}}))});
+    if(!map||!GE().layers.hasSource('user-pins')) return;
+    GE().layers.setSourceData('user-pins',{type:'FeatureCollection',features:userPins.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{fid:p.id}}))});
   }
   async function fetchElevDepth(lat,lng){
     try{
@@ -4120,7 +3449,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;
     const el=document.getElementById('pin-popup'); if(!el||el.style.display==='none')return;
-    const pt=map.project([pin.lng,pin.lat]); el.style.left=pt.x+'px'; el.style.top=pt.y+'px';
+    const pt=GE().coords.project([pin.lng,pin.lat]); el.style.left=pt.x+'px'; el.style.top=pt.y+'px';
   }
   window._closePinPopup=()=>{ activePinId=null; document.getElementById('pin-popup').style.display='none'; };
   window._removePin=(id)=>removePin(id);
@@ -4275,20 +3604,20 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function pushCommunityFeatures(){
-    if(!map||!map.getSource('community-points')) return;
+    if(!map||!GE().layers.hasSource('community-points')) return;
     /* Community pins are shown ONLY while the Community tab is active; selecting another
        tab clears them (the posts stay cached in communityPosts for an instant return). */
     const feats=(currentMode==='community') ? visibleCommunityPosts().map(p=>({
       type:'Feature', id:p.id, geometry:{type:'Point',coordinates:[p.lng,p.lat]},
       properties:{ fid:p.id, cat:p.category||'general', title:p.title||'', body:(p.body||'').slice(0,80), short:(p.title||'').slice(0,28)+((p.title||'').length>28?'…':'') }
     })) : [];
-    map.getSource('community-points').setData({type:'FeatureCollection',features:feats});
+    GE().layers.setSourceData('community-points',{type:'FeatureCollection',features:feats});
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   /* When add-mode is armed, map-click drops a community post pin and opens the compose modal */
   if(map){
-    map.on('click',(e)=>{
+    GE().events.on('click',(e)=>{
       if(!communityAddArmed) return;
       /* Skip if it's actually a tool action — handleMapClick will handle and toolMode set */
       if(toolMode) return;
@@ -4320,7 +3649,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const body=document.getElementById('compose-post-body').value.trim();
     if(!title && !body){ imToast(currentLang==='jp'?'タイトルか本文を入力してください。':currentLang==='de'?'Titel oder Text eingeben.':currentLang==='ru'?'Введите заголовок или текст.':currentLang==='es'?'Escribe un título o texto.':'Enter a title or some text.'); return; }
     /* never dead-end on a missing location: fall back to the current map center */
-    if(!pendingPostLoc){ if(map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
+    if(!pendingPostLoc){ if(map){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
     try{
@@ -4334,7 +3663,7 @@ window.addEventListener('DOMContentLoaded', () => {
     pendingPostLoc=null; pendingImg=''; showComposeImgPreview('');
     await loadCommunity();
     /* Fly to the new / updated post */
-    if(map && !wasEdit) map.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
+    if(!wasEdit) GE().camera.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
   };
   /* Compose image input wiring (bound once) */
   (function(){
@@ -4353,11 +3682,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Push community pins when style first loads, so they appear without needing to enter the tab */
   if(map){
     if(canDraw()){ try{ setupCommunityLayer(); }catch(_){} }
-    map.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
-    map.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
+    GE().events.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
+    GE().events.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     /* "In view" filter: as you pan, re-filter the feed + pins to the visible map area. */
     let _commViewT=null;
-    map.on('moveend',()=>{ if(commInView && currentMode==='community'){ clearTimeout(_commViewT); _commViewT=setTimeout(()=>{ try{ renderCommList(); }catch(_){} },120); } });
+    GE().events.on('moveend',()=>{ if(commInView && currentMode==='community'){ clearTimeout(_commViewT); _commViewT=setTimeout(()=>{ try{ renderCommList(); }catch(_){} },120); } });
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
@@ -4630,7 +3959,7 @@ window.addEventListener('DOMContentLoaded', () => {
        argument is kept only for call-site compatibility and is now a no-op. Mobile bottom-sheet padding is
        owned by the detent system elsewhere and is deliberately left untouched. As a one-time safety net, clear
        any stray desktop left/right map padding a prior build may have set (fresh maps already start at 0). */
-    try{ if(map && map.getPadding && map.setPadding && !isMobile()){ const cur=map.getPadding(); if(cur && (cur.left||cur.right)) map.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
+    try{ if(GE().camera.getPadding && GE().camera.setPadding && !isMobile()){ const cur=GE().camera.getPadding(); if(cur && (cur.left||cur.right)) GE().camera.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
@@ -4646,10 +3975,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ await aiWaitMapIdle(2500); }catch(_){}
       /* 1 — read the WebGL frame synchronously INSIDE a render tick (the reliable way to capture a
          canvas created without preserveDrawingBuffer), and composite the animated-wind 2D canvas. */
-      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
+      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=GE().render.canvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
         try{ const wb=document.getElementById('wind-bg-canvas'); if(wb && wb.style.display!=='none' && wb.width) cx.drawImage(wb,0,0,o.width,o.height); }catch(_){}
         try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
-        res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
+        res(o); }catch(_){ res(null); } }; try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
       const out=document.createElement('canvas');
       const cont=document.getElementById('map-container');
       out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
@@ -4833,9 +4162,9 @@ window.addEventListener('DOMContentLoaded', () => {
      NEVER cage the camera with maxBounds (that was the "locked near Europe" bug). */
   function applyFlatPanSetting(){
     if(!map) return;
-    try{ map.setMaxBounds(null); }catch(_){}
+    try{ GE().camera.setMaxBounds(null); }catch(_){}
     if(currentProj!=='flat') return;
-    try{ map.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
+    try{ GE().camera.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
     /* (#R28) keep the compare map's world-copies in step with the main map's free-pan setting */
     try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){}
   }
@@ -5000,7 +4329,7 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ window.IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
     const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
-    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&map.getLayer('lyr-'+k)&&map.getLayoutProperty('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
+    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
   }catch(_){} }); }catch(_){}
 
   /* ============================================================================
@@ -5119,7 +4448,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=map?map.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
+      if(cfg.weather && panel){ try{ const c=map?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=jp()?'為替を取得できません':'FX unavailable'; } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
@@ -5321,24 +4650,24 @@ window.addEventListener('DOMContentLoaded', () => {
     let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
     let card=null, open=false, events=[], pinsOn=true;
     const TYPE_COL={'Battles':'#ff3b30','Explosions/Remote violence':'#ff9500','Violence against civilians':'#af52de','Protests':'#0a84ff','Riots':'#ffd60a','Strategic developments':'#8e8e93'};
-    function ensureLayer(){ if(map.getSource('acled-src')) return true; if(!canDraw()) return false;
+    function ensureLayer(){ if(GE().layers.hasSource('acled-src')) return true; if(!canDraw()) return false;
       try{
-        map.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addLayer({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
+        GE().layers.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        GE().layers.add({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,5,4.4,9,7],
           'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
-        map.on('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          try{ new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
+        GE().events.onLayer('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          try{ GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
             .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>').addTo(map); }catch(_){}
         });
-        map.on('mouseenter','acled-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','acled-pt',()=>{ map.getCanvas().style.cursor=''; });
+        GE().events.onLayer('mouseenter','acled-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','acled-pt',()=>{ GE().render.canvas().style.cursor=''; });
         return true;
       }catch(_){ return false; } }
-    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; } try{ map.setLayoutProperty('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
-    function pushPins(){ const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; }
-      try{ map.getSource('acled-src').setData({type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
+    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; } try{ GE().layers.setLayout('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
+    function pushPins(){ const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; }
+      try{ GE().layers.setSourceData('acled-src',{type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
       setPins(pinsOn); }; a(); }
     async function loadEvents(){
       const st=card.querySelector('#acled-status'); const list=card.querySelector('#acled-list');
@@ -5362,7 +4691,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<span style="width:9px;height:9px;border-radius:5px;flex:none;margin-top:3px;background:'+(TYPE_COL[ev.event_type]||'#ff3b30')+';"></span>'+
         '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(jp()?'死者 ':'†')+ev.fatalities):'')+'</span></span></div>').join('');
       list.innerHTML=fmt;
-      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); map.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
+      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); GE().camera.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
       pushPins();
     }
     function build(){
@@ -5451,7 +4780,7 @@ window.addEventListener('DOMContentLoaded', () => {
          (above the sheet), so unproject that exact pixel — keeps Add-point and long-press accurate. */
       let cy=r.height/2;
       if(mob()){ const cs=getComputedStyle(mc); const cover=parseFloat(cs.getPropertyValue('--sheet-cover'))||parseFloat(cs.getPropertyValue('--peek-h'))||0; cy=(r.height-cover)/2; }
-      const px=[r.width/2, cy]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
+      const px=[r.width/2, cy]; const ll=GE().coords.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
     window._mCenterLL=centerLL;
     /* (#R13) The +Add point button (and the center crosshair) now appear ONLY while a measurement tool
        is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
@@ -5469,11 +4798,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
       renderCoordReadout(c.lng,c.lat); }catch(_){} }
     let _roT=0,_updRAF=0,_roRAF=0;
-    map.on('moveend',()=>{ readout(); update(); });
+    GE().events.on('moveend',()=>{ readout(); update(); });
     /* (#R25) Smoother pan/zoom ("動きがカクツク"): coalesce the per-move DOM work to ONE frame, and run the
        heavier readout (DEM + queryRenderedFeatures) at most ~every 110ms during motion (the precise final
        value still lands on moveend). The crosshair stays live without sampling on every single move event. */
-    map.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
+    GE().events.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
       /* (#R37) Mobile pan/zoom smoothness ("抜本的に滑らかに"): during motion render ONLY the cheap coordinate
          text. The heavy crosshair readout — DEM elevation lookup + queryRenderedFeatures for the active-layer
          value — no longer runs every ~110ms mid-gesture (which spiked the main thread when a data layer was on);

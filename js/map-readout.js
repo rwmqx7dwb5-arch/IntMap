@@ -9,6 +9,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.mapReadout=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Grid (zoom-adaptive, red equator) ===== */
   function gridStepForZoom(z){
     if(z<1.5) return {major:30,minor:10};
@@ -22,9 +23,9 @@ window.IntMapModules.mapReadout=function(map,HOST){
   }
   function buildGridFeatures(){
     if(!HOST.hasTurf()) return [];
-    const z=map?map.getZoom():2;
+    const z=map?GE().camera.getZoom():2;
     const {major,minor}=gridStepForZoom(z);
-    const b=map?map.getBounds():null;
+    const b=map?GE().camera.getBounds():null;
     let minLng=-180,maxLng=180,minLat=-80,maxLat=80;
     if(b){
       const pad=Math.max(major*2,2);
@@ -75,7 +76,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
     }
     /* Edge labels (along axes) */
     const labelStep=major;
-    const c=map?map.getCenter():{lng:0,lat:0};
+    const c=map?GE().camera.getCenter():{lng:0,lat:0};
     const baseLng=Math.max(minLng+major*0.5,Math.min(maxLng-major*0.5,c.lng));
     const baseLat=Math.max(minLat+major*0.5,Math.min(maxLat-major*0.5,c.lat));
     for(let lat=Math.ceil(minLat/labelStep)*labelStep; lat<=maxLat; lat+=labelStep){
@@ -98,16 +99,16 @@ window.IntMapModules.mapReadout=function(map,HOST){
   }
   let gridRebuildTimer=null, _gridKey='';
   function refreshGrid(){
-    if(!HOST.isGridOn||!map||!map.getSource('grid-source')) return;
+    if(!HOST.isGridOn||!map||!GE().layers.hasSource('grid-source')) return;
     clearTimeout(gridRebuildTimer);
     gridRebuildTimer=setTimeout(()=>{
       try{
         /* Skip the rebuild if the zoom-step + rounded viewport haven't really changed (#15) — avoids
            re-tessellating the whole grid on every tiny pan/rotate of the globe. */
-        const z=map.getZoom(), {major,minor}=gridStepForZoom(z), b=map.getBounds();
+        const z=GE().camera.getZoom(), {major,minor}=gridStepForZoom(z), b=GE().camera.getBounds();
         const key=major+'/'+minor+'/'+(b?[b.getWest(),b.getEast(),b.getSouth(),b.getNorth()].map(v=>Math.round(v/Math.max(major,1))).join(','):'');
         if(key===_gridKey) return; _gridKey=key;
-        map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()});
+        GE().layers.setSourceData('grid-source',{type:'FeatureCollection',features:buildGridFeatures()});
       }catch(e){}
     },90);
   }
@@ -123,9 +124,9 @@ window.IntMapModules.mapReadout=function(map,HOST){
     const gcb=document.getElementById('cb-grid'); if(gcb && gcb.checked!==HOST.isGridOn) gcb.checked=HOST.isGridOn;   /* (#R10) Grid now lives in the Layers menu */
     document.querySelectorAll('[data-proxy="cb-grid"]').forEach(x=>x.classList.toggle('active',HOST.isGridOn));
     _gridKey='';
-    if(!map||!map.getSource('grid-source'))return;
-    if(HOST.isGridOn) map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()});
-    else map.getSource('grid-source').setData({type:'FeatureCollection',features:[]});
+    if(!map||!GE().layers.hasSource('grid-source'))return;
+    if(HOST.isGridOn) GE().layers.setSourceData('grid-source',{type:'FeatureCollection',features:buildGridFeatures()});
+    else GE().layers.setSourceData('grid-source',{type:'FeatureCollection',features:[]});
   }
   function degLabel(v,k){ if(v===0)return'0°'; const d=k==='lat'?(v>0?'N':'S'):(v>0?'E':'W'); return Math.abs(v)+'°'+d; }
   function showMeasureTip(pt,txt){ const el=document.getElementById('measure-tooltip'); if(!el) return; el.innerText=txt; el.style.display='block';
@@ -150,9 +151,9 @@ window.IntMapModules.mapReadout=function(map,HOST){
            the click landed on a place name, not on empty climate raster ("地名ラベルをクリックする際、その
            クリック地点の気候区分までクリックされ…ないように"). */
         let onLabel=false;
-        try{ const pt=point||(map&&map.project([lng,lat]));
-          if(pt&&map){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>map.getLayer(id));
-            if(ls.length){ const pad=(typeof HOST.isMobile==='function'&&HOST.isMobile())?15:6; const near=map.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
+        try{ const pt=point||(GE().coords.project([lng,lat]));
+          if(pt&&map){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
+            if(ls.length){ const pad=(typeof HOST.isMobile==='function'&&HOST.isMobile())?15:6; const near=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
         if(!onLabel){ const code=window.sampleKoppenAt(lng,lat);
           if(code && window.kSelected){
             window.kSelected.has(code)?window.kSelected.delete(code):window.kSelected.add(code);
@@ -182,7 +183,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
     /* Don't add a measure point if the click landed on an existing pin or intel marker */
     if(point && map){
       try{
-        const hit=map.queryRenderedFeatures(point,{layers:['user-pin-dot','news-dots','dash-dots'].filter(l=>map.getLayer(l))});
+        const hit=GE().coords.queryRenderedFeatures(point,{layers:['user-pin-dot','news-dots','dash-dots'].filter(l=>GE().layers.get(l))});
         if(hit&&hit.length) return;
       }catch(e){}
     }
@@ -196,7 +197,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
        threshold drives the on-map highlight so "add vs. close" is unambiguous (#47). */
     if(HOST.toolMode==='measure' && HOST.measurePoints.length>=3 && point){
       try{
-        const pStart=map.project(HOST.measurePoints[0]);
+        const pStart=GE().coords.project(HOST.measurePoints[0]);
         const dx=pStart.x-point.x, dy=pStart.y-point.y;
         if(Math.hypot(dx,dy)<HOST.SNAP_PX){
           HOST.toolMode='area'; HOST.measureSnapClose=false;
@@ -247,7 +248,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
   function _ll2tile(lng,lat,z){ const n=Math.pow(2,z); const x=(lng+180)/360*n; const lr=lat*Math.PI/180; const y=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*n; return {x,y,n}; }
   /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
      whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
-  function demZoomForMap(){ let mz=4; try{ if(map) mz=map.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
+  function demZoomForMap(){ let mz=4; try{ if(map) mz=GE().camera.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
   function demElevAt(lng,lat,onReady,zArg){
     const z=(zArg!=null?zArg:demZoomForMap()); const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
@@ -380,6 +381,6 @@ const _wxCache=new Map();
       else if(typeof e==='number'){ set(HOST.elevText(e)); }
     }catch(_){}
   }
-  function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-map.getBearing()}deg)`; }
+  function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
   return { _demZoomForSpan, demElevAt, demElevBilinear, demZoomForMap, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
 };

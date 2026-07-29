@@ -32,7 +32,7 @@ test('the cockpit camera can look up: no axis clamp, no padding compensation', (
   const code = stripComments(R('js/flight-sim.js'));
   assert.doesNotMatch(code, /_cockpitCam|_AXIS_MARGIN/, 'the clamped-axis camera is gone');
   assert.doesNotMatch(code, /padding:pad|setPadding/, 'and nothing compensates with the projection centre');
-  assert.match(code, /calculateCameraOptionsFromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/,
+  assert.match(code, /camera\.fromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract */,
     'the eye→target camera is back — its pitch comes out of the geometry, so it passes 90°');
   assert.match(code, /setMaxPitch\(179\)/, 'and the renderer is allowed to go there');
 });
@@ -61,7 +61,7 @@ test('the tilt anchor lets a zoom move the camera', () => {
      because the sphere branch returns a zoom (see the note in the hook). Same question again. */
   assert.match(code, /Math\.pow\(2,zRef-cur\.zoom\)/, 'the zoom ratio is computed…');
   assert.match(code, /const anchor=gEye\(was,c2c,tile,sphere,k\);/, '…and applied to the anchored eye');
-  assert.match(code, /const sol=gSolve\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,zLim\);/,
+  assert.match(code, /const sol=gLimitPitch\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,guard,was\.pitch\);/   /* (#R178) gSolve split into gSolveAt (one exact answer + feasibility) and gLimitPitch (the largest holdable tilt); it is still handed the PROPOSED zoom, which is what this asserts */,
     'so the solve runs at the PROPOSED look distance');
   /* where the eye WAS is still taken from the APPLIED camera; it is the solve that moved */
   assert.match(code, /gEye\(was,/, 'the starting camera is still the applied one');
@@ -88,7 +88,7 @@ test('a double-click zoom no longer clears the selected aircraft (a separate def
   const dl = R('js/data-layers.js'), code = stripComments(dl);
   assert.match(code, /originalEvent&&\(e\.originalEvent\.detail\|0\)>=2\) return/,
     'the second click of a double-click is ignored outright');
-  assert.match(code, /map\.on\('dblclick',_planesDbl\)/, 'and a dblclick cancels a pending clear');
+  assert.match(code, /events\.on\('dblclick',_planesDbl\)/   /* (#R178) …through the contract */, 'and a dblclick cancels a pending clear');
   assert.match(code, /_planesClearT=setTimeout\(\(\)=>\{ _planesClearT=null; if\(selectedPlane\) selectPlane\(null\); \},320\)/,
     'clearing is deferred past the double-click window');
   assert.match(code, /if\(selectedPlane\) drawTrack\(selectedPlane\)/, 'the track is rebuilt when the scale changes');

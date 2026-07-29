@@ -99,6 +99,6 @@ test('R154 #9 Right sidebar resizable + smaller default', () => {
 test('R154 #10 Layer on/off desync — OFF learned layer is hidden', () => {
   assert.match(html, /function _ownedByCheckedOther\(cbId,lid\)\{/, 'cross-owner guard so an OFF-hide never mis-hides');
   assert.match(html, /function _auditLearned\(cb\)\{ try\{ if\(_LEARN_SKIP\.test\(cb\.id\)\|\|userTouched\(cb\)\)/, 'guards apply to BOTH directions (no !cb.checked bail)');
-  assert.match(html, /if\(!cb\.checked\)\{[\s\S]*fix:'hide-learned'[\s\S]*setLayoutProperty\(lid,'visibility','none'\)/, 'OFF + still-painted owned layers are hidden');
+  assert.match(html, /if\(!cb\.checked\)\{[\s\S]*fix:'hide-learned'[\s\S]*setLayout\(lid,'visibility','none'\)/   /* (#R178) …through the contract (layers.setLayout) */, 'OFF + still-painted owned layers are hidden');
   assert.match(html, /try\{ state\[id\]\.on=false; \}catch\(_\)\{\}[^\n]*re-attach \+ applyTime re-show/, 'ECMWF load-failure also clears state.on (not just the checkbox)');
 });

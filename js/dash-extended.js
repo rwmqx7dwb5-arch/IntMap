@@ -9,7 +9,8 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.dashExtended=function(map,HOST){
+window.IntMapModules.dashExtended=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -46,8 +47,8 @@ window.IntMapModules.dashExtended=function(map,HOST){
        straight into MapLibre. Future Cesium engine subscribes the same way. */
     window.IntMapSim=(function(){
       const ids={};
-      function ensure(id, makeLayers){ if(ids[id]) return ids[id]; const sid='sim-'+id; try{ if(!map.getSource(sid)) map.addSource(sid,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); if(makeLayers) makeLayers(sid); ids[id]=sid; }catch(_){} return sid; }
-      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ const s=map.getSource(sid); if(s) s.setData(geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
+      function ensure(id, makeLayers){ if(ids[id]) return ids[id]; const sid='sim-'+id; try{ if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); if(makeLayers) makeLayers(sid); ids[id]=sid; }catch(_){} return sid; }
+      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ GE().layers.setSourceData(sid,geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
       function feedParticles(id, arr){ update(id,{type:'FeatureCollection',features:(arr||[]).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat,(p.alt||0)]},properties:p}))}); }
       function feedTracks(id, tracks){ update(id,{type:'FeatureCollection',features:(tracks||[]).map(t=>({type:'Feature',geometry:{type:'LineString',coordinates:t.path||t},properties:t.props||{}}))}); }
       return { ensure, update, feedParticles, feedTracks, _ids:ids };
@@ -68,14 +69,14 @@ window.IntMapModules.dashExtended=function(map,HOST){
     /* ---------- (D) Speculative tile prefetch — camera-direction lookahead ---------- */
     (function(){
       let hist=[];
-      function activeTpl(){ try{ const st=map.getStyle(); if(!st) return null;
+      function activeTpl(){ try{ const st=GE().scene.getStyle(); if(!st) return null;
         if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat'){ const s=st.sources['satellite']; return s&&s.tiles&&s.tiles[0]; }
-        for(const id of ['bd','bdn','bl','bln']){ const s=st.sources[id]; if(s&&s.tiles){ const lyr=(st.layers||[]).find(l=>l.source===id); if(lyr && map.getLayer(lyr.id) && map.getLayoutProperty(lyr.id,'visibility')!=='none') return s.tiles[0]; } }
+        for(const id of ['bd','bdn','bl','bln']){ const s=st.sources[id]; if(s&&s.tiles){ const lyr=(st.layers||[]).find(l=>l.source===id); if(lyr && GE().layers.has(lyr.id) && GE().layers.getLayout(lyr.id,'visibility')!=='none') return s.tiles[0]; } }
         const s=st.sources['bd']; return s&&s.tiles&&s.tiles[0]; }catch(_){ return null; } }
       function prefetch(lng,lat,z){ const tpl=activeTpl(); if(!tpl) return; z=Math.max(0,Math.min(18,Math.round(z))); const n=Math.pow(2,z);
         const xc=Math.floor((lng+180)/360*n), latR=lat*Math.PI/180, yc=Math.floor((1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n);
         let cnt=0; for(let dx=-2;dx<=2;dx++){ for(let dy=-2;dy<=2;dy++){ if(cnt>=22) break; const x=((xc+dx)%n+n)%n, y=yc+dy; if(y<0||y>=n) continue; const url=tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{s}','a'); try{ const im=new Image(); im.decoding='async'; im.src=url; }catch(_){} cnt++; } } }
-      map.on('moveend',()=>{ try{ const c=map.getCenter(), z=map.getZoom(), now=performance.now(); hist.push({lng:c.lng,lat:c.lat,t:now}); if(hist.length>3) hist.shift(); if(hist.length<2) return; const a=hist[hist.length-2], b=hist[hist.length-1], dt=Math.max(1,b.t-a.t); let dl=b.lng-a.lng; if(dl>180)dl-=360; else if(dl<-180)dl+=360; const vlng=dl/dt, vlat=(b.lat-a.lat)/dt, look=550, pl=b.lng+vlng*look, pa=Math.max(-85,Math.min(85,b.lat+vlat*look)); if(Math.abs(vlng*look)<0.15 && Math.abs(vlat*look)<0.15) return; prefetch(pl,pa,z); }catch(_){} });
+      GE().events.on('moveend',()=>{ try{ const c=GE().camera.getCenter(), z=GE().camera.getZoom(), now=performance.now(); hist.push({lng:c.lng,lat:c.lat,t:now}); if(hist.length>3) hist.shift(); if(hist.length<2) return; const a=hist[hist.length-2], b=hist[hist.length-1], dt=Math.max(1,b.t-a.t); let dl=b.lng-a.lng; if(dl>180)dl-=360; else if(dl<-180)dl+=360; const vlng=dl/dt, vlat=(b.lat-a.lat)/dt, look=550, pl=b.lng+vlng*look, pa=Math.max(-85,Math.min(85,b.lat+vlat*look)); if(Math.abs(vlng*look)<0.15 && Math.abs(vlat*look)<0.15) return; prefetch(pl,pa,z); }catch(_){} });
       window.SpeculativePrefetch={ prefetch };
     })();
 
@@ -116,23 +117,23 @@ window.IntMapModules.dashExtended=function(map,HOST){
     function ensureOverlays(){
       if(!_imCanDraw()) return false;
       try{
-        if(!map.getSource('r7-disputes')){ map.addSource('r7-disputes',{type:'geojson',data:disputesFC()});
-          map.addLayer({id:'r7-disputes-line',type:'line',source:'r7-disputes',layout:{visibility:'none','line-cap':'round'},paint:{'line-color':'#ff4d4d','line-width':2.2,'line-dasharray':[2,2],'line-opacity':0.92}});
-          map.addLayer({id:'r7-disputes-label',type:'symbol',source:'r7-disputes',layout:{visibility:'none','symbol-placement':'line-center','text-field':['get','label'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ff7a7a','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+        if(!GE().layers.hasSource('r7-disputes')){ GE().layers.addSource('r7-disputes',{type:'geojson',data:disputesFC()});
+          GE().layers.add({id:'r7-disputes-line',type:'line',source:'r7-disputes',layout:{visibility:'none','line-cap':'round'},paint:{'line-color':'#ff4d4d','line-width':2.2,'line-dasharray':[2,2],'line-opacity':0.92}});
+          GE().layers.add({id:'r7-disputes-label',type:'symbol',source:'r7-disputes',layout:{visibility:'none','symbol-placement':'line-center','text-field':['get','label'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ff7a7a','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
         }
-        if(!map.getSource('r7-airdef')){ map.addSource('r7-airdef',{type:'geojson',data:airDefFC()});
-          map.addLayer({id:'r7-airdef-fill',type:'fill',source:'r7-airdef',filter:['==','$type','Polygon'],layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.1}});
-          map.addLayer({id:'r7-airdef-line',type:'line',source:'r7-airdef',filter:['==','$type','LineString'],layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.1,'line-opacity':0.55}});
-          map.addLayer({id:'r7-airdef-pt',type:'circle',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none'},paint:{'circle-radius':4,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':1.5}});
-          map.addLayer({id:'r7-airdef-label',type:'symbol',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none','text-field':['get','label'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}});
+        if(!GE().layers.hasSource('r7-airdef')){ GE().layers.addSource('r7-airdef',{type:'geojson',data:airDefFC()});
+          GE().layers.add({id:'r7-airdef-fill',type:'fill',source:'r7-airdef',filter:['==','$type','Polygon'],layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.1}});
+          GE().layers.add({id:'r7-airdef-line',type:'line',source:'r7-airdef',filter:['==','$type','LineString'],layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.1,'line-opacity':0.55}});
+          GE().layers.add({id:'r7-airdef-pt',type:'circle',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none'},paint:{'circle-radius':4,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':1.5}});
+          GE().layers.add({id:'r7-airdef-label',type:'symbol',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none','text-field':['get','label'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}});
         }
         return true;
       }catch(e){ return false; }
     }
     const DSET=['r7-disputes-line','r7-disputes-label'], ASET=['r7-airdef-fill','r7-airdef-line','r7-airdef-pt','r7-airdef-label'];
     const state={disputes:false,airdef:false,langs:false};
-    function setVis(ids,on){ ids.forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }); }
-    function refreshDisputeLabels(){ try{ const s=map.getSource('r7-disputes'); if(s) s.setData(disputesFC()); }catch(_){} }
+    function setVis(ids,on){ ids.forEach(l=>{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }); }
+    function refreshDisputeLabels(){ try{ GE().layers.setSourceData('r7-disputes',disputesFC()); }catch(_){} }
 
     /* ===== (#R8b) World-languages overlay — Jake Jing's digitisation of the Atlas of the World's
        Languages (Asher & Moseley). It's a heavy global polygon set, so it is: LAZY-loaded on first
@@ -145,39 +146,39 @@ window.IntMapModules.dashExtended=function(map,HOST){
     let langData=null, langFetching=false, langHoverWired=false, langTip=null;
     const _esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const _langHash=s=>{ let h=0; for(let i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; };
-    const _firstLabelId=()=>{ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; };
+    const _firstLabelId=()=>{ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; };
     const _langProp=(p,keys)=>{ for(const k of keys){ if(p&&p[k]!=null&&p[k]!=='') return p[k]; } return ''; };
     function addLangLayers(isVector){ const before=_firstLabelId(); const ext=isVector?{'source-layer':'languages'}:{};
-      if(!map.getLayer(LANG_FILL)) map.addLayer(Object.assign({id:LANG_FILL,type:'fill',source:LANG_SRC,layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#6f9be8'],'fill-opacity':0.34,'fill-antialias':true}},ext),before);
-      if(!map.getLayer(LANG_LINE)) map.addLayer(Object.assign({id:LANG_LINE,type:'line',source:LANG_SRC,layout:{visibility:'none'},paint:{'line-color':'rgba(255,255,255,0.45)','line-width':['interpolate',['linear'],['zoom'],2,0.3,7,0.9]}},ext),before);
+      if(!GE().layers.has(LANG_FILL)) GE().layers.add(Object.assign({id:LANG_FILL,type:'fill',source:LANG_SRC,layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#6f9be8'],'fill-opacity':0.34,'fill-antialias':true}},ext),before);
+      if(!GE().layers.has(LANG_LINE)) GE().layers.add(Object.assign({id:LANG_LINE,type:'line',source:LANG_SRC,layout:{visibility:'none'},paint:{'line-color':'rgba(255,255,255,0.45)','line-width':['interpolate',['linear'],['zoom'],2,0.3,7,0.9]}},ext),before);
     }
     function ensureLangSource(cb){
-      if(map.getSource(LANG_SRC)){ cb&&cb(true); return; }
-      if(window.LANGUAGES_TILES_URL){ try{ map.addSource(LANG_SRC,{type:'vector',tiles:[window.LANGUAGES_TILES_URL],maxzoom:10}); addLangLayers(true); cb&&cb(true); return; }catch(_){} }
-      if(langData){ try{ map.addSource(LANG_SRC,{type:'geojson',data:langData,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); return; }catch(_){} }
+      if(GE().layers.hasSource(LANG_SRC)){ cb&&cb(true); return; }
+      if(window.LANGUAGES_TILES_URL){ try{ GE().layers.addSource(LANG_SRC,{type:'vector',tiles:[window.LANGUAGES_TILES_URL],maxzoom:10}); addLangLayers(true); cb&&cb(true); return; }catch(_){} }
+      if(langData){ try{ GE().layers.addSource(LANG_SRC,{type:'geojson',data:langData,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); return; }catch(_){} }
       if(langFetching) return;
       langFetching=true;
       fetch('data/asher_languages.geojson').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(gj=>{
         try{ (gj.features||[]).forEach(f=>{ const p=f.properties||(f.properties={}); const fam=_langProp(p,['family','Family','FAMILY','fam','Fam','classification']); const hue=_langHash(fam||_langProp(p,['name','Language','language']))%360; p.__col='hsl('+hue+',58%,56%)'; }); }catch(_){}
         langData=gj; langFetching=false;
-        try{ map.addSource(LANG_SRC,{type:'geojson',data:gj,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); }catch(_){ cb&&cb(false); }
+        try{ GE().layers.addSource(LANG_SRC,{type:'geojson',data:gj,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); }catch(_){ cb&&cb(false); }
       }).catch(()=>{ langFetching=false; try{ satToast(jp()?'言語データが見つかりません（data/asher_languages.geojson を配置）':'Language data not found — add data/asher_languages.geojson'); }catch(_){}
         const x=document.getElementById('r7-dl-langs'); if(x){ x.checked=false; const r=x.closest('.lyr-row'); if(r) r.classList.remove('on'); } cb&&cb(false); });
     }
     function wireLangHover(){ if(langHoverWired) return; langHoverWired=true;
       langTip=document.createElement('div'); langTip.className='map-tooltip'; (document.getElementById('map-container')||document.body).appendChild(langTip);
-      map.on('mousemove',LANG_FILL,(e)=>{ const f=e.features&&e.features[0]; if(!f){ langTip.style.display='none'; return; } const p=f.properties||{};
+      GE().events.onLayer('mousemove',LANG_FILL,(e)=>{ const f=e.features&&e.features[0]; if(!f){ langTip.style.display='none'; return; } const p=f.properties||{};
         const lang=_langProp(p,['Language','language','name','NAME','Name','PRNAME','label'])||'—', fam=_langProp(p,['Family','family','FAMILY','fam','classification'])||'—';
         langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(jp()?'語族: ':'Family: ')+_esc(fam)+'</div>';
         langTip.style.display='block'; langTip.style.left=e.point.x+'px'; langTip.style.top=e.point.y+'px'; });
-      map.on('mouseenter',LANG_FILL,()=>{ map.getCanvas().style.cursor='pointer'; });
-      map.on('mouseleave',LANG_FILL,()=>{ if(langTip) langTip.style.display='none'; map.getCanvas().style.cursor=''; });
+      GE().events.onLayer('mouseenter',LANG_FILL,()=>{ GE().render.canvas().style.cursor='pointer'; });
+      GE().events.onLayer('mouseleave',LANG_FILL,()=>{ if(langTip) langTip.style.display='none'; GE().render.canvas().style.cursor=''; });
     }
     function toggle(which,on){ state[which]=on;
       if(which==='langs'){ if(on){ ensureLangSource(ok=>{ if(ok){ wireLangHover(); setVis(LSET,true); } }); } else { setVis(LSET,false); if(langTip) langTip.style.display='none'; } return; }
-      const apply=()=>{ if(!ensureOverlays()){ map.once('idle',apply); return; } setVis(which==='disputes'?DSET:ASET,on); }; apply(); }
+      const apply=()=>{ if(!ensureOverlays()){ GE().events.once('idle',apply); return; } setVis(which==='disputes'?DSET:ASET,on); }; apply(); }
     /* re-apply after a style swap (theme / satellite engine) so the overlays survive */
-    map.on('styledata',()=>{ if(state.disputes||state.airdef){ setTimeout(()=>{ if(ensureOverlays()){ setVis(DSET,state.disputes); setVis(ASET,state.airdef); } },60); }
+    GE().events.on('styledata',()=>{ if(state.disputes||state.airdef){ setTimeout(()=>{ if(ensureOverlays()){ setVis(DSET,state.disputes); setVis(ASET,state.airdef); } },60); }
       if(state.langs){ setTimeout(()=>{ ensureLangSource(ok=>{ if(ok) setVis(LSET,true); }); },80); } });
 
     /* dropdown UI — appended after the existing layer groups, non-destructive */

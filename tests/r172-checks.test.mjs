@@ -27,7 +27,10 @@ const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
    is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
    JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
 const INDEX = appShell(new URL('../', import.meta.url));
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
+/* (#R178) …and js/geo-engine.js is not a module either — it is the renderer adapter, carved out of
+   app-body.js this round. It is part of the page's program (see appShell), so questions asked of
+   the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
 const stripComments = src => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* Real `map.<x>` member reads, via the parser — a regex cannot do this in either direction

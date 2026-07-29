@@ -39,6 +39,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.terrainWater=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
         demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan, makeDraggable=HOST.makeDraggable;
@@ -70,35 +71,35 @@ window.IntMapModules.terrainWater=function(map,HOST){
 
     /* ---- layers ------------------------------------------------------------------------------- */
     function ensureVec(){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource(VEC)) map.addSource(VEC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('tw-levee-line')) map.addLayer({id:'tw-levee-line',type:'line',source:VEC,filter:['==',['get','kind'],'levee'],
+      if(!GE().layers.hasSource(VEC)) GE().layers.addSource(VEC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('tw-levee-line')) GE().layers.add({id:'tw-levee-line',type:'line',source:VEC,filter:['==',['get','kind'],'levee'],
         paint:{'line-color':'#8d6e3a','line-width':4,'line-opacity':0.95}});
-      if(!map.getLayer('tw-draft-line')) map.addLayer({id:'tw-draft-line',type:'line',source:VEC,filter:['==',['get','kind'],'draft'],
+      if(!GE().layers.has('tw-draft-line')) GE().layers.add({id:'tw-draft-line',type:'line',source:VEC,filter:['==',['get','kind'],'draft'],
         paint:{'line-color':'#ffd23f','line-width':3,'line-dasharray':[2,1.5],'line-opacity':0.95}});
-      if(!map.getLayer('tw-breach')) map.addLayer({id:'tw-breach',type:'symbol',source:VEC,filter:['==',['get','kind'],'breach'],
+      if(!GE().layers.has('tw-breach')) GE().layers.add({id:'tw-breach',type:'symbol',source:VEC,filter:['==',['get','kind'],'breach'],
         layout:{'text-field':['get','label'],'text-size':13,'text-allow-overlap':true,'text-rotate':['get','rot'],'text-rotation-alignment':'map'},
         paint:{'text-color':'#ff3b30','text-halo-color':'#fff','text-halo-width':1.6}});
-      if(!map.getLayer('tw-src')) map.addLayer({id:'tw-src',type:'circle',source:VEC,filter:['==',['get','kind'],'source'],
+      if(!GE().layers.has('tw-src')) GE().layers.add({id:'tw-src',type:'circle',source:VEC,filter:['==',['get','kind'],'source'],
         paint:{'circle-radius':6,'circle-color':'#29b6f6','circle-stroke-color':'#04283a','circle-stroke-width':2}});
       return true; }catch(_){ return false; } }
-    function setVec(feats){ try{ if(ensureVec()) map.getSource(VEC).setData({type:'FeatureCollection',features:feats||[]}); }catch(_){} }
+    function setVec(feats){ try{ if(ensureVec()) GE().layers.setSourceData(VEC,{type:'FeatureCollection',features:feats||[]}); }catch(_){} }
     function paintImg(srcId,lyrId,url,coords,before){
       try{ if(!_imCanDraw()) return;
-        const s=map.getSource(srcId);
-        if(s&&s.updateImage) s.updateImage({url,coordinates:coords});
-        else { map.addSource(srcId,{type:'image',url,coordinates:coords});
-          map.addLayer({id:lyrId,type:'raster',source:srcId,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},
-            (before&&map.getLayer(before))?before:undefined); }
+        const s=GE().layers.hasSource(srcId);
+        if(s) GE().layers.updateImage(srcId,{url,coordinates:coords});
+        else { GE().layers.addSource(srcId,{type:'image',url,coordinates:coords});
+          GE().layers.add({id:lyrId,type:'raster',source:srcId,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},
+            (before&&GE().layers.has(before))?before:undefined); }
       }catch(_){} }
     function wipe(){ [[LYR_WATER,IMG_WATER],[LYR_TERR,IMG_TERR]].forEach(([l,s])=>{
-        try{ if(map.getLayer(l)) map.removeLayer(l); }catch(_){} try{ if(map.getSource(s)) map.removeSource(s); }catch(_){} });
+        try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} try{ if(GE().layers.hasSource(s)) GE().layers.removeSource(s); }catch(_){} });
       setVec([]); }
 
     /* ---- build the grid from the real DEM ------------------------------------------------------ */
     async function build(){
       if(building) return false; building=true;
       try{
-        const b=map.getBounds(); if(!b) return false;
+        const b=GE().camera.getBounds(); if(!b) return false;
         let w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
         if(e<w) e+=360;
         const midLat=(n+s)/2;
@@ -319,7 +320,7 @@ window.IntMapModules.terrainWater=function(map,HOST){
         pT[o+3]=a; }
       ctT.putImageData(imT,0,0);
       if(anyEdit) paintImg(IMG_TERR,LYR_TERR,cvT.toDataURL('image/png'),coords,'tw-water');
-      else { try{ if(map.getLayer(LYR_TERR)) map.removeLayer(LYR_TERR); if(map.getSource(IMG_TERR)) map.removeSource(IMG_TERR); }catch(_){} }
+      else { try{ if(GE().layers.has(LYR_TERR)) GE().layers.remove(LYR_TERR); if(GE().layers.hasSource(IMG_TERR)) GE().layers.removeSource(IMG_TERR); }catch(_){} }
 
       /* 2 — the water: standing depth in blue, the routed flow path in cyan on top */
       const cv=document.createElement('canvas'); cv.width=NX; cv.height=NY;
@@ -426,8 +427,8 @@ window.IntMapModules.terrainWater=function(map,HOST){
       } else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>';
     }
     function setMode(m){ mode=m; drafting=null;
-      try{ map.getCanvas().style.cursor=(m==='pan')?'':'crosshair'; }catch(_){}
-      try{ if(m==='raise'||m==='lower') map.dragPan.disable(); else map.dragPan.enable(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=(m==='pan')?'':'crosshair'; }catch(_){}
+      try{ if(m==='raise'||m==='lower') GE().input.set('dragPan',false); else GE().input.set('dragPan',true); }catch(_){}
       syncMode(); renderParams(); draw(); }
 
     /* ---- map interaction -------------------------------------------------------------------------- */
@@ -451,9 +452,9 @@ window.IntMapModules.terrainWater=function(map,HOST){
         if(Math.abs(a[0]-b[0])<1e-7&&Math.abs(a[1]-b[1])<1e-7) p.pop(); else break; }
       if(p.length>=2){ levees.push(drafting); drafting=null; solve(); }
       else { drafting=null; draw(); } }
-    map.on('mousedown',onDown); map.on('mousemove',onMove); map.on('mouseup',onUp);
-    map.on('touchstart',onDown); map.on('touchmove',onMove); map.on('touchend',onUp);
-    map.on('click',onClick); map.on('dblclick',onDbl);
+    GE().events.on('mousedown',onDown); GE().events.on('mousemove',onMove); GE().events.on('mouseup',onUp);
+    GE().events.on('touchstart',onDown); GE().events.on('touchmove',onMove); GE().events.on('touchend',onUp);
+    GE().events.on('click',onClick); GE().events.on('dblclick',onDbl);
 
     /* ---- lifecycle -------------------------------------------------------------------------------- */
     async function open(o){
@@ -461,12 +462,12 @@ window.IntMapModules.terrainWater=function(map,HOST){
         panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
-      if(o&&o.lng!=null){ try{ map.flyTo({center:[o.lng,o.lat],zoom:Math.max(map.getZoom(),11),duration:600}); }catch(_){}
+      if(o&&o.lng!=null){ try{ GE().camera.flyTo({center:[o.lng,o.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:600}); }catch(_){}
         await new Promise(r=>setTimeout(r,750)); }
       if(!G||o&&o.refit){ if(await build()) solve(); } else solve();
       return true; }
     function close(){ opened=false; painting=false; drafting=null;
-      try{ map.dragPan.enable(); map.getCanvas().style.cursor=''; }catch(_){}
+      try{ GE().input.set('dragPan',true); GE().render.canvas().style.cursor=''; }catch(_){}
       if(panel) panel.style.display='none'; wipe(); return true; }
     window.addEventListener('intmap-lang',()=>{ if(opened) render(); });
 

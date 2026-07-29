@@ -251,7 +251,10 @@ try {
   if (!entry) err('split', 'src/main.js is missing — nothing imports the js/ modules');
   if (!bodyF) err('split', 'js/app-body.js is missing — the application body is gone');
   if (idx && entry && bodyF) {
-    const t = read(bodyF) + '\n' + read(idx);          // where factories are called from
+    /* (#R178) …and js/geo-engine.js, which is where the renderer adapter moved. It instantiates
+       IntMapModules.solid3d (the closed-body custom layer), so it is a factory CALL SITE now. */
+    const engineF = ALL.find((x) => x.rel === 'js/geo-engine.js');
+    const t = read(bodyF) + '\n' + read(idx) + '\n' + (engineF ? read(engineF) : '');   // where factories are called from
     const e = read(entry);
     const imported = new Set([...e.matchAll(/import\s+'\.\.\/(js\/[^']+)'/g)].map((m) => m[1]));
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {

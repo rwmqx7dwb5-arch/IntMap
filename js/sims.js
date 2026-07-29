@@ -16,6 +16,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.radiation=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -52,16 +53,16 @@ window.IntMapModules.radiation=function(map,HOST){
       {min:2,c:'#b7f7b0',n:['Trace deposition','微量沈着','Spuren','Следы','Trazas'],mSv:'<0.1'} ];
     async function fetchJSON(url){ const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
       for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
-    function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imrad-dep',type:'fill',source:DEP,paint:{'fill-color':['get','c'],'fill-opacity':0.5}});
-      map.addLayer({id:'imrad-dep-line',type:'line',source:DEP,paint:{'line-color':['get','c'],'line-width':0.4,'line-opacity':0.5}});
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imrad-heat',type:'heatmap',source:SRC,maxzoom:10,paint:{'heatmap-weight':['coalesce',['get','w'],0.4],'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],2,7,5,16,8,34],'heatmap-opacity':0.55,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.15,'rgba(120,220,120,0.45)',0.35,'#ffe08a',0.55,'#ff9f0a',0.78,'#ff453a',1,'#8a0f0f']}});
-      map.addLayer({id:'imrad-pt',type:'circle',source:SRC,minzoom:4.5,paint:{'circle-radius':2.1,'circle-color':['coalesce',['get','c'],'#ff453a'],'circle-opacity':0.5}});
-      map.addLayer({id:'imrad-srcpt',type:'circle',source:SRC,filter:['==',['get','src'],1],paint:{'circle-radius':7,'circle-color':'#ffe000','circle-stroke-color':'#8a0f0f','circle-stroke-width':3}});
+    function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imrad-dep',type:'fill',source:DEP,paint:{'fill-color':['get','c'],'fill-opacity':0.5}});
+      GE().layers.add({id:'imrad-dep-line',type:'line',source:DEP,paint:{'line-color':['get','c'],'line-width':0.4,'line-opacity':0.5}});
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imrad-heat',type:'heatmap',source:SRC,maxzoom:10,paint:{'heatmap-weight':['coalesce',['get','w'],0.4],'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],2,7,5,16,8,34],'heatmap-opacity':0.55,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.15,'rgba(120,220,120,0.45)',0.35,'#ffe08a',0.55,'#ff9f0a',0.78,'#ff453a',1,'#8a0f0f']}});
+      GE().layers.add({id:'imrad-pt',type:'circle',source:SRC,minzoom:4.5,paint:{'circle-radius':2.1,'circle-color':['coalesce',['get','c'],'#ff453a'],'circle-opacity':0.5}});
+      GE().layers.add({id:'imrad-srcpt',type:'circle',source:SRC,filter:['==',['get','src'],1],paint:{'circle-radius':7,'circle-color':'#ffe000','circle-stroke-color':'#8a0f0f','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
-    function clear(){ if(_run){ _run.cancel=true; _run=null; } try{ map.getSource(SRC)&&map.getSource(SRC).setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.getSource(DEP)&&map.getSource(DEP).setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clear(){ if(_run){ _run.cancel=true; _run=null; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* wind/precip/temperature field — FORECAST (now / next 3 days) or, for a PAST start date, the ERA5 ARCHIVE.
        Returns hourly u,v,precip,temp on a 6×6 grid; startHour = the field-hour the release begins at. */
     async function fetchField(cx,cy,opts){ opts=opts||{}; const nx=6, ny=6, half=2.6; const lons=[],lats=[];
@@ -146,7 +147,7 @@ window.IntMapModules.radiation=function(map,HOST){
           if(Math.random()<0.008*dH) p.dead=true; }
         const feats=[{type:'Feature',geometry:{type:'Point',coordinates:[src.lng,src.lat]},properties:{src:1,w:1,c:'#ffe000'}}];
         for(const p of parts){ if(p.dead) continue; const a=p.act; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{w:Math.max(0.15,a),c:(a>0.7?'#ff453a':a>0.4?'#ff9f0a':'#ffe08a')}}); }
-        try{ const s2=map.getSource(SRC); if(s2) s2.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
         if(tau>=1) return; requestAnimationFrame(frame); };
       requestAnimationFrame(frame); }
     async function run(src,opts){ opts=opts||{}; clear(); const myGen=++_gen;
@@ -167,13 +168,13 @@ window.IntMapModules.radiation=function(map,HOST){
       const secs=Math.max(15,Math.min(60,+opts.seconds||38));
       let painted=false;
       const paint=()=>{ if(myGen!==_gen) return true; if(painted) return true; if(!ensureLayers()) return false; painted=true;
-        try{ const ds=map.getSource(DEP); if(ds) ds.setData({type:'FeatureCollection',features:dz.feats}); }catch(_){}
-        try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); map.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else map.flyTo({center:[src.lng,src.lat],zoom:Math.max(map.getZoom(),6),duration:800}); }catch(_){}
+        try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:dz.feats}); }catch(_){}
+        try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else GE().camera.flyTo({center:[src.lng,src.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:800}); }catch(_){}
         animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour}); return true; };
-      if(!paint()){ let n=0; const t=setInterval(()=>{ if(myGen!==_gen||paint()||n++>56){ clearInterval(t); } },250); try{ map.once('idle',paint); }catch(_){} }
+      if(!paint()){ let n=0; const t=setInterval(()=>{ if(myGen!==_gen||paint()||n++>56){ clearInterval(t); } },250); try{ GE().events.once('idle',paint); }catch(_){} }
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
-    try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
+    try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
     return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite };
   })();
 };
@@ -301,6 +302,7 @@ window.IntMapModules.popArea=function(map,HOST){
 };
 
 window.IntMapModules.slope=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -311,12 +313,12 @@ window.IntMapModules.slope=function(map,HOST){
     const SL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
     function aspectColor(a){ return 'hsl('+Math.round(a)+',72%,55%)'; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
       return true; }catch(_){ return false; } }
-    async function run(){ if(busy||!on||!map) return; let b; try{ b=map.getBounds(); }catch(_){ return; }
-      const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth(); const z=Math.max(3,Math.min(13,Math.round(map.getZoom())));
+    async function run(){ if(busy||!on||!map) return; let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+      const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth(); const z=Math.max(3,Math.min(13,Math.round(GE().camera.getZoom())));
       const key=[mode,z,w.toFixed(3),s.toFixed(3),e.toFixed(3),n.toFixed(3)].join(','); if(key===lastKey) return; lastKey=key; busy=true;
       try{ const samp=await window.IntMapTerrain.sampler([w,s,e,n],z); if(!samp||!on){ busy=false; return; }
         const COLS=48, dLng=(e-w)/COLS, dLat=(n-s)/COLS, midLat=(s+n)/2;
@@ -329,7 +331,7 @@ window.IntMapModules.slope=function(map,HOST){
           if(mode==='aspect'){ let asp=(Math.atan2(-dzdx,-dzdy)*180/Math.PI+360)%360; col=slope<1.5?'#b8b8b8':aspectColor(asp); } else col=slopeColor(slope);   /* downslope azimuth (the direction the slope faces), clockwise from north */
           feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w+i*dLng,s+j*dLat],[w+(i+1)*dLng,s+j*dLat],[w+(i+1)*dLng,s+(j+1)*dLat],[w+i*dLng,s+(j+1)*dLat],[w+i*dLng,s+j*dLat]]]},properties:{col:col}});
         }
-        if(on){ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} updateLegend(feats.length); }
+        if(on){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){} updateLegend(feats.length); }
       }catch(_){}
       busy=false; }
     function updateLegend(nc){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('slope',[lbl(),lbl(),lbl(),lbl()],['imslope-fill'],'dl-slope'); if(!el) return; let h=el.querySelector('.sl-note'); if(!h){ h=document.createElement('div'); h.className='sl-note'; h.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.5;'; el.appendChild(h);}
@@ -338,12 +340,12 @@ window.IntMapModules.slope=function(map,HOST){
       h.innerHTML=ramp+'<br>'+modeBtn; const mb=h.querySelector('#sl-mode'); if(mb) mb.onclick=()=>setMode(mode==='slope'?'aspect':'slope'); }catch(_){} }
     const lbl=()=>SL('Slope / aspect','傾斜・斜面方向','Neigung / Exposition','Уклон / экспозиция','Pendiente / orientación');
     function setMode(m){ mode=(m==='aspect')?'aspect':'slope'; lastKey=''; run(); }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map.once) map.once('idle',apply); return; }
-      try{ map.setLayoutProperty('imslope-fill','visibility',on?'visible':'none'); }catch(_){}
-      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ const src=map.getSource(SRC); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} } };
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ GE().events.once('idle',apply); return; }
+      try{ GE().layers.setLayout('imslope-fill','visibility',on?'visible':'none'); }catch(_){}
+      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    map.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(run,500); });
-    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ try{ map.setLayoutProperty('imslope-fill','visibility','visible'); }catch(_){} } },80); });
+    GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(run,500); });
+    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ try{ GE().layers.setLayout('imslope-fill','visibility','visible'); }catch(_){} } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-slope')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-slope';
       const lab=document.createElement('label'); lab.className='layer-option';
@@ -360,6 +362,7 @@ window.IntMapModules.slope=function(map,HOST){
 };
 
 window.IntMapModules.rf=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -375,11 +378,11 @@ window.IntMapModules.rf=function(map,HOST){
     function dest(lng,lat,brg,dkm){ const dr=dkm/6371, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(brg)); const lo2=lo+Math.atan2(Math.sin(brg)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
     function horizonKm(h){ return 4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2)); }   /* 4/3-earth radio horizon, RX at 2 m */
     function fsplKm(){ const budget=txDbm-(-100)+3;   /* RX sensitivity −100 dBm, small antenna gain */ const d=Math.pow(10,(budget-32.44-20*Math.log10(freq))/20); return isFinite(d)?d:60; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imrf-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#12b886','fill-opacity':0.32}});
-      map.addLayer({id:'imrf-line',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#0ca678','line-width':1.6}});
-      map.addLayer({id:'imrf-ant',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imrf-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#12b886','fill-opacity':0.32}});
+      GE().layers.add({id:'imrf-line',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#0ca678','line-width':1.6}});
+      GE().layers.add({id:'imrf-ant',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     /* proper terrain VIEWSHED: a cell is covered only if NO closer terrain rises into the line of sight from the
        mast top to that cell (4/3-earth curvature drop applied). Marks true shadow gaps — no overstated coverage. */
@@ -403,14 +406,14 @@ window.IntMapModules.rf=function(map,HOST){
       if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'); }
       const r=await compute(ant.lng,ant.lat);
       if(r){ const feats=r.feats.concat([{type:'Feature',geometry:{type:'Point',coordinates:[ant.lng,ant.lat]},properties:{}}]);
-        try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-        try{ map.fitBounds([[ant.lng-r.maxR/95,ant.lat-r.maxR/111],[ant.lng+r.maxR/95,ant.lat+r.maxR/111]],{padding:50,duration:800}); }catch(_){}
+        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
+        try{ GE().camera.fitBounds([[ant.lng-r.maxR/95,ant.lat-r.maxR/111],[ant.lng+r.maxR/95,ant.lat+r.maxR/111]],{padding:50,duration:800}); }catch(_){}
         if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.innerHTML='<b>'+RF('Max range','最大到達','Max. Reichweite','Дальность','Alcance')+':</b> '+r.maxR.toFixed(1)+' km · <b>'+RF('covered','受信域','abgedeckt','покрытие','cubierto')+':</b> ~'+Math.round(r.covered*r.cellKm2).toLocaleString()+' km² · '+RF('base','基地標高','Basis','база','base')+' '+Math.round(r.g0)+' m'; }
       } else if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('No terrain data here.','この地点の地形データがありません。','Keine Geländedaten.','Нет данных.','Sin datos.'); }
     }catch(_){}
       busy=false; }
-    function _endPick(){ picking=false; try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
-    function startPick(){ _endPick(); picking=true; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ map.once('click',pickH); }catch(_){} }
+    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    function startPick(){ _endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rf-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       const inC='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
@@ -425,7 +428,7 @@ window.IntMapModules.rf=function(map,HOST){
         +'<div class="rf-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+RF('Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.','実地形上の見通し（4/3地球の電波見通し＋自由空間損失）。回折・遮蔽物は未考慮の一次近似です。','Sichtlinie über echtem Gelände.','Прямая видимость по рельефу.','Línea de vista sobre terreno real.')+'</div></div>';
       document.body.appendChild(panel);
-      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
+      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };
       const gv=(sel,d)=>{ const el=panel.querySelector(sel); const v=+el.value; return isFinite(v)?v:d; };
       panel.querySelector('.rf-h').onchange=()=>{ antH=Math.max(1,gv('.rf-h',30)); if(ant) run(); };
       panel.querySelector('.rf-p').onchange=()=>{ txDbm=gv('.rf-p',30); if(ant) run(); };
@@ -434,10 +437,11 @@ window.IntMapModules.rf=function(map,HOST){
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rf-head')); }catch(_){}
       return panel; }
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } }
-    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
+    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
 window.IntMapModules.sun=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -469,12 +473,12 @@ window.IntMapModules.sun=function(map,HOST){
       if(cosH>1) return {polar:'night'}; if(cosH<-1) return {polar:'day'};
       const w0=Math.acos(cosH), a=J0+(w0+lw)/(2*Math.PI)+n, Jset=solarTransitJ(a), Jrise=Jnoon-(Jset-Jnoon);
       return { rise:toDate(Jrise), set:toDate(Jset), noon:toDate(Jnoon) }; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':0.30}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':0.30}});
       return true; }catch(_){ return false; } }
     /* OSM buildings in view → cast-shadow polygons (only when zoomed in enough to be useful) */
-    async function fetchBld(){ let b; try{ b=map.getBounds(); }catch(_){ return []; } if(map.getZoom()<14.5) return [];
+    async function fetchBld(){ let b; try{ b=GE().camera.getBounds(); }catch(_){ return []; } if(GE().camera.getZoom()<14.5) return [];
       const s=b.getSouth().toFixed(4),w=b.getWest().toFixed(4),n=b.getNorth().toFixed(4),eA=b.getEast().toFixed(4); const key=[s,w,n,eA].join(',');
       if(key===bboxKey&&bbldCache) return bbldCache; bboxKey=key;
       const q='[out:json][timeout:25];(way["building"]('+s+','+w+','+n+','+eA+'););out geom 900;';
@@ -484,20 +488,20 @@ window.IntMapModules.sun=function(map,HOST){
         bbldCache=bld; return bld; }catch(_){} }
       return bbldCache||[]; }
     async function drawShadows(){ if(busy) return; busy=true; try{ ensure();
-      const c=map.getCenter(); const sp=sunPos(when,c.lat,c.lng);
+      const c=GE().camera.getCenter(); const sp=sunPos(when,c.lat,c.lng);
       updatePanel(sp);
-      try{ if(sp.altDeg>0) map.setLight&&map.setLight({anchor:'map',position:[1.5,sp.azCompass,Math.max(1,90-sp.altDeg)],color:'#fff5e6',intensity:0.5}); else map.setLight&&map.setLight({anchor:'map',position:[1.5,0,60],color:'#213',intensity:0.25}); }catch(_){}
-      if(sp.altDeg<=0.5){ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }   /* sun down → no cast shadows */
+      try{ if(sp.altDeg>0) GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,sp.azCompass,Math.max(1,90-sp.altDeg)],color:'#fff5e6',intensity:0.5}); else GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,0,60],color:'#213',intensity:0.25}); }catch(_){}
+      if(sp.altDeg<=0.5){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }   /* sun down → no cast shadows */
       const bld=await fetchBld(); const shadowBrg=(sp.azCompass+180)%360, br=shadowBrg*rad;
       const Lm=1/Math.tan(sp.altitude); const feats=[]; const clat=c.lat;
       const offLng=m=>m*Math.sin(br)/(111320*Math.cos(clat*rad)), offLat=m=>m*Math.cos(br)/110540;
       bld.forEach(bd=>{ const L=bd.h*Lm; if(!(L>0)) return; const oL=offLng(L), oA=offLat(L); const r0=bd.ring;
         for(let i=0;i<r0.length-1;i++){ const a=r0[i], b2=r0[i+1]; feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[a[0],a[1]],[b2[0],b2[1]],[b2[0]+oL,b2[1]+oA],[a[0]+oL,a[1]+oA],[a[0],a[1]]]]},properties:{}}); }
         feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r0.map(p=>[p[0]+oL,p[1]+oA])]},properties:{}}); });
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
     }catch(_){} busy=false; }
     function fmtT(d){ try{ return d.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
-    function updatePanel(sp){ if(!panel) return; const c=map.getCenter(); const st=sunTimes(when,c.lat,c.lng);
+    function updatePanel(sp){ if(!panel) return; const c=GE().camera.getCenter(); const st=sunTimes(when,c.lat,c.lng);
       const rd=panel.querySelector('.sun-read'); if(rd){ const dir=['N','NE','E','SE','S','SW','W','NW'][Math.round(sp.azCompass/45)%8];
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
@@ -553,7 +557,7 @@ window.IntMapModules.sun=function(map,HOST){
     async function solsticeShade(){ if(engBusy||!ENG()) return; engBusy=true;
       engSay(SN('Stepping through the solstice day…','冬至の1日を計算中…','Sonnenwendtag wird durchlaufen…','Расчёт дня солнцестояния…','Recorriendo el solsticio…'));
       try{
-        const lat=map.getCenter().lat, y=when.getFullYear();
+        const lat=GE().camera.getCenter().lat, y=when.getFullYear();
         const d=new Date(y, lat>=0?11:5, 21, 12, 0, 0);               /* the SHORT day for this hemisphere */
         const r=await ENG().dayShadow(d,{refit:true});
         terrainOn=true; syncTerrBtn();
@@ -561,11 +565,11 @@ window.IntMapModules.sun=function(map,HOST){
           +SN('of the view','の面積','der Ansicht','вида','de la vista')+' · '+r.steps+' '+SN('sun positions','時刻で判定','Sonnenstände','положений','posiciones')
           +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas'));
       }catch(_){ } engBusy=false; }
-    function endPick(){ try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
-    function pickPoint(){ endPick(); try{ map.getCanvas().style.cursor='crosshair'; }catch(_){}
+    function endPick(){ try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    function pickPoint(){ endPick(); try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       engSay(SN('Click the point to analyse.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
       pickH=async e=>{ endPick(); await analysePoint(e.lngLat.lng,e.lngLat.lat); };
-      try{ map.once('click',pickH); }catch(_){} }
+      try{ GE().events.once('click',pickH); }catch(_){} }
     async function analysePoint(lng,lat){ if(engBusy||!ENG()) return null; engBusy=true;
       engSay(SN('Building the 360° horizon and stepping a year…','360°の地平線と1年分を計算中…','360°-Horizont und ein Jahr…','Горизонт 360° и целый год…','Horizonte de 360° y un año…'));
       let a=null;
@@ -587,7 +591,7 @@ window.IntMapModules.sun=function(map,HOST){
       }catch(_){ engSay(SN('Could not read enough terrain here.','この地点の地形データを取得できませんでした。','Zu wenig Geländedaten.','Недостаточно данных рельефа.','Terreno insuficiente aquí.')); }
       engBusy=false; return a; }
 
-    map.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },500); } });
+    GE().events.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },500); } });
     /* (#R176) This panel bakes every label at construction and was built once, so switching language
        left it in the old one — measured: the three new buttons stayed English after a switch to JP.
        Nothing here holds state that `when` and the module-level flags do not, so the honest fix is to
@@ -598,7 +602,7 @@ window.IntMapModules.sun=function(map,HOST){
       try{ panel.remove(); }catch(_){} panel=null;
       if(wasOpen) open(); });
     function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,
       /* (#R176) the new half, so Atlas and the tests can drive it */
       terrainShadow:(on)=>{ const want=(on==null)?!terrainOn:!!on; if(want!==terrainOn) toggleTerrain(); return terrainOn; },
@@ -607,6 +611,7 @@ window.IntMapModules.sun=function(map,HOST){
 };
 
 window.IntMapModules.transitReach=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -617,11 +622,11 @@ window.IntMapModules.transitReach=function(map,HOST){
     if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, open(){}, clear(){} };
     const SRC='imtr-src'; let busy=false;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imtr-area',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#1558d6','fill-opacity':0.14}});
-      map.addLayer({id:'imtr-area-l',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#1558d6','line-width':1.4,'line-dasharray':[2,1.5]}});
-      map.addLayer({id:'imtr-stn',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,3,12,5.5],'circle-color':['coalesce',['get','col'],'#1558d6'],'circle-stroke-color':'#fff','circle-stroke-width':1.4}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imtr-area',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#1558d6','fill-opacity':0.14}});
+      GE().layers.add({id:'imtr-area-l',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#1558d6','line-width':1.4,'line-dasharray':[2,1.5]}});
+      GE().layers.add({id:'imtr-stn',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,3,12,5.5],'circle-color':['coalesce',['get','col'],'#1558d6'],'circle-stroke-color':'#fff','circle-stroke-width':1.4}});
       return true; }catch(_){ return false; } }
     const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
     async function fetchNet(bb){ const q='[out:json][timeout:60];(way["railway"~"^(rail|light_rail|subway|tram|narrow_gauge|monorail)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
@@ -669,15 +674,16 @@ window.IntMapModules.transitReach=function(map,HOST){
         let hull=turf.convex(pts); if(hull){ try{ hull=turf.buffer(hull,Math.min(3,(r.minutes*0.02)),{units:'kilometers'}); }catch(_){} feats.push({type:'Feature',geometry:hull.geometry,properties:{}}); } } }catch(_){}
       r.stations.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s.ll},properties:{col:colFor(s.t,r.minutes),k:'stn',name:s.name,t:Math.round(s.t)}}));
       feats.push({type:'Feature',geometry:{type:'Point',coordinates:r.origin},properties:{col:'#ff3b30',k:'origin'}});
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
     async function open(from,minutes){ ensure();
       try{ if(window.satToast) satToast(HOST.lang==='jp'?'鉄道到達圏を計算中…':'Computing rail reach…'); }catch(_){}
       const r=await run(from,minutes); if(r&&r.ok){ draw(r); } return r; }
-    return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
+    return { run, open, draw, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
 window.IntMapModules.disaster=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -689,11 +695,11 @@ window.IntMapModules.disaster=function(map,HOST){
     const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
     const DZ=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
-      map.addLayer({id:'imdis-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
-      map.addLayer({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
+      GE().layers.add({id:'imdis-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
+      GE().layers.add({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     /* connected inundation (bathtub flood-fill) over the real DEM: flood cells reachable from the origin whose
        ground is below the water surface. tsunami = same engine, water height attenuated inland + a propagation
@@ -738,15 +744,15 @@ window.IntMapModules.disaster=function(map,HOST){
       if(hazard==='radiation'){ try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
       let r=null; if(hazard==='flood'||hazard==='tsunami') r=await inund(); else r=await plume();
       if(r){ const feats=(r.feats||[]).concat([{type:'Feature',geometry:{type:'Point',coordinates:[origin.lng,origin.lat]},properties:{}}]);
-        try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
         if(hazard==='flood'||hazard==='tsunami') setStat('<b>'+DZ('Inundated area','浸水域','Überflutet','Затоплено','Inundado')+':</b> ~'+r.areaKm2.toLocaleString()+' km² · '+DZ('max depth','最大水深','max. Tiefe','глубина','profundidad')+' '+r.maxDep+' m · '+DZ('water','水位','Wasser','вода','agua')+' +'+r.level+' m');
         else setStat('<b>'+DZ('Plume reach','到達距離','Reichweite','дальность','alcance')+':</b> ~'+r.reach+' km '+DZ('downwind','風下','abwind','по ветру','a favor')+' · '+DZ('wind','風速','Wind','ветер','viento')+' '+r.windSpd.toFixed(1)+' m/s');
       } else setStat(DZ('No terrain/wind data here.','この地点のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'));
     }catch(_){ setStat(DZ('Simulation failed — try again.','計算に失敗しました。','Fehlgeschlagen.','Ошибка.','Falló.')); } busy=false; }
     function setStat(h){ if(panel){ const s=panel.querySelector('.dz-stat'); if(s) s.innerHTML=h; } }
     let floodM=5, waveH=8;
-    function _endPick(){ picking=false; try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
-    function startPick(){ _endPick(); picking=true; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ map.once('click',pickH); }catch(_){} }
+    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    function startPick(){ _endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['tsunami','🌊 '+DZ('Tsunami','津波','Tsunami','Цунами','Tsunami')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
@@ -772,11 +778,12 @@ window.IntMapModules.disaster=function(map,HOST){
       else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
       else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ origin=ll; run(); } }
-    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
 window.IntMapModules.earthReplay=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -798,12 +805,12 @@ window.IntMapModules.earthReplay=function(map,HOST){
       const darkPole=dec>0?-90:90;   /* dec>0 = N summer → S pole dark */
       const ring=pts.concat([[180,darkPole],[-180,darkPole],[pts[0][0],pts[0][1]]]);
       return { type:'Feature', geometry:{type:'Polygon',coordinates:[ring]}, properties:{} }; }
-    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imrep-night',type:'fill',source:SRC,paint:{'fill-color':'#04070f','fill-opacity':0.42}});
+    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:'imrep-night',type:'fill',source:SRC,paint:{'fill-color':'#04070f','fill-opacity':0.42}});
       return true; }catch(_){ return false; } }
     function ymd(d){ try{ return d.toISOString().slice(0,10); }catch(_){ return ''; } }
-    function drawTerminator(){ try{ ensure(); const t=terminatorFC(when); map.getSource(SRC).setData(t?{type:'FeatureCollection',features:[t]}:{type:'FeatureCollection',features:[]}); }catch(_){} }
+    function drawTerminator(){ try{ ensure(); const t=terminatorFC(when); GE().layers.setSourceData(SRC,t?{type:'FeatureCollection',features:[t]}:{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R94) Earth Replay is now a SHELL on the IntMapTime kernel: it draws the day/night terminator for the
        shared instant and plays it forward, while the kernel itself drives news / imagery / quakes / dated
        rasters / countries / borders. apply() therefore only paints the terminator + read-out. */
@@ -841,11 +848,11 @@ window.IntMapModules.earthReplay=function(map,HOST){
       const pb=panel.querySelector('.er-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ setWhen(new Date(when.getTime()+3*3600000)); },900); } };   /* +3 h per tick */
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.er-head')); }catch(_){}
       return panel; }
-    map.on('styledata',()=>{ if(panel&&panel.style.display!=='none') setTimeout(drawTerminator,90); });
+    GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none') setTimeout(drawTerminator,90); });
     /* (#R94) mirror the shared kernel: any time change (this panel, the main slider, or Atlas) redraws the
        terminator + read-out while the panel is open. */
     try{ if(window.IntMapTime) window.IntMapTime.on(e=>{ when=e.when; syncInputs(); if(panel&&panel.style.display!=='none'){ drawTerminator(); updateReadout(); } }); }catch(_){}
     function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, close, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
 };

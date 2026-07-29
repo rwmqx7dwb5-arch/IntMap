@@ -120,8 +120,11 @@ test('R162 #5 INVARIANT: every value passed to a factory is assigned exactly onc
   // `map`: declared `let map=null`, then bound exactly once — the MapLibre construction.
   const m = reassignments('map');
   assert.equal(m.length, 1, `map must be bound exactly once; found ${m.length}: ` + JSON.stringify(m));
-  assert.ok(m[0].text.includes('map=new maplibregl.Map('),
-    'the single map binding is the MapLibre construction — a later rebind would strand every extracted module on the old instance');
+  /* (#R178) the construction is spelled `map=GE().ui.createView({` now: even the PRIMARY view goes
+     through the engine contract, since js/geo-engine.js is imported before app-body.js runs. The
+     invariant is unchanged — one binding, one place, everything else after it. */
+  assert.ok(m[0].text.includes('map=GE().ui.createView('),
+    'the single map binding is the renderer construction — a later rebind would strand every extracted module on the old instance');
 
   // `countryStats` is declared once and thereafter only ever MUTATED IN PLACE.
   const cs = reassignments('countryStats');

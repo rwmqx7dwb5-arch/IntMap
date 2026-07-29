@@ -13,6 +13,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.wbLayers=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const computeFilteredNews=HOST.computeFilteredNews, countryStats=HOST.countryStats, imToast=HOST.imToast, loadCountryData=HOST.loadCountryData, renderStats=HOST.renderStats, searchVal=HOST.searchVal;
   (function(){
@@ -117,9 +118,9 @@ window.IntMapModules.wbLayers=function(map,HOST){
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
     function _wbHover(L,fill){ if(window['_wbhov_'+fill]) return; window['_wbhov_'+fill]=true;
       const fmt=(v)=>{ if(v==null) return '—'; const a=Math.abs(v); const r=(a>=100?Math.round(v):Math.round(v*10)/10); return r+(L.unit||''); };
-      map.on('mousemove',fill,(e)=>{ if(!e.features||!e.features.length) return; map.getCanvas().style.cursor='pointer'; const p=e.features[0].properties||{};
+      GE().events.onLayer('mousemove',fill,(e)=>{ if(!e.features||!e.features.length) return; GE().render.canvas().style.cursor='pointer'; const p=e.features[0].properties||{};
         try{ const el=window.ensureMapTooltip(); el.style.display='block'; el.innerHTML='<div style="font-weight:600;">'+(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'; window.positionTooltip(e.point); }catch(_){} });
-      map.on('mouseleave',fill,()=>{ map.getCanvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); el.style.display='none'; }catch(_){} });
+      GE().events.onLayer('mouseleave',fill,()=>{ GE().render.canvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); el.style.display='none'; }catch(_){} });
     }
     const _nmOf=(p)=>{ p=p||{}; return p.NAME_EN||p.ADMIN||p.name_en||p.NAME||p.name||p.NAME_LONG||p.ADM0_A3||''; };
     /* (#R37) IMF WEO (Oct 2024) GENERAL government gross debt, % of GDP — a broad, authoritative fallback for the
@@ -142,11 +143,11 @@ window.IntMapModules.wbLayers=function(map,HOST){
       const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
       if(!withData){ try{ if(typeof imToast==='function') imToast(jp()?'データを取得できませんでした。少し待って再試行してください。':'No data right now — please try again in a moment.'); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
-      try{ if(map.getSource(src)) map.getSource(src).setData(fc); else { map.addSource(src,{type:'geojson',data:fc});
-        map.addLayer({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
-        map.addLayer({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
+      try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
+        GE().layers.add({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
+        GE().layers.add({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
-      [fill,line].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+      [fill,line].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,[L.n.en,L.n.jp],[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
         /* (#R34) State the DATA SOURCE + PERIOD on every World Bank choropleth ("Inflation % (CPI)→データの
            出典と時期を記載しろ"). The period is the actual span of years present in the fetched data (each country
@@ -155,40 +156,40 @@ window.IntMapModules.wbLayers=function(map,HOST){
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
         nn.textContent=(jp()?'出典: 世界銀行 · ':'Source: World Bank · ')+L.code+(ysp?(' · '+ysp):'')+(jp()?'（国ごとに最新値）':' · most recent value per country')+(L.id==='wbdebt'?(jp()?' ＋ IMF WEO（一般政府総債務）で補完':' + IMF WEO general govt gross debt (gap-fill)'):''); } } }catch(_){}
     }); }); }
-    function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
+    function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 
     /* ---------- Earthquakes (USGS realtime feed + historical query) ---------- */
     let eqWin='week', eqClickWired=false;
     function eqUrl(){ if(eqWin==='year') return 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime='+new Date(Date.now()-365*864e5).toISOString().slice(0,10)+'&minmagnitude=6&orderby=time&limit=2000';
       return 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'+({day:'all_day',week:'all_week',month:'4.5_month'}[eqWin]||'all_week')+'.geojson'; }
     function eqOn(){ fetch(eqUrl()).then(r=>r.json()).then(j=>{ const src='src-eq';
-      try{ if(map.getSource(src)) map.getSource(src).setData(j); else { map.addSource(src,{type:'geojson',data:j});
-        map.addLayer({id:'eq-pt',type:'circle',source:src,paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}}); } }catch(_){}
-      const cb=document.getElementById('bx-eq'), on=cb?cb.checked:true; try{ if(map.getLayer('eq-pt')) map.setLayoutProperty('eq-pt','visibility',on?'visible':'none'); }catch(_){}
-      if(!eqClickWired){ eqClickWired=true; try{ map.on('click','eq-pt',(e)=>{ const p=(e.features&&e.features[0]&&e.features[0].properties)||{}; const when=p.time?new Date(+p.time).toLocaleString():'';
+      try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,j); else { GE().layers.addSource(src,{type:'geojson',data:j});
+        GE().layers.add({id:'eq-pt',type:'circle',source:src,paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}}); } }catch(_){}
+      const cb=document.getElementById('bx-eq'), on=cb?cb.checked:true; try{ if(GE().layers.has('eq-pt')) GE().layers.setLayout('eq-pt','visibility',on?'visible':'none'); }catch(_){}
+      if(!eqClickWired){ eqClickWired=true; try{ GE().events.onLayer('click','eq-pt',(e)=>{ const p=(e.features&&e.features[0]&&e.features[0].properties)||{}; const when=p.time?new Date(+p.time).toLocaleString():'';
         /* (#R32) className 'plc-popup' → themed dark/light bg + readable text. The default white maplibre popup
            inherited the page text color (near-white in dark mode) = white-on-white "ポップアップがダークモードで
            は見えない". */
-        new maplibregl.Popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span></div>').addTo(map); }); map.on('mouseenter','eq-pt',()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave','eq-pt',()=>{ map.getCanvas().style.cursor=''; }); }catch(_){} }
+        GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span></div>').addTo(map); }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; }); }catch(_){} }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('eq',['Earthquakes (USGS)','地震（USGS）'],['eq-pt'],'bx-eq');
         if(el){ let ctl=el.querySelector('.bx-eqwin'); if(!ctl){ ctl=document.createElement('div'); ctl.className='bx-eqwin'; ctl.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;'; el.appendChild(ctl); }
           const opts=[['day',jp()?'24時間':'24h'],['week',jp()?'7日':'7d'],['month',jp()?'30日(M4.5+)':'30d M4.5+'],['year',jp()?'1年(M6+)':'1yr M6+']];
           ctl.innerHTML=opts.map(o=>'<button data-w="'+o[0]+'" style="border:1px solid rgba(128,128,128,0.3);background:'+(eqWin===o[0]?'var(--primary-color)':'var(--input-bg)')+';color:'+(eqWin===o[0]?'#fff':'var(--text-main)')+';border-radius:7px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;">'+o[1]+'</button>').join('');
           ctl.querySelectorAll('button').forEach(b=>b.onclick=()=>{ eqWin=b.getAttribute('data-w'); eqOn(); }); } } }catch(_){}
     }).catch(()=>{ try{ if(typeof imToast==='function') imToast(jp()?'地震データを取得できませんでした':'Could not load earthquake data'); }catch(_){} }); }
-    function eqOff(){ try{ if(map.getLayer('eq-pt')) map.setLayoutProperty('eq-pt','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('eq'); }catch(_){} }
+    function eqOff(){ try{ if(GE().layers.has('eq-pt')) GE().layers.setLayout('eq-pt','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('eq'); }catch(_){} }
 
     /* ---------- Heat of Attention (news-density heatmap) ---------- */
     function heatPts(){ const pts=[]; try{ (window.newsFeatures||[]).forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) pts.push({type:'Feature',geometry:{type:'Point',coordinates:f.geometry.coordinates},properties:{}}); }); }catch(_){}
       if(pts.length<5){ try{ const list=(typeof computeFilteredNews==='function')?computeFilteredNews():[]; list.forEach(it=>{ const a=it&&it.analysis; if(a&&a.loc) pts.push({type:'Feature',geometry:{type:'Point',coordinates:a.loc},properties:{}}); }); }catch(_){} }
       return {type:'FeatureCollection',features:pts}; }
     function heatOn(){ const fc=heatPts(), src='src-heat';
-      try{ if(map.getSource(src)) map.getSource(src).setData(fc); else { map.addSource(src,{type:'geojson',data:fc});
-        map.addLayer({id:'heat-h',type:'heatmap',source:src,paint:{'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,18,4,42],'heatmap-opacity':0.72,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,255,0)',0.2,'#3b82f6',0.4,'#22c55e',0.6,'#eab308',0.8,'#f97316',1,'#ef4444']}}); } }catch(_){}
-      const cb=document.getElementById('bx-heat'), on=cb?cb.checked:true; try{ if(map.getLayer('heat-h')) map.setLayoutProperty('heat-h','visibility',on?'visible':'none'); }catch(_){}
+      try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
+        GE().layers.add({id:'heat-h',type:'heatmap',source:src,paint:{'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,18,4,42],'heatmap-opacity':0.72,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,255,0)',0.2,'#3b82f6',0.4,'#22c55e',0.6,'#eab308',0.8,'#f97316',1,'#ef4444']}}); } }catch(_){}
+      const cb=document.getElementById('bx-heat'), on=cb?cb.checked:true; try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility',on?'visible':'none'); }catch(_){}
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('heat',['Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания'],['heat-h'],'bx-heat'); if(el){ let h=el.querySelector('.bx-note'); if(!h){ h=document.createElement('div'); h.className='bx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=HOST.lang==='jp'?'世界のニュース密度から推定（概算）':HOST.lang==='de'?'Geschätzt aus der weltweiten Nachrichtendichte (näherungsweise)':HOST.lang==='ru'?'Оценка по плотности мировых новостей (приблизительно)':'Estimated from world news density (approximate)'; } } }catch(_){}
     }
-    function heatOff(){ try{ if(map.getLayer('heat-h')) map.setLayoutProperty('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
+    function heatOff(){ try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
 
     const ALL=WB.map(L=>({id:L.id,n:L.n,on:()=>choroOn(L),off:()=>choroOff(L)}))
       .concat([{id:'eq',n:{en:'Earthquakes (live + history)',jp:'地震（ライブ＋過去）'},on:eqOn,off:eqOff},
@@ -236,12 +237,12 @@ window.IntMapModules.wbLayers=function(map,HOST){
     /* (#R121) point-value hooks for the layer-data contract (IntMapLayers 'choropleth'): the value of every
        VISIBLE bx World-Bank choropleth at (lng,lat), read from the layer's OWN painted source data by
        point-in-polygon — works on- and off-screen. Registered here because this module owns these layers. */
-    const _bxVis=L=>{ try{ const f=L.id+'-fill'; return !!(map.getLayer(f)&&map.getLayoutProperty(f,'visibility')==='visible'); }catch(_){ return false; } };
+    const _bxVis=L=>{ try{ const f=L.id+'-fill'; return !!(GE().layers.has(f)&&GE().layers.getLayout(f,'visibility')==='visible'); }catch(_){ return false; } };
     window._imBxChoroOn=function(){ try{ return WB.some(_bxVis); }catch(_){ return false; } };
     window._imBxChoroValueAt=function(lng,lat){ const out=[];
       try{ if(!window._imPipGeo) return out;
         WB.forEach(L=>{ if(!_bxVis(L)) return;
-          const s=map.getSource('src-'+L.id); const d=s&&(s._data&&s._data.features?s._data:(s.serialize&&s.serialize().data)); if(!d||!d.features) return;
+          const d=GE().layers.sourceData('src-'+L.id); if(!d||!d.features) return;
           for(const f of d.features){ if(f&&f.geometry&&window._imPipGeo(lng,lat,f.geometry)){ const p=f.properties||{};
             if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(L.unit||'')+(p.nm?(' ('+p.nm+')'):'')); }
             else out.push(bxLabel(L)+': — '+(p.nm?('('+p.nm+')'):''));   /* gray no-data country = honest dash */

@@ -22,7 +22,11 @@ const index = readFileSync(join(ROOT, 'index.html'), 'utf8');
 /* (#R175) the application body is js/app-body.js now — the camera hook, the tooltip clamp and the
    module instantiations all live there. THAT is what those assertions must read: pointed at
    index.html they would pass vacuously, which is precisely the failure this file exists to prevent. */
-const body = readFileSync(join(ROOT, 'js/app-body.js'), 'utf8');
+/* (#R178) the application body is TWO files now — js/geo-engine.js was carved out of app-body.js
+   this round (the renderer adapter + the IntMapGeoEngine facade, moved verbatim). Same program,
+   two files, so every invariant below still asks the same question. */
+const body = [readFileSync(join(ROOT, 'js/app-body.js'), 'utf8'),
+              readFileSync(join(ROOT, 'js/geo-engine.js'), 'utf8')].join('\n');
 const entry = readFileSync(join(ROOT, 'src/main.js'), 'utf8');
 const vendor = readFileSync(join(ROOT, 'src/vendor.js'), 'utf8');
 const panel = readFileSync(join(ROOT, 'js/aircraft-detail.js'), 'utf8');
@@ -62,7 +66,7 @@ test('R175 ①: the tilt hook dollies — the target scales with the look distan
     'the dolly is a parameter of the ONE camera geometry, not a hand-written term');
   assert.match(body, /const anchor=gEye\(was,c2c,tile,sphere,k\);/,
     'the anchored eye is still scaled by k, so a pure zoom is a dolly and a pure tilt is unchanged');
-  assert.match(body, /const sol=gSolve\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,zLim\);/,
+  assert.match(body, /const sol=gLimitPitch\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,guard,was\.pitch\);/   /* (#R178) gSolve became gSolveAt (one exact answer + feasibility) wrapped in gLimitPitch (the largest holdable tilt); the anchor and the dolly `k` are unchanged, which is what this asserts */,
     'and the target is solved at the PROPOSED look distance (#R174 froze it at was.zoom)');
   assert.doesNotMatch(body, /d1=c2c\*mpp\(lat,was\.zoom\)/,
     'the #R174 frozen-distance solve must be gone — it is what made the report come back');
@@ -140,7 +144,11 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
   const imported = [...entry.matchAll(/import '\.\.\/(js\/[^']+)';/g)].map((m) => m[1]);
   for (const f of jsFiles) assert.ok(imported.includes('js/' + f), `js/${f} is never imported by src/main.js`);
   for (const rel of imported) assert.ok(existsSync(join(ROOT, rel)), `src/main.js imports ${rel}, which does not exist`);
-  assert.equal(imported[0], 'js/newsgeo.js', 'newsgeo stays first');
+  /* (#R178) js/geo-engine.js is imported FIRST, and that ordering is load-bearing: every module below
+     is written against window.IntMapGeoEngine and calls it from its factory, which runs at import
+     time. newsgeo stays first among the MODULES. */
+  assert.equal(imported[0], 'js/geo-engine.js', 'the renderer contract is imported before anything can ask for it');
+  assert.equal(imported[1], 'js/newsgeo.js', 'newsgeo stays first among the modules');
   assert.equal(imported[imported.length - 1], 'js/app-body.js', 'the application body is imported LAST');
   assert.equal(new Set(imported).size, imported.length, 'no module is imported twice');
 });
