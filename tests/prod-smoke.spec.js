@@ -139,3 +139,96 @@ test('prod exposes a build identifier', async () => {
   expect(build, 'window.INTMAP_BUILD is set').toBeTruthy();
   console.log(`[prod-smoke] live build = ${build}`);
 });
+
+/* ── (#R178) the three things this round shipped, verified on the LIVE site ─────────────────────
+   A deploy that boots is not a deploy that WORKS. The tilt fix is the sixth attempt at one report,
+   the decoupling moved 87 KB of code between files, and the imagery change is gated on the client's
+   own display — so each is asserted here against production rather than inferred from a green CI. */
+test('(#R178) prod holds the viewpoint through a tilt at the zoom it boots into', async () => {
+  const r = await page.evaluate(async () => {
+    const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    if (!window.__imap || !window.IntMapTilt || !window.IntMapGeoEngine) return { err: 'no engine' };
+    window.IntMapTilt.set(true);
+    await wait(700);
+    const el = window.__imap.getCanvasContainer(), b = el.getBoundingClientRect();
+    const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height / 2);
+    const fire = (t, type, x, y, bts) => t.dispatchEvent(new MouseEvent(type,
+      { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: bts, ctrlKey: true, view: window }));
+    const eye = () => window.IntMapGeoEngine.camera.eye();
+    const gap = (a, z) => { const D = Math.PI / 180, R = 6371008.8;
+      const h = Math.sin((z.lat - a.lat) * D / 2) ** 2 + Math.cos(a.lat * D) * Math.cos(z.lat * D) * Math.sin((z.lng - a.lng) * D / 2) ** 2;
+      return Math.hypot(2 * R * Math.asin(Math.min(1, Math.sqrt(h))), z.alt - a.alt); };
+    const first = eye(); if (!first) return { err: 'no eye' };
+    fire(el, 'mousedown', cx, cy, 1); await wait(40);
+    let y = cy, drift = 0, prev = first, step = 0;
+    for (let i = 0; i < 30; i++) {
+      y -= 6; fire(document, 'mousemove', cx, y, 1); await wait(40);
+      const e = eye(); if (!e) break;
+      drift = Math.max(drift, gap(first, e)); step = Math.max(step, gap(prev, e)); prev = e;
+    }
+    fire(document, 'mouseup', cx, y, 0); await wait(700);
+    const end = eye();
+    const out = { drift, step, rest: gap(first, end), pitch: window.__imap.getPitch(),
+                  minZoom: window.__imap.getMinZoom(), alt0: first.alt, altEnd: end.alt };
+    window.IntMapTilt.set(false);
+    return out;
+  });
+  expect(r.err, `engine unavailable: ${r.err}`).toBeUndefined();
+  expect(r.pitch, 'the drag really tilted the live map').toBeGreaterThan(20);
+  expect(r.minZoom, 'the tilt setting widened the zoom floor to the renderer\'s own').toBe(-2);
+  expect(r.drift, `the viewpoint must not move (${Math.round(r.drift)} m)`).toBeLessThan(50);
+  expect(r.step, `and must not jump between frames (${Math.round(r.step)} m)`).toBeLessThan(50);
+  expect(r.rest, 'drag inertia must not move it either').toBeLessThan(50);
+  expect(Math.abs(r.altEnd - r.alt0), 'the eye altitude must not change').toBeLessThan(50);
+  console.log(`[prod-smoke] tilt ${r.pitch.toFixed(1)}° · viewpoint drift ${Math.round(r.drift)} m · eye ${Math.round(r.alt0)} m`);
+});
+
+test('(#R178) prod deployed the renderer contract as its own module', async () => {
+  const r = await page.evaluate(() => {
+    const E = window.IntMapGeoEngine;
+    if (!E) return { err: 'IntMapGeoEngine missing' };
+    return { id: E.id(), hasRenderer: E.hasRenderer(),
+             /* the sections the decoupling depends on — a partial deploy would show up as a gap here */
+             sections: ['camera', 'layers', 'scene', 'coords', 'render', 'input', 'events', 'ui'].filter((k) => !!E[k]),
+             newApis: ['sourceData', 'setSourceTiles', 'updateImage', 'getLayout'].filter((k) => typeof E.layers[k] === 'function'),
+             cesium: !!(E.contracts() || {}).cesium };
+  });
+  expect(r.err).toBeUndefined();
+  expect(r.id, 'the live adapter is MapLibre').toBe('maplibre');
+  expect(r.hasRenderer, 'and it has a live renderer').toBe(true);
+  expect(r.sections, 'every contract section deployed').toEqual(['camera', 'layers', 'scene', 'coords', 'render', 'input', 'events', 'ui']);
+  expect(r.newApis, 'including the source/layer entries the decoupling needed').toEqual(['sourceData', 'setSourceTiles', 'updateImage', 'getLayout']);
+  expect(r.cesium, 'and the Cesium contract is still declared for the next engine').toBe(true);
+});
+
+test('(#R178) prod satellite protocol is live, and its HiDPI decision is honest', async () => {
+  const r = await page.evaluate(() => {
+    const S = window.IntMapSatProto;
+    if (!window.__imSatProto || !S) return { err: 'satellite protocol not registered' };
+    return { dpr: S.dpr(), hiDPI: S.hiDPI(), placeholderMax: S.placeholderMax,
+             can2x: typeof S.tile2x === 'function' };
+  });
+  expect(r.err).toBeUndefined();
+  expect(r.can2x, 'the @2x stitcher deployed').toBe(true);
+  expect(r.placeholderMax, 'the grey-placeholder threshold deployed').toBe(3500);
+  /* the runner is a 1× display, so the honest answer is "no @2x here" — asserting the DECISION
+     rather than the outcome is what makes this meaningful on any machine */
+  expect(r.hiDPI, `dpr ${r.dpr} must decide @2x as ${r.dpr >= 1.5}`).toBe(r.dpr >= 1.5);
+  console.log(`[prod-smoke] satellite protocol live · dpr ${r.dpr} · @2x ${r.hiDPI}`);
+});
+
+test('(#R178) prod service worker caches every terrarium DEM alias', async () => {
+  const sw = await (await page.request.get(new URL('sw.js', PROD_URL).href)).text();
+  const body = sw.slice(sw.indexOf('const TILE_HOSTS'), sw.indexOf("self.addEventListener('install'"));
+  expect(body.length, 'sw.js deployed with its tile tables').toBeGreaterThan(100);
+  const isTile = new Function(body + '\nreturn isTileRequest;')();
+  const aliases = [
+    'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/12/1/1.png',
+    'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/1/1.png',
+    'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/12/1/1.png',
+    'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/12/1/1.png',
+    'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/12/1/1.png',
+  ];
+  const missed = aliases.filter((u) => !isTile(u));
+  expect(missed, `DEM aliases still bypassing the cache: ${missed.join(', ')}`).toEqual([]);
+});
