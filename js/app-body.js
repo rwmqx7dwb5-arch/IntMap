@@ -1296,7 +1296,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const p=satProviderById(satState.providerId); if(!p) return;
     let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
     if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
-    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom()))), n=Math.pow(2,z);
+    /* (#R178) WARM THE LEVEL THAT WILL ACTUALLY BE FETCHED. On a HiDPI display the satellite protocol
+       serves each tile by stitching the four children one level deeper (see the imapsat block — the
+       imagery was otherwise running at half the screen's resolution), so the widest ring here was
+       warming a level that is now only the fallback. `_satZBias` shifts the whole prefetch — the
+       viewport ring, the travel lead and the zoom-in anticipation — onto the level the protocol
+       consumes. 0 on a 1x screen, so nothing changes there. */
+    const _satZBias=(function(){ try{ return (window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.hiDPI())?1:0; }catch(_){ return 0; } })();
+    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom())+_satZBias)), n=Math.pow(2,z);
     const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
@@ -1317,6 +1324,11 @@ window.addEventListener('DOMContentLoaded', () => {
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
     if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
+    /* (#R178) what level this call chose, for observation. Inferring it from network traffic does not
+       work once the protocol is stitching @2x tiles: the RENDER path then fetches the children one
+       level below the displayed zoom, and those outnumber the prefetch ring (measured at map z11 on a
+       2x screen: 18 requests at z12 from the ring, 41 at z13 from the children). */
+    try{ predictivePrefetch.lastLevel={ z, bias:_satZBias, mapZoom:Math.round(GE().camera.getZoom()), n:urls.length }; }catch(_){}
     if(!urls.length) return;
     const _mob=(typeof isMobile==='function'&&isMobile());
     const uniq=[...new Set(urls)].slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
