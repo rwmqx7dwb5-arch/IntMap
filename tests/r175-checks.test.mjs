@@ -36,19 +36,31 @@ const jsFiles = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).s
    "approach the target", the eye then converged on a point in the air: measured 8,373 → 7,205 m over
    2.3 zoom levels at pitch 85, and 8,373 → 12,955 m (i.e. AWAY from the ground) at pitch 110. */
 test('R175 ①: the tilt hook dollies — the target scales with the look distance', () => {
-  assert.match(body, /const k=\(isFinite\(cur\.zoom\)&&isFinite\(was\.zoom\)\)\?Math\.pow\(2,was\.zoom-cur\.zoom\):1;/,
-    'the proposed/applied look-distance ratio must be derived from the zoom difference');
   /* (#R176) SUPERSEDED IN MECHANISM, KEPT IN INTENT — the same shape as the note #R175 left on
      #R174's version of this test. The whole solve moved out of metres-per-degree into MERCATOR units,
      because the tangent plane it stood on is only true while the look distance is small next to the
      Earth (16 km at z12, 8,573 km at z3 — measured drift 22,218 km). In merc units the dolly is free:
      k·d0 IS d1, so "pre-scale the eye by k" and "take the old attitude at the new look distance" are
-     the same expression, and a pure zoom is still the identity. */
-  assert.match(body, /const d0=dPix\/\(tile\*Math\.pow\(2,was\.zoom\)\), d1=dPix\/\(tile\*Math\.pow\(2,cur\.zoom\)\);/,
-    'both look distances come from the zoom, in merc units');
-  assert.match(body, /Ez=k\*Cz\+d1\*Math\.cos\(p0\);/,
+     the same expression, and a pure zoom is still the identity.
+     (#R177) SUPERSEDED AGAIN. Two things changed and both are forced:
+       · the geometry is now gEye/gSolve, which speak the renderer's SPHERE model as well as its
+         mercator one — `globe` uses both, and the merc expressions named above were wrong by
+         thousands of kilometres below z12, where the app spends most of its time;
+       · `k` is measured against the PROPOSAL's own previous zoom, not the applied zoom, because the
+         sphere branch returns a zoom and `_requestedCameraState` never receives it. Measured on a
+         globe z3 drag with the old reference: cur z3 against was z2.967, i.e. every frame of a plain
+         tilt read as a 2.3 % dolly, six frames running.
+     The claim is #R175's, unchanged: the dolly scales the anchored eye, a pure zoom is the identity,
+     and the target is solved at the PROPOSED look distance. */
+  assert.match(body, /const zRef=\(last&&isFinite\(last\.zoom\)\)\?last\.zoom:was\.zoom;/,
+    'the dolly is measured against the proposal’s own history (the applied zoom now diverges from it)');
+  assert.match(body, /const k=\(isFinite\(cur\.zoom\)&&isFinite\(zRef\)\)\?Math\.pow\(2,zRef-cur\.zoom\):1;/,
+    'the look-distance ratio must be derived from the zoom difference');
+  assert.match(body, /function gEye\(cam,c2c,tile,sphere,k\)\{/,
+    'the dolly is a parameter of the ONE camera geometry, not a hand-written term');
+  assert.match(body, /const anchor=gEye\(was,c2c,tile,sphere,k\);/,
     'the anchored eye is still scaled by k, so a pure zoom is a dolly and a pure tilt is unchanged');
-  assert.match(body, /const Tx=Ex\+d1\*Math\.sin\(p1\)\*Math\.sin\(b1\),/,
+  assert.match(body, /const sol=gSolve\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,zLim\);/,
     'and the target is solved at the PROPOSED look distance (#R174 froze it at was.zoom)');
   assert.doesNotMatch(body, /d1=c2c\*mpp\(lat,was\.zoom\)/,
     'the #R174 frozen-distance solve must be gone — it is what made the report come back');
@@ -57,7 +69,12 @@ test('R175 ①: the tilt hook dollies — the target scales with the look distan
 test('R175 ①: a zoom that also travels still carries the target altitude', () => {
   /* wheel zoom is zoom-around-the-POINTER, so the centre moves and every frame is classified as
      travel; without this branch the frozen-elevation bug survives the fix on the commonest gesture */
-  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(!zoomed\|\|!was\.elevation\) return \{\};[\s\S]*?const el=was\.elevation\*k; return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
+  /* (#R177) SUPERSEDED IN MECHANISM, KEPT IN INTENT: the mercator branch still scales the target's
+     altitude by k and leaves the centre alone. The SPHERE branch cannot — its pivot is welded to the
+     surface, so the target's elevation moves the camera not at all — and it must actively zero the
+     number instead of letting a mercator-era one ride along: one did (1,488 km, at pitch 120) and
+     the next camera change froze the renderer inside its tile cover. */
+  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(!zoomed\) return \{\};[\s\S]*?if\(sphere\) return \{ elevation:0 \};[\s\S]*?const el=was\.elevation\*k; return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
     'a travelling frame that also zooms must scale the elevation and leave the centre alone');
 });
 

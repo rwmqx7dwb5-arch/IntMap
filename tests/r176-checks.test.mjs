@@ -40,22 +40,40 @@ const legal = R('js/legal.js');
    at z3 and 58,506 m at z6 over Tromsø, with a 23,152 km single-frame snap when the old |lat|>89.5
    guard declined a frame. Both come from the same cause — the solve converted metres to degrees with
    110,574 and 111,320·cos(lat), a tangent plane, while the look distance at z3 is 8,573 km. */
-test('R176 ①: the eye anchor is solved in Mercator units, with no bail-out frame', () => {
-  assert.match(body, /const mX=lng=>\(180\+lng\)\/360;/, 'the Mercator forward projection is in the hook');
-  assert.match(body, /const latOf=y=>360\/Math\.PI\*Math\.atan\(Math\.exp\(\(180-y\*360\)\*r\)\)-90;/, 'and its inverse');
-  assert.match(body, /const mpm=lat=>\{ const c=CIRC\*Math\.cos\(lat\*r\);/, 'altitude enters as merc units per metre');
+/* (#R177) SUPERSEDED IN MECHANISM, KEPT IN INTENT — and this time the mechanism was only half right.
+   Mercator units ARE the renderer's camera model, but only for one of the two transforms `globe`
+   owns: it draws vertical-perspective below z12 and mercator above, and a vertical-perspective
+   camera pivots about a point welded to the SPHERE, which no plane algebra describes. Measured on
+   the #R176 build against the matrix MapLibre draws with — 7,115 km of drift at globe z3, 475 km at
+   z6, 64.4 km at flat z6 Tromsø — while #R176's own ruler read 0 m for all of them, because that
+   ruler was the fix's equation. The intent below is unchanged: solve where the renderer's camera
+   really is, and never decline a frame. */
+test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with no bail-out frame', () => {
+  assert.match(body, /const gmX=lng=>\(180\+lng\)\/360;/, 'the Mercator forward projection is in the geometry');
+  assert.match(body, /const glatOf=y=>360\/Math\.PI\*Math\.atan\(Math\.exp\(\(180-y\*360\)\*GEO_RAD\)\)-90;/, 'and its inverse');
+  assert.match(body, /circ=GEO_CIRC\*Math\.cos\(cam\.lat\*GEO_RAD\)/, 'altitude enters against circumferenceAtLatitude');
   /* the camera offset is the pixel look distance over the world size — no metres anywhere */
-  assert.match(body, /const d0=dPix\/\(tile\*Math\.pow\(2,was\.zoom\)\), d1=dPix\/\(tile\*Math\.pow\(2,cur\.zoom\)\);/,
-    'the look distance is cameraToCenterDistance / worldSize, in merc units');
-  assert.match(body, /const Ex=Cx-d1\*Math\.sin\(p0\)\*Math\.sin\(b0\),/, 'the eye is the applied centre plus the camera offset');
-  assert.match(body, /const Tx=Ex\+d1\*Math\.sin\(p1\)\*Math\.sin\(b1\),/, 'and the target is one subtraction away at the new attitude');
+  assert.match(body, /const d=k\*c2c\/world, circ=/, 'the look distance is cameraToCenterDistance / worldSize, in merc units');
+  assert.match(body, /const ex=gmX\(cam\.lng\)-d\*Math\.sin\(p\)\*Math\.sin\(b\), ey=gmY\(cam\.lat\)\+d\*Math\.sin\(p\)\*Math\.cos\(b\);/,
+    'the eye is the applied centre plus the camera offset');
+  assert.match(body, /const tx=gmX\(anchor\.lng\)\+d\*Math\.sin\(p\)\*Math\.sin\(b\), ty=gmY\(anchor\.lat\)-d\*Math\.sin\(p\)\*Math\.cos\(b\);/,
+    'and the target is one subtraction away at the new attitude');
+  /* (#R177) …AND THE SPHERE, which #R176 had no expression for at all */
+  assert.match(body, /const gSpherical=t=>\{ try\{ return !!\(t&&t\.isGlobeRendering\); \}/,
+    'the hook asks the renderer WHICH camera model is on screen');
+  assert.match(body, /const dgWant=-cp\+Math\.sqrt\(Math\.max\(0,cp\*cp-1\+r\*r\)\);/,
+    'on the sphere the eye’s own radius fixes the look distance — |eye|² = 1 + dg² + 2·dg·cos p');
+  assert.match(body, /return \{ lng:cWant\.lng\/GEO_RAD, lat:cWant\.lat\/GEO_RAD, zoom:zWant, elevation:0, held:true \};/,
+    'so the ZOOM is what a tilt spends there — the pivot is on the surface, there is no other freedom');
   /* THE regression that produced the jerk: a declined frame applies the proposal verbatim (#R173) */
   assert.doesNotMatch(body, /Math\.abs\(lat\)>89\.5\) return \{\};/, 'the 89.5° bail-out must be gone');
-  assert.match(body, /const lat=latOf\(Math\.min\(YHI,Math\.max\(YLO,Ty\)\)\), lng=lngOf\(Tx\);/, 'out-of-world is CLAMPED, never declined');
-  /* the #R175 dolly must survive: k·d0 IS d1, so a pure zoom is still the identity */
-  assert.match(body, /Ez=k\*Cz\+d1\*Math\.cos\(p0\);/, 'the eye is still pre-scaled by k for a zoom (#R175)');
-  /* and the measuring stick that hid the bug for four rounds is fixed too */
-  assert.match(body, /const dM=\(c2c\/world\)\*Math\.sin\(pit\);/, 'eyePosition reports the eye in the renderer’s own coordinates');
+  assert.match(body, /const lat=glatOf\(Math\.min\(GEO_YHI,Math\.max\(GEO_YLO,ty\)\)\), lng=glngOf\(tx\);/,
+    'out-of-world is CLAMPED, never declined');
+  /* the #R175 dolly must survive: the look distance scales by k in both models */
+  assert.match(body, /const anchor=gEye\(was,c2c,tile,sphere,k\);/, 'the eye is still pre-scaled by k for a zoom (#R175)');
+  /* and the measuring stick that hid the bug for FIVE rounds is fixed too — by there being one */
+  assert.match(body, /return gEye\(cam,gC2C\(t,m\),tile,gSpherical\(t\),1\);/,
+    'eyePosition reports the eye from the same geometry the anchor solves, so they cannot disagree');
   assert.doesNotMatch(body, /const mLat=110574, mLng=\(111320\*Math\.cos\(c\.lat\*r\)\)\|\|1;/, 'no metres-per-degree left in eyePosition');
 });
 

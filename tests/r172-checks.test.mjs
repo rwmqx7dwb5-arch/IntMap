@@ -86,7 +86,9 @@ test('the tilt pivot is expressed as an intent and implemented on the pre-apply 
 });
 
 test('the pivot only fires on a PURE tilt, or "fly to Paris tilted" lands short', () => {
-  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 7000);
+  /* (#R177) the window is wider because the hook now says WHICH of the renderer's two camera models
+     it is solving for; the assertions themselves are #R172's, untouched. */
+  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 12000);
   assert.match(hook, /Math\.abs\(cur\.lng-last\.lng\)>1e-9\|\|Math\.abs\(cur\.lat-last\.lat\)>1e-9/,
     'an update that also travels is a journey, not a tilt (measured: Paris arrived 4.3 km off centre without this)');
   assert.match(hook, /const last=req; req=cur;/,
@@ -98,10 +100,15 @@ test('the viewpoint can be read and put back, and the scale is valid at any pitc
   assert.match(INDEX, /eyePosition\(\)\{/, 'the engine can say WHERE the viewpoint is');
   assert.match(INDEX, /setEye\(o\)\{/, '…and put it back');
   assert.match(INDEX, /eyeControl:true/, '…and declares it as a capability');
-  const eye = INDEX.slice(INDEX.indexOf('eyePosition(){'), INDEX.indexOf('eyePosition(){') + 2600);
+  const eye = INDEX.slice(INDEX.indexOf('eyePosition(){'), INDEX.indexOf('eyePosition(){') + 1200);
   assert.ok(!/unproject\(\[w\/2-50,h\/2\]\)/.test(eye),
     'past 90° of pitch the centre row is SKY — the unproject measurement was ~100 km out and is gone');
-  assert.match(eye, /2\*Math\.PI\*R\*Math\.cos\(\(c\.lat\|\|0\)\*r\)\)\/world/, "metres-per-pixel comes from the renderer's own map scale");
+  /* (#R177) SUPERSEDED IN MECHANISM, KEPT IN INTENT: the map scale is still the renderer's own, but
+     it is now read inside gEye — the single geometry the tilt anchor shares — rather than copied
+     here. The metres-per-pixel identity this used to name is the MERCATOR branch of it. */
+  const geo = INDEX.slice(INDEX.indexOf('function gEye('), INDEX.indexOf('function gEye(') + 1600);
+  assert.match(geo, /const d=k\*c2c\/world, circ=GEO_CIRC\*Math\.cos\(cam\.lat\*GEO_RAD\);/,
+    "metres-per-pixel comes from the renderer's own map scale (worldSize and circumferenceAtLatitude)");
 });
 
 /* ─── 3. the 3-D volume ─────────────────────────────────────────────────────────────────────── */
