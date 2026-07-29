@@ -74,10 +74,6 @@ function _m(){ return window.__imap||null; }
        centre, so leaning from 78° to 120° swings the eye from +3,385 m to −8,140 m — it goes under the
        world. An engine without this pair cannot honour the unlimited-tilt setting's promise. */
     eyeControl:true };
-  /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
-  const _solids={};
-  /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
-  let _pd=null, _pdAt=0;
   /* ── (#R178) THE ZOOM FLOOR IS OWNED IN ONE PLACE ───────────────────────────────────────
      Two things want to set it and they are not the same want. The APP sets it per projection
      (globe 0, flat 1.2 on desktop) so the world always covers the viewport. The unlimited-tilt
@@ -91,11 +87,6 @@ function _m(){ return window.__imap||null; }
      So the adapter REMEMBERS what the app asked for and applies min(app, −2) only while the
      eye pivot is installed; turning the setting off restores the app's own floor exactly. */
   const TILT_MIN_ZOOM=-2;
-  let _appMinZoom=null, _eyePivot=false;
-  function _applyZoomFloor(){ const m=_m(); if(!m||!m.setMinZoom) return;
-    if(_appMinZoom==null){ try{ _appMinZoom=m.getMinZoom(); }catch(_){ return; } }
-    const want=_eyePivot?Math.min(_appMinZoom,TILT_MIN_ZOOM):_appMinZoom;
-    try{ if(m.getMinZoom()!==want) m.setMinZoom(want); }catch(_){} }
 
   /* ═══════════════════════════════════════════════════════════════════════════════════════
      (#R177) WHERE THE CAMERA IS — ONE transcription of the renderer's own geometry.
@@ -515,6 +506,35 @@ function _m(){ return window.__imap||null; }
 
      Cleared on 'moveend', which is also where MapLibre discards `_requestedCameraState`, so the
      record lives exactly as long as the animation it describes. */
+
+  /* ══ (#R179) ONE ADAPTER PER VIEW — and everything it remembers goes INSIDE it ═════════════
+     ---------------------------------------------------------------------------------------
+     This used to be a single object literal reading one global handle, with its state — the
+     custom-layer registry, the projection-data cache, the app's zoom floor, the eye pivot, the
+     declaration record — in module scope. That was true enough while there was one map. There is
+     not: the compare pane, the flight simulator's minimap and the geo-guessing game each build a
+     SECOND view, and they were driving it with raw renderer calls because `createView` handed back
+     the raw handle and the contract had nothing to offer them. Measured: 106 raw calls in
+     js/compare.js, 8 in js/playground.js, 5 in js/flight-sim.js — none of which the coupling gate
+     could see, because it only recognises the renderer under the names `map`, `__imap` and
+     `maplibregl`, and these are held as `cmap`, `gmap` and `minimap`.
+     Two views sharing one `_eyePivot` or one `_solids` is #R178's lesson ⑥ waiting to happen
+     (「同じ性質の値は所有者を1つに」), so the state is per-adapter and the adapter is per-map. The
+     pure geometry above stays shared: it takes its arguments and remembers nothing.
+     `_m` is the parameter now, so every method body below is UNCHANGED — it already asked a
+     getter for its map rather than closing over one. */
+  function makeMapLibreAdapter(_m){
+  /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
+  const _solids={};
+  /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
+  let _pd=null, _pdAt=0;
+  let _appMinZoom=null, _eyePivot=false;
+  /* (#R179) the DEM contour source, built once per view — see demContourSource */
+  let _demSrc=null;
+  function _applyZoomFloor(){ const m=_m(); if(!m||!m.setMinZoom) return;
+    if(_appMinZoom==null){ try{ _appMinZoom=m.getMinZoom(); }catch(_){ return; } }
+    const want=_eyePivot?Math.min(_appMinZoom,TILT_MIN_ZOOM):_appMinZoom;
+    try{ if(m.getMinZoom()!==want) m.setMinZoom(want); }catch(_){} }
   let _decl=null, _declWired=false;
   /* (#R179) which branch of the hook answered the last frame, and with what — reported through
      camera.eyePivotDiag(). Not tracing for its own sake: 「どの枝が答えたか」 is the one thing every
@@ -606,7 +626,7 @@ function _m(){ return window.__imap||null; }
     return true;
   }
   /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
-  const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
+  return { id:'maplibre', capabilities:MAPLIBRE_CAPS,
     /* (#R179) each of these RECORDS what it was asked for before asking for it — see _declare.
        fitBounds names a centre and a zoom by definition, even though neither appears in `o`. */
     flyTo(o){ const m=_m(); if(m){ _declare(m,_declOf(o)); m.flyTo(o); } },
@@ -1199,19 +1219,69 @@ function _m(){ return window.__imap||null; }
        keeps every existing call site working while making the constructor swappable. */
     popup(o){ try{ return new maplibregl.Popup(o); }catch(_){ return null; } },
     marker(o){ try{ return new maplibregl.Marker(o); }catch(_){ return null; } },
+    /* (#R179) …and ATTACHED TO THIS VIEW. `marker(o)` hands back the renderer's object, and every
+       caller then finished with `.addTo(map)` — the raw handle, passed as a VALUE, which is the
+       shape of reference the coupling gate could not see (measured: 113 of them, plus 213 bare
+       existence tests). A second view could not be given a marker at all without the handle. */
+    addMarker(o,lngLat){ const m=_m(); if(!m) return null;
+      try{ const mk=new maplibregl.Marker(o); if(lngLat) mk.setLngLat(lngLat); mk.addTo(m); return mk; }
+      catch(_){ return null; } },
+    addPopup(o,lngLat,html){ const m=_m(); if(!m) return null;
+      try{ const p=new maplibregl.Popup(o); if(lngLat) p.setLngLat(lngLat); if(html!=null) p.setHTML(html);
+           p.addTo(m); return p; }catch(_){ return null; } },
     lngLat(lng,lat){ try{ return new maplibregl.LngLat(lng,lat); }catch(_){ return {lng,lat}; } },
     /* a custom tile SCHEME (weather composites, the elevation-tiles proxy). MapLibre calls these
        protocols; the contract calls them what they are. */
     addProtocol(name,fn){ try{ if(maplibregl&&maplibregl.addProtocol){ maplibregl.addProtocol(name,fn); return true; } }catch(_){} return false; },
-    /* A SECOND VIEW of the same world — the compare pane, the flight simulator's minimap and the
-       geo-guessing game each build one. They did it with `new maplibregl.Map(...)`, i.e. the one
-       call that names the engine outright. `createView` keeps the ownership (the caller still
-       holds and destroys it) while leaving the constructor to the adapter. */
+    /* (#R179) CONTOUR LINES FROM A DEM, as a source the caller can point a layer at.
+       js/data-layers.js was doing this itself, and it is the reason the last bare `maplibregl`
+       identifier survived in the project: maplibre-contour has to be handed the renderer's own
+       namespace (`demSource.setupMaplibre(maplibregl)`) so it can register its protocol. That is a
+       renderer detail by definition, so it belongs here — the caller asks for "a vector tile URL
+       whose features are contours of this DEM" and never learns which library made it. Returns null
+       when the library is absent, exactly as the call site's own feature test used to. */
+    demContourSource(o){
+      try{
+        const MLC=window.mlcontour||window.maplibreContour;
+        if(!(MLC&&MLC.DemSource&&o&&o.url)) return null;
+        if(!_demSrc){
+          _demSrc=new MLC.DemSource({ url:o.url, encoding:o.encoding||'terrarium',
+                                      maxzoom:(o.maxzoom!=null?o.maxzoom:13), worker:o.worker!==false });
+          _demSrc.setupMaplibre(maplibregl);
+        }
+        return _demSrc.contourProtocolUrl({ thresholds:o.thresholds, elevationKey:o.elevationKey||'ele',
+                                            levelKey:o.levelKey||'level', contourLayer:o.contourLayer||'contours' });
+      }catch(_){ return null; }
+    },
+    /* THE PRIMARY VIEW. Returns the renderer's own handle, and that is deliberate: it is the object
+       the engine itself is bound to (`window.__imap`), so app-body.js constructs it here and
+       publishes it, and every later call goes through the contract. Exactly one caller.
+       (#R179) A SECOND view must NOT come through here — see createSubView. */
     createView(o){ try{ return new maplibregl.Map(o); }catch(_){ return null; } },
+    /* (#R179) AN ADDITIONAL VIEW, as a scoped engine rather than a raw handle.
+       The compare pane, the flight simulator's minimap and the geo-guessing game each build one,
+       and until now `createView` handed them the renderer itself — so all three drove it with raw
+       calls (106 + 5 + 8 of them), invisible to the coupling gate because they hold it under their
+       own names. This returns the SAME contract, scoped to the new view: `.camera`, `.layers`,
+       `.scene`, `.events`, `.render`, `.coords`, `.input`, `.ui`, `.ready()`, `.canDraw()`, plus
+       `.destroy()`. The caller still owns its lifetime; it just no longer knows what a MapLibre
+       Map is. `.raw()` remains for the handful of places that genuinely need the handle (a
+       container element to attach to), and the gate counts those. */
+    createSubView(o){
+      let mm=null; try{ mm=new maplibregl.Map(o); }catch(_){ return null; }
+      if(!mm) return null;
+      const sub=makeMapLibreAdapter(()=>mm);
+      const view=engineFacade(()=>sub);
+      view.destroy=()=>{ try{ mm.remove(); }catch(_){} mm=null; return true; };
+      return view;
+    },
     /* GLOBAL TUNING — how many tile images may be in flight at once. Not per-map, which is why
        it is here and not on the camera. */
     setImageConcurrency(n){ try{ if(maplibregl&&maplibregl.config){ maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=n; return true; } }catch(_){} return false; },
     raw(){ return _m(); } };
+  }
+  /* the engine's own adapter, bound to the handle app-body.js publishes */
+  const MapLibreAdapter=makeMapLibreAdapter(_m);
   /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
      (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
   const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
@@ -1220,54 +1290,63 @@ function _m(){ return window.__imap||null; }
        (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true } };
   let _adapter=MapLibreAdapter;
-  return {
-    id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
-    adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; }, contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
-    camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo),
+  /* ══ (#R179) THE CONTRACT, AS A FUNCTION OF AN ADAPTER ════════════════════════════════════
+     Built once and handed out twice: the engine returns it bound to its own adapter, and
+     ui.createSubView returns it bound to a second one. That is the whole reason an additional
+     view can stop naming the renderer — before this it was given the raw handle, because the
+     contract simply had no way to describe anything but the primary map.
+     `A` is a GETTER rather than the adapter itself: `use()` may swap the engine's adapter at
+     runtime — that is how a Cesium adapter arrives — and every method must follow it. */
+  function engineFacade(A){
+   return {
+    /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
+    id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
+    can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
+    camera:{ flyTo:o=>A().flyTo(o), easeTo:o=>A().easeTo(o), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,o), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
       /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
-      getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds(),
-      zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop(),
+      getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
+      zoomTo:(z,o)=>A().zoomTo(z,o), zoomIn:o=>A().zoomIn(o), zoomOut:o=>A().zoomOut(o), stop:()=>A().stop(),
       /* (#R172) the camera that would show a box, and the current padding — both read-only */
-      forBounds:(b,o)=>_adapter.cameraForBounds?_adapter.cameraForBounds(b,o):null, getPadding:()=>_adapter.getPadding?_adapter.getPadding():null,
+      forBounds:(b,o)=>A().cameraForBounds?A().cameraForBounds(b,o):null, getPadding:()=>A().getPadding?A().getPadding():null,
       /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */
-      getProjection:()=>_adapter.getProjection(),
+      getProjection:()=>A().getProjection(),
       /* (#R173) 0 = flat, 1 = a sphere — see the adapter; the projection's NAME does not answer this */
-      globeness:()=>_adapter.globeness?_adapter.globeness():0,
-      setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
-      getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
+      globeness:()=>A().globeness?A().globeness():0,
+      setBearing:b=>A().setBearing(b), setPitch:p=>A().setPitch(p), getRoll:()=>A().getRoll(), setRoll:r=>A().setRoll(r),
+      getMaxPitch:()=>A().getMaxPitch(), setMaxPitch:v=>A().setMaxPitch(v), getMinPitch:()=>A().getMinPitch(),
       /* (#R178) the zoom range — set it here, never on the renderer, so the unlimited-tilt floor
          and the projection's own floor cannot overwrite one another */
-      setMinZoom:v=>_adapter.setMinZoom?_adapter.setMinZoom(v):false, getMinZoom:()=>_adapter.getMinZoom?_adapter.getMinZoom():0,
-      setMaxZoom:v=>_adapter.setMaxZoom?_adapter.setMaxZoom(v):false, getMaxZoom:()=>_adapter.getMaxZoom?_adapter.getMaxZoom():22,
-      zoomRange:()=>_adapter.zoomRange?_adapter.zoomRange():[0,22],
+      setMinZoom:v=>A().setMinZoom?A().setMinZoom(v):false, getMinZoom:()=>A().getMinZoom?A().getMinZoom():0,
+      setMaxZoom:v=>A().setMaxZoom?A().setMaxZoom(v):false, getMaxZoom:()=>A().getMaxZoom?A().getMaxZoom():22,
+      zoomRange:()=>A().zoomRange?A().zoomRange():[0,22],
       /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
-      tiltRange:()=>{ const c=_adapter.capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
-      altitude:()=>_adapter.cameraAltitude(),
+      tiltRange:()=>{ const c=A().capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
+      altitude:()=>A().cameraAltitude(),
       /* (#R172) the VIEWPOINT itself — read it, put it back, and tell a gesture from an animation */
-      eye:()=>_adapter.eyePosition?_adapter.eyePosition():null,
-      setEye:o=>_adapter.setEye?_adapter.setEye(o):false,
-      setCenterClamped:v=>_adapter.setCenterClamped?_adapter.setCenterClamped(v):false,
-      setTiltPivot:mo=>_adapter.setTiltPivot?_adapter.setTiltPivot(mo):false,
+      eye:()=>A().eyePosition?A().eyePosition():null,
+      setEye:o=>A().setEye?A().setEye(o):false,
+      setCenterClamped:v=>A().setCenterClamped?A().setCenterClamped(v):false,
+      setTiltPivot:mo=>A().setTiltPivot?A().setTiltPivot(mo):false,
       /* (#R179) IS THE EYE PIVOT REALLY WHOLE? Two separate pieces have to be in place — the
          camera hook and the repair to the renderer's own underground correction that runs ahead
          of it — and the second one leans on a renderer internal, so its absence has to be
          VISIBLE rather than inferred (#R162: a typeof guard around an internal deletes the
          feature in silence). 'n/a' means the engine has no such correction to repair. */
-      eyePivotDiag:()=>_adapter.eyePivotDiag?_adapter.eyePivotDiag():null,
-      isAnimating:()=>_adapter.isAnimating?_adapter.isAnimating():false,
+      eyePivotDiag:()=>A().eyePivotDiag?A().eyePivotDiag():null,
+      isAnimating:()=>A().isAnimating?A().isAnimating():false,
       /* (#R178) the remainder of the camera surface — see the adapter block */
-      setCenter:c=>_adapter.setCenter(c), panBy:(o,opt)=>_adapter.panBy(o,opt),
-      setMaxBounds:b=>_adapter.setMaxBounds(b), setRenderWorldCopies:v=>_adapter.setRenderWorldCopies(v),
-      fromTo:(f,fa,t,ta)=>_adapter.cameraFromTo?_adapter.cameraFromTo(f,fa,t,ta):null },
-    coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o),
+      setCenter:c=>A().setCenter(c), panBy:(o,opt)=>A().panBy(o,opt),
+      setMaxBounds:b=>A().setMaxBounds(b), setRenderWorldCopies:v=>A().setRenderWorldCopies(v),
+      fromTo:(f,fa,t,ta)=>A().cameraFromTo?A().cameraFromTo(f,fa,t,ta):null },
+    coords:{ project:ll=>A().project(ll), unproject:pt=>A().unproject(pt), terrainElevation:(ll,o)=>A().terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>A().queryRenderedFeatures(g,o),
       /* (#R173) the screen position of a point AT ALTITUDE — what picking anything lifted needs */
-      projectAltitude:(ll,a)=>_adapter.projectAltitude?_adapter.projectAltitude(ll,a):null,
+      projectAltitude:(ll,a)=>A().projectAltitude?A().projectAltitude(ll,a):null,
       /* (#R178) features already in a source's tiles (not necessarily drawn), the world's pixel
          size (the metres-per-pixel two callers were deriving from transform.worldSize), and a
          renderer position object */
-      querySourceFeatures:(s,p)=>_adapter.querySourceFeatures?_adapter.querySourceFeatures(s,p):[],
-      worldSize:()=>_adapter.worldSize?_adapter.worldSize():0,
-      lngLat:(lng,lat)=>_adapter.lngLat?_adapter.lngLat(lng,lat):{lng,lat} },
+      querySourceFeatures:(s,p)=>A().querySourceFeatures?A().querySourceFeatures(s,p):[],
+      worldSize:()=>A().worldSize?A().worldSize():0,
+      lngLat:(lng,lat)=>A().lngLat?A().lngLat(lng,lat):{lng,lat} },
     /* (#R161) has the renderer fully settled (style parsed AND every tile in)? Use canDraw() below for the
        far more common question "may I add a layer now" — (#R170) they are NOT the same, and answering the
        second with the first is what made freshly-ticked layers appear seconds late. */
@@ -1278,56 +1357,69 @@ function _m(){ return window.__imap||null; }
        engine and then pushes the saved ceiling at it, silently pushed it at nothing (measured: the
        ceiling read back 78 after a reload instead of 180). Distinct from ready()/canDraw(), which ask
        about the STYLE; this asks whether the renderer object is there to be asked. */
-    hasRenderer:()=>{ try{ return !!_adapter.raw(); }catch(_){ return false; } },
-    ready:()=>_adapter.styleReady(),
-    canDraw:()=>_adapter.canDraw(),
-    layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v),
+    hasRenderer:()=>{ try{ return !!A().raw(); }catch(_){ return false; } },
+    ready:()=>A().styleReady(),
+    canDraw:()=>A().canDraw(),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d)=>A().setSourceData(id,d), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v)=>A().setLayout(id,p,v), setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
-      addExtrusion:(d,b)=>_adapter.addExtrusion(d,b), setExtrusionRange:(id,a,b)=>_adapter.setExtrusionRange(id,a,b),
+      addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
-      addSolid:(id,b)=>_adapter.addSolid?_adapter.addSolid(id,b):false, setSolid:(id,o)=>_adapter.setSolid?_adapter.setSolid(id,o):false,
-      removeSolid:id=>_adapter.removeSolid?_adapter.removeSolid(id):false,
+      addSolid:(id,b)=>A().addSolid?A().addSolid(id,b):false, setSolid:(id,o)=>A().setSolid?A().setSolid(id,o):false,
+      removeSolid:id=>A().removeSolid?A().removeSolid(id):false,
       /* (#R160) feature-state (hover/selection highlighting) through the engine */
-      setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),
+      setFeatureState:(f,s)=>A().setFeatureState(f,s), removeFeatureState:(f,k)=>A().removeFeatureState(f,k),
       /* (#R161) read a paint property back (theme code needs to know the current value) */
-      getPaint:(id,p)=>_adapter.getPaint(id,p),
+      getPaint:(id,p)=>A().getPaint(id,p),
       /* (#R178) the rest of the layer surface — see the adapter block */
-      get:id=>_adapter.getLayer(id), getLayout:(id,p)=>_adapter.getLayout(id,p),
-      move:(id,before)=>_adapter.moveLayer(id,before),
-      setFilter:(id,f)=>_adapter.setFilter(id,f), getFilter:id=>_adapter.getFilter(id),
-      getFeatureState:f=>_adapter.getFeatureState(f),
-      updateImage:(id,o)=>_adapter.updateImageSource(id,o),
-      sourceData:id=>_adapter.sourceData?_adapter.sourceData(id):null,
-      setSourceTiles:(id,t)=>_adapter.setSourceTiles?_adapter.setSourceTiles(id,t):false },
+      get:id=>A().getLayer(id), getLayout:(id,p)=>A().getLayout(id,p),
+      move:(id,before)=>A().moveLayer(id,before),
+      setFilter:(id,f)=>A().setFilter(id,f), getFilter:id=>A().getFilter(id),
+      getFeatureState:f=>A().getFeatureState(f),
+      updateImage:(id,o)=>A().updateImageSource(id,o),
+      sourceData:id=>A().sourceData?A().sourceData(id):null,
+      setSourceTiles:(id,t)=>A().setSourceTiles?A().setSourceTiles(id,t):false },
     /* (#R178) THE SCENE rather than a layer — sky, light, terrain attachment, sprite atlas and
        the parsed style itself. Separate from layers.* because an engine can have all of these
        without having a "layer" concept at all. */
-    scene:{ getStyle:()=>_adapter.getStyle(), setLight:l=>_adapter.setLight(l),
-      setSky:s=>_adapter.setSky(s), getSky:()=>_adapter.getSky(),
-      setTerrain:t=>_adapter.setTerrain(t), getTerrain:()=>_adapter.getTerrain(),
-      addImage:(id,img,o)=>_adapter.addImage(id,img,o), hasImage:id=>_adapter.hasImage(id), removeImage:id=>_adapter.removeImage(id),
-      addProtocol:(n,fn)=>_adapter.addProtocol(n,fn), setImageConcurrency:n=>_adapter.setImageConcurrency(n) },
+    scene:{ getStyle:()=>A().getStyle(), setLight:l=>A().setLight(l),
+      setSky:s=>A().setSky(s), getSky:()=>A().getSky(),
+      setTerrain:t=>A().setTerrain(t), getTerrain:()=>A().getTerrain(),
+      addImage:(id,img,o)=>A().addImage(id,img,o), hasImage:id=>A().hasImage(id), removeImage:id=>A().removeImage(id),
+      addProtocol:(n,fn)=>A().addProtocol(n,fn), setImageConcurrency:n=>A().setImageConcurrency(n),
+      /* (#R179) contour tiles derived from a DEM — the last thing that needed the library by name */
+      demContourSource:o=>A().demContourSource?A().demContourSource(o):null },
     /* (#R178) RENDERER-OWNED UI + a SECOND VIEW. `new maplibregl.Popup/Marker/Map` were the last
        places the engine was named outright outside this file. */
-    ui:{ popup:o=>_adapter.popup(o), marker:o=>_adapter.marker(o), createView:o=>_adapter.createView(o) },
+    ui:{ popup:o=>A().popup(o), marker:o=>A().marker(o), createView:o=>A().createView(o),
+      /* (#R179) an ADDITIONAL view as a scoped engine, and renderer UI attached to THIS view */
+      createSubView:o=>A().createSubView?A().createSubView(o):null,
+      addMarker:(o,ll)=>A().addMarker?A().addMarker(o,ll):null,
+      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
-    render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),
-      container:()=>_adapter.getContainer(), size:()=>_adapter.getSize(), setCursor:c=>_adapter.setCursor(c),
+    render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),
+      container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
       /* (#R178) the element gestures are dispatched on — NOT the canvas: MapLibre stacks markers
          and the attribution over it, and a synthetic pointer event has to land on the same node
          the renderer listens to. */
-      canvasContainer:()=>_adapter.getCanvasContainer() },
+      canvasContainer:()=>A().getCanvasContainer() },
     /* (#R171) gesture ownership — a drawing tool suspends the renderer's own pan for the stroke */
     /* (#R178) …and now the whole gesture set by NAME, because the flight simulator suspends all
        of them for a flight and was indexing map[handlerName] to do it. */
-    input:{ setDragPan:on=>_adapter.setDragPan(on),
-      set:(name,on)=>_adapter.setGesture(name,on), names:()=>_adapter.gestures(),
-      setAll:on=>{ let n=0; _adapter.gestures().forEach(g=>{ if(_adapter.setGesture(g,on)) n++; }); return n; },
-      setZoomRate:(r,wheel)=>_adapter.setZoomRate(r,wheel) },
-    events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c),
+    input:{ setDragPan:on=>A().setDragPan(on),
+      set:(name,on)=>A().setGesture(name,on), names:()=>A().gestures(),
+      setAll:on=>{ let n=0; A().gestures().forEach(g=>{ if(A().setGesture(g,on)) n++; }); return n; },
+      setZoomRate:(r,wheel)=>A().setZoomRate(r,wheel) },
+    events:{ on:(e,c)=>A().on(e,c), off:(e,c)=>A().off(e,c), once:(e,c)=>A().once(e,c),
       /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
-      onLayer:(e,l,c)=>_adapter.onLayer(e,l,c), offLayer:(e,l,c)=>_adapter.offLayer(e,l,c),
-      onceLayer:(e,l,c)=>_adapter.onceLayer?_adapter.onceLayer(e,l,c):null },
-    raw(){ return _adapter.raw(); }
-  };
+      onLayer:(e,l,c)=>A().onLayer(e,l,c), offLayer:(e,l,c)=>A().offLayer(e,l,c),
+      onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null },
+    raw(){ return A().raw(); }
+   };
+  }
+
+  return Object.assign({
+    /* engine-level, not per-view: which adapter is installed, and the declared contracts */
+    adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; },
+    contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; }
+  }, engineFacade(()=>_adapter));
 })();

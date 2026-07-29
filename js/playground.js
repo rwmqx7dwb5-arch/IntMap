@@ -183,10 +183,11 @@ window.IntMapModules.playground=function(map,HOST){
       const answerB=document.createElement('button'); answerB.textContent=jp()?'回答':'Answer'; answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
       let gmap=null, guess=null, gmarker=null, answered=false;
       try{
-        gmap=GE().ui.createView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
+        gmap=GE().ui.createSubView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
         /* (#R31) GLOBE projection for the guess map ("メルカトルではなくglobe地図に") — more game-y & honest about distance. */
-        try{ gmap.on('style.load',()=>{ try{ gmap.setProjection({type:'globe'}); }catch(_){} }); gmap.setProjection&&gmap.setProjection({type:'globe'}); }catch(_){}
-        gmap.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=GE().ui.marker({element:el}).setLngLat(guess).addTo(gmap); answerB.disabled=false; answerB.style.opacity='1'; });
+        /* (#R179) through the scoped engine: setProjection takes a MODE, not a renderer spec */
+        try{ gmap.events.on('style.load',()=>{ try{ gmap.camera.setProjection('globe'); }catch(_){} }); gmap.camera.setProjection('globe'); }catch(_){}
+        gmap.events.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=gmap.ui.addMarker({element:el},guess); answerB.disabled=false; answerB.style.opacity='1'; });
       }catch(err){ result.textContent='Guess map failed.'; }
       answerB.onclick=()=>{
         if(answered||!guess) return; answered=true; answerB.style.display='none';
@@ -194,16 +195,16 @@ window.IntMapModules.playground=function(map,HOST){
         /* (#R30) zoom-out penalty — the more the player zoomed out during the round, the bigger the deduction. */
         const sz=(roundInfo&&roundInfo.startZoom)||15.4; const mz=(roundInfo&&roundInfo.getMinZoom)?roundInfo.getMinZoom():sz;
         const zoomDrop=Math.max(0, sz-mz); const penFrac=Math.min(0.6, zoomDrop*0.045); const penalty=Math.round(base*penFrac); const score=Math.max(0, base-penalty);
-        try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; GE().ui.marker({element:el}).setLngLat([target.lng,target.lat]).addTo(gmap);
-          gmap.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
+        try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmap.ui.addMarker({element:el},[target.lng,target.lat]);
+          gmap.camera.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
         result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'
           +(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'')
           +'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'+(jp()?'基本点 ':'Base ')+base
           +(penalty>0?(' · '+(jp()?'ズームアウト減点 −':'Zoom-out −')+penalty+' ('+(jp()?'最小ズーム ':'min zoom ')+mz.toFixed(1)+')'):' · <span style="color:#34c759;">'+(jp()?'ズームアウトなし！':'no zoom-out!')+'</span>')+'</div>';
         const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
-        again.onclick=()=>{ try{ gmap&&gmap.remove(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
+        again.onclick=()=>{ try{ gmap&&gmap.destroy(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
       };
-      ov.addEventListener('click',e=>{ if(e.target===ov){ try{ gmap&&gmap.remove(); }catch(_){} } });
+      ov.addEventListener('click',e=>{ if(e.target===ov){ try{ gmap&&gmap.destroy(); }catch(_){} } });
     }
 
     /* ===================== PANDEMIC SIMULATOR ===================== */

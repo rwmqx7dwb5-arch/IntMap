@@ -192,7 +192,10 @@ test('the 3-D volume module talks only to IntMapGeoEngine, never to the raw map'
 test('the engine contract declares real metric extrusion and the canDraw/ready split', () => {
   assert.match(INDEX, /extrusion3d:true/, 'MapLibre capabilities must advertise metric extrusion');
   assert.match(INDEX, /canDraw\(\)\{ if\(this\.styleReady\(\)\) return true; return this\.styleParsed\(\); \}/   /* (#R178) the engine answers it itself instead of bouncing off window.IntMapCanDraw */, 'the adapter must implement canDraw');
-  assert.match(INDEX, /canDraw:\(\)=>_adapter\.canDraw\(\)/, 'and the facade must expose it');
+  /* (#R179) the facade is a FUNCTION of an adapter now (engineFacade(A)), so the bindings read
+     `A().x()` rather than `_adapter.x()` — an additional view has to get the same object, and it
+     cannot if the object closes over the engine's own adapter. The claim is unchanged. */
+  assert.match(INDEX, /canDraw:\(\)=>A\(\)\.canDraw\(\)/, 'and the facade must expose it');
   assert.match(INDEX, /addExtrusion\(d,before\)/); assert.match(INDEX, /setExtrusionRange\(id,baseM,topM\)/);
   const cesium = INDEX.match(/const CESIUM_CONTRACT=[^;]+;/)[0];
   assert.match(cesium, /extrusion3d:true/, 'the Cesium contract must stay in sync with the capability list');
