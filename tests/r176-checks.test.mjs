@@ -23,7 +23,12 @@ const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
 const index = R('index.html');
-const body = R('js/app-body.js');
+/* (#R178) the application body is TWO files now: js/geo-engine.js was carved out of app-body.js
+   this round (the renderer adapter + the IntMapGeoEngine facade, moved verbatim), because the engine
+   had been created inside map.on('load') and therefore did not exist when the modules — now written
+   against it — run their factories. Every invariant below is about the same program, so `body` is
+   still that program; it just spans both files. */
+const body = [R('js/app-body.js'), R('js/geo-engine.js')].join('\n');
 const entry = R('src/main.js');
 const los = R('js/viewshed.js');
 const water = R('js/terrain-water.js');
@@ -61,9 +66,9 @@ test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with 
   /* (#R177) …AND THE SPHERE, which #R176 had no expression for at all */
   assert.match(body, /const gSpherical=t=>\{ try\{ return !!\(t&&t\.isGlobeRendering\); \}/,
     'the hook asks the renderer WHICH camera model is on screen');
-  assert.match(body, /const dg=-cp\+Math\.sqrt\(Math\.max\(0,cp\*cp-1\+rr\*rr\)\);/,
+  assert.match(body, /const dg=-cp\+Math\.sqrt\(Math\.max\(0,cp\*cp-1\+r\*r\)\);/   /* (#R178) the radius bisection is gone — the solve answers at the eye's OWN radius r and gLimitPitch clamps the TILT instead, so `rr` is simply `r` now */,
     'on the sphere the eye’s own radius fixes the look distance — |eye|² = 1 + dg² + 2·dg·cos p');
-  assert.match(body, /if\(sol&&sol\.ok\) return \{ lng:sol\.lng\/GEO_RAD, lat:sol\.lat\/GEO_RAD, zoom:sol\.z, elevation:0, held:true \};/,
+  assert.match(body, /return \{ lng:oLng, lat:oLat, zoom:z, elevation:0,\s*ok:/   /* (#R178) the sphere branch still answers with a ZOOM and a zero elevation — it just returns the one exact solve plus whether it is feasible, and gLimitPitch decides the tilt */,
     'so the ZOOM is what a tilt spends there — the pivot is on the surface, there is no other freedom');
   /* THE regression that produced the jerk: a declined frame applies the proposal verbatim (#R173) */
   assert.doesNotMatch(body, /Math\.abs\(lat\)>89\.5\) return \{\};/, 'the 89.5° bail-out must be gone');

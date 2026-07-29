@@ -173,7 +173,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
        planet gets its label from live tile data (no fixed list, no coverage ceiling). */
     _harvestOne('water','water_name',null,null);
     ['water'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
-      try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(HOST._stabIdx[kind].values())}); }catch(_){} });
+      try{ GE().layers.setSourceData('stab-'+kind+'-src',{type:'FeatureCollection',features:Array.from(HOST._stabIdx[kind].values())}); }catch(_){} });
   }
   function applyLabelLang(){
     if(!map) return;

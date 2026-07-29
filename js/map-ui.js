@@ -20,7 +20,8 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.layerRegistry=function(map,HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -47,7 +48,7 @@ window.IntMapModules.layerRegistry=function(map,HOST){
       try{ const r=await fetch(url); if(!r.ok) return null; const j=await r.json(); const v=pick(j);
         const out=(v==null||v==='')?null:(typeof v==='number'?(Math.round(v*100)/100+unit):String(v));
         if(out!=null) _numCache.set(key,out); return out; }catch(_){ return null; } }
-    function _srcFeatsIn(srcId,bounds){ try{ const s=map.getSource(srcId); if(!s||!s.serialize) return null; const d=s.serialize().data; if(!d||!Array.isArray(d.features)) return null;
+    function _srcFeatsIn(srcId,bounds){ try{ const d=GE().layers.sourceData(srcId); if(!d||!Array.isArray(d.features)) return null;
       const b=bounds||GE().camera.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
       return d.features.filter(f=>{ try{ const c=f.geometry&&f.geometry.type==='Point'&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=so&&c[1]<=n; }catch(_){ return false; } }); }catch(_){ return null; } }
     function register(id,impl){ REG[id]=impl||{}; }
@@ -109,7 +110,7 @@ window.IntMapModules.layerRegistry=function(map,HOST){
       'wb-internet-f':{src:'wb-internet',lb:()=>L5('Internet users','インターネット普及率','Internetnutzer','Пользователи интернета','Usuarios de internet'),fmt:p=>(+p.raw).toFixed(1)+'%'},
       'wb-precip-f':{src:'wb-precip',lb:()=>L5('Annual precipitation','年降水量','Jahresniederschlag','Годовые осадки','Precipitación anual'),fmt:p=>Math.round(+p.raw)+' mm'} };
     const _CHF=['pop','hdi','dem','milSpend','milSpendGDP','gdppc','tfr'].map(id=>id+'-fill');
-    const _srcData=sid=>{ try{ const s=map.getSource(sid); if(!s) return null; if(s._data&&s._data.features) return s._data; const d=s.serialize&&s.serialize().data; return (d&&d.features)?d:null; }catch(_){ return null; } };
+    const _srcData=sid=>{ try{ const d=GE().layers.sourceData(sid); return (d&&d.features)?d:null; }catch(_){ return null; } };
     register('choropleth',{ label:()=>L5('Country choropleth','国別コロプレス','Länder-Choroplethe','Хороплет по странам','Coropleta por países'),
       on:()=>_CHF.some(_lyrVis)||Object.keys(_WBF).some(_lyrVis)||!!(window._imBxChoroOn&&window._imBxChoroOn()),
       sampleAt:(x,y)=>{ const outs=[];
@@ -397,7 +398,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
       /* (#R72) clicking the MAP closes the sidebar, same as the classic dropdown ("地図上のどこかをクリックしたら
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
-      try{ map&&GE().events.on('click',open._mapCloser); }catch(_){}
+      try{ GE().events.on('click',open._mapCloser); }catch(_){}
       /* (#R160) overlay: the map-container did NOT change size, so no resize/recentre — just let the search-pill
          layout recompute against the now-open panel (the right-anchored HUD slides left via CSS). */
       try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
@@ -516,10 +517,10 @@ window.IntMapModules.ticker=function(map,HOST){
       if(or&&or.parentNode){ or.parentNode.insertBefore(bar,or.nextSibling); } else document.body.appendChild(bar);
       track=bar.querySelector('.tk-track'); }
     function open(){ build(); document.body.classList.add('ticker-on'); bar.style.display='flex'; refresh(); if(!timer) timer=setInterval(refresh,300000);
-      try{ map&&GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ map&&GE().render.resize(); }catch(_){} },350);
+      try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }   /* (#R102) ws windows fill the vacated strip */
     function close(){ if(bar) bar.style.display='none'; document.body.classList.remove('ticker-on'); if(timer){ clearInterval(timer); timer=0; }
-      try{ map&&GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ map&&GE().render.resize(); }catch(_){} },350);
+      try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }
     function toggle(){ if(document.body.classList.contains('ticker-on')){ window.imTicker='off'; close(); } else { window.imTicker='on'; open(); } try{ saveSettings&&saveSettings(); }catch(_){} }
     function apply(){ if(window.imTicker==='on') open(); else close(); }
@@ -583,7 +584,8 @@ window.IntMapModules.layerPresets=function(map,HOST){
 };
 
 window.IntMapModules.labelPopup=function(map,HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -601,7 +603,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
         GE().layers.add({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
         return true; }catch(_){ return false; }
     }
-    function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; }
+    function clearHL(){ try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; }
       /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
          the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
       try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
@@ -802,7 +804,8 @@ window.IntMapModules.geojsonUpload=function(map,HOST){
 };
 
 window.IntMapModules.viewHash=function(map,HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */

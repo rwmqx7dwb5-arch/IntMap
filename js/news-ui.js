@@ -400,7 +400,7 @@ window.IntMapModules.newsUi=function(map,HOST){
   /* Rebuild news-points from the current filter WITHOUT touching the sidebar feed (so a
      progressive update during geocoding doesn't reset scroll). Mirrors startNews()'s shape. */
   function aiRefreshNewsPins(){
-    if(!(map&&GE().layers.hasSource('news-points'))) return;
+    if(!(GE().layers.hasSource('news-points'))) return;
     HOST.newsFeatures=[];
     HOST.computeFilteredNews().forEach(item=>{ const a=item.analysis; if(a&&a.loc){
       const fid='n_'+Math.random().toString(36).slice(2,10);
@@ -484,7 +484,7 @@ window.IntMapModules.newsUi=function(map,HOST){
         if(pub&&item.publisher){ const openWiki=(e)=>{ e.stopPropagation(); const wl=(HOST.lang==='jp')?'ja':HOST.lang; const _u=IntMapSafe.url('https://'+wl+'.wikipedia.org/w/index.php?title=Special:Search&search='+encodeURIComponent(item.publisher)+'&go=Go'); if(_u) window.open(_u,'_blank','noopener'); };
           pub.onclick=openWiki; pub.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWiki(e); } }); } }
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
-      card.onclick=()=>{ if(map&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
+      card.onclick=()=>{ if(item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
       item._cardEl=card; /* lets the translation pass update this title in place */
       feed.appendChild(card);
       /* Pins are populated in bulk by startNews(); no per-batch pin push here. */
@@ -523,7 +523,7 @@ window.IntMapModules.newsUi=function(map,HOST){
         <div class="nrp-body">${bodyHtml}</div>
         <a class="nrp-orig" href="${HOST.escForReader(item.link)}" target="_blank" rel="noopener">${HOST.lang==='jp'?'元記事を開く':HOST.lang==='de'?'Original öffnen':HOST.lang==='ru'?'Открыть оригинал':HOST.lang==='es'?'Abrir original':'Open original'} ↗</a>`;
       const locEl=pane.querySelector('#nrp-loc');
-      if(locEl) locEl.onclick=()=>{ if(map&&item.analysis&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
+      if(locEl) locEl.onclick=()=>{ if(item.analysis&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
     }
     pane.querySelector('#nrp-back-btn').onclick=HOST.closeArticleReader;
     const mb=pane.querySelector('#nrp-mode-btn');

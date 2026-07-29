@@ -62,7 +62,7 @@ window.IntMapModules.radiation=function(map,HOST){
       GE().layers.add({id:'imrad-pt',type:'circle',source:SRC,minzoom:4.5,paint:{'circle-radius':2.1,'circle-color':['coalesce',['get','c'],'#ff453a'],'circle-opacity':0.5}});
       GE().layers.add({id:'imrad-srcpt',type:'circle',source:SRC,filter:['==',['get','src'],1],paint:{'circle-radius':7,'circle-color':'#ffe000','circle-stroke-color':'#8a0f0f','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
-    function clear(){ if(_run){ _run.cancel=true; _run=null; } try{ map.getSource(SRC)&&GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ map.getSource(DEP)&&GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clear(){ if(_run){ _run.cancel=true; _run=null; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* wind/precip/temperature field — FORECAST (now / next 3 days) or, for a PAST start date, the ERA5 ARCHIVE.
        Returns hourly u,v,precip,temp on a 6×6 grid; startHour = the field-hour the release begins at. */
     async function fetchField(cx,cy,opts){ opts=opts||{}; const nx=6, ny=6, half=2.6; const lons=[],lats=[];
@@ -147,7 +147,7 @@ window.IntMapModules.radiation=function(map,HOST){
           if(Math.random()<0.008*dH) p.dead=true; }
         const feats=[{type:'Feature',geometry:{type:'Point',coordinates:[src.lng,src.lat]},properties:{src:1,w:1,c:'#ffe000'}}];
         for(const p of parts){ if(p.dead) continue; const a=p.act; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{w:Math.max(0.15,a),c:(a>0.7?'#ff453a':a>0.4?'#ff9f0a':'#ffe08a')}}); }
-        try{ const s2=map.getSource(SRC); if(s2) s2.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
         if(tau>=1) return; requestAnimationFrame(frame); };
       requestAnimationFrame(frame); }
     async function run(src,opts){ opts=opts||{}; clear(); const myGen=++_gen;
@@ -168,13 +168,13 @@ window.IntMapModules.radiation=function(map,HOST){
       const secs=Math.max(15,Math.min(60,+opts.seconds||38));
       let painted=false;
       const paint=()=>{ if(myGen!==_gen) return true; if(painted) return true; if(!ensureLayers()) return false; painted=true;
-        try{ const ds=map.getSource(DEP); if(ds) ds.setData({type:'FeatureCollection',features:dz.feats}); }catch(_){}
+        try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:dz.feats}); }catch(_){}
         try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else GE().camera.flyTo({center:[src.lng,src.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:800}); }catch(_){}
         animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour}); return true; };
       if(!paint()){ let n=0; const t=setInterval(()=>{ if(myGen!==_gen||paint()||n++>56){ clearInterval(t); } },250); try{ GE().events.once('idle',paint); }catch(_){} }
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
-    try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
+    try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
     return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite };
   })();
 };
@@ -340,9 +340,9 @@ window.IntMapModules.slope=function(map,HOST){
       h.innerHTML=ramp+'<br>'+modeBtn; const mb=h.querySelector('#sl-mode'); if(mb) mb.onclick=()=>setMode(mode==='slope'?'aspect':'slope'); }catch(_){} }
     const lbl=()=>SL('Slope / aspect','傾斜・斜面方向','Neigung / Exposition','Уклон / экспозиция','Pendiente / orientación');
     function setMode(m){ mode=(m==='aspect')?'aspect':'slope'; lastKey=''; run(); }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map.once) GE().events.once('idle',apply); return; }
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ GE().events.once('idle',apply); return; }
       try{ GE().layers.setLayout('imslope-fill','visibility',on?'visible':'none'); }catch(_){}
-      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ const src=map.getSource(SRC); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} } };
+      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
     GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(run,500); });
     GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ try{ GE().layers.setLayout('imslope-fill','visibility','visible'); }catch(_){} } },80); });
@@ -428,7 +428,7 @@ window.IntMapModules.rf=function(map,HOST){
         +'<div class="rf-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+RF('Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.','実地形上の見通し（4/3地球の電波見通し＋自由空間損失）。回折・遮蔽物は未考慮の一次近似です。','Sichtlinie über echtem Gelände.','Прямая видимость по рельефу.','Línea de vista sobre terreno real.')+'</div></div>';
       document.body.appendChild(panel);
-      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
+      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };
       const gv=(sel,d)=>{ const el=panel.querySelector(sel); const v=+el.value; return isFinite(v)?v:d; };
       panel.querySelector('.rf-h').onchange=()=>{ antH=Math.max(1,gv('.rf-h',30)); if(ant) run(); };
       panel.querySelector('.rf-p').onchange=()=>{ txDbm=gv('.rf-p',30); if(ant) run(); };
@@ -437,7 +437,7 @@ window.IntMapModules.rf=function(map,HOST){
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rf-head')); }catch(_){}
       return panel; }
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } }
-    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
+    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
 window.IntMapModules.sun=function(map,HOST){
@@ -602,7 +602,7 @@ window.IntMapModules.sun=function(map,HOST){
       try{ panel.remove(); }catch(_){} panel=null;
       if(wasOpen) open(); });
     function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,
       /* (#R176) the new half, so Atlas and the tests can drive it */
       terrainShadow:(on)=>{ const want=(on==null)?!terrainOn:!!on; if(want!==terrainOn) toggleTerrain(); return terrainOn; },
@@ -679,7 +679,7 @@ window.IntMapModules.transitReach=function(map,HOST){
     async function open(from,minutes){ ensure();
       try{ if(window.satToast) satToast(HOST.lang==='jp'?'鉄道到達圏を計算中…':'Computing rail reach…'); }catch(_){}
       const r=await run(from,minutes); if(r&&r.ok){ draw(r); } return r; }
-    return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
+    return { run, open, draw, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
 window.IntMapModules.disaster=function(map,HOST){
@@ -778,7 +778,7 @@ window.IntMapModules.disaster=function(map,HOST){
       else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
       else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ origin=ll; run(); } }
-    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
@@ -853,6 +853,6 @@ window.IntMapModules.earthReplay=function(map,HOST){
        terminator + read-out while the panel is open. */
     try{ if(window.IntMapTime) window.IntMapTime.on(e=>{ when=e.when; syncInputs(); if(panel&&panel.style.display!=='none'){ drawTerminator(); updateReadout(); } }); }catch(_){}
     function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, close, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
 };

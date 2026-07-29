@@ -458,7 +458,7 @@ window.IntMapModules.droneNav=function(map,HOST){
   const SRC_WP='drone-wp-src', LYR_WP_POST='drone-wp-post', LYR_WP='drone-wp', LYR_HAZ='drone-hazard';
   const COL_OK='#0a84ff', COL_BAD='#ff453a', COL_WP='#ffd23f';
   function mppCentre(){ try{ const c=GE().camera.getCenter(); let w=0;
-      try{ const v=map.transform&&GE().coords.worldSize(); if(isFinite(v)&&v>0) w=v; }catch(_){}
+      try{ const v=GE().coords.worldSize(); if(isFinite(v)&&v>0) w=v; }catch(_){}
       if(!w) w=512*Math.pow(2,GE().camera.getZoom()||0);
       const m=(2*Math.PI*R_EARTH*Math.cos((c.lat||0)*D2R))/w; return (isFinite(m)&&m>0)?m:50; }catch(_){ return 50; } }
   /* With 3-D terrain ON the renderer's metres are height ABOVE THE GROUND under the map centre; with it

@@ -30,9 +30,13 @@ import * as walk from 'acorn-walk';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1'), '..');
 const JS_DIR = path.join(ROOT, 'js');
 
-/* Files whose raw-handle count has reached zero. Adding a name here is a promise
-   that it stays there; the gate enforces it. */
-export const DECOUPLED = new Set([]);
+/* THE ONE FILE ALLOWED TO NAME THE RENDERER. Everything else in js/ goes through
+   window.IntMapGeoEngine, and the gate fails if that stops being true — the whole
+   list is the ratchet, so a new file is decoupled by default rather than by
+   remembering to add it here. (#R178 took this from 2,037 references across 31
+   files to 0; the exemption is the adapter itself, which of course says
+   `new maplibregl.Popup` — that is what an adapter IS.) */
+export const ENGINE_FILE = 'geo-engine.js';
 
 /* The identifiers that ARE the renderer. `map` is how every module receives it
    (window.IntMapModules.x = function(map, HOST){…}); `__imap` is the global the
@@ -143,10 +147,11 @@ function main() {
   const apis = new Map();
   withHits.forEach(r => r.hits.forEach(h => apis.set(h.prop, (apis.get(h.prop) || 0) + 1)));
 
+  const offenders = withHits.filter(r => path.basename(r.file) !== ENGINE_FILE);
   console.log(`IntMap renderer-coupling — ${results.length} files in js/`);
-  console.log(`  raw renderer references: ${total}   files still coupled: ${withHits.length}   distinct APIs: ${apis.size}`);
-  console.log(`  decoupled so far: ${DECOUPLED.size} file(s)\n`);
-  withHits.forEach(r => console.log(`  ${String(r.hits.length).padStart(5)}  ${r.file}`));
+  console.log(`  raw renderer references: ${total}   distinct APIs: ${apis.size}`);
+  console.log(`  files naming the renderer outside js/${ENGINE_FILE}: ${offenders.length}\n`);
+  withHits.forEach(r => console.log(`  ${String(r.hits.length).padStart(5)}  ${r.file}${path.basename(r.file) === ENGINE_FILE ? '   (the adapter — expected)' : ''}`));
   console.log('\n  API histogram:');
   console.log('  ' + [...apis.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}:${v}`).join('  '));
 
@@ -156,21 +161,23 @@ function main() {
   }
   if (!gate) return;
 
-  const regressed = withHits.filter(r => DECOUPLED.has(path.basename(r.file)));
-  if (regressed.length) {
-    console.error('\n✗ these files were decoupled and have grown raw renderer references again:');
-    regressed.forEach(r => {
+  if (offenders.length) {
+    console.error(`\n✗ only js/${ENGINE_FILE} may name the renderer; these reach for it directly:`);
+    offenders.forEach(r => {
       console.error(`  ${r.file}`);
       r.hits.slice(0, 12).forEach(h => console.error(`      line ${h.line}: .${h.prop}`));
+      if (r.hits.length > 12) console.error(`      …and ${r.hits.length - 12} more`);
     });
+    console.error('\n  Use the contract instead: const GE=()=>window.IntMapGeoEngine;');
+    console.error('  scripts/decouple-codemod.mjs holds the renderer-call → contract-call table.');
     process.exit(1);
   }
-  const missing = [...DECOUPLED].filter(n => !results.some(r => path.basename(r.file) === n));
-  if (missing.length) {
-    console.error(`\n✗ DECOUPLED names no file: ${missing.join(', ')}`);
+  if (!results.some(r => path.basename(r.file) === ENGINE_FILE)) {
+    console.error(`\n✗ js/${ENGINE_FILE} is missing — the renderer seam is gone`);
     process.exit(1);
   }
-  console.log('\n✓ renderer-coupling gate PASSED');
+  console.log('\n✓ renderer-coupling gate PASSED — the renderer is named in one file');
 }
 
-if (import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/')) || process.argv[1].endsWith('engine-coupling.mjs')) main();
+/* run as a script, importable as a module (tests/r178-checks.test.mjs re-uses scanAll) */
+if (process.argv[1] && process.argv[1].replace(/\\/g, '/').endsWith('engine-coupling.mjs')) main();

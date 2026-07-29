@@ -36,7 +36,9 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
      abnormal one-frame jump is skipped. #R173 briefly replaced the fixed look distance with a solve on the
      round Earth; (#R174) that was withdrawn because it could not look up (measured: the map froze at 85.4°
      while the pilot looked to 165°), so the assertions follow the #R158 geometry again. */
-  ok('cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt)',
+  /* (#R178) spelled through the engine contract — camera.fromTo IS calculateCameraOptionsFromTo,
+     asked of the adapter instead of of MapLibre. Same geometry, same arguments. */
+  ok('cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt);',
     'the camera comes from one look-ahead geometry');
   ok('const _D=_D_LOOK', 'at a FIXED distance, which is what makes centre and zoom stable at every attitude');
   ok('const _pk=1-Math.exp(-Math.max(0.001,dt)/0.055); st._cP+=(pitchT-st._cP)*_pk;', 'time-based pitch low-pass (no 1-frame spike)');
@@ -44,17 +46,21 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
   ok('const sane=!!(cam&&cam.center&&_fin(cam.center.lng)', 'every camera output validated (NaN/Inf/range)');
   ok('if(_dC>9000||_dZ>3){ okCam=false;', 'abnormal one-frame jump is skipped (safety net)');
   ok('const camAlt=Math.max(st.alt, _grd+2.5);', 'camera eye altitude floored above smoothed terrain (decoupled from aircraft)');
-  ok('try{ if(map&&map.stop) map.stop(); }catch(_){} try{ window.__fsCamSkips=0', 'flight start halts other camera animations (sole controller)');
+  ok('try{ if(GE().camera.stop) GE().camera.stop(); }catch(_){} try{ window.__fsCamSkips=0', 'flight start halts other camera animations (sole controller)');
   /* (#R175) the pin survived the move to npm — and matters for the same reason it was made in #R158:
      the camera APIs this flight-sim fix rides on are exact-version behaviour, not a documented API. */
   const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
   assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'MapLibre pinned to an exact version');
   assert.ok(!/unpkg\.com\/maplibre-gl@/.test(html), 'and the unpinnable CDN copy is gone');
-  gone('cam=map.calculateCameraOptionsFromCameraLngLatAltRotation', 'the near-horizontal-unstable rotation API is no longer the primary path');
+  /* (#R178) the CALL is what must be gone, not the name — js/flight-sim.js still explains in a comment
+     why that API was abandoned, and deleting the explanation would lose the reason. */
+  gone('=GE().camera.fromRotation(', 'the near-horizontal-unstable rotation API is no longer the primary path');
+  gone('map.calculateCameraOptionsFromCameraLngLatAltRotation(', '…and not through the raw handle either');
 });
 
 test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real cropped imagery, native kept', () => {
-  ok("maplibregl.addProtocol('imapsat'", 'custom satellite tile protocol registered');
+  /* (#R178) registered through the contract — js/geo-engine.js is the only file that may say maplibregl */
+  ok("GE().scene.addProtocol('imapsat'", 'custom satellite tile protocol registered');
   ok('const _SAT_PLACEHOLDER_MAX=3500;', 'grey "no data" placeholder detected by byte length');
   ok('async function _satCrop(buf, dz, subX, subY)', 'nearest real ancestor cropped to the child quadrant');
   ok('for(let up=0; up<13 && az>1; up++)', 'walk-up deep enough for open ocean (Esri imagery ends ~z8)');

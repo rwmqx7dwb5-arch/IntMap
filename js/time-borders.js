@@ -15,7 +15,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.timeBorders=function(map,HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  /* (#R178) module state, not renderer state — it was map.__imtbClick (see data-layers.js) */
+  let _clickWired=false;
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -264,7 +267,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
       if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
-      if(!map.__imtbClick){ map.__imtbClick=true;
+      if(!_clickWired){ _clickWired=true;
         const _clk=(e)=>{ try{
           /* (#R108) while a country is ISOLATED, a click anywhere must NOT re-register as a historical-country click
              ("昔の国をisolateした状態でどこかをクリックすると国名をクリックした判定になってしまう"). */
@@ -630,7 +633,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
          with the layers missing, and this early return then bypassed ensure() forever — the "年代を変えても歴史的
          国境が表示されない" report (data was being set on a source no layer drew). Layers gone → fall through to
          ensure(), which idempotently recreates them. */
-      try{ const s=map.getSource('imtb-src'); if(s&&GE().layers.has('imtb-line')){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
       if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
@@ -642,7 +645,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
-      try{ const s=map.getSource('imtb-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     async function go(year){ active=true; const my=++seq;

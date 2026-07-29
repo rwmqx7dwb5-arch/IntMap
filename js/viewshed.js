@@ -93,8 +93,8 @@ window.IntMapModules.los=function(map,HOST){
     function paint(dataUrl, coords){
       try{
         if(!_imCanDraw()) return;
-        const s=map.getSource(IMGSRC);
-        if(s&&s.updateImage){ s.updateImage({url:dataUrl,coordinates:coords}); }
+        const s=GE().layers.hasSource(IMGSRC);
+        if(s){ GE().layers.updateImage(IMGSRC,{url:dataUrl,coordinates:coords}); }
         else {
           if(s){ try{ if(GE().layers.has(IMGLYR)) GE().layers.remove(IMGLYR); GE().layers.removeSource(IMGSRC); }catch(_){} }
           GE().layers.addSource(IMGSRC,{type:'image',url:dataUrl,coordinates:coords});

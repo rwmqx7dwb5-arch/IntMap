@@ -28,7 +28,10 @@ const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
    is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
    JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
 const INDEX = appShell(new URL('../', import.meta.url));
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
+/* (#R178) …and js/geo-engine.js is not a module either — it is the renderer adapter, carved out of
+   app-body.js this round. It is part of the page's program (see appShell), so questions asked of
+   the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
 
 function stripComments(src) {
   return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
@@ -262,7 +265,7 @@ test('the engine contract declares what this round needed, and Cesium answers fo
   for (const m of ['getProjection:', 'setBearing:', 'setPitch:', 'getMaxPitch:', 'setMaxPitch:', 'tiltRange:', 'altitude:']) {
     assert.ok(INDEX.includes(m), `the camera facade must expose ${m}`);
   }
-  assert.match(INDEX, /input:\{ setDragPan:on=>_adapter\.setDragPan\(on\) \}/, 'gesture hand-over belongs in the contract');
+  assert.match(INDEX, /input:\{ setDragPan:on=>_adapter\.setDragPan\(on\),/   /* (#R178) the section grew — every gesture by name — but setDragPan is still its first entry */, 'gesture hand-over belongs in the contract');
 });
 
 test('the module list, script tag and boot call for view-controls all agree', () => {

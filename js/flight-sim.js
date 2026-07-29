@@ -743,7 +743,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       /* (#R158) SOLE CAMERA CONTROLLER: cancel any in-flight MapLibre camera animation (Atlas flyTo, a snap-back easeTo, the
          globe intro) before the sim takes over — the per-frame jumpTo below is then the only thing driving the camera. The
          globe-tour auto-spin is stopped separately by _fsStashLayers() (its checkbox lives in #layer-dropdown). */
-      try{ if(map&&GE().camera.stop) GE().camera.stop(); }catch(_){} try{ window.__fsCamSkips=0; }catch(_){}
+      try{ if(GE().camera.stop) GE().camera.stop(); }catch(_){} try{ window.__fsCamSkips=0; }catch(_){}
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
       const c=GE().camera.getCenter(), ac=AC();
       /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
@@ -824,7 +824,7 @@ window.IntMapModules.flightSim=function(map,HOST){
          not disappear — it becomes ground +30 m, so a late DEM read can still never spawn inside a hill. */
       { const tr0=_terrRead(st.lng,st.lat), plaus0=tr0.ok&&(st._fieldElev==null||Math.abs(tr0.v-st._fieldElev)<150);   /* (#R117) a half-loaded DEM can read e.g. −1439 m at Haneda — never settle the runway onto garbage */
         if(plaus0){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+_clrLift()); } else st._settleTerr=true; }
-      try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
+      try{ HANDLERS.forEach(h=>GE().input.set(h,false)); }catch(_){}
       try{ _FSBLOCK.forEach(ev=>window.addEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) map features become display-only (see _fsBlocker) */
       /* (#R102) FULLSCREEN WITHIN IntMap — the map is lifted above all app chrome (see .fs-flying CSS), covering the whole
          IntMap viewport. The browser `requestFullscreen()` (desktop/OS fullscreen) was REMOVED per request ("デスクトップ
@@ -837,7 +837,7 @@ window.IntMapModules.flightSim=function(map,HOST){
          The ocean now shows the real satellite imagery — the R158 satellite protocol upscales the nearest real tile so the
          open sea reads as genuine imagery instead of Esri's grey "no data" placeholder (the reason the fill was added in R152).
          The PHYSICS sea-surface floor (can't dive below sea level over open ocean) is unrelated and stays. */
-      try{ if(map&&map.getLayer&&GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(map&&map.getSource&&GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* clear any leftover fill from an older session */
+      try{ if(GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* clear any leftover fill from an older session */
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
       mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
@@ -857,10 +857,10 @@ window.IntMapModules.flightSim=function(map,HOST){
          also unpins the ground-clamp (js/view-controls.js) and installs the eye pivot; the line above would
          otherwise silently undo it for anyone who has that setting on. One re-apply puts the owner in charge. */
       try{ if(window.IntMapTilt){ window.IntMapTilt.apply(); window.IntMapTilt.wireTilt(); } }catch(_){}
-      try{ if(map&&map.getLayer&&GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(map&&map.getSource&&GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
+      try{ if(GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
       for(const k in keys) keys[k]=false;
       try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */
-      try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
+      try{ HANDLERS.forEach(h=>GE().input.set(h,true)); }catch(_){}
       try{ fsAudio.stop(); }catch(_){}   /* (#R101) fade out + close the audio context */
       try{ destroyMinimap(); }catch(_){}   /* (#R96) tear down the moving-map's GL context */
       resultShown=false; try{ const r=document.getElementById('fs-result'); if(r) r.remove(); }catch(_){}   /* (#R98) clear the result screen */

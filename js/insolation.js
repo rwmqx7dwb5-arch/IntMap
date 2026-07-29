@@ -143,8 +143,8 @@ window.IntMapModules.insolation=function(map,HOST){
       ctx.putImageData(im,0,0);
       const coords=[[g.bbox[0],g.bbox[1]],[g.bbox[2],g.bbox[1]],[g.bbox[2],g.bbox[3]],[g.bbox[0],g.bbox[3]]];
       try{ if(!_imCanDraw()) return;
-        const s=map.getSource(IMG);
-        if(s&&s.updateImage) s.updateImage({url:cv.toDataURL('image/png'),coordinates:coords});
+        const s=GE().layers.hasSource(IMG);
+        if(s) GE().layers.updateImage(IMG,{url:cv.toDataURL('image/png'),coordinates:coords});
         else { GE().layers.addSource(IMG,{type:'image',url:cv.toDataURL('image/png'),coordinates:coords});
           const before=(()=>{ for(const id of ['imsun-shadow']){ try{ if(GE().layers.has(id)) return id; }catch(_){} } return undefined; })();
           GE().layers.add({id:LYR,type:'raster',source:IMG,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before); }

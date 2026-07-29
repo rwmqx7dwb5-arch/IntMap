@@ -13,7 +13,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.cameras=function(map,HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -84,7 +85,7 @@ window.IntMapModules.cameras=function(map,HOST){
       fetch('https://api.tfl.gov.uk/Place/Type/JamCam').then(r=>r.ok?r.json():null).then(arr=>{ if(!Array.isArray(arr)) return; let add=0;
         arr.forEach(cm=>{ const ap={}; (cm.additionalProperties||[]).forEach(x=>{ ap[x.key]=x.value; }); if(String(ap.available)==='false'||!ap.imageUrl) return; const id='tfl_'+cm.id; if(camById[id]) return;
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[+cm.lon,+cm.lat]},properties:{n:cm.commonName||'Traffic camera',url:ap.imageUrl||'',kind:'tfl',img:ap.imageUrl||'',video:ap.videoUrl||'',net:'tfl',col:'#ff6d00',attr:'© Transport for London'}}; add++; });
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ tflDone=false; }); }
     /* (#R87) Caltrans (California DOT) CCTV — ~3,500 live traffic cameras across the state's 12 districts, keyless
        open JSON, each a direct refreshing JPEG (`currentImageURL`, updated ~5 min). Fetched ONCE per district. A
@@ -95,7 +96,7 @@ window.IntMapModules.cameras=function(map,HOST){
           j.data.forEach(rec=>{ const c=rec&&rec.cctv; if(!c||!c.location) return; if(String(c.inService)!=='true') return; const st=c.imageData&&c.imageData.static; const img=st&&st.currentImageURL; if(!img) return;
             const lon=+c.location.longitude, lat=+c.location.latitude; if(!isFinite(lon)||!isFinite(lat)||(!lon&&!lat)) return; const id='ca_'+dd+'_'+c.index; if(camById[id]) return;
             camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[lon,lat]},properties:{n:c.location.locationName||('Caltrans '+(c.location.nearbyPlace||'camera')),url:img,kind:'img',net:'ca',col:'#2979ff',attr:'© Caltrans (California DOT)'}}; add++; });
-          if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+          if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
         }).catch(()=>{}); }
     }
     /* (#R87) Finland — Fintraffic / Digitraffic road weather cameras — 811 stations, 2,272 live camera views
@@ -108,7 +109,7 @@ window.IntMapModules.cameras=function(map,HOST){
           const imgs=presets.map(p=>'https://weathercam.digitraffic.fi/'+p.id+'.jpg'); const id='fi_'+pr.id; if(camById[id]) return;
           const nm=String(pr.name||'').replace(/_/g,' ').trim()||'Weather camera';
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[+g[0],+g[1]]},properties:{n:nm,url:imgs[0],kind:'img',net:'fi',col:'#ffab00',attr:'© Fintraffic / Digitraffic',presets:JSON.stringify(imgs).slice(0,1800)}}; add++; });
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ finlandDone=false; }); }
     /* (#R87) MORE US STATE DOT cameras via the OpenTrafficCamMap open dataset (MIT, crowdsourced, served from the
        jsDelivr CDN so the LIST is keyless + CORS-OK). PINNED to a commit for a stable schema. Only the hosts whose
@@ -131,7 +132,7 @@ window.IntMapModules.cameras=function(map,HOST){
         let add=0;
         for(const key in groups){ const g=groups[key]; if(!g.urls.length) continue; const id='otcm_'+key; if(camById[id]) continue;
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[g.lon,g.lat]},properties:{n:g.desc,url:g.urls[0],kind:'img',net:'us',col:'#e0409a',attr:g.attr,presets:JSON.stringify(g.urls).slice(0,1800)}}; add++; }
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ otcmDone=false; }); }
     /* (#R96c) US-state + Canadian-province DOT "511" traffic cameras — a huge keyless network on the shared "511"
        map platform. The marker list (/map/mapIcons/Cameras → item2:[{itemId,location:[lat,lon],title}]) has no CORS
@@ -151,7 +152,7 @@ window.IntMapModules.cameras=function(map,HOST){
       fetch(mk(url)).then(r=>r.ok?r.text():Promise.reject(new Error('s'+r.status))).then(t=>{ if(done) return; done=true; clearTimeout(to); let j=null; try{ j=JSON.parse(t); }catch(_){}
         if(j) resolve(j); else attempt(); }).catch(()=>{ if(done) return; done=true; clearTimeout(to); attempt(); }); })(); }); }
     /* throttle the source rebuild — with 13 sites & ~25k features we must not re-serialize the whole FeatureCollection on every camera add */
-    function _osSchedule(){ if(_osDataT) return; _osDataT=setTimeout(()=>{ _osDataT=null; try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} },600); }
+    function _osSchedule(){ if(_osDataT) return; _osDataT=setTimeout(()=>{ _osDataT=null; try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} },600); }
     function loadOneStop(){ if(oneStopDone) return; oneStopDone=true;
       ONESTOP.forEach((site,idx)=>{ const dom=site[0], attr=site[1];
         setTimeout(()=>{ _osFetchJSON('https://'+dom+'/map/mapIcons/Cameras').then(j=>{ const arr=j&&j.item2; if(!Array.isArray(arr)) return; let add=0;
@@ -177,11 +178,11 @@ window.IntMapModules.cameras=function(map,HOST){
           const kind=classify(u); if(!kind) return;   /* DROP link-out-only cams (the old facade) — keep only cams that display */
           const oc=(kind==='yt')?'#ff3b30':(kind==='pano')?'#00b8d4':(kind==='video')?'#a142f4':'#00c853';
           camById[el.id]={type:'Feature',id:el.id,geometry:{type:'Point',coordinates:[el.lon,el.lat]},properties:{n:el.tags.name||el.tags.operator||el.tags['operator:short']||'Camera',url:u,kind:kind,net:'osm',col:oc,attr:'© OpenStreetMap'}}; });
-        try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){}
+        try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){}
         try{ if(on) updateLegend(); }catch(_){}
       }).catch(()=>{ fetching=false; try{ if(!Object.keys(camById).length) satToast(LLw('Could not load cameras — try again.','カメラを取得できませんでした。','Kameras konnten nicht geladen werden.','Не удалось загрузить камеры.','No se pudieron cargar las cámaras.')); }catch(_){} });
     }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map&&map.once) GE().events.once('idle',apply); return; }
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ GE().events.once('idle',apply); return; }
       ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       if(on){ updateLegend(); loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); loadView(true); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
       else { _stopRefresh(); try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };

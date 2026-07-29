@@ -48,7 +48,7 @@ window.IntMapModules.dashExtended=function(map,HOST){
     window.IntMapSim=(function(){
       const ids={};
       function ensure(id, makeLayers){ if(ids[id]) return ids[id]; const sid='sim-'+id; try{ if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); if(makeLayers) makeLayers(sid); ids[id]=sid; }catch(_){} return sid; }
-      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ const s=map.getSource(sid); if(s) s.setData(geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
+      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ GE().layers.setSourceData(sid,geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
       function feedParticles(id, arr){ update(id,{type:'FeatureCollection',features:(arr||[]).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat,(p.alt||0)]},properties:p}))}); }
       function feedTracks(id, tracks){ update(id,{type:'FeatureCollection',features:(tracks||[]).map(t=>({type:'Feature',geometry:{type:'LineString',coordinates:t.path||t},properties:t.props||{}}))}); }
       return { ensure, update, feedParticles, feedTracks, _ids:ids };
@@ -133,7 +133,7 @@ window.IntMapModules.dashExtended=function(map,HOST){
     const DSET=['r7-disputes-line','r7-disputes-label'], ASET=['r7-airdef-fill','r7-airdef-line','r7-airdef-pt','r7-airdef-label'];
     const state={disputes:false,airdef:false,langs:false};
     function setVis(ids,on){ ids.forEach(l=>{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }); }
-    function refreshDisputeLabels(){ try{ const s=map.getSource('r7-disputes'); if(s) s.setData(disputesFC()); }catch(_){} }
+    function refreshDisputeLabels(){ try{ GE().layers.setSourceData('r7-disputes',disputesFC()); }catch(_){} }
 
     /* ===== (#R8b) World-languages overlay — Jake Jing's digitisation of the Atlas of the World's
        Languages (Asher & Moseley). It's a heavy global polygon set, so it is: LAZY-loaded on first

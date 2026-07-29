@@ -341,7 +341,7 @@ window.IntMapModules.runwaySearch=function(map,HOST){
         if(ll) ll.textContent=im?(jp()?'最小長 (ft)':'Min length (ft)'):(jp()?'最小長 (m)':'Min length (m)'); };
       relabelUnits();
       p.querySelector('#rwy-unit').onchange=()=>{ const im=imp(); const ri=p.querySelector('#rwy-radius'), li=p.querySelector('#rwy-len'); if(ri) ri.value=im?186:300; if(li){ li.value=im?6500:2000; li.step=im?500:100; } relabelUnits(); };
-      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };
       p.querySelector('#rwy-go').onclick=run;
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
     }

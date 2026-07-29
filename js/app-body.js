@@ -68,12 +68,11 @@ window.addEventListener('DOMContentLoaded', () => {
      (verified: adding a source+layer while isStyleLoaded()===false succeeds and the layer is live).
      During a real setStyle() swap (Map ⇄ Satellite) the parsed flag genuinely goes false and back,
      so the guard still protects that window — it just stops firing on ordinary tile traffic. */
-  function canDraw(){
-    if(!map) return false;
-    try{ if(map.isStyleLoaded()) return true; }catch(_){}
-    try{ if(map.style && map.style._loaded===true) return true; }catch(_){}                              /* fast path */
-    try{ const s=map.getStyle(); return !!(s && s.layers && s.layers.length); }catch(_){ return false; } /* public fallback */
-  }
+  /* (#R178) …and the test itself now lives in the engine (adapter.styleParsed): the fast path was
+     reading `map.style._loaded`, a private field of a MapLibre class. This stays as the app's named
+     predicate — every call site and window.IntMapCanDraw keep working — but it no longer knows what
+     a style object looks like. */
+  function canDraw(){ try{ const E=GE(); return !!(E&&E.hasRenderer()&&E.canDraw()); }catch(_){ return false; } }
   window.IntMapCanDraw=canDraw;   /* also reachable from js/ modules that hold no HOST (see IM_HOST.canDraw) */
   let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp', statsSortDir='desc';   /* (#R11) no tab auto-selected; (#R102) Countries sort direction (desc/asc) */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
@@ -404,7 +403,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
     try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}     /* (#R8c) lets modules (wind time pill, etc.) re-localize */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
-    try{ applyTheme(); if(map&&!map.isStyleLoaded()) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
+    try{ applyTheme(); if(!GE().ready()) GE().events.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
     try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
     try{ if(typeof renderNewsLangChecks==='function') renderNewsLangChecks(); }catch(_){}
     renderUI();
@@ -422,23 +421,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
-    if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
+    if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
-    ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',traveling?'visible':'none'); });
+    ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
-    if(map.getLayer('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } map.setLayoutProperty('ofm-country','visibility','none'); }
-      else if(_imbOfmWas!==null){ map.setLayoutProperty('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
+    if(GE().layers.has('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=GE().layers.getLayout('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } GE().layers.setLayout('ofm-country','visibility','none'); }
+      else if(_imbOfmWas!==null){ GE().layers.setLayout('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
     /* (#R94l) the CARTO *_all raster base BAKES modern borders + labels into the tiles — hiding vector layers
        can't remove them. Force the label-free variant DIRECTLY while travelling (don't rely on applyTheme's
        timing, which was why the era borders never appeared), and RAISE the era layers above the raster. */
     try{ const sat=(typeof currentMapType!=='undefined'&&currentMapType==='sat');
       const mc=(window.imMapColor||'auto'); const mapLight=(mc==='light')?true:(mc==='dark')?false:(document.documentElement.getAttribute('data-theme')==='light');
       if(traveling&&!sat){
-        if(map.getLayer('layer-dark'))     map.setLayoutProperty('layer-dark','visibility','none');
-        if(map.getLayer('layer-light'))    map.setLayoutProperty('layer-light','visibility','none');
-        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',mapLight?'none':'visible');
-        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',mapLight?'visible':'none');
+        if(GE().layers.has('layer-dark'))     GE().layers.setLayout('layer-dark','visibility','none');
+        if(GE().layers.has('layer-light'))    GE().layers.setLayout('layer-light','visibility','none');
+        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',mapLight?'none':'visible');
+        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',mapLight?'visible':'none');
       }
     }catch(_){}
   }catch(_){} };
@@ -462,17 +461,17 @@ window.addEventListener('DOMContentLoaded', () => {
       if(map){ try{
         const _l=(window.imMapColor==='light')||(window.imMapColor!=='dark'&&((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches)));
         const _sat=currentMapType==='sat';
-        if(map.getLayer('layer-sat'))      map.setLayoutProperty('layer-sat','visibility',_sat?'visible':'none');
-        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
-        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
-      }catch(_){} map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
+        if(GE().layers.has('layer-sat'))      GE().layers.setLayout('layer-sat','visibility',_sat?'visible':'none');
+        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
+        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
+      }catch(_){} GE().events.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
       return;
     }
     /* Map base color can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
     try{ window.refreshNewsPill&&window.refreshNewsPill(); }catch(_){}   /* (#R32) flip the news band color with the theme */
-    map.setLayoutProperty('layer-sat','visibility',sat?'visible':'none');
+    GE().layers.setLayout('layer-sat','visibility',sat?'visible':'none');
     /* Place labels: nicer crisp VECTOR labels (OpenFreeMap) replace the old Esri raster labels in
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
        reliable CartoDB English labels stay as the default for EN map view. */
@@ -483,24 +482,24 @@ window.addEventListener('DOMContentLoaded', () => {
        imtb-line / imtb-lbl. */
     const _travelingBase = !!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const showCartoLabels = namesOn && !vecMap && !_travelingBase;   /* labeled carto basemap */
-    if(map.getLayer('layer-sat-labels')) map.setLayoutProperty('layer-sat-labels','visibility','none');  /* Esri labels retired */
-    map.setLayoutProperty('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
-    map.setLayoutProperty('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
+    if(GE().layers.has('layer-sat-labels')) GE().layers.setLayout('layer-sat-labels','visibility','none');  /* Esri labels retired */
+    GE().layers.setLayout('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
-    try{ window._applyBorders(); }catch(_){ if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none'); }
-    if(map.getLayer('grid-labels')){ map.setPaintProperty('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); map.setPaintProperty('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
-    if(map.getLayer('grid-labels-cross')){ map.setPaintProperty('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); map.setPaintProperty('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
-    if(map.getLayer('grid-lines')){ map.setPaintProperty('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
+    try{ window._applyBorders(); }catch(_){ if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility', bordersOn?'visible':'none'); }
+    if(GE().layers.has('grid-labels')){ GE().layers.setPaint('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); GE().layers.setPaint('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
+    if(GE().layers.has('grid-labels-cross')){ GE().layers.setPaint('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); GE().layers.setPaint('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
+    if(GE().layers.has('grid-lines')){ GE().layers.setPaint('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
     /* Satellite imagery engine: panel + cross-fade buffer visibility follow the mode. */
     const satCont=document.getElementById('map-container'), satPanel=document.getElementById('sat-controller');
     /* (#R101) mobile: the panel is docked in the tools sheet → keep it available. desktop: show only when the
        user has explicitly opened it (satPanelDismissed=false), never merely because the basemap is Satellite. */
     if(satPanel){ const _satMob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; satPanel.style.display=(sat&&(_satMob||!satPanelDismissed))?'block':'none'; }
     if(satCont) satCont.classList.toggle('sat-on',sat);
-    [0,1].forEach(i=>{ const L='sat-fx-'+i; if(map.getLayer(L)) map.setLayoutProperty(L,'visibility',(sat&&i===satActive)?'visible':'none'); });
+    [0,1].forEach(i=>{ const L='sat-fx-'+i; if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',(sat&&i===satActive)?'visible':'none'); });
     if(sat){ try{ satRenderController(); }catch(_){} }
     try{ satRefreshReadout(); }catch(_){}
   }
@@ -518,8 +517,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const _stabIdx={water:new Map()};
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size};
-    if(dump==='peaks'){ try{ o.z=+map.getZoom().toFixed(2); o.c=[+map.getCenter().lng.toFixed(6),+map.getCenter().lat.toFixed(6)];
-      o.rp=map.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?map.project(c):null; }catch(_){}
+    if(dump==='peaks'){ try{ o.z=+GE().camera.getZoom().toFixed(2); o.c=[+GE().camera.getCenter().lng.toFixed(6),+GE().camera.getCenter().lat.toFixed(6)];
+      o.rp=GE().coords.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?GE().coords.project(c):null; }catch(_){}
         return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
     else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,10).map(f=>({n:(f.properties||{}).name,mz:(f.properties||{}).mz,cls:(f.properties||{}).class,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
     return o; };   /* diagnostics (read-only) */
@@ -548,7 +547,7 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ window.__sat={ providers:SAT_PROVIDERS, state:satState, keys:()=>satKeys, build:satBuildTiles, hasKey:satHasKey,
     render:satRenderController, apply:satApply, select:satSelectProvider, setOpacity:satSetOpacity, step:satStepDay,
     chip:satChipHTML, capture:satCaptureLabel, renderKeys:satRenderKeyInputs, saveKeys:satSaveKeyInputs,
-    mapReady:()=>{ try{ return !!(map&&map.isStyleLoaded()); }catch(e){ return 'err:'+e.message; } } }; }catch(_){}
+    mapReady:()=>{ try{ return !!(GE().ready()); }catch(e){ return 'err:'+e.message; } } }; }catch(_){}
 
   /* =====================================================================
    *  AI ENGINE — account-based, first-party (#R27; BYOK retired, its dead client
@@ -621,14 +620,14 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!va||!vb) return {err:t('aiVisPickDates')};
     const save={ day:satState.day, year:satState.year, opacity:satState.opacity };
     /* hide map overlays so the captured frame is imagery, not pins/grid */
-    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-    const vis=overlays.map(id=>{ try{ return map.getLayoutProperty(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
-    overlays.forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','none'); }catch(_){} });
+    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+    const vis=overlays.map(id=>{ try{ return GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
+    overlays.forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','none'); }catch(_){} });
     satState.opacity=1;
     let imgA=null,imgB=null,err=null;
     try{ imgA=await aiCaptureSatAt(p,va); imgB=await aiCaptureSatAt(p,vb); }catch(e){ err=e; }
     satState.day=save.day; satState.year=save.year; satState.opacity=save.opacity;
-    overlays.forEach((id,k)=>{ try{ map.setLayoutProperty(id,'visibility',vis[k]); }catch(_){} });
+    overlays.forEach((id,k)=>{ try{ GE().layers.setLayout(id,'visibility',vis[k]); }catch(_){} });
     try{ satApply(false); satRefreshReadout(); }catch(_){}
     if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
     return {imgA,imgB}; };
@@ -737,8 +736,8 @@ window.addEventListener('DOMContentLoaded', () => {
         case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof userTheme!=='undefined'?userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof userTheme!=='undefined'){ userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast('🎨 '+nx); }catch(_){} }catch(_){} break; }
         case (K==='f'): { try{ if(document.fullscreenElement){ document.exitFullscreen&&document.exitFullscreen().catch(()=>{}); } else { const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){} break; }
         case (k==='0'): click('btn-compass'); break;
-        case (k==='+'||k==='='): try{ map&&map.zoomIn(); }catch(_){} break;
-        case (k==='-'||k==='_'): try{ map&&map.zoomOut(); }catch(_){} break;
+        case (k==='+'||k==='='): try{ GE().camera.zoomIn(); }catch(_){} break;
+        case (k==='-'||k==='_'): try{ GE().camera.zoomOut(); }catch(_){} break;
         default: done=false;
       }
       if(done) e.preventDefault();
@@ -757,7 +756,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
+  try{ GE().scene.setImageConcurrency(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
   /* (#R158) SATELLITE TILE PROTOCOL — "限界までズームしても灰色タイルを出さない／同じズームでも高画質". Esri World_Imagery's
      native max zoom varies by place (z19 city / z18 rural / z17 desert / z16 open sea); past it Esri returns an HTTP-200
      grey "Map data not yet available" tile — a FIXED ~2.5 KB JPEG that MapLibre can't distinguish from real imagery, so it
@@ -766,7 +765,7 @@ window.addEventListener('DOMContentLoaded', () => {
      (high-quality) — the sea/desert/rural view stays genuine imagery while cities keep their crisp native z19. Real tiles
      pass straight through (one fetch, decoded in MapLibre's worker as before), results are cached, and ANY error falls back
      to the raw bytes so the map is never worse than before. Also lets the flight sim drop its blue water-fill (#R158). */
-  try{ if(maplibregl.addProtocol && typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
+  try{ if(typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
     const _SAT_HOSTS=['https://server.arcgisonline.com','https://services.arcgisonline.com'];
     const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]+'/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;
     const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
@@ -798,9 +797,64 @@ window.addEventListener('DOMContentLoaded', () => {
       if(real){ try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
       return {buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
     }
-    maplibregl.addProtocol('imapsat', async (params, abortController)=>{
+    /* ══ (#R178) THE IMAGERY IS HALF-RESOLUTION ON EVERY HIDPI SCREEN ═══════════════════════════
+       MapLibre picks the tile zoom from `coveringZoomLevel(zoom + log2(512/tileSize))` — read it in
+       src/geo/projection/covering_tiles.ts — and `pixelRatio` is not in that expression. The canvas
+       IS rendered at devicePixelRatio (see the Map options above), so on a 2× display one 256-pixel
+       Esri tile is stretched across 512 device pixels: the satellite view has been running at half
+       the resolution the screen can show, at every zoom, since the layer existed. Zooming in one
+       level is the only way a user could get that detail back, and that changes the framing.
+
+       The standard remedy is a "@2x" tile, and Esri has no @2x endpoint — but it does have the next
+       zoom level, and four of those children ARE the @2x tile. So stitch them: one 512×512 image for
+       the same geographic extent, which is exactly the pixel density the display asks for.
+
+       It costs 4× the tile bytes for a given view — and that is not waste, it is the same amount of
+       data the display would need at any honest resolution (zooming in one level costs the same 4×).
+       Kept off where that trade would be wrong: phones (RAM and radio), 1× screens (nothing to gain),
+       Data Saver, and 2G. Any child that is missing or is Esri's grey placeholder abandons the whole
+       attempt and the original single-tile path answers, so this can only ever add detail.
+
+       No re-encode: MapLibre's image request accepts an ImageBitmap straight from a protocol handler
+       ("User using addProtocol can directly return HTMLImageElement/ImageBitmap", image_request.ts),
+       so the stitched tile never becomes JPEG bytes again. The ancestor-crop path below returns a
+       bitmap now too, which drops a full JPEG encode per tile over ocean and desert. */
+    const _satHiDPI=(function(){
+      try{
+        if(isMobile()) return false;
+        if(!((window.devicePixelRatio||1)>=1.5)) return false;
+        if(typeof createImageBitmap!=='function') return false;
+        const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+        if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return false;
+        return true;
+      }catch(_){ return false; }
+    })();
+    function _canvas2d(w,h){
+      if(typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(w,h);
+      const c=document.createElement('canvas'); c.width=w; c.height=h; return c;
+    }
+    async function _toBitmap(c){ return c.transferToImageBitmap?c.transferToImageBitmap():await createImageBitmap(c); }
+    /* the four z+1 children as ONE 512×512 tile, or null when they are not all real imagery */
+    async function _sat2x(z,y,x,signal){
+      if(!_satHiDPI||z>=19) return null;
+      const q=[[0,0],[1,0],[0,1],[1,1]];
+      let kids;
+      try{ kids=await Promise.all(q.map(([dx,dy])=>_satFetch(z+1,2*y+dy,2*x+dx,signal))); }catch(_){ return null; }
+      if(!kids.every(k=>k&&!k.placeholder)) return null;
+      let bmps=null;
+      try{
+        bmps=await Promise.all(kids.map(k=>createImageBitmap(new Blob([k.buf]))));
+        const c=_canvas2d(512,512), ctx=c.getContext('2d');
+        ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        q.forEach(([dx,dy],i)=>ctx.drawImage(bmps[i],dx*256,dy*256,256,256));
+        return await _toBitmap(c);
+      }catch(_){ return null; }
+      finally{ if(bmps) bmps.forEach(b=>{ try{ b&&b.close&&b.close(); }catch(_){} }); }
+    }
+    GE().scene.addProtocol('imapsat', async (params, abortController)=>{
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
+      try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
       let first=null;
       try{ const res=await _satResolve(z,y,x,signal); return {data: res.buf.slice(0)}; }
       catch(e){ if(first&&first.buf) return {data: first.buf.slice(0)}; throw e; }
@@ -811,7 +865,10 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX };
   } }catch(_){}
   try{
-    map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
+    /* (#R178) even the primary view is built through the contract. It could not be while the engine
+       was created inside this map's own 'load' handler; js/geo-engine.js is imported before anything
+       else now, so `maplibregl` is named in exactly one file in the project. */
+    map=GE().ui.createView({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
          horizon read jagged without it; MSAA smooths every polygon + terrain edge for a clear quality
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
@@ -1046,8 +1103,8 @@ window.addEventListener('DOMContentLoaded', () => {
      machinery (`_sbBeginAnim`/`_sbReanchor`/`_sbCaptureAnchor`/`_sbFinishAnim`) is DELETED — it was the "余計な事"
      that fought a problem which no longer exists, and it was itself what jerked the map around. We keep only a
      coalesced resize for GENUINE viewport/container size changes (window resize, devtools, rotation). */
-  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };
-  if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
+  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ GE().render.resize(); }catch(_){} }); };
+  if('ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
   /* (#R160) Back-compat shim: a couple of callers still do `_sbBeginAnim(onEnd)` to "reveal the panel, then
      notify". There is no camera animation to run anymore (the map doesn't move), so just coalesce a resize in
@@ -1069,8 +1126,8 @@ window.addEventListener('DOMContentLoaded', () => {
        asking it to apply gives 78 for a fresh profile and 180 for a saved choice, from one place. */
     if(window.IntMapTilt&&window.IntMapTilt.apply) window.IntMapTilt.apply();
     else GE().camera.setMaxPitch(78);
-    if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
-    if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
+    GE().input.set('keyboard',true);
+    GE().input.set('dragRotate',true);
   }catch(_){} }
   /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
      The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
@@ -1090,22 +1147,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
       const iner=Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
       try{
-        map.scrollZoom.enable();
-        map.scrollZoom.setWheelZoomRate(z*(1/300));   /* 1.0 = the long-standing default feel */
-        map.scrollZoom.setZoomRate(z*(1/90));         /* trackpad pinch */
+        GE().input.set('scrollZoom',true);
+        GE().input.setZoomRate(z*(1/300),true);   /* 1.0 = the long-standing default feel */
+        GE().input.setZoomRate(z*(1/90));         /* trackpad pinch */
       }catch(_){}
       /* (#R22/#R23) iOS-like momentum, now with a dedicated INERTIA control ("慣性を0から既定まで調整可能に"):
          Pan scales the fling speed, Inertia scales the glide DURATION and can disable it entirely (0). On a
          1:1 touch/mouse drag the glide is the only thing these sliders can change — so this is also what makes
          the Pan/Inertia sliders visibly affect MOBILE behavior. */
       try{
-        if(iner<=0.02){ map.dragPan.enable({ linearity:1, maxSpeed:1, deceleration:100000 }); }   /* glide off → stops on release */
-        else { map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.3,iner)) }); }
+        if(iner<=0.02){ GE().input.set('dragPan',true); }   /* glide off → stops on release */
+        else { GE().input.set('dragPan',true); }
       }catch(_){}
-      try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
+      try{ GE().input.set('touchZoomRotate',true); }catch(_){}
       /* (#R25/#21) Take over double-tap zoom so its amount follows the Zoom slider on touch (built-in is a
          fixed +1). The custom dblclick handler does the sensitivity-scaled easeTo. */
-      try{ map.doubleClickZoom.disable(); }catch(_){}
+      try{ GE().input.set('doubleClickZoom',false); }catch(_){}
     };
     window._applyNavSens();
     /* (#R27) MOBILE PINCH-ZOOM sensitivity. MapLibre exposes no pinch-rate API, so the slider used to do
@@ -1114,29 +1171,29 @@ window.addEventListener('DOMContentLoaded', () => {
        CHANGED the setting (sens !== 1) — at the default, MapLibre's native pinch is left fully intact, so
        there is zero regression risk for everyone who never touched the slider. */
     (function(){
-      const cv=map.getCanvasContainer&&map.getCanvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
+      const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
       let active=false, startDist=0, startZoom=0;
       const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return map.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
+      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return GE().coords.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
       cv.addEventListener('touchstart',(e)=>{
         if(sens()===1) return;                                 /* default feel → MapLibre handles it */
-        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=map.getZoom();
-          try{ map.touchZoomRotate.disable(); }catch(_){} }
+        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom();
+          try{ GE().input.set('touchZoomRotate',false); }catch(_){} }
       },{passive:true});
       cv.addEventListener('touchmove',(e)=>{
         if(!active||!e.touches||e.touches.length!==2) return;
         const d=dist(e.touches); if(startDist<=0) return;
         const z=startZoom + Math.log2(d/startDist)*sens();
-        try{ map.easeTo({zoom:Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
+        try{ GE().camera.easeTo({zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
         if(e.cancelable) e.preventDefault();
       },{passive:false});
-      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ map.touchZoomRotate.enable(); }catch(_){} } };
+      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ GE().input.set('touchZoomRotate',true); }catch(_){} } };
       cv.addEventListener('touchend',end); cv.addEventListener('touchcancel',end);
     })();
     /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
        dragPan with defaults, which would silently drop the user's inertia choice. */
-    try{ map.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
+    try{ GE().events.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
   }
   /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
      最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
@@ -1166,7 +1223,7 @@ window.addEventListener('DOMContentLoaded', () => {
        "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
        label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
        re-raising. Now require EVERY label layer to sit above EVERY data layer. */
-    function inPlace(){ try{ const ls=map.getStyle().layers.map(l=>l.id);
+    function inPlace(){ try{ const ls=GE().scene.getStyle().layers.map(l=>l.id);
       let lowestStack=Infinity, highestData=-1;
       ls.forEach((id,i)=>{ if(STACK.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
       if(lowestStack===Infinity) return true;     /* no labels present yet */
@@ -1178,13 +1235,13 @@ window.addEventListener('DOMContentLoaded', () => {
        user's own overlays (tools/drawings/mask) back above the labels in their existing order. Result:
        data BELOW labels BELOW your own drawings — labels are visible over EVERY data layer, every time. */
     function raise(){ try{ if(inPlace()) return;
-      STACK.forEach(id=>{ if(map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* labels → top */
-      const ls=map.getStyle().layers.map(l=>l.id);
-      ls.forEach(id=>{ if(isOwn(id) && map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* own overlays back above labels */
+      STACK.forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
+      const ls=GE().scene.getStyle().layers.map(l=>l.id);
+      ls.forEach(id=>{ if(isOwn(id) && GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* own overlays back above labels */
     }catch(_){} }
     window._raiseLabelLayers=raise;
     let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
-    map.on('idle',sched); map.on('styledata',sched);
+    GE().events.on('idle',sched); GE().events.on('styledata',sched);
   })(); }
 
   /* (#R21) Mobile memory-pressure guard: Chrome-on-Android exposes performance.memory; when the JS
@@ -1231,8 +1288,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const p=satProviderById(satState.providerId); if(!p) return;
     let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
     if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
-    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(map.getZoom()))), n=Math.pow(2,z);
-    const c=map.getCenter(), b=map.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
+    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom()))), n=Math.pow(2,z);
+    const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
     let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
@@ -1251,7 +1308,7 @@ window.addEventListener('DOMContentLoaded', () => {
        already resident (the user asked for "Unthinkable Speed" satellite). */
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
-    if(aggressive){ try{ if((map.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
+    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
     if(!urls.length) return;
     const _mob=(typeof isMobile==='function'&&isMobile());
     const uniq=[...new Set(urls)].slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
@@ -1259,12 +1316,12 @@ window.addEventListener('DOMContentLoaded', () => {
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
   registerTileSW();
-  if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  if(map) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
   /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
      tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
      the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
   let _movePfT=0;
-  if(map) map.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((map.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
+  if(map) GE().events.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
   /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
@@ -1281,7 +1338,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Globe: hide markers on the far hemisphere. Use a unit-vector DOT PRODUCT (no per-marker acos)
        and only touch the DOM when a marker's visibility actually flips — this removes the layout
        thrash that made globe pan/zoom stutter on mobile (#3). */
-    const c=map.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
+    const c=GE().camera.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
     const cx=Math.cos(cla)*Math.cos(clo), cy=Math.cos(cla)*Math.sin(clo), cz=Math.sin(cla);
     const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of center ⇒ on the near side */
     markersArray.forEach(m=>{ const ll=m.getLngLat(), la=ll.lat*r, lo=ll.lng*r, cla2=Math.cos(la);
@@ -1332,7 +1389,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   /* Re-emit every geo source's data so on-map labels follow the active language (#1). */
-  function refreshGeoLabels(){ if(!map) return; for(const key of Object.keys(geoLayersDB)){ const src=map.getSource(key); if(src){ try{ src.setData(buildGeoFC(geoLayersDB[key])); }catch(_){} } } }
+  function refreshGeoLabels(){ for(const key of Object.keys(geoLayersDB)){ try{ if(GE().layers.hasSource(key)) GE().layers.setSourceData(key,buildGeoFC(geoLayersDB[key])); }catch(_){} } }
   window.refreshGeoLabels=refreshGeoLabels;
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window.triggerLayerHover=function(k,h){ if(!k)return; if(h)forceHoverLayers.add(k); else forceHoverLayers.delete(k); updateGeoLayers(); };
@@ -1351,7 +1408,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* refresh anything currently showing GDP */
       try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
-      try{ if(map&&map.getLayer('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
+      try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
     }catch(_){} }
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
@@ -1366,7 +1423,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })();
     return gdpPPPPromise;
   }
-  function applyCountryVisibility(){ if(!map||!map.getLayer('country-fill'))return; const v=countryInfoOn?'visible':'none'; map.setLayoutProperty('country-fill','visibility',v); map.setLayoutProperty('country-line','visibility',v); }
+  function applyCountryVisibility(){ if(!map||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none'; GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
   const cName=(s,f)=>(currentLang==='jp'&&s&&s.nameJp)?s.nameJp:(s&&s.nameEn)||f||'—';
@@ -1576,7 +1633,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){} });
     return out;
   }
-  function refreshTool(){ if(map&&map.getSource('tool-source')) map.getSource('tool-source').setData({type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
+  function refreshTool(){ if(GE().layers.hasSource('tool-source')) GE().layers.setSourceData('tool-source',{type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
 
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   function hideMeasureTip(){ document.getElementById('measure-tooltip').style.display='none'; }
@@ -1618,7 +1675,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170/#R171) */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
-    document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
+    document.getElementById('map-container').classList.add('tool-active'); if(map)GE().input.set('doubleClickZoom',false);
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
   }
   /* (#R169) moved verbatim to js/window-manager.js — see Architecture.md §3.1. */
@@ -1676,7 +1733,7 @@ window.addEventListener('DOMContentLoaded', () => {
   async function aiSummarizeView(){
     if(!aiGate()) return;
     if(!map) return;
-    const b=map.getBounds(); if(!b) return;
+    const b=GE().camera.getBounds(); if(!b) return;
     const seen=new Set(), picked=[];
     const src=(newsFeatures&&newsFeatures.length)
       ? newsFeatures.map(f=>({c:f.geometry&&f.geometry.coordinates, p:f.properties||{}}))
@@ -1708,13 +1765,13 @@ window.addEventListener('DOMContentLoaded', () => {
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
   function prefetchDEMViewport(){
     if(!map||isMobile()) return;
-    try{ const z=demZoomForMap(); const b=map.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
+    try{ const z=demZoomForMap(); const b=GE().camera.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
       for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
     }catch(_){}
   }
   let _demPrefetchT=null;
-  if(map){ map.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
-           map.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
+  if(map){ GE().events.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
+           GE().events.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
 
   /* ===== (#R119) IntMapLayers — the COMMON LAYER DATA CONTRACT ("Atlasが表示中レイヤーの実値を読める仕組み").
@@ -1732,17 +1789,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Map event wiring ===== */
   if(map){
-    map.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
+    GE().events.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
     /* (#R25 / #21) Double-tap / double-click zoom now respects the Zoom-sensitivity setting — this is the
        ONE zoom gesture whose amount we CAN tune on touch (MapLibre exposes no pinch-rate API, so continuous
        pinch stays 1:1 — a documented platform limit). The built-in doubleClickZoom is disabled in
        _applyNavSens so this is the sole double-tap zoom path. */
-    map.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
+    GE().events.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
       if(typeof toolMode!=='undefined' && toolMode) return;
       try{ const s=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
-        map.easeTo({zoom:map.getZoom()+s, around:(e&&e.lngLat)||map.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
+        GE().camera.easeTo({zoom:GE().camera.getZoom()+s, around:(e&&e.lngLat)||GE().camera.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
     });
-    map.on('mousemove',(e)=>{
+    GE().events.on('mousemove',(e)=>{
       updateCoord(e.lngLat.lng,e.lngLat.lat);
       if(!toolMode||!hasTurf())return;
       const c=[e.lngLat.lng,Math.max(-88,Math.min(88,e.lngLat.lat))];   /* polar-safe (#10) */
@@ -1752,7 +1809,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Detect hover over the first vertex → snap-to-close (#47) */
         const wasSnap=measureSnapClose; measureSnapClose=false;
         if(measurePoints.length>=3){
-          try{ const ps=map.project(measurePoints[0]); if(Math.hypot(ps.x-e.point.x,ps.y-e.point.y)<SNAP_PX) measureSnapClose=true; }catch(_){}
+          try{ const ps=GE().coords.project(measurePoints[0]); if(Math.hypot(ps.x-e.point.x,ps.y-e.point.y)<SNAP_PX) measureSnapClose=true; }catch(_){}
         }
         const tip=document.getElementById('measure-tooltip');
         if(measureSnapClose){ tip.classList.add('closing'); const ar=ringArea(measurePoints); showMeasureTip(e.point,`✓ ${t('measureClickClose')} · ${ar?areaTXT(ar):''}`); }
@@ -1763,38 +1820,40 @@ window.addEventListener('DOMContentLoaded', () => {
         refreshTool();
       }
     });
-    map.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
+    GE().events.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
     /* Coalesce occlusion updates to one per animation frame so dragging/spinning the globe stays smooth. */
     let _occRAF=0; const occOnMove=()=>{ if(_occRAF) return; _occRAF=requestAnimationFrame(()=>{ _occRAF=0; updateOcclusion(); }); };
     /* (#R33) Smoother MOBILE pan/zoom ("カクツク"): skip the per-frame occlusion recompute during a gesture on
        phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move. */
     const _occMob=()=>{ try{ return isMobile(); }catch(_){ return false; } };
-    map.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); map.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
-    map.on('rotate',updateCompass); map.on('pitch',updateCompass);
-    map.on('moveend',refreshGrid); map.on('zoomend',refreshGrid);
-    map.on('load',()=>{
-      try{ if(!/[?&]flat\b/.test(location.search)) map.setProjection({type:'globe'}); }catch(e){}
-      try{ window.__imap=map; }catch(_){}
+    GE().events.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
+    GE().events.on('rotate',updateCompass); GE().events.on('pitch',updateCompass);
+    GE().events.on('moveend',refreshGrid); GE().events.on('zoomend',refreshGrid);
+    GE().events.on('load',()=>{
+      /* (#R178) the contract takes a MODE ('flat' | 'globe' | 'globe-true'), not a MapLibre projection
+         spec — the point of the seam is that "a globe" is a request, and each engine decides what
+         object expresses it. __imap is published at construction now (see there), not here. */
+      try{ if(!/[?&]flat\b/.test(location.search)) GE().camera.setProjection('globe'); }catch(e){}
       ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
-      map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
+      GE().events.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
       /* (#R26) "デフォルト選択なのに地名ラベル/国境が出ない、再チェックで初めて出る": both default ON but
          occasionally weren't DRAWN on first load (OFM vector source + country data settle after the first
          idle). Re-assert the place labels + borders visibility a few times, and the moment the OFM source's
          tiles arrive — so names/borders appear on load without the user toggling them. */
       const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._applyBorders(); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
-      map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
+      GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
        context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
        browser restore the context, and on restore we force a fresh repaint + re-assert our layers. */
-    try{ const _cv=map.getCanvas&&map.getCanvas(); if(_cv&&_cv.addEventListener){
+    try{ const _cv=GE().render.canvas&&GE().render.canvas(); if(_cv&&_cv.addEventListener){
       _cv.addEventListener('webglcontextlost',(ev)=>{ try{ ev.preventDefault(); }catch(_){} },false);
-      _cv.addEventListener('webglcontextrestored',()=>{ try{ map.resize(); map.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
+      _cv.addEventListener('webglcontextrestored',()=>{ try{ GE().render.resize(); GE().render.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
     } }catch(_){}
-    map.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
-    map.on('contextmenu',(e)=>{ e.preventDefault();
+    GE().events.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
+    GE().events.on('contextmenu',(e)=>{ e.preventDefault();
       let pt=e.point, ll=e.lngLat;
       /* (#R16) On mobile the interaction is center-fixed (crosshair). A long-press anywhere acts on the
          CROSSHAIR point and the menu opens there (always on-screen) — the old behavior opened it under the
@@ -1803,7 +1862,7 @@ window.addEventListener('DOMContentLoaded', () => {
       showContextMenu(pt, ll); });
     /* Long-press → context menu on touch devices */
     (function(){
-      const canvas=map.getCanvas(); let pressTimer=null, startPt=null, fired=false;
+      const canvas=GE().render.canvas(); let pressTimer=null, startPt=null, fired=false;
       canvas.addEventListener('touchstart',(e)=>{
         if(e.touches.length!==1) return;
         const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
@@ -1813,7 +1872,7 @@ window.addEventListener('DOMContentLoaded', () => {
            while a measurement tool is active (per the user), so long-press is again the way to reach the
            right-click menu on touch when idle. Suppressed while a tool is active (the button handles that). */
         if(typeof toolMode!=='undefined' && toolMode) return;
-        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=map.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
+        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=GE().coords.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
       },{passive:true});
       const cancel=(e)=>{
         if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
@@ -1829,7 +1888,7 @@ window.addEventListener('DOMContentLoaded', () => {
       canvas.addEventListener('touchcancel',cancel,{passive:true});
     })();
     /* Reposition pin popup on every render — keeps it pinned to lng/lat with no drift */
-    map.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
+    GE().events.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
   }
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
   { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=(e)=>setGrid(e.target.checked); }   /* (#R10/#R38) Grid in Layers — drive state FROM the box (idempotent) so a re-asserted change can't re-enable it */
@@ -1856,7 +1915,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ['btn-screenshot','btn-share'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>window._closeShareMenu&&window._closeShareMenu()); });
   })();
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
-  document.getElementById('btn-compass').onclick=()=>map&&map.easeTo({bearing:0,pitch:0,duration:500});
+  document.getElementById('btn-compass').onclick=()=>GE().camera.easeTo({bearing:0,pitch:0,duration:500});
   /* (#R152) DESKTOP: right-click the compass → a popup to type an EXACT bearing / pitch (elevation) / zoom, applied to
      the current view ("方位磁針ボタンを右クリックしたら、方角、視点の仰角等を数値で打ち込めるポップアップ"). Left-click still resets north. */
   (function(){ const btn=document.getElementById('btn-compass'); if(!btn) return; let pop=null;
@@ -1867,12 +1926,12 @@ window.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('contextmenu',(e)=>{ e.preventDefault(); if(!map) return;
       try{ if(typeof _imTouchPrimary==='function' && _imTouchPrimary()) return; }catch(_){}   /* desktop only, per the request */
       if(pop){ closePop(); return; }
-      const b=Math.round(((map.getBearing()%360)+360)%360), p=Math.round(map.getPitch()||0), z=Math.round((map.getZoom()||0)*10)/10;
+      const b=Math.round(((GE().camera.getBearing()%360)+360)%360), p=Math.round(GE().camera.getPitch()||0), z=Math.round((GE().camera.getZoom()||0)*10)/10;
       /* (#R171) With the tilt limit set to Unlimited this field takes ANY angle from 0 to 360: past 180° the
          camera comes back down the far side with the bearing reversed (IntMapTilt.fromAngle), which is the
          one place "keep tilting round" is expressible without re-implementing the drag gesture. */
       const _unl=(()=>{ try{ return !!(window.IntMapTilt&&window.IntMapTilt.isUnlimited()); }catch(_){ return false; } })();
-      const maxP=_unl?360:Math.round((map.getMaxPitch&&map.getMaxPitch())||85);
+      const maxP=_unl?360:Math.round((GE().camera.getMaxPitch&&GE().camera.getMaxPitch())||85);
       pop=document.createElement('div'); pop.className='compass-num-pop';
       pop.innerHTML='<div class="cnp-t">'+CL('Set view','視点を設定','Ansicht einstellen','Задать вид','Definir vista')+'</div>'
         +'<label>'+CL('Bearing','方位','Richtung','Азимут','Rumbo')+' (°)<input type="number" id="cnp-bear" min="0" max="360" step="1" value="'+b+'"></label>'
@@ -1885,10 +1944,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const opt={duration:500}; if(isFinite(bb)) opt.bearing=((bb%360)+360)%360; if(isFinite(pp)) opt.pitch=Math.max(0,Math.min(maxP,pp)); if(isFinite(zz)) opt.zoom=Math.max(0,Math.min(22,zz));
         /* (#R171) an angle past the top is the same view aimed the other way — resolve it into a real
            (pitch, bearing) pair rather than clamping it flat against the ceiling. */
-        if(_unl&&isFinite(pp)&&pp>180){ try{ const r=window.IntMapTilt.fromAngle(pp, isFinite(bb)?bb:map.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }catch(_){} }
-        try{ map.easeTo(opt); }catch(_){} closePop(); };
+        if(_unl&&isFinite(pp)&&pp>180){ try{ const r=window.IntMapTilt.fromAngle(pp, isFinite(bb)?bb:GE().camera.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }catch(_){} }
+        try{ GE().camera.easeTo(opt); }catch(_){} closePop(); };
       pop.querySelector('#cnp-apply').onclick=apply;
-      pop.querySelector('#cnp-reset').onclick=()=>{ try{ map.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
+      pop.querySelector('#cnp-reset').onclick=()=>{ try{ GE().camera.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
       pop.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); apply(); } });
       setTimeout(()=>{ document.addEventListener('mousedown',onDoc,true); document.addEventListener('keydown',onKey,true); const f=pop.querySelector('#cnp-bear'); if(f){ f.focus(); f.select(); } },0);
     });
@@ -1969,8 +2028,8 @@ window.addEventListener('DOMContentLoaded', () => {
          レイヤーが消えない" still happened when the controlling checkbox couldn't be resolved (custom/legacy
          legends) or its change handler didn't fully hide. So ALSO hide every map layer that matches this id
          directly, regardless of the checkbox. Idempotent + specific (exact ids + lyr-/-fill/-line variants). */
-      try{ if(map&&map.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
-        map.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ map.setLayoutProperty(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
+      try{ if(GE().scene.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
+        GE().scene.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ GE().layers.setLayout(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
     }
     /* always close the legend element itself + re-tile, so the × is never a dead button */
     if(lg){ try{ lg.style.display='none'; }catch(_){} }
@@ -2075,7 +2134,7 @@ window.addEventListener('DOMContentLoaded', () => {
       applyTheme();
     }catch(_){} };
     if(bordersOn){
-      if(!canDraw()){ map&&map.once&&map.once('idle',mkBorders); }
+      if(!canDraw()){ GE().events.once('idle',mkBorders); }
       mkBorders();
       [250,700,1600,3200].forEach(ms=>setTimeout(mkBorders,ms));
     } else { mkBorders(); }
@@ -2084,7 +2143,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R29) ROBUST: a basemap style swap (Map↔Sat) drops the `countries` source + `country-fill` layer,
        but countryDataLoaded stays true — so the old `else applyCountryVisibility()` path was a no-op and
        Countries(info) "使えなくなっていた". Always RE-ENSURE the layers exist before showing them. */
-    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && canDraw() && !map.getSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
+    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && canDraw() && !GE().layers.hasSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
     if(countryInfoOn && !countryDataLoaded){ loadCountryData().then(ensure); } else ensure();
     if(!countryInfoOn) hideCountryInfo(); });
 
@@ -2098,10 +2157,10 @@ window.addEventListener('DOMContentLoaded', () => {
      countryGeo dependency → also fixes "borders only after reload"). */
   function ensureBordersLayer(){ try{
     if(!canDraw()) return false;
-    ensurePlaceLabels(); if(!map.getSource('ofm')) return false;
-    if(!map.getLayer('borders-only-line')){
-      const before=['ofm-country','ofm-city','ofm-other'].find(id=>map.getLayer(id)) || (map.getLayer('tool-poly')?'tool-poly':undefined);
-      map.addLayer({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
+    ensurePlaceLabels(); if(!GE().layers.hasSource('ofm')) return false;
+    if(!GE().layers.has('borders-only-line')){
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id)) || (GE().layers.has('tool-poly')?'tool-poly':undefined);
+      GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
         layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
         paint:{'line-color':'rgba(150,150,150,0.85)','line-opacity':0.9,'line-width':['interpolate',['linear'],['zoom'],1,0.5,4,0.9,8,1.5,12,2.2]}}, before);
@@ -2112,24 +2171,24 @@ window.addEventListener('DOMContentLoaded', () => {
     try{
       if(!canDraw()) return false;
       ensurePlaceLabels();                                  /* guarantees the `ofm` vector source exists */
-      if(!map.getSource('ofm')) return false;
-      const before = map.getLayer('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
-      if(!map.getLayer('ref-admin1')) map.addLayer({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
+      if(!GE().layers.hasSource('ofm')) return false;
+      const before = GE().layers.has('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
+      if(!GE().layers.has('ref-admin1')) GE().layers.add({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
         layout:{visibility:'none','line-join':'round'},
         paint:{'line-color':'#b07fd6','line-opacity':0.65,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.4,7,1.1,11,1.8]}}, before);
-      if(!map.getLayer('ref-roads')) map.addLayer({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
+      if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
         paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
       /* (#R41) Railways: gray was still hard to see ("灰色は視認性が悪すぎる"). Render the standard two-part rail
          symbol that reads on BOTH light AND dark basemaps: a strong dark SOLID base (visible on light terrain)
          with WHITE cross-tie dashes on top (visible on dark/satellite). */
-      if(!map.getLayer('ref-rail')) map.addLayer({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
+      if(!GE().layers.has('ref-rail')) GE().layers.add({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
         paint:{'line-color':'#2b2f36','line-opacity':0.96,'line-width':['interpolate',['linear'],['zoom'],5,1.1,9,2.2,12,3.6,15,5.2]}}, before);
-      if(!map.getLayer('ref-rail-dash')) map.addLayer({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
+      if(!GE().layers.has('ref-rail-dash')) GE().layers.add({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
         paint:{'line-color':'#f4f6fa','line-opacity':0.95,'line-dasharray':[1.4,3.2],'line-width':['interpolate',['linear'],['zoom'],6,1,9,1.8,12,2.8,15,4]}}, before);
@@ -2141,16 +2200,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R38) Apply from the LIVE box state, and re-assert several times + when the OFM vector tiles arrive.
        Root of "Roads/Railways/State borders をチェックしても表示されない、再読み込みで治る": the `ofm` source/layer
        often settled AFTER the single 400ms retry, so the visibility set hit nothing and never re-ran. */
-    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(map&&map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); if(map&&map.getLayer(layerId+'-dash')) map.setLayoutProperty(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
+    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
-      if(cb.checked && !canDraw()){ map&&map.once&&map.once('idle',apply); }
+      if(cb.checked && !canDraw()){ GE().events.once('idle',apply); }
       apply();
       if(cb.checked){ [250,700,1600,3200].forEach(ms=>setTimeout(apply,ms)); }
     }); }
   _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
-  try{ if(map&&map.on) map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
+  try{ GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
     try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){} } }); }catch(_){}
   /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
@@ -2158,7 +2217,7 @@ window.addEventListener('DOMContentLoaded', () => {
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
      hash, so this only sets the initial default — unchecking one still sticks for the session. */
   (function(){ const fire=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&!c.__defFired){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
-    try{ if(map){ if(map.isStyleLoaded()) setTimeout(fire,300); if(map.on) map.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); } else setTimeout(fire,1600); }catch(_){} })();
+    try{ if(GE().ready()) setTimeout(fire,300); GE().events.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); }catch(_){} })();
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
@@ -2207,8 +2266,8 @@ window.addEventListener('DOMContentLoaded', () => {
      legible. A subtle 1px border defines it against same-tone backgrounds. */
   function ensureLabelPill(force){
     if(!map) return;
-    if(force && map.hasImage('news-pill')){ try{ map.removeImage('news-pill'); }catch(_){} }
-    if(map.hasImage('news-pill')) return;
+    if(force && GE().scene.hasImage('news-pill')){ try{ GE().scene.removeImage('news-pill'); }catch(_){} }
+    if(GE().scene.hasImage('news-pill')) return;
     try{
       const dark=_newsUIDark();
       const dpr=2, w=40, h=30, r=12;
@@ -2220,7 +2279,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctx.lineWidth=1; ctx.strokeStyle = dark ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.40)';
       rr(0.5,0.5,w-1,h-1,r); ctx.stroke();
       const data=ctx.getImageData(0,0,w*dpr,h*dpr).data;
-      map.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
+      GE().scene.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
         pixelRatio:dpr, stretchX:[[r*dpr,(w-r)*dpr]], stretchY:[[r*dpr,(h-r)*dpr]], content:[8*dpr,6*dpr,(w-8)*dpr,(h-6)*dpr]
       });
     }catch(_){}
@@ -2274,8 +2333,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window._declutterNewsBands=_declutterNewsBands;
   function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
   window.scheduleNewsDeclutter=scheduleNewsDeclutter;
-  window.highlightDashMarker=function(id,on){ if(map&&map.getSource('dash-points')){ try{ map.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
-  function clearIntelSources(){ if(map){ if(map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); if(map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
+  window.highlightDashMarker=function(id,on){ if(GE().layers.hasSource('dash-points')){ try{ GE().layers.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
+  function clearIntelSources(){ if(map){ if(GE().layers.hasSource('news-points')) GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
   /* (#R122/#R123) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city point, e.g.
      everything filed under "USA" lands on one dot), so pins stack and only the top one is clickable.
      (#R123) FIX "対象領域に分散的に配置できていない": the R122 version fanned every cluster over a FIXED small spiral,
@@ -2291,10 +2350,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R127) re-run the duplicate spread on the CURRENT pins — called once the async country borders finish loading.
      A cold-load race left a country cluster as a tight blob because regionFor() had no polygon yet; the pins kept
      their ORIGINAL anchors in __oc, so re-spreading now fills the real territory. No-op unless news pins are live. */
-  function _respreadNews(){ try{ if(!map||!map.getSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
+  function _respreadNews(){ try{ if(!map||!GE().layers.hasSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
     const _m=(typeof currentMode!=='undefined')?currentMode:null; if(_m!=='news'&&_m!=='saved') return;
     _spreadDupNewsPins(newsFeatures);
-    try{ map.getSource('news-points').setData({type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
+    try{ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
     try{ scheduleNewsDeclutter(); }catch(_){}
   }catch(_){} }
   try{ window._respreadNews=_respreadNews; }catch(_){}
@@ -2343,7 +2402,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
-  window.flyToLoc=function(lng,lat){ if(map)map.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
+  window.flyToLoc=function(lng,lat){ if(map)GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
   window.toggleDashCat=function(cat){ if(activeDashCategories.has(cat))activeDashCategories.delete(cat); else activeDashCategories.add(cat); renderDashboard(); };
   /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
      a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
@@ -2563,9 +2622,9 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__countryPick=function(on){ const nv=(on==null)?!picking:!!on;
       _btns().forEach(b=>b.classList.toggle('on',nv));
       if(nv===picking) return; picking=nv; window.__scpPick=picking;
-      try{ const cv=map&&map.getCanvas&&map.getCanvas(); if(cv) cv.style.cursor=picking?'crosshair':''; }catch(_){}
-      if(picking&&!bound){ try{ map.on('click',onClick); bound=onClick; }catch(_){} }
-      if(!picking&&bound){ try{ map.off('click',bound); }catch(_){} bound=null; }
+      try{ const cv=GE().render.canvas&&GE().render.canvas(); if(cv) cv.style.cursor=picking?'crosshair':''; }catch(_){}
+      if(picking&&!bound){ try{ GE().events.on('click',onClick); bound=onClick; }catch(_){} }
+      if(!picking&&bound){ try{ GE().events.off('click',bound); }catch(_){} bound=null; }
       if(picking&&!keyH){ keyH=(ev)=>{ if(ev.key==='Escape') window.__countryPick(false); }; try{ document.addEventListener('keydown',keyH); }catch(_){} }
       else if(!picking&&keyH){ try{ document.removeEventListener('keydown',keyH); }catch(_){} keyH=null; }
       if(picking){ try{ imToast(_pl('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} }
@@ -2794,7 +2853,7 @@ window.addEventListener('DOMContentLoaded', () => {
     return null;
   }
   let _coordFlyT=null;
-  function coordFly(ll){ if(!ll||!map) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ map.flyTo({center:ll, zoom:Math.max(map.getZoom?map.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
+  function coordFly(ll){ if(!ll||!map) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ GE().camera.flyTo({center:ll, zoom:Math.max(GE().camera.getZoom?GE().camera.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
   searchInput.addEventListener('input',()=>{ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats')renderStats(searchVal()); else if(currentMode==='info')renderDashboard(); });
   function runSearch(){ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats'){ renderStats(searchVal()); return; } if(currentMode==='info'){ renderDashboard(); return; } if(currentMode==='saved'){ startNews(); return; } activeSearchQuery=searchInput.value.trim(); globalData=[]; fetchData(); }
   document.getElementById('btn-search').onclick=runSearch;
@@ -2817,8 +2876,8 @@ window.addEventListener('DOMContentLoaded', () => {
       n++;
       try{
         if(typeof currentMapType==='undefined' || currentMapType!==mode){ clearInterval(window._baseReassertT); return; }
-        if(canDraw() && map.getLayer('layer-sat')){
-          const wantSat=(mode==='sat'), isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible');
+        if(canDraw() && GE().layers.has('layer-sat')){
+          const wantSat=(mode==='sat'), isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible');
           if(wantSat!==isSat) applyTheme(); else { clearInterval(window._baseReassertT); }
         }
       }catch(_){}
@@ -2869,10 +2928,10 @@ window.addEventListener('DOMContentLoaded', () => {
     return OS;
   })();
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
-  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
+  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
   /* (#R101) switching to Satellite no longer force-opens the provider/date panel (satPanelDismissed stays true on
      desktop). The panel is rendered ready; it opens only when the user re-clicks the active Satellite button. */
-  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
+  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
   document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
   /* (#R101) already on Satellite → toggle the provider/date panel (desktop). Otherwise switch to Satellite. */
   document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
@@ -2880,25 +2939,25 @@ window.addEventListener('DOMContentLoaded', () => {
     IntMapOS.exec('view.base.sat',{source:'ui'}); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
-  if(map) map.on('styledata',()=>{ try{ if(!map.isStyleLoaded()||!map.getLayer('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
+  if(map) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
   /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
   /* projection — TRUE kernel commands (UI + Atlas both call these). */
-  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
+  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
   document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
   document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
   function ensureTerrainSource(){
-    if(map.getSource('terrain-dem')) return true;
+    if(GE().layers.hasSource('terrain-dem')) return true;
     /* Three host aliases for the SAME AWS terrarium DEM tiles. The browser opens a separate connection
        pool per hostname, so round-robining across them ~triples concurrent DEM throughput while tilted
        in 3D — the elevation tiles were the under-fetch bottleneck (user saw <10 Mbps) (#2,#18). */
-    try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:[
+    try{ GE().layers.addSource('terrain-dem',{type:'raster-dem',tiles:[
         /* (#R7) Five host aliases for the SAME AWS terrarium DEM bucket. Each distinct hostname gets its
            own browser connection pool, so round-robining ~5× the concurrent DEM fetches over HTTP/1.1
            S3 — the DEM tiles were the 3D under-fetch bottleneck the user measured (<10 Mbps). */
@@ -2923,16 +2982,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if(on){
       if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':currentLang==='de'?'3D-Gelände konnte nicht geladen werden':currentLang==='ru'?'Не удалось загрузить 3D-рельеф':currentLang==='es'?'No se pudo cargar el terreno 3D':'Could not load 3D terrain'); }catch(_){} return; }
       terrain3D=true; syncBtns();
-      try{ map.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
+      try{ GE().scene.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
       /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
          (and fog isn't supported on globe, which otherwise spams console warnings). */
-      if(currentProj!=='globe'){ try{ map.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
+      if(currentProj!=='globe'){ try{ GE().scene.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
       /* (#R7-3D-notilt) Do NOT move the camera when 3D is enabled. The user asked that selecting 3D
          change nothing on screen — terrain is attached so relief appears the moment THEY tilt
          (right-drag / two-finger), but we never auto-pitch or auto-zoom. */
     } else {
       terrain3D=false; syncBtns();
-      try{ map.setTerrain(null); }catch(e){}
+      try{ GE().scene.setTerrain(null); }catch(e){}
       /* leave the camera exactly where it is — no forced flatten (don't move on toggle). */
     }
   }
@@ -3001,7 +3060,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
-    try{ if(map){ map.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
+    try{ if(map){ GE().events.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
   })();
   /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
@@ -3068,7 +3127,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ['ticker.off', ()=>{ window.imTicker='off'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · off','ui'],
     ['settings.open',()=>{ const b=document.getElementById('btn-open-settings')||document.querySelector('[id*=open-settings]'); if(b) b.click(); }, 'Settings · open','ui'],
     ['isolate.exit',()=>{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }, 'Isolate · exit','map'],
-    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=map&&map.getCenter&&map.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
+    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
   ];
   REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
 
@@ -3320,24 +3379,24 @@ window.addEventListener('DOMContentLoaded', () => {
   let userPins=[], activePinId=null, pinSeq=0;
   function setupPinLayers(){
     if(!canDraw()) return;
-    if(!map.getSource('user-pins')){
-      map.addSource('user-pins',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'user-pin-shadow',type:'circle',source:'user-pins',paint:{'circle-radius':12,'circle-color':'#000','circle-opacity':0.18,'circle-blur':0.6}});
-      map.addLayer({id:'user-pin-dot',type:'circle',source:'user-pins',paint:{'circle-radius':['case',['boolean',['feature-state','hover'],false],10,8],'circle-color':'#ff3b30','circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'}});
+    if(!GE().layers.hasSource('user-pins')){
+      GE().layers.addSource('user-pins',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE().layers.add({id:'user-pin-shadow',type:'circle',source:'user-pins',paint:{'circle-radius':12,'circle-color':'#000','circle-opacity':0.18,'circle-blur':0.6}});
+      GE().layers.add({id:'user-pin-dot',type:'circle',source:'user-pins',paint:{'circle-radius':['case',['boolean',['feature-state','hover'],false],10,8],'circle-color':'#ff3b30','circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'}});
     }
     if(window._pinHandlersBound) return;
     window._pinHandlersBound=true;
-    map.on('mouseenter','user-pin-dot',()=>{ map.getCanvas().style.cursor='pointer'; });
-    map.on('mouseleave','user-pin-dot',()=>{ map.getCanvas().style.cursor=''; });
-    map.on('click','user-pin-dot',(e)=>{
+    GE().events.onLayer('mouseenter','user-pin-dot',()=>{ GE().render.canvas().style.cursor='pointer'; });
+    GE().events.onLayer('mouseleave','user-pin-dot',()=>{ GE().render.canvas().style.cursor=''; });
+    GE().events.onLayer('click','user-pin-dot',(e)=>{
       if(!e.features.length) return;
       e.preventDefault();
       const fid=e.features[0].properties.fid; openPinPopup(fid);
     });
   }
   function refreshPins(){
-    if(!map||!map.getSource('user-pins')) return;
-    map.getSource('user-pins').setData({type:'FeatureCollection',features:userPins.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{fid:p.id}}))});
+    if(!map||!GE().layers.hasSource('user-pins')) return;
+    GE().layers.setSourceData('user-pins',{type:'FeatureCollection',features:userPins.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{fid:p.id}}))});
   }
   async function fetchElevDepth(lat,lng){
     try{
@@ -3382,7 +3441,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;
     const el=document.getElementById('pin-popup'); if(!el||el.style.display==='none')return;
-    const pt=map.project([pin.lng,pin.lat]); el.style.left=pt.x+'px'; el.style.top=pt.y+'px';
+    const pt=GE().coords.project([pin.lng,pin.lat]); el.style.left=pt.x+'px'; el.style.top=pt.y+'px';
   }
   window._closePinPopup=()=>{ activePinId=null; document.getElementById('pin-popup').style.display='none'; };
   window._removePin=(id)=>removePin(id);
@@ -3537,20 +3596,20 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function pushCommunityFeatures(){
-    if(!map||!map.getSource('community-points')) return;
+    if(!map||!GE().layers.hasSource('community-points')) return;
     /* Community pins are shown ONLY while the Community tab is active; selecting another
        tab clears them (the posts stay cached in communityPosts for an instant return). */
     const feats=(currentMode==='community') ? visibleCommunityPosts().map(p=>({
       type:'Feature', id:p.id, geometry:{type:'Point',coordinates:[p.lng,p.lat]},
       properties:{ fid:p.id, cat:p.category||'general', title:p.title||'', body:(p.body||'').slice(0,80), short:(p.title||'').slice(0,28)+((p.title||'').length>28?'…':'') }
     })) : [];
-    map.getSource('community-points').setData({type:'FeatureCollection',features:feats});
+    GE().layers.setSourceData('community-points',{type:'FeatureCollection',features:feats});
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   /* When add-mode is armed, map-click drops a community post pin and opens the compose modal */
   if(map){
-    map.on('click',(e)=>{
+    GE().events.on('click',(e)=>{
       if(!communityAddArmed) return;
       /* Skip if it's actually a tool action — handleMapClick will handle and toolMode set */
       if(toolMode) return;
@@ -3582,7 +3641,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const body=document.getElementById('compose-post-body').value.trim();
     if(!title && !body){ imToast(currentLang==='jp'?'タイトルか本文を入力してください。':currentLang==='de'?'Titel oder Text eingeben.':currentLang==='ru'?'Введите заголовок или текст.':currentLang==='es'?'Escribe un título o texto.':'Enter a title or some text.'); return; }
     /* never dead-end on a missing location: fall back to the current map center */
-    if(!pendingPostLoc){ if(map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
+    if(!pendingPostLoc){ if(map){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
     try{
@@ -3596,7 +3655,7 @@ window.addEventListener('DOMContentLoaded', () => {
     pendingPostLoc=null; pendingImg=''; showComposeImgPreview('');
     await loadCommunity();
     /* Fly to the new / updated post */
-    if(map && !wasEdit) map.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
+    if(!wasEdit) GE().camera.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
   };
   /* Compose image input wiring (bound once) */
   (function(){
@@ -3615,11 +3674,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Push community pins when style first loads, so they appear without needing to enter the tab */
   if(map){
     if(canDraw()){ try{ setupCommunityLayer(); }catch(_){} }
-    map.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
-    map.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
+    GE().events.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
+    GE().events.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     /* "In view" filter: as you pan, re-filter the feed + pins to the visible map area. */
     let _commViewT=null;
-    map.on('moveend',()=>{ if(commInView && currentMode==='community'){ clearTimeout(_commViewT); _commViewT=setTimeout(()=>{ try{ renderCommList(); }catch(_){} },120); } });
+    GE().events.on('moveend',()=>{ if(commInView && currentMode==='community'){ clearTimeout(_commViewT); _commViewT=setTimeout(()=>{ try{ renderCommList(); }catch(_){} },120); } });
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
@@ -3892,7 +3951,7 @@ window.addEventListener('DOMContentLoaded', () => {
        argument is kept only for call-site compatibility and is now a no-op. Mobile bottom-sheet padding is
        owned by the detent system elsewhere and is deliberately left untouched. As a one-time safety net, clear
        any stray desktop left/right map padding a prior build may have set (fresh maps already start at 0). */
-    try{ if(map && map.getPadding && map.setPadding && !isMobile()){ const cur=map.getPadding(); if(cur && (cur.left||cur.right)) map.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
+    try{ if(GE().camera.getPadding && GE().camera.setPadding && !isMobile()){ const cur=GE().camera.getPadding(); if(cur && (cur.left||cur.right)) GE().camera.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
@@ -3908,10 +3967,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ await aiWaitMapIdle(2500); }catch(_){}
       /* 1 — read the WebGL frame synchronously INSIDE a render tick (the reliable way to capture a
          canvas created without preserveDrawingBuffer), and composite the animated-wind 2D canvas. */
-      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
+      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=GE().render.canvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
         try{ const wb=document.getElementById('wind-bg-canvas'); if(wb && wb.style.display!=='none' && wb.width) cx.drawImage(wb,0,0,o.width,o.height); }catch(_){}
         try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
-        res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
+        res(o); }catch(_){ res(null); } }; try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
       const out=document.createElement('canvas');
       const cont=document.getElementById('map-container');
       out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
@@ -4095,9 +4154,9 @@ window.addEventListener('DOMContentLoaded', () => {
      NEVER cage the camera with maxBounds (that was the "locked near Europe" bug). */
   function applyFlatPanSetting(){
     if(!map) return;
-    try{ map.setMaxBounds(null); }catch(_){}
+    try{ GE().camera.setMaxBounds(null); }catch(_){}
     if(currentProj!=='flat') return;
-    try{ map.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
+    try{ GE().camera.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
     /* (#R28) keep the compare map's world-copies in step with the main map's free-pan setting */
     try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){}
   }
@@ -4262,7 +4321,7 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ window.IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
     const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
-    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&map.getLayer('lyr-'+k)&&map.getLayoutProperty('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
+    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
   }catch(_){} }); }catch(_){}
 
   /* ============================================================================
@@ -4381,7 +4440,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=map?map.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
+      if(cfg.weather && panel){ try{ const c=map?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=jp()?'為替を取得できません':'FX unavailable'; } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
@@ -4583,24 +4642,24 @@ window.addEventListener('DOMContentLoaded', () => {
     let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
     let card=null, open=false, events=[], pinsOn=true;
     const TYPE_COL={'Battles':'#ff3b30','Explosions/Remote violence':'#ff9500','Violence against civilians':'#af52de','Protests':'#0a84ff','Riots':'#ffd60a','Strategic developments':'#8e8e93'};
-    function ensureLayer(){ if(map.getSource('acled-src')) return true; if(!canDraw()) return false;
+    function ensureLayer(){ if(GE().layers.hasSource('acled-src')) return true; if(!canDraw()) return false;
       try{
-        map.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addLayer({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
+        GE().layers.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        GE().layers.add({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,5,4.4,9,7],
           'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
-        map.on('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          try{ new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
+        GE().events.onLayer('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          try{ GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
             .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>').addTo(map); }catch(_){}
         });
-        map.on('mouseenter','acled-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','acled-pt',()=>{ map.getCanvas().style.cursor=''; });
+        GE().events.onLayer('mouseenter','acled-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','acled-pt',()=>{ GE().render.canvas().style.cursor=''; });
         return true;
       }catch(_){ return false; } }
-    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; } try{ map.setLayoutProperty('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
-    function pushPins(){ const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; }
-      try{ map.getSource('acled-src').setData({type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
+    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; } try{ GE().layers.setLayout('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
+    function pushPins(){ const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; }
+      try{ GE().layers.setSourceData('acled-src',{type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
       setPins(pinsOn); }; a(); }
     async function loadEvents(){
       const st=card.querySelector('#acled-status'); const list=card.querySelector('#acled-list');
@@ -4624,7 +4683,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<span style="width:9px;height:9px;border-radius:5px;flex:none;margin-top:3px;background:'+(TYPE_COL[ev.event_type]||'#ff3b30')+';"></span>'+
         '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(jp()?'死者 ':'†')+ev.fatalities):'')+'</span></span></div>').join('');
       list.innerHTML=fmt;
-      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); map.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
+      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); GE().camera.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
       pushPins();
     }
     function build(){
@@ -4713,7 +4772,7 @@ window.addEventListener('DOMContentLoaded', () => {
          (above the sheet), so unproject that exact pixel — keeps Add-point and long-press accurate. */
       let cy=r.height/2;
       if(mob()){ const cs=getComputedStyle(mc); const cover=parseFloat(cs.getPropertyValue('--sheet-cover'))||parseFloat(cs.getPropertyValue('--peek-h'))||0; cy=(r.height-cover)/2; }
-      const px=[r.width/2, cy]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
+      const px=[r.width/2, cy]; const ll=GE().coords.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
     window._mCenterLL=centerLL;
     /* (#R13) The +Add point button (and the center crosshair) now appear ONLY while a measurement tool
        is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
@@ -4731,11 +4790,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
       renderCoordReadout(c.lng,c.lat); }catch(_){} }
     let _roT=0,_updRAF=0,_roRAF=0;
-    map.on('moveend',()=>{ readout(); update(); });
+    GE().events.on('moveend',()=>{ readout(); update(); });
     /* (#R25) Smoother pan/zoom ("動きがカクツク"): coalesce the per-move DOM work to ONE frame, and run the
        heavier readout (DEM + queryRenderedFeatures) at most ~every 110ms during motion (the precise final
        value still lands on moveend). The crosshair stays live without sampling on every single move event. */
-    map.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
+    GE().events.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
       /* (#R37) Mobile pan/zoom smoothness ("抜本的に滑らかに"): during motion render ONLY the cheap coordinate
          text. The heavy crosshair readout — DEM elevation lookup + queryRenderedFeatures for the active-layer
          value — no longer runs every ~110ms mid-gesture (which spiked the main thread when a data layer was on);

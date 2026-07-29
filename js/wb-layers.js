@@ -242,7 +242,7 @@ window.IntMapModules.wbLayers=function(map,HOST){
     window._imBxChoroValueAt=function(lng,lat){ const out=[];
       try{ if(!window._imPipGeo) return out;
         WB.forEach(L=>{ if(!_bxVis(L)) return;
-          const s=map.getSource('src-'+L.id); const d=s&&(s._data&&s._data.features?s._data:(s.serialize&&s.serialize().data)); if(!d||!d.features) return;
+          const d=GE().layers.sourceData('src-'+L.id); if(!d||!d.features) return;
           for(const f of d.features){ if(f&&f.geometry&&window._imPipGeo(lng,lat,f.geometry)){ const p=f.properties||{};
             if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(L.unit||'')+(p.nm?(' ('+p.nm+')'):'')); }
             else out.push(bxLabel(L)+': — '+(p.nm?('('+p.nm+')'):''));   /* gray no-data country = honest dash */

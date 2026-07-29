@@ -660,7 +660,7 @@ window.IntMapModules.worldEvents=function(map,HOST){
       try{
         if(_imCanDraw()) setupIntelLayers();
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:(jp?e.jp:e.en)+' ('+e.y+')',body:jp?e.djp:e.den,layerRef:''}}));
-        if(map&&GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
+        if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
       }catch(_){}
       const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(jp?'📍 場所':'📍 Places')+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(jp?'🗓 出来事':'🗓 Events')+'</button></div>';
       const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(jp?'年代':'Years')+
@@ -809,7 +809,7 @@ window.IntMapModules.edu=function(map,HOST){
         const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cap2?(chosen.capital||'—'):cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
         const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
         p.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
-        try{ if(q.answer.latlng&&ok) map&&GE().camera.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
+        try{ if(q.answer.latlng&&ok) GE().camera.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
       });
     }
     /* map-quiz click resolution: point-in-polygon over countryGeo (works with the fill layer hidden) */

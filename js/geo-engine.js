@@ -794,7 +794,13 @@ function _m(){ return window.__imap||null; }
        only code that must wait for a quiet frame (screenshots, paint sampling) wants the latter. Making a
        renderer distinguish the two is a hard requirement of the contract now, not an implementation detail:
        MapLibre answers it from the parsed-style flag, a Cesium/Earth adapter from its own scene readiness. */
-    canDraw(){ try{ return !!(window.IntMapCanDraw&&window.IntMapCanDraw()); }catch(_){ return this.styleReady(); } },
+    canDraw(){ if(this.styleReady()) return true; return this.styleParsed(); },
+    /* (#R178) the PARSED-style test itself, which app-body's canDraw() had been doing by reaching into
+       `map.style._loaded` — a private field of a MapLibre class, and the single most version-fragile
+       thing left outside this file. The public getStyle() fallback stays as the second answer. */
+    styleParsed(){ const m=_m(); if(!m) return false;
+      try{ if(m.style&&m.style._loaded===true) return true; }catch(_){}
+      try{ const s=m.getStyle(); return !!(s&&s.layers&&s.layers.length); }catch(_){ return false; } },
     /* (#R170) 3-D EXTRUSION — real-scale volumes standing in the air (base/height in METRES above the
        ground plane). Needed by the Measure ▸ 3-D volume tool; a future Earth adapter maps it onto its own
        primitive. Kept as its own contract entry (not just "a fill layer") because an engine without real
@@ -852,6 +858,18 @@ function _m(){ return window.__imap||null; }
     /* an IMAGE source's picture, swapped without rebuilding the source — the wind field and the
        GIBS composites repaint this way. Named for the intent; MapLibre calls it updateImage. */
     updateImageSource(id,o){ const m=_m(); try{ const s=m&&m.getSource(id); if(s&&s.updateImage){ s.updateImage(o); return true; } }catch(_){} return false; },
+    /* WHAT IS IN A GEOJSON SOURCE RIGHT NOW. Four call sites wanted this and each dug a different
+       private field out of the MapLibre source object — `_data`, `_data.geojson`, `serialize().data`
+       — which is both engine-specific and version-specific. Asked once here: the current
+       FeatureCollection, or null when the source is missing or is not GeoJSON. (Atlas counts the
+       polygons it drew with it; the workspace snapshot round-trips it.) */
+    /* a RASTER source's tile list, swapped in place (RainViewer re-points its frames this way rather
+       than rebuilding the source, which would flash). */
+    setSourceTiles(id,tiles){ const m=_m(); try{ const s=m&&m.getSource(id); if(s&&s.setTiles){ s.setTiles(tiles); return true; } }catch(_){} return false; },
+    sourceData(id){ const m=_m(); try{ const s=m&&m.getSource(id); if(!s) return null;
+      let d=s._data; if(d&&d.geojson) d=d.geojson;
+      if(!d&&s.serialize){ const ser=s.serialize(); if(ser&&ser.type!=='geojson') return null; d=ser&&ser.data; }
+      return (d&&typeof d==='object')?d:null; }catch(_){ return null; } },
     /* STYLE-LEVEL FURNITURE — the sky, the light, the terrain attachment and the sprite atlas.
        All of them are "the scene", not "a layer", which is why they were never in layers.*. */
     getStyle(){ const m=_m(); try{ return (m&&m.getStyle)?m.getStyle():null; }catch(_){ return null; } },
@@ -983,7 +1001,9 @@ function _m(){ return window.__imap||null; }
       move:(id,before)=>_adapter.moveLayer(id,before),
       setFilter:(id,f)=>_adapter.setFilter(id,f), getFilter:id=>_adapter.getFilter(id),
       getFeatureState:f=>_adapter.getFeatureState(f),
-      updateImage:(id,o)=>_adapter.updateImageSource(id,o) },
+      updateImage:(id,o)=>_adapter.updateImageSource(id,o),
+      sourceData:id=>_adapter.sourceData?_adapter.sourceData(id):null,
+      setSourceTiles:(id,t)=>_adapter.setSourceTiles?_adapter.setSourceTiles(id,t):false },
     /* (#R178) THE SCENE rather than a layer — sky, light, terrain attachment, sprite atlas and
        the parsed style itself. Separate from layers.* because an engine can have all of these
        without having a "layer" concept at all. */

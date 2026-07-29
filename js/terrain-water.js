@@ -85,8 +85,8 @@ window.IntMapModules.terrainWater=function(map,HOST){
     function setVec(feats){ try{ if(ensureVec()) GE().layers.setSourceData(VEC,{type:'FeatureCollection',features:feats||[]}); }catch(_){} }
     function paintImg(srcId,lyrId,url,coords,before){
       try{ if(!_imCanDraw()) return;
-        const s=map.getSource(srcId);
-        if(s&&s.updateImage) s.updateImage({url,coordinates:coords});
+        const s=GE().layers.hasSource(srcId);
+        if(s) GE().layers.updateImage(srcId,{url,coordinates:coords});
         else { GE().layers.addSource(srcId,{type:'image',url,coordinates:coords});
           GE().layers.add({id:lyrId,type:'raster',source:srcId,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},
             (before&&GE().layers.has(before))?before:undefined); }

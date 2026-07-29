@@ -151,7 +151,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
            the click landed on a place name, not on empty climate raster ("地名ラベルをクリックする際、その
            クリック地点の気候区分までクリックされ…ないように"). */
         let onLabel=false;
-        try{ const pt=point||(map&&GE().coords.project([lng,lat]));
+        try{ const pt=point||(GE().coords.project([lng,lat]));
           if(pt&&map){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
             if(ls.length){ const pad=(typeof HOST.isMobile==='function'&&HOST.isMobile())?15:6; const near=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
         if(!onLabel){ const code=window.sampleKoppenAt(lng,lat);

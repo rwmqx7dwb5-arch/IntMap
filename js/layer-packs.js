@@ -619,7 +619,7 @@ window.IntMapModules.timeZones=function(map,HOST){
     function labelFC(){ if(!geo) return {type:'FeatureCollection',features:[]}; const best={};
       geo.features.forEach(f=>{ const z=f.properties&&f.properties.zone; if(z==null) return; const bb=bboxOf(f); if(!bb) return; const area=(bb[2]-bb[0])*(bb[3]-bb[1]); if(!best[z]||area>best[z].area) best[z]={area,cx:(bb[0]+bb[2])/2,cy:(bb[1]+bb[3])/2,z}; });
       return {type:'FeatureCollection',features:Object.keys(best).map(k=>{ const b=best[k]; return {type:'Feature',geometry:{type:'Point',coordinates:[b.cx,Math.max(-58,Math.min(72,b.cy))]},properties:{label:offLabel(b.z)+'\n'+zoneTime(b.z)}}; })}; }
-    function refreshTimes(){ try{ const s=map.getSource('tzl-lbl-src'); if(s) s.setData(labelFC()); }catch(_){} }
+    function refreshTimes(){ try{ GE().layers.setSourceData('tzl-lbl-src',labelFC()); }catch(_){} }
     function addLayers(){ if(!geo) return;
       if(!GE().layers.hasSource('tzl-src')) GE().layers.addSource('tzl-src',{type:'geojson',data:geo});
       if(!GE().layers.hasSource('tzl-lbl-src')) GE().layers.addSource('tzl-lbl-src',{type:'geojson',data:labelFC()});

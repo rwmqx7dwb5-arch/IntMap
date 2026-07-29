@@ -225,7 +225,7 @@ window.IntMapModules.drawTool=function(map,HOST){
       if(simplified.length>=2) f.push({type:'Feature',geometry:{type:'LineString',coordinates:simplified},properties:{}});
       if(raw.length) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[0]},properties:{color:'#34c759'}});
       if(raw.length>1) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[raw.length-1]},properties:{color:'#ff3b30'}});
-      const s=map.getSource('draw-src'); if(s) try{ s.setData(fc(f)); }catch(_){}
+      try{ GE().layers.setSourceData('draw-src',fc(f)); }catch(_){}
     }
 
     /* ---- recompute ---- */
@@ -428,7 +428,7 @@ window.IntMapModules.isolate=function(map,HOST){
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
-        try{ const _hl=map.getSource('place-hl-src'); if(_hl) _hl.setData({type:'FeatureCollection',features:[]}); }catch(_){}
+        try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
         try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){}
         try{ const _pp=document.querySelector('.plc-popup'); if(_pp&&_pp.parentNode) _pp.remove(); }catch(_){}
         /* (#R29) Isolating a country auto-deselects "Countries (info)" — its hover-fill / info card would
@@ -663,7 +663,7 @@ window.IntMapModules.outline=function(map,HOST){
       if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':_col,'line-width':2.4,'line-opacity':0.95}},before);
       return true; }catch(_){ return false; } }
     function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); if(GE().layers.has('pl-outline-line')) GE().layers.setPaint('pl-outline-line','line-color',c); }catch(_){} }
-    function setData(geo){ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData(geo); }catch(_){} }
+    function setData(geo){ try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',geo); }catch(_){} }
     /* (#R55) Bulletproof clear. The user re-reported the polygon staying after ×. The REAL hole (R54 missed it):
        a show() whose Nominatim fetch was STILL IN FLIGHT would resolve AFTER clear() and repaint the outline. So
        clear() bumps `_seq` (every in-flight show checks it after its await and bails on mismatch), flips
@@ -716,7 +716,7 @@ window.IntMapModules.outline=function(map,HOST){
         if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=GE().render.container&&GE().render.container(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); GE().camera.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
       }catch(_){ return false; } }
-    GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
+    GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',{type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
       else { /* (#R57) REAPER — while no outline is active, NO pl-outline layer/source may survive a style event, so a
                 cleared outline can never linger. Only ever removes. */
         try{ if(GE().layers.has('pl-outline-line')) GE().layers.remove('pl-outline-line'); }catch(_){}
@@ -807,7 +807,7 @@ window.IntMapModules.moveShape=function(map,HOST){
          shape about its own centroid ("右クリックしながら動かしたら回転させられるように") — screen-angle around the
          projected centroid drives rotAng, so the shape follows the cursor like a dial. */
       let curCen=baseCen.slice(), rotAng=0;
-      try{ GE().input.set('dragPan',false); }catch(_){} try{ if(map.dragRotate) GE().input.set('dragRotate',false); }catch(_){}
+      try{ GE().input.set('dragPan',false); }catch(_){} try{ GE().input.set('dragRotate',false); }catch(_){}
       try{ GE().render.canvas().style.cursor='move'; }catch(_){}
       let dragging=false, rotating=false, rotStart=0, rotBase=0;
       const angAt=(e)=>{ try{ const c=GE().coords.project({lng:curCen[0],lat:curCen[1]}); return Math.atan2(e.point.y-c.y,e.point.x-c.x); }catch(_){ return 0; } };
@@ -825,7 +825,7 @@ window.IntMapModules.moveShape=function(map,HOST){
       showPill(name); return true; }
     function stop(){ if(!on&&!handlers.length){ return; } on=false;
       try{ handlers.forEach(([ev,fn])=>GE().events.off(ev,fn)); }catch(_){} handlers=[];
-      try{ GE().input.set('dragPan',true); }catch(_){} try{ if(map.dragRotate) GE().input.set('dragRotate',true); }catch(_){}
+      try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().input.set('dragRotate',true); }catch(_){}
       try{ GE().render.canvas().style.cursor=''; }catch(_){}
       try{ if(GE().layers.has('immove-fill')) GE().layers.remove('immove-fill'); }catch(_){}
       try{ if(GE().layers.has('immove-line')) GE().layers.remove('immove-line'); }catch(_){}
@@ -850,7 +850,7 @@ window.IntMapModules.isochrone=function(map,HOST){
       if(!GE().layers.has('im-iso-line')) GE().layers.add({id:'im-iso-line',type:'line',source:SRC,filter:['==','$type','Polygon'],layout:{'line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#0a84ff'],'line-width':2.2,'line-opacity':0.92}});
       if(!GE().layers.has('im-iso-ctr')) GE().layers.add({id:'im-iso-ctr',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#fff','circle-stroke-color':'#0a84ff','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
-    function clear(){ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(panel) panel.style.display='none'; }
+    function clear(){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} if(panel) panel.style.display='none'; }
     async function fetchIso(c,cost,minutes){
       const body={locations:[{lat:+c.lat,lon:+c.lng}],costing:cost,contours:minutes.map(t=>({time:t})),polygons:true,denoise:0.5,generalize:60};
       const url='https://valhalla1.openstreetmap.de/isochrone?json='+encodeURIComponent(JSON.stringify(body));
@@ -950,7 +950,7 @@ window.IntMapModules.objectList=function(map,HOST){
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    function srcFeats(id){ try{ const s=map.getSource(id); return (s&&s._data&&s._data.features)||[]; }catch(_){ return []; } }
+    function srcFeats(id){ try{ const d=GE().layers.sourceData(id); return (d&&d.features)||[]; }catch(_){ return []; } }
     function fitFeats(feats){ try{ let a=180,b=90,c=-180,d=-90; const eat=co=>{ if(typeof co[0]==='number'){ if(co[0]<a)a=co[0]; if(co[1]<b)b=co[1]; if(co[0]>c)c=co[0]; if(co[1]>d)d=co[1]; } else co.forEach(eat); };
       feats.forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) eat(f.geometry.coordinates); });
       if(isFinite(a)&&c>=a){ if(a===c&&b===d) GE().camera.flyTo({center:[a,b],zoom:Math.max(GE().camera.getZoom(),12),duration:800}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:800}); } }catch(_){} }

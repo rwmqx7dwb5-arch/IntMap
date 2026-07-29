@@ -273,10 +273,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
          admin seams don't dominate — the region reads as one shape. */
       GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','color'],'#ff9f0a'],'line-width':['case',['==',['get','comp'],1],1,2],'line-opacity':['case',['==',['get','comp'],1],0.35,0.9]}},before);
       return true; }catch(_){ return false; } }
-    function paintPolys(){ if(!_hlPolys.length){ try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintPolys(){ if(!_hlPolys.length){ try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
       try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null)}}))}); return true; }catch(_){ return false; } }
-    function clearPolyHl(){ _hlPolys=[]; try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
        enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
     let _hlPolySeq=0;
@@ -292,10 +292,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       GE().layers.add({id:'nlq-line',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
       return true; }catch(_){ return false; } }
-    function paintLines(){ if(!_hlLines.length){ try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintLines(){ if(!_hlLines.length){ try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensureLineLayer()) return false;
       try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||''}}))}); return true; }catch(_){ return false; } }
-    function clearLineHl(){ _hlLines=[]; try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearLineHl(){ _hlLines=[]; try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     GE().events.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
     /* river / basin intent — multilingual, judged BEFORE any admin-unit logic ("全部が全部行政区分使えば
        いいわけじゃない。見極めて"). */
@@ -511,10 +511,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       return '<div style="margin:4px 0 2px;">'+rows.join('')+'</div>'; }catch(_){ return ''; } }
     /* (#R143) POST-DRAW verification — the pipeline's "実状態検証" step: confirm the source + layer exist and the
        source actually carries the expected feature count before the reply may claim success. */
-    function _verifyPolyPaint(expected){ try{ if(typeof map==='undefined'||!map) return {ok:false,reason:'no-map',n:0};
-      if(!map.getLayer||!GE().layers.has('nlq-poly-fill')) return {ok:false,reason:'no-layer',n:0};
-      const src=map.getSource&&map.getSource('nlq-poly-src'); if(!src) return {ok:false,reason:'no-source',n:0};
-      let n=-1; try{ let d=src._data; if(d&&d.geojson) d=d.geojson; if(d&&Array.isArray(d.features)) n=d.features.length; else if(src.serialize){ const s=src.serialize(); if(s&&s.data&&Array.isArray(s.data.features)) n=s.data.features.length; } }catch(_){}
+    function _verifyPolyPaint(expected){ try{ if(!GE()||!GE().hasRenderer()) return {ok:false,reason:'no-map',n:0};
+      if(!GE().layers.has('nlq-poly-fill')) return {ok:false,reason:'no-layer',n:0};
+      if(!GE().layers.hasSource('nlq-poly-src')) return {ok:false,reason:'no-source',n:0};
+      let n=-1; try{ const d=GE().layers.sourceData('nlq-poly-src'); if(d&&Array.isArray(d.features)) n=d.features.length; }catch(_){}
       /* n===-1 → couldn't introspect the source (older maplibre) → trust our own _hlPolys bookkeeping instead */
       const cnt=(n>=0)?n:_hlPolys.length;
       return {ok:(cnt>=expected), n:cnt, expected, layer:true, source:true}; }catch(e){ return {ok:false,reason:'threw',n:0}; } }
@@ -2602,10 +2602,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       }catch(_){} });
       GE().events.onLayer('mouseenter','nlq-poi-c',()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
       return true; }catch(_){ return false; } }
-    function paintPois(){ if(!_pois.length){ try{ const s=map.getSource('nlq-poi-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintPois(){ if(!_pois.length){ try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePoiLayer()) return false;
       try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:_pois.map((p,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name||'',kind:p.kind||'',color:_poiColor,wiki:p.wiki||'',wd:p.wd||'',web:p.web||'',wikiUrl:p.wikiUrl||'',sum:p.sum||'',url:p.url||'',src:p.src||''}}))}); return true; }catch(_){ return false; } }
-    function clearPois(){ _pois=[]; try{ const s=map.getSource('nlq-poi-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearPois(){ _pois=[]; try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     GE().events.on('styledata',()=>{ if(_pois.length){ setTimeout(()=>{ try{ paintPois(); }catch(_){} },160); } });
     /* ---- (#R73) map-change snapshot for layer self-verification (visible style layers + overlay canvases) ---- */
     function _visSnapshot(){ const s={ids:new Set(),cv:0};
@@ -2636,7 +2636,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       if(!GE().layers.has('nlq-fly-head')) GE().layers.add({id:'nlq-fly-head',type:'circle',source:'nlq-fly-src',filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ffd60a','circle-stroke-color':'#ff453a','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     function clearFly(){ if(_flyRun){ _flyRun.cancel=true; _flyRun=null; }
-      try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+      try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     async function flyAnimate(A,B,mode,secs){
       const km=_gcKm(A,B); if(!isFinite(km)||km<1) return {ok:false,km:0,real:''};
       clearFly(); if(!ensureFlyLayers()) return {ok:false,km,real:''};
@@ -2668,8 +2668,8 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const z=zEnd*(1-bl)+zMid*bl;
           const pitch=(te<0.5?(pStart*(1-bl)+pMid*bl):(pEnd*(1-bl)+pMid*bl));
           try{ GE().camera.jumpTo({center:[pos.lng,pos.lat],zoom:z,bearing:brg,pitch:Math.max(0,Math.min(85,pitch))}); }catch(_){}
-          try{ const s=map.getSource('nlq-fly-src')||((ensureFlyLayers()&&map.getSource('nlq-fly-src'))||null);
-            if(s) s.setData({type:'FeatureCollection',features:[
+          try{ if(!GE().layers.hasSource('nlq-fly-src')) ensureFlyLayers();
+            if(GE().layers.hasSource('nlq-fly-src')) GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
               {type:'Feature',geometry:{type:'LineString',coordinates:path},properties:{}},
               {type:'Feature',geometry:{type:'Point',coordinates:[pos.lng,pos.lat]},properties:{}}]}); }catch(_){}
           if(t>=1){ res(); return; }
@@ -2739,14 +2739,14 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         GE().layers.add({id:'nlq-blast-fill',type:'fill',source:'nlq-blast-src',paint:{'fill-color':['get','color'],'fill-opacity':0.16}},before);
         GE().layers.add({id:'nlq-blast-line',type:'line',source:'nlq-blast-src',paint:{'line-color':['get','color'],'line-width':1.3,'line-opacity':0.85}},before); }
       return true; }catch(_){ return false; } }
-    function clearBlast(){ _blastActive=false; try{ const s=map.getSource('nlq-blast-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearBlast(){ _blastActive=false; try{ GE().layers.setSourceData('nlq-blast-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     function drawBlastRings(center,Y){ if(!(Y>0)||!ensureBlastLayers()) return null; const cb=Math.cbrt(Y);   /* km per kt^(1/3), airburst-optimised for 5 psi */
       const rings=[ {r:1.7*cb,c:'#64b5ff',l:L('1 psi — windows shatter, light injuries','1 psi — 窓ガラス破損・軽傷','1 psi — Fenster bersten','1 psi — стёкла, лёгкие ранения','1 psi — ventanas rotas')},
         {r:1.2*cb,c:'#ffd60a',l:L('thermal — 3rd-degree burns','熱線 — 3度熱傷','thermisch — Verbrennungen 3.','тепловое — ожоги 3-й ст.','térmico — quemaduras 3.er grado')},
         {r:0.62*cb,c:'#ff9f0a',l:L('5 psi — most buildings collapse','5 psi — 大半の建物が倒壊','5 psi — Gebäude stürzen ein','5 psi — здания рушатся','5 psi — edificios colapsan')},
         {r:0.26*cb,c:'#ff453a',l:L('20 psi — total destruction','20 psi — 完全破壊','20 psi — Totalzerstörung','20 psi — полное разрушение','20 psi — destrucción total')} ];
       const feats=[]; rings.forEach(rg=>{ try{ (diskFillPolys([center.lng,center.lat],rg.r,96)||[]).forEach(poly=>feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:poly},properties:{color:rg.c}})); }catch(_){} });
-      try{ const src=map.getSource('nlq-blast-src'); if(src) src.setData({type:'FeatureCollection',features:feats}); _blastActive=true; }catch(_){}
+      try{ GE().layers.setSourceData('nlq-blast-src',{type:'FeatureCollection',features:feats}); _blastActive=true; }catch(_){}
       return rings; }
     /* (#R85) ground track with CORIOLIS + optional MaRV terminal manoeuvre. In an inertial (non-rotating) frame a
        ballistic trajectory projects to a great circle; the spinning Earth then smears it. We aim the inertial arc
@@ -2779,13 +2779,13 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const ahead=_gcPoint(A,B,Math.min(1,f+0.01)), brg=_gcBearing(pos,ahead);
         const z=zBase-3.4*(alt/(sol.apogee||1)), pitch=40+30*(alt/(sol.apogee||1));
         try{ GE().camera.jumpTo({center:[pos.lng,pos.lat],zoom:Math.max(1.3,z),bearing:brg,pitch:Math.max(0,Math.min(80,pitch))}); }catch(_){}
-        try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[
+        try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
           {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
           {type:'Feature',geometry:{type:'Point',coordinates:[pos.lng,pos.lat]},properties:{}}]}); }catch(_){}
         if(tau>=1){ res(); return; } requestAnimationFrame(frame); }; requestAnimationFrame(frame); });
       try{ GE().events.off('mousedown',cancelEvt); GE().events.off('touchstart',cancelEvt); GE().events.off('wheel',cancelEvt); }catch(_){}
       const cancelled=run.cancel; _flyRun=null;
-      try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[
+      try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
         {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
         {type:'Feature',geometry:{type:'Point',coordinates:[B.lng,B.lat]},properties:{}}]}); }catch(_){}
       if(!cancelled){ try{ GE().camera.easeTo({pitch:22,zoom:Math.max(GE().camera.getZoom(),zBase-0.6),duration:900}); }catch(_){} }
@@ -2811,7 +2811,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       if(!GE().layers.has('nlq-elev-fill')){ const before=['nlq-fly-line','nlq-poi-c','nlq-fill'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
         GE().layers.add({id:'nlq-elev-fill',type:'fill',source:'nlq-elev-src',paint:{'fill-color':['get','color'],'fill-opacity':0.6}},before); }
       return true; }catch(_){ return false; } }
-    function clearElev(){ try{ const s=map.getSource('nlq-elev-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearElev(){ try{ GE().layers.setSourceData('nlq-elev-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     async function elevGrid(box,maxPts){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1];
       const aspect=Math.max(0.25,Math.min(4,((e-w)*Math.cos((n+s)/2*Math.PI/180))/(Math.abs(n-s)||1e-6)));
       let ny=Math.round(Math.sqrt((maxPts||800)/aspect)); ny=Math.max(8,Math.min(44,ny)); let nx=Math.max(8,Math.min(60,Math.round(ny*aspect)));
@@ -2831,11 +2831,11 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         GE().layers.add({id:'nlq-fac-fill',type:'fill',source:'nlq-fac-src',paint:{'fill-color':['get','color'],'fill-opacity':0.5}},before);
         GE().layers.add({id:'nlq-fac-line',type:'line',source:'nlq-fac-src',paint:{'line-color':['get','color'],'line-width':0.8,'line-opacity':0.7}},before); }
       return true; }catch(_){ return false; } }
-    function clearFac(){ try{ const s=map.getSource('nlq-fac-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearFac(){ try{ GE().layers.setSourceData('nlq-fac-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     function paintFactions(groups){ if(!ensureFacLayers()) return 0; const g=geo(); if(!g) return 0;
       const byCode={}; (groups||[]).forEach(gr=>{ (gr.codes||[]).forEach(cd=>{ byCode[String(cd).toUpperCase()]=gr.color; }); });
       const feats=[]; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)).toUpperCase(); const col=byCode[cd]; if(!col||!f.geometry) return; feats.push({type:'Feature',geometry:f.geometry,properties:{color:col}}); });
-      try{ const s=map.getSource('nlq-fac-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ GE().layers.setSourceData('nlq-fac-src',{type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length; }
     /* curated scenarios keyed on era — modern ISO3 members grouped by faction (approximate: empires span
        several modern states; painted onto today's borders and clearly labelled as such). */
@@ -5597,7 +5597,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const pp={}; _OVL_PAINT.forEach(p=>{ try{ const v=GE().layers.getPaint(id,p); if(v!=null) pp[p]=JSON.parse(JSON.stringify(v)); }catch(_){} });
         if(Object.keys(pp).length) L2.paint=pp;
         S.layers[id]=L2;
-        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const src=map.getSource(sid); const ser=src&&src.serialize&&src.serialize(); if(ser&&ser.type==='geojson'&&ser.data&&typeof ser.data==='object'){ S.sources[sid]=JSON.parse(JSON.stringify(ser.data));
+        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const ser=GE().layers.sourceData(sid); if(ser&&typeof ser==='object'){ S.sources[sid]=JSON.parse(JSON.stringify(ser));
           /* (#R125) country highlights / choropleths paint via FEATURE-STATE (nlq / choroV on promoteId'd codes),
              which serialize() does NOT carry — capture each feature's state so a per-message clone can re-apply it. */
           try{ const sty=(GE().scene.getStyle().sources||{})[sid]||{}; if(sty.promoteId){ S.promote=S.promote||{}; S.promote[sid]=sty.promoteId; }
@@ -5608,7 +5608,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       if(Object.keys(S.layers).length||Object.keys(S.sources).length) snap[kind]=S; });
       return snap; }
     function _ovlRestore(kind,S){ if(!S) return false; try{
-      for(const sid in S.sources){ try{ const src=map.getSource(sid); if(src&&src.setData) src.setData(S.sources[sid]); }catch(_){} }
+      for(const sid in S.sources){ try{ GE().layers.setSourceData(sid,S.sources[sid]); }catch(_){} }
       for(const id in S.layers){ try{ if(!GE().layers.has(id)) continue; const L2=S.layers[id];
         if('filter' in L2){ try{ GE().layers.setFilter(id,L2.filter); }catch(_){} }
         if(L2.paint){ for(const p in L2.paint){ try{ GE().layers.setPaint(id,p,L2.paint[p]); }catch(_){} } } }catch(_){} }

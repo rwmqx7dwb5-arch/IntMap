@@ -14,6 +14,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.dataLayers=function(map,HOST){
+  /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
+     were properties hung on the map object itself (map.__choroHover / __natoHover / __euHover), which
+     is both invisible to anyone reading this file and something no other engine would carry. */
+  const _hoverWired={}; let _natoHoverWired=false, _euHoverWired=false;
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
@@ -986,7 +990,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
         tryAdd();
         let n=0;
         (function w(){
-          if(map&&GE().layers.hasSource('countries')&&HOST.countryGeo){ try{ cb(); }catch(e){ console.warn('withCountries cb failed',e); } return; }
+          if(GE().layers.hasSource('countries')&&HOST.countryGeo){ try{ cb(); }catch(e){ console.warn('withCountries cb failed',e); } return; }
           /* Wait MUCH longer (200 tries × 200ms = 40 s) to survive slow CDN style loads. */
           if(n++<200){ tryAdd(); setTimeout(w,200); }
           else console.warn('withCountries: gave up waiting for country source');
@@ -1063,7 +1067,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     };
     function wireChoroHover(id){
       const meta=CHORO_META[id]; if(!meta) return;
-      map.__choroHover=map.__choroHover||{}; if(map.__choroHover[id]) return; map.__choroHover[id]=true;
+      if(_hoverWired[id]) return; _hoverWired[id]=true;
       GE().events.onLayer('mousemove',id+'-fill',e=>{
         if(!e.features.length) return;
         const s=countryStats[e.features[0].id]; if(!s) return;
@@ -1158,7 +1162,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
       if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(HOST.lang==='jp'?'北回帰線 (北緯23.4°)':HOST.lang==='de'?'Wendekreis des Krebses (23,4°N)':HOST.lang==='ru'?'Северный тропик (23,4° с.ш.)':HOST.lang==='es'?'Trópico de Cáncer (23,4°N)':'Tropic of Cancer (23.4°N)'),'text-size':11,'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
     }
-    function applyNato(){ const src=map.getSource('src-nato'); if(src){ try{ src.setData(buildNatoFC()); }catch(_){} } }
+    function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){} }
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
     /* NATO accession years (#14) — shown on hover alongside the member's defense spend as % of GDP. */
     const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
@@ -1193,7 +1197,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     }
     function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
     function wireNatoHover(){
-      if(map.__natoHover) return; map.__natoHover=true;
+      if(_natoHoverWired) return; _natoHoverWired=true;
       GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); el.style.display='block';
@@ -1220,7 +1224,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(!GE().layers.has('eu-fill')) GE().layers.add({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':'#1c3faa','fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
       if(!GE().layers.has('eu-line')) GE().layers.add({id:'eu-line',type:'line',source:'src-eu',layout:{visibility:'none'},paint:{'line-color':'#ffd617','line-width':1.5}},beforeId);
     }
-    function applyEu(){ const s=map.getSource('src-eu'); if(s){ try{ s.setData(buildEuFC()); }catch(_){} } }
+    function applyEu(){ try{ GE().layers.setSourceData('src-eu',buildEuFC()); }catch(_){} }
     function setEuVis(on){ ['eu-fill','eu-line'].forEach(l=>setVis(l,on)); }
     function euLegend(){
       try{
@@ -1245,7 +1249,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       }catch(_){}
     }
     function wireEuHover(){
-      if(map.__euHover) return; map.__euHover=true;
+      if(_euHoverWired) return; _euHoverWired=true;
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); el.style.display='block';
         el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
@@ -1329,7 +1333,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     };
 
     let nightTimer=null;
-    function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} const src=map.getSource('src-night'); if(src)src.setData(poly); else GE().layers.add({id:'lyr-night',type:'fill',source:(GE().layers.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
+    function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} if(GE().layers.hasSource('src-night')) GE().layers.setSourceData('src-night',poly); else GE().layers.add({id:'lyr-night',type:'fill',source:(GE().layers.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
 
     /* Köppen-Geiger climate (#13): rendered locally from the native 1 km GeoTIFFs in
        "Köppen-Geiger climate classification data/<period>.tif" (Beck et al. 2018, 30 classes) and
@@ -2058,7 +2062,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       return el;
     }
     function updatePlanesZoomHint(){
-      const on=!!(map&&planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
+      const on=!!(planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
       const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM);
       if(on&&GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
@@ -2110,7 +2114,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     async function fetchPlanes(){
       _lastPlaneFetch=Date.now();
       /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
-      if(map && GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
+      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
       updatePlanesZoomHint();
       const lat=(map?GE().camera.getCenter().lat:48), lon=(map?GE().camera.getCenter().lng:8), rad=viewportRadiusNm();
       try{
@@ -2136,7 +2140,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     let aisKey=''; try{ aisKey=localStorage.getItem('intmap_ais_key')||''; }catch(_){}
     let aisWS=null, shipsByMMSI={}, aisRefreshT=null, _aisMove=null, _aisMoveT=null, aisReconnectT=null;
     function updateShipsZoomHint(){
-      const on=map&&GE().layers.get('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible';
+      const on=GE().layers.get('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible';
       const el=zoomHintEl('ships-zoom-hint',SHIPS_MIN_ZOOM);
       if(on&&aisKey&&GE().camera.getZoom()<SHIPS_MIN_ZOOM){ el.textContent=t('shipsZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
@@ -2220,7 +2224,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(ob) ob.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(i) i.value=aisKey; });
       if(cb) cb.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(!i) return; const nk=i.value.trim();
         if(nk!==aisKey){ aisKey=nk; try{ aisKey?localStorage.setItem('intmap_ais_key',aisKey):localStorage.removeItem('intmap_ais_key'); }catch(_){}
-          if(map&&GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'){ stopAIS(); startShips(); updateShipsZoomHint(); } } });
+          if(GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'){ stopAIS(); startShips(); updateShipsZoomHint(); } } });
     })();
     /* ===== (#R172) AIRCRAFT AT THEIR REAL ALTITUDE ==========================================
        「Live aircraft trafficは、飛行中の高度に応じて、実際にIntMapの空間でもその高度に描画して。」
@@ -2371,7 +2375,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     /* ground metres per screen pixel at the map centre — the same figure IntMapGeoEngine derives for the
        camera, computed here from the renderer's own map scale so it is defined at any pitch. */
     function _mppCentre(){ try{ const R=6371008.8, r=Math.PI/180, c=GE().camera.getCenter();
-      let w=0; try{ const v=map.transform&&GE().coords.worldSize(); if(isFinite(v)&&v>0) w=v; }catch(_){}
+      let w=0; try{ const v=GE().coords.worldSize(); if(isFinite(v)&&v>0) w=v; }catch(_){}
       if(!w) w=512*Math.pow(2,GE().camera.getZoom()||0);
       const m=(2*Math.PI*R*Math.cos((c.lat||0)*r))/w; return (isFinite(m)&&m>0)?m:50; }catch(_){ return 50; } }
     /* the DEM height under the map centre (0 when 3-D terrain is off — then the renderer's metres already
@@ -2463,7 +2467,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     function refreshTrafficLayer(id){
       if(!map) return;
       const filt=trafficFilters[id];
-      const src=map.getSource('src-'+id); if(!src) return;
+      if(!GE().layers.hasSource('src-'+id)) return;
       const data=id==='planes'?planesData:shipsData;
       const filtered=filt==='all'?data:data.filter(d=>d.type===filt);
       if(id==='planes') refreshPlanes3D(filtered);   /* (#R172) the lifted bodies ride the same filter */
@@ -2479,7 +2483,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
               dest:d.dest||'', draught:(d.draught!=null?d.draught:null), imo:(d.imo!=null?d.imo:null), t:(d.t||0) };
         return { type:'Feature', geometry:{type:'Point',coordinates:[d.lng,d.lat]}, properties:props };
       });
-      src.setData({type:'FeatureCollection',features});
+      GE().layers.setSourceData('src-'+id,{type:'FeatureCollection',features});
     }
     /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
        rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
@@ -2837,7 +2841,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(_rvTimer) return;
       _rvTimer=setInterval(()=>{ rvFetch().then(()=>{ ['radar','clouds'].forEach(k=>{
         if(GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible'){
-          try{ const tiles=rvTiles(k), src=map.getSource('src-'+k); if(tiles&&src&&src.setTiles) src.setTiles(tiles); else if(tiles) addRainViewer(k); }catch(_){}
+          try{ const tiles=rvTiles(k); if(!(tiles&&GE().layers.setSourceTiles('src-'+k,tiles))&&tiles) addRainViewer(k); }catch(_){}
         }
       }); }); },240000);
     }
@@ -3208,7 +3212,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
        is safe: it just falls back to today's behaviour). */
     window._imLayerOwn=window._imLayerOwn||{};
     (function(){
-      if(typeof map==='undefined'||!map||!map.on) return;
+      if(!GE()||!GE().events) return;
       const SKIP=/^(ofm-|country-|borders-|ref-|gl-|background$|land$|water$|waterway|admin|place-|poi-|road|bridge|tunnel|building|boundary|natural|landcover|landuse|coastline|sat$|layer-sat|nlq-|pl-outline|tool-|measure|radius|user-pin|news-|hl-|highlight|iso-mask|contour-label|imcmp-|imrad-|imroute-|sv-cov-|wind-field)/;   /* (#R84) exclude Atlas overlay layers + the wind colour-field from checkbox ownership learning */
       const snap=()=>{ const s=new Set(); try{ (GE().scene.getStyle().layers||[]).forEach(l=>s.add(l.id)); }catch(_){} return s; };
       let _seq=0;
@@ -3337,7 +3341,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
          focus (a background wipe otherwise waited out the whole 15s). So real desyncs now self-heal in a
          couple of seconds instead of half a minute — no new heal logic, just more trigger points. */
       try{ let _st=null; const soon=()=>{ clearTimeout(_st); _st=setTimeout(()=>{ if(!document.hidden) audit(); },1200); };
-        if(map&&map.on){ GE().events.on('idle',soon); }
+        GE().events.on('idle',soon);
         document.addEventListener('visibilitychange',()=>{ if(!document.hidden) soon(); }); }catch(_){}
       window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20)};
     })();
