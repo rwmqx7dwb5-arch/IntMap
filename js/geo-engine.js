@@ -374,7 +374,14 @@ function _m(){ return window.__imap||null; }
          last accepted one, or the step doubles every iteration and the walk shoots
          past `want` into pitches nobody asked for (measured: a 20° request probed
          past 150° and stopped the tilt at 11.9°). */
-      const SAMPLES=24, p0=lo, span=want-p0; let hi=want, gap=false;
+      /* …and the sample COUNT follows the span, because this runs inside the render loop. A drag frame
+         asks for one or two more degrees and needs two samples; only a setPitch(180) from 0 needs the
+         full sweep. The step never exceeds 2°, and the infeasible band is tens of degrees wide where it
+         exists (at globe z1.7 it runs from 76.7° to about 130°), so a coarser walk still cannot step
+         over one. Fixed at 24 this cost ~24 solves plus 24 applyConstrain calls on every frame of every
+         tilt, almost all of them re-answering "yes" about ground already covered. */
+      const p0=lo, span=want-p0;
+      const SAMPLES=Math.min(24,Math.max(2,Math.ceil(span/2))); let hi=want, gap=false;
       for(let i=1;i<=SAMPLES;i++){
         const pd=p0+span*i/SAMPLES, s=at(pd);
         if(s&&s.ok){ best=s; lo=pd; } else { hi=pd; gap=true; break; }
