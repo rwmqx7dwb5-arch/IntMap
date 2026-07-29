@@ -19,6 +19,10 @@
  *  registered in time — the same guarantee the inline tag had.
  * ==========================================================================*/
 window.addEventListener('DOMContentLoaded', () => {
+  /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
+     split module already uses. A getter, not the object: the engine is built inside map.on('load'),
+     i.e. long after this line runs (#R170 learned that the hard way). */
+  const GE=()=>window.IntMapGeoEngine;
   /* ===== State ===== */
   let userTheme='auto', userTZ='auto', currentMapType='map', currentProj='globe', currentLang='en';
   /* (#R7-i18n) Read the SAVED language up-front, before any legend / option / popup is built. Many
@@ -1810,6 +1814,24 @@ window.addEventListener('DOMContentLoaded', () => {
         const _solids={};
         /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
         let _pd=null, _pdAt=0;
+        /* ── (#R178) THE ZOOM FLOOR IS OWNED IN ONE PLACE ───────────────────────────────────────
+           Two things want to set it and they are not the same want. The APP sets it per projection
+           (globe 0, flat 1.2 on desktop) so the world always covers the viewport. The unlimited-tilt
+           setting needs ROOM BELOW that: holding the viewpoint on a sphere spends the zoom, and the
+           globe's pixel radius carries a 1/cos(centre.lat), so as the look-at point walks poleward
+           the zoom the geometry wants runs off the bottom. Measured on the startup view, the app's
+           own floor of 0 is what stopped the viewpoint being held past 60° of tilt; MapLibre's real
+           floor is −2 (defaultMinZoom) and at −2 the same view holds to 76°, where the ±85.051°
+           latitude wall takes over instead — i.e. −2 is exactly enough to make the zoom stop being
+           the binding constraint anywhere.
+           So the adapter REMEMBERS what the app asked for and applies min(app, −2) only while the
+           eye pivot is installed; turning the setting off restores the app's own floor exactly. */
+        const TILT_MIN_ZOOM=-2;
+        let _appMinZoom=null, _eyePivot=false;
+        function _applyZoomFloor(){ const m=_m(); if(!m||!m.setMinZoom) return;
+          if(_appMinZoom==null){ try{ _appMinZoom=m.getMinZoom(); }catch(_){ return; } }
+          const want=_eyePivot?Math.min(_appMinZoom,TILT_MIN_ZOOM):_appMinZoom;
+          try{ if(m.getMinZoom()!==want) m.setMinZoom(want); }catch(_){} }
 
         /* ═══════════════════════════════════════════════════════════════════════════════════════
            (#R177) WHERE THE CAMERA IS — ONE transcription of the renderer's own geometry.
@@ -1912,9 +1934,45 @@ window.addEventListener('DOMContentLoaded', () => {
                       fixes the zoom. A pure zoom still comes back as the identity, because k·dg is
                       just dg at the new scale, so #R175's dolly survives untouched.
            Clamped, never declined: #R173 established that a frame this hook refuses is applied
-           verbatim and wipes every correction before it — that is a guaranteed jump. */
+           verbatim and wipes every correction before it — that is a guaranteed jump.
+
+           (#R178) …and WHAT gets clamped is now the TILT. #R177 clamped the eye's radius — it kept
+           the viewpoint's direction and pulled it in towards the surface until the camera came back
+           into range — which is still 「視点の位置が変わる」, just continuously: measured on the app's
+           OWN STARTUP VIEW (globe z1.7, the zoom every session begins at and the one band #R172-#R177
+           never tested) a plain 66° tilt drag moved the viewpoint 3,712 km and dropped the eye from
+           24,422 km to 20,709 km, in frame-to-frame steps of 1,184 and 2,529 km. The user chose, when
+           told the two cannot both hold: 「視点を優先し、そこで傾きを止める」. So the answer is always
+           the EXACT one, and the pitch is the thing that saturates — see gLimitPitch below. */
         const GEO_LATMAX=85.051129*GEO_RAD;
-        function gSolve(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,zLim){
+        /* (#R178) WOULD THE RENDERER KEEP THIS CAMERA, OR MOVE IT? — asked of the renderer, never
+           modelled. Every previous round's idea of "in range" was a hand-written rule (|lat| ≤ 85.051,
+           zoom within [minZoom, maxZoom]) and every one of them was wrong somewhere: MapLibre also
+           pulls the centre back so the world keeps covering the viewport (`_latRange` is ±85.051 the
+           moment anything calls setMaxBounds(null), which this app does on every projection switch),
+           and it zooms IN rather than out when the world would be smaller than the canvas. Measured
+           on the flat map at the startup zoom, that box is ±60.4° of latitude — nothing to do with
+           85.051° — and holding the eye past ~20° of tilt asked for a centre outside it, so the
+           renderer moved the camera and the viewpoint went with it: 17,515 km.
+           `applyConstrain` is the renderer's own answer to exactly this question, it is pure (it
+           returns a camera, it does not apply one), and both transforms implement it. So the rule is
+           simply: a camera is feasible when the renderer hands it back unchanged. */
+        function gGuard(t){
+          let LL=null; try{ LL=maplibregl.LngLat; }catch(_){}
+          if(!(t&&t.applyConstrain&&LL)) return null;
+          return (lng,lat,z)=>{
+            if(!(isFinite(lng)&&isFinite(lat)&&isFinite(z))||Math.abs(lat)>90) return false;
+            try{
+              const r=t.applyConstrain(new LL(lng,lat),z);
+              if(!(r&&r.center)) return true;
+              const dLng=Math.abs((((r.center.lng-lng)%360)+540)%360-180);
+              return Math.abs(r.center.lat-lat)<1e-7&&dLng<1e-7&&Math.abs(r.zoom-z)<1e-7;
+            }catch(_){ return false; }
+          };
+        }
+        /* one attempt at one pitch. `ok` is the whole feasibility question: does this pitch resolve to
+           a camera the renderer can actually hold, with the eye exactly where it was? */
+        function gSolveAt(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard){
           const p=(pitch||0)*GEO_RAD, b=(bearing||0)*GEO_RAD, cp=Math.cos(p);
           if(sphere){
             const r=1+anchor.alt/GEO_R; if(!(isFinite(r)&&r>0.2)) return null;
@@ -1956,66 +2014,47 @@ window.addEventListener('DOMContentLoaded', () => {
               if(A.ok!==B.ok) return A.ok?A:B;
               return (B.err<A.err)?B:A;
             };
-            const zLo=(zLim&&isFinite(zLim[0]))?zLim[0]:0, zHi=(zLim&&isFinite(zLim[1]))?zLim[1]:24;
-            /* THE WHOLE SOLVE, for an eye at radius `rr` along the direction the anchor points.
-               rr = r is "hold the viewpoint exactly"; smaller values are the same viewpoint pulled in
-               towards the surface along its own line. |eye|² = 1 + dg² + 2·dg·cos p fixes the look
-               distance, the look distance and the attitude fix the centre, and the centre fixes the
-               zoom — so every rr either resolves to a real camera or does not. */
-            const solveAt=(rr)=>{
-              const dg=-cp+Math.sqrt(Math.max(0,cp*cp-1+rr*rr));
-              if(!(isFinite(dg)&&dg>1e-12)) return null;
-              const f=rr/r, Ev=[E[0]*f,E[1]*f,E[2]*f];
-              const c=centreFor(dg,Ev); if(!c) return null;
-              const z=Math.log2(((c2c*2*Math.PI*Math.cos(c.lat))/dg)/tile);
-              return { lat:c.lat, lng:c.lng, z, ok:c.ok&&isFinite(z)&&z>=zLo&&z<=zHi };
-            };
-            /* ── NOT EVERY VIEWPOINT IS HOLDABLE ON A SPHERE ────────────────────────────────────
+            /* ── NOT EVERY TILT CAN HOLD THE VIEWPOINT ON A SPHERE ──────────────────────────────
                MapLibre's camera is (centre, zoom, pitch, bearing) with the pivot WELDED to the
-               surface, so "the eye stays here" is three equations in three unknowns and it simply
-               runs out of range: measured at globe z4 over Tokyo, the eye is held exactly to pitch
-               84 — the centre walking 35.7°N → 85.0°N and the zoom 4 → 0 as it goes — and at 86°
-               the zoom the geometry wants is BELOW the map's own minimum. That is a property of the
-               parameterisation, not a bug to code away.
+               surface. Hold the eye and the surface point has to walk away from it along the bearing
+               by ψ, where cos ψ = (1 + dg·cos p)/r — which sends it OVER THE POLE, and a globe centre
+               past ±85.051° is not expressible (MapLibre clamps it in the vertical-perspective
+               transform's own defaultConstrain), while the zoom that goes with it runs off the bottom
+               of the scale because the globe's pixel radius carries a 1/cos(centre.lat).
 
-               Two rules for what happens past it:
-                 · NEVER emit a camera outside the renderer's range. An unconstrained solve answered
-                   z −0.167 at 85.0511°N for pitch 120, and the next camera change FROZE the page
-                   inside MapLibre's tile cover (plain MapLibre at the same pitch is fine, so that
-                   camera was ours).
-                 · AND NEVER STEP — 「挙動もぎこちない」 is the other half of the report. Clamping the
-                   zoom AFTER solving does step, because the solve then works from an eye radius its
-                   own look distance cannot reach, and the latitude pins while the longitude goes
-                   ill-conditioned: measured 4,225 km at pitch 88 and 8,956 km at pitch 140.
+               So "hold the eye" simply runs out of parameterisation at some pitch. MEASURED, per
+               projection and zoom, with the app's own minZoom of 0:
 
-               So instead of clamping the ANSWER, clamp the QUESTION: keep the viewpoint's direction
-               and find the largest radius along it that resolves to a camera in range. Feasibility is
-               monotone in rr (pulling the eye towards the surface only ever shortens the look distance
-               and raises the zoom), so a bisection finds the boundary, and AT the boundary it returns
-               the exact solve — which is what makes the hand-over continuous instead of a step. */
-            let sol=solveAt(r);
-            if(sol&&sol.ok) return { lng:sol.lng/GEO_RAD, lat:sol.lat/GEO_RAD, zoom:sol.z, elevation:0, held:true };
-            let lo=1+1e-9, hi=r, best=null;
-            if(!(hi>lo)){ const s0=solveAt(r); if(!s0) return null;
-              return { lng:s0.lng/GEO_RAD, lat:s0.lat/GEO_RAD, zoom:Math.min(zHi,Math.max(zLo,s0.z)), elevation:0, held:false }; }
-            for(let it=0;it<28;it++){
-              const mid=(lo+hi)/2, sm=solveAt(mid);
-              if(sm&&sm.ok){ best=sm; lo=mid; } else hi=mid;
-            }
-            /* …and when NOTHING along the line resolves — tilted so far that even an eye on the
-               surface wants a zoom below the map's minimum (measured: pitch 146 at globe z4, with the
-               pivot already pinned at 85.051° so cos(lat) is small and the world with it) — any answer
-               is arbitrary, so make the arbitrary answer the one that MOVES LEAST: leave the
-               proposal's own centre and zoom alone. Forcing a clamped camera there was the last
-               remaining step, 1,246 km in one frame. */
-            if(!best) return { elevation:0, held:false };
-            if(!(isFinite(best.lat)&&isFinite(best.lng)&&isFinite(best.z))) return null;
-            return { lng:best.lng/GEO_RAD, lat:best.lat/GEO_RAD, zoom:best.z, elevation:0, held:false };
+                   globe  z1.7 (STARTUP)  held to  60°      globe  z9   held to 120°
+                   globe  z3             held to  82°      globe  z12+ held to 178° (mercator)
+                   globe  z6             held to 114°      flat   z3+  held to 178°
+
+               #R177 answered this by clamping the eye's RADIUS — same direction, pulled towards the
+               surface — which is continuous but is still the viewpoint moving, thousands of km of it.
+               Asked to choose, the user chose the viewpoint: 「視点を優先し、そこで傾きを止める」.
+               So this returns ONLY exact solutions and `ok` says whether one exists; gLimitPitch
+               above finds the largest pitch that still has one. NEVER emit a camera outside the
+               renderer's range — an unconstrained solve answered z −0.167 at 85.0511°N for pitch 120
+               and the next camera change FROZE the page inside MapLibre's tile cover. */
+            const dg=-cp+Math.sqrt(Math.max(0,cp*cp-1+r*r));
+            if(!(isFinite(dg)&&dg>1e-12)) return null;
+            const c=centreFor(dg,E); if(!c) return null;
+            const z=Math.log2(((c2c*2*Math.PI*Math.cos(c.lat))/dg)/tile);
+            if(!(isFinite(c.lat)&&isFinite(c.lng)&&isFinite(z))) return null;
+            const oLng=c.lng/GEO_RAD, oLat=c.lat/GEO_RAD;
+            return { lng:oLng, lat:oLat, zoom:z, elevation:0,
+                     ok:!!(c.ok&&(guard?guard(oLng,oLat,z):true)) };
           }
           const world=tile*Math.pow(2,zoom); const d=c2c/world;
           if(!(isFinite(d)&&d>0)) return null;
           const tx=gmX(anchor.lng)+d*Math.sin(p)*Math.sin(b), ty=gmY(anchor.lat)-d*Math.sin(p)*Math.cos(b);
           if(!(isFinite(tx)&&isFinite(ty))) return null;
+          /* (#R178) the plane has the SAME wall, for the same reason: the look-at point walks away
+             from the eye and Mercator ends at ±85.051°. It is only invisible at the zooms #R176/#R177
+             tested because d = c2c/worldSize is tiny there — at the startup zoom d is 0.63 of the
+             whole world, so measured on the flat map at z1.7 the viewpoint could only be held to 20°.
+             `inLat` is that wall; clamping ty and answering anyway is what moved the eye. */
+          const inLat=(ty>=GEO_YLO&&ty<=GEO_YHI);
           const lat=glatOf(Math.min(GEO_YHI,Math.max(GEO_YLO,ty))), lng=glngOf(tx);
           const look=d*GEO_CIRC*Math.cos(lat*GEO_RAD);          /* eye→target distance, metres */
           let elevation=anchor.alt-look*cp;
@@ -2027,9 +2066,64 @@ window.addEventListener('DOMContentLoaded', () => {
              (|elevation − alt| = look·|cos p|), so this only ever binds on a camera that has already
              gone wrong; when it binds the eye is no longer exactly held, which beats a frozen map. */
           const cap=50*Math.abs(look);
-          if(isFinite(cap)&&cap>0&&Math.abs(elevation)>cap) elevation=Math.sign(elevation)*cap;
+          const inCap=!(isFinite(cap)&&cap>0&&Math.abs(elevation)>cap);
+          if(!inCap) elevation=Math.sign(elevation)*cap;
           if(!(isFinite(lat)&&isFinite(lng)&&isFinite(elevation))) return null;
-          return { lng, lat, elevation, held:true };
+          return { lng, lat, elevation, ok:(inLat&&inCap&&(guard?guard(lng,lat,zoom):true)) };
+        }
+        /* ══ THE TILT IS WHAT SATURATES (#R178) ═════════════════════════════════════════════════
+           `gSolveAt` answers exactly or says it cannot. This turns that into the camera to apply:
+           the exact solve at the proposed pitch when one exists, and otherwise the exact solve at
+           the LARGEST pitch that still has one, handed back with that pitch so the renderer stops
+           the tilt there instead of the viewpoint sliding.
+
+           Why a bisection rather than a formula: the wall is where the look-at point reaches
+           ±85.051° OR the zoom leaves [minZoom, maxZoom], and which of the two binds depends on the
+           bearing, the latitude, the viewport height and the projection. Feasibility is monotone in
+           pitch for a fixed anchor (measured: every combination in the table above holds from 0 up
+           to one angle and never recovers), so bisecting between a pitch known to work and the one
+           asked for lands exactly on the boundary — and AT the boundary the answer is the exact
+           solve, which is what makes the tilt come to rest smoothly instead of stepping.
+
+           `floorDeg` is the pitch CURRENTLY ON SCREEN. It is feasible by construction — it is a
+           camera this same hook produced — so it is a free lower bracket. When it is not (the first
+           frame after a jumpTo, or the flight simulator handing the camera back) the search falls
+           back to 0, which always resolves: at pitch 0 the look-at point is directly under the eye
+           and the zoom is the one already applied. */
+        function gLimitPitch(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard,floorDeg){
+          const at=pd=>gSolveAt(anchor,pd,bearing,c2c,tile,zoom,sphere,hint,guard);
+          const want=(isFinite(pitch)?pitch:0);
+          let lo=(isFinite(floorDeg)?Math.max(0,Math.min(floorDeg,want)):0), best=at(lo);
+          if(!(best&&best.ok)){ lo=0; best=at(0); }
+          if(!(best&&best.ok)) return at(want);   /* nothing holds at all — the exact answer is still the least wrong */
+          /* WALK, do not jump. Feasibility is NOT monotone in pitch: past the horizon the solve comes
+             back — at globe z1.7 the eye is holdable to 76.7°, unholdable to about 130°, and holdable
+             again beyond that, because a camera "looking up" resolves to a surface point on the FAR
+             side of the Earth. Those far solutions are real cameras and the eye is genuinely held in
+             them, but they are a different view: accepting one the moment it becomes reachable put
+             the tilt from 76.7° straight to 140° in a single frame, which is 「挙動もぎこちない」 in
+             its purest form. So only pitches reachable CONTINUOUSLY from the one on screen count.
+             Sample the interval first (cheap — a handful of trig calls), stop at the first sample
+             that fails, then bisect that last gap for the exact boundary. */
+          if(want>lo){
+            /* p0 is fixed: the samples must march from the STARTING pitch, not from the
+               last accepted one, or the step doubles every iteration and the walk shoots
+               past `want` into pitches nobody asked for (measured: a 20° request probed
+               past 150° and stopped the tilt at 11.9°). */
+            const SAMPLES=24, p0=lo, span=want-p0; let hi=want, gap=false;
+            for(let i=1;i<=SAMPLES;i++){
+              const pd=p0+span*i/SAMPLES, s=at(pd);
+              if(s&&s.ok){ best=s; lo=pd; } else { hi=pd; gap=true; break; }
+            }
+            if(gap){
+              for(let it=0;it<20;it++){
+                const mid=(lo+hi)/2, sm=at(mid);
+                if(sm&&sm.ok){ best=sm; lo=mid; } else hi=mid;
+              }
+              best.pitch=lo;                               /* …and STOP the tilt here */
+            }
+          }
+          return best;
         }
         /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
         const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
@@ -2074,6 +2168,16 @@ window.addEventListener('DOMContentLoaded', () => {
           getMaxPitch(){ const m=_m(); try{ return (m&&m.getMaxPitch)?m.getMaxPitch():60; }catch(_){ return 60; } },
           setMaxPitch(v){ const m=_m(); if(!(m&&m.setMaxPitch)) return false; try{ m.setMaxPitch(v); return true; }catch(_){ return false; } },
           getMinPitch(){ const m=_m(); try{ return (m&&m.getMinPitch)?m.getMinPitch():0; }catch(_){ return 0; } },
+          /* (#R178) the ZOOM range, through the contract for the same reason the pitch range is: the
+             app sets a floor per projection and the unlimited-tilt setting needs room under it, and
+             two owners writing the same renderer property directly is how one silently wins. Setting
+             it records the APP's intent; what actually reaches the renderer is _applyZoomFloor's
+             min(app, tilt). Reading gives the effective value, which is what a solve must respect. */
+          setMinZoom(v){ if(!isFinite(v)) return false; _appMinZoom=v; _applyZoomFloor(); return true; },
+          getMinZoom(){ const m=_m(); try{ return (m&&m.getMinZoom)?m.getMinZoom():0; }catch(_){ return 0; } },
+          setMaxZoom(v){ const m=_m(); if(!(m&&m.setMaxZoom)||!isFinite(v)) return false; try{ m.setMaxZoom(v); return true; }catch(_){ return false; } },
+          getMaxZoom(){ const m=_m(); try{ return (m&&m.getMaxZoom)?m.getMaxZoom():22; }catch(_){ return 22; } },
+          zoomRange(){ return [this.getMinZoom(),this.getMaxZoom()]; },
           /* (#R171) THE EYE'S OWN ALTITUDE above sea level, in metres — what the readout option shows.
              MapLibre 5.24 has no public getter for it (getFreeCameraOptions does not exist here; transform
              .getCameraAltitude() returns null), so the adapter derives it from the renderer's own geometry:
@@ -2203,7 +2307,12 @@ window.addEventListener('DOMContentLoaded', () => {
              jumpTo was in the loop: the drag died on the first correction. `transformCameraUpdate` gets the
              PROPOSED camera before it is applied, so the correction rides along with the gesture. */
           setTiltPivot(mode){ const m=_m(); if(!m) return false;
-            if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; } return true; }
+            if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; }
+              _eyePivot=false; _applyZoomFloor(); return true; }
+            /* (#R178) give the solve the room the renderer really has before installing the hook —
+               see _applyZoomFloor. Done here rather than in the tilt module so an engine whose zoom
+               has no such floor simply does nothing, and so the two can never disagree. */
+            _eyePivot=true; _applyZoomFloor();
             /* The PROPOSED camera lives in its own running state (MapLibre keeps a `_requestedCameraState` while
                a transformCameraUpdate hook is installed) and does NOT receive our override — so "did this update
                also move the centre?" has to be asked of the proposal's own history, not of the applied map, or
@@ -2342,10 +2451,18 @@ window.addEventListener('DOMContentLoaded', () => {
                    |lat|>89.5 guard did when it produced a 23,152 km single-frame snap at z3 (「挙動もぎこちない」).
                    Out-of-range answers are CLAMPED, and `hint` keeps the sphere's two-branch latitude solve on
                    the branch nearest the proposal so it cannot flip between frames. */
-                let zLim=null; try{ zLim=[m.getMinZoom(),m.getMaxZoom()]; }catch(_){}
-                const sol=gSolve(anchor,cur.pitch,cur.bearing,c2c,tile,cur.zoom,sphere,cur,zLim);
+                /* (#R178) the renderer's own "would you keep this camera?" — see gGuard. Built from
+                   the PROPOSED transform, so it already knows the projection, the canvas size and the
+                   zoom range that will be in force when the answer is applied. */
+                const guard=gGuard(t);
+                const sol=gLimitPitch(anchor,cur.pitch,cur.bearing,c2c,tile,cur.zoom,sphere,cur,guard,was.pitch);
                 if(!sol) return NOOP();
                 const out={ elevation:sol.elevation };
+                /* (#R178) …and the tilt stops where the viewpoint stops being holdable. Only set when
+                   gLimitPitch actually had to saturate — an untouched pitch must not be re-asserted,
+                   or every frame would re-apply a value MapLibre already has and the drag would
+                   fight its own handler. */
+                if(sol.pitch!=null&&isFinite(sol.pitch)) out.pitch=sol.pitch;
                 /* a real LngLat, not a pair: the renderer hands the override straight to
                    Transform.setCenter. Omitted when the solve has no centre to offer — past the reach
                    of the sphere's parameterisation the least-moving answer is the proposal's own. */
@@ -2475,6 +2592,11 @@ window.addEventListener('DOMContentLoaded', () => {
             globeness:()=>_adapter.globeness?_adapter.globeness():0,
             setBearing:b=>_adapter.setBearing(b), setPitch:p=>_adapter.setPitch(p), getRoll:()=>_adapter.getRoll(), setRoll:r=>_adapter.setRoll(r),
             getMaxPitch:()=>_adapter.getMaxPitch(), setMaxPitch:v=>_adapter.setMaxPitch(v), getMinPitch:()=>_adapter.getMinPitch(),
+            /* (#R178) the zoom range — set it here, never on the renderer, so the unlimited-tilt floor
+               and the projection's own floor cannot overwrite one another */
+            setMinZoom:v=>_adapter.setMinZoom?_adapter.setMinZoom(v):false, getMinZoom:()=>_adapter.getMinZoom?_adapter.getMinZoom():0,
+            setMaxZoom:v=>_adapter.setMaxZoom?_adapter.setMaxZoom(v):false, getMaxZoom:()=>_adapter.getMaxZoom?_adapter.getMaxZoom():22,
+            zoomRange:()=>_adapter.zoomRange?_adapter.zoomRange():[0,22],
             /* the renderer's own tilt ceiling, so the UI never offers a limit the engine cannot honour */
             tiltRange:()=>{ const c=_adapter.capabilities; return (c&&c.tiltRange)?c.tiltRange.slice():[0,60]; },
             altitude:()=>_adapter.cameraAltitude(),
@@ -3624,8 +3746,8 @@ window.addEventListener('DOMContentLoaded', () => {
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
   /* projection — TRUE kernel commands (UI + Atlas both call these). */
-  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
+  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
   document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
   document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
 
