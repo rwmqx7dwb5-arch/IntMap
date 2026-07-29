@@ -88,9 +88,14 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
   ok('getBearing(){ const m=_m(); return m?m.getBearing():0; }', 'adapter.getBearing');
   ok('getPitch(){ const m=_m(); return m?m.getPitch():0; }', 'adapter.getPitch');
   ok('getBounds(){ const m=_m(); return m?m.getBounds():null; }', 'adapter.getBounds');
-  ok('zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }', 'adapter.zoomTo');
-  ok('zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }', 'adapter.zoomIn');
-  ok('zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }', 'adapter.zoomOut');
+  /* (#R179) the three zoom controls are no longer BARE pass-throughs: each one now records that a
+     zoom was named before forwarding it (_declare), because the eye-anchored tilt had no other way
+     to tell 「zoom in」 from a gesture and was fighting it — measured, a zoom-button press while
+     looking up on the globe drove the viewpoint 2,143 km under the ground. Still 1:1 in the sense
+     #R160 meant it: one contract call, one renderer call, no reinterpretation of the argument. */
+  ok("zoomTo(z,o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomTo(z,o); } }", 'adapter.zoomTo');
+  ok("zoomIn(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomIn(o); } }", 'adapter.zoomIn');
+  ok("zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } }", 'adapter.zoomOut');
   ok('resize(){ const m=_m(); if(m&&m.resize) m.resize(); }', 'adapter.resize');
   ok('triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }', 'adapter.triggerRepaint');
   ok('setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }', 'adapter.setFeatureState');

@@ -396,10 +396,224 @@ function _m(){ return window.__imap||null; }
     }
     return best;
   }
+  /* ══ (#R179) THE RENDERER'S OWN UNDERGROUND CORRECTION RUNS *BEFORE* OURS ════════════════
+     ---------------------------------------------------------------------------------------
+     The SEVENTH report was 「上を見上げると…高度が明らかに変わっている」 — LOOKING UP, which
+     #R178 never dragged into: its one real ctrl-drag was at the startup band, where the tilt
+     saturates at 76.7° and so never reaches 90°, and its 0-180° sweeps used setPitch, which
+     #R177 had already recorded as a DIFFERENT code path. Measured on the #R178 build with a
+     real ctrl-drag past 90°:
+
+         flat z6  Tokyo   drift 1,394,705 m   eye 1,071,682 m → 56,088 m   pitch frozen at 90.0
+         flat z14 Tokyo         5,610 m             4,186 m →    219 m     pitch frozen at 90.0
+         globe (either zoom)         0 m                   held            (never triggered)
+
+     The cause is in MapLibre, and it is an ORDERING fact, not arithmetic. Camera._applyUpdated
+     Transform runs a chain of modifiers, and `_elevateCameraIfInsideTerrain` is pushed FIRST —
+     before `transformCameraUpdate`. It asks `getCameraAltitude()`, which is
+     `cos(pitch)·cameraToCenterDistance/pixelPerMeter + elevation`, of the PROPOSAL — and the
+     proposal is `_requestedCameraState`, which #R173 established never receives this hook's
+     overrides. During a drag it is cloned once at gesture start (`||=`) and thereafter only the
+     input handlers touch it, so its elevation stays at whatever it was before the drag — 0.
+     Past 90° the cosine turns negative, so that camera reads as being under the ground, and the
+     correction returns a pitch and zoom "to fix it": pitch exactly 90 and the zoom pushed in.
+     By the time our hook is called the pitch has already been rewritten, so it faithfully holds
+     the eye of a mangled camera, and the next frame re-reads the mangled camera as truth. That
+     is the monotone collapse in the numbers above, and it is why the setPitch sweeps passed:
+     jumpTo re-clones the proposal FROM the applied transform, elevation and all.
+
+     THE REPAIR IS NOT TO DISABLE THE CHECK. Measured both ways: neutralising it holds the eye
+     to 0 m but leaves the renderer permanently believing the camera is underground (it fired on
+     30 of 70 frames and we discarded 30 answers), and it stalled at 177°. Handing it the
+     elevation this engine actually applies holds the eye to 0 m, reaches 180°, and the check
+     fires ZERO times — because there was never anything wrong with the camera, only with the
+     transform it was shown. So: let it judge first; if it is happy, change nothing whatsoever;
+     and only when it wants to move the camera, give it the elevation the engine is about to
+     apply and ask the same question again. If it still objects, it is right — the eye really is
+     below ground — and its answer stands.
+     ═════════════════════════════════════════════════════════════════════════════════════════ */
+  /* ══ (#R179) HOW FAR IN YOU MAY ZOOM WHILE LOOKING UP ON A SPHERE ════════════════════════
+     ---------------------------------------------------------------------------------------
+     Defect ①, measured: on the globe, looking up at 105° and zooming in put the viewpoint's
+     altitude at −0.193 of what it was, i.e. INSIDE the planet. This is not a bug in the tilt
+     correction — the eye is exactly where it was asked to be. It is what the sphere's camera IS:
+     the pivot is welded to the surface, so the eye sits at r = √(1 + dg² + 2·dg·cos p) Earth
+     radii, and once cos p < 0 that expression dips BELOW 1. It bottoms out at |sin p| when
+     dg = |cos p|, which is to say the camera passes through the crust on the way in.
+
+     Asked whether to stop the zoom the way #R178 stops the tilt, the answer was 「①②両方直す」.
+     So: the largest zoom whose eye is still at or above sea level, found by bisecting gEye — the
+     one transcription of the renderer's geometry — rather than by re-deriving the algebra here,
+     which is how #R176/#R177 got two disagreeing copies of it.
+
+     Feasibility is NOT monotone in zoom (as dg → 0 the eye returns to the surface point, so
+     there is a second feasible region at absurd zooms), which is why this bisects from a zoom
+     KNOWN to be safe — the one on screen, which the previous frame already vetted — exactly as
+     gLimitPitch walks from the pitch on screen. Returns null when there is nothing to limit,
+     which is every ordinary zoom: this can only ever bind while cos p < 0 on a sphere, so
+     #R175's 「unlimited tiltだとズームインできない」 cannot come back through it. */
+  function gLimitZoom(cam,c2c,tile,heldZoom){
+    /* the eye's altitude for the same camera at zoom z. `elevation` is passed as 0 deliberately:
+       on the sphere the target's height is INERT (gEye's sphere branch never reads it — the pivot
+       is the surface point), so this is the whole truth about where that camera's eye would be. */
+    const at=z=>{ const e=gEye({lng:cam.lng,lat:cam.lat,zoom:z,pitch:cam.pitch,bearing:cam.bearing,elevation:0},
+                               c2c,tile,true,1);
+                  return (e&&isFinite(e.alt))?e.alt:null; };
+    if(!isFinite(cam.zoom)) return null;
+    const now=at(cam.zoom); if(now==null||now>=0) return null;      /* the eye is fine — nothing to do */
+    /* FIND THE BRACKET, do not assume one. The first version of this took the zoom on screen as
+       "known safe", which is wrong for the reason #R177 catalogued about every other reference in
+       this hook: the applied camera and the proposal are different cameras. Holding the eye on a
+       sphere spends the zoom AND walks the centre, so evaluating the applied zoom against the
+       PROPOSAL's centre and pitch describes a camera that never existed — measured underwater
+       already, so the clamp declined and the eye submerged anyway (−164,485 m at globe z4).
+       Zooming out grows dg without bound and the eye radius with it, so a safe zoom always exists
+       below; walk out until the eye surfaces, then bisect. Bounded, because this runs per frame. */
+    let lo=null;
+    for(let i=1;i<=24;i++){ const z=cam.zoom-i*0.5, v=at(z); if(v!=null&&v>=0){ lo=z; break; } }
+    if(lo==null) return null;
+    let hi=cam.zoom;
+    for(let i=0;i<20;i++){ const mid=(lo+hi)/2, v=at(mid); if(v!=null&&v>=0) lo=mid; else hi=mid; }
+    /* …and it may only ever STOP the zoom, never reverse it. A clamp that answers below the zoom
+       already on screen would make "+" zoom OUT, which is the shape of #R175's report
+       (「unlimited tiltだとズームインできない」) and worse — the measured runaway to z −5.54 was
+       exactly this kind of feedback. So the answer is confined between the zoom on screen and the
+       one asked for; when the boundary is behind us, the honest answer is "stay". */
+    if(isFinite(heldZoom)){
+      const lowest=Math.min(heldZoom,cam.zoom);
+      if(lo<lowest) lo=lowest;
+    }
+    return (lo<cam.zoom)?lo:null;
+  }
+  /* ══ (#R179) WHAT THE CALLER DECLARED — the thing six rounds of heuristics were guessing ══
+     ---------------------------------------------------------------------------------------
+     The hook has to tell 「turn your head」 from 「go there」, and #R173/#R175/#R177 answered it
+     by comparing the proposal against two histories (movedFromLast/movedFromApplied, zSame/zRef).
+     That works for GESTURES, where there is nothing else to go on. It is guesswork for a
+     PROGRAMMATIC camera change, and the guess loses in two measured ways — both of them the two
+     pre-existing look-up defects the user asked to have fixed this round:
+
+       ① a DECLARED zoom fights the eye-hold and runs away. On the globe, looking up at the
+          saturation pitch and then asking for +0.5 of zoom fourteen times (the zoom buttons and
+          Atlas both land here): zoom went the WRONG WAY to −5.54 and the viewpoint flew out to
+          328,806,633 m. The sphere spends the zoom to hold the eye, so a declared zoom and the
+          eye-hold are two writers of one value, and the feedback settles at a fixed point
+          nobody asked for.
+       ② an inherited target elevation survives a journey. Look up to 150° at z14, then fly to
+          Paris: the elevation the look-up needed (7,811 m, and 7,998,269 m after the k-scaling
+          of a zoom-out) is still there, so the eye lands at 11,470,292 m where a clean camera is
+          at 3,472,023 m — 3.3× too high, and identically 3.3× for a same-zoom flyTo.
+
+     The adapter does not have to guess: the caller PASSED it. So every method that takes an
+     explicit camera records which properties were named, and the hook reads that instead:
+
+       · only pitch/bearing/roll named  → an attitude change: hold the eye (the feature).
+       · zoom or centre named           → a DECLARATION: it wins outright. The eye follows from
+                                          the camera that was asked for, so the target goes back
+                                          to the ground and nothing is inherited.
+       · nothing recorded (a gesture)   → every heuristic below is untouched, byte for byte.
+
+     Cleared on 'moveend', which is also where MapLibre discards `_requestedCameraState`, so the
+     record lives exactly as long as the animation it describes. */
+  let _decl=null, _declWired=false;
+  /* (#R179) which branch of the hook answered the last frame, and with what — reported through
+     camera.eyePivotDiag(). Not tracing for its own sake: 「どの枝が答えたか」 is the one thing every
+     round from #R172 on has had to infer from the outside, and inferring it wrong is how #R176
+     measured its own correction with its own equation. */
+  let _lastBranch=null;
+  function _declare(m,props){
+    _decl=props||null;
+    if(!(m&&m.on)||_declWired) return;
+    _declWired=true;
+    try{ m.on('moveend',()=>{ _decl=null; }); }catch(_){}
+  }
+  /* which of the camera's properties an options object names. `around`/`offset` are not listed:
+     they modify a zoom or a pan that is already named here. */
+  function _declOf(o){
+    if(!o||typeof o!=='object') return null;
+    const has=k=>o[k]!=null;
+    return { zoom:has('zoom'), center:has('center'), pitch:has('pitch'),
+             bearing:has('bearing'), roll:has('roll') };
+  }
+  let _ugShim=null;                        /* {map, prev, own} while installed; null otherwise */
+  /* the elevation the tilt correction will put on THIS proposal — the same gSolveAt the hook
+     uses, at the proposal's own pitch, so cos(pitch)·look + elevation comes out as the eye's
+     real altitude rather than as a camera buried under the map. `guard` is deliberately null:
+     this is not deciding whether the pitch is reachable (gLimitPitch does that, afterwards),
+     only what the height of the look-at point is going to be. */
+  function _heldElevation(m,t){
+    try{
+      const c=m.getCenter(); if(!c) return null;
+      let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
+      const sphere=gSpherical(t), c2c=gC2C(t,m);
+      const was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
+                  elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
+      const anchor=gEye(was,c2c,tile,sphere,1); if(!anchor) return null;
+      const sol=gSolveAt(anchor,t.pitch,t.bearing,c2c,tile,t.zoom,sphere,
+                         {lng:t.center.lng,lat:t.center.lat},null);
+      return (sol&&isFinite(sol.elevation))?sol.elevation:null;
+    }catch(_){ return null; }
+  }
+  /* Installed and removed with the hook itself, so nothing outside the unlimited-tilt setting
+     changes. Reported through the contract (camera.eyePivotDiag) rather than left to be assumed:
+     #R162's lesson is that a `typeof` guard around a renderer internal makes a feature vanish in
+     SILENCE if the internal is ever renamed, and this one would take the whole seventh-round fix
+     with it. The regression test asserts 'active' while the pivot is on. */
+  function _installUnderGuard(m){
+    if(_ugShim||!m) return false;
+    if(typeof m._elevateCameraIfInsideTerrain!=='function') return false;
+    const own=Object.prototype.hasOwnProperty.call(m,'_elevateCameraIfInsideTerrain');
+    const prev=m._elevateCameraIfInsideTerrain, orig=prev.bind(m);
+    try{
+      /* (#R179) …and it is asked THROUGH A CATCH, because it can throw. Measured on `main` as
+         well as here, so this is pre-existing and only reachable with unlimited tilt on (the
+         standard 78° ceiling cannot produce the input): tilt to 180° on the globe and then press
+         the zoom button, and MapLibre raises "Can't calculate camera options with same From and
+         To" from inside this very method. Its own arithmetic asks calculateCameraOptionsFromTo
+         for a camera whose position coincides with the centre it is looking at, which is exactly
+         what pitch 180 with the target on the ground means (sin p = 0, so the eye is directly
+         over the centre). The exception escapes into _applyUpdatedTransform, which does not catch
+         it, so the whole camera update dies mid-flight. A refusal is the honest answer for a
+         degenerate pair — there is no direction to elevate along — so that is what it becomes. */
+      m._elevateCameraIfInsideTerrain=(t)=>{
+        const ask=()=>{ try{ return orig(t); }catch(_){ return null; } };
+        const wants=a=>!!(a&&(a.pitch!=null||a.zoom!=null));
+        const first=ask();
+        /* the overwhelmingly common case: it is happy, and this shim did not exist */
+        if(first&&!wants(first)) return first;
+        if(!_eyePivot) return first||{};
+        try{ if(window.__fsCamActive) return first||{}; }catch(_){}
+        /* (#R179) …and it stands down for a camera the caller DECLARED. The repair's premise is
+           that the engine is about to put an elevation on this transform which makes the camera
+           legitimate — true while the eye is being held, false here: a declared camera returns the
+           target to the ground (see the _decl branch in the hook), so it really is the camera
+           MapLibre thinks it is, and if that is underground its correction is the right answer
+           rather than something to talk it out of. */
+        if(_decl&&(_decl.zoom||_decl.center)) return first||{};
+        if(!(t&&typeof t.setElevation==='function')) return first||{};
+        const el=_heldElevation(m,t);
+        if(el==null) return first||{};
+        t.setElevation(el);                 /* the transform it judges is the one we will produce */
+        return ask()||{};
+      };
+    }catch(_){ return false; }
+    _ugShim={ map:m, prev, own }; return true;
+  }
+  function _removeUnderGuard(){
+    const s=_ugShim; _ugShim=null; if(!s) return false;
+    try{ if(s.own) s.map._elevateCameraIfInsideTerrain=s.prev;
+         else delete s.map._elevateCameraIfInsideTerrain; }catch(_){ return false; }
+    return true;
+  }
   /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
   const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
-    flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
-    fitBounds(b,o){ const m=_m(); if(m) m.fitBounds(b,o); }, setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
+    /* (#R179) each of these RECORDS what it was asked for before asking for it — see _declare.
+       fitBounds names a centre and a zoom by definition, even though neither appears in `o`. */
+    flyTo(o){ const m=_m(); if(m){ _declare(m,_declOf(o)); m.flyTo(o); } },
+    easeTo(o){ const m=_m(); if(m){ _declare(m,_declOf(o)); m.easeTo(o); } },
+    jumpTo(o){ const m=_m(); if(m){ _declare(m,_declOf(o)); m.jumpTo(o); } },
+    fitBounds(b,o){ const m=_m(); if(m){ _declare(m,{zoom:true,center:true}); m.fitBounds(b,o); } },
+    setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
     /* (#R172) "what camera shows this box?" — the answer WITHOUT moving, so a caller can fly to it
        itself (widgets fit a whole country that way). A pass-through; null when the engine has no
        such query, and the caller falls back to fitBounds. */
@@ -434,7 +648,9 @@ function _m(){ return window.__imap||null; }
       try{ const t=(m&&m.getProjection&&m.getProjection()||{}).type; return (t==='mercator'||t==='flat')?0:1; }catch(_){ return 0; } },
     /* (#R171) camera ATTITUDE — bearing / pitch / roll and the tilt limits. The unlimited-tilt setting and
        the flight sim both need these, and both are written against the engine, so they belong in the contract. */
-    setBearing(b){ const m=_m(); if(m&&m.setBearing) m.setBearing(b); }, setPitch(p){ const m=_m(); if(m&&m.setPitch) m.setPitch(p); },
+    /* (#R179) an attitude-only declaration: the eye is HELD, which is the whole unlimited-tilt feature */
+    setBearing(b){ const m=_m(); if(m&&m.setBearing){ _declare(m,{bearing:true}); m.setBearing(b); } },
+    setPitch(p){ const m=_m(); if(m&&m.setPitch){ _declare(m,{pitch:true}); m.setPitch(p); } },
     getRoll(){ const m=_m(); try{ return m&&m.getRoll?m.getRoll():0; }catch(_){ return 0; } }, setRoll(r){ const m=_m(); try{ if(m&&m.setRoll) m.setRoll(r); }catch(_){} },
     getMaxPitch(){ const m=_m(); try{ return (m&&m.getMaxPitch)?m.getMaxPitch():60; }catch(_){ return 60; } },
     setMaxPitch(v){ const m=_m(); if(!(m&&m.setMaxPitch)) return false; try{ m.setMaxPitch(v); return true; }catch(_){ return false; } },
@@ -509,6 +725,11 @@ function _m(){ return window.__imap||null; }
         const cam=m.calculateCameraOptionsFromTo({lng:o.lng,lat:o.lat},o.alt,{lng:tLng,lat:tLat},o.alt-drop);
         if(!(cam&&cam.center&&isFinite(cam.zoom)&&isFinite(cam.center.lat)&&isFinite(cam.center.lng))) return false;
         if(o.roll!=null&&isFinite(o.roll)) cam.roll=o.roll;
+        /* (#R179) this NAMES the whole camera (calculateCameraOptionsFromTo returns centre, zoom
+           and pitch), so say so — otherwise the eye-hook holds the OLD eye and quietly cancels
+           the very placement being asked for. It only worked until now because its one caller,
+           the flight simulator, suspends the hook with __fsCamActive for the length of a flight. */
+        _declare(m,{center:true,zoom:true,pitch:true,bearing:true});
         m.jumpTo(cam); return true;
       }catch(_){ return false; } },
     /* (#R172) is the RENDERER running a camera animation of its own right now? Lets a caller tell a user
@@ -579,11 +800,15 @@ function _m(){ return window.__imap||null; }
        PROPOSED camera before it is applied, so the correction rides along with the gesture. */
     setTiltPivot(mode){ const m=_m(); if(!m) return false;
       if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; }
-        _eyePivot=false; _applyZoomFloor(); return true; }
+        _eyePivot=false; _removeUnderGuard(); _applyZoomFloor(); return true; }
       /* (#R178) give the solve the room the renderer really has before installing the hook —
          see _applyZoomFloor. Done here rather than in the tilt module so an engine whose zoom
          has no such floor simply does nothing, and so the two can never disagree. */
       _eyePivot=true; _applyZoomFloor();
+      /* (#R179) …and let the renderer's own underground correction see the camera this hook is
+         going to produce, since it runs BEFORE this hook and would otherwise rewrite the pitch
+         to 90 on every frame of a look-up. See the block above _installUnderGuard. */
+      _installUnderGuard(m);
       /* The PROPOSED camera lives in its own running state (MapLibre keeps a `_requestedCameraState` while
          a transformCameraUpdate hook is installed) and does NOT receive our override — so "did this update
          also move the centre?" has to be asked of the proposal's own history, not of the applied map, or
@@ -675,6 +900,34 @@ function _m(){ return window.__imap||null; }
             if(isFinite(capNow)&&capNow>0&&Math.abs(was.elevation)>capNow) capEl=Math.sign(was.elevation)*capNow;
           }
           const NOOP=()=>(capEl!=null?{ elevation:capEl }:{});
+          /* ══ (#R179) A DECLARED ZOOM OR CENTRE WINS OUTRIGHT ═══════════════════════════════
+             Before any of the history comparisons, because they are guesses and this is not one:
+             the caller named these properties (see _declare above the adapter). Two measured
+             defects live here, and both are the eye-hold competing with an explicit instruction.
+
+             What a JOURNEY's eye should do is then fully determined by the camera that was asked
+             for, so nothing is inherited: the look-at target goes back to the ground, which is
+             what `elevation: 0` means and what MapLibre does natively. That single line is the
+             whole of defect ② — 「見上げてから飛ぶと視点が 3.3 倍高い」 — because the 7,998,269 m
+             the look-up needed was simply still there. */
+          /* A DECLARED CENTRE is a journey; a declared ZOOM on its own is a DOLLY.
+             Measured, that distinction is the whole of it. Resetting the target to the ground on
+             any declared zoom looked right and was wrong: the zoom button while looking up then
+             re-derived a camera whose grounded target puts the eye at look·cos p, i.e. BELOW sea
+             level past the horizon (−2,143,365 m at globe z5, pitch 180), and MapLibre's own
+             rescue for that shape cannot run because its arithmetic throws on the degenerate pair.
+             A zoom with no centre is #R175's dolly and the branches below already implement it —
+             the eye is held and scaled by k, so it stays wherever it was, above ground. */
+          if(_decl&&_decl.center){
+            /* …and a journey whose declared pitch is past the horizon asks for a camera under the
+               map. 90° is where a grounded target puts the eye at sea level, and it is MapLibre's
+               own answer (its correction clamps there); it only fails to apply it itself because
+               calculateCameraOptionsFromTo throws when the eye coincides with the centre. Looking
+               up is a TILT, and a tilt names a pitch and no centre, so it never lands here. */
+            const cp=Math.cos((cur.pitch||0)*GEO_RAD);
+            _lastBranch='journey/'+(sphere?'sphere':'merc')+(cp<0?' pitch→90':'');
+            return (cp<0&&!sphere)?{ elevation:0, pitch:90 }:{ elevation:0 };
+          }
           if(movedFromApplied&&(movedFromLast||!last)){
             /* Travel — a flyTo/pan is asking to look at a PLACE, so the centre is left alone (#R173).
                (#R175) But a journey that also ZOOMS still has to carry the look-at target's altitude
@@ -687,7 +940,16 @@ function _m(){ return window.__imap||null; }
                zooming or not — a declined frame leaves the previous value in place, and a
                mercator-era one that rode along this way is what froze the renderer (see gSolve).
                Inert here by construction, so it costs nothing. */
-            if(sphere) return { elevation:0 };
+            /* (#R179) …and the WHEEL is this branch (MapLibre zooms about the pointer, so the
+               centre moves and every notch lands here). That is where defect ① was measured:
+               eye altitude ratio −0.193 zooming in at pitch 105°. Same limit as the declared
+               path above, so the gesture and the button agree. */
+            if(sphere){
+              const zc=zoomed?gLimitZoom(cur,c2c,tile,was.zoom):null;
+              _lastBranch='travel/sphere'+(zoomed?(' z'+cur.zoom.toFixed(2)+'→'+(zc==null?'—':zc.toFixed(2))):'');
+              return (zc!=null)?{ elevation:0, zoom:zc }:{ elevation:0 };
+            }
+            _lastBranch='travel/merc'+(zoomed?' dolly':'');
             if(!zoomed) return NOOP();
             if(!was.elevation) return NOOP();
             /* (#R177) …and bounded by the same rule the anchored branch uses. Unbounded, a
@@ -727,7 +989,9 @@ function _m(){ return window.__imap||null; }
              zoom range that will be in force when the answer is applied. */
           const guard=gGuard(t);
           const sol=gLimitPitch(anchor,cur.pitch,cur.bearing,c2c,tile,cur.zoom,sphere,cur,guard,was.pitch);
-          if(!sol) return NOOP();
+          if(!sol){ _lastBranch='held/no-solution'; return NOOP(); }
+          _lastBranch='held/'+(sphere?'sphere':'merc')+' p'+cur.pitch.toFixed(1)+
+                      (sol.pitch!=null?('→'+sol.pitch.toFixed(1)):'');
           const out={ elevation:sol.elevation };
           /* (#R178) …and the tilt stops where the viewpoint stops being holdable. Only set when
              gLimitPitch actually had to saturate — an untouched pitch must not be re-asserted,
@@ -746,6 +1010,19 @@ function _m(){ return window.__imap||null; }
         };
       }catch(_){ return false; }
       return true; },
+    /* (#R179) the two halves of the eye pivot, reported rather than assumed — see the contract note */
+    eyePivotDiag(){ const m=_m();
+      return { pivot:_eyePivot,
+               hook:(()=>{ try{ return !!(m&&m.transformCameraUpdate); }catch(_){ return false; } })(),
+               underGuard:(!m||typeof m._elevateCameraIfInsideTerrain!=='function')?'n/a'
+                          :(_ugShim?'active':'off'),
+               /* (#R179) what the last caller DECLARED, and what the hook last did with it. Reported
+                  because the declaration is the thing that replaced six rounds of history-guessing:
+                  if it silently stopped arriving, every declared camera would go back to fighting
+                  the eye-hold and the two defects fixed this round would return with no test
+                  failing on the mechanism itself. */
+               decl:_decl?{ zoom:!!_decl.zoom, center:!!_decl.center, pitch:!!_decl.pitch }:null,
+               lastBranch:_lastBranch }; },
     project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
     /* (#R173) WHERE ON SCREEN IS A POINT THAT IS UP IN THE AIR? project() answers only for the ground,
        and MapLibre's own hit-testing has the same blind spot: queryRenderedFeatures on a fill-extrusion
@@ -787,7 +1064,11 @@ function _m(){ return window.__imap||null; }
        adopting them anywhere is safe, and a future adapter (Cesium/Earth) only has to implement these. */
     getZoom(){ const m=_m(); return m?m.getZoom():null; }, getCenter(){ const m=_m(); return m?m.getCenter():null; },
     getBearing(){ const m=_m(); return m?m.getBearing():0; }, getPitch(){ const m=_m(); return m?m.getPitch():0; }, getBounds(){ const m=_m(); return m?m.getBounds():null; },
-    zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }, zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }, zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }, stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
+    /* (#R179) the zoom controls DECLARE a zoom — the case that ran away to z −5.54 on the sphere */
+    zoomTo(z,o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomTo(z,o); } },
+    zoomIn(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomIn(o); } },
+    zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } },
+    stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
     resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
     setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
     /* (#R161) Phase-3 contract broadening — everything a self-contained OVERLAY subsystem needs so it
@@ -889,8 +1170,9 @@ function _m(){ return window.__imap||null; }
     hasImage(id){ const m=_m(); try{ return !!(m&&m.hasImage&&m.hasImage(id)); }catch(_){ return false; } },
     removeImage(id){ const m=_m(); try{ if(m&&m.hasImage&&m.hasImage(id)) m.removeImage(id); }catch(_){} },
     /* CAMERA leftovers */
-    setCenter(c){ const m=_m(); if(m&&m.setCenter) m.setCenter(c); },
-    panBy(off,o){ const m=_m(); if(m&&m.panBy) m.panBy(off,o); },
+    /* (#R179) a centre is a journey, declared */
+    setCenter(c){ const m=_m(); if(m&&m.setCenter){ _declare(m,{center:true}); m.setCenter(c); } },
+    panBy(off,o){ const m=_m(); if(m&&m.panBy){ _declare(m,{center:true}); m.panBy(off,o); } },
     setMaxBounds(b){ const m=_m(); try{ if(m&&m.setMaxBounds) m.setMaxBounds(b); }catch(_){} },
     setRenderWorldCopies(v){ const m=_m(); try{ if(m&&m.setRenderWorldCopies) m.setRenderWorldCopies(v); }catch(_){} },
     /* "what camera looks FROM here TO there" — the flight simulator's cockpit and the drone
@@ -966,6 +1248,12 @@ function _m(){ return window.__imap||null; }
       setEye:o=>_adapter.setEye?_adapter.setEye(o):false,
       setCenterClamped:v=>_adapter.setCenterClamped?_adapter.setCenterClamped(v):false,
       setTiltPivot:mo=>_adapter.setTiltPivot?_adapter.setTiltPivot(mo):false,
+      /* (#R179) IS THE EYE PIVOT REALLY WHOLE? Two separate pieces have to be in place — the
+         camera hook and the repair to the renderer's own underground correction that runs ahead
+         of it — and the second one leans on a renderer internal, so its absence has to be
+         VISIBLE rather than inferred (#R162: a typeof guard around an internal deletes the
+         feature in silence). 'n/a' means the engine has no such correction to repair. */
+      eyePivotDiag:()=>_adapter.eyePivotDiag?_adapter.eyePivotDiag():null,
       isAnimating:()=>_adapter.isAnimating?_adapter.isAnimating():false,
       /* (#R178) the remainder of the camera surface — see the adapter block */
       setCenter:c=>_adapter.setCenter(c), panBy:(o,opt)=>_adapter.panBy(o,opt),
