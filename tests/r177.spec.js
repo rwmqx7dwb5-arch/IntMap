@@ -77,6 +77,64 @@ for (const c of [{ proj: 'globe', z: 3, lng: 139.767, lat: 35.681, tag: 'globe z
   });
 }
 
+/* ── ①b 「挙動もぎこちない」 — the other half of the report ──────────────────────────────────────
+   Holding the viewpoint is not enough on its own: the FRAME-TO-FRAME step has to stay small even
+   where the eye cannot be held. On the sphere it cannot be, past a certain tilt — the pivot the eye
+   implies leaves ±85.051° and the zoom that goes with it leaves the map's range — and the first
+   version of this round's fallback simply reverted to the proposal's own camera there, which is a
+   different camera from the frame before: measured on a full 0-180° sweep at globe z4, a 32,010 km
+   single-frame jump at the moment the exact solution went out of range.
+   So the answer degrades along a ladder whose rungs agree at their boundaries, and this sweeps the
+   WHOLE tilt range to prove there is no step anywhere in it. */
+for (const c of [{ proj: 'globe', z: 3, tag: 'globe z3' },
+                 { proj: 'globe', z: 4, tag: 'globe z4' },
+                 { proj: 'globe', z: 8, tag: 'globe z8' },
+                 { proj: 'globe', z: 13, tag: 'globe z13' },
+                 { proj: 'mercator', z: 6, tag: 'flat z6' }]) {
+  test(`tilting through the whole 0-180° range never steps — ${c.tag}`, async ({ page }) => {
+    test.setTimeout(240000);
+    await boot(page);
+    await page.evaluate(installCameraRuler);
+    const r = await page.evaluate(async (cc) => {
+      const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
+      window.IntMapTilt.set(true);
+      m.setProjection({ type: cc.proj });
+      m.jumpTo({ center: [139.767, 35.681], zoom: cc.z, pitch: 0, bearing: 0 });
+      await wait(500);
+      const E0 = window.__eye();
+      let prev = E0, heldTo = 0;
+      const steps = [];
+      for (let p = 2; p <= 178; p += 2) {
+        m.setPitch(p); await wait(45);
+        const E = window.__eye();
+        steps.push({ p, j: window.__gap(prev, E), alt: E.alt });
+        if (window.__gap(E0, E) < 1) heldTo = p;
+        prev = E;
+      }
+      /* only while the viewpoint is still ABOVE THE SURFACE. Past the reach of the sphere's
+         parameterisation the camera keeps descending, and once it is inside the Earth "where the
+         viewpoint is" has stopped denoting anything a user can see — measuring smoothness there
+         would be measuring noise. */
+      const real = steps.filter(s => s.alt >= 0);
+      const moving = real.filter(s => s.j > 1).map(s => s.j).sort((x, y) => x - y);
+      const worst = real.reduce((a, s) => (s.j > a.j ? s : a), real[0] || { j: 0, p: 0 });
+      return { space: E0.space, alt0: Math.round(E0.alt), heldTo, atJump: worst.p, jump: worst.j,
+               median: moving.length ? moving[Math.floor(moving.length / 2)] : 0, aboveGround: real.length };
+    }, c);
+    // the eye is held EXACTLY as far as the parameterisation reaches…
+    expect(r.heldTo, `${c.tag}: held the viewpoint only to pitch ${r.heldTo}`).toBeGreaterThanOrEqual(60);
+    /* …and past that it still MOVES rather than jumps. Past the reach the camera genuinely has to
+       travel — on a sphere the eye cannot stay put once the zoom the geometry wants is below the
+       map's minimum, which at globe z4 is pitch 86 — so the invariant is not "small" but "no
+       discontinuity": no single frame may be far out of line with the rest of the sweep. The stepped
+       version failed this by 32x (8,956 km against a ~280 km ramp). Frames that do not move at all
+       are excluded from the median, since they are the held part of the range. */
+    if (r.median > 0)
+      expect(r.jump, `${c.tag}: worst step ${Math.round(r.jump)} m at pitch ${r.atJump} vs median ${Math.round(r.median)} m`)
+        .toBeLessThan(r.median * 4);
+  });
+}
+
 /* ── ② the readout's viewpoint IS the renderer's viewpoint ──────────────────────────────────────
    camera.eye() feeds the always-on 「視点」 chip, the 3-D solid shader's camera, and the tilt
    anchor. Checking it against the draw matrix is what makes the anchor's own test independent:
@@ -194,13 +252,11 @@ test('the anchor never emits a camera outside the renderer\'s range', async ({ p
         m.setProjection({ type: 'globe' });
         m.jumpTo({ center: [139.767, 35.681], zoom: s.z, pitch: s.p, bearing: s.b });
         await wait(350);
-        const t = m.transform;
-        // the renderer sizes its frustum from cameraToCenterDistance + elevation·pixelPerMeter,
-        // so THAT ratio — not the metres — is what says whether a camera is one it can handle
-        const ppm = t.pixelsPerMeter || (t.worldSize / (2 * Math.PI * 6371008.8 * Math.cos(m.getCenter().lat * Math.PI / 180)));
-        const elev = +m.getCameraTargetElevation() || 0;
-        seen.push({ tag: `z${s.z} p${s.p}`, zoom: m.getZoom(), lat: m.getCenter().lat, elev,
-                    looks: Math.abs(elev * ppm) / (t.cameraToCenterDistance || 1080) });
+        const t = m.transform, R = 6371008.8;
+        const look = ((t.cameraToCenterDistance || 1080) / t.worldSize) * 2 * Math.PI * R * Math.cos(m.getCenter().lat * Math.PI / 180);
+        seen.push({ tag: `z${s.z} p${s.p}`, zoom: m.getZoom(), lat: m.getCenter().lat,
+                    elev: +m.getCameraTargetElevation() || 0, look,
+                    sphere: !!t.isGlobeRendering });
       }
       return seen;
     }, null),
@@ -211,7 +267,15 @@ test('the anchor never emits a camera outside the renderer\'s range', async ({ p
     expect(s.zoom, `${s.tag}: zoom ${s.zoom} in range`).toBeGreaterThanOrEqual(0);
     expect(s.zoom, `${s.tag}: zoom ${s.zoom} in range`).toBeLessThanOrEqual(19);
     expect(Math.abs(s.lat), `${s.tag}: centre latitude ${s.lat} in range`).toBeLessThanOrEqual(85.06);
-    // 1,488 km at z12 was 89 look-distances from sea level, and the renderer froze on it
-    expect(s.looks, `${s.tag}: target ${Math.round(s.elev)} m = ${s.looks.toFixed(1)} look-distances`).toBeLessThanOrEqual(51);
+    /* WHAT FROZE THE RENDERER was a target 1,488 km above sea level at z12 — 89 times the distance
+       the camera was looking — because MapLibre sizes its frustum from
+       `cameraToCenterDistance + elevation·pixelPerMeter / cos(pitch)`. The bound belongs on the model
+       that USES the number: the mercator one. On the sphere the pivot is the surface point and the
+       elevation moves nothing at all, so it is not constrained there — and it cannot be, because
+       `isGlobeRendering` follows the RENDER, so the frame that crosses the zoom where the models swap
+       is still solving as mercator when it writes it. */
+    if (!s.sphere)
+      expect(Math.abs(s.elev), `${s.tag}: target ${Math.round(s.elev)} m against a ${Math.round(s.look)} m look distance`)
+        .toBeLessThanOrEqual(51 * Math.abs(s.look));
   }
 });

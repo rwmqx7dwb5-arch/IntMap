@@ -1929,52 +1929,88 @@ window.addEventListener('DOMContentLoaded', () => {
                from the other two. Two branches solve the latitude — take the one nearest the camera we
                were handed, so consecutive frames stay on the same branch (a branch flip is a snap).
                `hit` says whether it was reachable at all. */
-            const centreFor=(dg)=>{
+            const centreFor=(dg,Ev)=>{
               const u=[-dg*Math.sin(p)*Math.sin(b), -dg*Math.sin(p)*Math.cos(b), 1+dg*cp];
               const Ru=Math.hypot(u[1],u[2]); if(!(Ru>1e-12)) return null;
               const th=Math.atan2(u[1],u[2]);
-              const raw=E[1]/Ru, s=Math.max(-1,Math.min(1,raw)), asn=Math.asin(s);
-              const c1=wrap(asn-th), c2=wrap(Math.PI-asn-th);
-              let lat=(Math.abs(wrap(c2-hl))<Math.abs(wrap(c1-hl)))?c2:c1;
-              const inRange=Math.abs(lat)<=GEO_LATMAX;
-              lat=Math.max(-GEO_LATMAX,Math.min(GEO_LATMAX,lat));
-              const w=grotX(u,-lat), den=w[0]*w[0]+w[2]*w[2];
-              const lng=(den>1e-18)?Math.atan2(w[2]*E[0]-w[0]*E[2], w[0]*E[0]+w[2]*E[2])
-                                  : (hint&&isFinite(hint.lng)?hint.lng*GEO_RAD:0);
-              return { lat, lng, hit:inRange&&Math.abs(raw)<=1 };
+              const raw=Ev[1]/Ru, s=Math.max(-1,Math.min(1,raw)), asn=Math.asin(s);
+              /* TWO latitudes satisfy E_y, and picking the wrong one is a snap. #R177 first chose by
+                 nearness to the proposed centre, which is a HEURISTIC and ties: at pitch 178 the two
+                 candidates sat 1.586 and 1.553 rad from the hint, the choice flipped between frames,
+                 and the viewpoint moved 1,553 km in one. So do not guess — build BOTH cameras and
+                 keep the one whose eye actually lands closer to where the eye is meant to be. That is
+                 the thing being solved for, so it can neither tie meaningfully nor flip. */
+              const build=(latRaw)=>{
+                const inRange=Math.abs(latRaw)<=GEO_LATMAX;
+                const lat=Math.max(-GEO_LATMAX,Math.min(GEO_LATMAX,latRaw));
+                const w=grotX(u,-lat), den=w[0]*w[0]+w[2]*w[2];
+                const lng=(den>1e-18)?Math.atan2(w[2]*Ev[0]-w[0]*Ev[2], w[0]*Ev[0]+w[2]*Ev[2])
+                                    : (hint&&isFinite(hint.lng)?hint.lng*GEO_RAD:0);
+                const back=grotY(grotX(u,-lat),lng);            /* the eye this camera really gives */
+                const err=Math.hypot(back[0]-Ev[0],back[1]-Ev[1],back[2]-Ev[2]);
+                return { lat, lng, err:isFinite(err)?err:Infinity, ok:inRange&&Math.abs(raw)<=1 };
+              };
+              const A=build(wrap(asn-th)), B=build(wrap(Math.PI-asn-th));
+              /* an out-of-range latitude is not a solution at all, so prefer a reachable one even if
+                 the clamped other happens to score better */
+              if(A.ok!==B.ok) return A.ok?A:B;
+              return (B.err<A.err)?B:A;
             };
-            /* the look distance the eye's own radius demands: |eye|² = 1 + dg² + 2·dg·cos p, whatever
-               the centre turns out to be. That is the whole reason the sphere spends the ZOOM here. */
-            const dgWant=-cp+Math.sqrt(Math.max(0,cp*cp-1+r*r));
             const zLo=(zLim&&isFinite(zLim[0]))?zLim[0]:0, zHi=(zLim&&isFinite(zLim[1]))?zLim[1]:24;
-            const cWant=(isFinite(dgWant)&&dgWant>1e-12)?centreFor(dgWant):null;
-            const zWant=cWant?Math.log2(((c2c*2*Math.PI*Math.cos(cWant.lat))/dgWant)/tile):NaN;
-            /* ELEVATION IS ZERO ON THE SPHERE — the pivot is welded to the surface, so the number
-               changes nothing here, and the "keep the mercator twin in step" value this used to return
-               is a trap: at pitch 120 the mercator model legitimately wants its target 1,488 km up, and
-               that number SURVIVES into the next camera. Measured: a zoom to z12 afterwards inherited
-               it and MapLibre froze picking tiles for a camera 1,488 km above a 16 km zoom. Zero is
-               both inert here and the right starting point for the mercator branch at the crossover,
-               where the look distance is small enough that the two models already agree. */
-            if(cWant&&cWant.hit&&isFinite(zWant)&&zWant>=zLo&&zWant<=zHi)
-              return { lng:cWant.lng/GEO_RAD, lat:cWant.lat/GEO_RAD, zoom:zWant, elevation:0, held:true };
-            /* NOT EVERY VIEWPOINT IS HOLDABLE ON A SPHERE, and inventing a camera for the ones that
-               are not is worse than admitting it. Tilted past the horizon the pivot the eye implies
-               sits beyond ±85.051° — there is simply no MapLibre centre for it — and an unconstrained
-               solve answered z −0.167 at 85.0511°N for pitch 120 at globe z6. That camera does not
-               throw: the page FREEZES (measured — plain MapLibre at the same pitch is fine, so the
-               invalid camera was ours). Fall back to the best centre AT THE PROPOSED ZOOM, which is an
-               ordinary globe camera the renderer already handles. dg and the latitude define each
-               other there, so iterate — it settles in three passes. */
-            let lat=(hint&&isFinite(hint.lat))?hint.lat*GEO_RAD:0, c=null;
-            for(let it=0;it<3;it++){
-              const dg=(c2c*2*Math.PI*Math.cos(lat))/(tile*Math.pow(2,zoom));
+            /* THE WHOLE SOLVE, for an eye at radius `rr` along the direction the anchor points.
+               rr = r is "hold the viewpoint exactly"; smaller values are the same viewpoint pulled in
+               towards the surface along its own line. |eye|² = 1 + dg² + 2·dg·cos p fixes the look
+               distance, the look distance and the attitude fix the centre, and the centre fixes the
+               zoom — so every rr either resolves to a real camera or does not. */
+            const solveAt=(rr)=>{
+              const dg=-cp+Math.sqrt(Math.max(0,cp*cp-1+rr*rr));
               if(!(isFinite(dg)&&dg>1e-12)) return null;
-              const cc=centreFor(dg); if(!cc) return null; c=cc; lat=cc.lat;
+              const f=rr/r, Ev=[E[0]*f,E[1]*f,E[2]*f];
+              const c=centreFor(dg,Ev); if(!c) return null;
+              const z=Math.log2(((c2c*2*Math.PI*Math.cos(c.lat))/dg)/tile);
+              return { lat:c.lat, lng:c.lng, z, ok:c.ok&&isFinite(z)&&z>=zLo&&z<=zHi };
+            };
+            /* ── NOT EVERY VIEWPOINT IS HOLDABLE ON A SPHERE ────────────────────────────────────
+               MapLibre's camera is (centre, zoom, pitch, bearing) with the pivot WELDED to the
+               surface, so "the eye stays here" is three equations in three unknowns and it simply
+               runs out of range: measured at globe z4 over Tokyo, the eye is held exactly to pitch
+               84 — the centre walking 35.7°N → 85.0°N and the zoom 4 → 0 as it goes — and at 86°
+               the zoom the geometry wants is BELOW the map's own minimum. That is a property of the
+               parameterisation, not a bug to code away.
+
+               Two rules for what happens past it:
+                 · NEVER emit a camera outside the renderer's range. An unconstrained solve answered
+                   z −0.167 at 85.0511°N for pitch 120, and the next camera change FROZE the page
+                   inside MapLibre's tile cover (plain MapLibre at the same pitch is fine, so that
+                   camera was ours).
+                 · AND NEVER STEP — 「挙動もぎこちない」 is the other half of the report. Clamping the
+                   zoom AFTER solving does step, because the solve then works from an eye radius its
+                   own look distance cannot reach, and the latitude pins while the longitude goes
+                   ill-conditioned: measured 4,225 km at pitch 88 and 8,956 km at pitch 140.
+
+               So instead of clamping the ANSWER, clamp the QUESTION: keep the viewpoint's direction
+               and find the largest radius along it that resolves to a camera in range. Feasibility is
+               monotone in rr (pulling the eye towards the surface only ever shortens the look distance
+               and raises the zoom), so a bisection finds the boundary, and AT the boundary it returns
+               the exact solve — which is what makes the hand-over continuous instead of a step. */
+            let sol=solveAt(r);
+            if(sol&&sol.ok) return { lng:sol.lng/GEO_RAD, lat:sol.lat/GEO_RAD, zoom:sol.z, elevation:0, held:true };
+            let lo=1+1e-9, hi=r, best=null;
+            if(!(hi>lo)){ const s0=solveAt(r); if(!s0) return null;
+              return { lng:s0.lng/GEO_RAD, lat:s0.lat/GEO_RAD, zoom:Math.min(zHi,Math.max(zLo,s0.z)), elevation:0, held:false }; }
+            for(let it=0;it<28;it++){
+              const mid=(lo+hi)/2, sm=solveAt(mid);
+              if(sm&&sm.ok){ best=sm; lo=mid; } else hi=mid;
             }
-            if(!(c&&isFinite(c.lat)&&isFinite(c.lng))) return null;
-            /* no `zoom` in the answer — the proposal's own stands */
-            return { lng:c.lng/GEO_RAD, lat:c.lat/GEO_RAD, elevation:0, held:false };
+            /* …and when NOTHING along the line resolves — tilted so far that even an eye on the
+               surface wants a zoom below the map's minimum (measured: pitch 146 at globe z4, with the
+               pivot already pinned at 85.051° so cos(lat) is small and the world with it) — any answer
+               is arbitrary, so make the arbitrary answer the one that MOVES LEAST: leave the
+               proposal's own centre and zoom alone. Forcing a clamped camera there was the last
+               remaining step, 1,246 km in one frame. */
+            if(!best) return { elevation:0, held:false };
+            if(!(isFinite(best.lat)&&isFinite(best.lng)&&isFinite(best.z))) return null;
+            return { lng:best.lng/GEO_RAD, lat:best.lat/GEO_RAD, zoom:best.z, elevation:0, held:false };
           }
           const world=tile*Math.pow(2,zoom); const d=c2c/world;
           if(!(isFinite(d)&&d>0)) return null;
@@ -2213,13 +2249,52 @@ window.addEventListener('DOMContentLoaded', () => {
                    cur z3 against was z2.967, six frames running). Ask the proposal's own history;
                    fall back to the applied zoom only on the first frame, where the proposal has just
                    been cloned from it and the two agree by construction. */
-                const zRef=(last&&isFinite(last.zoom))?last.zoom:was.zoom;
+                /* (#R177) …and "Δ from WHAT" has to be asked of BOTH histories, exactly as #R173
+                   established for the centre. Once the sphere branch returns a zoom, the applied zoom
+                   and the proposed one diverge, and WHICH of them the proposal was derived from
+                   depends on the gesture:
+                     · a DRAG keeps one running `_requestedCameraState`, so the proposal's zoom is
+                       unchanged frame to frame while the applied zoom moves under it — the answer is
+                       in `last`. (Measured against the applied zoom instead: a plain globe z3 tilt
+                       read as a 2.3 % dolly on every frame, cur z3 against was z2.967.)
+                     · `setPitch`/`jumpTo` re-clone the proposal FROM the applied camera, so the
+                       proposal's zoom is the corrected one and `last` is a round stale — the answer
+                       is in `was`. (Measured against `last` instead: a 0-180° sweep at globe z4 held
+                       the viewpoint only to pitch 2, while a real ctrl-drag held it perfectly.)
+                   Matching EITHER reference means nobody asked to zoom; only differing from both is
+                   a real one. */
+                const zSame=(!!last&&Math.abs(cur.zoom-last.zoom)<1e-9)||Math.abs(cur.zoom-was.zoom)<1e-9;
+                const zRef=zSame?cur.zoom:((last&&isFinite(last.zoom))?last.zoom:was.zoom);
                 const k=(isFinite(cur.zoom)&&isFinite(zRef))?Math.pow(2,zRef-cur.zoom):1;
                 const zoomed=isFinite(k)&&k>0&&Math.abs(k-1)>1e-12;
                 /* (#R177) which of the renderer's two camera models is on screen for THIS proposal */
                 const sphere=gSpherical(t);
                 let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
                 const c2c=gC2C(t,m);
+                /* (#R177) A STALE TARGET ALTITUDE IS A HAZARD BY ITSELF, whatever this frame decides.
+                   MapLibre sizes its frustum from `cameraToCenterDistance + elevation·pixelPerMeter`,
+                   and a target left thousands of look-distances up is the shape of camera that froze
+                   the renderer. It gets there by inheritance, not by any one solve: a tilt past the
+                   horizon legitimately wants its mercator target 8,538 km up at z3, and if the frames
+                   after it DECLINE (nothing to correct) the number survives into a z15 camera where
+                   it is 7,822 look-distances. `isGlobeRendering` follows the RENDER, so the frame
+                   that crosses the swap cannot be relied on to clean up either. So bound it here,
+                   once, against the camera actually on screen — and hand that back on every path
+                   below, including the ones that otherwise change nothing. */
+                let capEl=null;
+                if(was.elevation){
+                  /* against the camera being PROPOSED, not the one being left: 16,373 km is a
+                     proportionate target at z3 with a 10,570 km look distance and an absurd one at
+                     z15 with a 2 km one, and the frame that carries it across is exactly the frame
+                     that declines (at z3/pitch 175 the eye is below the surface, so the sphere solve
+                     has no answer and rightly says so). Not conditioned on the model either: on the
+                     sphere the number is inert, so bounding it there costs nothing and saves the
+                     mercator camera that inherits it. */
+                  const lookNow=(c2c/(tile*Math.pow(2,cur.zoom)))*GEO_CIRC*Math.cos(cur.lat*GEO_RAD);
+                  const capNow=50*Math.abs(lookNow);
+                  if(isFinite(capNow)&&capNow>0&&Math.abs(was.elevation)>capNow) capEl=Math.sign(was.elevation)*capNow;
+                }
+                const NOOP=()=>(capEl!=null?{ elevation:capEl }:{});
                 if(movedFromApplied&&(movedFromLast||!last)){
                   /* Travel — a flyTo/pan is asking to look at a PLACE, so the centre is left alone (#R173).
                      (#R175) But a journey that also ZOOMS still has to carry the look-at target's altitude
@@ -2227,13 +2302,23 @@ window.addEventListener('DOMContentLoaded', () => {
                      ground while nothing has tilted, and a target left at a fixed altitude while the look
                      distance shrinks is one the camera converges ON. Wheel zoom is exactly this shape —
                      MapLibre zooms around the POINTER, so the centre moves and every frame lands here. */
-                  if(!zoomed) return {};
-                  /* (#R177) …and on the SPHERE there is nothing to carry: the pivot is the surface point,
-                     so the target's elevation moves the camera not at all. Zero it rather than let a
-                     mercator-era value ride along — one did, and froze the renderer (see gSolve). */
+                  /* (#R177) On the SPHERE there is nothing to carry: the pivot is the surface point, so
+                     the target's elevation moves the camera not at all. Zero it on EVERY such frame,
+                     zooming or not — a declined frame leaves the previous value in place, and a
+                     mercator-era one that rode along this way is what froze the renderer (see gSolve).
+                     Inert here by construction, so it costs nothing. */
                   if(sphere) return { elevation:0 };
-                  if(!was.elevation) return {};
-                  const el=was.elevation*k; return isFinite(el)?{ elevation:el }:{};
+                  if(!zoomed) return NOOP();
+                  if(!was.elevation) return NOOP();
+                  /* (#R177) …and bounded by the same rule the anchored branch uses. Unbounded, a
+                     target altitude carried in from an extreme tilt survives every pan: measured
+                     16,373 km at z15 — 7,822 look-distances — which is the shape of camera that
+                     froze the renderer. */
+                  const look=(c2c/(tile*Math.pow(2,cur.zoom)))*GEO_CIRC*Math.cos(cur.lat*GEO_RAD);
+                  let el=was.elevation*k;
+                  const cap=50*Math.abs(look);
+                  if(isFinite(cap)&&cap>0&&Math.abs(el)>cap) el=Math.sign(el)*cap;
+                  return isFinite(el)?{ elevation:el }:{};
                 }
                 /* (#R173) …and it must answer EVERY such update, including the ones that change nothing.
                    #R172 returned {} whenever the pitch had not moved since the last frame, and that is what
@@ -2245,13 +2330,13 @@ window.addEventListener('DOMContentLoaded', () => {
                    dropped the eye to −18,606 m. The same last-frame snap-back moved easeTo({pitch}) by 18.6 km.
                    Solving with an unchanged pitch is the IDENTITY (the eye is derived from the applied camera
                    and immediately solved back into it), so answering always costs nothing and closes the hole. */
-                try{ if(window.__fsCamActive) return {}; }catch(_){}
+                try{ if(window.__fsCamActive) return NOOP(); }catch(_){}
                 /* WHERE THE EYE IS NOW — the applied camera run through the renderer's own geometry, with the
                    look distance already scaled by `k` so that a zoom in the same update lands as the DOLLY it
                    is (#R175). Both statements the last three rounds traded against each other — "hold the eye
                    while the attitude changes" and "a zoom is a dolly" — are this one call. */
                 const anchor=gEye(was,c2c,tile,sphere,k);
-                if(!anchor) return {};
+                if(!anchor) return NOOP();
                 /* …and the camera that puts it back there at the NEW attitude. Never declines: #R173 proved a
                    refused frame is applied verbatim and wipes every correction before it — that is what the old
                    |lat|>89.5 guard did when it produced a 23,152 km single-frame snap at z3 (「挙動もぎこちない」).
@@ -2259,10 +2344,14 @@ window.addEventListener('DOMContentLoaded', () => {
                    the branch nearest the proposal so it cannot flip between frames. */
                 let zLim=null; try{ zLim=[m.getMinZoom(),m.getMaxZoom()]; }catch(_){}
                 const sol=gSolve(anchor,cur.pitch,cur.bearing,c2c,tile,cur.zoom,sphere,cur,zLim);
-                if(!sol) return {};
-                /* a real LngLat, not a pair: the renderer hands the override straight to Transform.setCenter */
-                let ctr; try{ ctr=new maplibregl.LngLat(sol.lng,sol.lat); }catch(_){ ctr={lng:sol.lng,lat:sol.lat}; }
-                const out={ center:ctr, elevation:sol.elevation };
+                if(!sol) return NOOP();
+                const out={ elevation:sol.elevation };
+                /* a real LngLat, not a pair: the renderer hands the override straight to
+                   Transform.setCenter. Omitted when the solve has no centre to offer — past the reach
+                   of the sphere's parameterisation the least-moving answer is the proposal's own. */
+                if(isFinite(sol.lng)&&isFinite(sol.lat)){
+                  try{ out.center=new maplibregl.LngLat(sol.lng,sol.lat); }catch(_){ out.center={lng:sol.lng,lat:sol.lat}; }
+                }
                 /* only the sphere returns a zoom, and only because its pivot leaves no other freedom */
                 if(sol.zoom!=null&&isFinite(sol.zoom)) out.zoom=sol.zoom;
                 return out;

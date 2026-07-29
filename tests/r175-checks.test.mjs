@@ -52,8 +52,10 @@ test('R175 ①: the tilt hook dollies — the target scales with the look distan
          tilt read as a 2.3 % dolly, six frames running.
      The claim is #R175's, unchanged: the dolly scales the anchored eye, a pure zoom is the identity,
      and the target is solved at the PROPOSED look distance. */
-  assert.match(body, /const zRef=\(last&&isFinite\(last\.zoom\)\)\?last\.zoom:was\.zoom;/,
-    'the dolly is measured against the proposal’s own history (the applied zoom now diverges from it)');
+  assert.match(body, /const zSame=\(!!last&&Math\.abs\(cur\.zoom-last\.zoom\)<1e-9\)\|\|Math\.abs\(cur\.zoom-was\.zoom\)<1e-9;/,
+    'a zoom is only real when it differs from BOTH histories — the drag answers in `last`, jumpTo in `was`');
+  assert.match(body, /const zRef=zSame\?cur\.zoom:\(\(last&&isFinite\(last\.zoom\)\)\?last\.zoom:was\.zoom\);/,
+    'the dolly is measured against whichever history the proposal actually came from');
   assert.match(body, /const k=\(isFinite\(cur\.zoom\)&&isFinite\(zRef\)\)\?Math\.pow\(2,zRef-cur\.zoom\):1;/,
     'the look-distance ratio must be derived from the zoom difference');
   assert.match(body, /function gEye\(cam,c2c,tile,sphere,k\)\{/,
@@ -74,7 +76,7 @@ test('R175 ①: a zoom that also travels still carries the target altitude', () 
      surface, so the target's elevation moves the camera not at all — and it must actively zero the
      number instead of letting a mercator-era one ride along: one did (1,488 km, at pitch 120) and
      the next camera change froze the renderer inside its tile cover. */
-  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(!zoomed\) return \{\};[\s\S]*?if\(sphere\) return \{ elevation:0 \};[\s\S]*?const el=was\.elevation\*k; return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
+  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(sphere\) return \{ elevation:0 \};[\s\S]*?if\(!zoomed\) return NOOP\(\);[\s\S]*?let el=was\.elevation\*k;[\s\S]*?return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
     'a travelling frame that also zooms must scale the elevation and leave the centre alone');
 });
 

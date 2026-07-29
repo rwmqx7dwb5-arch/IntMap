@@ -61,9 +61,9 @@ test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with 
   /* (#R177) …AND THE SPHERE, which #R176 had no expression for at all */
   assert.match(body, /const gSpherical=t=>\{ try\{ return !!\(t&&t\.isGlobeRendering\); \}/,
     'the hook asks the renderer WHICH camera model is on screen');
-  assert.match(body, /const dgWant=-cp\+Math\.sqrt\(Math\.max\(0,cp\*cp-1\+r\*r\)\);/,
+  assert.match(body, /const dg=-cp\+Math\.sqrt\(Math\.max\(0,cp\*cp-1\+rr\*rr\)\);/,
     'on the sphere the eye’s own radius fixes the look distance — |eye|² = 1 + dg² + 2·dg·cos p');
-  assert.match(body, /return \{ lng:cWant\.lng\/GEO_RAD, lat:cWant\.lat\/GEO_RAD, zoom:zWant, elevation:0, held:true \};/,
+  assert.match(body, /if\(sol&&sol\.ok\) return \{ lng:sol\.lng\/GEO_RAD, lat:sol\.lat\/GEO_RAD, zoom:sol\.z, elevation:0, held:true \};/,
     'so the ZOOM is what a tilt spends there — the pivot is on the surface, there is no other freedom');
   /* THE regression that produced the jerk: a declined frame applies the proposal verbatim (#R173) */
   assert.doesNotMatch(body, /Math\.abs\(lat\)>89\.5\) return \{\};/, 'the 89.5° bail-out must be gone');
@@ -215,7 +215,13 @@ test('R176: the three simulators are in the right places, catalogued, and source
 });
 
 test('R176: the build stamp was bumped', () => {
-  assert.match(index, /window\.INTMAP_BUILD='2026-07-29-R176'/, 'the anti-stale-version stamp names this round');
+  /* (#R177) #R176's own notes say "do not pin your round's value into a test that checks the stamp
+     MOVED — it is meaningless the next round", and then this line pinned '2026-07-29-R176'. What it
+     is really guarding is that the stamp did not sit still (it was stuck at R171 through #R172 and
+     #R173), so: it must name a round AT OR AFTER the one that wrote this check, forever. */
+  const m = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)'/.exec(index);
+  assert.ok(m, 'the anti-stale-version stamp is present and well-formed');
+  assert.ok(Number(m[2]) >= 176, `the stamp names R${m[2]}, which is older than the round that added this check`);
 });
 
 /* ── the split invariants every round since #R162 has to keep ─────────────────────────────────── */

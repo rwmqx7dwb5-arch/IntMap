@@ -48,7 +48,7 @@ test('the tilt anchor lets a zoom move the camera', () => {
      the identity for a pure tilt and a true dolly for a zoom. The assertion below is the same
      QUESTION #R174 asked — does a zoom still move the camera — expressed against that solution. */
   const idx = appShell(root);
-  const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 12000);
+  const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 20000);
   const code = stripComments(hook);
   /* (#R176) SUPERSEDED AGAIN IN MECHANISM, KEPT IN INTENT. The solve now runs in MERCATOR units —
      the metres-per-degree conversion these assertions named was a tangent plane, true at z12 where
