@@ -110,6 +110,23 @@ for (const dsf of [1, 2]) {
       expect(r.chose.bias, `the level bias must be ${r.hi ? 1 : 0} on this display`).toBe(r.hi ? 1 : 0);
       expect(r.chose.z, 'so it warms exactly the level the protocol will fetch')
         .toBe(r.chose.mapZoom + (r.hi ? 1 : 0));
+      /* …and ONLY for the provider that stitches. Switching to a plain XYZ provider must drop the bias,
+         or its prefetch would warm a level nothing fetches — this same defect, pointed the other way. */
+      const other = await page.evaluate(async () => {
+        const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+        const S = window.__sat;
+        const alt = (S && S.providers || []).find((x) => x.id !== 'esri' && x.tier === 'free');
+        if (!S || !alt) return { skipped: true };
+        S.select(alt.id);
+        await wait(1800);
+        window._imPredictivePrefetch.lastLevel = null;
+        window.__imap.jumpTo({ center: [139.6, 35.6], zoom: 8 });
+        for (let i = 0; i < 30 && !window._imPredictivePrefetch.lastLevel; i++) await wait(200);
+        return { provider: alt.id, chose: window._imPredictivePrefetch.lastLevel };
+      });
+      expect(other.skipped, 'there is a second free provider to switch to').toBeUndefined();
+      expect(other.chose, `the prefetch ran for ${other.provider}`).toBeTruthy();
+      expect(other.chose.bias, `a plain XYZ provider (${other.provider}) must not be biased`).toBe(0);
     });
   });
 }

@@ -1302,7 +1302,11 @@ window.addEventListener('DOMContentLoaded', () => {
        warming a level that is now only the fallback. `_satZBias` shifts the whole prefetch — the
        viewport ring, the travel lead and the zoom-in anticipation — onto the level the protocol
        consumes. 0 on a 1x screen, so nothing changes there. */
-    const _satZBias=(function(){ try{ return (window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.hiDPI())?1:0; }catch(_){ return 0; } })();
+    /* …and ONLY for the provider that actually stitches. `imapsat` serves the Esri base layer; the
+       other providers (Sentinel-2, GIBS, the BYOK ones) are plain XYZ sources whose displayed level
+       is unchanged, so biasing their prefetch would warm a level nothing fetches — the exact defect
+       this is fixing, pointed the other way. */
+    const _satZBias=(function(){ try{ return (p.id==='esri'&&window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.hiDPI())?1:0; }catch(_){ return 0; } })();
     const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom())+_satZBias)), n=Math.pow(2,z);
     const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
