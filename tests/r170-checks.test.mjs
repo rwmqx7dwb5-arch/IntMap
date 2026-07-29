@@ -29,7 +29,10 @@ const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
    is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
    JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */
 const INDEX = appShell(new URL('../', import.meta.url));
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js');
+/* (#R178) …and js/geo-engine.js is not a module either — it is the renderer adapter, carved out of
+   app-body.js this round. It is part of the page's program (see appShell), so questions asked of
+   the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
 function stripComments(src) {
@@ -44,10 +47,14 @@ test('canDraw() is declared in index.html as a hoisted function and exposed to m
 });
 
 test('canDraw() does not answer from isStyleLoaded alone — it must fall through to the parsed-style test', () => {
-  const body = INDEX.slice(INDEX.indexOf('function canDraw()'));
-  const end = body.indexOf('\n  window.IntMapCanDraw');
-  const fn = stripComments(body.slice(0, end > 0 ? end : 900));
-  assert.match(fn, /isStyleLoaded\(\)\)\s*return true/, 'the fast "already fully loaded" path should still short-circuit');
+  /* (#R178) the two answers moved into the ADAPTER as styleParsed(): app-body's canDraw() is now a
+     one-line shim that asks the engine, because the fast path was reading `map.style._loaded` — a
+     private field of a MapLibre class, and the last engine-specific thing outside js/geo-engine.js.
+     Same predicate, same two-step structure; asserted where it now lives. */
+  const fn = stripComments(INDEX.slice(INDEX.indexOf('styleParsed(){')).slice(0, 900));
+  assert.match(stripComments(INDEX), /function canDraw\(\)\{[^}]*E\.canDraw\(\)/,
+    'the app still has ONE named predicate, and it asks the engine');
+  assert.match(fn, /_loaded===true\) return true;[\s\S]*?getStyle\(\);/, 'the fast "already fully loaded" path should still short-circuit');
   assert.ok(/_loaded\s*===\s*true/.test(fn), 'must consult the parsed-style flag (the whole point: true while tiles stream)');
   assert.ok(/getStyle\(\)/.test(fn), 'must keep a PUBLIC-API fallback in case the internal flag ever moves');
 });
@@ -184,7 +191,7 @@ test('the 3-D volume module talks only to IntMapGeoEngine, never to the raw map'
 
 test('the engine contract declares real metric extrusion and the canDraw/ready split', () => {
   assert.match(INDEX, /extrusion3d:true/, 'MapLibre capabilities must advertise metric extrusion');
-  assert.match(INDEX, /canDraw\(\)\{ try\{ return !!\(window\.IntMapCanDraw/, 'the adapter must implement canDraw');
+  assert.match(INDEX, /canDraw\(\)\{ if\(this\.styleReady\(\)\) return true; return this\.styleParsed\(\); \}/   /* (#R178) the engine answers it itself instead of bouncing off window.IntMapCanDraw */, 'the adapter must implement canDraw');
   assert.match(INDEX, /canDraw:\(\)=>_adapter\.canDraw\(\)/, 'and the facade must expose it');
   assert.match(INDEX, /addExtrusion\(d,before\)/); assert.match(INDEX, /setExtrusionRange\(id,baseM,topM\)/);
   const cesium = INDEX.match(/const CESIUM_CONTRACT=[^;]+;/)[0];

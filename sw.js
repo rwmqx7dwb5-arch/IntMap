@@ -12,8 +12,14 @@
  *  without tainting the canvas. A soft LRU cap keeps the cache from growing forever.
  * ========================================================================== */
 const CACHE = 'intmap-tiles-v1';
-const MAX_ENTRIES = 4000;          // ~tiles kept on disk (trimmed oldest-first)
-const TRIM_TO = 3400;              // trim down to this when the cap is hit
+/* (#R178) 4000 → 12000. The cap is what makes a REVISIT free, and 4000 was set before the DEM
+   reached terrarium's native z15 (#R20) and before 3-D became a normal way to use the app: one
+   tilted city view at z15 is already several hundred DEM tiles on top of its imagery, so a session
+   that visits three or four places evicts the first one before you go back to it. Cache Storage is
+   disk-backed and the browser evicts under real pressure anyway, so the cost of a high cap is
+   bookkeeping, not memory. */
+const MAX_ENTRIES = 12000;         // ~tiles kept on disk (trimmed oldest-first)
+const TRIM_TO = 10200;             // trim down to this when the cap is hit
 
 /* Hosts whose responses are immutable tiles worth caching aggressively. */
 const TILE_HOSTS = [
@@ -28,10 +34,27 @@ const TILE_HOSTS = [
   'wmts.terrascope.be',               // (#R17) ESA WorldCover land-cover — single slow host, so cache hard → instant on revisit
   'tiles.openfreemap.org',            // (#R17) vector place labels — cache so labels snap in on revisit
 ];
+/* (#R178) …and some tile sets are identified by PATH, not by host. The terrarium DEM is served from
+   FIVE S3 aliases (#R7 round-robins them so the browser opens five connection pools instead of one),
+   and MapLibre picks the alias per tile as (x+y) % 5 — deterministically. Only ONE of those five
+   spellings was in the host list, so measured, FOUR OUT OF FIVE DEM TILES BYPASSED THIS CACHE
+   ENTIRELY and were re-downloaded on every visit:
+       s3.amazonaws.com                                        MISSED
+       elevation-tiles-prod.s3.amazonaws.com                   cached
+       elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com   MISSED
+       elevation-tiles-prod.s3.us-east-1.amazonaws.com             MISSED
+       s3.dualstack.us-east-1.amazonaws.com                        MISSED
+   Matching the PATH fixes every present and future alias at once, and it cannot over-match: nothing
+   else in the app requests a URL containing /terrarium/. */
+const TILE_PATHS = [
+  '/terrarium/',                      // AWS terrarium DEM, whichever S3 alias served it
+];
 function isTileRequest(url) {
-  let h;
-  try { h = new URL(url).hostname; } catch { return false; }
-  return TILE_HOSTS.some((t) => h === t || h.endsWith('.' + t) || h.endsWith(t));
+  let u;
+  try { u = new URL(url); } catch { return false; }
+  const h = u.hostname;
+  if (TILE_HOSTS.some((t) => h === t || h.endsWith('.' + t) || h.endsWith(t))) return true;
+  return TILE_PATHS.some((p) => u.pathname.indexOf(p) !== -1);
 }
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });

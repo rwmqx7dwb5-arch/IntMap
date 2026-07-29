@@ -12,7 +12,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.betaOverlays=function(map,HOST){
+window.IntMapModules.betaOverlays=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -24,22 +25,22 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     const jp=()=>HOST.lang==='jp';
     const state={ukr:false,bldg:false,hist:false,volc:false};
     const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
-    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
 
     /* ---------- Ukraine frontline (DeepState — curl-verified 200 + Access-Control-Allow-Origin:*) ---------- */
     const UKR_IDS=['ukr-fill','ukr-line','ukr-front'];
     let ukrFC=null, ukrTimer=null;
-    function ukrEnsure(){ if(map.getSource('ukr-src')) return true; if(!_imCanDraw()) return false;
+    function ukrEnsure(){ if(GE().layers.hasSource('ukr-src')) return true; if(!_imCanDraw()) return false;
       try{
-        map.addSource('ukr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'DeepStateMap'});
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addLayer({id:'ukr-fill',type:'fill',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':['*',0.32,['coalesce',['get','fill-opacity'],1]]}},before);
-        map.addLayer({id:'ukr-line',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.4,'line-opacity':0.9}},before);
-        map.addLayer({id:'ukr-front',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'LineString'],['==',['geometry-type'],'MultiLineString']],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','stroke'],'#ff3b30'],'line-width':2.4,'line-opacity':0.95}},before);
+        GE().layers.addSource('ukr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'DeepStateMap'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        GE().layers.add({id:'ukr-fill',type:'fill',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':['*',0.32,['coalesce',['get','fill-opacity'],1]]}},before);
+        GE().layers.add({id:'ukr-line',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.4,'line-opacity':0.9}},before);
+        GE().layers.add({id:'ukr-front',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'LineString'],['==',['geometry-type'],'MultiLineString']],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','stroke'],'#ff3b30'],'line-width':2.4,'line-opacity':0.95}},before);
         return true;
       }catch(_){ return false; } }
     async function ukrLoad(force){
-      if(ukrFC&&!force){ try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){} return true; }
+      if(ukrFC&&!force){ try{ GE().layers.setSourceData('ukr-src',ukrFC); }catch(_){} return true; }
       for(const wrap of PROX){ try{
         const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },15000);
         const r=await fetch(wrap('https://deepstatemap.live/api/history/last'),{signal:ctrl.signal}); clearTimeout(to);
@@ -57,7 +58,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
         const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon/.test(f.geometry.type)&&inUA(f));
         if(!feats.length) continue;
         ukrFC={type:'FeatureCollection',features:feats};
-        try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){}
+        try{ GE().layers.setSourceData('ukr-src',ukrFC); }catch(_){}
         try{ ukrKeyFromData(feats); }catch(_){}
         const when=j.createdAt||j.datetime||j.updatedAt||null;
         const el=document.getElementById('data-legend-ukrfront');
@@ -105,13 +106,13 @@ window.IntMapModules.betaOverlays=function(map,HOST){
       if(rows.length) key.innerHTML=rows.join('');
     }
     function ukrToggle(on){ state.ukr=on;
-      const a=()=>{ if(!ukrEnsure()){ map.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false).then(()=>{ if(ukrFC) ukrKeyFromData(ukrFC.features); }); };
+      const a=()=>{ if(!ukrEnsure()){ GE().events.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false).then(()=>{ if(ukrFC) ukrKeyFromData(ukrFC.features); }); };
       a();
       /* (#R30) NEVER move the camera on a layer toggle ("レイヤーを選択しても視点を一切動かさない") — the
          R21 auto-flyTo to Ukraine violated that. The layer only exists around Ukraine, so instead of moving
          the view we just HINT (once) that the user can pan there. */
-      if(on){ try{ const c=map.getCenter();
-        if((c.lng<18||c.lng>46||c.lat<40||c.lat>57||map.getZoom()<3.4) && !window._ukrHinted){ window._ukrHinted=true;
+      if(on){ try{ const c=GE().camera.getCenter();
+        if((c.lng<18||c.lng>46||c.lat<40||c.lat>57||GE().camera.getZoom()<3.4) && !window._ukrHinted){ window._ukrHinted=true;
           const t=(HOST.lang==='jp'?'ウクライナ前線を表示中（ウクライナ周辺へ移動すると見えます）':HOST.lang==='de'?'Ukraine-Frontlinie aktiv — zur Ukraine schwenken, um sie zu sehen':HOST.lang==='ru'?'Линия фронта включена — переместитесь к Украине, чтобы увидеть её':HOST.lang==='es'?'Línea del frente de Ucrania activada — desplázate a Ucrania para verla':'Ukraine frontline on — pan to Ukraine to see it');
           try{ if(typeof imToast==='function') imToast(t); else if(typeof satToast==='function') satToast(t); }catch(_){} } }catch(_){} }
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
@@ -133,11 +134,11 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     }
 
     /* ---------- 3D city buildings (OpenFreeMap `building` source-layer → fill-extrusion) ---------- */
-    function bldgEnsure(){ if(map.getLayer('ofm-bldg-3d')) return true; if(!_imCanDraw()) return false;
+    function bldgEnsure(){ if(GE().layers.has('ofm-bldg-3d')) return true; if(!_imCanDraw()) return false;
       try{
-        if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
-        const before=map.getLayer('ofm-country')?'ofm-country':(map.getLayer('tool-poly')?'tool-poly':undefined);
-        map.addLayer({id:'ofm-bldg-3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:13.5,layout:{visibility:'none'},paint:{
+        if(!GE().layers.hasSource('ofm')) GE().layers.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
+        const before=GE().layers.has('ofm-country')?'ofm-country':(GE().layers.has('tool-poly')?'tool-poly':undefined);
+        GE().layers.add({id:'ofm-bldg-3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:13.5,layout:{visibility:'none'},paint:{
           'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],8],0,'#c7cfdb',25,'#a8b3c5',80,'#8794ad',200,'#67759a',400,'#4d5c85'],
           'fill-extrusion-height':['coalesce',['get','render_height'],8],
           'fill-extrusion-base':['coalesce',['get','render_min_height'],0],
@@ -145,7 +146,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
         return true;
       }catch(_){ return false; } }
     function bldgToggle(on){ state.bldg=on;
-      const a=()=>{ if(!bldgEnsure()){ map.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
+      const a=()=>{ if(!bldgEnsure()){ GE().events.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',['3D buildings (cities)','3D建物（都市）'],['ofm-bldg-3d'],'beta-dl-bldg3d');
              if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。':'Shows from zoom 14. Tilt (3D button / right-drag) to see depth.'; el.appendChild(d); } }
@@ -161,13 +162,13 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     const HB_YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     let hbYear=1920; const hbCache=new Map();
     const HB_PAL=['#e6a176','#7eb6e8','#9fd29a','#e8a4c2','#cbb1e6','#ffd78a','#9adfd2','#e8938c','#b9c98a','#a7b8d9','#dcc4a1','#90c7e0'];
-    function hbEnsure(){ if(map.getSource('hb-src')) return true; if(!_imCanDraw()) return false;
+    function hbEnsure(){ if(GE().layers.hasSource('hb-src')) return true; if(!_imCanDraw()) return false;
       try{
-        map.addSource('hb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addLayer({id:'hb-fill',type:'fill',source:'hb-src',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.30}},before);
-        map.addLayer({id:'hb-line',type:'line',source:'hb-src',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}},before);
-        map.addLayer({id:'hb-lbl',type:'symbol',source:'hb-src',minzoom:2.2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#4a3a26','text-halo-color':'rgba(255,250,240,0.9)','text-halo-width':1.4}},before);
+        GE().layers.addSource('hb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        GE().layers.add({id:'hb-fill',type:'fill',source:'hb-src',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.30}},before);
+        GE().layers.add({id:'hb-line',type:'line',source:'hb-src',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}},before);
+        GE().layers.add({id:'hb-lbl',type:'symbol',source:'hb-src',minzoom:2.2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#4a3a26','text-halo-color':'rgba(255,250,240,0.9)','text-halo-width':1.4}},before);
         return true;
       }catch(_){ return false; } }
     async function hbLoad(year){
@@ -195,7 +196,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
         const note=document.querySelector('#data-legend-histb .hb-note');
         if(note) note.textContent=jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)';
       }
-      if(fc&&hbYear===year){ try{ map.getSource('hb-src').setData(fc); }catch(_){} }
+      if(fc&&hbYear===year){ try{ GE().layers.setSourceData('hb-src',fc); }catch(_){} }
       /* warm the neighboring years in the background so slider scrubbing is instant */
       try{ const i=HB_YEARS.indexOf(year); [HB_YEARS[i-1],HB_YEARS[i+1]].forEach(y=>{ if(y&&!hbCache.has(y)) setTimeout(()=>{ if(state.hist&&!hbCache.has(y)) hbPrefetch(y); },1200); }); }catch(_){}
     }
@@ -212,7 +213,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
       }catch(_){} }
     }
     function hbToggle(on){ state.hist=on;
-      const a=()=>{ if(!hbEnsure()){ map.once('idle',a); return; } setVis(HB_IDS,on); if(on) hbLoad(hbYear); };
+      const a=()=>{ if(!hbEnsure()){ GE().events.once('idle',a); return; } setVis(HB_IDS,on); if(on) hbLoad(hbYear); };
       a();
       try{
         if(on&&window._registerLayerOpacity){
@@ -259,35 +260,35 @@ window.IntMapModules.betaOverlays=function(map,HOST){
        (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
     const VL_IDS=['volc2-pt','volc2-lbl'];
     let volcFC=null, volcLoading=false;
-    function volcEnsure(){ if(map.getSource('volc2-src')) return true; if(!_imCanDraw()) return false;
+    function volcEnsure(){ if(GE().layers.hasSource('volc2-src')) return true; if(!_imCanDraw()) return false;
       try{
-        map.addSource('volc2-src',{type:'geojson',data:volcFC||{type:'FeatureCollection',features:[]},attribution:'Smithsonian GVP'});
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addLayer({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
+        GE().layers.addSource('volc2-src',{type:'geojson',data:volcFC||{type:'FeatureCollection',features:[]},attribution:'Smithsonian GVP'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        GE().layers.add({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.2,5,4.6,9,8],
           /* recently-erupted = hotter color (y = last eruption year; null/old = gray-orange) */
           'circle-color':['case',['>=',['coalesce',['get','y'],-99999],1950],'#ff3b30',['>=',['coalesce',['get','y'],-99999],1500],'#ff8a3d','#c98f6b'],
           'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
-        map.addLayer({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
-        map.on('click','volc2-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+        GE().layers.add({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
+        GE().events.onLayer('click','volc2-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           const yr=(p.y==null||p.y==='null')?(jp()?'噴火記録なし':'No dated eruption'):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(jp()?'年に最終噴火':' last eruption'));
           const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
           try{ if(popup) popup.remove(); }catch(_){}
-          try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map); }catch(_){}
+          try{ popup=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map); }catch(_){}
         });
-        map.on('mouseenter','volc2-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','volc2-pt',()=>{ map.getCanvas().style.cursor=''; });
+        GE().events.onLayer('mouseenter','volc2-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','volc2-pt',()=>{ GE().render.canvas().style.cursor=''; });
         return true;
       }catch(_){ return false; } }
     let popup=null;
-    async function volcLoad(){ if(volcFC){ try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} return; }
+    async function volcLoad(){ if(volcFC){ try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} return; }
       if(volcLoading) return; volcLoading=true;
       try{ const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
-        if(j&&Array.isArray(j.features)){ volcFC=j; try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} }
+        if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} }
       }catch(_){ try{ imToast(jp()?'火山データを読み込めませんでした':'Could not load volcano data'); }catch(_){} }
       volcLoading=false; }
     function volcToggle(on){ state.volc=on;
-      const a=()=>{ if(!volcEnsure()){ map.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
+      const a=()=>{ if(!volcEnsure()){ GE().events.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
       a();
       try{ if(on&&window._registerLayerOpacity){
             const el=window._registerLayerOpacity('volc2',['Volcanoes (GVP Holocene)','火山（GVP完新世）'],VL_IDS,'beta-dl-volc2');
@@ -319,11 +320,11 @@ window.IntMapModules.betaOverlays=function(map,HOST){
     function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?BLBL[k][0]:BLBL[k][1]; }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
-    map.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc){ setTimeout(()=>{
-      if(state.ukr&&ukrEnsure()){ setVis(UKR_IDS,true); if(ukrFC){ try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){} } }
+    GE().events.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc){ setTimeout(()=>{
+      if(state.ukr&&ukrEnsure()){ setVis(UKR_IDS,true); if(ukrFC){ try{ GE().layers.setSourceData('ukr-src',ukrFC); }catch(_){} } }
       if(state.bldg&&bldgEnsure()) setVis(['ofm-bldg-3d'],true);
-      if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ map.getSource('hb-src').setData(fc); }catch(_){} } }
-      if(state.volc&&volcEnsure()){ setVis(VL_IDS,true); if(volcFC){ try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} } }
+      if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ GE().layers.setSourceData('hb-src',fc); }catch(_){} } }
+      if(state.volc&&volcEnsure()){ setVis(VL_IDS,true); if(volcFC){ try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} } }
     },80); } });
     /* (#R21) under memory pressure, keep only the displayed year's borders */
     window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });

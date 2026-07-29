@@ -151,8 +151,11 @@ test('R169 #2 THE SHIM CONTRACT: every exported name is a hoisted forwarding dec
 });
 
 test('R169 #3 POSITION: the eleven calls sit together after the map is built, before any eager use', () => {
-  const mapAssign = lf.indexOf('map=new maplibregl.Map({');
-  assert.ok(mapAssign > 0, 'index.html constructs the map exactly where expected');
+  /* (#R178) the construction is spelled `map=GE().ui.createView({` now: even the PRIMARY view goes
+     through the engine contract, since js/geo-engine.js is imported before app-body.js runs. The
+     invariant is unchanged — one binding, one place, everything else after it. */
+  const mapAssign = lf.indexOf('map=GE().ui.createView({');
+  assert.ok(mapAssign > 0, 'the app constructs the map exactly where expected');
 
   const at = NAMES.map((m) => ({ m, i: lf.indexOf(callOf(m)) }));
   for (const x of at) assert.ok(x.i > mapAssign, `${x.m} is instantiated AFTER the map is constructed`);

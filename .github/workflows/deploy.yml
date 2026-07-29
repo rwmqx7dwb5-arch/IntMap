@@ -41,6 +41,8 @@ jobs:
       - run: npm ci
       - name: Static checks
         run: npm run check:static
+      - name: Renderer-decoupling gate (#R178)
+        run: npm run check:engine
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Browser smoke + internal QA (gate)

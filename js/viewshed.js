@@ -36,6 +36,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.los=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, _demZoomForSpan=HOST._demZoomForSpan, warmDEMTiles=HOST.warmDEMTiles,
@@ -80,30 +81,30 @@ window.IntMapModules.los=function(map,HOST){
     /* ---- layers ------------------------------------------------------------------------------ */
     function ensureLayers(){ if(!_imCanDraw()) return false;
       try{
-        if(!map.getSource(SRC)) map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        if(!map.getLayer('los-site')) map.addLayer({id:'los-site',type:'circle',source:SRC,filter:['==',['get','kind'],'site'],
+        if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(!GE().layers.has('los-site')) GE().layers.add({id:'los-site',type:'circle',source:SRC,filter:['==',['get','kind'],'site'],
           paint:{'circle-radius':6,'circle-color':'#ffd23f','circle-stroke-color':'#3a2a00','circle-stroke-width':2}});
         return true;
       }catch(_){ return false; } }
-    function setSite(){ try{ if(ensureLayers()) map.getSource(SRC).setData({type:'FeatureCollection',
+    function setSite(){ try{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',
       features: site?[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]:[] }); }catch(_){} }
     /* The overlay is ONE image, so precision is the raster's, not a polygon's. Rebuilt (not patched)
        on every run — an image source keeps its texture until it is handed a new one. */
     function paint(dataUrl, coords){
       try{
         if(!_imCanDraw()) return;
-        const s=map.getSource(IMGSRC);
-        if(s&&s.updateImage){ s.updateImage({url:dataUrl,coordinates:coords}); }
+        const s=GE().layers.hasSource(IMGSRC);
+        if(s){ GE().layers.updateImage(IMGSRC,{url:dataUrl,coordinates:coords}); }
         else {
-          if(s){ try{ if(map.getLayer(IMGLYR)) map.removeLayer(IMGLYR); map.removeSource(IMGSRC); }catch(_){} }
-          map.addSource(IMGSRC,{type:'image',url:dataUrl,coordinates:coords});
-          const before=(()=>{ for(const id of ['los-site','pl-outline-fill']){ try{ if(map.getLayer(id)) return id; }catch(_){} } return undefined; })();
-          map.addLayer({id:IMGLYR,type:'raster',source:IMGSRC,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before);
+          if(s){ try{ if(GE().layers.has(IMGLYR)) GE().layers.remove(IMGLYR); GE().layers.removeSource(IMGSRC); }catch(_){} }
+          GE().layers.addSource(IMGSRC,{type:'image',url:dataUrl,coordinates:coords});
+          const before=(()=>{ for(const id of ['los-site','pl-outline-fill']){ try{ if(GE().layers.has(id)) return id; }catch(_){} } return undefined; })();
+          GE().layers.add({id:IMGLYR,type:'raster',source:IMGSRC,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before);
         }
       }catch(_){}
     }
-    function wipe(){ try{ if(map.getLayer(IMGLYR)) map.removeLayer(IMGLYR); }catch(_){}
-      try{ if(map.getSource(IMGSRC)) map.removeSource(IMGSRC); }catch(_){} }
+    function wipe(){ try{ if(GE().layers.has(IMGLYR)) GE().layers.remove(IMGLYR); }catch(_){}
+      try{ if(GE().layers.hasSource(IMGSRC)) GE().layers.removeSource(IMGSRC); }catch(_){} }
 
     /* ---- progress ---------------------------------------------------------------------------- */
     function setProgress(frac,label){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;

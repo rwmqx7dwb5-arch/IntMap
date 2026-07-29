@@ -31,9 +31,17 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
  * they would all pass vacuously (it no longer contains the code they assert about), and a whole
  * generation of split invariants would go quiet in exactly the way they were written to prevent.
  */
+/*
+ * (#R178) …and FOUR files now. js/geo-engine.js is the renderer adapter plus the IntMapGeoEngine
+ * facade, moved verbatim out of js/app-body.js this round: it had been created inside
+ * `map.on('load', …)`, so it did not exist when the modules — now written entirely against it — run
+ * their factories at import time. Nothing about it is a module in the js/ sense; it is a piece of the
+ * page's own program that happens to live in its own file, exactly as app-body.js is. Leaving it out
+ * would quietly retire every engine-contract invariant from #R152 onward.
+ */
 export function appShell(root) {
   const parts = [];
-  for (const rel of ['index.html', 'src/main.js', 'src/vendor.js', 'js/app-body.js']) {
+  for (const rel of ['index.html', 'src/main.js', 'src/vendor.js', 'js/app-body.js', 'js/geo-engine.js']) {
     const u = new URL(rel, root);
     if (existsSync(u)) parts.push(readFileSync(u, 'utf8'));
   }

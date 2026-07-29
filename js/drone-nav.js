@@ -457,15 +457,15 @@ window.IntMapModules.droneNav=function(map,HOST){
   const SRC_PATH='drone-path-src', LYR_GROUND='drone-path-ground', LYR_AIR='drone-path-air';
   const SRC_WP='drone-wp-src', LYR_WP_POST='drone-wp-post', LYR_WP='drone-wp', LYR_HAZ='drone-hazard';
   const COL_OK='#0a84ff', COL_BAD='#ff453a', COL_WP='#ffd23f';
-  function mppCentre(){ try{ const c=map.getCenter(); let w=0;
-      try{ const v=map.transform&&map.transform.worldSize; if(isFinite(v)&&v>0) w=v; }catch(_){}
-      if(!w) w=512*Math.pow(2,map.getZoom()||0);
+  function mppCentre(){ try{ const c=GE().camera.getCenter(); let w=0;
+      try{ const v=GE().coords.worldSize(); if(isFinite(v)&&v>0) w=v; }catch(_){}
+      if(!w) w=512*Math.pow(2,GE().camera.getZoom()||0);
       const m=(2*Math.PI*R_EARTH*Math.cos((c.lat||0)*D2R))/w; return (isFinite(m)&&m>0)?m:50; }catch(_){ return 50; } }
   /* With 3-D terrain ON the renderer's metres are height ABOVE THE GROUND under the map centre; with it
      off they are metres above sea level. Same trap the 3-D volume tool documents — subtract the centre's
      ground elevation when terrain is on so an AMSL number lands at that altitude either way. */
   function groundOffset(){ try{ if(!HOST.terrain3D) return 0;
-      const c=map.getCenter(); const g=map.queryTerrainElevation?map.queryTerrainElevation({lng:c.lng,lat:c.lat}):null;
+      const c=GE().camera.getCenter(); const g=GE().coords.terrainElevation?GE().coords.terrainElevation({lng:c.lng,lat:c.lat}):null;
       return (g==null||!isFinite(g))?0:+g; }catch(_){ return 0; } }
   function ribbon(a,b,halfM){ const mLat=110574, mLng=(111320*Math.cos(((a.lat+b.lat)/2)*D2R))||1;
     let dx=(b.lng-a.lng)*mLng, dy=(b.lat-a.lat)*mLat; const len=Math.hypot(dx,dy)||1; dx/=len; dy/=len;
@@ -693,8 +693,8 @@ window.IntMapModules.droneNav=function(map,HOST){
     p.querySelectorAll('[data-down]').forEach(b=>{ b.onclick=()=>{ if(moveWaypoint(+b.getAttribute('data-down'),1)) compute().then(render); }; });
     p.querySelectorAll('[data-del]').forEach(b=>{ b.onclick=()=>{ if(removeWaypoint(+b.getAttribute('data-del'))) compute().then(render); }; });
     { const b=p.querySelector('#dn-add'); if(b) b.onclick=()=>{ addMode=!addMode;
-        try{ map.getCanvas().style.cursor=addMode?'crosshair':''; }catch(_){} render(); }; }
-    { const b=p.querySelector('#dn-addc'); if(b) b.onclick=()=>{ try{ const c=map.getCenter(); addWaypoint(c.lng,c.lat); }catch(_){} compute().then(render); }; }
+        try{ GE().render.canvas().style.cursor=addMode?'crosshair':''; }catch(_){} render(); }; }
+    { const b=p.querySelector('#dn-addc'); if(b) b.onclick=()=>{ try{ const c=GE().camera.getCenter(); addWaypoint(c.lng,c.lat); }catch(_){} compute().then(render); }; }
     { const b=p.querySelector('#dn-calc'); if(b) b.onclick=()=>{ compute().then(render); }; }
     { const b=p.querySelector('#dn-follow'); if(b) b.onclick=()=>{ followTerrain().then(render); }; }
     { const b=p.querySelector('#dn-save'); if(b) b.onclick=()=>{ if(saveRoute()){ try{ HOST.imToast(L('Route saved','経路を保存しました','Route gespeichert','Маршрут сохранён','Ruta guardada')); }catch(_){} render(); } }; }
@@ -704,7 +704,7 @@ window.IntMapModules.droneNav=function(map,HOST){
     /* clicking a finding flies to the point it is about — the reason and the place, together */
     p.querySelectorAll('.dn-vio').forEach(d=>{ d.onclick=()=>{ const st=lastResult; if(!st) return;
       const s=st.samples[+d.getAttribute('data-at')]; if(!s) return;
-      try{ map.flyTo({ center:[s.lng,s.lat], zoom:Math.max(map.getZoom(),14), pitch:Math.max(map.getPitch(),55), duration:900 }); }catch(_){} }; });
+      try{ GE().camera.flyTo({ center:[s.lng,s.lat], zoom:Math.max(GE().camera.getZoom(),14), pitch:Math.max(GE().camera.getPitch(),55), duration:900 }); }catch(_){} }; });
   }
 
   /* ---- map clicks ---------------------------------------------------------------------------
@@ -728,13 +728,13 @@ window.IntMapModules.droneNav=function(map,HOST){
     try{ HOST.bringToFront&&HOST.bringToFront(p); }catch(_){}
     if(lastResult) draw(lastResult);
     return true; }
-  function close(){ addMode=false; try{ map.getCanvas().style.cursor=''; }catch(_){}
+  function close(){ addMode=false; try{ GE().render.canvas().style.cursor=''; }catch(_){}
     if(panel) panel.style.display='none'; draw(null); return true; }
   function toggle(){ return panelOpen()?close():open(); }
 
   /* ---- boot ---------------------------------------------------------------------------------- */
   loadStore();
-  try{ map.on('click',onMapClick); map.on('zoomend',onZoom); map.on('terrain',onZoom); }catch(_){}
+  try{ GE().events.on('click',onMapClick); GE().events.on('zoomend',onZoom); GE().events.on('terrain',onZoom); }catch(_){}
   window.addEventListener('intmap-lang',()=>{ if(panelOpen()) render(); });
   /* (#R176) No toolbar button any more — 「DronesはMeasureに置くな。どこにも置くな。」. The three
      setTimeout(wireButton) probes that used to hunt for #btn-tool-drone are gone with it; the planner is
@@ -755,7 +755,7 @@ window.IntMapModules.droneNav=function(map,HOST){
     usePreset(id){ const x=PRESETS.find(q=>q.id===id); if(!x||!route) return false;
       route.spec=Object.assign({},x.spec); route.presetId=id; lastResult=null; return true; },
     setTypedRef(r){ typedRef=(r==='amsl')?'amsl':'agl'; return typedRef; }, typedRef:()=>typedRef,
-    setAddMode(v){ addMode=!!v; try{ map.getCanvas().style.cursor=addMode?'crosshair':''; }catch(_){} if(panelOpen()) render(); return addMode; },
+    setAddMode(v){ addMode=!!v; try{ GE().render.canvas().style.cursor=addMode?'crosshair':''; }catch(_){} if(panelOpen()) render(); return addMode; },
     /* the answer */
     compute, followTerrain, result:()=>lastResult,
     /* storage */

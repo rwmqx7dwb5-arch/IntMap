@@ -75,7 +75,7 @@ window.IntMapModules.streetView=function(map,HOST){
        there, so the map always shows exactly where SV is looking (the keyless Google embed is cross-origin, so we
        drive the position from the map instead of reading it back). */
     function _setHere(lng,lat,hdg){ _hereLL={lng:+lng,lat:+lat}; if(hdg!=null&&isFinite(+hdg)) _hereHdg=((+hdg%360)+360)%360;
-      try{ if(!_hereMarker){ _hereMarker=new maplibregl.Marker({element:_hereEl(),rotationAlignment:'map',pitchAlignment:'map',draggable:true});
+      try{ if(!_hereMarker){ _hereMarker=GE().ui.marker({element:_hereEl(),rotationAlignment:'map',pitchAlignment:'map',draggable:true});
           _hereMarker.on('dragstart',()=>{ _svDragging=true; try{ _hereMarker.getElement().style.cursor='grabbing'; }catch(_){} });
           _hereMarker.on('dragend',()=>{ _svDragging=false; try{ _hereMarker.getElement().style.cursor='grab'; }catch(_){} let dp; try{ dp=_hereMarker.getLngLat(); }catch(_){} if(!dp) return;
             /* (#R140) snap the dropped viewpoint onto Google's REAL coverage too, so dragging never strands the marker

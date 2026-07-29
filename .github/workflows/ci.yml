@@ -31,6 +31,10 @@ jobs:
       - run: npm ci
       - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets, action-pinning)
         run: npm run check:static
+      # (#R178) 「MapLibre依存脱却」: only js/geo-engine.js may name the renderer. An AST gate, so a
+      # comment that says "the map. When…" never trips it, and a local `map` variable is not coupling.
+      - name: Renderer-decoupling gate (only js/geo-engine.js may name MapLibre)
+        run: npm run check:engine
       # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
       # which is exactly the kind of guard that must not be optional. `npm run test:checks` is the

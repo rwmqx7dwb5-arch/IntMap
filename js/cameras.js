@@ -12,7 +12,9 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.cameras=function(map,HOST){
+window.IntMapModules.cameras=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -38,13 +40,13 @@ window.IntMapModules.cameras=function(map,HOST){
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
     function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc()});
-      if(!map.getLayer('webcams-pt')){
-        map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-        map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
-        map.on('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
-        map.on('mouseenter','webcams-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','webcams-pt',()=>{ map.getCanvas().style.cursor=''; });
+      if(!GE().layers.hasSource('webcams-src')) GE().layers.addSource('webcams-src',{type:'geojson',data:fc()});
+      if(!GE().layers.has('webcams-pt')){
+        GE().layers.add({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
+        GE().events.onLayer('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
+        GE().events.onLayer('mouseenter','webcams-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','webcams-pt',()=>{ GE().render.canvas().style.cursor=''; });
       }
       return true; }catch(_){ return false; } }
     function openCam(f){ _stopRefresh(); const p=f.properties||{}; const nm=String(p.n||'Camera').replace(/[<>]/g,''); const url=String(p.url||''); const kind=String(p.kind||''); const c=f.geometry.coordinates.slice();
@@ -68,7 +70,7 @@ window.IntMapModules.cameras=function(map,HOST){
         +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">'+refreshTxt+srcTxt+'</span>'
         +'<a href="'+IntMapSafe.html(IntMapSafe.url(url||p.video||p.img)||'#')+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Source','ソース','Quelle','Источник','Fuente')+' ↗</a></div>';   /* (#R138 SEC) http(s)-only + escape */
       if(popup) popup.remove();
-      popup=new maplibregl.Popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
+      popup=GE().ui.popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
       try{ popup.on('close',_stopRefresh); }catch(_){}
       /* (#R87) thumbnail → swap the main live image to that view */
       try{ const root=popup.getElement&&popup.getElement(); if(root){ root.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('.wc-thumb'); if(!b) return; const u=b.getAttribute('data-u'); const main=root.querySelector('img.wc-live'); if(main&&u){ main.setAttribute('data-base',u); main.style.display='block'; const off=main.parentNode&&main.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; main.src=u+(u.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); } }); } }catch(_){}
@@ -83,7 +85,7 @@ window.IntMapModules.cameras=function(map,HOST){
       fetch('https://api.tfl.gov.uk/Place/Type/JamCam').then(r=>r.ok?r.json():null).then(arr=>{ if(!Array.isArray(arr)) return; let add=0;
         arr.forEach(cm=>{ const ap={}; (cm.additionalProperties||[]).forEach(x=>{ ap[x.key]=x.value; }); if(String(ap.available)==='false'||!ap.imageUrl) return; const id='tfl_'+cm.id; if(camById[id]) return;
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[+cm.lon,+cm.lat]},properties:{n:cm.commonName||'Traffic camera',url:ap.imageUrl||'',kind:'tfl',img:ap.imageUrl||'',video:ap.videoUrl||'',net:'tfl',col:'#ff6d00',attr:'© Transport for London'}}; add++; });
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ tflDone=false; }); }
     /* (#R87) Caltrans (California DOT) CCTV — ~3,500 live traffic cameras across the state's 12 districts, keyless
        open JSON, each a direct refreshing JPEG (`currentImageURL`, updated ~5 min). Fetched ONCE per district. A
@@ -94,7 +96,7 @@ window.IntMapModules.cameras=function(map,HOST){
           j.data.forEach(rec=>{ const c=rec&&rec.cctv; if(!c||!c.location) return; if(String(c.inService)!=='true') return; const st=c.imageData&&c.imageData.static; const img=st&&st.currentImageURL; if(!img) return;
             const lon=+c.location.longitude, lat=+c.location.latitude; if(!isFinite(lon)||!isFinite(lat)||(!lon&&!lat)) return; const id='ca_'+dd+'_'+c.index; if(camById[id]) return;
             camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[lon,lat]},properties:{n:c.location.locationName||('Caltrans '+(c.location.nearbyPlace||'camera')),url:img,kind:'img',net:'ca',col:'#2979ff',attr:'© Caltrans (California DOT)'}}; add++; });
-          if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+          if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
         }).catch(()=>{}); }
     }
     /* (#R87) Finland — Fintraffic / Digitraffic road weather cameras — 811 stations, 2,272 live camera views
@@ -107,7 +109,7 @@ window.IntMapModules.cameras=function(map,HOST){
           const imgs=presets.map(p=>'https://weathercam.digitraffic.fi/'+p.id+'.jpg'); const id='fi_'+pr.id; if(camById[id]) return;
           const nm=String(pr.name||'').replace(/_/g,' ').trim()||'Weather camera';
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[+g[0],+g[1]]},properties:{n:nm,url:imgs[0],kind:'img',net:'fi',col:'#ffab00',attr:'© Fintraffic / Digitraffic',presets:JSON.stringify(imgs).slice(0,1800)}}; add++; });
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ finlandDone=false; }); }
     /* (#R87) MORE US STATE DOT cameras via the OpenTrafficCamMap open dataset (MIT, crowdsourced, served from the
        jsDelivr CDN so the LIST is keyless + CORS-OK). PINNED to a commit for a stable schema. Only the hosts whose
@@ -130,7 +132,7 @@ window.IntMapModules.cameras=function(map,HOST){
         let add=0;
         for(const key in groups){ const g=groups[key]; if(!g.urls.length) continue; const id='otcm_'+key; if(camById[id]) continue;
           camById[id]={type:'Feature',id:id,geometry:{type:'Point',coordinates:[g.lon,g.lat]},properties:{n:g.desc,url:g.urls[0],kind:'img',net:'us',col:'#e0409a',attr:g.attr,presets:JSON.stringify(g.urls).slice(0,1800)}}; add++; }
-        if(add){ try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
+        if(add){ try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} }
       }).catch(()=>{ otcmDone=false; }); }
     /* (#R96c) US-state + Canadian-province DOT "511" traffic cameras — a huge keyless network on the shared "511"
        map platform. The marker list (/map/mapIcons/Cameras → item2:[{itemId,location:[lat,lon],title}]) has no CORS
@@ -150,7 +152,7 @@ window.IntMapModules.cameras=function(map,HOST){
       fetch(mk(url)).then(r=>r.ok?r.text():Promise.reject(new Error('s'+r.status))).then(t=>{ if(done) return; done=true; clearTimeout(to); let j=null; try{ j=JSON.parse(t); }catch(_){}
         if(j) resolve(j); else attempt(); }).catch(()=>{ if(done) return; done=true; clearTimeout(to); attempt(); }); })(); }); }
     /* throttle the source rebuild — with 13 sites & ~25k features we must not re-serialize the whole FeatureCollection on every camera add */
-    function _osSchedule(){ if(_osDataT) return; _osDataT=setTimeout(()=>{ _osDataT=null; try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} },600); }
+    function _osSchedule(){ if(_osDataT) return; _osDataT=setTimeout(()=>{ _osDataT=null; try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} },600); }
     function loadOneStop(){ if(oneStopDone) return; oneStopDone=true;
       ONESTOP.forEach((site,idx)=>{ const dom=site[0], attr=site[1];
         setTimeout(()=>{ _osFetchJSON('https://'+dom+'/map/mapIcons/Cameras').then(j=>{ const arr=j&&j.item2; if(!Array.isArray(arr)) return; let add=0;
@@ -162,8 +164,8 @@ window.IntMapModules.cameras=function(map,HOST){
         }); }, idx*350);
       });
     }
-    function loadView(force){ if(!on||!map||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=map.getBounds(); }catch(_){ return; }
-      const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=map.getZoom();
+    function loadView(force){ if(!on||!map||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+      const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=GE().camera.getZoom();
       /* skip if the view is already covered AND we haven't zoomed in meaningfully (zoom-in fetches denser cams) */
       if(!force && contains(lastBox,cur) && z<=lastZoom+0.8) return;
       const padLa=Math.max(1.5,(cur[2]-cur[0])*0.25), padLo=Math.max(1.5,(cur[3]-cur[1])*0.25);
@@ -176,17 +178,17 @@ window.IntMapModules.cameras=function(map,HOST){
           const kind=classify(u); if(!kind) return;   /* DROP link-out-only cams (the old facade) — keep only cams that display */
           const oc=(kind==='yt')?'#ff3b30':(kind==='pano')?'#00b8d4':(kind==='video')?'#a142f4':'#00c853';
           camById[el.id]={type:'Feature',id:el.id,geometry:{type:'Point',coordinates:[el.lon,el.lat]},properties:{n:el.tags.name||el.tags.operator||el.tags['operator:short']||'Camera',url:u,kind:kind,net:'osm',col:oc,attr:'© OpenStreetMap'}}; });
-        try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){}
+        try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){}
         try{ if(on) updateLegend(); }catch(_){}
       }).catch(()=>{ fetching=false; try{ if(!Object.keys(camById).length) satToast(LLw('Could not load cameras — try again.','カメラを取得できませんでした。','Kameras konnten nicht geladen werden.','Не удалось загрузить камеры.','No se pudieron cargar las cámaras.')); }catch(_){} });
     }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map&&map.once) map.once('idle',apply); return; }
-      ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ GE().events.once('idle',apply); return; }
+      ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       if(on){ updateLegend(); loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); loadView(true); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
       else { _stopRefresh(); try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    map.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
-    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','visible'); }catch(_){} }); } },80); });
+    GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
+    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','visible'); }catch(_){} }); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-webcams')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-webcams';
       const lab=document.createElement('label'); lab.className='layer-option';

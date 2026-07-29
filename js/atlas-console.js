@@ -18,6 +18,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
   return (function(){
@@ -118,7 +119,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       return null; }
     let _hlColor='#ff9500', _hlLineColor='#ff9f0a';
     function setHlColor(c){ _hlColor=c; _hlLineColor=c;
-      try{ if(map.getLayer('nlq-fill')) map.setPaintProperty('nlq-fill','fill-color',c); if(map.getLayer('nlq-line')) map.setPaintProperty('nlq-line','line-color',c); }catch(_){} }
+      try{ if(GE().layers.has('nlq-fill')) GE().layers.setPaint('nlq-fill','fill-color',c); if(GE().layers.has('nlq-line')) GE().layers.setPaint('nlq-line','line-color',c); }catch(_){} }
     function _mixc(h,h2,t2){ const p=x=>parseInt(x,16); const a=[p(h.slice(1,3)),p(h.slice(3,5)),p(h.slice(5,7))], b=[p(h2.slice(1,3)),p(h2.slice(3,5)),p(h2.slice(5,7))];
       return '#'+a.map((v,i)=>('0'+Math.round(v+(b[i]-v)*t2).toString(16)).slice(-2)).join(''); }
     function rampFrom(c){ return [_mixc('#ffffff',c,0.12),_mixc('#ffffff',c,0.38),_mixc('#ffffff',c,0.68),c,_mixc(c,'#000000',0.35)]; }
@@ -232,12 +233,12 @@ window.IntMapModules.atlasConsole=function(map,HOST){
        loadCountryData ran), independent of any layer toggle. */
     function geo(){ return window.countryGeo || (typeof HOST.countryGeo!=='undefined'?HOST.countryGeo:null); }
     function ensureHlLayers(){ const g=geo(); if(!g||!g.features) return false;
-      try{ if(!map.getSource('nlq-src')) map.addSource('nlq-src',{type:'geojson',data:g,promoteId:'__code'}); }catch(_){}
-      if(map.getLayer('nlq-fill')) return true;
-      const before=['ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      try{ map.addLayer({id:'nlq-fill',type:'fill',source:'nlq-src',paint:{'fill-color':_hlColor,'fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.55,0]}},before);
-        map.addLayer({id:'nlq-line',type:'line',source:'nlq-src',paint:{'line-color':_hlLineColor,'line-width':['case',['boolean',['feature-state','nlq'],false],2,0],'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
-    function clearHl(){ _hl.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); }
+      try{ if(!GE().layers.hasSource('nlq-src')) GE().layers.addSource('nlq-src',{type:'geojson',data:g,promoteId:'__code'}); }catch(_){}
+      if(GE().layers.has('nlq-fill')) return true;
+      const before=['ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      try{ GE().layers.add({id:'nlq-fill',type:'fill',source:'nlq-src',paint:{'fill-color':_hlColor,'fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.55,0]}},before);
+        GE().layers.add({id:'nlq-line',type:'line',source:'nlq-src',paint:{'line-color':_hlLineColor,'line-width':['case',['boolean',['feature-state','nlq'],false],2,0],'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
+    function clearHl(){ _hl.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); }
     /* (#R108) HONEST highlight ("ハイライトしましたと言ってハイライトしていない例がある"): setFeatureState is a silent
        no-op when the source has no feature with that promoted id (country data not loaded yet, or a code that isn't in
        the geojson). Only report success when AT LEAST ONE requested country actually matches a real feature — otherwise
@@ -251,51 +252,51 @@ window.IntMapModules.atlasConsole=function(map,HOST){
          the dispatch's bounded retry (R61) waits for the data, then reports honestly if it never paints. */
       if(!valid.size) return false;
       let any=false; codes.forEach(c=>{ const cs=String(c); if(!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
-        try{ map.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} });
+        try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} });
       return any; }
-    map.on('styledata',()=>{ if(_hl.size||(_choroState&&Object.keys(_choroState).length)){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} });
-      if(_choroState&&Object.keys(_choroState).length){ try{ ensureChoroLayer(); for(const c in _choroState){ try{ map.setFeatureState({source:'nlq-src',id:c},{choroV:_choroState[c]}); }catch(_){} } }catch(_){} } }catch(_){} },120); } });
+    GE().events.on('styledata',()=>{ if(_hl.size||(_choroState&&Object.keys(_choroState).length)){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} });
+      if(_choroState&&Object.keys(_choroState).length){ try{ ensureChoroLayer(); for(const c in _choroState){ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:_choroState[c]}); }catch(_){} } }catch(_){} } }catch(_){} },120); } });
     function fbbox(g){ try{ let a=180,b=90,c=-180,d=-90; const scan=cs=>cs.forEach(x=>{ if(typeof x[0]==='number'){ a=Math.min(a,x[0]);b=Math.min(b,x[1]);c=Math.max(c,x[0]);d=Math.max(d,x[1]); } else scan(x); }); if(g.type==='Polygon'||g.type==='MultiPolygon') scan(g.coordinates); else return null; return [a,b,c,d]; }catch(_){ return null; } }
     function fitTo(codes){ try{ const g=geo(); if(!g||!g.features) return; const set=new Set(codes.map(String)); let a=180,b=90,c=-180,d=-90,any=false;
       g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); });
-      if(any&&isFinite(a)&&(c-a)<350){ map.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6,duration:900}); return true; } }catch(_){} return false; }
+      if(any&&isFinite(a)&&(c-a)<350){ GE().camera.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6,duration:900}); return true; } }catch(_){} return false; }
     /* ---- (#R62) POLYGON highlights — admin subdivisions (奈良県 / Stavropol Krai used to light up the WHOLE
        country) and named/fuzzy REGIONS (Blue Banana, Rhine-Ruhr, Great Plains). Resolution ladder per name:
        country-name match → Nominatim admin/natural polygon → directional slice → macro-region gazetteer
        (soft superellipse, not a rectangle) → AI-traced approximate outline → containing country (last resort). ---- */
     let _hlPolys=[];
-    function ensurePolyLayer(){ try{ if(!map.getSource('nlq-poly-src')) map.addSource('nlq-poly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(map.getLayer('nlq-poly-fill')) return true;
-      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      map.addLayer({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.32]}},before);
+    function ensurePolyLayer(){ try{ if(!GE().layers.hasSource('nlq-poly-src')) GE().layers.addSource('nlq-poly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(GE().layers.has('nlq-poly-fill')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.32]}},before);
       /* (#R64) composed regions (unions of many real admin polygons) get FAINT member outlines so the internal
          admin seams don't dominate — the region reads as one shape. */
-      map.addLayer({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','color'],'#ff9f0a'],'line-width':['case',['==',['get','comp'],1],1,2],'line-opacity':['case',['==',['get','comp'],1],0.35,0.9]}},before);
+      GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','color'],'#ff9f0a'],'line-width':['case',['==',['get','comp'],1],1,2],'line-opacity':['case',['==',['get','comp'],1],0.35,0.9]}},before);
       return true; }catch(_){ return false; } }
-    function paintPolys(){ if(!_hlPolys.length){ try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintPolys(){ if(!_hlPolys.length){ try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
-      try{ map.getSource('nlq-poly-src').setData({type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null)}}))}); return true; }catch(_){ return false; } }
-    function clearPolyHl(){ _hlPolys=[]; try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null)}}))}); return true; }catch(_){ return false; } }
+    function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
        enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
     let _hlPolySeq=0;
     window._imHlPolys={ list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
       remove:id=>{ const i=_hlPolys.findIndex(p=>String(p.id)===String(id)); if(i<0) return false; _hlPolys.splice(i,1); paintPolys(); return true; },
       repaint:()=>paintPolys(), clear:()=>clearPolyHl() };
-    map.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
+    GE().events.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
     /* ---- (#R65) LINE highlights — rivers as their REAL course ("河川をハイライトしてといったら、その河川を線で"),
        tributaries as thinner lines. Same lifecycle as the polygon highlights. ---- */
     let _hlLines=[];
-    function ensureLineLayer(){ try{ if(!map.getSource('nlq-line-src')) map.addSource('nlq-line-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(map.getLayer('nlq-line')) return true;
-      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      map.addLayer({id:'nlq-line',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
+    function ensureLineLayer(){ try{ if(!GE().layers.hasSource('nlq-line-src')) GE().layers.addSource('nlq-line-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(GE().layers.has('nlq-line')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      GE().layers.add({id:'nlq-line',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
       return true; }catch(_){ return false; } }
-    function paintLines(){ if(!_hlLines.length){ try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintLines(){ if(!_hlLines.length){ try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensureLineLayer()) return false;
-      try{ map.getSource('nlq-line-src').setData({type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||''}}))}); return true; }catch(_){ return false; } }
-    function clearLineHl(){ _hlLines=[]; try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
-    map.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
+      try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||''}}))}); return true; }catch(_){ return false; } }
+    function clearLineHl(){ _hlLines=[]; try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    GE().events.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
     /* river / basin intent — multilingual, judged BEFORE any admin-unit logic ("全部が全部行政区分使えば
        いいわけじゃない。見極めて"). */
     function basinIntent(nm){ const s2=String(nm||'').trim(); let m;
@@ -510,10 +511,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       return '<div style="margin:4px 0 2px;">'+rows.join('')+'</div>'; }catch(_){ return ''; } }
     /* (#R143) POST-DRAW verification — the pipeline's "実状態検証" step: confirm the source + layer exist and the
        source actually carries the expected feature count before the reply may claim success. */
-    function _verifyPolyPaint(expected){ try{ if(typeof map==='undefined'||!map) return {ok:false,reason:'no-map',n:0};
-      if(!map.getLayer||!map.getLayer('nlq-poly-fill')) return {ok:false,reason:'no-layer',n:0};
-      const src=map.getSource&&map.getSource('nlq-poly-src'); if(!src) return {ok:false,reason:'no-source',n:0};
-      let n=-1; try{ let d=src._data; if(d&&d.geojson) d=d.geojson; if(d&&Array.isArray(d.features)) n=d.features.length; else if(src.serialize){ const s=src.serialize(); if(s&&s.data&&Array.isArray(s.data.features)) n=s.data.features.length; } }catch(_){}
+    function _verifyPolyPaint(expected){ try{ if(!GE()||!GE().hasRenderer()) return {ok:false,reason:'no-map',n:0};
+      if(!GE().layers.has('nlq-poly-fill')) return {ok:false,reason:'no-layer',n:0};
+      if(!GE().layers.hasSource('nlq-poly-src')) return {ok:false,reason:'no-source',n:0};
+      let n=-1; try{ const d=GE().layers.sourceData('nlq-poly-src'); if(d&&Array.isArray(d.features)) n=d.features.length; }catch(_){}
       /* n===-1 → couldn't introspect the source (older maplibre) → trust our own _hlPolys bookkeeping instead */
       const cnt=(n>=0)?n:_hlPolys.length;
       return {ok:(cnt>=expected), n:cnt, expected, layer:true, source:true}; }catch(e){ return {ok:false,reason:'threw',n:0}; } }
@@ -521,7 +522,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
        (e.g. Eastern Europe includes Russia) so the fit still frames the rest instead of silently not moving. */
     function _fitGroups(feats){ try{ let a=180,b=90,c=-180,d=-90,any=false;
       (feats||[]).forEach(f=>{ const bb=fbbox(f.geo); if(!bb) return; if((bb[2]-bb[0])>180) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); });
-      if(any&&isFinite(a)&&(c-a)<350){ try{ map.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6.5,duration:900}); return true; }catch(_){} } }catch(_){} return false; }
+      if(any&&isFinite(a)&&(c-a)<350){ try{ GE().camera.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6.5,duration:900}); return true; }catch(_){} } }catch(_){} return false; }
     /* ==== (#R64) REAL region composition ("こんなカクカクポリゴンで許されると思うなよ。実際の範囲に忠実に、正確で
        高精細なポリゴンを引け"). A fuzzy/regional name is now resolved to a UNION OF REAL BOUNDARIES instead of a
        hand-waved outline: (a) country GROUPS (旧ソ連諸国, EU, NATO…) → the exact national polygons the map already
@@ -945,7 +946,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
          not-found result. It SUPERSEDES the old web-blind aiRegionUnits/aiRegionPoly hallucination rungs for logged-in
          users (the "見当違いの場所にblob" source); logged-out / resolver-unavailable falls back to the legacy path. */
       let _rrRan=false;
-      try{ const _mc=(()=>{ try{ const c=map.getCenter(); return {lat:c.lat,lng:c.lng}; }catch(_){ return null; } })();
+      try{ const _mc=(()=>{ try{ const c=GE().camera.getCenter(); return {lat:c.lat,lng:c.lng}; }catch(_){ return null; } })();
         const _gvNow=await _getGV();
         const rr=await _rrResolve(nm,{mapCenter:_mc, lastCountry:(_gvNow&&_gvNow.country)||'', lang:(typeof HOST.lang!=='undefined'?HOST.lang:'en')});
         if(rr){ _rrRan=!!rr.ran;
@@ -1356,7 +1357,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
     async function geocode(place){ place=String(place||'').trim();
       if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); if(sl) return _setLast({lng:sl.lng,lat:sl.lat,name:sl.name}); /* denied → fall through to deixis/centre */ }
       if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)){
-        if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
+        if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=GE().camera.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
          "Riga" gave Latvia's centroid 83 km from the city, "Paris" gives France's centroid, …), which put the point
          out in the countryside where transit/road routers find no stop → a false "no route". So DON'T short-circuit on
@@ -1786,9 +1787,9 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       return await _nomExtent(place); }
     /* Fit a box at a comfortable zoom: proportional MARGIN (so the place isn't edge-to-edge) + cameraForBounds, with
        only loose SANITY caps (a point can't go past z16.5; nothing below z0.6). NO per-type constants. */
-    function flyToBox(box){ try{ const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
-      const cam=map.cameraForBounds(box,{padding:pad,maxZoom:16.5}); if(cam&&cam.center&&isFinite(cam.zoom)){ const z=Math.max(0.6,Math.min(16.5,cam.zoom)); map.flyTo({center:[cam.center.lng,cam.center.lat], zoom:z, duration:1100}); return true; } }catch(_){}
-      try{ map.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
+    function flyToBox(box){ try{ const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
+      const cam=GE().camera.forBounds(box,{padding:pad,maxZoom:16.5}); if(cam&&cam.center&&isFinite(cam.zoom)){ const z=Math.max(0.6,Math.min(16.5,cam.zoom)); GE().camera.flyTo({center:[cam.center.lng,cam.center.lat], zoom:z, duration:1100}); return true; } }catch(_){}
+      try{ GE().camera.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
     /* (#R82) kexec = run an OS KERNEL command directly (the inverted path: Atlas → kernel → engine, no UI-click
@@ -1900,23 +1901,23 @@ window.IntMapModules.atlasConsole=function(map,HOST){
     const CHORO_RAMP=['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'];
     let _choroRamp=CHORO_RAMP.slice();   /* (#R61) user-selectable shading hue ("色分けの色も指定可能に") */
     const _choroFillExpr=ramp=>['case',['!=',['feature-state','choroV'],null],['interpolate',['linear'],['to-number',['feature-state','choroV'],0],0,ramp[0],0.25,ramp[1],0.5,ramp[2],0.75,ramp[3],1,ramp[4]],'rgba(0,0,0,0)'];
-    function ensureChoroLayer(){ if(!ensureHlLayers()) return false; if(map.getLayer('nlq-choro')) return true;
-      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      try{ map.addLayer({id:'nlq-choro',type:'fill',source:'nlq-src',paint:{
+    function ensureChoroLayer(){ if(!ensureHlLayers()) return false; if(GE().layers.has('nlq-choro')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      try{ GE().layers.add({id:'nlq-choro',type:'fill',source:'nlq-src',paint:{
         'fill-color':_choroFillExpr(_choroRamp),
         'fill-opacity':['case',['!=',['feature-state','choroV'],null],0.62,0]}},before); return true; }catch(_){ return false; } }
-    function clearChoro(){ try{ for(const c in _choroState){ try{ map.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; try{ _customScoreName=null; }catch(_){} }
+    function clearChoro(){ try{ for(const c in _choroState){ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; try{ _customScoreName=null; }catch(_){} }
     function drawChoro(metricKey,order,color){ const m=METRICS[metricKey]; if(!m) return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(metricKey||'')));
       if(!geo()) return R(false, warn('⚠ '+L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
       /* (#R61) optional shading hue — honoured for REAL (setPaintProperty on the live layer) or honestly flagged. */
       let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
       clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
-      try{ map.setPaintProperty('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
+      try{ GE().layers.setPaint('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
       const vals=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let v=m.get(s); if(v==null||isNaN(v)) continue; if(m.log&&v<=0) continue; vals.push({code, raw:v, t:(m.log?Math.log(v):v)}); }
       if(vals.length<3) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
       let lo=Infinity,hi=-Infinity; vals.forEach(p=>{ lo=Math.min(lo,p.t); hi=Math.max(hi,p.t); }); const span=(hi-lo)||1; const bottom=(String(order||'')==='bottom'||String(order||'')==='reverse');
-      vals.forEach(p=>{ let nv=(p.t-lo)/span; if(bottom) nv=1-nv; _choroState[String(p.code)]=nv; try{ map.setFeatureState({source:'nlq-src',id:String(p.code)},{choroV:nv}); }catch(_){} });
-      _choroMetric=metricKey; try{ map.flyTo({zoom:Math.min(map.getZoom(),2.3),duration:600}); }catch(_){}
+      vals.forEach(p=>{ let nv=(p.t-lo)/span; if(bottom) nv=1-nv; _choroState[String(p.code)]=nv; try{ GE().layers.setFeatureState({source:'nlq-src',id:String(p.code)},{choroV:nv}); }catch(_){} });
+      _choroMetric=metricKey; try{ GE().camera.flyTo({zoom:Math.min(GE().camera.getZoom(),2.3),duration:600}); }catch(_){}
       const sorted=vals.slice().sort((x,y)=>y.raw-x.raw); const top=sorted[0], bot=sorted[sorted.length-1];
       const loTxt=esc(fmtVal(metricKey, m.log?Math.exp(lo):lo)), hiTxt=esc(fmtVal(metricKey, m.log?Math.exp(hi):hi));
       const grad='linear-gradient(90deg,'+_choroRamp.join(',')+')';
@@ -2043,10 +2044,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='visible'&&(!_HEALTH.probedAt||(Date.now()-_HEALTH.probedAt)>600000)) _tick(); }catch(_){} }); }catch(_){}
     /* (#R44) a compact snapshot of what is CURRENTLY on screen, fed to the model so it can ground references
        ("there", "this country", "turn that layer off", "zoom in more", "the same") in the real map state. */
-    function stateContext(){ try{ const lines=[]; const c=map.getCenter(), z=map.getZoom();
+    function stateContext(){ try{ const lines=[]; const c=GE().camera.getCenter(), z=GE().camera.getZoom();
         const act=id=>{ const e=document.getElementById(id); return e&&e.classList.contains('active'); };
         const base=act('btn-view-sat')?'satellite':'map'; const proj=act('btn-view-3d')?'3D terrain':act('btn-view-flat')?'flat':'globe';
-        lines.push('Map centre ≈ '+c.lat.toFixed(2)+','+c.lng.toFixed(2)+' · zoom '+z.toFixed(1)+' · '+base+' base · '+proj+' view · bearing '+Math.round(map.getBearing())+'°.');
+        lines.push('Map centre ≈ '+c.lat.toFixed(2)+','+c.lng.toFixed(2)+' · zoom '+z.toFixed(1)+' · '+base+' base · '+proj+' view · bearing '+Math.round(GE().camera.getBearing())+'°.');
         if(_lastPlace&&_lastPlace.name) lines.push('Last place referenced: "'+_lastPlace.name+'" — map "here"/"there"/"that place" to it.');
         /* (#R74) the audit's honest paint-state per layer ("レイヤーのオンオフが実情と対応していない"): a checked
            box whose style layers are NOT actually painted is flagged so Atlas never reports it as showing. */
@@ -2550,11 +2551,11 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         return out;   /* [] = source answered, nothing tagged; null = source failed */
       }catch(_){ return null; } }
     let _pois=[], _poiColor=null;
-    function ensurePoiLayer(){ try{ if(!map.getSource('nlq-poi-src')) map.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(map.getLayer('nlq-poi-c')) return true;
-      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      map.addLayer({id:'nlq-poi-c',type:'circle',source:'nlq-poi-src',paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,4.5,10,7.5],'circle-color':['coalesce',['get','color'],'#ff453a'],'circle-opacity':0.88,'circle-stroke-color':'#ffffff','circle-stroke-width':1.4}},before);
-      map.addLayer({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':10.5,'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3}},before);
+    function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(GE().layers.has('nlq-poi-c')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      GE().layers.add({id:'nlq-poi-c',type:'circle',source:'nlq-poi-src',paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,4.5,10,7.5],'circle-color':['coalesce',['get','color'],'#ff453a'],'circle-opacity':0.88,'circle-stroke-color':'#ffffff','circle-stroke-width':1.4}},before);
+      GE().layers.add({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':10.5,'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3}},before);
       /* (#R72) POI popups reworked ("ポップアップがホバーしたときに出てこないほか、ポップアップの文字が見えないし、
          詳細情報をWikipediaのリンクで確認することもできない"):
          (a) HOVER now shows a light name/kind popup (desktop pointer);
@@ -2567,12 +2568,12 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         if(p.wd) return 'https://www.wikidata.org/wiki/'+encodeURIComponent(p.wd);
         return ''; }
       let hoverPop=null;
-      map.on('mousemove','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; map.getCanvas().style.cursor='pointer';
+      GE().events.onLayer('mousemove','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; GE().render.canvas().style.cursor='pointer';
         const p=f.properties||{}; const sm=p.sum?String(p.sum):''; const html='<div style="font-size:12px;font-weight:600;">'+esc(p.name||'—')+'</div>'+(p.kind?'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+esc(p.kind)+'</div>':'')+(sm?'<div style="font-size:10.5px;line-height:1.45;margin-top:3px;">'+esc(sm.length>140?sm.slice(0,140)+'…':sm)+'</div>':'');
-        if(!hoverPop){ hoverPop=new maplibregl.Popup({closeButton:false,closeOnClick:false,maxWidth:'240px',className:'plc-popup',offset:10}); }
+        if(!hoverPop){ hoverPop=GE().ui.popup({closeButton:false,closeOnClick:false,maxWidth:'240px',className:'plc-popup',offset:10}); }
         hoverPop.setLngLat(f.geometry.coordinates.slice()).setHTML(html); if(!hoverPop.isOpen()) hoverPop.addTo(map); }catch(_){} });
-      map.on('mouseleave','nlq-poi-c',()=>{ try{ map.getCanvas().style.cursor=''; if(hoverPop){ hoverPop.remove(); } }catch(_){} });
-      map.on('click','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+      GE().events.onLayer('mouseleave','nlq-poi-c',()=>{ try{ GE().render.canvas().style.cursor=''; if(hoverPop){ hoverPop.remove(); } }catch(_){} });
+      GE().events.onLayer('click','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
         try{ if(hoverPop) hoverPop.remove(); }catch(_){}
         const co=f.geometry.coordinates.slice();
         const wikiBtn='<button class="poi-wiki" style="display:none;flex:1 1 auto;border:none;background:var(--input-bg);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:600;cursor:pointer;">Wikipedia</button>';
@@ -2585,7 +2586,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           +(p.sum?'<div style="font-size:11.5px;line-height:1.55;margin-top:6px;">'+esc(p.sum)+'</div>':'')
           +'<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">'+(+co[1]).toFixed(4)+', '+(+co[0]).toFixed(4)+(p.src?(' · '+esc(p.src)):'')+'</div>'
           +'<div style="display:flex;gap:6px;margin-top:8px;">'+artBtn+wikiBtn+webBtn+'</div></div>';
-        const pop=new maplibregl.Popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup',offset:10}).setLngLat(co).setHTML(html).addTo(map);
+        const pop=GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup',offset:10}).setLngLat(co).setHTML(html).addTo(map);
         const el=pop.getElement();
         const wb=el&&el.querySelector('.poi-wiki');
         if(wb){ const direct=_poiWikiUrl(p);
@@ -2599,16 +2600,16 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const ab=el&&el.querySelector('.poi-art');
         if(ab&&p.url){ ab.onclick=()=>{ try{ const _u=IntMapSafe.url(String(p.url)); if(_u) window.open(_u,'_blank','noopener'); }catch(_){} }; }   /* (#R138 SEC) http(s)-only (matches the website-button guard) */
       }catch(_){} });
-      map.on('mouseenter','nlq-poi-c',()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} });
+      GE().events.onLayer('mouseenter','nlq-poi-c',()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
       return true; }catch(_){ return false; } }
-    function paintPois(){ if(!_pois.length){ try{ const s=map.getSource('nlq-poi-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    function paintPois(){ if(!_pois.length){ try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePoiLayer()) return false;
-      try{ map.getSource('nlq-poi-src').setData({type:'FeatureCollection',features:_pois.map((p,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name||'',kind:p.kind||'',color:_poiColor,wiki:p.wiki||'',wd:p.wd||'',web:p.web||'',wikiUrl:p.wikiUrl||'',sum:p.sum||'',url:p.url||'',src:p.src||''}}))}); return true; }catch(_){ return false; } }
-    function clearPois(){ _pois=[]; try{ const s=map.getSource('nlq-poi-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
-    map.on('styledata',()=>{ if(_pois.length){ setTimeout(()=>{ try{ paintPois(); }catch(_){} },160); } });
+      try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:_pois.map((p,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name||'',kind:p.kind||'',color:_poiColor,wiki:p.wiki||'',wd:p.wd||'',web:p.web||'',wikiUrl:p.wikiUrl||'',sum:p.sum||'',url:p.url||'',src:p.src||''}}))}); return true; }catch(_){ return false; } }
+    function clearPois(){ _pois=[]; try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    GE().events.on('styledata',()=>{ if(_pois.length){ setTimeout(()=>{ try{ paintPois(); }catch(_){} },160); } });
     /* ---- (#R73) map-change snapshot for layer self-verification (visible style layers + overlay canvases) ---- */
     function _visSnapshot(){ const s={ids:new Set(),cv:0};
-      try{ (map.getStyle().layers||[]).forEach(l=>{ let v='visible'; try{ v=map.getLayoutProperty(l.id,'visibility')||'visible'; }catch(_){} if(v!=='none') s.ids.add(l.id); }); }catch(_){}
+      try{ (GE().scene.getStyle().layers||[]).forEach(l=>{ let v='visible'; try{ v=GE().layers.getLayout(l.id,'visibility')||'visible'; }catch(_){} if(v!=='none') s.ids.add(l.id); }); }catch(_){}
       try{ s.cv=document.querySelectorAll('#map-container canvas, #map-container .data-legend, #map-container .koppen-legend, #map-container .maplibregl-marker').length; }catch(_){}
       return s; }
     function _visDelta(a,b){ if(!a||!b) return true; if(b.cv!==a.cv) return true; if(b.ids.size!==a.ids.size) return true;
@@ -2630,12 +2631,12 @@ window.IntMapModules.atlasConsole=function(map,HOST){
     function _gcBearing(A,B){ const d2r=Math.PI/180,r2d=180/Math.PI; const f1=A.lat*d2r,f2=B.lat*d2r,dl=(B.lng-A.lng)*d2r;
       return (Math.atan2(Math.sin(dl)*Math.cos(f2),Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl))*r2d+360)%360; }
     function ensureFlyLayers(){ try{
-      if(!map.getSource('nlq-fly-src')) map.addSource('nlq-fly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('nlq-fly-line')) map.addLayer({id:'nlq-fly-line',type:'line',source:'nlq-fly-src',filter:['==','$type','LineString'],layout:{'line-cap':'round'},paint:{'line-color':['coalesce',['get','color'],'#ff453a'],'line-width':2.5,'line-dasharray':[2,1.6],'line-opacity':0.9}});
-      if(!map.getLayer('nlq-fly-head')) map.addLayer({id:'nlq-fly-head',type:'circle',source:'nlq-fly-src',filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ffd60a','circle-stroke-color':'#ff453a','circle-stroke-width':2.5}});
+      if(!GE().layers.hasSource('nlq-fly-src')) GE().layers.addSource('nlq-fly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('nlq-fly-line')) GE().layers.add({id:'nlq-fly-line',type:'line',source:'nlq-fly-src',filter:['==','$type','LineString'],layout:{'line-cap':'round'},paint:{'line-color':['coalesce',['get','color'],'#ff453a'],'line-width':2.5,'line-dasharray':[2,1.6],'line-opacity':0.9}});
+      if(!GE().layers.has('nlq-fly-head')) GE().layers.add({id:'nlq-fly-head',type:'circle',source:'nlq-fly-src',filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ffd60a','circle-stroke-color':'#ff453a','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     function clearFly(){ if(_flyRun){ _flyRun.cancel=true; _flyRun=null; }
-      try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+      try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     async function flyAnimate(A,B,mode,secs){
       const km=_gcKm(A,B); if(!isFinite(km)||km<1) return {ok:false,km:0,real:''};
       clearFly(); if(!ensureFlyLayers()) return {ok:false,km,real:''};
@@ -2650,10 +2651,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       const pStart=(mode==='icbm')?52:62, pMid=(mode==='icbm')?18:(mode==='cruise')?68:60, pEnd=(mode==='icbm')?58:55;
       const run={cancel:false}; _flyRun=run;
       const cancelEvt=()=>{ run.cancel=true; };
-      try{ map.on('mousedown',cancelEvt); map.on('touchstart',cancelEvt); map.on('wheel',cancelEvt); }catch(_){}
+      try{ GE().events.on('mousedown',cancelEvt); GE().events.on('touchstart',cancelEvt); GE().events.on('wheel',cancelEvt); }catch(_){}
       const t0=performance.now(); const dur=secs*1000;
       const path=[];
-      try{ map.jumpTo({center:[A.lng,A.lat],zoom:zEnd+0.5,bearing:_gcBearing(A,B),pitch:pStart}); }catch(_){}
+      try{ GE().camera.jumpTo({center:[A.lng,A.lat],zoom:zEnd+0.5,bearing:_gcBearing(A,B),pitch:pStart}); }catch(_){}
       await new Promise(res=>{
         const frame=(now)=>{ if(run.cancel){ res(); return; }
           let t=Math.min(1,(now-t0)/dur);
@@ -2666,17 +2667,17 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const bl=4*te*(1-te);
           const z=zEnd*(1-bl)+zMid*bl;
           const pitch=(te<0.5?(pStart*(1-bl)+pMid*bl):(pEnd*(1-bl)+pMid*bl));
-          try{ map.jumpTo({center:[pos.lng,pos.lat],zoom:z,bearing:brg,pitch:Math.max(0,Math.min(85,pitch))}); }catch(_){}
-          try{ const s=map.getSource('nlq-fly-src')||((ensureFlyLayers()&&map.getSource('nlq-fly-src'))||null);
-            if(s) s.setData({type:'FeatureCollection',features:[
+          try{ GE().camera.jumpTo({center:[pos.lng,pos.lat],zoom:z,bearing:brg,pitch:Math.max(0,Math.min(85,pitch))}); }catch(_){}
+          try{ if(!GE().layers.hasSource('nlq-fly-src')) ensureFlyLayers();
+            if(GE().layers.hasSource('nlq-fly-src')) GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
               {type:'Feature',geometry:{type:'LineString',coordinates:path},properties:{}},
               {type:'Feature',geometry:{type:'Point',coordinates:[pos.lng,pos.lat]},properties:{}}]}); }catch(_){}
           if(t>=1){ res(); return; }
           requestAnimationFrame(frame); };
         requestAnimationFrame(frame); });
-      try{ map.off('mousedown',cancelEvt); map.off('touchstart',cancelEvt); map.off('wheel',cancelEvt); }catch(_){}
+      try{ GE().events.off('mousedown',cancelEvt); GE().events.off('touchstart',cancelEvt); GE().events.off('wheel',cancelEvt); }catch(_){}
       const cancelled=run.cancel; _flyRun=null;
-      if(!cancelled){ try{ map.easeTo({pitch:30,zoom:Math.max(map.getZoom(),zEnd-0.4),duration:900}); }catch(_){} }
+      if(!cancelled){ try{ GE().camera.easeTo({pitch:30,zoom:Math.max(GE().camera.getZoom(),zEnd-0.4),duration:900}); }catch(_){} }
       return {ok:true,km,real:real+(cancelled?(' · '+L('(interrupted)','（中断されました）','(abgebrochen)','(прервано)','(interrumpido)')):'')}; }
     /* ==== (#R83) REAL ballistic-missile simulator ("弾道ミサイルシミュレーターが粗悪すぎる"). The old ICBM mode
        was a parabolic camera zoom with no physics. This solves the actual minimum-energy KEPLERIAN trajectory
@@ -2733,19 +2734,19 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       return best?best[1]:null; }
     /* draw concentric warhead-effect rings at the impact point (cube-root scaling from a 1 kt reference) */
     let _blastActive=false;
-    function ensureBlastLayers(){ try{ if(!map.getSource('nlq-blast-src')) map.addSource('nlq-blast-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('nlq-blast-fill')){ const before=['nlq-fly-line','nlq-poi-c'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-        map.addLayer({id:'nlq-blast-fill',type:'fill',source:'nlq-blast-src',paint:{'fill-color':['get','color'],'fill-opacity':0.16}},before);
-        map.addLayer({id:'nlq-blast-line',type:'line',source:'nlq-blast-src',paint:{'line-color':['get','color'],'line-width':1.3,'line-opacity':0.85}},before); }
+    function ensureBlastLayers(){ try{ if(!GE().layers.hasSource('nlq-blast-src')) GE().layers.addSource('nlq-blast-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('nlq-blast-fill')){ const before=['nlq-fly-line','nlq-poi-c'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+        GE().layers.add({id:'nlq-blast-fill',type:'fill',source:'nlq-blast-src',paint:{'fill-color':['get','color'],'fill-opacity':0.16}},before);
+        GE().layers.add({id:'nlq-blast-line',type:'line',source:'nlq-blast-src',paint:{'line-color':['get','color'],'line-width':1.3,'line-opacity':0.85}},before); }
       return true; }catch(_){ return false; } }
-    function clearBlast(){ _blastActive=false; try{ const s=map.getSource('nlq-blast-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearBlast(){ _blastActive=false; try{ GE().layers.setSourceData('nlq-blast-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     function drawBlastRings(center,Y){ if(!(Y>0)||!ensureBlastLayers()) return null; const cb=Math.cbrt(Y);   /* km per kt^(1/3), airburst-optimised for 5 psi */
       const rings=[ {r:1.7*cb,c:'#64b5ff',l:L('1 psi — windows shatter, light injuries','1 psi — 窓ガラス破損・軽傷','1 psi — Fenster bersten','1 psi — стёкла, лёгкие ранения','1 psi — ventanas rotas')},
         {r:1.2*cb,c:'#ffd60a',l:L('thermal — 3rd-degree burns','熱線 — 3度熱傷','thermisch — Verbrennungen 3.','тепловое — ожоги 3-й ст.','térmico — quemaduras 3.er grado')},
         {r:0.62*cb,c:'#ff9f0a',l:L('5 psi — most buildings collapse','5 psi — 大半の建物が倒壊','5 psi — Gebäude stürzen ein','5 psi — здания рушатся','5 psi — edificios colapsan')},
         {r:0.26*cb,c:'#ff453a',l:L('20 psi — total destruction','20 psi — 完全破壊','20 psi — Totalzerstörung','20 psi — полное разрушение','20 psi — destrucción total')} ];
       const feats=[]; rings.forEach(rg=>{ try{ (diskFillPolys([center.lng,center.lat],rg.r,96)||[]).forEach(poly=>feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:poly},properties:{color:rg.c}})); }catch(_){} });
-      try{ const src=map.getSource('nlq-blast-src'); if(src) src.setData({type:'FeatureCollection',features:feats}); _blastActive=true; }catch(_){}
+      try{ GE().layers.setSourceData('nlq-blast-src',{type:'FeatureCollection',features:feats}); _blastActive=true; }catch(_){}
       return rings; }
     /* (#R85) ground track with CORIOLIS + optional MaRV terminal manoeuvre. In an inertial (non-rotating) frame a
        ballistic trajectory projects to a great circle; the spinning Earth then smears it. We aim the inertial arc
@@ -2769,25 +2770,25 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       const N=Math.max(64,Math.min(360,Math.round(km/50))); const track=[]; for(let i=0;i<=N;i++){ const p=_gcPoint(A,B,i/N); track.push([p.lng,p.lat]); }
       const zBase=Math.max(2.2,8.5-Math.log2(Math.max(1,km/60)));
       const run={cancel:false}; _flyRun=run; const cancelEvt=()=>{ run.cancel=true; };
-      try{ map.on('mousedown',cancelEvt); map.on('touchstart',cancelEvt); map.on('wheel',cancelEvt); }catch(_){}
+      try{ GE().events.on('mousedown',cancelEvt); GE().events.on('touchstart',cancelEvt); GE().events.on('wheel',cancelEvt); }catch(_){}
       const fAtTime=tau=>{ let lo=0,hi=1; for(let i=0;i<24;i++){ const mid=(lo+hi)/2; if(ballisticTimeFrac(sol,mid)<tau) lo=mid; else hi=mid; } return (lo+hi)/2; };
       const t0=performance.now(), dur=secs*1000;
-      try{ map.jumpTo({center:[A.lng,A.lat],zoom:zBase+0.4,bearing:_gcBearing(A,B),pitch:55}); }catch(_){}
+      try{ GE().camera.jumpTo({center:[A.lng,A.lat],zoom:zBase+0.4,bearing:_gcBearing(A,B),pitch:55}); }catch(_){}
       await new Promise(res=>{ const frame=now=>{ if(run.cancel){ res(); return; }
         const tau=Math.min(1,(now-t0)/dur); const f=fAtTime(tau); const pos=_gcPoint(A,B,f); const alt=ballisticAlt(sol,f);
         const ahead=_gcPoint(A,B,Math.min(1,f+0.01)), brg=_gcBearing(pos,ahead);
         const z=zBase-3.4*(alt/(sol.apogee||1)), pitch=40+30*(alt/(sol.apogee||1));
-        try{ map.jumpTo({center:[pos.lng,pos.lat],zoom:Math.max(1.3,z),bearing:brg,pitch:Math.max(0,Math.min(80,pitch))}); }catch(_){}
-        try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[
+        try{ GE().camera.jumpTo({center:[pos.lng,pos.lat],zoom:Math.max(1.3,z),bearing:brg,pitch:Math.max(0,Math.min(80,pitch))}); }catch(_){}
+        try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
           {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
           {type:'Feature',geometry:{type:'Point',coordinates:[pos.lng,pos.lat]},properties:{}}]}); }catch(_){}
         if(tau>=1){ res(); return; } requestAnimationFrame(frame); }; requestAnimationFrame(frame); });
-      try{ map.off('mousedown',cancelEvt); map.off('touchstart',cancelEvt); map.off('wheel',cancelEvt); }catch(_){}
+      try{ GE().events.off('mousedown',cancelEvt); GE().events.off('touchstart',cancelEvt); GE().events.off('wheel',cancelEvt); }catch(_){}
       const cancelled=run.cancel; _flyRun=null;
-      try{ const s=map.getSource('nlq-fly-src'); if(s) s.setData({type:'FeatureCollection',features:[
+      try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
         {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
         {type:'Feature',geometry:{type:'Point',coordinates:[B.lng,B.lat]},properties:{}}]}); }catch(_){}
-      if(!cancelled){ try{ map.easeTo({pitch:22,zoom:Math.max(map.getZoom(),zBase-0.6),duration:900}); }catch(_){} }
+      if(!cancelled){ try{ GE().camera.easeTo({pitch:22,zoom:Math.max(GE().camera.getZoom(),zBase-0.6),duration:900}); }catch(_){} }
       return {ok:true,km,sol,cancelled}; }
     function ballisticProfileSVG(sol,km){ const W=300,H=124,pL=30,pR=10,pT=12,pB=20, iw=W-pL-pR, ih=H-pT-pB;
       const N=90; let d=''; for(let i=0;i<=N;i++){ const f=i/N, x=pL+f*iw, y=pT+ih-(ballisticAlt(sol,f)/(sol.apogee||1))*ih; d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; }
@@ -2806,11 +2807,11 @@ window.IntMapModules.atlasConsole=function(map,HOST){
     /* ==== (#R83) ELEVATION HIGHLIGHT — real Copernicus-DEM sampling (Open-Meteo elevation API) to shade every
        grid cell below/above a threshold. Answers "カスピ海周辺の海抜0m以下地点をハイライトして" with genuine data,
        not a guess: the depression around the Caspian shades in graduated blue by depth below sea level. ==== */
-    function ensureElevLayers(){ try{ if(!map.getSource('nlq-elev-src')) map.addSource('nlq-elev-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('nlq-elev-fill')){ const before=['nlq-fly-line','nlq-poi-c','nlq-fill'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-        map.addLayer({id:'nlq-elev-fill',type:'fill',source:'nlq-elev-src',paint:{'fill-color':['get','color'],'fill-opacity':0.6}},before); }
+    function ensureElevLayers(){ try{ if(!GE().layers.hasSource('nlq-elev-src')) GE().layers.addSource('nlq-elev-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('nlq-elev-fill')){ const before=['nlq-fly-line','nlq-poi-c','nlq-fill'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+        GE().layers.add({id:'nlq-elev-fill',type:'fill',source:'nlq-elev-src',paint:{'fill-color':['get','color'],'fill-opacity':0.6}},before); }
       return true; }catch(_){ return false; } }
-    function clearElev(){ try{ const s=map.getSource('nlq-elev-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearElev(){ try{ GE().layers.setSourceData('nlq-elev-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     async function elevGrid(box,maxPts){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1];
       const aspect=Math.max(0.25,Math.min(4,((e-w)*Math.cos((n+s)/2*Math.PI/180))/(Math.abs(n-s)||1e-6)));
       let ny=Math.round(Math.sqrt((maxPts||800)/aspect)); ny=Math.max(8,Math.min(44,ny)); let nx=Math.max(8,Math.min(60,Math.round(ny*aspect)));
@@ -2825,16 +2826,16 @@ window.IntMapModules.atlasConsole=function(map,HOST){
        1916年3月の勢力図をマッピングして" with a curated, historically-accurate March-1916 belligerent map, and can
        paint any AI-supplied {faction→countries,color} set for other eras. Independent categorical fill source. ==== */
     function ensureFacLayers(){ try{ const g=geo(); if(!g) return false;
-      if(!map.getSource('nlq-fac-src')) map.addSource('nlq-fac-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('nlq-fac-fill')){ const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-        map.addLayer({id:'nlq-fac-fill',type:'fill',source:'nlq-fac-src',paint:{'fill-color':['get','color'],'fill-opacity':0.5}},before);
-        map.addLayer({id:'nlq-fac-line',type:'line',source:'nlq-fac-src',paint:{'line-color':['get','color'],'line-width':0.8,'line-opacity':0.7}},before); }
+      if(!GE().layers.hasSource('nlq-fac-src')) GE().layers.addSource('nlq-fac-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('nlq-fac-fill')){ const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+        GE().layers.add({id:'nlq-fac-fill',type:'fill',source:'nlq-fac-src',paint:{'fill-color':['get','color'],'fill-opacity':0.5}},before);
+        GE().layers.add({id:'nlq-fac-line',type:'line',source:'nlq-fac-src',paint:{'line-color':['get','color'],'line-width':0.8,'line-opacity':0.7}},before); }
       return true; }catch(_){ return false; } }
-    function clearFac(){ try{ const s=map.getSource('nlq-fac-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearFac(){ try{ GE().layers.setSourceData('nlq-fac-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     function paintFactions(groups){ if(!ensureFacLayers()) return 0; const g=geo(); if(!g) return 0;
       const byCode={}; (groups||[]).forEach(gr=>{ (gr.codes||[]).forEach(cd=>{ byCode[String(cd).toUpperCase()]=gr.color; }); });
       const feats=[]; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)).toUpperCase(); const col=byCode[cd]; if(!col||!f.geometry) return; feats.push({type:'Feature',geometry:f.geometry,properties:{color:col}}); });
-      try{ const s=map.getSource('nlq-fac-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ GE().layers.setSourceData('nlq-fac-src',{type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length; }
     /* curated scenarios keyed on era — modern ISO3 members grouped by faction (approximate: empires span
        several modern states; painted onto today's borders and clearly labelled as such). */
@@ -3041,8 +3042,8 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       try{ let a=180,b=90,c=-180,d=-90,has=false;
         if(box){ a=Math.min(a,box[0][0]);b=Math.min(b,box[0][1]);c=Math.max(c,box[1][0]);d=Math.max(d,box[1][1]); has=true; }
         pins.forEach(p=>{ a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat); has=true; });
-        if(has&&isFinite(a)&&(c-a)<340&&(c-a)>0.0001&&(d-b)>0.0001){ map.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); rendered=true; method=method||(box?'bbox':'pins'); }
-        else if(ctr){ map.flyTo({center:ctr,zoom:(opt.zoom||4),duration:1000}); rendered=true; method=method||'center'; } }catch(_){}
+        if(has&&isFinite(a)&&(c-a)<340&&(c-a)>0.0001&&(d-b)>0.0001){ GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); rendered=true; method=method||(box?'bbox':'pins'); }
+        else if(ctr){ GE().camera.flyTo({center:ctr,zoom:(opt.zoom||4),duration:1000}); rendered=true; method=method||'center'; } }catch(_){}
       return { rendered, method, name, pinCount:pins.length, hasExtent:!!(ext&&(ext.box||isFinite(ext.lng))), pinIdx }; }
 
     /* ═══════════ (#R150 · Atlas research-mapping commission) CODE-SIDE VERIFICATION ═══════════
@@ -3227,7 +3228,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
         if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
           try{ _pois=merged; let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
-          if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) map.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else map.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
+          if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) GE().camera.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
         return _atlMappingNoteHtml(_atlMappingVerdict(spots), _atlAuditSources(ctx.citations||[]), {infraFail, hadNew:newPins.length>0});
       }catch(e){ try{ console.warn('reply-mapping audit failed',e); }catch(_){}   /* (#R150) NEVER an empty catch — record the cause + surface an honest note */
         return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;opacity:.85;">'+L('Could not run the map self-check for this answer.','この回答の地図セルフチェックを実行できませんでした。','Karten-Selbstprüfung nicht möglich.','Не удалось выполнить самопроверку карты.','No se pudo verificar el mapa.')+'</div>'; } }
@@ -3270,23 +3271,23 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))+_featTogHtml('compare')); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); }   /* (#R151) offer the Compare on/off switch */
         case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
-          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ map.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
-          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
+          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
+          if(a.lng!=null&&a.lat!=null){ GE().camera.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(GE().camera.getZoom(),6),duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
+            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); } return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
           /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
           const ll=await geocode(placeStr);
-          if(ll){ if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
-            else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
-            else { map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
+          if(ll){ if(exZ!=null){ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
+            else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); }
+            else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); }
             return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
-        case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
           const ll=(a.lng!=null&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:String(a.place||'')}:await geocode(a.place);
           const nm3=(ll&&ll.name)||String(a.place||'').trim(); if(!nm3) return R(false, warn('⚠ '+esc(a.place||'')));
-          if(ll&&isFinite(ll.lng)){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4),duration:900}); }catch(_){} try{ _setLast(ll); }catch(_){} }
+          if(ll&&isFinite(ll.lng)){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4),duration:900}); }catch(_){} try{ _setLast(ll); }catch(_){} }
           const today=new Date().toISOString().slice(0,10); const langB=_langLine();
           const srcSink=[];   /* (#R79) collect real article URLs → ChatGPT-style source cards under the brief */
           let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3,srcSink); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
@@ -3323,7 +3324,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
           if(!ll) return R(false, warn('⚠ '+esc(a.place||'')));
           _herePoint={lng:+ll.lng,lat:+ll.lat,name:ll.name||''}; try{ _lastPlace={lng:+ll.lng,lat:+ll.lat,name:ll.name||''}; }catch(_){}
-          try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),5),duration:900}); }catch(_){}
+          try{ GE().camera.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(GE().camera.getZoom(),5),duration:900}); }catch(_){}
           const qq=String(a.question||a.query||'').trim();
           if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
           return R(true, note(esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
@@ -3365,15 +3366,15 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             else { tp=Math.max(0,Math.min(_cap,tp)); opt.pitch=tp; }
             GE.easeTo(opt); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine */
           return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:IntMapGeoEngine.camera.getPitch())+'°')); }
-        case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
+        case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; GE().camera.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
         case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
           const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
           if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('⚠')); }
-        case 'selectCountry': case 'country': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
+        case 'selectCountry': case 'country': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
         case 'timeSeries': case 'timeseries': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} let ok=false; try{ if(window.IntMapTimeSeries&&window.IntMapTimeSeries.open){ window.IntMapTimeSeries.open(); ok=true; } }catch(_){} return R(ok, ok?note('📈 '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('⚠')); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
-        case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
-        case 'los': case 'lineOfSight': { const ll=await geocode(a.place||a.from); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),8)}); }catch(_){} let ok=false; try{ if(window.IntMapLOS&&window.IntMapLOS.open){ window.IntMapLOS.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('📡 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+': '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||a.from||''))); }
+        case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
+        case 'los': case 'lineOfSight': { const ll=await geocode(a.place||a.from); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),8)}); }catch(_){} let ok=false; try{ if(window.IntMapLOS&&window.IntMapLOS.open){ window.IntMapLOS.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('📡 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+': '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||a.from||''))); }
         /* (#R118) POPULATION inside an area — drawn polygon / radius circles / a named place / an explicit radius
            around a place. Real WorldPop 100m-grid sum (IntMapPopArea), never an AI guess. */
         case 'population': case 'populationIn': case 'popIn': {
@@ -3399,7 +3400,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
            same capture + vision pipeline, result returned as a normal reply with both frames embedded). */
         case 'satelliteCompare': case 'satCompare': case 'satChange': {
           if(!window._imSatCapture) return R(false, warn('⚠'));
-          if(a.place){ const ll=await geocode(a.place); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),11),duration:800}); }catch(_){} await new Promise(r=>setTimeout(r,1400)); } }
+          if(a.place){ const ll=await geocode(a.place); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:800}); }catch(_){} await new Promise(r=>setTimeout(r,1400)); } }
           const va=String(a.dateA||a.before||a.from||'').slice(0,10), vb=String(a.dateB||a.after||a.to||'').slice(0,10);
           if(!va||!vb) return R(false, warn('⚠ '+L('Give two dates (dateA / dateB, YYYY-MM-DD).','2つの日付（dateA / dateB、YYYY-MM-DD）を指定してください。','Zwei Daten angeben (dateA/dateB).','Укажите две даты (dateA/dateB).','Indica dos fechas (dateA/dateB).')));
           const cap=await window._imSatCapture(va,vb);
@@ -3419,7 +3420,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(a.place){ const ll=await geocode(a.place); if(ll){ px=ll.lng; py=ll.lat; pname=ll.name||a.place; } }
           if(px==null&&a.lng!=null&&isFinite(+a.lng)){ px=+a.lng; py=+a.lat; }
           if(px==null&&_herePoint&&isFinite(_herePoint.lng)){ px=_herePoint.lng; py=_herePoint.lat; pname=_herePoint.name||''; }
-          if(px==null){ const c3=map.getCenter(); px=c3.lng; py=c3.lat; pname=L('map centre','地図中心','Kartenmitte','центр карты','centro del mapa'); }
+          if(px==null){ const c3=GE().camera.getCenter(); px=c3.lng; py=c3.lat; pname=L('map centre','地図中心','Kartenmitte','центр карты','centro del mapa'); }
           const vals=await LY.sampleAt(px,py,ids);
           const featLines=[];
           (ids||LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
@@ -3448,7 +3449,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const rawM=String(a.mode||a.profile||a.by||'').toLowerCase();
           if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
             let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
-            try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
+            try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
             let tr=null; try{ tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
             if(tr&&tr.ok) return R(true, note('🚆 '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — coloured green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
             return R(false, warn('🚆 '+L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.')));
@@ -3456,13 +3457,13 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const mode=/walk|foot|徒歩|pedestr|zu ?fu|пешк|a ?pie/.test(rawM)?'pedestrian':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM)?'bicycle':'auto');
           let mins=[]; if(Array.isArray(a.minutes)) mins=a.minutes.map(Number); else if(a.minutes!=null) mins=[+a.minutes]; else if(a.time!=null) mins=[+a.time]; else if(a.mins!=null) mins=[+a.mins];
           mins=mins.filter(x=>isFinite(x)&&x>0&&x<=120); if(!mins.length) mins=[15,30];
-          try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(9,12-Math.max.apply(null,mins)/15)}); }catch(_){}
+          try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(9,12-Math.max.apply(null,mins)/15)}); }catch(_){}
           let r=null; try{ r=await window.IntMapIsochrone.run({lng:ll.lng,lat:ll.lat},{mode,minutes:mins}); }catch(_){}
           const ic=mode==='pedestrian'?'🚶':mode==='bicycle'?'🚲':'🚗';
           if(r&&r.ok) return R(true, note('🎯 '+ic+' '+esc(ll.name||a.place||'')+' — '+r.minutes.join(' / ')+' '+L('min reachable','分の到達圏','Min erreichbar','мин зона','min alcanzable'))
             +note(L('Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.','実際の道路網に沿った到達圏（Valhalla／OpenStreetMap）— 車・徒歩・自転車で、距離の円ではありません。モードと時間は🎯パネルで調整できます。','Erreichbarkeit entlang des echten Straßennetzes (Valhalla/OSM) — Auto/Fuß/Rad, kein Distanzkreis.','Зона доступности по реальной дорожной сети (Valhalla/OSM) — авто/пешком/вело, не круг.','Área alcanzable por la red vial real (Valhalla/OSM) — coche/pie/bici, no un círculo.')));
           return R(false, warn('🎯 '+L('Could not compute the reachable area (routing service busy) — try again.','到達圏を算出できませんでした（サービス混雑）— 再試行してください。','Erreichbarkeit fehlgeschlagen — erneut versuchen.','Не удалось рассчитать — попробуйте снова.','No se pudo calcular — reintenta.'))); }
-        case 'route': { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ map.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
+        case 'route': { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
         case 'optimizeRoute': case 'tsp': case 'multiStop': case 'optimize': case 'optimizeStops': {
           let names=[]; if(Array.isArray(a.places)) names=a.places; else if(Array.isArray(a.points)) names=a.points; else if(Array.isArray(a.stops)) names=a.stops; else if(typeof a.places==='string') names=a.places.split(/[,、，]/); else if(typeof a.stops==='string') names=a.stops.split(/[,、，]/);
           names=names.map(x=>String(x).trim()).filter(Boolean).slice(0,12);
@@ -3476,7 +3477,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           let r=null; try{ r=await window.IntMapRouting.route({lng:seq[0].lng,lat:seq[0].lat},{lng:seq[seq.length-1].lng,lat:seq[seq.length-1].lat},{mode:mode2,via:seq.slice(1,-1).map(p=>({lng:p.lng,lat:p.lat}))}); }catch(_){}
           const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-color);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
           let summ=''; if(r&&r.ok&&r.distance!=null){ const km=r.distance/1000, mn=Math.round(r.duration/60), h=Math.floor(mn/60), rm=mn%60; summ=mi+' <b>'+(h?(h+' h '+rm+' min'):(mn+' min'))+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km'; }
-          else { try{ map.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
+          else { try{ GE().camera.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
           return R(true, note('🧭 '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
             +(summ?('<div style="font-size:13px;margin:3px 0 4px;">'+summ+'</div>'):'')
             +'<div>'+listHtml+'</div>'
@@ -3502,7 +3503,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             /* (#R126) 経路10-10 §6.3: SAME-NAME disambiguation — if the hit is far from the current view (>500 km)
                and a same-name candidate exists near the view, prefer the near one ("Potsdam" from a Germany view must
                be Potsdam DE, not Potsdam NY; verified the old path picked the US village). */
-            try{ if(g&&map&&map.getCenter){ const c=map.getCenter(); const dKm=(a,b)=>{const R=6371,x=(b[0]-a[0])*Math.PI/180*Math.cos((a[1]+b[1])/2*Math.PI/180),y=(b[1]-a[1])*Math.PI/180;return R*Math.sqrt(x*x+y*y);};
+            try{ if(g&&map&&GE().camera.getCenter){ const c=GE().camera.getCenter(); const dKm=(a,b)=>{const R=6371,x=(b[0]-a[0])*Math.PI/180*Math.cos((a[1]+b[1])/2*Math.PI/180),y=(b[1]-a[1])*Math.PI/180;return R*Math.sqrt(x*x+y*y);};
               if(dKm([c.lng,c.lat],[+g.lng,+g.lat])>500&&window.IntMapRouting.geoNear){ const n=await window.IntMapRouting.geoNear(q);
                 if(n&&dKm([c.lng,c.lat],[+n.lng,+n.lat])<dKm([c.lng,c.lat],[+g.lng,+g.lat])/3) g=n; } } }catch(_){}
             return g; };
@@ -3590,7 +3591,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
           if(!ll) return R(false, warn('⚠ '+L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar')));
-          try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),15),duration:900}); }catch(_){}
+          try{ GE().camera.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(GE().camera.getZoom(),15),duration:900}); }catch(_){}
           let ok=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.open) ok=window.IntMapStreetView.open({lng:+ll.lng,lat:+ll.lat},ll.name||''); }catch(_){}
           return R(ok, ok?note('🧍 '+L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+': '+esc(ll.name||((+ll.lat).toFixed(4)+', '+(+ll.lng).toFixed(4)))):warn('⚠')); }
         case 'radiation': case 'fallout': case 'dispersion': case 'plume': case 'radiationSim': {
@@ -3655,7 +3656,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         case 'flightSim': case 'flightsim': case 'flightsimulator': case 'flysim': case 'pilot': {
           if(a.on===false||/^(stop|exit|off|quit|end|land)$/i.test(String(a.mode||a.action||''))){ try{ window.IntMapFlightSim&&window.IntMapFlightSim.stop&&window.IntMapFlightSim.stop(); }catch(_){} return R(true, note('✓ '+L('Flight simulator stopped','飛行シミュレーターを終了しました','Flugsimulator beendet','Авиасимулятор остановлен','Simulador de vuelo detenido'))); }
           const opts={}; let nm=''; let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place||a.over||a.from){ try{ ll=await geocode(a.place||a.over||a.from); }catch(_){} }
-          if(ll){ opts.lng=ll.lng; opts.lat=ll.lat; nm=ll.name||a.place||''; try{ map.flyTo({center:[ll.lng,ll.lat],zoom:11,duration:500}); }catch(_){} }
+          if(ll){ opts.lng=ll.lng; opts.lat=ll.lat; nm=ll.name||a.place||''; try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:11,duration:500}); }catch(_){} }
           if(a.alt!=null&&isFinite(+a.alt)) opts.alt=+a.alt;
           /* (#R94p) pick the aircraft by name (explicit field only — never the geocoded place) */
           const _acs=String(a.aircraft||a.plane||a.craft||a.mode||'').toLowerCase();
@@ -3666,13 +3667,13 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           else if(/mustang|p-?51|warbird|大戦|マスタング|大戦機/.test(_acs)) opts.aircraft='warbird';
           let ok=false; try{ if(window.IntMapFlightSim&&window.IntMapFlightSim.setup){ window.IntMapFlightSim.setup(opts); ok=true; } else if(window.IntMapFlightSim&&window.IntMapFlightSim.start){ ok=window.IntMapFlightSim.start(opts); } }catch(_){}
           return R(ok, ok?note('✈ '+L('Flight simulator — pick your aircraft & runway, then START','飛行シミュレーター — 機体と滑走路を選んで START','Flugsimulator — Flugzeug & Piste wählen, dann START','Авиасимулятор — выберите самолёт и полосу, затем СТАРТ','Simulador — elige avión y pista, luego INICIAR')+(nm?(' · '+esc(nm)):'')):warn('⚠ '+L('Could not start the flight simulator','飛行シミュレーターを開始できませんでした','Konnte den Flugsimulator nicht starten','Не удалось запустить','No se pudo iniciar'))); }
-        case 'runway': case 'airports': { const ll=await geocode(a.place); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),7)}); }catch(_){} let ok=false; try{ if(window.RunwaySearch&&window.RunwaySearch.open){ window.RunwaySearch.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🛬 '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'runway': case 'airports': { const ll=await geocode(a.place); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),7)}); }catch(_){} let ok=false; try{ if(window.RunwaySearch&&window.RunwaySearch.open){ window.RunwaySearch.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🛬 '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'edu': case 'learn': { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note('🎓 '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('⚠')); }
         case 'ecmwf': case 'weatherLayers': { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note('🌦 '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('⚠')); }
         case 'widgets': { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
         case 'screenshot': { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
         case 'share': { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
-        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
+        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
         case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
         case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof HOST.unitMode!=='undefined') HOST.unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
         /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
@@ -3692,7 +3693,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note('⏳ '+ymdISO(T.when()))); }
           return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
         }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){}
+        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); }catch(_){}
           let _oid=null; try{ _oid=(HOST.userPins&&HOST.userPins.length)?String(HOST.userPins[HOST.userPins.length-1].id):null; }catch(_){}   /* (#R119) creating actions return the created object's id */
           return R(true, note(esc(ll.name||a.place||'')), _oid?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         /* (#R172) …and "volume". The catalogue has advertised {"type":"tool","name":"volume"} since #R170, but
@@ -3703,7 +3704,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         case 'tool': { const n=String(a.name||'').toLowerCase();
           if(/drone|ドローン|无人机|무인기/.test(n)){ let ok=false; try{ ok=!!(window.IntMapDrone&&window.IntMapDrone.toggle()); }catch(_){} return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); }
           const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/volume|立体|体積/.test(n)?'btn-tool-volume':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
-        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof HOST.radiusKm!=='undefined') HOST.radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ HOST.radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(HOST.radiusItems&&HOST.radiusItems.length)?String(HOST.radiusItems[HOST.radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof HOST.radiusKm!=='undefined') HOST.radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ HOST.radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(HOST.radiusItems&&HOST.radiusItems.length)?String(HOST.radiusItems[HOST.radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         /* (#R170) 3-D VOLUME — the Atlas face of Measure ▸ 3-D volume (js/volume3d.js). base/top are ALTITUDES
            ABOVE SEA LEVEL in metres; the module compensates for 3-D terrain so the band lands where it was asked for. */
         case 'volume3d': case 'volume': { const ll=await geocode(a.place); if(!ll) return R(false, warn('⚠ '+esc(a.place||'')));
@@ -3734,7 +3735,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             /* (#R172) no re-set needed any more: syncClicks() refuses to replace a ring it did not create,
                so the panel rebuild above can no longer wipe an Atlas footprint (it used to, for the square). */
           }catch(_){}
-          try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),pitch:Math.max(map.getPitch(),55)}); }catch(_){}
+          try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),pitch:Math.max(GE().camera.getPitch(),55)}); }catch(_){}
           const st=V.state();
           return R(!!st.points, st.points?note('🧊 '+esc(ll.name||a.place||'')+' · '+V.fmtAlt(Math.min(base,top))+'–'+V.fmtAlt(Math.max(base,top))+' · '+V.fmtVolume()):warn('⚠')); }
         /* (#R174) DRONE NAVIGATION — the Atlas face of js/drone-nav.js. Every number in the reply comes
@@ -3759,8 +3760,8 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             D.open();
             const res=await D.compute();
             try{ const lats=pts.map(p=>p.lat), lngs=pts.map(p=>p.lng);
-              map.fitBounds([[Math.min.apply(null,lngs),Math.min.apply(null,lats)],[Math.max.apply(null,lngs),Math.max.apply(null,lats)]],
-                {padding:90,pitch:Math.max(map.getPitch(),55),duration:900}); }catch(_){}
+              GE().camera.fitBounds([[Math.min.apply(null,lngs),Math.min.apply(null,lats)],[Math.max.apply(null,lngs),Math.max.apply(null,lats)]],
+                {padding:90,pitch:Math.max(GE().camera.getPitch(),55),duration:900}); }catch(_){}
             if(!res) return R(false, warn('⚠'));
             const bad=res.violations.filter(v=>v.severity==='critical'||v.severity==='error');
             const head='🛸 '+esc(D.route().name)+' · '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+Math.round(res.batteryPct)+'% '+L('battery','バッテリー','Akku','батарея','batería');
@@ -3772,7 +3773,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             if(!res) return R(false, warn('⚠ '+L('No route yet','経路がまだありません','Noch keine Route','Маршрута ещё нет','Aún no hay ruta')));
             return R(true, note('🛸 '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+res.violations.length+' '+L('findings','指摘','Hinweise','замечаний','hallazgos'))); }
           D.open(); return R(true, note('🛸 '+L('Drone planner open','ドローン航法を開きました','Drohnenplaner geöffnet','Планировщик открыт','Planificador abierto'))); }
-        case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof HOST.measurePoints!=='undefined') HOST.measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
+        case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof HOST.measurePoints!=='undefined') HOST.measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ GE().camera.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(GE().camera.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
         /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
@@ -3798,12 +3799,12 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           return R(true, note('⛰ '+(m==='aspect'?L('Slope aspect (direction each slope faces)','斜面の向き（方位）','Hangexposition','Экспозиция склона','Orientación'):L('Slope steepness (angle)','傾斜の急さ（角度）','Hangneigung','Крутизна склона','Pendiente'))+' — '+L('computed from the real elevation model for the current view; pan/zoom to update.','現在の表示範囲の標高データから算出。移動・拡大で更新。','aus dem echten Höhenmodell.','по реальной модели высот.','del modelo de elevación real.'))); }
         /* (#R89) RF / radio coverage from an antenna */
         case 'rfCoverage': case 'coverage': case 'radioCoverage': case 'signalCoverage': case 'reception': case 'lineOfSight': case 'viewshed': {
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=map.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
           try{ if(window.IntMapRF){ window.IntMapRF.setParams(+a.height||+a.antennaHeight||0, (a.power!=null?+a.power:null), +a.frequency||+a.freq||0); window.IntMapRF.open(ll); } }catch(_){}
           return R(true, note('📡 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+' — '+L('line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.','実地形上の見通し到達域。パネルでアンテナ高・出力・周波数を設定、クリックで基地局を移動。','Sichtlinie über echtem Gelände.','зона прямой видимости.','área de línea de vista.'))); }
         /* (#R90) sun & shadow */
         case 'sun': case 'shadow': case 'shadows': case 'sunlight': case 'sunPosition': case 'daylight': case 'insolation': {
-          try{ if(window.IntMapSun){ if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ try{ map.flyTo({center:[g.lng,g.lat],zoom:Math.max(map.getZoom(),15)}); }catch(_){} } } window.IntMapSun.open(); if(a.date||a.time||a.datetime){ const d=new Date(a.datetime||((a.date||'')+(a.time?('T'+a.time):''))); if(!isNaN(d)) window.IntMapSun.setTime(d); } } }catch(_){}
+          try{ if(window.IntMapSun){ if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ try{ GE().camera.flyTo({center:[g.lng,g.lat],zoom:Math.max(GE().camera.getZoom(),15)}); }catch(_){} } } window.IntMapSun.open(); if(a.date||a.time||a.datetime){ const d=new Date(a.datetime||((a.date||'')+(a.time?('T'+a.time):''))); if(!isNaN(d)) window.IntMapSun.setTime(d); } } }catch(_){}
           return R(true, note('🌇 '+L('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+' — '+L('pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.','日時を選択。表示中の建物（拡大時）が実際の影を落とし、3Dは太陽方向から照らされます。▶で一日を再生。','Datum/Zeit wählen — echte Gebäudeschatten.','выберите дату/время — реальные тени зданий.','elige fecha/hora — sombras reales.'))); }
         /* (#R176) terrain sculpting + water routing */
         case 'terrainWater': case 'waterFlow': case 'terrainEdit': case 'watershedSim': case 'sculpt': {
@@ -3830,13 +3831,13 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             if(a.site) window.IntMapSeismic.setSite(String(a.site));
             if(a.t!=null||a.seconds!=null) window.IntMapSeismic.setParams({t:+(a.t!=null?a.t:a.seconds)});
             ok=true; } }catch(_){}
-          let extra=''; try{ const c=map.getCenter(); const at=window.IntMapSeismic.at(c.lng,c.lat);
+          let extra=''; try{ const c=GE().camera.getCenter(); const at=window.IntMapSeismic.at(c.lng,c.lat);
             if(at&&at.tP!=null) extra=' · '+L('P here in','ここへP波','P hier in','P здесь через','P aquí en')+' '+Math.round(at.tP)+' s, S '+Math.round(at.tS)+' s'; }catch(_){}
           return R(ok, ok?note('🌐 '+L('Seismic waves','地震波','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+' — '
             +L('P, S and surface wavefronts ray-traced through the IASP91 Earth model, with arrival time, shaking duration and Modified-Mercalli intensity for the places around it.','P波・S波・表面波の波面をIASP91地球モデルでレイトレーシングし、周辺地点への到達時刻・揺れの継続時間・改正メルカリ震度を表示します。','P-, S- und Oberflächenwellen durch IASP91.','волны P, S и поверхностные по модели IASP91.','frentes P, S y superficiales por IASP91.')+extra):warn('⚠')); }
         /* (#R176) terrain shade + the annual sunlight budget (the Sun panel owns the controls) */
         case 'sunHours': case 'shadeHours': case 'terrainShadow': case 'solarHours': case 'insolationYear': {
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ ll={lng:g.lng,lat:g.lat}; try{ map.flyTo({center:[g.lng,g.lat],zoom:Math.max(map.getZoom(),12)}); }catch(_){} } } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=map.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ ll={lng:g.lng,lat:g.lat}; try{ GE().camera.flyTo({center:[g.lng,g.lat],zoom:Math.max(GE().camera.getZoom(),12)}); }catch(_){} } } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
           let ok=false, txt='';
           try{ if(window.IntMapSun){ window.IntMapSun.open(); ok=true;
             if(a.solstice){ await window.IntMapSun.solsticeShade(); }
@@ -3945,7 +3946,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
               for(let i5=0;i5<8&&!paintedP;i5++){ await new Promise(r5=>setTimeout(r5,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn, {exec:_mkExec(false,0,false)});
               const ver=_verifyPolyPaint(G.length);
-              if(!_fitGroups(_hlPolys)){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
+              if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
               const totalC=G.reduce((s2,g)=>s2+g.nCountries,0);
               let hh=note('✦ '+G.map(g=>esc(g.displayName)).join(', '))+_hlLegendHtml(G);
               /* (#R157) STATE THE DEFINITION USED (the work order's "採用した定義を結果に明示"). */
@@ -4007,7 +4008,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             let _painted=highlight(_codes);
             for(let i3=0;i3<8&&!_painted;i3++){ await new Promise(r3=>setTimeout(r3,700)); _painted=highlight(_codes); }
             if(!_painted) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung fehlgeschlagen (Karte lädt) — erneut','Не удалось нарисовать (карта загружается) — повторите','No se pudo dibujar (mapa cargando) — reintenta'))+cwarn);
-            const _ub=unionBox(_codes,[]); if(_ub){ try{ map.fitBounds(_ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else { try{ fitTo(_codes); }catch(_){} }
+            const _ub=unionBox(_codes,[]); if(_ub){ try{ GE().camera.fitBounds(_ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else { try{ fitTo(_codes); }catch(_){} }
             const _ord=_bottom?L('Lowest','下位','Niedrigste','Минимум','Menor'):L('Top','上位','Top','Топ','Top');
             let _hh=note('✦ '+_ord+' '+_picked.length+' · '+esc(lx(_sp.m.label))+(_minPop!=null?(' · '+L('excl. pop <','人口<','Bev. <','нас. <','pob. <')+' '+fmtVal('pop',_minPop)):'')+(_maxPop!=null?(' · '+L('excl. pop >','人口>','Bev. >','нас. >','pob. >')+' '+fmtVal('pop',_maxPop)):''));
             _hh+=note(_picked.map((p,i)=>(i+1)+'. '+esc(p.name)+' <span style="color:var(--text-muted);">'+fmtVal(_sp.key,p.val)+'</span>').join('<br>'));
@@ -4056,7 +4057,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
               for(let i4=0;i4<8&&!paintedP;i4++){ await new Promise(r4=>setTimeout(r4,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
               const ver=_verifyPolyPaint(G.length);
-              if(!_fitGroups(_hlPolys)){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
+              if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
               let hh=note('✦ '+G.map(g=>esc(g.displayName||g.name)).join(', '))+_hlLegendHtml(G);
               if(G.some(g=>g.kind==='set'||g.kind==='country')) hh+=note(L('Country sets drawn from real national borders (UN M49 standard where applicable)','国集合は実際の国境データから描画（該当時はUN M49標準）','Ländergruppen aus realen Staatsgrenzen (ggf. UN-M49-Standard)','Наборы стран построены по реальным госграницам (при наличии — стандарт UN M49)','Conjuntos de países con fronteras reales (estándar UN M49 cuando aplica)'));
               if(G.some(g=>g.composed)) hh+=note(L('Some regions built from member administrative boundaries','一部の地域は構成行政区画の境界から構築','Einige Regionen aus Verwaltungsgrenzen der Teilgebiete','Некоторые регионы построены из адм. границ','Algunas regiones a partir de límites administrativos'));
@@ -4119,10 +4120,10 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const codes2=found.map(c=>c.code);
           let painted=(codes2.length?highlight(codes2):(clearHl(),true)); let paintedP=paintPolys(); let paintedL=paintLines();
           for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(_hlMyGen!==_hlGen) return R(true,''); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
-          const ub=unionBox(codes2,polys.concat(lines)); if(ub){ try{ map.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
+          const ub=unionBox(codes2,polys.concat(lines)); if(ub){ try{ GE().camera.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
             /* (#R64) antimeridian-spanning sets (旧ソ連諸国: Chukotka wraps the date line) defeat a bbox fit —
                zoom out to the planet so the highlight is actually visible instead of silently not moving. */
-            if(!fitOk){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
+            if(!fitOk){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
           if((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL)) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
           const shown=found.filter(c=>!c._grp).map(c=>esc(c.name)).concat(grpNames.map(esc)).concat(polys.map(p=>esc(p.name))).concat(lineNames.map(esc));
           let hh=note((found.length?'✦ ':'')+shown.join(', '));
@@ -4201,7 +4202,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(_pstate==='denied') return R(false, warn('⚠ '+L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')));
           return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
             try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
-                try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),11),duration:1100}); }catch(_){}
+                try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),11),duration:1100}); }catch(_){}
                 /* (#R137) also drop the live accent dot + accuracy circle that follow the user */
                 try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
                 try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
@@ -4227,7 +4228,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             if(ext.osmType==='relation'&&ext.osmId&&(ext.adminPoly||cSync)) areaRel=ext.osmId;
             else if(cSync){ try{ const e2=await _nomExtent(cSync.name||placeStr2); if(e2&&e2.osmType==='relation'&&e2.osmId){ areaRel=e2.osmId; if(e2.box&&_bboxOK(e2.box)) box=e2.box; } }catch(_){} }
             if(!box){ if(ext.box&&_bboxOK(ext.box)) box=ext.box; else if(ext.lng!=null&&isFinite(ext.lng)){ const d2=1.2; box=[[ext.lng-d2,ext.lat-d2*0.8],[ext.lng+d2,ext.lat+d2*0.8]]; } } }
-          if(!box){ try{ const b2=map.getBounds(); box=[[b2.getWest(),b2.getSouth()],[b2.getEast(),b2.getNorth()]]; }catch(_){} pname=pname||L('the current view','現在の表示範囲','der aktuellen Ansicht','текущая область','la vista actual'); }
+          if(!box){ try{ const b2=GE().camera.getBounds(); box=[[b2.getWest(),b2.getSouth()],[b2.getEast(),b2.getNorth()]]; }catch(_){} pname=pname||L('the current view','現在の表示範囲','der aktuellen Ansicht','текущая область','la vista actual'); }
           if(!box) return R(false, warn('⚠'));
           /* clamp to a sane Overpass area ONLY for raw-bbox searches (area queries cover the full territory) */
           if(!areaRel){ const cx2=(box[0][0]+box[1][0])/2, cy2=(box[0][1]+box[1][1])/2; const sx2=Math.min(30,box[1][0]-box[0][0])||1, sy2=Math.min(24,box[1][1]-box[0][1])||1; box=[[cx2-sx2/2,cy2-sy2/2],[cx2+sx2/2,cy2+sy2/2]]; }
@@ -4338,7 +4339,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             sum:String(it.summary||''),url:it.url,src:it.src}));
           let okR=paintPois(); for(let i2=0;i2<6&&!okR&&_pois.length;i2++){ await new Promise(r2=>setTimeout(r2,700)); okR=paintPois(); }
           try{ if(_pois.length){ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p=>{ a2=Math.min(a2,p.lng);b2=Math.min(b2,p.lat);c2=Math.max(c2,p.lng);d2=Math.max(d2,p.lat); });
-            if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:9,duration:1100}); } }catch(_){}
+            if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:9,duration:1100}); } }catch(_){}
           const listHtml2=items.map((p,i)=>{ const mi=p.mappable?mappableItems.indexOf(p):-1; const pu=_atlCleanUrl(p.url); return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+(p.mappable?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(p.name)+'</span>'+((p.date||p.src)?' <span style="font-size:10px;color:var(--text-muted);">'+esc([p.date,p.src].filter(Boolean).join(' · '))+'</span>':'')+(p.summary?'<br><span style="font-size:11px;line-height:1.5;color:var(--text-main);opacity:0.9;">'+esc(p.summary.length>150?p.summary.slice(0,150)+'…':p.summary)+'</span>':'')+(pu?' <a href="'+esc(pu.url)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>':'')   /* (#R153) inline evidence link goes through _atlCleanUrl too (decode GNews aggregator → real article, drop SNS) — was raw p.url, the "無関係リンク／SNS" leak */+(!p.mappable?' <span style="font-size:9.5px;color:var(--text-muted);">('+L('location unverified','位置未確認','Ort unbestätigt','место не подтв.','ubicación no verif.')+')</span>':'')+'</span></div>'; }).join('');
           return R(true,'<div style="font-weight:600;margin:2px 0 4px;">'+esc(jr.title||topic)+'</div>'
             +(jr.overview?'<div style="font-size:12.5px;line-height:1.6;margin-bottom:6px;">'+esc(jr.overview)+'</div>':'')
@@ -4401,7 +4402,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const N=Math.max(80,Math.min(400,Math.round(km/40)));
           const track=_ballTrack(A,B,sol,N,{coriolis:a.coriolis!==false, marv}); const pts=track.pts, alts=track.alts;
           try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); });
-            if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:{top:160,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
+            if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:{top:160,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
           const secs=Math.max(10,Math.min(40,+a.seconds||Math.round(9+km/900)));
           try{ window.IntMapArc3D.show({pts,alts,apogee:sol.apogee,prog:0}); setTimeout(()=>{ try{ window.IntMapArc3D.animate(secs); }catch(_){} },950); }catch(_){}
           /* optional warhead-effect rings at the impact point */
@@ -4435,7 +4436,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           let ext=null; if(place&&!WORLD_RE.test(place)){ try{ ext=await placeExtent(place); }catch(_){} if(!ext){ try{ ext=await geocode(place); }catch(_){} } }
           let box=null; if(ext&&ext.box){ const bx=ext.box; if(Array.isArray(bx[0])) box=[[+bx[0][0],+bx[0][1]],[+bx[1][0],+bx[1][1]]]; else if(bx.length===4) box=[[+bx[0],+bx[1]],[+bx[2],+bx[3]]]; }
           if(!box&&ext&&isFinite(ext.lng)){ const d=(a.km!=null&&isFinite(+a.km))?(+a.km/111):3; box=[[ext.lng-d*1.5,Math.max(-84,ext.lat-d)],[ext.lng+d*1.5,Math.min(84,ext.lat+d)]]; }
-          if(!box){ try{ const b=map.getBounds(); box=[[b.getWest(),b.getSouth()],[b.getEast(),b.getNorth()]]; }catch(_){} }
+          if(!box){ try{ const b=GE().camera.getBounds(); box=[[b.getWest(),b.getSouth()],[b.getEast(),b.getNorth()]]; }catch(_){} }
           if(!box) return R(false, warn('⚠ '+L('Which area should I scan?','どの範囲を調べますか？','Welches Gebiet?','Какую область?','¿Qué área?')));
           const spanX=Math.abs(box[1][0]-box[0][0]); if(spanX>64){ const cx=(box[0][0]+box[1][0])/2; box[0][0]=cx-32; box[1][0]=cx+32; }
           const thr=(a.threshold!=null&&isFinite(+a.threshold))?+a.threshold:(a.meters!=null&&isFinite(+a.meters)?+a.meters:0);
@@ -4446,8 +4447,8 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             const col=above?_mixc('#ffe08a','#7a1500',Math.min(1,(p.el-thr)/2500)):_mixc('#7fc8ff','#001a4a',Math.min(1,(thr-p.el)/150));
             feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[p.lng-hw,p.lat-hh],[p.lng+hw,p.lat-hh],[p.lng+hw,p.lat+hh],[p.lng-hw,p.lat+hh],[p.lng-hw,p.lat-hh]]]},properties:{color:col}}); });
           if(!cnt) return R(false, warn('⚠ '+L('No sampled points '+(above?'above':'below')+' '+thr+' m in this area','この範囲に'+thr+'m'+(above?'以上':'以下')+'の地点は見つかりませんでした','Keine Punkte '+(above?'über':'unter')+' '+thr+' m in diesem Gebiet','Нет точек '+(above?'выше':'ниже')+' '+thr+' м в этой области','Sin puntos '+(above?'sobre':'bajo')+' '+thr+' m')));
-          ensureElevLayers(); try{ map.getSource('nlq-elev-src').setData({type:'FeatureCollection',features:feats}); }catch(_){}
-          try{ map.fitBounds(box,{padding:50,duration:900}); }catch(_){}
+          ensureElevLayers(); try{ GE().layers.setSourceData('nlq-elev-src',{type:'FeatureCollection',features:feats}); }catch(_){}
+          try{ GE().camera.fitBounds(box,{padding:50,duration:900}); }catch(_){}
           return R(true, note('🌊 '+esc((ext&&ext.name)||place||L('current view','現在の表示','aktuelle Ansicht','текущий вид','vista actual'))+' — '+cnt+' '+L('points','地点','Punkte','точек','puntos')+' '+(above?'≥':'≤')+' '+thr+' m · '+L('lowest','最低','tiefster','минимум','mínimo')+' '+Math.round(mn)+' m'+(above?(' · '+L('highest','最高','höchster','максимум','máximo')+' '+Math.round(mx)+' m'):''))
             +note(L('Elevation sampled live on a grid from the Copernicus DEM (Open-Meteo) — cells are graduated by depth/height.','標高はCopernicus DEM（Open-Meteo）からグリッド状にライブ取得。セルの濃淡は深さ・高さに応じた段階表示です。','Höhen live vom Copernicus-DEM (Open-Meteo) im Raster.','Высоты в реальном времени из Copernicus DEM (Open-Meteo) по сетке.','Elevación en vivo del DEM Copernicus (Open-Meteo).'))); }
         case 'historicalMap': case 'historical': case 'powerMap': case 'allianceMap': {
@@ -4456,7 +4457,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const key=histMatch(era)||histMatch(a.question||'');
           if(key&&HIST_SCENARIOS[key]){ const sc=HIST_SCENARIOS[key]; const n=paintFactions(sc.factions);
             for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); if(paintFactions(sc.factions)) break; }
-            try{ map.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
+            try{ GE().camera.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
             let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(sc.title)+'</div>'
               +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+sc.factions.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
               +note(sc.note);
@@ -4467,7 +4468,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(!jr||!Array.isArray(jr.factions)||!jr.factions.length) return R(false, warn('⚠ '+L('Could not build that historical map — try naming the war/year more specifically','その歴史地図を作成できませんでした。戦争名や年をより具体的に指定してください','Konnte diese historische Karte nicht erstellen','Не удалось построить эту историческую карту','No se pudo construir ese mapa histórico')));
           const groups=jr.factions.slice(0,6).map(f=>({name:String(f.name||''),color:(parseColor(f.color)||'#8a8f98'),codes:(Array.isArray(f.countries)?f.countries.map(c=>String(c).toUpperCase()):[])}));
           let n=paintFactions(groups); for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); n=paintFactions(groups); }
-          try{ map.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
+          try{ GE().camera.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
           let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(jr.title||era)+'</div>'
             +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+groups.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
             +note(jr.note||L('Approximate — historical powers mapped onto modern borders.','概略 — 歴史上の勢力を現代の国境上に表示。','Näherung — auf modernen Grenzen.','Приблизительно — на современных границах.','Aproximado — sobre fronteras actuales.'));
@@ -4490,7 +4491,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(pts.length<2) return R(false, warn('⚠ '+L('Need at least two points','2点以上必要です','Mindestens zwei Punkte nötig','Нужно минимум две точки','Se necesitan al menos dos puntos')));
           const col=a.color?parseColor(a.color):null;
           _hlLines.push({geo:{type:'LineString',coordinates:pts},color:col||undefined,w:(a.width!=null&&isFinite(+a.width))?+a.width:3,name:String(a.label||'')});
-          const okL=paintLines(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
+          const okL=paintLines(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
           return R(okL, okL?note('✏️ '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn('⚠')); }
         case 'drawPolygon': case 'polygon': { let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
           if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
@@ -4499,7 +4500,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           const colP=a.color?parseColor(a.color):null;
           const _pgObj={geo:{type:'Polygon',coordinates:[pts]},color:colP||undefined,name:String(a.label||'')};
           _hlPolys.push(_pgObj); const _pgId=(window._imHlPolys&&window._imHlPolys.tagId)?window._imHlPolys.tagId(_pgObj):null;   /* (#R120) drawn polygon becomes a referencable map-object */
-          const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
+          const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
           return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠'), (okPg&&_pgId)?{objectIds:[_pgId]}:null); }
         case 'controls': { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
@@ -4781,11 +4782,11 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           let cW=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) _choroRamp=rampFrom(pc); else cW=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
           clearHl(); clearChoro(); clearPolyHl(); clearLineHl();
           if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
-          try{ map.setPaintProperty('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
+          try{ GE().layers.setPaint('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
           let lo=1e9,hi=-1e9; codes.forEach(cd=>{ lo=Math.min(lo,score[cd]); hi=Math.max(hi,score[cd]); }); const span=(hi-lo)||1e-9;
-          codes.forEach(cd=>{ const nv=(score[cd]-lo)/span; _choroState[String(cd)]=nv; try{ map.setFeatureState({source:'nlq-src',id:String(cd)},{choroV:nv}); }catch(_){} });
+          codes.forEach(cd=>{ const nv=(score[cd]-lo)/span; _choroState[String(cd)]=nv; try{ GE().layers.setFeatureState({source:'nlq-src',id:String(cd)},{choroV:nv}); }catch(_){} });
           _choroMetric='__custom'; _customScoreName=String(a.name||'').trim().slice(0,60)||L('Custom score','カスタム評価','Eigener Score','Пользовательская оценка','Puntuación propia');
-          try{ map.flyTo({zoom:Math.min(map.getZoom(),2.3),duration:600}); }catch(_){}
+          try{ GE().camera.flyTo({zoom:Math.min(GE().camera.getZoom(),2.3),duration:600}); }catch(_){}
           const rank=codes.map(cd=>({cd,v:score[cd]})).sort((x,y)=>y.v-x.v);
           const nTop=Math.max(3,Math.min(15,(+a.n||10)));
           const pct=v=>Math.round((v-lo)/span*100);
@@ -4892,7 +4893,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             .concat((cities||[]).slice(0,8).map(c2=>({lng:c2.lng,lat:c2.lat,name:c2.name,kind:L('city','都市','Stadt','город','ciudad')+' · '+L('pop ','人口','Bev. ','нас. ','pob. ')+c2.pop.toLocaleString()+' · '+Math.round(c2._d)+' km',sum:'',url:'',src:'OpenStreetMap'})));
           let okP=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okP;i2++){ await new Promise(r2=>setTimeout(r2,700)); okP=paintPois(); }
           try{ if(typeof HOST.radiusKm!=='undefined') HOST.radiusKm=kmR; if(window._radiusFromPoint) window._radiusFromPoint(ctr.lng,ctr.lat); }catch(_){}
-          try{ map.fitBounds(box,{padding:70,duration:1100,maxZoom:9}); }catch(_){}
+          try{ GE().camera.fitBounds(box,{padding:70,duration:1100,maxZoom:9}); }catch(_){}
           /* report */
           const cd0=codeAtPoint(ctr.lng,ctr.lat); const cs=cd0&&countryStats[cd0];
           const popSum=(cities||[]).reduce((s2,c2)=>s2+c2.pop,0);
@@ -4952,7 +4953,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             url:(e.g[0].it.link&&/^https?:/i.test(e.g[0].it.link))?e.g[0].it.link:'',src:e.outlets.slice(0,3).join(', ')}));
           let okE=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okE;i2++){ await new Promise(r2=>setTimeout(r2,700)); okE=paintPois(); }
           try{ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p2=>{ a2=Math.min(a2,p2.lng);b2=Math.min(b2,p2.lat);c2=Math.max(c2,p2.lng);d2=Math.max(d2,p2.lat); });
-            if(_pois.length&&c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
+            if(_pois.length&&c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
           const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
           let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(HOST.lang==='jp'?'）':')')+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
           html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+items.length+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
@@ -5477,7 +5478,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const cg=e.target.closest&&e.target.closest('.atl-choice-go');
         if(cg){ const inp=cg.parentElement&&cg.parentElement.querySelector('.atl-choice-in'); const v=inp&&inp.value.trim(); if(v){ inp.value=''; run(v); } return; }
         const ri=e.target.closest&&e.target.closest('.atl-rp-item');
-        if(ri&&!(e.target.closest&&e.target.closest('a'))){ const p=_pois[+ri.getAttribute('data-i')]; if(p&&isFinite(p.lng)){ map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),7.5),duration:900}); } return; }
+        if(ri&&!(e.target.closest&&e.target.closest('a'))){ const p=_pois[+ri.getAttribute('data-i')]; if(p&&isFinite(p.lng)){ GE().camera.flyTo({center:[p.lng,p.lat],zoom:Math.max(GE().camera.getZoom(),7.5),duration:900}); } return; }
       }catch(_){} });
       panel.addEventListener('input',e=>{ try{
         const sl=e.target.closest&&e.target.closest('.atl-ctl-op'); if(!sl) return;
@@ -5570,7 +5571,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       isolate:'isolate', isolateRegion:'isolate', focus:'isolate', pin:'pin', marker:'pin', locate:'pin', myLocation:'pin', whereAmI:'pin', streetview:'streetview', streetView:'streetview', pano:'streetview',
       compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', reportMap:'poi', researchMap:'poi', research_map:'poi', situationMap:'poi', events:'poi', impact:'poi', runway:'poi',
       isochrone:'isochrone', reach:'isochrone', reachability:'isochrone', reachable:'isochrone', catchment:'isochrone' };
-    function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')!=='none') return true; }catch(_){} } return false; }
+    function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     /* (#R122) PER-MESSAGE overlay OWNERSHIP — the shared nlq-* canvas can only paint one message's snapshot of a
        given kind at a time, so each kind has ONE current owner (the reply bubble whose snapshot is on the map). A
        chip reads ON iff its bubble owns every kind it drew AND the layers are visible — so an older message's chip
@@ -5582,7 +5583,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const on=kinds.length&&kinds.every(k=>(_ovlOwn[k]===b&&_ovlVisible(k))||_ovlCloneVisible(b,k));   /* (#R125) a clone counts as ON */
         const t=row.querySelector('.atl-map-toggle'); if(t){ t.classList.toggle('on',!!on); t.setAttribute('aria-checked',on?'true':'false'); } }); }catch(_){} }
     function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
-      const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
+      const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
     /* (#R118) PER-MESSAGE overlay snapshots — the reported bug: every "Shown on the map" switch flipped the SHARED
        nlq-* layers, i.e. an old message's switch controlled whatever was drawn LAST ("そのメッセージのものではなく
        強制的に最新のもの"). Each reply now stores WHAT IT DREW (geojson source data + layer filter + key paint
@@ -5591,26 +5592,26 @@ window.IntMapModules.atlasConsole=function(map,HOST){
        snapshot keep the previous plain show/hide behaviour. */
     const _OVL_PAINT=['fill-color','fill-opacity','line-color','line-width','line-opacity','circle-color','circle-radius','circle-opacity'];
     function _ovlSnapshot(kinds){ const snap={}; (kinds||[]).forEach(kind=>{ if(kind==='arc') return; const ids=_OVL[kind]||[]; const S={sources:{},layers:{}};
-      ids.forEach(id=>{ try{ const ly=map.getLayer(id); if(!ly) return; const L2={};
-        try{ const f=map.getFilter(id); if(f!=null) L2.filter=JSON.parse(JSON.stringify(f)); }catch(_){}
-        const pp={}; _OVL_PAINT.forEach(p=>{ try{ const v=map.getPaintProperty(id,p); if(v!=null) pp[p]=JSON.parse(JSON.stringify(v)); }catch(_){} });
+      ids.forEach(id=>{ try{ const ly=GE().layers.get(id); if(!ly) return; const L2={};
+        try{ const f=GE().layers.getFilter(id); if(f!=null) L2.filter=JSON.parse(JSON.stringify(f)); }catch(_){}
+        const pp={}; _OVL_PAINT.forEach(p=>{ try{ const v=GE().layers.getPaint(id,p); if(v!=null) pp[p]=JSON.parse(JSON.stringify(v)); }catch(_){} });
         if(Object.keys(pp).length) L2.paint=pp;
         S.layers[id]=L2;
-        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const src=map.getSource(sid); const ser=src&&src.serialize&&src.serialize(); if(ser&&ser.type==='geojson'&&ser.data&&typeof ser.data==='object'){ S.sources[sid]=JSON.parse(JSON.stringify(ser.data));
+        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const ser=GE().layers.sourceData(sid); if(ser&&typeof ser==='object'){ S.sources[sid]=JSON.parse(JSON.stringify(ser));
           /* (#R125) country highlights / choropleths paint via FEATURE-STATE (nlq / choroV on promoteId'd codes),
              which serialize() does NOT carry — capture each feature's state so a per-message clone can re-apply it. */
-          try{ const sty=(map.getStyle().sources||{})[sid]||{}; if(sty.promoteId){ S.promote=S.promote||{}; S.promote[sid]=sty.promoteId; }
+          try{ const sty=(GE().scene.getStyle().sources||{})[sid]||{}; if(sty.promoteId){ S.promote=S.promote||{}; S.promote[sid]=sty.promoteId; }
             const st={}; ((S.sources[sid]&&S.sources[sid].features)||[]).forEach(f=>{ const fid=(f.id!=null)?f.id:(sty.promoteId&&f.properties?f.properties[sty.promoteId]:null); if(fid==null) return;
-              try{ const fs=map.getFeatureState({source:sid,id:fid}); if(fs&&Object.keys(fs).length) st[fid]=JSON.parse(JSON.stringify(fs)); }catch(_){} });
+              try{ const fs=GE().layers.getFeatureState({source:sid,id:fid}); if(fs&&Object.keys(fs).length) st[fid]=JSON.parse(JSON.stringify(fs)); }catch(_){} });
             if(Object.keys(st).length){ S.states=S.states||{}; S.states[sid]=st; } }catch(_){} } }catch(_){} }
       }catch(_){} });
       if(Object.keys(S.layers).length||Object.keys(S.sources).length) snap[kind]=S; });
       return snap; }
     function _ovlRestore(kind,S){ if(!S) return false; try{
-      for(const sid in S.sources){ try{ const src=map.getSource(sid); if(src&&src.setData) src.setData(S.sources[sid]); }catch(_){} }
-      for(const id in S.layers){ try{ if(!map.getLayer(id)) continue; const L2=S.layers[id];
-        if('filter' in L2){ try{ map.setFilter(id,L2.filter); }catch(_){} }
-        if(L2.paint){ for(const p in L2.paint){ try{ map.setPaintProperty(id,p,L2.paint[p]); }catch(_){} } } }catch(_){} }
+      for(const sid in S.sources){ try{ GE().layers.setSourceData(sid,S.sources[sid]); }catch(_){} }
+      for(const id in S.layers){ try{ if(!GE().layers.has(id)) continue; const L2=S.layers[id];
+        if('filter' in L2){ try{ GE().layers.setFilter(id,L2.filter); }catch(_){} }
+        if(L2.paint){ for(const p in L2.paint){ try{ GE().layers.setPaint(id,p,L2.paint[p]); }catch(_){} } } }catch(_){} }
       return true; }catch(_){ return false; } }
     /* (#R118b) ADOPT, not just restore: the highlight module re-asserts its own _hlPolys/_hlLines 140ms after any
        styledata (see paintPolys reassert), which instantly overwrote a bare setData restore. Restoring a message's
@@ -5622,8 +5623,8 @@ window.IntMapModules.atlasConsole=function(map,HOST){
          keeps this reply's content instead of the previous owner's. */
       try{ if(S.states){
         if(kind==='highlight'){ try{ clearHl(); }catch(_){} }
-        if(kind==='choropleth'){ try{ for(const c in _choroState){ map.setFeatureState({source:'nlq-src',id:c},{choroV:null}); } _choroState={}; }catch(_){} }
-        for(const sid in S.states){ const st=S.states[sid]; for(const fid in st){ try{ map.setFeatureState({source:sid,id:fid},st[fid]);
+        if(kind==='choropleth'){ try{ for(const c in _choroState){ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:null}); } _choroState={}; }catch(_){} }
+        for(const sid in S.states){ const st=S.states[sid]; for(const fid in st){ try{ GE().layers.setFeatureState({source:sid,id:fid},st[fid]);
           if(kind==='highlight'&&st[fid].nlq) try{ _hl.add(String(fid)); }catch(_){}
           if(kind==='choropleth'&&st[fid].choroV!=null) try{ _choroState[String(fid)]=st[fid].choroV; }catch(_){}
         }catch(_){} } } } }catch(_){}
@@ -5650,7 +5651,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         const kid='atlm'+bEl.__atlmId+'-'+kind, ids=_OVL[kind]||[];
         const ent=_cloneEnt(bEl,kind,true);
         if(!ent.defs.length){   /* first show: clone the ORIGINAL layer definitions with remapped ids/sources */
-          const style=map.getStyle(); const byId={}; (style.layers||[]).forEach(l=>{ byId[l.id]=l; });
+          const style=GE().scene.getStyle(); const byId={}; (style.layers||[]).forEach(l=>{ byId[l.id]=l; });
           const srcMap={}; for(const sid in S.sources){ const csid=kid+'-s-'+sid; srcMap[sid]=csid; ent.srcs[csid]=JSON.parse(JSON.stringify(S.sources[sid]));
             if(S.promote&&S.promote[sid]){ ent.promote=ent.promote||{}; ent.promote[csid]=S.promote[sid]; }
             if(S.states&&S.states[sid]){ ent.states=ent.states||{}; ent.states[csid]=JSON.parse(JSON.stringify(S.states[sid])); } }
@@ -5662,27 +5663,27 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           if(!ent.defs.length){ delete _ovlClones.get(bEl)[kind]; return false; } }
         /* (re)create sources + layers as needed, then show (promoteId + feature-states re-applied so
            feature-state-driven kinds — country highlight / choropleth — actually paint on the clone) */
-        for(const csid in ent.srcs){ try{ if(map.getSource(csid)) map.getSource(csid).setData(ent.srcs[csid]); else { const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; map.addSource(csid,o); }
-          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ map.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
-        ent.defs.forEach(nd=>{ try{ if(!map.getLayer(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; map.addLayer(d2, map.getLayer(nd.__before)?nd.__before:undefined); }
-          map.setLayoutProperty(nd.id,'visibility','visible'); }catch(_){} });
+        for(const csid in ent.srcs){ try{ if(GE().layers.hasSource(csid)) GE().layers.setSourceData(csid,ent.srcs[csid]); else { const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; GE().layers.addSource(csid,o); }
+          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ GE().layers.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
+        ent.defs.forEach(nd=>{ try{ if(!GE().layers.has(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; GE().layers.add(d2, GE().layers.has(nd.__before)?nd.__before:undefined); }
+          GE().layers.setLayout(nd.id,'visibility','visible'); }catch(_){} });
         ent.visible=true; ent.t=++_atlmSeq; _ovlCloneGC();
         return true; }catch(_){ return false; } }
     function _ovlCloneHide(bEl,kind){ const ent=_cloneEnt(bEl,kind,false); if(!ent) return false;
-      ent.defs.forEach(nd=>{ try{ if(map.getLayer(nd.id)) map.setLayoutProperty(nd.id,'visibility','none'); }catch(_){} });
+      ent.defs.forEach(nd=>{ try{ if(GE().layers.has(nd.id)) GE().layers.setLayout(nd.id,'visibility','none'); }catch(_){} });
       const was=ent.visible; ent.visible=false; return was; }
     function _ovlCloneVisible(bEl,kind){ const ent=_cloneEnt(bEl,kind,false); return !!(ent&&ent.visible); }
     function _ovlCloneGC(){ try{ const all=[]; _ovlClones.forEach((reg,b)=>{ for(const k in reg) all.push([b,k,reg[k]]); });
       const hidden=all.filter(e=>!e[2].visible).sort((a,b2)=>a[2].t-b2[2].t);
       while(all.length>14&&hidden.length){ const [b,k,ent]=hidden.shift(); all.splice(all.findIndex(e=>e[2]===ent),1);
-        ent.defs.forEach(nd=>{ try{ if(map.getLayer(nd.id)) map.removeLayer(nd.id); }catch(_){} });
-        for(const csid in ent.srcs){ try{ if(map.getSource(csid)) map.removeSource(csid); }catch(_){} }
+        ent.defs.forEach(nd=>{ try{ if(GE().layers.has(nd.id)) GE().layers.remove(nd.id); }catch(_){} });
+        for(const csid in ent.srcs){ try{ if(GE().layers.hasSource(csid)) GE().layers.removeSource(csid); }catch(_){} }
         try{ delete _ovlClones.get(b)[k]; }catch(_){} } }catch(_){} }
-    try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ clearTimeout(_ovlCloneShow._t); _ovlCloneShow._t=setTimeout(()=>{ try{
+    try{ if(typeof map!=='undefined'&&map) GE().events.on('styledata',()=>{ clearTimeout(_ovlCloneShow._t); _ovlCloneShow._t=setTimeout(()=>{ try{
       _ovlClones.forEach(reg=>{ for(const k in reg){ const ent=reg[k]; if(!ent.visible) continue;
-        for(const csid in ent.srcs){ try{ if(!map.getSource(csid)){ const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; map.addSource(csid,o); }
-          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ map.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
-        ent.defs.forEach(nd=>{ try{ if(!map.getLayer(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; map.addLayer(d2, map.getLayer(nd.__before)?nd.__before:undefined); } }catch(_){} }); } }); }catch(_){} },600); }); }catch(_){}
+        for(const csid in ent.srcs){ try{ if(!GE().layers.hasSource(csid)){ const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; GE().layers.addSource(csid,o); }
+          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ GE().layers.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
+        ent.defs.forEach(nd=>{ try{ if(!GE().layers.has(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; GE().layers.add(d2, GE().layers.has(nd.__before)?nd.__before:undefined); } }catch(_){} }); } }); }catch(_){} },600); }); }catch(_){}
     /* (#R145) on/off VIEW features (grid / 3D terrain / country-info) previously returned a text note only — give each
        an inline toggle SWITCH so the user can flip it straight from the reply ("オンオフ要素のある時はなるべくボタンを設置").
        Flips the REAL UI control directly (no chat turn) and reads the true state back, so the switch never lies. */
@@ -6157,7 +6158,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       const cls=_atlContentClass(d.contentClass);
       if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
         try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls}); }catch(_){}
-        if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) map.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(map.getZoom(),6),duration:900}); } }catch(_){} } }
+        if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) GE().camera.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:900}); } }catch(_){} } }
       if(gen===_runGen){ ai.innerHTML=html; recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
     }
     async function run(q,imgs,files){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
@@ -6359,7 +6360,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       _lastUserMsg=''; const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       const lng=+ll.lng, lat=+ll.lat;
       _herePoint={lng,lat,name:''}; try{ _lastPlace={lng,lat,name:''}; }catch(_){}
-      try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),5),duration:900}); }catch(_){}
+      try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),5),duration:900}); }catch(_){}
       /* label the pin with the country it falls in (best-effort, non-blocking) so it reads nicely */
       (async()=>{ try{ let nm=''; const cd=(typeof codeAtPoint==='function')?codeAtPoint(lng,lat):null;
           if(cd&&typeof countryStats!=='undefined'&&countryStats[cd]){ const s=countryStats[cd]; nm=(HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||''; }

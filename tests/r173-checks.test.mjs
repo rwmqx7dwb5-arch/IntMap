@@ -50,7 +50,7 @@ test('the cockpit camera is the eye→target one, which can look up (#R173 solve
   const src = stripComments(R('js/flight-sim.js'));
   assert.doesNotMatch(src, /_cockpitCam|_AXIS_MARGIN/, 'the clamped-axis solve is gone');
   assert.match(src, /const _D_LOOK=1800/, 'the look-ahead is a fixed distance again');
-  assert.match(src, /calculateCameraOptionsFromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/,
+  assert.match(src, /camera\.fromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract */,
     'centre and zoom come from the eye→target pair, stable at every attitude');
   assert.match(src, /setMaxPitch\(179\)/, 'and the renderer is allowed past the vertical');
 });
@@ -58,8 +58,8 @@ test('the cockpit camera is the eye→target one, which can look up (#R173 solve
 test('the simulator restores what it borrows — and no longer borrows the projection centre', () => {
   const src = stripComments(R('js/flight-sim.js'));
   assert.doesNotMatch(src, /getPadding|setPadding/, 'padding is never touched, so there is nothing to give back');
-  assert.match(src, /map\.setMaxPitch\(pv\.maxPitch\|\|60\)/, 'the tilt ceiling is still restored');
-  assert.match(src, /map\.setSky\(pv\.sky\|\|undefined\)/, '…and so is the pre-flight sky');
+  assert.match(src, /camera\.setMaxPitch\(pv\.maxPitch\|\|60\)/   /* (#R178) …through the contract */, 'the tilt ceiling is still restored');
+  assert.match(src, /scene\.setSky\(pv\.sky\|\|undefined\)/   /* (#R178) …through the contract */, '…and so is the pre-flight sky');
 });
 
 test('the sky belongs to the renderer — the sim paints none (#R174)', () => {
@@ -123,7 +123,7 @@ test('an aircraft can be picked where it is DRAWN, not where its shadow falls', 
   assert.match(d, /E\.coords\.projectAltitude/, 'and it projects the aircraft’s real altitude through the engine');
   assert.match(INDEX, /projectAltitude\(ll,altM\)\{/, 'the engine can project a point that is up in the air');
   assert.match(INDEX, /t\.getMatrixForModel\(\{lng,lat\},\+altM\|\|0\)/, 'through the renderer’s own model matrix, so the globe is right too');
-  assert.match(d, /map\.on\('mousemove',_planesHover\)/, 'hover uses it');
+  assert.match(d, /events\.on\('mousemove',_planesHover\)/   /* (#R178) …through the contract */, 'hover uses it');
   assert.match(d, /let d=pickPlane\(e\.point\), props=null;/, 'and so does the click');
   assert.ok(!/map\.on\('click',ly,/.test(d),
     'ONE click handler: two of them each toggled, so a click that satisfied both selected and deselected in the same event');
