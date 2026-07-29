@@ -9,6 +9,7 @@
 //   5. seismic arrivals reproduce the 2011 Tohoku record and published IASP91 travel times
 //   6. terrain shade and the annual sunlight budget answer with real terrain
 import { test, expect } from '@playwright/test';
+import { installCameraRuler } from './helpers/camera-ruler.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -30,6 +31,7 @@ for (const c of [{ z: 3, lng: 139.767, lat: 35.681, tag: 'z3 Tokyo' },
   test(`unlimited tilt holds the viewpoint still at ${c.tag}`, async ({ page }) => {
     test.setTimeout(180000);
     await boot(page);
+    await page.evaluate(installCameraRuler);
     const r = await page.evaluate(async (cc) => {
       const m = window.__imap, el = m.getCanvasContainer();
       const frame = () => new Promise(res => requestAnimationFrame(() => res()));
@@ -37,29 +39,25 @@ for (const c of [{ z: 3, lng: 139.767, lat: 35.681, tag: 'z3 Tokyo' },
       const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height / 2);
       const fire = (t, type, x, y, buttons) => t.dispatchEvent(new MouseEvent(type,
         { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons, ctrlKey: true, view: window }));
-      const D = Math.PI / 180, C = 2 * Math.PI * 6371008.8;
-      const mX = lng => (180 + lng) / 360;
-      const mY = lat => (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + lat * D / 2))) / 360;
-      // the camera's position in the world the renderer draws — merc units, no metres-per-degree
-      const eye = () => { const t = m.transform, ws = (t.tileSize || 512) * Math.pow(2, m.getZoom());
-        const d = (t.cameraToCenterDistance || 1080) / ws, ctr = m.getCenter();
-        const p = m.getPitch() * D, br = m.getBearing() * D, e0 = (+m.getCameraTargetElevation() || 0);
-        return { x: mX(ctr.lng) - d * Math.sin(p) * Math.sin(br), y: mY(ctr.lat) + d * Math.sin(p) * Math.cos(br),
-                 z: e0 / (C * Math.cos(ctr.lat * D)) + d * Math.cos(p) }; };
+      /* (#R177) SUPERSEDED RULER, SAME QUESTION. What stood here was #R176's own correction written
+         out a second time — so it agreed with the fix and disagreed with the renderer by up to
+         7,115 km, and these three tests passed on a build whose viewpoint was visibly sliding. The
+         ruler now lives in ONE place (tests/helpers/camera-ruler.js) for exactly the reason the
+         geometry does in the app: two copies of it is how this went unnoticed for four rounds. */
       window.IntMapTilt.set(false);
       m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
       await frame(); await frame();
       window.IntMapTilt.set(true);
       m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
       await frame(); await frame();
-      const E0 = eye(), S = C * Math.cos(cc.lat * D);
+      const E0 = window.__eye();
       fire(el, 'mousedown', cx, cy, 1); await frame();
       let y = cy, prev = E0, drift = 0, jump = 0;
       for (let i = 0; i < 18; i++) {
         y -= 6; fire(document, 'mousemove', cx, y, 1); await frame(); await frame();
-        const E = eye();
-        drift = Math.max(drift, Math.hypot(E.x - E0.x, E.y - E0.y, E.z - E0.z) * S);
-        jump = Math.max(jump, Math.hypot(E.x - prev.x, E.y - prev.y, E.z - prev.z) * S);
+        const E = window.__eye();
+        drift = Math.max(drift, window.__gap(E0, E));
+        jump = Math.max(jump, window.__gap(prev, E));
         prev = E;
       }
       fire(document, 'mouseup', cx, y, 0); await frame();
@@ -74,14 +72,14 @@ for (const c of [{ z: 3, lng: 139.767, lat: 35.681, tag: 'z3 Tokyo' },
 test('a zoom is still a dolly at every tilt (#R175 must survive #R176)', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const rows = await page.evaluate(async () => {
     const m = window.__imap, el = m.getCanvasContainer();
     const wait = ms => new Promise(res => setTimeout(res, ms));
     const b = el.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
-    const alt = () => { const t = m.transform, R = 6371008.8;
-      const ws = (t.tileSize || 512) * Math.pow(2, m.getZoom());
-      const mpp = (2 * Math.PI * R * Math.cos(m.getCenter().lat * Math.PI / 180)) / ws;
-      return (t.cameraToCenterDistance || 1080) * mpp * Math.cos(m.getPitch() * Math.PI / 180) + (+m.getCameraTargetElevation() || 0); };
+    /* (#R177) same superseded-ruler note as above: this read the altitude with the correction's own
+       equation. It is the renderer's drawn camera now. */
+    const alt = () => window.__eye().alt;
     const out = [];
     for (const pitch of [0, 85, 110, 150]) {
       window.IntMapTilt.set(false);

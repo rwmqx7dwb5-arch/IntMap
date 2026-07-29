@@ -96,8 +96,12 @@ test('the volume is drawn as one closed mesh — floor included, no interior she
 /* ─── 3. unlimited tilt keeps the viewpoint ─────────────────────────────────────────────────── */
 
 test('the eye anchor answers every proposal, not only the ones that change the pitch', () => {
-  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 8000);
-  assert.ok(!/Math\.abs\(cur\.pitch-was\.pitch\)<1e-4\) return \{\}/.test(hook),
+  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 20000);
+  /* (#R177) the bare `return {}` became `return NOOP()` so that a declined frame can still hand back
+     a BOUNDED target altitude — a frame that declines is exactly the one that carries a stale one
+     across a zoom (measured: 16,373 km inherited from a z3 tilt into a z15 camera). The claim below
+     is #R173's, unchanged: no proposal may be declined merely because the pitch did not move. */
+  assert.ok(!/Math\.abs\(cur\.pitch-was\.pitch\)<1e-4\) return (\{\}|NOOP\(\))/.test(hook),
     'declining a no-op frame applied the PROPOSED camera and wiped the anchor — measured: the eye fell 18.6 km on the last frame');
   assert.match(hook, /const movedFromLast=/, 'travel is judged against the previous proposal…');
   assert.match(hook, /const movedFromApplied=/, '…and against the camera actually on screen, because the proposal is re-cloned between gestures');

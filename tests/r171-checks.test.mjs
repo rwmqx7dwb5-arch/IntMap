@@ -200,12 +200,22 @@ test('the eye altitude is derived from the renderer, not guessed from the zoom',
   /* (#R172) the metres-per-pixel no longer comes from unprojecting two screen points: past 90° of pitch
      the centre row is SKY, and the reading was ~100 km out — see eyePosition() in the adapter. It comes
      from the renderer's own map scale instead, which is defined at every pitch. */
+  /* (#R177) SUPERSEDED IN MECHANISM, KEPT IN INTENT. The derivation moved OUT of eyePosition into
+     gEye — the single transcription of the renderer's camera geometry that the tilt anchor also
+     calls. That is the whole point: #R171-#R176 each wrote this geometry twice, once here and once
+     in the correction, and the two copies agreed with each other while disagreeing with the renderer
+     by up to 7,115 km. The question this test asks is unchanged — is the altitude read off the
+     renderer, or guessed from the zoom? — and it now also asks that there be only one answer. */
   const i = INDEX.indexOf('eyePosition(){');
-  const adapter = INDEX.slice(i, i + 2600);
+  const adapter = INDEX.slice(i, i + 1200);
   assert.ok(i > 0, 'the adapter must expose the viewpoint position');
-  assert.match(adapter, /transform&&m\.transform\.worldSize/, "metres-per-pixel comes from the renderer's own map scale, valid at any pitch");
-  assert.match(adapter, /cameraToCenterDistance/, "the camera→centre distance comes from the renderer when it is readable (fov is the renderer's business)");
-  assert.match(adapter, /getCameraTargetElevation/, 'the terrain under the centre is added, so the number is above SEA LEVEL');
+  assert.match(adapter, /return gEye\(cam,gC2C\(t,m\),tile,gSpherical\(t\),1\);/,
+    'the viewpoint comes from the ONE camera geometry, not from a second copy of it');
+  assert.match(adapter, /getCameraTargetElevation/, 'the terrain under the centre is carried, so the number is above SEA LEVEL');
+  const geo = INDEX.slice(INDEX.indexOf('function gEye('), INDEX.indexOf('function gEye(') + 1600);
+  assert.match(geo, /const world=tile\*Math\.pow\(2,cam\.zoom\)/, "the map scale comes from the renderer's own worldSize, valid at any pitch");
+  assert.match(geo, /c2c/, "the camera→centre distance comes from the renderer (fov is the renderer's business)");
+  assert.ok(!/unproject/.test(geo), 'and never from unprojecting screen points — past 90° of pitch the centre row is SKY');
   assert.match(INDEX, /cameraAltitude\(\)\{ const e=this\.eyePosition\(\); return e\?e\.alt:null; \}/,
     'the altitude is one component of the position, not a second derivation that can drift from it');
 });

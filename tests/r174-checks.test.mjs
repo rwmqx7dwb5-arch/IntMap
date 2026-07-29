@@ -48,17 +48,23 @@ test('the tilt anchor lets a zoom move the camera', () => {
      the identity for a pure tilt and a true dolly for a zoom. The assertion below is the same
      QUESTION #R174 asked — does a zoom still move the camera — expressed against that solution. */
   const idx = appShell(root);
-  const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 12000);
+  const hook = idx.slice(idx.indexOf('setTiltPivot(mode)'), idx.indexOf('setTiltPivot(mode)') + 20000);
   const code = stripComments(hook);
   /* (#R176) SUPERSEDED AGAIN IN MECHANISM, KEPT IN INTENT. The solve now runs in MERCATOR units —
      the metres-per-degree conversion these assertions named was a tangent plane, true at z12 where
      every round measured and wrong by 22,218 km at z3. The question is unchanged: does a zoom still
-     move the camera? */
-  assert.match(code, /Math\.pow\(2,was\.zoom-cur\.zoom\)/, 'the zoom ratio is computed…');
-  assert.match(code, /Ez=k\*Cz\+d1\*Math\.cos\(p0\)/, '…and applied to the anchored eye');
-  assert.match(code, /const Tx=Ex\+d1\*Math\.sin\(p1\)\*Math\.sin\(b1\)/, 'so the solve runs at the PROPOSED look distance');
-  /* d0 — where the eye WAS — is still taken at the applied zoom; it is the d1 SOLVE that moved. */
-  assert.match(code, /const d0=dPix\/\(tile\*Math\.pow\(2,was\.zoom\)\)/, 'the starting distance is still the applied one');
+     move the camera?
+     (#R177) AND AGAIN. The renderer has TWO camera models — `globe` is vertical-perspective below
+     z12 and mercator above — so one set of merc expressions could not be the whole answer; the
+     geometry moved into gEye/gSolve, which speak both. The dolly is now a PARAMETER of gEye rather
+     than a hand-written `k*Cz` term, and the reference for k moved to the proposal's own history
+     because the sphere branch returns a zoom (see the note in the hook). Same question again. */
+  assert.match(code, /Math\.pow\(2,zRef-cur\.zoom\)/, 'the zoom ratio is computed…');
+  assert.match(code, /const anchor=gEye\(was,c2c,tile,sphere,k\);/, '…and applied to the anchored eye');
+  assert.match(code, /const sol=gSolve\(anchor,cur\.pitch,cur\.bearing,c2c,tile,cur\.zoom,sphere,cur,zLim\);/,
+    'so the solve runs at the PROPOSED look distance');
+  /* where the eye WAS is still taken from the APPLIED camera; it is the solve that moved */
+  assert.match(code, /gEye\(was,/, 'the starting camera is still the applied one');
   assert.doesNotMatch(code, /d1=c2c\*mpp\(lat,was\.zoom\)/, 'the frozen-distance solve is gone');
 });
 
