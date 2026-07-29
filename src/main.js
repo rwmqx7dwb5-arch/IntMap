@@ -20,6 +20,13 @@
  * ==========================================================================*/
 import './vendor.js';
 
+/* (#R178) FIRST after the vendor bundle, and before anything that could ask for it: js/geo-engine.js
+   publishes window.IntMapGeoEngine, which is now how every module reaches the renderer. It used to be
+   created inside app-body.js's map.on('load'), i.e. after all of these have already run their
+   factories — the reason the first decoupled module threw "Cannot read properties of undefined". The
+   engine tolerates there being no map yet, so importing it this early costs nothing. */
+import '../js/geo-engine.js';
+
 import '../js/newsgeo.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';

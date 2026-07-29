@@ -136,6 +136,7 @@ window.IntMapModules.timeSeries=function(map,HOST){
 };
 
 window.IntMapModules.aiResearch=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const aiGate=HOST.aiGate, t=HOST.t, makeDraggable=HOST.makeDraggable, askAI=HOST.askAI, countryStats=HOST.countryStats;
   window.IntMapAIResearch=(function(){
@@ -228,7 +229,7 @@ window.IntMapModules.aiResearch=function(map,HOST){
     /* questions templated from the most populous countries inside the current viewport */
     function suggestQs(name){
       let inView=[];
-      try{ const b=map.getBounds();
+      try{ const b=GE().camera.getBounds();
         inView=Object.values(countryStats||{}).filter(s=>s&&s.latlng&&s.latlng[0]>b.getSouth()&&s.latlng[0]<b.getNorth()&&s.latlng[1]>b.getWest()&&s.latlng[1]<b.getEast());
         inView.sort((a,b2)=>(b2.pop||0)-(a.pop||0));
       }catch(_){}
@@ -296,7 +297,8 @@ window.IntMapModules.aiResearch=function(map,HOST){
   })();
 };
 
-window.IntMapModules.correlate=function(map,HOST){
+window.IntMapModules.correlate=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -451,7 +453,7 @@ window.IntMapModules.correlate=function(map,HOST){
     }
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
-    function ensureCountriesSrc(cb){ try{ if(map.getSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!map.getSource('countries')&&_imCanDraw()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
+    function ensureCountriesSrc(cb){ try{ if(GE().layers.hasSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!GE().layers.hasSource('countries')&&_imCanDraw()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
     /* (#R41) Diverging RdBu ramp — the residual map now uses a GRADED multi-hue scale (deep red → orange →
        light → light blue → deep blue), not the old two flat colors with faint alpha ("青と赤二色だけで塗れと
        なんかいっていない"). n∈[-1,1]: +1 = far ABOVE the fit (deep blue), −1 = far BELOW (deep red), 0 ≈ on the
@@ -464,18 +466,18 @@ window.IntMapModules.correlate=function(map,HOST){
                    ("機能使ってたら×しないと地図見れない"). */
       let tries=0;
       const paint=()=>{ try{
-        if(!map.getSource('countries')){ if(tries++<40){ ensureCountriesSrc(()=>setTimeout(paint,0)); return; } else { residPill(f.mx,f.my,true); return; } }
+        if(!GE().layers.hasSource('countries')){ if(tries++<40){ ensureCountriesSrc(()=>setTimeout(paint,0)); return; } else { residPill(f.mx,f.my,true); return; } }
         let maxA=0; const resids=f.ps.map((p,i)=>{ const e=f.ty[i]-(f.mb.m*f.tx[i]+f.mb.b); if(Math.abs(e)>maxA)maxA=Math.abs(e); return {c:p.c,e}; }); if(maxA<=0) maxA=1;
         const match=['match',['get','__code']];
         resids.forEach(({c,e})=>{ const n=Math.max(-1,Math.min(1,e/maxA)); match.push(c,_divColor(n)); });
         match.push('rgba(0,0,0,0)');
-        if(!map.getLayer('corr-resid-fill')){ const before=['ofm-river','ofm-water','ofm-peak','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>map.getLayer(id))||(map.getLayer('tool-poly')?'tool-poly':undefined); map.addLayer({id:'corr-resid-fill',type:'fill',source:'countries',layout:{visibility:'visible'},paint:{'fill-color':match,'fill-opacity':0.72}}, before); }
-        else { map.setPaintProperty('corr-resid-fill','fill-color',match); map.setPaintProperty('corr-resid-fill','fill-opacity',0.72); map.setLayoutProperty('corr-resid-fill','visibility','visible'); }
+        if(!GE().layers.has('corr-resid-fill')){ const before=['ofm-river','ofm-water','ofm-peak','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>GE().layers.get(id))||(GE().layers.has('tool-poly')?'tool-poly':undefined); GE().layers.add({id:'corr-resid-fill',type:'fill',source:'countries',layout:{visibility:'visible'},paint:{'fill-color':match,'fill-opacity':0.72}}, before); }
+        else { GE().layers.setPaint('corr-resid-fill','fill-color',match); GE().layers.setPaint('corr-resid-fill','fill-opacity',0.72); GE().layers.setLayout('corr-resid-fill','visibility','visible'); }
         residPill(f.mx,f.my);
       }catch(e){ if(tries++<40){ setTimeout(paint,120); } else { residPill(f.mx,f.my,true); } } };
       ensureCountriesSrc(()=>setTimeout(paint,0));
     }
-    window._refreshResidualColors=()=>{ try{ if(map.getLayer('corr-resid-fill')&&map.getLayoutProperty('corr-resid-fill','visibility')==='visible'&&_lastFit&&_lastFit.mb) residualMap(); }catch(_){} };
+    window._refreshResidualColors=()=>{ try{ if(GE().layers.has('corr-resid-fill')&&GE().layers.getLayout('corr-resid-fill','visibility')==='visible'&&_lastFit&&_lastFit.mb) residualMap(); }catch(_){} };
     function residPill(mx,my,err){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:9px 14px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:min(440px,calc(100vw - 24px));'; (document.getElementById('map-container')||document.body).appendChild(pill); }
       if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')+'</span><button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">✕</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
       /* (#R41) graded diverging legend bar (matches the RdBu fill) + a one-line "what is this" note */
@@ -484,7 +486,7 @@ window.IntMapModules.correlate=function(map,HOST){
         +'<div style="height:11px;border-radius:4px;background:'+grad+';border:1px solid rgba(128,128,128,0.25);"></div>'
         +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);"><span>'+tr('below the trend','傾向より下','unter dem Trend','ниже тренда','por debajo')+'</span><span>'+tr('on the line','線上','auf der Linie','на линии','en la línea')+'</span><span>'+tr('above the trend','傾向より上','über dem Trend','выше тренда','por encima')+'</span></div>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+tr('Each country is shaded by its regression residual — how far its '+ml(my)+' sits above/below what its '+ml(mx)+' predicts.','各国を回帰残差で塗り分け：その国の'+ml(my)+'が'+ml(mx)+'からの予測値より上振れ/下振れしている度合い。','Jedes Land ist nach dem Regressionsresiduum gefärbt — wie weit sein Wert über/unter der Erwartung liegt.','Каждая страна окрашена по остатку регрессии — насколько значение выше/ниже ожидаемого.','Cada país se sombrea por el residuo de la regresión: cuánto se sitúa por encima/debajo de lo previsto.')+'</div>';
-      pill.querySelector('button').onclick=()=>{ try{ if(map.getLayer('corr-resid-fill')) map.setLayoutProperty('corr-resid-fill','visibility','none'); }catch(_){} pill.style.display='none'; };
+      pill.querySelector('button').onclick=()=>{ try{ if(GE().layers.has('corr-resid-fill')) GE().layers.setLayout('corr-resid-fill','visibility','none'); }catch(_){} pill.style.display='none'; };
       pill.style.display='flex'; }
     function open(){ ensure(); ov.classList.add('show'); const go=()=>reRender();
       if(window.countryGeo&&Object.keys(countryStats||{}).length) go();
@@ -497,7 +499,8 @@ window.IntMapModules.correlate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.worldEvents=function(map,HOST){
+window.IntMapModules.worldEvents=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -657,7 +660,7 @@ window.IntMapModules.worldEvents=function(map,HOST){
       try{
         if(_imCanDraw()) setupIntelLayers();
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:(jp?e.jp:e.en)+' ('+e.y+')',body:jp?e.djp:e.den,layerRef:''}}));
-        if(map&&map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:feats});
+        if(map&&GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
       }catch(_){}
       const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(jp?'📍 場所':'📍 Places')+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(jp?'🗓 出来事':'🗓 Events')+'</button></div>';
       const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(jp?'年代':'Years')+
@@ -681,6 +684,7 @@ window.IntMapModules.worldEvents=function(map,HOST){
 };
 
 window.IntMapModules.edu=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats, t=HOST.t, makeDraggable=HOST.makeDraggable, resolveCountryId=HOST.resolveCountryId, fmtMoney=HOST.fmtMoney, hasTurf=HOST.hasTurf;
   window.IntMapEdu=(function(){
@@ -805,7 +809,7 @@ window.IntMapModules.edu=function(map,HOST){
         const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cap2?(chosen.capital||'—'):cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
         const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
         p.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
-        try{ if(q.answer.latlng&&ok) map&&map.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
+        try{ if(q.answer.latlng&&ok) map&&GE().camera.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
       });
     }
     /* map-quiz click resolution: point-in-polygon over countryGeo (works with the fill layer hidden) */
@@ -835,7 +839,7 @@ window.IntMapModules.edu=function(map,HOST){
       (tools||dd||document.body).appendChild(host);
       host.querySelector('#btn-edu').onclick=()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    if(map) map.on('click',onMapClick);
+    if(map) GE().events.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
     window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(jp()?'プレイグラウンド':'Playground')+'</span>'; });
     return { open:openP, close:closeP };

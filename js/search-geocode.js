@@ -9,6 +9,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.searchGeocode=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Map-side global place search (Nominatim) + abstract / natural-language pre-processing =====
    * Handles patterns like:
    *   - "capital of <country>"
@@ -145,7 +146,7 @@ window.IntMapModules.searchGeocode=function(map,HOST){
     const pinEl=document.createElement('div');
     pinEl.className='search-pin';
     pinEl.innerHTML='<div class="sp-body"></div><div class="sp-pulse"></div>';
-    HOST.searchMarker=new maplibregl.Marker({element:pinEl,anchor:'bottom'}).setLngLat([lng,lat]).addTo(map);
+    HOST.searchMarker=GE().ui.marker({element:pinEl,anchor:'bottom'}).setLngLat([lng,lat]).addTo(map);
     /* Build the result card */
     searchCardData={lng,lat,name:displayName,raw};
     searchCardEl=document.createElement('div');

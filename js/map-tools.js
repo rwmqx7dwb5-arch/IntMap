@@ -20,6 +20,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.projView=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -144,7 +145,7 @@ window.IntMapModules.projView=function(map,HOST){
       _projs:PROJS
     };
     /* ---- entry selectors (#16): desktop top-controls + mobile map sheet ---- */
-    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&map&&map.getCenter){ const cc=map.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
+    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&map&&GE().camera.getCenter){ const cc=GE().camera.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
     window.__projChoose=chooseProj;
     /* (#R7-proj) The Flat-view no longer carries a projection SELECTOR — Flat = real Mercator and Globe
        stay in perfect lock-step with the live map (the user disliked a separate "blank" projection
@@ -161,6 +162,7 @@ window.IntMapModules.projView=function(map,HOST){
 };
 
 window.IntMapModules.drawTool=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const ringArea=HOST.ringArea, t=HOST.t, distHTML=HOST.distHTML, areaHTML=HOST.areaHTML, makeDraggable=HOST.makeDraggable, imToast=HOST.imToast, exitTool=HOST.exitTool;
   window.DrawTool=(function(){
@@ -205,15 +207,15 @@ window.IntMapModules.drawTool=function(map,HOST){
 
     /* ---- map layers (line is stored in lng/lat so MapLibre reprojects it for any view) ---- */
     function fc(features){ return {type:'FeatureCollection',features}; }
-    function ensureLayers(){ if(layersReady && map.getSource('draw-src')) return;
+    function ensureLayers(){ if(layersReady && GE().layers.hasSource('draw-src')) return;
       try{
-        if(!map.getSource('draw-src')) map.addSource('draw-src',{type:'geojson',data:fc([])});
-        if(!map.getLayer('draw-loop-fill')) map.addLayer({id:'draw-loop-fill',type:'fill',source:'draw-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ffcc00','fill-opacity':0.22}});
-        if(!map.getLayer('draw-line-casing')) map.addLayer({id:'draw-line-casing',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':5,'line-opacity':0.6}});
-        if(!map.getLayer('draw-line')) map.addLayer({id:'draw-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff9500','line-width':3}});
+        if(!GE().layers.hasSource('draw-src')) GE().layers.addSource('draw-src',{type:'geojson',data:fc([])});
+        if(!GE().layers.has('draw-loop-fill')) GE().layers.add({id:'draw-loop-fill',type:'fill',source:'draw-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ffcc00','fill-opacity':0.22}});
+        if(!GE().layers.has('draw-line-casing')) GE().layers.add({id:'draw-line-casing',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':5,'line-opacity':0.6}});
+        if(!GE().layers.has('draw-line')) GE().layers.add({id:'draw-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff9500','line-width':3}});
         /* (#R8c) AREA-only closing aid: a dashed great-circle from end→start, shown when the trace has no self-crossing. */
-        if(!map.getLayer('draw-close-line')) map.addLayer({id:'draw-close-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['==','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff3b30','line-width':2,'line-dasharray':[2,2],'line-opacity':0.85}});
-        if(!map.getLayer('draw-pts')) map.addLayer({id:'draw-pts',type:'circle',source:'draw-src',filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2}});
+        if(!GE().layers.has('draw-close-line')) GE().layers.add({id:'draw-close-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['==','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff3b30','line-width':2,'line-dasharray':[2,2],'line-opacity':0.85}});
+        if(!GE().layers.has('draw-pts')) GE().layers.add({id:'draw-pts',type:'circle',source:'draw-src',filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2}});
         layersReady=true;
       }catch(_){ layersReady=false; }
     }
@@ -278,14 +280,14 @@ window.IntMapModules.drawTool=function(map,HOST){
       lastPx={x:px.x,y:px.y}; raw.push([ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]);
       recomputeLine(); if((++sampleN%3)===0) recomputeArea(); setData(); updateNumbers();
     }
-    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; closeAux=null; state='drawing'; try{ map.dragPan.disable(); }catch(_){} setData(); renderPanel(); }
+    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; closeAux=null; state='drawing'; try{ GE().input.set('dragPan',false); }catch(_){} setData(); renderPanel(); }
     function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea();
       /* (#R8c) No self-crossing ⇒ no enclosed loop. Close END→START with a great-circle line and report
          the area of THAT polygon. The closing line is AREA-only: it is never added to the length and is
          untouched by the smoothing slider (both use the open RAW path). */
       closeAux=null;
       if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
-      setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
+      setData(); state='done'; try{ GE().input.set('dragPan',true); }catch(_){} renderPanel(); }
 
     /* (#R123) POPULATION inside the drawn loop(s) — reuses IntMapPopArea (real WorldPop 100m grid, never a guess).
        Multiple enclosed loops are summed as a MultiPolygon. Same live progress bar as the measure/radius panels so
@@ -331,29 +333,29 @@ window.IntMapModules.drawTool=function(map,HOST){
     function onClick(e){ if(Date.now()-_touchTs<600) return; if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
     function onMove(e){ if(state==='drawing') sample(e.point, e.lngLat); }
     let wired=false;
-    function wire(){ if(wired) return; wired=true; map.on('click',onClick); map.on('mousemove',onMove);
-      const cv=map.getCanvas(); cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false}); }
-    function unwire(){ if(!wired) return; wired=false; map.off('click',onClick); map.off('mousemove',onMove);
-      const cv=map.getCanvas(); cv.removeEventListener('touchstart',onTouchStart); cv.removeEventListener('touchmove',onTouchMove); cv.removeEventListener('touchend',onTouchEnd); }
-    function touchLL(tch){ const r=map.getCanvas().getBoundingClientRect(); const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:map.unproject(pt)}; }
+    function wire(){ if(wired) return; wired=true; GE().events.on('click',onClick); GE().events.on('mousemove',onMove);
+      const cv=GE().render.canvas(); cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false}); }
+    function unwire(){ if(!wired) return; wired=false; GE().events.off('click',onClick); GE().events.off('mousemove',onMove);
+      const cv=GE().render.canvas(); cv.removeEventListener('touchstart',onTouchStart); cv.removeEventListener('touchmove',onTouchMove); cv.removeEventListener('touchend',onTouchEnd); }
+    function touchLL(tch){ const r=GE().render.canvas().getBoundingClientRect(); const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:GE().coords.unproject(pt)}; }
     function onTouchStart(e){ if(state==='off'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=false; if(state==='armed') startStroke(touchLL(e.touches[0]).lngLat); }
     function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
     /* (#R139) press-drag-release is the mobile gesture: a real trace (finger moved) finishes on lift; a bare TAP
        (no travel) must NOT leave a dead 1-point 'drawing' state — re-arm so the next press-drag works. */
     function onTouchEnd(e){ _touchTs=Date.now(); if(state!=='drawing') return;
       if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); }
-      else { raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; sampleN=0; state='armed'; try{ map.dragPan.enable(); }catch(_){} setData(); renderPanel(); } }
+      else { raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; sampleN=0; state='armed'; try{ GE().input.set('dragPan',true); }catch(_){} setData(); renderPanel(); } }
 
     function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); try{ window._syncToolBtns&&window._syncToolBtns(); }catch(_){} }
 
     const api={
       active(){ return state!=='off'; },
       start(pt){ try{ if(typeof exitTool==='function') exitTool(); }catch(_){}
-        ensureLayers(); wire(); map.getCanvas().style.cursor='crosshair'; setBtn(true);
+        ensureLayers(); wire(); GE().render.canvas().style.cursor='crosshair'; setBtn(true);
         if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon for the area-monitor feature.
          Finishes the stroke first if it is still being drawn, so "monitor this drawn area" works mid-gesture. */
@@ -369,6 +371,7 @@ window.IntMapModules.drawTool=function(map,HOST){
 };
 
 window.IntMapModules.isolate=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -379,9 +382,9 @@ window.IntMapModules.isolate=function(map,HOST){
     if(!map) return { enter(){}, exit(){}, active:()=>false };
     const jp=()=>HOST.lang==='jp'; let active=false, btn=null;
     function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
-    function ensure(){ if(map.getSource('iso-src')) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
+    function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
         return true;
       }catch(_){ return false; } }
     function findFeature(id){ const cg=window.countryGeo; if(!cg||!cg.features) return null;
@@ -412,16 +415,16 @@ window.IntMapModules.isolate=function(map,HOST){
     /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
        very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
-    function toTop(){ try{ if(!map.getLayer('iso-mask')) return; const ls=map.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') map.moveLayer('iso-mask'); }catch(_){} }
+    function toTop(){ try{ if(!GE().layers.has('iso-mask')) return; const ls=GE().scene.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') GE().layers.move('iso-mask'); }catch(_){} }
     function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
              already be sitting idle (nothing re-triggers a render), so that idle never fires and the mask never
              applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
              the idle listener kept as a last-resort. */
-          if(tries++<60){ setTimeout(apply,120); } else { try{ map.once('idle',apply); }catch(_){} } return; }
+          if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
-        try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){}
+        try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
@@ -433,10 +436,10 @@ window.IntMapModules.isolate=function(map,HOST){
            checkbox, the map layer and the Active-layers list all update together. */
         try{ const cc=document.getElementById('cb-countries'); if(cc&&cc.checked){ cc.checked=false; cc.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
         active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
-        try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ map.fitBounds(bb,{padding:60,duration:800});
+        try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ GE().camera.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
           const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
-          map.setMaxBounds([[bb[0][0]-padX,Math.max(-85,bb[0][1]-padY)],[bb[1][0]+padX,Math.min(85,bb[1][1]+padY)]]); } }catch(_){}
+          GE().camera.setMaxBounds([[bb[0][0]-padX,Math.max(-85,bb[0][1]-padY)],[bb[1][0]+padX,Math.min(85,bb[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
       }; apply(); }
     /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
@@ -456,15 +459,16 @@ window.IntMapModules.isolate=function(map,HOST){
        isolate THAT geometry directly — no countryGeo lookup at all. Accepts a bare geometry or a Feature. */
     function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
       applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
-    function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
-    map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
+    function exit(){ active=false; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
+    GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
-    map.on('idle',()=>{ if(active) toTop(); });
+    GE().events.on('idle',()=>{ if(active) toTop(); });
     return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
   })();
 };
 
 window.IntMapModules.seaRoute=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -563,13 +567,13 @@ window.IntMapModules.seaRoute=function(map,HOST){
     function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/6)); let nearCoast=0; for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); const cv=grid.cell[c.y*W+c.x]; if(cv===2) return false; if(inNoGo(lng,lat)) return false; if(cv===1) nearCoast++; } return nearCoast<=Math.max(2,Math.floor(n*0.5)); }
     function stringPull(path){ if(path.length<3) return path; const out=[path[0]]; let i=0; while(i<path.length-1){ let j=path.length-1; for(;j>i+1;j--){ if(Math.abs(path[j][0]-path[i][0])>170) continue; if(seaLineClear(path[i],path[j])) break; } out.push(path[j]); i=j; } return out; }
     /* --- layers --- */
-    function ensureLayers(){ if(map.getSource('route-src')) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource('route-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'route-nogo',type:'fill',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'fill-color':'#ff3b30','fill-opacity':0.16}});
-        map.addLayer({id:'route-nogo-line',type:'line',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'line-color':'#ff3b30','line-dasharray':[2,2],'line-width':1.2,'line-opacity':0.7}});
-        map.addLayer({id:'route-line-casing',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#04263f','line-width':5.5,'line-opacity':0.85}});
-        map.addLayer({id:'route-line',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#19c6ff','line-width':2.6}});
-        map.addLayer({id:'route-pts',type:'circle',source:'route-src',filter:['==',['get','kind'],'pt'],paint:{'circle-radius':6,'circle-color':'#19c6ff','circle-stroke-color':'#04263f','circle-stroke-width':2}});
+    function ensureLayers(){ if(GE().layers.hasSource('route-src')) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource('route-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'route-nogo',type:'fill',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'fill-color':'#ff3b30','fill-opacity':0.16}});
+        GE().layers.add({id:'route-nogo-line',type:'line',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'line-color':'#ff3b30','line-dasharray':[2,2],'line-width':1.2,'line-opacity':0.7}});
+        GE().layers.add({id:'route-line-casing',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#04263f','line-width':5.5,'line-opacity':0.85}});
+        GE().layers.add({id:'route-line',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#19c6ff','line-width':2.6}});
+        GE().layers.add({id:'route-pts',type:'circle',source:'route-src',filter:['==',['get','kind'],'pt'],paint:{'circle-radius':6,'circle-color':'#19c6ff','circle-stroke-color':'#04263f','circle-stroke-width':2}});
         return true; }catch(_){ return false; } }
     function draw(lineCoords){ const feats=[];
       noGo.forEach(z=>{ try{ feats.push({type:'Feature',geometry:turf.circle([z.lng,z.lat],z.km,{units:'kilometers',steps:48}).geometry,properties:{kind:'nogo'}}); }catch(_){} });
@@ -578,7 +582,7 @@ window.IntMapModules.seaRoute=function(map,HOST){
       if(lineCoords&&lineCoords.length>1){ /* split at antimeridian so renderWorldCopies:false draws it */
         let seg=[lineCoords[0]]; for(let i=1;i<lineCoords.length;i++){ if(Math.abs(lineCoords[i][0]-lineCoords[i-1][0])>180){ if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); seg=[lineCoords[i]]; } else seg.push(lineCoords[i]); }
         if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); }
-      try{ if(ensureLayers()) map.getSource('route-src').setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ if(ensureLayers()) GE().layers.setSourceData('route-src',{type:'FeatureCollection',features:feats}); }catch(_){}
     }
     function setBody(html){ const b=panel&&panel.querySelector('#route-body'); if(b) b.innerHTML=html; }
     function compute(){ if(!start||!end||busy) return; busy=true;
@@ -631,10 +635,10 @@ window.IntMapModules.seaRoute=function(map,HOST){
     function clear(){ start=null; end=null; noGo=[]; addNoGoMode=false; draw(null); refreshPanel(); }
     /* When "add no-go" is armed, a left-click drops a no-go zone (start/end come from the right-click
        menu, so normal clicks/measure tools aren't hijacked). */
-    map.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
+    GE().events.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
       noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); draw(null);
       const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(jp()?'禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。':'No-go added (120 km circle). Press Compute route.'); });
-    map.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
+    GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
     return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
   })();
 };
@@ -646,18 +650,19 @@ window.IntMapModules.seaRoute=function(map,HOST){
  * window.IntMapLOS API it publishes are unchanged, so every call site — the map right-click menu and
  * the Atlas los/viewshed actions — is untouched. */
 window.IntMapModules.outline=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapOutline=(function(){
     if(typeof map==='undefined'||!map) return { show(){}, clear(){} };
     const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
-    function setVis(v){ try{ if(map.getLayer('pl-outline-fill')) map.setLayoutProperty('pl-outline-fill','visibility',v); if(map.getLayer('pl-outline-line')) map.setLayoutProperty('pl-outline-line','visibility',v); }catch(_){} }
+    function setVis(v){ try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setLayout('pl-outline-fill','visibility',v); if(GE().layers.has('pl-outline-line')) GE().layers.setLayout('pl-outline-line','visibility',v); }catch(_){} }
     function ensureLayers(){ try{
-      if(!map.getSource('pl-outline-src')) map.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      if(!map.getLayer('pl-outline-fill')) map.addLayer({id:'pl-outline-fill',type:'fill',source:'pl-outline-src',paint:{'fill-color':_col,'fill-opacity':0.15}},before);
-      if(!map.getLayer('pl-outline-line')) map.addLayer({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':_col,'line-width':2.4,'line-opacity':0.95}},before);
+      if(!GE().layers.hasSource('pl-outline-src')) GE().layers.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      if(!GE().layers.has('pl-outline-fill')) GE().layers.add({id:'pl-outline-fill',type:'fill',source:'pl-outline-src',paint:{'fill-color':_col,'fill-opacity':0.15}},before);
+      if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':_col,'line-width':2.4,'line-opacity':0.95}},before);
       return true; }catch(_){ return false; } }
-    function setColor(c){ if(!c) return; _col=c; try{ if(map.getLayer('pl-outline-fill')) map.setPaintProperty('pl-outline-fill','fill-color',c); if(map.getLayer('pl-outline-line')) map.setPaintProperty('pl-outline-line','line-color',c); }catch(_){} }
+    function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); if(GE().layers.has('pl-outline-line')) GE().layers.setPaint('pl-outline-line','line-color',c); }catch(_){} }
     function setData(geo){ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData(geo); }catch(_){} }
     /* (#R55) Bulletproof clear. The user re-reported the polygon staying after ×. The REAL hole (R54 missed it):
        a show() whose Nominatim fetch was STILL IN FLIGHT would resolve AFTER clear() and repaint the outline. So
@@ -673,11 +678,11 @@ window.IntMapModules.outline=function(map,HOST){
        (the user reported the line staying after the popup's ×, which only closed the popup). clear() is nuclear:
        removes the layers + source so nothing can paint, then forces a repaint. */
     function clear(){ _seq++; _active=false; _last=null;
-      try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
-      try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
-      try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){}
+      try{ if(GE().layers.has('pl-outline-line')) GE().layers.remove('pl-outline-line'); }catch(_){}
+      try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
+      try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){}
       try{ setVis('none'); }catch(_){}
-      try{ map.triggerRepaint&&map.triggerRepaint(); }catch(_){} }
+      try{ GE().render.triggerRepaint&&GE().render.triggerRepaint(); }catch(_){} }
     function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
     /* (#R59) point-in-polygon — pick the boundary that CONTAINS the clicked point (exact, no distance threshold:
        the user said "固定基準で解決できると思うな"). Fixes "flies to a far same-named place". */
@@ -708,32 +713,33 @@ window.IntMapModules.outline=function(map,HOST){
         if(myseq!==_seq) return false;
         if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
         setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible');
-        if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
+        if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=GE().render.container&&GE().render.container(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); GE().camera.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
       }catch(_){ return false; } }
-    map.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
+    GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
       else { /* (#R57) REAPER — while no outline is active, NO pl-outline layer/source may survive a style event, so a
                 cleared outline can never linger. Only ever removes. */
-        try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
-        try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
-        try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
+        try{ if(GE().layers.has('pl-outline-line')) GE().layers.remove('pl-outline-line'); }catch(_){}
+        try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
+        try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){} } });
     /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
     return { show, clear, setColor, active:()=>_active,
       current:()=>(_active&&_last)?{name:_last.name, geo:_last.geo}:null,   /* (#R122) expose the geometry (Move/Isolate) */
-      focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) map.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
+      focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) GE().camera.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
   })();
 };
 
 window.IntMapModules.moveShape=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapMoveShape=(function(){
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     let baseGeo=null, baseCen=null, on=false, pill=null, handlers=[];
     const accent=()=>{ try{ return (window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; }catch(_){ return '#0a84ff'; } };
-    function ensure(){ try{ if(!map.getSource('immove-src')) map.addSource('immove-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      const bf=['nlq-poly-fill','pl-outline-fill','ofm-country','ofm-city'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      if(!map.getLayer('immove-fill')) map.addLayer({id:'immove-fill',type:'fill',source:'immove-src',paint:{'fill-color':accent(),'fill-opacity':0.4}},bf);
-      if(!map.getLayer('immove-line')) map.addLayer({id:'immove-line',type:'line',source:'immove-src',paint:{'line-color':accent(),'line-width':2.6}},bf);
-      else { try{ map.setPaintProperty('immove-fill','fill-color',accent()); map.setPaintProperty('immove-line','line-color',accent()); }catch(_){} }
+    function ensure(){ try{ if(!GE().layers.hasSource('immove-src')) GE().layers.addSource('immove-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      const bf=['nlq-poly-fill','pl-outline-fill','ofm-country','ofm-city'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+      if(!GE().layers.has('immove-fill')) GE().layers.add({id:'immove-fill',type:'fill',source:'immove-src',paint:{'fill-color':accent(),'fill-opacity':0.4}},bf);
+      if(!GE().layers.has('immove-line')) GE().layers.add({id:'immove-line',type:'line',source:'immove-src',paint:{'line-color':accent(),'line-width':2.6}},bf);
+      else { try{ GE().layers.setPaint('immove-fill','fill-color',accent()); GE().layers.setPaint('immove-line','line-color',accent()); }catch(_){} }
     }catch(_){} }
     function centroid(g){ let sx=0,sy=0,n=0; const eat=c=>{ if(typeof c[0]==='number'){ sx+=c[0]; sy+=c[1]; n++; } else c.forEach(eat); }; try{ eat(g.coordinates); }catch(_){} return n?[sx/n,sy/n]:[0,0]; }
     function _mercNow(){ try{ return (typeof HOST.proj==='undefined'||HOST.proj==='flat'); }catch(_){ return true; } }
@@ -783,7 +789,7 @@ window.IntMapModules.moveShape=function(map,HOST){
         while(lng-newCen[0]>180) lng-=360; while(lng-newCen[0]<-180) lng+=360;   /* keep longitudes contiguous around the new centre (no dateline split) */
         return [lng,lat]; } return c.map(mv); };
       return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
-    function paint(g){ ensure(); try{ map.getSource('immove-src').setData({type:'Feature',geometry:g,properties:{}}); }catch(_){} }
+    function paint(g){ ensure(); try{ GE().layers.setSourceData('immove-src',{type:'Feature',geometry:g,properties:{}}); }catch(_){} }
     function showPill(name){ try{ if(pill) pill.remove();
       pill=document.createElement('div'); pill.id='immove-pill';
       pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:1450;display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
@@ -801,10 +807,10 @@ window.IntMapModules.moveShape=function(map,HOST){
          shape about its own centroid ("右クリックしながら動かしたら回転させられるように") — screen-angle around the
          projected centroid drives rotAng, so the shape follows the cursor like a dial. */
       let curCen=baseCen.slice(), rotAng=0;
-      try{ map.dragPan.disable(); }catch(_){} try{ if(map.dragRotate) map.dragRotate.disable(); }catch(_){}
-      try{ map.getCanvas().style.cursor='move'; }catch(_){}
+      try{ GE().input.set('dragPan',false); }catch(_){} try{ if(map.dragRotate) GE().input.set('dragRotate',false); }catch(_){}
+      try{ GE().render.canvas().style.cursor='move'; }catch(_){}
       let dragging=false, rotating=false, rotStart=0, rotBase=0;
-      const angAt=(e)=>{ try{ const c=map.project({lng:curCen[0],lat:curCen[1]}); return Math.atan2(e.point.y-c.y,e.point.x-c.x); }catch(_){ return 0; } };
+      const angAt=(e)=>{ try{ const c=GE().coords.project({lng:curCen[0],lat:curCen[1]}); return Math.atan2(e.point.y-c.y,e.point.x-c.x); }catch(_){ return 0; } };
       const dn=(e)=>{ const btn=e&&e.originalEvent&&e.originalEvent.button;
         if(btn===2){ rotating=true; rotStart=angAt(e); rotBase=rotAng; }
         else dragging=true;
@@ -814,21 +820,22 @@ window.IntMapModules.moveShape=function(map,HOST){
         if(!dragging||!e.lngLat) return; curCen=[e.lngLat.lng,e.lngLat.lat]; paint(reshape(curCen,rotAng)); };
       const up=()=>{ dragging=false; rotating=false; };
       const ctx=(e)=>{ if(e&&e.preventDefault) try{ e.preventDefault(); }catch(_){} };   /* no browser context menu while placing */
-      map.on('mousedown',dn); map.on('touchstart',dn); map.on('mousemove',mvv); map.on('touchmove',mvv); map.on('mouseup',up); map.on('touchend',up); map.on('contextmenu',ctx);
+      GE().events.on('mousedown',dn); GE().events.on('touchstart',dn); GE().events.on('mousemove',mvv); GE().events.on('touchmove',mvv); GE().events.on('mouseup',up); GE().events.on('touchend',up); GE().events.on('contextmenu',ctx);
       handlers=[['mousedown',dn],['touchstart',dn],['mousemove',mvv],['touchmove',mvv],['mouseup',up],['touchend',up],['contextmenu',ctx]];
       showPill(name); return true; }
     function stop(){ if(!on&&!handlers.length){ return; } on=false;
-      try{ handlers.forEach(([ev,fn])=>map.off(ev,fn)); }catch(_){} handlers=[];
-      try{ map.dragPan.enable(); }catch(_){} try{ if(map.dragRotate) map.dragRotate.enable(); }catch(_){}
-      try{ map.getCanvas().style.cursor=''; }catch(_){}
-      try{ if(map.getLayer('immove-fill')) map.removeLayer('immove-fill'); }catch(_){}
-      try{ if(map.getLayer('immove-line')) map.removeLayer('immove-line'); }catch(_){}
-      try{ if(map.getSource('immove-src')) map.removeSource('immove-src'); }catch(_){}
+      try{ handlers.forEach(([ev,fn])=>GE().events.off(ev,fn)); }catch(_){} handlers=[];
+      try{ GE().input.set('dragPan',true); }catch(_){} try{ if(map.dragRotate) GE().input.set('dragRotate',true); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){}
+      try{ if(GE().layers.has('immove-fill')) GE().layers.remove('immove-fill'); }catch(_){}
+      try{ if(GE().layers.has('immove-line')) GE().layers.remove('immove-line'); }catch(_){}
+      try{ if(GE().layers.hasSource('immove-src')) GE().layers.removeSource('immove-src'); }catch(_){}
       if(pill){ try{ pill.remove(); }catch(_){} pill=null; } }
     return { start, stop, active:()=>on, _reshape:(cen,rot)=>reshape(cen,rot||0) }; })();
 };
 
 window.IntMapModules.isochrone=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable, bringToFront=HOST.bringToFront;
   window.IntMapIsochrone=(function(){
@@ -838,10 +845,10 @@ window.IntMapModules.isochrone=function(map,HOST){
     const ICON={auto:'🚗',pedestrian:'🚶',bicycle:'🚲'};
     const PAL=['#0a84ff','#34c759','#ff9f0a','#ff375f'];   /* smallest → largest contour */
     let panel=null, center=null, mode='auto', mins=[15,30], busy=false, lastMinutes=[15,30];
-    function ensureLayers(){ try{ if(!map.getSource(SRC)) map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(!map.getLayer('im-iso-fill')) map.addLayer({id:'im-iso-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#0a84ff'],'fill-opacity':0.18}});
-      if(!map.getLayer('im-iso-line')) map.addLayer({id:'im-iso-line',type:'line',source:SRC,filter:['==','$type','Polygon'],layout:{'line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#0a84ff'],'line-width':2.2,'line-opacity':0.92}});
-      if(!map.getLayer('im-iso-ctr')) map.addLayer({id:'im-iso-ctr',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#fff','circle-stroke-color':'#0a84ff','circle-stroke-width':3}});
+    function ensureLayers(){ try{ if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has('im-iso-fill')) GE().layers.add({id:'im-iso-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#0a84ff'],'fill-opacity':0.18}});
+      if(!GE().layers.has('im-iso-line')) GE().layers.add({id:'im-iso-line',type:'line',source:SRC,filter:['==','$type','Polygon'],layout:{'line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#0a84ff'],'line-width':2.2,'line-opacity':0.92}});
+      if(!GE().layers.has('im-iso-ctr')) GE().layers.add({id:'im-iso-ctr',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#fff','circle-stroke-color':'#0a84ff','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
     function clear(){ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(panel) panel.style.display='none'; }
     async function fetchIso(c,cost,minutes){
@@ -861,8 +868,8 @@ window.IntMapModules.isochrone=function(map,HOST){
       const polys=(j.features||[]).filter(f=>f.geometry&&/Polygon/.test(f.geometry.type)).sort((a,b)=>(b.properties.contour||0)-(a.properties.contour||0));   /* largest first → drawn underneath */
       const feats=polys.map(f=>{ const c=+f.properties.contour; const idx=Math.max(0,minutes.indexOf(c)); return {type:'Feature',geometry:f.geometry,properties:{col:PAL[Math.min(PAL.length-1,idx)],min:c}}; });
       feats.push({type:'Feature',geometry:{type:'Point',coordinates:[center.lng,center.lat]},properties:{}});
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ if(polys.length&&typeof turf!=='undefined'){ const bb=turf.bbox({type:'FeatureCollection',features:polys}); if(bb.every(isFinite)&&bb[2]>bb[0]) map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:56,duration:900,maxZoom:14}); } }catch(_){}
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ if(polys.length&&typeof turf!=='undefined'){ const bb=turf.bbox({type:'FeatureCollection',features:polys}); if(bb.every(isFinite)&&bb[2]>bb[0]) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:56,duration:900,maxZoom:14}); } }catch(_){}
       lastMinutes=minutes.slice(); renderPanel(); return {ok:true,minutes,mode:cost}; }
     function ensurePanel(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='iso-panel';
@@ -887,13 +894,14 @@ window.IntMapModules.isochrone=function(map,HOST){
 };
 
 window.IntMapModules.arc3d=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapArc3D=(function(){
     if(typeof map==='undefined'||!map) return { show(){}, hide(){}, animate(){}, draw(){} };
     let cv=null, ctx=null, data=null, raf=0, prog=1, dpr=1, bound=false;
     function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
       cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
       const cont=document.getElementById('map-container'); (cont||document.body).appendChild(cv); ctx=cv.getContext('2d');
-      if(!bound){ bound=true; const rd=()=>{ if(window.__fsCamActive) return; if(data) draw(); }; map.on('move',rd); map.on('zoom',rd); map.on('rotate',rd); map.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }   /* (#R95) graticule redraw paused while the flight sim drives the camera */
+      if(!bound){ bound=true; const rd=()=>{ if(window.__fsCamActive) return; if(data) draw(); }; GE().events.on('move',rd); GE().events.on('zoom',rd); GE().events.on('rotate',rd); GE().events.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }   /* (#R95) graticule redraw paused while the flight sim drives the camera */
     function resize(){ if(!cv) return; const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); const w=cont.clientWidth,h=cont.clientHeight; cv.width=w*dpr; cv.height=h*dpr; cv.style.width=w+'px'; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
     function lerp(a,b,t){ return a+(b-a)*t; }
     function hx(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
@@ -908,9 +916,9 @@ window.IntMapModules.arc3d=function(map,HOST){
          arc is geometrically to scale and grows/shrinks WITH the zoom (the old code used a fixed 0.46·screenHeight
          fraction, which is exactly why the height looked wrong and changed with zoom). Measure the live scale from
          the projection each frame (a 50 km north step at the view centre). */
-      let pxPerKm=0.1; try{ const c=map.getCenter(); const p0=map.project([c.lng,c.lat]); const p1=map.project([c.lng,c.lat+50/111.32]); const d=Math.hypot(p1.x-p0.x,p1.y-p0.y)/50; if(isFinite(d)&&d>0) pxPerKm=d; }catch(_){}
+      let pxPerKm=0.1; try{ const c=GE().camera.getCenter(); const p0=GE().coords.project([c.lng,c.lat]); const p1=GE().coords.project([c.lng,c.lat+50/111.32]); const d=Math.hypot(p1.x-p0.x,p1.y-p0.y)/50; if(isFinite(d)&&d>0) pxPerKm=d; }catch(_){}
       const maxLift=0.92*H;   /* clamp so an extreme apogee at high zoom can't shoot off-canvas */
-      const scr=[]; for(let i=0;i<N;i++){ let p; try{ p=map.project(data.pts[i]); }catch(_){ p={x:0,y:0}; } const lift=Math.min(maxLift,(data.alts[i]||0)*pxPerKm); scr.push({x:p.x, gy:p.y, y:p.y-lift, alt:data.alts[i]||0}); }
+      const scr=[]; for(let i=0;i<N;i++){ let p; try{ p=GE().coords.project(data.pts[i]); }catch(_){ p={x:0,y:0}; } const lift=Math.min(maxLift,(data.alts[i]||0)*pxPerKm); scr.push({x:p.x, gy:p.y, y:p.y-lift, alt:data.alts[i]||0}); }
       /* ground track (dashed) */
       ctx.setLineDash([5,5]); ctx.strokeStyle='rgba(255,90,90,0.35)'; ctx.lineWidth=1.3; ctx.beginPath(); scr.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.gy):ctx.moveTo(p.x,p.gy); }); ctx.stroke(); ctx.setLineDash([]);
       /* vertical altitude stems */
@@ -933,6 +941,7 @@ window.IntMapModules.arc3d=function(map,HOST){
 };
 
 window.IntMapModules.objectList=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const removePin=HOST.removePin, refreshTool=HOST.refreshTool, makeDraggable=HOST.makeDraggable, isMobile=HOST.isMobile;
   window.IntMapObjects=(function(){
@@ -944,19 +953,19 @@ window.IntMapModules.objectList=function(map,HOST){
     function srcFeats(id){ try{ const s=map.getSource(id); return (s&&s._data&&s._data.features)||[]; }catch(_){ return []; } }
     function fitFeats(feats){ try{ let a=180,b=90,c=-180,d=-90; const eat=co=>{ if(typeof co[0]==='number'){ if(co[0]<a)a=co[0]; if(co[1]<b)b=co[1]; if(co[0]>c)c=co[0]; if(co[1]>d)d=co[1]; } else co.forEach(eat); };
       feats.forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) eat(f.geometry.coordinates); });
-      if(isFinite(a)&&c>=a){ if(a===c&&b===d) map.flyTo({center:[a,b],zoom:Math.max(map.getZoom(),12),duration:800}); else map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:800}); } }catch(_){} }
+      if(isFinite(a)&&c>=a){ if(a===c&&b===d) GE().camera.flyTo({center:[a,b],zoom:Math.max(GE().camera.getZoom(),12),duration:800}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:800}); } }catch(_){} }
     /* one normalised object list gathered live from every subsystem */
     function collect(){ const out=[];
       try{ (HOST.userPins||[]).forEach((p,i)=>out.push({ id:p.id, kind:'pin', dot:'#ff3b30', name:labels[p.id]||(OL('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)),
-        focus:()=>map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),13),duration:800}), rename:v=>{ labels[p.id]=v; }, remove:()=>{ try{ removePin(p.id); }catch(_){} } })); }catch(_){}
+        focus:()=>GE().camera.flyTo({center:[p.lng,p.lat],zoom:Math.max(GE().camera.getZoom(),13),duration:800}), rename:v=>{ labels[p.id]=v; }, remove:()=>{ try{ removePin(p.id); }catch(_){} } })); }catch(_){}
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
-        focus:()=>map.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
+        focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Drawing','図形','Zeichnung','Фигура','Dibujo'),
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
-        setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(map.getLayer(L)) map.setPaintProperty(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
-        toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(map.getLayer(L)) map.setLayoutProperty(L,'visibility',v); }catch(_){} }); },
+        setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
+        toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',v); }catch(_){} }); },
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
       try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'),
         focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}

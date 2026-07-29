@@ -158,8 +158,21 @@ window.IntMapModules.viewControls=function(map,HOST){
   /* The engine is built inside map.on('load') in index.html, i.e. AFTER these factories run
      (#R170 learned this the hard way: wiring at construction time silently bound nothing). Wait
      for it, then push the saved choices at the renderer exactly once. */
+  /* (#R178) …and waiting for the ENGINE is no longer the same as waiting for the RENDERER. The engine
+     used to be created inside map.on('load'), so its existence implied a live map; js/geo-engine.js is
+     imported before the map is constructed now, and this loop fired immediately — pushing the saved
+     ceiling at an adapter whose _m() was still null, which silently did nothing. Measured: the tilt
+     limit read back 78° after a reload with the setting on "unlimited". So wait for hasRenderer(),
+     and keep the retry alive until apply() actually reports that the renderer took it. */
   (function waitForEngine(n){
-    if(GE()&&GE().camera){ try{ window.IntMapTilt.apply(); }catch(_){} try{ window.IntMapTilt.wireTilt(); }catch(_){} try{ if(window.IntMapEyeAlt.isOn()) window.IntMapEyeAlt.wire(); }catch(_){} return; }
+    const E=GE();
+    if(E&&E.camera&&(E.hasRenderer?E.hasRenderer():true)){
+      let ok=false;
+      try{ ok=window.IntMapTilt.apply(); }catch(_){}
+      try{ window.IntMapTilt.wireTilt(); }catch(_){}
+      try{ if(window.IntMapEyeAlt.isOn()) window.IntMapEyeAlt.wire(); }catch(_){}
+      if(ok) return;
+    }
     if((n||0)<200) setTimeout(()=>waitForEngine((n||0)+1),100);
   })(0);
 };

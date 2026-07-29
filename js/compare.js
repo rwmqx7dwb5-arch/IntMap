@@ -17,6 +17,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.compare=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
   return (function(){
     if(!map || typeof maplibregl==='undefined') return { open(){}, close(){} };
@@ -223,8 +224,8 @@ window.IntMapModules.compare=function(map,HOST){
        couldn't follow → "レイヤーと地図がずれる" on big scrolls / zoomed-out X-ray. Wrapping the synced lng to
        the equivalent in-range value keeps the compare basemap + its data layers registered together. */
     const _wrapLng=(lng)=>{ let x=((lng+180)%360+360)%360-180; return x; };
-    const _normCenter=()=>{ const c=map.getCenter(); return {lng:_wrapLng(c.lng), lat:c.lat}; };
-    const _rawCenter=()=>{ const c=map.getCenter(); return {lng:c.lng, lat:c.lat}; };
+    const _normCenter=()=>{ const c=GE().camera.getCenter(); return {lng:_wrapLng(c.lng), lat:c.lat}; };
+    const _rawCenter=()=>{ const c=GE().camera.getCenter(); return {lng:c.lng, lat:c.lat}; };
     /* (#R28) The compare map must render the SAME world copies as the main map or it drifts on big
        horizontal scrolls. The main flat map wraps ONLY in free-pan ("free"); globe and fixed-flat don't.
        When the main wraps, the compare must wrap too — so its basemap + overlays repeat across copies and
@@ -243,12 +244,12 @@ window.IntMapModules.compare=function(map,HOST){
              (frosted sidebar / sheet detents shift its optical center) — the lens must carry the SAME
              padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
-          let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
-          cmap.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
+          let pad; try{ pad=GE().camera.getPadding?GE().camera.getPadding():undefined; }catch(_){}
+          cmap.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:pad});
         } else {
           /* SYNC: center the compare on the geography under the UNCOVERED-area centroid. */
-          let target=null; try{ const u=map.unproject(uncoveredCentroidPx()); target={lng:_copies?u.lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
-          cmap.jumpTo({center:target||(_copies?_rawCenter():_normCenter()),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
+          let target=null; try{ const u=GE().coords.unproject(uncoveredCentroidPx()); target={lng:_copies?u.lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
+          cmap.jumpTo({center:target||(_copies?_rawCenter():_normCenter()),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
@@ -256,12 +257,12 @@ window.IntMapModules.compare=function(map,HOST){
     function syncToMain(){ if(mode!=='sync'||!cmap||syncing) return; syncing=true;
       try{
         const C=cmap.getCenter();
-        map.jumpTo({zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch()});
+        GE().camera.jumpTo({zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch()});
         const tpx=uncoveredCentroidPx();
-        const p=map.project(C);                                  /* where C sits on the main map now */
-        const cpx=map.project(map.getCenter());                  /* main center in screen px */
-        const next=map.unproject([cpx.x+(p.x-tpx[0]), cpx.y+(p.y-tpx[1])]);
-        map.jumpTo({center:next});
+        const p=GE().coords.project(C);                                  /* where C sits on the main map now */
+        const cpx=GE().coords.project(GE().camera.getCenter());                  /* main center in screen px */
+        const next=GE().coords.unproject([cpx.x+(p.x-tpx[0]), cpx.y+(p.y-tpx[1])]);
+        GE().camera.jumpTo({center:next});
       }catch(_){} syncing=false; }
     /* (#R18) Size the compare map to the full map-container and clip it to the window rect → a lens. */
     function layoutXrayLens(){
@@ -461,7 +462,7 @@ window.IntMapModules.compare=function(map,HOST){
          land on top of the × ("×がレイヤー選択ボタンと重なって終了できない") — now nothing in the header/controls
          can ever overlap it, on ANY platform. (Base + mobile CSS position #cmp-close absolutely.) */
       try{ const _x=win.querySelector('#cmp-close'); if(_x) win.appendChild(_x); }catch(_){}
-      cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
+      cmap=GE().ui.createView({container:'compare-map',style:compareStyle(),center:GE().camera.getCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
       try{ cmap.__wantGlobe=(typeof HOST.proj==='undefined'||HOST.proj!=='flat'); cmap.setProjection({type:cmap.__wantGlobe?'globe':'mercator'}); }catch(_){}
       /* (#R25) ROOT CAUSE of "メインマップがGlobeでもcompareはFlatのまま / Flatに戻してからGlobeにしないと反映
          されない": MapLibre's default projection is MERCATOR, and the setProjection() above runs BEFORE the
@@ -563,22 +564,22 @@ window.IntMapModules.compare=function(map,HOST){
       /* (#R20) BIDIRECTIONAL camera sync. Main→compare follows every main move (user or programmatic);
          compare→main only on USER gestures on the compare map (originalEvent present) so the two
          jumpTo streams can never feed back into each other (plus the syncing flag). */
-      map.on('move',()=>{ if(window.__fsCamActive) return; if(mode!=='free') syncFromMain(); });   /* (#R95) don't re-sync the compare map every flight frame */
-      map.on('moveend',followProjection);
+      GE().events.on('move',()=>{ if(window.__fsCamActive) return; if(mode!=='free') syncFromMain(); });   /* (#R95) don't re-sync the compare map every flight frame */
+      GE().events.on('moveend',followProjection);
       /* (#R21) Flat/Globe button calls this hook directly — the compare projection flips the same
          instant, in EVERY mode (incl. Free, where no camera sync runs). */
       window._cmpFollowProj=()=>{ try{ followProjection(); if(mode!=='free') syncFromMain(); }catch(_){} };
       /* (#R21) belt-and-braces: a final re-register once the main map settles (kills any residual
          lens drift from camera clamping mid-gesture). */
-      map.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
+      GE().events.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
       cmap.on('move',(ev)=>{ if(syncing||!ev||!ev.originalEvent) return;   /* user-driven compare drags only */
         if(mode==='sync'){ syncToMain(); }
         else if(mode==='xray'){
           /* (#R29.1) Let the user pan/zoom the map from INSIDE the X-ray window. The lens is 1:1 registered
              with the main camera, so a drag in the window drives the MAIN map by the same amount and both
              stay locked together ("compare viewのウィンドウ内からもX-ray時に地図を動かせるように"). */
-          syncing=true; try{ let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
-            map.jumpTo({center:cmap.getCenter(),zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch(),padding:pad}); }catch(_){}
+          syncing=true; try{ let pad; try{ pad=GE().camera.getPadding?GE().camera.getPadding():undefined; }catch(_){}
+            GE().camera.jumpTo({center:cmap.getCenter(),zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch(),padding:pad}); }catch(_){}
           syncing=false;
         }
       });

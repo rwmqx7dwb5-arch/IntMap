@@ -23,6 +23,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.playground=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const loadCountryData=HOST.loadCountryData, imToast=HOST.imToast, countryStats=HOST.countryStats;
   (function(){
@@ -133,7 +134,7 @@ window.IntMapModules.playground=function(map,HOST){
         if(!target){ try{ imToast(jp()?'地点を選べませんでした':'Could not pick a spot'); }catch(_){} return; }
         const START_Z=15.4; let minZoom=START_Z;
         const sbEl=document.getElementById('sidebar');
-        const saved={ c:map.getCenter(), z:map.getZoom(), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), mt:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), names:(typeof HOST.namesOn!=='undefined'?HOST.namesOn:true), borders:(typeof HOST.bordersOn!=='undefined'?HOST.bordersOn:false), mode:(typeof HOST.mode!=='undefined'?HOST.mode:null), sbCol:(sbEl?sbEl.classList.contains('collapsed'):true) };
+        const saved={ c:GE().camera.getCenter(), z:GE().camera.getZoom(), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), mt:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), names:(typeof HOST.namesOn!=='undefined'?HOST.namesOn:true), borders:(typeof HOST.bordersOn!=='undefined'?HOST.bordersOn:false), mode:(typeof HOST.mode!=='undefined'?HOST.mode:null), sbCol:(sbEl?sbEl.classList.contains('collapsed'):true) };
         /* (#R30) On start: turn OFF every data layer + labels + borders, DESELECT all tabs, and COLLAPSE the
            sidebar ("起動時には自動的にサイドバーが収納され、その他のタブやレイヤーが選択解除された状態に"). */
         try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked').forEach(cb=>{ if(cb.id==='cb-grid') return; if(cb.id==='cb-names'||cb.id==='cb-borders'||cb.id!=='cb-countries'){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }catch(_){}
@@ -145,29 +146,29 @@ window.IntMapModules.playground=function(map,HOST){
         try{ if(typeof HOST.satPanelDismissed!=='undefined') HOST.satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
         const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; document.body.appendChild(black);
         const bt=document.createElement('div'); bt.textContent=jp()?'どこかへ移動中…':'Dropping you somewhere…'; bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
-        let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, map.getZoom()); }catch(_){} };
-        setTimeout(()=>{ try{ map.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
+        let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, GE().camera.getZoom()); }catch(_){} };
+        setTimeout(()=>{ try{ GE().camera.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
           /* (#R34) RE-ASSERT satellite after the drop — World Explorer is a satellite where-am-I game, but a
              single early btn-view-sat click could lose the race with the style swap and leave it on Map
              ("World ExplorerではSatelliteではなくMapになっている"). Force it again here + keep the panel hidden. */
           try{ if(typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat'){ const sb=document.getElementById('btn-view-sat'); if(sb) sb.click(); } if(typeof HOST.satPanelDismissed!=='undefined') HOST.satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
           /* (#R30) drop a pulsing "home" pin at the start point so you never lose it while panning. */
-          try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(map); }catch(_){}
-          try{ map.on('zoom',onZoom); }catch(_){}
+          try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=GE().ui.marker({element:el}).setLngLat([target.lng,target.lat]).addTo(map); }catch(_){}
+          try{ GE().events.on('zoom',onZoom); }catch(_){}
           setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
         const panel=document.createElement('div'); panel.id='pg-we-panel';
         panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;max-width:calc(100vw - 24px);';
         const lab=document.createElement('span'); lab.textContent=jp()?'ここはどこ？':'Where are you?'; panel.appendChild(lab);
-        const homeB=document.createElement('button'); homeB.title=jp()?'開始地点へ戻る':'Back to start'; homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ map.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
+        const homeB=document.createElement('button'); homeB.title=jp()?'開始地点へ戻る':'Back to start'; homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ GE().camera.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
         const guessB=document.createElement('button'); guessB.textContent=jp()?'回答する':'Make a guess'; guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
         const exitB=document.createElement('button'); exitB.textContent='✕'; exitB.title=jp()?'終了':'Exit'; exitB.style.cssText='border:none;border-radius:50%;width:30px;height:30px;background:var(--input-bg);color:var(--text-main);font-size:14px;cursor:pointer;'; panel.appendChild(exitB);
         (document.getElementById('map-container')||document.body).appendChild(panel);
-        function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){} try{ map.off('zoom',onZoom); }catch(_){} try{ pin&&pin.remove(); }catch(_){}
+        function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){} try{ GE().events.off('zoom',onZoom); }catch(_){} try{ pin&&pin.remove(); }catch(_){}
           try{ document.body.classList.remove('pg-we'); }catch(_){}
           try{ const cb=document.getElementById('cb-names'); if(cb&&!!saved.names!==cb.checked){ cb.checked=!!saved.names; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
           try{ const mt=document.getElementById(saved.mt==='sat'?'btn-view-sat':'btn-view-map'); if(mt&&typeof HOST.mapType!=='undefined'&&HOST.mapType!==saved.mt) mt.click(); }catch(_){}
           try{ if(sbEl && !saved.sbCol && sbEl.classList.contains('collapsed')){ sbEl.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
-          try{ map.flyTo({center:saved.c,zoom:saved.z,duration:900}); }catch(_){}
+          try{ GE().camera.flyTo({center:saved.c,zoom:saved.z,duration:900}); }catch(_){}
         }
         exitB.onclick=restore;
         guessB.onclick=()=>openGuess(target,restore,{startZoom:START_Z,getMinZoom:()=>minZoom});
@@ -182,10 +183,10 @@ window.IntMapModules.playground=function(map,HOST){
       const answerB=document.createElement('button'); answerB.textContent=jp()?'回答':'Answer'; answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
       let gmap=null, guess=null, gmarker=null, answered=false;
       try{
-        gmap=new maplibregl.Map({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
+        gmap=GE().ui.createView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
         /* (#R31) GLOBE projection for the guess map ("メルカトルではなくglobe地図に") — more game-y & honest about distance. */
         try{ gmap.on('style.load',()=>{ try{ gmap.setProjection({type:'globe'}); }catch(_){} }); gmap.setProjection&&gmap.setProjection({type:'globe'}); }catch(_){}
-        gmap.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=new maplibregl.Marker({element:el}).setLngLat(guess).addTo(gmap); answerB.disabled=false; answerB.style.opacity='1'; });
+        gmap.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=GE().ui.marker({element:el}).setLngLat(guess).addTo(gmap); answerB.disabled=false; answerB.style.opacity='1'; });
       }catch(err){ result.textContent='Guess map failed.'; }
       answerB.onclick=()=>{
         if(answered||!guess) return; answered=true; answerB.style.display='none';
@@ -193,7 +194,7 @@ window.IntMapModules.playground=function(map,HOST){
         /* (#R30) zoom-out penalty — the more the player zoomed out during the round, the bigger the deduction. */
         const sz=(roundInfo&&roundInfo.startZoom)||15.4; const mz=(roundInfo&&roundInfo.getMinZoom)?roundInfo.getMinZoom():sz;
         const zoomDrop=Math.max(0, sz-mz); const penFrac=Math.min(0.6, zoomDrop*0.045); const penalty=Math.round(base*penFrac); const score=Math.max(0, base-penalty);
-        try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(gmap);
+        try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; GE().ui.marker({element:el}).setLngLat([target.lng,target.lat]).addTo(gmap);
           gmap.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
         result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'
           +(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'')
@@ -231,11 +232,11 @@ window.IntMapModules.playground=function(map,HOST){
         const N=feats.length, cent=[], bbs=[], pop=[], dev=[], st=[], nm=[]; let WORLDPOP=0;
         feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{}); const Pp=(s&&s.pop&&s.pop>0)?s.pop:3e6; pop[i]=Pp; WORLDPOP+=Pp; dev[i]=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5); nm[i]=cName(f)||'?'; st[i]={S:Pp,E:0,I:0,R:0,D:0,V:0,seeded:false,closed:false,lock:0,pool:null,fatigue:0}; });
         /* CASE-DOT layers (no country fill). A soft glow under crisp dots. */
-        try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); }); if(map.getSource('pg-dots')) map.removeSource('pg-dots'); }catch(_){}
-        try{ map.addSource('pg-dots',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots')) GE().layers.removeSource('pg-dots'); }catch(_){}
+        try{ GE().layers.addSource('pg-dots',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           /* (#R31) Finer, more UNIFORM dots ("大きさ差を小さく") — small fixed glow + tiny crisp dot. */
-          map.addLayer({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,5],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'circle-blur':0.9,'circle-opacity':0.28}});
-          map.addLayer({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,1.6,5,2.9],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'circle-stroke-color':'rgba(255,255,255,0.45)','circle-stroke-width':0.25,'circle-opacity':0.95}});
+          GE().layers.add({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,5],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'circle-blur':0.9,'circle-opacity':0.28}});
+          GE().layers.add({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,1.6,5,2.9],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'circle-stroke-color':'rgba(255,255,255,0.45)','circle-stroke-width':0.25,'circle-opacity':0.95}});
         }catch(e){ console.warn('pandemic dots',e); }
         /* (#R31) Place case dots on REAL places — the capital + gazetteer cities inside the country —
            then jittered clusters around them ("感染者単位で実際の場所に置いて"). Falls back to random
@@ -323,7 +324,7 @@ window.IntMapModules.playground=function(map,HOST){
             let k=Math.round(act/perDot); if(k<1 && (act>=1||s.D>0)) k=1; if(k>PG_POOL) k=PG_POOL;
             if(!s.pool) s.pool=genPts(i,PG_POOL); const sev=s.D>0?Math.min(1,s.D/(s.I+s.R+s.D+1)*3):0;
             for(let d=0; d<k && d<s.pool.length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:s.pool[d]},properties:{sev}}); }
-          try{ map.getSource('pg-dots').setData({type:'FeatureCollection',features:out}); }catch(_){} }
+          try{ GE().layers.setSourceData('pg-dots',{type:'FeatureCollection',features:out}); }catch(_){} }
         function loop(){ clearTimeout(timer); if(!running) return; step(); if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
         function start(){ if(running) return; running=true; loop(); }
         function stop(){ running=false; clearTimeout(timer); }
@@ -364,8 +365,8 @@ window.IntMapModules.playground=function(map,HOST){
           if(hit==null) return; picking=false; R0_BASE=P.r0; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
           news((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+nm[hit]+'.','alert');
         }
-        map.on('click',onPick);
-        function exit(){ stop(); try{ map.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(map.getLayer(id))map.removeLayer(id); }); if(map.getSource('pg-dots'))map.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
+        GE().events.on('click',onPick);
+        function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
         window._pgPandemicExit=exit;
         renderConfig();
       });

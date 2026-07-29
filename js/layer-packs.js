@@ -18,7 +18,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.earthSky=function(map,HOST){
+window.IntMapModules.earthSky=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -28,7 +29,7 @@ window.IntMapModules.earthSky=function(map,HOST){
   (function(){
     if(!map) return;
     const jp=()=>HOST.lang==='jp';
-    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} });
+    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} });
     const state={dams:false,volcanoes:false,aurora:false,adiz:false};
     /* Curated point datasets (famous, well-located). dam: capacity MW; volcano: summit m. */
     const DAMS=[['Three Gorges','China',22500,111.003,30.823],['Itaipú','Brazil/Paraguay',14000,-54.589,-25.408],['Xiluodu','China',13860,103.65,28.25],['Belo Monte','Brazil',11233,-51.79,-3.13],['Guri','Venezuela',10235,-62.999,7.766],['Tucuruí','Brazil',8370,-49.64,-3.83],['Grand Coulee','USA',6809,-118.982,47.957],['Xiangjiaba','China',6448,104.42,28.64],['Longtan','China',6426,107.04,25.02],['Sayano-Shushenskaya','Russia',6400,91.37,52.83],['Krasnoyarsk','Russia',6000,92.30,55.93],['Robert-Bourassa','Canada',5616,-77.44,53.79],['Churchill Falls','Canada',5428,-64.10,53.53],['Bratsk','Russia',4500,101.77,56.28],['Jinping-I','China',3600,101.63,28.19],['Aswan High','Egypt',2100,32.877,23.971],['GERD','Ethiopia',5150,35.093,11.215],['Kariba','Zambia/Zimbabwe',1830,28.762,-16.522],['Cahora Bassa','Mozambique',2075,32.70,-15.585],['Akosombo','Ghana',1020,0.06,6.30],['Tarbela','Pakistan',4888,72.69,34.09],['Bhakra','India',1325,76.43,31.41],['Sardar Sarovar','India',1450,73.75,21.83],['Atatürk','Türkiye',2400,38.32,37.49],['Hoover','USA',2078,-114.738,36.016],['Glen Canyon','USA',1320,-111.485,36.937],['Oroville','USA',819,-121.49,39.54],['Nurek','Tajikistan',3015,69.35,38.37],['Rogun','Tajikistan',3600,69.77,38.69],['Merowe','Sudan',1250,31.84,18.68],['Daniel-Johnson','Canada',2660,-68.74,50.66],['Mosul','Iraq',1052,42.82,36.63]];
@@ -44,26 +45,26 @@ window.IntMapModules.earthSky=function(map,HOST){
     let popup=null;
     function showPop(c,title,info){ try{ if(popup) popup.remove(); }catch(_){}
       const html='<div style="min-width:140px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">'+title+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+info+'</div></div>';
-      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html).addTo(map); }catch(_){}
+      try{ popup=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html).addTo(map); }catch(_){}
     }
     let wired=false;
     function ensureLayers(){ if(!_imCanDraw()) return false;
       try{
-        if(!map.getSource('l9-dams')){ map.addSource('l9-dams',{type:'geojson',data:ptFC(DAMS,'dam')});
-          map.addLayer({id:'l9-dams-pt',type:'circle',source:'l9-dams',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,7,7],'circle-color':'#34c7ff','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-          map.addLayer({id:'l9-dams-lbl',type:'symbol',source:'l9-dams',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#bdeaff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+        if(!GE().layers.hasSource('l9-dams')){ GE().layers.addSource('l9-dams',{type:'geojson',data:ptFC(DAMS,'dam')});
+          GE().layers.add({id:'l9-dams-pt',type:'circle',source:'l9-dams',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,7,7],'circle-color':'#34c7ff','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+          GE().layers.add({id:'l9-dams-lbl',type:'symbol',source:'l9-dams',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#bdeaff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
         }
-        if(!map.getSource('l9-volc')){ map.addSource('l9-volc',{type:'geojson',data:ptFC(VOLC,'volcano')});
-          map.addLayer({id:'l9-volc-pt',type:'circle',source:'l9-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.6,7,7.5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff2e0','circle-stroke-width':1.3,'circle-opacity':0.95}});
-          map.addLayer({id:'l9-volc-lbl',type:'symbol',source:'l9-volc',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+        if(!GE().layers.hasSource('l9-volc')){ GE().layers.addSource('l9-volc',{type:'geojson',data:ptFC(VOLC,'volcano')});
+          GE().layers.add({id:'l9-volc-pt',type:'circle',source:'l9-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.6,7,7.5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff2e0','circle-stroke-width':1.3,'circle-opacity':0.95}});
+          GE().layers.add({id:'l9-volc-lbl',type:'symbol',source:'l9-volc',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
         }
-        if(!map.getSource('l9-adiz')){ map.addSource('l9-adiz',{type:'geojson',data:adizFC()});
-          map.addLayer({id:'l9-adiz-fill',type:'fill',source:'l9-adiz',layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.08}});
-          map.addLayer({id:'l9-adiz-line',type:'line',source:'l9-adiz',layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.6,'line-dasharray':[3,2],'line-opacity':0.8}});
-          map.addLayer({id:'l9-adiz-lbl',type:'symbol',source:'l9-adiz',layout:{visibility:'none','symbol-placement':'point','text-field':['get','name'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':['get','color'],'text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+        if(!GE().layers.hasSource('l9-adiz')){ GE().layers.addSource('l9-adiz',{type:'geojson',data:adizFC()});
+          GE().layers.add({id:'l9-adiz-fill',type:'fill',source:'l9-adiz',layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.08}});
+          GE().layers.add({id:'l9-adiz-line',type:'line',source:'l9-adiz',layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.6,'line-dasharray':[3,2],'line-opacity':0.8}});
+          GE().layers.add({id:'l9-adiz-lbl',type:'symbol',source:'l9-adiz',layout:{visibility:'none','symbol-placement':'point','text-field':['get','name'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':['get','color'],'text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
         }
-        if(!map.getSource('l9-aurora')){ map.addSource('l9-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-          map.addLayer({id:'l9-aurora-heat',type:'heatmap',source:'l9-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
+        if(!GE().layers.hasSource('l9-aurora')){ GE().layers.addSource('l9-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          GE().layers.add({id:'l9-aurora-heat',type:'heatmap',source:'l9-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
           /* (#R123) FIX "ズームレベルによって輝度が落ちる": the OVATION source is a dense ~1° grid, so its point
              spacing in SCREEN pixels grows ~2× per zoom. The old radius grew only linearly (10→30), so on zoom-in
              the points separated, per-pixel density collapsed and the oval faded. Grow the radius geometrically to
@@ -75,7 +76,7 @@ window.IntMapModules.earthSky=function(map,HOST){
              separate past any affordable radius, so we FADE IT OUT as zoom rises and hand off to a soft-circle GLOW
              (below) that renders regardless of point density — the oval now stays visible at every zoom. */
           'heatmap-opacity':['interpolate',['linear'],['zoom'],1,0.78,6,0.78,8,0.42,10,0.16],'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
-          map.addLayer({id:'l9-aurora-glow',type:'circle',source:'l9-aurora',layout:{visibility:'none'},paint:{
+          GE().layers.add({id:'l9-aurora-glow',type:'circle',source:'l9-aurora',layout:{visibility:'none'},paint:{
             'circle-radius':['interpolate',['exponential',2],['zoom'],3,8,5,26,7,110,9,430,11,1700],   /* ~grid spacing so soft circles keep overlapping */
             'circle-color':['interpolate',['linear'],['get','a'],8,'#00753b',20,'#00d072',50,'#7dffa6',100,'#d2ffdc'],
             'circle-blur':0.85,
@@ -83,14 +84,14 @@ window.IntMapModules.earthSky=function(map,HOST){
         }
         /* Sea ice (#7) — AMSR2 concentration via NASA GIBS WMS GetMap (the WMTS tiles aren't in 3857, but
            the WMS GetMap IS). Date = today−2 (resolves to a real, processed day in the user's browser). */
-        if(!map.getSource('l9-seaice')){ const sd=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-          map.addSource('l9-seaice',{type:'raster',tiles:['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=AMSRU2_Sea_Ice_Concentration_12km&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+sd],tileSize:256,attribution:'NASA GIBS — AMSR2 sea-ice concentration'});
-          map.addLayer({id:'l9-seaice',type:'raster',source:'l9-seaice',layout:{visibility:'none'},paint:{'raster-opacity':0.82}});
+        if(!GE().layers.hasSource('l9-seaice')){ const sd=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+          GE().layers.addSource('l9-seaice',{type:'raster',tiles:['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=AMSRU2_Sea_Ice_Concentration_12km&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+sd],tileSize:256,attribution:'NASA GIBS — AMSR2 sea-ice concentration'});
+          GE().layers.add({id:'l9-seaice',type:'raster',source:'l9-seaice',layout:{visibility:'none'},paint:{'raster-opacity':0.82}});
         }
         if(!wired){ wired=true;
-          map.on('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🏞 '+p.name,p.info); });
-          map.on('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🌋 '+p.name,p.info); });
-          ['l9-dams-pt','l9-volc-pt'].forEach(l=>{ map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; }); });
+          GE().events.onLayer('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🏞 '+p.name,p.info); });
+          GE().events.onLayer('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🌋 '+p.name,p.info); });
+          ['l9-dams-pt','l9-volc-pt'].forEach(l=>{ GE().events.onLayer('mouseenter',l,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',l,()=>{ GE().render.canvas().style.cursor=''; }); });
         }
         return true;
       }catch(e){ return false; }
@@ -108,15 +109,15 @@ window.IntMapModules.earthSky=function(map,HOST){
       try{ const ft=j['Forecast Time']||j['Observation Time']; if(ft){ _auroraTime=ft; _auroraSyncNote(); } }catch(_){}
       const co=j.coordinates||[], feats=[];
       for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
-      if(map.getSource('l9-aurora')) map.getSource('l9-aurora').setData({type:'FeatureCollection',features:feats});
+      if(GE().layers.hasSource('l9-aurora')) GE().layers.setSourceData('l9-aurora',{type:'FeatureCollection',features:feats});
     }catch(e){ try{ imToast(jp()?'オーロラ予測を取得できませんでした':'Aurora forecast unavailable'); }catch(_){} } }
     const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat','l9-aurora-glow'],seaice:['l9-seaice']};
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
-      const apply=()=>{ if(!ensureLayers()){ map.once('idle',apply); return; } setVis(SETS[which],on);
+      const apply=()=>{ if(!ensureLayers()){ GE().events.once('idle',apply); return; } setVis(SETS[which],on);
         if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=setInterval(loadAurora,300000); } else if(auroraTimer){ clearInterval(auroraTimer); auroraTimer=null; } } };
       apply(); }
-    map.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
+    GE().events.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
     /* (#R38) [JP, EN, DE, RU]; l9Lbl() picks the active language. */
     const L9LBL={dams:['主要ダム・水インフラ','Major dams','Große Talsperren','Крупные плотины'],volcanoes:['活火山','Active volcanoes','Aktive Vulkane','Действующие вулканы'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)'],seaice:['海氷（北極・南極）','Sea ice (Arctic/Antarctic)','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defense zones (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)']};
     const l9Lbl=(k)=>L9LBL[k][{jp:0,en:1,de:2,ru:3}[HOST.lang]]||L9LBL[k][1];
@@ -137,7 +138,8 @@ window.IntMapModules.earthSky=function(map,HOST){
   })();
 };
 
-window.IntMapModules.landCover=function(map,HOST){
+window.IntMapModules.landCover=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -147,43 +149,43 @@ window.IntMapModules.landCover=function(map,HOST){
   (function(){
     if(!map) return;
     const jp=()=>HOST.lang==='jp';
-    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} });
+    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} });
     const state={worldcover:false,ecoregions:false,plates:false};
     const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
     /* ---- ESA WorldCover (raster) ---- */
-    function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!_imCanDraw()) return false;
+    function ensureRaster(){ if(GE().layers.hasSource('eco-worldcover')) return true; if(!_imCanDraw()) return false;
       /* (#R18) maxzoom 13→14: ESA WorldCover is 10 m/px (≈ native z14), so this keeps the classes crisp one
          zoom deeper instead of upscaling a z13 tile ("画質も高めて"). At normal regional zooms the tile
          count is unchanged (maxzoom only bites when zoomed right in), so it doesn't slow the common case;
          the SW (R17) caches every Terrascope tile so revisits are instant — the controllable speed win on a
          single slow host. */
-      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'});
+      try{ GE().layers.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'});
         /* (#R15 / #19,#29) The Terrascope WMTS is a single slow host (can't multi-host it), so squeeze what
            we can: raster-fade-duration:0 shows each tile the instant it arrives (no 300 ms fade → feels
            faster); raster-resampling:nearest keeps the CATEGORICAL land-cover classes crisp instead of
            blurring class edges (画質); maxzoom 12→13 sharpens deep zoom. */
-        map.addLayer({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}}); return true; }catch(_){ return false; } }   /* (#R40) Land cover default opacity 100% (was 0.85) per request */
+        GE().layers.add({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}}); return true; }catch(_){ return false; } }   /* (#R40) Land cover default opacity 100% (was 0.85) per request */
     /* ---- Tectonic plates (geojson) ---- */
     let platesLoaded=false, platesLoading=false;
-    function ensurePlateLayers(){ if(map.getSource('eco-plates')) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource('eco-plates',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addSource('eco-plates-b',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'eco-plates-fill',type:'fill',source:'eco-plates',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','_color'],'#e8590c'],'fill-opacity':0.18}});
-        map.addLayer({id:'eco-plates-line',type:'line',source:'eco-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.5,'line-opacity':0.92}});
-        map.addLayer({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffd3c7','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}}); return true; }catch(_){ return false; } }
+    function ensurePlateLayers(){ if(GE().layers.hasSource('eco-plates')) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource('eco-plates',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); GE().layers.addSource('eco-plates-b',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'eco-plates-fill',type:'fill',source:'eco-plates',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','_color'],'#e8590c'],'fill-opacity':0.18}});
+        GE().layers.add({id:'eco-plates-line',type:'line',source:'eco-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.5,'line-opacity':0.92}});
+        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffd3c7','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}}); return true; }catch(_){ return false; } }
     function loadPlates(cb){ if(platesLoaded){ cb(true); return; } if(platesLoading){ cb(false); return; } platesLoading=true;
       Promise.all([
         fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
         fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
       ]).then(([pl,bd])=>{ try{ (pl.features||[]).forEach((f,i)=>{ f.properties=f.properties||{}; f.properties._color=PAL[i%PAL.length]; }); }catch(_){}
-        try{ if(map.getSource('eco-plates')) map.getSource('eco-plates').setData(pl); }catch(_){}
-        try{ if(bd && map.getSource('eco-plates-b')) map.getSource('eco-plates-b').setData(bd); }catch(_){}
+        try{ if(GE().layers.hasSource('eco-plates')) GE().layers.setSourceData('eco-plates',pl); }catch(_){}
+        try{ if(bd && GE().layers.hasSource('eco-plates-b')) GE().layers.setSourceData('eco-plates-b',bd); }catch(_){}
         platesLoaded=true; platesLoading=false; cb(true);
       }).catch(()=>{ platesLoading=false; try{ imToast(jp()?'プレートデータを取得できませんでした':'Could not load plate data'); }catch(_){} cb(false); }); }
     /* ---- Ecoregions (PMTiles vector) ---- */
     let pmReady=false, pmLoading=false; const pmQ=[];
     function loadPMTiles(cb){ if(pmReady){ cb(true); return; } pmQ.push(cb); if(pmLoading) return; pmLoading=true;
       const s=document.createElement('script'); s.src='https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js';
-      s.onload=()=>{ try{ if(typeof pmtiles!=='undefined'){ const proto=new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', proto.tile); pmReady=true; } }catch(_){} pmLoading=false; pmQ.splice(0).forEach(fn=>fn(pmReady)); };
+      s.onload=()=>{ try{ if(typeof pmtiles!=='undefined'){ const proto=new pmtiles.Protocol(); GE().scene.addProtocol('pmtiles', proto.tile); pmReady=true; } }catch(_){} pmLoading=false; pmQ.splice(0).forEach(fn=>fn(pmReady)); };
       s.onerror=()=>{ pmLoading=false; pmQ.splice(0).forEach(fn=>fn(false)); };
       document.head.appendChild(s); }
     let ecoBuilt=false;
@@ -192,7 +194,7 @@ window.IntMapModules.landCover=function(map,HOST){
        authoritative RESOLVE/WWF Ecoregions 2017 (ArcGIS FeatureServer → data/ecoregions_2017.geojson,
        846 ecoregions, per-feature COLOR), lazy-loaded as a normal GeoJSON source — no external
        dependency, no dead URL, no plugin needed. */
-    function ecoBefore(){ try{ for(const l of (map.getStyle().layers||[])){ if(l.type==='symbol') return l.id; } }catch(_){} return undefined; }
+    function ecoBefore(){ try{ for(const l of (GE().scene.getStyle().layers||[])){ if(l.type==='symbol') return l.id; } }catch(_){} return undefined; }
     /* (#R13b) The public site is opened from `file://`, where `fetch()` of a LOCAL file is blocked by
        Chrome (only http/https/data). So the ecoregions GeoJSON is shipped as a JS global
        (`data/ecoregions_2017.js` → window.__ECOREGIONS_2017) and loaded with a <script> tag, which works
@@ -208,19 +210,19 @@ window.IntMapModules.landCover=function(map,HOST){
       s.onerror=()=>{ fetch('data/ecoregions_2017.geojson').then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))).then(gj=>done(gj)).catch(()=>done(null)); };
       document.head.appendChild(s);
     };
-    function ensureEco(cb){ if(map.getSource('eco-regions')){ cb(true); return; }
+    function ensureEco(cb){ if(GE().layers.hasSource('eco-regions')){ cb(true); return; }
       window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(jp()?'生態地域データを読み込めませんでした':'Could not load ecoregions'); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
-    function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||map.getSource('eco-regions')) return; ecoBuilt=true;
+    function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||GE().layers.hasSource('eco-regions')) return; ecoBuilt=true;
       try{ const before=ecoBefore();
-        map.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
-        map.addLayer({id:'eco-regions-fill',type:'fill',source:'eco-regions',layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}},before);
-        map.addLayer({id:'eco-regions-line',type:'line',source:'eco-regions',layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}},before);
+        GE().layers.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
+        GE().layers.add({id:'eco-regions-fill',type:'fill',source:'eco-regions',layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}},before);
+        GE().layers.add({id:'eco-regions-line',type:'line',source:'eco-regions',layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}},before);
         /* (#R13c) self-theme the popup (.plc-popup → var(--popup-bg)/var(--text-main)) so it stays
            readable in DARK mode — the default white-popup text was invisible on the dark UI. */
-        if(!window._ecoPop) window._ecoPop=new maplibregl.Popup({closeButton:true,maxWidth:'240px',className:'plc-popup'});
-        map.on('mouseenter','eco-regions-fill',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','eco-regions-fill',()=>{ map.getCanvas().style.cursor=''; });
-        map.on('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+        if(!window._ecoPop) window._ecoPop=GE().ui.popup({closeButton:true,maxWidth:'240px',className:'plc-popup'});
+        GE().events.onLayer('mouseenter','eco-regions-fill',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','eco-regions-fill',()=>{ GE().render.canvas().style.cursor=''; });
+        GE().events.onLayer('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(jp()?'バイオーム: ':'Biome: ')+(p.BIOME_NAME||'—')+'</div>';
           window._ecoPop.setLngLat(e.lngLat).setHTML(html).addTo(map); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
@@ -248,12 +250,12 @@ window.IntMapModules.landCover=function(map,HOST){
       } else if(lg){ lg.style.display='none'; }
     }
     function toggle(which,on){ state[which]=on;
-      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
-      else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
+      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ GE().events.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
+      else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ GE().events.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else { setVis(SETS.ecoregions,false);
         /* (#R20) phones: toggling OFF releases the ~10 MB parsed GeoJSON + the source copy (OOM
            pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache. */
-        if(typeof isMobile==='function'&&isMobile()){ try{ SETS.ecoregions.forEach(l=>{ if(map.getLayer(l)) map.removeLayer(l); }); if(map.getSource('eco-regions')) map.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
+        if(typeof isMobile==='function'&&isMobile()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
       } }
       /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
       try{ const nm=[ECLBL[which][1],ECLBL[which][0],ECLBL[which][2],ECLBL[which][3]];
@@ -261,7 +263,7 @@ window.IntMapModules.landCover=function(map,HOST){
         else if(!on&&window._hideGenericLegend&&which!=='worldcover') window._hideGenericLegend('eco-'+which);
       }catch(_){}
     }
-    map.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!map.getSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
+    GE().events.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!GE().layers.hasSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
     /* (#R38) [JP, EN, DE, RU]; ecoLbl() picks the active language. */
     const ECLBL={worldcover:['土地被覆 (ESA 2021)','Land cover (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)'],ecoregions:['生態地域 (WWF/RESOLVE)','Ecoregions (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)'],plates:['プレート境界','Tectonic plates','Tektonische Platten','Тектонические плиты']};
     const ecoLbl=(k)=>ECLBL[k][{jp:0,en:1,de:2,ru:3}[HOST.lang]]||ECLBL[k][1];
@@ -279,7 +281,8 @@ window.IntMapModules.landCover=function(map,HOST){
   })();
 };
 
-window.IntMapModules.betaPack2=function(map,HOST){
+window.IntMapModules.betaPack2=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -289,8 +292,8 @@ window.IntMapModules.betaPack2=function(map,HOST){
   (function(){
     if(typeof map==='undefined'||!map) return;
     const jp=()=>HOST.lang==='jp';
-    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
-    const before=()=>map.getLayer('tool-poly')?'tool-poly':undefined;
+    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
+    const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const state={rail:false,dc:false,pharma:false,cpi:false,lifeexp:false,spin:false};
     const cache={};
     let pop2=null;
@@ -317,28 +320,28 @@ window.IntMapModules.betaPack2=function(map,HOST){
         j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(jp()?'鉄道データを読み込めませんでした':'Could not load railway data'); }catch(_){} }); }
     }
     function clickPop(layerId){
-      map.on('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+      GE().events.onLayer('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
         try{ if(pop2) pop2.remove(); }catch(_){}
         const kind=p.k?('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;">'+esc(p.k)+'</div>'):'';
-        try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:150px;font-weight:600;font-size:13px;color:var(--text-main);">'+esc(p.n)+'</div>'+kind).addTo(map); }catch(_){}
+        try{ pop2=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:150px;font-weight:600;font-size:13px;color:var(--text-main);">'+esc(p.n)+'</div>'+kind).addTo(map); }catch(_){}
       });
-      map.on('mouseenter',layerId,()=>{ map.getCanvas().style.cursor='pointer'; });
-      map.on('mouseleave',layerId,()=>{ map.getCanvas().style.cursor=''; });
+      GE().events.onLayer('mouseenter',layerId,()=>{ GE().render.canvas().style.cursor='pointer'; });
+      GE().events.onLayer('mouseleave',layerId,()=>{ GE().render.canvas().style.cursor=''; });
     }
     /* ---------- point/line layer toggles ---------- */
-    function ptEnsure(key,src,ids){ if(map.getSource(src)) return true; if(!_imCanDraw()) return false;
+    function ptEnsure(key,src,ids){ if(GE().layers.hasSource(src)) return true; if(!_imCanDraw()) return false;
       try{
-        map.addSource(src,{type:'geojson',data:cache[key]||{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:ids[0],type:'circle',source:src,layout:{visibility:'none'},paint:{
+        GE().layers.addSource(src,{type:'geojson',data:cache[key]||{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:ids[0],type:'circle',source:src,layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,4.6,9,7.5],
           'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#ffffff','circle-stroke-width':0.9,'circle-opacity':0.92}},before());
-        map.addLayer({id:ids[1],type:'symbol',source:src,minzoom:4.5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':16},paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
+        GE().layers.add({id:ids[1],type:'symbol',source:src,minzoom:4.5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':16},paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
         clickPop(ids[0]);
         return true;
       }catch(_){ return false; } }
     function dcToggle(on){ state.dc=on;
-      const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ map.once('idle',a); return; }
-        load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
+      const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ GE().events.once('idle',a); return; }
+        load('dc',fc=>{ try{ GE().layers.setSourceData('dc-src',fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centers & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
@@ -347,27 +350,27 @@ window.IntMapModules.betaPack2=function(map,HOST){
            else if(window._hideGenericLegend) window._hideGenericLegend('dc2'); }catch(_){}
     }
     function phToggle(on){ state.pharma=on;
-      const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ map.once('idle',a); return; }
-        load('pharma',fc=>{ try{ map.getSource('ph-src').setData(fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
+      const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ GE().events.once('idle',a); return; }
+        load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',['Pharma manufacturing hubs','製薬・医薬品製造拠点'],['ph-pt','ph-lbl'],'beta-dl-pharma');
             if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。':'Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.'; el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
-    function railEnsure(){ if(map.getSource('rail-src')) return true; if(!_imCanDraw()) return false;
+    function railEnsure(){ if(GE().layers.hasSource('rail-src')) return true; if(!_imCanDraw()) return false;
       try{
-        map.addSource('rail-src',{type:'geojson',data:cache.rail||{type:'FeatureCollection',features:[]},attribution:'Natural Earth'});
-        map.addLayer({id:'rail-ln',type:'line',source:'rail-src',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#868e96'],'line-width':['interpolate',['linear'],['zoom'],2,0.7,6,1.5,10,2.6],'line-opacity':0.9}},before());
+        GE().layers.addSource('rail-src',{type:'geojson',data:cache.rail||{type:'FeatureCollection',features:[]},attribution:'Natural Earth'});
+        GE().layers.add({id:'rail-ln',type:'line',source:'rail-src',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#868e96'],'line-width':['interpolate',['linear'],['zoom'],2,0.7,6,1.5,10,2.6],'line-opacity':0.9}},before());
         return true;
       }catch(_){ return false; } }
     function railToggle(on){ state.rail=on;
-      const a=()=>{ if(!railEnsure()){ map.once('idle',a); return; }
-        if(on) load('rail',fc=>{ try{ map.getSource('rail-src').setData(fc); }catch(_){} });
+      const a=()=>{ if(!railEnsure()){ GE().events.once('idle',a); return; }
+        if(on) load('rail',fc=>{ try{ GE().layers.setSourceData('rail-src',fc); }catch(_){} });
         setVis(['rail-ln'],on); };
       a();
       /* (#R21) phones: toggling OFF releases the ~25k-feature parsed geojson + source copy (same
          OOM-pressure policy as ecoregions); it lazily re-fetches on the next toggle. */
-      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(map.getLayer('rail-ln')) map.removeLayer('rail-ln'); if(map.getSource('rail-src')) map.removeSource('rail-src'); }catch(_){} cache.rail=null; }
+      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(GE().layers.has('rail-ln')) GE().layers.remove('rail-ln'); if(GE().layers.hasSource('rail-src')) GE().layers.removeSource('rail-src'); }catch(_){} cache.rail=null; }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',['World railways (by gauge)','世界の鉄道（軌間別）'],['rail-ln'],'beta-dl-rail');
             if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
               k.innerHTML=RAIL_LBL.map(([g,ja,en])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+(jp()?ja:en)+'</div>').join('')+
@@ -408,8 +411,8 @@ window.IntMapModules.betaPack2=function(map,HOST){
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
       const build=async()=>{
-        if(!_imCanDraw()){ map.once('idle',build); return; }
-        if(map.getSource(W.src)){ show(); legend(); return; }
+        if(!_imCanDraw()){ GE().events.once('idle',build); return; }
+        if(GE().layers.hasSource(W.src)){ show(); legend(); return; }
         try{ await loadCountryData(); }catch(_){}
         if(!HOST.countryGeo||!Array.isArray(HOST.countryGeo.features)){ setTimeout(build,1200); return; }
         let vals=cache['wb_'+key];
@@ -422,26 +425,26 @@ window.IntMapModules.betaPack2=function(map,HOST){
         }
         try{
           const feats=HOST.countryGeo.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}));
-          map.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
-          map.addLayer({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
-          map.addLayer({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
+          GE().layers.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
+          GE().layers.add({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
+          GE().layers.add({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
           const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
           const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
           /* (#R25) Only show the TAP popup on touch devices. On a hover device the mousemove tooltip below
              already shows the exact same value, so a click popup was redundant ("ホバーでポップアップが出る
              レイヤーは、クリック時に新たなポップアップも出さなくていい"). Touch has no hover → keep it there. */
-          if(!window._imTouchPrimary||window._imTouchPrimary()) map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          if(!window._imTouchPrimary||window._imTouchPrimary()) GE().events.onLayer('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             try{ if(pop2) pop2.remove(); }catch(_){}
-            try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>').addTo(map); }catch(_){}
+            try{ pop2=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>').addTo(map); }catch(_){}
           });
           /* (#R23) per-country HOVER like HDI ("国別の数値があるレイヤーは…ホバーで表示") — reuses the shared
              map tooltip (desktop pointer; mobile keeps the tap popup above). */
-          map.on('mousemove',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          GE().events.onLayer('mousemove',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(!el) return; el.style.display='block';
               el.innerHTML='<div style="font-weight:600;font-size:14px;">'+esc(_nmOf(p))+'</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>';
-              window.positionTooltip&&window.positionTooltip(e.point); map.getCanvas().style.cursor='pointer'; }catch(_){}
+              window.positionTooltip&&window.positionTooltip(e.point); GE().render.canvas().style.cursor='pointer'; }catch(_){}
           });
-          map.on('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) el.style.display='none'; map.getCanvas().style.cursor=''; }catch(_){} });
+          GE().events.onLayer('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) el.style.display='none'; GE().render.canvas().style.cursor=''; }catch(_){} });
           show(); legend();
         }catch(_){}
       };
@@ -452,16 +455,16 @@ window.IntMapModules.betaPack2=function(map,HOST){
     /* ---------- Globe tour — slow endless rotation with the whole earth in view ---------- */
     let spinRAF=null,lastT=0;
     function spinStep(ts){ if(!state.spin) return;
-      if(lastT){ const dt=Math.min(100,ts-lastT); try{ const c=map.getCenter(); map.setCenter([c.lng+dt*0.0035,c.lat*0.999]); }catch(_){} }
+      if(lastT){ const dt=Math.min(100,ts-lastT); try{ const c=GE().camera.getCenter(); GE().camera.setCenter([c.lng+dt*0.0035,c.lat*0.999]); }catch(_){} }
       lastT=ts; spinRAF=requestAnimationFrame(spinStep); }
     function spinToggle(on){ state.spin=on;
       const cb=document.getElementById('beta-dl-spin');
       if(on){
         try{ if(typeof HOST.proj!=='undefined'&&HOST.proj==='flat'){ const b=document.getElementById('btn-view-globe'); b&&b.click(); } }catch(_){}
-        try{ map.easeTo({zoom:Math.min(map.getZoom(),1.7),pitch:0,duration:1200}); }catch(_){}
+        try{ GE().camera.easeTo({zoom:Math.min(GE().camera.getZoom(),1.7),pitch:0,duration:1200}); }catch(_){}
         lastT=0; if(!spinRAF) spinRAF=requestAnimationFrame(spinStep);
         if(!spinToggle._wired){ spinToggle._wired=true;
-          ['pointerdown','wheel','touchstart'].forEach(ev=>map.getCanvas().addEventListener(ev,()=>{ if(state.spin){ state.spin=false; if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } const c2=document.getElementById('beta-dl-spin'); if(c2){ c2.checked=false; const r=c2.closest('.lyr-row'); r&&r.classList.remove('on'); } } },{passive:true})); }
+          ['pointerdown','wheel','touchstart'].forEach(ev=>GE().render.canvas().addEventListener(ev,()=>{ if(state.spin){ state.spin=false; if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } const c2=document.getElementById('beta-dl-spin'); if(c2){ c2.checked=false; const r=c2.closest('.lyr-row'); r&&r.classList.remove('on'); } } },{passive:true})); }
       } else if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; }
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
@@ -483,10 +486,10 @@ window.IntMapModules.betaPack2=function(map,HOST){
     function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=b2Lbl(k); }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
-    map.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp||state.unemp||state.internet||state.precip){ setTimeout(()=>{
-      if(state.dc&&ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ setVis(['dc-pt','dc-lbl'],true); load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); }
-      if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ map.getSource('ph-src').setData(fc); }catch(_){} }); }
-      if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ map.getSource('rail-src').setData(cache.rail); }catch(_){} } }
+    GE().events.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp||state.unemp||state.internet||state.precip){ setTimeout(()=>{
+      if(state.dc&&ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ setVis(['dc-pt','dc-lbl'],true); load('dc',fc=>{ try{ GE().layers.setSourceData('dc-src',fc); }catch(_){} }); }
+      if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
+      if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ GE().layers.setSourceData('rail-src',cache.rail); }catch(_){} } }
       ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     },90); } });
     window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail) cache.rail=null; });
@@ -494,7 +497,8 @@ window.IntMapModules.betaPack2=function(map,HOST){
   })();
 };
 
-window.IntMapModules.religionLang=function(map,HOST){
+window.IntMapModules.religionLang=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -504,7 +508,7 @@ window.IntMapModules.religionLang=function(map,HOST){
   (function(){
     if(typeof map==='undefined'||!map) return;
     const jp=()=>HOST.lang==='jp';
-    const before=()=>map.getLayer('tool-poly')?'tool-poly':undefined;
+    const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     let pop=null;
     const expand=(o)=>{ const m={}; Object.keys(o).forEach(cat=>String(o[cat]).split(/\s+/).forEach(iso=>{ if(iso) m[iso]=cat; })); return m; };
@@ -547,27 +551,27 @@ window.IntMapModules.religionLang=function(map,HOST){
     const state={religion:false,language:false};
     function colorExpr(C){ const e=['match',['get','cat']]; Object.keys(C.col).forEach(cat=>{ e.push(cat, C.col[cat]); }); e.push('#9aa0a6'); return e; }
     async function build(key){ const C=CFG[key];
-      if(map.getSource(C.src)){ setVis(key,true); legend(key); return; }
+      if(GE().layers.hasSource(C.src)){ setVis(key,true); legend(key); return; }
       try{ await loadCountryData(); }catch(_){}
       const cg=(typeof HOST.countryGeo!=='undefined'&&HOST.countryGeo)||window.countryGeo;
       if(!cg||!Array.isArray(cg.features)){ setTimeout(()=>build(key),1200); return; }
       const feats=cg.features.filter(f=>f.id!=null&&C.map[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:C.map[f.id],iso:f.id}}));
       try{
-        map.addSource(C.src,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
-        map.addLayer({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(C),'fill-opacity':0.62}},before());
-        map.addLayer({id:C.ids[1],type:'line',source:C.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
-        map.on('click',C.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+        GE().layers.addSource(C.src,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+        GE().layers.add({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(C),'fill-opacity':0.62}},before());
+        GE().layers.add({id:C.ids[1],type:'line',source:C.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
+        GE().events.onLayer('click',C.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
           const catLbl=(C.lbl[p.cat]?(jp()?C.lbl[p.cat][1]:C.lbl[p.cat][0]):p.cat);
           try{ if(pop) pop.remove(); }catch(_){}
-          try{ pop=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>').addTo(map); }catch(_){}
+          try{ pop=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>').addTo(map); }catch(_){}
         });
-        map.on('mouseenter',C.ids[0],()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave',C.ids[0],()=>{ map.getCanvas().style.cursor=''; });
+        GE().events.onLayer('mouseenter',C.ids[0],()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave',C.ids[0],()=>{ GE().render.canvas().style.cursor=''; });
         setVis(key,true); legend(key);
       }catch(_){}
     }
-    function setVis(key,on){ const C=CFG[key]; C.ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }); }
+    function setVis(key,on){ const C=CFG[key]; C.ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} }); }
     function legend(key){ const C=CFG[key];
       try{ if(!window._registerLayerOpacity) return;
         const el=window._registerLayerOpacity('cat-'+key,[C.nm[0],C.nm[1]],C.ids,'beta-dl-cat-'+key);
@@ -577,7 +581,7 @@ window.IntMapModules.religionLang=function(map,HOST){
       }catch(_){} }
     function toggle(key,on){ state[key]=on;
       if(!on){ setVis(key,false); try{ window._hideGenericLegend&&window._hideGenericLegend('cat-'+key); }catch(_){} return; }
-      if(!_imCanDraw()){ map.once('idle',()=>toggle(key,true)); return; }
+      if(!_imCanDraw()){ GE().events.once('idle',()=>toggle(key,true)); return; }
       build(key);
     }
     const CLBL={religion:['宗教分布','Religion distribution'],language:['言語分布','Language distribution']};
@@ -591,11 +595,12 @@ window.IntMapModules.religionLang=function(map,HOST){
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=jp()?CLBL[k][0]:CLBL[k][1]; }); },20));
-    map.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(map.getSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
+    GE().events.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
   })();
 };
 
-window.IntMapModules.timeZones=function(map,HOST){
+window.IntMapModules.timeZones=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -616,17 +621,17 @@ window.IntMapModules.timeZones=function(map,HOST){
       return {type:'FeatureCollection',features:Object.keys(best).map(k=>{ const b=best[k]; return {type:'Feature',geometry:{type:'Point',coordinates:[b.cx,Math.max(-58,Math.min(72,b.cy))]},properties:{label:offLabel(b.z)+'\n'+zoneTime(b.z)}}; })}; }
     function refreshTimes(){ try{ const s=map.getSource('tzl-lbl-src'); if(s) s.setData(labelFC()); }catch(_){} }
     function addLayers(){ if(!geo) return;
-      if(!map.getSource('tzl-src')) map.addSource('tzl-src',{type:'geojson',data:geo});
-      if(!map.getSource('tzl-lbl-src')) map.addSource('tzl-lbl-src',{type:'geojson',data:labelFC()});
-      const before=['ofm-river','ofm-water','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      if(!GE().layers.hasSource('tzl-src')) GE().layers.addSource('tzl-src',{type:'geojson',data:geo});
+      if(!GE().layers.hasSource('tzl-lbl-src')) GE().layers.addSource('tzl-lbl-src',{type:'geojson',data:labelFC()});
+      const before=['ofm-river','ofm-water','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       const PAL=['match',['get','map_color8'],1,'#8dd3c7',2,'#ffffb3',3,'#bebada',4,'#fb8072',5,'#80b1d3',6,'#fdb462',7,'#b3de69',8,'#fccde5','#cfd8e3'];
-      if(!map.getLayer('tzl-fill')) map.addLayer({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.5}},before);   /* (#R79c) initial opacity 50% (matches the registered default) */
-      if(!map.getLayer('tzl-line')) map.addLayer({id:'tzl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},paint:{'line-color':'rgba(120,140,170,0.95)','line-width':['interpolate',['linear'],['zoom'],1,0.6,5,1.4],'line-dasharray':[2,1.6]}},before);
-      if(!map.getLayer('tzl-time')) map.addLayer({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],1,11,4,15],'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}}); }
-    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
+      if(!GE().layers.has('tzl-fill')) GE().layers.add({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.5}},before);   /* (#R79c) initial opacity 50% (matches the registered default) */
+      if(!GE().layers.has('tzl-line')) GE().layers.add({id:'tzl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},paint:{'line-color':'rgba(120,140,170,0.95)','line-width':['interpolate',['linear'],['zoom'],1,0.6,5,1.4],'line-dasharray':[2,1.6]}},before);
+      if(!GE().layers.has('tzl-time')) GE().layers.add({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],1,11,4,15],'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}}); }
+    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} }); }
     function toggle(v){ on=v;
       if(v){
-        const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else map.once('idle',apply); return; } addLayers(); setVis(true);
+        const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else GE().events.once('idle',apply); return; } addLayers(); setVis(true);
           try{ window._registerLayerOpacity&&window._registerLayerOpacity('tz',[lbl(),lbl(),lbl(),lbl()],['tzl-fill'],'dl-tz'); }catch(_){}
           try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=setInterval(refreshTimes,60000); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
         if(geo) go();
@@ -634,7 +639,7 @@ window.IntMapModules.timeZones=function(map,HOST){
           fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
         else go();
       } else { setVis(false); if(timer){ clearInterval(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
-    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
+    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
       const lab=document.createElement('label'); lab.className='layer-option';
@@ -650,7 +655,8 @@ window.IntMapModules.timeZones=function(map,HOST){
   })();
 };
 
-window.IntMapModules.gibsScience=function(map,HOST){
+window.IntMapModules.gibsScience=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -746,11 +752,11 @@ window.IntMapModules.gibsScience=function(map,HOST){
     const gxLbl=(L)=>L.label[idx()]!==undefined?L.label[idx()]:L.label[1];
     const gxNote=(L)=>L.note[idx()]!==undefined?L.note[idx()]:L.note[1];
     const srcId=(L)=>'gxsrc-'+L.id, layId=(L)=>'gxlyr-'+L.id;
-    const beforeLabels=()=>['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+    const beforeLabels=()=>['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
     function ensure(L){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource(srcId(L))) map.addSource(srcId(L),{type:'raster',tiles:[urlFor(L)],tileSize:256,maxzoom:L.max,attribution:'NASA EOSDIS GIBS'});
-      if(!map.getLayer(layId(L))) map.addLayer({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
+      if(!GE().layers.hasSource(srcId(L))) GE().layers.addSource(srcId(L),{type:'raster',tiles:[urlFor(L)],tileSize:256,maxzoom:L.max,attribution:'NASA EOSDIS GIBS'});
+      if(!GE().layers.has(layId(L))) GE().layers.add({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(e){ return false; } }
     function legendNote(L){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('gx-'+L.id,[L.label[1],L.label[0],L.label[2],L.label[3]],[layId(L)],'gx-'+L.id);
       if(el){
@@ -764,13 +770,13 @@ window.IntMapModules.gibsScience=function(map,HOST){
             +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:1px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
         let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
     function toggle(L,on){ state[L.id]=on;
-      const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
-        try{ map.setLayoutProperty(layId(L),'visibility',on?'visible':'none'); }catch(_){}
+      const apply=()=>{ if(!ensure(L)){ GE().events.once('idle',apply); return; }
+        try{ GE().layers.setLayout(layId(L),'visibility',on?'visible':'none'); }catch(_){}
         if(on){ legendNote(L); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
         else { try{ window._hideGenericLegend&&window._hideGenericLegend('gx-'+L.id); }catch(_){} } };
       apply();
       if(on) [400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    map.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ map.setLayoutProperty(layId(L),'visibility','visible'); }catch(_){} } }); },80); });
+    GE().events.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ GE().layers.setLayout(layId(L),'visibility','visible'); }catch(_){} } }); },80); });
     /* ===== (#R120) GIBS PIXEL → PHYSICAL VALUE — the reverse of the legend: fetch the actual rendered tile
        (same URL the layer paints), read the pixel under the point, project its colour onto the layer's
        colormap gradient (the SCALES stops were sampled from the REAL GIBS colormap XMLs in R42), and map the

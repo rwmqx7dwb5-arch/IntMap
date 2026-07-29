@@ -18,6 +18,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.flightSim=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const imToast=HOST.imToast;
   return (function(){
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
@@ -493,7 +494,7 @@ window.IntMapModules.flightSim=function(map,HOST){
     /* ===== (#R96) moving-map / nav display — a small SECOND MapLibre map (track-up) that follows the aircraft, like a
        car-nav / FlightRadar mini map. It reuses the app's existing Esri World Imagery raster (no NEW data source). ===== */
     function createMinimap(){ if(minimap||!hud||typeof maplibregl==='undefined') return; const el=hud.querySelector('.fs-mm-map'); if(!el) return;
-      try{ minimap=new maplibregl.Map({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
+      try{ minimap=GE().ui.createView({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
         center:[st?st.lng:0, st?st.lat:0], zoom:11, bearing:0, pitch:0,
         style:{ version:8, sources:{ mmsat:{ type:'raster', tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize:256, maxzoom:19, attribution:'© Esri' },
           /* (#R118) flight TRAIL on the moving-map ("ミニマップには軌跡が表示されるように") — the already-recorded st._path */
@@ -742,12 +743,12 @@ window.IntMapModules.flightSim=function(map,HOST){
       /* (#R158) SOLE CAMERA CONTROLLER: cancel any in-flight MapLibre camera animation (Atlas flyTo, a snap-back easeTo, the
          globe intro) before the sim takes over — the per-frame jumpTo below is then the only thing driving the camera. The
          globe-tour auto-spin is stopped separately by _fsStashLayers() (its checkbox lives in #layer-dropdown). */
-      try{ if(map&&map.stop) map.stop(); }catch(_){} try{ window.__fsCamSkips=0; }catch(_){}
+      try{ if(map&&GE().camera.stop) GE().camera.stop(); }catch(_){} try{ window.__fsCamSkips=0; }catch(_){}
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
-      const c=map.getCenter(), ac=AC();
+      const c=GE().camera.getCenter(), ac=AC();
       /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
          up map) into 90° (east) because 0 is falsy — read it properly instead. */
-      let b0=0; try{ const _b=(map.getBearing?map.getBearing():0); if(_b!=null&&isFinite(_b)) b0=_b; }catch(_){}
+      let b0=0; try{ const _b=(GE().camera.getBearing?GE().camera.getBearing():0); if(_b!=null&&isFinite(_b)) b0=_b; }catch(_){}
       if(opts.hdg!=null&&isFinite(opts.hdg)) b0=+opts.hdg;   /* (#R97) runway / requested heading */
       st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:2500),
         vb:[ac.Vcruise,0,0], q:[1,0,0,0], om:[0,0,0], elevTrim:0,
@@ -776,13 +777,13 @@ window.IntMapModules.flightSim=function(map,HOST){
       if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
         st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st._fieldElev=(opts.elev!=null?+opts.elev:null); st._fLL=[st.lng,st.lat]; st._maxAlt=st.alt; st._maxV=0; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }   /* (#R117) stats start from the runway; (#R118) _fLL = the airport anchor point */   /* (#R117) remember the airport's REAL field elevation — DEM reads far off it while tiles load are rejected */
       else computeTrim();
-      prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
+      prevCam={ center:GE().camera.getCenter(), zoom:GE().camera.getZoom(), bearing:GE().camera.getBearing(), pitch:GE().camera.getPitch(), roll:(GE().camera.getRoll?GE().camera.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
          camera can look forward to the horizon. State is remembered and restored on exit. */
-      try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
-      try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
-      try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
+      try{ prevView={ base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), terr:(typeof HOST.terrain3D!=='undefined'?HOST.terrain3D:false), maxPitch:(GE().camera.getMaxPitch?GE().camera.getMaxPitch():60) }; }catch(_){ prevView=null; }
+      try{ if(GE().camera.setMaxPitch) GE().camera.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
+      try{ if(GE().camera.setCenterClamped) GE().camera.setCenterClamped(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
       /* (#R172) take the tilt PIVOT back for the flight. With unlimited tilt on, the engine installs a
          per-update camera hook that keeps the viewpoint still while the user tilts; the sim is the sole camera
          controller (#R158) and writes the whole camera every frame, so it wants that hook out of the path
@@ -803,13 +804,13 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ if(HOST.proj!=='globe'&&window.IntMapOS) IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }catch(_){}
       /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
          pale horizon haze and distance fog; restored on exit. */
-      try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
+      try{ prevView.sky=(GE().scene.getSky?GE().scene.getSky():undefined); }catch(_){}
       /* (#R174) THE SKY IS THE RENDERER'S AGAIN. #R173 made MapLibre's sky transparent and painted its own
          gradient behind the canvas; the verdict was 「空を勝手に描くな！不自然。自然ならいいが、そうじゃない
          のに余計なことをするな」. This is the #R99 spec, unchanged since, restored verbatim: a real blue
          gradient, pale horizon haze, distance fog. Nothing of the sim's is drawn behind the map, and the
          pre-flight sky is put back on exit (prevView.sky). */
-      try{ if(map.setSky) map.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
+      try{ if(GE().scene.setSky) GE().scene.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
       try{ if(typeof HOST.mapType==='undefined'||HOST.mapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
@@ -830,13 +831,13 @@ window.IntMapModules.flightSim=function(map,HOST){
          での全画面という意味ではない"). Resize the map after the container changes size. */
       try{ document.body.classList.add('fs-flying'); }catch(_){}
       try{ _fsStashLayers(); }catch(_){}   /* (#R122) hide every data layer / highlight / outline while flying (place-name labels stay); restored on exit */
-      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
+      try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },120); setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
       /* (#R158) The blue sea WATER-FILL overlay was REMOVED per request ("フライトシミュレーターの海を水で満たす加工は廃止").
          The ocean now shows the real satellite imagery — the R158 satellite protocol upscales the nearest real tile so the
          open sea reads as genuine imagery instead of Esri's grey "no data" placeholder (the reason the fill was added in R152).
          The PHYSICS sea-surface floor (can't dive below sea level over open ocean) is unrelated and stays. */
-      try{ if(map&&map.getLayer&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); if(map&&map.getSource&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){}   /* clear any leftover fill from an older session */
+      try{ if(map&&map.getLayer&&GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(map&&map.getSource&&GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* clear any leftover fill from an older session */
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
       mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
@@ -851,12 +852,12 @@ window.IntMapModules.flightSim=function(map,HOST){
       window.removeEventListener('blur',onLoseFocus); document.removeEventListener('visibilitychange',onVisChange);
       window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
       window.__fsCamActive=false;
-      try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
+      try{ if(GE().camera.setCenterClamped) GE().camera.setCenterClamped(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
       /* (#R172) …and hand the camera back to whoever owned it before the flight. The unlimited-tilt setting
          also unpins the ground-clamp (js/view-controls.js) and installs the eye pivot; the line above would
          otherwise silently undo it for anyone who has that setting on. One re-apply puts the owner in charge. */
       try{ if(window.IntMapTilt){ window.IntMapTilt.apply(); window.IntMapTilt.wireTilt(); } }catch(_){}
-      try{ if(map&&map.getLayer&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); if(map&&map.getSource&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
+      try{ if(map&&map.getLayer&&GE().layers.has('fs-ocean-water')) GE().layers.remove('fs-ocean-water'); if(map&&map.getSource&&GE().layers.hasSource('fs-ocean')) GE().layers.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
       for(const k in keys) keys[k]=false;
       try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
@@ -868,12 +869,12 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ document.body.classList.remove('fs-flying'); }catch(_){}
       try{ _fsRestoreLayers(); }catch(_){}   /* (#R122) re-enable every layer/highlight that was on before the flight */
       try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(_){}
-      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },140);
-      try{ if(map.setRoll) map.setRoll(0); }catch(_){}
+      try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },140);
+      try{ if(GE().camera.setRoll) GE().camera.setRoll(0); }catch(_){}
       /* (#R85b) restore the pre-flight view (basemap / projection / 3-D / max pitch) */
       try{ const pv=prevView; if(pv){
-        if(map.setMaxPitch) map.setMaxPitch(pv.maxPitch||60);
-        try{ if(map.setSky) map.setSky(pv.sky||undefined); }catch(_){}   /* (#R99) restore the pre-flight sky */
+        if(GE().camera.setMaxPitch) GE().camera.setMaxPitch(pv.maxPitch||60);
+        try{ if(GE().scene.setSky) GE().scene.setSky(pv.sky||undefined); }catch(_){}   /* (#R99) restore the pre-flight sky */
         if(pv.base!=='sat'&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
         if(!pv.terr&&typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
         /* (#R170) restore BOTH ways. The old line only knew how to put the globe back; now that entry forces
@@ -884,7 +885,7 @@ window.IntMapModules.flightSim=function(map,HOST){
         if(typeof HOST.proj!=='undefined'&&window.IntMapOS){ IntMapOS.exec(pv.proj==='flat'?'view.proj.flat':'view.proj.globe',{source:'flightsim'}); }
       } }catch(_){}
       prevView=null;
-      if(prevCam){ try{ map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(map.setRoll) map.setRoll(0); map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }
+      if(prevCam){ try{ GE().camera.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(GE().camera.setRoll) GE().camera.setRoll(0); GE().camera.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }
     /* trim for level flight at the current speed & altitude: solve the AoA that makes lift = weight, and the
        throttle that makes thrust = drag. This stops the aircraft climbing/sinking on its own at spawn, and the
        trimmed AoA becomes the stability target so the machine holds its trimmed speed (speed stability). */
@@ -909,7 +910,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       else { st.thr=0; gamma=-Math.atan2(CD,Math.max(0.05,CLn)); }                                        /* glider: steady glide-path angle */
       const qElev=qd+(ac.prop?Th/(2*ac.S):0), elevMax=(ac.elevMax||0.5), CmBase=D.Cm0+D.Cma*aT-0.09*st.flaps;
       st.elevTrim=-(CmBase*qd + (ac.thrZ||0)*Th/(ac.S*ac.c))/(ac.Cmde*elevMax*qElev);   /* stick-equivalent trim (real elevator angle = stick × elevMax) */
-      const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((map.getBearing?map.getBearing():90)*Math.PI/180);
+      const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((GE().camera.getBearing?GE().camera.getBearing():90)*Math.PI/180);
       st.q=qFromEuler(0,aT+gamma,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
@@ -1054,10 +1055,10 @@ window.IntMapModules.flightSim=function(map,HOST){
     const _FS_HL_LAYERS=['place-hl-fill','place-hl-line','place-hl-dot','nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line','nlq-choro','pl-outline-fill','pl-outline-line'];
     let _fsHlVis=null;
     function _fsHideHl(){ if(_fsHlVis) return; const saved={};
-      _FS_HL_LAYERS.forEach(id=>{ try{ if(map.getLayer(id)){ let v='visible'; try{ v=map.getLayoutProperty(id,'visibility')||'visible'; }catch(_){} saved[id]=v; map.setLayoutProperty(id,'visibility','none'); } }catch(_){} });
+      _FS_HL_LAYERS.forEach(id=>{ try{ if(GE().layers.has(id)){ let v='visible'; try{ v=GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){} saved[id]=v; GE().layers.setLayout(id,'visibility','none'); } }catch(_){} });
       _fsHlVis=saved; }
     function _fsShowHl(){ const s=_fsHlVis; _fsHlVis=null; if(!s) return;
-      Object.keys(s).forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility', s[id]==='none'?'none':'visible'); }catch(_){} }); }
+      Object.keys(s).forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility', s[id]==='none'?'none':'visible'); }catch(_){} }); }
     function _fsStashLayers(){ if(_fsStash) return; const stash=[];
       try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!cb.checked) return;
         const id=cb.id||'', dl=(cb.getAttribute&&cb.getAttribute('data-layer'))||'';
@@ -1074,7 +1075,7 @@ window.IntMapModules.flightSim=function(map,HOST){
       const s=_fsStash; _fsStash=null; if(!s) return;
       try{ s.forEach(tok=>{ let cb=null; if(tok.indexOf('dl:')===0){ cb=document.querySelector('#layer-dropdown [data-layer="'+tok.slice(3)+'"]'); } else { cb=document.getElementById(tok); }
         if(cb&&!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } }); }catch(_){} }
-    function _terrRead(lng,lat){ let v=null; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
+    function _terrRead(lng,lat){ let v=null; try{ if(GE().coords.terrainElevation){ const te=GE().coords.terrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
       if(v==null) return { v:(st&&st.lastTerr!=null)?st.lastTerr:0, ok:false };
       if(st) st.lastTerr=v; return { v, ok:true }; }
     /* (#R152) OCEAN detection for flight PHYSICS. window.countryGeo = LAND polygons, so a point INSIDE any
@@ -1401,8 +1402,8 @@ window.IntMapModules.flightSim=function(map,HOST){
       const _D=_D_LOOK, _elR=(90-pitch)*D2R, _cE=Math.cos(_elR), _sE=Math.sin(_elR), _bR=bearing*D2R;
       const _nx=_cE*Math.cos(_bR), _ny=_cE*Math.sin(_bR), _nz=_sE;   /* down-positive nz (matches fwd[2]) */
       const tLat=eLat+_D*_nx/mLatM, tLng=eLng+_D*_ny/mLonM, tAlt=camAlt-_D*_nz;
-      try{ if(map.isEasing&&map.isEasing()) map.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
-      let cam=null; try{ if(map.calculateCameraOptionsFromTo) cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
+      try{ if(GE().camera.isAnimating&&GE().camera.isAnimating()) GE().camera.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
+      let cam=null; try{ if(GE().camera.fromTo) cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
       const _fin=v=>typeof v==='number'&&isFinite(v);
       const sane=!!(cam&&cam.center&&_fin(cam.center.lng)&&_fin(cam.center.lat)&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing==null?0:cam.bearing)&&_fin(cam.pitch==null?0:cam.pitch)&&_fin(roll)&&Math.abs(cam.center.lat)<=89.5);
       let okCam=sane;
@@ -1416,9 +1417,9 @@ window.IntMapModules.flightSim=function(map,HOST){
       if(!okCam&&sane&&(st._camSkip||0)>3) okCam=true;
       if(okCam) st._camSkip=0;
       if(okCam){ cam.roll=roll; st._cam=cam; st._camPrev={lng:cam.center.lng,lat:cam.center.lat,zoom:cam.zoom};
-        try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
+        try{ GE().camera.jumpTo(cam); }catch(_){ try{ delete cam.roll; GE().camera.jumpTo(cam); }catch(__){} } }
       else if(!cam){   /* FromTo unavailable (very old MapLibre) — last-resort validated direct camera */
-        try{ if(_fin(bearing)&&_fin(pitch)) map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} }
+        try{ if(_fin(bearing)&&_fin(pitch)) GE().camera.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} }
       /* okCam===false with cam!=null → skip this frame, keeping the last good camera (no teleport, no freeze — next frame's
          slightly-advanced geometry resolves cleanly). */
       try{ updateMinimap(dt); }catch(_){}

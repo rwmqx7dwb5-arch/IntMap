@@ -35,6 +35,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.aircraftDetail=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
@@ -108,7 +109,7 @@ window.IntMapModules.aircraftDetail=function(map,HOST){
      js/drone-nav.js measures its clearances with. null when neither can answer yet. */
   const DEM_Z=12;   /* terrarium z12 ≈ 38 m/pixel — ample for a spawn-clearance figure, and one tile covers a busy TMA */
   function groundAt(lng,lat){
-    try{ if(map.queryTerrainElevation){ const v=map.queryTerrainElevation([lng,lat]); if(v!=null&&isFinite(v)) return +v; } }catch(_){}
+    try{ if(GE().coords.terrainElevation){ const v=GE().coords.terrainElevation([lng,lat]); if(v!=null&&isFinite(v)) return +v; } }catch(_){}
     try{ const v=HOST.demElevBilinear(lng,lat,DEM_Z); if(v!=null&&isFinite(v)) return +v; }catch(_){}
     return null;
   }
@@ -207,7 +208,7 @@ window.IntMapModules.aircraftDetail=function(map,HOST){
     const badge='<span class="acp-badge '+(mil?'mil':'civ')+'">'+S(mil?L('Military','軍用','Militärisch','Военный','Militar'):L('Civilian','民間','Zivil','Гражданский','Civil'))+'</span>';
     const emerg=p.emergency?'<span class="acp-badge emg">'+S(L('Emergency: ','緊急事態: ','Notfall: ','Аварийная ситуация: ','Emergencia: ')+p.emergency)+'</span>':'';
 
-    const dist=(()=>{ try{ const c=map.getCenter(); const R=6371, r=Math.PI/180;
+    const dist=(()=>{ try{ const c=GE().camera.getCenter(); const R=6371, r=Math.PI/180;
       const dLat=(p.lat-c.lat)*r, dLng=(p.lng-c.lng)*r;
       const a=Math.sin(dLat/2)**2+Math.cos(c.lat*r)*Math.cos(p.lat*r)*Math.sin(dLng/2)**2;
       const km=2*R*Math.asin(Math.min(1,Math.sqrt(a)));

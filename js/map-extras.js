@@ -79,7 +79,8 @@ window.IntMapModules.locate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.annotations=function(map,HOST){
+window.IntMapModules.annotations=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -91,13 +92,13 @@ window.IntMapModules.annotations=function(map,HOST){
     const SRC='annot-src'; let seq=0, popup=null; const items=[];
     const jp=()=>HOST.lang==='jp';
     function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op}}))}; }
-    function ensure(){ if(map.getSource(SRC)) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource(SRC,{type:'geojson',data:fc()});
-        map.addLayer({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});
-        map.addLayer({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':2.6}});
-        map.on('click','annot-fill',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
-        map.on('click','annot-line',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
-        ['annot-fill','annot-line'].forEach(l=>{ map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; }); });
+    function ensure(){ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource(SRC,{type:'geojson',data:fc()});
+        GE().layers.add({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});
+        GE().layers.add({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':2.6}});
+        GE().events.onLayer('click','annot-fill',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
+        GE().events.onLayer('click','annot-line',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
+        ['annot-fill','annot-line'].forEach(l=>{ GE().events.onLayer('mouseenter',l,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',l,()=>{ GE().render.canvas().style.cursor=''; }); });
         return true;
       }catch(_){ return false; }
     }
@@ -105,14 +106,14 @@ window.IntMapModules.annotations=function(map,HOST){
        (e.g. many layers churning styledata right after "Keep on map"), ensure() returns false and the old
        refresh silently did nothing → the kept line/area "disappeared". Now we retry until the source+layers
        exist, so a kept drawing can never be dropped by a load race. */
-    function refresh(){ try{ if(ensure()){ map.getSource(SRC).setData(fc()); } else if(items.length){ setTimeout(refresh,120); } }catch(_){ if(items.length) setTimeout(refresh,200); } }
-    map.on('styledata',()=>{ if(items.length) setTimeout(refresh,80); });
+    function refresh(){ try{ if(ensure()){ GE().layers.setSourceData(SRC,fc()); } else if(items.length){ setTimeout(refresh,120); } }catch(_){ if(items.length) setTimeout(refresh,200); } }
+    GE().events.on('styledata',()=>{ if(items.length) setTimeout(refresh,80); });
     function repr(geom){ try{ if(geom.type==='LineString'){ const c=geom.coordinates; return c[Math.floor(c.length/2)]; } if(geom.type==='Polygon'){ const r=geom.coordinates[0]; let x=0,y=0; r.forEach(p=>{x+=p[0];y+=p[1];}); return [x/r.length,y/r.length]; } }catch(_){} return [0,0]; }
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
       const at=ll||repr(it.geom);
       const valHtml = it.value ? '<div style="font-size:13px;color:var(--primary-color);font-weight:700;margin:0 0 6px;">'+it.value+'</div>' : '';
       const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Color')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
-      popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html).addTo(map);
+      popup=GE().ui.popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html).addTo(map);
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
         const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
         const co=el.querySelector('.annot-color'); if(co) co.oninput=()=>{ it.color=co.value; refresh(); };
@@ -128,6 +129,7 @@ window.IntMapModules.annotations=function(map,HOST){
 };
 
 window.IntMapModules.layerHoverPopup=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
      In the NORMAL state (Countries(info) OFF, no measuring tool, not already isolated), tapping a country
      NAME place-label pops a small "🔍 Isolate <country>" button at the tap point. Tapping it isolates that
@@ -140,15 +142,15 @@ window.IntMapModules.layerHoverPopup=function(map,HOST){
     function ensurePop(){ if(pop) return pop; pop=document.createElement('button'); pop.id='label-isolate-btn';
       pop.style.cssText='display:none;position:absolute;z-index:1650;transform:translate(-50%,calc(-100% - 12px));background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.18);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);white-space:nowrap;display:none;align-items:center;gap:7px;letter-spacing:0.01em;';
       (document.getElementById('map-container')||document.body).appendChild(pop); return pop; }
-    map.on('movestart',hide);
-    map.on('click',(e)=>{
+    GE().events.on('movestart',hide);
+    GE().events.on('click',(e)=>{
       return;   /* (#R33) DISABLED — Isolate now lives in the place popup's action row (Copy/Wikipedia/AI brief/Isolate), so the separate floating button is no longer shown. */
       try{
         if(typeof HOST.toolMode!=='undefined' && HOST.toolMode){ hide(); return; }                 /* measuring/drawing → ignore */
         if(typeof HOST.countryInfoOn!=='undefined' && HOST.countryInfoOn){ hide(); return; }        /* its popup already has Isolate */
         if(window.IntMapIsolate && window.IntMapIsolate.active && window.IntMapIsolate.active()){ hide(); return; }
-        if(!map.getLayer('ofm-country')){ hide(); return; }
-        const hits=map.queryRenderedFeatures(e.point,{layers:['ofm-country']});
+        if(!GE().layers.has('ofm-country')){ hide(); return; }
+        const hits=GE().coords.queryRenderedFeatures(e.point,{layers:['ofm-country']});
         if(!hits||!hits.length){ hide(); return; }
         const p=hits[0].properties||{}; const name=p.name||p['name:en']||p.name_en||p['name:latin']||'';
         if(!name){ hide(); return; }
@@ -234,6 +236,7 @@ window.IntMapModules.layerSearch=function(map,HOST){
 };
 
 window.IntMapModules.runwaySearch=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const t=HOST.t, makeDraggable=HOST.makeDraggable;
   /* ===== (#R8c) Runway / air-base search SCAFFOLD. Data is NOT auto-fetched (the user: "今はすべての
      データ取ってこなくていい"); it lazy-loads from OurAirports (public-domain, CORS*) only when a search is
@@ -299,16 +302,16 @@ window.IntMapModules.runwaySearch=function(map,HOST){
       if(d.rwy) rws.push((jp()?'滑走路':'Runway')+': <b>'+esc(d.rwy)+'</b>');
       rws.push((jp()?'座標':'Coords')+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
       const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(jp()?'Wikipediaで見る ↗':'Read on Wikipedia ↗')+'</a></div>';
-      try{ rwyPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html).addTo(map); }catch(_){}
+      try{ rwyPopup=GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html).addTo(map); }catch(_){}
     }
-    function ensureLayers(){ if(map.getSource(SRC)) return; try{ map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:LYR,type:'circle',source:SRC,paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,8,6],'circle-color':['case',['get','mil'],'#ff453a','#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-      map.addLayer({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+    function ensureLayers(){ if(GE().layers.hasSource(SRC)) return; try{ GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      GE().layers.add({id:LYR,type:'circle',source:SRC,paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,8,6],'circle-color':['case',['get','mil'],'#ff453a','#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+      GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       /* Click a pin → the same info popup (#47). */
-      map.on('click',LYR,e=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}, c=e.features[0].geometry.coordinates; showRwyPopup({ name:p.name, apt:p.apt, muni:p.muni, mil:(p.mil===true||p.mil==='true'), len:+p.len||0, n:+p.n||0, rwy:p.rwy||'', coords:c }); });
-      map.on('mouseenter',LYR,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',LYR,()=>{ map.getCanvas().style.cursor=''; });
+      GE().events.onLayer('click',LYR,e=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}, c=e.features[0].geometry.coordinates; showRwyPopup({ name:p.name, apt:p.apt, muni:p.muni, mil:(p.mil===true||p.mil==='true'), len:+p.len||0, n:+p.n||0, rwy:p.rwy||'', coords:c }); });
+      GE().events.onLayer('mouseenter',LYR,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',LYR,()=>{ GE().render.canvas().style.cursor=''; });
     }catch(_){} }
-    function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
+    function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){} }
     function run(){ const p=panel; const im=imp(); const rIn=+p.querySelector('#rwy-radius').value||(im?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
       const radiusKm=im?rIn*1.60934:rIn, minLenM=im?lIn*0.3048:lIn;
       const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
@@ -318,7 +321,7 @@ window.IntMapModules.runwaySearch=function(map,HOST){
         const shown=res.slice(0,120);
         list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
           return '<div class="rwy-item" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
-        list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ const r=shown[+it.getAttribute('data-idx')]; if(!r) return; map.flyTo({center:[r.lo,r.la],zoom:Math.max(map.getZoom(),11)}); showRwyPopup({ name:r.name, apt:r.apt, muni:r.muni, mil:r.mil, len:(mode==='airport'?r.maxLen:r.lenM), n:(mode==='airport'?r.n:0), rwy:(mode==='runway'?r.rwy:''), coords:[r.lo,r.la] }); }; });
+        list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ const r=shown[+it.getAttribute('data-idx')]; if(!r) return; GE().camera.flyTo({center:[r.lo,r.la],zoom:Math.max(GE().camera.getZoom(),11)}); showRwyPopup({ name:r.name, apt:r.apt, muni:r.muni, mil:r.mil, len:(mode==='airport'?r.maxLen:r.lenM), n:(mode==='airport'?r.n:0), rwy:(mode==='runway'?r.rwy:''), coords:[r.lo,r.la] }); }; });
       });
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
@@ -375,7 +378,8 @@ window.IntMapModules.terrain=function(map,HOST){
     return { sampler, loadTile }; })();
 };
 
-window.IntMapModules.railSeaOverlays=function(map,HOST){
+window.IntMapModules.railSeaOverlays=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -394,21 +398,21 @@ window.IntMapModules.railSeaOverlays=function(map,HOST){
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
     const lbl=(L)=>L.label[HOST.lang]||L.label.en;
-    const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+    const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     function ensure(L){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource('ox-'+L.id)) map.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
-      if(!map.getLayer('oxl-'+L.id)) map.addLayer({id:'oxl-'+L.id,type:'raster',source:'ox-'+L.id,layout:{visibility:'none'},paint:{'raster-opacity':0.92,'raster-fade-duration':0}}, beforeLabels());
+      if(!GE().layers.hasSource('ox-'+L.id)) GE().layers.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
+      if(!GE().layers.has('oxl-'+L.id)) GE().layers.add({id:'oxl-'+L.id,type:'raster',source:'ox-'+L.id,layout:{visibility:'none'},paint:{'raster-opacity':0.92,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(_){ return false; } }
-    function toggle(L,on){ state[L.id]=on; let tries=0; const apply=()=>{ if(!ensure(L)){ if(tries++<40) setTimeout(apply,150); else map.once('idle',apply); return; }
-      try{ map.setLayoutProperty('oxl-'+L.id,'visibility',on?'visible':'none'); }catch(_){}
+    function toggle(L,on){ state[L.id]=on; let tries=0; const apply=()=>{ if(!ensure(L)){ if(tries++<40) setTimeout(apply,150); else GE().events.once('idle',apply); return; }
+      try{ GE().layers.setLayout('oxl-'+L.id,'visibility',on?'visible':'none'); }catch(_){}
       if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('ox-'+L.id,[L.label.en,L.label.jp,L.label.de,L.label.ru],['oxl-'+L.id],'ox-'+L.id); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
         /* (#R41) OpenSeaMap seamarks are a SPARSE transparent overlay — empty over open ocean / at world zoom, so
            it looked "broken" ("OpenSeaMapが動作しない"). It DOES load (tiles verified 200/png); tell the user the
            marks only appear when zoomed into a coast or harbour. */
-        if(L.id==='oxsea'){ try{ if(map.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbour.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[HOST.lang]||h.en); } }catch(_){} } }
+        if(L.id==='oxsea'){ try{ if(GE().camera.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbour.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[HOST.lang]||h.en); } }catch(_){} } }
       else { try{ window._hideGenericLegend&&window._hideGenericLegend('ox-'+L.id); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    map.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ map.setLayoutProperty('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });
+    GE().events.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ GE().layers.setLayout('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('ox-oxrail')) return;
       LIST.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-ox-'+L.id;
         const lab=document.createElement('label'); lab.className='layer-option';

@@ -29,6 +29,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.insolation=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
         demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan;
@@ -60,7 +61,7 @@ window.IntMapModules.insolation=function(map,HOST){
     /* ---- the working grid ---------------------------------------------------------------------- */
     let G=null, painted=false;
     async function grid(force){
-      const b=map.getBounds(); if(!b) return null;
+      const b=GE().camera.getBounds(); if(!b) return null;
       let w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth(); if(e<w) e+=360;
       const midLat=(n+s)/2;
       const spanKm=Math.max((e-w)*111.32*Math.cos(midLat*D),(n-s)*110.54);
@@ -144,15 +145,15 @@ window.IntMapModules.insolation=function(map,HOST){
       try{ if(!_imCanDraw()) return;
         const s=map.getSource(IMG);
         if(s&&s.updateImage) s.updateImage({url:cv.toDataURL('image/png'),coordinates:coords});
-        else { map.addSource(IMG,{type:'image',url:cv.toDataURL('image/png'),coordinates:coords});
-          const before=(()=>{ for(const id of ['imsun-shadow']){ try{ if(map.getLayer(id)) return id; }catch(_){} } return undefined; })();
-          map.addLayer({id:LYR,type:'raster',source:IMG,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before); }
+        else { GE().layers.addSource(IMG,{type:'image',url:cv.toDataURL('image/png'),coordinates:coords});
+          const before=(()=>{ for(const id of ['imsun-shadow']){ try{ if(GE().layers.has(id)) return id; }catch(_){} } return undefined; })();
+          GE().layers.add({id:LYR,type:'raster',source:IMG,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before); }
         painted=true;
       }catch(_){}
     }
     function clear(){ painted=false;
-      try{ if(map.getLayer(LYR)) map.removeLayer(LYR); }catch(_){}
-      try{ if(map.getSource(IMG)) map.removeSource(IMG); }catch(_){} }
+      try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
+      try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} }
 
     /* The terrain shadow for one moment. */
     let busy=false, lastShade=null;
@@ -160,7 +161,7 @@ window.IntMapModules.insolation=function(map,HOST){
       if(busy) return null; busy=true;
       try{
         const g=await grid(o&&o.refit); if(!g) return null;
-        const c=map.getCenter(); const sp=sunPos(when instanceof Date?when:new Date(when),c.lat,c.lng);
+        const c=GE().camera.getCenter(); const sp=sunPos(when instanceof Date?when:new Date(when),c.lat,c.lng);
         const mask=shadowMask(g,sp.azCompass,sp.altDeg);
         let shaded=0; for(let k=0;k<mask.length;k++) if(mask[k]) shaded++;
         paint(g,mask,o&&o.strength);
@@ -175,7 +176,7 @@ window.IntMapModules.insolation=function(map,HOST){
       if(busy) return null; busy=true;
       try{
         const g=await grid(o&&o.refit); if(!g) return null;
-        const c=map.getCenter(); const acc=new Uint8Array(g.NX*g.NY).fill(1);
+        const c=GE().camera.getCenter(); const acc=new Uint8Array(g.NX*g.NY).fill(1);
         const d0=new Date(date); d0.setHours(0,0,0,0);
         let steps=0, anySun=false;
         /* up to 96 sweeps over a quarter-million cells — yield between them, or the tab locks for

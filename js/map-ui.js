@@ -19,7 +19,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.layerRegistry=function(map,HOST){
+window.IntMapModules.layerRegistry=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -47,7 +48,7 @@ window.IntMapModules.layerRegistry=function(map,HOST){
         const out=(v==null||v==='')?null:(typeof v==='number'?(Math.round(v*100)/100+unit):String(v));
         if(out!=null) _numCache.set(key,out); return out; }catch(_){ return null; } }
     function _srcFeatsIn(srcId,bounds){ try{ const s=map.getSource(srcId); if(!s||!s.serialize) return null; const d=s.serialize().data; if(!d||!Array.isArray(d.features)) return null;
-      const b=bounds||map.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
+      const b=bounds||GE().camera.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
       return d.features.filter(f=>{ try{ const c=f.geometry&&f.geometry.type==='Point'&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=so&&c[1]<=n; }catch(_){ return false; } }); }catch(_){ return null; } }
     function register(id,impl){ REG[id]=impl||{}; }
     function list(){ return Object.keys(REG); }
@@ -81,12 +82,12 @@ window.IntMapModules.layerRegistry=function(map,HOST){
     register('news',   { label:()=>L5('News points','ニュース地点','Nachrichtenpunkte','Точки новостей','Puntos de noticias'),
       on:()=>{ const f=_srcFeatsIn('news-points',null); return !!(f&&f.length); },
       featuresIn:b=>_srcFeatsIn('news-points',b), summary:()=>{ const f=_srcFeatsIn('news-points',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
-    register('volcanoes',{ label:()=>L5('Volcanoes','火山','Vulkane','Вулканы','Volcanes'), on:()=>{ try{ return !!(map.getLayer('volc2-pt')&&map.getLayoutProperty('volc2-pt','visibility')!=='none'); }catch(_){ return false; } },
+    register('volcanoes',{ label:()=>L5('Volcanoes','火山','Vulkane','Вулканы','Volcanes'), on:()=>{ try{ return !!(GE().layers.has('volc2-pt')&&GE().layers.getLayout('volc2-pt','visibility')!=='none'); }catch(_){ return false; } },
       featuresIn:b=>_srcFeatsIn('volc2-src',b), source:()=>'Smithsonian GVP' });
     register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
       sampleAt:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:(Math.round(v)+' m'); }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
     /* ---- (#R120) live traffic layers — the REAL features currently on the map (same geojson the symbols paint) ---- */
-    const _lyrVis=id=>{ try{ return !!(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')==='visible'); }catch(_){ return false; } };
+    const _lyrVis=id=>{ try{ return !!(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')==='visible'); }catch(_){ return false; } };
     register('aircraft',{ label:()=>L5('Live aircraft','航空機（リアルタイム）','Live-Flugverkehr','Самолёты (онлайн)','Aviones en vivo'),
       on:()=>_lyrVis('lyr-planes'), featuresIn:b=>_srcFeatsIn('src-planes',b),
       summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B' });
@@ -115,8 +116,8 @@ window.IntMapModules.layerRegistry=function(map,HOST){
         try{ const v=window.choroValueAt&&window.choroValueAt(x,y); if(v) outs.push(v); }catch(_){}
         try{ const ids=Object.keys(_WBF).filter(_lyrVis);
           if(ids.length){ let hit=null;
-            try{ const pt=map.project([x,y]); const cv=map.getCanvas();
-              if(pt&&pt.x>=0&&pt.y>=0&&pt.x<=((cv&&cv.clientWidth)||1e9)&&pt.y<=((cv&&cv.clientHeight)||1e9)){ const h=map.queryRenderedFeatures(pt,{layers:ids}); if(h&&h.length) hit={id:h[0].layer.id,p:h[0].properties||{}}; } }catch(_){}
+            try{ const pt=GE().coords.project([x,y]); const cv=GE().render.canvas();
+              if(pt&&pt.x>=0&&pt.y>=0&&pt.x<=((cv&&cv.clientWidth)||1e9)&&pt.y<=((cv&&cv.clientHeight)||1e9)){ const h=GE().coords.queryRenderedFeatures(pt,{layers:ids}); if(h&&h.length) hit={id:h[0].layer.id,p:h[0].properties||{}}; } }catch(_){}
             if(!hit){ for(const id of ids){ const d=_srcData(_WBF[id].src); if(!d) continue;   /* (#R121) off-screen → PIP over the layer's own data */
               const f=d.features.find(ft=>window._imPipGeo(x,y,ft.geometry)); if(f&&f.properties&&f.properties.raw!=null){ hit={id,p:f.properties}; break; } } }
             if(hit){ const W=_WBF[hit.id]; if(W) outs.push(W.lb()+': '+W.fmt(hit.p)+(hit.p.iso?(' ('+hit.p.iso+')'):'')); } } }catch(_){}
@@ -166,6 +167,7 @@ window.IntMapModules.layerRegistry=function(map,HOST){
 };
 
 window.IntMapModules.layerSidebar=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const layerCbInfo=HOST.layerCbInfo, saveSettings=HOST.saveSettings, renderLayerFavs=HOST.renderLayerFavs;
   window.IntMapLayerSidebar=(function(){
@@ -265,7 +267,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
           document.documentElement.style.setProperty('--lsr-w', w+'px');   /* (#R160) overlay: only the panel width changes; the map stays full-width behind it (no margin push, no resize) */
           try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} });
         const end=e=>{ if(!rdrag) return; rdrag=false; try{ rh.releasePointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect=''; sb.style.transition='';
-          try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} };
+          try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(typeof map!=='undefined'&&map) GE().render.resize(); }catch(_){} };
         rh.addEventListener('pointerup',end); rh.addEventListener('pointercancel',end);
       })();
       sb.querySelector('.lsr-x').onclick=close;
@@ -395,13 +397,13 @@ window.IntMapModules.layerSidebar=function(map,HOST){
       /* (#R72) clicking the MAP closes the sidebar, same as the classic dropdown ("地図上のどこかをクリックしたら
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
-      try{ map&&map.on('click',open._mapCloser); }catch(_){}
+      try{ map&&GE().events.on('click',open._mapCloser); }catch(_){}
       /* (#R160) overlay: the map-container did NOT change size, so no resize/recentre — just let the search-pill
          layout recompute against the now-open panel (the right-anchored HUD slides left via CSS). */
       try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
     function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
       if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
-      try{ if(open._mapCloser&&map) map.off('click',open._mapCloser); }catch(_){}
+      try{ if(open._mapCloser&&map) GE().events.off('click',open._mapCloser); }catch(_){}
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
@@ -427,6 +429,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
 };
 
 window.IntMapModules.ticker=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const fetchData=HOST.fetchData, saveSettings=HOST.saveSettings;
   window.IntMapTicker=(function(){
@@ -513,10 +516,10 @@ window.IntMapModules.ticker=function(map,HOST){
       if(or&&or.parentNode){ or.parentNode.insertBefore(bar,or.nextSibling); } else document.body.appendChild(bar);
       track=bar.querySelector('.tk-track'); }
     function open(){ build(); document.body.classList.add('ticker-on'); bar.style.display='flex'; refresh(); if(!timer) timer=setInterval(refresh,300000);
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350);
+      try{ map&&GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ map&&GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }   /* (#R102) ws windows fill the vacated strip */
     function close(){ if(bar) bar.style.display='none'; document.body.classList.remove('ticker-on'); if(timer){ clearInterval(timer); timer=0; }
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350);
+      try{ map&&GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ map&&GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }
     function toggle(){ if(document.body.classList.contains('ticker-on')){ window.imTicker='off'; close(); } else { window.imTicker='on'; open(); } try{ saveSettings&&saveSettings(); }catch(_){} }
     function apply(){ if(window.imTicker==='on') open(); else close(); }
@@ -579,7 +582,8 @@ window.IntMapModules.layerPresets=function(map,HOST){
   })();
 };
 
-window.IntMapModules.labelPopup=function(map,HOST){
+window.IntMapModules.labelPopup=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -589,12 +593,12 @@ window.IntMapModules.labelPopup=function(map,HOST){
   (function(){
     if(!map) return;
     let popup=null, wired=false;
-    function firstSym(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
-    function ensureHL(){ if(map.getSource('place-hl-src')) return true; if(!_imCanDraw()) return false;
-      try{ map.addSource('place-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); const before=firstSym();
-        map.addLayer({id:'place-hl-fill',type:'fill',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ff3b30','fill-opacity':0.30}},before);
-        map.addLayer({id:'place-hl-line',type:'line',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'line-color':'#ff3b30','line-width':1.8,'line-opacity':0.9}},before);
-        map.addLayer({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
+    function firstSym(){ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
+    function ensureHL(){ if(GE().layers.hasSource('place-hl-src')) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource('place-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); const before=firstSym();
+        GE().layers.add({id:'place-hl-fill',type:'fill',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ff3b30','fill-opacity':0.30}},before);
+        GE().layers.add({id:'place-hl-line',type:'line',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'line-color':'#ff3b30','line-width':1.8,'line-opacity':0.9}},before);
+        GE().layers.add({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
         return true; }catch(_){ return false; }
     }
     function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; }
@@ -624,7 +628,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
       const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
       const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;display:flex;align-items:center;gap:8px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
-      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
+      try{ popup=GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
@@ -682,7 +686,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
         },0);
       }catch(_){}
     }
-    function highlight(lngLat,isCountry){ if(!ensureHL()) return; const set=(fc)=>{ try{ map.getSource('place-hl-src').setData(fc); }catch(_){} };
+    function highlight(lngLat,isCountry){ if(!ensureHL()) return; const set=(fc)=>{ try{ GE().layers.setSourceData('place-hl-src',fc); }catch(_){} };
       const dot={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
       if(!isCountry){ set(dot); return; }
       const fill=()=>{ try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]);
@@ -702,21 +706,21 @@ window.IntMapModules.labelPopup=function(map,HOST){
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
       showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true}); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
-    function wire(){ if(wired) return; if(!map.getLayer('ofm-country')) return; wired=true;
-      map.on('click','ofm-country',onLabel(true)); map.on('click','ofm-city',onLabel(false)); map.on('click','ofm-other',onLabel(false));
-      ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ map.on('click',id,onGeoLabel()); }catch(_){} });
-      ['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
+    function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
+      ['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
-      map.on('click',(e)=>{ try{
-        const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>map.getLayer(id)); if(!ls.length) return;
-        const hit=map.queryRenderedFeatures(e.point,{layers:ls});
+      GE().events.on('click',(e)=>{ try{
+        const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id)); if(!ls.length) return;
+        const hit=GE().coords.queryRenderedFeatures(e.point,{layers:ls});
         if(hit.length) return;   /* exact glyph hit → the per-layer onLabel handler already opened the popup */
         /* (#R23) PADDED hit-box: a finger tap almost never lands on the exact label glyph, so the popup
            "モバイル版では出ない". Re-query a small box around the tap (bigger on touch) and open the nearest
            label's popup. Skipped while a measurement/draw tool owns the gesture. */
         if(typeof HOST.toolMode==='undefined' || !HOST.toolMode){
           const pad=(typeof isMobile==='function'&&isMobile())?15:6;
-          const near=map.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
+          const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
           if(near.length){ const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
@@ -725,14 +729,14 @@ window.IntMapModules.labelPopup=function(map,HOST){
         clearHL();
       }catch(_){} });
     }
-    function tryWire(n){ if(map.getLayer('ofm-country')){ wire(); return; } if((n||0)<300) setTimeout(()=>tryWire((n||0)+1),200); }
-    if(_imCanDraw()) tryWire(0); else map.on('load',()=>tryWire(0));
+    function tryWire(n){ if(GE().layers.has('ofm-country')){ wire(); return; } if((n||0)<300) setTimeout(()=>tryWire((n||0)+1),200); }
+    if(_imCanDraw()) tryWire(0); else GE().events.on('load',()=>tryWire(0));
     /* (#R101) RE-ARM the label-click wiring on every style/source update. The old bounded 12 s retry could give up
        before the (sometimes slow) OpenFreeMap label layers finished loading — and because BOTH the per-layer
        handlers AND the padded-hit fallback live inside wire(), that left place-name labels completely UNCLICKABLE
        in the present (and past). styledata fires whenever the ofm source settles / after a basemap swap, so wire()
        now binds the moment ofm-country exists, however late. Also re-creates the highlight layers after a swap. */
-    map.on('styledata',()=>{ if(!wired){ try{ tryWire(0); }catch(_){} } setTimeout(()=>{ try{ ensureHL(); }catch(_){} }, 120); });
+    GE().events.on('styledata',()=>{ if(!wired){ try{ tryWire(0); }catch(_){} } setTimeout(()=>{ try{ ensureHL(); }catch(_){} }, 120); });
     /* (#R94m) EXACT same reaction for historical labels: reuse this place popup (Copy/Wikipedia/AI brief/Isolate
        + blue outline). `geojson` lets the caller outline the era polygon (an empire, not just one modern country). */
     window._imPlacePopup=(lngLat,name,isCountry,opts)=>{ try{ showPopup(lngLat,name,isCountry,opts); }catch(_){} };
@@ -740,6 +744,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
 };
 
 window.IntMapModules.geojsonUpload=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
@@ -755,23 +760,23 @@ window.IntMapModules.geojsonUpload=function(map,HOST){
       if(g.type && g.coordinates) return {type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
       if(Array.isArray(g.features)) return {type:'FeatureCollection',features:g.features};
       return null; }
-    function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }
+    function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }
     function addFC(fc,name){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
-      try{ map.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(jp()?'読み込みに失敗しました':'Failed to add layer'); return; }
-      const before = map.getLayer('tool-poly')?'tool-poly':undefined;
+      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(jp()?'読み込みに失敗しました':'Failed to add layer'); return; }
+      const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
       try{
-        map.addLayer({id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},before);
-        map.addLayer({id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},before);
-        map.addLayer({id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},before);
+        GE().layers.add({id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},before);
+        GE().layers.add({id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},before);
+        GE().layers.add({id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},before);
       }catch(_){}
       items.push({n,sid,name,col}); renderList(); fit(fc);
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
       toast((jp()?'GeoJSONを表示: ':'GeoJSON added: ')+name);
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
-      [it.sid+'-fill',it.sid+'-line',it.sid+'-pt'].forEach(l=>{ try{ if(map.getLayer(l)) map.removeLayer(l); }catch(_){} });
-      try{ if(map.getSource(it.sid)) map.removeSource(it.sid); }catch(_){}
+      [it.sid+'-fill',it.sid+'-line',it.sid+'-pt'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
+      try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
     function renderList(){ if(!listEl) return;
       listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${jp()?'削除':'Remove'}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">✕</button></div>`).join('');
@@ -796,7 +801,8 @@ window.IntMapModules.geojsonUpload=function(map,HOST){
   })();
 };
 
-window.IntMapModules.viewHash=function(map,HOST){
+window.IntMapModules.viewHash=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -815,7 +821,7 @@ window.IntMapModules.viewHash=function(map,HOST){
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
       document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
     }catch(_){} return Array.from(ids); }
-    function encode(){ try{ const c=map.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),map.getZoom().toFixed(2),Math.round(map.getBearing()),Math.round(map.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
+    function encode(){ try{ const c=GE().camera.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),GE().camera.getZoom().toFixed(2),Math.round(GE().camera.getBearing()),Math.round(GE().camera.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
       /* (#R101) time-travel state saved as the kernel's ISO instant (mode-independent — the slider is now year-based),
          so a shared link reproduces the exact moment; compare state too. */
@@ -843,7 +849,7 @@ window.IntMapModules.viewHash=function(map,HOST){
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&HOST.proj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
         else if(proj==='g'&&HOST.proj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
-        if(isFinite(lng)&&isFinite(lat)) map.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
+        if(isFinite(lng)&&isFinite(lat)) GE().camera.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
         /* satellite base view: switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a
            shared link reproduces the base exactly, e.g. pasting a no-sat link over a satellite session). */
         try{ const wantSat=/[#&]sat=1/.test(location.hash);
@@ -872,7 +878,7 @@ window.IntMapModules.viewHash=function(map,HOST){
       }
       setTimeout(()=>{ restoring=false; },3500);
     }
-    map.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
+    GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
     /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
        hash-only navigation — no reload — so restore() never re-ran. history.replaceState (used by save) does NOT
        fire hashchange, so this can't loop. Re-run a FULL restore on any user hash navigation to a state link. */
@@ -882,7 +888,7 @@ window.IntMapModules.viewHash=function(map,HOST){
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
        always matches what's actually on. */
     document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))){ clearTimeout(t); t=setTimeout(save,300); } });
-    if(_imCanDraw()) restore(); else map.on('load',restore);
+    if(_imCanDraw()) restore(); else GE().events.on('load',restore);
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
 };

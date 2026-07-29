@@ -12,7 +12,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.cameras=function(map,HOST){
+window.IntMapModules.cameras=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -38,13 +39,13 @@ window.IntMapModules.cameras=function(map,HOST){
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
     function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc()});
-      if(!map.getLayer('webcams-pt')){
-        map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-        map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
-        map.on('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
-        map.on('mouseenter','webcams-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
-        map.on('mouseleave','webcams-pt',()=>{ map.getCanvas().style.cursor=''; });
+      if(!GE().layers.hasSource('webcams-src')) GE().layers.addSource('webcams-src',{type:'geojson',data:fc()});
+      if(!GE().layers.has('webcams-pt')){
+        GE().layers.add({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
+        GE().events.onLayer('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
+        GE().events.onLayer('mouseenter','webcams-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','webcams-pt',()=>{ GE().render.canvas().style.cursor=''; });
       }
       return true; }catch(_){ return false; } }
     function openCam(f){ _stopRefresh(); const p=f.properties||{}; const nm=String(p.n||'Camera').replace(/[<>]/g,''); const url=String(p.url||''); const kind=String(p.kind||''); const c=f.geometry.coordinates.slice();
@@ -68,7 +69,7 @@ window.IntMapModules.cameras=function(map,HOST){
         +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">'+refreshTxt+srcTxt+'</span>'
         +'<a href="'+IntMapSafe.html(IntMapSafe.url(url||p.video||p.img)||'#')+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Source','ソース','Quelle','Источник','Fuente')+' ↗</a></div>';   /* (#R138 SEC) http(s)-only + escape */
       if(popup) popup.remove();
-      popup=new maplibregl.Popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
+      popup=GE().ui.popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
       try{ popup.on('close',_stopRefresh); }catch(_){}
       /* (#R87) thumbnail → swap the main live image to that view */
       try{ const root=popup.getElement&&popup.getElement(); if(root){ root.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('.wc-thumb'); if(!b) return; const u=b.getAttribute('data-u'); const main=root.querySelector('img.wc-live'); if(main&&u){ main.setAttribute('data-base',u); main.style.display='block'; const off=main.parentNode&&main.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; main.src=u+(u.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); } }); } }catch(_){}
@@ -162,8 +163,8 @@ window.IntMapModules.cameras=function(map,HOST){
         }); }, idx*350);
       });
     }
-    function loadView(force){ if(!on||!map||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=map.getBounds(); }catch(_){ return; }
-      const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=map.getZoom();
+    function loadView(force){ if(!on||!map||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+      const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=GE().camera.getZoom();
       /* skip if the view is already covered AND we haven't zoomed in meaningfully (zoom-in fetches denser cams) */
       if(!force && contains(lastBox,cur) && z<=lastZoom+0.8) return;
       const padLa=Math.max(1.5,(cur[2]-cur[0])*0.25), padLo=Math.max(1.5,(cur[3]-cur[1])*0.25);
@@ -180,13 +181,13 @@ window.IntMapModules.cameras=function(map,HOST){
         try{ if(on) updateLegend(); }catch(_){}
       }).catch(()=>{ fetching=false; try{ if(!Object.keys(camById).length) satToast(LLw('Could not load cameras — try again.','カメラを取得できませんでした。','Kameras konnten nicht geladen werden.','Не удалось загрузить камеры.','No se pudieron cargar las cámaras.')); }catch(_){} });
     }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map&&map.once) map.once('idle',apply); return; }
-      ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map&&map.once) GE().events.once('idle',apply); return; }
+      ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       if(on){ updateLegend(); loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); loadView(true); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
       else { _stopRefresh(); try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    map.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
-    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','visible'); }catch(_){} }); } },80); });
+    GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
+    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','visible'); }catch(_){} }); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-webcams')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-webcams';
       const lab=document.createElement('label'); lab.className='layer-option';

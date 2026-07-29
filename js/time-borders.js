@@ -14,7 +14,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.timeBorders=function(map,HOST){
+window.IntMapModules.timeBorders=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -249,18 +250,18 @@ window.IntMapModules.timeBorders=function(map,HOST){
         const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · historical-basemaps (aourednik)'});
-      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · historical-basemaps (aourednik)'});
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
-      if(!map.getLayer('imtb-fill')) map.addLayer({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
-      if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
+      if(!GE().layers.has('imtb-fill')) GE().layers.add({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
+      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire) → the era
          name, era style. Filtered to _same!=1 (see tagSame). */
-      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!map.getLayer('imtb-lbl2')) map.addLayer({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
+      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!map.__imtbClick){ map.__imtbClick=true;
@@ -275,8 +276,8 @@ window.IntMapModules.timeBorders=function(map,HOST){
              (imtb-lbl / imtb-lbl2) still opens the country as before. */
           const _lyr=(e.features&&e.features[0]&&e.features[0].layer&&e.features[0].layer.id)||'';
           if(_lyr==='imtb-fill'||_lyr==='imtb-line'){
-            try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-              if(specific.length&&e.point&&map.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
+            try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+              if(specific.length&&e.point&&GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
           }
           const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
           /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
@@ -292,7 +293,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
            empty land inside a past country (no name label, no place label there) must NOT force a country-name click
            ("国名でも地名ラベルでもない場所をクリックしたら、強制的に国名をクリックした判定になる"). This mirrors the
            modern map, where clicking bare land opens nothing. The name labels (imtb-lbl / imtb-lbl2) remain clickable. */
-        ['imtb-lbl','imtb-lbl2'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
+        ['imtb-lbl','imtb-lbl2'].forEach(id=>{ GE().events.onLayer('click',id,_clk); GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} }); GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} }); });
       }
       return true; }catch(_){ return false; } }
     /* visibility is owned by `window._applyBorders()`; `applyTheme()` additionally swaps the Carto base to its
@@ -629,8 +630,8 @@ window.IntMapModules.timeBorders=function(map,HOST){
          with the layers missing, and this early return then bypassed ensure() forever — the "年代を変えても歴史的
          国境が表示されない" report (data was being set on a source no layer drew). Layers gone → fall through to
          ensure(), which idempotently recreates them. */
-      try{ const s=map.getSource('imtb-src'); if(s&&map.getLayer('imtb-line')){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
-      if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
+      try{ const s=map.getSource('imtb-src'); if(s&&GE().layers.has('imtb-line')){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls + hard-resolves after
@@ -642,7 +643,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
       try{ const s=map.getSource('imtb-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){}
-      try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }); }catch(_){}
+      try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     async function go(year){ active=true; const my=++seq;
       /* (#R117) 1886–2019 → YEARLY CShapes borders (the year's July-1 state). Falls back to the aourednik
@@ -681,7 +682,7 @@ window.IntMapModules.timeBorders=function(map,HOST){
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
-    map.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
+    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed

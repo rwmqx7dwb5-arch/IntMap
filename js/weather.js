@@ -16,7 +16,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.wind=function(map,HOST){
+window.IntMapModules.wind=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -41,7 +42,7 @@ window.IntMapModules.wind=function(map,HOST){
     /* Globe near-hemisphere mask for the PARTICLES only (the field is masked by MapLibre's own globe
        clipping). Reuses the marker-occlusion dot test; refreshed once per frame. */
     const _view={x:1,y:0,z:0,th:Math.cos(87*R)};
-    function refreshView(){ try{ const c=map.getCenter(), cla=c.lat*R, clo=c.lng*R;
+    function refreshView(){ try{ const c=GE().camera.getCenter(), cla=c.lat*R, clo=c.lng*R;
       _view.x=Math.cos(cla)*Math.cos(clo); _view.y=Math.cos(cla)*Math.sin(clo); _view.z=Math.sin(cla); }catch(_){} }
     function visibleLL(lng,lat){ if(HOST.proj!=='globe') return true;
       const la=lat*R, lo=lng*R, cl=Math.cos(la);
@@ -125,25 +126,25 @@ window.IntMapModules.wind=function(map,HOST){
          mark `_fieldBusy` around it + stamp `_fieldT` so the styledata this remove/add fires can't RE-ENTER and rebuild
          again in a burst — that re-entrant loop, each rebuild re-running the 250 ms opacity fade-in, was the rare "点滅". */
       try{ const url=fieldCanvas.toDataURL(); _fieldBusy=true; _fieldT=Date.now();
-        try{ if(map.getLayer(FIELD_LYR)) map.removeLayer(FIELD_LYR); }catch(_){}
-        try{ if(map.getSource(FIELD_SRC)) map.removeSource(FIELD_SRC); }catch(_){}
-        map.addSource(FIELD_SRC,{type:'image',url:url,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
-        map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':(on?fieldOpacity:0),'raster-opacity-transition':{duration:250},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
+        try{ if(GE().layers.has(FIELD_LYR)) GE().layers.remove(FIELD_LYR); }catch(_){}
+        try{ if(GE().layers.hasSource(FIELD_SRC)) GE().layers.removeSource(FIELD_SRC); }catch(_){}
+        GE().layers.addSource(FIELD_SRC,{type:'image',url:url,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
+        GE().layers.add({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':(on?fieldOpacity:0),'raster-opacity-transition':{duration:250},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
       }catch(_){}
       finally{ setTimeout(()=>{ _fieldBusy=false; },30); }
     }
-    function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
+    function firstSymbolId(){ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     const BLANK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
     function ensureFieldLayer(){
       if(!_imCanDraw()) return false;
-      if(!map.getSource(FIELD_SRC)){
-        try{ map.addSource(FIELD_SRC,{type:'image',url:BLANK,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
-          map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':0,'raster-opacity-transition':{duration:350},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
+      if(!GE().layers.hasSource(FIELD_SRC)){
+        try{ GE().layers.addSource(FIELD_SRC,{type:'image',url:BLANK,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
+          GE().layers.add({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':0,'raster-opacity-transition':{duration:350},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
         }catch(e){ return false; }
       }
       return true;
     }
-    function showField(v){ try{ if(map.getLayer(FIELD_LYR)) map.setPaintProperty(FIELD_LYR,'raster-opacity', v?fieldOpacity:0); }catch(_){} }
+    function showField(v){ try{ if(GE().layers.has(FIELD_LYR)) GE().layers.setPaint(FIELD_LYR,'raster-opacity', v?fieldOpacity:0); }catch(_){} }
     function setFieldOpacity(o){ fieldOpacity=Math.max(0,Math.min(1,+o||0)); if(on) showField(true); }
     /* (#R8c) Persistent pill stating WHICH hour of GFS data is on screen (the user asked to see the
        valid time). Open-Meteo returns the analysis time in GMT; show it in the user's timezone. */
@@ -162,16 +163,16 @@ window.IntMapModules.wind=function(map,HOST){
        debounce collapses a styledata BURST (theme swap, other layer toggles, the field's own add/remove) into a
        single rebuild, so the field can't rapidly re-fade ("Wind(animated)が点滅するバグがまれに発生"). A genuine
        later style reload still lands (they are seconds apart). */
-    if(map) map.on('styledata',()=>{ if(!on||_fieldBusy) return;
+    if(map) GE().events.on('styledata',()=>{ if(!on||_fieldBusy) return;
       /* debounce ONLY while the field is still present (a burst); if a real style reload actually dropped it, rebuild
          immediately so it can never get stuck missing. */
-      let present=false; try{ present=!!(map.getSource(FIELD_SRC)&&map.getLayer(FIELD_LYR)); }catch(_){}
+      let present=false; try{ present=!!(GE().layers.hasSource(FIELD_SRC)&&GE().layers.has(FIELD_LYR)); }catch(_){}
       if(present&&(Date.now()-_fieldT<500)) return;
       setTimeout(()=>{ if(on&&!_fieldBusy&&ensureFieldLayer()){ if(grid||fieldReady) renderFieldImage(); showField(true); } },60); });
     /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
        visible area at any zoom). */
     function spawn(p){
-      let b; try{ b=map.getBounds(); }catch(_){ b=null; }
+      let b; try{ b=GE().camera.getBounds(); }catch(_){ b=null; }
       /* (#R7) FIX: the old `-grid?grid.lat0:85` parsed as `(-grid)?…:85` → NaN → 85, so every particle
          was seeded at lat ≥72° ABOVE the wind grid, where sample() returns null and the particle
          instantly respawns — the whole field rendered nothing. Clamp the seed band into the grid. */
@@ -200,7 +201,7 @@ window.IntMapModules.wind=function(map,HOST){
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
       else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
       ctx.lineCap='round';
-      let z=2; try{ z=map.getZoom(); }catch(_){}
+      let z=2; try{ z=GE().camera.getZoom(); }catch(_){}
       const sc=Math.pow(2,z);
       for(const p of parts){
         if(p.lng==null){ spawn(p); continue; }
@@ -209,14 +210,14 @@ window.IntMapModules.wind=function(map,HOST){
         const w=sample(p.lng,p.lat);
         if(!w){ spawn(p); continue; }
         const sp=Math.hypot(w[0],w[1]);
-        const s0=map.project([p.lng,p.lat]);
+        const s0=GE().coords.project([p.lng,p.lat]);
         if(!onScreen(s0)){ if(++p.age>p.life) spawn(p); else p.age++; continue; }
         const cosLat=Math.max(0.15,Math.cos(p.lat*R));
         const mPerPx=156543.03*cosLat/sc, dt=0.05*mPerPx;   /* (#R8b) calmer still (was 0.066) */
         p.lng += (w[0]*dt)/(111320*cosLat);
         p.lat += (w[1]*dt)/110540;
         if(p.lng>180) p.lng-=360; else if(p.lng<-180) p.lng+=360;
-        const s1=map.project([p.lng,p.lat]);
+        const s1=GE().coords.project([p.lng,p.lat]);
         if(p.age<p.life && onScreen(s1)){
           const a=0.6+Math.min(0.38,sp/40); ctx.lineWidth=1.0+Math.min(1.0,sp/28);
           ctx.strokeStyle='rgba(255,255,255,'+a.toFixed(2)+')'; ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(s1.x,s1.y); ctx.stroke();
@@ -231,21 +232,22 @@ window.IntMapModules.wind=function(map,HOST){
          色がつかない"). Retry for ~16 s AND hook the map's next idle, so the field paints as soon as the style is
          ready however the timing falls. renderFieldImage() itself rebuilds the source, so it can't silently no-op. */
       fetchGrid().then(()=>{ if(grid){ let n=0; const tryField=()=>{ if(!on) return; if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if(n++<80) setTimeout(tryField,200); }; tryField();
-        try{ map.once('idle',()=>{ if(on&&grid&&ensureFieldLayer()){ renderFieldImage(); showField(true); } }); }catch(_){} } updateTimePill(); });
+        try{ GE().events.once('idle',()=>{ if(on&&grid&&ensureFieldLayer()){ renderFieldImage(); showField(true); } }); }catch(_){} } updateTimePill(); });
       cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
     function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); updateTimePill(); }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
-    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
+    if(map){ GE().events.on('movestart',()=>{ moving=true; }); GE().events.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid, setOpacity:setFieldOpacity,
       sampleAt:(lng,lat)=>{ const w=sample(lng,lat); if(!w) return null; return { speed:Math.hypot(w[0],w[1]), dir:(Math.atan2(-w[0],-w[1])/R+360)%360, time:gridTime }; },
       dataTime:()=>gridTime,
-      _dbg:()=>{ let hasSrc=false,hasLyr=false,op=null; try{ hasSrc=!!map.getSource(FIELD_SRC); }catch(_){}
-        try{ hasLyr=!!map.getLayer(FIELD_LYR); if(hasLyr) op=map.getPaintProperty(FIELD_LYR,'raster-opacity'); }catch(_){}
-        return { on, gridPts: grid?grid.u.length:0, gridStep: grid?grid.STEP:null, fieldReady, hasSrc, hasLyr, rasterOpacity:op, parts:parts.length, styleLoaded:(()=>{try{return map.isStyleLoaded();}catch(_){return null;}})() }; } };
+      _dbg:()=>{ let hasSrc=false,hasLyr=false,op=null; try{ hasSrc=!!GE().layers.hasSource(FIELD_SRC); }catch(_){}
+        try{ hasLyr=!!GE().layers.has(FIELD_LYR); if(hasLyr) op=GE().layers.getPaint(FIELD_LYR,'raster-opacity'); }catch(_){}
+        return { on, gridPts: grid?grid.u.length:0, gridStep: grid?grid.STEP:null, fieldReady, hasSrc, hasLyr, rasterOpacity:op, parts:parts.length, styleLoaded:(()=>{try{return GE().ready();}catch(_){return null;}})() }; } };
   })();
 };
 
-window.IntMapModules.weatherEC=function(map,HOST){
+window.IntMapModules.weatherEC=function(map,HOST){
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -289,8 +291,8 @@ window.IntMapModules.weatherEC=function(map,HOST){
         s.onload=()=>{ sdk=window.OMWeatherMapLayer; sdk?res(sdk):rej(new Error('SDK global missing')); };
         s.onerror=()=>rej(new Error('SDK load failed')); document.head.appendChild(s); });
       return sdkLoading; }
-    function registerProto(){ if(protoReg||!sdk||!sdk.omProtocol) return protoReg; try{ maplibregl.addProtocol('om', sdk.omProtocol); protoReg=true; }catch(_){ protoReg=true; /* already added */ } return protoReg; }
-    function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
+    function registerProto(){ if(protoReg||!sdk||!sdk.omProtocol) return protoReg; try{ GE().scene.addProtocol('om', sdk.omProtocol); protoReg=true; }catch(_){ protoReg=true; /* already added */ } return protoReg; }
+    function firstSymbolId(){ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     function fetchMeta(){ return fetch(BASE).then(r=>r.json()).then(j=>{
       /* (#R17) The ECMWF feed publishes FORECAST steps into the future; the user doesn't want the slider to
          scrub past "now". Keep only valid-times up to the current hour (+1 h grace). */
@@ -303,29 +305,29 @@ window.IntMapModules.weatherEC=function(map,HOST){
       const sid=cfg.id+'-src'; const before=firstSymbolId();
       try{
         if(cfg.type==='isobars'){
-          if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable)});
-          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
-          if(!map.getLayer(cfg.id+'-lbl')) map.addLayer({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:omUrl(cfg.variable)});
+          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
+          if(!GE().layers.has(cfg.id+'-lbl')) GE().layers.add({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
           /* Wind directional barbs (vector 'wind-arrows' layer; needs &arrows=true). Color darkens with speed. */
-          if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable,'&arrows=true')});
-          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:omUrl(cfg.variable,'&arrows=true')});
+          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
-          if(!map.getSource(sid)) map.addSource(sid,{type:'raster',url:omUrl(cfg.variable),maxzoom:12});
-          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-fade-duration':0}},before);
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:omUrl(cfg.variable),maxzoom:12});
+          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-fade-duration':0}},before);
         }
         return true;
       }catch(e){ try{ console.warn('ECMWF add fail',cfg.id,e); }catch(_){} return false; }
     }
-    function removeLayer(cfg){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.removeLayer(l); }catch(_){} }); try{ if(map.getSource(cfg.id+'-src')) map.removeSource(cfg.id+'-src'); }catch(_){} }
-    function setVis(cfg,on){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} }); }
-    function setOp(cfg,op){ try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'line-opacity',op); } else if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'raster-opacity',op); }catch(_){} }
+    function removeLayer(cfg){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} }); try{ if(GE().layers.hasSource(cfg.id+'-src')) GE().layers.removeSource(cfg.id+'-src'); }catch(_){} }
+    function setVis(cfg,on){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
+    function setOp(cfg,op){ try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(cfg.id)) GE().layers.setPaint(cfg.id,'line-opacity',op); } else if(GE().layers.has(cfg.id)) GE().layers.setPaint(cfg.id,'raster-opacity',op); }catch(_){} }
     /* Public toggle API (the brief asked for toggleWeatherLayer(layerId, visible)). */
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
       try{ ensureTimeLegend(); syncTimeLegend(); }catch(_){}   /* (#R15c) show the time legend while any ECMWF layer is on */
       loadSDK().then(()=>{ if(!registerProto()) return;
-        const go=()=>{ if(!_imCanDraw()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
+        const go=()=>{ if(!_imCanDraw()){ GE().events.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
       }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} try{ state[id].on=false; }catch(_){}   /* (#R154) also clear the STATE, not just the checkbox — otherwise the on('styledata') re-attach + applyTime re-show a layer whose box is OFF after a load failure */ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
     }
@@ -336,7 +338,7 @@ window.IntMapModules.weatherEC=function(map,HOST){
     function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(jp()?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
     function updateTimeLabel(){ const el=document.getElementById('ec-validtime'); if(el) el.textContent=(jp()?'ECMWF 有効時刻: ':'ECMWF valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=document.getElementById('ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
     /* re-attach after a style swap */
-    map.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!_imCanDraw())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
+    GE().events.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!_imCanDraw())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:260px;max-height:78vh;overflow-y:auto;';
       const rows=LAYERS.map(l=>'<div class="lyr-row'+(state[l.id].on?' on':'')+'" style="margin:2px 0;"><label class="layer-option" style="display:flex;align-items:center;gap:7px;"><input type="checkbox" id="'+l.id+'-cb"'+(state[l.id].on?' checked':'')+'> <span>'+ecLbl(l)+'</span></label><input type="range" class="ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'" style="width:100%;accent-color:var(--primary-color);'+(state[l.id].on?'':'display:none;')+'"></div>').join('');
@@ -398,6 +400,7 @@ window.IntMapModules.weatherEC=function(map,HOST){
 };
 
 window.IntMapModules.weatherPanel=function(map,HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t, fmtTemp=HOST.fmtTemp;
   window.IntMapWeather=(function(){
