@@ -24,6 +24,27 @@ const boot = async page => {
   await page.waitForTimeout(1500);
 };
 
+/* The Carto style segment the VISIBLE base layer is drawing from — 'light_nolabels' at boot, or its
+   dark/labelled sibling. Read off the live style rather than assumed, because it is the only thing
+   that says which of the many Carto requests on the wire belong to the map: the layer panel's
+   preview thumbnails (js/layer-previews.js) fetch `light_all@2x` and `dark_all@2x` of their own
+   accord, at any display density, and a URL-shaped guess counts those as base-map traffic. */
+const baseStyleSegment = page => page.evaluate(() => {
+  try {
+    const m = window.__imap, st = m.getStyle();
+    for (const id of ['layer-light-nl', 'layer-dark-nl', 'layer-light', 'layer-dark']) {
+      const lyr = (st.layers || []).find(l => l.id === id);
+      if (!lyr) continue;
+      const vis = (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none';
+      if (!vis) continue;
+      const t = ((st.sources[lyr.source] || {}).tiles || [])[0] || '';
+      const mm = /cartocdn\.com\/([^/]+)\//.exec(t);
+      if (mm) return mm[1];
+    }
+    return null;
+  } catch (_) { return null; }
+});
+
 /* ── the base map at double density ───────────────────────────────────────────────────────── */
 test.describe('on a 2× display', () => {
   test.use({ deviceScaleFactor: 2 });
@@ -31,11 +52,19 @@ test.describe('on a 2× display', () => {
   test('the base map asks for @2x tiles, and they really are 512 px (#R179)', async ({ page }) => {
     test.setTimeout(180000);
     const carto = [];
-    page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\/(light|dark)_(all|nolabels)\//.test(u)) carto.push(u); });
+    page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
     await boot(page);
-    expect(carto.length, 'the base map is loading tiles at all').toBeGreaterThan(3);
-    const at2x = carto.filter(u => /@2x\.png/.test(u));
-    expect(at2x.length, 'and every one of them is the double-density tile').toBe(carto.length);
+    /* WHICH Carto requests belong to the live base map is asked of the STYLE, not guessed from the
+       URL. Guessing cost a CI failure: js/layer-previews.js has always fetched `light_all@2x` and
+       `dark_all@2x` thumbnails for the layer panel — independently of any display — so a filter
+       written as "(light|dark)_(all|nolabels)" counts those too and reports @2x traffic on a 1×
+       screen that the map never asked for. The visible base source names its own style, so use it. */
+    const seg = await baseStyleSegment(page);
+    expect(seg, 'the live base map names its style').toBeTruthy();
+    const mine = carto.filter(u => u.includes('/' + seg + '/'));
+    expect(mine.length, 'the base map is loading tiles at all').toBeGreaterThan(3);
+    const at2x = mine.filter(u => /@2x\.png/.test(u));
+    expect(at2x.length, 'and every one of them is the double-density tile').toBe(mine.length);
     /* …and the service really serves 512 px for it. Asserted against LIVE Carto rather than trusted:
        a URL that 404s or silently returns 256 would leave the map looking exactly as it did, which is
        the shape of failure #R162 recorded (a feature vanishing in silence). */
@@ -94,11 +123,14 @@ test.describe('on a 1× display', () => {
   test('a 1× screen pays nothing for either @2x path (#R179)', async ({ page }) => {
     test.setTimeout(180000);
     const carto = [];
-    page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\/(light|dark)_(all|nolabels)\//.test(u)) carto.push(u); });
+    page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
     await boot(page);
-    expect(carto.length, 'the base map is loading tiles').toBeGreaterThan(3);
-    expect(carto.filter(u => /@2x/.test(u)).length,
-      'no @2x tile is requested — spending bandwidth on detail the screen cannot show is pure loss').toBe(0);
+    const seg = await baseStyleSegment(page);
+    expect(seg, 'the live base map names its style').toBeTruthy();
+    const mine = carto.filter(u => u.includes('/' + seg + '/'));
+    expect(mine.length, 'the base map is loading tiles').toBeGreaterThan(3);
+    expect(mine.filter(u => /@2x/.test(u)).length,
+      'no @2x tile is requested for the MAP — spending bandwidth on detail the screen cannot show is pure loss').toBe(0);
     const r = await page.evaluate(() => ({
       decision: window.__imHiDPITiles,
       satAgrees: window.IntMapSatProto ? window.IntMapSatProto.hiDPI() : null,

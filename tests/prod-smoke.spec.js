@@ -321,19 +321,38 @@ test('(#R179) prod base map serves the pixels the display asks for', async ({ br
     const ctx = await browser.newContext({ deviceScaleFactor: dsf });
     const p2 = await ctx.newPage();
     const carto = [];
-    p2.on('request', (rq) => { const u = rq.url();
-      if (/basemaps\.cartocdn\.com\/(light|dark)_(all|nolabels)\//.test(u)) carto.push(u); });
+    p2.on('request', (rq) => { const u = rq.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
     try {
       await p2.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       await p2.waitForFunction(() => !!window.__imap, null, { timeout: 60_000 });
       await p2.waitForTimeout(4000);
       const decision = await p2.evaluate(() => window.__imHiDPITiles);
       expect(decision, `the one HiDPI decision at dpr ${dsf}`).toBe(dsf >= 1.5);
-      expect(carto.length, `the live base map loaded tiles at dpr ${dsf}`).toBeGreaterThan(3);
-      const at2x = carto.filter((u) => /@2x\.png/.test(u)).length;
-      if (dsf >= 1.5) expect(at2x, 'every base-map tile is double-density on a 2x display').toBe(carto.length);
+      /* WHICH Carto requests are the map's is asked of the live style. The layer panel's preview
+         thumbnails (js/layer-previews.js) fetch `light_all@2x` / `dark_all@2x` of their own accord at
+         any density, so a URL-shaped guess reports @2x traffic on a 1× screen that the map never
+         asked for — measured as a CI failure before this was derived instead of assumed. */
+      const seg = await p2.evaluate(() => {
+        try {
+          const m = window.__imap, st = m.getStyle();
+          for (const id of ['layer-light-nl', 'layer-dark-nl', 'layer-light', 'layer-dark']) {
+            const lyr = (st.layers || []).find((l) => l.id === id);
+            if (!lyr) continue;
+            if (((m.getLayoutProperty(id, 'visibility') || 'visible')) === 'none') continue;
+            const t = ((st.sources[lyr.source] || {}).tiles || [])[0] || '';
+            const mm = /cartocdn\.com\/([^/]+)\//.exec(t);
+            if (mm) return mm[1];
+          }
+          return null;
+        } catch (_) { return null; }
+      });
+      expect(seg, 'the live base map names its style').toBeTruthy();
+      const mine = carto.filter((u) => u.includes('/' + seg + '/'));
+      expect(mine.length, `the live base map loaded tiles at dpr ${dsf}`).toBeGreaterThan(3);
+      const at2x = mine.filter((u) => /@2x\.png/.test(u)).length;
+      if (dsf >= 1.5) expect(at2x, 'every base-map tile is double-density on a 2x display').toBe(mine.length);
       else expect(at2x, 'and a 1x display pays for none of it').toBe(0);
-      console.log(`[prod-smoke] dpr ${dsf} · base-map tiles ${carto.length} · @2x ${at2x}`);
+      console.log(`[prod-smoke] dpr ${dsf} · style ${seg} · base-map tiles ${mine.length} · @2x ${at2x}`);
     } finally { await ctx.close(); }
   }
 });
