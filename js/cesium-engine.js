@@ -191,6 +191,16 @@ window.IntMapCesiumEngine=(function(){
       scene.preRender.addEventListener(tick);
 
       this._wireEvents();
+      /* ══ (#R182) THE GESTURES ARE MAPLIBRE'S, NOT CESIUM'S ═══════════════════════
+         Cesium's own ScreenSpaceCameraController is a different navigation model
+         (left-drag spins the globe about its centre, right-drag zooms, middle-drag
+         tilts) and six of the eight gestures the contract names had no binding at
+         all here. js/cesium-input.js switches that controller off and drives this
+         view's setCamera from MapLibre's own handler arithmetic instead. It is a
+         separate file because it is a transcription of another library's behaviour
+         and has to be readable as one. */
+      this._input=(window.IntMapCesiumInput&&window.IntMapCesiumInput.attach)
+        ? window.IntMapCesiumInput.attach(this,Cesium) : null;
       if(o.center) this.setCamera({ center:o.center, zoom:(o.zoom==null?1.7:o.zoom), bearing:o.bearing||0, pitch:o.pitch||0 });
       if(o.style) this.setStyle(o.style);
       /* 'load' once the first frame with the initial style is on screen — the same
@@ -260,7 +270,7 @@ window.IntMapCesiumEngine=(function(){
        build, jumpTo({pitch:55, bearing:30}) at z9 read back 54.03° and 29.66°, and the error
        grows with the look distance — at low zoom it is tens of degrees.
        So invert the exact expression setCamera() uses. With the offset taken in the CENTRE's
-       east-north-up frame, `orbitPosition` puts the eye at
+       east-north-up frame, `Camera.lookAt(target, HeadingPitchRange)` puts the eye at
            E = −range·sin(pitch)·sin(heading)
            N = −range·sin(pitch)·cos(heading)
            U =  range·cos(pitch)
@@ -329,7 +339,18 @@ window.IntMapCesiumEngine=(function(){
     getPitch(){ const h=this._hpr(); return h?h.pitch:0; }
     getRoll(){ try{ return Cesium.Math.toDegrees(this._camera.roll); }catch(_){ return 0; } }
 
-    setCamera(cam,animate){
+    /* (#R182) `opts.silent` — a GESTURE frame, not a camera command. A drag is one
+       movestart…moveend however many frames it takes, so js/cesium-input.js drives
+       that lifecycle itself and asks setCamera not to announce each frame as a
+       complete move; 19 subscribers of `moveend` do real work (layer reconcile,
+       news refresh, the shared #v= URL) and none of them should run 60 times a
+       second. Everything else about the call is unchanged, `_afterMove` included. */
+    setCamera(cam,animate,opts){
+      /* (#R182) A PROGRAMMATIC CAMERA COMMAND ENDS A GESTURE'S GLIDE. MapLibre's
+         jumpTo/easeTo/flyTo all begin with `stop()`, which cancels handler inertia —
+         without it a fling that is still gliding keeps writing the camera on top of
+         wherever the caller just asked to go, and the caller silently loses. */
+      if(!(opts&&opts.silent)&&this._input) try{ this._input.cancel(); }catch(_){}
       const now={ center:this.getCenter(), zoom:this.getZoom(), bearing:this.getBearing(), pitch:this.getPitch() };
       const c=cam.center!=null?normLngLat(cam.center):now.center;
       let zoom=(cam.zoom==null?now.zoom:cam.zoom);
@@ -337,7 +358,18 @@ window.IntMapCesiumEngine=(function(){
       let pitch=(cam.pitch==null?now.pitch:cam.pitch);
       pitch=Math.max(this._minPitch,Math.min(this._maxPitch,pitch));
       const bearing=(cam.bearing==null?now.bearing:cam.bearing);
-      const range=Math.max(1,this.rangeFor(c.lat,zoom));
+      /* ══ (#R182) `around` — THE POINT THE ZOOM IS ANCHORED TO ═══════════════════════════
+         MapLibre's easeTo takes it and holds that location at the pixel it already occupies.
+         This adapter used to drop it on the floor (`camOf` never listed it), and two call
+         sites pass it: the app's own double-click/double-tap zoom and its custom pinch —
+         both of which exist precisely to zoom TOWARD THE CURSOR (#R20:「カーソル地点へと
+         ズームされるというUXがなくなってしまった」). Without it they zoomed to the centre.
+         The pixel is read BEFORE anything moves, and the centre is then solved so the same
+         ground point lands back on it. */
+      const around=(cam.around!=null)?normLngLat(cam.around):null;
+      let aroundPx=null;
+      if(around){ const p=this.project(around);
+        if(p&&p.x>=0&&p.y>=0&&isFinite(p.x)&&isFinite(p.y)) aroundPx=p; }
       /* the look-at point sits ON the terrain when there is terrain, so a tilted
          close-up over a mountain frames the mountain and not the ellipsoid under it.
          WITH NO TERRAIN THE HEIGHT IS ZERO BY DEFINITION and must not be asked for:
@@ -347,36 +379,112 @@ window.IntMapCesiumEngine=(function(){
          because the target had been placed on that sag. The same mistake as reading the
          centre off the mesh (see _centreCarto): a tessellation approximates the surface,
          it is not the surface. */
-      let h=0;
-      if(this._terrainSpec){ try{ const cc=Cesium.Cartographic.fromDegrees(c.lng,c.lat);
-        const g=this._globe.getHeight(cc); if(isFinite(g)) h=g; }catch(_){} }
-      const target=Cesium.Cartesian3.fromDegrees(c.lng,c.lat,h);
-      const hpr=new Cesium.HeadingPitchRange(Cesium.Math.toRadians(bearing),Cesium.Math.toRadians(pitch-90),range);
+      const at={ lng:c.lng, lat:c.lat };
+      const build=()=>{
+        let h=0;
+        if(this._terrainSpec){ try{ const cc=Cesium.Cartographic.fromDegrees(at.lng,at.lat);
+          const g=this._globe.getHeight(cc); if(isFinite(g)) h=g; }catch(_){} }
+        const range=Math.max(1,this.rangeFor(at.lat,zoom));
+        return { h, range, target:Cesium.Cartesian3.fromDegrees(at.lng,at.lat,h),
+                 hpr:new Cesium.HeadingPitchRange(Cesium.Math.toRadians(bearing),
+                                                  Cesium.Math.toRadians(pitch-90),range) };
+      };
+      let S=build();
+      /* aim, and — when an anchor was given — nudge the centre until the anchor is back
+         under its own pixel. The map's response to a centre shift is the identity to first
+         order, so this contracts in two or three passes. */
+      const solve=()=>{
+        this._aimAt(S.target,S.hpr,bearing,pitch,S.range,cam.roll);
+        if(!aroundPx) return;
+        for(let i=0;i<4;i++){
+          const cur=this._pickLngLat(aroundPx);
+          if(!cur) break;
+          const dLng=wrapLng(around.lng-cur.lng), dLat=around.lat-cur.lat;
+          if(Math.abs(dLng)<1e-9&&Math.abs(dLat)<1e-9) break;
+          at.lng=wrapLng(at.lng+dLng);
+          at.lat=Math.max(-89.9,Math.min(89.9,at.lat+dLat));
+          S=build();
+          this._aimAt(S.target,S.hpr,bearing,pitch,S.range,cam.roll);
+        }
+      };
       const fire=()=>{ this._afterMove(); };
       if(animate&&animate.duration>0){
-        /* Cesium's flyTo takes a destination, not an orbit, so the orbit is solved
-           here and handed over as a position + orientation. Same arithmetic as the
-           instant path — one transcription, two callers. */
-        const dest=orbitPosition(target,hpr);
+        /* ══ (#R182) "SAME ARITHMETIC, TWO CALLERS" WAS THE INTENTION, NOT THE CODE ═══════
+           This branch used to hand `flyTo` the ORBIT angles — `orientation:{heading, pitch}`
+           straight out of the HeadingPitchRange — and those are not the angles Cesium means
+           by that field. Cesium's orientation is the camera's own attitude in the local frame
+           AT THE DESTINATION; the orbit pitch is the angle subtended at the TARGET. They
+           coincide only when the two are the same point, i.e. never. Measured, asking for
+           centre 12,25 z4 by easeTo and reading back what arrived:
+
+               asked                 jumpTo (exact)            easeTo (this branch)
+               p0  b0                12.00,25.00 b0    p0      12.00,24.95 b−180 p0.1
+               p0  b45               12.00,25.00 b45   p0      12.00,24.95 b−180 p0.1
+               p30 b0                12.00,25.00 b0    p30     12.00,40.03 b0    p57.9
+               p60 b0                12.00,25.00 b0    p60     12.00,−0.38 b0    p0.0
+
+           — the centre 15° to 25° of latitude away, the pitch doubled or flattened, and at
+           pitch 0 the bearing thrown away entirely (the #R181 defect, in the other path: an
+           orbit that is vertical cannot carry a heading, and `flyTo` recovers the attitude
+           the same way `lookAtTransform` does). MapLibre lands on the asked-for camera to the
+           second decimal in all six cases. Every animated move in the app goes through here —
+           search results, Atlas commands, the zoom buttons, fitBounds with a duration.
+
+           So SOLVE the destination with the instant path, which is exact and already carries
+           `_faceHeading`, read the camera it produced, put the camera back, and fly to that.
+           Position and attitude both come from the one solve; `direction`/`up` is an
+           orientation form `flyTo` accepts, and it cannot be misread because it is not an
+           angular convention at all. */
+        const keep=this._readPose();
+        solve();
+        const dest=this._readPose();
+        this._writePose(keep);
         this.fire('movestart',{}); this.fire('zoomstart',{});
-        this._camera.flyTo({ destination:dest,
-          orientation:{ heading:hpr.heading, pitch:hpr.pitch, roll:Cesium.Math.toRadians(cam.roll||0) },
+        this._camera.flyTo({ destination:dest.pos, orientation:{ direction:dest.dir, up:dest.up },
           duration:Math.max(0.1,animate.duration/1000),
           easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
-          complete:()=>{ this._settle(c,zoom,pitch,bearing,h); fire(); this.fire('moveend',{}); this.fire('zoomend',{}); },
+          /* …AND LAND ON THE SOLVE, NOT ON THE FLIGHT'S OWN LAST FRAME. `flyTo` converts
+             direction/up back into heading/pitch/roll internally, which is degenerate when
+             the camera looks straight down — measured, the one remaining case after the
+             repair above was pitch 0, which arrived 0.1° off nadir and therefore with a
+             bearing of 112.6° instead of the 45° asked for. The flight is an ANIMATION; the
+             destination is defined by the instant solve, so re-assert it on arrival. */
+          complete:()=>{ this._aimAt(S.target,S.hpr,bearing,pitch,S.range,cam.roll);
+                         this._settle(at,zoom,pitch,bearing,S.h); fire();
+                         this._scene.requestRender();
+                         this.fire('moveend',{}); this.fire('zoomend',{}); },
           cancel:()=>{ fire(); this.fire('moveend',{}); } });
         return;
       }
+      solve();
+      this._settle(at,zoom,pitch,bearing,S.h);
+      this._scene.requestRender();
+      fire();
+      if(!(opts&&opts.silent)){ this.fire('move',{}); this.fire('moveend',{}); }
+    }
+
+    /* (#R182) THE SOLVE ITSELF, once — put the eye on the orbit and aim it at the target.
+       Three callers now: the instant path, the destination the animated path flies TO, and
+       the re-assert when that flight arrives. Splitting it out is what makes "same
+       arithmetic, two callers" a fact rather than a comment. */
+    _aimAt(target,hpr,bearing,pitch,range,roll){
       this._camera.lookAt(target,hpr);
       this._camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
       this._faceHeading(bearing,pitch,range);
-      this._settle(c,zoom,pitch,bearing,h);
-      if(cam.roll!=null&&isFinite(cam.roll)){
-        try{ this._camera.setView({ orientation:{ heading:this._camera.heading, pitch:this._camera.pitch, roll:Cesium.Math.toRadians(cam.roll) } }); }catch(_){}
+      if(roll!=null&&isFinite(roll)){
+        try{ this._camera.setView({ orientation:{ heading:this._camera.heading, pitch:this._camera.pitch,
+                                                  roll:Cesium.Math.toRadians(roll) } }); }catch(_){}
       }
-      this._scene.requestRender();
-      fire();
-      this.fire('move',{}); this.fire('moveend',{});
+    }
+    /* position + attitude as three world vectors — an orientation form that carries no
+       angular convention, and therefore cannot be read back as a different question */
+    _readPose(){
+      return { pos:Cesium.Cartesian3.clone(this._camera.positionWC,new Cesium.Cartesian3()),
+               dir:Cesium.Cartesian3.clone(this._camera.directionWC,new Cesium.Cartesian3()),
+               up:Cesium.Cartesian3.clone(this._camera.upWC,new Cesium.Cartesian3()) };
+    }
+    _writePose(p){
+      try{ this._camera.setView({ destination:p.pos, orientation:{ direction:p.dir, up:p.up } }); }catch(_){}
     }
 
     /* ══ (#R181) …AND THE ORBIT CANNOT CARRY THE HEADING WHEN IT IS VERTICAL ═══════════════
@@ -819,6 +927,11 @@ window.IntMapCesiumEngine=(function(){
     once(name,fn){ const w=(e)=>{ this.off(name,w); fn(e); }; return this.on(name,w); }
     fire(name,ev){ const a=this._handlers[name]; if(!a||!a.length) return;
       for(const fn of a.slice()){ try{ fn(ev||{}); }catch(_){} } }
+    /* (#R182) `map.listens(name)` — MapLibre's own question, and js/cesium-input.js asks it
+       for the same reason MapLibre does: the browser context menu is suppressed whenever the
+       app is listening for `contextmenu`, because otherwise the menu opens on top of a
+       right-drag rotate and eats every event after it. */
+    listens(name){ const a=this._handlers[name]; return !!(a&&a.length); }
     onLayer(type,layerId,fn){ this._layerHandlers.push({type,layerId,fn}); }
     offLayer(type,layerId,fn){ this._layerHandlers=this._layerHandlers.filter(h=>!(h.type===type&&h.layerId===layerId&&h.fn===fn)); }
 
@@ -888,6 +1001,19 @@ window.IntMapCesiumEngine=(function(){
         const t=(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e;
         return { x:(t.clientX||0)-r.left, y:(t.clientY||0)-r.top }; };
       const domDispatch=(name)=>(e)=>{
+        /* ══ (#R182) A RIGHT-DRAG THAT ROTATED IS NOT A RIGHT-CLICK ═══════════════════════
+           MapLibre does not raise the map's `contextmenu` event after a drag: its
+           BlockableMapEventHandler.reset() sets `_ignoreContextMenu` the moment a gesture
+           takes over, so the event that arrives on release is swallowed. This engine raised
+           it every time — and the app opens its own `#ctx-menu` panel on it, WHICH THEN SITS
+           OVER THE CANVAS. Measured: after one right-drag rotate, the next wheel and the next
+           ctrl-drag hit the menu instead of the map and did nothing at all. The browser's own
+           menu is still suppressed; what is skipped is telling the app a click happened. */
+        if(name==='contextmenu'&&this._ateContextMenu){
+          this._ateContextMenu=false;
+          try{ e.preventDefault(); }catch(_){}
+          return;
+        }
         const pos=rel(e);
         const ev=domEv(name,e,pos);
         this.fire(name,ev);
@@ -971,6 +1097,17 @@ window.IntMapCesiumEngine=(function(){
       this._camera.changed.raiseEventOnCameraChange=true;
       this._camera.percentageChanged=0.02;
       const onChanged=()=>{
+        /* (#R182) …unless a GESTURE owns the camera. js/cesium-input.js fires one
+           movestart…moveend for the whole gesture including its glide, which is what
+           MapLibre means by them; letting this stream run as well would announce
+           every frame of a drag as a separate move that also ended.
+           The grace period after it lets go is not belt-and-braces: Cesium raises
+           `changed` from postRender, i.e. AFTER the frame that moved — so the last
+           frame of a gesture is announced once the flag is already down, and the whole
+           movestart…moveend pair arrives again as an echo. Measured on a throttled
+           machine at 3 Hz, that echo landed 330 ms after the glide finished. */
+        if(this._inputActive) return;
+        if(this._inputTouched&&(Date.now()-this._inputTouched)<500) return;
         if(!moving){ moving=true; this.fire('movestart',{}); this.fire('dragstart',{}); }
         this.fire('move',{}); this.fire('zoom',{});
         angles();
@@ -1153,9 +1290,89 @@ window.IntMapCesiumEngine=(function(){
     getCanvasContainer(){ return this._widget.canvas&&this._widget.canvas.parentNode; }
     isStyleLoaded(){ return this._loaded&&this._styleParsed; }
     styleParsed(){ return this._styleParsed; }
-    isEasing(){ try{ return !!this._camera._currentFlight; }catch(_){ return false; } }
-    stop(){ try{ this._camera.cancelFlight(); }catch(_){} }
+    /* (#R182) …and an inertial glide is an ease too. NOT a drag: the contract's
+       `isAnimating()` exists to tell a gesture apart from a programmatic flight
+       (js/geo-engine.js), which is also what MapLibre's isEasing() answers — true
+       while the fling coasts, false while the finger is down. */
+    isEasing(){ try{ return !!this._camera._currentFlight||!!(this._input&&this._input.isEasing()); }catch(_){ return false; } }
+    stop(){ try{ this._camera.cancelFlight(); }catch(_){}
+            try{ if(this._input) this._input.cancel(); }catch(_){} }
+    /* (#R182) the eight gesture names now reach handlers that implement them, rather
+       than Cesium's four enable flags — three of which had no counterpart at all
+       (`keyboard`, `doubleClickZoom`, `boxZoom` were recorded and ignored) and two
+       of which shared one flag, so turning the pinch off also killed the wheel. */
+    cameraForBounds(b,o){ const v=this; if(!b) return null;
+      const bb=normBounds(b); if(!bb) return null;
+      const pad=(o&&o.padding)||0, padN=(typeof pad==='number')?pad:0;
+      const W=Math.max(1,v._canvasW()-2*padN), H=Math.max(1,v._canvasH()-2*padN);
+      const my=l=>Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,l))*D2R/2));
+      const myInv=y=>(2*Math.atan(Math.exp(y))-Math.PI/2)/D2R;
+      /* (#R181) THE CENTRE OF A BOX ON A MAP IS THE MERCATOR MIDPOINT, not the mean of the
+         two latitudes — the box is being fitted to a rectangle of Mercator PIXELS, which is
+         exactly what the zoom two lines down is derived from, so taking the mean here left
+         the centre and the zoom disagreeing about the same box. Measured against MapLibre
+         for [[135,33],[141,37]]: 35.000 here, 35.024 there. Longitude is linear in Mercator
+         x, so its mean is already the right answer. */
+      /* (#R181) …and a box that goes the whole way round is 360° WIDE, not 0° wide.
+         `wrapLng(east-west)` sends 360 to 0, which read as "no width at all" and quietly
+         dropped the longitude constraint from the fit entirely. */
+      let span=((bb.east-bb.west)%360+360)%360;
+      if(span===0&&bb.east!==bb.west) span=360;
+      const lat=myInv((my(bb.north)+my(bb.south))/2), lng=wrapLng(bb.west+span/2);
+      /* the zoom at which the box fills the viewport, in the same Mercator pixels
+         the range↔zoom mapping is written in */
+      const dx=span/360, dy=Math.abs(my(bb.north)-my(bb.south))/(2*Math.PI);
+      const zx=dx>0?Math.log2(W/(TILE*dx)):20, zy=dy>0?Math.log2(H/(TILE*dy)):20;
+      let zoom=Math.min(zx,zy);
+      /* ══ (#R181) ON A GLOBE, A RECTANGLE IS NOT A RECTANGLE ═══════════════════════════════
+         The arithmetic above fits the box to a rectangle of Mercator pixels, which is exactly
+         right on a plane and NOT right on a sphere: the far parts of the box are turned away
+         from the eye, so they land further from the centre of the screen than a flat map says
+         and fall outside it. Measured by projecting the box's own boundary after the fit,
+         against MapLibre on the same viewport: [[-10,35],[30,60]] left 6% of the box off
+         screen, [[135,33],[141,37]] 0.6%, [[2,48],[3,49]] 0.2%.
+         So when the scene really is a sphere, ask the sphere. With the eye at distance d from
+         the centre of the Earth above the fit centre, a surface point whose unit vector in the
+         centre's east/north/up frame is (e,n,u) sits at screen offsets R·e/(d−R·u) and
+         R·n/(d−R·u); requiring both to stay inside the frustum gives, for each point,
+             d ≥ R·u + R·max(|e|/tanX, |n|/tanY)
+         and the fit is the largest of those over the boundary. Closed form — no search — and
+         it is the SAME transcription, not a second one: for a small box u→1 and it reduces
+         algebraically to the Mercator expression above, which is why the two agree to 0.001
+         of a zoom level on a city-sized box and part company only where the curve matters. */
+      try{
+        if(v._scene.mode===Cesium.SceneMode.SCENE3D){
+          const tanY0=Math.tan(ML_FOVY/2), cw=v._canvasW(), ch=v._canvasH();
+          const tanX=tanY0*(W/ch), tanY=tanY0*(H/ch);
+          void cw;
+          const cLat=lat*D2R, cLng=lng*D2R;
+          const sinC=Math.sin(cLat), cosC=Math.cos(cLat);
+          let need=R_EARTH;
+          const consider=(lngDeg,latDeg)=>{
+            const la=latDeg*D2R, dl=(lngDeg*D2R)-cLng;
+            const cosLa=Math.cos(la), sinLa=Math.sin(la);
+            const e=cosLa*Math.sin(dl);
+            const n=cosC*sinLa-sinC*cosLa*Math.cos(dl);
+            const u=sinC*sinLa+cosC*cosLa*Math.cos(dl);
+            const d=R_EARTH*u+R_EARTH*Math.max(Math.abs(e)/tanX,Math.abs(n)/tanY);
+            if(d>need) need=d;
+          };
+          const N=24;
+          for(let i=0;i<=N;i++){
+            const t=i/N, lo=bb.west+span*t;
+            consider(lo,bb.south); consider(lo,bb.north);
+            const la=bb.south+(bb.north-bb.south)*t;
+            consider(bb.west,la); consider(bb.west+span,la);
+          }
+          const range=need-R_EARTH;
+          if(range>0){ const zs=v.zoomFor(lat,range); if(isFinite(zs)) zoom=Math.min(zoom,zs); }
+        }
+      }catch(_){}
+      zoom=Math.max(v._minZoom,Math.min(v._maxZoom,zoom));
+      return { center:{lng,lat}, zoom, bearing:(o&&o.bearing)||0, pitch:(o&&o.pitch)||0 };
+    }
     setGesture(name,on){
+      if(this._input){ const ok=this._input.set(name,on); if(ok) this._gestures[name]=!!on; return ok; }
       const c=this._scene.screenSpaceCameraController;
       const map={ dragPan:'enableTranslate', dragRotate:'enableRotate', scrollZoom:'enableZoom',
                   touchZoomRotate:'enableZoom', keyboard:null, doubleClickZoom:null,
@@ -1165,9 +1382,11 @@ window.IntMapCesiumEngine=(function(){
       if(k===null){ this._gestures[name]=!!on; return true; }
       try{ c[k]=!!on; this._gestures[name]=!!on; return true; }catch(_){ return false; }
     }
+    setZoomRate(r,wheel){ return this._input?this._input.setZoomRate(r,wheel):false; }
     setCursor(c){ try{ const cv=this._widget.canvas; if(cv) cv.style.cursor=c||''; }catch(_){} }
     destroy(){
       try{ if(this._ro) this._ro.disconnect(); }catch(_){}
+      try{ if(this._input) this._input.destroy(); this._input=null; }catch(_){}
       try{ if(this._ssHandler) this._ssHandler.destroy(); }catch(_){}
       /* (#R181) the DOM half of the pointer stream comes off with it — a sub-view that is
          closed and reopened would otherwise leave a listener firing at a dead scene */
@@ -1179,16 +1398,12 @@ window.IntMapCesiumEngine=(function(){
     }
   }
 
-  /* the eye position for an orbit — the same solve setCamera's instant path uses,
-     factored out so the animated path cannot drift from it */
-  function orbitPosition(target,hpr){
-    const t=Cesium.Transforms.eastNorthUpToFixedFrame(target);
-    const off=new Cesium.Cartesian3(
-      hpr.range*Math.cos(-hpr.pitch)*Math.sin(hpr.heading)*-1,
-      hpr.range*Math.cos(-hpr.pitch)*Math.cos(hpr.heading)*-1,
-      hpr.range*Math.sin(-hpr.pitch));
-    return Cesium.Matrix4.multiplyByPoint(t,off,new Cesium.Cartesian3());
-  }
+  /* (#R182) `orbitPosition` lived here — a second copy of the eye-position solve, kept so the
+     animated path could compute a destination without going through the instant one. It was
+     the reason the two paths could disagree, and they did (see setCamera). The animated path
+     now flies to the camera the INSTANT path produces, so there is nothing left to keep in
+     step and the copy is gone. The formula it held is still written out above `_hpr`, which is
+     where it is read BACKWARDS. */
   function rectFromCoords(Cesium,coords){
     if(!Array.isArray(coords)||coords.length<4) return Cesium.Rectangle.MAX_VALUE;
     const lngs=coords.map(c=>c[0]), lats=coords.map(c=>c[1]);
@@ -1257,7 +1472,9 @@ window.IntMapCesiumEngine=(function(){
     const num=(v,d)=>isFinite(v)?v:d;
     let _decl=null, _lastBranch='n/a';
     const declare=p=>{ _decl=p||null; };
-    const camOf=o=>({ center:o&&o.center, zoom:o&&o.zoom, bearing:o&&o.bearing, pitch:o&&o.pitch, roll:o&&o.roll });
+    /* (#R182) …`around` included — see setCamera. It used to stop here. */
+    const camOf=o=>({ center:o&&o.center, zoom:o&&o.zoom, bearing:o&&o.bearing, pitch:o&&o.pitch,
+                      roll:o&&o.roll, around:o&&o.around });
     /* (#R181) the animation options a caller ASKED for — `duration: 0` is an answer, not a
        missing one, so the test is `!= null` rather than truthiness (see zoomIn/zoomOut) */
     const _dur=(o,dflt)=>((o&&o.duration!=null)?(o.duration>0?{duration:o.duration}:null):dflt);
@@ -1272,76 +1489,10 @@ window.IntMapCesiumEngine=(function(){
       jumpTo(o){ const v=V(); if(v){ declare(declOf(o)); v.setCamera(camOf(o),null); } },
       fitBounds(b,o){ const v=V(); if(!v) return; declare({zoom:true,center:true});
         const c=this.cameraForBounds(b,o); if(c) v.setCamera(c,(o&&o.duration)?{duration:o.duration}:null); },
-      cameraForBounds(b,o){ const v=V(); if(!v||!b) return null;
-        const bb=normBounds(b); if(!bb) return null;
-        const pad=(o&&o.padding)||0, padN=(typeof pad==='number')?pad:0;
-        const W=Math.max(1,v._canvasW()-2*padN), H=Math.max(1,v._canvasH()-2*padN);
-        const my=l=>Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,l))*D2R/2));
-        const myInv=y=>(2*Math.atan(Math.exp(y))-Math.PI/2)/D2R;
-        /* (#R181) THE CENTRE OF A BOX ON A MAP IS THE MERCATOR MIDPOINT, not the mean of the
-           two latitudes — the box is being fitted to a rectangle of Mercator PIXELS, which is
-           exactly what the zoom two lines down is derived from, so taking the mean here left
-           the centre and the zoom disagreeing about the same box. Measured against MapLibre
-           for [[135,33],[141,37]]: 35.000 here, 35.024 there. Longitude is linear in Mercator
-           x, so its mean is already the right answer. */
-        /* (#R181) …and a box that goes the whole way round is 360° WIDE, not 0° wide.
-           `wrapLng(east-west)` sends 360 to 0, which read as "no width at all" and quietly
-           dropped the longitude constraint from the fit entirely. */
-        let span=((bb.east-bb.west)%360+360)%360;
-        if(span===0&&bb.east!==bb.west) span=360;
-        const lat=myInv((my(bb.north)+my(bb.south))/2), lng=wrapLng(bb.west+span/2);
-        /* the zoom at which the box fills the viewport, in the same Mercator pixels
-           the range↔zoom mapping is written in */
-        const dx=span/360, dy=Math.abs(my(bb.north)-my(bb.south))/(2*Math.PI);
-        const zx=dx>0?Math.log2(W/(TILE*dx)):20, zy=dy>0?Math.log2(H/(TILE*dy)):20;
-        let zoom=Math.min(zx,zy);
-        /* ══ (#R181) ON A GLOBE, A RECTANGLE IS NOT A RECTANGLE ═══════════════════════════════
-           The arithmetic above fits the box to a rectangle of Mercator pixels, which is exactly
-           right on a plane and NOT right on a sphere: the far parts of the box are turned away
-           from the eye, so they land further from the centre of the screen than a flat map says
-           and fall outside it. Measured by projecting the box's own boundary after the fit,
-           against MapLibre on the same viewport: [[-10,35],[30,60]] left 6% of the box off
-           screen, [[135,33],[141,37]] 0.6%, [[2,48],[3,49]] 0.2%.
-           So when the scene really is a sphere, ask the sphere. With the eye at distance d from
-           the centre of the Earth above the fit centre, a surface point whose unit vector in the
-           centre's east/north/up frame is (e,n,u) sits at screen offsets R·e/(d−R·u) and
-           R·n/(d−R·u); requiring both to stay inside the frustum gives, for each point,
-               d ≥ R·u + R·max(|e|/tanX, |n|/tanY)
-           and the fit is the largest of those over the boundary. Closed form — no search — and
-           it is the SAME transcription, not a second one: for a small box u→1 and it reduces
-           algebraically to the Mercator expression above, which is why the two agree to 0.001
-           of a zoom level on a city-sized box and part company only where the curve matters. */
-        try{
-          if(v._scene.mode===Cesium.SceneMode.SCENE3D){
-            const tanY0=Math.tan(ML_FOVY/2), cw=v._canvasW(), ch=v._canvasH();
-            const tanX=tanY0*(W/ch), tanY=tanY0*(H/ch);
-            void cw;
-            const cLat=lat*D2R, cLng=lng*D2R;
-            const sinC=Math.sin(cLat), cosC=Math.cos(cLat);
-            let need=R_EARTH;
-            const consider=(lngDeg,latDeg)=>{
-              const la=latDeg*D2R, dl=(lngDeg*D2R)-cLng;
-              const cosLa=Math.cos(la), sinLa=Math.sin(la);
-              const e=cosLa*Math.sin(dl);
-              const n=cosC*sinLa-sinC*cosLa*Math.cos(dl);
-              const u=sinC*sinLa+cosC*cosLa*Math.cos(dl);
-              const d=R_EARTH*u+R_EARTH*Math.max(Math.abs(e)/tanX,Math.abs(n)/tanY);
-              if(d>need) need=d;
-            };
-            const N=24;
-            for(let i=0;i<=N;i++){
-              const t=i/N, lo=bb.west+span*t;
-              consider(lo,bb.south); consider(lo,bb.north);
-              const la=bb.south+(bb.north-bb.south)*t;
-              consider(bb.west,la); consider(bb.west+span,la);
-            }
-            const range=need-R_EARTH;
-            if(range>0){ const zs=v.zoomFor(lat,range); if(isFinite(zs)) zoom=Math.min(zoom,zs); }
-          }
-        }catch(_){}
-        zoom=Math.max(v._minZoom,Math.min(v._maxZoom,zoom));
-        return { center:{lng,lat}, zoom, bearing:(o&&o.bearing)||0, pitch:(o&&o.pitch)||0 };
-      },
+      /* (#R182) the fit itself now lives ON THE VIEW — js/cesium-input.js's box zoom
+         needs it too, and a second copy of the sphere solve is exactly what #R181
+         went to the trouble of not having. */
+      cameraForBounds(b,o){ const v=V(); return v?v.cameraForBounds(b,o):null; },
       setPadding(p){ const v=V(); if(v) v._padding=Object.assign({},v._padding,p||{}); },
       getPadding(){ const v=V(); return v?v._padding:null; },
       getCamera(){ const v=V(); if(!v) return null;
@@ -1382,7 +1533,7 @@ window.IntMapCesiumEngine=(function(){
          so zoomIn({duration:0}) animated for 300 ms here while the same call on MapLibre
          returned already at the new zoom. Ask whether the caller SAID duration, not whether
          the number it said is truthy. */
-      zoomTo(z,o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:z},_dur(o,null)); } },
+      zoomTo(z,o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:z,around:o&&o.around},_dur(o,null)); } },
       zoomIn(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()+1},_dur(o,{duration:300})); } },
       zoomOut(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()-1},_dur(o,{duration:300})); } },
       stop(){ const v=V(); if(v) v.stop(); },
@@ -1534,8 +1685,13 @@ window.IntMapCesiumEngine=(function(){
       setDragPan(on){ return this.setGesture('dragPan',on); },
       setGesture(n,on){ const v=V(); return v?v.setGesture(n,on):false; },
       gestures(){ return ['dragPan','dragRotate','scrollZoom','touchZoomRotate','keyboard','doubleClickZoom','boxZoom','touchPitch']; },
-      setZoomRate(r){ const v=V(); if(!v) return false;
-        try{ v._scene.screenSpaceCameraController.zoomFactor=Math.max(0.5,5*(r||1)); return true; }catch(_){ return false; } },
+      /* (#R182) …and this reaches the SAME two rates MapLibre keeps
+         (scrollZoom.setWheelZoomRate / setZoomRate). It used to be folded into
+         Cesium's single `zoomFactor` through `Math.max(0.5, 5*r)`, which for both of
+         the app's settings (1/300 and 1/90) clamped to 0.5 — a tenth of Cesium's own
+         default — so the navigation-sensitivity slider moved nothing and the wheel
+         barely moved the map. */
+      setZoomRate(r,wheel){ const v=V(); return v?v.setZoomRate(r,wheel):false; },
       /* renderer-owned UI. Cesium has no popup/marker primitive, so these are DOM
          elements positioned by projecting their anchor every frame — the same
          thing MapLibre's Popup/Marker are, and they answer the same little API

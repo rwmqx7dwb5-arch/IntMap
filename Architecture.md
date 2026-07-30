@@ -155,6 +155,45 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     768 features 到達・714 がフィルタ通過で、描画 0）。**「今の視界が覆うタイル集合」**（`wantSet`）に
     置き換えた。
   - 検証：`tests/r181-checks.test.mjs`（20件・Node）＋`tests/r181-cesium.spec.js`（10件・実ブラウザ）。
+- **#R182：第2エンジンの「操作」を MapLibre の操作にした（`js/cesium-input.js` 新設）。**
+  #R180 は Cesium 自身の `ScreenSpaceCameraController` を置いたままだった。それは**別の航法モデル**
+  （左ドラッグ＝地球を中心まわりに回す／右ドラッグ＝ズーム／中ドラッグ＝傾け／ホイール＝視線方向へ寄る）で、
+  契約が名前を持つ8ジェスチャのうち**6つに束縛が無かった**。実測（両エンジン・同じ canvas・同じカメラ・
+  実入力）：左120px→ 平面 −6.17 対 −5.30／下120px→ +1.23 対 **+5.01（4倍）**／右120px→ bearing +96 対
+  **無反応**／右上120px→ pitch +48 対 **ズーム −0.12**／ctrl+上→ +48 対 **無反応**／shift+ドラッグ→
+  +2.83 対 **無反応**／ホイール→ +0.267 対 **0**／矢印キー→ +4.42 対 **無反応**。＝「ほぼできない」。
+  - **数値は転写であって発明ではない。** 本文の定数と式は同梱の `node_modules/maplibre-gl`（#R158 以来
+    5.24.0 に固定）の**ハンドラ実装そのもの**から取り、使用箇所ごとに出典を書いた。重要なのは
+    **MapLibre の globe pan は「掴んだ点をカーソルに追従させる」ではない**こと——MapLibre 自身が
+    `handleMapControlsPan` にそう書いている——ので、直観的な実装のほうが**一致しない**。
+    `computeGlobePanCenter`（bearing 回転・`lngSpeed`・`getDegreesPerPixel`）＋
+    `getZoomAdjustment`（緯度が変わると globe の見かけを保つため zoom が動く）をそのまま持ち込む。
+  - **カメラは必ず `setCamera()` 経由。** この層は `Cartesian3` を一切触らない＝#R181 の `_faceHeading`、
+    #R180 の range↔zoom 転写、DEM の `_settle` が1か所のままになる。ジェスチャの1フレームは
+    `{silent:true}` で渡し、**movestart…moveend はジェスチャ全体（慣性を含む）で1組**にする
+    （`moveend` の購読者は19あり、レイヤ再調整やニュース更新をする）。
+  - **同時に見つかった、ジェスチャ以外の4件**（いずれも #R180 から在り、実測で出た）：
+    1. **アニメーション経路が着地点を外していた。** `flyTo` に**軌道の角度**を `orientation` として
+       渡していたが、Cesium の orientation は**目的地の局所フレームでのカメラ自身の姿勢**。実測：
+       `easeTo` で centre 12,25 z4 を頼むと、pitch 30 で **lat 40.03・pitch 57.9**、pitch 60 で
+       **lat −0.38・pitch 0**、pitch 0 では **bearing が −180**（＝#R181 の「垂直な軌道は heading を
+       運べない」が別経路に残っていた）。→ **目的地を瞬時経路で解いて**位置と姿勢を読み、カメラを戻し、
+       `direction`/`up` で飛び、**到着時にもう一度同じ解を当てる**（`_aimAt` の呼び出し元は3つ）。
+       アプリの動く視点は全部ここを通る（検索結果・Atlas・ズームボタン・duration 付き fitBounds）。
+    2. **`around` がアダプタで捨てられていた。** 渡すのはアプリ自身のダブルクリック/ダブルタップ拡大と
+       ピンチ＝**カーソル地点へズームする** UX（#R20）そのもの。`camOf` に足し、`setCamera` が
+       「その緯度経度を元の画素へ戻す」まで中心を解く（実測ずれ 0〜1.8px）。
+    3. **プログラム的なカメラ命令が慣性に負けていた。** MapLibre の jumpTo/easeTo/flyTo は先頭で
+       `stop()` する。無いと、滑走中のフリックが `jumpTo` の上に書き続ける。
+    4. **右ドラッグの離しでアプリの `#ctx-menu` が開き、canvas を覆っていた。** MapLibre は
+       ジェスチャが始まった時点で `contextmenu` の**マップイベントを握り潰す**
+       （`BlockableMapEventHandler.reset()`）。実測：右ドラッグ1回のあと、次のホイールと次の
+       ctrl ドラッグは**メニューに当たって何も起きなかった**。
+  - 結果（実測・同一 run で MapLibre と突き合わせ）：pan −5.273 対 −5.273／+4.779 対 +4.779／
+    rotate +96 対 +96／pitch +48 対 +48／ctrl も同値／wheel +0.268 対 +0.268／box zoom 2.059 対 2.061／
+    矢印 +4.415 対 +4.409／shift+矢印 15/10 対 15/10。
+  - 検証：`tests/r182-checks.test.mjs`（17件・Node。**定数は `node_modules/maplibre-gl` を読んで突き合わせる**
+    ので、依存を上げて操作感が変わると落ちる）＋`tests/r182-cesium.spec.js`（6件・実ブラウザ・差分方式）。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
@@ -1046,7 +1085,7 @@ js/
                                     メートル、平面（mercator）は**メルカトル単位**。metre 決め打ちだったため z12 以上
                                     （globe が素の mercator になる領域）で全頂点が far plane の外へ飛び、立体が
                                     消えていた。`u_altScale` を variant で切り替える（実測は §19 #R174 ④）。9KB
-  ── 以下 (#R180) の5本＝**第2の描画エンジン**。既定セッションは1バイトも読み込まない
+  ── 以下 (#R180) の5本＋(#R182) の1本＝**第2の描画エンジン**。既定セッションは1バイトも読み込まない
      （`js/engine-select.js` からの**動的 import** のみ。main チャンクから cesium チャンクへの参照は 0）─────
   engine-select.js                  (#R180) このセッションがどちらのエンジンで動くかを決める唯一の場所。
                                     `localStorage['intmap_engine']`（`'cesium'` 以外＝既定の MapLibre）。
@@ -1093,6 +1132,24 @@ js/
                                     止めるので互換マウスイベントが出ない）、`render` は `scene.postRender`、
                                     `rotate`/`pitch` は角度が実際に動いたときだけ、`terrain` は `setTerrain` から。
                                     **`fitBounds`** は球のときは球に訊く（閉形式。小さい箱ではメルカトル式に一致）。
+                                    (#R182) **アニメーション経路の着地点**——`flyTo` に軌道の角度を orientation として
+                                    渡していた（別物）ので、pitch 30 の easeTo が緯度 15°先・pitch 57.9 に着き、
+                                    pitch 0 では bearing を捨てていた。**目的地は瞬時経路（`_aimAt`）で解いて
+                                    `direction`/`up` で飛び、到着時にもう一度当てる**。`around`（カーソル地点へ
+                                    ズーム）を `camOf` と `setCamera` が運ぶ。ジェスチャの1フレームは
+                                    `{silent:true}`＝move/moveend を出さない（`camera.changed` の流れも止める）。
+                                    右ドラッグで回した後の `contextmenu` は**マップイベントとして出さない**
+                                    （MapLibre と同じ。出すとアプリの `#ctx-menu` が canvas を覆う）。
+  cesium-input.js                   (#R182) **MapLibre のジェスチャを Cesium のカメラで実装した層**。Cesium 自身の
+                                    `ScreenSpaceCameraController` は `enableInputs=false` で止める（別の航法モデルで、
+                                    8つのうち6つに束縛が無かった）。dragPan／dragRotate（右ドラッグと ctrl+左、
+                                    回転 0.8°/px・傾き 0.5°/px）／scrollZoom（device 判定＋シグモイド＋200ms の
+                                    なめらか化、カーソル位置を固定）／boxZoom（`.maplibregl-boxzoom`）／
+                                    doubleClickZoom／keyboard（100px・15°・10°）／touchZoomRotate／touchPitch、
+                                    および慣性（linearity 0.3、pan/zoom/bearing/pitch でそれぞれ減速度が違う、
+                                    直近160msの窓、bezier(0,0,0.3,1)）。**定数と式は同梱の maplibre-gl から転写**し、
+                                    `tests/r182-checks.test.mjs` が**その node_modules を読んで**突き合わせる。
+                                    カメラは必ず `view.setCamera()` 経由（`Cartesian3` に触らない）。
   view-controls.js                  (#R171) 視点まわりの2つの設定＝`IntMapTilt`（地図の傾きの上限）と
                                     `IntMapEyeAlt`（常時表示欄の視点高度）。**engine だけで書かれた3本目**
                                     （生 `map` を一切参照しない）。
