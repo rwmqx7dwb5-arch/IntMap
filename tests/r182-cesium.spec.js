@@ -51,31 +51,36 @@ const park = async (page, over = {}) => {
    a MapLibre one share this machine's GPU while the suite runs, and the page is hidden — rAF
    was measured at 3–8 Hz and setTimeout throttled to about 1 Hz. A fixed wait under that is
    measuring the harness; polling for stillness measures the map. */
-const settle = (page, budgetMs = 4000) => page.evaluate(async (budget) => {
-  const at = () => { const x = window.IntMapGeoEngine.camera.get();
-    return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].join(','); };
+/* ROUNDED, and one quiet sample rather than two. Exact float equality is the wrong test: any
+   1e-12 wobble from a tile landing or a label re-assert resets the counter, so the poll runs to
+   its ceiling every time and the ceiling becomes the cost. Six decimals is far finer than any
+   assertion here and it actually repeats. */
+const CAM_JS = `(() => { const x = window.IntMapGeoEngine.camera.get();
+  return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].map((v) => v.toFixed(6)).join(','); })()`;
+const settle = (page, budgetMs = 2500) => page.evaluate(async ([src, budget]) => {
+  const at = new Function('return ' + src);
   let last = '', still = 0;
-  for (let i = 0; i < budget / 120 && still < 2; i++) {
-    await new Promise((r) => setTimeout(r, 120));
+  const t0 = Date.now();
+  while (Date.now() - t0 < budget && still < 1) {
+    await new Promise((r) => setTimeout(r, 100));
     const now = at(); still = (now === last) ? still + 1 : 0; last = now;
   }
-}, budgetMs);
+}, [CAM_JS, budgetMs]);
 /* …and after an INPUT, wait for the map to start moving first. An event dispatched from the
-   test process may not have been processed yet when the poll begins, and "unchanged twice"
-   would then mean "not yet", which reads as a gesture that did nothing. */
-const settleFrom = (page, key, budgetMs = 6000) => page.evaluate(async ([k, budget]) => {
-  const at = () => { const x = window.IntMapGeoEngine.camera.get();
-    return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].join(','); };
+   test process may not have been processed yet when the poll begins, and "unchanged" would
+   then mean "not yet", which reads as a gesture that did nothing. */
+const settleFrom = (page, key, budgetMs = 4000) => page.evaluate(async ([src, k, budget]) => {
+  const at = new Function('return ' + src);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const t0 = Date.now();
-  while (Date.now() - t0 < budget && at() === k) await wait(80);
+  while (Date.now() - t0 < budget && at() === k) await wait(60);
   let last = '', still = 0;
-  while (Date.now() - t0 < budget && still < 2) {
-    await wait(120);
+  while (Date.now() - t0 < budget && still < 1) {
+    await wait(100);
     const now = at(); still = (now === last) ? still + 1 : 0; last = now;
   }
-}, [key, budgetMs]);
-const camKey = (c) => [c.lng, c.lat, c.zoom, c.bearing, c.pitch].join(',');
+}, [CAM_JS, key, budgetMs]);
+const camKey = (c) => [c.lng, c.lat, c.zoom, c.bearing, c.pitch].map((v) => v.toFixed(6)).join(',');
 
 const norm = (d) => { const v = ((d % 360) + 360) % 360; return v > 180 ? v - 360 : v; };
 
@@ -113,6 +118,10 @@ async function mouseSuite(page, engine, part) {
     const during = await cam(page);
     await page.mouse.up({ button: opts.button || 'left' });
     if (opts.key) await page.keyboard.up(opts.key);
+    /* the reading is already taken, but the RELEASE starts a fling — and letting it still be
+       gliding when the next gesture's park() lands makes MapLibre stop() its own handler
+       part-way through the next drag. Measured, dropping this: ctrlRotate and keyRight both
+       came back as 0 ON MAPLIBRE. What made the polls cheap was rounding them, not skipping. */
     await settle(page);
     out[name] = { dLng: during.lng - before.lng, dLat: during.lat - before.lat,
       dZoom: during.zoom - before.zoom, dBearing: norm(during.bearing - before.bearing),
@@ -192,7 +201,9 @@ const compare = (ml, cs) => {
 };
 
 test('R182 ①a: pan, rotate and pitch answer the way MapLibre answers', async ({ page }) => {
-  test.setTimeout(300_000);
+  /* generous on purpose: a shared CI runner measured 2.5x this machine, and the value of the
+     test is the fourteen-gesture comparison, not its speed */
+  test.setTimeout(600_000);
   const ml = await mouseSuite(page, 'maplibre', 'drag');
   const cs = await mouseSuite(page, 'cesium', 'drag');
   const show = compare(ml, cs);
@@ -228,7 +239,7 @@ test('R182 ①a: pan, rotate and pitch answer the way MapLibre answers', async (
 });
 
 test('R182 ①b: the wheel, the box zoom and the keyboard answer the way MapLibre answers', async ({ page }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   const ml = await mouseSuite(page, 'maplibre', 'rest');
   const cs = await mouseSuite(page, 'cesium', 'rest');
   const show = compare(ml, cs);
@@ -263,7 +274,7 @@ test('R182 ①b: the wheel, the box zoom and the keyboard answer the way MapLibr
    either. The input pipeline itself is what ① exercises; what is left to check here is the
    controller's own bookkeeping, and a burst is exactly the fast flick that exercises it. */
 test('R182 ②: a drag is one movestart…moveend, and the fling glides after release', async ({ page }) => {
-  test.setTimeout(180000);
+  test.setTimeout(300000);
   await boot(page, 'cesium');
   await park(page, { pitch: 0 });
   const got = await page.evaluate(async () => {
@@ -340,7 +351,7 @@ test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', as
    The adapter used to drop the option, and the two call sites that pass it are the app's own
    double-click and pinch zoom, which exist for exactly this (#R20). */
 test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({ page }) => {
-  test.setTimeout(240000);
+  test.setTimeout(360000);
   await boot(page, 'cesium');
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
@@ -378,7 +389,7 @@ test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({
    the old engine three of the names were recorded and ignored, and two shared one flag, so
    turning the pinch off also killed the wheel. */
 test('R182 ⑤: all eight gesture names can be suspended and restored', async ({ page }) => {
-  test.setTimeout(180000);
+  test.setTimeout(300000);
   await boot(page, 'cesium');
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
@@ -414,7 +425,7 @@ test('R182 ⑤: all eight gesture names can be suspended and restored', async ({
    One finger pans; two fingers pinch about their midpoint. Driven through CDP's touch input
    so the pointer stream is the real one. */
 test('R182 ⑥: one finger pans and two fingers pinch', async ({ page }) => {
-  test.setTimeout(180000);
+  test.setTimeout(300000);
   await boot(page, 'cesium');
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
