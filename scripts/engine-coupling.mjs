@@ -54,8 +54,47 @@ export const ENGINE_FILE = 'geo-engine.js';
    attach to a view rather than to a handle, and contour tiles come from scene.demContourSource
    instead of handing maplibre-contour the library by name. The budget is the measurement after
    that, so the number can only come down from here — raising it is a deliberate act with a
-   failing build in between. */
-export const VALUE_BUDGET = 324;
+   failing build in between.
+
+   (#R180) …and it came down to ONE. 「MapLibre依存脱却作業を完了させて。」 The remaining 324 were
+   four shapes, and each had one honest answer rather than a suppression:
+
+     · 46 × the _imCanDraw fallback   `window.__imap||map` → `GE().ready()`, which IS isStyleLoaded.
+     · 95 × the MODULE CONTRACT       `IntMapModules.x = function(map, HOST)` → `function(HOST)`,
+            and the 95 call sites in app-body.js with it. This was the largest single block and the
+            reason the number could never reach zero by editing bodies: every module was handed the
+            renderer whether it wanted one or not.
+     · 18 × `…addTo(map)`             → `GE().ui.attach(…)`, a new contract entry, because the call
+            sites build a long popup/marker chain first and only the LAST link named the handle.
+     · the rest, existence tests      `if(!map)` / `typeof map==='undefined'` → `GE().hasRenderer()`.
+
+   The ONE that is left is `window.__imap = map` in app-body.js: the primary view being handed to
+   the engine, which is the single legitimate reason for the app to hold the renderer at all.
+   Rewritten by PARSING, not by pattern (scripts/decouple-codemod.mjs's lesson), and verified from
+   the other side by the free-identifier check in scripts/static-checks.mjs — dropping a parameter
+   that a body still reads is a feature that disappears in silence (#R163). */
+export const VALUE_BUDGET = 1;
+
+/* ── (#R180) …AND THE ALIAS HOLE, CLOSED AT THE SOURCE TOO ───────────────────────────────────
+   #R179 shut the `ui.createView` door because a second view kept the handle under a local name
+   (`cmap`, `gmap`, `minimap`) that no count above can see. The SAME hole had a second door:
+   `window.__imap`. Measured this round, three subsystems read the global into a local and drove
+   it raw — `M()` in js/map-extras.js (IntMapLocate: getSource/addLayer/on/project/flyTo) and two
+   in js/news-timeline.js — none of them visible to either count, because the alias is `M`/`m`.
+   So the global itself is now gated: js/geo-engine.js reads it (that is what the adapter IS) and
+   js/app-body.js publishes it once. Anywhere else, use the contract.
+   js/cesium-engine.js is on the list for the same reason js/geo-engine.js is: it IS an adapter.
+   Reading the handle the app published is what an adapter does — the rule is that nothing
+   ELSE may. */
+export const IMAP_GLOBAL_FILES = new Set(['geo-engine.js', 'app-body.js', 'cesium-engine.js']);
+
+/* ── (#R180) …AND THE SECOND ENGINE IS ALSO ALLOWED TO NAME ITS OWN RENDERER ─────────────────
+   The gate's first rule is "only js/geo-engine.js may name the renderer", and `maplibregl` is
+   still the only name it means. A Cesium adapter names CESIUM, which is a different library and
+   a different question, so it does not widen that rule at all — but the ENGINE_FILE exemption
+   has to be a set now rather than one string, or a second adapter is unrepresentable. */
+export const ADAPTER_FILES = new Set(['geo-engine.js', 'cesium-engine.js', 'cesium-layers.js',
+                                      'cesium-style.js', 'cesium-vector-tiles.js']);
 
 /* ── (#R179) …AND THE HANDLE UNDER ANOTHER NAME ──────────────────────────────────────────────
    The other hole, and the one that actually mattered: this scan only recognises the renderer as
@@ -100,7 +139,7 @@ export function scanFile(file) {
   } catch (e) {
     return { file: path.relative(ROOT, file).replace(/\\/g, '/'), error: String(e && e.message || e), hits: [] };
   }
-  const hits = [], values = [], views = [];
+  const hits = [], values = [], views = [], imaps = [];
   /* depth 0 = the module factory's parameter, i.e. the renderer itself */
   let shadowDepth = 0;
   const record = (node, prop) => hits.push({ prop, line: node.loc.start.line });
@@ -134,17 +173,82 @@ export function scanFile(file) {
     return names.has('map');
   };
 
-  /* HOW the renderer reaches a file, both shapes, and both are at function depth 1:
-       window.IntMapModules.x = function(map, HOST){ … }     ← a parameter
+  /* HOW the renderer reaches a file, and WHERE that binding sits.
+       window.IntMapModules.x = function(map, HOST){ … }     ← a parameter (removed in #R180)
        window.addEventListener('DOMContentLoaded', () => { let map; … })   ← app-body.js
-     So a `map` bound at depth ≤ 1 IS the renderer; anything deeper is somebody's
-     local (companies.js builds a ticker→series object called `map`). */
+     #R178/#R179 hard-coded "depth ≤ 1" for this, and #R180 broke it by accident: wrapping
+     app-body's body in `const _imAppBoot = () => {…}` (the boot barrier the second engine
+     needs) put `let map` one level deeper, and the gate went quietly from seeing every
+     reference in that file to seeing none — reporting 0 for the best possible reason and the
+     worst possible one at the same time. A constant that encodes where a declaration HAPPENS
+     to live is not a rule; find the declaration instead.
+       rootDepth = the shallowest function depth at which this file binds `map`.
+     A binding deeper than that is somebody's local (companies.js builds a ticker→series map),
+     and rootDepth = null — no binding at all, which is now true of every module — means any
+     bare `map` is a FREE identifier and therefore exactly the regression worth catching. */
+  /* …and "binds `map`" is not enough to identify it, because most files that still have a
+     local called `map` have ONLY that (companies.js's ticker→series object, the gesture-name
+     table in the Cesium adapter). Taking the shallowest binding of the name would promote one
+     of those to "the renderer" and report it as coupling. So the binding has to be one that
+     could actually BE the renderer, which is exactly two shapes:
+        a module-factory parameter  window.IntMapModules.x = function(map, …)
+        the primary view's variable  `X = ….createView(…)` / `window.__imap = X`
+     Neither is a heuristic about depth or naming — they are the only two ways the handle has
+     ever entered a file. */
+  let rootDepth = null;
+  {
+    const rendererNames = new Set();
+    const findNames = node => {
+      if (!node || typeof node.type !== 'string') return;
+      if (node.type === 'AssignmentExpression' && node.right && node.right.type === 'Identifier') {
+        const lhs = node.left;
+        if (lhs.type === 'MemberExpression' && !lhs.computed && lhs.property.type === 'Identifier' &&
+            lhs.property.name === '__imap') rendererNames.add(node.right.name);
+      }
+      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' &&
+          node.right && node.right.type === 'CallExpression' &&
+          node.right.callee.type === 'MemberExpression' && !node.right.callee.computed &&
+          node.right.callee.property.type === 'Identifier' &&
+          node.right.callee.property.name === 'createView') rendererNames.add(node.left.name);
+      if (node.type === 'AssignmentExpression' && node.left.type === 'MemberExpression' &&
+          /IntMapModules$/.test(src.slice(node.left.object.start, node.left.object.end)) &&
+          node.right && FN.has(node.right.type) && node.right.params[0] &&
+          node.right.params[0].type === 'Identifier') rendererNames.add(node.right.params[0].name);
+      for (const k in node) {
+        if (k === 'loc' || k === 'start' || k === 'end') continue;
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach(c => c && typeof c.type === 'string' && findNames(c));
+        else if (v && typeof v.type === 'string') findNames(v);
+      }
+    };
+    findNames(ast);
+    if (rendererNames.has('map')) {
+      let d = 0;
+      const seek = node => {
+        if (!node || typeof node.type !== 'string') return;
+        const isFn = FN.has(node.type); if (isFn) d++;
+        const note = () => { if (rootDepth === null || d < rootDepth) rootDepth = d; };
+        if (isFn) node.params.forEach(p => { const s = new Set(); collectPatternNames(p, s); if (s.has('map')) note(); });
+        if (node.type === 'VariableDeclaration') node.declarations.forEach(dec => {
+          const s = new Set(); collectPatternNames(dec.id, s); if (s.has('map')) note(); });
+        for (const k in node) {
+          if (k === 'loc' || k === 'start' || k === 'end') continue;
+          const v = node[k];
+          if (Array.isArray(v)) v.forEach(c => c && typeof c.type === 'string' && seek(c));
+          else if (v && typeof v.type === 'string') seek(v);
+        }
+        if (isFn) d--;
+      };
+      seek(ast);
+    }
+  }
+  const SHADOW_FROM = (rootDepth === null) ? 1 : rootDepth + 1;
   let fnDepth = 0;
   const visit = (node, parent, key) => {
     if (!node || typeof node.type !== 'string') return;
     const isFn = FN.has(node.type);
     if (isFn) fnDepth++;
-    const shadows = fnDepth >= 2 && (isFn || node.type === 'BlockStatement') && declaresMap(node);
+    const shadows = fnDepth >= SHADOW_FROM && (isFn || node.type === 'BlockStatement') && declaresMap(node);
     if (shadows) shadowDepth++;
     if (node.type === 'MemberExpression' && isRawObject(node.object)) {
       if (node.computed && node.property.type !== 'Literal') record(node, '[computed]');
@@ -176,6 +280,14 @@ export function scanFile(file) {
                           : 'other' });
       }
     }
+    /* (#R180) …and every read of the GLOBAL handle, wherever it appears. Counted as its own
+       thing because it is neither a member access on `map` nor an identifier named `map`:
+       `const M=()=>window.__imap` hands a subsystem the renderer under a name no scan can
+       predict, which is exactly how three of them stayed invisible through #R178 and #R179. */
+    if (node.type === 'MemberExpression' && !node.computed && node.property.type === 'Identifier' &&
+        node.property.name === '__imap') {
+      imaps.push({ line: node.loc.start.line });
+    }
     /* (#R179) …and every call that ASKS FOR the raw handle — see PRIMARY_VIEW_FILE */
     if (node.type === 'CallExpression' && node.callee.type === 'MemberExpression' &&
         !node.callee.computed && node.callee.property.type === 'Identifier' &&
@@ -192,7 +304,7 @@ export function scanFile(file) {
     if (isFn) fnDepth--;
   };
   visit(ast, null, null);
-  return { file: path.relative(ROOT, file).replace(/\\/g, '/'), hits, values, views };
+  return { file: path.relative(ROOT, file).replace(/\\/g, '/'), hits, values, views, imaps };
 }
 
 export function scanAll() {
@@ -265,6 +377,17 @@ function main() {
     console.error('  (#R179 found 106 such calls in compare.js alone, with the gate reading 0).');
     strayViews.forEach(r => r.views.forEach(v => console.error(`  ${r.file}:${v.line}`)));
     if (primaryViews > 1) console.error(`  js/${PRIMARY_VIEW_FILE} calls it ${primaryViews} times; expected 1`);
+    process.exit(1);
+  }
+  /* (#R180) the global handle — see IMAP_GLOBAL_FILES */
+  const strayGlobals = results.filter(r => (r.imaps || []).length && !IMAP_GLOBAL_FILES.has(path.basename(r.file)));
+  if (strayGlobals.length) {
+    console.error(`\n✗ window.__imap is the renderer's own handle. Only js/geo-engine.js (the adapter) and` +
+                  ` js/app-body.js (which publishes it once) may name it.`);
+    console.error('  Reading it into a local is the same coupling under a different name, and no other count');
+    console.error('  in this file can see it (#R180 found three subsystems doing exactly that). Use the');
+    console.error('  contract: const GE=()=>window.IntMapGeoEngine.');
+    strayGlobals.forEach(r => r.imaps.forEach(v => console.error(`  ${r.file}:${v.line}`)));
     process.exit(1);
   }
   if (valueTotal > VALUE_BUDGET) {

@@ -15,7 +15,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.statsCompare=function(map,HOST){
+window.IntMapModules.statsCompare=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
   const _GE=()=>window.IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
@@ -473,7 +474,7 @@ window.IntMapModules.statsCompare=function(map,HOST){
          there today ("昔の年代でも、地図クリック国選択…現在は強制的に現行国家が選択される"). Falls back to the modern
          country when there is no era entity with comparable data there. */
       try{ const TB=window.IntMapTimeBorders;
-        if(TB&&TB.active&&TB.active()&&typeof map!=='undefined'&&map){
+        if(TB&&TB.active&&TB.active()&&GE().hasRenderer()&&GE().hasRenderer()){
           /* (#R123) resolve the era entity at the click from the ERA polygon FeatureCollection via point-in-polygon
              FIRST — queryRenderedFeatures on imtb-fill only sees what is CURRENTLY painted, so if the era layer
              hadn't finished rendering the pick fell through to the modern countryGeo below ("国境線と国家は昔なのに、
@@ -910,7 +911,7 @@ window.IntMapModules.statsCompare=function(map,HOST){
        「Compareで選択された国家は、地図上でも同じ色で塗られるように（Show comparisonクリック時に）」). An independent
        categorical fill built directly from window.countryGeo — needs no layer toggle and never disturbs Atlas's
        own highlight/choropleth layers. Country codes[i] gets PAL[i], exactly matching the chips/bars/table. */
-    function ensureCmpMap(){ if(typeof map==='undefined'||!map) return false; const g=window.countryGeo||(typeof HOST.countryGeo!=='undefined'?HOST.countryGeo:null); if(!g||!g.features) return false;
+    function ensureCmpMap(){ if(!GE().hasRenderer()||!GE().hasRenderer()) return false; const g=window.countryGeo||(typeof HOST.countryGeo!=='undefined'?HOST.countryGeo:null); if(!g||!g.features) return false;
       try{ if(!_LY().hasSource('imcmp-src')) _LY().addSource('imcmp-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
       if(!_LY()) return false;   /* engine not built yet (#R172) */
       if(_LY().has('imcmp-fill')) return true;

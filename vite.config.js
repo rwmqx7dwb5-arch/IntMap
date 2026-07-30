@@ -24,7 +24,7 @@
  *  this arrangement could otherwise have.
  * ==========================================================================*/
 import { defineConfig } from 'vite';
-import { cpSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { cpSync, createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname);
@@ -57,6 +57,51 @@ function copyStatic() {
   };
 }
 
+/* ── (#R180) CESIUM'S RUNTIME DIRECTORIES ────────────────────────────────────
+   Cesium is not only a JS module: it resolves Workers/, Assets/, ThirdParty/ and
+   Widgets/ at RUN TIME against `window.CESIUM_BASE_URL`, so bundling the module
+   is not enough — the four directories have to be served too. They come out of
+   node_modules at build time (≈8 MB, and never committed: dist/ is gitignored and
+   built in CI), and the dev server maps the same path onto node_modules so one
+   value of CESIUM_BASE_URL works for `vite dev`, `npm run serve` and Pages alike.
+
+   Nothing here is loaded unless the user chooses Cesium in Settings: the app's
+   own import of it is dynamic (js/engine-select.js), so a MapLibre session never
+   requests the chunk and never touches these files. */
+const CESIUM_SRC = join(ROOT, 'node_modules', 'cesium', 'Build', 'Cesium');
+const CESIUM_DIRS = ['Workers', 'Assets', 'ThirdParty', 'Widgets'];
+function cesiumAssets() {
+  return {
+    name: 'intmap-cesium-assets',
+    apply: 'build',
+    closeBundle() {
+      if (!existsSync(CESIUM_SRC)) { this.warn('cesium runtime assets not found — the Cesium engine will not start'); return; }
+      for (const d of CESIUM_DIRS) {
+        const from = join(CESIUM_SRC, d);
+        if (existsSync(from)) cpSync(from, join(ROOT, 'dist', 'cesium', d), { recursive: true });
+      }
+    },
+  };
+}
+/* `vite dev` has no dist/ to copy into, so the same path is served out of
+   node_modules — one value of CESIUM_BASE_URL for every way the site runs. */
+function cesiumDevAssets() {
+  return {
+    name: 'intmap-cesium-assets-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const m = /^\/cesium\/(.+)$/.exec((req.url || '').split('?')[0]);
+        if (!m) return next();
+        const f = join(CESIUM_SRC, decodeURIComponent(m[1]));
+        if (!f.startsWith(CESIUM_SRC) || !existsSync(f)) return next();
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        createReadStream(f).pipe(res);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   root: ROOT,
   base: './',
@@ -79,6 +124,12 @@ export default defineConfig({
            attributable to the library it came from. */
         manualChunks(id) {
           if (id.includes('node_modules/maplibre-gl')) return 'maplibre-gl';
+          /* (#R180) the SECOND engine, in a chunk of its own for the same reason as the
+             first — and, far more importantly, so that the default session never asks
+             for it. It is reached only through the dynamic import in
+             js/engine-select.js, which runs when the Settings choice is 'cesium'. */
+          if (id.includes('node_modules/cesium') || id.includes('node_modules/@mapbox/vector-tile') ||
+              id.includes('node_modules/pbf')) return 'cesium';
           if (id.includes('node_modules/@turf') || id.includes('node_modules/topojson-client')) return 'geo';
           if (id.includes('node_modules/@supabase')) return 'supabase';
         },
@@ -93,5 +144,5 @@ export default defineConfig({
   },
   server: { port: 5173, strictPort: false },
   preview: { port: 4173, strictPort: false },
-  plugins: [copyStatic()],
+  plugins: [copyStatic(), cesiumAssets(), cesiumDevAssets()],
 });

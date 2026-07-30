@@ -11,7 +11,7 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.authUi=function(map,HOST){
+window.IntMapModules.authUi=function(HOST){
   /* ---------- DATA: geo_pins -> geoRaw -> rebuildGeoIndex ---------- */
   async function loadGeoFromSupabase(){
     if(!HOST.DB) return;

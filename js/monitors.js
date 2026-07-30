@@ -20,7 +20,7 @@
  *  "no CSS-in-JS template literal" rule.
  * ========================================================================== */
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.monitors=function(map,HOST){
+window.IntMapModules.monitors=function(HOST){
   /* (#R173) 脱MapLibre 第7段階 — the monitor's map work goes through the engine facade, never the raw
      renderer. Every call it needed was already in the contract; the `map` parameter stays only because
      every module file shares one factory signature. */
@@ -28,7 +28,7 @@ window.IntMapModules.monitors=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
     /* (#R162) HOST is the HOST INTERFACE — the index.html closure values this module used to
        inherit implicitly. It matters that the four state reads (lang/user/mode/radiusItems)
        are GETTERS on H and not captured parameters: all four are reassigned at runtime (the
@@ -291,7 +291,7 @@ window.IntMapModules.monitors=function(map,HOST){
         const sensV=ov.querySelector('#mon-sens').value; const sensMap={low:{min_score:0.45,min_new:3},medium:{min_score:0.3,min_new:1},high:{min_score:0.18,min_new:1}};
         const res=await create({ name:ov.querySelector('#mon-name').value, area, sources, comparison:{mode:cmp,window_days:30}, intervalMin:intv, sensitivity:sensMap[sensV]||{} });
         if(res.ok){ ov.remove(); _toast(ML('Monitor created.','監視を作成しました。','Monitor erstellt.','Монитор создан.','Monitor creado.')); render();
-          try{ if(map){ showOnMap({geometry:res.monitor.geometry,bbox:res.monitor.bbox},[],res.monitor.id); } }catch(_){} }
+          try{ if(GE().hasRenderer()){ showOnMap({geometry:res.monitor.geometry,bbox:res.monitor.bbox},[],res.monitor.id); } }catch(_){} }
         else if(res.error==='login'){ _promptLogin(); }
         else { btn.disabled=false; btn.textContent=ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'); showErr(String(res.error||ML('Could not create the monitor.','監視を作成できませんでした。','Monitor konnte nicht erstellt werden.','Не удалось создать монитор.','No se pudo crear el monitor.'))); } };
     }

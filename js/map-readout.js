@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.mapReadout=function(map,HOST){
+window.IntMapModules.mapReadout=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Grid (zoom-adaptive, red equator) ===== */
   function gridStepForZoom(z){
@@ -23,9 +23,9 @@ window.IntMapModules.mapReadout=function(map,HOST){
   }
   function buildGridFeatures(){
     if(!HOST.hasTurf()) return [];
-    const z=map?GE().camera.getZoom():2;
+    const z=GE().hasRenderer()?GE().camera.getZoom():2;
     const {major,minor}=gridStepForZoom(z);
-    const b=map?GE().camera.getBounds():null;
+    const b=GE().hasRenderer()?GE().camera.getBounds():null;
     let minLng=-180,maxLng=180,minLat=-80,maxLat=80;
     if(b){
       const pad=Math.max(major*2,2);
@@ -76,7 +76,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
     }
     /* Edge labels (along axes) */
     const labelStep=major;
-    const c=map?GE().camera.getCenter():{lng:0,lat:0};
+    const c=GE().hasRenderer()?GE().camera.getCenter():{lng:0,lat:0};
     const baseLng=Math.max(minLng+major*0.5,Math.min(maxLng-major*0.5,c.lng));
     const baseLat=Math.max(minLat+major*0.5,Math.min(maxLat-major*0.5,c.lat));
     for(let lat=Math.ceil(minLat/labelStep)*labelStep; lat<=maxLat; lat+=labelStep){
@@ -99,7 +99,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
   }
   let gridRebuildTimer=null, _gridKey='';
   function refreshGrid(){
-    if(!HOST.isGridOn||!map||!GE().layers.hasSource('grid-source')) return;
+    if(!HOST.isGridOn||!GE().hasRenderer()||!GE().layers.hasSource('grid-source')) return;
     clearTimeout(gridRebuildTimer);
     gridRebuildTimer=setTimeout(()=>{
       try{
@@ -124,7 +124,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
     const gcb=document.getElementById('cb-grid'); if(gcb && gcb.checked!==HOST.isGridOn) gcb.checked=HOST.isGridOn;   /* (#R10) Grid now lives in the Layers menu */
     document.querySelectorAll('[data-proxy="cb-grid"]').forEach(x=>x.classList.toggle('active',HOST.isGridOn));
     _gridKey='';
-    if(!map||!GE().layers.hasSource('grid-source'))return;
+    if(!GE().hasRenderer()||!GE().layers.hasSource('grid-source'))return;
     if(HOST.isGridOn) GE().layers.setSourceData('grid-source',{type:'FeatureCollection',features:buildGridFeatures()});
     else GE().layers.setSourceData('grid-source',{type:'FeatureCollection',features:[]});
   }
@@ -152,7 +152,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
            クリック地点の気候区分までクリックされ…ないように"). */
         let onLabel=false;
         try{ const pt=point||(GE().coords.project([lng,lat]));
-          if(pt&&map){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
+          if(pt&&GE().hasRenderer()){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
             if(ls.length){ const pad=(typeof HOST.isMobile==='function'&&HOST.isMobile())?15:6; const near=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
         if(!onLabel){ const code=window.sampleKoppenAt(lng,lat);
           if(code && window.kSelected){
@@ -181,7 +181,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
        math and make turf emit NaN or globe-wrapping geometry. Clamp out of the polar caps. */
     lat=Math.max(-88,Math.min(88,lat));
     /* Don't add a measure point if the click landed on an existing pin or intel marker */
-    if(point && map){
+    if(point && GE().hasRenderer()){
       try{
         const hit=GE().coords.queryRenderedFeatures(point,{layers:['user-pin-dot','news-dots','dash-dots'].filter(l=>GE().layers.get(l))});
         if(hit&&hit.length) return;
@@ -248,7 +248,7 @@ window.IntMapModules.mapReadout=function(map,HOST){
   function _ll2tile(lng,lat,z){ const n=Math.pow(2,z); const x=(lng+180)/360*n; const lr=lat*Math.PI/180; const y=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*n; return {x,y,n}; }
   /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
      whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
-  function demZoomForMap(){ let mz=4; try{ if(map) mz=GE().camera.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
+  function demZoomForMap(){ let mz=4; try{ if(GE().hasRenderer()) mz=GE().camera.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
   function demElevAt(lng,lat,onReady,zArg){
     const z=(zArg!=null?zArg:demZoomForMap()); const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
@@ -381,6 +381,6 @@ const _wxCache=new Map();
       else if(typeof e==='number'){ set(HOST.elevText(e)); }
     }catch(_){}
   }
-  function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
+  function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&GE().hasRenderer())s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
   return { _demZoomForSpan, demElevAt, demElevBilinear, demZoomForMap, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
 };

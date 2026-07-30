@@ -9,7 +9,8 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.onboarding=function(map,HOST){
+window.IntMapModules.onboarding=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const ensurePlaceLabels=HOST.ensurePlaceLabels, applyLabelLang=HOST.applyLabelLang, isMobile=HOST.isMobile;
   /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
      first visit (nothing seen before) we auto-cycle a few colorful layers with a bottom pill that names
@@ -24,7 +25,7 @@ window.IntMapModules.onboarding=function(map,HOST){
          Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
       try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return; }catch(_){}
     }
-    if(typeof map==='undefined'||!map) return;
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     try{ const old=document.getElementById('im-demo-pill'); if(old) old.remove(); }catch(_){}
     const jp=()=>HOST.lang==='jp';
     const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-popgrid','Population density (1 km grid)','人口密度（1kmグリッド）']];
@@ -161,7 +162,7 @@ window.IntMapModules.onboarding=function(map,HOST){
   window._imWelcome=_imWelcome;
 };
 
-window.IntMapModules.progressCtl=function(map,HOST){
+window.IntMapModules.progressCtl=function(HOST){
   /* (#R139) HONEST population-progress control shared by the measure/radius panel and the Draw tool. WorldPop gives
      NO real % for a single request (its task API only reports created/finished/error), so any determinate number
      there is fabricated — the old bar was a time-based ease-out that DECELERATED toward 92% and snapped to 100%

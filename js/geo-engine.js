@@ -1229,6 +1229,13 @@ function _m(){ return window.__imap||null; }
     addPopup(o,lngLat,html){ const m=_m(); if(!m) return null;
       try{ const p=new maplibregl.Popup(o); if(lngLat) p.setLngLat(lngLat); if(html!=null) p.setHTML(html);
            p.addTo(m); return p; }catch(_){ return null; } },
+    /* (#R180) PUT AN ALREADY-BUILT ONE ON THIS VIEW. addMarker/addPopup construct AND attach, which
+       covers the simple cases; the eighteen remaining call sites build a long chain first
+       (`ui.popup(o).setLngLat(c).setMaxWidth(w).setHTML(html)`) and then finished it with
+       `.addTo(map)` — the raw handle again, as a VALUE, which is the reference shape #R179 measured
+       and the coupling gate now counts. This takes the finished object instead, so the chain is
+       untouched and no caller names the renderer. Returns the object so it still chains. */
+    attach(o){ const m=_m(); try{ if(m&&o&&o.addTo) o.addTo(m); }catch(_){} return o; },
     lngLat(lng,lat){ try{ return new maplibregl.LngLat(lng,lat); }catch(_){ return {lng,lat}; } },
     /* a custom tile SCHEME (weather composites, the elevation-tiles proxy). MapLibre calls these
        protocols; the contract calls them what they are. */
@@ -1394,7 +1401,9 @@ function _m(){ return window.__imap||null; }
       /* (#R179) an ADDITIONAL view as a scoped engine, and renderer UI attached to THIS view */
       createSubView:o=>A().createSubView?A().createSubView(o):null,
       addMarker:(o,ll)=>A().addMarker?A().addMarker(o,ll):null,
-      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null },
+      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null,
+      /* (#R180) attach a popup/marker the caller built itself — see the adapter */
+      attach:o=>A().attach?A().attach(o):o },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
@@ -1420,6 +1429,17 @@ function _m(){ return window.__imap||null; }
   return Object.assign({
     /* engine-level, not per-view: which adapter is installed, and the declared contracts */
     adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; },
-    contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; }
+    contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
+    /* (#R180) THE FACADE, AS A PUBLIC FACTORY. #R179 made the contract a function
+       of an adapter so an additional view could be handed the same shape; that
+       worked while both adapters lived in this file. A SECOND ENGINE does not —
+       js/cesium-engine.js has to be able to answer ui.createSubView with the same
+       object, and `engineFacade` is a closure here. Exposing the factory is what
+       makes "implement this contract" a thing another file can actually do, which
+       is the whole premise of the seam. */
+    makeFacade(adapterOrGetter){
+      const g=(typeof adapterOrGetter==='function')?adapterOrGetter:()=>adapterOrGetter;
+      return engineFacade(g);
+    }
   }, engineFacade(()=>_adapter));
 })();

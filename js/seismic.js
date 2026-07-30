@@ -38,13 +38,13 @@
  *  arrival until the surface-wave train has gone by, and the rupture adds its own length 1/fc.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.seismic=function(map,HOST){
+window.IntMapModules.seismic=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
 
   window.IntMapSeismic=(function(){
-    if(!map) return { open(){}, close(){}, state:()=>({open:false}) };
+    if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
     const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
     const D=Math.PI/180, RE=6371.0;                       /* IASP91 works in km */
     const SRC='seis-src';

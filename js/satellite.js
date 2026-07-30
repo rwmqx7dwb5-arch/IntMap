@@ -8,12 +8,12 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satellite=function(map,HOST){
+window.IntMapModules.satellite=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const saveSatKeys=()=>{ try{ localStorage.setItem('intmap_sat_keys',JSON.stringify(HOST.satKeys)); }catch(_){} };
   const satProviderById=(id)=>HOST.SAT_PROVIDERS.find(p=>p.id===id);
   /* BYOK/paid satellite providers require Pro AND a saved key; free providers are always usable. */
@@ -38,7 +38,7 @@ window.IntMapModules.satellite=function(map,HOST){
   }
   /* Core: load the selected provider into the idle buffer, then cross-fade (double-buffering). */
   function satApply(animate){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const p=satProviderById(HOST.satState.providerId); if(!p) return;
     HOST.satErrCount=0;
     /* Esri = the always-present base layer (layer-sat): no buffer needed → it is our fallback. */
@@ -180,7 +180,7 @@ window.IntMapModules.satellite=function(map,HOST){
     else if(HOST.mapType==='sat') satRenderController();
   }
   function satSetup(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     if(!satSetup._wired){ satSetup._wired=true; try{ GE().events.on('error',satOnError); }catch(_){}
       /* (#R24) auto-dismiss the FLOATING satellite controller when the user starts operating elsewhere
          ("それ以外の場所を操作し始めたら自動で消える"); it re-opens via the Satellite button (which resets
@@ -225,7 +225,7 @@ window.IntMapModules.satellite=function(map,HOST){
      (a WebGL drawing buffer is only guaranteed valid in the same frame it was drawn). */
   function aiCaptureCanvas(maxDim){
     return new Promise(res=>{
-      if(!map){ res(null); return; }
+      if(!GE().hasRenderer()){ res(null); return; }
       let done=false; const grab=()=>{ if(done)return; done=true; try{ res(aiDownscaleDataURL(GE().render.canvas(),maxDim)); }catch(_){ res(null); } };
       try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); }
       setTimeout(grab,900); /* safety net if no render event fires */

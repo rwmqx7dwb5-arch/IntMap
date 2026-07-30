@@ -11,7 +11,7 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.feedback=function(map,HOST){
+window.IntMapModules.feedback=function(HOST){
   const escapeHtml=HOST.escapeHtml, isMobile=HOST.isMobile;
   /* ===== (#R20) Feedback — 5-star + free text, stored in Supabase (`feedback` table,
      supabase_feedback.sql; admins read it in admin.html). 4–5 stars → thank-you + a gentle

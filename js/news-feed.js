@@ -8,11 +8,12 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsFeed=function(map,HOST){
+window.IntMapModules.newsFeed=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   function startNews(){
     const feed=document.getElementById('live-news-feed'); HOST.clearMarkers(); feed.innerHTML=''; HOST.renderedCount=0;
     if(HOST.globalData.length===0){ feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`; return; }

@@ -78,7 +78,9 @@ test('R152 #9 → R153 Measure/Share popups follow the Solid/Glass appearance se
 
 test('R152 #10 Compass right-click numeric popup (desktop)', () => {
   assert.match(html, /\.compass-num-pop\{ position:fixed;/, 'popup CSS present');
-  assert.match(html, /btn\.addEventListener\('contextmenu',\(e\)=>\{ e\.preventDefault\(\); if\(!map\) return;/, 'right-click handler on the compass');
+  /* (#R180) `if(!map)` became `if(!GE().hasRenderer())` when the last value references to the raw
+     handle went — the claim (a right-click handler that bails without a renderer) is unchanged. */
+  assert.match(html, /btn\.addEventListener\('contextmenu',\(e\)=>\{ e\.preventDefault\(\); if\(!GE\(\)\.hasRenderer\(\)\) return;/, 'right-click handler on the compass');
   assert.match(html, /id="cnp-bear"[\s\S]{0,300}id="cnp-pitch"/, 'bearing + pitch inputs');
   assert.match(html, /if\(typeof _imTouchPrimary==='function' && _imTouchPrimary\(\)\) return;/, 'desktop-only guard');
 });

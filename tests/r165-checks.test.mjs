@@ -155,9 +155,9 @@ test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its or
   assert.ok(html.includes("import '../js/atlas-console.js';"), 'src/main.js imports js/atlas-console.js (#R175)');
   assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
     'js/atlas-console.js extends IntMapModules without clobbering what earlier files put there');
-  assert.ok(mod.includes('window.IntMapModules.atlasConsole=function(map,HOST){'),
-    'js/atlas-console.js declares the atlasConsole factory taking (map,HOST)');
-  assert.ok(html.includes('window.IntMapConsole=window.IntMapModules.atlasConsole(map,IM_HOST);'),
+  assert.ok(mod.includes('window.IntMapModules.atlasConsole=function(HOST){'),
+    'js/atlas-console.js declares the atlasConsole factory taking (HOST)');
+  assert.ok(html.includes('window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);'),
     'index.html instantiates the kernel with the shared host at the original position');
 });
 

@@ -10,7 +10,7 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.toolPanel=function(map,HOST){
+window.IntMapModules.toolPanel=function(HOST){
   function bearingHTML(a,b){ const d=HOST.bearingDeg(a,b); return `${d.toFixed(1)}° <span class="unit-sub">(${HOST.compassDir(d)})</span>`; }
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */

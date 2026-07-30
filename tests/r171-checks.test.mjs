@@ -274,9 +274,10 @@ test('the engine contract declares what this round needed, and Cesium answers fo
 test('the module list, script tag and boot call for view-controls all agree', () => {
   /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
   assert.match(INDEX, /import '\.\.\/js\/view-controls\.js';/, 'the file must be loaded by the Vite entry');
-  assert.match(INDEX, /window\.IntMapModules\.viewControls\(map,IM_HOST\)/, 'the factory must be instantiated with the other module factories');
+  assert.match(INDEX, /window\.IntMapModules\.viewControls\((IM_HOST)\)/, 'the factory must be instantiated with the other module factories');
   const src = R('js/view-controls.js');
-  assert.match(src, /window\.IntMapModules\.viewControls=function\(map,HOST\)/, 'factory shape');
+  /* (#R180) the renderer parameter is gone from every factory — no module receives the raw handle */
+  assert.match(src, /window\.IntMapModules\.viewControls=function\(HOST\)/, 'factory shape');
   assert.match(src, /\(function waitForEngine\(n\)\{/,
     'the factories run before IntMapGeoEngine exists (#R170) — the module must wait for it rather than binding to nothing');
 });

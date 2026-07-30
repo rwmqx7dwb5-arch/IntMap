@@ -32,7 +32,13 @@ const INDEX = appShell(new URL('../', import.meta.url));
 /* (#R178) …and js/geo-engine.js is not a module either — it is the renderer adapter, carved out of
    app-body.js this round. It is part of the page's program (see appShell), so questions asked of
    the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
-const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
+/* (#R180) …and js/cesium-engine.js joins js/geo-engine.js on that exemption for the same
+   reason: this check asks whether a MODULE gates a layer add on the renderer's own
+   isStyleLoaded() instead of on canDraw(). An ADAPTER is where that question is answered, not
+   asked — `isStyleLoaded()` on the Cesium view IS the implementation the contract's
+   styleReady() delegates to, exactly as `map.isStyleLoaded()` is on the MapLibre side. */
+const ADAPTERS = new Set(['geo-engine.js', 'cesium-engine.js']);
+const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && !ADAPTERS.has(f));
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
 function stripComments(src) {
@@ -168,7 +174,7 @@ test('the place-search pill sits at the top of the map', () => {
 test('the 3-D volume tool is wired from menu to renderer', () => {
   /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
   assert.match(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'the module must be loaded by the Vite entry');
-  assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\(map,IM_HOST\)/, 'and instantiated exactly once');
+  assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\((IM_HOST)\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');
   /* (#R171) release() = clear() plus handing the drag gesture back, now that the freehand / circle /

@@ -57,7 +57,7 @@ const MOVED = {
   'js/map-ui.js': ['layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup', 'geojsonUpload', 'viewHash', 'share'],
   'js/playground.js': ['playground'],
   /* (#R176) `los` left this file for js/viewshed.js when the star-polygon viewshed became a raster
-     one — the factory name, the (map,HOST) signature and the single call site are all unchanged, so
+     one — the factory name, the signature and the single call site are all unchanged, so
      the invariants this test guards still hold; only its address moved. */
   'js/map-tools.js': ['projView', 'drawTool', 'isolate', 'seaRoute', 'outline', 'moveShape', 'isochrone', 'arc3d', 'objectList'],
   'js/viewshed.js': ['los'],
@@ -101,9 +101,9 @@ test('R166 #1 all seven files are loaded and every factory they define is instan
     // Comment-blanked: every header says "this file adds no <style>" in prose.
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     for (const f of facs) {
-      assert.ok(src.includes(`window.IntMapModules.${f}=function(map,HOST){`),
-        `${file} declares the ${f} factory taking (map,HOST)`);
-      const calls = html.split(`window.IntMapModules.${f}(map,IM_HOST);`).length - 1;
+      assert.ok(src.includes(`window.IntMapModules.${f}=function(HOST){`),
+        `${file} declares the ${f} factory taking (HOST)`);
+      const calls = html.split(`window.IntMapModules.${f}(IM_HOST);`).length - 1;
       assert.equal(calls, 1, `index.html must call ${f} exactly once (found ${calls})`);
     }
     // The file defines these factories and no others, so the lists above cannot drift silently.
@@ -117,7 +117,7 @@ test('R166 #2 ORDER: the 41 calls appear exactly where their blocks used to run'
   // these blocks append layer rows and panel buttons to shared containers, so their relative order
   // is user-visible. Pin it.
   const seen = ALL_FACS
-    .map((f) => ({ f, at: html.indexOf(`window.IntMapModules.${f}(map,IM_HOST);`) }))
+    .map((f) => ({ f, at: html.indexOf(`window.IntMapModules.${f}(IM_HOST);`) }))
     .filter((x) => x.at >= 0)
     .sort((a, b) => a.at - b.at)
     .map((x) => x.f);

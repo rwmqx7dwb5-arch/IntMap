@@ -12,7 +12,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.workspace=function(map,HOST){
+window.IntMapModules.workspace=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const bringToFront=HOST.bringToFront, fetchData=HOST.fetchData, i18n=HOST.i18n, imToast=HOST.imToast, loadCommunity=HOST.loadCommunity, registerWindow=HOST.registerWindow, renderCompanies=HOST.renderCompanies, renderDashboard=HOST.renderDashboard, setMode=HOST.setMode, startNews=HOST.startNews;
   return (function(){
@@ -414,7 +414,7 @@ window.IntMapModules.workspace=function(map,HOST){
     /* (#R78e) the map's geographic centre was landing off-window because frosted-sidebar mode sets
        map.setPadding({left: sidebarWidth}) so the optical centre sits right of the overlay — stale in a
        window. Zero the padding here so the map truly centres in its window, then resize. */
-    function fitMap(){ try{ const m=window.__imap||map; if(!m) return; try{ m.setPadding({top:0,right:0,bottom:0,left:0},{duration:0}); }catch(_){} m.resize(); }catch(_){} }
+    function fitMap(){ try{ const E=window.IntMapGeoEngine; if(!(E&&E.hasRenderer())) return; try{ E.camera.setPadding({top:0,right:0,bottom:0,left:0},{duration:0}); }catch(_){} E.render.resize(); }catch(_){} }
     function schedSave(){ if(!on) return; clearTimeout(saveT); saveT=setTimeout(saveRects,400); }
     function saveRects(){ if(!on) return; const rects={},vis={},minz={};
       for(const id in wraps){ const w=wraps[id]; if(!w||!w.isConnected) continue;

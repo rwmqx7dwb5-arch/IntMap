@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsContext=function(map,HOST){
+window.IntMapModules.newsContext=function(HOST){
   function matchPublisher(publisher){ if(!publisher) return null;
     for(const m of HOST._pubMatchers){ if(m.cjk?publisher.includes(m.label):m.re.test(publisher)) return m; }
     /* (#R32) Non-AI publisher-location BOOST ("AIを用いない発信地解析を強化 / 位置不明のピンが多い"): a huge

@@ -14,15 +14,15 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.routing=function(map,HOST){
+window.IntMapModules.routing=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const bringToFront=HOST.bringToFront, makeDraggable=HOST.makeDraggable;
   return (function(){
-    if(typeof map==='undefined'||!map) return { route(){ return Promise.resolve({ok:false}); }, clear(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { route(){ return Promise.resolve({ok:false}); }, clear(){} };
     const SRC='imroute-src';
     /* (#R85) per-mode leg styling ("どこで徒歩、どこで鉄道なのか地図上で一切わからない") — walking legs draw as a
        DOTTED line in grey, transit legs as a SOLID line coloured by vehicle mode (rail blue, subway orange, tram

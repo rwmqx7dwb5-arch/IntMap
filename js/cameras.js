@@ -12,17 +12,17 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.cameras=function(map,HOST){
+window.IntMapModules.cameras=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const EP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
     const LLw=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
     const lbl=()=>LLw('Live cameras','ライブカメラ','Live-Kameras','Веб-камеры','Cámaras en vivo');
@@ -70,7 +70,7 @@ window.IntMapModules.cameras=function(map,HOST){
         +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">'+refreshTxt+srcTxt+'</span>'
         +'<a href="'+IntMapSafe.html(IntMapSafe.url(url||p.video||p.img)||'#')+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Source','ソース','Quelle','Источник','Fuente')+' ↗</a></div>';   /* (#R138 SEC) http(s)-only + escape */
       if(popup) popup.remove();
-      popup=GE().ui.popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
+      popup=GE().ui.attach(GE().ui.popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html));
       try{ popup.on('close',_stopRefresh); }catch(_){}
       /* (#R87) thumbnail → swap the main live image to that view */
       try{ const root=popup.getElement&&popup.getElement(); if(root){ root.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('.wc-thumb'); if(!b) return; const u=b.getAttribute('data-u'); const main=root.querySelector('img.wc-live'); if(main&&u){ main.setAttribute('data-base',u); main.style.display='block'; const off=main.parentNode&&main.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; main.src=u+(u.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); } }); } }catch(_){}
@@ -164,7 +164,7 @@ window.IntMapModules.cameras=function(map,HOST){
         }); }, idx*350);
       });
     }
-    function loadView(force){ if(!on||!map||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+    function loadView(force){ if(!on||!GE().hasRenderer()||fetching) return; loadTfL(); loadCaltrans(); loadFinland(); loadOTCM(); loadOneStop(); let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
       const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=GE().camera.getZoom();
       /* skip if the view is already covered AND we haven't zoomed in meaningfully (zoom-in fetches denser cams) */
       if(!force && contains(lastBox,cur) && z<=lastZoom+0.8) return;

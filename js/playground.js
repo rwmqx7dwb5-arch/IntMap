@@ -22,7 +22,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.playground=function(map,HOST){
+window.IntMapModules.playground=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const loadCountryData=HOST.loadCountryData, imToast=HOST.imToast, countryStats=HOST.countryStats;
@@ -118,7 +118,7 @@ window.IntMapModules.playground=function(map,HOST){
         '}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
-      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
       ensureCountries(()=>{
         const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
@@ -153,7 +153,7 @@ window.IntMapModules.playground=function(map,HOST){
              ("World ExplorerではSatelliteではなくMapになっている"). Force it again here + keep the panel hidden. */
           try{ if(typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat'){ const sb=document.getElementById('btn-view-sat'); if(sb) sb.click(); } if(typeof HOST.satPanelDismissed!=='undefined') HOST.satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
           /* (#R30) drop a pulsing "home" pin at the start point so you never lose it while panning. */
-          try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=GE().ui.marker({element:el}).setLngLat([target.lng,target.lat]).addTo(map); }catch(_){}
+          try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=GE().ui.attach(GE().ui.marker({element:el}).setLngLat([target.lng,target.lat])); }catch(_){}
           try{ GE().events.on('zoom',onZoom); }catch(_){}
           setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
         const panel=document.createElement('div'); panel.id='pg-we-panel';
@@ -222,7 +222,7 @@ window.IntMapModules.playground=function(map,HOST){
       measles:{ n:{en:'Measles',jp:'麻疹'}, r0:14, inc:11, inf:8, ifr:0.002, immMo:600, seas:0.05 }
     };
     window._pgPandemic=function(){
-      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
       ensureCountries(()=>{
         const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }

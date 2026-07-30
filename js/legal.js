@@ -9,7 +9,7 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.legal=function(map,HOST){
+window.IntMapModules.legal=function(HOST){
   /* ===== Terms of Service & Privacy Policy ===== */
   const LEGAL_DATE='2026-07-17';   /* (#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. (#R114) Terms §6 + sources: AI provider is OpenAI (gpt-5.6-terra; #R150 Terra re-verified reachable, Luna is the fallback) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. */
   function legalTermsHTML(){ return HOST.lang==='jp'? `

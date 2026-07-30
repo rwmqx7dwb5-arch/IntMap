@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.windowManager=function(map,HOST){
+window.IntMapModules.windowManager=function(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
      moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
      off-screen and become unreachable (the other half of the mobile measure complaint, #7). */

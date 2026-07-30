@@ -36,6 +36,19 @@
         "127.0.0.1"
       ],
       "port": 8786
+    },
+    {
+      "name": "intmap-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4191"
+      ],
+      "port": 4191,
+      "url": "http://127.0.0.1:4191"
     }
   ]
 }
