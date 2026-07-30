@@ -131,6 +131,23 @@ test('R181 ③: mousedown/mouseup come from the pointer, not the mouse', () => {
     'a touch already arrives as touchstart/touchend; MapLibre does not raise mousedown for one');
 });
 
+test('R181 ③: every sourcedata fire carries isSourceLoaded', () => {
+  const src = R('js/cesium-engine.js');
+  /* every subscriber in the app tests it, so a fire without it is a fire nobody hears */
+  const bare = src.split('\n')
+    .map((ln, i) => [i + 1, ln])
+    .filter(([, ln]) => /fire\('sourcedata'/.test(ln) && !/isSourceLoaded/.test(ln));
+  assert.deepEqual(bare.map(([n]) => n), [],
+    'route it through _fireSourceData so the payload cannot be forgotten');
+  assert.match(src, /_sourceLoaded\(rec\)\{/, '"loaded" means something different per source type');
+  assert.match(src, /rec\.type==='vector'\) return !!\(rec\.vt&&rec\.vt\.stats\(\)\.pending===0\)/);
+  assert.match(src, /tileLoadProgressEvent/,
+    'a raster source becomes loaded when the globe\'s tile queue drains — the only signal there is');
+  /* and the app's three subscribers are still testing the flag we now send */
+  const app = R('js/app-body.js') + R('js/satellite.js');
+  assert.ok((app.match(/e\.isSourceLoaded/g) || []).length >= 3);
+});
+
 test('R181 ③: leaving the canvas closes out the layer hovers it opened', () => {
   const src = R('js/cesium-engine.js');
   const blk = src.slice(src.indexOf("if(name==='mouseout'"));

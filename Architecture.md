@@ -131,6 +131,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     互換マウスイベントが生成されない＝実測 0 対 4）。`click`/`dblclick`/`mousemove` は Cesium の
     ScreenSpaceEventHandler のまま（ドラッグを click にしない抑制は MapLibre と同じ）。`contextmenu` は
     DOM 側へ移した（`e.preventDefault()` が効くようにするため）。`mouseout` は**開いている hover を閉じる**。
+  - **③b `sourcedata` が `isSourceLoaded` を運んでいなかった。** 発火はしていた（実測 12 対 95）ので
+    「頻度の違い」に見えるが、**アプリの購読者3つは全員 `e.isSourceLoaded` を見る**——OFM 地名ラベルと
+    ラベル言語の再アサート／コミュニティ板の参照オーバーレイ／**衛星のクロスフェード**（届くまで待ち、
+    さもなければ 1,900ms のタイムアウトに落ちる）。**形が違うイベントは、発火しなかったイベントである。**
+    「読み込み済み」の意味は型ごとに違うので型ごとに答える（geojson＝データがある／vector＝
+    `stats().pending===0`／raster 系＝Cesium は**タイルを地球単位でしか追わない**ので `tilesLoaded`。
+    キューが 0 に落ちた瞬間だけ発火する＝1画面ぶんのタイルで1回）。
   - **④ `fitBounds` が球で箱を切っていた。** 平面メルカトルで矩形に合わせていたので、球では奥側が
     画面外へ出る（実測：欧州サイズの箱で **6%**、日本 0.6%、パリ 0.2%）。球のときは球に訊く——
     視点距離 d に対し各境界点 (e,n,u) が `d ≥ R·u + R·max(|e|/tanX, |n|/tanY)` を満たす最小の d（閉形式）。
@@ -147,7 +154,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     z12 から z1.7 に戻ると**国名ラベル1,122件が二度と戻らなかった**（レイヤは可視・ズーム範囲内・
     768 features 到達・714 がフィルタ通過で、描画 0）。**「今の視界が覆うタイル集合」**（`wantSet`）に
     置き換えた。
-  - 検証：`tests/r181-checks.test.mjs`（19件・Node）＋`tests/r181-cesium.spec.js`（9件・実ブラウザ）。
+  - 検証：`tests/r181-checks.test.mjs`（20件・Node）＋`tests/r181-cesium.spec.js`（10件・実ブラウザ）。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。

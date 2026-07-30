@@ -495,11 +495,11 @@ window.IntMapCesiumEngine=(function(){
         this._dem.configure(spec);
       }
       this._sources.set(id,rec);
-      this.fire('sourcedata',{sourceId:id});
+      this._fireSourceData(id);
     }
     _fetchGeoJSON(rec,url){
       fetch(url,{mode:'cors',credentials:'omit'}).then(r=>r.ok?r.json():null).then(j=>{
-        if(!j) return; rec.data=normaliseFC(j); this._markSourceDirty(rec.id); this.fire('sourcedata',{sourceId:rec.id});
+        if(!j) return; rec.data=normaliseFC(j); this._markSourceDirty(rec.id);
       }).catch(()=>{});
     }
     setSourceData(id,data){
@@ -507,7 +507,7 @@ window.IntMapCesiumEngine=(function(){
       if(typeof data==='string'){ this._fetchGeoJSON(rec,data); return; }
       rec.data=normaliseFC(data);
       this._markSourceDirty(id);
-      this.fire('sourcedata',{sourceId:id});
+      this._fireSourceData(id);
     }
     sourceData(id){ const r=this._sources.get(id); return r?r.data:null; }
     removeSource(id){
@@ -528,8 +528,37 @@ window.IntMapCesiumEngine=(function(){
       this._layers.filter(l=>l.def.source===id).forEach(l=>this._rebuildLayer(l));
       return true;
     }
+    /* ══ (#R181) `sourcedata` HAS TO CARRY `isSourceLoaded`, OR THREE HANDLERS ARE DEAD ═══════
+       The event fired — 12 times against MapLibre's 95 in the audit, which looked like a mere
+       difference of frequency — but it carried only `{sourceId}`, and every subscriber in the app
+       tests `e.isSourceLoaded`:
+         app-body.js  the OFM place labels + label language, re-asserted when the tiles land
+         app-body.js  the community-board reference overlays (admin1 / roads / rail)
+         satellite.js the satellite cross-fade, which waits for the incoming raster and otherwise
+                      falls through to a 1,900 ms timeout
+       So none of them ran, and the last one degraded to always taking the timeout. "Loaded" means
+       something different per source type, so each type answers for itself rather than one of them
+       answering for all. */
+    _sourceLoaded(rec){
+      if(!rec) return false;
+      try{
+        if(rec.type==='geojson') return !!rec.data;
+        if(rec.type==='vector') return !!(rec.vt&&rec.vt.stats().pending===0);
+        /* raster / raster-dem / image are Cesium imagery, and Cesium tracks tiles for the whole
+           globe rather than per layer — `tilesLoaded` is a superset, and a true statement about
+           this layer whenever it holds */
+        return !!this._globe.tilesLoaded;
+      }catch(_){ return false; }
+    }
+    _fireSourceData(id){
+      const rec=this._sources.get(id);
+      this.fire('sourcedata',{ sourceId:id, isSourceLoaded:this._sourceLoaded(rec), dataType:'source' });
+    }
     _markSourceDirty(id){
       this._layers.forEach(l=>{ if(l.def.source===id) this._dirty.add(l.def.id); });
+      /* a vector tile landing is the one moment "this source is now loaded" can become true
+         without anything else happening, and it is exactly what those handlers are waiting for */
+      this._fireSourceData(id);
       this._schedule();
     }
     _features(def){
@@ -914,6 +943,19 @@ window.IntMapCesiumEngine=(function(){
          compass simply did not follow the map. Fired when the angle actually MOVED rather than
          on every camera event, which is what makes them different from `move`. */
       scene.postRender.addEventListener(()=>{ this.fire('render',{}); });
+      /* (#R181) …and the moment the globe's tile queue DRAINS is when a raster source becomes
+         "loaded" — the only signal Cesium has for it, and what satellite.js's cross-fade is
+         waiting on. Fired on the transition to zero, not on every change of the queue, so a
+         screen of tiles arriving is one announcement rather than dozens. */
+      try{
+        let inQueue=0;
+        this._globe.tileLoadProgressEvent.addEventListener((n)=>{
+          const was=inQueue; inQueue=n|0;
+          if(was>0&&inQueue===0){
+            this._sources.forEach((rec,id)=>{ if(rec.type!=='geojson') this._fireSourceData(id); });
+          }
+        });
+      }catch(_){}
       let lastB=null,lastP=null;
       /* published on the instance because a PROGRAMMATIC camera move (jumpTo/flyTo) does not
          go through the gesture stream, and MapLibre fires rotate/pitch for those too */

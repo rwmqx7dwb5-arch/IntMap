@@ -284,6 +284,28 @@ test('R181 ⑦: a default session still transfers no Cesium and no engine errors
   expect(errors).toEqual([]);
 });
 
+/* the audit read `sourcedata` 12 against MapLibre's 95 and that looked like frequency — but the
+   payload carried only {sourceId}, and all three subscribers in the app test `e.isSourceLoaded`.
+   An event that fires with the wrong shape is an event that never fired. */
+test('R181 ③b: sourcedata says WHEN a source finished, not only that it changed', async ({ page }) => {
+  await boot(page, 'cesium');
+  await page.evaluate(() => {
+    window.__sd = [];
+    window.IntMapGeoEngine.events.on('sourcedata', (e) => {
+      if (e && e.isSourceLoaded) window.__sd.push(e.sourceId);
+    });
+    window.IntMapGeoEngine.camera.jumpTo({ center: [20, 10], zoom: 2.5, pitch: 0, bearing: 0 });
+  });
+  await expect.poll(() => page.evaluate(() => window.__sd.length), { timeout: 45_000 })
+    .toBeGreaterThan(0);
+  /* `ofm` is the vector source the place-label and reference-overlay handlers wait on */
+  await expect.poll(() => page.evaluate(() => window.__sd.filter((s) => s === 'ofm').length),
+    { timeout: 45_000 }).toBeGreaterThan(0);
+  const kinds = await page.evaluate(() => [...new Set(window.__sd)].length);
+  expect(kinds, 'raster sources report it too — satellite.js\'s cross-fade waits on one')
+    .toBeGreaterThan(1);
+});
+
 test('R181 ⑦: the sky spec survives a round trip, so a flight can put it back', async ({ page }) => {
   await boot(page, 'cesium');
   const got = await page.evaluate(() => {
