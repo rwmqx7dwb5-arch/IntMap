@@ -289,6 +289,41 @@ test('R180 ⑥: terrain comes from the app\'s own terrarium DEM and reads true h
   expect(got.dead).toBeGreaterThan(-600);
 });
 
+/* ── ⑥b THE SATELLITE PROTOCOL — a near miss that would have shipped looking fine ─────────
+   `maplibregl.addProtocol` is a STATIC registration, so js/app-body.js registers `imapsat://`
+   at line 940 and asks the contract for a view at line 973. The first version of this adapter
+   kept protocols PER VIEW, so the handler was dropped on the floor thirty lines before the view
+   existed — and nothing would have said so, because the satellite layer boots with
+   visibility:'none'. Everything #R158/#R178/#R179 built into that protocol (the grey-placeholder
+   repair, the HiDPI stitch, the imagery-depth memo) would simply not have existed on this engine.
+   The fix moved the registry out of the view; the SECOND attempt was needed because the adapter
+   method still had an `if(view)` guard in front of it. Hence a test, not a comment. */
+test('R180 ⑥b: tile protocols survive being registered before the view exists', async ({ page }) => {
+  await asCesium(page);
+  const got = await page.evaluate(async () => {
+    const v = window.__imap;
+    const out = { protocols: window.__imCesium.protocols() };
+    const rec = v._layers.find((x) => x.def.id === 'layer-sat');
+    out.satLayerExists = !!rec;
+    out.satTiles = (window.IntMapGeoEngine.scene.getStyle().sources.satellite || {}).tiles;
+    /* ask the provider for a real tile over Tokyo and see what comes back — this is the whole
+       path: Cesium → the app's protocol → Esri → #R179's stitch/repair → an ImageBitmap */
+    try {
+      const img = await rec.provider.requestImage(1818, 806, 11);
+      out.tile = { got: !!img, w: img && img.width, h: img && img.height,
+                   bitmap: typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap };
+    } catch (e) { out.tileErr = String((e && e.message) || e); }
+    return out;
+  });
+  expect(got.protocols, 'the protocol registered before createView must still be there').toContain('imapsat');
+  expect(got.satLayerExists).toBe(true);
+  expect(got.satTiles, 'and the style really is pointing at it').toEqual(['imapsat://{z}/{y}/{x}']);
+  expect(got.tileErr, 'no error from the provider').toBeUndefined();
+  expect(got.tile.got, 'a real image came back through the app\'s own satellite path').toBe(true);
+  expect(got.tile.bitmap, 'as an ImageBitmap — no re-encode, as #R178 arranged').toBe(true);
+  expect(got.tile.w).toBeGreaterThanOrEqual(256);
+});
+
 /* ── ⑦ AN ADDITIONAL VIEW — #R179's per-view contract, on engine two ──────────────────────
    #R179 closed `ui.createView` because a second view kept the raw handle under a local name.
    The replacement is `ui.createSubView`, which returns the SAME contract scoped to the new

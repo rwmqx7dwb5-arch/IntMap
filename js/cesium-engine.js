@@ -1209,7 +1209,12 @@ window.IntMapCesiumEngine=(function(){
       addImage(id,img){ const v=V(); return v?v.addImage(id,img):false; },
       hasImage(id){ const v=V(); return v?v.hasImage(id):false; },
       removeImage(id){ const v=V(); if(v) v.removeImage(id); },
-      addProtocol(n,fn){ const v=V(); return v?v.addProtocol(n,fn):false; },
+      /* NO `if(v)` GUARD — that is the whole point (see PROTOCOLS at the top). The app registers
+         the satellite protocol thirty lines before it asks for a view, so a method that needs a
+         view to exist would return false and drop the handler on the floor. Measured after the
+         first attempt at this fix moved only the STORAGE: the layer still fetched nothing,
+         because this guard was still here. A scheme handler belongs to the app, not to a canvas. */
+      addProtocol(n,fn){ if(!n||typeof fn!=='function') return false; PROTOCOLS[n]=fn; return true; },
       setImageConcurrency(n){ try{ if(Cesium&&Cesium.RequestScheduler&&isFinite(n)){
         Cesium.RequestScheduler.maximumRequests=n;
         Cesium.RequestScheduler.maximumRequestsPerServer=Math.max(6,Math.round(n/4)); return true; } }catch(_){}
@@ -1356,7 +1361,10 @@ window.IntMapCesiumEngine=(function(){
       const adapter=makeCesiumAdapter(()=>window.__imap,ViewClass);
       if(!(window.IntMapGeoEngine&&window.IntMapGeoEngine.use)) return false;
       window.IntMapGeoEngine.use(adapter);
-      window.__imCesium={ Cesium, adapter };
+      /* diagnostics, in the spirit of window.__imap / window.IntMapSatProto — the registered
+         scheme handlers are reported so "is the satellite protocol actually wired?" is a
+         question with an answer, rather than something inferred from a blank layer */
+      window.__imCesium={ Cesium, adapter, protocols:()=>Object.keys(PROTOCOLS) };
       return true;
     }catch(e){ console.warn('[IntMap] Cesium engine failed to start:',e); return false; }
   }
