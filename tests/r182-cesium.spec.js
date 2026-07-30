@@ -51,7 +51,7 @@ const park = async (page, over = {}) => {
    a MapLibre one share this machine's GPU while the suite runs, and the page is hidden — rAF
    was measured at 3–8 Hz and setTimeout throttled to about 1 Hz. A fixed wait under that is
    measuring the harness; polling for stillness measures the map. */
-const settle = (page, budgetMs = 6000) => page.evaluate(async (budget) => {
+const settle = (page, budgetMs = 4000) => page.evaluate(async (budget) => {
   const at = () => { const x = window.IntMapGeoEngine.camera.get();
     return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].join(','); };
   let last = '', still = 0;
@@ -63,7 +63,7 @@ const settle = (page, budgetMs = 6000) => page.evaluate(async (budget) => {
 /* …and after an INPUT, wait for the map to start moving first. An event dispatched from the
    test process may not have been processed yet when the poll begins, and "unchanged twice"
    would then mean "not yet", which reads as a gesture that did nothing. */
-const settleFrom = (page, key, budgetMs = 9000) => page.evaluate(async ([k, budget]) => {
+const settleFrom = (page, key, budgetMs = 6000) => page.evaluate(async ([k, budget]) => {
   const at = () => { const x = window.IntMapGeoEngine.camera.get();
     return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].join(','); };
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -84,7 +84,7 @@ const norm = (d) => { const v = ((d % 360) + 360) % 360; return v > 180 ? v - 36
    that moved moved by Cesium's law rather than MapLibre's. Measured before this round, at
    z4: a 120 px drag down moved the centre 4× too far, a right-drag zoomed instead of
    rotating, ctrl+drag did nothing, and the wheel did nothing at all. */
-async function mouseSuite(page, engine) {
+async function mouseSuite(page, engine, part) {
   await boot(page, engine);
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
@@ -119,13 +119,19 @@ async function mouseSuite(page, engine) {
       dPitch: during.pitch - before.pitch };
   };
 
-  await drag('panRight', 120, 0);
-  await drag('panDown', 0, 120);
-  await drag('panRightFlat', 120, 0, { start: { pitch: 0 } });
-  await drag('rotateRight', 120, 0, { button: 'right' });
-  await drag('pitchUp', 0, -120, { button: 'right' });
-  await drag('ctrlRotate', 120, 0, { key: 'Control' });
-  await drag('ctrlPitch', 0, -120, { key: 'Control' });
+  /* SPLIT IN TWO, because one test that drives fourteen gestures through two engines is one
+     test that times out on a shared CI runner (measured: 3.2 min against a 180 s budget, all
+     three attempts). The halves are independent and run in parallel workers. */
+  if (part === 'drag') {
+    await drag('panRight', 120, 0);
+    await drag('panDown', 0, 120);
+    await drag('panRightFlat', 120, 0, { start: { pitch: 0 } });
+    await drag('rotateRight', 120, 0, { button: 'right' });
+    await drag('pitchUp', 0, -120, { button: 'right' });
+    await drag('ctrlRotate', 120, 0, { key: 'Control' });
+    await drag('ctrlPitch', 0, -120, { key: 'Control' });
+    return out;
+  }
 
   /* the wheel, as a whole gesture — and whether it zoomed at the cursor */
   for (const [name, delta] of [['wheelIn', -120], ['wheelOut', 120]]) {
@@ -177,14 +183,19 @@ async function mouseSuite(page, engine) {
   return out;
 }
 
-test('R182 ①: every mouse and keyboard gesture answers the way MapLibre answers', async ({ page }) => {
-  test.slow();
-  const ml = await mouseSuite(page, 'maplibre');
-  const cs = await mouseSuite(page, 'cesium');
+/* the comparison, printed in full — a failure should read as a table, not as one number */
+const compare = (ml, cs) => {
   const show = (k) => `${k}: MapLibre ${JSON.stringify(ml[k], (_, v) => typeof v === 'number' ? +v.toFixed(3) : v)}`
     + ` vs Cesium ${JSON.stringify(cs[k], (_, v) => typeof v === 'number' ? +v.toFixed(3) : v)}`;
-  /* the whole table, so a failure reads as a comparison rather than as one number */
   for (const k of Object.keys(ml)) console.log(show(k));
+  return show;
+};
+
+test('R182 ①a: pan, rotate and pitch answer the way MapLibre answers', async ({ page }) => {
+  test.setTimeout(300_000);
+  const ml = await mouseSuite(page, 'maplibre', 'drag');
+  const cs = await mouseSuite(page, 'cesium', 'drag');
+  const show = compare(ml, cs);
 
   /* PAN — the same law, which is MapLibre's globe pan and not "the grabbed point follows the
      cursor" (maplibre-gl says so itself; see js/cesium-input.js). Cesium used to move 4× too
@@ -214,6 +225,13 @@ test('R182 ①: every mouse and keyboard gesture answers the way MapLibre answer
     expect(Math.abs(ml[k].dPitch), `${k}: MapLibre itself must have tilted`).toBeGreaterThan(10);
     expect(Math.abs(cs[k].dPitch - ml[k].dPitch), show(k)).toBeLessThan(1);
   }
+});
+
+test('R182 ①b: the wheel, the box zoom and the keyboard answer the way MapLibre answers', async ({ page }) => {
+  test.setTimeout(300_000);
+  const ml = await mouseSuite(page, 'maplibre', 'rest');
+  const cs = await mouseSuite(page, 'cesium', 'rest');
+  const show = compare(ml, cs);
 
   /* THE WHEEL — the sigmoid, at the app's own rates, anchored at the cursor */
   for (const k of ['wheelIn', 'wheelOut']) {
@@ -245,6 +263,7 @@ test('R182 ①: every mouse and keyboard gesture answers the way MapLibre answer
    either. The input pipeline itself is what ① exercises; what is left to check here is the
    controller's own bookkeeping, and a burst is exactly the fast flick that exercises it. */
 test('R182 ②: a drag is one movestart…moveend, and the fling glides after release', async ({ page }) => {
+  test.setTimeout(180000);
   await boot(page, 'cesium');
   await park(page, { pitch: 0 });
   const got = await page.evaluate(async () => {
@@ -290,7 +309,7 @@ test('R182 ②: a drag is one movestart…moveend, and the fling glides after re
    up to 25° of latitude away and threw the bearing away entirely at pitch 0 — and every
    animated move in the app goes through there. */
 test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', async ({ page }) => {
-  test.slow();
+  test.setTimeout(300000);
   await boot(page, 'cesium');
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
@@ -321,6 +340,7 @@ test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', as
    The adapter used to drop the option, and the two call sites that pass it are the app's own
    double-click and pinch zoom, which exist for exactly this (#R20). */
 test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({ page }) => {
+  test.setTimeout(240000);
   await boot(page, 'cesium');
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
@@ -358,6 +378,7 @@ test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({
    the old engine three of the names were recorded and ignored, and two shared one flag, so
    turning the pinch off also killed the wheel. */
 test('R182 ⑤: all eight gesture names can be suspended and restored', async ({ page }) => {
+  test.setTimeout(180000);
   await boot(page, 'cesium');
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
@@ -393,6 +414,7 @@ test('R182 ⑤: all eight gesture names can be suspended and restored', async ({
    One finger pans; two fingers pinch about their midpoint. Driven through CDP's touch input
    so the pointer stream is the real one. */
 test('R182 ⑥: one finger pans and two fingers pinch', async ({ page }) => {
+  test.setTimeout(180000);
   await boot(page, 'cesium');
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
