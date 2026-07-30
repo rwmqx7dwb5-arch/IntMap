@@ -74,6 +74,13 @@ window.IntMapEngineSelect=(function(){
         await import('./cesium-style.js');
         await import('./cesium-layers.js');
         await import('./cesium-vector-tiles.js');
+        /* (#R182) …and the gestures, BEFORE the engine: cesium-engine.js attaches the
+           input layer while it builds the view, so it has to be published by then.
+           A missing one is not fatal (the view falls back to Cesium's own
+           controller), which is exactly why the order has to be stated rather than
+           left to chance — the failure would be a map that navigates oddly, not one
+           that fails to start. */
+        await import('./cesium-input.js');
         const mod=await import('./cesium-engine.js');
         void mod;
         const ok=await window.IntMapCesiumEngine.boot();
