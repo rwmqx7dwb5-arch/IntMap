@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.aiCore=function(map,HOST){
+window.IntMapModules.aiCore=function(HOST){
   const saveAIConfig=()=>{ try{ localStorage.setItem('intmap_ai_config',JSON.stringify(HOST.aiConfig)); }catch(_){} };
   /* (#R27) Account-based AI: the first-party server proxy is ALWAYS configured (see INTMAP_AI_PROXY
      below), so the engine is always "ready" to RECEIVE a click. The real gate — login required + the

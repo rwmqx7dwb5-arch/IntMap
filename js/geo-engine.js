@@ -1229,6 +1229,13 @@ function _m(){ return window.__imap||null; }
     addPopup(o,lngLat,html){ const m=_m(); if(!m) return null;
       try{ const p=new maplibregl.Popup(o); if(lngLat) p.setLngLat(lngLat); if(html!=null) p.setHTML(html);
            p.addTo(m); return p; }catch(_){ return null; } },
+    /* (#R180) PUT AN ALREADY-BUILT ONE ON THIS VIEW. addMarker/addPopup construct AND attach, which
+       covers the simple cases; the eighteen remaining call sites build a long chain first
+       (`ui.popup(o).setLngLat(c).setMaxWidth(w).setHTML(html)`) and then finished it with
+       `.addTo(map)` — the raw handle again, as a VALUE, which is the reference shape #R179 measured
+       and the coupling gate now counts. This takes the finished object instead, so the chain is
+       untouched and no caller names the renderer. Returns the object so it still chains. */
+    attach(o){ const m=_m(); try{ if(m&&o&&o.addTo) o.addTo(m); }catch(_){} return o; },
     lngLat(lng,lat){ try{ return new maplibregl.LngLat(lng,lat); }catch(_){ return {lng,lat}; } },
     /* a custom tile SCHEME (weather composites, the elevation-tiles proxy). MapLibre calls these
        protocols; the contract calls them what they are. */
@@ -1394,7 +1401,9 @@ function _m(){ return window.__imap||null; }
       /* (#R179) an ADDITIONAL view as a scoped engine, and renderer UI attached to THIS view */
       createSubView:o=>A().createSubView?A().createSubView(o):null,
       addMarker:(o,ll)=>A().addMarker?A().addMarker(o,ll):null,
-      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null },
+      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null,
+      /* (#R180) attach a popup/marker the caller built itself — see the adapter */
+      attach:o=>A().attach?A().attach(o):o },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),

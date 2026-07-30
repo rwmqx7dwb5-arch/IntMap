@@ -19,13 +19,13 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.layerRegistry=function(map,HOST){
+window.IntMapModules.layerRegistry=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const demElevAt=HOST.demElevAt;
   window.IntMapLayers=(function(){
@@ -167,7 +167,7 @@ window.IntMapModules.layerRegistry=function(map,HOST){
   })();
 };
 
-window.IntMapModules.layerSidebar=function(map,HOST){
+window.IntMapModules.layerSidebar=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const layerCbInfo=HOST.layerCbInfo, saveSettings=HOST.saveSettings, renderLayerFavs=HOST.renderLayerFavs;
@@ -268,7 +268,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
           document.documentElement.style.setProperty('--lsr-w', w+'px');   /* (#R160) overlay: only the panel width changes; the map stays full-width behind it (no margin push, no resize) */
           try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} });
         const end=e=>{ if(!rdrag) return; rdrag=false; try{ rh.releasePointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect=''; sb.style.transition='';
-          try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(typeof map!=='undefined'&&map) GE().render.resize(); }catch(_){} };
+          try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(GE().hasRenderer()&&GE().hasRenderer()) GE().render.resize(); }catch(_){} };
         rh.addEventListener('pointerup',end); rh.addEventListener('pointercancel',end);
       })();
       sb.querySelector('.lsr-x').onclick=close;
@@ -404,7 +404,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
       try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
     function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
       if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
-      try{ if(open._mapCloser&&map) GE().events.off('click',open._mapCloser); }catch(_){}
+      try{ if(open._mapCloser&&GE().hasRenderer()) GE().events.off('click',open._mapCloser); }catch(_){}
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
@@ -429,7 +429,7 @@ window.IntMapModules.layerSidebar=function(map,HOST){
   })();
 };
 
-window.IntMapModules.ticker=function(map,HOST){
+window.IntMapModules.ticker=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const fetchData=HOST.fetchData, saveSettings=HOST.saveSettings;
@@ -534,7 +534,7 @@ window.IntMapModules.ticker=function(map,HOST){
   })();
 };
 
-window.IntMapModules.layerPresets=function(map,HOST){
+window.IntMapModules.layerPresets=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
@@ -583,17 +583,17 @@ window.IntMapModules.layerPresets=function(map,HOST){
   })();
 };
 
-window.IntMapModules.labelPopup=function(map,HOST){
+window.IntMapModules.labelPopup=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     let popup=null, wired=false;
     function firstSym(){ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
     function ensureHL(){ if(GE().layers.hasSource('place-hl-src')) return true; if(!_imCanDraw()) return false;
@@ -630,7 +630,7 @@ window.IntMapModules.labelPopup=function(map,HOST){
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
       const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
       const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;display:flex;align-items:center;gap:8px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
-      try{ popup=GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
+      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
@@ -745,12 +745,12 @@ window.IntMapModules.labelPopup=function(map,HOST){
   })();
 };
 
-window.IntMapModules.geojsonUpload=function(map,HOST){
+window.IntMapModules.geojsonUpload=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     let seq=0; const items=[]; let listEl=null;
     const PALETTE=['#ff9500','#34c759','#5856d6','#ff2d55','#00b8d4','#ffcc00','#af52de','#0a84ff'];
     const jp=()=>HOST.lang==='jp';
@@ -803,15 +803,15 @@ window.IntMapModules.geojsonUpload=function(map,HOST){
   })();
 };
 
-window.IntMapModules.viewHash=function(map,HOST){
+window.IntMapModules.viewHash=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     let restoring=false, t=null;
     /* (#R42b) Per-TAB flag: true on the FIRST load of a tab (a fresh open / a shared link / a copied address
        bar opened on another device), false on a plain RELOAD of the same tab. sessionStorage survives reload
@@ -896,7 +896,7 @@ window.IntMapModules.viewHash=function(map,HOST){
   })();
 };
 
-window.IntMapModules.share=function(map,HOST){
+window.IntMapModules.share=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t;
   window.IntMapShare=(function(){

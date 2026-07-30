@@ -69,8 +69,8 @@ const ALL_FACS = Object.values(MOVED).flat();
    by name at the end of boot, so the factory just hands the function back. */
 const RETURNED = { mobileUI: 'initMobileUI' };
 const callOf = (f) => (RETURNED[f]
-  ? `const ${RETURNED[f]}=window.IntMapModules.${f}(map,IM_HOST);`
-  : `window.IntMapModules.${f}(map,IM_HOST);`);
+  ? `const ${RETURNED[f]}=window.IntMapModules.${f}(IM_HOST);`
+  : `window.IntMapModules.${f}(IM_HOST);`);
 
 /* The order the blocks occupied in the closure = the order their calls must appear in index.html. */
 const ORDER = [
@@ -103,8 +103,8 @@ test('R167 #1 all eight files are loaded and every factory they define is instan
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     for (const f of facs) {
-      assert.ok(src.includes(`window.IntMapModules.${f}=function(map,HOST){`),
-        `${file} declares the ${f} factory taking (map,HOST)`);
+      assert.ok(src.includes(`window.IntMapModules.${f}=function(HOST){`),
+        `${file} declares the ${f} factory taking (HOST)`);
       const calls = html.split(callOf(f)).length - 1;
       assert.equal(calls, 1, `index.html must call ${f} exactly once (found ${calls})`);
     }
@@ -205,7 +205,7 @@ test('R167 #5 THE DEAD-ZONE RULE: js/feedback.js never binds HOST.DB at factory 
   // helpers were all hoisted FUNCTION DECLARATIONS. A `const` is not hoisted: reading HOST.DB while
   // the factory runs enters that const's temporal dead zone and throws before the modal exists.
   const src = rd('js/feedback.js');
-  const i = src.indexOf('window.IntMapModules.feedback=function(map,HOST){');
+  const i = src.indexOf('window.IntMapModules.feedback=function(HOST){');
   assert.ok(i > 0, 'js/feedback.js declares the feedback factory');
   const bindLine = src.slice(i).split('\n')[1];
   assert.ok(!/\bDB\s*=\s*HOST\.DB\b/.test(bindLine),

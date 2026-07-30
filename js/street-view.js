@@ -14,7 +14,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.streetView=function(map,HOST){
+window.IntMapModules.streetView=function(HOST){
   /* (#R173) 脱MapLibre 第7段階 — this module is written against the engine facade, never the raw renderer.
      Every call below already existed in the contract (#R152/#R160/#R161); the parameter is kept only
      because the factory signature is shared by all module files. */
@@ -82,7 +82,7 @@ window.IntMapModules.streetView=function(map,HOST){
                off-pano; if the drop has no coverage nearby, keep it where dropped but say so honestly. */
             _snapPano(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _svLinks=res.links||[]; _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _svLinks=[]; _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); else _coverageUnverifiedToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _coverageUnverifiedToast(); _reloadEmbed(); }); }); }
         if(!_svDragging) _hereMarker.setLngLat([+lng,+lat]); _hereMarker.setRotation(_hereHdg);
-        if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
+        if(!_hereMarker._map){ GE().ui.attach(_hereMarker); } }catch(_){}
       try{ const b=GE().camera.getBounds(); if(b&&!b.contains([+lng,+lat])) GE().camera.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
       _updHeadingLabel(); }
     function _updHeadingLabel(){ try{ if(panel){ const h=panel.querySelector('.sv-hdg'); if(h) h.innerHTML=_compass(_hereHdg); } }catch(_){} }

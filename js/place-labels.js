@@ -8,12 +8,12 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.placeLabels=function(map,HOST){
+window.IntMapModules.placeLabels=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
      hard-coded English; pull the right language out of geoLayersDB instead). */
   /* Fallback names for geo-layer checkboxes whose layer was pulled out of geoLayersDB (e.g. Rimland,
@@ -176,7 +176,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
       try{ GE().layers.setSourceData('stab-'+kind+'-src',{type:'FeatureCollection',features:Array.from(HOST._stabIdx[kind].values())}); }catch(_){} });
   }
   function applyLabelLang(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const mode=window.imLabelLang||'ui';
     let nameExpr;
     if(mode==='en') nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name_int'],['get','name']];
@@ -237,7 +237,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
     return {type:'FeatureCollection',features:feats};
   }
   function ensureGeoLayers(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     /* Style may not be ready yet (e.g. right after setProjection on load). Retry until it is. */
     if(!_imCanDraw()){ clearTimeout(ensureGeoLayers._t); ensureGeoLayers._t=setTimeout(ensureGeoLayers,160); return; }
     for(const[key,data] of Object.entries(HOST.geoLayersDB)){
@@ -264,7 +264,7 @@ window.IntMapModules.placeLabels=function(map,HOST){
     updateGeoLayers();
   }
   function updateGeoLayers(){
-    if(!map)return;
+    if(!GE().hasRenderer())return;
     /* (#R13c) If the style is mid-load, a toggle-OFF would silently no-op and the layer would STAY on
        ("消したはずのレイヤーが残る"). Re-run once the style settles so the on/off state always lands. */
     if(!_imCanDraw()){ try{ GE().events.once('idle',()=>{ try{ updateGeoLayers(); }catch(_){} }); }catch(_){} return; }

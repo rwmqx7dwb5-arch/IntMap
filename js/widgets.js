@@ -12,7 +12,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.widgets=function(map,HOST){
+window.IntMapModules.widgets=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats, fmtMoney=HOST.fmtMoney, imToast=HOST.imToast, isMobile=HOST.isMobile;
   /* (#R172) CAMERA THROUGH IntMapGeoEngine — this module no longer names the renderer.
@@ -559,7 +560,7 @@ window.IntMapModules.widgets=function(map,HOST){
            so if you were already zoomed in it stayed city-close ("zoomed too close. Show an entire country").
            Now fitBounds the country geometry (maxZoom 6 so a tiny country still shows with context); fall back
            to a sensible low-zoom flyTo when the geometry is unavailable or spans the antimeridian. */
-        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!map) return;
+        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!GE().hasRenderer()) return;
           /* (#R37) Frame the WHOLE country (more context, never city-close) with a GENTLE animation. The user
              re-reported both "zoomed too close" AND "jump too fast" after the R36 cameraForBounds+speed:1.2 (1.2
              is MapLibre's DEFAULT — i.e. still the fast snap). Fix: cap the framing zoom a notch lower (maxZoom 5,

@@ -13,7 +13,7 @@
  *  from scratch, after the news pins (#R161) and the 3-D volume tool (#R170).
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.viewControls=function(map,HOST){
+window.IntMapModules.viewControls=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
 

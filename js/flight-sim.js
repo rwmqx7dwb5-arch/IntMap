@@ -17,11 +17,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.flightSim=function(map,HOST){
+window.IntMapModules.flightSim=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const imToast=HOST.imToast;
   return (function(){
-    if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     /* (#R175) SPAWN CLEARANCE, in one place. An airborne start is normally lifted to ground +1,500 m and

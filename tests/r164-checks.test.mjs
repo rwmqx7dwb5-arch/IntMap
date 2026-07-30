@@ -75,11 +75,11 @@ test('R164 #1 each block was moved out, loaded, and instantiated at its original
     assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${key}=function(map,HOST){`),
-      `${file} declares the ${key} factory taking (map,HOST)`);
+    assert.ok(src.includes(`window.IntMapModules.${key}=function(HOST){`),
+      `${file} declares the ${key} factory taking (HOST)`);
     const call = global
-      ? `window.${global}=window.IntMapModules.${key}(map,IM_HOST);`
-      : `window.IntMapModules.${key}(map,IM_HOST);`;
+      ? `window.${global}=window.IntMapModules.${key}(IM_HOST);`
+      : `window.IntMapModules.${key}(IM_HOST);`;
     assert.ok(html.includes(call), `index.html instantiates ${key} with the shared host at the original position`);
   }
 });

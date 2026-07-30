@@ -9,12 +9,12 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.dashExtended=function(map,HOST){
+window.IntMapModules.dashExtended=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const loadDashFromSupabase=HOST.loadDashFromSupabase, renderDashboard=HOST.renderDashboard, diskFillPolys=HOST.diskFillPolys, diskOutlineLines=HOST.diskOutlineLines, satToast=HOST.satToast;
   /* ===================== R7 — Next-gen ADDITIVE architecture & intelligence overlays =====================
      100% additive & self-contained — it never mutates the existing MapLibre / Supabase / i18n / timezone
@@ -25,7 +25,7 @@ window.IntMapModules.dashExtended=function(map,HOST){
        (C) Web-Worker offload bridge  (D) speculative camera-lookahead tile prefetch
        (E) new overlays: sovereignty-dispute lines + geodesic air-defense coverage "domes". */
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
 
     /* ---------- (A) IndexedDB persistence — instant next-load + offline resilience ---------- */
     window.IntMapCache=(function(){

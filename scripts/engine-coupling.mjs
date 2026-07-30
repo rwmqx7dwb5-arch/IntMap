@@ -54,8 +54,36 @@ export const ENGINE_FILE = 'geo-engine.js';
    attach to a view rather than to a handle, and contour tiles come from scene.demContourSource
    instead of handing maplibre-contour the library by name. The budget is the measurement after
    that, so the number can only come down from here — raising it is a deliberate act with a
-   failing build in between. */
-export const VALUE_BUDGET = 324;
+   failing build in between.
+
+   (#R180) …and it came down to ONE. 「MapLibre依存脱却作業を完了させて。」 The remaining 324 were
+   four shapes, and each had one honest answer rather than a suppression:
+
+     · 46 × the _imCanDraw fallback   `window.__imap||map` → `GE().ready()`, which IS isStyleLoaded.
+     · 95 × the MODULE CONTRACT       `IntMapModules.x = function(map, HOST)` → `function(HOST)`,
+            and the 95 call sites in app-body.js with it. This was the largest single block and the
+            reason the number could never reach zero by editing bodies: every module was handed the
+            renderer whether it wanted one or not.
+     · 18 × `…addTo(map)`             → `GE().ui.attach(…)`, a new contract entry, because the call
+            sites build a long popup/marker chain first and only the LAST link named the handle.
+     · the rest, existence tests      `if(!map)` / `typeof map==='undefined'` → `GE().hasRenderer()`.
+
+   The ONE that is left is `window.__imap = map` in app-body.js: the primary view being handed to
+   the engine, which is the single legitimate reason for the app to hold the renderer at all.
+   Rewritten by PARSING, not by pattern (scripts/decouple-codemod.mjs's lesson), and verified from
+   the other side by the free-identifier check in scripts/static-checks.mjs — dropping a parameter
+   that a body still reads is a feature that disappears in silence (#R163). */
+export const VALUE_BUDGET = 1;
+
+/* ── (#R180) …AND THE ALIAS HOLE, CLOSED AT THE SOURCE TOO ───────────────────────────────────
+   #R179 shut the `ui.createView` door because a second view kept the handle under a local name
+   (`cmap`, `gmap`, `minimap`) that no count above can see. The SAME hole had a second door:
+   `window.__imap`. Measured this round, three subsystems read the global into a local and drove
+   it raw — `M()` in js/map-extras.js (IntMapLocate: getSource/addLayer/on/project/flyTo) and two
+   in js/news-timeline.js — none of them visible to either count, because the alias is `M`/`m`.
+   So the global itself is now gated: js/geo-engine.js reads it (that is what the adapter IS) and
+   js/app-body.js publishes it once. Anywhere else, use the contract. */
+export const IMAP_GLOBAL_FILES = new Set(['geo-engine.js', 'app-body.js']);
 
 /* ── (#R179) …AND THE HANDLE UNDER ANOTHER NAME ──────────────────────────────────────────────
    The other hole, and the one that actually mattered: this scan only recognises the renderer as
@@ -100,7 +128,7 @@ export function scanFile(file) {
   } catch (e) {
     return { file: path.relative(ROOT, file).replace(/\\/g, '/'), error: String(e && e.message || e), hits: [] };
   }
-  const hits = [], values = [], views = [];
+  const hits = [], values = [], views = [], imaps = [];
   /* depth 0 = the module factory's parameter, i.e. the renderer itself */
   let shadowDepth = 0;
   const record = (node, prop) => hits.push({ prop, line: node.loc.start.line });
@@ -176,6 +204,14 @@ export function scanFile(file) {
                           : 'other' });
       }
     }
+    /* (#R180) …and every read of the GLOBAL handle, wherever it appears. Counted as its own
+       thing because it is neither a member access on `map` nor an identifier named `map`:
+       `const M=()=>window.__imap` hands a subsystem the renderer under a name no scan can
+       predict, which is exactly how three of them stayed invisible through #R178 and #R179. */
+    if (node.type === 'MemberExpression' && !node.computed && node.property.type === 'Identifier' &&
+        node.property.name === '__imap') {
+      imaps.push({ line: node.loc.start.line });
+    }
     /* (#R179) …and every call that ASKS FOR the raw handle — see PRIMARY_VIEW_FILE */
     if (node.type === 'CallExpression' && node.callee.type === 'MemberExpression' &&
         !node.callee.computed && node.callee.property.type === 'Identifier' &&
@@ -192,7 +228,7 @@ export function scanFile(file) {
     if (isFn) fnDepth--;
   };
   visit(ast, null, null);
-  return { file: path.relative(ROOT, file).replace(/\\/g, '/'), hits, values, views };
+  return { file: path.relative(ROOT, file).replace(/\\/g, '/'), hits, values, views, imaps };
 }
 
 export function scanAll() {
@@ -265,6 +301,17 @@ function main() {
     console.error('  (#R179 found 106 such calls in compare.js alone, with the gate reading 0).');
     strayViews.forEach(r => r.views.forEach(v => console.error(`  ${r.file}:${v.line}`)));
     if (primaryViews > 1) console.error(`  js/${PRIMARY_VIEW_FILE} calls it ${primaryViews} times; expected 1`);
+    process.exit(1);
+  }
+  /* (#R180) the global handle — see IMAP_GLOBAL_FILES */
+  const strayGlobals = results.filter(r => (r.imaps || []).length && !IMAP_GLOBAL_FILES.has(path.basename(r.file)));
+  if (strayGlobals.length) {
+    console.error(`\n✗ window.__imap is the renderer's own handle. Only js/geo-engine.js (the adapter) and` +
+                  ` js/app-body.js (which publishes it once) may name it.`);
+    console.error('  Reading it into a local is the same coupling under a different name, and no other count');
+    console.error('  in this file can see it (#R180 found three subsystems doing exactly that). Use the');
+    console.error('  contract: const GE=()=>window.IntMapGeoEngine.');
+    strayGlobals.forEach(r => r.imaps.forEach(v => console.error(`  ${r.file}:${v.line}`)));
     process.exit(1);
   }
   if (valueTotal > VALUE_BUDGET) {

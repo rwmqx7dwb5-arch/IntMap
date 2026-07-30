@@ -168,7 +168,7 @@ test('the place-search pill sits at the top of the map', () => {
 test('the 3-D volume tool is wired from menu to renderer', () => {
   /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
   assert.match(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'the module must be loaded by the Vite entry');
-  assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\(map,IM_HOST\)/, 'and instantiated exactly once');
+  assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\((IM_HOST)\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');
   /* (#R171) release() = clear() plus handing the drag gesture back, now that the freehand / circle /

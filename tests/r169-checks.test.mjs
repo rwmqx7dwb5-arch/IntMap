@@ -82,7 +82,7 @@ const MODULES = {
 const NAMES = Object.keys(MODULES);
 const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const shimOf = (m, n) => `function ${n}(){ return ${MODULES[m].k}.${n}.apply(this,arguments); }`;
-const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(map,IM_HOST);`;
+const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(IM_HOST);`;
 
 /* Closure values these modules read that are REASSIGNED at runtime → live host getters, never a
    bare identifier inside a js/ file. A captured copy would silently go stale (the #R162 shape). */
@@ -108,8 +108,8 @@ test('R169 #1 all eleven files are loaded and every factory is declared and inst
     assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${m}=function(map,HOST){`),
-      `${file} declares the ${m} factory taking (map,HOST)`);
+    assert.ok(src.includes(`window.IntMapModules.${m}=function(HOST){`),
+      `${file} declares the ${m} factory taking (HOST)`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     const calls = html.split(callOf(m)).length - 1;
     assert.equal(calls, 1, `index.html must instantiate ${m} exactly once (found ${calls})`);
@@ -163,7 +163,7 @@ test('R169 #3 POSITION: the eleven calls sit together after the map is built, be
 
   // The #R169 block must follow the #R168 block — both are declaration-only, but keeping them in
   // one place is what makes "everything is instantiated here" a checkable statement.
-  const r168 = lf.indexOf('const IM_COMMUNITY=window.IntMapModules.community(map,IM_HOST);');
+  const r168 = lf.indexOf('const IM_COMMUNITY=window.IntMapModules.community(IM_HOST);');
   assert.ok(r168 > 0 && at[0].i > r168, 'the #R169 block sits directly after the #R168 block');
 
   // Nothing may CALL a moved name while the closure is still evaluating and before the factories

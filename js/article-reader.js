@@ -17,7 +17,7 @@
  *  DEV-NOTES R169 for a decision: re-wire the Read button to it, or delete the feature.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.articleReader=function(map,HOST){
+window.IntMapModules.articleReader=function(HOST){
   const READER_NOISE=new Set(['edit','[edit]','skip to content','watch live','sign in','log in','menu','advertisement','home','news','sport','business','technology','more','share','save','reuters','associated press','follow us','related topics','watch','listen']);
   function cleanReaderMarkdown(md){
     let firstImg=''; let text=md||'';

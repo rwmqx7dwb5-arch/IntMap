@@ -116,7 +116,7 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
     'a click opens the card and stands the tooltip down');
   assert.ok(dl.includes('else { const el=ensureMapTooltip();'), 'and falls back to the pinned tooltip if the card module is absent');
   assert.match(dl, /P\.update\(d,\{track:_trackCard\(d\.icao24\)\}\)/, 'the open card is refreshed by the live poll');
-  assert.ok(body.includes('window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(map,IM_HOST);'),
+  assert.ok(body.includes('window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);'),
     'the factory is instantiated');
   assert.ok(/'droneNav',\s*'aircraftDetail'/.test(entry), 'both new factories are covered by the required-module guard');
 });

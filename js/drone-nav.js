@@ -55,7 +55,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.droneNav=function(map,HOST){
+window.IntMapModules.droneNav=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
 

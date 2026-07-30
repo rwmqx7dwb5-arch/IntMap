@@ -17,12 +17,12 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.atlasConsole=function(map,HOST){
+window.IntMapModules.atlasConsole=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
   return (function(){
-    if(typeof map==='undefined'||!map) return { open(){}, run(){}, toggle(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, toggle(){} };
     /* (#R64) Atlas MIRRORS the language of the user's message ("別の言語で話しかけても、言語設定の言語でしか返答
        しないのはやめろ") — the deterministic reply strings too, not just the AI text. Unsupported detected
        languages (e.g. French) fall back to the UI language. */
@@ -2571,7 +2571,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
       GE().events.onLayer('mousemove','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; GE().render.canvas().style.cursor='pointer';
         const p=f.properties||{}; const sm=p.sum?String(p.sum):''; const html='<div style="font-size:12px;font-weight:600;">'+esc(p.name||'—')+'</div>'+(p.kind?'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+esc(p.kind)+'</div>':'')+(sm?'<div style="font-size:10.5px;line-height:1.45;margin-top:3px;">'+esc(sm.length>140?sm.slice(0,140)+'…':sm)+'</div>':'');
         if(!hoverPop){ hoverPop=GE().ui.popup({closeButton:false,closeOnClick:false,maxWidth:'240px',className:'plc-popup',offset:10}); }
-        hoverPop.setLngLat(f.geometry.coordinates.slice()).setHTML(html); if(!hoverPop.isOpen()) hoverPop.addTo(map); }catch(_){} });
+        hoverPop.setLngLat(f.geometry.coordinates.slice()).setHTML(html); if(!hoverPop.isOpen()) GE().ui.attach(hoverPop); }catch(_){} });
       GE().events.onLayer('mouseleave','nlq-poi-c',()=>{ try{ GE().render.canvas().style.cursor=''; if(hoverPop){ hoverPop.remove(); } }catch(_){} });
       GE().events.onLayer('click','nlq-poi-c',e=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
         try{ if(hoverPop) hoverPop.remove(); }catch(_){}
@@ -2586,7 +2586,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
           +(p.sum?'<div style="font-size:11.5px;line-height:1.55;margin-top:6px;">'+esc(p.sum)+'</div>':'')
           +'<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">'+(+co[1]).toFixed(4)+', '+(+co[0]).toFixed(4)+(p.src?(' · '+esc(p.src)):'')+'</div>'
           +'<div style="display:flex;gap:6px;margin-top:8px;">'+artBtn+wikiBtn+webBtn+'</div></div>';
-        const pop=GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup',offset:10}).setLngLat(co).setHTML(html).addTo(map);
+        const pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup',offset:10}).setLngLat(co).setHTML(html));
         const el=pop.getElement();
         const wb=el&&el.querySelector('.poi-wiki');
         if(wb){ const direct=_poiWikiUrl(p);
@@ -3503,7 +3503,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
             /* (#R126) 経路10-10 §6.3: SAME-NAME disambiguation — if the hit is far from the current view (>500 km)
                and a same-name candidate exists near the view, prefer the near one ("Potsdam" from a Germany view must
                be Potsdam DE, not Potsdam NY; verified the old path picked the US village). */
-            try{ if(g&&map&&GE().camera.getCenter){ const c=GE().camera.getCenter(); const dKm=(a,b)=>{const R=6371,x=(b[0]-a[0])*Math.PI/180*Math.cos((a[1]+b[1])/2*Math.PI/180),y=(b[1]-a[1])*Math.PI/180;return R*Math.sqrt(x*x+y*y);};
+            try{ if(g&&GE().hasRenderer()&&GE().camera.getCenter){ const c=GE().camera.getCenter(); const dKm=(a,b)=>{const R=6371,x=(b[0]-a[0])*Math.PI/180*Math.cos((a[1]+b[1])/2*Math.PI/180),y=(b[1]-a[1])*Math.PI/180;return R*Math.sqrt(x*x+y*y);};
               if(dKm([c.lng,c.lat],[+g.lng,+g.lat])>500&&window.IntMapRouting.geoNear){ const n=await window.IntMapRouting.geoNear(q);
                 if(n&&dKm([c.lng,c.lat],[+n.lng,+n.lat])<dKm([c.lng,c.lat],[+g.lng,+g.lat])/3) g=n; } } }catch(_){}
             return g; };
@@ -5679,7 +5679,7 @@ window.IntMapModules.atlasConsole=function(map,HOST){
         ent.defs.forEach(nd=>{ try{ if(GE().layers.has(nd.id)) GE().layers.remove(nd.id); }catch(_){} });
         for(const csid in ent.srcs){ try{ if(GE().layers.hasSource(csid)) GE().layers.removeSource(csid); }catch(_){} }
         try{ delete _ovlClones.get(b)[k]; }catch(_){} } }catch(_){} }
-    try{ if(typeof map!=='undefined'&&map) GE().events.on('styledata',()=>{ clearTimeout(_ovlCloneShow._t); _ovlCloneShow._t=setTimeout(()=>{ try{
+    try{ if(GE().hasRenderer()&&GE().hasRenderer()) GE().events.on('styledata',()=>{ clearTimeout(_ovlCloneShow._t); _ovlCloneShow._t=setTimeout(()=>{ try{
       _ovlClones.forEach(reg=>{ for(const k in reg){ const ent=reg[k]; if(!ent.visible) continue;
         for(const csid in ent.srcs){ try{ if(!GE().layers.hasSource(csid)){ const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; GE().layers.addSource(csid,o); }
           const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ GE().layers.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }

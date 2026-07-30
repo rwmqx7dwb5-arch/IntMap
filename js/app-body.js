@@ -417,7 +417,7 @@ window.addEventListener('DOMContentLoaded', () => {
      the modern line + modern country labels hide and the era's borders + names show; at Now the modern set
      returns. This replaced the two layers fighting each other (which fast-blinked when the toggle was flipped). */
   let _imbOfmWas=null;
-  window._applyBorders=function(){ try{ if(typeof map==='undefined'||!map) return;
+  window._applyBorders=function(){ try{ if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
@@ -458,7 +458,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!canDraw()){   /* (#R170) a parsed style is all the base-map visibility set below needs */
       /* (#R34) Even while the style is still loading, do an IMMEDIATE best-effort base flip so a Map/Sat
          tap never feels dead ("切り替えができない/反応が極めて悪い"). The full applyTheme re-runs on idle. */
-      if(map){ try{
+      if(GE().hasRenderer()){ try{
         const _l=(window.imMapColor==='light')||(window.imMapColor!=='dark'&&((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches)));
         const _sat=currentMapType==='sat';
         if(GE().layers.has('layer-sat'))      GE().layers.setLayout('layer-sat','visibility',_sat?'visible':'none');
@@ -1041,48 +1041,48 @@ window.addEventListener('DOMContentLoaded', () => {
    *  Instantiated HERE, immediately after `map` exists (it is assigned once, in the try above) and
    *  before the first statement that evaluates any of these names eagerly. The factories only DECLARE:
    *  none of them touches closure state while running, so there is no dead zone to fall into. */
-  const IM_COUNTRIES_UI=window.IntMapModules.countriesUi(map,IM_HOST);
+  const IM_COUNTRIES_UI=window.IntMapModules.countriesUi(IM_HOST);
   function renderStats(){ return IM_COUNTRIES_UI.renderStats.apply(this,arguments); }
   function showCountryDetail(){ return IM_COUNTRIES_UI.showCountryDetail.apply(this,arguments); }
   function renderCountryDetailBody(){ return IM_COUNTRIES_UI.renderCountryDetailBody.apply(this,arguments); }
   function loadCountryData(){ return IM_COUNTRIES_UI.loadCountryData.apply(this,arguments); }
   function addCountryLayers(){ return IM_COUNTRIES_UI.addCountryLayers.apply(this,arguments); }
-  const IM_NEWS_UI=window.IntMapModules.newsUi(map,IM_HOST);
+  const IM_NEWS_UI=window.IntMapModules.newsUi(IM_HOST);
   function renderUI(){ return IM_NEWS_UI.renderUI.apply(this,arguments); }
   function setupIntelLayers(){ return IM_NEWS_UI.setupIntelLayers.apply(this,arguments); }
   function appendNewsBatch(){ return IM_NEWS_UI.appendNewsBatch.apply(this,arguments); }
   function renderReaderMode(){ return IM_NEWS_UI.renderReaderMode.apply(this,arguments); }
   function aiGeocodeNews(){ return IM_NEWS_UI.aiGeocodeNews.apply(this,arguments); }
   function _spreadDupNewsPins(){ return IM_NEWS_UI._spreadDupNewsPins.apply(this,arguments); }
-  const IM_COMPANIES_UI=window.IntMapModules.companiesUi(map,IM_HOST);
+  const IM_COMPANIES_UI=window.IntMapModules.companiesUi(IM_HOST);
   function renderCompanies(){ return IM_COMPANIES_UI.renderCompanies.apply(this,arguments); }
   function showCompanyDetail(){ return IM_COMPANIES_UI.showCompanyDetail.apply(this,arguments); }
   function renderDashboard(){ return IM_COMPANIES_UI.renderDashboard.apply(this,arguments); }
   function _coCmpEnsureCss(){ return IM_COMPANIES_UI._coCmpEnsureCss.apply(this,arguments); }
   function _coCmpRender(){ return IM_COMPANIES_UI._coCmpRender.apply(this,arguments); }
-  const IM_TOOL_PANEL=window.IntMapModules.toolPanel(map,IM_HOST);
+  const IM_TOOL_PANEL=window.IntMapModules.toolPanel(IM_HOST);
   /* (#R170) Measure ▸ 3-D volume. Built AFTER IntMapGeoEngine exists (it talks to nothing else), and exposed
      globally because the tool panel, exitTool and the Atlas volume3d action all drive the same single box. */
-  window.IntMapVolume3D=window.IntMapModules.volume3d(map,IM_HOST);
+  window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST);
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
-  window.IntMapModules.viewControls(map,IM_HOST);
+  window.IntMapModules.viewControls(IM_HOST);
   /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
-  window.IntMapModules.droneNav(map,IM_HOST);
+  window.IntMapModules.droneNav(IM_HOST);
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js. */
-  window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(map,IM_HOST);
+  window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
-  const IM_AUTH_UI=window.IntMapModules.authUi(map,IM_HOST);
+  const IM_AUTH_UI=window.IntMapModules.authUi(IM_HOST);
   function bootSupabase(){ return IM_AUTH_UI.bootSupabase.apply(this,arguments); }
   function _openSetPassword(){ return IM_AUTH_UI._openSetPassword.apply(this,arguments); }
   function openAuthModal(){ return IM_AUTH_UI.openAuthModal.apply(this,arguments); }
-  const IM_COMMUNITY=window.IntMapModules.community(map,IM_HOST);
+  const IM_COMMUNITY=window.IntMapModules.community(IM_HOST);
   function renderCommunity(){ return IM_COMMUNITY.renderCommunity.apply(this,arguments); }
   function wireCommList(){ return IM_COMMUNITY.wireCommList.apply(this,arguments); }
   /* ── (#R169) EIGHTH SPLIT — eleven more SUBJECT modules (Architecture.md §3.1 #R169).
@@ -1090,7 +1090,7 @@ window.addEventListener('DOMContentLoaded', () => {
    *  with a parser — see tests/r169-checks.test.mjs), so instantiating them all here, once `map`
    *  exists, cannot run app code early. Every name index.html still calls keeps a hoisted `function`
    *  shim, so call sites textually above this line behave exactly as before. */
-  const IM_SAT=window.IntMapModules.satellite(map,IM_HOST);
+  const IM_SAT=window.IntMapModules.satellite(IM_HOST);
   function aiCaptureSatAt(){ return IM_SAT.aiCaptureSatAt.apply(this,arguments); }
   function satApply(){ return IM_SAT.satApply.apply(this,arguments); }
   function satBuildTiles(){ return IM_SAT.satBuildTiles.apply(this,arguments); }
@@ -1109,7 +1109,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function satSetup(){ return IM_SAT.satSetup.apply(this,arguments); }
   function satStepDay(){ return IM_SAT.satStepDay.apply(this,arguments); }
   function satToast(){ return IM_SAT.satToast.apply(this,arguments); }
-  const IM_AI=window.IntMapModules.aiCore(map,IM_HOST);
+  const IM_AI=window.IntMapModules.aiCore(IM_HOST);
   function aiDev(){ return IM_AI.aiDev.apply(this,arguments); }
   function aiEsc(){ return IM_AI.aiEsc.apply(this,arguments); }
   function aiFetchUsage(){ return IM_AI.aiFetchUsage.apply(this,arguments); }
@@ -1131,32 +1131,32 @@ window.addEventListener('DOMContentLoaded', () => {
   function askAI(){ return IM_AI.askAI.apply(this,arguments); }
   function askAIJSON(){ return IM_AI.askAIJSON.apply(this,arguments); }
   function askAIJSONEnvelope(){ return IM_AI.askAIJSONEnvelope.apply(this,arguments); }
-  const IM_LABELS=window.IntMapModules.placeLabels(map,IM_HOST);
+  const IM_LABELS=window.IntMapModules.placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
   function buildGeoFC(){ return IM_LABELS.buildGeoFC.apply(this,arguments); }
   function ensureGeoLayers(){ return IM_LABELS.ensureGeoLayers.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }
   function localizeGeoLabels(){ return IM_LABELS.localizeGeoLabels.apply(this,arguments); }
   function updateGeoLayers(){ return IM_LABELS.updateGeoLayers.apply(this,arguments); }
-  const IM_WINMGR=window.IntMapModules.windowManager(map,IM_HOST);
+  const IM_WINMGR=window.IntMapModules.windowManager(IM_HOST);
   function addEdgeResize(){ return IM_WINMGR.addEdgeResize.apply(this,arguments); }
   function bringToFront(){ return IM_WINMGR.bringToFront.apply(this,arguments); }
   function makeDraggable(){ return IM_WINMGR.makeDraggable.apply(this,arguments); }
   function registerWindow(){ return IM_WINMGR.registerWindow.apply(this,arguments); }
-  const IM_SEARCH=window.IntMapModules.searchGeocode(map,IM_HOST);
+  const IM_SEARCH=window.IntMapModules.searchGeocode(IM_HOST);
   function doGeocode(){ return IM_SEARCH.doGeocode.apply(this,arguments); }
   function localFuzzyPlaces(){ return IM_SEARCH.localFuzzyPlaces.apply(this,arguments); }
-  const IM_NEWSCTX=window.IntMapModules.newsContext(map,IM_HOST);
+  const IM_NEWSCTX=window.IntMapModules.newsContext(IM_HOST);
   function analyzeContext(){ return IM_NEWSCTX.analyzeContext.apply(this,arguments); }
   function rebuildGeoIndex(){ return IM_NEWSCTX.rebuildGeoIndex.apply(this,arguments); }
-  const IM_NEWSFEED=window.IntMapModules.newsFeed(map,IM_HOST);
+  const IM_NEWSFEED=window.IntMapModules.newsFeed(IM_HOST);
   function aiTranslateTitles(){ return IM_NEWSFEED.aiTranslateTitles.apply(this,arguments); }
   function fetchData(){ return IM_NEWSFEED.fetchData.apply(this,arguments); }
   function loadNewsFromSupabase(){ return IM_NEWSFEED.loadNewsFromSupabase.apply(this,arguments); }
   function startNews(){ return IM_NEWSFEED.startNews.apply(this,arguments); }
-  const IM_READER=window.IntMapModules.articleReader(map,IM_HOST);
+  const IM_READER=window.IntMapModules.articleReader(IM_HOST);
   function openArticleInSidebar(){ return IM_READER.openArticleInSidebar.apply(this,arguments); }
-  const IM_COMMBOARD=window.IntMapModules.communityBoard(map,IM_HOST);
+  const IM_COMMBOARD=window.IntMapModules.communityBoard(IM_HOST);
   function cmAddPost(){ return IM_COMMBOARD.cmAddPost.apply(this,arguments); }
   function cmEditPost(){ return IM_COMMBOARD.cmEditPost.apply(this,arguments); }
   function commCatLabel(){ return IM_COMMBOARD.commCatLabel.apply(this,arguments); }
@@ -1166,7 +1166,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function renderCommList(){ return IM_COMMBOARD.renderCommList.apply(this,arguments); }
   function setupCommunityLayer(){ return IM_COMMBOARD.setupCommunityLayer.apply(this,arguments); }
   function visibleCommunityPosts(){ return IM_COMMBOARD.visibleCommunityPosts.apply(this,arguments); }
-  const IM_READOUT=window.IntMapModules.mapReadout(map,IM_HOST);
+  const IM_READOUT=window.IntMapModules.mapReadout(IM_HOST);
   function _demZoomForSpan(){ return IM_READOUT._demZoomForSpan.apply(this,arguments); }
   function demElevAt(){ return IM_READOUT.demElevAt.apply(this,arguments); }
   function demElevBilinear(){ return IM_READOUT.demElevBilinear.apply(this,arguments); }
@@ -1183,7 +1183,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); }
-  const IM_ELEVPROF=window.IntMapModules.elevationProfile(map,IM_HOST);
+  const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 
   /* Coalesce resizes to one per frame (#32) — the sidebar open/close transition fires the
@@ -1211,7 +1211,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* Google-Earth-style navigation feel: stepless wheel zoom centerd on the cursor, a little
      snappier than the default, plus a low-angle tilt limit so you can lean into the horizon. */
-  if(map){ try{
+  if(GE().hasRenderer()){ try{
     GE().input.setZoomRate(1/300,true);       /* default 1/450 → a touch more responsive */
     GE().input.setZoomRate(1/90);             /* trackpad pinch */
     /* (#R171) 78° is the STANDARD ceiling, not the only one — Settings ▸ Map behaviour ▸ "Map tilt limit"
@@ -1236,7 +1236,7 @@ window.addEventListener('DOMContentLoaded', () => {
      (1.0×) reproduce the long-standing feel exactly. */
   try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan', lblNavInertia:'Inertia' });
        Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）', lblNavInertia:'慣性（0で無効）' }); }catch(_){}
-  if(map){
+  if(GE().hasRenderer()){
     window.imNavZoomSens = window.imNavZoomSens || 1;
     window.imNavPanSens  = window.imNavPanSens  || 1;
     if(window.imNavInertia==null) window.imNavInertia=1;   /* (#R23) 1=default glide, 0=instant stop */
@@ -1299,7 +1299,7 @@ window.addEventListener('DOMContentLoaded', () => {
      the same self-heal pattern as the country-isolation mask. They are slotted just BELOW the measurement
      tool layers (your own drawings stay on top of everything). Guarded: only moves when actually out of
      place, so there's no repaint loop. */
-  if(map){ (function(){
+  if(GE().hasRenderer()){ (function(){
     /* (#R72) 'geo-sea' moved ABOVE the city/other labels: symbol collision gives priority to the TOPMOST layer,
        so coastal city names were eating the sea names — a view framing the whole East China Sea showed harbour
        towns but not 東シナ海. Seas now lose only to country names. */
@@ -1382,7 +1382,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const _tileUrl=(tpl,z,x,y)=>tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y);
   let _prevCenter=null, _prefetchT=null;
   function predictivePrefetch(aggressive){
-    if(!map || currentMapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
+    if(!GE().hasRenderer() || currentMapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
     const p=satProviderById(satState.providerId); if(!p) return;
     let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
     if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
@@ -1430,12 +1430,12 @@ window.addEventListener('DOMContentLoaded', () => {
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
   registerTileSW();
-  if(map) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  if(GE().hasRenderer()) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
   /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
      tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
      the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
   let _movePfT=0;
-  if(map) GE().events.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
+  if(GE().hasRenderer()) GE().events.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
   /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
@@ -1444,7 +1444,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   let _occAllVis=false;
   function updateOcclusion(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     /* Flat map: every marker is visible. Do the bulk write ONCE (guarded) instead of on every pan
        frame — redundant style writes were a needless per-move cost on phones (#3). */
     if(currentProj!=='globe'){ if(!_occAllVis){ markersArray.forEach(m=>m.getElement().style.visibility='visible'); _occAllVis=true; } return; }
@@ -1537,7 +1537,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })();
     return gdpPPPPromise;
   }
-  function applyCountryVisibility(){ if(!map||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none'; GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
+  function applyCountryVisibility(){ if(!GE().hasRenderer()||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none'; GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
   const cName=(s,f)=>(currentLang==='jp'&&s&&s.nameJp)?s.nameJp:(s&&s.nameEn)||f||'—';
@@ -1789,7 +1789,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170/#R171) */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
-    document.getElementById('map-container').classList.add('tool-active'); if(map)GE().input.set('doubleClickZoom',false);
+    document.getElementById('map-container').classList.add('tool-active'); if(GE().hasRenderer())GE().input.set('doubleClickZoom',false);
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
   }
   /* (#R169) moved verbatim to js/window-manager.js — see Architecture.md §3.1. */
@@ -1846,7 +1846,7 @@ window.addEventListener('DOMContentLoaded', () => {
      no measure tool needed). Uses the rendered pins, falling back to all analyzed stories. */
   async function aiSummarizeView(){
     if(!aiGate()) return;
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const b=GE().camera.getBounds(); if(!b) return;
     const seen=new Set(), picked=[];
     const src=(newsFeatures&&newsFeatures.length)
@@ -1878,13 +1878,13 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Warm the DEM tile cache across the visible area once the camera settles, so the
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
   function prefetchDEMViewport(){
-    if(!map||isMobile()) return;
+    if(!GE().hasRenderer()||isMobile()) return;
     try{ const z=demZoomForMap(); const b=GE().camera.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
       for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
     }catch(_){}
   }
   let _demPrefetchT=null;
-  if(map){ GE().events.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
+  if(GE().hasRenderer()){ GE().events.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
            GE().events.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
 
@@ -1899,10 +1899,10 @@ window.addEventListener('DOMContentLoaded', () => {
      Consumers: Atlas state context (per-layer live summary), the `layerData` action, and analyze evidence.
      Register new layers here in the SAME change that adds them (control-plane rule). ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerRegistry(map,IM_HOST);
+  window.IntMapModules.layerRegistry(IM_HOST);
 
   /* ===== Map event wiring ===== */
-  if(map){
+  if(GE().hasRenderer()){
     GE().events.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
     /* (#R25 / #21) Double-tap / double-click zoom now respects the Zoom-sensitivity setting — this is the
        ONE zoom gesture whose amount we CAN tune on touch (MapLibre exposes no pinch-rate API, so continuous
@@ -2037,7 +2037,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function closePop(){ if(pop){ try{ pop.remove(); }catch(_){} pop=null; document.removeEventListener('mousedown',onDoc,true); document.removeEventListener('keydown',onKey,true); } }
     function onDoc(e){ if(pop && !pop.contains(e.target) && e.target!==btn) closePop(); }
     function onKey(e){ if(e.key==='Escape') closePop(); }
-    btn.addEventListener('contextmenu',(e)=>{ e.preventDefault(); if(!map) return;
+    btn.addEventListener('contextmenu',(e)=>{ e.preventDefault(); if(!GE().hasRenderer()) return;
       try{ if(typeof _imTouchPrimary==='function' && _imTouchPrimary()) return; }catch(_){}   /* desktop only, per the request */
       if(pop){ closePop(); return; }
       const b=Math.round(((GE().camera.getBearing()%360)+360)%360), p=Math.round(GE().camera.getPitch()||0), z=Math.round((GE().camera.getZoom()||0)*10)/10;
@@ -2190,7 +2190,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
   window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerSidebar(map,IM_HOST);
+  window.IntMapModules.layerSidebar(IM_HOST);
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
      ように流れる画面") — a thin exchange-style strip BELOW the map area (the app shell shrinks by 30px; nothing
      overlays the map), scrolling right→left: loaded news headlines (clickable), FX (fxratesapi → er-api fallback),
@@ -2205,9 +2205,9 @@ window.addEventListener('DOMContentLoaded', () => {
      with a bottom DOCK to reopen hidden windows, reset the layout, or exit the mode. Layout persists.
      Default OFF; desktop only; disable restores the exact original DOM via placeholders (fully additive). */
   /* (#R164) moved to js/workspace.js — see Architecture.md §3.1. */
-  window.IntMapWorkspace=window.IntMapModules.workspace(map,IM_HOST);
+  window.IntMapWorkspace=window.IntMapModules.workspace(IM_HOST);
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.ticker(map,IM_HOST);
+  window.IntMapModules.ticker(IM_HOST);
   document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
     /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
     if(cb.getAttribute('data-layer')==='rimland'){ if(window.imToggleRimland) window.imToggleRimland(cb.checked); return; }
@@ -2242,7 +2242,7 @@ window.addEventListener('DOMContentLoaded', () => {
        roads/rail — the `ofm` vector source often settles AFTER the first cold toggle, so re-assert on idle +
        a backoff + when the OFM tiles arrive (the sourcedata listener below), else borders only appeared
        after a reload. */
-    const mkBorders=()=>{ try{ if(!map) return;
+    const mkBorders=()=>{ try{ if(!GE().hasRenderer()) return;
       if(bordersOn) ensureBordersLayer();
       window._applyBorders();   /* (#R94g) governs modern OR historical borders (whichever the clock wants) — one toggle */
       applyTheme();
@@ -2379,7 +2379,7 @@ window.addEventListener('DOMContentLoaded', () => {
      LIGHT map → near-black pill + white text; DARK map → near-white pill + dark text, so the band is always
      legible. A subtle 1px border defines it against same-tone backgrounds. */
   function ensureLabelPill(force){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     if(force && GE().scene.hasImage('news-pill')){ try{ GE().scene.removeImage('news-pill'); }catch(_){} }
     if(GE().scene.hasImage('news-pill')) return;
     try{
@@ -2400,7 +2400,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* (#R32) Re-skin the news band when the theme flips (called from applyTheme). Regenerates the sprite and
      flips the text + halo colors so the band stays readable in every theme. */
-  function refreshNewsPill(){ try{ if(!map) return; ensureLabelPill(true);
+  function refreshNewsPill(){ try{ if(!GE().hasRenderer()) return; ensureLabelPill(true);
       const dark=_newsUIDark();
       /* (#R161) news band theming through the engine (Phase-3 subsystem migration) */
       const _GEp=window.IntMapGeoEngine;
@@ -2448,7 +2448,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
   window.scheduleNewsDeclutter=scheduleNewsDeclutter;
   window.highlightDashMarker=function(id,on){ if(GE().layers.hasSource('dash-points')){ try{ GE().layers.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
-  function clearIntelSources(){ if(map){ if(GE().layers.hasSource('news-points')) GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
+  function clearIntelSources(){ if(GE().hasRenderer()){ if(GE().layers.hasSource('news-points')) GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
   /* (#R122/#R123) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city point, e.g.
      everything filed under "USA" lands on one dot), so pins stack and only the top one is clickable.
      (#R123) FIX "対象領域に分散的に配置できていない": the R122 version fanned every cluster over a FIXED small spiral,
@@ -2464,7 +2464,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R127) re-run the duplicate spread on the CURRENT pins — called once the async country borders finish loading.
      A cold-load race left a country cluster as a tight blob because regionFor() had no polygon yet; the pins kept
      their ORIGINAL anchors in __oc, so re-spreading now fills the real territory. No-op unless news pins are live. */
-  function _respreadNews(){ try{ if(!map||!GE().layers.hasSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
+  function _respreadNews(){ try{ if(!GE().hasRenderer()||!GE().layers.hasSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
     const _m=(typeof currentMode!=='undefined')?currentMode:null; if(_m!=='news'&&_m!=='saved') return;
     _spreadDupNewsPins(newsFeatures);
     try{ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
@@ -2516,7 +2516,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
-  window.flyToLoc=function(lng,lat){ if(map)GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
+  window.flyToLoc=function(lng,lat){ if(GE().hasRenderer())GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
   window.toggleDashCat=function(cat){ if(activeDashCategories.has(cat))activeDashCategories.delete(cat); else activeDashCategories.add(cat); renderDashboard(); };
   /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
      a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
@@ -2701,7 +2701,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _btns=()=>[document.getElementById('csearch-pick'),document.getElementById('csearch-pick-ws')].filter(Boolean);
     function resolveAt(lngLat){
       try{ const TB=window.IntMapTimeBorders;
-        if(TB&&TB.active&&TB.active()&&typeof map!=='undefined'&&map){
+        if(TB&&TB.active&&TB.active()&&GE().hasRenderer()&&GE().hasRenderer()){
           let nm=null;
           /* era polygon under the click — SMALLEST-area containing feature (simplified era polygons overlap at borders) */
           try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]); let bA=Infinity;
@@ -2762,7 +2762,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
   window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
   /* (#R163) moved to js/companies.js — see Architecture.md §3.1. */
-  window.IntMapCompanies=window.IntMapModules.companies(map,IM_HOST);
+  window.IntMapCompanies=window.IntMapModules.companies(IM_HOST);
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
   /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
@@ -2967,7 +2967,7 @@ window.addEventListener('DOMContentLoaded', () => {
     return null;
   }
   let _coordFlyT=null;
-  function coordFly(ll){ if(!ll||!map) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ GE().camera.flyTo({center:ll, zoom:Math.max(GE().camera.getZoom?GE().camera.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
+  function coordFly(ll){ if(!ll||!GE().hasRenderer()) return; clearTimeout(_coordFlyT); _coordFlyT=setTimeout(()=>{ try{ GE().camera.flyTo({center:ll, zoom:Math.max(GE().camera.getZoom?GE().camera.getZoom():2,6), speed:1.3, essential:true}); }catch(_){} },160); }
   searchInput.addEventListener('input',()=>{ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats')renderStats(searchVal()); else if(currentMode==='info')renderDashboard(); });
   function runSearch(){ const ll=parseLatLng(searchInput.value); if(ll){ coordFly(ll); return; } if(currentMode==='stats'){ renderStats(searchVal()); return; } if(currentMode==='info'){ renderDashboard(); return; } if(currentMode==='saved'){ startNews(); return; } activeSearchQuery=searchInput.value.trim(); globalData=[]; fetchData(); }
   document.getElementById('btn-search').onclick=runSearch;
@@ -3042,10 +3042,10 @@ window.addEventListener('DOMContentLoaded', () => {
     return OS;
   })();
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
-  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
+  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(GE().hasRenderer()) GE().events.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
   /* (#R101) switching to Satellite no longer force-opens the provider/date panel (satPanelDismissed stays true on
      desktop). The panel is rendered ready; it opens only when the user re-clicks the active Satellite button. */
-  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
+  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(GE().hasRenderer()) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
   document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
   /* (#R101) already on Satellite → toggle the provider/date panel (desktop). Otherwise switch to Satellite. */
   document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
@@ -3053,14 +3053,14 @@ window.addEventListener('DOMContentLoaded', () => {
     IntMapOS.exec('view.base.sat',{source:'ui'}); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
-  if(map) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
+  if(GE().hasRenderer()) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
   /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
   /* projection — TRUE kernel commands (UI + Atlas both call these). */
-  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!GE().hasRenderer())return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
+  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!GE().hasRenderer())return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
   document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
   document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
 
@@ -3090,7 +3090,7 @@ window.addEventListener('DOMContentLoaded', () => {
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const b3=document.getElementById('btn-view-3d');
     const syncBtns=()=>{ if(b3) b3.classList.toggle('active',terrain3D); document.querySelectorAll('[data-proxy="btn-view-3d"]').forEach(b=>b.classList.toggle('active',terrain3D)); };
     if(on){
@@ -3174,7 +3174,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
-    try{ if(map){ GE().events.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
+    try{ if(GE().hasRenderer()){ GE().events.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
   })();
   /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
@@ -3474,7 +3474,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
-  window.IntMapModules.feedback(map,IM_HOST);
+  window.IntMapModules.feedback(IM_HOST);
 
   /* ============================================================================
      (#R29.1) PLAYGROUND (beta) — experimental interactive modes, all in one hub:
@@ -3483,10 +3483,10 @@ window.addEventListener('DOMContentLoaded', () => {
        3) Nation Sim — lead a real country (1900–2026), dictator or democracy
      All built with createElement + inline styles (no CSS-in-template-literal). ===========*/
   /* (#R166) moved to js/playground.js — see Architecture.md §3.1. */
-  window.IntMapModules.playground(map,IM_HOST);
+  window.IntMapModules.playground(IM_HOST);
 
   /* (#R167) moved to js/legal.js — see Architecture.md §3.1. */
-  window.IntMapModules.legal(map,IM_HOST);
+  window.IntMapModules.legal(IM_HOST);
   _wireCountryPopupClose();
 
   /* ===================== Right-click pins ===================== */
@@ -3509,7 +3509,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   function refreshPins(){
-    if(!map||!GE().layers.hasSource('user-pins')) return;
+    if(!GE().hasRenderer()||!GE().layers.hasSource('user-pins')) return;
     GE().layers.setSourceData('user-pins',{type:'FeatureCollection',features:userPins.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{fid:p.id}}))});
   }
   async function fetchElevDepth(lat,lng){
@@ -3569,7 +3569,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   /* (#R164) moved to js/data-layers.js — see Architecture.md §3.1. */
-  window.IntMapModules.dataLayers(map,IM_HOST);
+  window.IntMapModules.dataLayers(IM_HOST);
   /* ================ END GROUP 3 ================ */
 
   /* ===================== GROUP 4: PREMIUM / PRO PLAN =====================
@@ -3628,10 +3628,10 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ window.refreshProUI(); }catch(_){}
   })();
   /* (#R167) moved to js/news-timeline.js — see Architecture.md §3.1. */
-  window.IntMapModules.newsTimeline(map,IM_HOST);
+  window.IntMapModules.newsTimeline(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.locate(map,IM_HOST);
+  window.IntMapModules.locate(IM_HOST);
 
   /* =============================================================================
    *  COMMUNITY TAB — user-placed pins + posts + comments. Uses localStorage.
@@ -3710,7 +3710,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function pushCommunityFeatures(){
-    if(!map||!GE().layers.hasSource('community-points')) return;
+    if(!GE().hasRenderer()||!GE().layers.hasSource('community-points')) return;
     /* Community pins are shown ONLY while the Community tab is active; selecting another
        tab clears them (the posts stay cached in communityPosts for an instant return). */
     const feats=(currentMode==='community') ? visibleCommunityPosts().map(p=>({
@@ -3722,7 +3722,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   /* When add-mode is armed, map-click drops a community post pin and opens the compose modal */
-  if(map){
+  if(GE().hasRenderer()){
     GE().events.on('click',(e)=>{
       if(!communityAddArmed) return;
       /* Skip if it's actually a tool action — handleMapClick will handle and toolMode set */
@@ -3755,7 +3755,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const body=document.getElementById('compose-post-body').value.trim();
     if(!title && !body){ imToast(currentLang==='jp'?'タイトルか本文を入力してください。':currentLang==='de'?'Titel oder Text eingeben.':currentLang==='ru'?'Введите заголовок или текст.':currentLang==='es'?'Escribe un título o texto.':'Enter a title or some text.'); return; }
     /* never dead-end on a missing location: fall back to the current map center */
-    if(!pendingPostLoc){ if(map){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
+    if(!pendingPostLoc){ if(GE().hasRenderer()){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
     try{
@@ -3786,7 +3786,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(rm) rm.onclick=()=>{ pendingImg=''; showComposeImgPreview(''); };
   })();
   /* Push community pins when style first loads, so they appear without needing to enter the tab */
-  if(map){
+  if(GE().hasRenderer()){
     if(canDraw()){ try{ setupCommunityLayer(); }catch(_){} }
     GE().events.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     GE().events.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
@@ -3796,7 +3796,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
-  const initMobileUI=window.IntMapModules.mobileUI(map,IM_HOST);
+  const initMobileUI=window.IntMapModules.mobileUI(IM_HOST);
 
   /* =====================================================================
    *  SUPABASE INTEGRATION — cloud data loading, auth, community + favorites,
@@ -4069,11 +4069,11 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layoutReflow(map,IM_HOST);
+  window.IntMapModules.layoutReflow(IM_HOST);
 
   /* ---------- Screenshot (#18) — keeps legends, hides controls ---------- */
   async function takeScreenshot(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const btn=document.getElementById('btn-screenshot'); if(btn) btn.disabled=true;
     document.body.classList.add('capture-mode');
     try{
@@ -4267,7 +4267,7 @@ window.addEventListener('DOMContentLoaded', () => {
      to the whole globe; it just doesn't tile sideways. Free = world copies repeat left/right.
      NEVER cage the camera with maxBounds (that was the "locked near Europe" bug). */
   function applyFlatPanSetting(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     try{ GE().camera.setMaxBounds(null); }catch(_){}
     if(currentProj!=='flat') return;
     try{ GE().camera.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
@@ -4446,7 +4446,7 @@ window.addEventListener('DOMContentLoaded', () => {
    *  own DOM, CSS, projection math and input handling.
    *  ========================================================================== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.projView(map,IM_HOST);
+  window.IntMapModules.projView(IM_HOST);
 
   /* ---------- Animated wind layer (#9) ---------- */
   /* REAL global 10 m wind field from Open-Meteo (GFS), no key, CORS-enabled (Access-Control-Allow-
@@ -4457,7 +4457,7 @@ window.addEventListener('DOMContentLoaded', () => {
      through the wind field in degrees, and PROJECTS it with the live map each frame — so the flow is
      correct under any projection/zoom/rotation and pans & zooms locked to the map ("座標ベース"). */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.wind(map,IM_HOST);
+  window.IntMapModules.wind(IM_HOST);
 
   /* ===================== Freehand DRAW / trace tool (#R7) =====================
      Click (or tap) once to start, move the cursor to trace a freehand curve in real time, click again
@@ -4470,20 +4470,20 @@ window.addEventListener('DOMContentLoaded', () => {
        • Distance = great-circle (turf), area = spherical-excess polygon (ringArea) → correct at any
          latitude, antimeridian/pole-safe like the other tools. ============================= */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.drawTool(map,IM_HOST);
+  window.IntMapModules.drawTool(IM_HOST);
 
   /* (#R167) moved to js/dash-extended.js — see Architecture.md §3.1. */
-  window.IntMapModules.dashExtended(map,IM_HOST);
+  window.IntMapModules.dashExtended(IM_HOST);
 
   /* ===== (#R9b/#40/#41/#42/#14) Earth, sky & airspace: major dams, active volcanoes, NOAA aurora
      forecast (live), and approximate Air-Defense Identification Zones. Self-contained, additive. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.earthSky(map,IM_HOST);
+  window.IntMapModules.earthSky(IM_HOST);
 
   /* ===== (#R11) Land cover & earth science: ESA WorldCover 2021 (WMTS raster), RESOLVE/WWF Ecoregions
      2017 (PMTiles vector), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.landCover(map,IM_HOST);
+  window.IntMapModules.landCover(IM_HOST);
 
   /* ===== (#R19) Beta layers — Ukraine frontline (LIVE, DeepState API) · 3D city buildings
      (OpenFreeMap vector building footprints, fill-extrusion) · Historical borders time slider
@@ -4491,7 +4491,7 @@ window.addEventListener('DOMContentLoaded', () => {
      All three rows are swept into "Others (beta)" by reorganizeLayerPanel. Each registers an
      opacity legend via _registerLayerOpacity. Everything lazy-loads on first toggle. ===== */
   /* (#R164) moved to js/beta-overlays.js — see Architecture.md §3.1. */
-  window.IntMapModules.betaOverlays(map,IM_HOST);
+  window.IntMapModules.betaOverlays(IM_HOST);
 
   /* ===== (#R21) Beta layer pack 2 — Data centers & AI infra · World railways by gauge · Pharma &
      health (factory hubs + life-expectancy choropleth) · Corruption indicator (World Bank WGI,
@@ -4499,13 +4499,13 @@ window.addEventListener('DOMContentLoaded', () => {
      reorganize sweep; data is lazy-loaded on first toggle and exposed through
      window.IntMapBeta2.load(key,cb) so the Compare view reuses the same FeatureCollections. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.betaPack2(map,IM_HOST);
+  window.IntMapModules.betaPack2(IM_HOST);
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
      ISO-3 keyed; countries without an entry stay neutral gray — real data, nothing fabricated). ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.religionLang(map,IM_HOST);
+  window.IntMapModules.religionLang(IM_HOST);
 
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
      A no-op stub remains so any stray reference can't throw. ===== */
@@ -4526,10 +4526,10 @@ window.addEventListener('DOMContentLoaded', () => {
      weather (Open-Meteo @ map center), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
      stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labeled). ===== */
   /* (#R164) moved to js/widgets.js — see Architecture.md §3.1. */
-  window.IntMapModules.widgets(map,IM_HOST);
+  window.IntMapModules.widgets(IM_HOST);
   (function(){
     return; /* widgets disabled */
-    if(typeof map==='undefined' || !map) return;
+    if(!GE().hasRenderer() || !GE().hasRenderer()) return;
     const jp=()=>currentLang==='jp'; const KEY='intmap_widgets';
     let cfg={clock:true,weather:true,fx:false}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cfg=Object.assign(cfg,s); }catch(_){}
     let panel=null, tick=null, dataTick=null;
@@ -4554,7 +4554,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=map?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
+      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=jp()?'為替を取得できません':'FX unavailable'; } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
@@ -4565,7 +4565,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.annotations(map,IM_HOST);
+  window.IntMapModules.annotations(IM_HOST);
   /* Densify a click-path into a great-circle polyline so the saved annotation matches the drawn arc. */
   function _gcDensify(pts){ if(!hasTurf()||pts.length<2) return pts.slice(); const out=[pts[0].slice()];
     for(let i=1;i<pts.length;i++){ try{ const gc=turf.greatCircle(turf.point(pts[i-1]),turf.point(pts[i]),{npoints:24}); const g=gc.geometry;
@@ -4606,15 +4606,15 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== (#R9b/#53) Country isolation — show only the selected country; mask the rest with the globe-style
      background. A floating "Exit isolation" pill restores the full map. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.isolate(map,IM_HOST);
+  window.IntMapModules.isolate(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerHoverPopup(map,IM_HOST);
+  window.IntMapModules.layerHoverPopup(IM_HOST);
 
   /* ===== (#R9b/#9) Per-country time-series graphs from the World Bank Open Data API (CORS *). Opened
      from the country detail popup; draws a small SVG line chart per indicator. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.timeSeries(map,IM_HOST);
+  window.IntMapModules.timeSeries(IM_HOST);
 
   /* ===== (#R62) COUNTRY COMPARISON — rebuilt from the ground up ("根本的な部分から作り変えて"): up to FIVE
      countries side by side, ~20 indicators (multi-select), SOURCE switching (World Bank ⇄ IMF WEO for the
@@ -4622,19 +4622,19 @@ window.addEventListener('DOMContentLoaded', () => {
      multi-country time-series charts with a shared crosshair, fully wired into Atlas (compareStats action).
      Desktop = wide modal; mobile = the same modal compacted (smaller charts, scrollable columns). ===== */
   /* (#R163) moved to js/stats-compare.js — see Architecture.md §3.1. */
-  window.IntMapStatsCompare=window.IntMapModules.statsCompare(map,IM_HOST);
+  window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST);
 
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
      and the terrain DEM is cast in 96 rays (earth-curvature-corrected) → terrain-blocked dead zones are
      filled red, the visible coverage outlined green. Uses the same cached terrarium DEM as the readout. ===== */
   /* (#R166) moved to js/map-tools.js, then (#R176) to js/viewshed.js — see Architecture.md §3.1. */
-  window.IntMapModules.los(map,IM_HOST);
+  window.IntMapModules.los(IM_HOST);
 
   /* ===== (#R176) The three simulators the round was asked for. Each is self-contained in its own file
      and reached from the map's right-click menu and from Atlas (never from the Measure menu). ===== */
-  window.IntMapModules.terrainWater(map,IM_HOST);   /* sculpt the ground, drop water, watch it route */
-  window.IntMapModules.seismic(map,IM_HOST);        /* P/S/surface wavefronts, arrivals, intensity */
-  window.IntMapModules.insolation(map,IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
+  window.IntMapModules.terrainWater(IM_HOST);   /* sculpt the ground, drop water, watch it route */
+  window.IntMapModules.seismic(IM_HOST);        /* P/S/surface wavefronts, arrivals, intensity */
+  window.IntMapModules.insolation(IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
 
   /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
      avoids land, follows open water (a near-coast cost penalty keeps it off the 0 m coastline, per
@@ -4643,7 +4643,7 @@ window.addEventListener('DOMContentLoaded', () => {
      test); A* runs on that grid; the staircase path is string-pulled along clear-sea sightlines (faithful,
      not an invented curve). Canals (Suez/Panama) are land in the mask → not auto-traversed (documented). ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.seaRoute(map,IM_HOST);
+  window.IntMapModules.seaRoute(IM_HOST);
 
   /* ===== (#R12 / #20,#21) ECMWF (Open-Meteo data_spatial) weather suite — the official Open-Meteo
      weather-map-layer SDK decodes the ECMWF IFS .om tiles through a MapLibre `om://` protocol and applies
@@ -4653,7 +4653,7 @@ window.addEventListener('DOMContentLoaded', () => {
      Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Exposes
      window.toggleWeatherLayer(id, visible) + per-layer opacity. ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.weatherEC(map,IM_HOST);
+  window.IntMapModules.weatherEC(IM_HOST);
 
   /* ===== (#R12 / compare) Compare-mode window — a resizable / minimisable / draggable floating window
      holding a SECOND MapLibre instance with its own basemap, projection and data layers, so two states
@@ -4677,13 +4677,13 @@ window.addEventListener('DOMContentLoaded', () => {
        are not cloned (documented in DEV-NOTES).
      · Resizable from ALL FOUR corners ("四隅でできるように"). */
   /* (#R163) moved to js/compare.js — see Architecture.md §3.1. */
-  window.IntMapCompare=window.IntMapModules.compare(map,IM_HOST);
+  window.IntMapCompare=window.IntMapModules.compare(IM_HOST);
 
   /* ===== (#R20) LAYER PRESETS — save the current layer set (selection + opacities) under a name and
      re-apply it in one tap ("レイヤーを自分の好きな設定や透明度、複数選択…で保存できる機能").
      Lives in Layers → Tools; persists locally + (when logged in) in the account prefs blob. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerPresets(map,IM_HOST);
+  window.IntMapModules.layerPresets(IM_HOST);
 
   /* ===== (#R20) ACCOUNT PREFS SYNC — a logged-in user's settings / layer favorites / widget board /
      layer presets live in Supabase `user_prefs` (supabase_user_prefs.sql, own-row RLS) so they follow
@@ -4730,25 +4730,25 @@ window.addEventListener('DOMContentLoaded', () => {
      recent developments), seeded with the nearby geocoded news headlines so it is stronger on "now"
      than an encyclopedia. Needs an AI key (Settings → AI features); reuses askAI(). ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.aiResearch(map,IM_HOST);
+  window.IntMapModules.aiResearch(IM_HOST);
 
   /* ===== (#R39) TWO-LAYER CORRELATION / SCATTER — pick any two NUMERIC, ABSOLUTE-SCALE country metrics
      ("数値があるかつ絶対尺度のレイヤーのみ") and see a scatter plot + correlation coefficient over every
      country that has both values. Opened from a button at the bottom of the Layers panel. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.correlate(map,IM_HOST);
+  window.IntMapModules.correlate(IM_HOST);
 
   /* ===== (#R20) WORLD EVENTS ARCHIVE — the Information tab gains a Places | Events split
      ("既存カードをplaceとして中分類…eventとして新たな中分類を新設"). Events = curated key moments
      (wars, disasters, revolutions, assassinations, space, economic crises) searchable by TEXT
      (existing search box) and YEAR RANGE, each plotted on the map. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.worldEvents(map,IM_HOST);
+  window.IntMapModules.worldEvents(IM_HOST);
 
   /* ===== (#R22) ACLED CONFLICT EVENTS card removed from the News tab per request ("News欄のACLEDは削除"). ===== */
   (function(){
     return; /* ACLED card retired (#R22) */
-    if(typeof map==='undefined'||!map) return;
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>currentLang==='jp';
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
@@ -4764,8 +4764,8 @@ window.addEventListener('DOMContentLoaded', () => {
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,5,4.4,9,7],
           'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
         GE().events.onLayer('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          try{ GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
-            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>').addTo(map); }catch(_){}
+          try{ GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
+            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>')); }catch(_){}
         });
         GE().events.onLayer('mouseenter','acled-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','acled-pt',()=>{ GE().render.canvas().style.cursor=''; });
@@ -4840,13 +4840,13 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerSearch(map,IM_HOST);
+  window.IntMapModules.layerSearch(IM_HOST);
 
   /* ===== (#R20) EDUCATION MODE — quizzes + learning cards built on the bundled country data
      ("世界地理…を学べるモード。クイズ、解説カード"). Entry: Layers → Tools → 🎓 Learn. Three quiz
      types: flag→country, capital→country, find-the-country-on-the-map (click; point-in-polygon). ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.edu(map,IM_HOST);
+  window.IntMapModules.edu(IM_HOST);
 
   /* ===== (#R11) Mobile measuring is CENTER-FIXED: a subtle crosshair marks the map center, a bottom-
      center "Add point" button adds the center coordinate (for measure / area / radius), and a small
@@ -4854,7 +4854,7 @@ window.addEventListener('DOMContentLoaded', () => {
      (now-disabled) long-press context menu when no tool is active. On desktop it shows only while a
      measurement tool is active (so right-click still drives the menu). ===== */
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const mob=()=>{ try{ return isMobile(); }catch(_){ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); } };
     const mc=document.getElementById('map-container')||document.body;
     const st=document.createElement('style'); st.textContent=`
@@ -4924,25 +4924,25 @@ window.addEventListener('DOMContentLoaded', () => {
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
      drop a red highlight at the point. Non-destructive: layer-scoped handlers fire only on a label. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.labelPopup(map,IM_HOST);
+  window.IntMapModules.labelPopup(IM_HOST);
 
   /* ===== (#R9/#49) User GeoJSON upload — load any .geojson/.json from the Layers menu OR by dropping
      it on the map. Auto-styles fill/line/point, fits bounds, and each upload is removable. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.geojsonUpload(map,IM_HOST);
+  window.IntMapModules.geojsonUpload(IM_HOST);
 
   /* ===== (#R40) Comprehensive LIVE weather popup (right-click → "Weather here"). Open-Meteo forecast API
      (free, no key, CORS-enabled) → always-latest current conditions + a 5-day outlook. Self-contained;
      5-language; reuses fmtTemp for the unit setting. CSS is added via cssText with single quotes only (no
      back-tick in a CSS template-literal → no blank-site risk). ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.weatherPanel(map,IM_HOST);
+  window.IntMapModules.weatherPanel(IM_HOST);
 
   /* ===== (#R8c) View bookmarks — the live map state (center, zoom, bearing, pitch, projection AND the
      set of active data layers) is mirrored into the URL hash, so the address bar is a shareable permalink
      and a reload restores the exact analysis view. "Copy link to this view" lives in the right-click menu. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.viewHash(map,IM_HOST);
+  window.IntMapModules.viewHash(IM_HOST);
 
   /* ===== (#R42/#R42b) "Share this view" — a REAL, surfaced share PANEL ("今の状態をそのままURLで共有"). The
      permalink (IntMapBookmark / the address bar) encodes center/zoom/bearing/pitch, projection, satellite base,
@@ -4952,7 +4952,7 @@ window.addEventListener('DOMContentLoaded', () => {
      the native share sheet + a list of exactly what travels in the URL. 5-language. CSS via cssText with single
      quotes only (no back-tick in CSS → no blank-site risk). ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.share(map,IM_HOST);
+  window.IntMapModules.share(IM_HOST);
   try{ const _sb=document.getElementById('btn-share'); if(_sb) _sb.onclick=()=>{ try{ window.IntMapShare.open(); }catch(_){} }; }catch(_){}
 
   /* ===== (#R42) "Atlas" — natural-language console (beta) ("自然言語版ターミナル"). Type a request in plain
@@ -4970,29 +4970,29 @@ window.addEventListener('DOMContentLoaded', () => {
      nearest the label (so the "Paris" label near France → France's Paris, not Paris TX). CSS via single-quoted
      cssText (no back-tick → no blank-site risk). 5-language. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.outline(map,IM_HOST);
+  window.IntMapModules.outline(IM_HOST);
   /* ===== (#R122) MOVE / TRUE-SIZE — drag any outlined place (country or sub-national/region) to a new location. In
      Mercator, projected size distorts with latitude, so as the shape is dragged its vertices rescale by
      cos(lat0)/cos(latNew) to keep its REAL area constant ("メルカトルでは面積一定になるように") — the classic
      "true size of…" comparison. Painted in its own source so it never disturbs the layer state. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.moveShape(map,IM_HOST);
+  window.IntMapModules.moveShape(IM_HOST);
   /* ===== (#R83) ROAD ROUTING ("Atlasで経路機能を…（Google Map）のような") — real turn-by-turn directions from the
      public OSRM road network (car via router.project-osrm.org; foot/bike via routing.openstreetmap.de). Draws the
      route on the map with start/end pins and returns distance, duration and step-by-step guidance. Separate from
      the existing IntMapRoute (which is a maritime/sea A* route). ===== */
   /* (#R163) moved to js/routing.js — see Architecture.md §3.1. */
-  window.IntMapRouting=window.IntMapModules.routing(map,IM_HOST);
+  window.IntMapRouting=window.IntMapModules.routing(IM_HOST);
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
      polygons for drive / walk / cycle. Opened from the right-click menu or Atlas. Store-siting, evacuation, travel, etc. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.isochrone(map,IM_HOST);
+  window.IntMapModules.isochrone(IM_HOST);
   /* ===== (#R83) STREET VIEW ("ストリートビューを使えるように") — an embedded, KEYLESS Google Street View panel
      (the classic maps.google.com output=svembed endpoint, no API key/billing) plus an "open in Google Maps" jump.
      Draggable floating window; used from the map context menu and from Atlas. ===== */
   /* (#R163) moved to js/street-view.js — see Architecture.md §3.1. */
-  window.IntMapStreetView=window.IntMapModules.streetView(map,IM_HOST);
+  window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST);
   /* ===== (#R83) RADIATION DISPERSION — a real Lagrangian particle model ("流体力学にのっとった粒子飛散モデルで、
      風向きや気温、降水も考慮"). Particles are released from a source and advected by a LIVE, space+time-varying
      wind field (Open-Meteo 6×6 grid, hourly, 3-day forecast), spread by turbulent diffusion scaled by atmospheric
@@ -5000,31 +5000,31 @@ window.addEventListener('DOMContentLoaded', () => {
      radioactive half-life. Rendered as an animated particle plume + concentration heatmap. Not an operational
      forecast — clearly labelled educational. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.radiation(map,IM_HOST);
+  window.IntMapModules.radiation(IM_HOST);
   /* ===== (#R84) 3-D ARC OVERLAY — a screen-space canvas that lifts a ground track off the map by REAL altitude so
      ballistic trajectories read as a dimensional arc (「地図にのっぺりではなく立体的な軌道」), coloured by altitude.
      MapLibre line layers can't be raised off the surface, so this projects each ground point every frame and
      offsets it upward by its altitude — the arc pans/zooms/rotates with the map. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.arc3d(map,IM_HOST);
+  window.IntMapModules.arc3d(IM_HOST);
   /* ===== (#R83) FLIGHT SIMULATOR ("Atlasでフライトシミュレーターを使えるように") — a real, flyable arcade flight
      model over the actual world map: coordinated-turn banking, pitch/throttle, stall, gravity and ground/terrain
      collision, with the MapLibre camera as the cockpit view and a live HUD (airspeed, altitude, heading, VSI,
      throttle, artificial horizon). Keyboard: W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc exit. ===== */
   /* (#R163) moved to js/flight-sim.js — see Architecture.md §3.1. */
-  window.IntMapFlightSim=window.IntMapModules.flightSim(map,IM_HOST);
-  window.IntMapConsole=window.IntMapModules.atlasConsole(map,IM_HOST);   /* (#R165) the Atlas kernel (~6,200 lines) moved to js/atlas-console.js — see Architecture.md §3.1 */
+  window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST);
+  window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);   /* (#R165) the Atlas kernel (~6,200 lines) moved to js/atlas-console.js — see Architecture.md §3.1 */
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
   window.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){ const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; e.preventDefault(); try{ window.IntMapConsole.toggle(); }catch(_){} } });
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.runwaySearch(map,IM_HOST);
+  window.IntMapModules.runwaySearch(IM_HOST);
 
   loadSettings();
 
   /* (#R167) moved to js/onboarding.js — see Architecture.md §3.1. */
-  window.IntMapModules.onboarding(map,IM_HOST);
+  window.IntMapModules.onboarding(IM_HOST);
 
   /* ===== (#R31) NEW BETA LAYERS — 10 real-data additions (≥10 to β, per request) =====
      Self-contained: each row owns a change handler (no edits to the big toggleLayer switch); rows are
@@ -5032,7 +5032,7 @@ window.addEventListener('DOMContentLoaded', () => {
      up automatically. Data: World Bank Open Data (latest value per country, CORS) + USGS earthquakes
      (realtime feed + historical query) + a news-density "Heat of Attention" heatmap. */
   /* (#R164) moved to js/wb-layers.js — see Architecture.md §3.1. */
-  window.IntMapModules.wbLayers(map,IM_HOST);
+  window.IntMapModules.wbLayers(IM_HOST);
 
   /* ===== (#R86/#R87) LIVE CAMERAS — REBUILT REAL, then GREATLY EXPANDED ("coverageが限定的すぎる…20倍にしろ").
      EVERY pin genuinely displays live imagery IN-APP (no link-out facade). Sources, all KEYLESS + CORS-open + direct
@@ -5050,7 +5050,7 @@ window.addEventListener('DOMContentLoaded', () => {
      platform — ~17,000 more live cameras across 13 regions (FL/GA/NY/PA/NC/NV/WI/ID/LA + New England + ON/AB/YT),
      each list proxied ONCE (/map/mapIcons/Cameras) and every image hotlinking directly (/map/Cctv/{id}). ===== */
   /* (#R164) moved to js/cameras.js — see Architecture.md §3.1. */
-  window.IntMapModules.cameras(map,IM_HOST);
+  window.IntMapModules.cameras(IM_HOST);
 
   /* ===== (#R88) UNIVERSAL OBJECT LIST ("汎用オブジェクト一覧") — ONE place to see & manage EVERY user object on the
      map (pins · radius circles · kept drawings/annotations · uploaded GeoJSON · the active route · the reachable-area
@@ -5058,10 +5058,10 @@ window.addEventListener('DOMContentLoaded', () => {
      subsystem supports it. Reads the REAL existing state and calls the REAL existing remove APIs (fully additive — no
      subsystem is refactored). A small count-badge button appears bottom-left whenever ≥1 object exists. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.objectList(map,IM_HOST);
+  window.IntMapModules.objectList(IM_HOST);
 
   /* (#R167) moved to js/onboarding.js — see Architecture.md §3.1. */
-  window.IntMapModules.progressCtl(map,IM_HOST);
+  window.IntMapModules.progressCtl(IM_HOST);
 
   /* ===== (#R118) PRECISE POPULATION INSIDE A DRAWN AREA ("囲んだ範囲の人口を超正確に算出") =====
      Real gridded-census data, not a country-share guess: the WorldPop Global Project population raster
@@ -5081,33 +5081,33 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R162) moved to js/monitors.js — see Architecture.md §3.1.
      (#R163) its private host object became the shared IM_HOST, which is a superset of the ten values
      this module reads (lang/user/mode/radiusItems live, plus the six helpers). */
-  window.IntMapMonitors=window.IntMapModules.monitors(map,IM_HOST);
+  window.IntMapMonitors=window.IntMapModules.monitors(IM_HOST);
 
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.popArea(map,IM_HOST);
+  window.IntMapModules.popArea(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.terrain(map,IM_HOST);
+  window.IntMapModules.terrain(IM_HOST);
 
   /* ===== (#R89) SLOPE / ASPECT ANALYSIS ("傾斜・方角解析") — colour-codes terrain steepness (slope angle) or the
      direction each slope faces (aspect), computed from the real DEM over the current view. Disaster / hiking /
      construction / military use. Keyless (terrarium DEM). Recomputes on pan/zoom. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.slope(map,IM_HOST);
+  window.IntMapModules.slope(IM_HOST);
 
   /* ===== (#R89) RF / RADIO COVERAGE ("電波・通信圏") — from an antenna (position, height, power, frequency),
      draw the terrain-aware line-of-sight service area: 360 rays marched over the real DEM, each stopped at the
      first ridge that breaks line of sight, capped by the radio horizon (4/3-earth) and the free-space-path-loss
      range from the link budget. Keyless (terrarium DEM). Real viewshed, not a distance circle. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.rf(map,IM_HOST);
+  window.IntMapModules.rf(IM_HOST);
 
   /* ===== (#R90) SUN & SHADOW ("日照・影") — pick a date+time and see the sun's position, the day's sun-path times,
      and REAL cast shadows: OSM buildings in view are projected along the sun vector (length = height / tan(altitude))
      into ground-shadow polygons, and maplibre's 3D light is aimed from the sun so extrusions self-shade. Astronomy
      is the standard SunCalc solar-position algorithm. Keyless. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.sun(map,IM_HOST);
+  window.IntMapModules.sun(IM_HOST);
 
   /* ===== (#R91) TRANSIT ISOCHRONE — REACHABLE BY RAIL ("鉄道で1時間以内") — the area you can reach from a point
      within a time budget riding the REAL OSM rail network: fetch rail ways + stations (Overpass), build a welded
@@ -5115,7 +5115,7 @@ window.addEventListener('DOMContentLoaded', () => {
      budget is plotted (coloured by minutes) and a reachable-area hull (stations buffered by the leftover walk time)
      is drawn. Complements the drive/walk/cycle Valhalla isochrone. Keyless. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.transitReach(map,IM_HOST);
+  window.IntMapModules.transitReach(IM_HOST);
 
   /* ===== (#R92) UNIFIED DISASTER SIMULATOR ("災害シミュレーター") — one framework, one panel, one time slider for
      FLOOD & TSUNAMI (connected DEM flood-fill / inundation from real elevation), ASHFALL & SMOKE (wind-advected
@@ -5123,7 +5123,7 @@ window.addEventListener('DOMContentLoaded', () => {
      IntMapRadiation). Pick a hazard + origin + conditions; the slider steps the impact area through time. Keyless.
      EDUCATIONAL approximation — in a real emergency follow official authorities. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.disaster(map,IM_HOST);
+  window.IntMapModules.disaster(IM_HOST);
 
   /* ===== (#R93) EARTH REPLAY — "世界を巻き戻す" — a master clock that reconstructs the world at a chosen moment by
      driving EVERY dated layer from one time axis: a real day/night terminator computed for the datetime (works for
@@ -5131,17 +5131,17 @@ window.addEventListener('DOMContentLoaded', () => {
      (existing timeTravel engine) and any dated raster layers (temp/precip/SST/… via refreshDatedLayer). Not a
      separate history map — it puts the existing dated features onto one shared globe clock. ▶ plays time forward. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.earthReplay(map,IM_HOST);
+  window.IntMapModules.earthReplay(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.railSeaOverlays(map,IM_HOST);
+  window.IntMapModules.railSeaOverlays(IM_HOST);
 
   /* ===== (#R41) Time-zone layer — REAL boundaries (Natural Earth ne_10m_time_zones, loaded on demand from
      jsDelivr, CORS-OK) PLUS the CURRENT local time labelled on every zone, refreshed each minute
      ("タイムゾーンの境界…現在の時間もそれぞれのタイムゾーン上に表示"). Key-free; only fetched when toggled. Layer
      ids are `tzl-*` so they don't collide with the generic dl- orphan sweep (id `tz`). ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.timeZones(map,IM_HOST);
+  window.IntMapModules.timeZones(IM_HOST);
 
   /* (#R38) "レイヤーを大幅増強して" — EIGHT additional REAL NASA GIBS science rasters. Every tile endpoint was
      curl-verified (HTTP 200 / image/*) before wiring (wrong GIBS layer ids serve blank tiles). Self-contained +
@@ -5150,7 +5150,7 @@ window.addEventListener('DOMContentLoaded', () => {
      layers request the freshest reliably-processed GIBS day (−2 d); Blue Marble is a static composite. Built via
      DOM APIs (no innerHTML/template literals → no CSS-back-tick risk). */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.gibsScience(map,IM_HOST);
+  window.IntMapModules.gibsScience(IM_HOST);
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical
@@ -5158,7 +5158,7 @@ window.addEventListener('DOMContentLoaded', () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=window.IntMapModules.timeBorders(map,IM_HOST);
+  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST);
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an

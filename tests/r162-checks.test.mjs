@@ -91,7 +91,8 @@ test('R162 #4 each factory is instantiated with exactly its declared dependencie
     'window.IntMapHistStates=window.IntMapModules.histStates(countryStats);': ['js/history.js', 'histStates', ['countryStats']],
     'window.IntMapHistId=window.IntMapModules.histId(countryStats);': ['js/history.js', 'histId', ['countryStats']],
     // (#R163) the private host object became the shared IM_HOST and the parameter was renamed H → HOST
-    'window.IntMapMonitors=window.IntMapModules.monitors(map,IM_HOST);': ['js/monitors.js', 'monitors', ['map', 'HOST']],
+    // (#R180) …and the renderer parameter is gone: no module receives the raw handle any more.
+    'window.IntMapMonitors=window.IntMapModules.monitors(IM_HOST);': ['js/monitors.js', 'monitors', ['HOST']],
     'window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);':
       ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'geoLayersDB', 'loadCountryData']],
   };

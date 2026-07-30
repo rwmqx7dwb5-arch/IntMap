@@ -50,7 +50,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.volume3d=function(map,HOST){
+window.IntMapModules.volume3d=function(HOST){
   return (function(){
     const SRC='imv3d-src', LYR='imv3d-vol', EDGE='imv3d-edge', BODY='imv3d-body';
     const GE=()=>window.IntMapGeoEngine;

@@ -12,16 +12,16 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.betaOverlays=function(map,HOST){
+window.IntMapModules.betaOverlays=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile, satToast=HOST.satToast;
   (function(){
-    if(typeof map==='undefined'||!map) return;
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const state={ukr:false,bldg:false,hist:false,volc:false};
     const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
@@ -274,7 +274,7 @@ window.IntMapModules.betaOverlays=function(map,HOST){
           const yr=(p.y==null||p.y==='null')?(jp()?'噴火記録なし':'No dated eruption'):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(jp()?'年に最終噴火':' last eruption'));
           const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
           try{ if(popup) popup.remove(); }catch(_){}
-          try{ popup=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map); }catch(_){}
+          try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
         });
         GE().events.onLayer('mouseenter','volc2-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','volc2-pt',()=>{ GE().render.canvas().style.cursor=''; });
