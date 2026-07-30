@@ -101,6 +101,53 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   - **Cesium が答えない物は答えないと言う**：`solid3d:false`（#R173 の閉じた立体は吸収シェーディングまで含むため）、
     `demContourSource()→null`（maplibre-contour は MapLibre の名前空間を要求する）。呼び出し側は既存の
     フォールバックを取る。詳細は §7.1。
+- **#R181：第2エンジンの実測点検（両エンジンを同じ契約に通して全回答を突き合わせ、6件を修正）。**
+  点検方法そのものが成果物：`IntMapGeoEngine` の**使われている面すべて**（camera/coords/layers/scene/ui/
+  render/input/events）を両エンジンで同一手順に通し、差分を数値で出す。6件中3件はスクリーンショットに
+  写らない（読み出しが乱数・イベントが発火しない・6%はみ出す）ので、#R180 のブラウザ試験を素通りしていた。
+  - **① 衛星画像の破損＝`ImageBitmap` の向き（4経路）。** WebGL 仕様は `ImageBitmap` に対して
+    `UNPACK_FLIP_Y_WEBGL` を**無視する**（向きは生成時に固定される）ので、Cesium が DOM 画像用に頼っている
+    そのフラグが効かず、**タイル1枚ずつが自分の中心で上下反転**＝地図がタイル行ごとに裂ける。
+    タイルの中身とタイル配置は無実だった（合成グリッドは正しい位置に描かれ、`imapsat://` の返すバイト列は
+    Esri のタイルと**画素一致**〈4タイルで mean|diff|=0〉）。`js/cesium-layers.js` に `toTexture()` を1つ置き、
+    プロトコル経路・hillshade・color-relief・heatmap の**4つ全部**をそこに通す（`imageOrientation:'flipY'`＝
+    Cesium 自身の `Resource.createImageBitmapFromBlob` と同じ指示）。`transferToImageBitmap` は向きを
+    指定できないので廃止。
+  - **② pitch 0 で bearing が壊れていた（読み出しと適用の両方）。** 真上から見ると水平成分は定義上ゼロで、
+    それを弾く閾値 `range*1e-9` が**自分の残差より4桁小さかった**ため一度も発火せず、`atan2` が丸め残差の
+    向きを答えていた（z9 で 67.34°／z6 で 123.54°／起動時 −177.63°、実際は真北）。残差は浮動小数点雑音では
+    なく**中心ピックの分解能**で range に比例する（実測 horiz/range ≤ 8.4e-8、対して 0.5° の傾きは 8.7e-3）
+    → `range*1e-5`。さらに `Camera.lookAtTransform` は `right = direction × UNIT_Z` から姿勢を復元するので
+    **真下では heading を捨てる**（既定の視点＝pitch 0 なので、この engine では地図を回せなかった）→
+    視線軸まわりの `twistRight` で Cesium 自身の heading が要求値になるまで回す（位置も注視方向も動かさない。
+    `setView({orientation:{pitch:-90}})` は**カメラ位置の法線**を向くので注視点が 11 m ずれる）。
+    実測：z1.7〜14 × pitch 0〜75 × 6方位の216通りで **|Δbearing| ≤ 0.0004°**。
+  - **③ イベントの穴（購読されているのに発火しない）。** アプリが購読する26種のうち
+    `mousedown`/`mouseup`/`mouseout`/`touchstart`/`touchmove`/`touchend`/`wheel`/`render`/`terrain`/
+    `rotate`/`pitch` が Cesium 側に**発生源が無かった**。map-tools.js と terrain-water.js は down→move→up を
+    マウスとタッチ両方に張るので**図形をドラッグできない**、`updateCompass` は `rotate`/`pitch` に張るので
+    **コンパスが追随しない**、ピン popup は `render` で追随するので**ずれる**。
+    `mousedown`/`mouseup` は **pointer から**取る（Cesium が pointerdown の default を止めるため、
+    互換マウスイベントが生成されない＝実測 0 対 4）。`click`/`dblclick`/`mousemove` は Cesium の
+    ScreenSpaceEventHandler のまま（ドラッグを click にしない抑制は MapLibre と同じ）。`contextmenu` は
+    DOM 側へ移した（`e.preventDefault()` が効くようにするため）。`mouseout` は**開いている hover を閉じる**。
+  - **④ `fitBounds` が球で箱を切っていた。** 平面メルカトルで矩形に合わせていたので、球では奥側が
+    画面外へ出る（実測：欧州サイズの箱で **6%**、日本 0.6%、パリ 0.2%）。球のときは球に訊く——
+    視点距離 d に対し各境界点 (e,n,u) が `d ≥ R·u + R·max(|e|/tanX, |n|/tanY)` を満たす最小の d（閉形式）。
+    **小さい箱では上の式に代数的に一致する**ので二重の幾何ではない。実測で MapLibre の globe fit と
+    小数第3位まで一致（日本 6.606／欧州 3.709／パリ 8.537）。併せて `wrapLng(east-west)` が
+    **360°→0** になり経度の制約が消えていたのも修正。
+  - **⑤ 既定エンジン（MapLibre）で「衛星」を押すと例外。** `applyTheme` はスプライトを作り直し
+    （＝`styledata` を**同期で**発火し）、その `styledata` ハンドラが `applyTheme` を呼び戻すが、
+    ループを止める `layer-sat` の可視性変更は**その次の行**。実測 `RangeError: Maximum call stack size
+    exceeded` が3〜6件・11段の再入。**再入禁止フラグ**にした（外側の呼び出しが全部やるので内側は不要）。
+  - **⑥ ベクタタイルが深いズームから戻ると復活しなかった。** 「まだ要るか」を `generation` カウンタで
+    見ていたが、`update()` は**カメラ移動ごとではなくレイヤごと・フレームごと**に呼ばれる＝1ソース10レイヤなら
+    静止していても毎フレーム10回増える。結果、`onChange`（＝タイルが届いた、描き直せ）がほぼ常に握り潰され、
+    z12 から z1.7 に戻ると**国名ラベル1,122件が二度と戻らなかった**（レイヤは可視・ズーム範囲内・
+    768 features 到達・714 がフィルタ通過で、描画 0）。**「今の視界が覆うタイル集合」**（`wantSet`）に
+    置き換えた。
+  - 検証：`tests/r181-checks.test.mjs`（19件・Node）＋`tests/r181-cesium.spec.js`（9件・実ブラウザ）。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
@@ -1012,14 +1059,33 @@ js/
                                     terrain→アプリが既に流している **terrarium タイル**から `HeightmapTerrainData`
                                     （**キーレス**＝Ion トークン無し）。Cesium がやらない**画面空間デクラッタ**も
                                     ここ（投影→sort-key 順→衝突箱／地平線の裏と画面外は席を取らない）。16KB
+                                    (#R181) **この4つの生産者が作るテクスチャは `toTexture()` で1回だけ向きを決める**。
+                                    WebGL 仕様は `ImageBitmap` に `UNPACK_FLIP_Y_WEBGL` を**無視する**ので、
+                                    Cesium がそのフラグに頼っている以上、普通に作った bitmap は**タイルごとに
+                                    自分の中心で反転**する（＝鏡像ではなくタイル行ごとの裂け目。報告された
+                                    「衛星画像が完全に破損」の正体）。`transferToImageBitmap` は向きを指定できないので廃止。
   cesium-vector-tiles.js            (#R180) ベクタタイルの**ピラミッド**（cover/fetch/decode/LRU）。描画は
                                     GeoJSON 経路と同じものを使う——タイルの難所はレンダラであって、
                                     features になりさえすれば既存の描画器が受け取れる。`@mapbox/vector-tile`。4KB
+                                    (#R181) 「まだ要るタイル」は**カウンタではなく集合**（`wantSet`）。`update()` は
+                                    カメラ移動ごとではなく**レイヤごと・フレームごと**に呼ばれるので、そこで増やす
+                                    `generation` は「誰かが訊いた」であって「カメラが動いた」ではなく、
+                                    `onChange`（タイルが届いた＝描き直せ）がほぼ常に握り潰されていた。
   cesium-engine.js                  (#R180) アダプタ本体。`makeMapLibreAdapter` と**同じメソッド集合**を実装し、
                                     `IntMapGeoEngine.use()` で差し込まれる。カメラ対応（zoom↔range・pitch は
                                     ちょうど90°ずれる）の**唯一の転写**、地形が届いたらカメラを打ち直す `_settle`、
                                     popup/marker（Cesium に無いので DOM を投影で追従。`.maplibregl-*` の
                                     クラス名は**意図的に維持**＝スタイルはアプリのものだから）。39KB
+                                    (#R181) カメラの2件とイベント面。**pitch 0 の bearing**——水平成分が定義上ゼロに
+                                    なる領域を弾く閾値が**自分の残差より4桁小さく**一度も発火しなかった
+                                    （`_enuNoise(range)=range*1e-5`。残差は雑音ではなく中心ピックの分解能で
+                                    range に比例する）／`lookAtTransform` は真下では heading を捨てるので
+                                    `_faceHeading` が**視線軸まわりの twist** で入れ直す（位置も注視方向も不変）。
+                                    **イベント**——アプリが購読する26種のうち11種に発生源が無かった。
+                                    `mousedown`/`mouseup` は **pointer から**（Cesium が pointerdown の default を
+                                    止めるので互換マウスイベントが出ない）、`render` は `scene.postRender`、
+                                    `rotate`/`pitch` は角度が実際に動いたときだけ、`terrain` は `setTerrain` から。
+                                    **`fitBounds`** は球のときは球に訊く（閉形式。小さい箱ではメルカトル式に一致）。
   view-controls.js                  (#R171) 視点まわりの2つの設定＝`IntMapTilt`（地図の傾きの上限）と
                                     `IntMapEyeAlt`（常時表示欄の視点高度）。**engine だけで書かれた3本目**
                                     （生 `map` を一切参照しない）。

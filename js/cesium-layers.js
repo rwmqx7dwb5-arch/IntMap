@@ -191,6 +191,55 @@ window.IntMapCesiumLayers=(function(){
     return new TerrariumTerrainProvider();
   }
 
+  /* ══ (#R181) EVERY TEXTURE THIS FILE PRODUCES HAS TO BE HANDED OVER BOTTOM-UP ══════════════
+     「Cesium選択時の衛星画像が完全に破損している。」 — the satellite view tore into horizontal
+     bands, each tile row displaced against its neighbours. Measured, the cause was not the
+     imagery and not the tile maths: the synthetic tile-coordinate grid below renders in exactly
+     the right place, and the bytes `imapsat://` returns are pixel-identical to Esri's own tile
+     (mean |diff| = 0 over four sampled tiles). What differed was the TYPE of the object handed
+     back from requestImage, and only that.
+
+     WebGL uploads a texture bottom-up, and Cesium relies on `UNPACK_FLIP_Y_WEBGL` to turn a
+     top-down DOM image the right way round. But the WebGL spec says that flag — and
+     `UNPACK_PREMULTIPLY_ALPHA_WEBGL` with it — is IGNORED when the source is an `ImageBitmap`;
+     a bitmap carries its own orientation, fixed at creation. So an `ImageBitmap` built the
+     ordinary way arrives upside down, and because each tile is flipped about ITS OWN centre the
+     result is not one mirrored map but a map torn into tile rows. Cesium's own fetch path never
+     hits this: `Resource.createImageBitmapFromBlob` passes `imageOrientation:'flipY'`, which is
+     the same instruction, moved from the upload to the decode.
+
+     Which is why a defect in one shared helper looked like a defect in one feature. FOUR
+     producers here hand Cesium a bitmap — the protocol path (the satellite layer), hillshade,
+     colour relief and the heatmap — and every one of them was upside down. Only the satellite
+     layer is loud enough to be reported.
+
+     The three canvas producers could simply return their canvas and be correct — a canvas IS a
+     DOM source, so the flag applies to it, and the synthetic tile grid proved exactly that during
+     the hunt. They go through here anyway, and that costs a copy the old `transferToImageBitmap`
+     did not: one rule that holds for all four sources is worth more than saving it. Whatever a
+     producer builds, it becomes a texture THROUGH HERE, oriented once, in the one place that
+     knows why. */
+  function toTexture(src){
+    if(typeof ImageBitmap!=='undefined'&&src instanceof ImageBitmap){
+      /* already a bitmap (a protocol handler's stitched tile, or a caller's own): its
+         orientation is baked in, so re-decode it the way Cesium's own loader would.
+         createImageBitmap accepts an ImageBitmap as a source, and the original is closed
+         because nothing else can reach it once this promise resolves. */
+      return createImageBitmap(src,{imageOrientation:'flipY'})
+        .then(b=>{ try{ src.close&&src.close(); }catch(_){} return b; })
+        .catch(()=>src);
+    }
+    if(typeof createImageBitmap==='function'){
+      try{ return createImageBitmap(src,{imageOrientation:'flipY'}); }catch(_){}
+    }
+    /* No createImageBitmap. A canvas IS a DOM source, so UNPACK_FLIP_Y_WEBGL applies to it and
+       handing the canvas straight over is already the right way up — but encoded BYTES are not
+       something Cesium can upload, and returning a Blob would draw nothing while looking like a
+       success. Say so instead (the tile then falls back to its parent's texture, which is what
+       "this tile did not arrive" means everywhere else in the renderer). */
+    return (typeof Blob!=='undefined'&&src instanceof Blob)?undefined:src;
+  }
+
   /* ── IMAGERY THROUGH THE APP'S OWN TILE PATHS ──────────────────────────────
      Two reasons this is not just UrlTemplateImageryProvider:
        · the satellite source is a registered PROTOCOL (`imapsat://`), which is
@@ -243,9 +292,10 @@ window.IntMapCesiumLayers=(function(){
           return Promise.resolve(proto({url},ac)).then(res=>{
             const d=res&&res.data;
             if(!d) return undefined;
-            if(typeof ImageBitmap!=='undefined'&&d instanceof ImageBitmap) return d;
-            if(d instanceof ArrayBuffer||ArrayBuffer.isView(d)) return createImageBitmap(new Blob([d]));
-            return d;
+            /* (#R181) …and every one of these becomes a texture through toTexture — see there */
+            if(typeof ImageBitmap!=='undefined'&&d instanceof ImageBitmap) return toTexture(d);
+            if(d instanceof ArrayBuffer||ArrayBuffer.isView(d)) return toTexture(new Blob([d]));
+            return toTexture(d);
           }).catch(()=>undefined);
         }
         return Cesium.ImageryProvider.loadImage(this,new Cesium.Resource({url,request:new Cesium.Request({throttle:true,throttleByServer:true,type:Cesium.RequestType.IMAGERY})}));
@@ -336,7 +386,7 @@ window.IntMapCesiumLayers=(function(){
         o[i+3]=Math.round(255*k*(col.a==null?1:col.a)*0.72);
       }
       ctx.putImageData(img,0,0);
-      return c.transferToImageBitmap?c.transferToImageBitmap():createImageBitmap(c);
+      return toTexture(c);   /* (#R181) oriented for the GPU in ONE place — see toTexture */
     };
   }
 
@@ -371,7 +421,7 @@ window.IntMapCesiumLayers=(function(){
         o[i]=LUT[j]; o[i+1]=LUT[j+1]; o[i+2]=LUT[j+2]; o[i+3]=LUT[j+3];
       }
       ctx.putImageData(img,0,0);
-      return c.transferToImageBitmap?c.transferToImageBitmap():createImageBitmap(c);
+      return toTexture(c);   /* (#R181) oriented for the GPU in ONE place — see toTexture */
     };
   }
 
@@ -435,7 +485,7 @@ window.IntMapCesiumLayers=(function(){
         o[i+3]=Math.round(LUT[j+3]*(p.opacity==null?1:p.opacity));
       }
       ctx.putImageData(img,0,0);
-      return c.transferToImageBitmap?c.transferToImageBitmap():createImageBitmap(c);
+      return toTexture(c);   /* (#R181) oriented for the GPU in ONE place — see toTexture */
     };
   }
 

@@ -268,6 +268,37 @@ window.IntMapCesiumEngine=(function(){
        overhead, 90 = horizon, 180 = under the centre looking up), and is exact by construction
        — the same transcription, read backwards, which is #R177's rule about having ONE copy of
        the geometry rather than two that agree with each other and not with the renderer. */
+    /* ══ (#R181) WHERE THE OFFSET STOPS BEING A DIRECTION AND BECOMES RESIDUE ══════════════
+       At pitch 0 the horizontal part of the offset is zero by definition, so `atan2` is being
+       asked to name the direction of a quantity that is not there. The guard for that was
+       `range*1e-9` — and measured, `horiz` at pitch 0 is never anywhere near that small:
+
+           z1.7  range 2.35e7 m   horiz 1.98      m      guard 2.4e−2   NOT caught
+           z2.5  range 1.35e7 m   horiz 5.3e−1    m      guard 1.4e−2   NOT caught
+           z4    range 4.78e6 m   horiz 2.6e−2    m      guard 4.8e−3   NOT caught
+           z6    range 1.11e6 m   horiz 2.1e−3    m      guard 1.1e−3   NOT caught
+           z9    range 1.49e5 m   horiz 3.5e−4    m      guard 1.5e−4   NOT caught
+           z14   range 4.67e3 m   horiz 1.1e−5    m      guard 4.7e−6   NOT caught
+
+       — so it never fired, at any zoom, and the bearing at pitch 0 was the direction of a
+       residue: 67.34° at z9, 123.54° at z6, −177.63° at boot, for a camera pointing due north.
+       Nothing LOOKED wrong, because a map at pitch 0 is drawn north-up whatever the heading;
+       what was wrong was every reader of the number — the shared `#v=` URL, the compass,
+       Atlas's answer to "which way is this facing".
+
+       The residue is not floating-point noise. It scales with RANGE, because it is the
+       resolution of the centre pick itself: `_centreCarto` intersects a ray with the ellipsoid,
+       and the further away the eye is, the more ground a ray's own precision covers. Above,
+       horiz/range is 8.4e−8 at worst and ~2e−9 at close range. Half a degree of tilt puts
+       sin(0.5°) = 8.7e−3 of range there — FIVE orders of magnitude above it.
+       `range*1e-5` sits in that gap with ~119× of margin over the largest residue measured and
+       ~870× below the smallest tilt, and stays right at the closest range the zoom scale can
+       reach (z22 ≈ 15 m, where it is 1.5e−4 m against ~6e−6 m of matrix noise). The original
+       form was correct; only the constant was, by four orders of magnitude, not. */
+    _enuNoise(range){
+      const r=(isFinite(range)&&range>0)?range:1;
+      return r*1e-5;
+    }
     _hpr(){
       try{
         const c=this._centreCarto();
@@ -281,7 +312,7 @@ window.IntMapCesiumEngine=(function(){
         /* at pitch 0 or 180 the horizontal offset vanishes and the bearing is undefined —
            keep the renderer's own answer there rather than emitting a random direction */
         const horiz=Math.hypot(off.x,off.y);
-        const heading=(horiz>range*1e-9)
+        const heading=(horiz>this._enuNoise(range))
           ? Math.atan2(-off.x,-off.y)/D2R
           : Cesium.Math.toDegrees(this._camera.heading);
         return { lat:Cesium.Math.toDegrees(c.latitude), lng:Cesium.Math.toDegrees(c.longitude),
@@ -338,6 +369,7 @@ window.IntMapCesiumEngine=(function(){
       }
       this._camera.lookAt(target,hpr);
       this._camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      this._faceHeading(bearing,pitch,range);
       this._settle(c,zoom,pitch,bearing,h);
       if(cam.roll!=null&&isFinite(cam.roll)){
         try{ this._camera.setView({ orientation:{ heading:this._camera.heading, pitch:this._camera.pitch, roll:Cesium.Math.toRadians(cam.roll) } }); }catch(_){}
@@ -345,6 +377,43 @@ window.IntMapCesiumEngine=(function(){
       this._scene.requestRender();
       fire();
       this.fire('move',{}); this.fire('moveend',{});
+    }
+
+    /* ══ (#R181) …AND THE ORBIT CANNOT CARRY THE HEADING WHEN IT IS VERTICAL ═══════════════
+       The other half of the same defect, and the half that is not merely a readback. An
+       orbit offset is a POSITION, and `Camera.lookAtTransform` recovers the attitude from it
+       by `right = direction × UNIT_Z` — which is the zero vector when the camera is straight
+       above the target, so Cesium substitutes UNIT_X and the eye ends up facing north no
+       matter what heading was asked for (read `lookAtTransform`, and confirmed: at pitch 0
+       the camera's own `heading` is 0 for every bearing passed in). Pitch 0 is the app's
+       DEFAULT view, so on this engine the map simply could not be rotated.
+       The repair has to add the heading WITHOUT disturbing anything else, and the obvious tool
+       does not: `setView({orientation:{pitch:-90}})` aims down the geodetic normal at the
+       CAMERA, and on an oblate ellipsoid that is not the line back to the target — measured, it
+       slid the look-point 11 m south at z9, which reads as 0.004° of phantom tilt and takes the
+       bearing with it. A twist about the view axis changes neither the position nor the
+       direction; it only spins `up`, which at the poles of the orbit is the whole of the
+       heading. So turn the camera until Cesium's OWN heading reads what was asked — a
+       correction driven by a measurement rather than by a second transcription of the
+       geometry — and let `_hpr`'s degenerate branch report that same number back.
+       The sign is read from the geometry, not assumed: a twist about the view axis turns the
+       heading one way when the eye looks DOWN the normal and the other way when it looks up it
+       (pitch 180, #R179's LOOKING UP), and `direction · normal` says which.
+       Applied only where the offset has stopped carrying the heading — the same predicate
+       `_hpr` reads it back with, so the two cannot disagree. Everywhere else the existing path
+       is exact (measured: bearing 25° round trips to 25.000° at pitch 30 and 60) and is
+       left alone. */
+    _faceHeading(bearing,pitch,range){
+      if(!(range*Math.abs(Math.sin(pitch*D2R))<=this._enuNoise(range))) return false;
+      try{
+        const nrm=this._scene.globe.ellipsoid.geodeticSurfaceNormal(this._camera.positionWC,new Cesium.Cartesian3());
+        const s=(Cesium.Cartesian3.dot(this._camera.direction,nrm)<0)?1:-1;
+        const want=((bearing%360)+360)%360;
+        const have=((Cesium.Math.toDegrees(this._camera.heading)%360)+360)%360;
+        let d=want-have; while(d>180) d-=360; while(d<=-180) d+=360;
+        if(Math.abs(d)>1e-9) this._camera.twistRight(s*Cesium.Math.toRadians(d));
+        return true;
+      }catch(_){ return false; }
     }
 
     /* ══ …AND THEN WAIT FOR THE GROUND TO ARRIVE ═══════════════════════════════════════════
@@ -388,6 +457,7 @@ window.IntMapCesiumEngine=(function(){
           this._camera.lookAt(target,new Cesium.HeadingPitchRange(
             Cesium.Math.toRadians(bearing),Cesium.Math.toRadians(pitch-90),range));
           this._camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+          this._faceHeading(bearing,pitch,range);   /* (#R181) re-asserting the camera re-asserts the HEADING too */
           Cesium.Cartesian3.clone(this._camera.positionWC,mine);
           this._scene.requestRender();
         }
@@ -697,6 +767,8 @@ window.IntMapCesiumEngine=(function(){
       this._scene.requestRender();
     }
     _afterMove(){
+      /* (#R181) …including a programmatic one, so the compass follows a jumpTo as well as a drag */
+      if(this._fireAngles) try{ this._fireAngles(); }catch(_){}
       /* everything whose paint reads the zoom, plus every vector-tile-backed layer
          (a new camera means a new tile cover) */
       const z=this.getZoom();
@@ -757,8 +829,100 @@ window.IntMapCesiumEngine=(function(){
       };
       H.setInputAction(m=>dispatch('click',m.position),T.LEFT_CLICK);
       H.setInputAction(m=>dispatch('dblclick',m.position),T.LEFT_DOUBLE_CLICK);
-      H.setInputAction(m=>dispatch('contextmenu',m.position),T.RIGHT_CLICK);
       H.setInputAction(m=>dispatch('mousemove',m.endPosition),T.MOUSE_MOVE);
+      /* ══ (#R181) THE REST OF THE POINTER STREAM, FROM THE DOM ══════════════════════════════
+         Cesium's ScreenSpaceEventHandler is an ABSTRACTION over the pointer — it folds touch
+         into its LEFT_* events and offers no down/up/out/wheel at all — so four of the app's
+         subscriptions had nothing to fire them: `mousedown` `mouseup` `touchstart` `touchmove`
+         `touchend` `wheel` `mouseout`. That is not a cosmetic gap. map-tools.js's shape
+         placement and terrain-water.js both bind down → move → up on BOTH mouse and touch, so
+         on this engine a shape could be started and never dragged; atlas-console's flight
+         animations cancel on mousedown/touchstart/wheel and so could not be interrupted; and
+         the coordinate readout clears on `mouseout` and so never cleared.
+         The events that ARE in Cesium's abstraction keep coming from it — LEFT_CLICK is
+         drag-aware, which is the same suppression MapLibre applies (`click` only when the
+         pointer did not move between press and release), and re-deriving that from raw DOM
+         clicks would be a second, worse copy of it. Everything else is listened for on the
+         canvas directly, which is where MapLibre gets it too.
+         `contextmenu` MOVES here from RIGHT_CLICK for a reason: map-tools calls
+         `e.preventDefault()` on it to keep the browser menu away while placing a shape, and
+         Cesium's synthetic object has no DOM event to prevent — so the call was a silent
+         no-op and the menu opened. */
+      const domEv=(name,e,pos)=>{
+        const ev=mk(pos||{x:0,y:0});
+        ev.originalEvent=e;
+        ev.preventDefault=()=>{ try{ e.preventDefault(); }catch(_){} ev.defaultPrevented=true; };
+        ev.defaultPrevented=false;
+        return ev;
+      };
+      const rel=(e)=>{ const r=this._widget.canvas.getBoundingClientRect();
+        const t=(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e;
+        return { x:(t.clientX||0)-r.left, y:(t.clientY||0)-r.top }; };
+      const domDispatch=(name)=>(e)=>{
+        const pos=rel(e);
+        const ev=domEv(name,e,pos);
+        this.fire(name,ev);
+        /* (#R181) the pointer leaving the canvas ends every hover, and a `mousemove` can no
+           longer say so because there are no more of them — MapLibre closes them out the same
+           way, and without it a layer's `mouseleave` never arrived (measured 0 against 2) and
+           whatever it un-highlights stayed lit. */
+        if(name==='mouseout'&&this._over&&this._over.size){
+          for(const h of this._layerHandlers){
+            if(h.type==='mouseleave'&&this._over.has(h.layerId)){ try{ h.fn(ev); }catch(_){} }
+          }
+          this._over=new Set();
+        }
+        /* the layer-scoped handlers see the same names the primary stream does */
+        const wanted=this._layerHandlers.filter(h=>h.type===name);
+        if(!wanted.length) return;
+        const hits=this.queryRenderedFeatures([pos.x,pos.y]);
+        for(const h of wanted){
+          const f=hits.filter(x=>x.layer&&x.layer.id===h.layerId);
+          if(f.length){ try{ h.fn(Object.assign({},ev,{features:f})); }catch(_){} }
+        }
+      };
+      const cv=this._widget.canvas;
+      this._domEvs=[];
+      /* passive where the app never prevents (so scrolling and pinch stay smooth), and NOT
+         passive for wheel/contextmenu/touchstart, which callers do prevent */
+      for(const [n,passive] of [['mouseout',true],
+                                ['touchstart',false],['touchmove',false],['touchend',true],
+                                ['wheel',false],['contextmenu',false]]){
+        const fn=domDispatch(n);
+        try{ cv.addEventListener(n,fn,{passive}); this._domEvs.push([n,fn]); }catch(_){}
+      }
+      /* ══ (#R181) …AND `mousedown`/`mouseup` COME FROM THE POINTER, NOT THE MOUSE ══════════
+         Listening for `mousedown` on the canvas measured ZERO while `mouseout` from the very
+         same registration measured two. The reason is Cesium's own input layer: it binds
+         POINTER events and calls preventDefault on pointerdown, and preventing a pointer
+         event's default is exactly what suppresses the browser's compatibility mouse events.
+         So take them from the pointer stream, which is where they still exist — restricted to
+         a real mouse, because a touch already arrives as touchstart/touchend and MapLibre does
+         not raise `mousedown` for one either. */
+      for(const [src,name] of [['pointerdown','mousedown'],['pointerup','mouseup']]){
+        const inner=domDispatch(name);
+        const fn=(e)=>{ if(e.pointerType&&e.pointerType!=='mouse') return; inner(e); };
+        try{ cv.addEventListener(src,fn,{passive:true}); this._domEvs.push([src,fn]); }catch(_){}
+      }
+      /* ══ (#R181) EVERY FRAME, AND THE TWO ANGLES ══════════════════════════════════════════
+         `render` had no source at all, and three call sites want it: the pin popup is
+         repositioned on it (so it drifted on this engine), and two canvas captures wait on it
+         with a timeout as the safety net (so they silently took the slow path). The widget is
+         in `requestRenderMode`, so postRender fires only when a frame really was drawn — this
+         is the honest per-frame hook and it does not spin when the map is still.
+         `rotate` and `pitch` had no source either, and `updateCompass` is bound to both: the
+         compass simply did not follow the map. Fired when the angle actually MOVED rather than
+         on every camera event, which is what makes them different from `move`. */
+      scene.postRender.addEventListener(()=>{ this.fire('render',{}); });
+      let lastB=null,lastP=null;
+      /* published on the instance because a PROGRAMMATIC camera move (jumpTo/flyTo) does not
+         go through the gesture stream, and MapLibre fires rotate/pitch for those too */
+      this._fireAngles=()=>{
+        const b=this.getBearing(), p=this.getPitch();
+        if(lastB==null||Math.abs(b-lastB)>1e-4){ lastB=b; this.fire('rotate',{}); }
+        if(lastP==null||Math.abs(p-lastP)>1e-4){ lastP=p; this.fire('pitch',{}); }
+      };
+      const angles=()=>this._fireAngles();
       /* the camera's own stream — MapLibre's move/zoom family, from the one event
          Cesium raises when anything about the view changes */
       let moving=false, tmr=0;
@@ -767,6 +931,7 @@ window.IntMapCesiumEngine=(function(){
       const onChanged=()=>{
         if(!moving){ moving=true; this.fire('movestart',{}); this.fire('dragstart',{}); }
         this.fire('move',{}); this.fire('zoom',{});
+        angles();
         this._afterMove();
         clearTimeout(tmr);
         tmr=setTimeout(()=>{ moving=false; this.fire('moveend',{}); this.fire('dragend',{});
@@ -898,12 +1063,23 @@ window.IntMapCesiumEngine=(function(){
         }
         this._globe.depthTestAgainstTerrain=false;
         this._scene.requestRender();
+        /* (#R181) three subscribers wait on this — the 3-D aircraft refresh, drone-nav and
+           volume3d all re-place things that sit ON the ground when the ground changes */
+        this.fire('terrain',{terrain:this._terrainSpec});
         return true;
       }catch(_){ return false; }
     }
     getTerrain(){ return this._terrainSpec; }
     setSky(s){
       try{
+        /* (#R181) KEEP THE SPEC, not just its effect. Cesium's atmosphere is parameterised by
+           brightness/hue/saturation shifts, so setSky can only carry a MapLibre sky across
+           approximately — and `getSky` used to answer `{}`, i.e. "there is a sky", losing what
+           it was. flight-sim.js reads getSky() to put the sky BACK after a flight
+           (js/flight-sim.js: `prevView.sky = GE().scene.getSky()`), so on this engine the
+           restore replaced the sky with an empty one. Store what was asked for and hand it
+           back; the approximation stays in how it is APPLIED. */
+        this._skySpec=(s===false)?null:(s||null);
         if(s===null||s===false){ this._scene.skyAtmosphere.show=false; return; }
         this._scene.skyAtmosphere.show=true;
         /* MapLibre's sky spec names a horizon and a fog colour; Cesium's atmosphere
@@ -913,7 +1089,7 @@ window.IntMapCesiumEngine=(function(){
         if(c) this._scene.skyAtmosphere.brightnessShift=Math.max(-1,Math.min(1,(c.r+c.g+c.b)/3-0.5));
       }catch(_){}
     }
-    getSky(){ try{ return this._scene.skyAtmosphere.show?{}:null; }catch(_){ return null; } }
+    getSky(){ try{ return this._scene.skyAtmosphere.show?(this._skySpec||{}):null; }catch(_){ return null; } }
     setLight(l){
       try{
         /* MapLibre `light` is a lighting model for extrusions; Cesium's equivalent
@@ -951,6 +1127,11 @@ window.IntMapCesiumEngine=(function(){
     destroy(){
       try{ if(this._ro) this._ro.disconnect(); }catch(_){}
       try{ if(this._ssHandler) this._ssHandler.destroy(); }catch(_){}
+      /* (#R181) the DOM half of the pointer stream comes off with it — a sub-view that is
+         closed and reopened would otherwise leave a listener firing at a dead scene */
+      try{ const cv=this._widget&&this._widget.canvas;
+           if(cv&&this._domEvs) this._domEvs.forEach(([n,fn])=>cv.removeEventListener(n,fn));
+           this._domEvs=null; }catch(_){}
       try{ this._dsDisplay.destroy(); }catch(_){}
       try{ this._widget.destroy(); }catch(_){}
     }
@@ -1035,6 +1216,9 @@ window.IntMapCesiumEngine=(function(){
     let _decl=null, _lastBranch='n/a';
     const declare=p=>{ _decl=p||null; };
     const camOf=o=>({ center:o&&o.center, zoom:o&&o.zoom, bearing:o&&o.bearing, pitch:o&&o.pitch, roll:o&&o.roll });
+    /* (#R181) the animation options a caller ASKED for — `duration: 0` is an answer, not a
+       missing one, so the test is `!= null` rather than truthiness (see zoomIn/zoomOut) */
+    const _dur=(o,dflt)=>((o&&o.duration!=null)?(o.duration>0?{duration:o.duration}:null):dflt);
     const declOf=o=>o&&typeof o==='object'
       ? { zoom:o.zoom!=null, center:o.center!=null, pitch:o.pitch!=null, bearing:o.bearing!=null, roll:o.roll!=null }
       : null;
@@ -1048,15 +1232,72 @@ window.IntMapCesiumEngine=(function(){
         const c=this.cameraForBounds(b,o); if(c) v.setCamera(c,(o&&o.duration)?{duration:o.duration}:null); },
       cameraForBounds(b,o){ const v=V(); if(!v||!b) return null;
         const bb=normBounds(b); if(!bb) return null;
-        const lat=(bb.north+bb.south)/2, lng=wrapLng((bb.east+bb.west)/2);
-        /* the zoom at which the box fills the viewport, in the same Mercator pixels
-           the range↔zoom mapping is written in */
         const pad=(o&&o.padding)||0, padN=(typeof pad==='number')?pad:0;
         const W=Math.max(1,v._canvasW()-2*padN), H=Math.max(1,v._canvasH()-2*padN);
         const my=l=>Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,l))*D2R/2));
-        const dx=Math.abs(wrapLng(bb.east-bb.west))/360, dy=Math.abs(my(bb.north)-my(bb.south))/(2*Math.PI);
+        const myInv=y=>(2*Math.atan(Math.exp(y))-Math.PI/2)/D2R;
+        /* (#R181) THE CENTRE OF A BOX ON A MAP IS THE MERCATOR MIDPOINT, not the mean of the
+           two latitudes — the box is being fitted to a rectangle of Mercator PIXELS, which is
+           exactly what the zoom two lines down is derived from, so taking the mean here left
+           the centre and the zoom disagreeing about the same box. Measured against MapLibre
+           for [[135,33],[141,37]]: 35.000 here, 35.024 there. Longitude is linear in Mercator
+           x, so its mean is already the right answer. */
+        /* (#R181) …and a box that goes the whole way round is 360° WIDE, not 0° wide.
+           `wrapLng(east-west)` sends 360 to 0, which read as "no width at all" and quietly
+           dropped the longitude constraint from the fit entirely. */
+        let span=((bb.east-bb.west)%360+360)%360;
+        if(span===0&&bb.east!==bb.west) span=360;
+        const lat=myInv((my(bb.north)+my(bb.south))/2), lng=wrapLng(bb.west+span/2);
+        /* the zoom at which the box fills the viewport, in the same Mercator pixels
+           the range↔zoom mapping is written in */
+        const dx=span/360, dy=Math.abs(my(bb.north)-my(bb.south))/(2*Math.PI);
         const zx=dx>0?Math.log2(W/(TILE*dx)):20, zy=dy>0?Math.log2(H/(TILE*dy)):20;
-        const zoom=Math.max(v._minZoom,Math.min(v._maxZoom,Math.min(zx,zy)));
+        let zoom=Math.min(zx,zy);
+        /* ══ (#R181) ON A GLOBE, A RECTANGLE IS NOT A RECTANGLE ═══════════════════════════════
+           The arithmetic above fits the box to a rectangle of Mercator pixels, which is exactly
+           right on a plane and NOT right on a sphere: the far parts of the box are turned away
+           from the eye, so they land further from the centre of the screen than a flat map says
+           and fall outside it. Measured by projecting the box's own boundary after the fit,
+           against MapLibre on the same viewport: [[-10,35],[30,60]] left 6% of the box off
+           screen, [[135,33],[141,37]] 0.6%, [[2,48],[3,49]] 0.2%.
+           So when the scene really is a sphere, ask the sphere. With the eye at distance d from
+           the centre of the Earth above the fit centre, a surface point whose unit vector in the
+           centre's east/north/up frame is (e,n,u) sits at screen offsets R·e/(d−R·u) and
+           R·n/(d−R·u); requiring both to stay inside the frustum gives, for each point,
+               d ≥ R·u + R·max(|e|/tanX, |n|/tanY)
+           and the fit is the largest of those over the boundary. Closed form — no search — and
+           it is the SAME transcription, not a second one: for a small box u→1 and it reduces
+           algebraically to the Mercator expression above, which is why the two agree to 0.001
+           of a zoom level on a city-sized box and part company only where the curve matters. */
+        try{
+          if(v._scene.mode===Cesium.SceneMode.SCENE3D){
+            const tanY0=Math.tan(ML_FOVY/2), cw=v._canvasW(), ch=v._canvasH();
+            const tanX=tanY0*(W/ch), tanY=tanY0*(H/ch);
+            void cw;
+            const cLat=lat*D2R, cLng=lng*D2R;
+            const sinC=Math.sin(cLat), cosC=Math.cos(cLat);
+            let need=R_EARTH;
+            const consider=(lngDeg,latDeg)=>{
+              const la=latDeg*D2R, dl=(lngDeg*D2R)-cLng;
+              const cosLa=Math.cos(la), sinLa=Math.sin(la);
+              const e=cosLa*Math.sin(dl);
+              const n=cosC*sinLa-sinC*cosLa*Math.cos(dl);
+              const u=sinC*sinLa+cosC*cosLa*Math.cos(dl);
+              const d=R_EARTH*u+R_EARTH*Math.max(Math.abs(e)/tanX,Math.abs(n)/tanY);
+              if(d>need) need=d;
+            };
+            const N=24;
+            for(let i=0;i<=N;i++){
+              const t=i/N, lo=bb.west+span*t;
+              consider(lo,bb.south); consider(lo,bb.north);
+              const la=bb.south+(bb.north-bb.south)*t;
+              consider(bb.west,la); consider(bb.west+span,la);
+            }
+            const range=need-R_EARTH;
+            if(range>0){ const zs=v.zoomFor(lat,range); if(isFinite(zs)) zoom=Math.min(zoom,zs); }
+          }
+        }catch(_){}
+        zoom=Math.max(v._minZoom,Math.min(v._maxZoom,zoom));
         return { center:{lng,lat}, zoom, bearing:(o&&o.bearing)||0, pitch:(o&&o.pitch)||0 };
       },
       setPadding(p){ const v=V(); if(v) v._padding=Object.assign({},v._padding,p||{}); },
@@ -1095,9 +1336,13 @@ window.IntMapCesiumEngine=(function(){
       setMaxZoom(x){ const v=V(); if(!v||!isFinite(x)) return false; v._maxZoom=x; return true; },
       getMaxZoom(){ const v=V(); return v?v._maxZoom:22; },
       zoomRange(){ return [this.getMinZoom(),this.getMaxZoom()]; },
-      zoomTo(z,o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:z},(o&&o.duration)?{duration:o.duration}:null); } },
-      zoomIn(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()+1},(o&&o.duration)?{duration:o.duration}:{duration:300}); } },
-      zoomOut(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()-1},(o&&o.duration)?{duration:o.duration}:{duration:300}); } },
+      /* (#R181) `duration: 0` MEANS instant, and `(o&&o.duration)` reads 0 as "not given" —
+         so zoomIn({duration:0}) animated for 300 ms here while the same call on MapLibre
+         returned already at the new zoom. Ask whether the caller SAID duration, not whether
+         the number it said is truthy. */
+      zoomTo(z,o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:z},_dur(o,null)); } },
+      zoomIn(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()+1},_dur(o,{duration:300})); } },
+      zoomOut(o){ const v=V(); if(v){ declare({zoom:true}); v.setCamera({zoom:v.getZoom()-1},_dur(o,{duration:300})); } },
       stop(){ const v=V(); if(v) v.stop(); },
       setCenter(c){ const v=V(); if(v){ declare({center:true}); v.setCamera({center:c},null); } },
       panBy(off,o){ const v=V(); if(!v||!off) return; declare({center:true});
