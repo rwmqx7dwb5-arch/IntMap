@@ -27,6 +27,14 @@ import './vendor.js';
    engine tolerates there being no map yet, so importing it this early costs nothing. */
 import '../js/geo-engine.js';
 
+/* (#R180) …and immediately after it, WHICH engine this session runs on. This must
+   come before js/app-body.js registers its DOMContentLoaded handler so that the
+   handler can see `window.IntMapEnginePending` and wait for it; with the default
+   (MapLibre) the module publishes nothing and the boot path is unchanged. Cesium
+   itself is imported dynamically from inside it, so it lands in its own Rollup
+   chunk and a MapLibre session transfers none of it. */
+import '../js/engine-select.js';
+
 import '../js/newsgeo.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';

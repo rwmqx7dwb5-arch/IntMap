@@ -91,6 +91,11 @@ window.IntMapI18N={
       lblSidebarStyle:"Seitenleiste", sidebarOpaque:"Solide (Standard)", sidebarTranslucent:"Mattglas", sidebarGlass2:"Mattglas (transparenter)",
       lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangEn:"Immer Englisch",
       lblFlatPan:"Flache Kartenansicht", flatPanFixed:"Fester Ausschnitt (Europa)", flatPanFree:"Frei schwenken (Welt umrunden)",
+      /* (#R180) Render-Engine */
+      lblEngine:"Karten-Engine", engineMapLibre:"MapLibre — 2-D/3-D-Karte (Vorgabe)", engineCesium:"Cesium — echter 3-D-Globus mit realem Gelände",
+      engineHint:"Cesium stellt die Erde in jedem Zoom als echtes Ellipsoid dar, mit denselben Satellitenbildern und denselben Höhendaten. Sie wird nur bei Auswahl heruntergeladen, und der Wechsel lädt die Seite neu. Höhenlinien und das geschlossene 3-D-Körper-Werkzeug bleiben MapLibre vorbehalten.",
+      engineSwitching:"Engine wird gewechselt — neu laden…", engineFellBack:"Cesium konnte nicht starten, diese Sitzung läuft daher mit MapLibre.",
+      engineActive:"Aktiv: ",
       /* (#R171) Neigungsgrenze + Kamerahöhe */
       lblTiltLimit:"Neigungsgrenze der Karte", tiltStandard:"Standard — bis 78° (Vorgabe)", tiltUnlimited:"Unbegrenzt — der volle Bereich 0–180°",
       tiltHint:"Unbegrenzt lässt die Karte über den Horizont hinaus kippen, bis die Kamera senkrecht nach oben blickt. Jenseits von 180° wiederholt sich die Ansicht mit umgekehrter Blickrichtung — per Rechtsklick auf den Kompass lässt sich jeder Winkel von 0 bis 360 eingeben.",
@@ -142,6 +147,11 @@ window.IntMapI18N={
       lblSidebarStyle:"Вид боковой панели", sidebarOpaque:"Непрозрачная (по умолчанию)", sidebarTranslucent:"Матовое стекло", sidebarGlass2:"Матовое стекло (прозрачнее)",
       lblLabelLang:"Подписи мест", labelLangUi:"Как язык приложения", labelLangLocal:"Местный язык (родной алфавит)", labelLangEn:"Всегда английский",
       lblFlatPan:"Плоская карта", flatPanFixed:"Фикс. область (Европа)", flatPanFree:"Свободно (вокруг мира)",
+      /* (#R180) движок отрисовки */
+      lblEngine:"Движок карты", engineMapLibre:"MapLibre — 2D/3D-карта (по умолчанию)", engineCesium:"Cesium — настоящий 3D-глобус с реальным рельефом",
+      engineHint:"Cesium рисует Землю настоящим эллипсоидом на любом масштабе, с теми же спутниковыми снимками и теми же данными о высотах. Он загружается только при выборе, а переключение перезагружает страницу. Изолинии и инструмент замкнутого 3D-тела остаются только в MapLibre.",
+      engineSwitching:"Смена движка — перезагрузка…", engineFellBack:"Cesium не запустился, поэтому сеанс работает на MapLibre.",
+      engineActive:"Сейчас работает: ",
       /* (#R171) предел наклона + высота камеры */
       lblTiltLimit:"Предел наклона карты", tiltStandard:"Стандартный — до 78° (по умолчанию)", tiltUnlimited:"Без предела — весь диапазон 0–180°",
       tiltHint:"Без предела карту можно наклонять за горизонт, пока камера не посмотрит строго вверх. За 180° вид повторяется с развёрнутым азимутом, поэтому правый клик по компасу позволяет задать любой угол от 0 до 360.",
@@ -194,6 +204,11 @@ window.IntMapI18N={
       lblSidebarStyle:"Barra lateral", sidebarOpaque:"Sólida (predeterminada)", sidebarTranslucent:"Vidrio esmerilado", sidebarGlass2:"Vidrio esmerilado (más transparente)",
       lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangEn:"Siempre en inglés",
       lblFlatPan:"Vista de mapa plano", flatPanFixed:"Encuadre fijo (Europa)", flatPanFree:"Desplazamiento libre (dar la vuelta al mundo)",
+      /* (#R180) motor de renderizado */
+      lblEngine:"Motor del mapa", engineMapLibre:"MapLibre — mapa 2-D/3-D (predeterminado)", engineCesium:"Cesium — globo 3-D real con relieve real",
+      engineHint:"Cesium dibuja la Tierra como un elipsoide real en cualquier zoom, con las mismas imágenes de satélite y los mismos datos de elevación. Solo se descarga al seleccionarlo, y cambiar recarga la página. Las curvas de nivel y la herramienta de sólido 3-D cerrado siguen siendo exclusivas de MapLibre.",
+      engineSwitching:"Cambiando de motor — recargando…", engineFellBack:"Cesium no pudo iniciarse, así que esta sesión funciona con MapLibre.",
+      engineActive:"En uso: ",
       /* (#R171) límite de inclinación + altitud de la cámara */
       lblTiltLimit:"Límite de inclinación del mapa", tiltStandard:"Estándar — hasta 78° (predeterminado)", tiltUnlimited:"Sin límite — todo el rango 0–180°",
       tiltHint:"Sin límite puedes inclinar más allá del horizonte hasta que la cámara mire en vertical. Pasados los 180° la vista se repite con el rumbo invertido, así que con clic derecho en la brújula puedes escribir cualquier ángulo de 0 a 360.",

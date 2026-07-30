@@ -13,7 +13,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.dataLayers=function(map,HOST){
+window.IntMapModules.dataLayers=function(HOST){
   /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
      were properties hung on the map object itself (map.__choroHover / __natoHover / __euHover), which
      is both invisible to anyone reading this file and something no other engine would carry. */
@@ -22,7 +22,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 Satellite Drop" });
     Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 サテライトドロップ" });
     /* (#R12) New layer-category labels for the re-organized panel. */
@@ -1044,7 +1044,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
        queryRenderedFeatures over all visible choropleth fills → topmost wins. Returns "Label: value". */
     window.choroValueAt=function(lng,lat){
       try{
-        if(!map||!countryStats) return null;
+        if(!GE().hasRenderer()||!countryStats) return null;
         const fillIds=Object.keys(CHORO_META).map(id=>id+'-fill').filter(L=>GE().layers.get(L));
         if(!fillIds.length) return null;
         const pt=GE().coords.project([lng,lat]);
@@ -2056,7 +2056,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
         el.style.cssText='position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:1200;display:none;white-space:nowrap;background:rgba(18,18,20,0.82);color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,0.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
-        el.onclick=()=>{ if(map) GE().camera.easeTo({zoom:onClickZoom,duration:600}); };
+        el.onclick=()=>{ if(GE().hasRenderer()) GE().camera.easeTo({zoom:onClickZoom,duration:600}); };
         const mc=document.getElementById('map-container'); if(mc) mc.appendChild(el);
       }
       return el;
@@ -2067,7 +2067,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(on&&GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
     function viewportRadiusNm(){
-      try{ if(map){ const c=GE().camera.getCenter(), ne=GE().camera.getBounds().getNorthEast(), toR=Math.PI/180, R=6371;
+      try{ if(GE().hasRenderer()){ const c=GE().camera.getCenter(), ne=GE().camera.getBounds().getNorthEast(), toR=Math.PI/180, R=6371;
         const dLat=(ne.lat-c.lat)*toR, dLon=(ne.lng-c.lng)*toR;
         const a=Math.sin(dLat/2)**2+Math.cos(c.lat*toR)*Math.cos(ne.lat*toR)*Math.sin(dLon/2)**2;
         const km=2*R*Math.asin(Math.min(1,Math.sqrt(a)));
@@ -2116,7 +2116,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
       if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
       updatePlanesZoomHint();
-      const lat=(map?GE().camera.getCenter().lat:48), lon=(map?GE().camera.getCenter().lng:8), rad=viewportRadiusNm();
+      const lat=(GE().hasRenderer()?GE().camera.getCenter().lat:48), lon=(GE().hasRenderer()?GE().camera.getCenter().lng:8), rad=viewportRadiusNm();
       try{
         const r=await fetch(`https://api.airplanes.live/v2/point/${lat.toFixed(3)}/${lon.toFixed(3)}/${rad}`);
         if(r.ok){
@@ -2181,7 +2181,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       }
     }
     function connectAIS(){
-      if(!aisKey||!map) return;
+      if(!aisKey||!GE().hasRenderer()) return;
       stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships');
       let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); }catch(e){ imToast((HOST.lang==='jp'?'AIS接続失敗: ':HOST.lang==='de'?'AIS-Verbindung fehlgeschlagen: ':HOST.lang==='ru'?'Сбой подключения AIS: ':HOST.lang==='es'?'Fallo de conexión AIS: ':'AIS connect failed: ')+((e&&e.message)||e)); return; }
       aisWS=ws;
@@ -2208,7 +2208,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       return (c>=0&&c<=8)?(jp?ja[c]:en[c]):''; }
     /* Ship glyphs (top-view hull) — colored + rotated by heading/COG, like the plane icons. */
     function ensureShipIcons(){
-      if(!map) return;
+      if(!GE().hasRenderer()) return;
       const make=(color)=>{ const s=40, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
         const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
         ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
@@ -2294,7 +2294,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       return { fixes:a.length, minutes:Math.round((a[a.length-1][3]-a[0][3])/60000),
         maxAlt:Math.round(a.reduce((m2,p)=>p[2]>m2?p[2]:m2,0)) }; }
     function drawTrack(k){
-      if(!map||!GE().layers.hasSource(TRACK_SRC)) return;
+      if(!GE().hasRenderer()||!GE().layers.hasSource(TRACK_SRC)) return;
       const pts=(k&&planeTracks[k])||[];
       const feats=[];
       if(pts.length>=2){
@@ -2420,7 +2420,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       const dx=halfM/mLng, dy=halfM/mLat;
       return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
     function refreshPlanes3D(list){
-      if(!map||!GE().layers.hasSource(PLANE3D_SRC)) return;
+      if(!GE().hasRenderer()||!GE().layers.hasSource(PLANE3D_SRC)) return;
       _gndFresh();
       const mpp=_mppCentre();
       const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
@@ -2465,7 +2465,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
       if(visible&&planes3D) refreshTrafficLayer('planes');
     }
     function refreshTrafficLayer(id){
-      if(!map) return;
+      if(!GE().hasRenderer()) return;
       const filt=trafficFilters[id];
       if(!GE().layers.hasSource('src-'+id)) return;
       const data=id==='planes'?planesData:shipsData;
@@ -2488,7 +2488,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
        rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
     function ensurePlaneIcons(){
-      if(!map) return;
+      if(!GE().hasRenderer()) return;
       const make=(color)=>{
         const s=44, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
         const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
@@ -2785,7 +2785,7 @@ window.IntMapModules.dataLayers=function(map,HOST){
     const _CONTOUR_BASE={ 5:[1000,4000], 6:[500,2000], 7:[500,2000], 8:[250,1000], 9:[200,1000], 10:[100,500], 11:[100,500], 12:[50,250], 13:[25,100], 14:[10,50], 15:[10,50] };
     window._contourDensity=window._contourDensity||1;
     function _contourThresholds(){ const d=Math.max(0.25,Math.min(4,+window._contourDensity||1)); const out={}; for(const z in _CONTOUR_BASE){ const b=_CONTOUR_BASE[z]; out[z]=[Math.max(1,Math.round(b[0]/d)), Math.max(2,Math.round(b[1]/d))]; } return out; }
-    function _rebuildContours(){ try{ if(!map) return;
+    function _rebuildContours(){ try{ if(!GE().hasRenderer()) return;
       const wasOn=GE().layers.get('contour-lines') && GE().layers.getLayout('contour-lines','visibility')!=='none';
       ['contour-labels','contour-lines'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.remove(id); }catch(_){} });
       try{ if(GE().layers.hasSource('contour-src')) GE().layers.removeSource('contour-src'); }catch(_){}
@@ -3071,13 +3071,13 @@ window.IntMapModules.dataLayers=function(map,HOST){
         });
       }catch(_){}
     };
-    try{ if(map) GE().events.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
+    try{ if(GE().hasRenderer()) GE().events.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
     /* (#R41) The orphan sweep + label-raise self-heals were driven ONLY by 'idle'. When the map is wedged
        not-idle (a tile source erroring / looping), idle never fires, so "消したはずのレイヤーが残り続ける" and
        buried labels persisted until a reload. Drive the SAME idempotent, drift-only self-heals on a slow
        heartbeat too so they recover without an idle and without a reload. Each only acts on real drift, so in
        steady state this does nothing. */
-    try{ if(map){ setInterval(()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }, 2500); } }catch(_){}
+    try{ if(GE().hasRenderer()){ setInterval(()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }, 2500); } }catch(_){}
     /* (#R36) UNIVERSAL async-race orphan guard for EVERY layer subsystem (main dl-, eco-dl-, beta-dl-, bx-, l9-dl-).
        The dl- toggle-time guard + the dl- idle sweep only cover the MAIN system; the eco / World-Bank / hazard
        layers add+show inside THEIR OWN async callbacks, so an ON-then-quick-OFF can re-show a layer whose box is

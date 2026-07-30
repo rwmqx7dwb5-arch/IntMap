@@ -64,13 +64,43 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ゲートは**両方の数**を報告し、**残 324 を爪車で固定**し、`ui.createView` を
   **app-body.js の1回だけ**に限定して「別名で持ったハンドル」を出所で塞ぐ。
   プロパティ位置は除外する（除外しないと `arr.map(...)` に飲まれる。実測 932 のうち 605 が Array.prototype.map）。
-  Cesium は**第2エンジンとして `CESIUM_CONTRACT` を宣言済み**（実装アダプタは未導入）。
-  **#R179 で規模を実測**：契約を通る **219個のレイヤ定義が11型**
-  （line 69/fill 44/circle 42/symbol 33/raster 16/fill-extrusion 4/heatmap 3/color-relief 2/hillshade 1）、
-  **paint 43種・layout 33種**、**21演算子を使う468個の style 式**。
-  参照数が 0 でも**アプリ全体が MapLibre の style 言語で喋っている**ので、
-  第2エンジンは実質「その言語の解釈器」＝1ラウンドで見かけだけ作ることはできない（標準指示4）。
-  土台（ビューごとのアダプタ／1つの契約形／爪車つきの残 324件）は #R179 で整った。
+- **#R180：脱却は完了し、第2エンジンは実在する。**
+  - **残 324 → 1。** 4つの形しかなく、それぞれ答えは1つだった：
+    **46件** `_imCanDraw` の予備路 `window.__imap||map` → `GE().ready()`（＝`isStyleLoaded` そのもの）／
+    **95件 モジュール契約そのもの** `IntMapModules.x = function(map, HOST)` → `function(HOST)`
+    （app-body.js の95呼び出しと同時に。**本体を編集しても 0 にならなかった理由がこれ**）／
+    **18件** `….addTo(map)` → 新設の `GE().ui.attach(…)`（長い popup/marker 連鎖の**最後の環だけ**が生だった）／
+    残りは存在テスト `if(!map)` / `typeof map==='undefined'` → `GE().hasRenderer()`。
+    **残る1件は `window.__imap = map`**＝主ビューをエンジンに渡す唯一の正当な理由。
+  - **別名の穴の「第2の扉」も塞いだ。** #R179 は `ui.createView` を塞いだが、`window.__imap` が残っていた：
+    3つのサブシステムがグローバルをローカルに読み込んで生で駆動していた
+    （map-extras.js の `M()`＝IntMapLocate が getSource/addLayer/on/project/flyTo、news-timeline.js に2件）。
+    どちらの計数にも映らない（別名が `M`/`m` だから）。**グローバル自体をゲート**した（`IMAP_GLOBAL_FILES`）。
+  - **Cesium＝設定で選べる第2エンジン（既定は MapLibre のまま）。** カバー範囲はユーザーの選択により
+    **ベクタタイルを含む完全同等**。#R180 の実測は 247レイヤ定義/11型・122ソース・762式/36演算子だが、
+    **ソースの内訳**が実装可能性を決めた：**geojson 97 / raster 11 / vector 6 / image 6 / raster-dem 2**。
+    基図も衛星もラスタ（Carto @2x・Esri は `imapsat://`）で、アプリ自身のレイヤの79%が GeoJSON＝Cesium の土俵。
+    ベクタタイルの難所は**レンダラ**であって、GeoJSON が描けるなら MVT は「features になる」だけでよい。
+    - `js/cesium-style.js` — style 言語の**解釈器**（式・フィルタ〈旧 `$type` 形式と式形式の両方〉・色・旧 `{stops}`）。
+      **純粋**（Cesium も DOM も参照しない）ので `tests/r180-checks.test.mjs` が Node で直接検証する。
+    - `js/cesium-layers.js` — プロバイダ＋描画。raster→`ImageryLayer`（brightness/contrast/saturation/hue が
+      **ネイティブ**＝#R34 の暗色基図は近似ではない）、fill/line/circle/symbol/fill-extrusion→エンティティ、
+      heatmap/hillshade/color-relief→同じ DEM から計算したラスタ、terrain→**同じ terrarium タイル**から
+      `HeightmapTerrainData`。**キーレス（Ion トークン無し）**。
+    - `js/cesium-vector-tiles.js` — タイルピラミッド（cover/fetch/decode/cache）。`@mapbox/vector-tile` が
+      タイルを GeoJSON にする。
+    - `js/cesium-engine.js` — アダプタ本体（`makeMapLibreAdapter` と**同じメソッド集合**）。
+    - `js/engine-select.js` — DOMContentLoaded より前に選択。既定では**何も publish しない**。
+  - **既定セッションは 1 バイトも払わない**：`import('cesium')` は動的、main チャンクから cesium チャンクへの参照 0、
+    modulepreload 無し。設定 ▸ 地図の動作 ▸ 地図エンジン（5言語）／Atlas `engine` アクション（SYS カタログ記載済み）。
+    **切替は再読み込み**（レンダラを跨いでシーンは移せない）で、パネルは**実際に描画しているエンジン**を
+    保存値とは別に表示する（無言のフォールバック禁止＝#R162）。
+  - **カメラ対応は実測で一致**：起動画面で視点高度 **24,421,745 m**＝#R178 が MapLibre globe z1.7 で測った
+    24,422 km。単発の `jumpTo` が z1.7/4/6/9/12/13/14・pitch 70 まで**中心 0m・zoom 0・pitch 0°** で往復する。
+    地形は Fuji 3,751.5 m／Everest 8,712.7 m／死海 −412 m。
+  - **Cesium が答えない物は答えないと言う**：`solid3d:false`（#R173 の閉じた立体は吸収シェーディングまで含むため）、
+    `demContourSource()→null`（maplibre-contour は MapLibre の名前空間を要求する）。呼び出し側は既存の
+    フォールバックを取る。詳細は §7.1。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
@@ -962,6 +992,34 @@ js/
                                     メートル、平面（mercator）は**メルカトル単位**。metre 決め打ちだったため z12 以上
                                     （globe が素の mercator になる領域）で全頂点が far plane の外へ飛び、立体が
                                     消えていた。`u_altScale` を variant で切り替える（実測は §19 #R174 ④）。9KB
+  ── 以下 (#R180) の5本＝**第2の描画エンジン**。既定セッションは1バイトも読み込まない
+     （`js/engine-select.js` からの**動的 import** のみ。main チャンクから cesium チャンクへの参照は 0）─────
+  engine-select.js                  (#R180) このセッションがどちらのエンジンで動くかを決める唯一の場所。
+                                    `localStorage['intmap_engine']`（`'cesium'` 以外＝既定の MapLibre）。
+                                    Cesium のときだけ `window.IntMapEnginePending` に Promise を publish し、
+                                    js/app-body.js の**ブートバリア**がそれを待つ——レンダラはシーンが出来た
+                                    あとでは差し替えられないので、決定は `ui.createView` より前でなければならない。
+                                    既定では publish しないので、その経路に Promise は一切現れない。3KB
+  cesium-style.js                   (#R180) **MapLibre style 言語の解釈器**（第2エンジンの本当のコスト）。
+                                    式評価（`get`/`interpolate`/`case`/`match`/`coalesce`/`step`/`feature-state`…）、
+                                    フィルタ（**旧 `$type` 形式**と式形式の両方。旧→式に**変換**するので評価器は1つ）、
+                                    色（#rgb/#rrggbbaa/rgb()/hsl()/CSS名／sRGB・Lab 混色）、旧 `{stops}` 関数。
+                                    **純粋**——Cesium も DOM も window 状態も参照しないので Node で直接テストできる。
+                                    実装しない演算子は `UNSUPPORTED` として**公開**する（#R162）。17KB
+  cesium-layers.js                  (#R180) プロバイダと描画器。raster→`ImageryLayer`（brightness/contrast/
+                                    saturation/hue が**ネイティブ**）、fill/line/circle/symbol/fill-extrusion→
+                                    エンティティ、heatmap/hillshade/color-relief→同じ DEM から計算するラスタ、
+                                    terrain→アプリが既に流している **terrarium タイル**から `HeightmapTerrainData`
+                                    （**キーレス**＝Ion トークン無し）。Cesium がやらない**画面空間デクラッタ**も
+                                    ここ（投影→sort-key 順→衝突箱／地平線の裏と画面外は席を取らない）。16KB
+  cesium-vector-tiles.js            (#R180) ベクタタイルの**ピラミッド**（cover/fetch/decode/LRU）。描画は
+                                    GeoJSON 経路と同じものを使う——タイルの難所はレンダラであって、
+                                    features になりさえすれば既存の描画器が受け取れる。`@mapbox/vector-tile`。4KB
+  cesium-engine.js                  (#R180) アダプタ本体。`makeMapLibreAdapter` と**同じメソッド集合**を実装し、
+                                    `IntMapGeoEngine.use()` で差し込まれる。カメラ対応（zoom↔range・pitch は
+                                    ちょうど90°ずれる）の**唯一の転写**、地形が届いたらカメラを打ち直す `_settle`、
+                                    popup/marker（Cesium に無いので DOM を投影で追従。`.maplibregl-*` の
+                                    クラス名は**意図的に維持**＝スタイルはアプリのものだから）。39KB
   view-controls.js                  (#R171) 視点まわりの2つの設定＝`IntMapTilt`（地図の傾きの上限）と
                                     `IntMapEyeAlt`（常時表示欄の視点高度）。**engine だけで書かれた3本目**
                                     （生 `map` を一切参照しない）。
@@ -2549,7 +2607,14 @@ z12 付近から先は素の Mercator」と定義されている**からで、`g
     ＝生 `map` 参照ゼロのモジュールが **31/55 本**に。`tests/r172-checks.test.mjs` が本数を下限として固定する。
     移行中の罠：`js/mobile-ui.js` は**工場が2つ**（`mobileUI` と `layoutReflow`）なので、片方だけにヘルパーを
     置くと他方で自由識別子になる（`static-checks` の split-scope 検査が即座に捕まえた）。
-- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`・#R170 で `extrusion3d:true` を追加）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
+- **Cesium**: ~~`CESIUM_CONTRACT`＝capabilities 宣言のみ~~ → **#R180 で実装アダプタが入った**。
+  `js/cesium-engine.js` が `makeMapLibreAdapter` と同じメソッド集合を返し、`js/engine-select.js` が
+  DOMContentLoaded 前に `IntMapGeoEngine.use()` する。`makeFacade(adapterGetter)` を engine が公開したのは
+  このため——`ui.createSubView` が返す契約（#R179）は `engineFacade` のクロージャで、**別ファイルのアダプタからは
+  呼べなかった**。「この契約を実装せよ」を他ファイルが実際に実行できるようにする最後の1本。
+  カメラは `range(lat,zoom) = 2πR·cos(lat)/(512·2^zoom) · 0.5/tan(fovy/2) · H` と、その厳密な逆写像の
+  **1つの転写**だけを持つ（#R177 の教訓＝幾何の写しを2つ持つと互いに一致して現実と食い違う）。
+  pitch はちょうど 90° ずれる（MapLibre 0 = 真下 = Cesium −90）ので 0–180 が −90…+90 に**切れ目なく**乗る。
 - **#R161 第3段階＝自己完結サブシステムの丸ごと移行（ニュースピン・オーバーレイ）**: 契約を「オーバーレイが必要とするもの一式」（`ready`／`render.container/size/setCursor`／`events.onLayer/offLayer`／`layers.getPaint`）まで広げ、**`setupIntelLayers()` のニュース＋ダッシュのソース/レイヤ生成、`_declutterNewsBands()` の projection＋surface サイズ＋feature-state、帯のテーマ配色、ニュースの hover/click/leave 全6ハンドラ**を engine 経由へ移行。**生 `map` を一切参照しないサブシステムの第1号**＝別レンダラーのアダプタはこの契約を実装するだけでニュースピンを継承できる。
   - **検証の壁と突破**: hermetic な Playwright ではベースマップの vector source（`tiles.openfreemap.org`）が遮断され `isStyleLoaded()` が永久に false → レイヤが作られず**レイヤ単位の検証が不可能**だった（R143/R130 の既知事象）。`tests/r161.spec.js` はその**1ソースだけを空の TileJSON でスタブ**してスタイルを完了させ、アプリ本来の経路でオーバーレイを作らせて実検証する。
 - **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **Atlas カメラ制御 3ケース（`zoom`/`bearing`/`pitch`）を `const GE=IntMapGeoEngine.camera` で読み取りも駆動もエンジン経由へ**（#R152 で `pitch`/`bearing` の easeTo、#R160 で getter＋`zoom` ケースを追加）。複雑な `flyTo` ケースは誤移行リスクのため据え置き（将来段階）。
@@ -2570,9 +2635,14 @@ z12 付近から先は素の Mercator」と定義されている**からで、`g
      残りは **js/ の中で組み立てられる style 文字列**（flight-sim の `-ctrl-attrib` / `-control-container`、
      compare の `-map` / `-canvas-container`、`-marker` / `-popup` など）＝**CSS ファイルだけ見ると半分を見落とす**。
      中立クラスを併記させるか、エンジンがクラス名を公開するかの設計判断が必要。
-  5. **Cesium アダプタ**＝`js/geo-engine-cesium.js`。土台（ビューごとのアダプタ／`engineFacade` の1つの形）は
-     #R179 で整った。残るのは **MapLibre style 言語の解釈器**（11レイヤ型・paint 43・layout 33・21演算子の 468 式）と
-     SDK の遅延読み込み・設定UI（5言語）・Atlas 配線。**規模が理由で #R179 では着手していない**（標準指示4）。
+  5. **Cesium アダプタ**——**#R180 で実装済み**。`js/cesium-engine.js`（＋`cesium-style.js` /
+     `cesium-layers.js` / `cesium-vector-tiles.js` / `engine-select.js`）。#R179 が「規模が理由で着手しない」と
+     書いたのは正しい測定だったが、**ソースの内訳**（geojson 97 / raster 11 / vector 6 / image 6 / raster-dem 2）
+     までは見ていなかった：基図も衛星もラスタで、アプリ自身のレイヤの79%が GeoJSON だった。
+     ベクタタイルは MVT→features に落として同じ GeoJSON 描画器へ流す。
+     **未実装を宣言しているもの**：`solid3d`（#R173 の吸収シェーディングは Cesium のポリゴンでは作れない）と
+     `demContourSource`（maplibre-contour は MapLibre 名前空間を要求する）。どちらも `false`/`null` を返し、
+     呼び出し側は既存のフォールバックを取る。設定UI（5言語）・Atlas `engine` アクション・SYS カタログ済み。
 - **旧「次にやること」（#R170〜#R173 当時）**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js`、#R171 の `view-controls.js` がその実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky` を `terrain` 名前空間として契約化（`setMaxPitch` は #R171 で `camera` に入った）、⑧生 `map` 参照が**少ない順**に残りのモジュールを潰していく（#R171 は 10 本、#R172 は 5 本、**#R173 は `monitors`/`street-view` の 2 本**＝残りは `map-readout`(18)/`analysis-panels`(19)/`routing`(19)/`playground`(22)/`cameras`(24) が次の順番）。
 - **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋**`tests/r170-checks.test.mjs`（`canDraw`/`extrusion3d`/`addExtrusion`/`setExtrusionRange` の契約・Cesium 側の同期・`volume3d.js` が生 `map` を呼ばないこと）**＋**`tests/r170.spec.js`（実ブラウザ：地形 ON/OFF で `fill-extrusion-base` が実際に DEM ぶん補正される）**＋**`tests/r171-checks.test.mjs`（第5段階の契約・Cesium 側の同期・移行10本＋新モジュールに生 `map` が無いことを**パーサ**で確認・レンダラー非依存モジュール数の下限）**＋**`tests/r171.spec.js`（実ブラウザ：`globe` が z12 で平面になることを実測。#R172 で「飛行中も曲率」の要求は撤回——それを満たす投影ではコックピットが白紙になるため）**＋**`tests/r172-checks.test.mjs`（第6段階の契約・Cesium 側の同期・移行5本に生 `map` が無いことを**パーサ**で確認・本数の下限31）**＋**`tests/r172.spec.js`（実ブラウザ：コックピットに**地面が写っている**ことを画素で判定／無制限傾きで視点が動かないこと・標準傾きは従来どおり回ること・傾きを伴う `flyTo` が目的地に着くこと／立体の底面・内部・単位・上限撤廃／**スタブ ADS-B** で機体が実高度に立つこと）**＋既存スモーク。
 

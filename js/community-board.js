@@ -8,7 +8,8 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.communityBoard=function(map,HOST){
+window.IntMapModules.communityBoard=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
   const _GE=()=>window.IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
@@ -17,7 +18,7 @@ window.IntMapModules.communityBoard=function(map,HOST){
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const commCatById=(id)=>HOST.COMM_CATEGORIES.find(c=>c.id===id)||HOST.COMM_CATEGORIES[0];
   const commCatLabel=(id)=>{ const c=commCatById(id); return c.label[HOST.lang]||c.label.en; };
   /* Deterministic avatar (colored initial) from a display name. */

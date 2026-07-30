@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.elevationProfile=function(map,HOST){
+window.IntMapModules.elevationProfile=function(HOST){
   async function demSampleAll(points, z, timeoutMs, onProgress){ await HOST.warmDEMTiles(points, z, timeoutMs, onProgress); return points.map(p=>{ if(!p) return null; const v=HOST.demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
   /* ===== (#R9b/#46) Elevation cross-section under a measured line (area uses its perimeter). Below 0 m
      gets a faint blue band so sub-sea segments are obvious. Samples the cached terrarium DEM. ===== */

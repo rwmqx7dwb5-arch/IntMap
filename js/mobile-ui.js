@@ -9,7 +9,7 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.mobileUI=function(map,HOST){
+window.IntMapModules.mobileUI=function(HOST){
   /* (#R172) CAMERA + EVENTS THROUGH IntMapGeoEngine — this module no longer names the renderer.
      Everything it did to the map was camera work: read the bearing/pitch for the compass, pad the view
      for the bottom sheet, cancel an in-flight ease when the finger grabs it again, and resize. */
@@ -258,7 +258,7 @@ window.IntMapModules.mobileUI=function(map,HOST){
   return initMobileUI;
 };
 
-window.IntMapModules.layoutReflow=function(map,HOST){
+window.IntMapModules.layoutReflow=function(HOST){
   const applySidebarStyle=HOST.applySidebarStyle;
   /* (#R172) the resize below goes through IntMapGeoEngine too — this is a SEPARATE factory closure from
      mobileUI above, so it needs its own handle (the split-scope check catches exactly this). */

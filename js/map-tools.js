@@ -19,12 +19,12 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.projView=function(map,HOST){
+window.IntMapModules.projView=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.ProjView=(function(){
     const RAD=Math.PI/180, EARTH_KM=6371;
     let host=null, cv=null, ctx=null, sel=null, titleEl=null, entry=null, mEntry=null;
@@ -145,7 +145,7 @@ window.IntMapModules.projView=function(map,HOST){
       _projs:PROJS
     };
     /* ---- entry selectors (#16): desktop top-controls + mobile map sheet ---- */
-    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&map&&GE().camera.getCenter){ const cc=GE().camera.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
+    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&GE().hasRenderer()&&GE().camera.getCenter){ const cc=GE().camera.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
     window.__projChoose=chooseProj;
     /* (#R7-proj) The Flat-view no longer carries a projection SELECTOR — Flat = real Mercator and Globe
        stay in perfect lock-step with the live map (the user disliked a separate "blank" projection
@@ -161,12 +161,12 @@ window.IntMapModules.projView=function(map,HOST){
   })();
 };
 
-window.IntMapModules.drawTool=function(map,HOST){
+window.IntMapModules.drawTool=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const ringArea=HOST.ringArea, t=HOST.t, distHTML=HOST.distHTML, areaHTML=HOST.areaHTML, makeDraggable=HOST.makeDraggable, imToast=HOST.imToast, exitTool=HOST.exitTool;
   window.DrawTool=(function(){
-    if(!map) return { start(){}, toggle(){}, active(){return false;}, exit(){}, onResolution(){} };
+    if(!GE().hasRenderer()) return { start(){}, toggle(){}, active(){return false;}, exit(){}, onResolution(){} };
     let state='off';                 // off | armed | drawing | done
     let raw=[], simplified=[], loopRings=[], lockedArea=0, lengthKm=0, smoothing=0, closeAux=null;
     let lastPx=null, panel=null, layersReady=false, hadTouchMove=false, sampleN=0;
@@ -370,16 +370,16 @@ window.IntMapModules.drawTool=function(map,HOST){
   })();
 };
 
-window.IntMapModules.isolate=function(map,HOST){
+window.IntMapModules.isolate=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, loadCountryData=HOST.loadCountryData;
   window.IntMapIsolate=(function(){
-    if(!map) return { enter(){}, exit(){}, active:()=>false };
+    if(!GE().hasRenderer()) return { enter(){}, exit(){}, active:()=>false };
     const jp=()=>HOST.lang==='jp'; let active=false, btn=null;
     function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
     function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
@@ -467,16 +467,16 @@ window.IntMapModules.isolate=function(map,HOST){
   })();
 };
 
-window.IntMapModules.seaRoute=function(map,HOST){
+window.IntMapModules.seaRoute=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t, fmtLL=HOST.fmtLL, makeDraggable=HOST.makeDraggable;
   window.IntMapRoute=(function(){
-    if(!map) return { open(){}, clear(){}, setStart(){}, active:()=>false };
+    if(!GE().hasRenderer()) return { open(){}, clear(){}, setStart(){}, active:()=>false };
     const jp=()=>HOST.lang==='jp';
     const W=3600, H=1800;                /* (#R14) 0.1° mask ≈ 11 km cells — sharper coastlines so a route can start at shallow/coastal points and stops cutting across thin land (was 0.2°/22 km) */
     let grid=null, panel=null, start=null, end=null, noGo=[], pureDist=false, addNoGoMode=false, busy=false;
@@ -649,10 +649,10 @@ window.IntMapModules.seaRoute=function(map,HOST){
  * this file is 125 lines lighter for it (standing instruction 13). The factory name and the
  * window.IntMapLOS API it publishes are unchanged, so every call site — the map right-click menu and
  * the Atlas los/viewshed actions — is untouched. */
-window.IntMapModules.outline=function(map,HOST){
+window.IntMapModules.outline=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapOutline=(function(){
-    if(typeof map==='undefined'||!map) return { show(){}, clear(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, clear(){} };
     const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
     function setVis(v){ try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setLayout('pl-outline-fill','visibility',v); if(GE().layers.has('pl-outline-line')) GE().layers.setLayout('pl-outline-line','visibility',v); }catch(_){} }
@@ -729,10 +729,10 @@ window.IntMapModules.outline=function(map,HOST){
   })();
 };
 
-window.IntMapModules.moveShape=function(map,HOST){
+window.IntMapModules.moveShape=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapMoveShape=(function(){
-    if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
     let baseGeo=null, baseCen=null, on=false, pill=null, handlers=[];
     const accent=()=>{ try{ return (window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; }catch(_){ return '#0a84ff'; } };
     function ensure(){ try{ if(!GE().layers.hasSource('immove-src')) GE().layers.addSource('immove-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -834,7 +834,7 @@ window.IntMapModules.moveShape=function(map,HOST){
     return { start, stop, active:()=>on, _reshape:(cen,rot)=>reshape(cen,rot||0) }; })();
 };
 
-window.IntMapModules.isochrone=function(map,HOST){
+window.IntMapModules.isochrone=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable, bringToFront=HOST.bringToFront;
@@ -893,10 +893,10 @@ window.IntMapModules.isochrone=function(map,HOST){
     return { open, run, clear, ensureLayers, _src:SRC }; })();
 };
 
-window.IntMapModules.arc3d=function(map,HOST){
+window.IntMapModules.arc3d=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapArc3D=(function(){
-    if(typeof map==='undefined'||!map) return { show(){}, hide(){}, animate(){}, draw(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, hide(){}, animate(){}, draw(){} };
     let cv=null, ctx=null, data=null, raf=0, prog=1, dpr=1, bound=false;
     function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
       cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
@@ -940,12 +940,12 @@ window.IntMapModules.arc3d=function(map,HOST){
     return { show, hide, animate, draw }; })();
 };
 
-window.IntMapModules.objectList=function(map,HOST){
+window.IntMapModules.objectList=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const removePin=HOST.removePin, refreshTool=HOST.refreshTool, makeDraggable=HOST.makeDraggable, isMobile=HOST.isMobile;
   window.IntMapObjects=(function(){
-    if(typeof map==='undefined'||!map) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
     const OL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;

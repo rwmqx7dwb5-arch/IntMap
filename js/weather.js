@@ -16,12 +16,12 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.wind=function(map,HOST){
+window.IntMapModules.wind=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast, isMobile=HOST.isMobile;
   window.Wind=(function(){
@@ -163,7 +163,7 @@ window.IntMapModules.wind=function(map,HOST){
        debounce collapses a styledata BURST (theme swap, other layer toggles, the field's own add/remove) into a
        single rebuild, so the field can't rapidly re-fade ("Wind(animated)が点滅するバグがまれに発生"). A genuine
        later style reload still lands (they are seconds apart). */
-    if(map) GE().events.on('styledata',()=>{ if(!on||_fieldBusy) return;
+    if(GE().hasRenderer()) GE().events.on('styledata',()=>{ if(!on||_fieldBusy) return;
       /* debounce ONLY while the field is still present (a burst); if a real style reload actually dropped it, rebuild
          immediately so it can never get stuck missing. */
       let present=false; try{ present=!!(GE().layers.hasSource(FIELD_SRC)&&GE().layers.has(FIELD_LYR)); }catch(_){}
@@ -236,7 +236,7 @@ window.IntMapModules.wind=function(map,HOST){
       cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
     function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); updateTimePill(); }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
-    if(map){ GE().events.on('movestart',()=>{ moving=true; }); GE().events.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
+    if(GE().hasRenderer()){ GE().events.on('movestart',()=>{ moving=true; }); GE().events.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid, setOpacity:setFieldOpacity,
       sampleAt:(lng,lat)=>{ const w=sample(lng,lat); if(!w) return null; return { speed:Math.hypot(w[0],w[1]), dir:(Math.atan2(-w[0],-w[1])/R+360)%360, time:gridTime }; },
       dataTime:()=>gridTime,
@@ -246,16 +246,16 @@ window.IntMapModules.wind=function(map,HOST){
   })();
 };
 
-window.IntMapModules.weatherEC=function(map,HOST){
+window.IntMapModules.weatherEC=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast, t=HOST.t, makeDraggable=HOST.makeDraggable;
   window.IntMapWeatherEC=(function(){
-    if(!map) return { open(){}, toggle(){} };
+    if(!GE().hasRenderer()) return { open(){}, toggle(){} };
     const jp=()=>HOST.lang==='jp';
     const BASE='https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json';
     const SDK_URL='https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js';
@@ -399,12 +399,12 @@ window.IntMapModules.weatherEC=function(map,HOST){
   })();
 };
 
-window.IntMapModules.weatherPanel=function(map,HOST){
+window.IntMapModules.weatherPanel=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t, fmtTemp=HOST.fmtTemp;
   window.IntMapWeather=(function(){
-    if(!map) return { open(){} };
+    if(!GE().hasRenderer()) return { open(){} };
     const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
     function wx(code){ const M={
       0:['☀️','Clear sky','快晴','Klarer Himmel','Ясно','Despejado'],1:['🌤','Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado'],

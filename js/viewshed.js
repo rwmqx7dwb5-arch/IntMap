@@ -35,15 +35,15 @@
  *  resolution). Same red = reachable / green = shadow legend as before.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.los=function(map,HOST){
+window.IntMapModules.los=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, _demZoomForSpan=HOST._demZoomForSpan, warmDEMTiles=HOST.warmDEMTiles,
         demElevBilinear=HOST.demElevBilinear, demElevAt=HOST.demElevAt, t=HOST.t, makeDraggable=HOST.makeDraggable;
 
   window.IntMapLOS=(function(){
-    if(!map) return { open(){}, clear(){}, run(){}, state:()=>({}) };
+    if(!GE().hasRenderer()) return { open(){}, clear(){}, run(){}, state:()=>({}) };
     const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
 
     const SRC='los-src', IMGSRC='los-img-src', IMGLYR='los-img';

@@ -130,7 +130,7 @@ test('the volume tool has a finish-drawing button and no Solid choice', () => {
 test('the drone planner is wired into the app', () => {
   const idx = appShell(root);
   assert.match(idx, /import '\.\.\/js\/drone-nav\.js';/, 'the file is loaded by the Vite entry (#R175)');
-  assert.match(idx, /window\.IntMapModules\.droneNav\(map,IM_HOST\)/, 'and instantiated');
+  assert.match(idx, /window\.IntMapModules\.droneNav\((IM_HOST)\)/, 'and instantiated');
   /* (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the launcher was removed from the Measure menu
      AND from the mobile tools sheet. The planner itself is untouched: the assertions above (loaded,
      instantiated) and the Atlas ones below are what keep the feature alive. */

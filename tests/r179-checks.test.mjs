@@ -10,9 +10,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import * as acorn from 'acorn';
-import { scanAll, scanFile, VALUE_BUDGET, PRIMARY_VIEW_FILE, ENGINE_FILE } from '../scripts/engine-coupling.mjs';
+import { scanAll, scanFile, VALUE_BUDGET, PRIMARY_VIEW_FILE, ENGINE_FILE, IMAP_GLOBAL_FILES } from '../scripts/engine-coupling.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = p => readFileSync(new URL(p, root), 'utf8');
@@ -40,13 +40,42 @@ test('R179: the gate counts the renderer held or tested as a VALUE, not only mem
   const member = outside.reduce((n, r) => n + r.hits.length, 0);
   const values = outside.reduce((n, r) => n + (r.values || []).length, 0);
   assert.equal(member, 0, 'member access outside the adapter must stay at zero');
-  assert.ok(values > 0, 'and the value references must be VISIBLE — reporting 0 for them is the #R178 blind spot');
   assert.ok(values <= VALUE_BUDGET,
     `value references (${values}) must stay within the budget (${VALUE_BUDGET}); the ratchet only goes down`);
-  const kinds = new Set();
-  outside.forEach(r => (r.values || []).forEach(v => kinds.add(v.kind)));
-  assert.ok(kinds.has('tested'), 'existence tests are classified — they are the mechanical half');
-  assert.ok(kinds.has('held'), 'and handles passed as arguments — the half that needs somewhere to go');
+  /* (#R180) …and the budget is now 1 — the app no longer holds or tests the renderer anywhere
+     except the single line that hands the primary view to the engine. #R179 asserted here that the
+     live sources still contained a `tested` and a `held` reference, which was a fair description of
+     the work outstanding THEN and would now fail for the right reason. What still has to be
+     guarded is the CLASSIFIER, not the app's remaining coupling, so it is proven on a probe: a
+     scanner that silently stopped recognising either shape would let the whole category back in
+     with the count reading 0, which is exactly the #R178 blind spot this test exists for. */
+  const dir = mkdtempSync(join(tmpdir(), 'imkinds-'));
+  const f = join(dir, 'probe.js');
+  try {
+    writeFileSync(f, `window.IntMapModules.probe=function(map,HOST){
+      if(!map) return; if(typeof maplibregl!=='undefined') other(map);
+    };\n`);
+    const kinds = new Set((scanFile(f).values || []).map(v => v.kind));
+    assert.ok(kinds.has('tested'), 'existence tests are classified — they are the mechanical half');
+    assert.ok(kinds.has('held'), 'and handles passed as arguments — the half that needed somewhere to go');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+/* ── (#R180) …and the OTHER door into the same hole ────────────────────────────────────────── */
+test('R180: the global handle window.__imap is gated to the adapter and the one line that publishes it', () => {
+  const all = scanAll();
+  const stray = all.filter(r => (r.imaps || []).length && !IMAP_GLOBAL_FILES.has(basename(r.file)));
+  assert.deepEqual(stray.map(r => r.file), [],
+    'reading window.__imap into a local is the same coupling under a name no scan can predict — ' +
+    '#R180 found three subsystems doing exactly that (IntMapLocate drove getSource/addLayer/on/project/flyTo ' +
+    'through `M()`), invisible to both counts above');
+  /* and it can still fail */
+  const dir = mkdtempSync(join(tmpdir(), 'imglobal-'));
+  const f = join(dir, 'probe.js');
+  try {
+    writeFileSync(f, `const M=()=>window.__imap; M();\n`);
+    assert.equal((scanFile(f).imaps || []).length, 1, 'a bare read of the global is counted');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('R179: `arr.map(...)` is not counted as renderer coupling', () => {
@@ -56,7 +85,7 @@ test('R179: `arr.map(...)` is not counted as renderer coupling', () => {
   const dir = mkdtempSync(join(tmpdir(), 'imcoupling-'));
   const f = join(dir, 'probe.js');
   try {
-    writeFileSync(f, `window.IntMapModules.probe=function(map,HOST){
+    writeFileSync(f, `window.IntMapModules.probe=function(HOST){
       const xs=[1,2,3].map(n=>n*2); const o={map:1}; const q=xs.map(String);
       return {xs,q,o};
     };\n`);

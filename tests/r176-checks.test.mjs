@@ -89,7 +89,7 @@ test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with 
 test('R176 ②: the viewshed answers per raster cell, not per bearing', () => {
   assert.ok(existsSync(join(ROOT, 'js/viewshed.js')), 'the engine has its own file');
   assert.match(entry, /import '\.\.\/js\/viewshed\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.los\(map,IM_HOST\);/, 'and instantiated under the same factory name');
+  assert.match(body, /window\.IntMapModules\.los\((IM_HOST)\);/, 'and instantiated under the same factory name');
   assert.doesNotMatch(R('js/map-tools.js'), /window\.IntMapModules\.los=function/, 'and no longer defined in map-tools.js');
   /* a ray is never truncated: every sample is classified, so a valley beyond a ridge can come back */
   assert.match(los, /if\(angTgt>=hznAng-1e-12\)\{ c=VIS; \}/, 'each sample is tested against the running horizon');
@@ -116,7 +116,7 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
   assert.doesNotMatch(R('js/drone-nav.js'), /getElementById\('btn-tool-drone'\)/, 'and nothing hunts for the button any more');
   /* the feature itself is untouched — the user asked for the BUTTON to go, not the planner */
   assert.match(entry, /import '\.\.\/js\/drone-nav\.js';/, 'the planner is still loaded');
-  assert.match(body, /window\.IntMapModules\.droneNav\(map,IM_HOST\)/, 'and still instantiated');
+  assert.match(body, /window\.IntMapModules\.droneNav\((IM_HOST)\)/, 'and still instantiated');
   assert.match(atlas, /window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'and Atlas opens it directly now');
   assert.ok(atlas.includes("case 'drone':"), 'the full drone action still exists');
 });
@@ -127,7 +127,7 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
 test('R176 ④: water is priority-flood + volume routing, and the inflow is exact', () => {
   assert.ok(existsSync(join(ROOT, 'js/terrain-water.js')), 'the simulator has its own file');
   assert.match(entry, /import '\.\.\/js\/terrain-water\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.terrainWater\(map,IM_HOST\);/, 'and instantiated');
+  assert.match(body, /window\.IntMapModules\.terrainWater\((IM_HOST)\);/, 'and instantiated');
   assert.match(water, /function Heap\(cap\)\{/, 'a real min-heap, so the flood is O(n log n)');
   assert.match(water, /filled\[nk\]=Math\.max\(surf\[nk\],filled\[k\]\);/, 'priority-flood fills to the spill level');
   assert.match(water, /parent\[nk\]=k;/, 'and the pop order doubles as the drainage tree');
@@ -150,7 +150,7 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
 test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion names its chain', () => {
   assert.ok(existsSync(join(ROOT, 'js/seismic.js')), 'the simulator has its own file');
   assert.match(entry, /import '\.\.\/js\/seismic\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.seismic\(map,IM_HOST\);/, 'and instantiated');
+  assert.match(body, /window\.IntMapModules\.seismic\((IM_HOST)\);/, 'and instantiated');
   assert.match(quake, /const IASP91=\[/, 'the velocity model is the data in the file');
   assert.match(quake, /\{ d0:2889, d1:5153\.9,p:\[10\.03904,3\.75665,-13\.67046\], *s:\[0\] \}/, 'including an outer core with no S');
   assert.match(quake, /function trace\(p,srcDepth,phase,dir\)\{/, 'and the travel times are TRACED, not tabulated');
@@ -175,7 +175,7 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
 test('R176 ⑥: terrain shade is a sweep, and the year is read off a real horizon profile', () => {
   assert.ok(existsSync(join(ROOT, 'js/insolation.js')), 'the engine has its own file');
   assert.match(entry, /import '\.\.\/js\/insolation\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.insolation\(map,IM_HOST\);/, 'and instantiated');
+  assert.match(body, /window\.IntMapModules\.insolation\((IM_HOST)\);/, 'and instantiated');
   assert.match(insol, /function shadowMask\(g,azCompass,altDeg\)\{/, 'the shadow is one pass over the grid');
   assert.match(insol, /M\[k\]=Math\.max\(z,S\);/, 'carrying max(z, S) along the ray — O(N²), not O(N² · ray)');
   assert.match(insol, /async function horizon\(lng,lat,o\)\{/, 'a point owns a 360° horizon profile');

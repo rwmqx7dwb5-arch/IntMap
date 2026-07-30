@@ -2189,3 +2189,19 @@
     .mon-evkind-new{color:#30a46c;font-weight:600} .mon-evkind-continuing{color:var(--text-muted)}
     .mon-repfoot{font-size:10.5px;color:var(--text-muted);margin-top:14px;text-align:right}
     @media (max-width:768px){ .mon-kvs{grid-template-columns:1fr} .mon-dialog{max-height:92vh} }
+
+    /* ══ (#R180) THE SECOND ENGINE'S DRAWING SURFACE ═══════════════════════════════════════
+       Cesium ships Widgets/widgets.css, and none of it is wanted here: it styles the timeline,
+       the animation dial, the base-layer picker and the geocoder — Ion-backed chrome this app
+       replaced with its own long ago, and which js/cesium-engine.js does not construct (it uses
+       CesiumWidget, not Viewer). What that stylesheet ALSO carries, and what is genuinely
+       required, is the rule that makes the canvas fill its container: without it the drawing
+       buffer stays at the HTML default of 300×150 in a 840×720 box, which is not a small
+       cosmetic problem — the engine derives the zoom from the canvas HEIGHT (see the CAMERA
+       block), so a wrong canvas is a wrong camera.
+       These four rules are that requirement and nothing else. They are inert in a MapLibre
+       session: no element ever carries the class. */
+    .cesium-widget{width:100%;height:100%;position:relative;overflow:hidden}
+    .cesium-widget canvas{width:100%;height:100%;display:block;touch-action:none}
+    .cesium-widget-credits{display:none!important}   /* the app renders attribution in its own Sources modal */
+    #map:has(> .cesium-widget){position:relative}

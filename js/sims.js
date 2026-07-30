@@ -15,14 +15,14 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.radiation=function(map,HOST){
+window.IntMapModules.radiation=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapRadiation=(function(){
-    if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
     const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
@@ -179,7 +179,7 @@ window.IntMapModules.radiation=function(map,HOST){
   })();
 };
 
-window.IntMapModules.popArea=function(map,HOST){
+window.IntMapModules.popArea=function(HOST){
   window.IntMapPopArea=(function(){
     const cache=new Map();
     function _decim(ring){ const r=ring.map(p=>[+(+p[0]).toFixed(5),+(+p[1]).toFixed(5)]);
@@ -301,14 +301,14 @@ window.IntMapModules.popArea=function(map,HOST){
   })();
 };
 
-window.IntMapModules.slope=function(map,HOST){
+window.IntMapModules.slope=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapSlope=(function(){
-    if(typeof map==='undefined'||!map) return { toggle(){}, run(){}, clear(){}, setMode(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { toggle(){}, run(){}, clear(){}, setMode(){} };
     const SRC='imslope-src'; let on=false, mode='slope', busy=false, moveT=null, lastKey='';
     const SL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
@@ -317,7 +317,7 @@ window.IntMapModules.slope=function(map,HOST){
       GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       GE().layers.add({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
       return true; }catch(_){ return false; } }
-    async function run(){ if(busy||!on||!map) return; let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+    async function run(){ if(busy||!on||!GE().hasRenderer()) return; let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
       const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth(); const z=Math.max(3,Math.min(13,Math.round(GE().camera.getZoom())));
       const key=[mode,z,w.toFixed(3),s.toFixed(3),e.toFixed(3),n.toFixed(3)].join(','); if(key===lastKey) return; lastKey=key; busy=true;
       try{ const samp=await window.IntMapTerrain.sampler([w,s,e,n],z); if(!samp||!on){ busy=false; return; }
@@ -361,16 +361,16 @@ window.IntMapModules.slope=function(map,HOST){
     return { toggle, run, clear:()=>toggle(false), setMode }; })();
 };
 
-window.IntMapModules.rf=function(map,HOST){
+window.IntMapModules.rf=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapRF=(function(){
-    if(typeof map==='undefined'||!map) return { open(){}, run(){}, clear(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
     const SRC='imrf-src'; let panel=null, ant=null, busy=false, picking=false, pickH=null;
     let antH=30, txDbm=30, freq=900;   /* metres, dBm (1 W), MHz */
     const RF=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
@@ -440,16 +440,16 @@ window.IntMapModules.rf=function(map,HOST){
     return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
-window.IntMapModules.sun=function(map,HOST){
+window.IntMapModules.sun=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapSun=(function(){
-    if(typeof map==='undefined'||!map) return { open(){}, close(){}, setTime(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setTime(){} };
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
     const SN=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
@@ -610,16 +610,16 @@ window.IntMapModules.sun=function(map,HOST){
       state:()=>({ open:!!(panel&&panel.style.display!=='none'), when:when.toISOString(), terrainOn }) }; })();
 };
 
-window.IntMapModules.transitReach=function(map,HOST){
+window.IntMapModules.transitReach=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   window.IntMapTransitReach=(function(){
-    if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, open(){}, clear(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, open(){}, clear(){} };
     const SRC='imtr-src'; let busy=false;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
     function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
@@ -682,16 +682,16 @@ window.IntMapModules.transitReach=function(map,HOST){
     return { run, open, draw, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
-window.IntMapModules.disaster=function(map,HOST){
+window.IntMapModules.disaster=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapDisaster=(function(){
-    if(typeof map==='undefined'||!map) return { open(){}, run(){}, clear(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
     const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
     const DZ=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
@@ -782,16 +782,16 @@ window.IntMapModules.disaster=function(map,HOST){
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
-window.IntMapModules.earthReplay=function(map,HOST){
+window.IntMapModules.earthReplay=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable;
   window.IntMapEarthReplay=(function(){
-    if(typeof map==='undefined'||!map) return { open(){}, close(){}, setWhen(){} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setWhen(){} };
     const SRC='imrep-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), playing=0;
     const ER=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;

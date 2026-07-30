@@ -73,7 +73,7 @@ const NAMES = Object.keys(MODULES);
    day it isn't, and CodeQL flags it (js/incomplete-sanitization) rather than guess. */
 const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const shimOf = (m, n) => `function ${n}(){ return ${MODULES[m].k}.${n}.apply(this,arguments); }`;
-const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(map,IM_HOST);`;
+const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(IM_HOST);`;
 
 /* Closure values these modules read that are REASSIGNED at runtime → live host getters, never a bare
    identifier inside a js/ file. A captured copy would silently go stale (the #R162 shape). */
@@ -95,8 +95,8 @@ test('R168 #1 all six files are loaded and every factory is declared and instant
     assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${m}=function(map,HOST){`),
-      `${file} declares the ${m} factory taking (map,HOST)`);
+    assert.ok(src.includes(`window.IntMapModules.${m}=function(HOST){`),
+      `${file} declares the ${m} factory taking (HOST)`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     const calls = html.split(callOf(m)).length - 1;
     assert.equal(calls, 1, `index.html must instantiate ${m} exactly once (found ${calls})`);

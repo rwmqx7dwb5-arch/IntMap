@@ -18,16 +18,16 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.earthSky=function(map,HOST){
+window.IntMapModules.earthSky=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} });
     const state={dams:false,volcanoes:false,aurora:false,adiz:false};
@@ -45,7 +45,7 @@ window.IntMapModules.earthSky=function(map,HOST){
     let popup=null;
     function showPop(c,title,info){ try{ if(popup) popup.remove(); }catch(_){}
       const html='<div style="min-width:140px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">'+title+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+info+'</div></div>';
-      try{ popup=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html).addTo(map); }catch(_){}
+      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html)); }catch(_){}
     }
     let wired=false;
     function ensureLayers(){ if(!_imCanDraw()) return false;
@@ -138,16 +138,16 @@ window.IntMapModules.earthSky=function(map,HOST){
   })();
 };
 
-window.IntMapModules.landCover=function(map,HOST){
+window.IntMapModules.landCover=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, t=HOST.t, isMobile=HOST.isMobile;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} });
     const state={worldcover:false,ecoregions:false,plates:false};
@@ -224,7 +224,7 @@ window.IntMapModules.landCover=function(map,HOST){
         GE().events.onLayer('mouseleave','eco-regions-fill',()=>{ GE().render.canvas().style.cursor=''; });
         GE().events.onLayer('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(jp()?'バイオーム: ':'Biome: ')+(p.BIOME_NAME||'—')+'</div>';
-          window._ecoPop.setLngLat(e.lngLat).setHTML(html).addTo(map); });
+          GE().ui.attach(window._ecoPop.setLngLat(e.lngLat).setHTML(html)); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
     /* (#R13c) Land-cover legend — the official ESA WorldCover 2021 11-class palette + labels (EN/JP).
@@ -281,16 +281,16 @@ window.IntMapModules.landCover=function(map,HOST){
   })();
 };
 
-window.IntMapModules.betaPack2=function(map,HOST){
+window.IntMapModules.betaPack2=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
   (function(){
-    if(typeof map==='undefined'||!map) return;
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
     const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
@@ -323,7 +323,7 @@ window.IntMapModules.betaPack2=function(map,HOST){
       GE().events.onLayer('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
         try{ if(pop2) pop2.remove(); }catch(_){}
         const kind=p.k?('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;">'+esc(p.k)+'</div>'):'';
-        try{ pop2=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:150px;font-weight:600;font-size:13px;color:var(--text-main);">'+esc(p.n)+'</div>'+kind).addTo(map); }catch(_){}
+        try{ pop2=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:150px;font-weight:600;font-size:13px;color:var(--text-main);">'+esc(p.n)+'</div>'+kind)); }catch(_){}
       });
       GE().events.onLayer('mouseenter',layerId,()=>{ GE().render.canvas().style.cursor='pointer'; });
       GE().events.onLayer('mouseleave',layerId,()=>{ GE().render.canvas().style.cursor=''; });
@@ -435,7 +435,7 @@ window.IntMapModules.betaPack2=function(map,HOST){
              レイヤーは、クリック時に新たなポップアップも出さなくていい"). Touch has no hover → keep it there. */
           if(!window._imTouchPrimary||window._imTouchPrimary()) GE().events.onLayer('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             try{ if(pop2) pop2.remove(); }catch(_){}
-            try{ pop2=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>').addTo(map); }catch(_){}
+            try{ pop2=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>')); }catch(_){}
           });
           /* (#R23) per-country HOVER like HDI ("国別の数値があるレイヤーは…ホバーで表示") — reuses the shared
              map tooltip (desktop pointer; mobile keeps the tap popup above). */
@@ -497,16 +497,16 @@ window.IntMapModules.betaPack2=function(map,HOST){
   })();
 };
 
-window.IntMapModules.religionLang=function(map,HOST){
+window.IntMapModules.religionLang=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
   (function(){
-    if(typeof map==='undefined'||!map) return;
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -564,7 +564,7 @@ window.IntMapModules.religionLang=function(map,HOST){
           let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
           const catLbl=(C.lbl[p.cat]?(jp()?C.lbl[p.cat][1]:C.lbl[p.cat][0]):p.cat);
           try{ if(pop) pop.remove(); }catch(_){}
-          try{ pop=GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>').addTo(map); }catch(_){}
+          try{ pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>')); }catch(_){}
         });
         GE().events.onLayer('mouseenter',C.ids[0],()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave',C.ids[0],()=>{ GE().render.canvas().style.cursor=''; });
@@ -599,16 +599,16 @@ window.IntMapModules.religionLang=function(map,HOST){
   })();
 };
 
-window.IntMapModules.timeZones=function(map,HOST){
+window.IntMapModules.timeZones=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const satToast=HOST.satToast;
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
     let on=false, geo=null, loading=false, timer=null;
     const lbl=()=>({en:'Time zones (live clock)',jp:'タイムゾーン（現在時刻）',de:'Zeitzonen (Uhr)',ru:'Часовые пояса (время)',es:'Husos horarios (hora)'})[HOST.lang]||'Time zones';
@@ -655,14 +655,14 @@ window.IntMapModules.timeZones=function(map,HOST){
   })();
 };
 
-window.IntMapModules.gibsScience=function(map,HOST){
+window.IntMapModules.gibsScience=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   (function(){
-    if(!map) return;
+    if(!GE().hasRenderer()) return;
     const GDATE=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* label/note order = [JP, EN, DE, RU] */
     const LIST=[

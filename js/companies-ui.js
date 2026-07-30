@@ -10,11 +10,12 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.companiesUi=function(map,HOST){
+window.IntMapModules.companiesUi=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* =============================================================================
    * WEBGL PIN INFRASTRUCTURE — pins are rendered as native MapLibre circle layers
    * on the WebGL canvas. The map projection math runs on the GPU at the exact

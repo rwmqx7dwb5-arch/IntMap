@@ -38,7 +38,12 @@ IDBKeyRange indexedDB matchMedia getComputedStyle alert confirm prompt atob btoa
 closest HTMLElement Element Node NodeList Text OffscreenCanvas ImageData CanvasRenderingContext2D WebGLRenderingContext
 AudioContext SpeechSynthesisUtterance speechSynthesis isSecureContext devicePixelRatio innerWidth innerHeight scrollX scrollY
 CSS Audio Option DOMRect Range getSelection AbortSignal WeakRef SVGElement ClipboardItem escape unescape scrollTo print
+ImageBitmap createImageBitmap WebGL2RenderingContext ReadableStream
 maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pmtiles`.split(/\s+/).filter(Boolean));
+/* (#R180) `ImageBitmap`/`createImageBitmap` were already used in js/app-body.js's satellite
+   protocol (#R178) but only ever inside a `typeof` guard, which this walker does not treat as a
+   reference; the Cesium providers use them directly. WebGL2RenderingContext is how the engine
+   selector checks whether the second engine can run at all before importing 8 MB of it. */
 /* `pmtiles` is loaded on demand from unpkg by the land-cover pack (js/layer-packs.js) and every use
    is guarded by `typeof pmtiles!=='undefined'`, so it is a real vendor global, not a lost closure name. */
 
@@ -126,8 +131,16 @@ function freeIdentifiers(src) {
         walk(n.object); if (n.computed) walk(n.property); return;
       case 'Property':
         if (n.computed) walk(n.key); walk(n.value); return;
-      case 'MethodDefinition' | 'PropertyDefinition':
+      /* (#R180) `case 'A' | 'B':` is a BITWISE OR OF TWO STRINGS, i.e. `case 0:` — this arm has
+         never matched anything. It was dormant because no file in js/ used `class` until the
+         Cesium adapter needed one for Cesium's provider interfaces; the moment one did, every
+         method NAME was walked as an identifier reference and reported as a lost closure
+         variable (104 of them). The same lesson as #R178's regex and #R179's AST: a check that
+         has never fired is not a check that passes. */
+      case 'MethodDefinition': case 'PropertyDefinition':
         if (n.computed) walk(n.key); walk(n.value); return;
+      case 'ClassBody':
+        n.body.forEach(walk); return;
       case 'FunctionDeclaration': case 'FunctionExpression': case 'ArrowFunctionExpression':
         fnScope(n); return;
       case 'BlockStatement':

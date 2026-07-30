@@ -9,11 +9,12 @@
 
 window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.newsTimeline=function(map,HOST){
+window.IntMapModules.newsTimeline=function(HOST){
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ const m=window.__imap||map; return !!(m&&m.isStyleLoaded()); }catch(__){ return false; } } }
+  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const ymdISO=HOST.ymdISO, fetchData=HOST.fetchData;
   /* ================ END GROUP 4 (Pro removed) ================ */
 
@@ -47,12 +48,14 @@ window.IntMapModules.newsTimeline=function(map,HOST){
       window.IntMapTime.set(base,{allowFuture:false,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
-    function _tmTerminator(show){ try{ const m=window.__imap||(typeof map!=='undefined'?map:null); if(!m||!_imCanDraw()) return;
-      const has=!!(m.getSource&&m.getSource('imtm-night'));
-      if(!show){ if(has){ try{ m.getSource('imtm-night').setData({type:'FeatureCollection',features:[]}); }catch(_){} } return; }
-      if(!has){ try{ m.addSource('imtm-night',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); m.addLayer({id:'imtm-night',type:'fill',source:'imtm-night',paint:{'fill-color':'#04070f','fill-opacity':0.33}}); }catch(_){ return; } }
+    /* (#R180) through the contract. This held window.__imap under the name `m` and drove it raw —
+       the same "handle under another name" hole #R179 closed for the additional views. */
+    function _tmTerminator(show){ try{ const E=GE(); if(!(E&&E.hasRenderer())||!_imCanDraw()) return;
+      const has=E.layers.hasSource('imtm-night');
+      if(!show){ if(has){ try{ E.layers.setSourceData('imtm-night',{type:'FeatureCollection',features:[]}); }catch(_){} } return; }
+      if(!has){ try{ E.layers.addSource('imtm-night',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); E.layers.add({id:'imtm-night',type:'fill',source:'imtm-night',paint:{'fill-color':'#04070f','fill-opacity':0.33}}); }catch(_){ return; } }
       let fc={type:'FeatureCollection',features:[]}; try{ const w=window.IntMapTime.when(); const ER=window.IntMapEarthReplay; const t=(ER&&ER._terminatorFC)?ER._terminatorFC(w):null; if(t) fc={type:'FeatureCollection',features:[t]}; }catch(_){}
-      try{ m.getSource('imtm-night').setData(fc); }catch(_){} }catch(_){} }
+      try{ E.layers.setSourceData('imtm-night',fc); }catch(_){} }catch(_){} }
     function _tmSyncTerminator(){ try{ _tmTerminator(mode==='time' && !tl.classList.contains('collapsed')); }catch(_){} }
     const curY=new Date().getFullYear();
     const L5=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
@@ -186,7 +189,7 @@ window.IntMapModules.newsTimeline=function(map,HOST){
         },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */
     (function autoClose(){ const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed')){ tl.classList.add('collapsed'); _tmSyncTerminator(); } }catch(_){} };
-      function wireMap(){ try{ const M=window.__imap||(typeof map!=='undefined'?map:null); if(M&&M.on){ M.on('dragstart',closeIf); M.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); M.on('click',closeIf); M.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
+      function wireMap(){ try{ const E=GE(); if(E&&E.hasRenderer()){ E.events.on('dragstart',closeIf); E.events.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); E.events.on('click',closeIf); E.events.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
       if(!wireMap()) setTimeout(wireMap,1500);
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();
     window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(window.IntMapTime.state()); }catch(_){} });

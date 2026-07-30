@@ -73,9 +73,9 @@ test('R163 #1 each module was moved out, loaded, and instantiated at its origina
     assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${key}=function(map,HOST){`),
-      `${file} declares the ${key} factory taking (map,HOST)`);
-    assert.ok(html.includes(`window.${global}=window.IntMapModules.${key}(map,IM_HOST);`),
+    assert.ok(src.includes(`window.IntMapModules.${key}=function(HOST){`),
+      `${file} declares the ${key} factory taking (HOST)`);
+    assert.ok(html.includes(`window.${global}=window.IntMapModules.${key}(IM_HOST);`),
       `index.html instantiates ${key} with the shared host at ${global}'s original position`);
   }
 });
