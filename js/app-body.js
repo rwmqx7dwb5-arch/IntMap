@@ -746,10 +746,36 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
+  /* ══ (#R179) WHETHER THIS SCREEN WANTS DOUBLE-DENSITY TILES — ONE rule, ONE owner ═════════════
+     #R178 established the defect and the trade for the satellite layer: MapLibre picks a raster's
+     tile zoom from `zoom + log2(512/tileSize)` and `pixelRatio` is not in that expression, while the
+     canvas is drawn at devicePixelRatio — so a 256-pixel tile is stretched across 512 device pixels
+     and every raster has been at half the resolution the screen can show. It then wrote the decision
+     («desktop, DPR ≥ 1.5, not Data Saver, not 2G») inline inside the satellite protocol.
+     It is hoisted here because it now has TWO callers, and #R178's own lesson ⑥ is that the moment a
+     value has two owners one of them silently wins. */
+  const _hiDPITiles=(function(){
+    try{
+      if(isMobile()) return false;                       /* RAM + radio: #R20's tab-kills */
+      if(!((window.devicePixelRatio||1)>=1.5)) return false;   /* nothing to gain on a 1× screen */
+      const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+      if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return false;
+      return true;
+    }catch(_){ return false; }
+  })();
+  try{ window.__imHiDPITiles=_hiDPITiles; }catch(_){}
   /* Use all FOUR CARTO subdomains (a–d), not just a/b (#7): on HTTP/1.1 the browser caps concurrent
      connections per host at ~6, so spreading tiles over 4 hosts ~doubles basemap throughput while
      tilted in 3D; on HTTP/2 it's harmless. */
-  const carto=(s)=>['https://a.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://d.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png'];
+  /* (#R179) …and at @2x on a HiDPI screen. THE BASE MAP HAD THE SAME HALF-RESOLUTION DEFECT #R178
+     FOUND IN THE SATELLITE LAYER, and it is the more important of the two because it is what the app
+     opens on — every label, coastline and road on the default view has been drawn from a 256-pixel
+     tile stretched over 512 device pixels. Unlike Esri, Carto publishes the double-density tile
+     itself (`{z}/{x}/{y}@2x.png`), so this needs no stitching, no extra requests and no fallback
+     path: it is the SAME tile count, each tile carrying the pixels the display was always going to
+     use. Off on phones and 1× screens for the reasons in _hiDPITiles above. */
+  const carto=(s)=>{ const r=_hiDPITiles?'@2x':'';
+    return ['a','b','c','d'].map(h=>'https://'+h+'.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}'+r+'.png'); };
   /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
      requests over a single connection, so lift MapLibre's default 16-request cap. This is
      the single biggest win for satellite-tile throughput (no quality change — same tiles). */
@@ -775,9 +801,53 @@ window.addEventListener('DOMContentLoaded', () => {
     /* raw-fetch cache (keyed z/x/y) so the ancestor walk-up reuses the SHARED low-zoom tiles — over open ocean many z18
        children resolve to the same z8 ancestor, which is then fetched once, not per child. */
     const _satRaw=new Map(), _SAT_RAW_MAX=1200;
+    /* ══ (#R179) HOW DEEP ESRI'S IMAGERY ACTUALLY GOES, LEARNED FROM THE TILES THAT ARRIVE ═══════
+       Esri's native maximum zoom varies by place (#R158: z19 city, z18 rural, z17 desert, z16 open
+       sea) and past it every tile is the grey placeholder. The @2x stitch below builds a tile from
+       the four children one level DOWN, so over ocean and desert it fetches four placeholders,
+       discovers they are useless, and throws them away — four wasted requests for every screen tile,
+       on exactly the connections that can least afford them.
+       Nothing has to guess: the answer arrives with the tiles. This records the deepest zoom real
+       imagery has been seen at for each z10 neighbourhood (~40 km, which is far finer than the
+       regions Esri's coverage varies over) and the stitch skips itself when the level it needs is
+       past that. Deliberately conservative in the direction of QUALITY: only a REAL tile teaches
+       anything, the value only ever grows, and an unknown neighbourhood is attempted. A coastal z10
+       cell that holds both a city and open water keeps the city's depth and so keeps trying over the
+       water — wasteful in that one cell, and never a lost pixel anywhere. */
+    const _satDepth=new Map(), _SAT_DEPTH_MAX=4000;
+    const _satCell=(z,x,y)=>{ const d=z-10; return d>=0?((x>>d)+'/'+(y>>d)):(z+':'+x+'/'+y); };
+    /* Recorded against the tile that was ASKED FOR, with the depth that was DISCOVERED for it —
+       never against the ancestor the walk-up happened to land on. That distinction is the whole
+       correctness of this memo and the first version got it wrong: a z12 ocean tile resolves from a
+       real z8 ancestor, and z8 is four levels above the z10 cell grid, so `_satCell(8,…)` produced a
+       different key entirely and the z12 neighbourhood learned nothing. (A z8 tile also spans
+       sixteen z10 cells, so there is no single cell it could honestly be filed under.) */
+    /* TWO DIFFERENT FACTS, and conflating them silently switched @2x off everywhere.
+       A real tile at zoom z proves imagery EXISTS at z. It says nothing whatsoever about z+1 — which
+       is the level the stitch needs. Recording one number and treating it as a ceiling meant every
+       tile the resolve path touched first (i.e. every city, since real tiles return immediately)
+       came back "already as deep as it goes" and skipped its own double-density pass: a quality
+       regression wearing a bandwidth saving's clothes, caught by the city half of the test.
+         have — deepest level real imagery has been SEEN at. Encouraging, never limiting.
+         stop — deepest real level where the NEXT one was observed to be the grey placeholder. Only
+                the ancestor walk establishes this, and only this may block the stitch. */
+    function _satHold(z,x,y){ const k=_satCell(z,x,y); let v=_satDepth.get(k);
+      if(!v){ v={have:null,stop:null}; _satDepth.set(k,v);
+        if(_satDepth.size>_SAT_DEPTH_MAX){ const f=_satDepth.keys().next().value; _satDepth.delete(f); } }
+      return v; }
+    function _satNoteHave(z,x,y,d){ if(!isFinite(d)) return; const v=_satHold(z,x,y);
+      if(v.have==null||d>v.have) v.have=d;
+      /* real imagery deeper than a recorded stop means that stop was wrong or has been re-flown */
+      if(v.stop!=null&&v.stop<d) v.stop=null; }
+    function _satNoteStop(z,x,y,d){ if(!isFinite(d)) return; const v=_satHold(z,x,y);
+      if(v.have==null||d>v.have) v.have=d;
+      if(v.stop==null||d>v.stop) v.stop=d; }
+    /* null = no positive evidence that imagery stops before the level asked for, so try. */
+    function _satKnownStop(z,x,y){ const v=_satDepth.get(_satCell(z,x,y)); return v?v.stop:null; }
     async function _satFetch(z,y,x,signal){ const rk=z+'/'+x+'/'+y; const c=_satRaw.get(rk); if(c){ _satRaw.delete(rk); _satRaw.set(rk,c); return c; }
       const r=await fetch(_satUrl(z,y,x),{signal,mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
-      const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); } return out; }
+      const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
+      return out; }
     async function _satCrop(buf, dz, subX, subY){ const bmp=await createImageBitmap(new Blob([buf])); const n=1<<dz, cell=bmp.width/n;
       let c; if(typeof OffscreenCanvas!=='undefined'){ c=new OffscreenCanvas(256,256); } else { c=document.createElement('canvas'); c.width=256; c.height=256; }
       const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
@@ -788,13 +858,17 @@ window.addEventListener('DOMContentLoaded', () => {
        | 'raw' (placeholder kept — no real ancestor found). Shared by the protocol + a debug hook so it is E2E-testable. */
     async function _satResolve(z,y,x,signal){ const key=z+'/'+x+'/'+y; const hit=_satCacheGet(key); if(hit) return {buf:hit, mode:hit.__mode||'cache'};
       const first=await _satFetch(z,y,x,signal);
-      if(!first.placeholder){ first.buf.__mode='native'; _satCachePut(key, first.buf); return {buf:first.buf, mode:'native'}; }
+      /* (#R179) THIS is where the depth is learned, because this is where it is discovered — see
+         _satNote. A native tile proves imagery reaches z; the ancestor walk below measures exactly
+         how far short of z it stops. */
+      if(!first.placeholder){ _satNoteHave(z,x,y,z); first.buf.__mode='native'; _satCachePut(key, first.buf); return {buf:first.buf, mode:'native'}; }
       /* placeholder → walk up to the nearest REAL ancestor, crop its sub-quadrant, upscale */
       let az=z, ax=x, ay=y, dz=0, real=null;
       for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
         let got=null; try{ got=await _satFetch(az,ay,ax,signal); }catch(_){ break; }
         if(!got.placeholder){ real=got; break; } }
-      if(real){ try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
+      if(real){ _satNoteStop(z,x,y,az);   /* az is real and az+1 was the placeholder — a STOP */
+        try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
       return {buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
     }
     /* ══ (#R178) THE IMAGERY IS HALF-RESOLUTION ON EVERY HIDPI SCREEN ═══════════════════════════
@@ -819,16 +893,11 @@ window.addEventListener('DOMContentLoaded', () => {
        ("User using addProtocol can directly return HTMLImageElement/ImageBitmap", image_request.ts),
        so the stitched tile never becomes JPEG bytes again. The ancestor-crop path below returns a
        bitmap now too, which drops a full JPEG encode per tile over ocean and desert. */
-    const _satHiDPI=(function(){
-      try{
-        if(isMobile()) return false;
-        if(!((window.devicePixelRatio||1)>=1.5)) return false;
-        if(typeof createImageBitmap!=='function') return false;
-        const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-        if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return false;
-        return true;
-      }catch(_){ return false; }
-    })();
+    /* (#R179) …and that decision is now _hiDPITiles, hoisted above the base-map URLs because the base
+       map had the same defect and needs the same answer. Only the one extra condition that is
+       specific to STITCHING stays here: Esri has no @2x endpoint, so this path builds the tile from
+       four children and cannot run at all without createImageBitmap. Carto's @2x needs nothing. */
+    const _satHiDPI=_hiDPITiles&&(typeof createImageBitmap==='function');
     function _canvas2d(w,h){
       if(typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(w,h);
       const c=document.createElement('canvas'); c.width=w; c.height=h; return c;
@@ -837,10 +906,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* the four z+1 children as ONE 512×512 tile, or null when they are not all real imagery */
     async function _sat2x(z,y,x,signal){
       if(!_satHiDPI||z>=19) return null;
+      /* (#R179) …and not where the imagery is already known to stop shallower than the level this
+         needs. See _satDepth: four placeholder fetches per tile is the cost of asking anyway. */
+      const stop=_satKnownStop(z,x,y);
+      if(stop!=null&&z+1>stop) return null;
       const q=[[0,0],[1,0],[0,1],[1,1]];
       let kids;
       try{ kids=await Promise.all(q.map(([dx,dy])=>_satFetch(z+1,2*y+dy,2*x+dx,signal))); }catch(_){ return null; }
       if(!kids.every(k=>k&&!k.placeholder)) return null;
+      /* (#R179) all four are real, so imagery reaches at least one level past this tile */
+      _satNoteHave(z,x,y,z+1);
       let bmps=null;
       try{
         bmps=await Promise.all(kids.map(k=>createImageBitmap(new Blob([k.buf]))));
@@ -868,6 +943,14 @@ window.addEventListener('DOMContentLoaded', () => {
          left exactly as it was. Reporting the decision separately matters: "no @2x tile" is the right
          answer on a 1× display and a bug on a 2× one, and only the flag tells them apart. */
       hiDPI:()=>_satHiDPI, dpr:()=>(window.devicePixelRatio||1),
+      /* (#R179) what the imagery-depth memo has learned, and what it would decide — so a test can
+         prove that a second look-up over open ocean costs NO requests, without inferring it from
+         network traffic (#R178's lesson: after the stitch starts, the render path's own child
+         fetches outnumber the ring's, so a request count reads the wrong number). */
+      depth:(z,x,y)=>{ const v=_satDepth.get(_satCell(z|0,x|0,y|0)); return v?{have:v.have,stop:v.stop}:null; },
+      wouldStitch:(z,x,y)=>{ if(!_satHiDPI||(z|0)>=19) return false;
+        const st=_satKnownStop(z|0,x|0,y|0); return !(st!=null&&(z|0)+1>st); },
+      depthEntries:()=>_satDepth.size,
       tile2x:async(z,y,x)=>{ try{ const b=await _sat2x(z|0,y|0,x|0,null);
         return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap)}:{ok:false}; }
         catch(e){ return {ok:false, err:String(e&&e.message||e)}; } } };
@@ -890,7 +973,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8) Retain far more recently-seen tiles in RAM so panning/tilting back is instant and never
          refetches — the user measured spare bandwidth (<20 Mbps) and headroom, so trade memory for speed.
          Phones keep a tighter cap to stay within the mobile GPU/RAM budget. */
-      fadeDuration:0, maxTileCacheSize:(isMobile()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):8192), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
+      /* (#R179) …and the desktop cap is stated in BYTES, not tiles, when the tiles are double-density.
+         #R21 chose 8192 while every raster tile was 256², i.e. ~0.26 MB of texture. #R178's satellite
+         stitch and this round's @2x base map both make them 512² — four times the memory for the same
+         count — so keeping the number would have quietly quadrupled a budget that was picked against
+         「ブラウザが落ちることがないように」. 2048 double-density tiles hold the same bytes 8192 single-
+         density ones did, which is the cap #R21 actually decided on. Phones do not take @2x at all
+         (see _hiDPITiles), so their numbers are untouched. */
+      fadeDuration:0, maxTileCacheSize:(isMobile()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */

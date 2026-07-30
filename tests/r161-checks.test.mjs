@@ -236,9 +236,13 @@ test('#16 the engine contract grew and the news overlay runs through it', () => 
   /* new adapter capabilities */
   for (const m of ['styleReady()', 'getContainer()', 'getSize()', 'setCursor(c)', 'getPaint(id,p)', 'onLayer(e,layer,c)'])
     assert.ok(html.includes(m), 'adapter method missing: ' + m);
-  /* exposed on the facade */
-  for (const m of ['ready:()=>_adapter.styleReady()', 'container:()=>_adapter.getContainer()', 'size:()=>_adapter.getSize()',
-    'setCursor:c=>_adapter.setCursor(c)', 'onLayer:(e,l,c)=>_adapter.onLayer(e,l,c)', 'getPaint:(id,p)=>_adapter.getPaint(id,p)'])
+  /* exposed on the facade.
+     (#R179) the facade is a FUNCTION of an adapter now (engineFacade(A)), so its bindings read
+     `A().x()` rather than `_adapter.x()`: an additional view — the compare pane, the flight-sim
+     minimap, the guess map — has to be handed the SAME object, and it cannot be if that object
+     closes over the engine's own adapter. The bindings asserted are #R161's, unchanged. */
+  for (const m of ['ready:()=>A().styleReady()', 'container:()=>A().getContainer()', 'size:()=>A().getSize()',
+    'setCursor:c=>A().setCursor(c)', 'onLayer:(e,l,c)=>A().onLayer(e,l,c)', 'getPaint:(id,p)=>A().getPaint(id,p)'])
     assert.ok(html.includes(m), 'facade binding missing: ' + m);
   /* news overlay: creation, data, declutter, theming and pointer events via GE */
   assert.ok(html.includes("GE.layers.addSource('news-points'"), 'news source not created through the engine');

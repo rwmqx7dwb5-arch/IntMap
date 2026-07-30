@@ -265,7 +265,10 @@ test('the engine contract declares what this round needed, and Cesium answers fo
   for (const m of ['getProjection:', 'setBearing:', 'setPitch:', 'getMaxPitch:', 'setMaxPitch:', 'tiltRange:', 'altitude:']) {
     assert.ok(INDEX.includes(m), `the camera facade must expose ${m}`);
   }
-  assert.match(INDEX, /input:\{ setDragPan:on=>_adapter\.setDragPan\(on\),/   /* (#R178) the section grew — every gesture by name — but setDragPan is still its first entry */, 'gesture hand-over belongs in the contract');
+  /* (#R179) the facade is a FUNCTION of an adapter now (engineFacade(A)), so the bindings read
+     `A().x()` rather than `_adapter.x()` — an additional view has to get the same object, and it
+     cannot if the object closes over the engine's own adapter. The claim is unchanged. */
+  assert.match(INDEX, /input:\{ setDragPan:on=>A\(\)\.setDragPan\(on\),/   /* (#R178) the section grew — every gesture by name — but setDragPan is still its first entry */, 'gesture hand-over belongs in the contract');
 });
 
 test('the module list, script tag and boot call for view-controls all agree', () => {

@@ -102,9 +102,13 @@ test('R152 #12 Contour density slider rebuilds the source with scaled thresholds
 
 test('R152 #13 IntMapGeoEngine renderer abstraction + MapLibre adapter + Cesium contract', () => {
   assert.match(html, /window\.IntMapGeoEngine=\(function\(\)\{/, 'engine defined');
-  assert.match(html, /const MapLibreAdapter=\{ id:'maplibre', capabilities:MAPLIBRE_CAPS,/, 'MapLibre adapter');
+  /* (#R179) the adapter is built PER VIEW now — a factory over a map getter, so the compare pane
+     and the flight-sim minimap each get their own with their own state. Same object, same id. */
+  assert.match(html, /function makeMapLibreAdapter\(_m\)\{/, 'MapLibre adapter (per-view factory)');
+  assert.match(html, /return \{ id:'maplibre', capabilities:MAPLIBRE_CAPS,/, 'MapLibre adapter');
   assert.match(html, /const CESIUM_CONTRACT=\{ id:'cesium', implemented:false,/, 'Cesium contract (no SDK)');
-  assert.match(html, /camera:\{ flyTo:o=>_adapter\.flyTo\(o\)/, 'camera facade delegates to the adapter');
+  /* (#R179) …through A(), the adapter GETTER the facade is built over — see the note in r161-checks */
+  assert.match(html, /camera:\{ flyTo:o=>A\(\)\.flyTo\(o\)/, 'camera facade delegates to the adapter');
   assert.match(html, /use\(a\)\{ if\(a&&a\.id\) _adapter=a;/, 'a future renderer can be swapped in');
   // Atlas camera execution routes through the engine (R160 aliases `const GE=IntMapGeoEngine.camera` in these cases)
   /* (#R171) The pitch case now builds its easeTo options first, because the tilt ceiling is a user setting

@@ -2774,8 +2774,10 @@ window.IntMapModules.dataLayers=function(map,HOST){
         }catch(e){ console.warn('addSubcables',e); }
       });
     }
-    /* === Contour lines — generated on the fly from the terrarium DEM by maplibre-contour === */
-    let _mlcDem=null;
+    /* === Contour lines — generated on the fly from the terrarium DEM ===
+       (#R179) the DEM source itself now lives in the engine (scene.demContourSource): it has to be
+       handed the renderer's namespace to register a tile protocol, which is not this file's business.
+       The `_mlcDem` handle that used to be cached here went with it. */
     /* (#R152) contour GRANULARITY slider — the [minor, major] metre intervals per zoom are BAKED into the vector
        tiles at source creation, so changing them means rebuilding the source. `_contourDensity` scales the base
        table (1 = default, >1 = finer/more lines by dividing the interval, <1 = coarser). The slider lives in the
@@ -2793,14 +2795,21 @@ window.IntMapModules.dataLayers=function(map,HOST){
     window._setContourDensity=function(d){ window._contourDensity=Math.max(0.25,Math.min(4,+d||1)); _rebuildContours(); };
     function addContours(){
       if(GE().layers.has('contour-lines')) return true;
-      const MLC=window.mlcontour||window.maplibreContour; if(!MLC||!MLC.DemSource) return false;
       try{
-        if(!_mlcDem){ _mlcDem=new MLC.DemSource({ url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding:'terrarium', maxzoom:13, worker:true }); _mlcDem.setupMaplibre(maplibregl); }
         if(!GE().layers.hasSource('contour-src')){
-          GE().layers.addSource('contour-src',{ type:'vector', maxzoom:15, tiles:[ _mlcDem.contourProtocolUrl({
+          /* (#R179) the ENGINE derives the contour tiles. This used to build the DEM source here and
+             hand maplibre-contour the renderer's namespace (`setupMaplibre(maplibregl)`) — the last
+             bare reference to the map library anywhere outside js/geo-engine.js. Registering a tile
+             protocol is a renderer detail, so the contract owns it; null means the library is absent,
+             which is what the old `if(!MLC||!MLC.DemSource) return false` said. */
+          const url=GE().scene.demContourSource({
+            url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+            encoding:'terrarium', maxzoom:13, worker:true,
             /* (#R152) [minor, major] metre intervals, scaled by the user's density slider (_contourThresholds). */
             thresholds:_contourThresholds(),
-            elevationKey:'ele', levelKey:'level', contourLayer:'contours' }) ] });
+            elevationKey:'ele', levelKey:'level', contourLayer:'contours' });
+          if(!url) return false;
+          GE().layers.addSource('contour-src',{ type:'vector', maxzoom:15, tiles:[url] });
         }
         const dark=document.documentElement.getAttribute('data-theme')==='dark';
         GE().layers.add({ id:'contour-lines', type:'line', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none'},

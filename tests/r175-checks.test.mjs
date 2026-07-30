@@ -80,8 +80,17 @@ test('R175 ①: a zoom that also travels still carries the target altitude', () 
      surface, so the target's elevation moves the camera not at all — and it must actively zero the
      number instead of letting a mercator-era one ride along: one did (1,488 km, at pitch 120) and
      the next camera change froze the renderer inside its tile cover. */
-  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(sphere\) return \{ elevation:0 \};[\s\S]*?if\(!zoomed\) return NOOP\(\);[\s\S]*?let el=was\.elevation\*k;[\s\S]*?return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
+  /* (#R179) SUPERSEDED IN MECHANISM AGAIN, KEPT IN INTENT. Two things moved:
+       · the sphere branch now also STOPS THE ZOOM when the dolly would drive the eye through the
+         crust (gLimitZoom) — measured, the eye reached −0.193 of its altitude at globe z6/pitch 105
+         before that. It still zeroes the elevation for #R177's reason.
+       · a caller that NAMED a centre is now recognised before any of this (the `_decl` branch), so
+         「journey」 no longer has to be inferred from two frames of history. A declared zoom with no
+         centre is a DOLLY and deliberately still lands here, which is what this test is about. */
+  assert.match(body, /if\(movedFromApplied&&\(movedFromLast\|\|!last\)\)\{[\s\S]*?if\(sphere\)\{[\s\S]*?gLimitZoom\(cur,c2c,tile,was\.zoom\)[\s\S]*?elevation:0[\s\S]*?\}[\s\S]*?if\(!zoomed\) return NOOP\(\);[\s\S]*?let el=was\.elevation\*k;[\s\S]*?return isFinite\(el\)\?\{ elevation:el \}:\{\};/,
     'a travelling frame that also zooms must scale the elevation and leave the centre alone');
+  assert.match(body, /if\(_decl&&_decl\.center\)\{/,
+    '(#R179) …and a caller that named a CENTRE is a journey by declaration, not by inference');
 });
 
 /* ── ② the tooltip and the aircraft card ─────────────────────────────────────────────────── */

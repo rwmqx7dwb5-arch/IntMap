@@ -88,9 +88,14 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
   ok('getBearing(){ const m=_m(); return m?m.getBearing():0; }', 'adapter.getBearing');
   ok('getPitch(){ const m=_m(); return m?m.getPitch():0; }', 'adapter.getPitch');
   ok('getBounds(){ const m=_m(); return m?m.getBounds():null; }', 'adapter.getBounds');
-  ok('zoomTo(z,o){ const m=_m(); if(m) m.zoomTo(z,o); }', 'adapter.zoomTo');
-  ok('zoomIn(o){ const m=_m(); if(m) m.zoomIn(o); }', 'adapter.zoomIn');
-  ok('zoomOut(o){ const m=_m(); if(m) m.zoomOut(o); }', 'adapter.zoomOut');
+  /* (#R179) the three zoom controls are no longer BARE pass-throughs: each one now records that a
+     zoom was named before forwarding it (_declare), because the eye-anchored tilt had no other way
+     to tell 「zoom in」 from a gesture and was fighting it — measured, a zoom-button press while
+     looking up on the globe drove the viewpoint 2,143 km under the ground. Still 1:1 in the sense
+     #R160 meant it: one contract call, one renderer call, no reinterpretation of the argument. */
+  ok("zoomTo(z,o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomTo(z,o); } }", 'adapter.zoomTo');
+  ok("zoomIn(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomIn(o); } }", 'adapter.zoomIn');
+  ok("zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } }", 'adapter.zoomOut');
   ok('resize(){ const m=_m(); if(m&&m.resize) m.resize(); }', 'adapter.resize');
   ok('triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }', 'adapter.triggerRepaint');
   ok('setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }', 'adapter.setFeatureState');
@@ -98,11 +103,14 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
 });
 
 test('R160 (D2) IntMapGeoEngine facade exposes the broadened contract', () => {
-  ok('getZoom:()=>_adapter.getZoom(), getCenter:()=>_adapter.getCenter(), getBearing:()=>_adapter.getBearing(), getPitch:()=>_adapter.getPitch(), getBounds:()=>_adapter.getBounds()', 'camera getters on the facade');
-  ok('zoomTo:(z,o)=>_adapter.zoomTo(z,o), zoomIn:o=>_adapter.zoomIn(o), zoomOut:o=>_adapter.zoomOut(o), stop:()=>_adapter.stop()', 'zoom controls on the facade');
-  ok('setFeatureState:(f,s)=>_adapter.setFeatureState(f,s), removeFeatureState:(f,k)=>_adapter.removeFeatureState(f,k),', 'feature-state on the layers namespace');
+  /* (#R179) the facade is a FUNCTION of an adapter now (engineFacade(A)), so the bindings read
+     `A().x()` rather than `_adapter.x()` — an additional view has to get the same object, and it
+     cannot if the object closes over the engine's own adapter. The claim is unchanged. */
+  ok('getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds()', 'camera getters on the facade');
+  ok('zoomTo:(z,o)=>A().zoomTo(z,o), zoomIn:o=>A().zoomIn(o), zoomOut:o=>A().zoomOut(o), stop:()=>A().stop()', 'zoom controls on the facade');
+  ok('setFeatureState:(f,s)=>A().setFeatureState(f,s), removeFeatureState:(f,k)=>A().removeFeatureState(f,k),', 'feature-state on the layers namespace');
   // (#R161) the render namespace gained container/size/setCursor — assert the R160 members only
-  ok('render:{ resize:()=>_adapter.resize(), triggerRepaint:()=>_adapter.triggerRepaint(), canvas:()=>_adapter.getCanvas(),', 'render namespace (resize/repaint/canvas)');
+  ok('render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),', 'render namespace (resize/repaint/canvas)');
 });
 
 test('R160 (D3) Atlas camera-control dispatch (zoom/bearing/pitch) reads AND drives via the engine', () => {
