@@ -1628,6 +1628,20 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 - **basemap スタイル切替（Map↔Sat）はカスタム source/layer を破棄する**。`countries`/`country-fill` 等は
   必要時に再生成する（Countries(info) ハンドラは `addCountryLayers()` を再実行して自己修復）。
 - **(#R158) 衛星タイルは `maplibregl.addProtocol('imapsat')` 経由**。Esri World_Imagery のネイティブ最大zoomは地域で異なり超過タイルは灰色「no data」（固定~2521B）を返すので、fetch でバイト長≤3500Bを灰色判定→**最寄り実祖先タイルの該当象限を高品質クロップ拡大**（都市z19はネイティブ素通り・LRU+生fetchキャッシュ・エラーで生バイトフォールバック）。Esriは `ACAO:*` なのでプロキシ不要。`window.__imSatProto` 偽なら直Esriへ縮退。灰色タイルが全域で消滅し外洋も実衛星が出る（フライトシムの青い水fillはこれで不要になり撤去）。
+- **(#R178/#R179) ラスタは HiDPI 画面で半分の解像度になる**——MapLibre はラスタのタイルズームを
+  `zoom + log2(512/tileSize)` で選び、**`pixelRatio` はこの式に入らない**のにキャンバスは devicePixelRatio で描かれる。
+  判定は **`_hiDPITiles` に1つだけ**（デスクトップ・DPR≥1.5・非 Data Saver・非2G。`window.__imHiDPITiles` で観測可）。
+  - **衛星（Esri）**: @2x エンドポイントが無いので `imapsat` プロトコルで**次のズームの4枚を 512×512 に綴じる**（#R178）。
+    `addProtocol` は ImageBitmap をそのまま返せるので再エンコード無し。子が1枚でも欠け/灰色なら丸ごと従来経路＝**画質は上がるだけ**。
+  - **基図（Carto）**: `{z}/{x}/{y}@2x.png` を**サービス自身が配信**するので綴じ合わせ・追加リクエスト・代替経路すべて不要（#R179）。
+    **同じタイル数**で画素が2倍。#R178 は衛星だけ直したので、**アプリが開く画面がずっと半解像度だった**。
+  - **(#R179) タイルキャッシュ上限はバイトで言う**：#R21 の `maxTileCacheSize:8192` は 256²＝約0.26MB 前提。
+    512² では同じ枚数が4倍のメモリなので、倍密度時は **2048**（同じバイト数）。携帯は @2x を取らないので数字は不変。
+  - **(#R179) 綴じ合わせは「無い画像」に払わない**：z10 近傍ごとに `have`（実画像が見えた最深）と
+    `stop`（**次の段が灰色だと観測された**最深実ズーム）を**別々に**持ち、**止めてよいのは `stop` だけ**。
+    混ぜると「z の実タイル＝もう限界」と読まれて**あらゆる都市で @2x が無効になる**（実際にそうなった）。
+    記録は**訊かれたタイル**に対して（祖先に対してではない。z8 祖先は z10 セル16個にまたがる）。
+    `window.IntMapSatProto.depth/wouldStitch/hiDPI` で観測可。
 - **`reorganizeLayerPanel()` は DOM を大量に並べ替える**。タップ中に走ると行がずれて誤タップの原因になり得る。
 - **ケッペンのOOMクラッシュ**：モバイルは必ず軽量 `*_4k.png` を使う（フル解像度はモバイルでRAM超過）。
 - **ヘッドレスプレビューは `document.hidden`** で WebGL の `load` が発火しない。地図描画はDOM/状態/console で検証する。
@@ -2545,7 +2559,19 @@ z12 付近から先は素の Mercator」と定義されている**からで、`g
   `capabilities.solid3d`（`extrusion3d` では底面も内部も表現できない）／`coords.projectAltitude(lngLat, altM)`
   （`project()` は地面しか答えず、レンダラーの点クエリにも同じ盲点がある）。移行は `street-view`／`monitors` の2本で
   **レンダラー非依存 34本／56本**（`js/solid3d.js` は MapLibre アダプタの実装なので意図的に非依存ではない）。
-- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js`、#R171 の `view-controls.js` がその実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky` を `terrain` 名前空間として契約化（`setMaxPitch` は #R171 で `camera` に入った）、⑧生 `map` 参照が**少ない順**に残りのモジュールを潰していく（#R171 は 10 本、#R172 は 5 本、**#R173 は `monitors`/`street-view` の 2 本**＝残りは `map-readout`(18)/`analysis-panels`(19)/`routing`(19)/`playground`(22)/`cameras`(24) が次の順番）。
+- **(#R179) 次にやること（実測に基づく残作業）**——順序はこのまま。
+  1. **モジュール契約の署名**: `window.IntMapModules.x(map, HOST)` が全モジュールに生ハンドルを渡している。
+     これが「値としての参照 324件」の最大の塊（app-body.js だけで 143）。`(HOST)` だけにする、
+     あるいは HOST 経由でビュー契約を渡すのが本筋。**約60の工場呼び出し＋60の署名**。
+  2. **存在テスト 211件**を `GE().hasRenderer()` へ（機械的）。
+  3. **ハンドル受け渡し 112件**——`.addTo(map)` は #R179 の `ui.addMarker`/`addPopup` で置き換え可能な形が揃った。
+  4. **CSS の `.maplibregl-*` セレクタ5個**（`.maplibregl-canvas` / `-popup-content` / `-popup-tip` /
+     `-popup-close-button`）＝レンダラが自分で振る DOM クラス名への依存。中立クラスを併記させるか、
+     エンジンがクラス名を公開するかの設計判断が必要。
+  5. **Cesium アダプタ**＝`js/geo-engine-cesium.js`。土台（ビューごとのアダプタ／`engineFacade` の1つの形）は
+     #R179 で整った。残るのは **MapLibre style 言語の解釈器**（11レイヤ型・paint 43・layout 33・21演算子の 468 式）と
+     SDK の遅延読み込み・設定UI（5言語）・Atlas 配線。**規模が理由で #R179 では着手していない**（標準指示4）。
+- **旧「次にやること」（#R170〜#R173 当時）**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（#R170 の `volume3d.js`、#R171 の `view-controls.js` がその実例）、②**次のサブシステム移行**は同じ形の `dash`/`user-pin`/`grid` オーバーレイ（#R161 と同型で低リスク）、③`markers`（`maplibregl.Marker`）名前空間の追加、④`flyTo`/`fitBounds` 系ディスパッチの移行、⑤別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、⑥Cesium Adapter の骨子、⑦`setTerrain`/`setSky` を `terrain` 名前空間として契約化（`setMaxPitch` は #R171 で `camera` に入った）、⑧生 `map` 参照が**少ない順**に残りのモジュールを潰していく（#R171 は 10 本、#R172 は 5 本、**#R173 は `monitors`/`street-view` の 2 本**＝残りは `map-readout`(18)/`analysis-panels`(19)/`routing`(19)/`playground`(22)/`cameras`(24) が次の順番）。
 - **検証**: 契約テスト＝`tests/r152-checks.test.mjs`＋`tests/r160-checks.test.mjs`＋**`tests/r161-checks.test.mjs`#16**（拡幅契約・ニュース6ハンドラの移行・生 `map` へのニュースハンドラ残存ゼロ）＋**`tests/r161.spec.js`（実ブラウザ：facade がレンダラーと数値一致、オーバーレイが実際に engine 経由で生成される）**＋**`tests/r170-checks.test.mjs`（`canDraw`/`extrusion3d`/`addExtrusion`/`setExtrusionRange` の契約・Cesium 側の同期・`volume3d.js` が生 `map` を呼ばないこと）**＋**`tests/r170.spec.js`（実ブラウザ：地形 ON/OFF で `fill-extrusion-base` が実際に DEM ぶん補正される）**＋**`tests/r171-checks.test.mjs`（第5段階の契約・Cesium 側の同期・移行10本＋新モジュールに生 `map` が無いことを**パーサ**で確認・レンダラー非依存モジュール数の下限）**＋**`tests/r171.spec.js`（実ブラウザ：`globe` が z12 で平面になることを実測。#R172 で「飛行中も曲率」の要求は撤回——それを満たす投影ではコックピットが白紙になるため）**＋**`tests/r172-checks.test.mjs`（第6段階の契約・Cesium 側の同期・移行5本に生 `map` が無いことを**パーサ**で確認・本数の下限31）**＋**`tests/r172.spec.js`（実ブラウザ：コックピットに**地面が写っている**ことを画素で判定／無制限傾きで視点が動かないこと・標準傾きは従来どおり回ること・傾きを伴う `flyTo` が目的地に着くこと／立体の底面・内部・単位・上限撤廃／**スタブ ADS-B** で機体が実高度に立つこと）**＋既存スモーク。
 
 #### その他12件（要点）
