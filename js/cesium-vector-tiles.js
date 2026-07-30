@@ -58,7 +58,23 @@ window.IntMapVectorTiles=(function(){
     const CACHE_MAX=320;                   /* ≈ six screens of tiles; decoded features are the heavy part */
     let inflight=0; const MAX_INFLIGHT=8;
     const queue=[];
-    let generation=0;                      /* bumped on every camera change, so stale work can be dropped */
+    /* ══ (#R181) WHAT IS STILL WANTED IS A SET OF TILES, NOT A COUNTER ═════════════════════════
+       This was a `generation` counter bumped once per update() call, and queued work was thrown
+       away when its generation no longer matched — the comment said "the camera moved on", but
+       update() is called once per LAYER per frame, not once per camera change. Ten vector layers
+       over one source is ten bumps a frame with the map standing still, so a tile queued by one
+       layer was cancelled by the next layer asking, and — the part that actually broke the map —
+       `onChange` was gated on the same stale comparison, so "a tile arrived, redraw" was almost
+       never delivered.
+       Measured: pan to z12, back out to z1.7, and the country labels never came back. 768
+       features reached the layer and 714 passed its filter, with the layer visible, in zoom range
+       and its data source shown — and it drew NOTHING, because the rebuild that would have used
+       them was never asked for. It stayed that way indefinitely; only another camera movement
+       cleared it.
+       So say the thing that was meant: a tile is still wanted if it is in the cover the CURRENT
+       view asks for. That is exactly a set membership test, it cannot drift when a second layer
+       asks the same question, and a tile that lands is always announced. */
+    let wantSet=new Set();
 
     /* TileJSON, when the source was given a `url` rather than a template list */
     const tjP=state.ready?Promise.resolve(true):fetch(spec.url,{mode:'cors',credentials:'omit'})
@@ -85,7 +101,9 @@ window.IntMapVectorTiles=(function(){
     function pump(){
       while(inflight<MAX_INFLIGHT&&queue.length){
         const job=queue.shift();
-        if(job.gen!==generation){ cache.delete(job.k); continue; }   /* the camera moved on */
+        /* dropped only when the view no longer covers it — and the pending marker goes with it,
+           so the tile is asked for again the moment it IS wanted */
+        if(!wantSet.has(job.k)){ cache.delete(job.k); continue; }
         inflight++;
         load(job).finally(()=>{ inflight--; pump(); });
       }
@@ -115,7 +133,10 @@ window.IntMapVectorTiles=(function(){
           }
         }
         touch(k,{features:feats});
-        if(job.gen===generation&&onChange) { try{ onChange(); }catch(_){} }
+        /* a tile that decoded and is still on screen is news, always — the layer above
+           coalesces the redraw on the next animation frame, so saying so twice costs nothing
+           and saying it never leaves the layer blank (see wantSet) */
+        if(wantSet.has(k)&&onChange) { try{ onChange(); }catch(_){} }
       }catch(_){ touch(k,'error'); }
     }
 
@@ -143,15 +164,16 @@ window.IntMapVectorTiles=(function(){
     /* Ask for the tiles this view needs; returns the features already decoded.
        Never blocks: what is not in yet arrives through `onChange`. */
     function update(bounds,zoom){
-      generation++;
-      const gen=generation;
-      if(!state.ready){ tjP.then(ok=>{ if(ok&&gen===generation&&onChange) onChange(); }); return []; }
+      if(!state.ready){ tjP.then(ok=>{ if(ok&&onChange) onChange(); }); return []; }
       const want=cover(bounds,zoom);
       const out=[];
+      const next=new Set();
+      for(const [z,x,y] of want) next.add(key(z,x,y));
+      wantSet=next;
       for(const [z,x,y] of want){
         const k=key(z,x,y);
         const v=cache.get(k);
-        if(v===undefined){ cache.set(k,'pending'); queue.push({z,x,y,k,gen}); }
+        if(v===undefined){ cache.set(k,'pending'); queue.push({z,x,y,k}); }
         else if(v&&v!=='pending'&&v!=='error'){ touch(k,v); out.push(...v.features); }
       }
       pump();
@@ -173,7 +195,9 @@ window.IntMapVectorTiles=(function(){
       return { id, ready, pending, error, cached:cache.size, tiles:!!state.tiles,
                minzoom:state.minzoom, maxzoom:state.maxzoom, sourceError:state.error };
     }
-    function destroy(){ generation++; queue.length=0; cache.clear(); }
+    /* (#R181) emptying wantSet is what now cancels the queue — pump() drops every job whose
+       tile is no longer wanted, and after destroy() none of them are */
+    function destroy(){ wantSet=new Set(); queue.length=0; cache.clear(); }
     return { id, spec, update, current, stats, destroy, isReady:()=>state.ready };
   }
 

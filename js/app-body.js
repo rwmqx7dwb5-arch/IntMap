@@ -453,6 +453,28 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){}
   }catch(_){} };
   function applyTheme(){
+    /* ══ (#R181) NOT RE-ENTRANT — IT CALLS SOMETHING THAT CALLS IT BACK ═══════════════════════
+       Measured on the DEFAULT engine, simply pressing "Satellite": three to six uncaught
+       `RangeError: Maximum call stack size exceeded`, and applyTheme running eleven times deep.
+       The loop is entirely inside this function's own first half:
+
+         applyTheme → refreshNewsPill → ensureLabelPill(force) → scene.removeImage
+                    → MapLibre `_afterImageUpdated` fires `styledata` SYNCHRONOUSLY
+                    → the handler below (see the `layer-sat` visibility check) → applyTheme …
+
+       and what would have stopped it — flipping `layer-sat`'s visibility, which is the very
+       condition that handler tests — is the NEXT line after the sprite rebuild. So every
+       re-entry still saw the old visibility and went round again, unwinding only when the
+       stack gave out. Everything after the throw in the outermost call was skipped, which is
+       why the base map could be left mid-flip.
+       A re-entrant call is always redundant: the call already running is about to set the whole
+       theme, including whatever the inner one wanted. Say so, rather than reordering the body
+       and leaving the trap set for the next thing that fires an event mid-theme. */
+    if(applyTheme._busy) return;
+    applyTheme._busy=true;
+    try{ return _applyThemeBody(); } finally { applyTheme._busy=false; }
+  }
+  function _applyThemeBody(){
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
        sepia surfaces, serif type, brass accents, and a parchment tint over the (light) basemap. */
