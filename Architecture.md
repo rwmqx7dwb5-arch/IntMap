@@ -187,13 +187,17 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
        `stop()` する。無いと、滑走中のフリックが `jumpTo` の上に書き続ける。
     4. **右ドラッグの離しでアプリの `#ctx-menu` が開き、canvas を覆っていた。** MapLibre は
        ジェスチャが始まった時点で `contextmenu` の**マップイベントを握り潰す**
-       （`BlockableMapEventHandler.reset()`）。実測：右ドラッグ1回のあと、次のホイールと次の
+       （`BlockableMapEventHandler`）。実測：右ドラッグ1回のあと、次のホイールと次の
        ctrl ドラッグは**メニューに当たって何も起きなかった**。
+       **抑止は押下期間ぜんぶをまたぐ形でなければならない**——`contextmenu` は **Chromium で
+       Linux/macOS は mousedown、Windows は mouseup** に出るので、「回った**あと**」だけ握り潰す
+       実装は Windows でしか効かない（ローカルで通り CI で3回とも落ちた）。**押下で保留・回転に
+       なった瞬間に破棄・離したときに残っていれば発火**（＝MapLibre の `_delayContextMenu`）。
   - 結果（実測・同一 run で MapLibre と突き合わせ）：pan −5.273 対 −5.273／+4.779 対 +4.779／
     rotate +96 対 +96／pitch +48 対 +48／ctrl も同値／wheel +0.268 対 +0.268／box zoom 2.059 対 2.061／
     矢印 +4.415 対 +4.409／shift+矢印 15/10 対 15/10。
   - 検証：`tests/r182-checks.test.mjs`（17件・Node。**定数は `node_modules/maplibre-gl` を読んで突き合わせる**
-    ので、依存を上げて操作感が変わると落ちる）＋`tests/r182-cesium.spec.js`（7件・実ブラウザ・差分方式）。
+    ので、依存を上げて操作感が変わると落ちる）＋`tests/r182-cesium.spec.js`（8件・実ブラウザ・差分方式）。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
