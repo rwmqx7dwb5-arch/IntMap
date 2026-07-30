@@ -90,8 +90,11 @@ test('the tilt pivot is expressed as an intent and implemented on the pre-apply 
 
 test('the pivot only fires on a PURE tilt, or "fly to Paris tilted" lands short', () => {
   /* (#R177) the window is wider because the hook now says WHICH of the renderer's two camera models
-     it is solving for; the assertions themselves are #R172's, untouched. */
-  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 12000);
+     it is solving for; the assertions themselves are #R172's, untouched.
+     (#R179) wider again — the hook gained the branch that reads what the caller DECLARED, which is
+     what stopped a zoom button fighting the eye-hold. Widening a fixed-size source window is a
+     maintenance cost of asserting on source at all; the assertions below are still #R172's. */
+  const hook = INDEX.slice(INDEX.indexOf('setTiltPivot(mode){'), INDEX.indexOf('setTiltPivot(mode){') + 20000);
   assert.match(hook, /Math\.abs\(cur\.lng-last\.lng\)>1e-9\|\|Math\.abs\(cur\.lat-last\.lat\)>1e-9/,
     'an update that also travels is a journey, not a tilt (measured: Paris arrived 4.3 km off centre without this)');
   assert.match(hook, /const last=req; req=cur;/,

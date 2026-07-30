@@ -148,9 +148,12 @@ test('the three contract entries this round needed are declared, faced and answe
   for (const m of ['globeness()', 'addSolid(id,before)', 'setSolid(id,o)', 'removeSolid(id)', 'projectAltitude(ll,altM)']) {
     assert.ok(INDEX.includes(m), `the MapLibre adapter implements ${m}`);
   }
-  assert.match(INDEX, /globeness:\(\)=>_adapter\.globeness/, 'globeness is on the facade');
-  assert.match(INDEX, /addSolid:\(id,b\)=>_adapter\.addSolid/, 'so is addSolid');
-  assert.match(INDEX, /projectAltitude:\(ll,a\)=>_adapter\.projectAltitude/, 'so is projectAltitude');
+  /* (#R179) the facade is a FUNCTION of an adapter now (engineFacade(A)), so the bindings read
+     `A().x()` rather than `_adapter.x()` — an additional view has to get the same object, and it
+     cannot if the object closes over the engine's own adapter. The claim is unchanged. */
+  assert.match(INDEX, /globeness:\(\)=>A\(\)\.globeness/, 'globeness is on the facade');
+  assert.match(INDEX, /addSolid:\(id,b\)=>A\(\)\.addSolid/, 'so is addSolid');
+  assert.match(INDEX, /projectAltitude:\(ll,a\)=>A\(\)\.projectAltitude/, 'so is projectAltitude');
   assert.match(INDEX, /\n\s+solid3d:true,/, 'and solid3d is a declared capability');
   const cesium = INDEX.slice(INDEX.indexOf('const CESIUM_CONTRACT='), INDEX.indexOf('const CESIUM_CONTRACT=') + 1600);
   assert.match(cesium, /solid3d:true/, 'a positional-camera engine answers it too — the capability is per-engine');

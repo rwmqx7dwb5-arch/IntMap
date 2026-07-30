@@ -20,9 +20,16 @@ window.IntMapModules.compare=function(map,HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
   return (function(){
-    if(!map || typeof maplibregl==='undefined') return { open(){}, close(){} };
+    /* (#R179) the renderer is asked FOR ITSELF, not named. `typeof maplibregl` was the last
+       reference to the library in this file. */
+    if(!GE()||!GE().hasRenderer()) return { open(){}, close(){} };
     const jp=()=>HOST.lang==='jp';
     let win=null, cmap=null, mode='sync', minimized=false, built=false, ro=null, syncing=false, baseKind='map';
+    /* (#R179) four pieces of OUR state that used to be hung on the renderer's map object
+       (`_wantGlobe` and friends). #R178 moved the main map's four such flags into module
+       variables for the same reason: they are this module's bookkeeping, not the renderer's, and a
+       contract has nowhere to put them. */
+    let _wantGlobe=null, _basePoll=0, _baseRetryT=0, _copiesApplied=null;
     const xrayOn=()=>mode==='xray';
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
     /* (#R29.1) Use the MOBILE 4k texture on phones — exactly like the main map's koppenDisplayURL().
@@ -166,15 +173,15 @@ window.IntMapModules.compare=function(map,HOST){
         {id:'cmp-lyr-worldcover',type:'raster',source:'cmp-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.9,'raster-fade-duration':0,'raster-resampling':'nearest'}},
         {id:'cmp-lyr-koppen',type:'raster',source:'cmp-koppen',layout:{visibility:'none'},paint:{'raster-opacity':0.78}}
       ] }; }
-    function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
+    function setVis(id,on){ try{ if(cmap.layers.has(id)) cmap.layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} }
     /* (#R20) Base swap that CANNOT silently no-op: remembers the wanted base and retries until the
        style has the layers ("map/satellite切り替えが、押しても地図が変わらない" = a click during style
        load hit a missing layer and nothing retried). */
     function applyBase(){ if(!cmap) return;
       /* (#R29.1) POLL until the base layers exist instead of waiting for `idle` — a globe renders
-         continuously and never goes idle, so the old `cmap.once('idle',applyBase)` could never fire and the
+         continuously and never goes idle, so the old `cmap.events.once('idle',applyBase)` could never fire and the
          Map/Sat switch "押しても地図が変わらない". A bounded 120ms poll always lands once the style is ready. */
-      if(!cmap.getLayer('cmp-base-carto')){ clearTimeout(cmap.__baseRetryT); cmap.__baseRetryT=setTimeout(applyBase,120); return; }
+      if(!cmap.layers.has('cmp-base-carto')){ clearTimeout(_baseRetryT); _baseRetryT=setTimeout(applyBase,120); return; }
       /* (#R35) X-ray "Map" now paints the compare's OWN carto/dark base instead of going transparent.
          The old behavior ("Map" = transparent = just shows the MAIN map through the lens) was exactly the
          "X-rayはすべてをメインマップに合わせるためのモード" the user rejected — you could never make the lens a
@@ -184,13 +191,13 @@ window.IntMapModules.compare=function(map,HOST){
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
       if(xrayOn()){ setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); return; }
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
-    function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
+    function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.render.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
       /* (#R34) POLL until the wanted base actually shows — a click landing during the cmap style-load
          otherwise no-ops with nothing retrying ("Compare viewで…切り替えができないバグが発生する"). */
-      try{ clearInterval(cmap.__basePoll); let n=0; cmap.__basePoll=setInterval(()=>{ n++;
-        try{ if(!cmap||baseKind!==kind){ clearInterval(cmap.__basePoll); return; }
-          if(cmap.getLayer('cmp-base-sat')){ const wantSat=(kind==='sat'), isSat=(cmap.getLayoutProperty('cmp-base-sat','visibility')==='visible'); if(wantSat!==isSat) go(); else clearInterval(cmap.__basePoll); } }catch(_){}
-        if(n>30) clearInterval(cmap.__basePoll); },150); }catch(_){}
+      try{ clearInterval(_basePoll); let n=0; _basePoll=setInterval(()=>{ n++;
+        try{ if(!cmap||baseKind!==kind){ clearInterval(_basePoll); return; }
+          if(cmap.layers.has('cmp-base-sat')){ const wantSat=(kind==='sat'), isSat=(cmap.layers.getLayout('cmp-base-sat','visibility')==='visible'); if(wantSat!==isSat) go(); else clearInterval(_basePoll); } }catch(_){}
+        if(n>30) clearInterval(_basePoll); },150); }catch(_){}
     }
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */
@@ -199,7 +206,7 @@ window.IntMapModules.compare=function(map,HOST){
        they already matched (isGlobe defaulted true) and never switched. That's why "Flatに戻してからGlobeに
        しないと反映されない". Now it always syncs whenever the wanted projection differs from what we last set. */
     function followProjection(){ try{ const wantGlobe=(typeof HOST.proj==='undefined'||HOST.proj!=='flat');
-      if(cmap.__wantGlobe!==wantGlobe){ cmap.__wantGlobe=wantGlobe; cmap.setProjection({type:wantGlobe?'globe':'mercator'}); } }catch(_){} }
+      if(_wantGlobe!==wantGlobe){ _wantGlobe=wantGlobe; cmap.camera.setProjection(wantGlobe?'globe':'flat'); } }catch(_){} }
     /* centroid (container px) of the main-map area NOT covered by the compare window */
     function uncoveredCentroidPx(){
       const mcEl=document.getElementById('map-container')||document.body;
@@ -233,7 +240,7 @@ window.IntMapModules.compare=function(map,HOST){
        sit in the SAME copy. Fix for "free panのflat mapで大きくスクロールするとレイヤーと地図がずれる" (#5)
        and the zoomed-out X-ray drift (#8). */
     function _cmpWorldCopies(){ try{ return (typeof HOST.proj!=='undefined'&&HOST.proj==='flat'&&window.imFlatPan==='free'); }catch(_){ return false; } }
-    function _syncCopies(){ const want=_cmpWorldCopies(); try{ if(cmap.__copies!==want){ cmap.__copies=want; cmap.setRenderWorldCopies(want); } }catch(_){} return want; }
+    function _syncCopies(){ const want=_cmpWorldCopies(); try{ if(_copiesApplied!==want){ _copiesApplied=want; cmap.camera.setRenderWorldCopies(want); } }catch(_){} return want; }
     function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true; const _copies=_syncCopies();
       try{
         followProjection();
@@ -245,19 +252,19 @@ window.IntMapModules.compare=function(map,HOST){
              padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
           let pad; try{ pad=GE().camera.getPadding?GE().camera.getPadding():undefined; }catch(_){}
-          cmap.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:pad});
+          cmap.camera.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:pad});
         } else {
           /* SYNC: center the compare on the geography under the UNCOVERED-area centroid. */
           let target=null; try{ const u=GE().coords.unproject(uncoveredCentroidPx()); target={lng:_copies?u.lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
-          cmap.jumpTo({center:target||(_copies?_rawCenter():_normCenter()),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
+          cmap.camera.jumpTo({center:target||(_copies?_rawCenter():_normCenter()),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
        sync relation (compare center = uncovered-area centroid geography) keeps holding. */
     function syncToMain(){ if(mode!=='sync'||!cmap||syncing) return; syncing=true;
       try{
-        const C=cmap.getCenter();
-        GE().camera.jumpTo({zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch()});
+        const C=cmap.camera.getCenter();
+        GE().camera.jumpTo({zoom:cmap.camera.getZoom(),bearing:cmap.camera.getBearing(),pitch:cmap.camera.getPitch()});
         const tpx=uncoveredCentroidPx();
         const p=GE().coords.project(C);                                  /* where C sits on the main map now */
         const cpx=GE().coords.project(GE().camera.getCenter());                  /* main center in screen px */
@@ -272,39 +279,39 @@ window.IntMapModules.compare=function(map,HOST){
       cm.style.left=mr.left+'px'; cm.style.top=mr.top+'px'; cm.style.width=mr.width+'px'; cm.style.height=mr.height+'px'; cm.style.zIndex='1';
       const top=Math.max(0,wr.top-mr.top), left=Math.max(0,wr.left-mr.left), right=Math.max(0,mr.right-wr.right), bottom=Math.max(0,mr.bottom-wr.bottom);
       const clip='inset('+top+'px '+right+'px '+bottom+'px '+left+'px round 12px)'; cm.style.clipPath=clip; cm.style.webkitClipPath=clip;
-      try{ cmap.resize(); }catch(_){}
+      try{ cmap.render.resize(); }catch(_){}
     }
     function clearXrayLens(){ const cm=document.getElementById('compare-map'); if(!cm) return;
       /* (#R25) Fully restore the canvas to its in-window CSS box (position:absolute;inset:0) and resize a
          few times — a single resize sometimes left the compare map mis-sized after x-ray, showing as a dark
          strip at the top ("x-ray後に上部が暗転"). */
       ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath','boxShadow'].forEach(p=>cm.style[p]='');
-      const r=()=>{ try{ cmap.resize(); }catch(_){} };
+      const r=()=>{ try{ cmap.render.resize(); }catch(_){} };
       r(); requestAnimationFrame(r); setTimeout(r,80); setTimeout(r,300); }
     /* ---------- (#R20) portable layer registry for the compare "Layers ▾" pulldown ---------- */
     const CMP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     const cmpGibs=(layer,lvl,ext,time)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/'+time+'/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
     const cmpGibsStatic=(layer,lvl,ext)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
     function ld(k,fb){ try{ if(typeof layerDates!=='undefined'&&layerDates&&layerDates[k]) return layerDates[k]; }catch(_){} return fb; }
-    function addR(id,tiles,maxz,op){ if(cmap.getSource('cmpx-'+id)) return; cmap.addSource('cmpx-'+id,{type:'raster',tiles:tiles,tileSize:256,maxzoom:maxz||9}); cmap.addLayer({id:'cmpx-'+id,type:'raster',source:'cmpx-'+id,layout:{visibility:'none'},paint:{'raster-opacity':op==null?0.78:op}}); }
+    function addR(id,tiles,maxz,op){ if(cmap.layers.hasSource('cmpx-'+id)) return; cmap.layers.addSource('cmpx-'+id,{type:'raster',tiles:tiles,tileSize:256,maxzoom:maxz||9}); cmap.layers.add({id:'cmpx-'+id,type:'raster',source:'cmpx-'+id,layout:{visibility:'none'},paint:{'raster-opacity':op==null?0.78:op}}); }
     const CMP_LAYERS=[
-      {k:'koppen', n:()=>jp()?'ケッペン気候区分':'Köppen climate', ids:['cmp-lyr-koppen'], add(){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} }},
+      {k:'koppen', n:()=>jp()?'ケッペン気候区分':'Köppen climate', ids:['cmp-lyr-koppen'], add(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(),coordinates:KC}); }catch(_){} }},
       {k:'worldcover', n:()=>jp()?'土地被覆 (ESA 2021)':'Land cover (ESA 2021)', ids:['cmp-lyr-worldcover'], add(){}},
       {k:'eco', n:()=>jp()?'生態地域':'Ecoregions', ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
-        const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',layout:{visibility:'none'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } done&&done(); }catch(_){} };
+        const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.layers.hasSource('cmp-eco')){ cmap.layers.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.layers.add({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.layers.add({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',layout:{visibility:'none'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } done&&done(); }catch(_){} };
         if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco); }},
       {k:'plates', n:()=>jp()?'プレート境界':'Tectonic plates', ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
-        if(cmap.getSource('cmpx-plates')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmpx-plates')){ done&&done(); return; }
         Promise.all([
           fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
           fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
         ]).then(([pl,bd])=>{ try{
-          cmap.addSource('cmpx-plates',{type:'geojson',data:pl}); cmap.addSource('cmpx-plates-b',{type:'geojson',data:bd||{type:'FeatureCollection',features:[]}});
-          cmap.addLayer({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
-          cmap.addLayer({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
+          cmap.layers.addSource('cmpx-plates',{type:'geojson',data:pl}); cmap.layers.addSource('cmpx-plates-b',{type:'geojson',data:bd||{type:'FeatureCollection',features:[]}});
+          cmap.layers.add({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
+          cmap.layers.add({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
-      {k:'hillshade', n:()=>jp()?'陰影起伏':'Hillshade', ids:['cmpx-hill'], add(){ try{ if(!cmap.getSource('cmpx-dem')) cmap.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13});
-        if(!cmap.getLayer('cmpx-hill')) cmap.addLayer({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
+      {k:'hillshade', n:()=>jp()?'陰影起伏':'Hillshade', ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13});
+        if(!cmap.layers.has('cmpx-hill')) cmap.layers.add({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
       {k:'nightsat', n:()=>jp()?'夜の光（衛星）':'Night lights (satellite)', ids:['cmpx-nightsat'], add(){ addR('nightsat',cmpGibsStatic('VIIRS_Black_Marble',8,'png').map(u=>u.replace('/default/','/default/2016-01-01/')),8,0.95); }},
       {k:'snow', n:()=>jp()?'積雪':'Snow cover', ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},
       {k:'aod', n:()=>jp()?'エアロゾル':'Aerosol (AOD)', ids:['cmpx-aod'], add(){ addR('aod',cmpGibs('MODIS_Combined_Value_Added_AOD',6,'png',ld('aod',CMP_DATE)),6); }},
@@ -314,7 +321,7 @@ window.IntMapModules.compare=function(map,HOST){
       {k:'thermal', n:()=>jp()?'熱異常（火災）':'Thermal anomalies', ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
       {k:'popgrid', n:()=>jp()?'人口密度グリッド':'Population grid', ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
       {k:'ukr', n:()=>jp()?'ウクライナ前線':'Ukraine frontline', ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
-        if(cmap.getSource('cmpx-ukr')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmpx-ukr')){ done&&done(); return; }
         fetch('https://deepstatemap.live/api/history/last').then(r=>r.json()).then(j=>{ try{
           let fc=(j&&j.map)?j.map:j; if(typeof fc==='string') fc=JSON.parse(fc);
           if(!fc||!Array.isArray(fc.features)) return;
@@ -324,27 +331,27 @@ window.IntMapModules.compare=function(map,HOST){
           const firstLL=(g)=>{ try{ let c=g.coordinates; while(Array.isArray(c[0])) c=c[0]; return c; }catch(_){ return null; } };
           const inUA=(f)=>{ const c=firstLL(f.geometry); return !c || (c[0]>20&&c[0]<42.5&&c[1]>43.9&&c[1]<54.5); };
           const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon/.test(f.geometry.type)&&inUA(f));
-          cmap.addSource('cmpx-ukr',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
-          cmap.addLayer({id:'cmpx-ukr-f',type:'fill',source:'cmpx-ukr',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':0.3}});
-          cmap.addLayer({id:'cmpx-ukr-l',type:'line',source:'cmpx-ukr',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.3}});
+          cmap.layers.addSource('cmpx-ukr',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+          cmap.layers.add({id:'cmpx-ukr-f',type:'fill',source:'cmpx-ukr',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':0.3}});
+          cmap.layers.add({id:'cmpx-ukr-l',type:'line',source:'cmpx-ukr',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.3}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       {k:'volc', n:()=>jp()?'火山':'Volcanoes', ids:['cmpx-volc'], add(done){
-        if(cmap.getSource('cmpx-volc')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmpx-volc')){ done&&done(); return; }
         fetch('data/volcanoes_gvp.json').then(r=>r.json()).then(j=>{ try{
-          cmap.addSource('cmpx-volc',{type:'geojson',data:j});
-          cmap.addLayer({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
+          cmap.layers.addSource('cmpx-volc',{type:'geojson',data:j});
+          cmap.layers.add({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R36) parity adds — aurora + earthquakes (the main map has them; compare didn't). Same sources/paint
          as the main map so they are byte-identical, not "low quality" clones. */
       {k:'aurora', n:()=>jp()?'オーロラ予報':'Aurora forecast', ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
-        if(cmap.getSource('cmpx-aurora')){ done&&done(); return; }
-        cmap.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        cmap.addLayer({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
+        if(cmap.layers.hasSource('cmpx-aurora')){ done&&done(); return; }
+        cmap.layers.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        cmap.layers.add({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
           /* (#R123/#R124) same zoom fix as the main l9-aurora-heat layer (compare-map copy): heatmap fades out on
              zoom-in, a soft-circle glow (below) takes over so the oval stays visible at every zoom. */
           'heatmap-intensity':['interpolate',['linear'],['zoom'],1,1.1,4,1.35,7,1.9,10,2.6],
           'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,3,20,4,30,5,52,6,88,7,150,8,250,9,380,10,480],'heatmap-opacity':['interpolate',['linear'],['zoom'],1,0.78,6,0.78,8,0.42,10,0.16],'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
-        cmap.addLayer({id:'cmpx-aurora-glow',type:'circle',source:'cmpx-aurora',layout:{visibility:'none'},paint:{
+        cmap.layers.add({id:'cmpx-aurora-glow',type:'circle',source:'cmpx-aurora',layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['exponential',2],['zoom'],3,8,5,26,7,110,9,430,11,1700],
           'circle-color':['interpolate',['linear'],['get','a'],8,'#00753b',20,'#00d072',50,'#7dffa6',100,'#d2ffdc'],
           'circle-blur':0.85,
@@ -352,13 +359,13 @@ window.IntMapModules.compare=function(map,HOST){
         fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r=>r.json()).then(j=>{ try{
           const co=j.coordinates||[], feats=[];
           for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
-          if(cmap.getSource('cmpx-aurora')) cmap.getSource('cmpx-aurora').setData({type:'FeatureCollection',features:feats});
+          if(cmap.layers.hasSource('cmpx-aurora')) cmap.layers.setSourceData('cmpx-aurora',{type:'FeatureCollection',features:feats});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       {k:'eq', n:()=>jp()?'地震（USGS）':'Earthquakes (USGS)', ids:['cmpx-eq'], add(done){
-        if(cmap.getSource('cmpx-eq')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmpx-eq')){ done&&done(); return; }
         fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(r=>r.json()).then(j=>{ try{
-          cmap.addSource('cmpx-eq',{type:'geojson',data:j});
-          cmap.addLayer({id:'cmpx-eq',type:'circle',source:'cmpx-eq',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}});
+          cmap.layers.addSource('cmpx-eq',{type:'geojson',data:j});
+          cmap.layers.add({id:'cmpx-eq',type:'circle',source:'cmpx-eq',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R21) "全部のレイヤーをcompare viewでも使えるように" — country CHOROPLETHS are now cloned:
          the main map paints them via feature-state on its own 'countries' source (unshareable), so
@@ -373,7 +380,7 @@ window.IntMapModules.compare=function(map,HOST){
           gdppc:[1000,'#fff7ec',5000,'#fee8c8',15000,'#fdbb84',30000,'#fc8d59',55000,'#e34a33',90000,'#7f0000'],
           tfr:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']};
         function srcReady(done){
-          if(cmap.getSource('cmp-choro')){ done&&done(); return; }
+          if(cmap.layers.hasSource('cmp-choro')){ done&&done(); return; }
           try{
             const cg=(typeof HOST.countryGeo!=='undefined'&&HOST.countryGeo)||window.countryGeo;
             const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
@@ -381,14 +388,14 @@ window.IntMapModules.compare=function(map,HOST){
             const feats=cg.features.map(f=>{ const s=cs[f.id]||{}; const msg=(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null;
               const nv=(x)=>(x!=null&&!isNaN(x)&&x>0)?x:-1;
               return {type:'Feature',geometry:f.geometry,properties:{pop:nv(s.density),hdi:nv(s.hdi),dem:nv(s.dem),milSpend:nv(s.milSpend),milSpendGDP:nv(msg),gdppc:nv(s.gdppc),tfr:nv(s.tfr)}}; });
-            cmap.addSource('cmp-choro',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+            cmap.layers.addSource('cmp-choro',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
             done&&done();
           }catch(_){}
         }
         function mk(k,nm){ return {k:'ch-'+k, n:nm, ids:['cmp-ch-'+k], add(done){ srcReady(()=>{ try{
-          if(!cmap.getLayer('cmp-ch-'+k)){
+          if(!cmap.layers.has('cmp-ch-'+k)){
             const ramp=['interpolate',['linear'],['to-number',['get',k]]].concat(RAMP[k]);
-            cmap.addLayer({id:'cmp-ch-'+k,type:'fill',source:'cmp-choro',layout:{visibility:'none'},paint:{'fill-color':['case',['<=',['to-number',['get',k]],0],'rgba(128,128,128,0.25)',ramp],'fill-opacity':0.7}});
+            cmap.layers.add({id:'cmp-ch-'+k,type:'fill',source:'cmp-choro',layout:{visibility:'none'},paint:{'fill-color':['case',['<=',['to-number',['get',k]],0],'rgba(128,128,128,0.25)',ramp],'fill-opacity':0.7}});
           }
           done&&done(); }catch(_){} }); }}; }
         return [
@@ -403,34 +410,34 @@ window.IntMapModules.compare=function(map,HOST){
       })(),
       {k:'histb', n:()=>jp()?'過去の国境':'Historical borders', ids:['cmp-hb-f','cmp-hb-l'], add(done){
         const cur=(window.IntMapBeta&&window.IntMapBeta.hbCurrent)?window.IntMapBeta.hbCurrent():null;
-        if(cmap.getSource('cmp-hb')){ try{ if(cur&&cur.fc) cmap.getSource('cmp-hb').setData(cur.fc); }catch(_){} done&&done(); return; }
+        if(cmap.layers.hasSource('cmp-hb')){ try{ if(cur&&cur.fc) cmap.layers.setSourceData('cmp-hb',cur.fc); }catch(_){} done&&done(); return; }
         const use=(fc)=>{ try{ if(!fc||!Array.isArray(fc.features)) return;
-          cmap.addSource('cmp-hb',{type:'geojson',data:fc});
-          cmap.addLayer({id:'cmp-hb-f',type:'fill',source:'cmp-hb',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.3}});
-          cmap.addLayer({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
+          cmap.layers.addSource('cmp-hb',{type:'geojson',data:fc});
+          cmap.layers.add({id:'cmp-hb-f',type:'fill',source:'cmp-hb',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.3}});
+          cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
           done&&done(); }catch(_){} };
         if(cur&&cur.fc){ use(cur.fc); return; }
         fetch('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(r=>r.json()).then(use).catch(()=>{}); }},
       {k:'rail', n:()=>jp()?'世界の鉄道（軌間別）':'Railways (by gauge)', ids:['cmp-rail'], add(done){
-        if(cmap.getSource('cmp-rail')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmp-rail')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
-        window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.getSource('cmp-rail')) { done&&done(); return; }
-          cmap.addSource('cmp-rail',{type:'geojson',data:fc});
-          cmap.addLayer({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','col'],'#888'],'line-width':1.3,'line-opacity':0.85}});
+        window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.layers.hasSource('cmp-rail')) { done&&done(); return; }
+          cmap.layers.addSource('cmp-rail',{type:'geojson',data:fc});
+          cmap.layers.add({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','col'],'#888'],'line-width':1.3,'line-opacity':0.85}});
           done&&done(); }catch(_){} }); }},
       {k:'dc', n:()=>jp()?'データセンター':'Data centers / cloud', ids:['cmp-dc'], add(done){
-        if(cmap.getSource('cmp-dc')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmp-dc')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
-        window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.getSource('cmp-dc')) { done&&done(); return; }
-          cmap.addSource('cmp-dc',{type:'geojson',data:fc});
-          cmap.addLayer({id:'cmp-dc',type:'circle',source:'cmp-dc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
+        window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.layers.hasSource('cmp-dc')) { done&&done(); return; }
+          cmap.layers.addSource('cmp-dc',{type:'geojson',data:fc});
+          cmap.layers.add({id:'cmp-dc',type:'circle',source:'cmp-dc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }); }},
       {k:'pharma', n:()=>jp()?'医療・製薬':'Pharma & health', ids:['cmp-ph'], add(done){
-        if(cmap.getSource('cmp-ph')){ done&&done(); return; }
+        if(cmap.layers.hasSource('cmp-ph')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
-        window.IntMapBeta2.load('pharma',fc=>{ try{ if(cmap.getSource('cmp-ph')) { done&&done(); return; }
-          cmap.addSource('cmp-ph',{type:'geojson',data:fc});
-          cmap.addLayer({id:'cmp-ph',type:'circle',source:'cmp-ph',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#2bb3a3'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
+        window.IntMapBeta2.load('pharma',fc=>{ try{ if(cmap.layers.hasSource('cmp-ph')) { done&&done(); return; }
+          cmap.layers.addSource('cmp-ph',{type:'geojson',data:fc});
+          cmap.layers.add({id:'cmp-ph',type:'circle',source:'cmp-ph',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#2bb3a3'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }); }}
     ];
     function build(){ if(built) return; built=true; injectCSS();
@@ -462,18 +469,18 @@ window.IntMapModules.compare=function(map,HOST){
          land on top of the × ("×がレイヤー選択ボタンと重なって終了できない") — now nothing in the header/controls
          can ever overlap it, on ANY platform. (Base + mobile CSS position #cmp-close absolutely.) */
       try{ const _x=win.querySelector('#cmp-close'); if(_x) win.appendChild(_x); }catch(_){}
-      cmap=GE().ui.createView({container:'compare-map',style:compareStyle(),center:GE().camera.getCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
-      try{ cmap.__wantGlobe=(typeof HOST.proj==='undefined'||HOST.proj!=='flat'); cmap.setProjection({type:cmap.__wantGlobe?'globe':'mercator'}); }catch(_){}
+      cmap=GE().ui.createSubView({container:'compare-map',style:compareStyle(),center:GE().camera.getCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
+      try{ _wantGlobe=(typeof HOST.proj==='undefined'||HOST.proj!=='flat'); cmap.camera.setProjection(_wantGlobe?'globe':'flat'); }catch(_){}
       /* (#R25) ROOT CAUSE of "メインマップがGlobeでもcompareはFlatのまま / Flatに戻してからGlobeにしないと反映
          されない": MapLibre's default projection is MERCATOR, and the setProjection() above runs BEFORE the
          cmap style loads, so it silently no-ops — yet __wantGlobe was left = true, so the followProjection()
          guard thought it already matched and never re-applied. Force a clean re-apply once the style is
          actually ready (and again on first idle as a backstop). */
-      cmap.on('load',()=>{ applyBase(); try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
-      cmap.once('idle',()=>{ try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
+      cmap.events.on('load',()=>{ applyBase(); try{ _wantGlobe=null; }catch(_){} followProjection(); });
+      cmap.events.once('idle',()=>{ try{ _wantGlobe=null; }catch(_){} followProjection(); });
       /* (#R34) Re-assert base AND re-show the picked compare layer after any style change — in x-ray a
          layer add/base swap could drop the chosen layer's visibility ("x-rayで…選択したレイヤーが反映されない"). */
-      cmap.on('styledata',()=>{ setTimeout(()=>{ try{ applyBase(); if(xrayOn()) _reshowCmpLayer(); }catch(_){} },60); });
+      cmap.events.on('styledata',()=>{ setTimeout(()=>{ try{ applyBase(); if(xrayOn()) _reshowCmpLayer(); }catch(_){} },60); });
       /* base buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
       /* (#R20) three EXCLUSIVE modes */
@@ -484,12 +491,12 @@ window.IntMapModules.compare=function(map,HOST){
         win.classList.toggle('cmp-xray',m==='xray');
         if(prev==='xray'&&m!=='xray'){ try{ clearXrayLens(); }catch(_){} }
         applyBase(); _reshowCmpLayer();
-        try{ cmap.resize(); }catch(_){}
+        try{ cmap.render.resize(); }catch(_){}
         if(m!=='free') syncFromMain();   /* immediate (rAF never fires in a hidden tab) */
-        requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} if(m!=='free') syncFromMain(); });
+        requestAnimationFrame(()=>{ try{ cmap.render.resize(); }catch(_){} if(m!=='free') syncFromMain(); });
         /* (#R32b) X-ray needs the canvas reflowed to its fixed full-container box a few times before the lens
            registers + the base/layer paint ("x-rayだけバグが多発"). Re-layout + re-assert base/layer/sync. */
-        if(m==='xray'){ [60,200,500].forEach(ms=>setTimeout(()=>{ try{ layoutXrayLens(); applyBase(); _reshowCmpLayer(); syncFromMain(); cmap.resize(); }catch(_){} },ms)); }
+        if(m==='xray'){ [60,200,500].forEach(ms=>setTimeout(()=>{ try{ layoutXrayLens(); applyBase(); _reshowCmpLayer(); syncFromMain(); cmap.render.resize(); }catch(_){} },ms)); }
       }
       win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
       window._cmpSetMode=setMode;
@@ -515,7 +522,7 @@ window.IntMapModules.compare=function(map,HOST){
            .cmp-min{height:auto !important} rule → after any resize the minimize button "did nothing".
            Stash + clear the inline height when collapsing, restore it when expanding. */
         if(minimized){ win.dataset.prevH=win.style.getPropertyValue('height'); win.style.removeProperty('height'); win.classList.add('cmp-min'); }
-        else { win.classList.remove('cmp-min'); if(win.dataset.prevH){ win.style.setProperty('height',win.dataset.prevH,'important'); } setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); }
+        else { win.classList.remove('cmp-min'); if(win.dataset.prevH){ win.style.setProperty('height',win.dataset.prevH,'important'); } setTimeout(()=>{ try{cmap.render.resize();}catch(_){} },60); }
         /* (#R36) Swap the button icon/title so it's obvious whether the panel is collapsed (mobile shows the SVG;
            desktop shows the ::before, which the .cmp-min CSS turns into a square). */
         try{ const mb=win.querySelector('#cmp-min');
@@ -549,16 +556,16 @@ window.IntMapModules.compare=function(map,HOST){
             if(rz.includes('w')) L=r0.right-W; if(rz.includes('n')) T=r0.bottom-H;
             win.style.left=Math.max(0,L)+'px'; win.style.top=Math.max(0,T)+'px';
             win.style.setProperty('width',W+'px','important'); win.style.setProperty('height',H+'px','important');
-            try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); });
+            try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); });
           const end=()=>{ rz=null; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
         });
       })();
       /* resize observer → resize the map (+ re-aim the lens/centroid) */
-      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
+      try{ ro=new ResizeObserver(()=>{ try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
       /* (#R16) touch resize grip (mobile height) */
       (function(){ const g=win.querySelector('.cmp-resize'); if(!g) return; let rz=false,sy=0,sh=0;
         g.addEventListener('pointerdown',e=>{ rz=true; sy=e.clientY; sh=win.getBoundingClientRect().height; try{g.setPointerCapture(e.pointerId);}catch(_){} e.preventDefault(); });
-        g.addEventListener('pointermove',e=>{ if(!rz) return; const h=Math.max(180,Math.min(window.innerHeight-40,sh+(e.clientY-sy))); win.style.setProperty('height',h+'px','important'); try{cmap.resize();}catch(_){} if(mode!=='free') syncFromMain(); });
+        g.addEventListener('pointermove',e=>{ if(!rz) return; const h=Math.max(180,Math.min(window.innerHeight-40,sh+(e.clientY-sy))); win.style.setProperty('height',h+'px','important'); try{cmap.render.resize();}catch(_){} if(mode!=='free') syncFromMain(); });
         const end=()=>{ rz=false; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
       })();
       /* (#R20) BIDIRECTIONAL camera sync. Main→compare follows every main move (user or programmatic);
@@ -572,14 +579,14 @@ window.IntMapModules.compare=function(map,HOST){
       /* (#R21) belt-and-braces: a final re-register once the main map settles (kills any residual
          lens drift from camera clamping mid-gesture). */
       GE().events.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
-      cmap.on('move',(ev)=>{ if(syncing||!ev||!ev.originalEvent) return;   /* user-driven compare drags only */
+      cmap.events.on('move',(ev)=>{ if(syncing||!ev||!ev.originalEvent) return;   /* user-driven compare drags only */
         if(mode==='sync'){ syncToMain(); }
         else if(mode==='xray'){
           /* (#R29.1) Let the user pan/zoom the map from INSIDE the X-ray window. The lens is 1:1 registered
              with the main camera, so a drag in the window drives the MAIN map by the same amount and both
              stay locked together ("compare viewのウィンドウ内からもX-ray時に地図を動かせるように"). */
           syncing=true; try{ let pad; try{ pad=GE().camera.getPadding?GE().camera.getPadding():undefined; }catch(_){}
-            GE().camera.jumpTo({center:cmap.getCenter(),zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch(),padding:pad}); }catch(_){}
+            GE().camera.jumpTo({center:cmap.camera.getCenter(),zoom:cmap.camera.getZoom(),bearing:cmap.camera.getBearing(),pitch:cmap.camera.getPitch(),padding:pad}); }catch(_){}
           syncing=false;
         }
       });
@@ -597,8 +604,8 @@ window.IntMapModules.compare=function(map,HOST){
           if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; } } } }catch(_){}
       /* (#R22) Resize several times after the window becomes visible so the GL canvas always fills the
          body — a single deferred resize sometimes left an unsized gray strip at the top ("上部がグレー"). */
-      const fit=()=>{ try{cmap.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
-      requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.once('idle',fit); }catch(_){} }
+      const fit=()=>{ try{cmap.render.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
+      requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.events.once('idle',fit); }catch(_){} }
     function close(){ try{ document.body.classList.remove('cmp-open'); }catch(_){}   /* (#R28) restore the main-map FABs */
       if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
       try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
@@ -609,7 +616,7 @@ window.IntMapModules.compare=function(map,HOST){
     window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(window.matchMedia('(max-width:768px)').matches) return;
       const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return;
       const sr=sb.getBoundingClientRect(), wr=win.getBoundingClientRect();
-      if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
+      if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
     /* entry button in the Layers dropdown */
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button

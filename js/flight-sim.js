@@ -493,8 +493,11 @@ window.IntMapModules.flightSim=function(map,HOST){
       try{ syncHUDChrome(); }catch(_){} }
     /* ===== (#R96) moving-map / nav display — a small SECOND MapLibre map (track-up) that follows the aircraft, like a
        car-nav / FlightRadar mini map. It reuses the app's existing Esri World Imagery raster (no NEW data source). ===== */
-    function createMinimap(){ if(minimap||!hud||typeof maplibregl==='undefined') return; const el=hud.querySelector('.fs-mm-map'); if(!el) return;
-      try{ minimap=GE().ui.createView({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
+    /* (#R179) …and it is a scoped ENGINE now, not a renderer handle. `createSubView` returns the same
+       contract bound to the second view, so this file no longer knows what map library is running —
+       the `typeof maplibregl` feature test it used to open with was the last such reference in it. */
+    function createMinimap(){ if(minimap||!hud||!GE()) return; const el=hud.querySelector('.fs-mm-map'); if(!el) return;
+      try{ minimap=GE().ui.createSubView({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
         center:[st?st.lng:0, st?st.lat:0], zoom:11, bearing:0, pitch:0,
         style:{ version:8, sources:{ mmsat:{ type:'raster', tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize:256, maxzoom:19, attribution:'© Esri' },
           /* (#R118) flight TRAIL on the moving-map ("ミニマップには軌跡が表示されるように") — the already-recorded st._path */
@@ -502,19 +505,20 @@ window.IntMapModules.flightSim=function(map,HOST){
           layers:[{ id:'mmsat', type:'raster', source:'mmsat' },
             { id:'mmtrail-cas', type:'line', source:'mmtrail', layout:{'line-join':'round','line-cap':'round'}, paint:{'line-color':'rgba(0,0,0,0.55)','line-width':4} },
             { id:'mmtrail', type:'line', source:'mmtrail', layout:{'line-join':'round','line-cap':'round'}, paint:{'line-color':'#ffd60a','line-width':2.2} }] } });
-        setTimeout(()=>{ try{ minimap&&minimap.resize(); }catch(_){} },40);
+        setTimeout(()=>{ try{ minimap&&minimap.render.resize(); }catch(_){} },40);
       }catch(_){ minimap=null; } }
-    function destroyMinimap(){ if(minimap){ try{ minimap.remove(); }catch(_){} minimap=null; } mmT=0; }
+    function destroyMinimap(){ if(minimap){ try{ minimap.destroy(); }catch(_){} minimap=null; } mmT=0; }
     function toggleMinimap(){ mmOn=!mmOn; const mm=hud&&hud.querySelector('.fs-minimap'); if(mm) mm.style.display=mmOn?'':'none';
-      if(mmOn){ createMinimap(); setTimeout(()=>{ try{ minimap&&minimap.resize(); }catch(_){} },40); } }
+      if(mmOn){ createMinimap(); setTimeout(()=>{ try{ minimap&&minimap.render.resize(); }catch(_){} },40); } }
     /* track-up follow, throttled to ~8 Hz (a nav map needs no per-frame redraw); zoom adapts to height AGL */
     function updateMinimap(dt){ if(!minimap||!mmOn||!st) return; mmT+=dt; if(mmT<0.12) return; mmT=0;
       try{ const nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(nh[1],nh[0])*180/Math.PI+360)%360;
         const agl=Math.max(0, st.alt-(st.lastTerr!=null?st.lastTerr:0)), z=Math.max(9.5, Math.min(13.5, 13.5-Math.log2(agl/400+1)));
-        minimap.jumpTo({ center:[st.lng, st.lat], bearing:hdg, zoom:z });
+        minimap.camera.jumpTo({ center:[st.lng, st.lat], bearing:hdg, zoom:z });
         /* (#R118) trail line = the recorded flight path + the current position (throttled with the same 8 Hz tick) */
-        try{ const src=minimap.getSource('mmtrail'); if(src&&st._path){ const cs=st._path.map(p=>[p[0],p[1]]); cs.push([st.lng,st.lat]);
-          if(cs.length>1&&cs.length!==(updateMinimap._n||0)){ updateMinimap._n=cs.length; src.setData({type:'Feature',geometry:{type:'LineString',coordinates:cs},properties:{}}); } } }catch(_){}
+        try{ if(minimap.layers.hasSource('mmtrail')&&st._path){ const cs=st._path.map(p=>[p[0],p[1]]); cs.push([st.lng,st.lat]);
+          if(cs.length>1&&cs.length!==(updateMinimap._n||0)){ updateMinimap._n=cs.length;
+            minimap.layers.setSourceData('mmtrail',{type:'Feature',geometry:{type:'LineString',coordinates:cs},properties:{}}); } } }catch(_){}
         const nEl=hud.querySelector('.fs-mm-n'); if(nEl) nEl.style.transform='rotate('+(-hdg).toFixed(0)+'deg)';
         const hEl=hud.querySelector('.fs-mm-hdg'); if(hEl) hEl.textContent=Math.round(hdg).toString().padStart(3,'0');
         const aEl=hud.querySelector('.fs-mm-alt'); if(aEl) aEl.textContent=(Math.round(st.alt/10)*10).toLocaleString();   /* (#R99) round to 10 m so the throttled minimap can't show a different exact number than the main HUD */

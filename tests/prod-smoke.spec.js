@@ -217,6 +217,146 @@ test('(#R178) prod satellite protocol is live, and its HiDPI decision is honest'
   console.log(`[prod-smoke] satellite protocol live · dpr ${r.dpr} · @2x ${r.hiDPI}`);
 });
 
+/* ══ (#R179) THE ROUND'S OWN WORK, AGAINST THE LIVE SITE ══════════════════════════════════════
+   #R178's follow-up recorded that 「CI が緑」 and 「ライブで効いている」 are different claims. These
+   three are the #R179 versions of that: the reported gesture performed on production, the
+   second-view seam plus the declaration record the two side-effect fixes rest on, and the base
+   map's tile density. */
+
+test('(#R179) prod holds the viewpoint while LOOKING UP — the reported gesture', async () => {
+  /* The #R178 test above drags at the band the app boots into, where the tilt saturates at 76.7°
+     and so never reaches 90° — which is exactly why the report came back a seventh time. This one
+     zooms in first, so the drag really crosses the horizon. */
+  const r = await page.evaluate(async () => {
+    const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    if (!window.__imap || !window.IntMapTilt || !window.IntMapGeoEngine) return { err: 'no engine' };
+    const m = window.__imap, C = window.IntMapGeoEngine.camera;
+    window.IntMapTilt.set(false); await wait(300);
+    m.jumpTo({ center: [139.767, 35.681], zoom: 14, pitch: 0, bearing: 0, elevation: 0 });
+    await wait(1200);
+    window.IntMapTilt.set(true); await wait(400);
+    const el = m.getCanvasContainer(), b = el.getBoundingClientRect();
+    const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height * 0.8);
+    const fire = (t, type, x, y, bts) => t.dispatchEvent(new MouseEvent(type,
+      { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: bts, ctrlKey: true, view: window }));
+    const eye = () => C.eye();
+    const gap = (a, z) => { const D = Math.PI / 180, R = 6371008.8;
+      const h = Math.sin((z.lat - a.lat) * D / 2) ** 2 + Math.cos(a.lat * D) * Math.cos(z.lat * D) * Math.sin((z.lng - a.lng) * D / 2) ** 2;
+      return Math.hypot(2 * R * Math.asin(Math.min(1, Math.sqrt(h))), z.alt - a.alt); };
+    const first = eye(); if (!first) return { err: 'no eye' };
+    fire(el, 'mousedown', cx, cy, 1); await wait(40);
+    let y = cy, drift = 0, step = 0, prev = first, maxPitchStep = 0, prevP = m.getPitch();
+    for (let i = 0; i < 45; i++) {
+      y -= 6; fire(document, 'mousemove', cx, y, 1); await wait(40);
+      const e = eye(); if (!e) break;
+      drift = Math.max(drift, gap(first, e)); step = Math.max(step, gap(prev, e)); prev = e;
+      maxPitchStep = Math.max(maxPitchStep, Math.abs(m.getPitch() - prevP)); prevP = m.getPitch();
+    }
+    fire(document, 'mouseup', cx, y, 0); await wait(800);
+    const end = eye();
+    const out = { drift, step, rest: gap(first, end), pitch: m.getPitch(), maxPitchStep,
+                  alt0: first.alt, altEnd: end.alt, diag: C.eyePivotDiag() };
+    window.IntMapTilt.set(false);
+    return out;
+  });
+  expect(r.err, `engine unavailable: ${r.err}`).toBeUndefined();
+  /* the whole point of this test: the live drag must get PAST the horizon */
+  expect(r.pitch, 'the live drag really looked up past 90 degrees').toBeGreaterThan(120);
+  expect(r.diag.underGuard, 'the repair to the renderer own underground correction is live').toBe('active');
+  expect(r.drift, `the viewpoint must not move (${Math.round(r.drift)} m; was 5,610 m at this zoom)`).toBeLessThan(50);
+  expect(r.step, `and must not jump between frames (${Math.round(r.step)} m)`).toBeLessThan(50);
+  expect(r.rest, 'drag inertia must not move it either').toBeLessThan(50);
+  expect(Math.abs(r.altEnd - r.alt0), 'the eye altitude must not change').toBeLessThan(50);
+  expect(r.maxPitchStep, 'and the tilt must not leap').toBeLessThan(12);
+  console.log(`[prod-smoke] looked up to ${r.pitch.toFixed(1)} deg · drift ${Math.round(r.drift)} m · eye ${Math.round(r.alt0)} m`);
+});
+
+test('(#R179) prod deployed the per-view seam and the declaration record', async () => {
+  const r = await page.evaluate(async () => {
+    const E = window.IntMapGeoEngine;
+    if (!E) return { err: 'no engine' };
+    const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const out = { hasSubView: typeof E.ui.createSubView === 'function',
+                  hasAddMarker: typeof E.ui.addMarker === 'function',
+                  hasContours: typeof E.scene.demContourSource === 'function',
+                  hasDiag: typeof E.camera.eyePivotDiag === 'function' };
+    /* a real second view, built and torn down on the live site */
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:-9999px;top:0;width:160px;height:160px;';
+    document.body.appendChild(host);
+    const v = out.hasSubView ? E.ui.createSubView({ container: host, attributionControl: false, interactive: false,
+      center: [0, 0], zoom: 2, style: { version: 8, sources: {}, layers: [] } }) : null;
+    if (v) { await wait(1500);
+      out.subSections = ['camera', 'layers', 'scene', 'coords', 'render', 'input', 'events', 'ui'].filter((k) => !!v[k]);
+      out.subAnswersForItself = Math.abs(v.camera.getZoom() - 2) < 0.01;
+      out.subIsContract = typeof v.addLayer !== 'function';
+      try { v.destroy(); } catch (_) {} }
+    host.remove();
+    /* …and the declaration the two side-effect fixes read */
+    E.camera.flyTo({ center: [2.35, 48.86], zoom: 6, duration: 900 });
+    await wait(250);
+    out.decl = E.camera.eyePivotDiag().decl;
+    await wait(1500);
+    out.declCleared = E.camera.eyePivotDiag().decl;
+    return out;
+  });
+  expect(r.err).toBeUndefined();
+  expect(r.hasSubView, 'ui.createSubView deployed — an additional view can be a scoped engine').toBe(true);
+  expect(r.hasAddMarker, 'renderer UI attaches to a view').toBe(true);
+  expect(r.hasContours, 'contour tiles come from the engine').toBe(true);
+  expect(r.hasDiag, 'and the pivot reports both its halves').toBe(true);
+  expect(r.subSections, 'a live sub-view carries every contract section')
+    .toEqual(['camera', 'layers', 'scene', 'coords', 'render', 'input', 'events', 'ui']);
+  expect(r.subIsContract, 'and it is the contract, not a renderer handle').toBe(true);
+  expect(r.subAnswersForItself, 'answering about its own camera').toBe(true);
+  expect(r.decl, 'a journey names a centre and a zoom').toMatchObject({ center: true, zoom: true });
+  expect(r.declCleared, 'and the record is dropped when the movement ends').toBe(null);
+});
+
+test('(#R179) prod base map serves the pixels the display asks for', async ({ browser }) => {
+  /* The shared page above is a 1× context, and #R178's satellite test asserts the DECISION rather
+     than the outcome for exactly that reason. The base map's density can be checked properly, so
+     it is: a fresh context at each ratio, watching what the live site actually requests. */
+  for (const dsf of [1, 2]) {
+    const ctx = await browser.newContext({ deviceScaleFactor: dsf });
+    const p2 = await ctx.newPage();
+    const carto = [];
+    p2.on('request', (rq) => { const u = rq.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
+    try {
+      await p2.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await p2.waitForFunction(() => !!window.__imap, null, { timeout: 60_000 });
+      await p2.waitForTimeout(4000);
+      const decision = await p2.evaluate(() => window.__imHiDPITiles);
+      expect(decision, `the one HiDPI decision at dpr ${dsf}`).toBe(dsf >= 1.5);
+      /* WHICH Carto requests are the map's is asked of the live style. The layer panel's preview
+         thumbnails (js/layer-previews.js) fetch `light_all@2x` / `dark_all@2x` of their own accord at
+         any density, so a URL-shaped guess reports @2x traffic on a 1× screen that the map never
+         asked for — measured as a CI failure before this was derived instead of assumed. */
+      const seg = await p2.evaluate(() => {
+        try {
+          const m = window.__imap, st = m.getStyle();
+          for (const id of ['layer-light-nl', 'layer-dark-nl', 'layer-light', 'layer-dark']) {
+            const lyr = (st.layers || []).find((l) => l.id === id);
+            if (!lyr) continue;
+            if (((m.getLayoutProperty(id, 'visibility') || 'visible')) === 'none') continue;
+            const t = ((st.sources[lyr.source] || {}).tiles || [])[0] || '';
+            const mm = /cartocdn\.com\/([^/]+)\//.exec(t);
+            if (mm) return mm[1];
+          }
+          return null;
+        } catch (_) { return null; }
+      });
+      expect(seg, 'the live base map names its style').toBeTruthy();
+      const mine = carto.filter((u) => u.includes('/' + seg + '/'));
+      expect(mine.length, `the live base map loaded tiles at dpr ${dsf}`).toBeGreaterThan(3);
+      const at2x = mine.filter((u) => /@2x\.png/.test(u)).length;
+      if (dsf >= 1.5) expect(at2x, 'every base-map tile is double-density on a 2x display').toBe(mine.length);
+      else expect(at2x, 'and a 1x display pays for none of it').toBe(0);
+      console.log(`[prod-smoke] dpr ${dsf} · style ${seg} · base-map tiles ${mine.length} · @2x ${at2x}`);
+    } finally { await ctx.close(); }
+  }
+});
+
 test('(#R178) prod service worker caches every terrarium DEM alias', async () => {
   const sw = await (await page.request.get(new URL('sw.js', PROD_URL).href)).text();
   const body = sw.slice(sw.indexOf('const TILE_HOSTS'), sw.indexOf("self.addEventListener('install'"));
