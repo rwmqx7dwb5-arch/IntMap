@@ -2565,9 +2565,11 @@ z12 付近から先は素の Mercator」と定義されている**からで、`g
      あるいは HOST 経由でビュー契約を渡すのが本筋。**約60の工場呼び出し＋60の署名**。
   2. **存在テスト 211件**を `GE().hasRenderer()` へ（機械的）。
   3. **ハンドル受け渡し 112件**——`.addTo(map)` は #R179 の `ui.addMarker`/`addPopup` で置き換え可能な形が揃った。
-  4. **CSS の `.maplibregl-*` セレクタ5個**（`.maplibregl-canvas` / `-popup-content` / `-popup-tip` /
-     `-popup-close-button`）＝レンダラが自分で振る DOM クラス名への依存。中立クラスを併記させるか、
-     エンジンがクラス名を公開するかの設計判断が必要。
+  4. **`.maplibregl-*` セレクタ**＝レンダラが自分で振る DOM クラス名への依存。**実測 11種・26箇所**で、
+     `css/` にあるのは5種（`-canvas` / `-ctrl` / `-popup-content` / `-popup-tip` / `-popup-close-button`）だけ。
+     残りは **js/ の中で組み立てられる style 文字列**（flight-sim の `-ctrl-attrib` / `-control-container`、
+     compare の `-map` / `-canvas-container`、`-marker` / `-popup` など）＝**CSS ファイルだけ見ると半分を見落とす**。
+     中立クラスを併記させるか、エンジンがクラス名を公開するかの設計判断が必要。
   5. **Cesium アダプタ**＝`js/geo-engine-cesium.js`。土台（ビューごとのアダプタ／`engineFacade` の1つの形）は
      #R179 で整った。残るのは **MapLibre style 言語の解釈器**（11レイヤ型・paint 43・layout 33・21演算子の 468 式）と
      SDK の遅延読み込み・設定UI（5言語）・Atlas 配線。**規模が理由で #R179 では着手していない**（標準指示4）。
