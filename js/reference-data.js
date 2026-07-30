@@ -157,6 +157,13 @@ window.IntMapRefData=(function(){
   ];
   const DATA_SOURCES=[
     {n:'CARTO basemaps',u:'https://carto.com/attribution/',use:{en:'Light/dark vector basemap tiles',jp:'標準マップのタイル'}},
+    /* (#R180) the two rendering engines themselves. MapLibre has always been here in spirit; it is
+       named explicitly now that it is a CHOICE rather than the only possibility. Both are
+       permissively licensed and neither requires an account: the Cesium engine deliberately uses
+       no Cesium Ion asset, so it draws the same Esri imagery and the same AWS terrarium elevation
+       the MapLibre engine does, and no token is ever set. */
+    {n:'MapLibre GL JS',u:'https://maplibre.org/',use:{en:'The default map rendering engine (BSD-3-Clause). Draws every 2-D/3-D map view, the globe projection and the terrain mesh.',jp:'既定の地図描画エンジン（BSD-3-Clause）。2D/3D地図・globe投影・地形メッシュの描画。'}},
+    {n:'CesiumJS',u:'https://cesium.com/platform/cesiumjs/',use:{en:'Optional second rendering engine (Apache-2.0), selectable in Settings ▸ Map behaviour ▸ Map engine. Downloaded only when chosen. Uses NO Cesium Ion asset and no access token — it renders the same Esri imagery and the same AWS terrarium elevation data as the default engine.',jp:'任意の第2描画エンジン（Apache-2.0）。設定 ▸ 地図の動作 ▸ 地図エンジンで選択でき、選んだときだけダウンロードされます。Cesium Ion のアセットもアクセストークンも一切使わず、既定エンジンと同じ Esri 衛星画像・同じ AWS terrarium 標高データを描画します。'}},
     {n:'Twemoji (Twitter Emoji)',u:'https://github.com/jdecked/twemoji',use:{en:'Self-hosted country-flag webfont (TwemojiCountryFlags.woff2) so flag emoji render on platforms without native flag glyphs (e.g. Windows). Graphics licensed CC-BY 4.0.',jp:'国旗絵文字をネイティブ非対応のOS（Windows等）でも表示するための自己ホスト国旗フォント（TwemojiCountryFlags.woff2）。画像はCC-BY 4.0。'}},
     {n:'Esri World Imagery',u:'https://www.esri.com/',use:{en:'Satellite imagery + reference labels; World Hillshade & World Transportation reference tiles (hillshade layer and the roads-layer preview image)',jp:'衛星画像・地名ラベル。World Hillshade・World Transportation参照タイル（陰影起伏レイヤーと道路レイヤーのプレビュー画像）'}},
     {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',use:{en:'Place search & place/region boundary outlines (Nominatim) & basemap data',jp:'地名検索・地名/地域の範囲ポリゴン表示（Nominatim）・地図データ'}},

@@ -996,6 +996,41 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
       pixelRatio:(isMobile()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),
+      /* ══ (#R180) TWO CEILINGS INSIDE THE RENDERER THAT WERE THROWING PIXELS AWAY ═══════════
+         #R178 and #R179 found the satellite layer and then the base map running at half the
+         resolution the display can show. Both were OUR arithmetic. These two are MapLibre's
+         own defaults, and they cost resolution in exactly the situations this app is built
+         for — a tilted 3-D view, and a large high-density monitor.
+
+         ① ANISOTROPIC FILTERING, which MapLibre applies to a raster tile only when
+            `transform.pitch > options.anisotropicFilterPitch`, default 20°. Read it in the
+            renderer: `P.texture.useMipmap && d.extTextureFilterAnisotropic &&
+            e.transform.pitch > e.options.anisotropicFilterPitch`. A surface receding from the
+            camera is minified far harder along one axis than the other, and an isotropic
+            sampler has to pick one mip level for both — which is why ground near the horizon
+            goes to mush. Below 20° of pitch that correction was simply off, and on the GLOBE
+            (the app's default projection) the surface curves away towards the limb at EVERY
+            pitch, including zero. 0 turns it on wherever the GPU offers it; where there is no
+            anisotropy to correct the sampler costs the same as the trilinear one it replaces.
+
+         ② maxCanvasSize, default [4096, 4096]. MapLibre clamps the drawing buffer to it, so
+            on any display whose CSS size × devicePixelRatio exceeds 4096 the canvas is
+            silently scaled DOWN and the `pixelRatio` set above stops being honoured — a
+            1440p screen at DPR 2 is already 5120 px wide, i.e. the common case, not an exotic
+            one. Raised to the GPU's own limit (capped at 8192, and never above what it
+            reports), so full device resolution survives on a large monitor. Phones keep
+            4096: there the cap is a RAM guard, and 「ブラウザが落ちることがないように」 has
+            outranked sharpness on mobile since #R20. */
+      anisotropicFilterPitch:0,
+      maxCanvasSize:(function(){
+        if(isMobile()) return [4096,4096];
+        let lim=4096;
+        try{ const c=document.createElement('canvas'), gl=c.getContext('webgl2')||c.getContext('webgl');
+          if(gl){ const t=gl.getParameter(gl.MAX_TEXTURE_SIZE)||0, r=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)||0;
+            lim=Math.max(4096,Math.min(8192,Math.min(t||8192,r||8192))); }
+        }catch(_){}
+        return [lim,lim];
+      })(),
       glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       /* (#R19) Desktop maxZoom 18→19: Esri World Imagery serves real z19 tiles over most urban areas,
          so 3D/satellite close-ups gain a full extra level of native detail (no upscaling). Phones stay

@@ -510,6 +510,12 @@ window.IntMapCesiumLayers=(function(){
         if(!pass(ctx)) continue;
         if(++n>env.maxFeatures) break;
         const g=f.geometry;
+        /* (#R180) carry the FEATURE's id onto every primitive it produces. Picking answers with
+           an entity, and `setFeatureState({source,id},…)` — which is how the app does hover and
+           selection highlighting — needs the id of the feature, not of the entity. Without this
+           a pick can be drawn but never highlighted. */
+        const fid=(f.id!=null?f.id:(f.properties&&f.properties.id));
+        const add=(o)=>{ const e=ents.add(o); try{ e.__fid=fid; }catch(_){} return e; };
         try{
           switch(def.type){
             case 'fill': {
@@ -517,7 +523,7 @@ window.IntMapCesiumLayers=(function(){
               const op=RN(paint['fill-opacity'],ctx,1);
               for(const poly of rings(g)){
                 if(!poly.length) continue;
-                ents.add({ id:def.id+'/'+n+'/'+ents.values.length, properties:f.properties,
+                add({ id:def.id+'/'+n+'/'+ents.values.length, properties:f.properties,
                   polygon:{ hierarchy:hierarchyOf(Cesium,poly),
                     material:col({...fc,a:(fc.a==null?1:fc.a)*op}),
                     /* draped onto the ground so a choropleth follows the terrain instead
@@ -533,7 +539,7 @@ window.IntMapCesiumLayers=(function(){
               const top=RN(paint['fill-extrusion-height'],ctx,0);
               for(const poly of rings(g)){
                 if(!poly.length) continue;
-                ents.add({ id:def.id+'/x'+ents.values.length, properties:f.properties,
+                add({ id:def.id+'/x'+ents.values.length, properties:f.properties,
                   polygon:{ hierarchy:hierarchyOf(Cesium,poly), height:base, extrudedHeight:top,
                     material:col({...fc,a:(fc.a==null?1:fc.a)*op}), closeTop:true, closeBottom:true,
                     outline:false } });
@@ -550,7 +556,7 @@ window.IntMapCesiumLayers=(function(){
                 : c4;
               for(const ln of lines(g)){
                 const pos=deg(ln); if(pos.length<4) continue;
-                ents.add({ id:def.id+'/l'+ents.values.length, properties:f.properties,
+                add({ id:def.id+'/l'+ents.values.length, properties:f.properties,
                   polyline:{ positions:Cesium.Cartesian3.fromDegreesArray(pos), width:w, material,
                     clampToGround:true, arcType:Cesium.ArcType.GEODESIC } });
               }
@@ -563,7 +569,7 @@ window.IntMapCesiumLayers=(function(){
               const sc=RC(paint['circle-stroke-color'],ctx,'#ffffff');
               for(const pt of points(g)){
                 if(!pt||pt.length<2) continue;
-                ents.add({ id:def.id+'/p'+ents.values.length, properties:f.properties,
+                add({ id:def.id+'/p'+ents.values.length, properties:f.properties,
                   position:Cesium.Cartesian3.fromDegrees(+pt[0],+pt[1],pt.length>2?+pt[2]:0),
                   point:{ pixelSize:rad*2, color:col({...cc,a:(cc.a==null?1:cc.a)*op}),
                     outlineWidth:sw, outlineColor:col(sc),
@@ -604,7 +610,7 @@ window.IntMapCesiumLayers=(function(){
                   rotation:-(RN(layout['icon-rotate'],ctx,0))*Math.PI/180,
                   disableDepthTestDistance:Number.POSITIVE_INFINITY,
                   heightReference:(pt.length>2?Cesium.HeightReference.NONE:Cesium.HeightReference.CLAMP_TO_GROUND) };
-                const ent=ents.add(e);
+                const ent=add(e);
                 ent.__allowOverlap=(R(layout['text-allow-overlap'],ctx,false)===true);
                 ent.__sortKey=RN(layout['symbol-sort-key'],ctx,0);
                 ent.__padding=RN(layout['text-padding'],ctx,2);

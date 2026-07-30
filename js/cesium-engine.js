@@ -41,6 +41,20 @@ window.IntMapCesiumEngine=(function(){
 
   let Cesium=null;
 
+  /* ══ TILE PROTOCOLS ARE ENGINE-LEVEL, NOT PER-VIEW ═══════════════════════════
+     A near miss worth recording, because it would have shipped looking fine.
+     `maplibregl.addProtocol` is a STATIC registration, so app-body.js registers
+     the satellite protocol (`imapsat://`, which is where #R158's grey-placeholder
+     repair and #R178/#R179's HiDPI stitching live) at line 940 — thirty lines
+     BEFORE it asks the contract for a view at line 973. A per-view registry is
+     empty at that moment, so the handler would have been dropped on the floor,
+     and nothing would have said so: the satellite layer boots with
+     `visibility:'none'`, so the map looks perfectly correct until somebody turns
+     it on and gets a blank layer.
+     So the registry lives here, outside every view, which is also what it IS —
+     a scheme handler is a property of the app, not of a canvas. */
+  const PROTOCOLS=Object.create(null);
+
   /* Cesium resolves its Workers/, Assets/ and ThirdParty/ against this. The Vite
      build copies them to dist/cesium/ (see vite.config.js) and the dev server
      serves them from node_modules through the same path, so one value works in
@@ -104,7 +118,6 @@ window.IntMapCesiumEngine=(function(){
       this._layerById=new Map();
       this._states=new Map();                      /* "source[/sourceLayer]" → { featureId → state } */
       this._images=Object.create(null);
-      this._protocols=Object.create(null);
       this._minZoom=(o.minZoom==null?0:o.minZoom);
       this._maxZoom=(o.maxZoom==null?22:o.maxZoom);
       this._maxPitch=85; this._minPitch=0;
@@ -168,10 +181,6 @@ window.IntMapCesiumEngine=(function(){
          meets a ridge. Both are cheap next to the fragment cost already being paid, and
          the standing brief is 「表示速度、画質を高めて。どちらか一方犠牲はNG」. */
       try{ const fx=scene.postProcessStages&&scene.postProcessStages.fxaa; if(fx) fx.enabled=(o.antialias!==false); }catch(_){}
-      /* the maximum anisotropy the GPU offers, so imagery on a steeply tilted surface stays
-         sharp instead of blurring to mush — the case a 3-D globe is in constantly */
-      try{ const ctx=scene.context; if(ctx&&ctx.maximumTextureFilterAnisotropy)
-        this._maxAniso=ctx.maximumTextureFilterAnisotropy; }catch(_){}
       scene.screenSpaceCameraController.enableCollisionDetection=false;
       this._applyFov();
 
@@ -223,8 +232,18 @@ window.IntMapCesiumEngine=(function(){
       try{
         const scene=this._scene;
         const px=new Cesium.Cartesian2(this._canvasW()/2,this._canvasH()/2);
-        const ray=this._camera.getPickRay(px);
-        let p=ray?scene.globe.pick(ray,scene):null;
+        /* WITH NO TERRAIN, ASK THE ELLIPSOID, NOT THE MESH. `globe.pick` intersects the
+           TESSELLATED surface, and a low-zoom tile approximates the curve with a handful of
+           flat triangles — so the ray meets the chord, which is inside the true surface, and
+           the distance comes back slightly long. Measured at the app's startup view: the zoom
+           read 1.6991 for a camera placed at exactly 1.7. Tiny, but it is the number every
+           other derived quantity is built on, and pickEllipsoid is both exact and cheaper.
+           When terrain IS attached the mesh is the ground, and then the mesh is the right
+           answer — a camera over Mt Fuji is looking at the mountain, not at the ellipsoid
+           3.7 km below it. */
+        let p=null;
+        if(!this._terrainSpec) p=this._camera.pickEllipsoid(px,scene.globe.ellipsoid);
+        if(!p){ const ray=this._camera.getPickRay(px); p=ray?scene.globe.pick(ray,scene):null; }
         if(!p) p=this._camera.pickEllipsoid(px,scene.globe.ellipsoid);
         if(p) return Cesium.Cartographic.fromCartesian(p);
       }catch(_){}
@@ -289,8 +308,17 @@ window.IntMapCesiumEngine=(function(){
       const bearing=(cam.bearing==null?now.bearing:cam.bearing);
       const range=Math.max(1,this.rangeFor(c.lat,zoom));
       /* the look-at point sits ON the terrain when there is terrain, so a tilted
-         close-up over a mountain frames the mountain and not the ellipsoid under it */
-      let h=0; try{ const cc=Cesium.Cartographic.fromDegrees(c.lng,c.lat); const g=this._globe.getHeight(cc); if(isFinite(g)) h=g; }catch(_){}
+         close-up over a mountain frames the mountain and not the ellipsoid under it.
+         WITH NO TERRAIN THE HEIGHT IS ZERO BY DEFINITION and must not be asked for:
+         globe.getHeight reads the TESSELLATED surface, and with the ellipsoid provider a
+         coarse tile approximates the curve with a handful of flat triangles whose chord
+         sags kilometres inside it — measured, a z9 jumpTo to Tokyo landed 9,377 m out
+         because the target had been placed on that sag. The same mistake as reading the
+         centre off the mesh (see _centreCarto): a tessellation approximates the surface,
+         it is not the surface. */
+      let h=0;
+      if(this._terrainSpec){ try{ const cc=Cesium.Cartographic.fromDegrees(c.lng,c.lat);
+        const g=this._globe.getHeight(cc); if(isFinite(g)) h=g; }catch(_){} }
       const target=Cesium.Cartesian3.fromDegrees(c.lng,c.lat,h);
       const hpr=new Cesium.HeadingPitchRange(Cesium.Math.toRadians(bearing),Cesium.Math.toRadians(pitch-90),range);
       const fire=()=>{ this._afterMove(); };
@@ -493,7 +521,11 @@ window.IntMapCesiumEngine=(function(){
           L.show=visible;
           this._reorderImagery();
         } else if(rec.kind==='vector'){
-          const ds=this._vec.build(def,visible?this._features(def):[],this._env());
+          /* the feature states go in on the FIRST build too, not only on the next flush —
+             a layer added while a hover is already set would otherwise draw unhighlighted
+             until something else happened to dirty it */
+          const ds=this._vec.build(def,visible?this._features(def):[],
+            Object.assign({},this._env(),{states:this._statesFor(def)}));
           rec.ds=ds; ds.show=visible;
           this._dsColl.add(ds);
         } else if(rec.kind==='background'){
@@ -512,7 +544,7 @@ window.IntMapCesiumEngine=(function(){
             rectangle:rectFromCoords(Cesium,spec.coordinates) }); }catch(_){ return null; }
         }
         return CL().makeTileImageryProvider(Cesium,{ tiles:spec.tiles||[], tileSize:spec.tileSize||256,
-          maxzoom:spec.maxzoom, minzoom:spec.minzoom, attribution:spec.attribution, protocols:this._protocols });
+          maxzoom:spec.maxzoom, minzoom:spec.minzoom, attribution:spec.attribution, protocols:PROTOCOLS });
       }
       if(def.type==='hillshade'){
         const paintOf=()=>{
@@ -553,7 +585,18 @@ window.IntMapCesiumEngine=(function(){
       const p=rec.def.paint||{}, ctx={zoom:this.getZoom(),properties:{}};
       const n=(k,d)=>S().resolveNum(p[k],ctx,d);
       L.alpha=n('raster-opacity',1);
-      L.brightness=Math.max(n('raster-brightness-min',0)*2,0)+n('raster-brightness-max',1)*0+ (p['raster-brightness-min']!=null?1+n('raster-brightness-min',0):1);
+      /* opacity, contrast, saturation and hue are the SAME knob in both renderers, so those three
+         are exact — MapLibre's 0-centred deltas against Cesium's 1-centred multipliers.
+         BRIGHTNESS IS NOT, and it is the one worth being explicit about. MapLibre's
+         raster-brightness-min/max remap the input range, which is how #R34's dark base map works:
+         a measured contrast for the land/sea slope PLUS a brightness FLOOR applied afterwards, so
+         land is rescued from the crush while the ocean stays dark. Cesium's `brightness` is a
+         plain multiplier and cannot express a floor at all. Lifting by the floor is the closest
+         honest reading of the intent (0.33 → 1.33) and it preserves the ordering the measurement
+         was about; it is an approximation, and saying so here is better than a line of arithmetic
+         that looks exact and is not. */
+      const bmin=n('raster-brightness-min',0);
+      L.brightness=(p['raster-brightness-min']!=null)?(1+bmin):1;
       L.contrast=1+n('raster-contrast',0);
       L.saturation=1+n('raster-saturation',0);
       L.hue=n('raster-hue-rotate',0)*D2R;
@@ -650,7 +693,7 @@ window.IntMapCesiumEngine=(function(){
         try{ this._vec.update(rec.ds,rec.def,this._features(rec.def),
                               Object.assign({},env,{states:this._statesFor(rec.def)})); }catch(_){}
       }
-      try{ this._vec.placeLabels(this._scene,this._dsColl instanceof Array?this._dsColl:dsList(this._dsColl),this._maxLabels); }catch(_){}
+      try{ this._vec.placeLabels(this._scene,dsList(this._dsColl),this._maxLabels); }catch(_){}
       this._scene.requestRender();
     }
     _afterMove(){
@@ -822,7 +865,9 @@ window.IntMapCesiumEngine=(function(){
             out.push({ layer:{ id:layerId, type:rec.def.type, source:rec.def.source },
                        source:rec.def.source, sourceLayer:rec.def['source-layer'],
                        properties:(ent.properties&&ent.properties.getValue)?ent.properties.getValue(Cesium.JulianDate.now()):(ent.properties||{}),
-                       id:undefined, geometry:null, __entity:ent });
+                       /* the FEATURE's id, not the entity's — `setFeatureState({source,id},…)` is
+                          how the app highlights what was picked, and it needs the former */
+                       id:ent.__fid, geometry:null, __entity:ent });
           }
         }
       }catch(_){}
@@ -880,7 +925,7 @@ window.IntMapCesiumEngine=(function(){
     addImage(id,img){ if(this._images[id]) return false; this._images[id]=img; return true; }
     hasImage(id){ return !!this._images[id]; }
     removeImage(id){ delete this._images[id]; }
-    addProtocol(name,fn){ this._protocols[name]=fn; return true; }
+    addProtocol(name,fn){ PROTOCOLS[name]=fn; return true; }
 
     /* ── the rest of the surface ───────────────────────────────────────────── */
     resize(){ try{ this._widget.resize(); this._applyFov(); this._scene.requestRender(); this.fire('resize',{}); }catch(_){} }
@@ -1197,7 +1242,8 @@ window.IntMapCesiumEngine=(function(){
       setDragPan(on){ return this.setGesture('dragPan',on); },
       setGesture(n,on){ const v=V(); return v?v.setGesture(n,on):false; },
       gestures(){ return ['dragPan','dragRotate','scrollZoom','touchZoomRotate','keyboard','doubleClickZoom','boxZoom','touchPitch']; },
-      setZoomRate(r){ const v=V(); try{ v._scene.screenSpaceCameraController.zoomFactor=Math.max(0.5,5*(r||1)); return true; }catch(_){ return false; } },
+      setZoomRate(r){ const v=V(); if(!v) return false;
+        try{ v._scene.screenSpaceCameraController.zoomFactor=Math.max(0.5,5*(r||1)); return true; }catch(_){ return false; } },
       /* renderer-owned UI. Cesium has no popup/marker primitive, so these are DOM
          elements positioned by projecting their anchor every frame — the same
          thing MapLibre's Popup/Marker are, and they answer the same little API
