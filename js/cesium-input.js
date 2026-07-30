@@ -438,9 +438,12 @@ window.IntMapCesiumInput=(function(){
       else if(e.button===2&&!e.ctrlKey){ if(!on.dragRotate) return; mode='rotate'; }
       else if(e.button===0){ if(!on.dragPan) return; mode='pan'; }
       else return;
-      /* a fresh press starts fresh — MapLibre's BlockableMapEventHandler.mousedown clears
-         `_ignoreContextMenu` the same way, which is what keeps a plain right CLICK working */
+      /* a fresh press starts fresh, and from here until the release the context menu is HELD:
+         Chromium raises it on mousedown on Linux/macOS and on mouseup on Windows, so the only
+         suppression that works on both is one that spans the whole press
+         (MapLibre's BlockableMapEventHandler.mousedown sets `_delayContextMenu` for this). */
       rotated=false; moved=false; view._ateContextMenu=false;
+      view._ctxDelay=true; try{ view._ctxDrop(); }catch(_){}
       startX=lastX=p.x; startY=lastY=p.y;
       cancelEase();
       cam=read();
@@ -478,9 +481,12 @@ window.IntMapCesiumInput=(function(){
       /* rotate AND pitch, together — MapLibre runs both handlers on the same drag */
       rotated=true;
       /* …and once it has rotated, the release is not a right-CLICK. See the engine's
-         contextmenu dispatch: the app opens a panel over the canvas on that event, and a
-         panel over the canvas eats every gesture after it. */
+         contextmenu handler: the app opens a panel over the canvas on that event, and a panel
+         over the canvas eats every gesture after it. Drop anything already stashed (Linux and
+         macOS raise the event at the press) as well as arming the flag (Windows raises it at
+         the release). */
       view._ateContextMenu=true;
+      try{ view._ctxDrop(); }catch(_){}
       begin('rot');
       const o=centrePt();
       let bd;
@@ -496,6 +502,9 @@ window.IntMapCesiumInput=(function(){
 
     function onUp(e){
       if(e.pointerType==='touch'||e.pointerType==='pen'){ pts.delete(e.pointerId); touchEnd(); return; }
+      /* the press is over: whatever context menu it stashed is now due (a plain right click)
+         or already dropped (a right drag that rotated) */
+      try{ view._ctxRelease(); }catch(_){}
       if(!mode||mode==='touch') return;
       const was=mode; mode=null;
       if(was==='box'){ endBox(rel(e)); return; }

@@ -22,6 +22,30 @@ const boot = async (page, engine) => {
   await page.waitForFunction(() => !!window.__imap, null, BOOT);
   await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
   await expect.poll(() => page.evaluate(() => window.IntMapGeoEngine.id()), BOOT).toBe(engine);
+  /* ══ AND STOP THE APP CHASING ITS OWN TAIL ═══════════════════════════════════════════════
+     js/map-ui.js writes the shared `#v=` URL when the map settles, and listens for
+     `hashchange` to restore the camera from it — so every gesture is followed by a
+     programmatic camera command that can land in the middle of the NEXT one. On MapLibre that
+     command calls stop(), which RESETS the drag handler, and the baseline then reads 0;
+     measured, that is what put "MapLibre itself must have moved" on three different gestures
+     in three different runs, and once stopped an easeTo from moving at all.
+     The round trip is the app's own feature with its own tests (#R42). Here it is noise, so a
+     capture-phase listener registered after the app's own swallows it for the run. */
+  await page.evaluate(() => {
+    window.addEventListener('hashchange', (e) => { e.stopImmediatePropagation(); }, true);
+  });
+  /* …and let the app finish arriving. MapLibre's ScrollZoomHandler banks a lone wheel event
+     for 40 ms before it can tell a mouse from a trackpad, and that timer is throttled in a
+     hidden document — measured, the FIRST wheel after boot sometimes did nothing at all while
+     every later one worked. Waiting for one idle is the precondition, not a retry. */
+  await page.evaluate(async () => {
+    await new Promise((r) => {
+      let done = false;
+      const fin = () => { if (!done) { done = true; r(); } };
+      try { window.IntMapGeoEngine.events.once('idle', fin); } catch (_) {}
+      setTimeout(fin, 8000);
+    });
+  });
 };
 
 /* the canvas, not the canvas CONTAINER: MapLibre's container is zero-height in this app's
@@ -57,11 +81,15 @@ const park = async (page, over = {}) => {
    assertion here and it actually repeats. */
 const CAM_JS = `(() => { const x = window.IntMapGeoEngine.camera.get();
   return [x.center.lng, x.center.lat, x.zoom, x.bearing, x.pitch].map((v) => v.toFixed(6)).join(','); })()`;
-const settle = (page, budgetMs = 2500) => page.evaluate(async ([src, budget]) => {
+/* TWO quiet samples and a floor of 500 ms, not one sample. The app re-asserts the camera from
+   its `#v=` URL a few hundred milliseconds after a jumpTo, and on MapLibre that re-assert calls
+   stop(), which RESETS the drag handler — so a gesture begun in that window registers nothing
+   and the MapLibre baseline reads 0. One quiet sample can slip in ahead of it. */
+const settle = (page, budgetMs = 3000) => page.evaluate(async ([src, budget]) => {
   const at = new Function('return ' + src);
   let last = '', still = 0;
   const t0 = Date.now();
-  while (Date.now() - t0 < budget && still < 1) {
+  while (Date.now() - t0 < budget && (still < 2 || Date.now() - t0 < 500)) {
     await new Promise((r) => setTimeout(r, 100));
     const now = at(); still = (now === last) ? still + 1 : 0; last = now;
   }
@@ -151,7 +179,9 @@ async function mouseSuite(page, engine, part) {
     const before = await cam(page);
     await page.mouse.move(px, py);
     await page.mouse.wheel(0, delta);
-    await settleFrom(page, camKey(before));
+    /* a longer window than a drag gets: MapLibre banks a lone wheel event for 40 ms to sniff
+       the device, and that timer is throttled while the document is hidden */
+    await settleFrom(page, camKey(before), 10000);
     const after = await cam(page);
     const back = await page.evaluate((a) => window.IntMapGeoEngine.coords.project(a), anchor);
     out[name] = { dZoom: after.zoom - before.zoom,
@@ -419,6 +449,48 @@ test('R182 ⑤: all eight gesture names can be suspended and restored', async ({
   await settle(page);
   const restored = await cam(page);
   expect(Math.abs(restored.lng - before.lng), 'and must pan again once restored').toBeGreaterThan(1);
+});
+
+/* ══ ⑤b THE RIGHT DRAG MUST NOT OPEN A PANEL OVER THE MAP ════════════════════════════════
+   The app opens `#ctx-menu` on the map's `contextmenu` event, and a panel over the canvas
+   eats every gesture that follows — measured, after one right-drag rotate the next wheel and
+   the next ctrl-drag both did nothing. Chromium raises `contextmenu` on mouseDOWN on Linux
+   and macOS and on mouseUP on Windows, so this is asserted on the OUTCOME (is the menu over
+   the map?) rather than on when the event arrives. */
+test('R182 ⑤b: a right-drag rotate opens no menu, a plain right-click still does', async ({ page }) => {
+  test.setTimeout(300000);
+  await boot(page, 'cesium');
+  const b = await canvasBox(page);
+  const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
+  const overMap = () => page.evaluate(() => {
+    const r = window.IntMapGeoEngine.render.canvas().getBoundingClientRect();
+    return document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2 + 60)
+      .slice(0, 2).map((x) => x.tagName + (x.id ? '#' + x.id : '')).join(',');
+  });
+
+  await park(page, { pitch: 0 });
+  await page.mouse.move(cx, cy + 40);
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(cx + 120, cy + 40);
+  await page.mouse.up({ button: 'right' });
+  await settle(page);
+  const after = await cam(page);
+  expect(Math.abs(norm(after.bearing)), 'the drag must have rotated').toBeGreaterThan(10);
+  expect(await overMap(), 'a rotate must leave nothing over the canvas').not.toContain('#ctx-menu');
+
+  /* …and the very next gesture still reaches the map, which is what the panel was breaking */
+  const before = await cam(page);
+  await page.mouse.move(cx + 150, cy + 100);
+  await page.mouse.wheel(0, -120);
+  await settleFrom(page, camKey(before));
+  expect(Math.abs((await cam(page)).zoom - before.zoom), 'the wheel after a rotate').toBeGreaterThan(0.1);
+
+  /* a right CLICK is not a drag, and the app's own menu is a feature */
+  await page.mouse.move(cx, cy + 40);
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.up({ button: 'right' });
+  await page.waitForTimeout(400);
+  expect(await overMap(), 'a plain right-click must still raise the app menu').toContain('#ctx-menu');
 });
 
 /* ══ ⑥ TOUCH ═════════════════════════════════════════════════════════════════════════════

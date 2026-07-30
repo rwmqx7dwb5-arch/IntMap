@@ -1001,19 +1001,6 @@ window.IntMapCesiumEngine=(function(){
         const t=(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e;
         return { x:(t.clientX||0)-r.left, y:(t.clientY||0)-r.top }; };
       const domDispatch=(name)=>(e)=>{
-        /* ══ (#R182) A RIGHT-DRAG THAT ROTATED IS NOT A RIGHT-CLICK ═══════════════════════
-           MapLibre does not raise the map's `contextmenu` event after a drag: its
-           BlockableMapEventHandler.reset() sets `_ignoreContextMenu` the moment a gesture
-           takes over, so the event that arrives on release is swallowed. This engine raised
-           it every time — and the app opens its own `#ctx-menu` panel on it, WHICH THEN SITS
-           OVER THE CANVAS. Measured: after one right-drag rotate, the next wheel and the next
-           ctrl-drag hit the menu instead of the map and did nothing at all. The browser's own
-           menu is still suppressed; what is skipped is telling the app a click happened. */
-        if(name==='contextmenu'&&this._ateContextMenu){
-          this._ateContextMenu=false;
-          try{ e.preventDefault(); }catch(_){}
-          return;
-        }
         const pos=rel(e);
         const ev=domEv(name,e,pos);
         this.fire(name,ev);
@@ -1042,10 +1029,38 @@ window.IntMapCesiumEngine=(function(){
          passive for wheel/contextmenu/touchstart, which callers do prevent */
       for(const [n,passive] of [['mouseout',true],
                                 ['touchstart',false],['touchmove',false],['touchend',true],
-                                ['wheel',false],['contextmenu',false]]){
+                                ['wheel',false]]){
         const fn=domDispatch(n);
         try{ cv.addEventListener(n,fn,{passive}); this._domEvs.push([n,fn]); }catch(_){}
       }
+      /* ══ (#R182) `contextmenu` IS DELAYED TO THE RELEASE, AND DROPPED IF THE PRESS ROTATED ══
+         MapLibre's BlockableMapEventHandler does exactly this, and the reason is platform:
+         Chromium raises `contextmenu` on mouseDOWN on Linux and macOS, and on mouseUP on
+         Windows. Suppressing it only once a rotate has MOVED therefore works on Windows and
+         does nothing on Linux — measured, this round's first repair passed locally and failed
+         all three CI attempts, with the right-drag pitch and both ctrl gestures reading 0
+         because the app's `#ctx-menu` had opened over the canvas and was eating the input.
+         So: stash it while a button is down, drop the stash the moment the gesture turns into
+         a rotate, and fire whatever survives on release. A plain right CLICK still gets its
+         menu; a right DRAG never does, on either platform. */
+      let pendingCtx=null;
+      this._ctxDelay=false;
+      this._ctxDrop=()=>{ pendingCtx=null; };
+      this._ctxRelease=()=>{
+        this._ctxDelay=false;
+        if(!pendingCtx) return;
+        const ev=pendingCtx; pendingCtx=null;
+        this.fire('contextmenu',ev);
+      };
+      const onCtx=(e)=>{
+        const ev=domEv('contextmenu',e,rel(e));
+        /* MapLibre suppresses the browser's own menu whenever the app listens at all */
+        if(this.listens('contextmenu')){ try{ e.preventDefault(); }catch(_){} }
+        if(this._ateContextMenu){ this._ateContextMenu=false; pendingCtx=null; return; }
+        if(this._ctxDelay){ pendingCtx=ev; return; }
+        this.fire('contextmenu',ev);
+      };
+      try{ cv.addEventListener('contextmenu',onCtx,{passive:false}); this._domEvs.push(['contextmenu',onCtx]); }catch(_){}
       /* ══ (#R181) …AND `mousedown`/`mouseup` COME FROM THE POINTER, NOT THE MOUSE ══════════
          Listening for `mousedown` on the canvas measured ZERO while `mouseout` from the very
          same registration measured two. The reason is Cesium's own input layer: it binds

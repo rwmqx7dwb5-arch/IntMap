@@ -233,6 +233,27 @@ test('R182 ⑦: the flight is solved by the instant path, and re-asserted on arr
   assert.equal(calls, 3, `_aimAt should have exactly three call sites, found ${calls}`);
 });
 
+/* ── ⑦b THE CONTEXT MENU SPANS THE WHOLE PRESS ─────────────────────────────────────────────
+   The app opens its own `#ctx-menu` panel over the canvas on this event, so a right-drag
+   rotate that raises it kills every gesture that follows. Suppressing it only once the drag
+   has MOVED is a Windows-only fix: Chromium raises `contextmenu` on mouseDOWN on Linux and
+   macOS. That repair passed locally and failed all three CI attempts. */
+test('R182 ⑦b: contextmenu is held for the press, dropped by a rotate, released on the up', () => {
+  /* held from the press… */
+  assert.match(INPUT, /view\._ctxDelay=true;/, 'the press must start the hold');
+  /* …dropped the moment the drag becomes a rotate, on BOTH the stash and the flag… */
+  assert.match(INPUT, /view\._ateContextMenu=true;\s*\n\s*try\{ view\._ctxDrop\(\); \}/);
+  /* …and released when the button comes up, so a plain right CLICK still gets its menu */
+  assert.match(INPUT, /try\{ view\._ctxRelease\(\); \}/);
+  for (const n of ['_ctxDelay', '_ctxDrop', '_ctxRelease']) {
+    assert.ok(ENGINE.includes(n), `the engine must implement ${n}`);
+  }
+  /* the engine must not fire it straight through any more */
+  assert.ok(!/\['contextmenu',false\]/.test(ENGINE),
+    'contextmenu must not go through the generic DOM dispatch');
+  assert.match(ENGINE, /if\(this\._ctxDelay\)\{ pendingCtx=ev; return; \}/);
+});
+
 test('R182 ⑦: `around` survives the adapter and anchors the zoom', () => {
   assert.match(ENGINE, /const camOf=o=>\(\{[^}]*around:o&&o\.around/s);
   assert.match(ENGINE, /const around=\(cam\.around!=null\)\?normLngLat\(cam\.around\):null;/);
