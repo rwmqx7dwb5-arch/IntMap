@@ -1429,6 +1429,17 @@ function _m(){ return window.__imap||null; }
   return Object.assign({
     /* engine-level, not per-view: which adapter is installed, and the declared contracts */
     adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; },
-    contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; }
+    contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
+    /* (#R180) THE FACADE, AS A PUBLIC FACTORY. #R179 made the contract a function
+       of an adapter so an additional view could be handed the same shape; that
+       worked while both adapters lived in this file. A SECOND ENGINE does not —
+       js/cesium-engine.js has to be able to answer ui.createSubView with the same
+       object, and `engineFacade` is a closure here. Exposing the factory is what
+       makes "implement this contract" a thing another file can actually do, which
+       is the whole premise of the seam. */
+    makeFacade(adapterOrGetter){
+      const g=(typeof adapterOrGetter==='function')?adapterOrGetter:()=>adapterOrGetter;
+      return engineFacade(g);
+    }
   }, engineFacade(()=>_adapter));
 })();

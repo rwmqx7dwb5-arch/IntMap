@@ -151,13 +151,32 @@ test('R175 ②: the card speaks all five languages and credits the photographer'
 /* ── ③ the Vite migration's invariants ───────────────────────────────────────────────────── */
 test('R175 ③: every js/ module is imported by the entry, in index.html’s old order', () => {
   const imported = [...entry.matchAll(/import '\.\.\/(js\/[^']+)';/g)].map((m) => m[1]);
-  for (const f of jsFiles) assert.ok(imported.includes('js/' + f), `js/${f} is never imported by src/main.js`);
+  /* (#R180) …plus the ones a reachable module imports DYNAMICALLY. The claim this test makes —
+     no js/ module is unreachable, i.e. no feature silently does not exist — is unchanged. What
+     changed is that a module can be reachable on purpose without being in the static graph:
+     the second rendering engine is loaded by `import('./cesium-engine.js')` from
+     js/engine-select.js precisely so a MapLibre session (the default) transfers none of its
+     4.8 MB, and putting it in src/main.js would undo that. A file nothing imports at all still
+     fails, which is the case worth catching. */
+  const dyn = new Set();
+  for (const f of jsFiles) {
+    for (const m of readFileSync(join(ROOT, 'js', f), 'utf8').matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+  }
+  for (const f of jsFiles) assert.ok(imported.includes('js/' + f) || dyn.has('js/' + f),
+    `js/${f} is never imported by src/main.js, and no reachable module import()s it either`);
   for (const rel of imported) assert.ok(existsSync(join(ROOT, rel)), `src/main.js imports ${rel}, which does not exist`);
+  for (const rel of dyn) assert.ok(existsSync(join(ROOT, rel)), `a js/ module dynamically imports ${rel}, which does not exist`);
   /* (#R178) js/geo-engine.js is imported FIRST, and that ordering is load-bearing: every module below
      is written against window.IntMapGeoEngine and calls it from its factory, which runs at import
      time. newsgeo stays first among the MODULES. */
   assert.equal(imported[0], 'js/geo-engine.js', 'the renderer contract is imported before anything can ask for it');
-  assert.equal(imported[1], 'js/newsgeo.js', 'newsgeo stays first among the modules');
+  /* (#R180) …and WHICH engine fills that contract is decided immediately after it, before
+     js/app-body.js registers the DOMContentLoaded handler that builds the view. The order is
+     load-bearing in the same way #R178's was: engine-select publishes the pending-engine
+     promise that app-body's boot barrier waits on, and a handler registered before the
+     promise exists would boot on MapLibre no matter what the user chose. */
+  assert.equal(imported[1], 'js/engine-select.js', 'the engine choice is made before the app body can build a view');
+  assert.equal(imported[2], 'js/newsgeo.js', 'newsgeo stays first among the feature modules');
   assert.equal(imported[imported.length - 1], 'js/app-body.js', 'the application body is imported LAST');
   assert.equal(new Set(imported).size, imported.length, 'no module is imported twice');
 });

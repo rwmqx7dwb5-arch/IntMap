@@ -18,7 +18,18 @@
  *  a type="module" script runs before DOMContentLoaded fires, so the listener below is still
  *  registered in time — the same guarantee the inline tag had.
  * ==========================================================================*/
-window.addEventListener('DOMContentLoaded', () => {
+/* (#R180) THE BOOT BARRIER — two lines, and the body below is untouched.
+   A second engine cannot be installed after the app has built its view: every
+   source, layer, marker and camera hook is created through whichever adapter was
+   in place at `GE().ui.createView(…)`. js/engine-select.js starts loading Cesium
+   before DOMContentLoaded but `import('cesium')` is asynchronous, so the choice is
+   published as a PROMISE and this waits for it. With no pending engine — the
+   default, and every MapLibre session — `_p` is undefined, `_imAppBoot()` runs
+   synchronously on the DOMContentLoaded tick exactly as before, and there is no
+   promise anywhere in the path. Wrapping rather than re-indenting is deliberate:
+   the 5,000-line body below is byte-identical to #R179's, so nothing in it can
+   have changed meaning. */
+window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
      split module already uses. A getter, not the object: the engine is built inside map.on('load'),
      i.e. long after this line runs (#R170 learned that the hard way). */
@@ -3400,6 +3411,20 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R171) tilt ceiling + viewpoint-altitude readout reflect the SAVED state (each subsystem owns it) */
     try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) tl.value=window.IntMapTilt.isUnlimited()?'unlimited':'standard';
       const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; }catch(_){}
+    /* (#R180) the ENGINE, and — separately — the engine actually running. Those are two
+       facts and conflating them is exactly how a silent fallback hides (#R162): Cesium can
+       fail to load (no WebGL2, a blocked chunk, an offline first visit) and the session then
+       runs on MapLibre while the stored choice still says otherwise. The select shows the
+       CHOICE; the line under it shows what is really drawing, and only when they differ. */
+    try{ const es=document.getElementById('setting-engine'), st=document.getElementById('engine-status');
+      const ES=window.IntMapEngineSelect;
+      if(es&&ES){ es.value=ES.choice();
+        const live=ES.active(), fail=ES.failure();
+        if(st){
+          if(fail&&ES.choice()==='cesium'){ st.textContent=t('engineFellBack')+' ('+fail+')'; st.style.display=''; st.style.color='var(--danger-color,#ff3b30)'; }
+          else if(live!==ES.choice()){ st.textContent=t('engineActive')+ES.label(live,currentLang); st.style.display=''; st.style.color=''; }
+          else st.style.display='none';
+        } } }catch(_){}
     settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
@@ -3434,12 +3459,23 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R171) tilt ceiling + viewpoint altitude — both take effect immediately and persist themselves */
     try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) window.IntMapTilt.set(tl.value==='unlimited'); }catch(_){}
     try{ const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) window.IntMapEyeAlt.set(ea.value==='on'); }catch(_){}
+    /* (#R180) …and the ENGINE, which is the one setting that cannot take effect immediately:
+       a scene cannot be moved from one renderer to another once its sources, layers, markers
+       and camera hooks exist. So it is stored and the page reloads — announced, never silent,
+       and only when the value actually changed. */
+    let _engineReload=false;
+    try{ const es=document.getElementById('setting-engine'), ES=window.IntMapEngineSelect;
+      if(es&&ES&&es.value!==ES.choice()){ ES.set(es.value); _engineReload=true;
+        try{ imToast(t('engineSwitching')); }catch(_){} } }catch(_){}
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
     settingsDirty=false; modal.style.display='none'; applyTheme(); if(toolMode)updateToolPanel();
     renderUI();
     /* Changing the news-language scope/selection changes which feeds we pull → re-fetch. */
     const langsChanged=(prevNewsLangs.length!==newsLangs.length)||prevNewsLangs.some((l,i)=>l!==newsLangs[i]);
     if(prevNewsLang!==newsLangMode || (newsLangMode==='multi' && langsChanged)){ globalData=[]; try{ fetchData(); }catch(_){} }
+    /* (#R180) LAST, so every other setting on this panel has already been saved and applied
+       before the page goes away. The delay is only long enough for the toast to be read. */
+    if(_engineReload) setTimeout(()=>{ try{ location.reload(); }catch(_){} },700);
   };
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
@@ -3890,6 +3926,11 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
     lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
     lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centerd)", flatPanFree:"Free pan (wrap around the world)",
+    /* (#R180) the rendering engine */
+    lblEngine:"Map engine", engineMapLibre:"MapLibre — 2-D/3-D map (default)", engineCesium:"Cesium — true 3-D globe with real terrain",
+    engineHint:"Cesium renders the Earth as a real ellipsoid at every zoom, with the same satellite imagery and the same elevation data. It is downloaded only when selected, and switching reloads the page. Contour lines and the closed 3-D solid tool stay MapLibre-only.",
+    engineSwitching:"Switching engine — reloading…", engineFellBack:"Cesium could not start, so this session is running on MapLibre.",
+    engineActive:"Running on: ",
     /* (#R171) tilt ceiling + viewpoint altitude */
     lblTiltLimit:"Map tilt limit", tiltStandard:"Standard — up to 78° (default)", tiltUnlimited:"Unlimited — the full 0–180° range",
     tiltHint:"Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.",
@@ -3905,6 +3946,11 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
     lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
+    /* (#R180) 描画エンジン */
+    lblEngine:"地図エンジン", engineMapLibre:"MapLibre — 2D/3D地図（既定）", engineCesium:"Cesium — 実地形つきの真の3D地球儀",
+    engineHint:"Cesiumはどのズームでも地球を実際の楕円体として描き、衛星画像も標高データも同じものを使います。選択したときだけダウンロードされ、切り替えるとページを再読み込みします。等高線と閉じた3D立体ツールはMapLibre専用のままです。",
+    engineSwitching:"エンジンを切り替えます — 再読み込み中…", engineFellBack:"Cesiumを起動できなかったため、このセッションはMapLibreで動作しています。",
+    engineActive:"現在の動作: ",
     /* (#R171) 傾きの上限・視点高度 */
     lblTiltLimit:"地図の傾きの制限", tiltStandard:"標準 — 78°まで（既定）", tiltUnlimited:"無制限 — 0〜180°の全範囲",
     tiltHint:"無制限にすると、地平線を越えて真上を向くところまで倒せます。180°を超えた角度は方位を反転した同じ視線になるため、方位磁針を右クリックすれば0〜360°の任意の角度を数値で指定できます。",
@@ -5178,4 +5224,11 @@ window.addEventListener('DOMContentLoaded', () => {
      wired to a menu), it is simply never auto-invoked on load. */
   /* try{ setTimeout(_imWelcome,900); }catch(_){} */
   try{ ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
+};
+  /* (#R180) …and the other half of the barrier. `then(boot, boot)` on purpose: a
+     Cesium that fails to load must still give the user the app — on MapLibre,
+     which is still the installed adapter because js/cesium-engine.js only calls
+     IntMapGeoEngine.use() after the widget is actually up. */
+  let _p=null; try{ _p=window.IntMapEnginePending; }catch(_){}
+  if(_p&&typeof _p.then==='function') _p.then(_imAppBoot,_imAppBoot); else _imAppBoot();
 });

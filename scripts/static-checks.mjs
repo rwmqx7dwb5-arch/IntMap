@@ -257,8 +257,23 @@ try {
     const t = read(bodyF) + '\n' + read(idx) + '\n' + (engineF ? read(engineF) : '');   // where factories are called from
     const e = read(entry);
     const imported = new Set([...e.matchAll(/import\s+'\.\.\/(js\/[^']+)'/g)].map((m) => m[1]));
+    /* (#R180) …and the ones reached by DYNAMIC import from a module that IS in the entry.
+       The question this check asks — "is every module actually reachable, or is it dead code
+       whose feature silently never exists?" — is unchanged; what changed is that a module can
+       now be reachable on purpose WITHOUT being in the static graph. The second rendering
+       engine is loaded by `import('./cesium-engine.js')` inside js/engine-select.js precisely
+       so that a MapLibre session never downloads it, and listing it in src/main.js would undo
+       that. So a dynamic import from an already-reachable js/ file counts as reachable, and a
+       file nothing imports at all still fails. */
+    const dyn = new Set();
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      if (!imported.has(f.rel)) err('split', `${f.rel} exists but src/main.js never imports it (import '../${f.rel}';)`);
+      for (const m of read(f).matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+    }
+    for (const rel of dyn) {
+      if (!ALL.some((x) => x.rel === rel)) err('split', `a js/ module dynamically imports ${rel}, which does not exist`);
+    }
+    for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
+      if (!imported.has(f.rel) && !dyn.has(f.rel)) err('split', `${f.rel} exists but nothing imports it (add import '../${f.rel}'; to src/main.js, or import() it from a module that is imported)`);
     }
     // …and nothing may be imported that no longer exists (a dangling import breaks the whole bundle).
     for (const rel of imported) {

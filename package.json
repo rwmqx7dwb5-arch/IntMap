@@ -33,12 +33,15 @@
     "vite": "6.3.5"
   },
   "dependencies": {
+    "@mapbox/vector-tile": "^2.0.3",
     "@supabase/supabase-js": "2.58.0",
     "@turf/turf": "6.5.0",
+    "cesium": "^1.143.0",
     "html2canvas": "1.4.1",
     "katex": "0.16.11",
     "maplibre-contour": "0.1.0",
     "maplibre-gl": "5.24.0",
+    "pbf": "^4.0.1",
     "topojson-client": "3.1.0"
   },
   "allowScripts": {
