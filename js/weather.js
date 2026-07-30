@@ -17,7 +17,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.wind=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -247,7 +247,7 @@ window.IntMapModules.wind=function(HOST){
 };
 
 window.IntMapModules.weatherEC=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -460,25 +460,16 @@ window.IntMapModules.weatherPanel=function(HOST){
        per-location cache so reopening costs nothing; (b) an automatic FAILOVER to MET Norway
        (api.met.no Locationforecast, CORS-open) mapped into the same shape; (c) if both fail, an HONEST
        error line instead of a dash-filled skeleton. */
+    /* (#R183) The ladder above is now ONE function shared with everything else that asks for weather:
+       window.IntMapWx.point() (js/wx-source.js). The cache, the r.ok/{"error":true} guard and the MET
+       Norway mapping this block used to hold privately are all in there, plus the thing #R72 could not
+       have known it needed — a circuit breaker, so a daily-quota 429 stops the whole app re-asking for
+       the rest of the day instead of only this panel backing off.
+       Keeping a second copy here is what let the identical defect survive in js/widgets.js until #R183,
+       so there is deliberately no second copy any more. `_metNo` stays as a thin alias because the
+       function name appears in the R72 notes and in tests. */
     const _wxCache={};
-    const _METSYM={clearsky:0,fair:1,partlycloudy:2,cloudy:3,fog:45,lightrain:61,rain:63,heavyrain:65,lightrainshowers:80,rainshowers:81,heavyrainshowers:82,lightsleet:66,sleet:67,heavysleet:67,lightsleetshowers:66,sleetshowers:67,heavysleetshowers:67,lightsnow:71,snow:73,heavysnow:75,lightsnowshowers:85,snowshowers:85,heavysnowshowers:86,rainandthunder:95,heavyrainandthunder:95,lightrainandthunder:95,rainshowersandthunder:95,heavyrainshowersandthunder:96,snowandthunder:95,sleetandthunder:95};
-    function _metCode(sym){ if(!sym) return null; const k=String(sym).replace(/_(day|night|polartwilight)$/,''); return (_METSYM[k]!=null)?_METSYM[k]:3; }
-    async function _metNo(lat,lng){
-      const r=await fetch('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat='+lat.toFixed(3)+'&lon='+lng.toFixed(3));
-      if(!r.ok) return null; const j=await r.json(); const ts=j&&j.properties&&j.properties.timeseries; if(!ts||!ts.length) return null;
-      const d0=ts[0].data, i0=d0.instant.details||{};
-      const cur={temperature_2m:i0.air_temperature, relative_humidity_2m:i0.relative_humidity, apparent_temperature:null,
-        precipitation:(d0.next_1_hours&&d0.next_1_hours.details&&d0.next_1_hours.details.precipitation_amount)!=null?d0.next_1_hours.details.precipitation_amount:null,
-        weather_code:_metCode((d0.next_1_hours&&d0.next_1_hours.summary&&d0.next_1_hours.summary.symbol_code)||(d0.next_6_hours&&d0.next_6_hours.summary&&d0.next_6_hours.summary.symbol_code)),
-        wind_speed_10m:(i0.wind_speed!=null)?i0.wind_speed*3.6:null, wind_direction_10m:i0.wind_from_direction, surface_pressure:i0.air_pressure_at_sea_level};
-      /* aggregate the hourly series into per-day max/min + a midday symbol */
-      const days={}; ts.forEach(e=>{ try{ const dt=e.time.slice(0,10); const t2=e.data.instant.details.air_temperature; if(t2==null) return;
-        const d=days[dt]||(days[dt]={mx:-99,mn:99,sym:null}); if(t2>d.mx)d.mx=t2; if(t2<d.mn)d.mn=t2;
-        const hh=+e.time.slice(11,13); if(hh>=11&&hh<=14&&!d.sym) d.sym=_metCode((e.data.next_6_hours&&e.data.next_6_hours.summary&&e.data.next_6_hours.summary.symbol_code)||(e.data.next_1_hours&&e.data.next_1_hours.summary&&e.data.next_1_hours.summary.symbol_code)); }catch(_){} });
-      const keys=Object.keys(days).sort().slice(0,5);
-      const daily={time:keys, weather_code:keys.map(k=>days[k].sym!=null?days[k].sym:3), temperature_2m_max:keys.map(k=>days[k].mx), temperature_2m_min:keys.map(k=>days[k].mn)};
-      return {current:cur, daily, _src:'MET Norway'};
-    }
+    const _metNo=(lat,lng)=>window.IntMapWx.metNo(lat,lng);
     async function open(lngLat){ const p=ensure(); _lastLL=lngLat; p.style.display='block'; place();
       const lat=lngLat.lat, lng=lngLat.lng;
       /* (#R41) title is an <h4> so the shared _wireLegendDrag delegated handler makes the popup MOVABLE
@@ -491,11 +482,7 @@ window.IntMapModules.weatherPanel=function(HOST){
         let j=null; const hit=_wxCache[ck];
         if(hit&&(Date.now()-hit.t)<600000) j=hit.j;
         if(!j){
-          try{ const u='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=5&wind_speed_unit=kmh';
-            const r=await fetch(u,{cache:'no-store'}); const j0=await r.json();
-            if(r.ok&&j0&&!j0.error&&j0.current&&j0.current.temperature_2m!=null) j=j0;
-          }catch(_){}
-          if(!j){ j=await _metNo(lat,lng); }   /* Open-Meteo down or rate-limited → MET Norway */
+          j=await window.IntMapWx.point(lat,lng,{days:5,uv:false});   /* Open-Meteo, else MET Norway — one ladder */
           if(!j) throw new Error('all weather sources failed');
           _wxCache[ck]={t:Date.now(),j};
         }
