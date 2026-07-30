@@ -49,8 +49,28 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   **AST 実測で 2,037箇所 / 31ファイル / 86 API → 0**（`npm run check:engine` が CI で固定。構文解析なので
   コメント中の "the map. When…" では誤検知せず、ローカル変数 `map` も依存とみなさない）。
   置換表は `scripts/decouple-codemod.mjs`、検査は `scripts/engine-coupling.mjs`。
-  Cesium は**第2エンジンとして `CESIUM_CONTRACT` を宣言済み**（実装アダプタは未導入）＝
-  「同じ契約を満たす2本目の `js/geo-engine-*.js` を書き、設定で選ぶ」だけになった。
+- **#R179：その「0」が数えていなかったもの。** 上の 0 は**メンバアクセス**の数であり、真である。
+  同じ AST を「あらゆる参照」に広げると、アダプタの外に **327件**あった：
+  **TESTED 211**（`if(map)` / `typeof maplibregl!=='undefined'`＝レンダラの存在を訊く）と
+  **HELD 112**（`.addTo(map)` / `setupMaplibre(maplibregl)`、そして**モジュール契約そのもの**
+  `window.IntMapModules.x(map, HOST)`＝全モジュールが生ハンドルを受け取る）。
+  さらに**名前の一覧では原理的に見えない**ものが1つ：`ui.createView` がレンダラ自身の Map を返していたため、
+  **3つの追加ビューが生で駆動されていた**（compare.js の `cmap` 106／playground.js の `gmap` 8／
+  flight-sim.js の `minimap` 5）。#R179 はこの「第2エンジンを塞いでいた部分」を閉じた：
+  **アダプタはビューごとのファクトリ**（`makeMapLibreAdapter`。状態もビューごと）、
+  **契約はアダプタの関数**（`engineFacade`）で `ui.createSubView` が同じ形を返す、
+  マーカー/ポップアップは**ビューに**付く（`ui.addMarker`/`addPopup`）、等高線は `scene.demContourSource`
+  （maplibre-contour にレンダラ名前空間を渡す＝最後の裸の `maplibregl` だった）。
+  ゲートは**両方の数**を報告し、**残 324 を爪車で固定**し、`ui.createView` を
+  **app-body.js の1回だけ**に限定して「別名で持ったハンドル」を出所で塞ぐ。
+  プロパティ位置は除外する（除外しないと `arr.map(...)` に飲まれる。実測 932 のうち 605 が Array.prototype.map）。
+  Cesium は**第2エンジンとして `CESIUM_CONTRACT` を宣言済み**（実装アダプタは未導入）。
+  **#R179 で規模を実測**：契約を通る **219個のレイヤ定義が11型**
+  （line 69/fill 44/circle 42/symbol 33/raster 16/fill-extrusion 4/heatmap 3/color-relief 2/hillshade 1）、
+  **paint 43種・layout 33種**、**21演算子を使う468個の style 式**。
+  参照数が 0 でも**アプリ全体が MapLibre の style 言語で喋っている**ので、
+  第2エンジンは実質「その言語の解釈器」＝1ラウンドで見かけだけ作ることはできない（標準指示4）。
+  土台（ビューごとのアダプタ／1つの契約形／爪車つきの残 324件）は #R179 で整った。
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
