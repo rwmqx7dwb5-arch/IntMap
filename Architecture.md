@@ -1853,6 +1853,13 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 - **基盤切替**：`btn-view-map/sat` と `applyTheme()`＋`_reassertBase()`（スタイルロード競合に強いポーリング再適用）。
 - **投影**：Flat(mercator)/Globe。3D地形は terrarium DEM（複数ホストで並列フェッチ、モバイルは maxzoom 13 でRAM安全）。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country/city/other` を生成（冪等）。`cb-names`(既定ON)で表示。
+- **施設・店舗名 (#R186)**：同じ `ofm` の **`poi`** レイヤから `ofm-poi`（テキスト）＋`ofm-poi-dot`（点）。z14〜、
+  `rank` の窓をズームで開き `symbol-sort-key` で衝突順も同じ順序に。`cb-poi`（既定OFF）。
+- **背後の星空と太陽 (#R186)**：`js/space-sky.js`。ダークテーマ＋globe＋自前の空を持たないエンジンのときだけ、
+  `#map` の**下**の `#space-canvas` に実カタログの星（`data/stars.bin`）と実位置の太陽を描く。地球が不透明なので
+  裏側の星は地球自身が隠す。`body.space-sky-on` が `#map` の `--bg-color` を外す（その黒が置き換え対象だった）。
+- **粗い地球全体の衛星ベース (#R186)**：`js/world-base.js`。同梱の正距円筒画像から `imapworld://` プロトコルで
+  低ズーム衛星タイルを**ネットワーク無しで**生成し、`layer-sat` の下に敷く（衛星ベースマップのときだけ表示）。
 - **国境ライン**：`borders-only-line`（`cb-borders`、既定OFF）。国塗り＝`country-fill`/`country-line`（`cb-countries`=Countries(info)）。
 - **データレイヤー群**：`geoLayersDB` / 各種 setup 関数。`_registerLayerOpacity()` でレイヤーごとに透明度凡例。
 - **レイヤーパネル再構成**：`reorganizeLayerPanel()` が DOM を毎回並べ替えて分類:
@@ -2136,6 +2143,57 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R186 補足（同梱した空と地球／大気は0倍されていた／2つの標本化は境界で必ず食い違う）
+
+**新しいファイル。** `js/space-sky.js`（`window.IntMapSky`）＝ダークモードで globe の背後に描く実際の
+星空と太陽。`js/world-base.js`（`window.IntMapWorldBase`）＝同梱した地球全体の粗い衛星画像を、
+ネットワークに触れずに低ズーム衛星タイルとして供給するプロトコル。`scripts/build-star-catalogue.mjs`
+→ `data/stars.bin`（+`stars.json`）、`scripts/build-world-basemap.mjs` → `data/world-basemap.jpg`
+（+`world-basemap.json`）。どちらも**再生成可能**で、出典は「データ＆帰属」に載っている。
+
+**同梱データの形式。** `stars.bin` は 12 バイトのヘッダ（`IMSTAR1\0` + uint32 の件数）＋1星6バイト
+（uint16 赤経＝度×65536/360、int16 赤緯＝度×32767/90、uint8 V等級＝(V+2)×20、int8 B−V＝×50）＝
+9,096 星で 55 KB。量子化は**カタログではなく描画器に対して**選んである：赤経0.0055°／赤緯0.0027°に対し
+カメラの視野では1°が約21画素、つまり**0.1画素未満**。`world-basemap.jpg` は 2048×1024 の正距円筒
+（−180…180 / −90…90）。**赤道方向2,048 pxは512pxタイルで z2 が等倍**なので、プロトコルの maxzoom は 4。
+
+**エンジン契約に増えた2つ。**
+- `camera.viewFrame()` — 無限遠の点を射影するのに要る値一式（幅・高さ・fov・padding由来のオフセット・
+  中心・方位・傾き・ロール、および検算用の `cameraToCenterPx`/`globeRadiusPx`）。**Cesium は null を
+  返す**＝「このエンジンは自前の空を持っている」の意味で、`js/space-sky.js` はそれを見て黙る。
+- `scene.setSunDirection({lng,lat})` — 「太陽が真上に来ている地点」。**規約を持たない一つの事実**だけを
+  渡し、MapLibre の `style.light`（方位+90°オフセット・直交形を符号反転・globe行列と同じ回転鎖）への
+  変換はアダプタ側に置く。#R182 の「型が同じ数値なので動いてしまう」を繰り返さないための形。
+
+**MapLibre の大気は実装済みで、0倍されていた。** globe のシェーダは本物のレイリー＋ミー散乱の積分
+（惑星6,371 km／大気6,471 km／散乱係数 (5.5,13.0,22.4)e−6／ミー21e−6／スケールハイト8 km・1.2 km）。
+ただし `atmosphere-blend` 倍で、**`sky` を持たないスタイルはこの値が 0**。衛星ベースマップのときだけ
+`setSky({'atmosphere-blend': …ズーム補間})` を入れる。⚠ 太陽方向は `style.light` なので、**同じ設定が
+fill-extrusion の陰影も決める**。衛星の間だけ実太陽、切ると既定ランプ、日照シミュレータが開いている
+間はそちらが優先。
+
+**極の黒はタイルの失敗ではない。** Web メルカトルは ±85.0511° で終わり、Cesium は ±90° まで描くので、
+極冠には**どのラスタ源にも要求できるタイルが存在しない**。`js/cesium-engine.js` が同梱の正距円筒画像を
+`SingleTileImageryProvider` で imagery コレクションの index 0 に置く（`_reorderImagery` はアプリの
+レイヤを全部その上へ上げるので順序管理は不要）。
+
+**Cesium の空は元から入っていた。** `CesiumWidget` に `skyBox:false` を渡していたのが、Tycho-2 星図
+（`Assets/Textures/SkyBox/`）と `Sun`・`Moon` を**まとめて無効化する分岐**だった。外すだけで復活し、
+星箱は `Transforms.computeIcrfToFixedMatrix` でシーンの時刻に合わせて回る。その時刻はアプリの
+マスタークロック（`window.IntMapTime`）から押し込む＋`requestRenderMode` なので30秒ごとに再描画要求。
+
+**地形と水（`js/terrain-water.js`）。** 作業格子は 384²（携帯192²）、流下は**MFD**（Freeman 1991、
+(勾配)^1.1×等高線長）で D8 の平行線アーティファクトを除去し、**窪地は段階的**——盆地内のセルは水を
+盆地に渡し、盆地の全セル訪問後に水位を解いて**溢れた分だけ**を出口へ注ぐ。作業矩形の外は
+`traceDownstream()` が実DEM（z11・54 m）を**窓ごとに priority flood して parent 鎖を辿る**方式で
+最大600 km追跡し、終端を `sea` / `sink` / `lake` / `loop` / `flat` / `nodata` / `tiles` / `cap` に
+分類して**理由ごと報告**する。海の判定は標高ではなく**≤0 m 領域の連結性＋窓に占める面積比（15%）**。
+
+**読み込み画面。** `index.html` の body 先頭の**静的マークアップ**＋`css/intmap.css` 先頭の規則
+（render-blocking な `<link>` なので最初のフレームで塗られる）。`window.__imBoot.set(pct, mark)` を
+`js/app-body.js` が本物の里程標で呼ぶ（html→dom→renderer→load→style→layers→idle）。20秒の失敗安全弁
+つき——開かない読み込み画面は、読み込み画面が無いより悪い。
 
 ### #R185 補足（重いのは「静止画」ではなく「動かしたとき」／半解像度の4つ目の扉／出所は1つでは足りない）
 

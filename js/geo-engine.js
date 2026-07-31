@@ -677,6 +677,36 @@ function _m(){ return window.__imap||null; }
     globeness(){ const m=_m(); try{ const v=m&&m.style&&m.style.projection&&m.style.projection.transitionState;
         if(typeof v==='number'&&isFinite(v)) return Math.max(0,Math.min(1,v)); }catch(_){}
       try{ const t=(m&&m.getProjection&&m.getProjection()||{}).type; return (t==='mercator'||t==='flat')?0:1; }catch(_){ return 0; } },
+    /* ══ (#R186) THE CAMERA, AS SOMETHING AT INFINITY SEES IT ═══════════════════════════════════
+       js/space-sky.js draws the real night sky BEHIND the globe. A star is at infinity, so where it
+       lands on screen depends on the camera's ROTATION and its projection — never on its position —
+       and the numbers that decide that are not all in the public camera surface: the field of view
+       and the padding-derived centre offset are not `getBearing()`-style values anyone was asking
+       for before.
+       They are answered HERE rather than read from the renderer at the call site, because this file
+       is the only one allowed to name MapLibre (scripts/engine-coupling.mjs) — and because "what a
+       point at infinity projects to" is a genuine engine question that a different engine answers
+       differently. Cesium overrides it to null: it has a real SkyBox and needs no help.
+       The rotation chain the sky code applies to this is the renderer's own — Transform._calcMatrices
+       builds Rz(roll)·Rx(−pitch)·Rz(bearing)·Rx(lat)·Ry(−lng) for the globe, and the atmosphere
+       shader's getSunPos() applies exactly the same chain to the light direction. tests/r186 checks
+       the reconstruction against map.project() rather than trusting that reading. */
+    viewFrame(){ const m=_m(); if(!m) return null;
+      try{ const t=m.transform; if(!t) return null;
+        const c=t.center||m.getCenter(), off=t.centerOffset||{x:0,y:0};
+        const fov=(typeof t.fovInRadians==='number')?t.fovInRadians:((t.fov||36.87)*Math.PI/180);
+        const world=t.worldSize||0, gr=world?(world/(2*Math.PI)/Math.max(1e-6,Math.cos((c.lat||0)*Math.PI/180))):0;
+        return { width:t.width, height:t.height, fovRad:fov,
+          offsetX:off.x||0, offsetY:off.y||0,
+          lng:c.lng, lat:c.lat,
+          bearingDeg:t.bearing||0, pitchDeg:t.pitch||0,
+          rollDeg:(typeof t.rollInRadians==='number')?(t.rollInRadians*180/Math.PI):0,
+          /* the two lengths that turn the rotation into a full projection — needed only to CHECK the
+             model against map.project(); a star at infinity is unaffected by either */
+          cameraToCenterPx:(typeof t.cameraToCenterDistance==='number')?t.cameraToCenterDistance:0,
+          globeRadiusPx:gr,
+          globeness:this.globeness() };
+      }catch(_){ return null; } },
     /* (#R171) camera ATTITUDE — bearing / pitch / roll and the tilt limits. The unlimited-tilt setting and
        the flight sim both need these, and both are written against the engine, so they belong in the contract. */
     /* (#R179) an attitude-only declaration: the eye is HELD, which is the whole unlimited-tilt feature */
@@ -1193,6 +1223,32 @@ function _m(){ return window.__imap||null; }
        All of them are "the scene", not "a layer", which is why they were never in layers.*. */
     getStyle(){ const m=_m(); try{ return (m&&m.getStyle)?m.getStyle():null; }catch(_){ return null; } },
     setLight(l){ const m=_m(); try{ if(m&&m.setLight) m.setLight(l); }catch(_){} },
+    /* ══ (#R186) WHERE THE SUN IS, SAID WITHOUT A CONVENTION ═══════════════════════════════════
+       「MapLibreでも、Satelliteでは、地球の大気が見えるように。（実寸・実色）」
+       MapLibre's globe atmosphere is a real Rayleigh + Mie scattering integral — 6,371 km planet,
+       6,471 km atmosphere, per-wavelength coefficients, 8 km and 1.2 km scale heights — so 実寸・実色
+       is the renderer's to keep. What it needs from us is the direction of the Sun, and that is
+       where a convention can be got wrong: the shader takes it from `style.light`, whose `position`
+       is [radial, azimuth°, polar°] in a frame whose azimuth is offset by 90°, whose cartesian form
+       is NEGATED before use, and which is then rotated by the same chain the globe matrix uses.
+       #R182 is the round where a value with the right TYPE and the wrong convention was passed
+       between two camera APIs and quietly did something else, so the caller says the one thing that
+       has no convention — the point on Earth the Sun is directly above — and the arithmetic to get
+       from there to the renderer's light spec lives here, next to the renderer it belongs to.
+         −cartesian(position) must equal the globe-space unit vector [sin λ cos φ, sin φ, cos λ cos φ]
+         ⇒ polar = acos(−cos λ cos φ),  azimuth = atan2(sin λ cos φ, −sin φ)
+       Passing null restores the app's default light. */
+    setSunDirection(o){ const m=_m(); if(!m||!m.setLight) return false;
+      try{
+        if(!o){ m.setLight({anchor:'viewport',position:[1.15,210,30]}); return true; }
+        const D=Math.PI/180, la=(o.lng||0)*D, ph=(o.lat||0)*D;
+        const cl=Math.cos(la), sl=Math.sin(la), cp=Math.cos(ph), sp=Math.sin(ph);
+        const polar=Math.acos(Math.max(-1,Math.min(1,-cl*cp)))/D;
+        const azim=Math.atan2(sl*cp,-sp)/D;
+        m.setLight({ anchor:'map', position:[1.5,azim,polar],
+                     color:o.color||'#ffffff', intensity:(o.intensity==null?0.5:o.intensity) });
+        return true;
+      }catch(_){ return false; } },
     setSky(s){ const m=_m(); try{ if(m&&m.setSky) m.setSky(s); }catch(_){} },
     getSky(){ const m=_m(); try{ return (m&&m.getSky)?m.getSky():null; }catch(_){ return null; } },
     setTerrain(t){ const m=_m(); try{ if(m&&m.setTerrain) m.setTerrain(t); return true; }catch(_){ return false; } },
@@ -1333,6 +1389,8 @@ function _m(){ return window.__imap||null; }
       getProjection:()=>A().getProjection(),
       /* (#R173) 0 = flat, 1 = a sphere — see the adapter; the projection's NAME does not answer this */
       globeness:()=>A().globeness?A().globeness():0,
+      /* (#R186) the frame a point at infinity is projected with — null when the engine draws its own sky */
+      viewFrame:()=>A().viewFrame?A().viewFrame():null,
       setBearing:b=>A().setBearing(b), setPitch:p=>A().setPitch(p), getRoll:()=>A().getRoll(), setRoll:r=>A().setRoll(r),
       getMaxPitch:()=>A().getMaxPitch(), setMaxPitch:v=>A().setMaxPitch(v), getMinPitch:()=>A().getMinPitch(),
       /* (#R178) the zoom range — set it here, never on the renderer, so the unlimited-tilt floor
@@ -1403,6 +1461,8 @@ function _m(){ return window.__imap||null; }
        the parsed style itself. Separate from layers.* because an engine can have all of these
        without having a "layer" concept at all. */
     scene:{ getStyle:()=>A().getStyle(), setLight:l=>A().setLight(l),
+      /* (#R186) "the Sun is overhead at this point" — see the adapter for why it is stated that way */
+      setSunDirection:o=>A().setSunDirection?A().setSunDirection(o):false,
       setSky:s=>A().setSky(s), getSky:()=>A().getSky(),
       setTerrain:t=>A().setTerrain(t), getTerrain:()=>A().getTerrain(),
       addImage:(id,img,o)=>A().addImage(id,img,o), hasImage:id=>A().hasImage(id), removeImage:id=>A().removeImage(id),

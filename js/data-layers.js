@@ -12,6 +12,17 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+/* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
+   「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
+   Three readers need this list and they must not disagree, so it is stated once, here, above the
+   factory that builds the rows:
+     · the row builder below marks these checkboxes `checked`;
+     · js/app-body.js dispatches their `change` once the style can accept layers — a checked box on
+       its own paints nothing, which is the mistake #R34 already recorded for the Place-names toggle;
+     · the session restore in js/app-body.js switches one back OFF when the saved snapshot says the
+       user had switched it off, so "default on" never means "cannot be turned off".
+   Ids, not layer keys, because that is what all three readers hold. */
+window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.dataLayers=function(HOST){
   /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
@@ -380,12 +391,25 @@ window.IntMapModules.dataLayers=function(HOST){
     /* Sea-level slider lives in the legend too (#11) — control the simulation straight from the legend. */
     { const r=lgdSeaLevel.querySelector('.sl-legend-range'); if(r) r.addEventListener('input',()=>{ window._seaLevelM=parseInt(r.value,10)||0; if(window._refreshSeaLevel) window._refreshSeaLevel(); }); }
     /* (#R9) Custom value button: any number in [-11000, +9000]; out-of-range shows an inline error. */
+    /* (#R186) 「Sea-level changeは、setを押さなくても、数値を変えた時点で結果が変わるように。」 — the number box
+       now applies AS IT CHANGES, exactly like the slider beside it (which has always been on `input`).
+       `input` fires on every keystroke AND on the spinner arrows, so a partially-typed value like "-"
+       or "1" would repaint at each character; the apply is therefore debounced by one animation-frame-ish
+       tick and a lone sign/empty box is treated as "still typing" rather than as an error. Set stays —
+       it is the explicit commit for anyone who has learned to press it, and Enter still commits — but
+       nothing waits for either of them any more. */
     { const num=lgdSeaLevel.querySelector('.sl-num'), setb=lgdSeaLevel.querySelector('.sl-set'), err=lgdSeaLevel.querySelector('.sl-err');
-      const apply=()=>{ const v=parseInt(num.value,10);
+      const apply=(quiet)=>{ const raw=String(num.value||'').trim();
+        if(quiet && (raw===''||raw==='-'||raw==='+')){ if(err) err.style.display='none'; return; }   /* mid-typing, not an error */
+        const v=parseInt(raw,10);
         if(isNaN(v)||v<-11000||v>9000){ if(err){ err.textContent=HOST.lang==='jp'?'-11000〜9000 の数値を入力してください':HOST.lang==='de'?'Zahl zwischen -11000 und 9000 eingeben':HOST.lang==='ru'?'Введите число от -11000 до 9000':HOST.lang==='es'?'Introduce un número entre -11000 y 9000':'Enter a number between -11000 and 9000'; err.style.display='block'; } return; }
         if(err) err.style.display='none'; window._seaLevelM=v; if(window._refreshSeaLevel) window._refreshSeaLevel(); };
-      if(setb) setb.onclick=apply;
-      if(num) num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); apply(); } });
+      if(setb) setb.onclick=()=>apply(false);
+      if(num){ let _slT=0;
+        num.addEventListener('input',()=>{ clearTimeout(_slT); _slT=setTimeout(()=>apply(true),90); });
+        num.addEventListener('change',()=>{ clearTimeout(_slT); apply(true); });
+        num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); clearTimeout(_slT); apply(false); } });
+      }
     }
     /* === Wind legend (#R12 / #19,#22) — replaces the floating top-center valid-time pill that overlapped
        the search box. Same draggable data-legend format as every other layer, carries the GFS valid time,
@@ -635,7 +659,14 @@ window.IntMapModules.dataLayers=function(HOST){
         'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
         'precip','clouds','ships','planes','sats','hillshade','contours','night','subcables','nato','eu']);
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
-      w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"> <span data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
+      /* (#R186) 「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」 — these two rows ship
+         CHECKED. window.IntMapDefaultLayers is the single list; app-body dispatches the change event for
+         each of them once the style can accept layers (a checked box alone paints nothing), and the
+         session restore consults the same list so a user who switches one OFF is not overruled on the
+         next load. Declared as a window value rather than a local const so both readers see one list. */
+      const defOn=(window.IntMapDefaultLayers||[]).indexOf('dl-'+id)>=0;
+      w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
+      if(defOn){ w.classList.add('on'); const ex0=w.querySelector('.lyr-extras'); if(ex0) ex0.style.display='block'; }
       dd.appendChild(w);
       const cb=w.querySelector('#dl-'+id);
       cb.addEventListener('change',e=>{
@@ -676,7 +707,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const sec=document.getElementById('layer-active-section'); if(!sec) return;
       const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
-      const skip=new Set(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
@@ -889,7 +920,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
-        ['cb-names','cb-geolabels','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        ['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -921,7 +952,7 @@ window.IntMapModules.dataLayers=function(HOST){
         dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
-          if(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+          if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){
@@ -1307,7 +1338,16 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R9) Works for ANY offset incl. NEGATIVE (sea-level fall, the slider's minus side): build the
          candidate depth→color stops, then keep only strictly-ASCENDING ones so MapLibre's interpolate
          never receives a non-monotonic input (which threw with the old fixed -50 stop at low L). */
-      const cand=[[-11000,'rgba(5,40,90,0.92)'],[L-50,'rgba(25,95,175,0.82)'],[L-1.5,'rgba(45,125,205,0.72)'],[L,'rgba(120,180,235,0.60)'],[L+0.6,'rgba(0,0,0,0)'],[12000,'rgba(0,0,0,0)']];
+      /* ⚠ (#R186) 「Opacityの100%は、全然100% Opacityではない」 — ROOT CAUSE, and it was in these stops.
+         The layer's `color-relief-opacity` MULTIPLIES the ramp's own alpha, and the ramp carried a
+         baked-in 0.60-0.92. So the slider at 100 % produced at most 92 % over deep water and only
+         60 % at the shoreline — the control could not reach opaque no matter where it was dragged.
+         The stops are now FULLY OPAQUE and the slider is the one and only transparency, so 100 %
+         means 100 %. Depth still reads, because depth was never carried by the alpha: it is the
+         colour ramp (deep navy → pale blue), which is untouched. The land side fades out through the
+         SAME hue instead of through rgba(0,0,0,0) — interpolating towards transparent BLACK darkened
+         the 0.6 m coastal feather, which was a second, smaller bug in the same line. */
+      const cand=[[-11000,'rgba(5,40,90,1)'],[L-50,'rgba(25,95,175,1)'],[L-1.5,'rgba(45,125,205,1)'],[L,'rgba(120,180,235,1)'],[L+0.6,'rgba(120,180,235,0)'],[12000,'rgba(120,180,235,0)']];
       const out=[]; let last=-Infinity;
       for(const c of cand){ if(c[0]>last){ out.push(c[0],c[1]); last=c[0]; } }
       return ['interpolate',['linear'],['elevation'], ...out];
@@ -2076,10 +2116,39 @@ window.IntMapModules.dataLayers=function(HOST){
        every field for the tooltip + the exact data timestamp. Synthetic data is now a last resort
        only when the device is offline / the feed is unreachable. */
     let _lastPlaneFetch=0;
-    /* airplanes.live caps the query radius at 250 nm, so below this zoom the viewport is far
-       larger than the data coverage → only a central blob would show. Instead of that broken
-       look, we prompt the user to zoom in (their explicit request). */
-    const PLANES_MIN_ZOOM=5, SHIPS_MIN_ZOOM=6;
+    /* ══ (#R186) HOW MUCH SKY THE LAYER COVERS ════════════════════════════════════════════════════
+       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」
+
+       The ceiling was never the renderer and never the aircraft count — it was ONE query. The feed's
+       point endpoint takes a centre and a radius, and 250 nm is a HARD cap: measured against the live
+       API, r=250 answers 200 and r=300/500/1000 all answer **403**, so a bigger circle is not on
+       offer. #R? therefore refused to draw below z5, because one 463-km circle inside a
+       continent-wide viewport is a blob in the middle rather than "the aircraft on screen".
+
+       A circle is not the only shape available, though — several of them are. The viewport is now
+       TILED with 250-nm circles on the step that makes their inscribed squares meet, the results are
+       merged and de-duplicated on the ICAO 24-bit address, and the covered area grows with the
+       number of circles instead of being fixed by one radius. Measured on the live API: eight
+       sequential queries over Europe returned 200 every time, took 3.4 s in total, and yielded 1,956
+       distinct aircraft where a single circle at the same centre returned 611.
+
+       ⚠ AND THE PACE IS MEASURED, NOT ASSUMED. The first version fired four at a time and 9 of 20
+       came back as network failures — not 429s, bare "Failed to fetch", i.e. the host stopped
+       answering this address at all — after which even single retries failed. Probed properly: the
+       block lifts after 30 s of quiet, and 14 consecutive requests spaced 1.2 s apart then ALL
+       succeed. So the sweep is STRICTLY SEQUENTIAL at 1.2 s, the budget is 16 circles rather than
+       30, and the poll interval grows with the sweep (16 circles → one refresh a minute). That is
+       0.29 requests a second in the long run — a fraction of what the feed tolerates — while a
+       close-in single-circle view still refreshes every 20 s exactly as it always did. The
+       staleness a wide sweep buys is invisible: a minute of flight is 15 km, five pixels at z4. */
+    const PLANE_CIRCLE_NM=250;                       /* the API's hard maximum, verified by 403 above it */
+    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?6:16);
+    const PLANE_GAP_MS=1200;                         /* measured sustainable spacing — see above */
+    const PLANE_MAX_AIRCRAFT=20000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
+    /* Below this the covered block is a small fraction of an ocean-sized view and the old "zoom in"
+       prompt is still the honest answer. It used to be z5; a 30-circle sweep covers ~3,900 × 3,300 km,
+       which is a real region at z3-z4. */
+    const PLANES_MIN_ZOOM=3, SHIPS_MIN_ZOOM=6;
     function zoomHintEl(id,onClickZoom){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
@@ -2091,16 +2160,52 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function updatePlanesZoomHint(){
       const on=!!(planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
-      const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM);
-      if(on&&GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; } else el.style.display='none';
+      const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM+2);
+      if(!on){ el.style.display='none'; return; }
+      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; return; }
+      /* (#R186) …and when the budget covers only part of a very wide view, SAY SO rather than letting
+         a partly-filled sky read as an empty one. `_planeCover` is set by the planner below, so this
+         reports what the last sweep actually asked for, not an estimate. */
+      if(_planeCover&&_planeCover.clipped){ el.textContent=t('planesAreaHint')||t('planesZoomHint'); el.style.display='block'; return; }
+      el.style.display='none';
     }
-    function viewportRadiusNm(){
-      try{ if(GE().hasRenderer()){ const c=GE().camera.getCenter(), ne=GE().camera.getBounds().getNorthEast(), toR=Math.PI/180, R=6371;
-        const dLat=(ne.lat-c.lat)*toR, dLon=(ne.lng-c.lng)*toR;
-        const a=Math.sin(dLat/2)**2+Math.cos(c.lat*toR)*Math.cos(ne.lat*toR)*Math.sin(dLon/2)**2;
-        const km=2*R*Math.asin(Math.min(1,Math.sqrt(a)));
-        return Math.max(50,Math.min(250,Math.round(km/1.852))); } }catch(_){}
-      return 250;
+    /* ── (#R186) THE SWEEP PLAN: which circles cover the view ──────────────────────────────────────
+       Each 250-nm circle fully contains a square of side r·√2, so stepping by that side leaves no
+       gap between neighbours (0.94 of it, for a little overlap at the corners where the projection
+       stretches). Longitude steps are widened by 1/cos(lat) so the ground spacing stays constant as
+       the grid climbs away from the equator. When the view needs more circles than the budget, the
+       grid is CLIPPED to the central block and `clipped` is set — the hint above then says the
+       coverage is partial instead of leaving the user to guess. */
+    let _planeCover=null;
+    function planeCircles(){
+      const R=6371, NM=1.852, toR=Math.PI/180;
+      let c={lat:48,lng:8}, b=null;
+      try{ if(GE().hasRenderer()){ c=GE().camera.getCenter(); b=GE().camera.getBounds(); } }catch(_){}
+      const sideKm=PLANE_CIRCLE_NM*NM*Math.SQRT2*0.94;      /* the inscribed square, with overlap */
+      const dLat=sideKm/110.574;
+      let wantX=1, wantY=1, spanKmX=sideKm, spanKmY=sideKm;
+      if(b){ try{
+        const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
+        const lonSpan=((e-w)+360)%360||360;
+        spanKmX=Math.max(1,lonSpan*111.320*Math.max(0.05,Math.cos(c.lat*toR)));
+        spanKmY=Math.max(1,(n-s)*110.574);
+        wantX=Math.max(1,Math.ceil(spanKmX/sideKm)); wantY=Math.max(1,Math.ceil(spanKmY/sideKm));
+      }catch(_){} }
+      const budget=PLANE_CIRCLE_BUDGET();
+      let nx=wantX, ny=wantY, clipped=false;
+      /* Shrink the grid towards the budget while keeping the viewport's aspect, so the covered block
+         stays the shape of the screen rather than collapsing into a column. */
+      while(nx*ny>budget&&(nx>1||ny>1)){ clipped=true; if(nx*spanKmY>=ny*spanKmX&&nx>1) nx--; else if(ny>1) ny--; else nx--; }
+      const out=[];
+      for(let j=0;j<ny;j++){ const lat=c.lat+((j-(ny-1)/2)*dLat);
+        if(lat>88||lat<-88) continue;
+        const dLng=sideKm/(111.320*Math.max(0.05,Math.cos(lat*toR)));
+        for(let i=0;i<nx;i++){ let lng=c.lng+((i-(nx-1)/2)*dLng);
+          lng=((lng+540)%360)-180;
+          out.push([Math.max(-89.9,Math.min(89.9,lat)),lng]); } }
+      _planeCover={ nx, ny, wantX, wantY, clipped, circles:out.length,
+                    coverKmX:nx*sideKm, coverKmY:ny*sideKm, spanKmX, spanKmY };
+      return out;
     }
     /* Normalise an airplanes.live ADS-B record to our internal plane shape (units → m, m/s). */
     function adsbToPlane(a,nowMs){
@@ -2139,26 +2244,99 @@ window.IntMapModules.dataLayers=function(HOST){
         src:(a.type||''), emergency:((a.emergency&&a.emergency!=='none')?a.emergency:'')
       };
     }
+    /* (#R186) One sweep at a time. A sweep is now several requests over a second or two, so a moveend
+       arriving mid-sweep must not start a second one on top of it — the two would interleave their
+       partial results and the layer would flicker between them. The in-flight sweep is aborted and
+       the new one takes over; `_planeSweep` is the token that says which one is allowed to publish. */
+    let _planeSweep=0, _planeStats=null;
     async function fetchPlanes(){
       _lastPlaneFetch=Date.now();
       /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
-      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
+      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; _planeCover=null; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
+      const mine=++_planeSweep;
+      const circles=planeCircles();
       updatePlanesZoomHint();
-      const lat=(GE().hasRenderer()?GE().camera.getCenter().lat:48), lon=(GE().hasRenderer()?GE().camera.getCenter().lng:8), rad=viewportRadiusNm();
-      try{
-        const r=await fetch(`https://api.airplanes.live/v2/point/${lat.toFixed(3)}/${lon.toFixed(3)}/${rad}`);
-        if(r.ok){
-          const j=await r.json(); const ac=Array.isArray(j.ac)?j.ac:[];
-          planesTime=(j.now||Date.now());
-          planesSynthetic=false;
-          planesData=ac.filter(a=>a.lat!=null&&a.lon!=null).slice(0,1800).map(a=>adsbToPlane(a,planesTime));
-          recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
-          refreshTrafficLayer('planes'); return;
+      const t0=Date.now();
+      const byHex=new Map(); let ok=0, fail=0, newest=0;
+      const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+      const one=async(la,lo)=>{
+        try{
+          const r=await fetch(`https://api.airplanes.live/v2/point/${la.toFixed(3)}/${lo.toFixed(3)}/${PLANE_CIRCLE_NM}`);
+          if(!r.ok) return false;                               /* (#R183) an error body is valid JSON — check r.ok */
+          const j=await r.json();
+          if(j&&j.now>newest) newest=j.now;
+          const ac=Array.isArray(j&&j.ac)?j.ac:[];
+          for(const a of ac){ if(a&&a.lat!=null&&a.lon!=null&&a.hex&&!byHex.has(a.hex)) byHex.set(a.hex,a); }
+          return true;
+        }catch(e){ return false; }
+      };
+      const missed=[];
+      for(let k=0;k<circles.length;k++){
+        if(mine!==_planeSweep) return;
+        if(k) await sleep(PLANE_GAP_MS);
+        const good=await one(circles[k][0],circles[k][1]);
+        if(good) ok++; else { fail++; missed.push(circles[k]); }
+      }
+      /* One retry pass for the circles that came back empty-handed, at the same pace. A failed circle
+         is a HOLE in the sky, not a slightly smaller answer, so it is worth 1.2 s to fill it. */
+      let retried=0;
+      for(const c of missed){
+        if(mine!==_planeSweep) return;
+        await sleep(PLANE_GAP_MS*2);
+        if(await one(c[0],c[1])){ ok++; fail--; retried++; }
+      }
+      if(mine!==_planeSweep) return;                            /* a newer sweep owns the layer now */
+      if(ok>0){
+        planesTime=(newest||Date.now());
+        const seenNow=Date.now();
+        const raw=Array.from(byHex.values());
+        /* ⚠ A PARTIAL SWEEP MUST NOT LOOK LIKE AN EMPTIER SKY. When some circles are still missing
+           after the retry, the aircraft they would have carried are not gone — they were not asked
+           about. Carry the previous answer for anything the new sweep did not mention and that is
+           under two minutes old, rather than deleting a third of the traffic because one request
+           was refused. A full sweep replaces everything, as before. */
+        const fresh=new Set(raw.map(a=>a.hex));
+        const merged=raw.slice(0,PLANE_MAX_AIRCRAFT).map(a=>adsbToPlane(a,planesTime));
+        merged.forEach(d=>{ d.seenAt=seenNow; });
+        let carried=0;
+        if(fail>0&&!planesSynthetic&&planesData.length){
+          for(const d of planesData){
+            if(merged.length>=PLANE_MAX_AIRCRAFT) break;
+            if(!d.icao24||fresh.has(d.icao24.toLowerCase())||fresh.has(d.icao24)) continue;
+            if(seenNow-(d.seenAt||0)>120000) continue;
+            merged.push(d); carried++;
+          }
         }
-      }catch(e){ console.warn('airplanes.live fetch failed',e); }
+        planesSynthetic=false;
+        planesData=merged;
+        /* No silent caps (#R185): every number the sweep produced is readable from the console API. */
+        _planeStats={ circles:circles.length, ok, fail, retried, carried, unique:raw.length, kept:planesData.length,
+                      dropped:Math.max(0,raw.length-Math.min(raw.length,PLANE_MAX_AIRCRAFT)), ms:Date.now()-t0,
+                      cover:_planeCover?{ nx:_planeCover.nx, ny:_planeCover.ny, clipped:_planeCover.clipped,
+                        coverKmX:Math.round(_planeCover.coverKmX), coverKmY:Math.round(_planeCover.coverKmY) }:null };
+        if(_planeStats.dropped) console.warn('live aircraft: '+_planeStats.dropped+' beyond the '+PLANE_MAX_AIRCRAFT+' render cap were not drawn');
+        if(fail>0) console.warn('live aircraft: '+fail+' of '+circles.length+' circles did not answer; '+carried+' aircraft carried over from the previous sweep');
+        recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
+        refreshTrafficLayer('planes'); schedulePlanePoll(); return;
+      }
+      /* Every circle failed. If we still hold real aircraft, KEEP them — replacing real data with a
+         placeholder because one refresh was refused is a downgrade, not a fallback. The synthetic set
+         is only for a layer that has nothing at all. */
+      if(!planesSynthetic&&planesData.length){ console.warn('Live aircraft feed did not answer — keeping the previous positions'); schedulePlanePoll(); return; }
       /* feed unreachable (offline / blocked) → clearly-labeled synthetic placeholder so the layer isn't empty */
-      console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes();
+      console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes(); schedulePlanePoll();
     }
+    /* (#R186) The poll interval follows the size of the sweep, so the long-run request rate stays
+       roughly constant instead of multiplying by the number of circles. One circle keeps the original
+       20 s; a full 30-circle sweep settles at ~66 s, which is five pixels of aircraft movement at the
+       zoom where a 30-circle sweep is what you get. */
+    function planePollMs(){ const n=(_planeCover&&_planeCover.circles)||1;
+      /* one circle → the original 20 s; a full 16-circle sweep takes ~19 s to issue, so its gap is
+         set well clear of that (3.5 s a circle) and the feed sees 0.29 requests a second */
+      return Math.max(20000,Math.min(120000,Math.round(n*3500))); }
+    function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
+      clearInterval(planesTimer); clearTimeout(planesTimer);
+      planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
     /* ===== Live ships via AISstream.io (real AIS over WebSocket) =====
        There is NO free, key-less, CORS-friendly global AIS feed, so this is BYOK: the user pastes
@@ -2547,8 +2725,43 @@ window.IntMapModules.dataLayers=function(HOST){
     function squareRing(lng,lat,halfM){ const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(lat*r))||1;
       const dx=halfM/mLng, dy=halfM/mLat;
       return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
-    function refreshPlanes3D(list){
+    /* (#R186) The 3-D body is 3-10 polygons PER AIRCRAFT, and #R186 raised the feed cap from 1,800 to
+       20,000 — so the quantity that used to be bounded by the feed now has to be bounded here. Two
+       steps, in this order, because only the first one is free:
+         1. CULL TO WHAT IS ON SCREEN (with a margin, so a small pan does not pop bodies in). An
+            aircraft outside the viewport contributes nothing to the picture; dropping it is not a
+            reduction in quality, it is not drawing the invisible.
+         2. If MORE than the cap are still on screen, keep the ones nearest the centre and say in the
+            console how many were left out — a silent truncation would read as "that is all there is"
+            (#R185). The flat glyph layer has no such limit: it is one symbol per aircraft and
+            MapLibre draws tens of thousands of those without noticing. */
+    const PLANES_3D_MAX=4000;
+    let _planes3DCulled=0;
+    function _cullFor3D(list){
+      _planes3DCulled=0;
+      /* Under the budget nothing is culled at all, so the drawn set does not depend on the viewport
+         and a pan cannot change which aircraft have bodies. Culling only engages where it has to. */
+      if(list.length<=PLANES_3D_MAX) return list;
+      let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
+      let inView=list;
+      if(b){ try{
+        const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
+        const padY=(n-s)*0.25, lonSpan=((e-w)+360)%360||360, padX=lonSpan*0.25;
+        const s2=s-padY, n2=n+padY;
+        const inLon=(lng)=>{ const d=((lng-w+540)%360)-180; return d>=-padX&&d<=lonSpan+padX; };
+        inView=list.filter(d=>d.lat!=null&&d.lat>=s2&&d.lat<=n2&&d.lng!=null&&inLon(d.lng));
+      }catch(_){ inView=list; } }
+      if(inView.length<=PLANES_3D_MAX){ _planes3DCulled=list.length-inView.length; return inView; }
+      let c={lat:0,lng:0}; try{ c=GE().camera.getCenter(); }catch(_){}
+      const d2=(d)=>{ const dy=d.lat-c.lat, dx=(((d.lng-c.lng)+540)%360-180)*Math.cos(c.lat*Math.PI/180); return dy*dy+dx*dx; };
+      const near=inView.slice().sort((a,b2)=>d2(a)-d2(b2)).slice(0,PLANES_3D_MAX);
+      _planes3DCulled=list.length-near.length;
+      console.warn('live aircraft 3-D: '+(inView.length-near.length)+' aircraft on screen are beyond the '+PLANES_3D_MAX+'-body budget and have no 3-D body this frame');
+      return near;
+    }
+    function refreshPlanes3D(all){
       if(!GE().hasRenderer()||!GE().layers.hasSource(PLANE3D_SRC)) return;
+      const list=_cullFor3D(all||[]);
       _gndFresh();
       const mpp=_mppCentre();
       /* (#R185) 19 px of half-length, which is what the 2-D glyph draws (a 52-px canvas whose
@@ -2910,11 +3123,20 @@ window.IntMapModules.dataLayers=function(HOST){
       setVis('lyr-'+id,true);
       if(id==='planes'){
         applyPlanesMode(true);   /* (#R172) flat glyphs OR lifted bodies — never both */
+        /* (#R186) a self-re-arming TIMEOUT, not an interval: one sweep is now several requests over a
+           second or two, and the gap to the next one is chosen from how big that sweep was
+           (planePollMs). An interval would keep firing at a fixed rate while a wide sweep was still
+           running. The non-null value is also what schedulePlanePoll reads as "the layer is on". */
+        if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); }
+        planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },20000);
         fetchPlanes();
-        if(planesTimer) clearInterval(planesTimer);
-        planesTimer=setInterval(fetchPlanes,20000); /* live ADS-B refresh */
         /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
-        if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
+        /* (#R186) the minimum gap between two view-driven sweeps scales with the sweep, for the same
+           reason the poll interval does — at 1.5 s a wide sweep would still be running when the next
+           one was allowed to start. Close in (one circle) it is the original 1.5 s. */
+        if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){
+            try{ refreshTrafficLayer('planes'); }catch(_){}   /* (#R186) re-draw from what we already hold: the 3-D cull is viewport-shaped when the sky is very busy, and the per-aircraft ground offset follows the view */
+            clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>Math.max(1500,planePollMs()/4)) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
         updatePlanesZoomHint();
       } else {
         startShips();
@@ -2925,7 +3147,7 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function stopTraffic(id){
       setVis('lyr-'+id,false);
-      if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); planesTimer=null; } updatePlanesZoomHint(); }
+      if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
       if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === (#R184) LIVE SATELLITES ============================================================
@@ -3329,7 +3551,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R38) NEVER re-dispatch on the 7 utility toggles. They are not async-race layers, and several have
          stateful handlers (cb-grid's setGrid; borders/roads/rail have their OWN multi-retry re-assert) — a
          re-dispatched change here is what flipped Grid back ON ("何度消しても自動的にチェックされる"). */
-      if(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+      if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
       [500,1400,3000].forEach(ms=>setTimeout(()=>{ try{ if(cb.checked||!cb.isConnected) return; cb.__reassertGuard=1; cb.dispatchEvent(new Event('change',{bubbles:true})); cb.__reassertGuard=0; }catch(_){ try{cb.__reassertGuard=0;}catch(__){} } },ms));
     }); }catch(_){}
     /* Expose for the lyr-row dt-/ft- handlers above */
@@ -3358,6 +3580,10 @@ window.IntMapModules.dataLayers=function(HOST){
            aircraft" the moment the body became four extrusions — a reader that only sees `features`
            cannot tell 3 aircraft drawn in detail from 14 drawn plainly. */
         return { on:planes3DOn(), planes:planesData.length, features:s2.features, aircraft:s2.aircraft, detailed:s2.detailed,
+          /* (#R186) the SWEEP — how much sky was asked for, how many circles it took, what came back
+             and what the render cap left out. No silent caps (#R185). */
+          sweep:_planeStats, cover:_planeCover, culled3D:_planes3DCulled, minZoom:PLANES_MIN_ZOOM,
+          circleBudget:PLANE_CIRCLE_BUDGET(), maxAircraft:PLANE_MAX_AIRCRAFT, pollMs:planePollMs(), gapMs:PLANE_GAP_MS,
           lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
           visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
           flatVisible:(()=>{ try{ return !!(GE().layers.has('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
@@ -3505,6 +3731,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const BASE={
         'cb-names':['ofm-country','ofm-city','ofm-other'],
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
+        'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line'],'cb-countries':['country-fill'],
         'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };

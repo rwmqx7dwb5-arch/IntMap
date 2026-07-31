@@ -16,6 +16,31 @@
        of those selectors could ever match. Removed per the dead-code cleanup request; the coercion in
        applyTheme() stays so old saved settings keep migrating. */
 
+    /* ══ (#R186) THE LAUNCH SCREEN ═══════════════════════════════════════════════════════════════
+       「読み込み画面には、IntMapのアイコンを使用し、iOS風の洗練されたUIに。」
+
+       An iOS launch screen is a small set of specific decisions, and these are them: the app icon at
+       its Home-Screen size on the system surface colour, an Apple-radius squircle (~22.4 % of the
+       side — that is the ratio, not a guess), no shadow and no chrome, a hairline determinate bar,
+       and a dissolve rather than a slide. It comes FIRST in the stylesheet because it is the first
+       thing painted, and the rules are self-contained so no later cascade can move it.
+       `body.booting` freezes scrolling underneath while the app assembles itself. */
+    .boot-splash{ position:fixed; inset:0; z-index:200000; display:flex; align-items:center; justify-content:center;
+      background:var(--bg-color); opacity:1; transition:opacity 0.42s cubic-bezier(0.4,0,0.2,1); }
+    .boot-splash.boot-gone{ opacity:0; pointer-events:none; }
+    .boot-inner{ display:flex; flex-direction:column; align-items:center; gap:26px;
+      transform:translateY(-3vh); animation:bootRise 0.7s cubic-bezier(0.2,0.7,0.2,1) both; }
+    .boot-splash.boot-gone .boot-inner{ transform:translateY(-3vh) scale(1.045); transition:transform 0.42s cubic-bezier(0.4,0,0.2,1); }
+    @keyframes bootRise{ from{ opacity:0; transform:translateY(-3vh) scale(0.965); } to{ opacity:1; transform:translateY(-3vh) scale(1); } }
+    .boot-icon{ width:124px; height:124px; border-radius:27.8px; overflow:hidden; background:#0a0a0c; }   /* 27.8 / 124 = Apple's 22.4 % corner ratio */
+    .boot-icon img{ width:100%; height:100%; display:block; object-fit:cover; }
+    .boot-bar{ width:184px; height:4px; border-radius:2px; overflow:hidden; background:rgba(128,128,128,0.22); }
+    .boot-bar > i{ display:block; height:100%; width:0%; border-radius:2px; background:var(--text-main); opacity:0.72;
+      transition:width 0.45s cubic-bezier(0.25,1,0.5,1); }
+    .boot-note{ font-size:12.5px; letter-spacing:0.2px; color:var(--text-muted); min-height:1em; }
+    body.booting{ overflow:hidden; }
+    @media (prefers-reduced-motion:reduce){ .boot-inner{ animation:none; } .boot-splash,.boot-bar > i{ transition:none; } }
+
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
@@ -2077,6 +2102,13 @@
 
     /* --- Animated wind canvas overlay (#7) --- */
     /* (#R7) Windy model: a wind-SPEED color field (#wind-bg-canvas) under WHITE particle streaks (#wind-canvas). */
+    /* (#R186) THE NIGHT SKY behind the globe (js/space-sky.js). It sits at stacking level 0 and is
+       inserted BEFORE #map in the DOM, so the renderer's own canvas — and therefore the opaque Earth
+       — paints on top of it and occludes every star behind the planet for free. `#map` gives up its
+       --bg-color while the sky is up, because that colour IS the black the request is about. */
+    #space-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; display:none; }
+    body.space-sky-on #map{ background:transparent; }
+    body.space-sky-on .map-container{ background:#000; }
     #wind-bg-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; display:none; }
     #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
 
