@@ -54,10 +54,22 @@
  *  · No network per frame. TLEs refresh on the timescale they actually change (2 h); positions are
  *    recomputed locally every second from the elements already in hand.
  *
+ *  ── (#R185) EVERY ACTIVE SATELLITE, AND NEVER AN EMPTY SKY ──────────────────────────────────
+ *  「何も表示されないのは論外。実際の位置に全衛星がリアルタイムで美しく表示されるのが最低条件。」
+ *  Two things followed. The default catalogue is now `active` — all of it — because the two reasons
+ *  it was not have both been measured away: the elements are fetched as TLE rather than GP JSON
+ *  (~2.5 MB instead of 6.8 MB, the same numbers), and SGP4 costs 1.94 µs an object, so eleven
+ *  thousand of them are 21 ms of a tick that steps at 2–3 s for a catalogue that size. And the feed
+ *  is no longer a single point of failure: on 2026-08-01 celestrak.org resolved and refused every
+ *  connection for hours, and with one source this layer drew NOTHING. There are four ways to the
+ *  same element sets now — CelesTrak, two public CORS mirrors, a catalogue SHIPPED WITH THE APP
+ *  (data/tle/, rebuilt by CI) and the local cache — and each one says which it used.
+ *
  *  Source & terms: CelesTrak GP/OMM (celestrak.org) — keyless, CORS-open (verified from the browser;
  *  a curl check cannot answer this because curl sends no Origin), free for non-commercial use with
- *  attribution. Group sizes measured: `visual` 65 KB / 294 ms, `stations` 9.6 KB, and `active`
- *  6.8 MB / 16 s — which is why `active` is offered but never the default.
+ *  attribution. The bundled fallback is built by scripts/build-tle-snapshot.mjs from CelesTrak, or
+ *  from SatNOGS DB (Space-Track / CelesTrak elements) when CelesTrak cannot be reached. Group sizes
+ *  measured: `visual` 65 KB, `stations` 9.6 KB, `active` 6.8 MB as JSON and ~2.5 MB as TLE.
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
@@ -104,14 +116,52 @@ window.IntMapModules.satellitesLive=function(HOST){
     { id:'galileo',  kb:25,   nm:()=>L('Galileo','Galileo','Galileo','Galileo','Galileo') },
     { id:'science',  kb:60,   nm:()=>L('Science','科学衛星','Wissenschaft','Научные','Científicos') },
     { id:'starlink', kb:1800, nm:()=>L('Starlink','Starlink','Starlink','Starlink','Starlink') },
-    { id:'active',   kb:6800, nm:()=>L('All active (very large)','運用中すべて（非常に大きい）','Alle aktiven (sehr groß)','Все действующие (очень много)','Todos los activos (muy grande)') }
+    { id:'active',   kb:2500, nm:()=>L('All active satellites','運用中の全衛星','Alle aktiven Satelliten','Все действующие спутники','Todos los satélites activos') }
   ];
-  const DEFAULT_GROUP='visual';
-  const GP=(g)=>'https://celestrak.org/NORAD/elements/gp.php?GROUP='+encodeURIComponent(g)+'&FORMAT=json';
+  /* ══ (#R185) THE DEFAULT IS EVERYTHING ═══════════════════════════════════════════════════════
+     「実際の位置に全衛星がリアルタイムで美しく表示されるのが最低条件。」 #R184 defaulted to the 157
+     naked-eye objects because `active` is 6.8 MB as GP JSON and 16 s to fetch. Both halves of that
+     are fixed rather than accepted: the elements are fetched in the TLE form CelesTrak also serves
+     (~2.5 MB — a third of the JSON, and the same numbers), and the propagation was MEASURED at
+     1.94 µs per object, so eleven thousand of them cost 21 ms of a one-second tick. There is no
+     reason left to show a hundred and fifty of them. */
+  const DEFAULT_GROUP='active';
+  /* TLE rather than JSON: one third of the bytes for the same element sets, the format the bundled
+     fallback below is stored in, and therefore ONE parser for the network, the cache and the
+     snapshot — the file already argues for that in ingest()'s note, and a second format is how the
+     three quietly start disagreeing. */
+  const GP=(g)=>'https://celestrak.org/NORAD/elements/gp.php?GROUP='+encodeURIComponent(g)+'&FORMAT=tle';
+  /* ══ AND IT MUST NOT BE ONE HOST ══════════════════════════════════════════════════════════════
+     Measured on 2026-08-01: celestrak.org resolved and then refused every connection for hours, and
+     the layer drew nothing at all — no satellites, one honest error line, an empty sky. A single
+     free host IS a single point of failure, so there are three ways to the same element sets:
+       1. CelesTrak directly (authoritative, ≤2 h old);
+       2. the same CORS proxies js/data-layers.js already uses for the submarine-cable feed, which
+          cover the case where the host is up but this browser cannot reach it;
+       3. a catalogue SHIPPED WITH THE APP (data/tle/catalogue.tle, rebuilt by CI —
+          scripts/build-tle-snapshot.mjs). Same-origin, so it cannot be blocked or rate-limited,
+          and real elements with a real epoch — the card already reports how old they are.
+     Nothing here fabricates an orbit. A snapshot propagated by SGP4 gives a real position whose
+     accuracy decays from its epoch; that is a different thing from an invented one, and the
+     difference is what makes it acceptable under standing instruction 4. */
+  const PROXIES=[ (u)=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+                  (u)=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u) ];
+  const BUNDLED='data/tle/catalogue.tle', BUNDLED_META='data/tle/catalogue.json';
 
-  const SRC='src-sats', LYR='lyr-sats', LBL='lyr-sats-lbl';
+  const SRC='src-sats', LYR='lyr-sats', LBL='lyr-sats-lbl', HALO='lyr-sats-halo';
   const TRK_SRC='src-sat-track', TRK='lyr-sat-track', FOOT='lyr-sat-foot', FOOTLN='lyr-sat-foot-line';
-  const ALL_LAYERS=[FOOT,FOOTLN,TRK,LYR,LBL];
+  const ALL_LAYERS=[FOOT,FOOTLN,TRK,HALO,LYR,LBL];
+  /* Above this many objects the names stop being drawn at all — see the label layer's filter. */
+  const LABEL_MAX=600;
+  /* The orbital regimes, by the altitude SGP4 returned: GEO is the 35,786 km synchronous shell, MEO
+     the navigation constellations above the inner Van Allen belt, HEO anything markedly eccentric
+     (Molniya, Tundra), and everything else low orbit. */
+  const bandOf=(f)=>{ const h=f.altKm;
+    if(!(h>0)) return 'leo';
+    if(h>32000) return 'geo';
+    if((f.ecc||0)>0.25) return 'heo';
+    if(h>2000) return 'meo';
+    return 'leo'; };
 
   let group=DEFAULT_GROUP;
   let sats=[];                             /* [{satrec, name, id, intl, epoch}] */
@@ -120,6 +170,10 @@ window.IntMapModules.satellitesLive=function(HOST){
   let selected=null;                       /* NORAD id of the satellite whose track is drawn */
   let timer=null, on=false;
   let visibleOnly=false;                   /* show only what is above the horizon from the map centre */
+  let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
+  /* (#R185) called the FIRST time a catalogue lands, from whichever rung of the ladder answered, so
+     the layer can go visible on the shipped copy instead of waiting out the network's timeouts. */
+  let _onPrimed=null;
   let opacity=0.95;
   let _hover=null, _click=null, _moveT=null, _onMove=null;
 
@@ -143,42 +197,67 @@ window.IntMapModules.satellitesLive=function(HOST){
      records for the same 2 h the refresh timer uses removes the whole class of request.
      `active` is 6.8 MB, so anything over the cap is fetched fresh rather than stuffed into
      localStorage — a quota exception here would take the layer down with it. */
-  const CK='intmap_sat_cat', CACHE_MS=2*3600*1000, CACHE_MAX=1500000;
+  /* (#R185) the cache holds the TLE TEXT now, which is a third of the JSON it replaced, so the full
+     `active` catalogue (~2.5 MB) fits inside a normal 5 MB localStorage budget instead of being the
+     one group that could never be cached. A quota failure still just returns false. */
+  const CK='intmap_sat_cat', CACHE_MS=2*3600*1000, CACHE_MAX=4000000;
   /* `visual` measured at 294 ms and the 6.8 MB `active` group at 16 s, so 25 s is generous for the
      largest catalogue on a slow link and still far short of "never" — see the abort in load(). */
-  const FETCH_MS=25000;
+  const FETCH_MS=12000;
   function cacheGet(g){
     try{ const j=JSON.parse(localStorage.getItem(CK)||'null');
-      if(!j||j.g!==g||!Array.isArray(j.a)) return null;
+      if(!j||j.g!==g||typeof j.a!=='string') return null;
       if(Date.now()-(+j.t||0)>CACHE_MS) return null;
       return j; }catch(_){ return null; }
   }
-  function cachePut(g,arr){
-    try{ const s=JSON.stringify({ g, t:Date.now(), a:arr });
-      if(s.length>CACHE_MAX) return false;
-      localStorage.setItem(CK,s); return true; }catch(_){ return false; }
+  function cachePut(g,text){
+    try{ if(typeof text!=='string'||text.length>CACHE_MAX) return false;
+      localStorage.setItem(CK,JSON.stringify({ g, t:Date.now(), a:text })); return true; }catch(_){ return false; }
   }
-  /* The GP records → propagatable satellite records. One function, because the cache and the network
-     must produce the identical thing: a second copy of this loop is how a cached catalogue quietly
-     starts differing from a fetched one. */
-  function ingest(arr,want){
-    if(!SAT||!Array.isArray(arr)||!arr.length) return false;
-    const out=[];
-    for(let i=0;i<arr.length;i++){
-      try{
-        const rec=SAT.json2satrec(arr[i]);
-        /* A record that failed to initialise is DROPPED, not drawn at 0,0. satellite.js reports it
-           on the record itself; an object we cannot propagate is one we must not pretend to place. */
-        if(!rec||rec.error) continue;
-        out.push({ satrec:rec, name:String(arr[i].OBJECT_NAME||'').trim(),
-          id:arr[i].NORAD_CAT_ID, intl:arr[i].OBJECT_ID||'', epoch:arr[i].EPOCH||'',
-          /* the element set's own quality figures — shown on the card because they are what an
-             SGP4 position is only as good as */
-          meanMotion:+arr[i].MEAN_MOTION||null, ecc:+arr[i].ECCENTRICITY||0,
-          raan:+arr[i].RA_OF_ASC_NODE, argp:+arr[i].ARG_OF_PERICENTER,
-          bstar:+arr[i].BSTAR||0, revNum:+arr[i].REV_AT_EPOCH||null,
-          classification:arr[i].CLASSIFICATION_TYPE||'' });
-      }catch(_){}
+  /* ── THE ELEMENT SETS, PARSED ONCE ────────────────────────────────────────────────────────────
+     One function, because the cache, the network, the proxies and the bundled snapshot must produce
+     the identical thing: a second copy of this loop is how a cached catalogue quietly starts
+     differing from a fetched one. The TLE columns are fixed-width by definition (Spacetrack Report
+     #3), so every card field is read from the line it lives on rather than from a second document.
+     `twoline2satrec` does the propagation set-up; nothing here re-derives what it already knows. */
+  const _num=(v)=>{ const n=parseFloat(v); return isFinite(n)?n:null; };
+  /* line 1 cols 54-61: a decimal point assumed before the mantissa, the last two chars an exponent */
+  function _expField(t){
+    const m=/^\s*([-+]?)(\d{5})([-+]\d)$/.exec(t); if(!m) return _num(t)||0;
+    return (m[1]==='-'?-1:1)*parseFloat('0.'+m[2])*Math.pow(10,parseInt(m[3],10));
+  }
+  function _epochISO(l1){
+    const e=parseFloat(l1.slice(18,32)); if(!isFinite(e)) return '';
+    const yy=Math.floor(e/1000), year=yy<57?2000+yy:1900+yy, doy=e%1000;
+    try{ return new Date(Date.UTC(year,0,1)+(doy-1)*86400000).toISOString(); }catch(_){ return ''; }
+  }
+  function ingestTLE(text,want){
+    if(!SAT||typeof text!=='string'||text.length<140) return false;
+    const lines=text.split(/\r?\n/);
+    const out=[]; const seen=new Set();
+    for(let i=0;i+2<lines.length+1;i++){
+      const l1=lines[i+1], l2=lines[i+2];
+      if(!l1||!l2||l1[0]!=='1'||l2[0]!=='2'||l1.length<69||l2.length<69) continue;
+      if(l1.slice(2,7).trim()!==l2.slice(2,7).trim()) continue;
+      const name=String(lines[i]||'').replace(/^0\s+/,'').trim();
+      let rec=null;
+      try{ rec=SAT.twoline2satrec(l1,l2); }catch(_){ continue; }
+      /* A record that failed to initialise is DROPPED, not drawn at 0,0. satellite.js reports it
+         on the record itself; an object we cannot propagate is one we must not pretend to place. */
+      if(!rec||rec.error) { i+=2; continue; }
+      const id=parseInt(l1.slice(2,7),10);
+      if(seen.has(id)){ i+=2; continue; }
+      seen.add(id);
+      out.push({ satrec:rec, name:name||('NORAD '+id), id, intl:l1.slice(9,17).trim(),
+        epoch:_epochISO(l1),
+        /* the element set's own quality figures — shown on the card because they are what an
+           SGP4 position is only as good as */
+        meanMotion:_num(l2.slice(52,63)), ecc:_num('0.'+l2.slice(26,33).trim()),
+        raan:_num(l2.slice(17,25)), argp:_num(l2.slice(34,42)),
+        incl:_num(l2.slice(8,16)),
+        bstar:_expField(l1.slice(53,61)), revNum:_num(l2.slice(63,68)),
+        classification:(l1[7]||'').trim() });
+      i+=2;
     }
     /* a reply for a catalogue the user has since switched away from is DROPPED, never painted */
     if(!out.length||want!==group) return false;
@@ -201,10 +280,9 @@ window.IntMapModules.satellitesLive=function(HOST){
     /* a fresh cache answers synchronously — no request, no in-flight state to coalesce onto */
     const hit=cacheGet(want);
     if(hit&&want===group){
-      const ok=ingest(hit.a,want);
-      if(ok) return Promise.resolve(true);
+      if(ingestTLE(hit.a,want)) return Promise.resolve(true);
     }
-    loading=true; lastErr=null; _inflightG=want;
+    loading=true; lastErr=null; bundled=false; bundledMeta=null; _inflightG=want;
     /* A REQUEST THAT NEVER SETTLES IS WORSE THAN ONE THAT FAILS. `fetch` has no timeout of its own,
        so a CelesTrak that accepts the connection and then stops talking — which is what a rate-limited
        server does rather than refusing outright — left this promise pending for ever: `loading` stayed
@@ -212,26 +290,68 @@ window.IntMapModules.satellitesLive=function(HOST){
        catalogue (the preview tile, Atlas's `find`, a test) hung with it. Measured in CI: seven jobs
        each timing out at 60 s inside a single `await`. A refusal is a fact the layer can act on — it
        falls back to the cached elements below and labels them — so make sure one arrives. */
-    const ac=(typeof AbortController!=='undefined')?new AbortController():null;
-    const killer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(_){} },FETCH_MS);
-    _inflight=fetch(GP(want),Object.assign({cache:'no-store'},ac?{signal:ac.signal}:{})).then(r=>{
-      if(!r.ok) throw new Error('HTTP '+r.status);       /* (#R183) an error body is still valid JSON */
-      return r.json();
-    }).then(arr=>{
-      if(!Array.isArray(arr)||!arr.length) throw new Error('empty catalogue');
-      const ok=ingest(arr,want);
-      if(ok) cachePut(want,arr);
-      return ok;
-    }).catch(e=>{ lastErr=String(e&&e.message||e);
+    const grab=(url,ms)=>{
+      const ac=(typeof AbortController!=='undefined')?new AbortController():null;
+      const killer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(_){} },ms||FETCH_MS);
+      return fetch(url,Object.assign({cache:'no-store'},ac?{signal:ac.signal}:{}))
+        .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+        .then(t=>{ if(!t||t.length<140) throw new Error('empty catalogue'); return t; })
+        .finally(()=>clearTimeout(killer));
+    };
+    /* ══ (#R185) FOUR WAYS TO THE SAME ELEMENT SETS, TRIED IN ORDER ═══════════════════════════
+       The layer must not be able to end up empty (「何も表示されないのは論外」), and on 2026-08-01
+       it did: one host, unreachable, nothing drawn. Each rung below is a genuinely different
+       failure it survives — CelesTrak down (2, 3), this browser blocked from it (2), everything
+       offline (4) — and each one is labelled, so what is on screen is never a mystery. */
+    _inflight=(async()=>{
+      const tried=[];
+      /* THE SHIPPED CATALOGUE IS THE FLOOR, NOT THE LAST RESORT. Trying it only after the network
+         had exhausted its timeouts meant up to a minute of empty map before anything appeared —
+         which is the same "nothing on screen" outcome, just slower. It is SAME-ORIGIN and arrives
+         in milliseconds, so it goes first, is painted immediately, and the live feed replaces it
+         the moment that answers. Only for the full catalogue, because that is what it IS: serving
+         it in answer to a request for "GPS" would answer a different question. */
+      let primedFromBundle=false;
+      if(want==='active'&&!sats.length){
+        try{ const t=await grab(BUNDLED,15000);
+          if(ingestTLE(t,want)){
+            primedFromBundle=true; bundled=true;
+            let when='';
+            try{ const m=await fetch(BUNDLED_META).then(r=>r.ok?r.json():null);
+              if(m){ bundledMeta=m; if(m.newestEpoch) when=' ('+String(m.newestEpoch).slice(0,10)+')'; } }catch(_){}
+            lastErr='showing the catalogue shipped with the app'+when+' while the live feed loads';
+            try{ if(_onPrimed) _onPrimed(); }catch(_){}
+          }
+        }catch(e){ tried.push('bundled: '+String(e&&e.message||e)); }
+      }
+      const live=(t)=>{ if(!ingestTLE(t,want)) return false;
+        cachePut(want,t); bundled=false; bundledMeta=null; lastErr=null;
+        try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; };
+      try{ const t=await grab(GP(want)); if(live(t)) return true; tried.push('celestrak: parsed nothing'); }
+      catch(e){ tried.push('celestrak: '+String(e&&e.message||e)); }
+      for(let i=0;i<PROXIES.length;i++){
+        try{ const t=await grab(PROXIES[i](GP(want)),FETCH_MS);
+          if(live(t)){ lastErr='CelesTrak was unreachable; elements came through a public mirror'; return true; }
+          tried.push('proxy'+i+': parsed nothing');
+        }catch(e){ tried.push('proxy'+i+': '+String(e&&e.message||e)); }
+      }
+      if(primedFromBundle){
+        lastErr='live feed unreachable — showing the catalogue shipped with the app'
+          +(bundledMeta&&bundledMeta.newestEpoch?(' ('+String(bundledMeta.newestEpoch).slice(0,10)+')'):'');
+        return true;
+      }
       /* THE FEED REFUSED. A cache past its refresh age is still a better answer than an empty map:
          SGP4 keeps propagating from it and the card already reports the age of the elements it used,
          so the user sees stale-but-labelled rather than nothing at all. */
       try{ const j=JSON.parse(localStorage.getItem(CK)||'null');
-        if(j&&j.g===want&&Array.isArray(j.a)&&ingest(j.a,want)){ lastErr=lastErr+' (using cached elements)'; return true; }
+        if(j&&j.g===want&&typeof j.a==='string'&&ingestTLE(j.a,want)){
+          lastErr='live feed unreachable — using cached elements';
+          try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; }
       }catch(_){}
-      return false; })
-      .then(ok=>{ clearTimeout(killer);
-        if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
+      lastErr=tried.join('; ')||'no catalogue source answered';
+      return false;
+    })()
+      .then(ok=>{ if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
     return _inflight;
   }
 
@@ -257,10 +377,31 @@ window.IntMapModules.satellitesLive=function(HOST){
         const lat=SAT.degreesLat(gd.latitude), lng=SAT.degreesLong(gd.longitude);
         if(!isFinite(lat)||!isFinite(lng)) continue;
         const v=pv.velocity?Math.hypot(pv.velocity.x,pv.velocity.y,pv.velocity.z):null;
+        /* ══ (#R185) WHICH WAY IT IS GOING, ALONG THE GROUND ═══════════════════════════════════
+           The aircraft layer turns its glyph to the track; a satellite icon that always points north
+           is the one place this layer did not follow it. The heading is the azimuth of the velocity
+           RELATIVE TO THE ROTATING EARTH, which is what a ground track is: rotate the inertial
+           velocity into ECF and subtract the Earth's own rotation (ω × r, and ω is about z, so the
+           cross product is two terms), then read it in the sub-satellite point's east-north frame.
+           Exact, and ten multiplications — no second propagation. */
+        let hdg=null;
+        if(pv.velocity){
+          try{
+            const r=SAT.eciToEcf(pv.position,gmst), vv=SAT.eciToEcf(pv.velocity,gmst);
+            const W=7.2921159e-5;                       /* rad s⁻¹, Earth's rotation rate */
+            const vx=vv.x+W*r.y, vy=vv.y-W*r.x, vz=vv.z;
+            const la=gd.latitude, lo=gd.longitude;
+            const sl=Math.sin(la), cl=Math.cos(la), so=Math.sin(lo), co=Math.cos(lo);
+            const east=-so*vx+co*vy;
+            const north=-sl*co*vx-sl*so*vy+cl*vz;
+            const a=Math.atan2(east,north)*R2D;
+            if(isFinite(a)) hdg=((a%360)+360)%360;
+          }catch(_){}
+        }
         let lit=null;
         if(sun){ try{ const f=SAT.shadowFraction(sun,pv.position); if(isFinite(f)) lit=(f<0.5); }catch(_){} }
         out.push({ id:s.id, name:s.name, intl:s.intl, epoch:s.epoch, deep:(s.satrec.method==='d'),
-          lng, lat, altKm:gd.height, velKmS:v,
+          lng, lat, altKm:gd.height, velKmS:v, headingDeg:hdg,
           eci:pv.position, eciV:pv.velocity, gmst,
           /* minutes per revolution, straight off the mean motion the elements carry */
           periodMin:s.satrec.no?(2*Math.PI/s.satrec.no):null,
@@ -402,13 +543,35 @@ window.IntMapModules.satellitesLive=function(HOST){
       if(!E.layers.has(TRK)) E.layers.add({ id:TRK, type:'line', source:TRK_SRC,
         filter:['==',['get','kind'],'track'], layout:{ 'line-cap':'round', 'line-join':'round' },
         paint:{ 'line-color':'#ffd23f', 'line-width':1.8, 'line-opacity':0.9, 'line-dasharray':[2,1.6] } });
+      /* == (#R185) A CATALOGUE OF ELEVEN THOUSAND HAS TO READ AS A SKY, NOT AS A SWARM ==========
+         The default is now every active object, and every one of them the same yellow dot is a
+         texture rather than a picture. A soft halo underneath, coloured and sized by ORBIT REGIME,
+         is what separates them: low orbit sweeps fast and close, the geostationary belt stands
+         still over the equator, the navigation shells sit between. The regime is computed from the
+         altitude the propagator returned — a fact about the orbit, not a decoration. */
+      if(!E.layers.has(HALO)) E.layers.add({ id:HALO, type:'circle', source:SRC,
+        paint:{ 'circle-color':['match',['get','band'],'geo','#ff8a3d','meo','#8f7bff','heo','#ff5c8a','#3ad1ff'],
+                'circle-radius':['interpolate',['linear'],['zoom'],
+                  1,['match',['get','band'],'geo',3.4,'meo',3,'heo',3,2.2],
+                  6,['match',['get','band'],'geo',6.5,'meo',5.6,'heo',5.6,4.4]],
+                'circle-blur':0.45,
+                'circle-opacity':['*',opacity,['case',['==',['get','sunlit'],false],0.35,0.72]] } });
       if(!E.layers.has(LYR)) E.layers.add({ id:LYR, type:'symbol', source:SRC, layout:{
         'icon-image':'sat-icon',
+        /* (#R185) ...and the icon turns to the direction of travel, which is what the aircraft layer
+           does and what 「Live aircraft trafficの要領で」 asks for. `hdg` is the azimuth of the
+           ground track, computed in propagateAll from the velocity relative to the rotating Earth. */
+        'icon-rotate':['coalesce',['get','hdg'],0],
+        'icon-rotation-alignment':'map',
         'icon-size':['interpolate',['linear'],['zoom'],1,0.5,4,0.72,8,0.9],
         'icon-allow-overlap':true, 'icon-ignore-placement':true },
         paint:{ 'icon-opacity':['*',opacity,['case',['==',['get','sunlit'],false],0.55,1]] } });
       /* Names only where they can be read — at low zoom a catalogue of 5,000 labels is a grey band. */
-      if(!E.layers.has(LBL)) E.layers.add({ id:LBL, type:'symbol', source:SRC, minzoom:3, layout:{
+      if(!E.layers.has(LBL)) E.layers.add({ id:LBL, type:'symbol', source:SRC, minzoom:3,
+        /* (#R185) `text-optional` stops a name from hiding its icon; it does not stop MapLibre from
+           CONSIDERING eleven thousand of them every frame. Name the selected object always, and the
+           rest only while the catalogue is small enough for names to be readable at all. */
+        filter:['any',['==',['get','sel'],1],['==',['get','lbl'],1]], layout:{
         'text-field':['get','name'], 'text-size':10.5, 'text-offset':[0,1.3], 'text-anchor':'top',
         'text-allow-overlap':false, 'text-optional':true },
         paint:{ 'text-color':'#ffd23f', 'text-halo-color':'rgba(0,0,0,0.85)', 'text-halo-width':1.4,
@@ -431,9 +594,11 @@ window.IntMapModules.satellitesLive=function(HOST){
     if(!ensureLayers()){ try{ if(window.IntMapSatPanel&&window.IntMapSatPanel.isOpen()) window.IntMapSatPanel.refresh(); }catch(_){} return; }
     const list=shown();
     try{
+      const named=list.length<=LABEL_MAX?1:0;
       GE().layers.setSourceData(SRC,{ type:'FeatureCollection', features:list.map(f=>({
         type:'Feature', geometry:{ type:'Point', coordinates:[f.lng,f.lat] },
         properties:{ id:f.id, name:f.name, sunlit:f.sunlit, altKm:Math.round(f.altKm),
+          hdg:(f.headingDeg==null?0:Math.round(f.headingDeg)), band:bandOf(f), lbl:named,
           sel:(f.id===selected)?1:0 } })) });
     }catch(_){}
     paintSelection();
@@ -455,6 +620,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   function setOpacity(v){ opacity=Math.max(0,Math.min(1,+v||0));
     try{ const E=GE();
       if(E.layers.has(LYR)) E.layers.setPaint(LYR,'icon-opacity',['*',opacity,['case',['==',['get','sunlit'],false],0.55,1]]);
+      if(E.layers.has(HALO)) E.layers.setPaint(HALO,'circle-opacity',['*',opacity,['case',['==',['get','sunlit'],false],0.35,0.72]]);
       if(E.layers.has(LBL)) E.layers.setPaint(LBL,'text-opacity',opacity);
     }catch(_){}
     return opacity; }
@@ -504,7 +670,9 @@ window.IntMapModules.satellitesLive=function(HOST){
         +S(up?L('Above the horizon here','ここでは地平線の上','Über dem Horizont','Над горизонтом','Sobre el horizonte')
              :L('Below the horizon here','ここでは地平線の下','Unter dem Horizont','Под горизонтом','Bajo el horizonte'))
       +(f.sunlit==null?'':' · '+S(f.sunlit?L('sunlit','太陽光を受けている','sonnenbeschienen','освещён Солнцем','iluminado'):L('in eclipse','影の中','im Erdschatten','в тени Земли','en eclipse')))+'</div>'
-      +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;">CelesTrak · SGP4/SDP4</div>';
+      +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;">'
+      +(bundled?S(L('Bundled catalogue','同梱カタログ','Mitgelieferter Katalog','Встроенный каталог','Catálogo incluido')):'CelesTrak')
+      +' · SGP4/SDP4</div>';
   }
 
   /* ── lifecycle ────────────────────────────────────────────────────────────────────────────── */
@@ -546,14 +714,24 @@ window.IntMapModules.satellitesLive=function(HOST){
   }
   function start(){
     on=true; wire();
+    /* (#R185) ONE SECOND IS RIGHT FOR A HUNDRED OBJECTS AND WRONG FOR ELEVEN THOUSAND. Propagation
+       is cheap (measured 1.94 us each, so 21 ms for the whole active catalogue), but each tick also
+       rebuilds that many GeoJSON features and hands them to the renderer to re-tile. So the period
+       follows the catalogue: a low-orbit satellite moves ~7.7 km/s, which at a world view is well
+       under a pixel a second, and a larger catalogue therefore loses nothing visible by stepping at
+       two or three seconds while getting the frame budget back. */
+    const period=()=>(sats.length>6000?3000:sats.length>2000?2000:1000);
     const go=()=>{ paint(); try{ ALL_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setVisible(id,true); }); }catch(_){}
-      if(!timer) timer=setInterval(tick,1000); };
+      if(timer) clearInterval(timer);
+      timer=setInterval(tick,period()); };
+    /* go as soon as ANY source has answered — see _onPrimed */
+    _onPrimed=()=>{ if(on) go(); };
     if(!sats.length) load(group).then(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalogue.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } });
     else go();
     return true;
   }
   function stop(){
-    on=false;
+    on=false; _onPrimed=null;
     if(timer){ clearInterval(timer); timer=null; }
     unwire();
     const E=GE(); if(!E) return true;
@@ -603,6 +781,8 @@ window.IntMapModules.satellitesLive=function(HOST){
     state:()=>({ on, group, catalogue:sats.length, drawn:shown().length, computed:fixes.length,
       selected, visibleOnly, opacity,
       tleAgeH:tleAt?(Date.now()-tleAt)/3600000:null, loading, err:lastErr,
+      bundled, bundledSource:(bundledMeta&&bundledMeta.source)||null,
+      bundledEpoch:(bundledMeta&&bundledMeta.newestEpoch)||null,
       sunlit:fixes.filter(f=>f.sunlit===true).length,
       deepSpace:fixes.filter(f=>f.deep).length,
       layerVisible:(()=>{ try{ return !!(GE().layers.has(LYR)&&GE().layers.isVisible(LYR)); }catch(_){ return false; } })() }),

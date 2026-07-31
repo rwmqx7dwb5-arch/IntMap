@@ -224,6 +224,15 @@ window.IntMapCesiumEngine=(function(){
       this._dsDisplay=new Cesium.DataSourceDisplay({ scene, dataSourceCollection:this._dsColl });
       const tick=()=>{ try{ this._dsDisplay.update(Cesium.JulianDate.now()); }catch(_){} };
       scene.preRender.addEventListener(tick);
+      /* ══ (#R185) THE FRAME COUNTER THE CAMERA READBACK IS CACHED AGAINST ══════════════════
+         `_centreCarto` intersects a ray with the TESSELLATED globe, and that mesh can only
+         change inside scene.render() — so its answer is constant between two frames, and every
+         extra call in the same frame is the same pick paid again. setCamera alone asks for it
+         five times (centre, zoom, bearing, pitch, then _afterMove's zoom); measured, one
+         readback of all four cost 7.7 ms with terrain attached. Counting frames is what makes
+         "the same question, in the same frame" answerable without changing any answer. */
+      this._frameNo=0; this._poseCache=null;
+      scene.postRender.addEventListener(()=>{ this._frameNo++; });
 
       this._wireEvents();
       /* ══ (#R182) THE GESTURES ARE MAPLIBRE'S, NOT CESIUM'S ═══════════════════════
@@ -273,7 +282,31 @@ window.IntMapCesiumEngine=(function(){
        centre. Picked off the globe when there is one under the crosshair, and
        otherwise the point directly beneath the eye, which is what a camera
        looking at the sky is honestly centred on. */
+    /* ══ (#R185) THE SAME PICK, ASKED FIVE TIMES A FRAME ══════════════════════════════════════
+       True while nothing has moved and no frame has been drawn: the ray, the mesh it meets and
+       therefore the answer are all unchanged. So hold the pose the last answer was computed for
+       — position, direction and up, exactly the three vectors `_readPose` calls the camera — and
+       the frame it was computed in, and return the same Cartographic when all four still hold.
+       This changes no answer: the tessellation the ray hits is only rewritten inside
+       scene.render(), and every code path that moves the camera moves one of those vectors. */
+    _poseUnchanged(){
+      const m=this._poseCache; if(!m||m.frame!==this._frameNo) return false;
+      const c=this._camera, p=c.positionWC, d=c.directionWC, u=c.upWC;
+      return m.px===p.x&&m.py===p.y&&m.pz===p.z&&m.dx===d.x&&m.dy===d.y&&m.dz===d.z
+          &&m.ux===u.x&&m.uy===u.y&&m.uz===u.z;
+    }
+    _rememberPose(carto,hpr){
+      const c=this._camera, p=c.positionWC, d=c.directionWC, u=c.upWC;
+      this._poseCache={ frame:this._frameNo, px:p.x,py:p.y,pz:p.z, dx:d.x,dy:d.y,dz:d.z,
+                        ux:u.x,uy:u.y,uz:u.z, carto:carto||null, hpr:(hpr===undefined?undefined:hpr) };
+    }
     _centreCarto(){
+      if(this._poseUnchanged()&&this._poseCache.carto) return this._poseCache.carto;
+      const out=this._centreCartoRaw();
+      if(this._poseUnchanged()) this._poseCache.carto=out; else this._rememberPose(out);
+      return out;
+    }
+    _centreCartoRaw(){
       try{
         const scene=this._scene;
         const px=new Cesium.Cartesian2(this._canvasW()/2,this._canvasH()/2);
@@ -344,7 +377,15 @@ window.IntMapCesiumEngine=(function(){
       const r=(isFinite(range)&&range>0)?range:1;
       return r*1e-5;
     }
+    /* (#R185) …and the three readers of _hpr — getZoom, getBearing, getPitch — are three more
+       copies of the same question. Same cache, same rule: pose plus frame. */
     _hpr(){
+      if(this._poseUnchanged()&&this._poseCache.hpr!==undefined) return this._poseCache.hpr;
+      const out=this._hprRaw();
+      if(this._poseUnchanged()) this._poseCache.hpr=out; else this._rememberPose(null,out);
+      return out;
+    }
+    _hprRaw(){
       try{
         const c=this._centreCarto();
         const target=Cesium.Cartesian3.fromRadians(c.longitude,c.latitude,c.height||0);
@@ -485,6 +526,7 @@ window.IntMapCesiumEngine=(function(){
              bearing of 112.6° instead of the 45° asked for. The flight is an ANIMATION; the
              destination is defined by the instant solve, so re-assert it on arrival. */
           complete:()=>{ this._aimAt(S.target,S.hpr,bearing,pitch,S.range,cam.roll);
+                         this._noteCommanded(zoom);
                          this._settle(at,zoom,pitch,bearing,S.h); fire();
                          this._scene.requestRender();
                          this.fire('moveend',{}); this.fire('zoomend',{}); },
@@ -492,6 +534,9 @@ window.IntMapCesiumEngine=(function(){
         return;
       }
       solve();
+      /* (#R185) the zoom the styles will be evaluated at, and the camera position that makes
+         that claim true — see _styleZoom */
+      this._noteCommanded(zoom);
       this._settle(at,zoom,pitch,bearing,S.h);
       this._scene.requestRender();
       fire();
@@ -602,6 +647,7 @@ window.IntMapCesiumEngine=(function(){
           this._camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
           this._faceHeading(bearing,pitch,range);   /* (#R181) re-asserting the camera re-asserts the HEADING too */
           Cesium.Cartesian3.clone(this._camera.positionWC,mine);
+          this._noteCommanded(zoom);               /* (#R185) …and the camera is still ours, at the same zoom */
           this._scene.requestRender();
         }
         setTimeout(check,WAIT[tries++]);
@@ -704,16 +750,37 @@ window.IntMapCesiumEngine=(function(){
       this._fireSourceData(id);
       this._schedule();
     }
-    _features(def){
-      const rec=this._sources.get(def.source);
+    /* ══ (#R185) EVERY FEATURE THIS SOURCE HAS, ONCE ══════════════════════════════════════════
+       A style layer selects a slice of its source with `source-layer`, so the assembly (which
+       walks the whole tile cover) is a property of the SOURCE and the slicing is a property of
+       the layer. They were fused, so ten OpenFreeMap layers over one tileset assembled the same
+       ~10,000 features ten times and then scanned them ten times to pick their own. Pass a memo
+       and both become once. Without a memo the behaviour is exactly what it was — `_buildLayer`
+       and `queryRenderedFeatures` still call it one layer at a time. */
+    _sourceFeatures(rec){
       if(!rec) return [];
       if(rec.type==='geojson') return (rec.data&&rec.data.features)||[];
-      if(rec.type==='vector'&&rec.vt){
-        const b=this.getBoundsLL();
-        const all=rec.vt.update(b,this.getZoom());
-        return def['source-layer']?all.filter(f=>f.sourceLayer===def['source-layer']):all;
-      }
+      if(rec.type==='vector'&&rec.vt) return rec.vt.update(this.getBoundsLL(),this._styleZoom());
       return [];
+    }
+    _features(def,memo){
+      const rec=this._sources.get(def.source);
+      if(!rec) return [];
+      let all;
+      if(memo){
+        all=memo.all.get(def.source);
+        if(all===undefined){ all=this._sourceFeatures(rec); memo.all.set(def.source,all); }
+      } else all=this._sourceFeatures(rec);
+      const sl=def['source-layer'];
+      if(!sl) return all;
+      if(!memo) return all.filter(f=>f.sourceLayer===sl);
+      let by=memo.byLayer.get(def.source);
+      if(!by){
+        by=new Map();
+        for(const f of all){ const k=f.sourceLayer||''; let a=by.get(k); if(!a){ a=[]; by.set(k,a); } a.push(f); }
+        memo.byLayer.set(def.source,by);
+      }
+      return by.get(sl)||[];
     }
 
     /* ── layers ────────────────────────────────────────────────────────────── */
@@ -786,7 +853,11 @@ window.IntMapCesiumEngine=(function(){
             rectangle:rectFromCoords(Cesium,spec.coordinates) }); }catch(_){ return null; }
         }
         return CL().makeTileImageryProvider(Cesium,{ tiles:spec.tiles||[], tileSize:spec.tileSize||256,
-          maxzoom:spec.maxzoom, minzoom:spec.minzoom, attribution:spec.attribution, protocols:PROTOCOLS });
+          maxzoom:spec.maxzoom, minzoom:spec.minzoom, attribution:spec.attribution, protocols:PROTOCOLS,
+          /* (#R185) the two numbers that decide how much imagery a screen pixel gets —
+             see makeTileImageryProvider, which turns them into the imagery LEVEL */
+          screenSpaceError:this._globe?this._globe.maximumScreenSpaceError:2,
+          fullResolution:!/Mobi|Android|iPhone|iPad/.test(navigator.userAgent||'') });
       }
       if(def.type==='hillshade'){
         const paintOf=()=>{
@@ -866,6 +937,7 @@ window.IntMapCesiumEngine=(function(){
     setPaint(id,prop,val){
       const rec=this._layerById.get(id); if(!rec) return;
       rec.def.paint=Object.assign({},rec.def.paint,{[prop]:val});
+      rec.zoomy=undefined;                      /* (#R185) the document changed — re-answer "does it read the zoom" */
       if(rec.imagery) this._applyImageryPaint(rec);
       else if(rec.ds) this._dirty.add(id);
       else if(rec.kind==='background') this._buildLayer(rec);
@@ -876,12 +948,13 @@ window.IntMapCesiumEngine=(function(){
       if(prop==='visibility') return this.setVisible(id,val!=='none');
       const rec=this._layerById.get(id); if(!rec) return;
       rec.def.layout=Object.assign({},rec.def.layout,{[prop]:val});
+      rec.zoomy=undefined;                      /* (#R185) as setPaint */
       if(rec.ds) this._dirty.add(id);
       this._schedule();
     }
     getLayout(id,prop){ const rec=this._layerById.get(id); return rec&&rec.def.layout?rec.def.layout[prop]:undefined; }
     setFilter(id,f){ const rec=this._layerById.get(id); if(!rec) return;
-      rec.def.filter=f; this._dirty.add(id); this._schedule(); }
+      rec.def.filter=f; rec.zoomy=undefined; this._dirty.add(id); this._schedule(); }
     getFilter(id){ const rec=this._layerById.get(id); return rec?rec.def.filter:null; }
     setOpacity(id,v){
       const rec=this._layerById.get(id); if(!rec) return;
@@ -917,8 +990,51 @@ window.IntMapCesiumEngine=(function(){
             ||this._states.get(def.source);
       return m||{};
     }
-    _env(){ return { zoom:this.getZoom(), terrain:!!this._terrainSpec, images:this._images,
+    /* ══ (#R185) THE ZOOM THE STYLES ARE EVALUATED AT IS THE ONE THAT WAS ASKED FOR ══════════
+       `getZoom()` is a READBACK: it inverts the camera against the ground point picked off the
+       tessellated globe, so while the DEM under the crosshair is still refining it answers a
+       slightly different number each frame for a camera that has not changed zoom at all.
+       Measured over a 20-step pan at a fixed zoom 13: 13.122, 13.141, 13.128, then 13.000 for
+       eleven frames, then 13.020 — five jumps larger than the 0.01 the redraw gate below tests,
+       for a gesture in which the zoom was constant by construction. Every one of those five
+       frames rebuilt all 84 vector layers.
+       So when the camera is still exactly where setCamera put it, use the zoom setCamera was
+       GIVEN. It is the same number the readback converges to, it is what the user asked for, and
+       it does not wobble with the terrain. The moment anything else moves the camera — a gesture
+       that writes the camera directly, the flight simulator's setEye — the position no longer
+       matches and the readback answers, as before. */
+    _styleZoom(){
+      try{
+        if(this._cmdZoom!=null&&this._cmdPos&&Cesium.Cartesian3.equals(this._cmdPos,this._camera.positionWC))
+          return this._cmdZoom;
+      }catch(_){}
+      return this.getZoom();
+    }
+    _noteCommanded(zoom){
+      this._cmdZoom=zoom;
+      try{ this._cmdPos=Cesium.Cartesian3.clone(this._camera.positionWC,this._cmdPos||new Cesium.Cartesian3()); }
+      catch(_){ this._cmdPos=null; }
+    }
+    _env(){ return { zoom:this._styleZoom(), terrain:!!this._terrainSpec, images:this._images,
                      maxFeatures:this._maxFeatures, states:null }; }
+
+    /* Does this layer's OUTPUT depend on the zoom? A style layer is a fixed document, so this is
+       a property of the document and is answered once: any `["zoom"]` in a filter/paint/layout
+       expression, or a legacy `{stops:…}` function (which is a zoom function unless it names a
+       property — and one that names a property is re-evaluated per feature, not per zoom, so
+       treating it as zoom-dependent is the conservative direction). */
+    _zoomSensitive(rec){
+      if(rec.zoomy===undefined){
+        let s=true;
+        try{ const j=JSON.stringify([rec.def.filter||null,rec.def.paint||null,rec.def.layout||null]);
+          s=/"zoom"/.test(j)||/"stops"/.test(j); }catch(_){ s=true; }
+        rec.zoomy=s;
+      }
+      return rec.zoomy;
+    }
+    _inZoomWindow(def,z){
+      return (def.minzoom==null||z>=def.minzoom)&&(def.maxzoom==null||z<def.maxzoom);
+    }
 
     /* ── the redraw loop ───────────────────────────────────────────────────── */
     _schedule(){
@@ -928,30 +1044,62 @@ window.IntMapCesiumEngine=(function(){
     _flush(){
       const env=this._env();
       const ids=[...this._dirty]; this._dirty.clear();
+      const memo={ all:new Map(), byLayer:new Map() };
       for(const id of ids){
         const rec=this._layerById.get(id); if(!rec) continue;
         if(rec.kind!=='vector'||!rec.ds) continue;
         if(!rec.ds.show) continue;
-        try{ this._vec.update(rec.ds,rec.def,this._features(rec.def),
+        try{ this._vec.update(rec.ds,rec.def,this._features(rec.def,memo),
                               Object.assign({},env,{states:this._statesFor(rec.def)})); }catch(_){}
       }
+      /* the declutter pass is a function of the CAMERA, not of the layers, so it runs on every
+         scheduled frame — including the ones where nothing needed rebuilding */
       try{ this._vec.placeLabels(this._scene,dsList(this._dsColl),this._maxLabels); }catch(_){}
       this._scene.requestRender();
     }
     _afterMove(){
       /* (#R181) …including a programmatic one, so the compass follows a jumpTo as well as a drag */
       if(this._fireAngles) try{ this._fireAngles(); }catch(_){}
-      /* everything whose paint reads the zoom, plus every vector-tile-backed layer
-         (a new camera means a new tile cover) */
-      const z=this.getZoom();
-      if(this._lastZoom==null||Math.abs(z-this._lastZoom)>0.01){
-        this._lastZoom=z;
-        this._layers.forEach(l=>{ if(l.kind==='vector') this._dirty.add(l.def.id);
-                                  else if(l.imagery) this._applyImageryPaint(l); });
-      } else {
-        this._layers.forEach(l=>{ const rec=this._sources.get(l.def.source);
-          if(l.kind==='vector'&&rec&&rec.type==='vector') this._dirty.add(l.def.id); });
-      }
+      /* ══ (#R185) A CAMERA MOVE IS NOT A REASON TO REBUILD A LAYER ═════════════════════════
+         What `_vec.update` produces from a layer is a function of three things: the features it
+         is given, the zoom the style is evaluated at, and the feature states. A camera move can
+         change the first (a vector TILESET has a new cover) and the second — and nothing else.
+         Both branches below used to assert that everything had changed on every frame of every
+         gesture, so a pan re-created the Cesium entity graph of up to 84 layers, ~1,900 entities,
+         sixty times a second. Measured on the 3-D satellite scene over the Alps, a 40-step drag:
+         252 ms per frame, of which 114 ms was this rebuild and its feature assembly — against
+         36 ms for the same gesture on MapLibre, which reuses what it already parsed.
+         So ask the two questions the output actually depends on:
+           · the tile cover — declared once per SOURCE and compared by signature, so a layer over
+             a tileset rebuilds when it crosses a tile boundary and not when it moves a pixel;
+           · the zoom — and only for layers whose own document mentions it, or whose min/maxzoom
+             window the zoom just crossed.
+         Nothing is skipped that could have looked different; a tile landing still arrives through
+         `_markSourceDirty`, and setPaint / setLayout / setFilter / setFeatureState all dirty their
+         layers themselves. */
+      const z=this._styleZoom();
+      const prev=this._lastZoom;
+      const zChanged=(prev==null||Math.abs(z-prev)>0.01);
+      this._lastZoom=z;
+      /* declare the cover once per vector-tile source (this is also what QUEUES the new tiles,
+         so it has to happen on every move, cover change or not) */
+      const moved=new Map();
+      const b=this.getBoundsLL();
+      this._sources.forEach((rec,id)=>{
+        if(rec.type!=='vector'||!rec.vt||!rec.vt.want) return;
+        const sig=rec.vt.want(b,z);
+        moved.set(id,sig!==rec.coverSig);
+        rec.coverSig=sig;
+      });
+      this._layers.forEach(l=>{
+        if(l.kind==='vector'){
+          const cover=moved.get(l.def.source);
+          const need=(cover===true)
+            ||(zChanged&&(this._zoomSensitive(l)
+                          ||this._inZoomWindow(l.def,prev)!==this._inZoomWindow(l.def,z)));
+          if(need) this._dirty.add(l.def.id);
+        } else if(l.imagery&&zChanged) this._applyImageryPaint(l);
+      });
       this._schedule();
     }
 

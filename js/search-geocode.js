@@ -59,7 +59,7 @@ window.IntMapModules.searchGeocode=function(HOST){
   function localFuzzyPlaces(q){
     const ql=(q||'').toLowerCase().trim(); if(!ql) return [];
     const out=[];
-    const push=(name,lng,lat,score,kind)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||''}); };   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
+    const push=(name,lng,lat,score,kind,bbox)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||'',bbox:bbox||null}); };   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
     try{ Object.values(HOST.countryStats||{}).forEach(s=>{
       if(!s.latlng) return; const en=(s.nameEn||'').toLowerCase(), jp=(s.nameJp||''), cap=(s.capital||'').toLowerCase();
       let sc=0, suffix='';
@@ -71,7 +71,11 @@ window.IntMapModules.searchGeocode=function(HOST){
       else if(cap.includes(ql)&&ql.length>=3){ sc=58; suffix=' · '+s.capital; }
       else if(ql.length>=4 && _lev(en,ql)<=2) sc=62;
       else if(ql.length>=5 && cap && _lev(cap,ql)<=2){ sc=56; suffix=' · '+s.capital; }   /* (#R19) misspelled capital */
-      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc, suffix?'capital':'country');
+      /* (#R185) a country match carries the country's REAL extent (see js/countries-ui.js), so the
+         search frames Monaco like Monaco and Russia like Russia instead of giving both the one
+         `country` zoom. A CAPITAL match is a point inside the country and must not be framed by the
+         country's box — it keeps the class zoom, as before. */
+      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc, suffix?'capital':'country', suffix?null:s.bbox);
     }); }catch(_){}
     try{ const gz=(typeof HOST.BUILTIN_GAZETTEER!=='undefined')?HOST.BUILTIN_GAZETTEER:null;
       if(gz) for(const type in gz){ gz[type].forEach(e=>{ const terms=Array.isArray(e.terms)?e.terms.join(' '):String(e.terms||''); const tl=terms.toLowerCase(); const nm=(e.name&&(e.name[HOST.lang]||e.name.en))||terms;
@@ -103,7 +107,11 @@ window.IntMapModules.searchGeocode=function(HOST){
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
        timeout so it can never hang the search. */
     res.innerHTML='';
-    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null,l.kind));
+    /* (#R185) …and the extent rides along as the shape js/place-framing.js already reads — a
+       Nominatim-style [S, N, W, E] box plus the point — so one ladder frames local and remote
+       results alike rather than there being a second copy of the decision here. */
+    const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng }:null;
+    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind));
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${HOST.t('loading')}</div>`;
     /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
        blocked (null Origin) or just slow, and on a fresh load countryStats isn't loaded yet, so there was
@@ -128,7 +136,7 @@ window.IntMapModules.searchGeocode=function(HOST){
         if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
     await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
-    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null,l.kind)); }   /* weak local fallback */
+    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${HOST.t('noMatch')}</div>`; }
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;

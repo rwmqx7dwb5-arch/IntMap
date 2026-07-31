@@ -1,0 +1,155 @@
+// (#R185) Browser regressions for this round.
+//
+// Each one pins a behaviour that was found by MEASURING the running app, and each is written as
+// the measurement rather than as the code — so it keeps holding if the implementation moves.
+import { test, expect } from '@playwright/test';
+
+const BOOT = { timeout: 120_000 };
+
+const boot = async (page, engine) => {
+  await page.goto('/');
+  await page.evaluate((e) => { try { localStorage.setItem('intmap_engine', e); } catch (_) {} }, engine);
+  await page.reload();
+  await page.waitForFunction((e) => !!window.IntMapGeoEngine && window.IntMapGeoEngine.id() === e
+    && window.IntMapGeoEngine.canDraw(), engine, BOOT);
+};
+
+test('R185 Cesium: a pan that does not change the tile cover rebuilds no layers', async ({ page }) => {
+  test.setTimeout(240_000);
+  await boot(page, 'cesium');
+  await page.evaluate(async () => {
+    document.getElementById('btn-view-sat').click(); await new Promise(r => setTimeout(r, 700));
+    window.IntMapGeoEngine.camera.jumpTo({ center: [7.98, 46.55], zoom: 13, pitch: 65, bearing: 20 });
+  });
+  await page.waitForFunction(() => { try { return !!window.IntMapGeoEngine.raw()._scene.globe.tilesLoaded; } catch (_) { return false; } }, null, { timeout: 90_000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+
+  const r = await page.evaluate(async () => {
+    const v = window.IntMapGeoEngine.raw();
+    const nextFrame = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    /* count what the flush is asked to rebuild, per gesture frame */
+    const dirty = [];
+    const orig = v._flush.bind(v);
+    v._flush = function () { dirty.push(v._dirty.size); return orig(); };
+    let lng = 7.98, lat = 46.55, brg = 20;
+    for (let i = 0; i < 24; i++) {
+      lng += 0.0004; lat += 0.00015; brg += 0.12;               /* well inside one tile */
+      v.setCamera({ center: [lng, lat], zoom: 13, pitch: 65, bearing: brg }, null, { silent: true });
+      await nextFrame();
+    }
+    v._flush = orig;
+    dirty.sort((a, b) => a - b);
+    return { flushes: dirty.length, median: dirty[dirty.length >> 1], max: dirty[dirty.length - 1],
+      layers: v._layers.length, entities: (() => { let n = 0; const c = v._dsColl; for (let i = 0; i < c.length; i++) n += c.get(i).entities.values.length; return n; })() };
+  });
+  console.log('R185 cesium gesture · flushes', r.flushes, '· dirty layers per flush: median', r.median, 'max', r.max,
+    '· (of', r.layers, 'layers,', r.entities, 'entities)');
+  /* BEFORE: every gesture frame marked every vector layer dirty — measured 84 of them, 1,900
+     entities re-created at 100 ms a frame. The camera moving is not a reason to rebuild a layer;
+     its FEATURES changing is, and a sub-tile pan changes none. */
+  expect(r.flushes).toBeGreaterThan(4);
+  expect(r.median, 'a pan inside one tile must rebuild nothing').toBe(0);
+});
+
+test('R185 Cesium: the satellite imagery is chosen for the display, not for the terrain error', async ({ page }) => {
+  test.setTimeout(240_000);
+  await boot(page, 'cesium');
+  await page.evaluate(async () => {
+    document.getElementById('btn-view-sat').click(); await new Promise(r => setTimeout(r, 700));
+    window.IntMapGeoEngine.camera.jumpTo({ center: [7.98, 46.55], zoom: 13, pitch: 0, bearing: 0 });
+  });
+  await page.waitForFunction(() => { try { return !!window.IntMapGeoEngine.raw()._scene.globe.tilesLoaded; } catch (_) { return false; } }, null, { timeout: 90_000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  const r = await page.evaluate(() => {
+    const s = window.IntMapGeoEngine.raw()._scene, g = s.globe;
+    const terrain = [], imagery = [];
+    for (const t of g._surface._tilesToRender) {
+      terrain.push(t._level);
+      const d = t.data; if (!d || !d.imagery) continue;
+      for (const ti of d.imagery) { const im = ti.readyImagery || ti.loadingImagery; if (!im) continue;
+        const tx = im.texture || im.textureWebMercator; if (tx) imagery.push({ level: im.level, w: tx.width }); }
+    }
+    return { terrainMax: Math.max(...terrain), imageryMax: Math.max(...imagery.map(i => i.level)),
+      texWidths: [...new Set(imagery.map(i => i.w))], sse: g.maximumScreenSpaceError, n: imagery.length,
+      dpr: window.devicePixelRatio,
+      stitched: (() => { try { return !!(window.IntMapSatProto && window.IntMapSatProto.hiDPI()); } catch (_) { return false; } })() };
+  });
+  console.log('R185 cesium imagery · terrain level', r.terrainMax, '· imagery level', r.imageryMax,
+    '· texture widths', r.texWidths.join('/'), '· SSE', r.sse);
+  /* MEASURED: Cesium picks the imagery level so one texel lands on one unit of the terrain tile's
+     geometric error, and the terrain refines to `maximumScreenSpaceError` DEVICE pixels — so at the
+     default SSE 2 the imagery arrived at half the display's resolution (sharpness 7.5 against
+     MapLibre's 22.7 on the same camera). One level deeper is one texel per device pixel. */
+  expect(r.n).toBeGreaterThan(0);
+  expect(r.imageryMax, 'imagery must be one level finer than the terrain tile carrying it')
+    .toBe(r.terrainMax + Math.round(Math.log2(r.sse)));
+  /* …and the tile itself is whatever the DISPLAY asked for: #R178's stitched 512 px on a HiDPI
+     screen, Esri's native 256 on a 1x one. Asserting a raw pixel count would only be asserting the
+     runner's devicePixelRatio. */
+  expect(r.texWidths).toContain(r.stitched ? 512 : 256);
+});
+
+test('R185 satellites: the layer is not empty when the live feed is unreachable', async ({ page }) => {
+  test.setTimeout(240_000);
+  /* the exact failure of 2026-08-01, made deterministic: celestrak.org unreachable, and the public
+     relays with it. Everything else — including the catalogue this site ships — is untouched. */
+  await page.route(/celestrak\.org|allorigins\.win|codetabs\.com/, (route) => route.abort());
+  await boot(page, 'maplibre');
+  await page.evaluate(() => {
+    const cb = document.getElementById('dl-sats');
+    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+  await page.waitForFunction(() => {
+    try { const s = window.IntMapSatellites && window.IntMapSatellites.state(); return !!(s && s.catalogue > 0 && s.drawn > 0); }
+    catch (_) { return false; }
+  }, null, { timeout: 90_000 });
+  const s = await page.evaluate(() => window.IntMapSatellites.state());
+  console.log('R185 satellites (feed blocked) · catalogue', s.catalogue, '· drawn', s.drawn,
+    '· bundled', s.bundled, '·', s.err);
+  expect(s.catalogue, 'the shipped catalogue must carry the layer').toBeGreaterThan(500);
+  expect(s.drawn).toBeGreaterThan(100);
+  expect(s.bundled, 'and it must SAY it is the shipped copy').toBe(true);
+  expect(String(s.err || '')).toMatch(/shipped with the app/);
+  /* every drawn object is a real propagated position, not a placeholder at 0,0 */
+  const pos = await page.evaluate(() => {
+    const l = window.IntMapSatellites.list();
+    const zero = l.filter(f => Math.abs(f.lng) < 1e-9 && Math.abs(f.lat) < 1e-9).length;
+    const alt = l.map(f => f.altKm).filter(a => a > 0);
+    const hdg = l.filter(f => f.headingDeg != null).length;
+    return { n: l.length, zero, minAlt: Math.min(...alt), maxAlt: Math.max(...alt), hdg };
+  });
+  expect(pos.zero, 'a satellite we cannot propagate is dropped, never drawn at 0,0').toBe(0);
+  expect(pos.minAlt).toBeGreaterThan(100);        /* nothing orbits below the atmosphere */
+  expect(pos.maxAlt).toBeGreaterThan(30000);      /* the geostationary belt is in there */
+  expect(pos.hdg, 'every object knows which way it is going — the icon turns to it').toBe(pos.n);
+});
+
+test('R185 aircraft: the 3-D body carries its own outline and its altitude is its own', async ({ page }) => {
+  test.setTimeout(240_000);
+  await boot(page, 'maplibre');
+  await page.evaluate(async () => {
+    window.IntMapGeoEngine.camera.jumpTo({ center: [139.78, 35.55], zoom: 11, pitch: 0, bearing: 0 });
+    await new Promise(r => setTimeout(r, 900));
+    const cb = document.getElementById('dl-planes');
+    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+  const ok = await page.waitForFunction(() => {
+    try { const s = window.IntMapPlanes3D && window.IntMapPlanes3D.state(); return !!(s && s.planes > 0); }
+    catch (_) { return false; }
+  }, null, { timeout: 60_000 }).then(() => true).catch(() => false);
+  /* the ADS-B feed is live and keyless; if it is not answering, this assertion has nothing to say */
+  test.skip(!ok, 'live aircraft feed returned nothing here');
+  const s = await page.evaluate(() => window.IntMapPlanes3D.state());
+  console.log('R185 aircraft ·', s.aircraft, 'aircraft ·', s.features, 'features · detailed', s.detailed,
+    '· lifted', s.lifted, '· maxAlt', s.maxAlt);
+  expect(s.on, 'the 3-D body is what the app shows by default — that is what had to get louder').toBe(true);
+  expect(s.aircraft).toBeGreaterThan(0);
+  /* ten parts per aircraft when detailed (two outline plates + eight solids), three when not */
+  expect(s.features).toBeGreaterThanOrEqual(s.aircraft * (s.detailed ? 10 : 3));
+  /* the aircraft count is not the feature count — #R183's lesson, and the plates would have
+     multiplied it again */
+  expect(s.aircraft).toBeLessThan(s.features);
+  /* an altitude read off a part's base would now be tens of metres high for a parked aeroplane */
+  expect(s.maxAlt).toBeLessThan(25000);
+  if (s.lifted === 0) expect(s.maxAlt).toBe(0);
+});

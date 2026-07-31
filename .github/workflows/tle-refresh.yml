@@ -1,0 +1,49 @@
+# (#R185) Keep the bundled satellite catalogue close to the live one.
+#
+# The live-satellites layer reads CelesTrak. On 2026-08-01 celestrak.org resolved and then refused
+# every connection for hours, and with one source the layer drew nothing at all — which is the one
+# outcome the brief rules out (「何も表示されないのは論外」). The app therefore ships a real element
+# set of its own (data/tle/), and this job is what stops that copy from going stale: it rebuilds it
+# from CelesTrak — or, when CelesTrak cannot be reached, from SatNOGS DB, which mirrors the same
+# Space-Track / CelesTrak elements — and commits it only when the file actually changed.
+#
+# Element sets are re-issued on a roughly two-hour timescale for low orbits, but a snapshot is a
+# FALLBACK, not the live path: twice a day keeps its worst case at ~12 h old, which SGP4 propagates
+# to a few kilometres for LEO, and the layer states the age of the elements it used either way.
+name: TLE snapshot
+
+on:
+  schedule:
+    - cron: '17 3,15 * * *'      # 03:17 and 15:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tle-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rebuild data/tle from the live sources
+        run: node scripts/build-tle-snapshot.mjs
+      - name: Commit only if the catalogue actually moved
+        run: |
+          if git diff --quiet -- data/tle; then
+            echo "catalogue unchanged — nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/tle
+          git commit -m "data: refresh the bundled satellite catalogue
+
+          Rebuilt by .github/workflows/tle-refresh.yml (#R185)."
+          git push
