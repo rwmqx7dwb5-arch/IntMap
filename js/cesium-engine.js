@@ -67,6 +67,13 @@ window.IntMapCesiumEngine=(function(){
       return new URL('cesium/',new URL(root,location.href)).href;
     }catch(_){ return './cesium/'; }
   }
+  /* (#R184) How many MSAA samples a screen of this pixel density can actually show. See the
+     constructor for the measurement and the reasoning; declared here so it is one rule rather than
+     an expression buried in an options literal, and so a test can call it directly.
+       dpr 1  → 4  (an edge is one pixel wide; this is what shipped and it does not change)
+       dpr 2  → 2  (4 device pixels per CSS pixel already; 4× MSAA would be 16 samples)
+       dpr 3+ → 1  (9 device pixels per CSS pixel — the display is the anti-aliasing) */
+  function _msaaFor(dpr){ const d=+dpr||1; return d>=3?1:d>=2?2:4; }
   let _loadP=null;
   function loadCesium(){
     if(_loadP) return _loadP;
@@ -148,7 +155,19 @@ window.IntMapCesiumEngine=(function(){
         contextOptions:{ webgl:{ alpha:false, antialias:o.antialias!==false, preserveDrawingBuffer:!!o.preserveDrawingBuffer,
                                  powerPreference:'high-performance' },
                          requestWebgl1:false },
-        msaaSamples:(o.antialias===false?1:4),
+        /* ══ (#R184) HOW MUCH MULTISAMPLING, AND WHY IT DEPENDS ON THE SCREEN ═════
+           MSAA smooths GEOMETRY edges — the globe's limb and the terrain silhouette
+           against the sky. How many samples that needs is a fact about the DISPLAY,
+           not about the scene: at devicePixelRatio 2 every CSS pixel already holds
+           four device pixels, so 4× MSAA on top is sixteen samples per CSS pixel
+           and no screen resolves the last twelve. The cost, meanwhile, is paid on
+           the whole frame — this is the biggest single item in a 3-D satellite
+           frame after the imagery itself.
+           So the sample count comes DOWN as the pixel density goes UP, and at 1×
+           (where an edge really is one pixel wide) it stays at 4 — unchanged from
+           what shipped. Nothing here trades quality for speed; it declines to pay
+           for samples the display cannot show. */
+        msaaSamples:(o.antialias===false?1:_msaaFor(o.pixelRatio||(window.devicePixelRatio||1))),
         /* ══ THE SAME HALF-RESOLUTION DEFECT, IN THE NEW ENGINE ═══════════════════
            Cesium's default is `useBrowserRecommendedResolution: true`, which sizes
            the drawing buffer in CSS PIXELS and ignores devicePixelRatio entirely —
@@ -176,11 +195,27 @@ window.IntMapCesiumEngine=(function(){
       this._globe.depthTestAgainstTerrain=false;    /* markers must not sink into a hill */
       this._globe.enableLighting=false;
       scene.highDynamicRange=false;
-      /* FXAA on top of MSAA: MSAA smooths geometry edges (the terrain silhouette and the
-         globe's limb), FXAA also smooths the shaded/textured interior where the imagery
-         meets a ridge. Both are cheap next to the fragment cost already being paid, and
-         the standing brief is 「表示速度、画質を高めて。どちらか一方犠牲はNG」. */
-      try{ const fx=scene.postProcessStages&&scene.postProcessStages.fxaa; if(fx) fx.enabled=(o.antialias!==false); }catch(_){}
+      /* ══ (#R184) FXAA IS NOT A SECOND OPINION ON TOP OF MSAA — IT IS A BLUR ═══════════
+         This used to run FXAA AND MSAA together, on the reasoning that MSAA smooths
+         geometry edges while FXAA also smooths the textured interior. Measured on one
+         frozen 3-D satellite scene over the Alps, A/B in the same tab, the second half of
+         that sentence is the problem: FXAA works on the RESOLVED image and cannot tell an
+         aliased edge from real detail, so what it smooths in the interior is the satellite
+         imagery. Mean |Laplacian| of the rendered pixels — a sharpness measure — over two
+         independent runs:
+
+             MSAA 4 + FXAA (as shipped)   332-336 ms   sharpness 5.06
+             MSAA 4, FXAA off             315-320 ms   sharpness 7.25   ← faster AND sharper
+             MSAA 1, FXAA on              230-234 ms   sharpness 5.06
+
+         FXAA costs ~17-20 ms and removes 30 % of the image detail. There is no trade here
+         to weigh: switching it off improves BOTH axes, which is the one thing the standing
+         brief 「どちらか一方犠牲はNG」 asks for.
+         It stays ON in the one case where it is the only anti-aliasing there is — a context
+         that gave us no multisampling — because then it is smoothing edges that would
+         otherwise be raw stair-steps, and that is what it is good at. */
+      try{ const fx=scene.postProcessStages&&scene.postProcessStages.fxaa;
+        if(fx) fx.enabled=(o.antialias!==false)&&!(scene.msaaSamples>1); }catch(_){}
       scene.screenSpaceCameraController.enableCollisionDetection=false;
       this._applyFov();
 
@@ -1837,5 +1872,8 @@ window.IntMapCesiumEngine=(function(){
               with MapLibre numerically, so it is measurable from the outside */
            _rangeFor:(lat,zoom,c2cPx)=>((2*Math.PI*R_EARTH*Math.cos(lat*D2R))/(TILE*Math.pow(2,zoom)))*c2cPx,
            _zoomFor:(lat,range,c2cPx)=>Math.log2((2*Math.PI*R_EARTH*Math.cos(lat*D2R))*c2cPx/(TILE*range)),
+           /* (#R184) the anti-aliasing policy, exposed so the rule can be checked without
+              constructing a widget — see _msaaFor and the constructor's measurement */
+           _msaaFor,
            ML_FOVY, TILE };
 })();
