@@ -5097,6 +5097,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      the existing IntMapRoute (which is a maritime/sea A* route). ===== */
   /* (#R163) moved to js/routing.js — see Architecture.md §3.1. */
   window.IntMapRouting=window.IntMapModules.routing(IM_HOST);
+  /* (#R184) the analyses the directions panel runs on a computed route (window.IntMapRoutingOps):
+     elevation from the DEM, border crossings from the country polygons, weather/earthquakes/news
+     along the way, arrival times, where the alternatives differ, and routing on OSM's record of the
+     network as it was in a chosen year. The panel reaches for it by name and simply offers nothing
+     if it is absent, so this is an addition to routing rather than a change to it. */
+  window.IntMapModules.routingOps(IM_HOST);
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
      polygons for drive / walk / cycle. Opened from the right-click menu or Atlas. Store-siting, evacuation, travel, etc. ===== */

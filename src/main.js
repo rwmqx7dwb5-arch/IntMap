@@ -58,6 +58,11 @@ import '../js/companies.js';
 import '../js/stats-compare.js';
 import '../js/compare.js';
 import '../js/routing.js';
+/* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
+   alternative differences, and routing on OSM's record of a historical network). The three
+   capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
+   built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
+import '../js/routing-ops.js';
 import '../js/street-view.js';
 import '../js/flight-sim.js';
 import '../js/time-borders.js';
@@ -148,7 +153,7 @@ const MODULE_FACTORIES = [
   'toolPanel', 'authUi', 'community', 'satellite', 'aiCore', 'placeLabels',
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
-  'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps',
+  'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);
