@@ -99,7 +99,15 @@ test('with the tilt ceiling lifted, zooming in still moves the viewpoint', async
    survived, because that one is pushed whatever its altitude. The machine stays, its trail goes.
    Measured over Mt Fuji with the aircraft at 5,000 ft: 0 legs at every zoom from z10.5 to z14.3. */
 test('the track survives zooming in over high ground with 3-D terrain on', async ({ page }) => {
-  test.setTimeout(240000);
+  /* (#R184) 240 s was never a budget, it was a coin toss. This test boots the app with 3-D terrain,
+     streams DEM tiles over Mt Fuji, waits out five moveend cycles and then six wheel steps — and it
+     has been measured at 3.8 min against a 4.0 min ceiling on EVERY CI run for rounds, on main and
+     on this branch alike. A 5 % margin survives only while nothing else is competing for the runner.
+     #R184 added 33 browser tests (a second engine booted several times, Overpass and DEM work), and
+     the same unchanged test went 3.8 → 4.2 min and failed three attempts in a row ON THE TIMEOUT,
+     not on an assertion. Nothing it checks has changed and nothing it checks is relaxed here; it is
+     given a budget with real margin instead of one it was always about to miss. */
+  test.setTimeout(480000);
   let tick = 0;
   await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 8);
     route.fulfill({ status: 200, contentType: 'application/json',
@@ -330,16 +338,27 @@ test('the drone planner answers with the real terrain, and says exactly what fai
   // the extension seams the brief asks for really are consulted
   const seams = await page.evaluate(async () => { const D = window.IntMapDrone;
     D.newRoute(); D.addWaypoint(139.70, 35.68, 100, 'agl'); D.addWaypoint(139.78, 35.70, 100, 'agl');
+    /* (#R184) js/drone-ops.js now fills these seams for real, so a test that registers its own
+       source has to measure the DELTA rather than the absolute count. What is being asserted is
+       unchanged — "unregistering removes the one I added" — but it can no longer be spelled as
+       "and then nothing is registered at all", because that was only ever true while the seams
+       were empty. The wind field is put BACK afterwards for the same reason: leaving it null
+       would silently disable the real one for whatever runs next in this tab. */
+    const before = D.hazardSourceIds().slice().sort();
     const calm = await D.compute();
     D.registerHazardSource('t-nfz', () => [{ i: 3, kind: 'no-fly-zone', severity: 'error', text: 'test NFZ' }]);
     D.registerWindField(() => ({ u: 5, v: 0 }));
     const windy = await D.compute();
-    D.unregisterHazardSource('t-nfz'); D.registerWindField(null);
+    D.unregisterHazardSource('t-nfz');
+    try { if (window.IntMapDroneOps) window.IntMapDroneOps.install(); else D.registerWindField(null); }
+    catch (_) { D.registerWindField(null); }
     return { nfz: windy.violations.filter(v => v.kind === 'no-fly-zone').length,
-      calmS: calm.timeS, windS: windy.timeS, sources: D.hazardSourceIds().length }; });
+      calmS: calm.timeS, windS: windy.timeS,
+      before, after: D.hazardSourceIds().slice().sort() }; });
   expect(seams.nfz, 'a hazard source becomes a finding like any other').toBe(1);
   expect(seams.windS, 'a tailwind really does shorten the flight').toBeLessThan(seams.calmS * 0.85);
-  expect(seams.sources, 'and unregistering removes it').toBe(0);
+  expect(seams.after, 'and unregistering removes exactly the one that was added').toEqual(seams.before);
+  expect(seams.after, 'the test source is gone').not.toContain('t-nfz');
 
   expect(errs, 'no page errors along the way').toEqual([]);
 });

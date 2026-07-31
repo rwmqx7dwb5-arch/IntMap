@@ -273,8 +273,14 @@ window.IntMapModules.droneNav=function(HOST){
       const d=distM(a,b), dz=wpAmsl(i)-wpAmsl(i-1);
       const s3=Math.hypot(d,dz);
       let gs=Math.max(0.1,+spec.cruiseSpeed||10);
-      /* wind seam: the along-track component changes ground speed, nothing else is invented */
-      const w=windAt({ lng:(a[0]+b[0])/2, lat:(a[1]+b[1])/2, amsl:(wpAmsl(i)+wpAmsl(i-1))/2 });
+      /* wind seam: the along-track component changes ground speed, nothing else is invented.
+         (#R184) The sample handed over carries the GROUND under the leg and the ETA at its midpoint
+         as well as the altitude — a real wind field is resolved in height AND in time, and a seam
+         that passes only `amsl` forces its consumer to guess both. Additive: a field a consumer
+         ignores costs it nothing, and the seam's contract (fn(sample) → {u,v,gust}) is unchanged. */
+      const _gMid=((wpGround[i-1]||0)+(wpGround[i]||0))/2, _aMid=(wpAmsl(i)+wpAmsl(i-1))/2;
+      const w=windAt({ lng:(a[0]+b[0])/2, lat:(a[1]+b[1])/2, amsl:_aMid,
+        ground:_gMid, agl:_aMid-_gMid, eta:Date.now()+(timeS*1000), leg:i-1 });
       if(w){ const br=bearingDeg(a,b)*D2R; gs=Math.max(0.5, gs + (w.u*Math.sin(br)+w.v*Math.cos(br))); }
       const tH=d/gs;
       const tV=dz>0 ? dz/Math.max(0.05,+spec.climbRate||3) : (-dz)/Math.max(0.05,+spec.descentRate||3);
@@ -362,8 +368,13 @@ window.IntMapModules.droneNav=function(HOST){
              'Участок '+(i+1)+'→'+(i+2)+' ограничен скоростью набора/снижения: '+fmtT(lg.timeS)+' на '+fmtKm(lg.distM)+'.',
              'El tramo '+(i+1)+'→'+(i+2)+' está limitado por el ascenso/descenso: '+fmtT(lg.timeS)+' para '+fmtKm(lg.distM)+'.') }); });
 
-    /* ---- extension seam: everything else that has an opinion about a point on this route ---- */
-    const ctx={ samples, legs, spec, wp, wpGround, route };
+    /* ---- extension seam: everything else that has an opinion about a point on this route ----
+       (#R184) The context carries the DEM zoom the samples were read at and the energy the plan has
+       cost so far. Both are things a source would otherwise have to re-derive: a radio-link check
+       that picked its own DEM zoom would disagree with the terrain profile beside it, and a
+       return-leg reserve cannot be stated at all without the outbound figure. */
+    const ctx={ samples, legs, spec, wp, wpGround, route, demZoom:z, _energyWh:energyWh,
+      groundDistM:totalGround, dist3DM:total3D, timeS };
     Object.keys(hazardSources).forEach(id=>{ try{ const out=hazardSources[id](ctx);
       (Array.isArray(out)?out:[]).forEach(h=>{ if(!h) return;
         V.push({ kind:String(h.kind||id), severity:h.severity||'warn', at:(h.i!=null?h.i:0),
@@ -604,6 +615,7 @@ window.IntMapModules.droneNav=function(HOST){
       : `<div class="dn-ok">✓ ${L('Every condition is met.','すべての飛行条件を満たしています。','Alle Bedingungen erfüllt.','Все условия выполнены.','Se cumplen todas las condiciones.')}</div>`);
     const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${esc(route.spec[f.k])}"><i>${f.unit}</i></label>`).join('');
     const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button type="button" class="dn-del" data-drop="${esc(r.id)}">✕</button></div>`).join('')}</div>`:'';
+    const ops=opsSection();
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
         <span class="tp-hd-btns"><button class="tp-min-btn" type="button" title="–">–</button><button class="tp-close" type="button" title="${HOST.t('close')}">✕</button></span></div>
@@ -626,10 +638,94 @@ window.IntMapModules.droneNav=function(HOST){
       <canvas id="dn-profile" class="dn-profile" width="520" height="150"></canvas>
       <div class="dn-profile-lbl">${L('Altitude profile — terrain (filled) and the planned path','高度推移 — 地形（塗り）と飛行経路','Höhenprofil — Gelände und Flugweg','Профиль высот — рельеф и маршрут','Perfil de altitud — terreno y ruta')}</div>
       ${vio}
+      ${ops}
       ${routes.length?`<div class="dn-sec">${L('Saved routes','保存した経路','Gespeicherte Routen','Сохранённые маршруты','Rutas guardadas')}</div>`:''}${saved}`;
     wire(p);
     drawProfile();
     return p;
+  }
+  /* ---- (#R184) OPERATIONS ---------------------------------------------------------------------
+     The five checks and the three actions js/drone-ops.js provides, rendered as part of THIS panel
+     rather than as a second one — they are opinions about the route on screen, and a separate window
+     would make the operator read two places to learn whether the flight is possible.
+
+     The whole block is absent when js/drone-ops.js has not loaded, rather than showing controls that
+     do nothing. `opsOut` is the last answer from a compare / conflict / return-to-home run; it is
+     module state because render() rebuilds innerHTML and a result held in the DOM would vanish. */
+  let opsOut=null, opsBusy='';
+  const OPS=()=>window.IntMapDroneOps;
+  const CHECKS=[
+    { k:'wind',    lbl:['Wind at altitude','高度別の風','Wind in Flughöhe','Ветер на высоте','Viento en altitud'] },
+    { k:'link',    lbl:['Radio link & line of sight','無線リンクと視通','Funk & Sicht','Радиосвязь и видимость','Radio y visión'] },
+    { k:'nofly',   lbl:['Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas'] },
+    { k:'reserve', lbl:['Battery for the return','帰投分の電池','Akku für den Rückflug','Заряд на возврат','Batería para volver'] },
+    { k:'sites',   lbl:['Emergency landing sites','緊急着陸地点','Notlandeplätze','Места аварийной посадки','Lugares de aterrizaje'] }
+  ];
+  const cLbl=(c)=>c.lbl[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0];
+  function opsSection(){
+    const O=OPS(); if(!O) return '';
+    const st=O.state(), en=st.enabled, R=st.link;
+    const toggles=CHECKS.map(c=>`<label class="dn-opchk"><input type="checkbox" data-opchk="${c.k}"${en[c.k]?' checked':''}> ${esc(cLbl(c))}</label>`).join('');
+    const num=(id,v,step,min,max)=>`<input type="number" data-opnum="${id}" value="${esc(v)}" step="${step}" min="${min}" max="${max}" inputmode="decimal">`;
+    const radioRows=`<label class="dn-spec"><span>${L('Radio frequency','無線周波数','Funkfrequenz','Частота','Frecuencia')}</span>${num('mhz',R.mhz,1,1,60000)}<i>MHz</i></label>`
+      +`<label class="dn-spec"><span>${L('Transmit power','送信出力','Sendeleistung','Мощность передатчика','Potencia de transmisión')}</span>${num('txDbm',R.txDbm,0.5,-10,40)}<i>dBm</i></label>`
+      +`<label class="dn-spec"><span>${L('Receiver sensitivity','受信感度','Empfängerempfindlichkeit','Чувствительность приёмника','Sensibilidad')}</span>${num('rxSensDbm',R.rxSensDbm,1,-130,-40)}<i>dBm</i></label>`
+      +`<label class="dn-spec"><span>${L('Antenna gain (each end)','アンテナ利得（各端）','Antennengewinn (je Seite)','Усиление антенны','Ganancia de antena')}</span>${num('antGainDbi',R.antGainDbi,0.5,-5,30)}<i>dBi</i></label>`
+      +`<label class="dn-spec"><span>${L('Ground station height','地上局の高さ','Höhe der Bodenstation','Высота наземной станции','Altura de la estación')}</span>${num('stationH',R.stationH,0.1,0,120)}<i>m</i></label>`;
+    /* what each check last found, in one line each — the detail is already in the violations list */
+    const rep=[];
+    if(en.wind&&st.wind.report) rep.push(L('Wind','風','Wind','Ветер','Viento')+': '
+      +(Math.round(st.wind.report.maxSpeed*10)/10)+' m/s '+L('max','最大','max','макс','máx')
+      +' · '+(st.wind.src||'—')+' · '+st.wind.cells+' '+L('cells','セル','Zellen','ячеек','celdas'));
+    if(en.link&&st.link.report&&st.link.report.worstMarginDb!=null) rep.push(L('Link margin','リンク余裕','Funkreserve','Запас связи','Margen del enlace')+': '
+      +Math.round(st.link.report.worstMarginDb)+' dB · '+L('LOS breaks','視通の途切れ','Sichtabbrüche','Разрывы видимости','Cortes de visión')+' '+st.link.report.losBreaks);
+    if(en.nofly&&st.nofly.report) rep.push(L('Restricted areas','制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas')+': '
+      +st.nofly.report.hits+' / '+st.nofly.zones+' '+L('nearby','付近','in der Nähe','рядом','cerca'));
+    if(en.sites) rep.push(L('Landing sites','着陸地点','Notlandeplätze','Места посадки','Lugares')+': '
+      +st.sites.reachable+' / '+st.sites.n+' '+L('reachable','到達可能','erreichbar','достижимо','alcanzables'));
+    if(en.reserve&&st.reserve&&st.reserve.roundTripWh!=null) rep.push(L('Round trip','往復','Umlauf','Круг','Ida y vuelta')+': '
+      +st.reserve.roundTripWh.toFixed(1)+' Wh ('+Math.round(st.reserve.roundTripPct)+' %)');
+    /* the last comparison / conflict / RTH answer */
+    let out='';
+    if(opsOut&&opsOut.kind==='compare'&&opsOut.data){
+      out='<table class="dn-cmp"><tr><th></th><th>'+L('Length','距離','Länge','Длина','Longitud')+'</th><th>'+L('Time','時間','Zeit','Время','Tiempo')+'</th><th>Wh</th><th>'+L('Clear.','余裕','Abst.','Зазор','Marg.')+'</th><th>⚠</th><th></th></tr>'
+        +opsOut.data.variants.map(v=>`<tr><td>${esc(v.name)}</td><td>${fmtKm(v.dist3DM)}</td><td>${fmtT(v.timeS)}</td><td>${v.energyWh.toFixed(1)}</td><td>${v.minClearance==null?'—':fmtM(v.minClearance)}</td><td>${v.violations}</td><td><button type="button" class="acp-mini" data-opuse="${esc(v.id)}">${L('Use','採用','Nutzen','Взять','Usar')}</button></td></tr>`).join('')
+        +'</table>';
+    } else if(opsOut&&opsOut.kind==='conflicts'&&opsOut.data){
+      const d=opsOut.data;
+      out=d.checked===0
+        ? `<div class="tp-hint">${L('No other saved route to check against — save a second route first.','照合できる保存済みの経路がありません。まず2本目の経路を保存してください。','Keine zweite gespeicherte Route zum Vergleich.','Нет второго сохранённого маршрута для сверки.','No hay otra ruta guardada con la que comparar.')}</div>`
+        : d.minima.map(m=>`<div class="dn-vio dn-${m.conflict?'error':'info'}"><b>${esc(m.name||m.route)}</b><br>${L('Closest approach','最接近','Dichteste Annäherung','Наибольшее сближение','Máxima aproximación')}: ${Math.round(m.horizM)} m ${L('apart','水平','horizontal','по горизонтали','horizontal')} · ${Math.round(m.vertM)} m ${L('vertically','垂直','vertikal','по вертикали','vertical')} · ${Math.round(m.timeS)} s ${L('apart in time','の時間差','Zeitabstand','разница по времени','de diferencia')}${m.conflict?(' — '+L('inside the '+d.separation.horizM+' m / '+d.separation.vertM+' m / '+d.separation.timeS+' s separation minimum','離隔基準 '+d.separation.horizM+' m・'+d.separation.vertM+' m・'+d.separation.timeS+' 秒の内側です','innerhalb des Mindestabstands','внутри минимума эшелонирования','dentro de la separación mínima')):''}</div>`).join('')
+          ||`<div class="dn-ok">✓ ${L('No conflict with any other saved route.','ほかの保存済み経路との干渉はありません。','Kein Konflikt mit anderen Routen.','Конфликтов с другими маршрутами нет.','Sin conflicto con otras rutas.')}</div>`;
+    } else if(opsOut&&opsOut.kind==='rth'&&opsOut.data){
+      out=opsOut.data.alreadyHome
+        ? `<div class="dn-ok">✓ ${L('The route already ends at the launch point.','経路はすでに離陸地点で終わっています。','Die Route endet bereits am Startpunkt.','Маршрут уже заканчивается в точке взлёта.','La ruta ya termina en el punto de despegue.')}</div>`
+        : `<div class="dn-ok">✓ ${L('Return leg added: climb to '+fmtM(opsOut.data.safeAmsl)+' AMSL (the route’s highest ground '+fmtM(opsOut.data.maxGround)+' plus '+fmtM(opsOut.data.clear)+'), transit, then descend onto the launch point.','帰投区間を追加しました。'+fmtM(opsOut.data.safeAmsl)+'（海抜）まで上昇し（経路上の最高地形 '+fmtM(opsOut.data.maxGround)+' ＋ '+fmtM(opsOut.data.clear)+'）、水平移動のうえ離陸地点へ降下します。','Rückflug ergänzt: Steigflug auf '+fmtM(opsOut.data.safeAmsl)+' ü. NN, Transit, dann Sinkflug.','Добавлен возврат: набор до '+fmtM(opsOut.data.safeAmsl)+' над уровнем моря, перелёт, снижение.','Tramo de regreso añadido: ascenso a '+fmtM(opsOut.data.safeAmsl)+' AMSL, tránsito y descenso.')}</div>`;
+    }
+    const bz=(k,t)=>`<button type="button" class="ai-action-btn" data-opact="${k}">${opsBusy===k?'…':t}</button>`;
+    return `<div class="dn-sec">${L('Operations','運航条件','Betrieb','Эксплуатация','Operaciones')}</div>`
+      +`<div class="dn-opchks">${toggles}</div>`
+      +(rep.length?`<div class="dn-oprep">${rep.map(x=>'<div>'+esc(x)+'</div>').join('')}</div>`:'')
+      +`<div class="dn-btns">`
+        +bz('prepare','⤓ '+L('Fetch & check','取得して点検','Laden & prüfen','Загрузить и проверить','Cargar y comprobar'))
+        +bz('compare','⇄ '+L('Compare routes','経路を比較','Routen vergleichen','Сравнить маршруты','Comparar rutas'))
+        +bz('rth','⤺ '+L('Return to launch','帰投経路を追加','Rückflug anhängen','Добавить возврат','Añadir regreso'))
+        +bz('conflicts','⚠ '+L('Check other routes','他機との干渉','Andere Routen prüfen','Проверить конфликты','Comprobar conflictos'))
+      +`</div>`
+      +out
+      +`<details class="tp-more"><summary>${L('Radio link','無線リンク','Funkverbindung','Радиосвязь','Enlace de radio')}</summary><div class="dn-specs">${radioRows}</div>`
+        +`<div class="tp-hint">${L('The ground station is the first waypoint unless you set another.','地上局は、別途指定しない限り最初のウェイポイントです。','Bodenstation ist der erste Wegpunkt, sofern nicht anders gesetzt.','Наземная станция — первая точка маршрута, если не задана другая.','La estación es el primer punto de ruta salvo que fijes otra.')}</div></details>`
+      +`<div class="dn-opsrc">${L('Wind: Open-Meteo (MET Norway fallback) · restricted areas and landing sites: OpenStreetMap. The area check is ADVISORY and is not an airspace clearance — check the rules that apply where you fly.','風: Open-Meteo（不可時は MET Norway）／制限区域・着陸地点: OpenStreetMap。区域の判定は目安であり、航空当局の飛行許可ではありません。飛行地域の規則を必ず確認してください。','Wind: Open-Meteo (Ersatz: MET Norway) · Gebiete und Landeplätze: OpenStreetMap. Die Prüfung ist ein Hinweis, keine Luftraumfreigabe.','Ветер: Open-Meteo (резерв — MET Norway) · зоны и площадки: OpenStreetMap. Проверка носит справочный характер и не является разрешением.','Viento: Open-Meteo (alternativa MET Norway) · zonas y lugares: OpenStreetMap. La comprobación es orientativa, no una autorización.')}</div>`;
+  }
+  function opsRun(k){
+    const O=OPS(); if(!O||opsBusy) return;
+    opsBusy=k; render();
+    const done=(kind,data)=>{ opsBusy=''; opsOut=data?{kind,data}:null; render(); };
+    if(k==='prepare') O.prepare().then(()=>done(null,null)).catch(()=>done(null,null));
+    else if(k==='compare') O.compareVariants().then(d=>done('compare',d)).catch(()=>done(null,null));
+    else if(k==='rth') O.returnToHome().then(d=>done('rth',d)).catch(()=>done(null,null));
+    else if(k==='conflicts') O.checkConflicts().then(d=>done('conflicts',d)).catch(()=>done(null,null));
+    else opsBusy='';
   }
   function kindLabel(k){
     const M={ 'terrain-collision':['Terrain','地形との接触','Gelände','Рельеф','Terreno'],
@@ -639,7 +735,21 @@ window.IntMapModules.droneNav=function(HOST){
       'battery':['Battery','バッテリー','Akku','Батарея','Batería'],
       'speed':['Speed','速度','Geschwindigkeit','Скорость','Velocidad'],
       'dem':['Elevation data','標高データ','Höhendaten','Данные о высоте','Datos de elevación'],
-      'climb-limited':['Climb-limited','上昇律速','Steigbegrenzt','Ограничение набора','Limitado por ascenso'] };
+      'climb-limited':['Climb-limited','上昇律速','Steigbegrenzt','Ограничение набора','Limitado por ascenso'],
+      /* (#R184) the kinds js/drone-ops.js contributes through the hazard seam. They are named here
+         rather than in that file because this is the ONE table the panel reads — a source that
+         invented its own label would print a raw slug next to translated ones. */
+      'wind':['Wind','風','Wind','Ветер','Viento'],
+      'wind-limit':['Wind limit','風速限界','Windgrenze','Предел ветра','Límite de viento'],
+      'crosswind':['Crosswind','横風','Seitenwind','Боковой ветер','Viento cruzado'],
+      'wind-level':['Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'],
+      'wind-data':['Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'],
+      'link-los':['Radio line of sight','無線の視通','Funksicht','Радиовидимость','Visión radio'],
+      'link-range':['Radio range','通信可能範囲','Funkreichweite','Дальность связи','Alcance de radio'],
+      'link-ok':['Radio link','無線リンク','Funkverbindung','Радиосвязь','Enlace de radio'],
+      'nofly':['Restricted area','飛行制限区域','Sperrgebiet','Запретная зона','Zona restringida'],
+      'nofly-data':['Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas'],
+      'return':['Return to launch','帰投','Rückflug','Возврат','Regreso'] };
     const a=M[k]; if(!a) return k;
     return a[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0]; }
 
@@ -701,6 +811,19 @@ window.IntMapModules.droneNav=function(HOST){
     { const b=p.querySelector('#dn-clear'); if(b) b.onclick=()=>{ clearRoute(); render(); }; }
     p.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ if(openRoute(b.getAttribute('data-open'))) compute().then(render); }; });
     p.querySelectorAll('[data-drop]').forEach(b=>{ b.onclick=()=>{ if(deleteRoute(b.getAttribute('data-drop'))) render(); }; });
+    /* (#R184) the operations block */
+    p.querySelectorAll('[data-opchk]').forEach(inp=>{ inp.onchange=()=>{ const O=OPS(); if(!O) return;
+      const patch={}; patch[inp.getAttribute('data-opchk')]=inp.checked; O.setEnabled(patch);
+      /* switching a check on means its data has to exist before compute() can read it */
+      if(inp.checked) opsRun('prepare'); else compute().then(render); }; });
+    p.querySelectorAll('[data-opnum]').forEach(inp=>{ inp.onchange=()=>{ const O=OPS(); if(!O) return;
+      const v=parseFloat(inp.value); if(!isFinite(v)) return;
+      const patch={}; patch[inp.getAttribute('data-opnum')]=v; O.setRadio(patch); compute().then(render); }; });
+    p.querySelectorAll('[data-opact]').forEach(b=>{ b.onclick=()=>opsRun(b.getAttribute('data-opact')); });
+    p.querySelectorAll('[data-opuse]').forEach(b=>{ b.onclick=()=>{ const O=OPS(); if(!O) return;
+      opsBusy='compare'; render();
+      O.useVariant(b.getAttribute('data-opuse')).then(()=>{ opsBusy=''; opsOut=null; render(); })
+        .catch(()=>{ opsBusy=''; render(); }); }; });
     /* clicking a finding flies to the point it is about — the reason and the place, together */
     p.querySelectorAll('.dn-vio').forEach(d=>{ d.onclick=()=>{ const st=lastResult; if(!st) return;
       const s=st.samples[+d.getAttribute('data-at')]; if(!s) return;

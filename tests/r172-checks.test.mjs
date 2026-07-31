@@ -38,8 +38,15 @@ const stripComments = src => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[
 function rawMapUses(file) {
   const src = R('js/' + file);
   let ast;
+/* (#R184) PARSE IT THE WAY IT RUNS. Every js/ file executes as an ES module (src/main.js
+   imports them), and until this round none of them CONTAINED an import, so script mode happened
+   to work. js/satellites-live.js imports satellite.js — SGP4 is not something to hand-roll — and
+   script mode then throws a parse error, which is this check being wrong about the program rather
+   than the program being wrong. Script first (the stricter reading for the files that really are
+   plain scripts), module as the fallback. */
   try { ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script' }); }
-  catch (e) { assert.fail(`${file} does not parse: ${e.message}`); }
+  catch (_) { try { ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module' }); }
+              catch (e) { assert.fail(`${file} does not parse: ${e.message}`); } }
   const hits = [];
   walk.simple(ast, {
     MemberExpression(n) {

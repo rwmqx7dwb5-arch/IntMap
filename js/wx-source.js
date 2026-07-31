@@ -223,7 +223,29 @@
            truth in both cases — the same discipline as uv_index vs uv_index_clear_sky above. */
         _partialFirstDay: true
       };
-      var out = { current: current, daily: daily, _src: 'MET Norway' };
+      /* (#R184) THE HOURLY SERIES, in Open-Meteo's shape and units.
+         The mapping above reduces MET's timeseries to "now" plus a daily aggregate, which is
+         everything the widgets asked for and nothing a consumer of the FORECAST can use. The drone
+         planner needs wind at the hour a leg is actually flown, and the alternative to publishing it
+         here was a second fetch of the same URL in another file — which is precisely the shape #R183
+         had to remove (a fix that could not travel because every caller wrote its own fetch).
+         MET publishes 10 m wind only; a consumer that needs a wind aloft has to say so rather than
+         extrapolate, and `_windLevelM` states which height these numbers are for. */
+      var hourly = (function () {
+        var time = [], ws = [], wd = [], wg = [], t2 = [];
+        ts.forEach(function (e) {
+          var d = (e.data && e.data.instant && e.data.instant.details) || null;
+          if (!d) return;
+          time.push(Date.parse(e.time));
+          ws.push(d.wind_speed != null ? d.wind_speed * 3.6 : null);        /* m/s → km/h */
+          wd.push(d.wind_from_direction != null ? d.wind_from_direction : null);
+          wg.push(d.wind_speed_of_gust != null ? d.wind_speed_of_gust * 3.6 : null);
+          t2.push(d.air_temperature != null ? d.air_temperature : null);
+        });
+        return time.length ? { time: time, wind_speed_10m: ws, wind_direction_10m: wd,
+          wind_gusts_10m: wg, temperature_2m: t2, _windLevelM: 10 } : null;
+      })();
+      var out = { current: current, daily: daily, hourly: hourly, _src: 'MET Norway' };
       cache[url] = { t: Date.now(), j: out };
       return out;
     }).catch(function () { return null; }).then(function (v) { delete inflight[url]; return v; });

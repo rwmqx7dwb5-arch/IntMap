@@ -1407,7 +1407,25 @@ window.IntMapModules.flightSim=function(HOST){
       const _nx=_cE*Math.cos(_bR), _ny=_cE*Math.sin(_bR), _nz=_sE;   /* down-positive nz (matches fwd[2]) */
       const tLat=eLat+_D*_nx/mLatM, tLng=eLng+_D*_ny/mLonM, tAlt=camAlt-_D*_nz;
       try{ if(GE().camera.isAnimating&&GE().camera.isAnimating()) GE().camera.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
-      let cam=null; try{ if(GE().camera.fromTo) cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
+      /* (#R184) ON AN ENGINE WHOSE CAMERA IS A POSITION, SAY THE POSITION.
+         Everything below this branch is MapLibre's indirect solve: its camera is a centre + zoom +
+         pitch + bearing, so putting the eye in the cockpit means aiming at a target a fixed distance
+         ahead and letting the renderer derive the eye — which is what `calculateCameraOptionsFromTo`
+         does and what #R174–#R179 tuned. Pushing a positional camera through the same route gets the
+         longitude, latitude and heading right and the ALTITUDE wrong, because the target's height and
+         the eye's height are two different things once the eye is not derived: measured on Cesium,
+         3,174 m of error with everything else correct.
+         The simulator already knows exactly where the eye is and where it looks — it computed both a
+         few lines above — so an engine that can take that gets told it directly. MapLibre's path is
+         untouched, and an engine that does not declare the capability never reaches this line. */
+      let posCam=false;
+      if(GE().can&&GE().can('eyeIsPosition')&&GE().camera.setEye){
+        try{ posCam=!!GE().camera.setEye({ lng:eLng, lat:eLat, alt:camAlt,
+          bearing:bearing, pitch:pitch, roll:roll }); }catch(_){ posCam=false; }
+        if(posCam) st._cam={ center:{lng:eLng,lat:eLat}, bearing:bearing, pitch:pitch, roll:roll, alt:camAlt };
+        /* if it refused, fall through to the solve below rather than freeze the view */
+      }
+      let cam=null; if(!posCam){ try{ if(GE().camera.fromTo) cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){} }
       const _fin=v=>typeof v==='number'&&isFinite(v);
       const sane=!!(cam&&cam.center&&_fin(cam.center.lng)&&_fin(cam.center.lat)&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing==null?0:cam.bearing)&&_fin(cam.pitch==null?0:cam.pitch)&&_fin(roll)&&Math.abs(cam.center.lat)<=89.5);
       let okCam=sane;
@@ -1422,7 +1440,11 @@ window.IntMapModules.flightSim=function(HOST){
       if(okCam) st._camSkip=0;
       if(okCam){ cam.roll=roll; st._cam=cam; st._camPrev={lng:cam.center.lng,lat:cam.center.lat,zoom:cam.zoom};
         try{ GE().camera.jumpTo(cam); }catch(_){ try{ delete cam.roll; GE().camera.jumpTo(cam); }catch(__){} } }
-      else if(!cam){   /* FromTo unavailable (very old MapLibre) — last-resort validated direct camera */
+      /* (#R184) `!posCam` is load-bearing, not defensive. With a positional camera `cam` is null and
+         `okCam` is false, which is exactly the shape of "FromTo is unavailable" — so without this the
+         last-resort jumpTo would fire every frame and immediately undo the setEye above, putting the
+         camera back at z14 over the aeroplane instead of in it. */
+      else if(!cam&&!posCam){   /* FromTo unavailable (very old MapLibre) — last-resort validated direct camera */
         try{ if(_fin(bearing)&&_fin(pitch)) GE().camera.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} }
       /* okCam===false with cam!=null → skip this frame, keeping the last good camera (no teleport, no freeze — next frame's
          slightly-advanced geometry resolves cleanly). */

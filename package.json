@@ -19,9 +19,11 @@
     "test:smoke": "playwright test tests/smoke.spec.js",
     "test:qa": "playwright test tests/internal-qa.spec.js",
     "test:e2e": "playwright test",
+    "//test:profile": "(#R184) the renderer PROFILING instrument — frame time beside a sharpness measure, swept over the anti-aliasing and LOD settings. Excluded from the default run (see playwright.config.js): it is a measurement, not a gate.",
+    "test:profile": "playwright test tests/r184-imagery-profile.spec.js --workers=1",
     "test:security": "node --test tests/security-logic.mjs",
     "test:monitor": "node --test tests/monitor-logic.test.mjs",
-    "test:checks": "node --test tests/security-logic.mjs tests/monitor-logic.test.mjs tests/r147-checks.test.mjs tests/r149-checks.test.mjs tests/r150-checks.test.mjs tests/r151-checks.test.mjs tests/r152-checks.test.mjs tests/r153-checks.test.mjs tests/r154-checks.test.mjs tests/r155-checks.test.mjs tests/r156-checks.test.mjs tests/r157-checks.test.mjs tests/r158-checks.test.mjs tests/r159-checks.test.mjs tests/r160-checks.test.mjs tests/r161-checks.test.mjs tests/r162-checks.test.mjs tests/r163-checks.test.mjs tests/r164-checks.test.mjs tests/r165-checks.test.mjs tests/r166-checks.test.mjs tests/r167-checks.test.mjs tests/r168-checks.test.mjs tests/r169-checks.test.mjs tests/r170-checks.test.mjs tests/r171-checks.test.mjs tests/r172-checks.test.mjs tests/r173-checks.test.mjs tests/r174-checks.test.mjs tests/r175-checks.test.mjs tests/r176-checks.test.mjs tests/r179-checks.test.mjs tests/r180-checks.test.mjs tests/r181-checks.test.mjs tests/r182-checks.test.mjs tests/r183-checks.test.mjs",
+    "test:checks": "node --test tests/security-logic.mjs tests/monitor-logic.test.mjs tests/r147-checks.test.mjs tests/r149-checks.test.mjs tests/r150-checks.test.mjs tests/r151-checks.test.mjs tests/r152-checks.test.mjs tests/r153-checks.test.mjs tests/r154-checks.test.mjs tests/r155-checks.test.mjs tests/r156-checks.test.mjs tests/r157-checks.test.mjs tests/r158-checks.test.mjs tests/r159-checks.test.mjs tests/r160-checks.test.mjs tests/r161-checks.test.mjs tests/r162-checks.test.mjs tests/r163-checks.test.mjs tests/r164-checks.test.mjs tests/r165-checks.test.mjs tests/r166-checks.test.mjs tests/r167-checks.test.mjs tests/r168-checks.test.mjs tests/r169-checks.test.mjs tests/r170-checks.test.mjs tests/r171-checks.test.mjs tests/r172-checks.test.mjs tests/r173-checks.test.mjs tests/r174-checks.test.mjs tests/r175-checks.test.mjs tests/r176-checks.test.mjs tests/r179-checks.test.mjs tests/r180-checks.test.mjs tests/r181-checks.test.mjs tests/r182-checks.test.mjs tests/r183-checks.test.mjs tests/r184-checks.test.mjs",
     "test": "node scripts/static-checks.mjs && node scripts/engine-coupling.mjs --gate && npm run test:checks && playwright test",
     "report": "playwright show-report"
   },
@@ -42,6 +44,7 @@
     "maplibre-contour": "0.1.0",
     "maplibre-gl": "5.24.0",
     "pbf": "^4.0.1",
+    "satellite.js": "^7.1.0",
     "topojson-client": "3.1.0"
   },
   "allowScripts": {

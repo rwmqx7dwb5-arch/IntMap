@@ -106,6 +106,17 @@ export default defineConfig({
   root: ROOT,
   base: './',
   publicDir: false,
+  /* (#R184) satellite.js 7 re-exports an OPTIONAL WebAssembly accelerator whose two Emscripten entry
+     points use top-level `await` and import `node:module` / `node:worker_threads`. They are reached
+     through the package-internal subpath imports below, and because the package declares no
+     `sideEffects` field Rollup keeps them in the graph even though nothing references them — the
+     build then fails with «Module format "iife" does not support top-level await». IntMap uses the
+     pure-JS SGP4/SDP4 path only (a few hundred objects a second, not a 30,000-object catalogue), so
+     both are pointed at a stub that throws if it is ever actually called. See the stub for the full
+     reasoning; tests/r184-checks.test.mjs pins this so a dependency bump cannot quietly undo it. */
+  resolve: {
+    alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') }],
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

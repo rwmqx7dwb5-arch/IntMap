@@ -95,6 +95,15 @@ window.IntMapModules.layerRegistry=function(HOST){
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
       summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'aisstream.io AIS' });
+    /* (#R184) live satellites. Unlike the two above, this one does NOT read the source back out of the
+       renderer: the layer's own state() is authoritative (a GeoJSON source's data is not readable in
+       MapLibre 5 — #R183), and "how many are above the horizon from here" is the meaningful count. */
+    register('satellites',{ label:()=>L5('Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники (онлайн)','Satélites en vivo'),
+      on:()=>{ try{ return !!(window.IntMapSatellites&&window.IntMapSatellites.isOn()); }catch(_){ return false; } },
+      featuresIn:b=>_srcFeatsIn('src-sats',b),
+      summary:()=>{ try{ const s=window.IntMapSatellites&&window.IntMapSatellites.state(); if(!s) return null;
+          return s.drawn+' / '+s.catalogue+' '+L5('tracked','追跡中','verfolgt','отслеживается','en seguimiento'); }catch(_){ return null; } },
+      source:()=>'CelesTrak GP · SGP4/SDP4' });
     /* ---- (#R120/#R121) country choropleths — the value of every VISIBLE choropleth family at a point.
        Core stat fills go through window.choroValueAt (countryStats; R121: works OFF-SCREEN too via
        point-in-polygon over countryGeo), the World-Bank beta fills carry their raw value in the feature

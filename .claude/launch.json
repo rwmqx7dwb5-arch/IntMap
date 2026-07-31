@@ -63,6 +63,19 @@
       ],
       "port": 5199,
       "url": "http://localhost:5199"
+    },
+    {
+      "name": "intmap-preview-r184",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4197"
+      ],
+      "port": 4197,
+      "url": "http://127.0.0.1:4197"
     }
   ]
 }

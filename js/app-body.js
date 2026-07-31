@@ -1139,10 +1139,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
   window.IntMapModules.droneNav(IM_HOST);
+  /* (#R184) …and the operational layer on top of it (window.IntMapDroneOps): the wind field and the
+     hazard sources that #R174 left as declared-but-unfilled seams, plus route comparison,
+     return-to-home and the multi-aircraft conflict check. It registers itself INTO the planner, so
+     the planner keeps working unchanged if this file is absent. */
+  window.IntMapModules.droneOps(IM_HOST);
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js. */
   window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);
+  /* (#R184) LIVE SATELLITES (window.IntMapSatellites) and their detail card (window.IntMapSatPanel).
+     The layer owns its own feed, propagation, hover, click and timer — js/data-layers.js only turns it
+     on and off and gives it a legend, exactly as it does for the two traffic layers. The panel is built
+     first so the layer's click handler can always find it. See js/satellites-live.js. */
+  window.IntMapModules.satelliteDetail(IM_HOST);
+  window.IntMapModules.satellitesLive(IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
@@ -5086,6 +5097,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      the existing IntMapRoute (which is a maritime/sea A* route). ===== */
   /* (#R163) moved to js/routing.js — see Architecture.md §3.1. */
   window.IntMapRouting=window.IntMapModules.routing(IM_HOST);
+  /* (#R184) the analyses the directions panel runs on a computed route (window.IntMapRoutingOps):
+     elevation from the DEM, border crossings from the country polygons, weather/earthquakes/news
+     along the way, arrival times, where the alternatives differ, and routing on OSM's record of the
+     network as it was in a chosen year. The panel reaches for it by name and simply offers nothing
+     if it is absent, so this is an addition to routing rather than a change to it. */
+  window.IntMapModules.routingOps(IM_HOST);
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
      polygons for drive / walk / cycle. Opened from the right-click menu or Atlas. Store-siting, evacuation, travel, etc. ===== */

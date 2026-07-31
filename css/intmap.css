@@ -451,6 +451,19 @@
     #drone-panel .dn-open{ flex:1; min-width:0; text-align:left; border:none; background:none; color:var(--text-main); font-size:11.5px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     #drone-panel .dn-saved-row span{ font-size:10px; color:var(--text-muted); }
     #drone-panel .dn-del{ width:20px; height:20px; padding:0; border:none; border-radius:5px; background:rgba(128,128,128,0.16); color:var(--text-main); font-size:10px; cursor:pointer; }
+    /* (#R184) the Operations block — the wind / radio / restricted-area / return-battery / landing-site
+       checks and the three route actions. Same vocabulary as the rest of the panel; nothing new. */
+    #drone-panel .dn-opchks{ display:grid; grid-template-columns:1fr 1fr; gap:2px 8px; margin:2px 0 6px; }
+    #drone-panel .dn-opchk{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); cursor:pointer; }
+    #drone-panel .dn-opchk input{ accent-color:var(--primary-color); }
+    #drone-panel .dn-oprep{ font-size:10.5px; color:var(--text-main); background:rgba(128,128,128,0.08); border-radius:7px; padding:5px 7px; margin-bottom:6px; font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-oprep div{ padding:1px 0; }
+    #drone-panel .dn-cmp{ width:100%; border-collapse:collapse; font-size:10.5px; margin-top:6px; font-variant-numeric:tabular-nums; }
+    #drone-panel .dn-cmp th{ font-weight:600; color:var(--text-muted); text-align:right; padding:2px 3px; border-bottom:1px solid rgba(128,128,128,0.18); }
+    #drone-panel .dn-cmp th:first-child, #drone-panel .dn-cmp td:first-child{ text-align:left; }
+    #drone-panel .dn-cmp td{ text-align:right; padding:3px; border-bottom:1px solid rgba(128,128,128,0.1); }
+    #drone-panel .dn-cmp .acp-mini{ padding:2px 6px; font-size:10px; }
+    #drone-panel .dn-opsrc{ font-size:9.5px; line-height:1.4; color:var(--text-muted); margin-top:8px; padding-top:5px; border-top:1px solid rgba(128,128,128,0.14); }
     @media(max-width:640px){ #drone-panel{ left:8px !important; right:8px !important; width:auto !important; top:64px !important; max-height:calc(100vh - 150px) !important; }
       #drone-panel .dn-btns{ grid-template-columns:1fr 1fr; }
       #drone-panel .dn-wp-btns button{ width:26px; height:26px; font-size:11px; }
@@ -871,6 +884,13 @@
     .acp-note{ font-size:10.5px; color:var(--text-muted); margin-top:6px; }
     .acp-src{ font-size:10px; color:var(--text-muted); margin-top:10px; padding-top:6px; border-top:1px solid rgba(128,128,128,0.16); }
     @media (max-width:768px){ .ac-popup{ width:calc(100vw - 24px); } }
+    /* (#R184) LIVE SATELLITE detail card (js/satellite-detail.js). Same shell and the same .acp-* rows as
+       the aircraft card above — it deliberately reuses that vocabulary rather than inventing a second
+       one — so only the two states orbit has and flight does not are described here. */
+    .sat-popup{ width:344px; z-index:2210; }
+    .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
+    .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
+    @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }

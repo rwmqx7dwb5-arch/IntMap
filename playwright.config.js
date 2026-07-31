@@ -12,7 +12,16 @@ export default defineConfig({
   testDir: 'tests',
   // prod-smoke runs against the LIVE deployed URL via playwright.prod.config.js — never
   // as part of the local/CI hermetic suite.
-  testIgnore: /prod-smoke\.spec\.js/,
+  // (#R184) …and r184-imagery-profile is an INSTRUMENT, not a contract. It sweeps the renderer's
+  // anti-aliasing and LOD settings and prints frame time beside a sharpness measure; its only
+  // assertion is that the canvas was not blank while it measured. It costs 6.2 minutes of a shared
+  // two-core runner, and adding it took the CI browser job from ~40 min to 1 h 22 m — at which point
+  // four timing-sensitive tests elsewhere in the suite (a 180 s camera settle, a zoom-dolly ratio, a
+  // Cesium wheel-after-rotate) began failing on LOAD rather than on their own merits, having been
+  // green on main for eight consecutive runs and passing on both trees locally. The measurement it
+  // produced is pinned by r184-imagery.spec.js, which DOES run here. Run the instrument deliberately
+  // with `npm run test:profile` when investigating performance.
+  testIgnore: /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/,
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast

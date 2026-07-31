@@ -73,7 +73,18 @@ function _m(){ return window.__imap||null; }
        what "tilting must not move the viewpoint" needs: MapLibre's pitch orbits the eye around the map
        centre, so leaning from 78° to 120° swings the eye from +3,385 m to −8,140 m — it goes under the
        world. An engine without this pair cannot honour the unlimited-tilt setting's promise. */
-    eyeControl:true };
+    eyeControl:true,
+    /* (#R184) IS THE CAMERA A POSITION, OR IS IT DERIVED? A different question from eyeControl, and
+       the flight simulator is where the difference bites. MapLibre's camera is a CENTRE + zoom +
+       pitch + bearing; the eye is a consequence of those four, and putting the eye somewhere exact
+       means solving backwards for them (`cameraFromTo`, then jumpTo — the #R177–#R179 work). That
+       solve is written against MapLibre's own geometry, so an engine whose camera is genuinely a
+       position gets the eye's ALTITUDE wrong when it is pushed through the same route: measured on
+       Cesium, a cockpit driven that way sat 3,174 m away from the aeroplane's altitude while its
+       longitude, latitude and heading were all correct.
+       FALSE here means "ask for a centre and let the engine derive the eye" — which is what MapLibre
+       wants and what seven rounds of tuning are built on. It is not a shortcoming. */
+    eyeIsPosition:false };
   /* ── (#R178) THE ZOOM FLOOR IS OWNED IN ONE PLACE ───────────────────────────────────────
      Two things want to set it and they are not the same want. The APP sets it per projection
      (globe 0, flat 1.2 on desktop) so the world always covers the viewport. The unlimited-tilt
@@ -1295,7 +1306,10 @@ function _m(){ return window.__imap||null; }
     /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
        own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
        (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
-    globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true } };
+    globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true,
+    /* (#R184) …and TRUE here: Cesium's camera is a position and an orientation, full stop. See the
+       MapLibre declaration above for why the distinction matters to the flight simulator. */
+    eyeIsPosition:true } };
   let _adapter=MapLibreAdapter;
   /* ══ (#R179) THE CONTRACT, AS A FUNCTION OF AN ADAPTER ════════════════════════════════════
      Built once and handed out twice: the engine returns it bound to its own adapter, and
