@@ -871,6 +871,13 @@
     .acp-note{ font-size:10.5px; color:var(--text-muted); margin-top:6px; }
     .acp-src{ font-size:10px; color:var(--text-muted); margin-top:10px; padding-top:6px; border-top:1px solid rgba(128,128,128,0.16); }
     @media (max-width:768px){ .ac-popup{ width:calc(100vw - 24px); } }
+    /* (#R184) LIVE SATELLITE detail card (js/satellite-detail.js). Same shell and the same .acp-* rows as
+       the aircraft card above — it deliberately reuses that vocabulary rather than inventing a second
+       one — so only the two states orbit has and flight does not are described here. */
+    .sat-popup{ width:344px; z-index:2210; }
+    .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
+    .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
+    @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }

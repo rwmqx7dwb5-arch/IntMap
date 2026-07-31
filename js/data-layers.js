@@ -487,7 +487,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -600,7 +600,7 @@ window.IntMapModules.dataLayers=function(HOST){
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
-      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],
+      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],
       ['__grp','lyrGrpHazard'],
       ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['night','lyrNight'],
       ['__grp','lyrGrpDemo'],
@@ -633,7 +633,7 @@ window.IntMapModules.dataLayers=function(HOST){
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
-        'precip','clouds','ships','planes','hillshade','contours','night','subcables','nato','eu']);
+        'precip','clouds','ships','planes','sats','hillshade','contours','night','subcables','nato','eu']);
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"> <span data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       dd.appendChild(w);
@@ -867,7 +867,7 @@ window.IntMapModules.dataLayers=function(HOST){
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
-          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          ['lyrGrpMaritime',['sst','eez','subcables','planes','sats','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer files beside live aircraft — 「Live aircraft trafficの要領で」. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
@@ -1879,6 +1879,7 @@ window.IntMapModules.dataLayers=function(HOST){
     const GENERIC_LEG={
       precip:['Precipitation (IMERG)','降水量 (IMERG)'], clouds:['Clouds (infrared)','雲（赤外）'],
       ships:['Live ship traffic','船舶（リアルタイム）'], planes:['Live aircraft traffic','航空機（リアルタイム）'],
+      sats:['Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники в реальном времени'],
       hillshade:['Elevation relief (hillshade)','陰影起伏'], contours:['Contour lines','等高線'],
       night:['Day / night','昼/夜'], subcables:['Submarine cables','海底ケーブル'], nato:['NATO members','NATO加盟国']
     };
@@ -1920,6 +1921,33 @@ window.IntMapModules.dataLayers=function(HOST){
             const c3=a3.querySelector('.gl-alt3d'); try{ c3.checked=planes3DOn(); }catch(_){}
             c3.addEventListener('change',()=>{ try{ setPlanes3D(c3.checked); }catch(_){} });
           }
+        }
+        /* (#R184) satellites: the CelesTrak group is the equivalent of the traffic filter — it decides
+           which catalogue is being propagated at all, so it belongs in the same place. Beside it, the
+           one filter that is real geometry rather than a category: "only what is above the horizon from
+           the map centre", which is what `visible` means for an object 400 km up. */
+        if(id==='sats'){
+          const A=()=>window.IntMapSatellites;
+          const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+          const _gL=HOST.lang==='jp'?'カタログ':HOST.lang==='de'?'Katalog':HOST.lang==='ru'?'Каталог':HOST.lang==='es'?'Catálogo':'Catalogue';
+          const _vL=HOST.lang==='jp'?'ここから見えるものだけ':HOST.lang==='de'?'Nur von hier sichtbare':HOST.lang==='ru'?'Только видимые отсюда':HOST.lang==='es'?'Solo los visibles desde aquí':'Only visible from here';
+          let opts='';
+          try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
+          fr.innerHTML=_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;">'+opts+'</select>';
+          el.appendChild(fr);
+          const gs=fr.querySelector('.gl-satgrp'); try{ gs.value=A()?A().group():'visual'; }catch(_){}
+          gs.addEventListener('change',()=>{ try{ A().setGroup(gs.value); }catch(_){} try{ _satLegendCount(); }catch(_){} });
+          const vw=document.createElement('label'); vw.style.cssText='display:flex;align-items:center;gap:5px;cursor:pointer;';
+          vw.innerHTML='<input type="checkbox" class="gl-satvis" style="accent-color:var(--primary-color);">'+_vL;
+          fr.appendChild(vw);
+          const vc=vw.querySelector('.gl-satvis'); try{ vc.checked=!!(A()&&A().visibleOnly()); }catch(_){}
+          vc.addEventListener('change',()=>{ try{ A().setVisibleOnly(vc.checked); }catch(_){} try{ _satLegendCount(); }catch(_){} });
+          const cnt=document.createElement('div'); cnt.className='gl-satcount'; cnt.style.cssText='font-size:10px;color:var(--text-muted);margin-top:3px;';
+          el.appendChild(cnt);
+          /* fill it NOW rather than on the next one-second tick: the legend is created after the layer
+             has already started, so waiting for the interval leaves the box blank for up to a second
+             on every single toggle — visible, and indistinguishable from "this layer counts nothing". */
+          try{ _satLegendCount(); }catch(_){}
         }
       } else { el.querySelector('h4').textContent=nm; }
       /* (#R40) attach the 1-line "what is this data" explanation to the generic legend too (it was only on the
@@ -2840,6 +2868,38 @@ window.IntMapModules.dataLayers=function(HOST){
       if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); planesTimer=null; } updatePlanesZoomHint(); }
       if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
+    /* === (#R184) LIVE SATELLITES ============================================================
+       Three thin functions, because js/satellites-live.js owns the feed, the SGP4 propagation, its
+       own one-second timer, its hover/click handlers and its own layers. This file's whole job for
+       this layer is the same as for the traffic layers: turn it on, turn it off, give it a legend
+       and route the opacity slider. Nothing about orbits lives here. */
+    let _satCountT=null;
+    function _satLegendCount(){
+      const el=document.getElementById('data-legend-sats'); if(!el) return;
+      const box=el.querySelector('.gl-satcount'); if(!box) return;
+      let s=null; try{ s=window.IntMapSatellites&&window.IntMapSatellites.state(); }catch(_){}
+      if(!s){ box.textContent=''; return; }
+      const jp=HOST.lang==='jp';
+      if(s.loading){ box.textContent=jp?'カタログを取得中…':HOST.lang==='de'?'Katalog wird geladen…':HOST.lang==='ru'?'Загрузка каталога…':HOST.lang==='es'?'Cargando el catálogo…':'Loading the catalogue…'; return; }
+      if(s.err&&!s.catalogue){ box.textContent=(jp?'取得できませんでした: ':'Could not load: ')+s.err; return; }
+      /* Two numbers, because they answer two different questions and conflating them would hide the
+         filter: how many objects are being propagated, and how many are being drawn right now. */
+      const drawn=s.drawn, total=s.catalogue;
+      box.textContent = jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
+        : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):''));
+    }
+    function startSats(){
+      const A=window.IntMapSatellites;
+      if(!A){ try{ satToast(HOST.lang==='jp'?'人工衛星レイヤーを読み込めませんでした':HOST.lang==='de'?'Satellitenebene nicht verfügbar':HOST.lang==='ru'?'Слой спутников недоступен':HOST.lang==='es'?'La capa de satélites no está disponible':'The satellite layer is unavailable'); }catch(_){}
+        const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
+      whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
+      if(_satCountT) clearInterval(_satCountT);
+      _satCountT=setInterval(_satLegendCount,1000); _satLegendCount();
+    }
+    function stopSats(){
+      try{ window.IntMapSatellites&&window.IntMapSatellites.stop(); }catch(_){}
+      if(_satCountT){ clearInterval(_satCountT); _satCountT=null; }
+    }
     /* === EEZ via MarineRegions WMS === */
     /* (#R79g) The MarineRegions default style colours each boundary TYPE (200 NM / 12 NM / treaty / median /
        court / joint / unilateral / disputed / baselines / connection) but in DIM near-black tones that were
@@ -3070,6 +3130,7 @@ window.IntMapModules.dataLayers=function(HOST){
           });
         }
         else if(id==='ships'||id==='planes'){ startTraffic(id); }
+        else if(id==='sats'){ startSats(); }
         else if(id==='pop'){
           lgdPop.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('pop'); applyChoro('pop',s=>s.density); setVis('pop-fill',true); }catch(e){ console.warn('pop choro fail',e); } });
@@ -3127,6 +3188,7 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
         else if(id==='eu'){ setEuVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('eu'); }catch(_){} }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
+        else if(id==='sats'){ stopSats(); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
         else if(id==='thermal'){ setThermalVis(false); }
@@ -3268,6 +3330,9 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ if(GE().layers.has(PLANE3D_LYR))GE().layers.setPaint(PLANE3D_LYR,'fill-extrusion-opacity',v);
           if(GE().layers.has(PLANE3D_POST))GE().layers.setPaint(PLANE3D_POST,'fill-extrusion-opacity',Math.min(0.5,v*0.5)); }catch(_){} }
       else if(id==='ships'){ if(GE().layers.has('lyr-ships'))GE().layers.setPaint('lyr-ships','icon-opacity',v); }
+      /* (#R184) the satellite layer paints its own icons AND labels, and the eclipsed dimming is part of
+         the same expression — so the slider goes to the module rather than to one paint property. */
+      else if(id==='sats'){ try{ window.IntMapSatellites&&window.IntMapSatellites.setOpacity(v); }catch(_){} }
       else if(id==='hillshade'){ if(GE().layers.has('lyr-hillshade'))GE().layers.setPaint('lyr-hillshade','hillshade-exaggeration',Math.max(0.05,v)); }
       else if(id==='contours'){ if(GE().layers.has('contour-lines'))GE().layers.setPaint('contour-lines','line-opacity',v); if(GE().layers.has('contour-labels'))GE().layers.setPaint('contour-labels','text-opacity',v); }
       else if(id==='relief'){ if(GE().layers.has('lyr-relief'))GE().layers.setPaint('lyr-relief','color-relief-opacity',v); }
@@ -3407,7 +3472,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R81) layers whose emptiness is LEGITIMATE (live traffic is zoom-gated / may have no data; wind is a
          canvas) or whose handler is stateful (grid — see #R38) must NOT be re-fired by the learned-heal. Base
          vector toggles never reach here (they are in the BASE id-table). */
-      const _LEARN_SKIP=/^(dl-ships|dl-planes|dl-wind|cb-grid)$/;
+      const _LEARN_SKIP=/^(dl-ships|dl-planes|dl-sats|dl-wind|cb-grid)$/;   /* (#R184) +sats: a live layer whose visibility its own module owns */
       /* (#R154) a layer id is owned by exactly ONE checkbox (learn code above never steals), but guard anyway: don't hide
          a learned-owned layer that a DIFFERENT *checked* layer also paints/owns — so an OFF-hide can never mis-hide. */
       function _ownedByCheckedOther(cbId,lid){ try{

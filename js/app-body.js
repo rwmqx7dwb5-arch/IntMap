@@ -1143,6 +1143,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js. */
   window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);
+  /* (#R184) LIVE SATELLITES (window.IntMapSatellites) and their detail card (window.IntMapSatPanel).
+     The layer owns its own feed, propagation, hover, click and timer — js/data-layers.js only turns it
+     on and off and gives it a legend, exactly as it does for the two traffic layers. The panel is built
+     first so the layer's click handler can always find it. See js/satellites-live.js. */
+  window.IntMapModules.satelliteDetail(IM_HOST);
+  window.IntMapModules.satellitesLive(IM_HOST);
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
