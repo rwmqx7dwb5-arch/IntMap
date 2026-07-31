@@ -99,7 +99,15 @@ test('with the tilt ceiling lifted, zooming in still moves the viewpoint', async
    survived, because that one is pushed whatever its altitude. The machine stays, its trail goes.
    Measured over Mt Fuji with the aircraft at 5,000 ft: 0 legs at every zoom from z10.5 to z14.3. */
 test('the track survives zooming in over high ground with 3-D terrain on', async ({ page }) => {
-  test.setTimeout(240000);
+  /* (#R184) 240 s was never a budget, it was a coin toss. This test boots the app with 3-D terrain,
+     streams DEM tiles over Mt Fuji, waits out five moveend cycles and then six wheel steps — and it
+     has been measured at 3.8 min against a 4.0 min ceiling on EVERY CI run for rounds, on main and
+     on this branch alike. A 5 % margin survives only while nothing else is competing for the runner.
+     #R184 added 33 browser tests (a second engine booted several times, Overpass and DEM work), and
+     the same unchanged test went 3.8 → 4.2 min and failed three attempts in a row ON THE TIMEOUT,
+     not on an assertion. Nothing it checks has changed and nothing it checks is relaxed here; it is
+     given a budget with real margin instead of one it was always about to miss. */
+  test.setTimeout(480000);
   let tick = 0;
   await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 8);
     route.fulfill({ status: 200, contentType: 'application/json',
