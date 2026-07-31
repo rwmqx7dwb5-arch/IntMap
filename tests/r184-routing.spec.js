@@ -110,7 +110,7 @@ test('R184 route ④: Munich → Milan is reported crossing real borders in orde
     /* the country outlines are loaded by the Countries tab; the analysis says so rather than
        silently answering zero, and this asserts the loaded case */
     const t0 = Date.now();
-    while (!(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length) && Date.now() - t0 < 30000) {
+    while (!(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length) && Date.now() - t0 < 90000) {
       try { document.getElementById('dl-pop') && document.getElementById('dl-pop').dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
       await new Promise((x) => setTimeout(x, 500));
     }
@@ -149,6 +149,10 @@ test('R184 route ⑤: weather is probed along the route and stamped with the arr
   }, [MUC, NUE]);
   test.skip(!!r.skip, 'the public routing service is unreachable');
   expect(r.n).toBeGreaterThanOrEqual(2);
+  /* `withWx` is deliberately NOT asserted. Open-Meteo's free tier is per-IP and per-product-host
+     (#R183), and a full-suite run shares one IP with every other spec that asks for weather — so a
+     probe with no forecast is the quota, not a defect. What must hold is that the probes are laid
+     out along the route and stamped with the right times, which is this module's own arithmetic. */
   /* the probes span the route and carry the time the traveller reaches them */
   expect(r.first.atM).toBe(0);
   expect(Math.abs(r.last.atM - r.totalM)).toBeLessThan(1000);

@@ -113,37 +113,80 @@ window.IntMapModules.satellitesLive=function(HOST){
      start its own — otherwise choosing GPS while `visual` is still downloading would hand back the
      wrong catalogue and never load the right one. */
   let _inflight=null, _inflightG=null;
+  /* ── THE CATALOGUE IS CACHED, AND THAT IS ABOUT CELESTRAK AS MUCH AS ABOUT US ───────────────
+     Element sets change on a two-hour timescale — the layer already refreshes on that clock and
+     recomputes positions locally in between. Re-downloading them on every page load, every engine
+     switch and every re-toggle is traffic that buys nothing and that a free, keyless, unmetered
+     service does not owe us: asked for the same group seven times in a few minutes (a full test
+     run), it simply stopped answering, and the layer had nothing to draw. Persisting the raw
+     records for the same 2 h the refresh timer uses removes the whole class of request.
+     `active` is 6.8 MB, so anything over the cap is fetched fresh rather than stuffed into
+     localStorage — a quota exception here would take the layer down with it. */
+  const CK='intmap_sat_cat', CACHE_MS=2*3600*1000, CACHE_MAX=1500000;
+  function cacheGet(g){
+    try{ const j=JSON.parse(localStorage.getItem(CK)||'null');
+      if(!j||j.g!==g||!Array.isArray(j.a)) return null;
+      if(Date.now()-(+j.t||0)>CACHE_MS) return null;
+      return j; }catch(_){ return null; }
+  }
+  function cachePut(g,arr){
+    try{ const s=JSON.stringify({ g, t:Date.now(), a:arr });
+      if(s.length>CACHE_MAX) return false;
+      localStorage.setItem(CK,s); return true; }catch(_){ return false; }
+  }
+  /* The GP records → propagatable satellite records. One function, because the cache and the network
+     must produce the identical thing: a second copy of this loop is how a cached catalogue quietly
+     starts differing from a fetched one. */
+  function ingest(arr,want){
+    if(!Array.isArray(arr)||!arr.length) return false;
+    const out=[];
+    for(let i=0;i<arr.length;i++){
+      try{
+        const rec=SAT.json2satrec(arr[i]);
+        /* A record that failed to initialise is DROPPED, not drawn at 0,0. satellite.js reports it
+           on the record itself; an object we cannot propagate is one we must not pretend to place. */
+        if(!rec||rec.error) continue;
+        out.push({ satrec:rec, name:String(arr[i].OBJECT_NAME||'').trim(),
+          id:arr[i].NORAD_CAT_ID, intl:arr[i].OBJECT_ID||'', epoch:arr[i].EPOCH||'',
+          /* the element set's own quality figures — shown on the card because they are what an
+             SGP4 position is only as good as */
+          meanMotion:+arr[i].MEAN_MOTION||null, ecc:+arr[i].ECCENTRICITY||0,
+          raan:+arr[i].RA_OF_ASC_NODE, argp:+arr[i].ARG_OF_PERICENTER,
+          bstar:+arr[i].BSTAR||0, revNum:+arr[i].REV_AT_EPOCH||null,
+          classification:arr[i].CLASSIFICATION_TYPE||'' });
+      }catch(_){}
+    }
+    /* a reply for a catalogue the user has since switched away from is DROPPED, never painted */
+    if(!out.length||want!==group) return false;
+    sats=out; tleAt=Date.now();
+    return true;
+  }
   function load(g){
     const want=g||group;
     if(_inflight&&_inflightG===want) return _inflight;
+    /* a fresh cache answers synchronously — no request, no in-flight state to coalesce onto */
+    const hit=cacheGet(want);
+    if(hit&&want===group){
+      const ok=ingest(hit.a,want);
+      if(ok) return Promise.resolve(true);
+    }
     loading=true; lastErr=null; _inflightG=want;
     _inflight=fetch(GP(want),{cache:'no-store'}).then(r=>{
       if(!r.ok) throw new Error('HTTP '+r.status);       /* (#R183) an error body is still valid JSON */
       return r.json();
     }).then(arr=>{
       if(!Array.isArray(arr)||!arr.length) throw new Error('empty catalogue');
-      const out=[];
-      for(let i=0;i<arr.length;i++){
-        try{
-          const rec=SAT.json2satrec(arr[i]);
-          /* A record that failed to initialise is DROPPED, not drawn at 0,0. satellite.js reports it
-             on the record itself; an object we cannot propagate is one we must not pretend to place. */
-          if(!rec||rec.error) continue;
-          out.push({ satrec:rec, name:String(arr[i].OBJECT_NAME||'').trim(),
-            id:arr[i].NORAD_CAT_ID, intl:arr[i].OBJECT_ID||'', epoch:arr[i].EPOCH||'',
-            /* the element set's own quality figures — shown on the card because they are what an
-               SGP4 position is only as good as */
-            meanMotion:+arr[i].MEAN_MOTION||null, ecc:+arr[i].ECCENTRICITY||0,
-            raan:+arr[i].RA_OF_ASC_NODE, argp:+arr[i].ARG_OF_PERICENTER,
-            bstar:+arr[i].BSTAR||0, revNum:+arr[i].REV_AT_EPOCH||null,
-            classification:arr[i].CLASSIFICATION_TYPE||'' });
-        }catch(_){}
-      }
-      /* a reply for a catalogue the user has since switched away from is DROPPED, never painted */
-      if(want!==group) return false;
-      sats=out; tleAt=Date.now();
-      return true;
-    }).catch(e=>{ lastErr=String(e&&e.message||e); return false; })
+      const ok=ingest(arr,want);
+      if(ok) cachePut(want,arr);
+      return ok;
+    }).catch(e=>{ lastErr=String(e&&e.message||e);
+      /* THE FEED REFUSED. A cache past its refresh age is still a better answer than an empty map:
+         SGP4 keeps propagating from it and the card already reports the age of the elements it used,
+         so the user sees stale-but-labelled rather than nothing at all. */
+      try{ const j=JSON.parse(localStorage.getItem(CK)||'null');
+        if(j&&j.g===want&&Array.isArray(j.a)&&ingest(j.a,want)){ lastErr=lastErr+' (using cached elements)'; return true; }
+      }catch(_){}
+      return false; })
       .then(ok=>{ if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
     return _inflight;
   }
