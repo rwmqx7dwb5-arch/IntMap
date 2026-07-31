@@ -128,7 +128,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   const DEFAULT_GROUP='active';
   /* TLE rather than JSON: one third of the bytes for the same element sets, the format the bundled
      fallback below is stored in, and therefore ONE parser for the network, the cache and the
-     snapshot — the file already argues for that in ingest()'s note, and a second format is how the
+     snapshot — see ingestTLE below, which is the only parser there is, and a second format is how the
      three quietly start disagreeing. */
   const GP=(g)=>'https://celestrak.org/NORAD/elements/gp.php?GROUP='+encodeURIComponent(g)+'&FORMAT=tle';
   /* ══ AND IT MUST NOT BE ONE HOST ══════════════════════════════════════════════════════════════
