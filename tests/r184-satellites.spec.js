@@ -28,11 +28,21 @@ const boot = async (page) => {
    asked seven times in five minutes — which is exactly what a full-suite run does, and what turned
    every assertion below into "0 objects" once. The layer caches the catalogue for the same two hours
    it refreshes on, so in practice one fetch serves the whole run; when even that fails there is
-   nothing real to assert about, and saying so is honest where a green tick would not be. */
+   nothing real to assert about, and saying so is honest where a green tick would not be.
+
+   The guard RACES A CLOCK, and that is not belt-and-braces. The first version of it simply awaited
+   snapshot(), which awaits the fetch — so when CelesTrak accepted the connection and then stopped
+   talking (what a rate-limited server does instead of refusing), the guard hung with it and every
+   job died on Playwright's own 60 s timeout instead of skipping. A check that cannot answer when
+   the thing it is checking is unresponsive is not a check. The layer now aborts its own fetch too;
+   this is the belt for that braces. */
 const feed = async (page) => page.evaluate(async () => {
   const A = window.IntMapSatellites;
-  const fx = await A.snapshot();
-  return { n: fx.length, err: A.state().err };
+  const fx = await Promise.race([
+    A.snapshot(),
+    new Promise((r) => setTimeout(() => r(null), 30000)),
+  ]);
+  return { n: fx ? fx.length : 0, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
 });
 const needFeed = async (page) => { const f = await feed(page);
   test.skip(f.n === 0, 'the CelesTrak catalogue is unreachable from this runner: ' + (f.err || 'no records')); };

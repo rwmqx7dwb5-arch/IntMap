@@ -123,6 +123,9 @@ window.IntMapModules.satellitesLive=function(HOST){
      `active` is 6.8 MB, so anything over the cap is fetched fresh rather than stuffed into
      localStorage — a quota exception here would take the layer down with it. */
   const CK='intmap_sat_cat', CACHE_MS=2*3600*1000, CACHE_MAX=1500000;
+  /* `visual` measured at 294 ms and the 6.8 MB `active` group at 16 s, so 25 s is generous for the
+     largest catalogue on a slow link and still far short of "never" — see the abort in load(). */
+  const FETCH_MS=25000;
   function cacheGet(g){
     try{ const j=JSON.parse(localStorage.getItem(CK)||'null');
       if(!j||j.g!==g||!Array.isArray(j.a)) return null;
@@ -171,7 +174,16 @@ window.IntMapModules.satellitesLive=function(HOST){
       if(ok) return Promise.resolve(true);
     }
     loading=true; lastErr=null; _inflightG=want;
-    _inflight=fetch(GP(want),{cache:'no-store'}).then(r=>{
+    /* A REQUEST THAT NEVER SETTLES IS WORSE THAN ONE THAT FAILS. `fetch` has no timeout of its own,
+       so a CelesTrak that accepts the connection and then stops talking — which is what a rate-limited
+       server does rather than refusing outright — left this promise pending for ever: `loading` stayed
+       true, `err` stayed null, the layer never drew and never said why, and anything awaiting the
+       catalogue (the preview tile, Atlas's `find`, a test) hung with it. Measured in CI: seven jobs
+       each timing out at 60 s inside a single `await`. A refusal is a fact the layer can act on — it
+       falls back to the cached elements below and labels them — so make sure one arrives. */
+    const ac=(typeof AbortController!=='undefined')?new AbortController():null;
+    const killer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(_){} },FETCH_MS);
+    _inflight=fetch(GP(want),Object.assign({cache:'no-store'},ac?{signal:ac.signal}:{})).then(r=>{
       if(!r.ok) throw new Error('HTTP '+r.status);       /* (#R183) an error body is still valid JSON */
       return r.json();
     }).then(arr=>{
@@ -187,7 +199,8 @@ window.IntMapModules.satellitesLive=function(HOST){
         if(j&&j.g===want&&Array.isArray(j.a)&&ingest(j.a,want)){ lastErr=lastErr+' (using cached elements)'; return true; }
       }catch(_){}
       return false; })
-      .then(ok=>{ if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
+      .then(ok=>{ clearTimeout(killer);
+        if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
     return _inflight;
   }
 
