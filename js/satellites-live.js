@@ -171,6 +171,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   let timer=null, on=false;
   let visibleOnly=false;                   /* show only what is above the horizon from the map centre */
   let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
+  let _diverged=0;                         /* (#R185) objects dropped this tick because SGP4 diverged on them */
   /* (#R185) called the FIRST time a catalogue lands, from whichever rung of the ladder answered, so
      the layer can go visible on the shipped copy instead of waiting out the network's timeouts. */
   let _onPrimed=null;
@@ -368,6 +369,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     const t=when||new Date();
     const gmst=SAT.gstime(t), sun=sunAt(t);
     const out=[];
+    let dropped=0;
     for(let i=0;i<sats.length;i++){
       const s=sats[i];
       try{
@@ -376,6 +378,23 @@ window.IntMapModules.satellitesLive=function(HOST){
         const gd=SAT.eciToGeodetic(pv.position,gmst);
         const lat=SAT.degreesLat(gd.latitude), lng=SAT.degreesLong(gd.longitude);
         if(!isFinite(lat)||!isFinite(lng)) continue;
+        /* ══ (#R185) SGP4 DIVERGES ON SOME ELEMENT SETS, AND IT DOES IT QUIETLY ═══════════════
+           It reports no error and hands back a position; the position is simply not where the
+           object is. Measured on the live catalogue: ASTROCAST-0201 came back at 9,244,632 km and
+           MENUT at 238,361 km, both with a mean motion near 16 revolutions a day — which is a
+           ninety-minute orbit and therefore a few hundred kilometres up. Drawing those is drawing
+           a fabricated position, and it was invisible while the default catalogue was the 157
+           bright objects.
+           The test is the object's OWN orbit rather than a magic altitude: the semi-major axis
+           SGP4 itself derived from the mean motion fixes the apogee at a(1+e), and a real fix
+           cannot be far outside it. The margin is generous (1.5×) so perturbations, a stale
+           element set and genuinely eccentric orbits all survive — EXPLORER 50 (IMP-8), which
+           really is 270,956 km out on a 222,000 km semi-major axis, sits at 1.04× its apogee and
+           stays. Below 80 km the object has re-entered and is likewise not there. */
+        const altKm=gd.height;
+        if(!(altKm>80)){ dropped++; continue; }
+        const apoKm=(s.satrec.a>0)?(s.satrec.a*R_EARTH*(1+(s.satrec.ecco||0))):0;
+        if(apoKm>0&&(R_EARTH+altKm)>apoKm*1.5){ dropped++; continue; }
         const v=pv.velocity?Math.hypot(pv.velocity.x,pv.velocity.y,pv.velocity.z):null;
         /* ══ (#R185) WHICH WAY IT IS GOING, ALONG THE GROUND ═══════════════════════════════════
            The aircraft layer turns its glyph to the track; a satellite icon that always points north
@@ -410,6 +429,7 @@ window.IntMapModules.satellitesLive=function(HOST){
           sunlit:lit });
       }catch(_){}
     }
+    _diverged=dropped;
     return out;
   }
 
@@ -783,6 +803,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       tleAgeH:tleAt?(Date.now()-tleAt)/3600000:null, loading, err:lastErr,
       bundled, bundledSource:(bundledMeta&&bundledMeta.source)||null,
       bundledEpoch:(bundledMeta&&bundledMeta.newestEpoch)||null,
+      diverged:_diverged,
       sunlit:fixes.filter(f=>f.sunlit===true).length,
       deepSpace:fixes.filter(f=>f.deep).length,
       layerVisible:(()=>{ try{ return !!(GE().layers.has(LYR)&&GE().layers.isVisible(LYR)); }catch(_){ return false; } })() }),
