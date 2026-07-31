@@ -638,11 +638,18 @@ window.IntMapModules.dataLayers=function(HOST){
       const isDated=layerDates.hasOwnProperty(id) && !isMonth;
       const isTraffic=(id==='ships'||id==='planes');
       let extra='';
+      /* ⚠ (#R138/#R186) `layerDates[id]` IS DOM TEXT — it is written from the date input's own `value`
+         in the change handler below, so it leaves our code and comes back. CodeQL traces exactly that
+         flow into the innerHTML a few lines down and calls it high severity. Nothing realistic rides
+         it (same origin, and a `type=date` value is browser-validated), but "nothing realistic" is not
+         "nothing", and #R138's rule is that a value which came from outside our own code reaches the
+         DOM through window.IntMapSafe. So it does. */
+      const _esc=(v)=>window.IntMapSafe.html(v==null?'':v);
       if(isMonth){
         /* time slider over the last 36 months (value 36 = newest available month) */
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${t('lyrTimeMonth')||'Month'}: <input type="range" id="mo-${id}" min="0" max="36" value="36" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="molbl-${id}" style="min-width:58px; text-align:right; font-variant-numeric:tabular-nums;">${layerDates[id].slice(0,7)}</span></label></div>`;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${t('lyrTimeMonth')||'Month'}: <input type="range" id="mo-${id}" min="0" max="36" value="36" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="molbl-${id}" style="min-width:58px; text-align:right; font-variant-numeric:tabular-nums;">${_esc(String(layerDates[id]).slice(0,7))}</span></label></div>`;
       } else if(isDated){
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${layerDates[id]}" max="${new Date().toISOString().slice(0,10)}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${_esc(layerDates[id])}" max="${_esc(new Date().toISOString().slice(0,10))}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
       }
       if(isTraffic){
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all" data-i18n="filtAll">${t('filtAll')||'All'}</option><option value="civilian" data-i18n="filtCiv">${t('filtCiv')||'Civilian'}</option><option value="military" data-i18n="filtMil">${t('filtMil')||'Military'}</option></select></label></div>`;
@@ -651,7 +658,11 @@ window.IntMapModules.dataLayers=function(HOST){
       if(isSeaLevel){
         /* Sea-level-rise simulator (#24): slider chooses a +rise in meters; the DEM recolors so
            everything below that level floods blue. */
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${HOST.lang==='jp'?'海面変動':HOST.lang==='de'?'Meeresspiegel':HOST.lang==='ru'?'Уровень моря':HOST.lang==='es'?'Nivel del mar':'Sea-level'}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,window._seaLevelM||0))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${((window._seaLevelM||0)>=0?'+':'')+(window._seaLevelM||0)} m</span></label></div>`;
+        /* the same rule: `window._seaLevelM` is written from an input's value (and from Atlas), so it
+           becomes a NUMBER before it is ever spliced into markup — Number() is the barrier here, and
+           it is also the only thing that makes the clamp below mean anything */
+        const _sl=Number(window._seaLevelM)||0;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${HOST.lang==='jp'?'海面変動':HOST.lang==='de'?'Meeresspiegel':HOST.lang==='ru'?'Уровень моря':HOST.lang==='es'?'Nivel del mar':'Sea-level'}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
       }
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
