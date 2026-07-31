@@ -121,6 +121,9 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
   expect(pos.zero, 'a satellite we cannot propagate is dropped, never drawn at 0,0').toBe(0);
   expect(pos.minAlt).toBeGreaterThan(100);        /* nothing orbits below the atmosphere */
   expect(pos.maxAlt).toBeGreaterThan(30000);      /* the geostationary belt is in there */
+  /* (#R185b) …and nothing beyond the Moon: SGP4 diverges silently on a few element sets, and one
+     of them reported 9,244,632 km on a ninety-minute orbit. Found in production verification. */
+  expect(pos.maxAlt, 'a diverged SGP4 solution is not a position').toBeLessThan(500000);
   expect(pos.hdg, 'every object knows which way it is going — the icon turns to it').toBe(pos.n);
 });
 
