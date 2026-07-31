@@ -15,7 +15,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.routing=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -161,10 +161,26 @@ window.IntMapModules.routing=function(HOST){
       const step={maneuver:{type:e[0],modifier:e[1]},name:(m.street_names&&m.street_names[0])||'',distance:(m.length||0)*1000};
       if(T===26&&m.roundabout_exit_count) step.maneuver.exit=m.roundabout_exit_count;
       return step; }
+    /* (#R184) Valhalla's costing name for each of the road modes, so an AREA to avoid can be honoured
+       on foot and by bike as well as by car. OSRM has no equivalent at all — the demo server rejects
+       `exclude=` — which is why the whole avoid path goes through Valhalla. */
+    const _vhCosting=(m)=>/walk|foot|pedestr/i.test(m||'')?'pedestrian':/cycl|bike/i.test(m||'')?'bicycle':'auto';
     async function _roadValhalla(from,to,opts){ const rid=opts._rid; const av=new Set(opts.avoid||[]);
       const co={}; if(av.has('toll')) co.use_tolls=0; if(av.has('motorway')) co.use_highways=0.1; if(av.has('ferry')) co.use_ferry=0;
+      const costing=_vhCosting(opts.mode);
+      const cOpts={}; cOpts[costing]=co;
       const body={locations:[{lat:+from.lat,lon:+from.lng}].concat((Array.isArray(opts.via)?opts.via:[]).map(p=>({lat:+p.lat,lon:+p.lng}))).concat([{lat:+to.lat,lon:+to.lng}]),
-        costing:'auto',costing_options:{auto:co},directions_options:{units:'kilometers'}};
+        costing:costing,costing_options:cOpts,directions_options:{units:'kilometers'}};
+      /* (#R184) 「通過禁止範囲を地図で描画」 — the drawn areas, as Valhalla's own exclude_polygons. Rings
+         are [lon,lat], which is the order Valhalla documents and the order this app stores anyway.
+         Measured on the public FOSSGIS server (Munich, one 2 km box across the direct line):
+         4.675 km / 725 s becomes 5.444 km / 834 s — it really reroutes, it does not merely accept the
+         parameter. Degenerate rings are dropped rather than sent, because a 2-point "polygon" makes
+         the whole request fail and the user would see "no route" instead of "your box is empty". */
+      const ex=(Array.isArray(opts.avoidAreas)?opts.avoidAreas:[])
+        .map(r=>(Array.isArray(r)?r.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]):[]))
+        .filter(r=>r.length>=4);
+      if(ex.length) body.exclude_polygons=ex;
       const url='https://valhalla1.openstreetmap.de/route?json='+encodeURIComponent(JSON.stringify(body));
       let j=null,errKind='provider_unavailable'; const ac=_mkAC(22000);
       try{ const r=await fetch(url,{signal:ac.signal});
@@ -182,11 +198,14 @@ window.IntMapModules.routing=function(HOST){
         shape=shape.length?shape.concat(seg):seg; });
       const avoidTx=(opts.avoid&&opts.avoid.length)?(LL('avoids ','回避: ','ohne ','без ','evita ')+opts.avoid.map(x=>({toll:LL('tolls','有料道路','Maut','платные','peajes'),motorway:LL('highways','高速道路','Autobahn','магистрали','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):LL('Route','経路','Route','Маршрут','Ruta');
       const alt={lines:[{coords:shape,walk:0,col:'#1a73e8'}],stops:[],geometry:{type:'LineString',coordinates:shape},coords:shape,steps:steps,
-        duration:trip.summary.time,distance:(trip.summary.length||0)*1000,color:ALT_PAL[0],label:avoidTx};
+        duration:trip.summary.time,distance:(trip.summary.length||0)*1000,color:ALT_PAL[0],label:avoidTx,
+        legDurations:(trip.legs||[]).map(l=>(l.summary&&l.summary.time)||0)};
       const setId=_rsNew([alt],[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
-      return {ok:true,status:'success',road:true,provider:'valhalla',routeSetId:setId,sel:0,mode:'driving',avoid:opts.avoid,
-        distance:alt.distance,duration:alt.duration,steps:steps,
-        alternatives:[{duration:alt.duration,distance:alt.distance,steps:steps,label:alt.label,color:alt.color}]}; }
+      return {ok:true,status:'success',road:true,provider:'valhalla',routeSetId:setId,sel:0,
+        mode:(costing==='pedestrian'?'walking':costing==='bicycle'?'cycling':'driving'),
+        avoid:opts.avoid, avoidAreas:ex.length||0,
+        distance:alt.distance,duration:alt.duration,steps:steps,coords:shape,legDurations:alt.legDurations,
+        alternatives:[{duration:alt.duration,distance:alt.distance,steps:steps,label:alt.label,color:alt.color,coords:shape}]}; }
     /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
        (#R126) 経路10-10 §3.2/§24.1: public CORS proxies REMOVED from the routing path (api.transitous.org serves CORS
        headers directly — proxying routed third parties through corsproxy.io/allorigins leaked origin/destination
@@ -194,7 +213,16 @@ window.IntMapModules.routing=function(HOST){
        pool so a newer route request cancels them. _planItins._fail carries WHY it failed (§2.5 error taxonomy). */
     async function _planItins(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
-      const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'');
+      /* (#R184) 「フェリー、鉄道、徒歩区間の個別除外」 — MOTIS takes the transit modes it MAY use as an
+         allow-list, so excluding one means sending the others. Verified against the live server: a
+         valid list answers 200, an invalid mode name answers 500, so the parameter is really read
+         rather than ignored. Walking is not a transit mode — it is how you reach a stop — so
+         excluding it is expressed by capping the access/egress distance instead (below). */
+      const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'')
+        +(Array.isArray(opts.transitModes)&&opts.transitModes.length?('&transitModes='+encodeURIComponent(opts.transitModes.join(','))):'')
+        +(isFinite(+opts.maxWalkM)&&+opts.maxWalkM>0
+          ? (()=>{ const s=Math.round(Math.max(60,Math.min(3600,(+opts.maxWalkM)/1.35)));   /* 1.35 m/s walking */
+                   return '&maxPreTransitTime='+s+'&maxPostTransitTime='+s; })() : '');
       const tmo=opts.quick?15000:32000;
       let fail='provider_unavailable';
       const _fetchPlan=async(u)=>{ const ac=_mkAC(tmo);
@@ -377,6 +405,13 @@ window.IntMapModules.routing=function(HOST){
          unreachable, fall through to OSRM without the avoid and flag it so the reply is honest (avoid not applied). */
       if(opts.avoid&&opts.avoid.length&&/driv|car|auto/.test(mode)){ const vr=await _roadValhalla(from,to,opts);
         if(vr&&(vr.ok||vr.status==='cancelled')) return vr; opts._avoidDropped=true; }
+      /* (#R184) …and a DRAWN AREA to keep out of goes the same way, for every road mode. OSRM cannot
+         express it at all, so this is provider selection by capability rather than by preference: if
+         Valhalla is unreachable we fall through to OSRM WITHOUT the area and flag it, because a route
+         that quietly ignores the box the user drew is worse than one that says it could not. */
+      if(Array.isArray(opts.avoidAreas)&&opts.avoidAreas.length&&!_isTransit(mode)){
+        const vr=await _roadValhalla(from,to,opts);
+        if(vr&&(vr.ok||vr.status==='cancelled')) return vr; opts._avoidDropped=true; }
       const prof=PROFILES[mode]||PROFILES.driving;
       const via=Array.isArray(opts.via)?opts.via:[];
       const pts=[from].concat(via).concat([to]);
@@ -415,14 +450,18 @@ window.IntMapModules.routing=function(HOST){
       let alts=j.routes.slice(0,3).map((rt,i)=>{ const steps=[]; (rt.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>steps.push(s)));
         const coords=(rt.geometry&&rt.geometry.coordinates)||[];
         return {lines:[{coords:coords,walk:rwalk,col:rcol}],stops:[],geometry:rt.geometry,coords:coords,steps:steps,
+          /* (#R184) the per-LEG durations — one leg per via-point section. This is what "arrival time
+             at each point on the way" is made of, and it is only available here: the total duration
+             cannot be split back into legs after the fact. */
+          legDurations:(rt.legs||[]).map(l=>l.duration||0),
           duration:rt.duration,distance:rt.distance,color:ALT_PAL[i%ALT_PAL.length]}; });
       alts=_roadDedup(alts); alts.sort((a,b)=>(a.duration||0)-(b.duration||0));
       alts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; }); _labelRoad(alts,opts.avoid);
       const setId=_rsNew(alts,[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
       const b0=alts[0];
       return {ok:true,status:'success',road:true,routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,avoidDropped:!!opts._avoidDropped,
-        distance:b0.distance,duration:b0.duration,steps:b0.steps,
-        alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color}))}; }
+        distance:b0.distance,duration:b0.duration,steps:b0.steps,coords:b0.coords,legDurations:b0.legDurations,
+        alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color,coords:a.coords,legDurations:a.legDurations}))}; }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
@@ -450,6 +489,10 @@ window.IntMapModules.routing=function(HOST){
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       return null; }
     let panel=null,pFrom=null,pTo=null,pMode='driving',pickTarget=null,pickHandler=null; const pAvoid=new Set();   /* (#R132) §7.3 avoid set */
+    /* (#R184) via points, drawn keep-out areas, and the transit mode allow-list. `pVia` holds the
+       RESOLVED places (or null while a field is being typed), which is why it is parallel to pFrom /
+       pTo rather than being read out of the DOM — the same rule #R126 established for the endpoints. */
+    let pVia=[], pAreas=[], pAreaDraw=null, pTModes=null, pMaxWalk=null, pLastResult=null, opsBusy='';
     /* (#R132) 経路10-10 §12: proper turn-by-turn — interpret the FULL OSRM maneuver vocabulary (turn / merge / on-ramp
        / off-ramp / fork / end-of-road / roundabout+exit-number / U-turn / arrive-side), plus road ref, signposted
        destinations (方面), motorway exit numbers, and lane guidance (▮ valid / ▯ not) — not just "arrow + road name".
@@ -496,6 +539,11 @@ window.IntMapModules.routing=function(HOST){
       panel.innerHTML='<div class="rp-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🧭 '+LL('Directions','経路案内','Route','Маршрут','Cómo llegar')+'</span><button class="rp-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="flex:0 0 auto;padding:10px 12px 6px;display:flex;flex-direction:column;gap:7px;">'
           +'<div style="display:flex;align-items:center;gap:8px;"><span style="flex:0 0 auto;">🟢</span><input class="rp-from" placeholder="'+escp(LL('Choose start (or click the map)','出発地（または地図をクリック）','Start (oder Karte anklicken)','Начало (или клик по карте)','Origen (o clic en el mapa)'))+'" style="'+inCss+'"><button class="rp-pick-from" title="'+LL('Pick on map','地図で選ぶ','Auf Karte wählen','Выбрать на карте','Elegir en el mapa')+'" style="flex:0 0 auto;width:30px;height:30px;border:none;background:var(--input-bg);border-radius:8px;color:var(--text-muted);cursor:pointer;">◎</button></div>'
+          /* (#R184) 「任意の経由地点追加」 — the via points. opts.via has been honoured by both routers
+             since #R132; what was missing was any way for a person to say so. Rendered between the
+             two endpoints because that is where they are in the journey. */
+          +'<div class="rp-vias" style="display:flex;flex-direction:column;gap:6px;"></div>'
+          +'<button class="rp-addvia" style="align-self:flex-start;height:26px;padding:0 9px;border:1px dashed var(--glass-border,rgba(128,128,128,0.35));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">＋ '+escp(LL('Add a stop','経由地を追加','Zwischenziel','Промежуточная точка','Añadir parada'))+'</button>'
           +'<div style="display:flex;align-items:center;gap:8px;"><span style="flex:0 0 auto;">🔴</span><input class="rp-to" placeholder="'+escp(LL('Choose destination','目的地','Ziel','Пункт назначения','Destino'))+'" style="'+inCss+'"><button class="rp-pick-to" title="'+LL('Pick on map','地図で選ぶ','Auf Karte wählen','Выбрать на карте','Elegir en el mapa')+'" style="flex:0 0 auto;width:30px;height:30px;border:none;background:var(--input-bg);border-radius:8px;color:var(--text-muted);cursor:pointer;">◎</button></div>'
           +'<div style="display:flex;gap:8px;align-items:center;"><div class="rp-modes" style="flex:1;display:flex;gap:3px;background:var(--input-bg);border-radius:9px;padding:3px;">'
             +'<button data-m="driving" class="rp-mode" title="'+LL('Drive','車','Auto','Авто','Coche')+'" style="'+mBtn+'">🚗</button><button data-m="transit" class="rp-mode" title="'+LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')+'" style="'+mBtn+'">🚆</button><button data-m="walking" class="rp-mode" title="'+LL('Walk','徒歩','Zu Fuß','Пешком','A pie')+'" style="'+mBtn+'">🚶</button><button data-m="cycling" class="rp-mode" title="'+LL('Cycle','自転車','Rad','Вело','Bici')+'" style="'+mBtn+'">🚲</button></div>'
@@ -509,13 +557,47 @@ window.IntMapModules.routing=function(HOST){
           /* (#R132) 経路10-10 §7.3: avoid toll / highway / ferry (OSRM exclude=, driving profile). Shown only for driving. */
           +'<div class="rp-avoid" style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">'
             +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Avoid:','回避:','Meiden:','Избегать:','Evitar:'))+'</span>'
-            +['toll','motorway','ferry'].map(k=>'<button class="rp-av" data-av="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp({toll:LL('Tolls','有料道路','Maut','Платные','Peajes'),motorway:LL('Highways','高速道路','Autobahn','Магистрали','Autopistas'),ferry:LL('Ferries','フェリー','Fähren','Паромы','Ferris')}[k])+'</button>').join('')+'</div>'
+            +['toll','motorway','ferry'].map(k=>'<button class="rp-av" data-av="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp({toll:LL('Tolls','有料道路','Maut','Платные','Peajes'),motorway:LL('Highways','高速道路','Autobahn','Магистрали','Autopistas'),ferry:LL('Ferries','フェリー','Fähren','Паромы','Ferris')}[k])+'</button>').join('')
+            /* (#R184) 「通過禁止範囲を地図で描画」 — a drawn box the route may not enter. Road modes only:
+               Valhalla's exclude_polygons has no transit equivalent, and offering it there would be a
+               button that silently does nothing. */
+            +'<button class="rp-area" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">▧ '+escp(LL('Draw an area','範囲を描く','Fläche zeichnen','Нарисовать зону','Dibujar zona'))+'</button>'
+            +'<span class="rp-arean" style="font-size:10.5px;color:var(--text-muted);"></span></div>'
+          /* (#R184) 「フェリー、鉄道、徒歩区間の個別除外」 — transit only. MOTIS takes an ALLOW-list of
+             transit modes, so a chip that is off simply leaves its mode out of the list. */
+          +'<div class="rp-tmodes" style="display:none;gap:5px;align-items:center;flex-wrap:wrap;">'
+            +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Use:','利用:','Nutzen:','Использовать:','Usar:'))+'</span>'
+            +[['RAIL',LL('Rail','鉄道','Bahn','Ж/д','Tren')],['SUBWAY',LL('Subway','地下鉄','U-Bahn','Метро','Metro')],['TRAM',LL('Tram','路面電車','Tram','Трамвай','Tranvía')],['BUS',LL('Bus','バス','Bus','Автобус','Autobús')],['FERRY',LL('Ferry','フェリー','Fähre','Паром','Ferri')]]
+              .map(([k,lb])=>'<button class="rp-tm" data-tm="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp(lb)+'</button>').join('')
+            +'<label style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted);">'+escp(LL('Max walk','徒歩上限','Max. Fußweg','Макс. пешком','Máx. a pie'))
+              +'<input type="number" class="rp-maxwalk" min="0" max="5000" step="100" placeholder="—" style="width:64px;height:24px;padding:0 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;"> m</label></div>'
         +'</div>'
         +'<div class="rp-summary" style="flex:0 0 auto;padding:2px 12px;font-size:13px;color:var(--text-main);"></div>'
         +'<div class="rp-export" style="flex:0 0 auto;display:none;gap:6px;align-items:center;padding:2px 12px 4px;">'
           +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Export:','エクスポート:','Export:','Экспорт:','Exportar:'))+'</span>'
           +'<button class="rp-exp" data-f="gpx" style="height:26px;padding:0 10px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">GPX</button>'
           +'<button class="rp-exp" data-f="geojson" style="height:26px;padding:0 10px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">GeoJSON</button></div>'
+        /* (#R184) the analyses of a route that already exists — elevation, borders, conditions along
+           the way, the schedule, where the alternatives differ, and the historical network. Each is a
+           button rather than automatic: they cost DEM tiles, weather requests and an Overpass query,
+           and running all of them on every keystroke would be the opposite of helpful. */
+        +'<div class="rp-ops" style="flex:0 0 auto;display:none;flex-direction:column;gap:5px;padding:4px 12px 6px;">'
+          +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
+            +[['elev','⛰ '+LL('Elevation','標高差','Höhe','Высоты','Desnivel')],
+              ['borders','🛂 '+LL('Borders','国境','Grenzen','Границы','Fronteras')],
+              ['along','🌦 '+LL('Along the way','沿道の状況','Unterwegs','По пути','Por el camino')],
+              ['times','🕒 '+LL('Arrival times','到着時刻','Ankunftszeiten','Время прибытия','Horas de llegada')],
+              ['diff','⇄ '+LL('Differences','経路の差','Unterschiede','Различия','Diferencias')]]
+              .map(([k,lb])=>'<button class="rp-op" data-op="'+k+'" style="height:26px;padding:0 9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp(lb)+'</button>').join('')
+          +'</div>'
+          +'<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">'
+            +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Historical network:','過去の路線網:','Historisches Netz:','Историческая сеть:','Red histórica:'))+'</span>'
+            +'<input type="number" class="rp-hyear" value="1900" min="1800" max="2025" step="1" style="width:66px;height:24px;padding:0 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;">'
+            +'<select class="rp-hkind" style="height:24px;padding:0 4px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;"><option value="rail">'+escp(LL('Railways','鉄道','Bahn','Ж/д','Ferrocarril'))+'</option><option value="road">'+escp(LL('Roads','道路','Straßen','Дороги','Carreteras'))+'</option></select>'
+            +'<button class="rp-op" data-op="hist" style="height:24px;padding:0 9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:12px;cursor:pointer;font-size:11px;">'+escp(LL('Route on it','この年で計算','Berechnen','Проложить','Calcular'))+'</button>'
+          +'</div>'
+          +'<div class="rp-opout" style="font-size:11px;color:var(--text-main);line-height:1.5;"></div>'
+        +'</div>'
         +'<div class="rp-steps" style="flex:1 1 auto;overflow-y:auto;padding:2px 12px 12px;"></div>';
       document.body.appendChild(panel);
       panel.querySelector('.rp-close').onclick=()=>{ panel.style.display='none'; try{ clear(); }catch(_){} _endPick(); };
@@ -539,22 +621,99 @@ window.IntMapModules.routing=function(HOST){
       /* (#R132) §15.7 export the shown route */
       panel.querySelectorAll('.rp-exp').forEach(b=>b.onclick=()=>{ try{ exportRoute(b.getAttribute('data-f')); }catch(_){} });
       panel.querySelector('.rp-pick-from').onclick=()=>_startPick('from'); panel.querySelector('.rp-pick-to').onclick=()=>_startPick('to');
+      /* (#R184) via points, the drawn area, the transit allow-list and the analyses */
+      panel.querySelector('.rp-addvia').onclick=()=>{ pVia.push(null); _renderVias(); };
+      panel.querySelector('.rp-area').onclick=()=>_toggleAreaDraw();
+      panel.querySelectorAll('.rp-tm').forEach(b=>b.onclick=()=>{ const k=b.getAttribute('data-tm');
+        if(!pTModes) pTModes=['RAIL','SUBWAY','TRAM','BUS','FERRY'];
+        const i=pTModes.indexOf(k);
+        if(i>=0){ if(pTModes.length>1) pTModes.splice(i,1); } else pTModes.push(k);
+        _syncTModes(); recompute(); });
+      { const mw=panel.querySelector('.rp-maxwalk'); if(mw) mw.onchange=()=>{ const v=parseFloat(mw.value);
+        pMaxWalk=isFinite(v)&&v>0?v:null; recompute(); }; }
+      panel.querySelectorAll('.rp-op').forEach(b=>b.onclick=()=>_runOp(b.getAttribute('data-op')));
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rp-head')); }catch(_){}
-      _syncModes(); return panel; }
-    function _syncAvoid(){ if(!panel) return; const row=panel.querySelector('.rp-avoid'); if(row) row.style.display=(pMode==='driving')?'flex':'none';
+      _syncModes(); _renderVias(); return panel; }
+    /* ---- (#R184) via points ------------------------------------------------------------------ */
+    function _renderVias(){ if(!panel) return;
+      const box=panel.querySelector('.rp-vias'); if(!box) return;
+      const inCss='flex:1;min-width:0;height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;box-sizing:border-box;';
+      box.innerHTML=pVia.map((v,i)=>'<div style="display:flex;align-items:center;gap:8px;"><span style="flex:0 0 auto;font-size:11px;color:var(--text-muted);width:14px;text-align:center;">'+(i+1)+'</span>'
+        +'<input class="rp-via" data-vi="'+i+'" value="'+escp((v&&v.name)||'')+'" placeholder="'+escp(LL('Stop','経由地','Zwischenziel','Промежуточная точка','Parada'))+'" style="'+inCss+'">'
+        +'<button class="rp-via-pick" data-vi="'+i+'" title="'+LL('Pick on map','地図で選ぶ','Auf Karte wählen','Выбрать на карте','Elegir en el mapa')+'" style="flex:0 0 auto;width:26px;height:26px;border:none;background:var(--input-bg);border-radius:7px;color:var(--text-muted);cursor:pointer;">◎</button>'
+        +'<button class="rp-via-del" data-vi="'+i+'" style="flex:0 0 auto;width:22px;height:22px;border:none;background:rgba(128,128,128,0.16);border-radius:6px;color:var(--text-main);font-size:10px;cursor:pointer;">✕</button></div>').join('');
+      box.querySelectorAll('.rp-via').forEach(el=>{ const i=+el.getAttribute('data-vi');
+        el.addEventListener('input',()=>{ pVia[i]=null; });
+        el.addEventListener('keydown',async e=>{ if(e.key!=='Enter') return; e.preventDefault();
+          const g=await geo1(el.value,pFrom?[pFrom.lng,pFrom.lat]:null);
+          if(g){ el.value=g.name; pVia[i]=g; recompute(); } }); });
+      box.querySelectorAll('.rp-via-pick').forEach(b=>b.onclick=()=>_startPick('via:'+b.getAttribute('data-vi')));
+      box.querySelectorAll('.rp-via-del').forEach(b=>b.onclick=()=>{ pVia.splice(+b.getAttribute('data-vi'),1); _renderVias(); recompute(); });
+    }
+    /* ---- (#R184) the drawn keep-out area ------------------------------------------------------
+       Two clicks give the opposite corners of a box. A box rather than a free polygon because a
+       keep-out area is nearly always "not through there" and two clicks say that without a drawing
+       mode to learn or exit; the request already accepts arbitrary rings, so a richer editor can
+       replace this without touching the routing side. */
+    const AREA_SRC='imroute-area-src', AREA_FILL='imroute-area', AREA_LINE='imroute-area-line';
+    function _areaLayers(){ try{ const E=GE(); if(!E||!E.canDraw()) return false;
+      if(!E.layers.hasSource(AREA_SRC)) E.layers.addSource(AREA_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!E.layers.has(AREA_FILL)) E.layers.add({id:AREA_FILL,type:'fill',source:AREA_SRC,paint:{'fill-color':'#ff453a','fill-opacity':0.16}});
+      if(!E.layers.has(AREA_LINE)) E.layers.add({id:AREA_LINE,type:'line',source:AREA_SRC,paint:{'line-color':'#ff453a','line-width':1.6,'line-dasharray':[3,2]}});
+      return true; }catch(_){ return false; } }
+    function _drawAreas(){ if(!_areaLayers()) return;
+      try{ GE().layers.setSourceData(AREA_SRC,{type:'FeatureCollection',features:pAreas.map(r=>({type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{}}))});
+        [AREA_FILL,AREA_LINE].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setVisible(id,pAreas.length>0); }); }catch(_){}
+      const n=panel&&panel.querySelector('.rp-arean');
+      if(n) n.textContent=pAreas.length?(pAreas.length+' '+LL('area(s)','か所','Fläche(n)','зон','zonas')+' · '+LL('tap to clear','押して消去','tippen zum Löschen','нажмите, чтобы убрать','toca para borrar')):''; }
+    function _toggleAreaDraw(){
+      if(pAreas.length&&!pAreaDraw){ pAreas=[]; _drawAreas(); recompute(); return; }
+      if(pAreaDraw){ _endAreaDraw(); return; }
+      let first=null;
+      pAreaDraw=(e)=>{ const ll=[e.lngLat.lng,e.lngLat.lat];
+        if(!first){ first=ll; try{ GE().events.once('click',pAreaDraw); }catch(_){} return; }
+        const w=Math.min(first[0],ll[0]), e2=Math.max(first[0],ll[0]);
+        const s=Math.min(first[1],ll[1]), n=Math.max(first[1],ll[1]);
+        pAreas.push([[w,s],[e2,s],[e2,n],[w,n],[w,s]]);
+        _endAreaDraw(); _drawAreas(); recompute(); };
+      try{ GE().render.canvas().style.cursor='crosshair'; GE().events.once('click',pAreaDraw); }catch(_){}
+      const b=panel&&panel.querySelector('.rp-area');
+      if(b){ b.style.background='var(--primary-color)'; b.style.color='#fff'; b.textContent='◉ '+LL('Click two corners','対角2点をクリック','Zwei Ecken klicken','Кликните два угла','Haz clic en dos esquinas'); } }
+    function _endAreaDraw(){ try{ if(pAreaDraw) GE().events.off('click',pAreaDraw); }catch(_){} pAreaDraw=null;
+      try{ GE().render.canvas().style.cursor=''; }catch(_){}
+      const b=panel&&panel.querySelector('.rp-area');
+      if(b){ b.style.background='transparent'; b.style.color='var(--text-muted)'; b.textContent='▧ '+LL('Draw an area','範囲を描く','Fläche zeichnen','Нарисовать зону','Dibujar zona'); } }
+    function _syncTModes(){ if(!panel) return;
+      const row=panel.querySelector('.rp-tmodes'); if(row) row.style.display=(pMode==='transit')?'flex':'none';
+      const on=pTModes||['RAIL','SUBWAY','TRAM','BUS','FERRY'];
+      panel.querySelectorAll('.rp-tm').forEach(b=>{ const k=on.indexOf(b.getAttribute('data-tm'))>=0;
+        b.style.background=k?'var(--primary-color)':'transparent'; b.style.color=k?'#fff':'var(--text-muted)';
+        b.style.borderColor=k?'var(--primary-color)':'var(--glass-border,rgba(128,128,128,0.28))'; }); }
+    function _syncAvoid(){ if(!panel) return; const row=panel.querySelector('.rp-avoid');
+      /* (#R184) the avoid row is no longer driving-only: a DRAWN AREA is honoured for walking and
+         cycling too (Valhalla's pedestrian/bicycle costings take exclude_polygons), so the row shows
+         for every road mode and only the three toll/highway/ferry chips stay driving-only. */
+      if(row) row.style.display=(pMode==='transit')?'none':'flex';
+      panel.querySelectorAll('.rp-av').forEach(b=>{ b.style.display=(pMode==='driving')?'':'none'; });
+      _syncTModes();
       panel.querySelectorAll('.rp-av').forEach(b=>{ const on=pAvoid.has(b.getAttribute('data-av')); b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; b.style.borderColor=on?'var(--primary-color)':'var(--glass-border,rgba(128,128,128,0.28))'; }); }
     function _syncModes(){ if(!panel) return; panel.querySelectorAll('.rp-mode').forEach(b=>{ const on=b.getAttribute('data-m')===pMode; b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; }); _syncAvoid(); }
     function _startPick(which){ _endPick(); pickTarget=which; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickHandler=async e=>{ const ll={lng:e.lngLat.lng,lat:e.lngLat.lat}; const g={lng:ll.lng,lat:ll.lat,name:ll.lat.toFixed(4)+', '+ll.lng.toFixed(4)};
         const tgt=pickTarget;
-        if(tgt==='from'){ pFrom=g; if(panel) panel.querySelector('.rp-from').value=g.name; } else { pTo=g; if(panel) panel.querySelector('.rp-to').value=g.name; }
+        const vm=/^via:(\d+)$/.exec(String(tgt||''));
+        if(vm){ pVia[+vm[1]]=g; _renderVias(); }
+        else if(tgt==='from'){ pFrom=g; if(panel) panel.querySelector('.rp-from').value=g.name; } else { pTo=g; if(panel) panel.querySelector('.rp-to').value=g.name; }
         _endPick(); recompute();
         /* (#R126) §6.6: reverse-geocode the picked point (best-effort) so the field shows a place, not bare coords */
         try{ const ac=new AbortController(); setTimeout(()=>{try{ac.abort();}catch(_){}} ,6000);
           const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=17&lat='+ll.lat.toFixed(6)+'&lon='+ll.lng.toFixed(6),{signal:ac.signal}); const j=await r.json();
           if(j&&j.display_name){ const nm=j.display_name.split(',').slice(0,2).join(', ');
-            const still=(tgt==='from')?(pFrom===g):(pTo===g);   /* only if the user hasn't changed the field since */
-            if(still){ g.name=nm; const el=panel&&panel.querySelector(tgt==='from'?'.rp-from':'.rp-to'); if(el) el.value=nm; } } }catch(_){} };
+            const vm2=/^via:(\d+)$/.exec(String(tgt||''));
+            const still=vm2?(pVia[+vm2[1]]===g):(tgt==='from')?(pFrom===g):(pTo===g);   /* only if the user hasn't changed the field since */
+            if(still){ g.name=nm;
+              if(vm2){ _renderVias(); }
+              else { const el=panel&&panel.querySelector(tgt==='from'?'.rp-from':'.rp-to'); if(el) el.value=nm; } } } }catch(_){} };
       try{ GE().events.once('click',pickHandler); }catch(_){} }
     function _endPick(){ pickTarget=null; try{ if(pickHandler) GE().events.off('click',pickHandler); }catch(_){} pickHandler=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
     async function recompute(){ if(!panel) return; const sum=panel.querySelector('.rp-summary'), st=panel.querySelector('.rp-steps');
@@ -563,9 +722,22 @@ window.IntMapModules.routing=function(HOST){
       const _wsel=panel.querySelector('.rp-when'), _tin=panel.querySelector('.rp-time'); const _opts={mode:pMode};
       if(_wsel&&_wsel.value!=='now'&&_tin&&_tin.value){ const d=new Date(_tin.value); if(isFinite(d.getTime())){ _opts.time=d.toISOString(); _opts.arriveBy=(_wsel.value==='arrive'); } }
       if(pMode==='driving'&&pAvoid.size) _opts.avoid=[...pAvoid];   /* (#R132) §7.3 */
+      /* (#R184) the four new inputs. Only resolved via points are sent — a half-typed one must never
+         become a coordinate (#R126 §3.12), which is why pVia holds nulls rather than raw text. */
+      { const vs=pVia.filter(v=>v&&isFinite(+v.lng)&&isFinite(+v.lat)); if(vs.length) _opts.via=vs; }
+      if(pAreas.length&&pMode!=='transit') _opts.avoidAreas=pAreas;
+      if(pMode==='transit'){
+        if(pTModes&&pTModes.length&&pTModes.length<5) _opts.transitModes=pTModes.slice();
+        if(pMaxWalk) _opts.maxWalkM=pMaxWalk; }
       let r=null; try{ r=await route(pFrom,pTo,_opts); }catch(_){}
       if(r&&r.status==='cancelled') return;   /* (#R126) superseded by a newer request — that one updates the UI */
       { const exp=panel.querySelector('.rp-export'); if(exp) exp.style.display=(r&&r.ok)?'flex':'none'; }   /* (#R132) §15.7 show export only when a route exists */
+      /* (#R184) a new route invalidates every analysis of the previous one */
+      pLastResult=(r&&r.ok)?r:null;
+      { const ops=panel.querySelector('.rp-ops'); if(ops) ops.style.display=(r&&r.ok)?'flex':'none';
+        const out=panel.querySelector('.rp-opout'); if(out) out.innerHTML=''; }
+      try{ window.IntMapRoutingOps&&window.IntMapRoutingOps.clearDifferences(); }catch(_){}
+      try{ window.IntMapRoutingOps&&window.IntMapRoutingOps.clearHistorical(); }catch(_){}
       if(!r||!r.ok){
         /* (#R126) 経路10-10 §2.5: outage / timeout / rate-limit / no-route are DIFFERENT answers, not one "not found" */
         const stt=(r&&r.status)||'';
@@ -605,6 +777,116 @@ window.IntMapModules.routing=function(HOST){
             const co=step&&step.geometry&&step.geometry.coordinates; try{ selectStep(ctx.setId,si,co); }catch(_){}
             st.querySelectorAll('.rp-step').forEach(x=>x.style.background=(x===sr)?'rgba(255,210,63,0.14)':''); } }); }
       } }
+    /* ---- (#R184) THE ANALYSES ------------------------------------------------------------------
+       Each button asks js/routing-ops.js one question about the route currently drawn and renders the
+       answer. `pLastResult` is the route the answers belong to; recompute() clears it, so an answer
+       can never outlive the route it describes. */
+    function _opCoords(){
+      const r=pLastResult; if(!r) return null;
+      if(Array.isArray(r.coords)&&r.coords.length>1) return r.coords;
+      const rc=_routeCoords(); return (rc&&rc.coords&&rc.coords.length>1)?rc.coords:null; }
+    function _opAlts(){ const rs=_rsets.get(_rsActive); return (rs&&rs.alts&&rs.alts.length>1)?rs.alts:null; }
+    function _opOut(html){ const box=panel&&panel.querySelector('.rp-opout'); if(box) box.innerHTML=html; }
+    function _opBusy(k){ opsBusy=k;
+      if(!panel) return; panel.querySelectorAll('.rp-op').forEach(b=>{ b.style.opacity=(opsBusy&&b.getAttribute('data-op')!==opsBusy)?'0.45':'1'; }); }
+    const _m=(v)=>(v==null||!isFinite(v))?'—':(Math.abs(v)>=1000?((v/1000).toFixed(2)+' km'):(Math.round(v)+' m'));
+    const _hhmm=(ms)=>{ try{ return new Date(ms).toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } };
+    async function _runOp(k){
+      const O=window.IntMapRoutingOps;
+      if(!O){ _opOut('<span style="color:#ff9f0a;">⚠</span>'); return; }
+      if(opsBusy) return;
+      const coords=_opCoords();
+      if(k!=='hist'&&!coords){ _opOut('<span style="color:var(--text-muted);">'+escp(LL('Compute a route first.','先に経路を計算してください。','Zuerst eine Route berechnen.','Сначала рассчитайте маршрут.','Calcula una ruta primero.'))+'</span>'); return; }
+      _opBusy(k); _opOut('<span style="color:var(--text-muted);">…</span>');
+      try{
+        if(k==='elev'){
+          const e=await O.elevation(coords);
+          if(!e||e.err) _opOut('<span style="color:#ff9f0a;">⚠ '+escp(LL('No elevation data for this route yet.','この経路の標高データを取得できませんでした。','Keine Höhendaten.','Нет данных о высотах.','Sin datos de elevación.'))+'</span>');
+          else _opOut('<b>'+escp(LL('Elevation','標高差','Höhe','Высоты','Desnivel'))+'</b><br>'
+            +'▲ '+_m(e.ascentM)+' · ▼ '+_m(e.descentM)+' · '+escp(LL('net','正味','netto','итог','neto'))+' '+((e.netM>=0?'+':'')+Math.round(e.netM))+' m<br>'
+            +escp(LL('Highest','最高','Höchster','Максимум','Máximo'))+' '+Math.round(e.maxM)+' m · '+escp(LL('lowest','最低','niedrigster','минимум','mínimo'))+' '+Math.round(e.minM)+' m'
+            +' · '+escp(LL('steepest','最急勾配','steilster','макс. уклон','más empinado'))+' '+e.maxGradePct.toFixed(1)+'%'
+            +'<br><span style="color:var(--text-muted);font-size:10px;">'+escp(LL('Terrarium DEM z'+e.demZoom+', '+e.samples+' samples, changes under '+e.noiseFloorM+' m ignored as sampling noise'+(e.missing?(', '+e.missing+' without data'):''),
+              'Terrarium DEM z'+e.demZoom+'・'+e.samples+'点。'+e.noiseFloorM+'m未満の変化はサンプリング誤差として除外'+(e.missing?('・'+e.missing+'点は標高欠測'):''),
+              'Terrarium-DEM z'+e.demZoom+', '+e.samples+' Proben',
+              'Terrarium DEM z'+e.demZoom+', '+e.samples+' проб',
+              'DEM Terrarium z'+e.demZoom+', '+e.samples+' muestras'))+'</span>');
+        } else if(k==='borders'){
+          const b=O.borders(coords);
+          if(!b||b.err) _opOut('<span style="color:#ff9f0a;">⚠ '+escp(LL('Country outlines are not loaded yet — open the Countries tab once and try again.','国境データが未読み込みです。Countriesタブを一度開いてから再試行してください。','Ländergrenzen noch nicht geladen.','Границы стран ещё не загружены.','Los contornos de países aún no están cargados.'))+'</span>');
+          else _opOut('<b>'+escp(LL('Border crossings','国境通過','Grenzübertritte','Пересечения границ','Cruces de frontera'))+': '+b.count+'</b>'
+            +(b.segments.length?('<br>'+b.segments.map(sg=>escp(sg.name)+' <span style="color:var(--text-muted);font-size:10.5px;">'+_m(sg.m)+'</span>').join(' → ')):'')
+            +(b.crossings.length?('<br>'+b.crossings.map(c=>'<span style="color:var(--text-muted);font-size:10.5px;">'+escp(c.from+' → '+c.to)+' · '+_m(c.atM)+'</span>').join('<br>')):'')
+            +'<br><span style="color:var(--text-muted);font-size:10px;">'+escp(LL(
+              'From the app’s own country outlines, sampled every '+b.sampleStepM+' m. Those outlines are simplified for drawing, so a very short transit can be the outline’s resolution rather than a real crossing — the length beside each country is what tells them apart.',
+              'アプリの国境ポリゴンを '+b.sampleStepM+' m 間隔で判定しています。描画用に簡略化された境界のため、ごく短い通過は実際の越境ではなく境界の解像度である可能性があります。各国の横に出ている距離で判断してください。',
+              'Aus den Ländergrenzen der App, alle '+b.sampleStepM+' m abgetastet; sie sind zum Zeichnen vereinfacht.',
+              'По контурам стран приложения, шаг '+b.sampleStepM+' м; они упрощены для отрисовки.',
+              'Desde los contornos de países de la app, muestreados cada '+b.sampleStepM+' m; están simplificados para el dibujo.'))+'</span>');
+        } else if(k==='along'){
+          const dep=(()=>{ const w=panel.querySelector('.rp-when'), t=panel.querySelector('.rp-time');
+            if(w&&w.value!=='now'&&t&&t.value){ const d=new Date(t.value); if(isFinite(d.getTime())) return d.getTime(); }
+            return Date.now(); })();
+          const a=await O.along(coords,{ durationS:(pLastResult&&pLastResult.duration)||0, departMs:dep });
+          const wx=a.probes.map(p=>{
+            const t=p.wx&&p.wx.tempC!=null?(Math.round(p.wx.tempC)+' °C'):'—';
+            const w=p.wx&&p.wx.windKmh!=null?(Math.round(p.wx.windKmh)+' km/h'):'';
+            const pc=p.wx&&p.wx.precip!=null&&p.wx.precip>0?(' · '+p.wx.precip.toFixed(1)+' mm'):'';
+            return '<span style="color:var(--text-muted);font-size:10.5px;">'+_m(p.atM)+' · '+_hhmm(p.etaMs)+'</span> '+escp(t+(w?(' · '+w):'')+pc); }).join('<br>');
+          const q=a.quakes.length?('<br><b>'+escp(LL('Earthquakes near the route (last 24 h)','経路付近の地震（24時間）','Erdbeben nahe der Route (24 h)','Землетрясения рядом (24 ч)','Sismos cerca (24 h)'))+'</b><br>'
+            +a.quakes.map(x=>'<span style="color:#ff9f0a;">M'+(x.mag||0).toFixed(1)+'</span> '+escp(String(x.place||''))+' <span style="color:var(--text-muted);font-size:10.5px;">'+Math.round(x.km)+' km</span>').join('<br>')):'';
+          const nw=a.news.length?('<br><b>'+escp(LL('News along the route','経路沿いのニュース','Nachrichten entlang der Route','Новости по маршруту','Noticias en la ruta'))+'</b><br>'
+            +a.news.map(x=>'<span style="color:var(--text-muted);font-size:10.5px;">'+Math.round(x.km)+' km</span> '+escp(x.title)).join('<br>')):'';
+          _opOut('<b>'+escp(LL('Weather along the way','沿道の天気','Wetter unterwegs','Погода по пути','Tiempo por el camino'))+'</b><br>'+wx+q+nw
+            +(a.quakes.length||a.news.length?'':'<br><span style="color:var(--text-muted);font-size:10.5px;">'+escp(LL('No earthquakes or geolocated news near this route.','経路付近に地震・位置付きニュースはありません。','Keine Erdbeben oder verorteten Nachrichten.','Землетрясений и новостей рядом нет.','Sin sismos ni noticias geolocalizadas.'))+'</span>'));
+        } else if(k==='times'){
+          const w=panel.querySelector('.rp-when'), t=panel.querySelector('.rp-time');
+          const arriveBy=!!(w&&w.value==='arrive');
+          const tMs=(w&&w.value!=='now'&&t&&t.value&&isFinite(new Date(t.value).getTime()))?new Date(t.value).getTime():Date.now();
+          /* the legs are the via-point sections when there are via points, and one leg otherwise —
+             the arrival time "at each point on the way" is exactly the boundary between them */
+          const durs=(pLastResult&&pLastResult.legDurations)||[(pLastResult&&pLastResult.duration)||0];
+          const sc=O.schedule(durs,{ timeMs:tMs, arriveBy });
+          const names=[ (pFrom&&pFrom.name)||'' ].concat(pVia.map((v,i)=>(v&&v.name)||('#'+(i+1)))).concat([ (pTo&&pTo.name)||'' ]);
+          _opOut('<b>'+escp(LL('Arrival times','到着時刻','Ankunftszeiten','Время прибытия','Horas de llegada'))+'</b>'
+            +(arriveBy?(' <span style="color:var(--text-muted);font-size:10.5px;">'+escp(LL('(working back from the arrival deadline)','（到着時刻から逆算）','(rückwärts von der Ankunft)','(отсчёт назад от прибытия)','(hacia atrás desde la llegada)'))+'</span>'):'')
+            +'<br>'+sc.points.map((p,i)=>'<span style="color:var(--text-muted);font-size:10.5px;">'+_hhmm(p.tMs)+'</span> '+escp(names[i]||('#'+i))).join('<br>'));
+        } else if(k==='diff'){
+          const alts=_opAlts();
+          if(!alts){ _opOut('<span style="color:var(--text-muted);">'+escp(LL('Only one route was returned — there is nothing to compare.','経路が1本のみのため比較できません。','Nur eine Route — nichts zu vergleichen.','Только один маршрут — сравнивать нечего.','Solo una ruta — nada que comparar.'))+'</span>'); }
+          else { const d=O.highlightDifferences(alts);
+            _opOut('<b>'+escp(LL('Where the routes differ','経路が分かれる区間','Wo sich die Routen unterscheiden','Где маршруты расходятся','Dónde difieren las rutas'))+'</b><br>'
+              +d.per.map(p=>'<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+escp(p.color)+';"></span> '+escp((alts[p.i].label||('#'+(p.i+1)))+' — '+_m(p.uniqueM)+' '+LL('not shared','が非共通','abweichend','не общий','no compartido')+' ('+p.segments+')')).join('<br>')
+              +'<br><span style="color:var(--text-muted);font-size:10px;">'+escp(LL('Lines closer than '+d.sameThresholdM+' m count as the same road.','距離 '+d.sameThresholdM+' m 以内は同一の道とみなします。','Linien unter '+d.sameThresholdM+' m gelten als dieselbe Straße.','Линии ближе '+d.sameThresholdM+' м считаются одной дорогой.','Líneas a menos de '+d.sameThresholdM+' m cuentan como la misma vía.'))+'</span>'); }
+        } else if(k==='hist'){
+          if(!pFrom||!pTo){ _opOut('<span style="color:var(--text-muted);">'+escp(LL('Enter a start and destination.','出発地と目的地を入力してください。','Start und Ziel eingeben.','Введите начало и цель.','Introduce origen y destino.'))+'</span>'); }
+          else {
+            const y=parseInt((panel.querySelector('.rp-hyear')||{}).value,10)||1900;
+            const kind=(panel.querySelector('.rp-hkind')||{}).value||'rail';
+            const h=await O.historicalRoute(pFrom,pTo,{ year:y, kind });
+            if(!h||h.err){
+              const M={ 'too-far':LL('That is too far for a historical-network search (max '+(h&&h.maxKm||400)+' km apart).','この距離は過去路線網の検索範囲を超えています（直線距離で最大 '+(h&&h.maxKm||400)+' km）。','Zu weit für die historische Netzsuche.','Слишком далеко для поиска по исторической сети.','Demasiado lejos para la búsqueda histórica.'),
+                'empty':LL('OpenStreetMap has no '+(kind==='rail'?'railway':'road')+' recorded here for '+y+'.','この地域には '+y+' 年の'+(kind==='rail'?'鉄道':'道路')+'の記録が OpenStreetMap にありません。','OSM kennt hier für '+y+' nichts.','В OSM нет записей за '+y+' год здесь.','OSM no tiene registros aquí para '+y+'.'),
+                'no-network':LL('The nearest recorded line is '+(h&&h.snapKm)+' km from an endpoint — too far to start from.','最寄りの記録された路線が端点から '+(h&&h.snapKm)+' km 離れており、起点にできません。','Nächste Linie '+(h&&h.snapKm)+' km entfernt.','Ближайшая линия в '+(h&&h.snapKm)+' км.','La línea más cercana está a '+(h&&h.snapKm)+' km.'),
+                'disconnected':LL('The network that existed in '+y+' does not connect these two places.','この2地点は '+y+' 年の路線網ではつながっていません。','Das Netz von '+y+' verbindet diese Orte nicht.','Сеть '+y+' года не соединяет эти пункты.','La red de '+y+' no conecta estos lugares.'),
+                'overpass':LL('OpenStreetMap could not be reached.','OpenStreetMap に接続できませんでした。','OpenStreetMap nicht erreichbar.','OpenStreetMap недоступен.','No se pudo contactar con OpenStreetMap.') };
+              _opOut('<span style="color:#ff9f0a;">⚠ '+escp(M[h&&h.err]||LL('No historical route found.','過去の経路が見つかりませんでした。','Keine historische Route.','Исторический маршрут не найден.','Sin ruta histórica.'))+'</span>');
+            } else {
+              O.drawHistorical(h);
+              _opOut('<b>'+escp(LL('On the '+y+' network','（'+y+' 年の路線網）','Netz '+y,'Сеть '+y+' года','Red de '+y))+'</b><br>'
+                +escp(_m(h.lengthM)+' · '+h.ways+' '+LL('ways in the corridor','区間（走査範囲）','Wege im Korridor','участков в коридоре','tramos en el corredor'))
+                +'<br><span style="color:var(--text-muted);font-size:10px;">'+escp(LL(
+                  'Of the route itself, '+h.onRouteDatedPct+'% runs on line that OpenStreetMap actually dates; '+h.onRoute.assumedGone+' of '+h.onRoute.checked+' sampled points are on line recorded as closed but undated (assumed to have existed in a past year) and '+h.onRoute.assumedLive+' on line still there today but undated (assumed to date back to at least 1900). This is OpenStreetMap’s record, not a historical atlas.',
+                  'この経路自体のうち '+h.onRouteDatedPct+'% が、OpenStreetMap に年代の記録がある路線を通ります。標本 '+h.onRoute.checked+' 点のうち '+h.onRoute.assumedGone+' 点は「廃止だが年代不明」（過去には存在したと仮定）、'+h.onRoute.assumedLive+' 点は「現存するが年代不明」（1900年以前から存在したと仮定）の区間です。これは OpenStreetMap の記録であって歴史地図ではありません。',
+                  h.onRouteDatedPct+'% der Route liegt auf datierter Linie (OSM-Daten, kein historischer Atlas).',
+                  h.onRouteDatedPct+'% маршрута — по линии с датой в OSM (данные OSM, не исторический атлас).',
+                  'El '+h.onRouteDatedPct+'% de la ruta va por línea con fecha en OSM (datos de OSM, no un atlas histórico).'))+'</span>');
+            }
+          }
+        }
+      }catch(e){ _opOut('<span style="color:#ff9f0a;">⚠ '+escp(String(e&&e.message||e))+'</span>'); }
+      _opBusy('');
+    }
     function _hm(iso){ try{ const d=new Date(iso); if(!isFinite(d.getTime())) return ''; return d.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
     /* (#R85) transit leg list — one row per leg, mode icon + colour bar + line name + endpoints + duration */
     function legRows(legs){ return (legs||[]).map(l=>{ const mn=Math.round((l.duration||0)/60); const ic=_modeIcon(l.mode);

@@ -83,8 +83,21 @@ function closureTopLevelNames(js) {
 }
 
 /* ── 2. free identifiers of a standalone script ───────────────────────────── */
+/* (#R184) PARSE IT THE WAY IT RUNS. Every js/ file is imported by src/main.js and therefore
+   executes as an ES module, but until this round none of them contained an `import`, so parsing
+   them as scripts happened to work. js/satellites-live.js imports satellite.js — SGP4 is not
+   something to hand-roll — and the check then failed with a PARSE ERROR, which is the check being
+   wrong about the program rather than the program being wrong. Script mode is still tried first,
+   because it is the stricter reading for the files that are still plain scripts, and module mode is
+   the fallback for the ones that are not. */
+function parseFile(src, extra) {
+  const opts = Object.assign({ ecmaVersion: 'latest' }, extra || {});
+  try { return acorn.parse(src, Object.assign({ sourceType: 'script' }, opts)); }
+  catch (_) { return acorn.parse(src, Object.assign({ sourceType: 'module' }, opts)); }
+}
+
 function freeIdentifiers(src) {
-  const ast = acorn.parse(src, { ecmaVersion: 'latest', allowReturnOutsideFunction: true });
+  const ast = parseFile(src, { allowReturnOutsideFunction: true });
   const free = new Map(); // name -> first line
   const scopes = [new Set()];
   const declare = (n) => scopes[scopes.length - 1].add(n);
@@ -107,6 +120,10 @@ function freeIdentifiers(src) {
       if (s.type === 'FunctionDeclaration' && s.id) declare(s.id.name);
       else if (s.type === 'ClassDeclaration' && s.id) declare(s.id.name);
       else if (s.type === 'VariableDeclaration') s.declarations.forEach((d) => pat(d.id, s.kind === 'var' ? declareVar : declare));
+      /* (#R184) an import binding is a declaration — without this, `import * as SAT` makes every
+         use of SAT look like a name that resolves to nothing at runtime, which is the exact defect
+         this check exists to find and would be a false positive of the loudest kind */
+      else if (s.type === 'ImportDeclaration') (s.specifiers || []).forEach((sp) => { if (sp.local) declare(sp.local.name); });
     }
   };
 
@@ -197,7 +214,7 @@ const KNOWN_DEAD = new Map([
  */
 function hostShadows(src) {
   const out = [];
-  const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true });
+  const ast = parseFile(src, { locations: true });
   const pat = (p, cb) => { if (!p) return;
     if (p.type === 'Identifier') cb(p);
     else if (p.type === 'ObjectPattern') p.properties.forEach((x) => pat(x.value || x.argument, cb));

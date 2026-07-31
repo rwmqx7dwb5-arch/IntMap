@@ -561,6 +561,32 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
     REAL['beta-dl-histb']=()=>_bmShot(3,14,48,true,ctx=>{ drawLand(ctx,()=>'rgba(0,0,0,0)','rgba(226,184,96,0.9)'); });
     REAL['dl-sealevel']=()=>_bmShot(5,4.9,52.2,false,ctx=>{ ctx.fillStyle='rgba(46,138,236,0.4)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#0a3d67'; ctx.font='700 11px sans-serif'; ctx.fillText('+2 m',8,16); });
     REAL['dl-planes']=()=>fetch('https://api.airplanes.live/v2/point/47/8/250').then(r=>r.json()).then(j=>{ const ac=(j&&Array.isArray(j.ac))?j.ac.filter(a=>a.lat!=null&&a.lon!=null):[]; if(ac.length<10) return null; return _bmShot(6,8,47,true,ctx=>{ ac.slice(0,700).forEach(a=>{ const x=X(+a.lon),y=Y(+a.lat); if(x<-3||x>W+3||y<-3||y>H+3) return; const alt=(+a.alt_baro||+a.alt_geom||0); const col=alt>30000?'#64d2ff':alt>10000?'#9bd1ff':'#ffd60a'; const r=((+a.track||0))*Math.PI/180; ctx.save(); ctx.translate(x,y); ctx.rotate(r); ctx.beginPath(); ctx.moveTo(0,-2.6); ctx.lineTo(1.7,2.2); ctx.lineTo(-1.7,2.2); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore(); }); }); }).catch(()=>null);
+    /* (#R184) satellites — the REAL catalogue, propagated by the layer's own SGP4 through
+       IntMapSatellites.snapshot(), so the tile shows where those objects actually are right now and
+       cannot drift away from what the layer draws. Sub-satellite points over the whole world, sized
+       by orbit regime, plus the ISS ground track when the station is in the loaded group. */
+    /* (#R184) THIS TILE NEVER TRIGGERS A LOAD — it only draws a catalogue that is ALREADY in hand.
+       The sibling `dl-planes` tile does fetch, and that is fine: airplanes.live is a high-volume
+       community ADS-B endpoint built to be polled. CelesTrak is not — it is a small, free, keyless
+       service that stopped answering this machine entirely after seven requests in five minutes, and
+       a preview tile that pulls a satellite catalogue on EVERY page load (measured: it did, in a
+       session that never opened the layer) is the app being a bad citizen of it for a thumbnail.
+       So the real-data preview is a reward for having used the layer, and everything else falls back
+       to the stylised sketch — which is what `null` here means. */
+    REAL['dl-sats']=()=>{ const A=window.IntMapSatellites;
+      if(!A||!A.snapshot||!A.state||!(A.state().catalogue>0)) return Promise.resolve(null);
+      return A.snapshot().then(fx=>{ if(!fx||fx.length<5) return null;
+        let trk=null; try{ const iss=fx.find(f=>/ZARYA|ISS \(/i.test(f.name||'')); if(iss) trk=A.groundTrack(iss.id); }catch(_){}
+        return _bmShot(1,0,10,true,ctx=>{
+          if(trk) trk.forEach(seg=>{ ctx.beginPath(); seg.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+            ctx.strokeStyle='rgba(255,210,63,0.55)'; ctx.lineWidth=1; ctx.stroke(); });
+          fx.slice(0,900).forEach(f=>{ const x=X(f.lng),y=Y(f.lat); if(x<-3||x>W+3||y<-3||y>H+3) return;
+            const r=f.altKm>30000?2.6:f.altKm>2000?2.0:1.5;
+            ctx.beginPath(); ctx.arc(x,y,r,0,7);
+            ctx.fillStyle=(f.sunlit===false)?'rgba(255,210,63,0.4)':'#ffd23f'; ctx.fill();
+            ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=0.4; ctx.stroke(); });
+        });
+      }).catch(()=>null); };
     REAL['dl-ec-cloud']=()=>{ const z=2,lon=140,lat=26,t=tXY(z,lon,lat),n=Math.pow(2,z),date='2024-06-15';
       const gu=x=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Fraction_Day/default/'+date+'/GoogleMapsCompatible_Level6/'+z+'/'+t.y+'/'+(((x%n)+n)%n)+'.png';
       return Promise.all([imgLoad(gu(t.x)),imgLoad(gu(t.x+1))]).then(gibs=>_bmShot(z,lon,lat,false,ctx=>{ ctx.globalAlpha=0.66; try{ if(gibs[0]) ctx.drawImage(gibs[0],0,0,W/2,H); if(gibs[1]) ctx.drawImage(gibs[1],W/2,0,W/2,H); }catch(_){} ctx.globalAlpha=1; })).catch(()=>null); };

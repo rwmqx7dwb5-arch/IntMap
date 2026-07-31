@@ -58,6 +58,11 @@ import '../js/companies.js';
 import '../js/stats-compare.js';
 import '../js/compare.js';
 import '../js/routing.js';
+/* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
+   alternative differences, and routing on OSM's record of a historical network). The three
+   capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
+   built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
+import '../js/routing-ops.js';
 import '../js/street-view.js';
 import '../js/flight-sim.js';
 import '../js/time-borders.js';
@@ -95,7 +100,17 @@ import '../js/solid3d.js';
 import '../js/volume3d.js';
 import '../js/view-controls.js';
 import '../js/drone-nav.js';
+/* (#R184) the ten operational capabilities that hang off js/drone-nav.js's #R174 seams — wind at
+   altitude, the radio link, restricted areas, the return-leg reserve, landing sites, route
+   comparison, return-to-home and multi-aircraft conflicts. After the planner, because it attaches
+   to the planner's published API. */
+import '../js/drone-ops.js';
 import '../js/aircraft-detail.js';
+/* (#R184) the LIVE SATELLITE layer and its detail card — the aircraft layer's shape applied to orbit.
+   satellites-live.js is the only module in this graph with a real npm dependency of its own
+   (satellite.js, MIT): SGP4/SDP4 is not something to hand-roll, and the reason is in the file. */
+import '../js/satellites-live.js';
+import '../js/satellite-detail.js';
 import '../js/auth-ui.js';
 import '../js/community.js';
 import '../js/satellite.js';
@@ -138,7 +153,7 @@ const MODULE_FACTORIES = [
   'toolPanel', 'authUi', 'community', 'satellite', 'aiCore', 'placeLabels',
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
-  'aircraftDetail',
+  'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);
