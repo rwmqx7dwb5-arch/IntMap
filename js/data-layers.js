@@ -2405,17 +2405,73 @@ window.IntMapModules.dataLayers=function(HOST){
       const c=GE().camera.getCenter(); return _groundAt(c.lng,c.lat); }catch(_){ return 0; } }
     /* An aeroplane silhouette in ground metres, centred on [lng,lat] and turned to `hdg` (°, clockwise from
        north). Same outline as the 2-D glyph so the layer does not change character when it goes 3-D. */
-    const _PLANE_OUTLINE=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],[-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
-    function planeRing(lng,lat,hdg,halfM){
+    /* (#R183) The airliner plan-form, shared by the 2-D icon and the 3-D silhouette so the layer does
+       not change character when it goes 3-D. Swept wing, two nacelles, tapered nose, separate
+       horizontal stabiliser. Units: half-length 19, +y aft (the screen convention the canvas glyph is
+       drawn in). DECLARED HERE, above every use — it was briefly written next to ensurePlaneIcons
+       instead, ~150 lines further down, which put this `const` in its own temporal dead zone and threw
+       ReferenceError while the factory was still being constructed, taking the whole data-layers
+       module with it. The same TDZ trap as #R167. */
+    const _PLANE_PLAN=[
+      [0,-20],[1.5,-16.5],[2.4,-9],                     /* nose → forward fuselage */
+      [2.6,-4.5],[18.5,5.5],[18.5,8.2],[9,6.6],         /* starboard wing, swept trailing edge */
+      [9.6,10.6],[7.4,10.9],[6.4,6.3],                  /* starboard engine nacelle */
+      [2.6,5.6],[2.4,11.5],                             /* wing root → rear fuselage */
+      [7.2,16.4],[7.2,18.4],[0,16.2],                   /* starboard tailplane */
+      [-7.2,18.4],[-7.2,16.4],[-2.4,11.5],              /* port tailplane */
+      [-2.6,5.6],[-6.4,6.3],[-7.4,10.9],[-9.6,10.6],    /* port engine nacelle */
+      [-9,6.6],[-18.5,8.2],[-18.5,5.5],[-2.6,-4.5],     /* port wing */
+      [-2.4,-9],[-1.5,-16.5]
+    ];
+    const _PLANE_OUTLINE=_PLANE_PLAN;
+    /* Turn a list of aircraft-frame offsets into a lng/lat ring. `pts` are in the SCREEN convention the
+       2-D glyph uses (+y = aft), in units where the half-length is 19; `halfM` is that half-length in
+       real ground metres. Shared by the whole-aircraft silhouette and by every 3-D part below. */
+    function planeRingPts(lng,lat,hdg,halfM,pts){
       const r=Math.PI/180, s=halfM/19, th=(+hdg||0)*r, cs=Math.cos(th), sn=Math.sin(th);
       const mLat=110574, mLng=(111320*Math.cos(lat*r))||1, out=[];
-      for(const p of _PLANE_OUTLINE){
+      for(const p of pts){
         /* the outline is drawn nose-up in screen space (+y = south); rotate it into a compass track */
         const ex=p[0]*s, ey=-p[1]*s;                          /* east, north offsets in metres, track 0 */
         const e=ex*cs+ey*sn, n=-ex*sn+ey*cs;
         out.push([lng+e/mLng, lat+n/mLat]);
       }
       out.push(out[0]); return out; }
+    function planeRing(lng,lat,hdg,halfM){ return planeRingPts(lng,lat,hdg,halfM,_PLANE_OUTLINE); }
+    /* (#R183) 「立体的に見たときの感じもリアルに。」
+       #R172 gave the aircraft their real ALTITUDE, which was the important half. What stood there was
+       still one flat plan-view polygon given a uniform thickness — a cookie-cutter plate. Tilt the map
+       and it read as a paper cut-out lying in the air, because every part of it was the same height:
+       a wing and a tailfin are simply not at the same level on an aeroplane.
+       `fill-extrusion` is still the only primitive with a real altitude in MapLibre 5.24 (#R172
+       established that `symbol-z-offset` does not exist in this build), but nothing said the body had
+       to be ONE extrusion. It is now four, each with its own base and top:
+           fuselage      a narrow tapered body, the full length, the tallest solid part
+           wing          a wide thin slab low on the fuselage, swept, with the engines hung on it
+           stabiliser    a small wide slab near the tail, above the wing line
+           fin           a narrow slab standing well above everything else
+       From above that silhouette is unchanged. From a tilted camera it has structure — the fin
+       catches the light against the sky, the wings sit below the spine — which is what "looks like a
+       real aircraft in 3-D" actually means here.
+       Cost is bounded by HOW MANY aircraft are on screen, not by zoom — and getting that axis wrong
+       is worth recording. The first version gated the parts on the glyph's on-screen size, which
+       sounds right and is useless here: `half` is clamped to a 26-px minimum at EVERY zoom (that is
+       what makes an aircraft visible at all at z4), so half/mpp is pinned at 13 px for every zoom
+       below ~15 and the detailed body simply never appeared. Measured over real traffic at z13: 53
+       aircraft, 91 features — 53 silhouettes and 38 posts, no parts at all. The quantity that
+       actually varies is the aircraft count, so that is what the budget is on. */
+    const _P_FUSELAGE=[[0,-20],[1.7,-14],[2.4,-6],[2.4,9],[1.9,13.5],[0,15.5],[-1.9,13.5],[-2.4,9],[-2.4,-6],[-1.7,-14]];
+    const _P_WING=[[2.4,-4.5],[18.5,5.5],[18.5,8.2],[9,6.6],[9.6,10.6],[7.4,10.9],[6.4,6.3],[2.4,5.6],
+                   [-2.4,5.6],[-6.4,6.3],[-7.4,10.9],[-9.6,10.6],[-9,6.6],[-18.5,8.2],[-18.5,5.5],[-2.4,-4.5]];
+    const _P_STAB=[[2.0,11.2],[7.2,16.4],[7.2,18.4],[0,16.2],[-7.2,18.4],[-7.2,16.4],[-2.0,11.2]];
+    const _P_FIN=[[0.9,10.5],[1.0,17.6],[0.2,18.6],[-0.2,18.6],[-1.0,17.6],[-0.9,10.5]];
+    /* Heights as a fraction of the HALF-LENGTH, so the proportions hold at every zoom. An airliner is
+       about 0.3 of its length tall to the top of the fin, which is where the fin's top comes out. */
+    const _P_LEVELS={ fuselage:[0.00,0.26], wing:[0.06,0.12], stab:[0.17,0.22], fin:[0.19,0.60] };
+    /* Above this many aircraft the body falls back to the single silhouette: 4 polygons each would be
+       7,200 extrusions at the feed's 1,800 cap, and at that density they overlap into a smear anyway. */
+    const DETAIL_MAX_AIRCRAFT=900;
+    const _PARTS=[{k:'fuselage',p:_P_FUSELAGE},{k:'wing',p:_P_WING},{k:'stab',p:_P_STAB},{k:'fin',p:_P_FIN}];
     function squareRing(lng,lat,halfM){ const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(lat*r))||1;
       const dx=halfM/mLng, dy=halfM/mLat;
       return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
@@ -2426,6 +2482,9 @@ window.IntMapModules.dataLayers=function(HOST){
       const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
       const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
       const thick=Math.max(30, 2.2*mpp);               /* give the glyph body so it is not a zero-height sheet */
+      /* (#R183) see the note by _P_LEVELS — bounded by aircraft count, which is the quantity that
+         actually varies, not by zoom, which the 26-px size floor pins. */
+      const detailed=list.length<=DETAIL_MAX_AIRCRAFT;
       const feats=[];
       for(const d of list){
         if(d.lng==null||d.lat==null) continue;
@@ -2435,17 +2494,47 @@ window.IntMapModules.dataLayers=function(HOST){
           acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
           vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
           squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0), category:(d.category!=null?d.category:null) };
-        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]}, properties:props });
+        if(detailed){
+          /* (#R183) four parts at four heights — see the note by _P_LEVELS. Every part carries the
+             SAME properties object shape, so a click on a wing identifies the same aircraft as a
+             click on the fin, and the existing pick/hover path needs no change. */
+          for(const part of _PARTS){
+            const lv=_P_LEVELS[part.k];
+            const b=alt+lv[0]*half, t=alt+lv[1]*half;
+            feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,part.p)]},
+              properties:Object.assign({},props,{ alt:b, top:Math.max(b+0.5,t), part:part.k }) });
+          }
+        } else {
+          feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]}, properties:props });
+        }
+        /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
+           fallback resolves a rendered feature back to an aircraft through `properties.icao24`
+           (see _planesClear), and the post had only {type, alt, top, post} — so a click that landed
+           on the hairline under an aeroplane found a feature, failed to match it to anything in
+           planesData, and selected nothing. The post IS the aircraft's footprint; saying so is what
+           makes "click the post to select it" true by construction rather than by luck. */
         if(!d.onGround&&alt>0) feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[squareRing(d.lng,d.lat,post)]},
-          properties:{ type:d.type, alt:0, top:alt, post:1 } });
+          properties:Object.assign({},props,{ alt:0, top:alt, post:1 }) });
       }
       try{ GE().layers.setSourceData(PLANE3D_SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       /* what was actually handed over, kept here rather than read back out of the renderer: MapLibre 5 does
          not expose a GeoJSON source's data, and a reader that guessed at its internals reported "0 features"
          while the screen was full of aircraft. */
-      _planes3DStats={ features:feats.length,
-        lifted:feats.filter(f=>!f.properties.post&&(+f.properties.alt||0)>0).length,
-        maxAlt:Math.round(feats.reduce((m2,f)=>(!f.properties.post&&+f.properties.alt>m2)?+f.properties.alt:m2,0)),
+      /* (#R183) `lifted` used to be "features that are off the ground", which was the same thing as
+         "aircraft in the air" only while one aircraft was exactly one feature. It is four now when the
+         body is detailed, so counting features would have quietly reported 4× the aircraft — the
+         #R181 lesson about suspecting what a counter counts. Aircraft are counted by their fuselage
+         (or by the single silhouette), and the raw feature total is kept under its own name. */
+      const bodies=feats.filter(f=>!f.properties.post&&(!f.properties.part||f.properties.part==='fuselage'));
+      /* maxAlt is THE AIRCRAFT'S ALTITUDE, and it has to be read off the fuselage for the same reason
+         `lifted` counts fuselages: every other part is deliberately offset ABOVE it. Taking the max
+         over all features returned the base of the tallest TAIL FIN — at z9 that is +0.19 × half,
+         about 485 m — so a jet at 36,000 ft reported 11,458 m instead of 10,973 m. Caught by
+         tests/r172, r173 and r174, all three of which are really the same assertion. `_P_LEVELS`
+         pins fuselage's base at 0.00 of the half-length, so this is exactly the reported altitude. */
+      _planes3DStats={ features:feats.length, aircraft:bodies.length, detailed:detailed,
+        lifted:bodies.filter(f=>(+f.properties.alt||0)>0).length,
+        maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.alt||0),0)),
         offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
@@ -2487,19 +2576,49 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
        rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
+    /* (#R183) 「Live aircraft trafficの飛行機アイコンはもっと目立つものに。」
+       Three separate reasons the old glyph was hard to see, only one of which was its size:
+
+       1. IT WAS RASTERISED AT 1× ON A 2× SCREEN. `addImage` was handed a 44-px ImageData with no
+          pixelRatio, so MapLibre treated 44 canvas pixels as 44 CSS pixels and the GPU upscaled the
+          bitmap on every HiDPI display — a soft, smeared aeroplane. This is the same defect family as
+          the half-resolution rasters of #R178/#R179/#R180: the pixels were being thrown away at the
+          door. The icon is now drawn at devicePixelRatio and declared with it, so it is sharp at the
+          SAME on-screen size — sharper, not bigger.
+       2. NO SEPARATION FROM THE MAP. A flat fill with a 1.6-px white line vanishes over bright
+          satellite imagery, over snow, over a pale basemap. There is now a soft dark drop shadow
+          under the silhouette and a heavier white rim above it, so the glyph carries its own contrast
+          and reads on any background instead of depending on what is behind it.
+       3. THE SHAPE WAS A PAPER DART. Straight leading edges, no engines, no separate tailplane. The
+          outline below is a real airliner plan-form — swept wing, two nacelles, a tapered nose and a
+          distinct horizontal stabiliser — so it is recognisable as an aircraft at 30 px instead of
+          just as "an arrow".
+
+       The size ramp is raised too (0.4→0.52 at z2, 0.78→1.0 at z9), which is the part that was
+       actually asked for; the other three are why it was faint even at the old size. */
     function ensurePlaneIcons(){
       if(!GE().hasRenderer()) return;
+      const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
       const make=(color)=>{
-        const s=44, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
-        const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
-        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
-        const P=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],[-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
-        ctx.beginPath(); P.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fill(); ctx.stroke();
-        return ctx.getImageData(0,0,s,s);
+        const s=52, cv=document.createElement('canvas'); cv.width=s*dpr; cv.height=s*dpr;
+        const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.translate(s/2,s/2);
+        const path=()=>{ ctx.beginPath(); _PLANE_PLAN.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); };
+        /* the shadow first, so it sits UNDER everything and never tints the body */
+        ctx.save(); ctx.shadowColor='rgba(0,0,0,0.55)'; ctx.shadowBlur=4.5; ctx.shadowOffsetY=1.6;
+        ctx.fillStyle='rgba(0,0,0,0.5)'; path(); ctx.fill(); ctx.restore();
+        /* white rim, then the body drawn inside it */
+        ctx.lineJoin='round'; ctx.lineCap='round';
+        ctx.strokeStyle='rgba(255,255,255,0.98)'; ctx.lineWidth=2.6; path(); ctx.stroke();
+        ctx.fillStyle=color; path(); ctx.fill();
+        /* a hairline of the body colour, darkened, along the rim keeps the shape crisp when the white
+           halo lands on white ground */
+        ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=0.9; path(); ctx.stroke();
+        return { data:ctx.getImageData(0,0,s*dpr,s*dpr), pixelRatio:dpr };
       };
-      try{ if(!GE().scene.hasImage('plane-civ')) GE().scene.addImage('plane-civ',make('#1e90ff')); }catch(_){}
-      try{ if(!GE().scene.hasImage('plane-mil')) GE().scene.addImage('plane-mil',make('#ff3b30')); }catch(_){}
-      try{ if(!GE().scene.hasImage('plane-sel')) GE().scene.addImage('plane-sel',make('#ffd23f')); }catch(_){}   /* (#R173) the clicked aircraft */
+      const add=(id,color)=>{ try{ if(!GE().scene.hasImage(id)){ const m=make(color); GE().scene.addImage(id,m.data,{pixelRatio:m.pixelRatio}); } }catch(_){} };
+      add('plane-civ','#1e90ff');
+      add('plane-mil','#ff3b30');
+      add('plane-sel','#ffd23f');   /* (#R173) the clicked aircraft */
     }
     function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-US'); }catch(_){ return ''; } }
     function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec));
@@ -2567,7 +2686,7 @@ window.IntMapModules.dataLayers=function(HOST){
         GE().layers.add({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
           visibility:'none',
           'icon-image':['case',['==',['get','sel'],1],'plane-sel',['match',['get','type'],'military','plane-mil','plane-civ']],
-          'icon-size':['interpolate',['linear'],['zoom'],2,0.4,5,0.58,9,0.78],
+          'icon-size':['interpolate',['linear'],['zoom'],2,0.52,5,0.74,9,1.0],
           'icon-rotate':['coalesce',['get','heading'],0],
           'icon-rotation-alignment':'map',
           'icon-allow-overlap':true,
@@ -3113,7 +3232,11 @@ window.IntMapModules.dataLayers=function(HOST){
           ||planesData.find(d=>((d.callsign||'')+' '+(d.reg||'')).toUpperCase().indexOf(s2)>=0);
         return hit?hit.icao24:null; },
       state:()=>{ const s2=_planes3DStats;
-        return { on:planes3DOn(), planes:planesData.length, features:s2.features, lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
+        /* (#R183) `aircraft` and `detailed` are surfaced because `features` stopped meaning "one per
+           aircraft" the moment the body became four extrusions — a reader that only sees `features`
+           cannot tell 3 aircraft drawn in detail from 14 drawn plainly. */
+        return { on:planes3DOn(), planes:planesData.length, features:s2.features, aircraft:s2.aircraft, detailed:s2.detailed,
+          lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
           visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
           flatVisible:(()=>{ try{ return !!(GE().layers.has('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
           selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
