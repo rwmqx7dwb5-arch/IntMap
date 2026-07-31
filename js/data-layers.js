@@ -2507,8 +2507,14 @@ window.IntMapModules.dataLayers=function(HOST){
         } else {
           feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]}, properties:props });
         }
+        /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
+           fallback resolves a rendered feature back to an aircraft through `properties.icao24`
+           (see _planesClear), and the post had only {type, alt, top, post} — so a click that landed
+           on the hairline under an aeroplane found a feature, failed to match it to anything in
+           planesData, and selected nothing. The post IS the aircraft's footprint; saying so is what
+           makes "click the post to select it" true by construction rather than by luck. */
         if(!d.onGround&&alt>0) feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[squareRing(d.lng,d.lat,post)]},
-          properties:{ type:d.type, alt:0, top:alt, post:1 } });
+          properties:Object.assign({},props,{ alt:0, top:alt, post:1 }) });
       }
       try{ GE().layers.setSourceData(PLANE3D_SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       /* what was actually handed over, kept here rather than read back out of the renderer: MapLibre 5 does
@@ -2520,9 +2526,15 @@ window.IntMapModules.dataLayers=function(HOST){
          #R181 lesson about suspecting what a counter counts. Aircraft are counted by their fuselage
          (or by the single silhouette), and the raw feature total is kept under its own name. */
       const bodies=feats.filter(f=>!f.properties.post&&(!f.properties.part||f.properties.part==='fuselage'));
+      /* maxAlt is THE AIRCRAFT'S ALTITUDE, and it has to be read off the fuselage for the same reason
+         `lifted` counts fuselages: every other part is deliberately offset ABOVE it. Taking the max
+         over all features returned the base of the tallest TAIL FIN — at z9 that is +0.19 × half,
+         about 485 m — so a jet at 36,000 ft reported 11,458 m instead of 10,973 m. Caught by
+         tests/r172, r173 and r174, all three of which are really the same assertion. `_P_LEVELS`
+         pins fuselage's base at 0.00 of the half-length, so this is exactly the reported altitude. */
       _planes3DStats={ features:feats.length, aircraft:bodies.length, detailed:detailed,
         lifted:bodies.filter(f=>(+f.properties.alt||0)>0).length,
-        maxAlt:Math.round(feats.reduce((m2,f)=>(!f.properties.post&&+f.properties.alt>m2)?+f.properties.alt:m2,0)),
+        maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.alt||0),0)),
         offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
@@ -3220,7 +3232,11 @@ window.IntMapModules.dataLayers=function(HOST){
           ||planesData.find(d=>((d.callsign||'')+' '+(d.reg||'')).toUpperCase().indexOf(s2)>=0);
         return hit?hit.icao24:null; },
       state:()=>{ const s2=_planes3DStats;
-        return { on:planes3DOn(), planes:planesData.length, features:s2.features, lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
+        /* (#R183) `aircraft` and `detailed` are surfaced because `features` stopped meaning "one per
+           aircraft" the moment the body became four extrusions — a reader that only sees `features`
+           cannot tell 3 aircraft drawn in detail from 14 drawn plainly. */
+        return { on:planes3DOn(), planes:planesData.length, features:s2.features, aircraft:s2.aircraft, detailed:s2.detailed,
+          lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
           visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
           flatVisible:(()=>{ try{ return !!(GE().layers.has('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
           selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
