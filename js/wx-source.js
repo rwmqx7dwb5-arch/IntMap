@@ -47,8 +47,10 @@
  *    the UI says which one it is showing. Standing instruction 4: no number may quietly change
  *    meaning because its source changed.
  *  · SUN TIMES WITH NO NETWORK AT ALL. Sunrise/sunset was a forecast-host request for something that
- *    is pure astronomy. It is computed here (the standard sunrise equation, ~1 min accuracy), so the
- *    sun widget can no longer be taken down by anyone's quota.
+ *    is pure astronomy. It is computed here, so the sun widget can no longer be taken down by
+ *    anyone's quota. Accuracy is stated where the function is, and it is the MEASURED figure
+ *    (≤4.7 min against MET Norway's Sunrise 3.0 over 70 probes) rather than the "one minute" the
+ *    textbook claims for the simplified equation of centre.
  *
  *  Sources & terms: Open-Meteo (CC-BY 4.0, keyless) and MET Norway Locationforecast 2.0
  *  (NLOD / CC-BY 4.0, keyless) — both already declared in js/reference-data.js and js/legal.js.
@@ -93,6 +95,18 @@
      `{"error":true}` flag are both checked, so a caller can only ever receive real data or null. */
   var cache = {};        /* url -> {t, j} */
   var inflight = {};     /* url -> Promise */
+  /* Is this URL actually Open-Meteo? Asked by HOST, not by substring. `url.indexOf('open-meteo.com')`
+     also matches https://evil.example/?x=open-meteo.com, and the answer decides whether a circuit
+     breaker trips for the rest of the day — CodeQL flagged the substring form
+     (js/incomplete-url-substring-sanitization) and it was right to. Every Open-Meteo product lives on
+     its own subdomain (api / air-quality-api / archive-api / marine-api / geocoding-api), so the test
+     is the registrable domain plus a dot-boundary, never a bare `includes`. */
+  function isOpenMeteo(url) {
+    try {
+      var h = new URL(url, (typeof location !== 'undefined' && location.href) || 'https://localhost/').hostname.toLowerCase();
+      return h === 'open-meteo.com' || h.slice(-15) === '.open-meteo.com';
+    } catch (_) { return false; }
+  }
   function guardedJSON(url, ttlMs) {
     var ttl = (ttlMs == null) ? 300000 : ttlMs;
     var hit = cache[url];
@@ -106,10 +120,10 @@
           var reason = (j && j.reason) || ('HTTP ' + r.status);
           /* Open-Meteo says which kind of 429 it is, in prose. "Daily API request limit exceeded"
              is the one that lasts all day; "Minutely"/"Hourly" recover on their own. */
-          if (/open-meteo\.com/.test(url)) _trip(r.status === 429 && /dai(ly|l)/i.test(reason), reason);
+          if (isOpenMeteo(url)) _trip(r.status === 429 && /dai(ly|l)/i.test(reason), reason);
           return null;
         }
-        if (/open-meteo\.com/.test(url)) _clear();
+        if (isOpenMeteo(url)) _clear();
         cache[url] = { t: Date.now(), j: j };
         return j;
       });

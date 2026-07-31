@@ -27,6 +27,12 @@ function loadWx(fetchImpl) {
   const fn = new Function('window', 'localStorage', 'fetch', read('js/wx-source.js') + '\nreturn window.IntMapWx;');
   return fn(win, win.localStorage, fetchImpl);
 }
+// Match the HOST, not a substring: `url.includes('open-meteo.com')` also matches
+// https://evil.example/?x=open-meteo.com, which is the defect CodeQL flags as
+// js/incomplete-url-substring-sanitization — and the same shape was in wx-source.js's own
+// breaker, where the answer decides whether a source is locked out for the rest of the day.
+const isOM = (u) => { const h = new URL(u).hostname.toLowerCase();
+  return h === 'open-meteo.com' || h.endsWith('.open-meteo.com'); };
 const res = (status, body) => Promise.resolve({
   ok: status >= 200 && status < 300,
   status,
@@ -40,7 +46,7 @@ test('R183: an Open-Meteo 429 error body is NOT accepted as data (the whole bug)
   const quota = { error: true, reason: 'Daily API request limit exceeded. Please try again tomorrow.' };
   let met = 0;
   const Wx = loadWx((url) => {
-    if (url.includes('open-meteo.com')) return res(429, quota);
+    if (isOM(url)) return res(429, quota);
     met++;
     return res(200, {
       properties: {
@@ -61,7 +67,7 @@ test('R183: an Open-Meteo 429 error body is NOT accepted as data (the whole bug)
 test('R183: a daily-limit 429 trips the breaker until the next UTC midnight, and stops re-asking', async () => {
   let om = 0;
   const Wx = loadWx((url) => {
-    if (url.includes('open-meteo.com')) { om++; return res(429, { error: true, reason: 'Daily API request limit exceeded.' }); }
+    if (isOM(url)) { om++; return res(429, { error: true, reason: 'Daily API request limit exceeded.' }); }
     return res(200, { properties: { timeseries: [{ time: '2026-07-30T23:00:00Z', data: { instant: { details: { air_temperature: 1 } } } }] } });
   });
   await Wx.point(10, 10, { days: 1 });
@@ -88,7 +94,7 @@ test('R183: MET\'s clear-sky UV never lands in the all-sky field', async () => {
   // Open-Meteo's uv_index is all-sky; MET publishes ultraviolet_index_clear_sky, an upper bound
   // that ignores cloud. Writing one into the other would make the number change meaning when the
   // source changed — the card says "clear sky" precisely because these stay apart.
-  const Wx = loadWx((url) => url.includes('open-meteo.com')
+  const Wx = loadWx((url) => isOM(url)
     ? res(429, { error: true, reason: 'Daily API request limit exceeded.' })
     : res(200, { properties: { timeseries: [{ time: '2026-07-30T23:00:00Z', data: { instant: { details: { air_temperature: 30, ultraviolet_index_clear_sky: 2.9 } } } }] } }));
   const j = await Wx.point(35.68, 139.76, { uv: true });
@@ -101,7 +107,7 @@ test('R183: the MET series is bucketed by LOCAL day, not by the UTC date in the 
   // Measured bug: at 08:00 JST the UTC-date bucket held ONE hour, so the UV "daily max" came back
   // equal to the current reading and the weather card showed H 32 / L 32.
   const mk = (t, temp, uv) => ({ time: t, data: { instant: { details: { air_temperature: temp, ultraviolet_index_clear_sky: uv } } } });
-  const Wx = loadWx((url) => url.includes('open-meteo.com')
+  const Wx = loadWx((url) => isOM(url)
     ? res(429, { error: true, reason: 'Daily API request limit exceeded.' })
     : res(200, { properties: { timeseries: [
         mk('2026-07-30T23:00:00Z', 28, 0.5),   // 08:00 JST on the 31st
