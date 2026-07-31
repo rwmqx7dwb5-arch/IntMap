@@ -1139,6 +1139,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
   window.IntMapModules.droneNav(IM_HOST);
+  /* (#R184) …and the operational layer on top of it (window.IntMapDroneOps): the wind field and the
+     hazard sources that #R174 left as declared-but-unfilled seams, plus route comparison,
+     return-to-home and the multi-aircraft conflict check. It registers itself INTO the planner, so
+     the planner keeps working unchanged if this file is absent. */
+  window.IntMapModules.droneOps(IM_HOST);
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js. */
