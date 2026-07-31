@@ -105,7 +105,9 @@ window.IntMapWorldBase=(function(){
         /* {z}/{x}/{y} — the order the source template below asks for */
         return tile(+m[1],+m[2],+m[3]).then(d=>({data:d}));
       });
-      protoOn=!!ok||true;
+      /* Both engines answer false when they could not register it, and `state().protocol` is read by
+         the tests — so report what happened rather than asserting success. */
+      protoOn=!!ok;
     }catch(_){ return false; }
     return protoOn;
   }
