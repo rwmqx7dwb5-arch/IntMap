@@ -255,3 +255,52 @@ test('R183: the "lifted" counter counts aircraft, not the parts they are made of
   assert.match(DL, /part\s*===\s*'fuselage'/, 'aircraft are counted by their fuselage');
   assert.match(DL, /aircraft:\s*bodies\.length/, 'and reported under their own name');
 });
+
+/* ── js/volume3d.js — more than one body ──────────────────────────────────────────────────────── */
+const V3D = read('js/volume3d.js');
+const TP = read('js/tool-panel.js');
+
+test('R183: the volume tool keeps a STORE of bodies, each with its own layers', () => {
+  // The old limitation was not a rendering one — the engine's solid contract is already keyed by
+  // layer id — it was that `ring`/`baseM`/`topM` were single variables, so a second body could only
+  // destroy the first. Per-object layer ids are what make several bodies drawable at once.
+  assert.match(V3D, /let saved=\[\]/, 'a store of saved bodies');
+  assert.match(V3D, /const SS=id=>|SL=id=>|SB=id=>/, 'layer ids are derived per object, not constant');
+  for (const fn of ['commit', 'selectObj', 'setObjVisible', 'removeObj', 'updateObj', 'pickAt']) {
+    assert.ok(V3D.includes('function ' + fn + '('), `${fn} exists`);
+  }
+  assert.match(V3D, /totalVolumeM3/, 'the running total is part of the contract, not the panel');
+});
+
+test('R183: committing keeps the settings and clears only the footprint', () => {
+  // Re-entering the altitudes and colour for every body in a series is the friction this feature
+  // exists to remove — the same reasoning as #R18 keeping the line-of-sight numbers across sites.
+  const body = V3D.slice(V3D.indexOf('function commit('), V3D.indexOf('function find('));
+  assert.match(body, /ring=\[\]/, 'the footprint is cleared');
+  assert.doesNotMatch(body, /\bbaseM=/, 'the altitude band is NOT reset');
+  assert.doesNotMatch(body, /\bcolor=/, 'the colour is NOT reset');
+});
+
+test('R183: a hidden body does not swallow a click meant for the one underneath', () => {
+  const pick = V3D.slice(V3D.indexOf('function pickAt('), V3D.indexOf('function pickAt(') + 400);
+  assert.match(pick, /visible===false/, 'hidden bodies are skipped');
+  assert.match(pick, /for\(let i=saved\.length-1;i>=0;i--\)/, 'newest first — the one drawn last is on top');
+});
+
+test('R183: each saved body reads the ground under ITS OWN centroid', () => {
+  // With 3-D terrain on, the renderer's metres are above the GROUND. Two bodies can sit on opposite
+  // sides of a mountain, so one shared offset would put one of them at the wrong altitude — which is
+  // exactly the defect this whole tool exists to prevent (see the file header).
+  assert.match(V3D, /function objGround\(o\)/);
+  assert.match(V3D, /o\.ground=objGround\(o\)/);
+});
+
+test('R183: editing a saved body refreshes text in place, never rebuilding the field being typed in', () => {
+  // #R171's defect: the panel re-renders on every keystroke, and rebuilding the inputs throws the
+  // caret out of the one under the cursor.
+  const list = TP.slice(TP.indexOf('const v3dList='), TP.indexOf('sync();', TP.indexOf('const v3dList=')));
+  assert.match(list, /const retext=/, 'a text-only refresh exists');
+  const applyO = list.slice(list.indexOf('const applyO='), list.indexOf('const applyO=') + 200);
+  assert.ok(applyO.includes('retext()'), 'typing refreshes text only');
+  assert.ok(!applyO.includes('v3dList()'), 'typing must NOT rebuild the field under the cursor');
+});

@@ -153,7 +153,13 @@ window.IntMapModules.toolPanel=function(HOST){
            body, full stop. In its place, the thing a clicked polygon actually lacked: an END. */
         +`<button class="ai-action-btn" id="v3d-seal" style="display:none;"></button>`
         +`<div class="tp-hint" id="v3d-hint">${HINTS[st.shape]||HINTS.polygon}</div>`
-        +`<button class="ai-action-btn" id="v3d-keep" style="display:none;">✓ ${_L('Keep on map','地図に残す','Auf der Karte behalten','Оставить на карте','Mantener en el mapa')}</button>`;
+        /* (#R183) 「完了した立体を保存して次を描ける」 — the draft becomes a saved object and the
+           footprint clears, keeping the altitudes/colour so a series is quick to draw. */
+        +`<button class="ai-action-btn" id="v3d-save" style="display:none;">＋ ${_L('Save & draw next','保存して次を描く','Speichern & nächstes','Сохранить и следующий','Guardar y dibujar otro')}</button>`
+        +`<button class="ai-action-btn" id="v3d-keep" style="display:none;">✓ ${_L('Keep on map','地図に残す','Auf der Karte behalten','Оставить на карте','Mantener en el mapa')}</button>`
+        /* the saved-object list. Rebuilt in place by v3dList() so typing in a neighbouring field
+           never rebuilds the whole panel out from under the cursor (the #R171 defect). */
+        +`<div id="v3d-objs"></div>`;
     } else if(HOST.toolMode==='radius'){
       let opts=`<option value="">${HOST.t('presetNone')}</option>`;
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[HOST.lang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
@@ -255,6 +261,71 @@ window.IntMapModules.toolPanel=function(HOST){
           sb.textContent=st.sealed
             ? '✎ '+_L('Resume drawing','描画を再開','Weiterzeichnen','Продолжить рисование','Seguir dibujando')
             : '✓ '+_L('Finish drawing','描画を完了','Zeichnen beenden','Завершить рисование','Terminar el dibujo'); }
+        const sv=p.querySelector('#v3d-save'); if(sv) sv.style.display=st.points>=3?'':'none';
+        v3dList();
+      };
+      /* (#R183) THE SAVED-OBJECT LIST — 「オブジェクト一覧から選択・非表示・削除／後から高度・色・
+         透明度を編集／体積値を常時表示／クリックして選択」.
+         Rebuilt in place inside #v3d-objs rather than by re-rendering the panel, for the reason #R171
+         established: the panel re-renders on every keystroke in a neighbouring field, and rebuilding
+         it would move the cursor out of whatever the user is typing in. The volume of each body and
+         the running total are shown on every refresh, so "体積値を常時表示" is satisfied by the list
+         itself and not by having to select something. */
+      const v3dList=()=>{ if(!V||!V.list) return; const box=p.querySelector('#v3d-objs'); if(!box) return;
+        const objs=V.list();
+        if(!objs.length){ box.innerHTML=''; return; }
+        const sel=V.selected();
+        const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        box.innerHTML=`<div class="tp-sub" style="margin-top:8px;">${objs.length} ${_L('objects','オブジェクト','Objekte','объектов','objetos')}`
+          +` · ${_L('total','合計','gesamt','всего','total')} <b style="color:var(--text-main);">${V.fmtVolumeOf(V.totalVolumeM3())}</b></div>`
+          +`<div class="radius-list">`+objs.map(o=>
+            `<div class="radius-list-item${o.id===sel?' v3d-sel':''}" data-v3d="${o.id}" style="${o.id===sel?'outline:1.5px solid var(--primary-color);border-radius:8px;':''}cursor:pointer;">`
+            +`<span class="rl-sw" style="background:${o.color};${o.visible?'':'opacity:0.25;'}"></span>`
+            +`<span class="rl-main" style="${o.visible?'':'opacity:0.45;'}">${esc(o.name)}<br>`
+            +`<span style="font-size:10px;color:var(--text-muted);">${o.band} · ${o.volume}</span></span>`
+            +`<button class="rl-del" data-v3dvis="${o.id}" title="${o.visible?_L('Hide','非表示','Ausblenden','Скрыть','Ocultar'):_L('Show','表示','Einblenden','Показать','Mostrar')}">${o.visible?'👁':'⚊'}</button>`
+            +`<button class="rl-del" data-v3ddel="${o.id}" title="${_L('Delete','削除','Löschen','Удалить','Eliminar')}">✕</button></div>`).join('')
+          +`</div>`
+          +(sel?(()=>{ const o=objs.find(x=>x.id===sel); if(!o) return '';
+              /* editing a SAVED body afterwards: the same three controls the draft has, bound to it */
+              return `<div class="v3d-alt" style="margin-top:6px;">`
+                +`<label><span>${_L('from','下端','von','от','desde')}</span><input type="number" id="v3d-o-base" step="${V.fieldStep()}" inputmode="decimal" value="${V.fieldValue(o.low)}"></label>`
+                +`<label><span>${_L('to','上端','bis','до','hasta')}</span><input type="number" id="v3d-o-top" step="${V.fieldStep()}" inputmode="decimal" value="${V.fieldValue(o.high)}"></label></div>`
+                +`<div class="v3d-style"><span class="v3d-slbl">${HOST.t('color')}</span>`
+                +`<input type="color" id="v3d-o-color" value="${o.color}"></div>`
+                +`<div class="v3d-style"><span class="v3d-slbl">${HOST.t('opacity')}</span>`
+                +`<input type="range" id="v3d-o-op" min="0.05" max="0.95" step="0.05" value="${o.opacity}" style="flex:1;min-width:0;accent-color:var(--primary-color);"></div>`; })():'')
+          +`<button class="tp-clear" id="v3d-clearall" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;
+        box.querySelectorAll('[data-v3d]').forEach(el=>{ el.onclick=(ev)=>{ if(ev.target.closest('button')) return;
+          V.select(el.getAttribute('data-v3d')===V.selected()?null:el.getAttribute('data-v3d')); v3dList(); }; });
+        box.querySelectorAll('[data-v3dvis]').forEach(b=>{ b.onclick=(ev)=>{ ev.stopPropagation(); V.setObjVisible(b.getAttribute('data-v3dvis')); v3dList(); }; });
+        box.querySelectorAll('[data-v3ddel]').forEach(b=>{ b.onclick=(ev)=>{ ev.stopPropagation(); V.removeObj(b.getAttribute('data-v3ddel')); v3dList(); }; });
+        const ca=box.querySelector('#v3d-clearall'); if(ca) ca.onclick=()=>{ V.removeAll(); v3dList(); };
+        const ob=box.querySelector('#v3d-o-base'), ot=box.querySelector('#v3d-o-top'),
+              oc=box.querySelector('#v3d-o-color'), oo=box.querySelector('#v3d-o-op');
+        /* the same "not a number yet" discipline the draft's fields use (#R172): '' / '-' / '.' are
+           states a real keyboard passes through and must reach the model unconverted */
+        const _toM2=(raw)=>{ const s=String(raw==null?'':raw).trim();
+          if(s===''||s==='-'||s==='+'||s==='.'||s==='-.') return s;
+          const n=Number(s); return isFinite(n)?V.fromUnit(n):s; };
+        /* Refresh only the DERIVED TEXT while a field is being typed into. Calling v3dList() here
+           would rebuild these very inputs and throw the caret out of the one under the cursor —
+           #R171's defect, which is why the draft's fields refresh in place too. */
+        const retext=()=>{ const now=V.list(); const hd=box.querySelector('.tp-sub');
+          if(hd) hd.innerHTML=`${now.length} ${_L('objects','オブジェクト','Objekte','объектов','objetos')}`
+            +` · ${_L('total','合計','gesamt','всего','total')} <b style="color:var(--text-main);">${V.fmtVolumeOf(V.totalVolumeM3())}</b>`;
+          now.forEach(o=>{ const row=box.querySelector('[data-v3d="'+o.id+'"] .rl-main span'); if(row) row.textContent=o.band+' · '+o.volume; }); };
+        const applyO=()=>{ V.updateObj(sel,{base:_toM2(ob&&ob.value),top:_toM2(ot&&ot.value)}); retext(); };
+        if(ob) ob.oninput=applyO; if(ot) ot.oninput=applyO;
+        /* …and settle the field to what the model actually holds on blur/Enter, where the clamp
+           becomes visible and can never fight the keyboard (same as the draft's `settle`) */
+        const settleO=(el,get)=>{ if(!el) return; const w=()=>{ try{ el.value=V.fieldValue(get()); }catch(_){} };
+          el.onchange=w; el.onblur=w; el.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); applyO(); w(); el.blur(); } }; };
+        settleO(ob,()=>{ const o=(V.list().find(x=>x.id===sel)||{}); return o.low; });
+        settleO(ot,()=>{ const o=(V.list().find(x=>x.id===sel)||{}); return o.high; });
+        if(oc) oc.oninput=()=>{ V.updateObj(sel,{color:oc.value});
+          const sw=box.querySelector('[data-v3d="'+sel+'"] .rl-sw'); if(sw) sw.style.background=oc.value; };
+        if(oo) oo.oninput=()=>{ V.updateObj(sel,{opacity:parseFloat(oo.value)}); };
       };
       sync();
       /* A stroke shape finishes without any map click, so the module tells the panel directly. */
@@ -292,6 +363,28 @@ window.IntMapModules.toolPanel=function(HOST){
       if(op) op.oninput=()=>{ if(V) V.setStyle(null,parseFloat(op.value)); };
       p.querySelectorAll('[data-v3dcol]').forEach(b=>{ b.onclick=()=>{ const c=b.getAttribute('data-v3dcol'); if(V) V.setStyle(c,null); if(col) col.value=c; mark(); }; });
       const kp=p.querySelector('#v3d-keep'); if(kp) kp.onclick=()=>{ try{ if(V) V.keep(); }catch(_){} };
+      /* (#R183) save the finished body and start the next one. The measure tool's clicked vertices are
+         cleared alongside the module's ring, otherwise the very next panel refresh would push them back
+         in through syncClicks and the "cleared" footprint would reappear. */
+      { const sv=p.querySelector('#v3d-save'); if(sv) sv.onclick=()=>{ if(!V||!V.commit) return;
+          const id=V.commit(); if(!id) return;
+          HOST.measurePoints=[]; try{ HOST.refreshTool(); }catch(_){}
+          try{ if(bI) bI.value=V.fieldValue(V.base()); if(tI) tI.value=V.fieldValue(V.top()); }catch(_){}
+          sync(); }; }
+      /* 「クリックして選択」 — a click on a saved footprint selects it. Bound once, guarded by the tool
+         being open, and it does NOT swallow the click: the measure tool still gets its vertex, because
+         a click that both selects an object and extends the footprint is what the user asked for when
+         the two overlap. Point-in-polygon lives in js/volume3d.js (pickAt) so the test is exact and
+         renderer-independent. */
+      if(!updateToolPanel._v3dClick){ updateToolPanel._v3dClick=true;
+        try{ window.IntMapGeoEngine.events.on('click',(e)=>{
+          try{ if(HOST.toolMode!=='volume') return; const W=window.IntMapVolume3D; if(!W||!W.pickAt) return;
+            const ll=e&&e.lngLat; if(!ll) return;
+            const hit=W.pickAt(ll.lng,ll.lat);
+            if(hit){ W.select(hit===W.selected()?null:hit); try{ HOST.refreshTool(); }catch(_){} }
+          }catch(_){}
+        }); }catch(_){}
+      }
     }
     if(HOST.toolMode==='radius'){
       const r=p.querySelector('#radius-range'), n=p.querySelector('#radius-num'), op=p.querySelector('#radius-op'), pre=p.querySelector('#radius-preset'), col=p.querySelector('#radius-color');
