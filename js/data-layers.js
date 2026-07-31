@@ -2488,18 +2488,62 @@ window.IntMapModules.dataLayers=function(HOST){
        below ~15 and the detailed body simply never appeared. Measured over real traffic at z13: 53
        aircraft, 91 features — 53 silhouettes and 38 posts, no parts at all. The quantity that
        actually varies is the aircraft count, so that is what the budget is on. */
-    const _P_FUSELAGE=[[0,-20],[1.7,-14],[2.4,-6],[2.4,9],[1.9,13.5],[0,15.5],[-1.9,13.5],[-2.4,9],[-2.4,-6],[-1.7,-14]];
+    /* ══ (#R185) WHAT THE USER ACTUALLY SEES IS THIS, NOT THE 2-D GLYPH ═══════════════════════
+       「Live aircraft trafficの飛行機アイコンはもっと目立つものに。また、立体的に見たときの感じもリアルに。」
+       — reported again after #R183 rebuilt the 2-D glyph (device-resolution raster, white rim, drop
+       shadow, a real airliner plan-form). Measured why: `planes3D` defaults to TRUE and
+       `applyPlanesMode` shows the flat glyph OR the lifted body and never both, so **none of that
+       work is on screen by default**. What is on screen is this — and this had no rim, no halo and
+       no outline of any kind, because `fill-extrusion` has none. Screenshotted over Tokyo at z11 on
+       the pale base map, one aircraft was a small flat blue shape the eye slides past.
+       Two things follow, and they are the two halves of the instruction:
+
+       PROMINENCE. The glyph carries its own contrast, the way the 2-D one does — a WHITE RIM and a
+       DARK HALO, built as two very thin plates slightly larger than the aircraft and sitting just
+       BELOW it. Looking straight down (the app's default view) the body hides the middle of them and
+       what is left is exactly an outline; tilted, they read as a bright underside over a shadow line,
+       which is what an aircraft against the ground actually looks like. And it was SMALLER than the
+       2-D glyph it replaced: 13 px of half-length against the glyph's ~19, so switching to 3-D made
+       the aircraft shrink by a third. The two now match.
+
+       3-D REALISM. #R183's four slabs put the parts at four heights, which was the right idea, but a
+       slab-sided box is not what a tilted camera should see. The fuselage is two stacked prisms now
+       (a wide lower body, a narrower upper deck) so its cross-section steps towards round; the
+       engines are separate nacelles hung BELOW the wing where they belong rather than being notches
+       in the wing outline; and the fin tapers over two stages. Eight parts, all from the same
+       plan-form, so the view from directly above is unchanged. */
+    const _P_FUS_LO=[[0,-20],[1.7,-14],[2.4,-6],[2.4,9],[1.9,13.5],[0,15.5],[-1.9,13.5],[-2.4,9],[-2.4,-6],[-1.7,-14]];
+    const _P_FUS_HI=[[0,-18.2],[1.15,-13],[1.6,-6],[1.6,8],[1.25,12.4],[0,14.2],[-1.25,12.4],[-1.6,8],[-1.6,-6],[-1.15,-13]];
     const _P_WING=[[2.4,-4.5],[18.5,5.5],[18.5,8.2],[9,6.6],[9.6,10.6],[7.4,10.9],[6.4,6.3],[2.4,5.6],
                    [-2.4,5.6],[-6.4,6.3],[-7.4,10.9],[-9.6,10.6],[-9,6.6],[-18.5,8.2],[-18.5,5.5],[-2.4,-4.5]];
+    const _P_NAC_R=[[6.3,5.4],[9.7,6.2],[9.9,10.7],[6.5,10.2]];
+    const _P_NAC_L=[[-6.3,5.4],[-9.7,6.2],[-9.9,10.7],[-6.5,10.2]];
     const _P_STAB=[[2.0,11.2],[7.2,16.4],[7.2,18.4],[0,16.2],[-7.2,18.4],[-7.2,16.4],[-2.0,11.2]];
-    const _P_FIN=[[0.9,10.5],[1.0,17.6],[0.2,18.6],[-0.2,18.6],[-1.0,17.6],[-0.9,10.5]];
+    const _P_FIN_LO=[[0.9,10.5],[1.0,17.6],[0.2,18.6],[-0.2,18.6],[-1.0,17.6],[-0.9,10.5]];
+    const _P_FIN_HI=[[0.55,12.6],[0.62,17.3],[0.15,18.1],[-0.15,18.1],[-0.62,17.3],[-0.55,12.6]];
+    /* the rim and halo: the whole plan-form, grown about its own centre. Two scales, so the outline
+       is white against dark ground and dark against white ground — the same two-tone edge the 2-D
+       glyph draws with a stroke, which `fill-extrusion` cannot do. */
+    const _grow=(pts,k)=>pts.map(p=>[p[0]*k,p[1]*k]);
+    const _P_RIM=_grow(_PLANE_PLAN,1.13);
+    const _P_HALO=_grow(_PLANE_PLAN,1.30);
     /* Heights as a fraction of the HALF-LENGTH, so the proportions hold at every zoom. An airliner is
        about 0.3 of its length tall to the top of the fin, which is where the fin's top comes out. */
-    const _P_LEVELS={ fuselage:[0.00,0.26], wing:[0.06,0.12], stab:[0.17,0.22], fin:[0.19,0.60] };
-    /* Above this many aircraft the body falls back to the single silhouette: 4 polygons each would be
-       7,200 extrusions at the feed's 1,800 cap, and at that density they overlap into a smear anyway. */
-    const DETAIL_MAX_AIRCRAFT=900;
-    const _PARTS=[{k:'fuselage',p:_P_FUSELAGE},{k:'wing',p:_P_WING},{k:'stab',p:_P_STAB},{k:'fin',p:_P_FIN}];
+    const _P_LEVELS={ halo:[0.000,0.014], rim:[0.014,0.030], fuselage:[0.030,0.200], fusetop:[0.200,0.272],
+                      wing:[0.086,0.132], nacelle:[0.052,0.122], stab:[0.196,0.240],
+                      fin:[0.214,0.452], fintop:[0.452,0.600] };
+    /* Above this many aircraft the body falls back to the single silhouette: nine polygons each would
+       be 16,200 extrusions at the feed's 1,800 cap, and at that density they overlap into a smear
+       anyway. (#R183 put this budget on the AIRCRAFT COUNT rather than on the glyph's screen size,
+       because `half` is clamped to a floor at every zoom and a size gate therefore never fired.) */
+    const DETAIL_MAX_AIRCRAFT=400;
+    const _PARTS=[{k:'halo',p:_P_HALO},{k:'rim',p:_P_RIM},
+                  {k:'fuselage',p:_P_FUS_LO},{k:'fusetop',p:_P_FUS_HI},
+                  {k:'wing',p:_P_WING},{k:'nacelle',p:_P_NAC_R},{k:'nacelle',p:_P_NAC_L},
+                  {k:'stab',p:_P_STAB},{k:'fin',p:_P_FIN_LO},{k:'fintop',p:_P_FIN_HI}];
+    /* …and when there are too many for the detailed body, the silhouette still gets its outline. */
+    const _PARTS_PLAIN=[{k:'halo',p:_P_HALO},{k:'rim',p:_P_RIM},{k:'body',p:_PLANE_OUTLINE}];
+    const _PLAIN_LEVELS={ halo:[0.000,0.014], rim:[0.014,0.030], body:[0.030,0.130] };
     function squareRing(lng,lat,halfM){ const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(lat*r))||1;
       const dx=halfM/mLng, dy=halfM/mLat;
       return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
@@ -2507,7 +2551,10 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!GE().hasRenderer()||!GE().layers.hasSource(PLANE3D_SRC)) return;
       _gndFresh();
       const mpp=_mppCentre();
-      const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
+      /* (#R185) 19 px of half-length, which is what the 2-D glyph draws (a 52-px canvas whose
+         plan-form spans 38.6 of those units at icon-size 1). The 3-D body used 13 and therefore
+         SHRANK the aircraft by a third the moment the layer went 3-D — half of "目立たない". */
+      const half=Math.max(88, 19*mpp);                 /* never smaller than ~38 px across */
       const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
       const thick=Math.max(30, 2.2*mpp);               /* give the glyph body so it is not a zero-height sheet */
       /* (#R183) see the note by _P_LEVELS — bounded by aircraft count, which is the quantity that
@@ -2518,22 +2565,25 @@ window.IntMapModules.dataLayers=function(HOST){
         if(d.lng==null||d.lat==null) continue;
         const off=_groundAt(d.lng,d.lat);              /* (#R174) the ground under THIS aircraft */
         const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        const props={ type:d.type, alt, top:alt+thick, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
+        /* (#R185) `acAlt` is THE AIRCRAFT'S OWN ALTITUDE and is never overwritten by a part. `alt`
+           is a part's BASE, and the parts no longer start at the aircraft's altitude (the outline
+           plates are under it and the fuselage sits on them), so every reader that means "how high
+           is this aeroplane" — the diagnostics, `lifted`, `maxAlt`, and the three tests that pin
+           them — has to read this instead. Deriving it from a part's base is what #R183's note
+           warns about one level up. */
+        const props={ type:d.type, alt, acAlt:alt, top:alt+thick, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
           acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
           vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
           squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0), category:(d.category!=null?d.category:null) };
-        if(detailed){
-          /* (#R183) four parts at four heights — see the note by _P_LEVELS. Every part carries the
-             SAME properties object shape, so a click on a wing identifies the same aircraft as a
-             click on the fin, and the existing pick/hover path needs no change. */
-          for(const part of _PARTS){
-            const lv=_P_LEVELS[part.k];
-            const b=alt+lv[0]*half, t=alt+lv[1]*half;
-            feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,part.p)]},
-              properties:Object.assign({},props,{ alt:b, top:Math.max(b+0.5,t), part:part.k }) });
-          }
-        } else {
-          feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]}, properties:props });
+        /* (#R183) every part carries the SAME properties object shape, so a click on a wing
+           identifies the same aircraft as a click on the fin, and the existing pick/hover path needs
+           no change. (#R185) the outline plates ride the same list — see the note by _P_LEVELS. */
+        const parts=detailed?_PARTS:_PARTS_PLAIN, levels=detailed?_P_LEVELS:_PLAIN_LEVELS;
+        for(const part of parts){
+          const lv=levels[part.k];
+          const b=alt+lv[0]*half, t=alt+lv[1]*half;
+          feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,part.p)]},
+            properties:Object.assign({},props,{ alt:b, top:Math.max(b+0.5,t), part:part.k }) });
         }
         /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
            fallback resolves a rendered feature back to an aircraft through `properties.icao24`
@@ -2553,7 +2603,10 @@ window.IntMapModules.dataLayers=function(HOST){
          body is detailed, so counting features would have quietly reported 4× the aircraft — the
          #R181 lesson about suspecting what a counter counts. Aircraft are counted by their fuselage
          (or by the single silhouette), and the raw feature total is kept under its own name. */
-      const bodies=feats.filter(f=>!f.properties.post&&(!f.properties.part||f.properties.part==='fuselage'));
+      /* (#R185) …and the fuselage is still the ONE feature per aircraft, in both the detailed and
+         the plain body — 'body' is the plain one's single solid. Counting anything else counts
+         outline plates as aircraft (#R181: suspect what a counter counts). */
+      const bodies=feats.filter(f=>!f.properties.post&&(f.properties.part==='fuselage'||f.properties.part==='body'));
       /* maxAlt is THE AIRCRAFT'S ALTITUDE, and it has to be read off the fuselage for the same reason
          `lifted` counts fuselages: every other part is deliberately offset ABOVE it. Taking the max
          over all features returned the base of the tallest TAIL FIN — at z9 that is +0.19 × half,
@@ -2561,8 +2614,8 @@ window.IntMapModules.dataLayers=function(HOST){
          tests/r172, r173 and r174, all three of which are really the same assertion. `_P_LEVELS`
          pins fuselage's base at 0.00 of the half-length, so this is exactly the reported altitude. */
       _planes3DStats={ features:feats.length, aircraft:bodies.length, detailed:detailed,
-        lifted:bodies.filter(f=>(+f.properties.alt||0)>0).length,
-        maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.alt||0),0)),
+        lifted:bodies.filter(f=>(+f.properties.acAlt||0)>0).length,
+        maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.acAlt||0),0)),
         offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
@@ -2731,7 +2784,14 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!GE().layers.has(PLANE3D_LYR)) GE().layers.add({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['!=',['get','post'],1], layout:{visibility:'none'},
           paint:{ /* (#R173) the selected aircraft is the one whose track is drawn — say so in its colour */
-            'fill-extrusion-color':['case',['==',['get','sel'],1],'#ffd23f',['match',['get','type'],'military','#ff3b30','#1e90ff']],
+            /* (#R185) …and the two outline plates get theirs. `fill-extrusion-opacity` is not
+               data-driven in MapLibre, so the plates' transparency is carried in the COLOUR, which
+               is — the halo has to be a shadow rather than a black ring, and the rim has to stay
+               opaque white for it to be a rim at all. */
+            'fill-extrusion-color':['case',
+              ['==',['get','part'],'halo'],'rgba(8,12,18,0.5)',
+              ['==',['get','part'],'rim'],'rgba(255,255,255,0.97)',
+              ['==',['get','sel'],1],'#ffd23f',['match',['get','type'],'military','#ff3b30','#1e90ff']],
             'fill-extrusion-opacity':opacities.planes,
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as

@@ -235,7 +235,15 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
      re-derivable by accident. The invariant that number actually encoded is asserted directly:
      three aircraft, two of them airborne and therefore carrying a post down to the ground. */
   expect(s.aircraft, 'three aircraft, however many parts each is drawn from').toBe(3);
-  expect(s.features, 'bodies + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * (s.detailed ? 4 : 1) + 2);
+  /* (#R185) …and TEN now — two outline plates (a white rim over a dark halo, which is how a
+     fill-extrusion gets an outline at all) under eight solids: two fuselage sections, the wing, two
+     engine nacelles, the stabiliser and a two-stage fin. The magic number is not the contract;
+     "one aircraft is drawn from a fixed number of parts, and each airborne one adds exactly one
+     post" is — so read the part count out of the state rather than restating it here. */
+  const parts = (s.features - 2) / s.aircraft;
+  expect(Number.isInteger(parts), 'every aircraft is drawn from the same number of parts').toBe(true);
+  expect(parts, 'the detailed body is many parts; the plain one is a silhouette with its outline').toBe(s.detailed ? 10 : 3);
+  expect(s.features, 'bodies + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * parts + 2);
 
   // the flat rendering is still one click away, and it is exclusive
   const flat = await page.evaluate(() => { window.IntMapPlanes3D.set(false); return window.IntMapPlanes3D.state(); });

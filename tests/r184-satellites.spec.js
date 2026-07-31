@@ -168,10 +168,13 @@ test('R184 ④: the checkbox draws the layer, fills the legend and cleans up aga
   });
   expect(on.state.on).toBe(true);
   expect(on.state.drawn).toBeGreaterThan(50);
-  expect(on.layers.every((l) => l.has), 'all five layers exist: icons, labels, track, footprint fill + outline').toBe(true);
+  expect(on.layers.every((l) => l.has), 'every layer exists: the orbit-band halo, icons, labels, track, footprint fill + outline').toBe(true);
   expect(on.layers.every((l) => l.vis)).toBe(true);
   expect(on.legendShown).toBe(true);
-  expect(on.legendGroup).toBe('visual');
+  /* (#R185) the default catalogue is every active satellite now — 「実際の位置に全衛星が」 — so what
+     this pins is that the legend's selector AGREES with the layer, not which group that happens to be. */
+  expect(on.legendGroup).toBe(on.state.group);
+  expect(on.state.group).toBe('active');
   expect(on.legendCount, 'the legend reports drawn / catalogue, not a guess').toMatch(/\d+\s*\/\s*\d+/);
   expect(on.legendOpacity, 'every legend owns its opacity row (#R15c)').toBe(true);
 
