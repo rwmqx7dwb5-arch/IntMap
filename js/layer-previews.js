@@ -565,7 +565,16 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
        IntMapSatellites.snapshot(), so the tile shows where those objects actually are right now and
        cannot drift away from what the layer draws. Sub-satellite points over the whole world, sized
        by orbit regime, plus the ISS ground track when the station is in the loaded group. */
-    REAL['dl-sats']=()=>{ const A=window.IntMapSatellites; if(!A||!A.snapshot) return Promise.resolve(null);
+    /* (#R184) THIS TILE NEVER TRIGGERS A LOAD — it only draws a catalogue that is ALREADY in hand.
+       The sibling `dl-planes` tile does fetch, and that is fine: airplanes.live is a high-volume
+       community ADS-B endpoint built to be polled. CelesTrak is not — it is a small, free, keyless
+       service that stopped answering this machine entirely after seven requests in five minutes, and
+       a preview tile that pulls a satellite catalogue on EVERY page load (measured: it did, in a
+       session that never opened the layer) is the app being a bad citizen of it for a thumbnail.
+       So the real-data preview is a reward for having used the layer, and everything else falls back
+       to the stylised sketch — which is what `null` here means. */
+    REAL['dl-sats']=()=>{ const A=window.IntMapSatellites;
+      if(!A||!A.snapshot||!A.state||!(A.state().catalogue>0)) return Promise.resolve(null);
       return A.snapshot().then(fx=>{ if(!fx||fx.length<5) return null;
         let trk=null; try{ const iss=fx.find(f=>/ZARYA|ISS \(/i.test(f.name||'')); if(iss) trk=A.groundTrack(iss.id); }catch(_){}
         return _bmShot(1,0,10,true,ctx=>{

@@ -61,7 +61,22 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-import * as SAT from 'satellite.js';
+/* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
+   `satellite.js` is 27 KB gzipped, and a static import puts it in the main bundle for EVERY
+   session — including the overwhelming majority that never switch this layer on. The app already
+   has a policy for this and states it plainly for Cesium (js/engine-select.js: 8 MB reached only
+   through a dynamic import, so a MapLibre session transfers none of it); the same reasoning applies
+   at a smaller scale here, in a round whose brief was 「高速化」.
+   So the propagator is imported on FIRST USE and lands in its own Rollup chunk. Everything that
+   needs it is downstream of load(), which awaits it; the sync helpers below still check, because a
+   guard that can never fire costs nothing and a missing one is a TypeError in a live layer. */
+let SAT=null, _satP=null;
+function loadSGP4(){
+  if(SAT) return Promise.resolve(SAT);
+  if(!_satP) _satP=import('satellite.js').then(m=>{ SAT=m; return m; })
+    .catch(e=>{ _satP=null; throw e; });
+  return _satP;
+}
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
@@ -141,7 +156,7 @@ window.IntMapModules.satellitesLive=function(HOST){
      must produce the identical thing: a second copy of this loop is how a cached catalogue quietly
      starts differing from a fetched one. */
   function ingest(arr,want){
-    if(!Array.isArray(arr)||!arr.length) return false;
+    if(!SAT||!Array.isArray(arr)||!arr.length) return false;
     const out=[];
     for(let i=0;i<arr.length;i++){
       try{
@@ -167,6 +182,16 @@ window.IntMapModules.satellitesLive=function(HOST){
   function load(g){
     const want=g||group;
     if(_inflight&&_inflightG===want) return _inflight;
+    /* THE PROPAGATOR FIRST. Everything below turns element sets into satellite records, which is
+       json2satrec's job, so this is the one place the lazy import has to be resolved — and doing it
+       here means the cache path gets it too, rather than being the one route that skips it. */
+    if(!SAT){
+      loading=true; lastErr=null; _inflightG=want;
+      _inflight=loadSGP4().then(()=>{ _inflight=null; _inflightG=null; loading=false; return load(want); })
+        .catch(e=>{ lastErr='could not load the orbit propagator: '+String(e&&e.message||e);
+          loading=false; _inflight=null; _inflightG=null; return false; });
+      return _inflight;
+    }
     /* a fresh cache answers synchronously — no request, no in-flight state to coalesce onto */
     const hit=cacheGet(want);
     if(hit&&want===group){
@@ -207,12 +232,13 @@ window.IntMapModules.satellitesLive=function(HOST){
   /* ── propagation ──────────────────────────────────────────────────────────────────────────── */
   /* The Sun, once per instant rather than once per satellite: sunPos() takes a JULIAN DATE (not a
      Date) and returns the geocentric vector in AU, which is exactly what shadowFraction wants. */
-  function sunAt(t){ try{ return SAT.sunPos(SAT.jday(t)).rsun; }catch(_){ return null; } }
+  function sunAt(t){ if(!SAT) return null; try{ return SAT.sunPos(SAT.jday(t)).rsun; }catch(_){ return null; } }
 
   /* One instant, every satellite. Returns the sub-satellite point plus the quantities the card
      shows — all of them computed here rather than copied from the feed, because the feed carries
      ELEMENTS, not positions. */
   function propagateAll(when){
+    if(!SAT) return [];
     const t=when||new Date();
     const gmst=SAT.gstime(t), sun=sunAt(t);
     const out=[];
@@ -246,7 +272,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   function observer(){ try{ const c=GE().camera.getCenter();
       return { longitude:c.lng*D2R, latitude:c.lat*D2R, height:0 }; }catch(_){ return null; } }
   function lookFrom(obs,f){
-    if(!obs||!f||!f.eci) return null;
+    if(!SAT||!obs||!f||!f.eci) return null;
     try{
       const ecf=SAT.eciToEcf(f.eci,f.gmst);
       const la=SAT.ecfToLookAngles(obs,ecf);
@@ -259,6 +285,7 @@ window.IntMapModules.satellitesLive=function(HOST){
      the horizon, then a bisection onto the crossing and a scan for the maximum. Bounded by
      `horizonH` hours so a satellite that simply never rises here says so instead of spinning. */
   function nextPass(id,fromT,horizonH){
+    if(!SAT) return null;
     const obs=observer(); if(!obs) return null;
     let s=null; for(let i=0;i<sats.length;i++) if(sats[i].id===id){ s=sats[i]; break; }
     if(!s) return null;
@@ -310,6 +337,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   /* One full orbit either side of now, split wherever it crosses the antimeridian so the line does
      not draw itself across the whole map. */
   function groundTrack(id,when){
+    if(!SAT) return [];
     let s=null; for(let i=0;i<sats.length;i++) if(sats[i].id===id){ s=sats[i]; break; }
     if(!s) return [];
     const per=s.satrec.no?(2*Math.PI/s.satrec.no):95;        /* minutes */
