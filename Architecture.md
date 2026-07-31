@@ -974,8 +974,22 @@ js/
   analysis-panels.js                (#R166) 解析パネル 5本。時系列チャート `IntMapTimeSeries`・AIリサーチ
                                     `IntMapAIResearch`・2レイヤー相関/散布図・世界史イベント年表・地理クイズ
                                     `IntMapEdu`。95KB
+  wx-source.js                      (#R183) **気象・UVの唯一の取得口** `window.IntMapWx`。ファクトリでは
+                                    なく即時公開なので `src/main.js` の先頭付近で読み込む（必須グローバル
+                                    チェックにも `IntMapWx` を追加済み）。`point()` が
+                                    Open-Meteo →（不可なら）MET Norway の梯子を1本にまとめる。中身は
+                                    (a) `r.ok` と Open-Meteo 自身の `{"error":true}` の両方を検査、
+                                    (b) **サーキットブレーカー**＝「1日の上限」429 はその日いっぱい続く事実
+                                    なので再要求せず 00:00 UTC まで fallback 直行（localStorage 保存）、
+                                    (c) URL 単位の合流＋TTLキャッシュ、
+                                    (d) 日の出・日没は**ネットワーク非依存の計算**（`sunTimes`）。
+                                    単位の正直さ: Open-Meteo の `uv_index` は全天、MET は
+                                    `ultraviolet_index_clear_sky`＝**別の量**なのでフィールドを分ける。
+                                    MET は現在時刻から先しか無いので初日バケットに `_partialFirstDay`。
   weather.js                        (#R166) 気象 3本。風の粒子アニメーション `Wind`・予報パネル
                                     `IntMapWeatherEC`・地点天気 `IntMapWeather`。52KB
+                                    (#R183) 取得の梯子は自前で持たず `IntMapWx.point()` に委譲
+                                    （MET マッピングの二重持ちが #R72 の修正を widgets へ渡らなくした原因）
   playground.js                     (#R166) プレイグラウンド（beta）。World Explorer／パンデミック／ネーションシム。
                                     48KB。**2番目の READ-WRITE ホストメンバー利用モジュール**
                                     （`mode`＝`currentMode` と `satPanelDismissed` を setter 経由で書く。§3.1 #R166）。

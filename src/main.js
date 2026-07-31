@@ -35,13 +35,19 @@ import '../js/geo-engine.js';
    chunk and a MapLibre session transfers none of it. */
 import '../js/engine-select.js';
 
-/* (#R183) …and the one guarded weather/UV client, before anything that could ask it for a number.
-   js/wx-source.js publishes window.IntMapWx synchronously (no factory), so an early import costs
-   nothing and guarantees the widget board, the point-weather popup and the drone/route weather
-   readouts all share the same circuit breaker rather than each re-hammering a dead quota. */
-import '../js/wx-source.js';
-
 import '../js/newsgeo.js';
+/* (#R183) The one guarded weather/UV client, imported before anything that could ask it for a
+   number. js/wx-source.js publishes window.IntMapWx synchronously (no factory), so it costs nothing
+   here and guarantees the widget board, the point-weather popup and every other reader share one
+   circuit breaker rather than each re-hammering a dead quota.
+   It sits AFTER newsgeo deliberately: tests/r175-checks pins newsgeo as the first feature module,
+   and nothing about this file needs to precede it — its consumers all call it lazily. */
+import '../js/wx-source.js';
+/* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which
+   js/search-geocode.js consults from gotoPlace. Its own file because that factory's body may
+   contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
+   whole table be tested without a browser. */
+import '../js/place-framing.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
@@ -135,7 +141,7 @@ const MODULE_FACTORIES = [
   'aircraftDetail',
 ];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');
