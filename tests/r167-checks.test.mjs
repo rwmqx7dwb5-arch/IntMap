@@ -164,7 +164,14 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   const MUT = new Set(['push', 'pop', 'splice', 'sort', 'shift', 'unshift', 'reverse', 'fill', 'copyWithin']);
   const writes = [];
   for (const [where, js] of sources) {
-    const ast = acorn.parse(js, { ecmaVersion: 'latest' });
+/* (#R184) PARSE IT THE WAY IT RUNS. Every js/ file executes as an ES module (src/main.js
+   imports them), and until this round none of them CONTAINED an import, so script mode happened
+   to work. js/satellites-live.js imports satellite.js — SGP4 is not something to hand-roll — and
+   script mode then throws a parse error, which is this check being wrong about the program rather
+   than the program being wrong. Script first (the stricter reading for the files that really are
+   plain scripts), module as the fallback. */
+    const ast = (() => { try { return acorn.parse(js, { ecmaVersion: 'latest', sourceType: 'script' }); }
+                         catch (_) { return acorn.parse(js, { ecmaVersion: 'latest', sourceType: 'module' }); } })();
     walk.full(ast, (n) => {
       if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression'
           && n.left.object.type === 'Identifier' && names.has(n.left.object.name)) writes.push(where + ': ' + n.left.object.name + '.<member>=');
