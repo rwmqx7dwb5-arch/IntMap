@@ -304,3 +304,48 @@ test('R183: editing a saved body refreshes text in place, never rebuilding the f
   assert.ok(applyO.includes('retext()'), 'typing refreshes text only');
   assert.ok(!applyO.includes('v3dList()'), 'typing must NOT rebuild the field under the cursor');
 });
+
+/* -- js/viewshed.js -- the point-to-point link ------------------------------------------------- */
+const LOS = read('js/viewshed.js');
+
+test('R183: the link runs at the DEM native zoom, which the area sweep cannot', () => {
+  // A line's tile count grows with LENGTH, not area, so a profile can afford terrarium's z15 where
+  // the 360-degree sweep must back off to stay inside the tile-cache budget (#R176: exceeding it
+  // evicts the tiles the sweep is still reading). That is the precision claim, so pin it.
+  const fn = LOS.slice(LOS.indexOf('async function linkRun('), LOS.indexOf('function drawLinkOnMap('));
+  assert.match(fn, /let z=15/, 'the profile starts at the DEM maximum');
+  assert.match(fn, /while\(z>6/, 'and only backs off for a link long enough to blow the budget');
+  assert.match(fn, /demElevBilinear/, 'samples are bilinear, like the sweep');
+});
+
+test('R183: the controlling obstacle is ranked against the Fresnel radius, not raw clearance', () => {
+  // The first Fresnel zone is widest at mid-path, so ranking obstacles by raw metres of clearance
+  // lets a close-in hillock outrank the mid-path ridge that actually decides the link.
+  const fn = LOS.slice(LOS.indexOf('function judgeProfile('), LOS.indexOf('async function linkRun('));
+  assert.match(fn, /score\s*=\s*F1>0\s*\?\s*\(clearance\/F1\)\s*:\s*clearance/);
+  assert.match(fn, /dropAt\(d1,kFac\)/, 'curvature and refraction are applied to the terrain');
+});
+
+test('R183: the four verdicts are the same words the raster sweep uses', () => {
+  // Two tools that disagree about what "blocked" means are worse than one tool.
+  for (const v of ['clear', 'fresnel', 'diffraction', 'blocked']) {
+    assert.ok(LOS.includes("'" + v + "'"), v);
+  }
+  assert.match(LOS, /knifeEdgeDb\(v\)/, 'ITU-R P.526 decides diffraction vs blocked');
+  assert.match(LOS, /diffDb<=DIFF_DB/, 'against the same threshold the sweep uses');
+});
+
+test('R183: the minimum antenna height is SOLVED, and only the observer end moves', () => {
+  // Terrain does not move when the mast gets taller, so the solver re-judges the same samples.
+  const fn = LOS.slice(LOS.indexOf('let needH=null;'), LOS.indexOf('if(!live()) return null;', LOS.indexOf('let needH=null;')));
+  assert.match(fn, /judgeProfile\(prof,g0\+/, 'bisection raises the observer ground, not the terrain');
+  assert.match(fn, /for\(let it=0;it<24;it\+\+\)/, 'bisection, not a scan');
+  assert.match(fn, /obsH\+500/, 'capped -- past that the answer is "not from here", not a taller tower');
+});
+
+test('R183: a gap in the DEM never votes on the verdict', () => {
+  // "NO DATA IS NOT SEA LEVEL" -- the rule the sweep states. A gap is interpolated for DRAWING only.
+  const fn = LOS.slice(LOS.indexOf('NO DATA IS NOT SEA LEVEL', LOS.indexOf('async function linkRun(')), LOS.indexOf('const g0=prof[0].h'));
+  assert.match(fn, /gap=true/, 'gaps are marked');
+  assert.match(fn, /ONLY for drawing|only for drawing/i, 'and the reason is written down');
+});
