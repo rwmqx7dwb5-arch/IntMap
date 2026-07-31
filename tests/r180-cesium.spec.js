@@ -219,12 +219,19 @@ test('R180 ⑤: an MVT source decodes and its features reach the scene', async (
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, v = window.__imap;
     E.camera.jumpTo({ center: [10, 20], zoom: 3, pitch: 0, bearing: 0 });
-    /* the OpenFreeMap tileset the place-label layer uses; give the pyramid time to fetch */
-    for (let i = 0; i < 40; i++) {
+    /* the OpenFreeMap tileset the place-label layer uses; give the pyramid time to fetch.
+       (#R185) ⚠ "some entities exist" is not "the tiles have arrived". The first tiles to decode
+       are wherever the queue reached, and the declutter pass that runs with them can legitimately
+       hide every one of them — measured on a partial set: 117 entities, 0 shown, while the settled
+       set is 669 entities with 45 shown. The source itself knows when it is done, so ask it. */
+    for (let i = 0; i < 60; i++) {
       const rec = v._layerById.get('ofm-country');
-      if (rec && rec.ds && rec.ds.entities.values.length) break;
+      const st = (() => { try { return v._sources.get(rec.def.source).vt.stats(); } catch (_) { return null; } })();
+      if (rec && rec.ds && rec.ds.entities.values.length > 50 && st && st.pending === 0) break;
       await new Promise((r) => setTimeout(r, 500));
     }
+    /* …and one more frame for the flush that the last tile scheduled */
+    await new Promise((r) => setTimeout(r, 700));
     const rec = v._layerById.get('ofm-country');
     const src = v._sources.get(rec && rec.def.source);
     const gv = (x) => (x && x.getValue ? x.getValue() : x);

@@ -57,6 +57,14 @@
     megacity:9.6, city:10.6, town:12.2, village:13.4, hamlet:14.2, suburb:12.6, neighbourhood:13.8,
     /* physical features */
     island:8.4, lake:9.4, river:9, mountain:11, volcano:11, glacier:9, forest:9.4, bay:8.4, cape:11,
+    /* (#R185) …and the ones a real answer landed on with NOTHING in this table to catch them, so
+       they fell to the town-sized default: the Great Barrier Reef (natural/reef, 2,300 km) and the
+       Grand Canyon (natural/valley, 446 km) were both framed at 12.2 — an 8 km window. Both are
+       mapped in OSM as single NODES, so there is no extent to fall back on and the class IS the
+       answer. Sizes within a class vary, so these are the middle of the class, not its largest
+       member; a result that does publish an extent still overrides them. */
+    reef:8.6, valley:9.6, plateau:7.5, peninsula:8.6, strait:8.4, ridge:10.4, cliff:12.6,
+    beach:13.4, wetland:10.6, spring:15, cave:15, rock:15.4, reserve:9.2, natural:11,
     /* things you can stand in front of */
     airport:12.4, port:12.4, station:14.6, park:13, university:14, stadium:15, museum:15.6,
     landmark:15.2, building:16.6, address:17, poi:15.6
@@ -64,7 +72,7 @@
   const DEFAULT_ZOOM=12.2;
   /* Linear/very-elongated features whose bounding box is a bad frame (see the trap note above). */
   const LINEAR=new Set(['river','stream','canal','coastline','motorway','trunk','primary','secondary',
-    'railway','rail','waterway','highway','valley','ridge','border','boundary']);
+    'railway','rail','waterway','highway','valley','ridge','border','boundary','cliff','strait']);
 
   /* Nominatim / Photon / Open-Meteo / gazetteer → one of the keys above. Anything unrecognised
      returns null and the caller falls back to DEFAULT_ZOOM, which is deliberately a town-sized
@@ -155,17 +163,38 @@
       if(v==='house'||v==='houses') return 'address';
       return 'town';
     }
-    if(k==='boundary') return (v==='administrative')?'region':'region';
+    /* (#R185) protected land — a national park, a nature reserve, a wilderness area. Checked
+       BEFORE the generic boundary line below, which answers 'region' for everything. */
+    if(k==='boundary'&&(v==='protected_area'||v==='national_park'||v==='aboriginal_lands')) return 'reserve';
+    if(k==='leisure'&&v==='nature_reserve') return 'reserve';
+    if(k==='boundary') return 'region';
     if(k==='natural'){
-      if(v==='peak'||v==='saddle') return 'mountain';
+      if(v==='peak'||v==='saddle'||v==='hill') return 'mountain';
       if(v==='volcano') return 'volcano';
       if(v==='water'||v==='bay') return (v==='bay')?'bay':'lake';
       if(v==='glacier') return 'glacier';
       if(v==='wood'||v==='forest'||v==='scrub') return 'forest';
-      if(v==='desert'||v==='sand') return 'desert';
+      if(v==='desert'||v==='sand'||v==='dune') return 'desert';
       if(v==='cape') return 'cape';
       if(v==='coastline') return 'river';
+      /* (#R185) measured gaps — every one of these came back from a real query */
+      if(v==='reef'||v==='shoal') return 'reef';
+      if(v==='valley'||v==='gorge'||v==='canyon') return 'valley';
+      if(v==='plateau') return 'plateau';
+      if(v==='peninsula'||v==='isthmus') return 'peninsula';
+      if(v==='strait'||v==='channel') return 'strait';
+      if(v==='ridge'||v==='arete'||v==='esker') return 'ridge';
+      if(v==='cliff') return 'cliff';
+      if(v==='beach'||v==='shingle') return 'beach';
+      if(v==='wetland'||v==='marsh'||v==='swamp'||v==='grassland'||v==='heath'||v==='moor') return 'wetland';
+      if(v==='spring'||v==='hot_spring'||v==='geyser') return 'spring';
+      if(v==='cave_entrance'||v==='sinkhole') return 'cave';
+      if(v==='rock'||v==='stone'||v==='tree'||v==='boulder') return 'rock';
+      /* a physical feature this table does not name is still a physical feature, and the
+         town-sized default is the wrong order of magnitude for one */
+      return 'natural';
     }
+
     /* MEASURED: Lake Baikal comes back as category `water`, which is its own top-level key and was
        not in this table at all — the lake fell through to the default town-sized zoom. */
     if(k==='water'){
@@ -219,6 +248,7 @@
   /* The extent the provider published, as [[w,s],[e,n]] — or null when there is none, when it is
      unusable (antimeridian / degenerate), or when the feature is linear. */
   const STUB_DEG=0.0005;   /* see NODE STUB below — the synthetic box is 0.0001°, this is 5× that */
+  const OUTLIER_DEG=1;     /* ~110 km — see the OUTLYING TERRITORY note below */
   function placeExtent(raw,cls){
     if(!raw) return null;
     if(cls&&LINEAR.has(cls)) return null;
@@ -247,10 +277,24 @@
        point falls outside the middle 60% of the extent in either axis, the extent is being driven by
        outliers and the class zoom at the point is the better frame. A compact place (Japan, Lake
        Baikal, Central Park) has its point near the centre and keeps its extent. */
+    /* (#R185) …AND THE TELL IS A DISTANCE, NOT A FRACTION. The rule above rejected Monaco: its box
+       is 0.124° x 0.235° and the label point sits near the north edge (fy = 0.92), so a 2 km² state
+       fell back to the plain `country` zoom of 4.4 — the entire Mediterranean, to answer "Monaco".
+       Vatican City, San Marino and Gibraltar fail the same way, and so does any small place whose
+       label is not in the middle of it.
+       What the rule is actually looking for is an OUTLYING TERRITORY, and an outlier is what makes a
+       box far bigger than the thing it is meant to frame: Tokyo's point is 700 km from the centre of
+       its extent, France's 2,000 km. Monaco's is 11 km — which is not an outlier, it is just where
+       the label goes. So the fraction has to be joined by an absolute offset: about 1° (110 km) is
+       larger than any place that could be framed by its own box at street scale and far smaller than
+       every outlier measured. Tokyo (6.3°) and France (20°) are still rejected; Monaco and Vatican
+       City keep their footprints. */
     const plng=+(raw.lon!=null?raw.lon:raw.lng), plat=+raw.lat;
     if(isFinite(plng)&&isFinite(plat)){
+      const cx=(w+e)/2, cy=(s+n)/2;
       const fx=(plng-w)/(e-w), fy=(plat-s)/(n-s);
-      if(fx<0.2||fx>0.8||fy<0.2||fy>0.8) return null;
+      const offX=Math.abs(plng-cx), offY=Math.abs(plat-cy);
+      if(((fx<0.2||fx>0.8)&&offX>OUTLIER_DEG)||((fy<0.2||fy>0.8)&&offY>OUTLIER_DEG)) return null;
     }
     return [[w,s],[e,n]];
   }

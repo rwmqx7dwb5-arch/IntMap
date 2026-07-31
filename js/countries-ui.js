@@ -12,7 +12,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
   const _GE=()=>window.IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
@@ -44,6 +45,17 @@ window.IntMapModules.countriesUi=function(HOST){
         if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_110m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
         if(gj&&gj.features){
           HOST.countryGeo=gj; window.countryGeo=HOST.countryGeo;   /* reused by the projection viewer (#16,#17) */
+          /* [w,s,e,n] of a feature's rings — no turf, because this is arithmetic over coordinates and
+             runs once per country. Returns null when the geometry is unusable. */
+          const _bboxOf=(feat)=>{
+            let w=Infinity,s2=Infinity,e=-Infinity,n=-Infinity,seen=0;
+            const walk=(c)=>{ if(!Array.isArray(c)) return;
+              if(typeof c[0]==='number'){ const x=+c[0],y=+c[1];
+                if(isFinite(x)&&isFinite(y)){ seen++; if(x<w)w=x; if(x>e)e=x; if(y<s2)s2=y; if(y>n)n=y; } return; }
+              for(const k of c) walk(k); };
+            try{ walk(feat&&feat.geometry&&feat.geometry.coordinates); }catch(_){ return null; }
+            return seen?[w,s2,e,n]:null;
+          };
           gj.features.forEach(f=>{
             const p=f.properties||{};
             let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
@@ -65,6 +77,15 @@ window.IntMapModules.countriesUi=function(HOST){
             HOST.countryStats[code]={ code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
               sov:!_nonSov,
               pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
+              /* (#R185) THE COUNTRY'S OWN FOOTPRINT, so the search can frame it instead of guessing.
+                 js/place-framing.js prefers a published extent over a class zoom for exactly the reason
+                 #R183 gave — it is a measurement — but a LOCAL match (a country name typed into the
+                 search box, resolved against this table without touching a geocoder) had no extent to
+                 offer, so every country from Russia to Vatican City was framed at the one `country`
+                 zoom of 4.4. Measured: Monaco, Singapore, Vatican City and Japan all landed on 4.4.
+                 The geometry that answers this is already in hand here — one pass over the winning
+                 feature's rings, done once per country at load. */
+              bbox:_bboxOf(f),
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };

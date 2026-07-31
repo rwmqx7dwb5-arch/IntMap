@@ -257,6 +257,38 @@ window.IntMapCesiumLayers=(function(){
     const scheme=new Cesium.WebMercatorTilingScheme();
     const maxLevel=cfg.maxzoom==null?19:cfg.maxzoom;
     const minLevel=cfg.minzoom==null?0:cfg.minzoom;
+    /* ══ (#R185) THE HALF-RESOLUTION DEFECT, A FOURTH TIME, THROUGH A FOURTH DOOR ══════════════
+       #R178 found the satellite tiles at half the display's resolution, #R179 found the base map,
+       #R180 found Cesium's own drawing buffer. This is the same defect once more, and it is the
+       one that made the Cesium satellite view visibly softer than the MapLibre one at the SAME
+       camera — measured on a top-down z13 view of the Jungfrau, mean |Laplacian| of the rendered
+       pixels: MapLibre 22.7, Cesium 7.5.
+
+       Cesium does not choose the imagery level from the screen. It chooses it so that one imagery
+       TEXEL lands on one unit of the terrain tile's geometric error — and the terrain is refined
+       until that error is `maximumScreenSpaceError` DEVICE PIXELS, which is 2 by default. So the
+       imagery arrives at one texel per two device pixels: half resolution, on every display,
+       whatever the pixel ratio. Read back on that scene: terrain tile level 13 spanning 1,024
+       device pixels, carrying a 512-texel image. Raising the screen-space error to 1 confirmed it
+       from the other side (imagery level 14, sharpness 7.5 → 15.7) — but that quadruples the
+       terrain MESH as well, which is not what was wrong.
+
+       The one input to that choice a custom provider owns is its declared `tileWidth`: Cesium
+       divides by it to get the level-zero texel spacing, so halving it moves the chosen level
+       exactly one deeper (`Math.round` of a value shifted by exactly 1.0). Dividing by the
+       screen-space error states the policy directly — one texel per device pixel rather than one
+       per SSE pixels — and it stays correct if that error is ever changed.
+       `tileWidth` reaches nothing else for this provider: Cesium reads it here and in
+       UrlTemplateImageryProvider's `{width}`/`{i}`/`{j}` URL tags, which this provider does not
+       use. The delivered image is unchanged — still the 512-px stitched tile #R178 built.
+
+       The cost is honest and is exactly MapLibre's: four imagery tiles per terrain tile instead
+       of one, which is the same number of Esri tiles per screen area that the MapLibre side has
+       been fetching since #R178. Phones opt out (`fullResolution:false`) for the reason they opt
+       out of the stitch itself — 「ブラウザが落ちることがないように」 has outranked sharpness on
+       mobile since #R20, and four times the resident texture memory is exactly that risk. */
+    const sse=(cfg.screenSpaceError>0?cfg.screenSpaceError:2);
+    const declaredWidth=(cfg.fullResolution===false)?tileSize:Math.max(1,Math.round(tileSize/sse));
 
     function urlFor(x,y,level){
       if(!tiles.length) return null;
@@ -269,7 +301,8 @@ window.IntMapCesiumLayers=(function(){
         this._errorEvent=new Cesium.Event();
         this.tilingScheme=scheme;
         this.rectangle=scheme.rectangle;
-        this.tileWidth=tileSize; this.tileHeight=tileSize;
+        /* the level control, not a claim about the bytes — see the note above */
+        this.tileWidth=declaredWidth; this.tileHeight=declaredWidth;
         this.maximumLevel=maxLevel; this.minimumLevel=minLevel;
         this.ready=true;
         this.hasAlphaChannel=true;
@@ -279,7 +312,7 @@ window.IntMapCesiumLayers=(function(){
       get errorEvent(){ return this._errorEvent; }
       getTileCredits(){ return undefined; }
       pickFeatures(){ return undefined; }
-      requestImage(x,y,level){
+      requestImage(x,y,level,request){
         const url=urlFor(x,y,level);
         if(!url) return undefined;
         const scheme=/^([a-z0-9+.-]+):\/\//i.exec(url);
@@ -289,14 +322,40 @@ window.IntMapCesiumLayers=(function(){
              contract MapLibre's addProtocol has, so #R179's stitched 512-px satellite
              tile arrives here as a bitmap with no re-encode */
           const ac=(typeof AbortController!=='undefined')?new AbortController():{signal:undefined,abort(){}};
-          return Promise.resolve(proto({url},ac)).then(res=>{
+          const run=()=>Promise.resolve(proto({url},ac)).then(res=>{
             const d=res&&res.data;
             if(!d) return undefined;
             /* (#R181) …and every one of these becomes a texture through toTexture — see there */
             if(typeof ImageBitmap!=='undefined'&&d instanceof ImageBitmap) return toTexture(d);
             if(d instanceof ArrayBuffer||ArrayBuffer.isView(d)) return toTexture(new Blob([d]));
             return toTexture(d);
-          }).catch(()=>undefined);
+          });
+          /* ══ (#R185) THE PROTOCOL PATH HAS TO GO THROUGH THE SCHEDULER TOO ═══════════════
+             Everything Cesium fetches for itself is queued by RequestScheduler — at most 50 in
+             flight, 6 per server, ordered by the tile's own priority and CANCELLED when the
+             camera leaves it behind. This branch returned a bare promise, so the app's satellite
+             tiles were the one imagery source with no ceiling and no cancellation: during a drag
+             the queue filled with tiles for views the user had already left, and each of them
+             still cost four Esri fetches and a decode. That was tolerable while Cesium asked for
+             one imagery tile per terrain tile; it stopped being tolerable the moment the level
+             bias above made it four. Measured over a 40-step drag: 316 tile decodes, median
+             latency 303 ms — latency that is queueing, not network.
+             Cesium hands `requestImage` the Request object it made for this tile, and the
+             contract for "deferred, ask me again" is to return undefined — which is exactly what
+             Resource.fetchImage does. So do the same thing with the same object, and the
+             scheduler's ceiling, priority and cancellation apply to these tiles as well. */
+          if(request&&Cesium.RequestScheduler&&Cesium.RequestScheduler.request){
+            request.url=url;
+            request.throttle=true;
+            request.throttleByServer=false;   /* one logical server: the protocol handler decides where the bytes come from */
+            request.type=Cesium.RequestType.IMAGERY;
+            request.requestFunction=run;
+            request.cancelFunction=()=>{ try{ ac.abort(); }catch(_){} };
+            const p=Cesium.RequestScheduler.request(request);
+            if(!p) return undefined;          /* deferred — Cesium will ask again next frame */
+            return p.catch(()=>undefined);
+          }
+          return run().catch(()=>undefined);
         }
         return Cesium.ImageryProvider.loadImage(this,new Cesium.Resource({url,request:new Cesium.Request({throttle:true,throttleByServer:true,type:Cesium.RequestType.IMAGERY})}));
       }
@@ -664,6 +723,13 @@ window.IntMapCesiumLayers=(function(){
                 ent.__allowOverlap=(R(layout['text-allow-overlap'],ctx,false)===true);
                 ent.__sortKey=RN(layout['symbol-sort-key'],ctx,0);
                 ent.__padding=RN(layout['text-padding'],ctx,2);
+                /* (#R185) the declutter pass runs on every camera frame and needs this label's
+                   world position and screen box. Both are fixed the moment the entity is built —
+                   the text, the font size and the padding are all decided right here — so read
+                   them out of the entity's properties once instead of 1,330 times a frame. */
+                ent.__pos=e.position;
+                ent.__labelW=(label?String(label).length*size*0.55:0)+ent.__padding*2;
+                ent.__labelH=size+ent.__padding*2;
               }
               break; }
           }
@@ -701,6 +767,24 @@ window.IntMapCesiumLayers=(function(){
        every label, sort by the layer's own symbol-sort-key, and hide the ones
        whose box has already been taken. `text-allow-overlap` opts out, exactly
        as it does in the renderer this is matching. */
+    /* ══ (#R185) THE PASS RUNS ON EVERY CAMERA FRAME, SO ITS ARITHMETIC IS THE FRAME'S ═══════
+       This is a function of the camera, so #R185's redraw gate cannot skip it the way it skips
+       a layer rebuild — it has to run whenever the view moves, and measured on the 3-D satellite
+       scene over the Alps it was 10 ms of a 69 ms gesture frame with 1,329 label candidates.
+       Two things in it were paid per candidate that are properties of the FRAME:
+         · `SceneTransforms.worldToWindowCoordinates` rebuilds the view-projection product,
+           re-derives the viewport transformation and allocates a Cartesian4 for every call. The
+           product is the same for all 1,329 of them, so it is formed once and each label is one
+           matrix-vector multiply and a divide. Same arithmetic, same answer — verified against
+           Cesium's own function to a fraction of a pixel by tests/r185-cesium-perf.spec.js.
+         · the collision test was linear in the labels already placed, i.e. quadratic in the
+           number kept (320 of them is ~51,000 rectangle comparisons). A uniform grid of screen
+           cells makes it proportional to the number of NEIGHBOURS instead, which is what a
+           collision test is actually asking about.
+       The fast projection is used only in 3-D — the mode this app's Cesium view is always in —
+       and Cesium's own function still answers in any other mode, so the fallback is the original
+       behaviour rather than a guess. */
+    const _m4=new Cesium.Matrix4(), _v4=new Cesium.Cartesian4();
     function placeLabels(scene,dataSources,maxLabels){
       const C=Cesium;
       const now=C.JulianDate.now();
@@ -711,6 +795,23 @@ window.IntMapCesiumLayers=(function(){
          the ones actually in front of the viewer. This is Cesium's own horizon test. */
       let occluder=null;
       try{ occluder=new C.EllipsoidalOccluder(scene.globe.ellipsoid,scene.camera.positionWC); }catch(_){}
+      /* the frame's world→clip product, formed once */
+      let VP=null;
+      try{
+        if(scene.mode===C.SceneMode.SCENE3D&&scene.camera.frustum&&scene.camera.frustum.projectionMatrix)
+          VP=C.Matrix4.multiply(scene.camera.frustum.projectionMatrix,scene.camera.viewMatrix,_m4);
+      }catch(_){ VP=null; }
+      const project=(pos)=>{
+        if(VP){
+          _v4.x=pos.x; _v4.y=pos.y; _v4.z=pos.z; _v4.w=1;
+          const c=C.Matrix4.multiplyByVector(VP,_v4,_v4);
+          if(!(c.w>0)) return null;                       /* behind the eye */
+          return { x:(c.x/c.w*0.5+0.5)*W, y:(0.5-c.y/c.w*0.5)*H };
+        }
+        return C.SceneTransforms.worldToWindowCoordinates
+          ? C.SceneTransforms.worldToWindowCoordinates(scene,pos)
+          : C.SceneTransforms.wgs84ToWindowCoordinates(scene,pos);
+      };
       const cands=[];
       for(const ds of dataSources){
         if(!ds||!ds.show) continue;
@@ -718,20 +819,29 @@ window.IntMapCesiumLayers=(function(){
       }
       /* highest symbol-sort-key first, which is what decides who keeps the space */
       cands.sort((a,b)=>(b.__sortKey||0)-(a.__sortKey||0));
-      const taken=[];
+      /* screen buckets for the collision test — one cell is about one label box */
+      const CELL=64, GX=Math.max(1,Math.ceil(W/CELL)), GY=Math.max(1,Math.ceil(H/CELL));
+      const grid=new Map();
+      const cells=(b)=>{
+        const x0=Math.max(0,Math.min(GX-1,Math.floor(b[0]/CELL))), x1=Math.max(0,Math.min(GX-1,Math.floor(b[2]/CELL)));
+        const y0=Math.max(0,Math.min(GY-1,Math.floor(b[1]/CELL))), y1=Math.max(0,Math.min(GY-1,Math.floor(b[3]/CELL)));
+        const out=[]; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) out.push(y*GX+x);
+        return out;
+      };
       let shown=0;
       for(const e of cands){
-        const pos=e.position.getValue(now);
+        const pos=e.__pos||e.position.getValue(now);
         if(!pos){ e.label.show=false; continue; }
         if(occluder&&!occluder.isPointVisible(pos)){ e.label.show=false; continue; }
-        const win=C.SceneTransforms.worldToWindowCoordinates
-          ? C.SceneTransforms.worldToWindowCoordinates(scene,pos)
-          : C.SceneTransforms.wgs84ToWindowCoordinates(scene,pos);
+        const win=project(pos);
         if(!win){ e.label.show=false; continue; }
-        const txt=e.label.text&&e.label.text.getValue?e.label.text.getValue():e.label.text;
-        const fs=parseFloat((e.label.font&&e.label.font.getValue?e.label.font.getValue():e.label.font)||'14')||14;
-        const pad=e.__padding||2;
-        const w=String(txt||'').length*fs*0.55+pad*2, h=fs+pad*2;
+        let w=e.__labelW, h=e.__labelH;
+        if(w===undefined||h===undefined){
+          const txt=e.label.text&&e.label.text.getValue?e.label.text.getValue():e.label.text;
+          const fs=parseFloat((e.label.font&&e.label.font.getValue?e.label.font.getValue():e.label.font)||'14')||14;
+          const pad=e.__padding||2;
+          w=String(txt||'').length*fs*0.55+pad*2; h=fs+pad*2;
+        }
         const box=[win.x-w/2,win.y-h/2,win.x+w/2,win.y+h/2];
         /* OFF SCREEN: hidden, and — the part that matters — it does not RESERVE space either.
            The first version pushed every candidate's box into `taken`, so labels far outside
@@ -739,10 +849,16 @@ window.IntMapCesiumLayers=(function(){
         if(box[2]<0||box[0]>W||box[3]<0||box[1]>H){ e.label.show=false; continue; }
         if(e.__allowOverlap){ e.label.show=true; continue; }   /* opts out of the collision pass, as in MapLibre */
         if(shown>=maxLabels){ e.label.show=false; continue; }
+        const ks=cells(box);
         let hit=false;
-        for(const t of taken){ if(box[0]<t[2]&&box[2]>t[0]&&box[1]<t[3]&&box[3]>t[1]){ hit=true; break; } }
+        for(const k of ks){
+          const bucket=grid.get(k); if(!bucket) continue;
+          for(const t of bucket){ if(box[0]<t[2]&&box[2]>t[0]&&box[1]<t[3]&&box[3]>t[1]){ hit=true; break; } }
+          if(hit) break;
+        }
         if(hit){ e.label.show=false; continue; }
-        taken.push(box); e.label.show=true; shown++;
+        for(const k of ks){ let bucket=grid.get(k); if(!bucket){ bucket=[]; grid.set(k,bucket); } bucket.push(box); }
+        e.label.show=true; shown++;
       }
       return shown;
     }

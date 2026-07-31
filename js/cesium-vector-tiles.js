@@ -161,22 +161,50 @@ window.IntMapVectorTiles=(function(){
     }
     const MAX_TILES=64;
 
+    /* ══ (#R185) WHAT THIS VIEW WANTS, SAID WITHOUT ASSEMBLING ANYTHING ═══════════════════════
+       `update()` below does two separable jobs: it declares which tiles the current view needs
+       (cheap — a cover and a queue), and it concatenates every decoded feature in that cover
+       (expensive — tens of thousands of objects). The layer above called it once PER LAYER PER
+       CAMERA FRAME, so ten style layers over one tileset paid the concatenation ten times a
+       frame whether or not anything had changed. Measured on the 3-D satellite scene over the
+       Alps: 979 ms of feature assembly across a 40-step drag, and 2,963 ms of entity rebuilding
+       downstream of it, for a tile cover that was IDENTICAL on most of those frames.
+       So the declaration gets its own entrance, and it answers with a SIGNATURE of the cover.
+       Same cover ⇒ same features ⇒ the entities already on screen are already right, and the
+       caller can skip the whole rebuild. The signature is the level plus the tile-key list, so
+       it changes exactly when the set of tiles does — no earlier (a sub-pixel pan) and no later
+       (crossing a tile boundary, or the zoom stepping to another level). */
+    let lastSig='';
+    function want(bounds,zoom){
+      if(!state.ready){ tjP.then(ok=>{ if(ok&&onChange) onChange(); }); return ''; }
+      const list=cover(bounds,zoom);
+      const next=new Set();
+      let sig='';
+      for(const [z,x,y] of list){ const k=key(z,x,y); next.add(k); sig+=k+' '; }
+      wantSet=next;
+      for(const [z,x,y] of list){
+        const k=key(z,x,y);
+        if(cache.get(k)===undefined){ cache.set(k,'pending'); queue.push({z,x,y,k}); }
+      }
+      pump();
+      lastSig=sig;
+      return sig;
+    }
+    /* the signature of the cover last DECLARED — used by the layer above to notice that a tile
+       landing (which is announced through onChange, not through want()) has changed the answer */
+    function sig(){ return lastSig; }
+
     /* Ask for the tiles this view needs; returns the features already decoded.
        Never blocks: what is not in yet arrives through `onChange`. */
     function update(bounds,zoom){
-      if(!state.ready){ tjP.then(ok=>{ if(ok&&onChange) onChange(); }); return []; }
-      const want=cover(bounds,zoom);
+      if(!state.ready){ want(bounds,zoom); return []; }
+      want(bounds,zoom);
       const out=[];
-      const next=new Set();
-      for(const [z,x,y] of want) next.add(key(z,x,y));
-      wantSet=next;
-      for(const [z,x,y] of want){
+      for(const [z,x,y] of cover(bounds,zoom)){
         const k=key(z,x,y);
         const v=cache.get(k);
-        if(v===undefined){ cache.set(k,'pending'); queue.push({z,x,y,k}); }
-        else if(v&&v!=='pending'&&v!=='error'){ touch(k,v); out.push(...v.features); }
+        if(v&&v!=='pending'&&v!=='error'){ touch(k,v); out.push(...v.features); }
       }
-      pump();
       return out;
     }
     /* what is decoded RIGHT NOW for this view, without scheduling anything */
@@ -197,8 +225,8 @@ window.IntMapVectorTiles=(function(){
     }
     /* (#R181) emptying wantSet is what now cancels the queue — pump() drops every job whose
        tile is no longer wanted, and after destroy() none of them are */
-    function destroy(){ wantSet=new Set(); queue.length=0; cache.clear(); }
-    return { id, spec, update, current, stats, destroy, isReady:()=>state.ready };
+    function destroy(){ wantSet=new Set(); queue.length=0; cache.clear(); lastSig=''; }
+    return { id, spec, want, sig, update, current, stats, destroy, isReady:()=>state.ready };
   }
 
   return { makeSource, lib, _tileX:tileX, _tileY:tileY };
