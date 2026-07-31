@@ -234,11 +234,23 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
      caught a real defect on production: the pick and the renderer's own footprint hit were two separate
      click handlers and each of them TOGGLED, so a click that satisfied both selected the aircraft and
      deselected it in the same event. One handler, one decision. */
+  /* (#R183) Aim at the aircraft's GROUND POSITION, taken from the data, rather than at the centroid
+     of whichever polygon a render query happens to return. The post is deliberately a hairline —
+     max(6 m, 1.1 px) — so it is only about two pixels across on screen, and the old centroid only
+     ever hit it by being coincidentally close: the silhouette's average vertex sits a little aft of
+     the aircraft, and once the body became four parts (fuselage/wing/stabiliser/fin) the fuselage's
+     average moved a couple of pixels forward and the click fell off the post. The position the test
+     MEANS is the aircraft's own lng/lat, so that is what it now projects. */
   const post = await page.evaluate(() => { const m = window.__imap;
-    /* the aircraft's own footprint: where the renderer answers a point query for it (its ground position) */
-    const f = m.queryRenderedFeatures({ layers: ['lyr-planes-3d'] }).find(x => (x.properties || {}).icao24 === 'ABC123');
-    const r = f.geometry.coordinates[0], c = r.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
-    const g = m.project([c[0] / r.length, c[1] / r.length]); return { x: Math.round(g.x), y: Math.round(g.y) }; });
+    /* the post's own square is centred exactly on the aircraft's lng/lat, so its centroid IS the
+       ground point — aim at the thing being tested rather than at a proxy for it */
+    const pf = m.queryRenderedFeatures({ layers: ['lyr-planes-post'] }).find(x => (x.properties || {}).post === 1);
+    let ll;
+    if (pf) { const r = pf.geometry.coordinates[0].slice(0, 4);
+      const c = r.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
+      ll = [c[0] / r.length, c[1] / r.length];
+    } else { ll = [139.72, 35.68]; }   /* the stub's final position, after its four fixes */
+    const g = m.project(ll); return { x: Math.round(g.x), y: Math.round(g.y) }; });
   await page.mouse.click(post.x, post.y); await page.waitForTimeout(1200);
   expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'the post under an aircraft selects it').toBe('ABC123');
 });

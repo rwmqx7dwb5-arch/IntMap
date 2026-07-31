@@ -183,6 +183,138 @@ window.IntMapModules.volume3d=function(HOST){
     }
     function hide(){ const E=GE(); if(!E) return; try{ E.layers.setVisible(LYR,false); E.layers.setVisible(EDGE,false);
       if(E.layers.has(BODY)) E.layers.setVisible(BODY,false); }catch(_){} }
+
+    /* ---- MORE THAN ONE BODY (#R183) ---------------------------------------------------------
+       「完了した立体を保存して次を描ける／オブジェクト一覧から選択・非表示・削除／後から高度・色・
+         透明度を編集／体積値を常時表示／クリックして選択」
+
+       Everything above this line describes ONE volume: `ring`, `baseM`, `topM`, `color`, `opacity`
+       are single variables, so drawing a second body could only ever destroy the first. That is the
+       whole limitation, and it is not a rendering one — the engine's solid contract is already keyed
+       BY LAYER ID (`addSolid(id)`, `setSolid(id, …)`), so several bodies were always drawable. What
+       was missing was somewhere to keep them.
+
+       The draft above is deliberately left exactly as it was. It is the one being drawn, it owns the
+       gesture, the DEM chase and the click-vertex sync, and every one of those paths has been through
+       four rounds of fixes (#R170–#R174). `commit()` copies it into `saved` and clears it, so the
+       drawing flow is untouched and "save this one and start the next" is the only new state.
+
+       Saved bodies get their own layer ids and are re-rendered from their own numbers, which is what
+       makes them editable afterwards: changing a saved object's altitude band or colour is the same
+       code path as painting it in the first place. */
+    let saved=[], seq=0, selectedId=null;
+    const SS=id=>'imv3d-s-'+id, SL=id=>'imv3d-sl-'+id, SE=id=>'imv3d-se-'+id, SB=id=>'imv3d-sb-'+id;
+    /* Area/volume for a saved body: the SAME turf ring area the draft and the Area tool use, so a
+       body does not change size by being saved. */
+    function ringAreaM2(r){ try{ return (HOST.hasTurf()&&r&&r.length>=3)?(HOST.ringArea(r)*1e6):0; }catch(_){ return 0; } }
+    function objVolumeM3(o){ return ringAreaM2(o.ring)*Math.abs(o.top-o.base); }
+    function ensureSaved(o){ const E=GE(); if(!E||!E.canDraw()) return false;
+      try{
+        if(!E.layers.hasSource(SS(o.id))) E.layers.addSource(SS(o.id),{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        if(canSolid()&&!E.layers.has(SB(o.id))) E.layers.addSolid(SB(o.id));
+        if(!E.layers.has(SL(o.id))){
+          const ok=E.layers.addExtrusion({ id:SL(o.id), source:SS(o.id), paint:{
+            'fill-extrusion-color':o.color, 'fill-extrusion-opacity':o.opacity,
+            'fill-extrusion-base':0, 'fill-extrusion-height':0 } });
+          if(!ok) return false;
+        }
+        if(!E.layers.has(SE(o.id))) E.layers.add({ id:SE(o.id), type:'line', source:SS(o.id),
+          paint:{ 'line-color':o.color, 'line-width':1.6, 'line-opacity':0.9 } });
+        return true;
+      }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
+    }
+    /* The same altitude compensation the draft documents at the top of this file: with 3-D terrain on
+       the renderer's metres are above the GROUND, so the ground under this body's own centroid is
+       subtracted and the user's numbers stay altitude above SEA LEVEL either way. Each saved body
+       reads its OWN ground, not the draft's — they can be on opposite sides of a mountain. */
+    function objGround(o){ if(!has3DTerrain()||!o.ring.length) return null;
+      try{ let x=0,y=0; o.ring.forEach(p=>{ x+=p[0]; y+=p[1]; });
+        const g=GE().coords.terrainElevation({lng:x/o.ring.length,lat:y/o.ring.length});
+        return (g==null||!isFinite(g))?null:+g; }catch(_){ return null; } }
+    function paintSaved(o){ const E=GE(); if(!E) return false;
+      if(!o.ring||o.ring.length<3) return false;
+      if(!ensureSaved(o)) return false;
+      const r=o.ring.map(p=>[+p[0],+p[1]]); const a=r[0], z=r[r.length-1];
+      if(a[0]!==z[0]||a[1]!==z[1]) r.push([a[0],a[1]]);
+      o.ground=objGround(o);
+      const off=(has3DTerrain()&&o.ground!=null)?o.ground:0;
+      const lo=Math.min(o.base,o.top), hi=Math.max(o.base,o.top);
+      const rb=Math.max(0,lo-off), rh=Math.max(rb+0.5,hi-off);
+      const asSolid=canSolid()&&E.layers.has(SB(o.id));
+      const on=o.visible!==false;
+      /* the selected body is outlined brighter, so "which one am I editing" is answerable by looking
+         at the map rather than only at the list */
+      const sel=(o.id===selectedId);
+      try{
+        E.layers.setSourceData(SS(o.id),{type:'FeatureCollection',features:[
+          {type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{color:o.color,id:o.id}} ]});
+        E.layers.setExtrusionRange(SL(o.id),rb,rh);
+        E.layers.setPaint(SL(o.id),'fill-extrusion-color',o.color);
+        E.layers.setPaint(SL(o.id),'fill-extrusion-opacity',o.opacity);
+        E.layers.setVisible(SL(o.id),on&&!asSolid);
+        E.layers.setPaint(SE(o.id),'line-color',sel?'#ffd23f':o.color);
+        E.layers.setPaint(SE(o.id),'line-width',sel?3:1.6);
+        E.layers.setVisible(SE(o.id),on);
+        if(canSolid()){ E.layers.setSolid(SB(o.id),{ ring:r, base:rb, top:rh, color:o.color, opacity:o.opacity });
+          E.layers.setVisible(SB(o.id),on&&asSolid); }
+        lastRenderErr=null; return true;
+      }catch(e){ lastRenderErr=String(e&&e.message||e); return false; }
+    }
+    function dropSaved(o){ const E=GE(); if(!E) return;
+      try{ E.layers.remove(SL(o.id)); E.layers.remove(SE(o.id));
+        if(E.layers.removeSolid) E.layers.removeSolid(SB(o.id));
+        E.layers.removeSource(SS(o.id)); }catch(_){} }
+    function repaintSaved(){ saved.forEach(o=>{ try{ paintSaved(o); }catch(_){} }); }
+
+    /* ---- the object list's operations ------------------------------------------------------- */
+    /* declared ABOVE its first use — the #R167/#R183 dead-zone trap, which cost a whole module the
+       last time it was written the other way round */
+    const L2=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    function commit(name){
+      const r=closedRing(); if(!r) return null;                     /* nothing finished to save */
+      const o={ id:'v'+(++seq), ring:ring.map(p=>[+p[0],+p[1]]),
+        base:loM(), top:hiM(), color, opacity, visible:true, ground:null,
+        name:String(name||'').trim()|| (L2('Volume','立体','Volumen','Объём','Volumen')+' '+(saved.length+1)) };
+      saved.push(o);
+      selectedId=o.id;
+      paintSaved(o);
+      /* start the next one: the footprint goes, the SETTINGS stay. Re-entering the altitudes and the
+         colour for every body in a series is exactly the friction this feature exists to remove — the
+         same reasoning as #R18 keeping the line-of-sight numbers across sites. */
+      ring=[]; trace=[]; groundM=null; sealed=false; ringFromClicks=false; hide();
+      return o.id;
+    }
+    function find(id){ return saved.find(o=>o.id===id)||null; }
+    function selectObj(id){ selectedId=find(id)?id:null; repaintSaved(); return selectedId; }
+    function setObjVisible(id,v){ const o=find(id); if(!o) return false; o.visible=(v==null)?!o.visible:!!v; paintSaved(o); return o.visible; }
+    function removeObj(id){ const i=saved.findIndex(o=>o.id===id); if(i<0) return false;
+      dropSaved(saved[i]); saved.splice(i,1); if(selectedId===id) selectedId=null; return true; }
+    function removeAllObjs(){ saved.slice().forEach(o=>dropSaved(o)); saved=[]; selectedId=null; return true; }
+    /* Editing a saved body afterwards. Altitudes come in through the SAME `_num` guard the draft's
+       fields use, so a half-typed value ('', '-', '1e') never rewrites a number. */
+    function updateObj(id,patch){ const o=find(id); if(!o||!patch) return false;
+      if(patch.base!=null) o.base=clamp(_num(patch.base,o.base),MIN_M,MAX_M);
+      if(patch.top!=null)  o.top =clamp(_num(patch.top ,o.top ),MIN_M,MAX_M);
+      if(patch.color) o.color=patch.color;
+      if(patch.opacity!=null&&isFinite(+patch.opacity)) o.opacity=clamp(+patch.opacity,0.05,0.95);
+      if(patch.name!=null) o.name=String(patch.name);
+      paintSaved(o); return true; }
+    /* ---- click to select --------------------------------------------------------------------
+       Point-in-polygon against each saved FOOTPRINT, newest first. Deliberately not a renderer pick:
+       the footprint is the thing that is on the ground, the test is exact, and it gives the same
+       answer on an engine whose solids are a fallback shell (Cesium, #R180) as on one with real
+       closed bodies. Hidden bodies are not selectable — an invisible object should not swallow a
+       click meant for the one underneath it. */
+    function pointInRing(lng,lat,r){ let inside=false;
+      for(let i=0,j=r.length-1;i<r.length;j=i++){
+        const xi=r[i][0], yi=r[i][1], xj=r[j][0], yj=r[j][1];
+        if(((yi>lat)!==(yj>lat)) && (lng < (xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; }
+      return inside; }
+    function pickAt(lng,lat){
+      for(let i=saved.length-1;i>=0;i--){ const o=saved[i];
+        if(o.visible===false||!o.ring||o.ring.length<3) continue;
+        if(pointInRing(+lng,+lat,o.ring)) return o.id; }
+      return null; }
     function remove(){ const E=GE(); if(!E) return;
       try{ E.layers.remove(LYR); E.layers.remove(EDGE);
         if(E.layers.removeSolid) E.layers.removeSolid(BODY);
@@ -361,12 +493,15 @@ window.IntMapModules.volume3d=function(HOST){
     function fieldStep(){ return unit==='m'?100:unit==='ft'?500:unit==='km'?0.1:0.1; }
 
     /* ---- formatting (shared with the tool panel) -------------------------------------------- */
-    function fmtVolume(){ const v=volumeM3(); if(!(v>0)) return '—';
+    /* (#R183) takes the value, so a SAVED body's volume is written by exactly the same rules as the
+       draft's — the list, the per-object row and the total cannot drift apart in formatting. */
+    function fmtVolumeOf(v){ if(!(v>0)) return '—';
       const per=UNITS[unit]*UNITS[unit]*UNITS[unit], u=v/per;
       /* metres get the long-standing auto-flip to km³ once the number stops being readable; a unit the user
          chose on purpose is never silently swapped for another one. */
       if(unit==='m'&&v>=1e9) return (v/1e9).toLocaleString(undefined,{maximumFractionDigits:2})+' km³';
       return (u>=100?Math.round(u):+u.toPrecision(4)).toLocaleString(undefined,{maximumFractionDigits:4})+' '+unit+'³'; }
+    function fmtVolume(){ return fmtVolumeOf(volumeM3()); }
     function fmtAlt(m){ const v=toUnit(m), d=_dp();
       return (d?(+v.toFixed(d)):Math.round(v)).toLocaleString(undefined,{maximumFractionDigits:d})+' '+unit; }
 
@@ -384,13 +519,29 @@ window.IntMapModules.volume3d=function(HOST){
       if(_wired) return;
       const E=GE();
       if(E&&E.events){ _wired=true;
-        E.events.on('styledata',()=>{ try{ if(ring.length>=3 && !E.layers.has(LYR)) setTimeout(paint,80); }catch(_){} });
-        E.events.on('terrain',()=>{ try{ if(ring.length>=3) setTimeout(()=>paint(),120); }catch(_){} });
+        E.events.on('styledata',()=>{ try{ if(ring.length>=3 && !E.layers.has(LYR)) setTimeout(paint,80); }catch(_){}
+          /* (#R183) …and every SAVED body too. A base-map change rebuilds the style and takes their
+             layers with it; without this the object list still listed them while the map was empty. */
+          try{ if(saved.length && !E.layers.has(SL(saved[0].id))) setTimeout(repaintSaved,80); }catch(_){} });
+        E.events.on('terrain',()=>{ try{ if(ring.length>=3) setTimeout(()=>paint(),120); }catch(_){}
+          /* a terrain toggle changes what the renderer's metres MEAN, so each saved body must re-read
+             the ground under ITS OWN centroid — that compensation is the whole point of this tool */
+          try{ if(saved.length) setTimeout(repaintSaved,140); }catch(_){} });
         return; }
       if((n||0)<200) setTimeout(()=>wire((n||0)+1),100);
     })(0);
 
     return { setRing, syncClicks, setAltitudes, setStyle, clear, remove, paint,
+      /* (#R183) more than one body — see the note above `saved` */
+      commit, list:()=>saved.map(o=>({ id:o.id, name:o.name, base:o.base, top:o.top, low:Math.min(o.base,o.top),
+        high:Math.max(o.base,o.top), color:o.color, opacity:o.opacity, visible:o.visible!==false,
+        points:o.ring.length, ground:o.ground,
+        areaM2:ringAreaM2(o.ring), thicknessM:Math.abs(o.top-o.base), volumeM3:objVolumeM3(o),
+        volume:fmtVolumeOf(objVolumeM3(o)), band:fmtAlt(Math.min(o.base,o.top))+'–'+fmtAlt(Math.max(o.base,o.top)) })),
+      select:selectObj, selected:()=>selectedId, setObjVisible, removeObj, removeAll:removeAllObjs,
+      updateObj, pickAt, count:()=>saved.length, repaintSaved,
+      /* the total the panel shows under the list — a series of bodies is usually drawn to be added up */
+      totalVolumeM3:()=>saved.reduce((s,o)=>s+objVolumeM3(o),0),
       /* (#R171) shapes + gesture ownership */
       setShape, shape:()=>shape, release, ownsGesture, onDone:fn=>{ onShapeDone=fn; },
       circleRing, rectRing, smoothRing, distM,
@@ -403,7 +554,12 @@ window.IntMapModules.volume3d=function(HOST){
       ground:()=>groundM, terrainOn:has3DTerrain,
       areaM2, thicknessM, volumeM3, fmtVolume, fmtAlt, keep,
       /* diagnostics — Atlas + tests read these instead of poking at the renderer */
+      fmtVolumeOf,
       state:()=>({ points:ring.length, base:baseM, top:topM, low:loM(), high:hiM(), shape, drawing, sealed,
+        /* (#R183) the saved bodies, so Atlas and the tests can read the whole tool rather than only
+           the one being drawn */
+        objects:saved.length, selected:selectedId,
+        totalVolumeM3:saved.reduce((s,o)=>s+objVolumeM3(o),0),
         thickness:thicknessM(), areaM2:areaM2(), unit, fromClicks:ringFromClicks,
         volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
         /* (#R173) "painted" is true for EITHER representation — the closed body and the open shell are the

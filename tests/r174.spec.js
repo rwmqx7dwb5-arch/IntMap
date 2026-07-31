@@ -129,7 +129,10 @@ test('the track survives zooming in over high ground with 3-D terrain on', async
     const t = window.__cap.track, p = window.__cap.planes;
     return { zoom: +m.getZoom().toFixed(2), centreGround: g == null ? null : Math.round(g),
       legs: t ? t.features.filter(f => f.properties.kind === 'leg').length : -1,
-      bodies: p ? p.features.filter(f => !f.properties.post).length : -1 }; });
+      /* (#R183) one aircraft is FOUR extrusions now (fuselage/wing/stabiliser/fin), so counting
+         non-post features counts PARTS. The aircraft is counted the way the module counts it — by
+         its fuselage, or by the single silhouette when the body is drawn plainly. */
+      bodies: p ? p.features.filter(f => !f.properties.post && (!f.properties.part || f.properties.part === 'fuselage')).length : -1 }; });
 
   const box = await page.evaluate(() => { const c = document.getElementById('map').getBoundingClientRect();
     return { x: Math.round(c.x + c.width / 2), y: Math.round(c.y + c.height / 2) }; });

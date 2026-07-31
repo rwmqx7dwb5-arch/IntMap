@@ -943,6 +943,19 @@ js/
                                     表示する精度値（セル寸法・レイ本数・標本数・DEM ズーム・欠測数）は
                                     **実際に使った値**。DEM タイル予算は **LRU 上限 560（#R19）の内側**でなければ
                                     掃引中のタイルが追い出される（§19 #R176 ②）。EN/JP/DE/RU/ES。
+                                    (#R183) **2点間リンク解析**を追加（`linkTo` / `linkRun` / `clearLink` /
+                                    `armLink` / `linkState`）。面のスイープでは構造上答えられない
+                                    「この地点→あの地点は届くか・何が邪魔か・アンテナは何m必要か」に答える。
+                                    **線はタイル数が長さに比例する**ので、面が予算のため後退する場面でも
+                                    **DEM native z15** で走る（実測 10km→3.9m間隔／98km→24.5m間隔）。
+                                    出力＝曲率＋屈折込みの地形断面グラフ（devicePixelRatioで描画）・
+                                    **決め手となる地形**（位置と余裕/不足m）・フレネル**割合**・回折損失dB・
+                                    **必要アンテナ高**（同じ判定を二分探索して解く。500m上限）。
+                                    障害物の順位は素の余裕でなく**フレネル半径に対する比**（第1ゾーンは
+                                    中間点で最も広いので、素のmだと手前の小丘が中間点の尾根を追い越す）。
+                                    判定語はラスタと**同じ4語**（clear/fresnel/diffraction/blocked）。
+                                    必要高が解けない場合、障害物が経路の75%より先なら「**相手側を上げよ**」と言う
+                                    （手前を上げても持ち上がりは `(1−d1/total)` 倍しかない）。
   terrain-water.js                  (#R176) **地形編集＋水流 `IntMapTerrainWater`**。実 DEM をブラシで盛る／削る、
                                     線を引くだけで堤防・ダム（同じ高さ場に稜線を刻むだけで、ソルバは man-made か
                                     どうかを知らない）、任意量の水を落とす。水は**プライオリティフラッド**
@@ -974,8 +987,22 @@ js/
   analysis-panels.js                (#R166) 解析パネル 5本。時系列チャート `IntMapTimeSeries`・AIリサーチ
                                     `IntMapAIResearch`・2レイヤー相関/散布図・世界史イベント年表・地理クイズ
                                     `IntMapEdu`。95KB
+  wx-source.js                      (#R183) **気象・UVの唯一の取得口** `window.IntMapWx`。ファクトリでは
+                                    なく即時公開なので `src/main.js` の先頭付近で読み込む（必須グローバル
+                                    チェックにも `IntMapWx` を追加済み）。`point()` が
+                                    Open-Meteo →（不可なら）MET Norway の梯子を1本にまとめる。中身は
+                                    (a) `r.ok` と Open-Meteo 自身の `{"error":true}` の両方を検査、
+                                    (b) **サーキットブレーカー**＝「1日の上限」429 はその日いっぱい続く事実
+                                    なので再要求せず 00:00 UTC まで fallback 直行（localStorage 保存）、
+                                    (c) URL 単位の合流＋TTLキャッシュ、
+                                    (d) 日の出・日没は**ネットワーク非依存の計算**（`sunTimes`）。
+                                    単位の正直さ: Open-Meteo の `uv_index` は全天、MET は
+                                    `ultraviolet_index_clear_sky`＝**別の量**なのでフィールドを分ける。
+                                    MET は現在時刻から先しか無いので初日バケットに `_partialFirstDay`。
   weather.js                        (#R166) 気象 3本。風の粒子アニメーション `Wind`・予報パネル
                                     `IntMapWeatherEC`・地点天気 `IntMapWeather`。52KB
+                                    (#R183) 取得の梯子は自前で持たず `IntMapWx.point()` に委譲
+                                    （MET マッピングの二重持ちが #R72 の修正を widgets へ渡らなくした原因）
   playground.js                     (#R166) プレイグラウンド（beta）。World Explorer／パンデミック／ネーションシム。
                                     48KB。**2番目の READ-WRITE ホストメンバー利用モジュール**
                                     （`mode`＝`currentMode` と `satPanelDismissed` を setter 経由で書く。§3.1 #R166）。
@@ -1072,6 +1099,14 @@ js/
                                     描画中だけ engine の `input.setDragPan(false)` でドラッグを預かる。
                                     (#R172) **高度の上限撤廃**・**単位（m/km/ft/mi）**。クリック由来でないリング
                                     （Atlas 等）はパネル再描画で上書きされない（`syncClicks`）。
+                                    (#R183) **複数オブジェクト対応**。`saved[]` に確定した立体を持ち、各体が
+                                    自前のレイヤID（`imv3d-s{,l,e,b}-<id>`）を持つ。`commit()`＝下書きを複製して
+                                    底面だけ空に（高度・色は残す）／`list()`＝名前・帯・体積・表示＋**合計**／
+                                    `select` `setObjVisible` `removeObj` `removeAll` `updateObj`（保存済みの
+                                    高度帯・色・不透明度を後から編集。下書きと同じ `_num` ガード）／
+                                    `pickAt(lng,lat)`＝底面の点内包で**クリック選択**（非表示体は対象外）。
+                                    **各体は自分の重心下の地面を読む**（山の反対側に置かれ得るので共有オフセット不可）。
+                                    スタイル入替・地形トグルで保存済みも描き直す。**下書きの経路は無変更**。
                                     (#R173) **立体は engine の `layers.addSolid` に頼む「閉じた立体」ひとつ**になった。
                                     #R172 の「底面スラブ＋内部シート8枚」は**一度も見えていなかった**——`fill-extrusion`
                                     は深度を書き込むので、内側に描いたものは自分の手前の壁で深度テストに落ちる。

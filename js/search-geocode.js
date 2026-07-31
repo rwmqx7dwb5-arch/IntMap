@@ -84,6 +84,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     const seen=new Set();
     return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);
   }
+
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
     res.style.display='block';
@@ -93,14 +94,16 @@ window.IntMapModules.searchGeocode=function(HOST){
     const pq=preprocessNLQuery(q);
     const local=localFuzzyPlaces(q);
     const seen=new Set();
-    const addItem=(label,lng,lat,raw)=>{ if(isNaN(lng)||isNaN(lat))return; const key=label+'|'+lng.toFixed(2)+'|'+lat.toFixed(2); if(seen.has(key))return; seen.add(key);
-      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; d.onclick=()=>{ gotoPlace(lng,lat,label,raw||null); res.style.display='none'; inp.value=String(label).split(',')[0].split(' · ')[0]; }; res.appendChild(d); };
+    /* (#R183) `kind` rides along so a local (gazetteer / country / capital) match — which has no
+       provider metadata at all — still gets framed by what it IS rather than by the default. */
+    const addItem=(label,lng,lat,raw,kind)=>{ if(isNaN(lng)||isNaN(lat))return; const key=label+'|'+lng.toFixed(2)+'|'+lat.toFixed(2); if(seen.has(key))return; seen.add(key);
+      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; d.onclick=()=>{ gotoPlace(lng,lat,label,raw||null,kind||null); res.style.display='none'; inp.value=String(label).split(',')[0].split(' · ')[0]; }; res.appendChild(d); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
        timeout so it can never hang the search. */
     res.innerHTML='';
-    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null));
+    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null,l.kind));
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${HOST.t('loading')}</div>`;
     /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
        blocked (null Origin) or just slow, and on a fresh load countryStats isn't loaded yet, so there was
@@ -109,18 +112,23 @@ window.IntMapModules.searchGeocode=function(HOST){
        coverage). Either one alone yields results, so the search practically never comes back empty. */
     const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },5000);
     const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${HOST.lang==='jp'?'ja':'en'}&format=json`,{signal:ctrl.signal})
-      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,address:{country:p.country}}); }); }).catch(()=>{});
+      /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
+         (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
+      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
     const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${HOST.lang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
       .then(r=>r.ok?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
     const phP=fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=${HOST.lang==='jp'?'en':'en'}`,{signal:ctrl.signal})
+      /* (#R183) Photon publishes `extent` [minLon, maxLat, maxLon, minLat] on most results — a real
+         footprint, which beats any class guess — plus osm_key/osm_value as the class fallback. All
+         three were being discarded here, so every Photon hit landed on the flat zoom-9 default. */
       .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
         const label=[p.name,p.city,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
-        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
+        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
     await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
-    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
+    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null,l.kind)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${HOST.t('noMatch')}</div>`; }
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
@@ -138,10 +146,24 @@ window.IntMapModules.searchGeocode=function(HOST){
     searchCardEl.style.left=pt.x+'px';
     searchCardEl.style.top=pt.y+'px';
   }
-  async function gotoPlace(lng,lat,displayName,raw){
+  async function gotoPlace(lng,lat,displayName,raw,localKind){
     const GEO=window.IntMapGeoEngine; if(!GEO)return;
     closeSearchCard();
-    GEO.camera.flyTo({center:[lng,lat],zoom:9,speed:1.4});
+    /* (#R183) …instead of zoom 9 for a doorway and zoom 9 for a continent. See framingFor above.
+       fitBounds is preferred where the geocoder gave a real extent; cameraForBounds is asked first so
+       the flight is a single smooth flyTo rather than fitBounds' own motion, and so a renderer that
+       cannot answer the query still gets framed. maxZoom keeps a tiny extent (a single building's
+       footprint) from slamming into z20. */
+    const fr=window.IntMapPlaceFraming.framingFor(raw,localKind);
+    let flown=false;
+    if(fr.bounds&&!fr.bounds.huge){
+      try{
+        const cam=GEO.camera.forBounds(fr.bounds,{padding:64,maxZoom:16.5});
+        if(cam&&cam.center&&isFinite(cam.zoom)){ GEO.camera.flyTo({center:cam.center,zoom:cam.zoom,speed:1.4,essential:true}); flown=true; }
+        else { GEO.camera.fitBounds(fr.bounds,{padding:64,maxZoom:16.5,speed:1.4,essential:true}); flown=true; }
+      }catch(_){}
+    }
+    if(!flown) GEO.camera.flyTo({center:[lng,lat],zoom:fr.zoom,speed:1.4});
     /* Build custom HTML pin element */
     const pinEl=document.createElement('div');
     pinEl.className='search-pin';
@@ -191,5 +213,8 @@ window.IntMapModules.searchGeocode=function(HOST){
       }
     }catch(_){}
   }
+  /* (#R183) The framing decision itself lives in js/place-framing.js — it is pure (no map, no HOST,
+     no renderer), this factory's body may contain only declarations (tests/r169-checks #4), and the
+     app-body shim contract pins exactly this return list. */
   return { doGeocode, localFuzzyPlaces };
 };

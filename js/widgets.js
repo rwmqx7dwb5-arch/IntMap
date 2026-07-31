@@ -423,21 +423,43 @@ window.IntMapModules.widgets=function(HOST){
          SHARED geoPos cache, so re-rendering all weather/aqi/sun/uv widgets lets them consume the cached coords and
          overwrite their own prompt buttons — "他のウィジェットのボタンも全部それぞれ押さなくていいように". */
       setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=jp()?'取得中…':'Locating…'; reqGeo(()=>{ try{ active.forEach(w=>{ if(['weather','aqi','sun','uv'].includes(w.t)) refreshOne(w); }); }catch(_){ try{ refreshOne(e); }catch(__){} } }); }; },0); }
+    /* (#R183) 「UV Indexとweatherのウィジェットが更新されない。」 ROOT CAUSE, reproduced in the browser:
+       api.open-meteo.com was answering 429 {"error":true,"reason":"Daily API request limit exceeded"},
+       and this function did `await r.json()` with NO `r.ok` test — an error body is perfectly good JSON,
+       so `j.current` came back undefined and the card printed "🌤 —" forever with nothing to explain it.
+       The air-quality host has its own quota and kept working, which is exactly why the report named
+       `weather` and `uv` and not `aqi`.
+       #R72 fixed this same defect in the point-weather popup and the fix could not travel, because every
+       caller wrote its own fetch. It travels now: window.IntMapWx is the one guarded client (r.ok +
+       {"error":true} checked, MET Norway failover, a circuit breaker so a dead quota is not re-hammered
+       all day, request coalescing). See js/wx-source.js. */
+    /* When BOTH sources are gone, SAY so — a bare dash is the thing that made this invisible for
+       eleven rounds. `_wxWhy` reads the breaker so the line names the actual reason. */
+    function _wxWhy(){ try{ const st=window.IntMapWx&&window.IntMapWx.status();
+        if(st&&st.down&&st.daily) return _WL('Weather service daily limit reached — retrying after 00:00 UTC',
+          '気象サービスの1日の上限に達しました（00:00 UTCに再開）','Tageslimit des Wetterdienstes erreicht — erneut ab 00:00 UTC',
+          'Суточный лимит погодного сервиса исчерпан — повтор после 00:00 UTC','Límite diario del servicio meteorológico alcanzado — se reintenta tras las 00:00 UTC');
+      }catch(_){}
+      return _WL('Weather services unreachable','気象サービスに接続できません','Wetterdienste nicht erreichbar','Погодные сервисы недоступны','Servicios meteorológicos no disponibles'); }
+    /* the "as of / via" tail every weather-family card shows, so the source is never a guess */
+    function _wxSrc(j){ return (j&&j._src)?(' · '+j._src):''; }
     async function refreshWeather(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
-        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
-        const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
+        const j=await window.IntMapWx.point(c.lat,c.lng,{days:1,uv:false});
+        if(!j){ setV(e.u,'—', _wxWhy()); return; }
+        const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+c.lbl);
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+c.lbl+_wxSrc(j));
       }catch(_){ setV(e.u,'—', una()); } }
     /* (#R41) Weather at the MAP CENTER — distinct from the geolocation 'weather' widget; needs no permission
        and follows wherever the user pans (refreshed on the data tick). */
     async function refreshMapWeather(e){ try{ const c=camCentre(); if(!c){ setV(e.u,'—',una()); return; }
-        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto',{cache:'no-store'});
-        const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
+        const j=await window.IntMapWx.point(c.lat,c.lng,{days:1,uv:false});
+        if(!j){ setV(e.u,'—', _wxWhy()); return; }
+        const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map center')); }catch(_){ setV(e.u,'—', una()); } }
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map center')+_wxSrc(j)); }catch(_){ setV(e.u,'—', una()); } }
     /* (#R21) FX freshness: fxratesapi.com (keyless, CORS*, minute-fresh — curl-verified) is primary;
        open.er-api.com (daily) stays as the fallback. */
     async function refreshFx(e){ try{ const base=(e.cfg&&e.cfg.base)||'USD', quote=(e.cfg&&e.cfg.quote)||'JPY';
@@ -450,13 +472,31 @@ window.IntMapModules.widgets=function(HOST){
         setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', when+' · '+src);
         const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'為替 ':'FX ')+base+'/'+quote;
       }catch(_){ setV(e.u,'—', una()); } }
-    async function refreshSun(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
-        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&daily=sunrise,sunset,daylight_duration&forecast_days=1&timezone=auto');
-        const j=await r.json(); const d=j.daily||{};
-        const sr=String(d.sunrise&&d.sunrise[0]||'').slice(11,16), ss=String(d.sunset&&d.sunset[0]||'').slice(11,16);
-        const dl=d.daylight_duration&&d.daylight_duration[0];
-        setV(e.u,'<span style="font-size:17px;">🌅 '+(sr||'—')+' · 🌇 '+(ss||'—')+'</span>',
-          (dl?((jp()?'昼の長さ ':'daylight ')+Math.floor(dl/3600)+'h '+Math.round(dl%3600/60)+'m · '):'')+c.lbl);
+    /* (#R183) Sunrise/sunset used to be a forecast-host request for something that is pure astronomy —
+       so the quota outage that killed the weather and UV cards took this one down too, for no reason at
+       all. It is computed now (IntMapWx.sunTimes; measured within 3 min of MET Norway's Sunrise 3.0, see
+       js/wx-source.js), which means it cannot be rate-limited, needs no network, and works offline.
+       Times are rendered in the user's clock (HOST.userTZ when set), and the poles get the honest
+       answer instead of a blank: at 78°N in July the sun does not set. */
+    function refreshSun(e){ try{ const c0=geoPos&&(Date.now()-geoPos.ts<10*60*1000)?{lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'}:null;
+        if(!c0){ widgetLoc().then(c=>{ if(!c) wgtLocPrompt(e); else _paintSun(e,c); }); return; }
+        _paintSun(e,c0);
+      }catch(_){ setV(e.u,'—', una()); } }
+    function _paintSun(e,c){ try{
+        const s=window.IntMapWx.sunTimes(c.lat,c.lng);
+        let tz; try{ if(HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; }catch(_){}
+        const hm=d=>{ try{ return d.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ return '—'; } };
+        if(s.polar==='day'){ setV(e.u,'<span style="font-size:17px;">☀️ '+_WL('Midnight sun','白夜','Mitternachtssonne','Полярный день','Sol de medianoche')+'</span>',
+            _WL('the sun does not set today','今日は日没がありません','die Sonne geht heute nicht unter','сегодня солнце не заходит','hoy el sol no se pone')+' · '+c.lbl); return; }
+        if(s.polar==='night'){ setV(e.u,'<span style="font-size:17px;">🌑 '+_WL('Polar night','極夜','Polarnacht','Полярная ночь','Noche polar')+'</span>',
+            _WL('the sun does not rise today','今日は日の出がありません','die Sonne geht heute nicht auf','сегодня солнце не восходит','hoy el sol no sale')+' · '+c.lbl); return; }
+        /* Round to MINUTES FIRST, then split. `floor(s/3600)+'h '+round(s%3600/60)+'m'` prints "13h 60m"
+           whenever the leftover seconds round up to a full minute — seen in this very card at 13:59:50
+           of daylight. Carrying the rounded minute into the hour is the only way that cannot happen. */
+        const dl=s.daylightSec;
+        const dlMin=Math.round(dl/60), dlTxt=Math.floor(dlMin/60)+'h '+(dlMin%60)+'m';
+        setV(e.u,'<span style="font-size:17px;">🌅 '+hm(s.sunrise)+' · 🌇 '+hm(s.sunset)+'</span>',
+          (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt+' · '):'')+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
         let age=(Date.now()/864e5-ref)%syn; if(age<0)age+=syn; const ph=age/syn;
@@ -590,12 +630,27 @@ window.IntMapModules.widgets=function(HOST){
         setV(e.u,v,'<b style="color:var(--text-main);">'+String(title).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</b> · '+e.cfg.date);
       }catch(_){ setV(e.u,'—',''); } }
     /* (#R22) New live widgets — all keyless + CORS-verified. */
+    /* (#R183) Same root cause as the weather card (see refreshWeather), and one extra trap on the way out.
+       Open-Meteo's `uv_index` is the ALL-SKY index; MET Norway publishes `ultraviolet_index_clear_sky`,
+       which ignores cloud and is therefore an upper bound — a different quantity. Writing it into the same
+       field would have made the number quietly change meaning the moment the source changed, so the
+       fallback value is carried separately and the card SAYS "clear sky" when that is what it is showing. */
     async function refreshUv(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
-        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=uv_index&daily=uv_index_max&forecast_days=1&timezone=auto');
-        const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0]; const cat=_uvCat(uv);   /* (#R154) colour-fill */
+        const j=await window.IntMapWx.point(c.lat,c.lng,{days:1,uv:true});
+        if(!j){ _wgtColor(e.u,null); setV(e.u,'—', _wxWhy()); return; }
+        const cu=j.current||{}, dy=j.daily||{};
+        const allSky=(cu.uv_index!=null);
+        const uv=allSky?cu.uv_index:cu.uv_index_clear_sky;
+        const mx=allSky?(dy.uv_index_max&&dy.uv_index_max[0]):(dy.uv_index_clear_sky_max&&dy.uv_index_clear_sky_max[0]);
+        const cat=_uvCat(uv);   /* (#R154) colour-fill */
         _wgtColor(e.u, cat.col);
+        const clearNote=(uv!=null&&!allSky)?(_WL('clear sky','快晴時','klarer Himmel','ясное небо','cielo despejado')+' · '):'';
+        /* "today's max" is only true of a whole-day aggregate. The fallback's first bucket starts at the
+           current hour (dy._partialFirstDay), so it is the peak still to come — said as such. */
+        const mxLbl=dy._partialFirstDay?_WL('peak ahead ','この先の最大 ','Spitze voraus ','пик впереди ','pico próximo ')
+                                       :_WL('max ','本日最大 ','max ','макс. ','máx ');
         setV(e.u, _wgtBig(uv!=null?(+uv).toFixed(1):'—','UV', cat.label),
-          ((mx!=null?(_WL('max ','本日最大 ','max ','макс. ','máx ')+(+mx).toFixed(1)+' · '):''))+((j.current&&j.current.time)?asOf(j.current.time)+' · ':'')+c.lbl);   /* (#R146) reading date/time via asOf() */
+          clearNote+((mx!=null?(mxLbl+(+mx).toFixed(1)+' · '):''))+(cu.time?asOf(cu.time)+' · ':'')+c.lbl+_wxSrc(j));   /* (#R146) reading date/time via asOf() */
       }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old

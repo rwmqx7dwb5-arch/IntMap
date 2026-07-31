@@ -229,8 +229,13 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
   expect(s.lifted, 'two are airborne; the third is on the ground and stays on it').toBe(2);
   expect(s.maxAlt, '36,000 ft = 10,973 m').toBeGreaterThan(10900);
   expect(s.maxAlt).toBeLessThan(11050);
-  // bodies + posts: 3 aircraft, 2 of them with a post down to the ground
-  expect(s.features).toBe(5);
+  /* (#R183) One aircraft is FOUR extrusions now — fuselage, wing, stabiliser, fin, at four
+     different heights, which is what makes it read as an aircraft rather than a flat plate when the
+     map is tilted. So `features` is no longer one-per-aircraft and the old magic 5 would only be
+     re-derivable by accident. The invariant that number actually encoded is asserted directly:
+     three aircraft, two of them airborne and therefore carrying a post down to the ground. */
+  expect(s.aircraft, 'three aircraft, however many parts each is drawn from').toBe(3);
+  expect(s.features, 'bodies + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * (s.detailed ? 4 : 1) + 2);
 
   // the flat rendering is still one click away, and it is exclusive
   const flat = await page.evaluate(() => { window.IntMapPlanes3D.set(false); return window.IntMapPlanes3D.state(); });
