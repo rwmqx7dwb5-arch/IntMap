@@ -61,25 +61,31 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-/* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
-   `satellite.js` is 27 KB gzipped, and a static import puts it in the main bundle for EVERY
-   session — including the overwhelming majority that never switch this layer on. The app already
-   has a policy for this and states it plainly for Cesium (js/engine-select.js: 8 MB reached only
-   through a dynamic import, so a MapLibre session transfers none of it); the same reasoning applies
-   at a smaller scale here, in a round whose brief was 「高速化」.
-   So the propagator is imported on FIRST USE and lands in its own Rollup chunk. Everything that
-   needs it is downstream of load(), which awaits it; the sync helpers below still check, because a
-   guard that can never fire costs nothing and a missing one is a TypeError in a live layer. */
-let SAT=null, _satP=null;
-function loadSGP4(){
-  if(SAT) return Promise.resolve(SAT);
-  if(!_satP) _satP=import('satellite.js').then(m=>{ SAT=m; return m; })
-    .catch(e=>{ _satP=null; throw e; });
-  return _satP;
-}
-
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
+  /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
+     `satellite.js` is 27 KB gzipped, and a STATIC import puts it in the main bundle for EVERY
+     session — including the overwhelming majority that never switch this layer on. The app already
+     has a policy for this and states it plainly for Cesium (js/engine-select.js: 8 MB reached only
+     through a dynamic import, so a MapLibre session transfers none of it); the same reasoning
+     applies at a smaller scale here, in a round whose brief was 「高速化」.
+     So the propagator is imported on FIRST USE and lands in its own Rollup chunk. Everything that
+     needs it is downstream of load(), which awaits it; the sync helpers below still check, because
+     a guard that can never fire costs nothing and a missing one is a TypeError in a live layer.
+
+     It lives INSIDE the factory, not at the top of the file, and that is not a style choice: no js/
+     module may have a TOP-LEVEL declaration (tests/r175-checks — an AST sweep finding zero of them
+     across every file is precisely what made the ESM conversion incapable of changing a name
+     resolution). A `let SAT` at file scope broke that invariant, and the check caught it. The
+     factory is instantiated exactly once, so the closure holds the same single instance the file
+     scope would have. */
+  let SAT=null, _satP=null;
+  function loadSGP4(){
+    if(SAT) return Promise.resolve(SAT);
+    if(!_satP) _satP=import('satellite.js').then(m=>{ SAT=m; return m; })
+      .catch(e=>{ _satP=null; throw e; });
+    return _satP;
+  }
   const GE=()=>window.IntMapGeoEngine;
   const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };

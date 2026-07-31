@@ -40,8 +40,17 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
 test('R184 #2: satellite.js is a declared dependency and the WASM alias that makes it bundle exists', () => {
   const pkg = JSON.parse(rd('package.json'));
   assert.ok(pkg.dependencies['satellite.js'], 'satellite.js ships to the browser, so it is a dependency');
-  assert.match(rd('js/satellites-live.js'), /from 'satellite\.js'/,
+  /* DYNAMIC, not static: a static import puts 27 KB gz of SGP4 in the main bundle for every session
+     including the ones that never open the layer (the same reasoning js/engine-select.js applies to
+     Cesium). And it must sit INSIDE the factory, because no js/ module may have a top-level
+     declaration — tests/r175-checks proves that invariant and this round briefly broke it. */
+  const sat = rd('js/satellites-live.js');
+  assert.match(sat, /import\('satellite\.js'\)/,
     'the propagator is imported, not hand-rolled — see the file header for why');
+  assert.ok(!/^import\s/m.test(sat),
+    'and imported DYNAMICALLY, so a session that never opens the layer never downloads it');
+  assert.ok(sat.indexOf('let SAT=null') > sat.indexOf('IntMapModules.satellitesLive=function'),
+    'the lazy-loader state lives inside the factory, not at file scope (#R175 top-level rule)');
   /* satellite.js 7 re-exports an optional WASM accelerator whose Emscripten entry points use
      top-level await and import node:module. Rollup keeps them in the graph (the package declares no
      sideEffects) and the build then fails outright. The alias is what makes `npm run build` work,
