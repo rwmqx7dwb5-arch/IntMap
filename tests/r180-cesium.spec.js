@@ -215,6 +215,7 @@ test('R180 ④: a layer added through the contract draws, with its expressions e
    `type:'vector'` sources (OpenFreeMap place labels, the languages tileset, the DEM contours,
    two Open-Meteo tilesets). Cesium has no vector-tile pipeline; this is the one built for it. */
 test('R180 ⑤: an MVT source decodes and its features reach the scene', async ({ page }) => {
+  test.setTimeout(150000);   /* a Cesium boot plus a whole tile pyramid does not fit the default */
   await asCesium(page);
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, v = window.__imap;
@@ -224,14 +225,26 @@ test('R180 ⑤: an MVT source decodes and its features reach the scene', async (
        are wherever the queue reached, and the declutter pass that runs with them can legitimately
        hide every one of them — measured on a partial set: 117 entities, 0 shown, while the settled
        set is 669 entities with 45 shown. The source itself knows when it is done, so ask it. */
-    for (let i = 0; i < 60; i++) {
+    /* ⚠ AND THE WAIT MUST NOT OUTLAST THE TEST. The first version of this loop ran 60 x 500 ms —
+       thirty seconds inside one page.evaluate, against a 60 s test budget that also has to cover
+       the Cesium boot. It passed locally and timed out on all three CI attempts. Wait for the STATE
+       THIS TEST ASSERTS, with the settled tileset as the fallback, and cap it well inside the
+       budget. */
+    const gvw = (x) => (x && x.getValue ? x.getValue() : x);
+    for (let i = 0; i < 36; i++) {
       const rec = v._layerById.get('ofm-country');
-      const st = (() => { try { return v._sources.get(rec.def.source).vt.stats(); } catch (_) { return null; } })();
-      if (rec && rec.ds && rec.ds.entities.values.length > 50 && st && st.pending === 0) break;
-      await new Promise((r) => setTimeout(r, 500));
+      const ds = rec && rec.ds;
+      const n = ds ? ds.entities.values.length : 0;
+      if (n > 50) {
+        const shown = ds.entities.values.filter((e) => e.label && gvw(e.label.show) === true).length;
+        if (shown > 0) break;
+        const st = (() => { try { return v._sources.get(rec.def.source).vt.stats(); } catch (_) { return null; } })();
+        if (st && st.pending === 0) break;
+      }
+      await new Promise((r) => setTimeout(r, 400));
     }
     /* …and one more frame for the flush that the last tile scheduled */
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 600));
     const rec = v._layerById.get('ofm-country');
     const src = v._sources.get(rec && rec.def.source);
     const gv = (x) => (x && x.getValue ? x.getValue() : x);
