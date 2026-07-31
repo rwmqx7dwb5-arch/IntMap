@@ -1478,6 +1478,11 @@ window.IntMapCesiumEngine=(function(){
     /* the three things #R171/#R172 had to ask MapLibre for, and which a positional
        camera on a real ellipsoid simply has */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true,
+    /* (#R184) …and the camera IS a position, which is a stronger statement than eyeControl:
+       MapLibre can be talked into holding a viewpoint, but its camera is defined by a centre and
+       a zoom and the eye is derived from them. The flight simulator asks this question because
+       the two answers need two different ways of driving the cockpit — see js/geo-engine.js. */
+    eyeIsPosition:true,
     /* honest about what the interpreter does NOT implement — surfaced rather than
        discovered as a missing layer (#R162) */
     styleGaps:()=>{ try{ return window.IntMapStyle.gaps(); }catch(_){ return []; } } };
