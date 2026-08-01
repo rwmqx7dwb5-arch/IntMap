@@ -296,22 +296,37 @@ window.IntMapModules.widgets=function(HOST){
        no longer light. The luminance test therefore runs on the COMPOSITED value: α·lum(colour) +
        (1−α)·lum(surface), with the surface read from the live theme. Yellow keeps dark text in light
        mode and takes white in dark mode, which is what the composite says. */
-    const _TINT_A=0.58;
+    /* ⚠ AND IT FOLLOWS THE APPEARANCE SETTING, because #R33's standing rule is 「全てのUIはこの設定に
+       従うように」 and #R153 spelled out what that means for this exact material: `--glass-fill` is
+       ONE shared surface that resolves to the OPAQUE --card-bg in Solid mode ("無条件で透過しないよう
+       に") and to a translucent rgba in the two glass modes ("無条件で不透過するな"). Solid is the
+       default. So a tint that was translucent unconditionally would make AQI and UV the only two
+       see-through cards on an otherwise solid board — the same kind of exception this round is
+       removing, pointing the other way. The alpha therefore comes from the mode; what is fixed is
+       that the fill is FLAT, which is the half of the request about the soft shading. */
+    const _TINT_GLASS=0.58;
+    function _glassOn(){ try{ return document.body.classList.contains('sidebar-translucent')
+      ||document.body.classList.contains('sidebar-glass2'); }catch(_){ return false; } }
+    function _tintA(){ return _glassOn()?_TINT_GLASS:1; }
     function _themeLum(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'?0.11:0.93; }catch(_){ return 0.11; } }
     function _wgtColor(u,col){ try{ const card=document.querySelector('.wgt-card[data-u="'+u+'"]'); if(!card) return;
         if(col){ card.classList.add('wgt-colored'); card.setAttribute('data-tint',col);
+          const _TINT_A=_tintA();
           const eff=_TINT_A*_lum(col)+(1-_TINT_A)*_themeLum();
           card.classList.toggle('wgt-on-light',eff>0.5);
           let h=String(col).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join('');
           const n=parseInt(h,16);
           card.style.setProperty('background','rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+_TINT_A+')','important'); }
         else{ card.classList.remove('wgt-colored','wgt-on-light'); card.removeAttribute('data-tint'); card.style.removeProperty('background'); } }catch(_){} }
-    /* The composite luminance above depends on the THEME, and a theme switch does not refresh a
-       widget's data — so re-decide the text colour when the theme changes, from the tint the card is
-       already wearing. (`data-tint` is written by _wgtColor itself, so this can never invent one.) */
-    try{ window.addEventListener('intmap-theme',()=>{ try{
-      document.querySelectorAll('.wgt-card[data-tint]').forEach(c=>{
-        const u=c.getAttribute('data-u'); if(u) _wgtColor(u,c.getAttribute('data-tint')); }); }catch(_){} }); }catch(_){}
+    /* The fill and the composite luminance above depend on the THEME and on the Solid/Frosted-Glass
+       setting, and neither switch refreshes a widget's data — so re-decide both when either changes,
+       from the tint the card is already wearing. (`data-tint` is written by _wgtColor itself, so this
+       can never invent one.) The appearance setting is carried as a body class, which raises no
+       event, so it is watched the same way js/space-sky.js watches the theme attribute. */
+    function _retint(){ try{ document.querySelectorAll('.wgt-card[data-tint]').forEach(c=>{
+      const u=c.getAttribute('data-u'); if(u) _wgtColor(u,c.getAttribute('data-tint')); }); }catch(_){} }
+    try{ window.addEventListener('intmap-theme',_retint); }catch(_){}
+    try{ new MutationObserver(_retint).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(_){}
     function _wgtBig(num,unit,cat){ return String(num)+(unit?'<span class="wgt-unit">'+unit+'</span>':'')+(cat?'<span class="wgt-cat">'+cat+'</span>':''); }
     /* full US-AQI 6-tier scale (was 4 stops) — 5 languages */
     function _aqiCat(v){ if(v==null) return {col:null,label:''};

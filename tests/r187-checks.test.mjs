@@ -101,10 +101,17 @@ test('R187 widgets: the AQI / UV tint is flat and translucent, i.e. glass', () =
      backdrop-filter the card already carries is what the eye sees. */
   assert.ok(!/linear-gradient\(158deg,'\+_shade/.test(src), 'the colour gradient must be gone');
   assert.ok(!/function _shade/.test(src), 'the shading helper has no remaining use');
-  const m = /const _TINT_A=([0-9.]+);/.exec(src);
-  assert.ok(m, 'the tint alpha must be a named constant');
+  const m = /const _TINT_GLASS=([0-9.]+);/.exec(src);
+  assert.ok(m, 'the glass-mode tint alpha must be a named constant');
   assert.ok(+m[1] > 0.2 && +m[1] < 0.9, `a tint alpha of ${m[1]} is not translucent`);
   assert.match(src, /card\.style\.setProperty\('background','rgba\(/, 'the tint must be a flat rgba');
+  /* ⚠ …and it must FOLLOW the Solid/Frosted-Glass setting (#R33: 「全てのUIはこの設定に従うように」,
+     #R153: --glass-fill is opaque in Solid mode and translucent in the two glass modes). Solid is
+     the default, so an unconditionally translucent tint would make these the only see-through cards
+     on a solid board — the same kind of exception this round removes, pointing the other way. */
+  assert.match(src, /function _glassOn\(\)\{[\s\S]{0,200}sidebar-translucent[\s\S]{0,80}sidebar-glass2/,
+    'the appearance setting decides the alpha');
+  assert.match(src, /function _tintA\(\)\{ return _glassOn\(\)\?_TINT_GLASS:1; \}/, 'Solid mode stays opaque');
   /* the text colour has to be decided on the COMPOSITED surface, not on the raw category colour */
   assert.match(src, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'contrast must be judged on the blend');
 });
