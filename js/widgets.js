@@ -115,7 +115,32 @@ window.IntMapModules.widgets=function(HOST){
          glass edge INSIDE the border, and removing it would flatten the surface rather than the halo
          the request is about. The press/hover TRANSFORMS stay — the tactile response was never the
          complaint. */
-      '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
+      /* ══ (#R188) THE WIDGETS ARE GLASS, AND NOW THEY ACTUALLY ARE ═══════════════════════════════
+         「AQI, UVIウィジェットはぼんやりと影を付けなくてよい。そして、全ウィジェットはガラス風の質感に。」
+         — reported for the third time. Measured on the built app in the DEFAULT appearance before
+         changing anything:
+
+             --glass-fill  = #1c1c1e   (fully opaque — it resolves to --card-bg in Solid mode)
+             every .wgt-card background = rgb(28,28,30)
+             AQI card background        = rgb(255,204,0)   ← an opaque slab of colour
+
+         So `backdrop-filter` was being applied to every card and doing NOTHING, because the surface
+         under it was opaque: not one widget in the app was glass, and the two coloured ones were not
+         even the same material as the rest. #R187 read the instruction as "stop making AQI/UV an
+         exception" and made them follow the appearance setting — which removed the exception in the
+         wrong direction, leaving everything uniformly not-glass.
+
+         Confirmed with the user this round: the widgets are glass REGARDLESS of the Sidebar-appearance
+         setting. So the cards get their own material, `--wgt-glass`, which is translucent in both
+         themes and in all three appearance modes; the frosted modes still deepen it, because there
+         the surface behind is itself translucent and the cards should stay consistent with it.
+         ⚠ This is deliberately scoped to `.wgt-card` and nothing else — #R33/#R153's rule that every
+         other surface follows the setting is untouched. */
+      ':root{--wgt-glass:rgba(255,255,255,0.55);--wgt-glass-brd:rgba(255,255,255,0.55);--wgt-glass-blur:24px;--wgt-glass-sat:180%;}'+
+      '[data-theme="dark"]{--wgt-glass:rgba(30,30,38,0.44);--wgt-glass-brd:rgba(255,255,255,0.13);}'+
+      'body.sidebar-glass2{--wgt-glass:rgba(255,255,255,0.20);}'+
+      '[data-theme="dark"] body.sidebar-glass2{--wgt-glass:rgba(22,22,30,0.26);}'+
+      '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--wgt-glass);border:1px solid var(--wgt-glass-brd);backdrop-filter:saturate(var(--wgt-glass-sat)) blur(var(--wgt-glass-blur));-webkit-backdrop-filter:saturate(var(--wgt-glass-sat)) blur(var(--wgt-glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
       '.wgt-card:not(.editing):active{transform:scale(0.972);box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;}'+
       /* (#R41) subtle iOS hover-lift on desktop ("よりiOS風の洗練されたデザインに") */
       '@media(hover:hover){ .wgt-card:not(.editing):hover{transform:translateY(-1.5px);box-shadow:0 1px 0 rgba(255,255,255,0.12) inset;} }'+
@@ -304,10 +329,14 @@ window.IntMapModules.widgets=function(HOST){
        see-through cards on an otherwise solid board — the same kind of exception this round is
        removing, pointing the other way. The alpha therefore comes from the mode; what is fixed is
        that the fill is FLAT, which is the half of the request about the soft shading. */
-    const _TINT_GLASS=0.58;
-    function _glassOn(){ try{ return document.body.classList.contains('sidebar-translucent')
-      ||document.body.classList.contains('sidebar-glass2'); }catch(_){ return false; } }
-    function _tintA(){ return _glassOn()?_TINT_GLASS:1; }
+    /* ⚠ (#R188) …AND THE COLOURED PAIR IS THE SAME GLASS, TINTED. #R187 took the alpha from the
+       appearance setting, which meant 1.0 in the default Solid mode — an OPAQUE slab of category
+       colour, measured as rgb(255,204,0), i.e. the one thing on the board that was neither glass nor
+       the same material as its neighbours. The alpha is now a constant, exactly like every other
+       card's fill, so AQI and UV differ from the rest in colour and in nothing else. Flat, so nothing
+       fades into a corner (that was #R187's other half, and it stands). */
+    const _TINT_GLASS=0.52;
+    function _tintA(){ return _TINT_GLASS; }
     function _themeLum(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'?0.11:0.93; }catch(_){ return 0.11; } }
     function _wgtColor(u,col){ try{ const card=document.querySelector('.wgt-card[data-u="'+u+'"]'); if(!card) return;
         if(col){ card.classList.add('wgt-colored'); card.setAttribute('data-tint',col);

@@ -759,6 +759,36 @@ window.IntMapModules.flightSim=function(HOST){
               o.alt=Math.max(150,Math.min(eye.alt,ceil));
               o.keepAlt=true;
             }
+            /* ══ (#R188) 「画角も合わせてください。」 ════════════════════════════════════════════════
+               #R187 carried the eye's POSITION and ALTITUDE across and said heading was 「the other
+               half of 今見てる画角」. It is not: heading was already right before #R187 (start() has
+               read the map's bearing since #R95), so nothing about the view actually changed. What
+               was never carried is the TILT — and the tilt is what makes one view different from
+               another at the same place.
+
+               Confirmed with the user this round: match BOTH the attitude and the camera. So the
+               view's tilt is handed over as two separate facts, because they answer two different
+               questions:
+
+                 · `viewGamma` — where the aeroplane is GOING. The camera convention is the same one
+                   the sim already uses (90° = level, 0° = straight down), so the flight-path angle
+                   the view implies is pitch − 90°. ⚠ It is then clamped by computeTrim() to what the
+                   airframe can actually HOLD — full-thrust climb angle above, idle glide angle below,
+                   both computed from the same drag polar as the level trim, not from a round number.
+                   A map looking straight down does not become a vertical dive; it becomes the
+                   steepest steady descent this aeroplane makes.
+                 · `viewCam` — what the SCREEN shows in the first frame. The aeroplane's own attitude
+                   would snap the view to the horizon the instant START is pressed, however the
+                   aeroplane is trimmed. Seeding the camera smoother with the map's own bearing/
+                   pitch/roll makes frame one the view that was on screen, and it eases into the
+                   cockpit over 1.2 s (see the intro window in the frame loop). */
+            const _p=(GE().camera.getPitch?GE().camera.getPitch():null);
+            const _b=(GE().camera.getBearing?GE().camera.getBearing():null);
+            const _r=(GE().camera.getRoll?GE().camera.getRoll():0);
+            if(_p!=null&&isFinite(_p)){
+              o.viewGamma=(_p-90)*Math.PI/180;
+              o.viewCam={ pitch:_p, bearing:(isFinite(_b)?_b:0), roll:(isFinite(_r)?_r:0) };
+            }
           }catch(_){}
         }
         /* (#R119) REAL RUNWAY spawn: fetch the airport's actual runways (OurAirports, both-end coordinates),
@@ -813,7 +843,13 @@ window.IntMapModules.flightSim=function(HOST){
       if(opts.onGround && ac.Tmax<=0) opts=Object.assign({},opts,{onGround:false});   /* (#R100) an engineless glider can't roll for take-off → a runway choice becomes an aerotow RELEASE: an airborne start (the settle lifts it to a safe release height), not a 33 m/s ground "warp" */
       if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
         st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st._fieldElev=(opts.elev!=null?+opts.elev:null); st._fLL=[st.lng,st.lat]; st._maxAlt=st.alt; st._maxV=0; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }   /* (#R117) stats start from the runway; (#R118) _fLL = the airport anchor point */   /* (#R117) remember the airport's REAL field elevation — DEM reads far off it while tiles load are rejected */
-      else computeTrim();
+      else computeTrim(opts.viewGamma);   /* (#R188) "current map view" hands over the tilt it was showing */
+      /* (#R188) …and the CAMERA starts where the map was, not where the aeroplane points. Read before
+         the basemap/projection switches below touch the camera, so it is genuinely the view the user
+         pressed START on. The frame loop consumes and clears it. */
+      if(opts.viewCam&&isFinite(opts.viewCam.pitch)) st._camSeed={ pitch:+opts.viewCam.pitch,
+        bearing:(isFinite(opts.viewCam.bearing)?+opts.viewCam.bearing:0),
+        roll:(isFinite(opts.viewCam.roll)?+opts.viewCam.roll:0), t0:performance.now(), ms:1200 };
       prevCam={ center:GE().camera.getCenter(), zoom:GE().camera.getZoom(), bearing:GE().camera.getBearing(), pitch:GE().camera.getPitch(), roll:(GE().camera.getRoll?GE().camera.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
@@ -929,7 +965,12 @@ window.IntMapModules.flightSim=function(HOST){
     /* trim for level flight at the current speed & altitude: solve the AoA that makes lift = weight, the ELEVATOR
        that zeroes the pitch moment there (Cm0+Cma·α+Cmde·δe_trim=0), and the throttle for thrust=drag. Then set the
        body-frame velocity (AoA baked in) and the attitude quaternion so the machine spawns hands-off level. */
-    function computeTrim(){ if(!st) return; const ac=AC(), rho=rhoAt(st.alt), Vt=Math.max(20,st.V||ac.Vcruise), qd=0.5*rho*Vt*Vt, D=ac.D;
+    /* (#R188) `gammaWant` (radians, + = climbing) asks for a trimmed flight path other than level. It
+       is a REQUEST: the solve below clamps it to what this airframe can hold steadily and trims for
+       whatever survives, so nothing here can produce an attitude the physics would immediately undo.
+       Called with no argument — every path that existed before this round — the answer is byte-for-
+       byte the level (or best-glide) trim it always was. */
+    function computeTrim(gammaWant){ if(!st) return; const ac=AC(), rho=rhoAt(st.alt), Vt=Math.max(20,st.V||ac.Vcruise), qd=0.5*rho*Vt*Vt, D=ac.D;
       /* (#R97) TRUE equilibrium trim (Fx=Fz=M=0). Solve the AoA for lift=weight WITHOUT a positive-CL floor — a fast
          or lightly-loaded machine genuinely trims at a NEGATIVE AoA, and the old `Math.max(CL0+0.02,…)` clamp forced
          extra lift so it accelerated UP from spawn (e.g. P-51 at 2.5 km needed CL≈0.18 but was given 0.26 ≈1.45 g).
@@ -943,8 +984,20 @@ window.IntMapModules.flightSim=function(HOST){
       const CD=ac.CD0+ac.k*CLn*CLn+st.flaps*0.02+st.gear*0.022, Drag=qd*ac.S*CD;
       const densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
       let gamma=0, Th=0;
-      if(ac.Tmax>0){ st.thr=Math.max(0.02,Math.min(1,Drag/(ac.Tmax*densF))); Th=st.thr*ac.Tmax*densF; }   /* powered: throttle for thrust=drag (level) */
-      else { st.thr=0; gamma=-Math.atan2(CD,Math.max(0.05,CLn)); }                                        /* glider: steady glide-path angle */
+      /* the envelope of STEADY flight paths at this speed and weight: at most the angle full thrust
+         can sustain against drag, at least the angle the airframe glides at with no thrust. Both come
+         from the polar already solved above — there is no new constant here. */
+      const _glide=-Math.atan2(CD,Math.max(0.05,CLn));
+      if(ac.Tmax>0){
+        if(gammaWant!=null&&isFinite(gammaWant)){
+          const Tmx=ac.Tmax*densF;
+          const gMax=Math.asin(Math.max(-1,Math.min(1,(Tmx-Drag)/Math.max(1,ac.m*g0))));
+          gamma=Math.max(Math.min(_glide,gMax),Math.min(gMax,gammaWant));
+          st.thr=Math.max(0,Math.min(1,(Drag+ac.m*g0*Math.sin(gamma))/Math.max(1e-6,Tmx)));
+          Th=st.thr*Tmx;
+        } else { st.thr=Math.max(0.02,Math.min(1,Drag/(ac.Tmax*densF))); Th=st.thr*ac.Tmax*densF; }   /* powered: throttle for thrust=drag (level) */
+      }
+      else { st.thr=0; gamma=_glide; }                                        /* glider: steady glide-path angle */
       const qElev=qd+(ac.prop?Th/(2*ac.S):0), elevMax=(ac.elevMax||0.5), CmBase=D.Cm0+D.Cma*aT-0.09*st.flaps;
       st.elevTrim=-(CmBase*qd + (ac.thrZ||0)*Th/(ac.S*ac.c))/(ac.Cmde*elevMax*qElev);   /* stick-equivalent trim (real elevator angle = stick × elevMax) */
       const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((GE().camera.getBearing?GE().camera.getBearing():90)*Math.PI/180);
@@ -1424,10 +1477,18 @@ window.IntMapModules.flightSim=function(HOST){
          singularity (a high cap clips ONLY the instantaneous pole-pop — real turn/roll rates are far below it); pitch gets an
          exponential low-pass (τ≈55 ms) that erases a one-frame spike WITHOUT lag. dt-based → 30 fps and 120 fps behave
          identically, and a jittery pitch can no longer reintroduce the teleport. */
-      const cap=900*Math.max(0.001,dt), slew=(prev,tgt)=>{ let dd=((tgt-prev+540)%360)-180; if(dd>cap)dd=cap; else if(dd<-cap)dd=-cap; return (prev+dd+360)%360; };
-      if(st._cB==null){ st._cB=bearingT; st._cR=rollT; st._cP=pitchT; }
+      /* (#R188) THE INTRO WINDOW. `_camSeed` is set only by an airborne start from "Current map view";
+         while it is alive the smoother starts from the MAP's bearing/pitch/roll and its two rates are
+         slowed so the change is a move rather than a cut — 1.2 s, after which the seed is dropped and
+         every constant below is exactly the one #R174 tuned. */
+      let _intro=0;
+      if(st._camSeed){ const age=performance.now()-st._camSeed.t0;
+        if(age>=st._camSeed.ms) st._camSeed=null; else _intro=1-age/st._camSeed.ms; }
+      const cap=(_intro>0?110:900)*Math.max(0.001,dt), slew=(prev,tgt)=>{ let dd=((tgt-prev+540)%360)-180; if(dd>cap)dd=cap; else if(dd<-cap)dd=-cap; return (prev+dd+360)%360; };
+      if(st._cB==null){ const sd=st._camSeed;
+        st._cB=sd?sd.bearing:bearingT; st._cR=sd?sd.roll:rollT; st._cP=sd?sd.pitch:pitchT; }
       st._cB=slew(st._cB,bearingT); st._cR=slew(st._cR,rollT);
-      const _pk=1-Math.exp(-Math.max(0.001,dt)/0.055); st._cP+=(pitchT-st._cP)*_pk;
+      const _pk=1-Math.exp(-Math.max(0.001,dt)/(_intro>0?0.42:0.055)); st._cP+=(pitchT-st._cP)*_pk;
       const bearing=st._cB, roll=st._cR, pitch=st._cP; st._camRoll=roll; st._camPitch=pitch;
       /* eye altitude: at the aircraft, but never below (smoothed terrain + a small clearance) — decoupled from st.alt so a
          DEM refresh can't put the eye inside the ground. */

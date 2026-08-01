@@ -47,6 +47,31 @@ const feed = async (page) => page.evaluate(async () => {
 const needFeed = async (page) => { const f = await feed(page);
   test.skip(f.n === 0, 'the CelesTrak catalogue is unreachable from this runner: ' + (f.err || 'no records')); };
 
+/* …AND THE GUARD HAS TO BE ABOUT THE CATALOGUE THE TEST ACTUALLY ASSERTS ON. needFeed() loads the
+   DEFAULT group, and that group is `active` — the one group with a same-origin bundled floor
+   (data/tle/catalogue.tle; js/satellites-live.js gates it on `want==='active'`), so it succeeds very
+   nearly unconditionally. A test that then calls setGroup() is measuring a DIFFERENT request:
+   `geo` has no such floor, its only sources are CelesTrak and two public proxies, the element cache
+   holds exactly one group at a time, and this config gives every test a fresh context — so that
+   catalogue is never cached and is always a live fetch. A rate-limited runner therefore walked
+   straight through needFeed and asserted against nought objects, which is how #R187 saw ② fail
+   twice locally after repeated suite runs while CI passed on the identical commit.
+
+   Same clock race as feed(), for the reason written above it: `geo` can spend the layer's 12 s
+   timeout on each of three hosts in turn, and a test's whole budget is 60 s. */
+const needFeedFor = async (page, group) => {
+  const f = await page.evaluate(async (g) => {
+    const A = window.IntMapSatellites;
+    A.setGroup(g);
+    const fx = await Promise.race([
+      A.snapshot(),
+      new Promise((r) => setTimeout(() => r(null), 30000)),
+    ]);
+    return { n: fx ? fx.length : 0, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
+  }, group);
+  test.skip(f.n === 0, 'the CelesTrak "' + group + '" catalogue is unreachable from this runner: ' + (f.err || 'no records'));
+};
+
 /* ── ① THE PROPAGATOR IS RIGHT, MEASURED AGAINST THE REAL WORLD ───────────────────────────── */
 test('R184 ①: SGP4 reproduces the real ISS orbit, and the Sun/shadow pair actually answers', async ({ page }) => {
   await boot(page);
@@ -91,10 +116,14 @@ test('R184 ①: SGP4 reproduces the real ISS orbit, and the Sun/shadow pair actu
 /* ── ② THE DEEP-SPACE BRANCH IS REALLY THERE ──────────────────────────────────────────────── */
 test('R184 ②: geostationary objects come back from SDP4, at the right altitude', async ({ page }) => {
   await boot(page);
-  await needFeed(page);
+  /* `geo`, not the default group — this is the only test here that asks for a second catalogue, and
+     guarding the first one told us nothing about this one. It also replaces the setGroup() this test
+     used to do itself: switching group DISCARDS the loaded elements, so a needFeed() before it was
+     verifying a catalogue the very next line threw away. */
+  await needFeedFor(page, 'geo');
   const r = await page.evaluate(async () => {
     const A = window.IntMapSatellites;
-    A.setGroup('geo');
+    /* the guard above already loaded these, so this is propagation only — no second request */
     const fx = await A.snapshot();
     const deep = fx.filter((f) => f.deep);
     const alts = fx.map((f) => f.altKm).sort((a, b) => a - b);

@@ -2173,9 +2173,16 @@ window.IntMapModules.dataLayers=function(HOST){
        the measured budget, which is the one thing that gets the address blocked. A close-in view is a
        single circle and still refreshes every 20 s exactly as before. */
     const PLANE_CIRCLE_NM=250;                       /* the API's hard maximum, re-verified by 403 above it (#R187) */
-    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?12:48);
+    /* (#R188) 48 → 128 (mobile 12 → 24). The long-run request rate does NOT move with this number:
+       planePollMs() has always been 3.5 s a circle, so a bigger sweep refreshes less often instead of
+       asking faster. What it buys, together with the triangular lattice, is 65.7 million km². */
+    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?24:128);
     const PLANE_GAP_MS=1200;                         /* measured sustainable spacing — see above */
     const PLANE_MAX_AIRCRAFT=50000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
+    /* (#R188) a 128-circle sweep takes ~154 s to ISSUE, so it publishes what it has every few seconds
+       instead of at the end — and an aircraft that a later publish has not re-seen is only dropped
+       when the sweep has actually re-asked about the patch of sky it was in (planeCellOf). */
+    const PLANE_PUBLISH_MS=4000;
     /* Below this the covered block is a small fraction of an ocean-sized view and the old "zoom in"
        prompt is still the honest answer. It used to be z5, then z3; a 48-circle sweep covers roughly
        4,900 × 3,700 km, which is a real region at z2. */
@@ -2207,36 +2214,113 @@ window.IntMapModules.dataLayers=function(HOST){
        the grid climbs away from the equator. When the view needs more circles than the budget, the
        grid is CLIPPED to the central block and `clipped` is set — the hint above then says the
        coverage is partial instead of leaving the user to guess. */
+    /* ══ (#R188) THE SAME REQUESTS, HALF AS MANY OF THEM PER MILLION SQUARE KILOMETRES ═════════════
+       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」— reported a third time.
+
+       Everything that could have made this easy was measured away first, and none of it survived:
+
+         · A SECOND FEED. adsb.fi and adsb.lol both answer the same shape of query, and adsb.fi
+           returns the same aircraft as airplanes.live (554 vs 554 over Frankfurt, union 561), so a
+           second host would have been a second rate-limit bucket and twice the circles per minute.
+           Measured from the page's own origin, BOTH answer `TypeError: Failed to fetch`: neither
+           sends `Access-Control-Allow-Origin`, so neither can be reached from a browser at all.
+           airplanes.live remains the only key-less CORS-enabled ADS-B feed there is.
+         · A FASTER PACE. #R186's 1.2 s came from a measurement, and it still holds: 34 consecutive
+           circles at 1,200 ms all answered 200, while the same 34 at 700 ms gave 12 successes and
+           then SIXTEEN consecutive hard failures — the address cut off, exactly the state #R186
+           described. The gap is not negotiable and is unchanged.
+         · A BIGGER CIRCLE. r=250 answers, r=300 and r=500 are 403. Unchanged since #R187.
+
+       What was left is the one thing nobody had looked at: the LATTICE. Stepping by a circle's
+       inscribed square throws away everything outside that square — a circle of radius r covers
+       πr², the square keeps 2r², i.e. 64% of what each request already paid for. The optimal
+       covering of a plane by equal circles is the TRIANGULAR lattice (Kershner 1939): neighbours at
+       d = r√3, rows at d·√3/2, alternate rows offset by d/2, and every point of the plane inside
+       some circle. Each request then owns a hexagon of (√3/2)d² = 2.598 r² instead of 2 r².
+
+       Measured on this app's own numbers (r = 463 km, keeping a 4% overlap margin for the
+       projection): 770 km between centres and 667 km between rows, so ONE REQUEST NOW COVERS
+       513,600 km² where it used to cover 378,700 — 1.36× the sky for exactly the same 1.2 s.
+
+       The circle budget then goes 48 → 128 (mobile 12 → 24). Combined: 18.2 → 65.7 million km², or
+       3.6× the area of #R187, and the long-run request rate is IDENTICAL because the poll interval
+       has always been 3.5 s per circle — a bigger sweep refreshes less often, it does not ask
+       faster. The two costs a 128-circle sweep would have had are both paid off below: it takes
+       154 s to issue (so the layer publishes AS IT GOES rather than at the end), and it used to
+       lock out the next viewport for its whole duration (so a sweep the camera has left behind is
+       now abandoned — which is only safe because what it had already published survives). */
+    const PLANE_LATTICE_MARGIN=0.96;    /* shrink the ideal covering step so the corners overlap slightly */
     let _planeCover=null;
     function planeCircles(){
-      const R=6371, NM=1.852, toR=Math.PI/180;
+      const NM=1.852, toR=Math.PI/180;
       let c={lat:48,lng:8}, b=null;
       try{ if(GE().hasRenderer()){ c=GE().camera.getCenter(); b=GE().camera.getBounds(); } }catch(_){}
-      const sideKm=PLANE_CIRCLE_NM*NM*Math.SQRT2*0.94;      /* the inscribed square, with overlap */
-      const dLat=sideKm/110.574;
-      let wantX=1, wantY=1, spanKmX=sideKm, spanKmY=sideKm;
+      const rKm=PLANE_CIRCLE_NM*NM;                          /* the query radius on the ground */
+      const stepKm=rKm*Math.sqrt(3)*PLANE_LATTICE_MARGIN;    /* triangular-lattice spacing — see above */
+      const rowKm=stepKm*Math.sqrt(3)/2;                     /* …and the row pitch that goes with it */
+      const dLat=rowKm/110.574;
+      let wantX=1, wantY=1, spanKmX=stepKm, spanKmY=rowKm;
       if(b){ try{
         const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
         const lonSpan=((e-w)+360)%360||360;
         spanKmX=Math.max(1,lonSpan*111.320*Math.max(0.05,Math.cos(c.lat*toR)));
         spanKmY=Math.max(1,(n-s)*110.574);
-        wantX=Math.max(1,Math.ceil(spanKmX/sideKm)); wantY=Math.max(1,Math.ceil(spanKmY/sideKm));
+        wantX=Math.max(1,Math.ceil(spanKmX/stepKm)); wantY=Math.max(1,Math.ceil(spanKmY/rowKm));
+        /* ⚠ THE EXTRA COLUMN IS ONLY FOR THE OFFSET ROWS. A triangular lattice shifts alternate rows
+           half a step, so the block needs one more column to cover its own edges — but ONLY when
+           there are offset rows to cover and more than one column to offset. Adding it
+           unconditionally made a close-in view ask for TWO requests where one has always been
+           enough, which tests/r186 caught at z6.2 (`close.circles` 1 → 2). One circle for a small
+           view is not a detail: it is the 20-second refresh that view has always had. */
+        if(wantX>1&&wantY>1) wantX++;
       }catch(_){} }
       const budget=PLANE_CIRCLE_BUDGET();
       let nx=wantX, ny=wantY, clipped=false;
       /* Shrink the grid towards the budget while keeping the viewport's aspect, so the covered block
          stays the shape of the screen rather than collapsing into a column. */
       while(nx*ny>budget&&(nx>1||ny>1)){ clipped=true; if(nx*spanKmY>=ny*spanKmX&&nx>1) nx--; else if(ny>1) ny--; else nx--; }
-      const out=[];
+      const out=[], rows=[];
       for(let j=0;j<ny;j++){ const lat=c.lat+((j-(ny-1)/2)*dLat);
+        const dLng=stepKm/(111.320*Math.max(0.05,Math.cos(lat*toR)));
+        const off=(j&1)?dLng/2:0;                            /* alternate rows are offset by half a step */
+        rows.push({lat,dLng,off});
         if(lat>88||lat<-88) continue;
-        const dLng=sideKm/(111.320*Math.max(0.05,Math.cos(lat*toR)));
-        for(let i=0;i<nx;i++){ let lng=c.lng+((i-(nx-1)/2)*dLng);
+        for(let i=0;i<nx;i++){ let lng=c.lng+off+((i-(nx-1)/2)*dLng);
           lng=((lng+540)%360)-180;
-          out.push([Math.max(-89.9,Math.min(89.9,lat)),lng]); } }
+          /* the third element is the CELL KEY, not the list position: rows beyond ±88° are skipped,
+             so the two stop matching after the first skipped row and a carried-over aircraft would
+             be tested against the wrong patch of sky. */
+          out.push([Math.max(-89.9,Math.min(89.9,lat)),lng,j*nx+i]); } }
+      /* ⚠ (#R188) CENTRE FIRST. The sweep is now long enough to be watched, and it publishes as it
+         goes, so the ORDER decides what the user sees for the first two minutes. Row-major starts at
+         a corner of the block — measured over Europe at z3, the first four circles landed in the
+         mid-Atlantic and found ONE aircraft while Frankfurt sat unasked. Sorting by distance from the
+         view centre costs one sort and fills the middle of the screen first, which is where the user
+         is looking; the set of circles is identical either way. */
+      out.sort((a,b)=>{
+        const da=Math.pow((((a[1]-c.lng+540)%360)-180)*Math.cos(c.lat*toR),2)+Math.pow(a[0]-c.lat,2);
+        const db=Math.pow((((b[1]-c.lng+540)%360)-180)*Math.cos(c.lat*toR),2)+Math.pow(b[0]-c.lat,2);
+        return da-db;
+      });
       _planeCover={ nx, ny, wantX, wantY, clipped, circles:out.length,
-                    coverKmX:nx*sideKm, coverKmY:ny*sideKm, spanKmX, spanKmY };
+                    coverKmX:nx*stepKm, coverKmY:ny*rowKm, spanKmX, spanKmY,
+                    /* the lattice itself, so a carried-over aircraft can be asked "has the sweep
+                       already looked where you are?" in O(1) — see _sweep()'s publish step */
+                    c, dLat, rows, stepKm, rowKm };
       return out;
+    }
+    /* Which lattice cell a position falls in, or null when it is outside the planned block. The
+       answer is the index into the circle list the planner just built, so "cell k has been swept"
+       is a plain Set lookup. */
+    function planeCellOf(lat,lng){
+      const cv=_planeCover; if(!cv||!cv.rows||!cv.rows.length) return null;
+      const j=Math.round((lat-cv.c.lat)/cv.dLat+(cv.ny-1)/2);
+      if(j<0||j>=cv.ny) return null;
+      const row=cv.rows[j]; if(!row) return null;
+      let dl=((lng-cv.c.lng-row.off+540)%360)-180;
+      const i=Math.round(dl/row.dLng+(cv.nx-1)/2);
+      if(i<0||i>=cv.nx) return null;
+      return j*cv.nx+i;
     }
     /* Normalise an airplanes.live ADS-B record to our internal plane shape (units → m, m/s). */
     function adsbToPlane(a,nowMs){
@@ -2279,7 +2363,7 @@ window.IntMapModules.dataLayers=function(HOST){
        arriving mid-sweep must not start a second one on top of it — the two would interleave their
        partial results and the layer would flicker between them. The in-flight sweep is aborted and
        the new one takes over; `_planeSweep` is the token that says which one is allowed to publish. */
-    let _planeSweep=0, _planeStats=null, _planeBusy=false;
+    let _planeSweep=0, _planeStats=null, _planeBusy=false, _planeSweepAt=null;
     async function fetchPlanes(){
       /* ⚠ (#R186) A SWEEP THAT IS ALREADY RUNNING IS LEFT TO FINISH. The token below exists so a
          stale sweep cannot publish into a layer that has moved on — but using it to abort on every
@@ -2288,21 +2372,46 @@ window.IntMapModules.dataLayers=function(HOST){
          positions it had collected were lost. tests/r174 measured that as an aircraft track with 2
          legs where five fixes had been fed to it. Skipping is right and abandoning is not: the
          running sweep is about to publish the same view, and the next poll covers anything newer. */
-      if(_planeBusy) return;
+      /* ⚠ (#R188) …UNLESS THE CAMERA HAS LEFT THAT SKY ALTOGETHER. #R186's rule was right for a
+         16-circle sweep of a few seconds; a 128-circle sweep takes 154 s to issue, and refusing every
+         new request for that long means panning to another continent shows the previous continent's
+         traffic for two and a half minutes. The reason #R186 could not abandon a sweep — that its
+         collected positions would be lost — no longer holds, because the sweep publishes as it goes:
+         everything it has found is already on the layer before it is abandoned. So a new request
+         while busy still yields to the running sweep when it is about the same sky, and takes over
+         when the centre has moved more than half the covered block. */
+      if(_planeBusy){
+        try{
+          const cv=_planeCover, at=_planeSweepAt;
+          if(!cv||!at) return;
+          const now=GE().camera.getCenter();
+          const dLng=(((now.lng-at.lng+540)%360)-180)*111.320*Math.max(0.05,Math.cos(now.lat*Math.PI/180));
+          const dLat=(now.lat-at.lat)*110.574;
+          if(Math.abs(dLng)<cv.coverKmX/2&&Math.abs(dLat)<cv.coverKmY/2) return;
+        }catch(_){ return; }
+      }
       _lastPlaneFetch=Date.now();
       /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
       if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; _planeCover=null; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
       const mine=++_planeSweep;
       _planeBusy=true;
-      try{ return await _sweep(mine); } finally { _planeBusy=false; }
+      try{ _planeSweepAt=GE().camera.getCenter(); }catch(_){ _planeSweepAt=null; }
+      /* ⚠ only the sweep that still OWNS the token may clear the busy flag: an abandoned sweep
+         finishing after its replacement has started would otherwise unlock a slot that is in use. */
+      try{ return await _sweep(mine); } finally { if(mine===_planeSweep) _planeBusy=false; }
     }
     async function _sweep(mine){
       const circles=planeCircles();
       updatePlanesZoomHint();
       const t0=Date.now();
-      const byHex=new Map(); let ok=0, fail=0, newest=0;
+      /* ⚠ `lastPub` starts at the sweep's own start, not at 0. Starting it at 0 made the elapsed time
+         the whole Unix epoch, so the FIRST circle always tripped the in-loop publish and every short
+         sweep published twice with identical data. Harmless (recordTracks de-duplicates on position)
+         but pointless work; a one-circle sweep should publish once, at the end. */
+      const byHex=new Map(); let ok=0, fail=0, newest=0, retried=0, published=0, lastPub=Date.now();
+      const swept=new Set();                                    /* cell keys this sweep has already asked about */
       const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-      const one=async(la,lo)=>{
+      const one=async(la,lo,cell)=>{
         try{
           const r=await fetch(`https://api.airplanes.live/v2/point/${la.toFixed(3)}/${lo.toFixed(3)}/${PLANE_CIRCLE_NM}`);
           if(!r.ok) return false;                               /* (#R183) an error body is valid JSON — check r.ok */
@@ -2310,57 +2419,74 @@ window.IntMapModules.dataLayers=function(HOST){
           if(j&&j.now>newest) newest=j.now;
           const ac=Array.isArray(j&&j.ac)?j.ac:[];
           for(const a of ac){ if(a&&a.lat!=null&&a.lon!=null&&a.hex&&!byHex.has(a.hex)) byHex.set(a.hex,a); }
+          if(cell!=null) swept.add(cell);
           return true;
         }catch(e){ return false; }
+      };
+      /* ══ (#R188) THE LAYER FILLS IN AS THE SWEEP RUNS ═════════════════════════════════════════════
+         A 128-circle sweep takes 154 s to issue. Publishing only at the end would mean two and a half
+         minutes of the previous answer and then everything at once, which is not what a bigger budget
+         was asked for. So every few seconds the layer is rebuilt from:
+           · every aircraft this sweep has seen so far, and
+           · every aircraft the LAST published answer held that this sweep has not re-seen AND whose
+             position is in a cell the sweep has not yet re-asked about.
+         The second rule is what makes this exact rather than merely optimistic: an aircraft is only
+         dropped once the feed has been asked about the patch of sky it was in and did not mention it.
+         Age is a backstop for aircraft outside the current lattice entirely. */
+      const KEEP_MS=Math.max(150000,circles.length*PLANE_GAP_MS+60000);
+      const prev=(!planesSynthetic&&Array.isArray(planesData))?planesData.slice():[];
+      const publish=(final)=>{
+        if(mine!==_planeSweep) return;
+        planesTime=(newest||Date.now());
+        const seenNow=Date.now();
+        const raw=Array.from(byHex.values());
+        const fresh=new Set(); raw.forEach(a=>{ const h=String(a.hex||'').toLowerCase(); if(h) fresh.add(h); });
+        const merged=raw.slice(0,PLANE_MAX_AIRCRAFT).map(a=>adsbToPlane(a,planesTime));
+        merged.forEach(d=>{ d.seenAt=seenNow; });
+        let carried=0;
+        for(const d of prev){
+          if(merged.length>=PLANE_MAX_AIRCRAFT) break;
+          const h=String(d.icao24||'').toLowerCase(); if(!h||fresh.has(h)) continue;
+          if(seenNow-(d.seenAt||0)>KEEP_MS) continue;
+          const cell=planeCellOf(d.lat,d.lng);
+          if(cell!=null&&swept.has(cell)) continue;             /* asked, and the feed did not mention it */
+          merged.push(d); carried++;
+        }
+        planesSynthetic=false;
+        planesData=merged;
+        published++; lastPub=Date.now();
+        /* No silent caps (#R185): every number the sweep produced is readable from the console API. */
+        _planeStats={ circles:circles.length, asked:swept.size, ok, fail, retried, carried, publishes:published,
+                      unique:raw.length, kept:planesData.length, complete:!!final,
+                      dropped:Math.max(0,raw.length-Math.min(raw.length,PLANE_MAX_AIRCRAFT)), ms:Date.now()-t0,
+                      cover:_planeCover?{ nx:_planeCover.nx, ny:_planeCover.ny, clipped:_planeCover.clipped,
+                        coverKmX:Math.round(_planeCover.coverKmX), coverKmY:Math.round(_planeCover.coverKmY),
+                        areaMkm2:+((_planeCover.coverKmX*_planeCover.coverKmY)/1e6).toFixed(1) }:null };
+        recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
+        refreshTrafficLayer('planes');
       };
       const missed=[];
       for(let k=0;k<circles.length;k++){
         if(mine!==_planeSweep) return;
         if(k) await sleep(PLANE_GAP_MS);
-        const good=await one(circles[k][0],circles[k][1]);
+        const good=await one(circles[k][0],circles[k][1],circles[k][2]);
         if(good) ok++; else { fail++; missed.push(circles[k]); }
+        if(ok>0&&Date.now()-lastPub>=PLANE_PUBLISH_MS) publish(false);
       }
       /* One retry pass for the circles that came back empty-handed, at the same pace. A failed circle
          is a HOLE in the sky, not a slightly smaller answer, so it is worth 1.2 s to fill it. */
-      let retried=0;
       for(const c of missed){
         if(mine!==_planeSweep) return;
         await sleep(PLANE_GAP_MS*2);
-        if(await one(c[0],c[1])){ ok++; fail--; retried++; }
+        if(await one(c[0],c[1],c[2])){ ok++; fail--; retried++;
+          if(Date.now()-lastPub>=PLANE_PUBLISH_MS) publish(false); }
       }
       if(mine!==_planeSweep) return;                            /* a newer sweep owns the layer now */
       if(ok>0){
-        planesTime=(newest||Date.now());
-        const seenNow=Date.now();
-        const raw=Array.from(byHex.values());
-        /* ⚠ A PARTIAL SWEEP MUST NOT LOOK LIKE AN EMPTIER SKY. When some circles are still missing
-           after the retry, the aircraft they would have carried are not gone — they were not asked
-           about. Carry the previous answer for anything the new sweep did not mention and that is
-           under two minutes old, rather than deleting a third of the traffic because one request
-           was refused. A full sweep replaces everything, as before. */
-        const fresh=new Set(raw.map(a=>a.hex));
-        const merged=raw.slice(0,PLANE_MAX_AIRCRAFT).map(a=>adsbToPlane(a,planesTime));
-        merged.forEach(d=>{ d.seenAt=seenNow; });
-        let carried=0;
-        if(fail>0&&!planesSynthetic&&planesData.length){
-          for(const d of planesData){
-            if(merged.length>=PLANE_MAX_AIRCRAFT) break;
-            if(!d.icao24||fresh.has(d.icao24.toLowerCase())||fresh.has(d.icao24)) continue;
-            if(seenNow-(d.seenAt||0)>120000) continue;
-            merged.push(d); carried++;
-          }
-        }
-        planesSynthetic=false;
-        planesData=merged;
-        /* No silent caps (#R185): every number the sweep produced is readable from the console API. */
-        _planeStats={ circles:circles.length, ok, fail, retried, carried, unique:raw.length, kept:planesData.length,
-                      dropped:Math.max(0,raw.length-Math.min(raw.length,PLANE_MAX_AIRCRAFT)), ms:Date.now()-t0,
-                      cover:_planeCover?{ nx:_planeCover.nx, ny:_planeCover.ny, clipped:_planeCover.clipped,
-                        coverKmX:Math.round(_planeCover.coverKmX), coverKmY:Math.round(_planeCover.coverKmY) }:null };
+        publish(true);
         if(_planeStats.dropped) console.warn('live aircraft: '+_planeStats.dropped+' beyond the '+PLANE_MAX_AIRCRAFT+' render cap were not drawn');
-        if(fail>0) console.warn('live aircraft: '+fail+' of '+circles.length+' circles did not answer; '+carried+' aircraft carried over from the previous sweep');
-        recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
-        refreshTrafficLayer('planes'); schedulePlanePoll(); return;
+        if(fail>0) console.warn('live aircraft: '+fail+' of '+circles.length+' circles did not answer; '+_planeStats.carried+' aircraft carried over from the previous sweep');
+        schedulePlanePoll(); return;
       }
       /* Every circle failed. If we still hold real aircraft, KEEP them — replacing real data with a
          placeholder because one refresh was refused is a downgrade, not a fallback. The synthetic set
@@ -2377,8 +2503,11 @@ window.IntMapModules.dataLayers=function(HOST){
       /* one circle → the original 20 s; a full 48-circle sweep takes ~58 s to issue, so its gap is
          set well clear of that (3.5 s a circle) and the feed sees 0.29 requests a second.
          (#R187) the ceiling is 180 s so a 48-circle sweep's interval is the rule's answer and not a
-         clip — clipping it would mean polling FASTER than the measured budget. */
-      return Math.max(20000,Math.min(180000,Math.round(n*3500))); }
+         clip — clipping it would mean polling FASTER than the measured budget.
+         (#R188) …and 600 s for the same reason now the budget is 128: 128 × 3.5 s = 448 s, so the
+         ceiling has to be above it or the long-run rate would rise with the budget instead of
+         staying at the 0.29 requests a second #R186 measured as sustainable. */
+      return Math.max(20000,Math.min(600000,Math.round(n*3500))); }
     function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
       clearInterval(planesTimer); clearTimeout(planesTimer);
       planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
@@ -3272,20 +3401,83 @@ window.IntMapModules.dataLayers=function(HOST){
        Their public API serves all cable routes + landing points as GeoJSON; each cable
        carries its own color. Loaded lazily with the same CORS-proxy fallbacks used elsewhere. */
     let _subcablesLoading=false;
+    /* ══ (#R188) WHY IT WAS ALWAYS THE CABLES THAT WENT MISSING ════════════════════════════════════
+       「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
+
+       #R187 found a real defect (a refused addSource that was logged and abandoned) and fixed it. The
+       report came back, so the asymmetry between the two default layers was measured from the page's
+       own origin instead of reasoned about:
+
+           fetch('https://www.submarinecablemap.com/api/v3/cable/cable-geo.json')
+               → TypeError: Failed to fetch          (no Access-Control-Allow-Origin, EVERY time)
+
+       So the direct request in the proxy list below has never once succeeded from a browser: the
+       submarine cables have ALWAYS come through a free public CORS proxy, and the layer is up only
+       when one of three volunteer proxies happens to be up. Köppen has no such dependency — it is a
+       bundled PNG on the app's own origin — which is exactly why 「片方しかつかない」 names this one
+       every time and never that one.
+
+       Two changes, and neither invents a data source:
+
+       1. THE ANSWER IS KEPT. A successful download goes into the Cache API and is served from there
+          on the next visit BEFORE the network is tried, with a refresh behind it that updates the
+          source in place when it lands. Same data, same attribution; a proxy outage now costs a
+          refresh rather than the layer. (#R186's rule: a fallback that only appears after the
+          network has timed out is not a fallback, it is a delay.)
+       2. A FAILED DOWNLOAD IS NOT A PREFERENCE. When everything failed, the old code unticked the
+          box — and _snapshot() saves the ticked boxes, so the next thing the user toggled wrote a
+          session in which this layer was OFF. From then on the restore switched it off deliberately,
+          for ever: one bad afternoon for corsproxy.io became a permanent 「片方しかつかない」.
+          The box is now marked `imAutoOff` when the app is the one unticking it, the session keeps
+          wanting it (js/app-body.js), and it is retried with backoff before giving up at all. */
+    const _CABLE_CACHE='intmap-subcables-v1';
+    async function _cableCached(u){ try{ if(!self.caches) return null;
+        const c=await caches.open(_CABLE_CACHE); const r=await c.match(u); if(!r) return null;
+        const j=await r.json(); return (j&&j.features)?j:null; }catch(_){ return null; } }
+    async function _cableStore(u,j){ try{ if(!self.caches||!j||!j.features) return;
+        const c=await caches.open(_CABLE_CACHE);
+        await c.put(u,new Response(JSON.stringify(j),{headers:{'content-type':'application/json'}})); }catch(_){} }
+    const CABLE_URL='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
+    const CABLE_LP_URL='https://www.submarinecablemap.com/api/v3/landing-point/landing-point-geo.json';
+    /* ⚠ the bare URL stays FIRST in this list even though it is measured to fail from a browser: the
+       app is also opened from origins that are allowed to read it (a local file server, an extension
+       host), and a proxy is a third party the data should not travel through when it need not. */
+    const _cableProxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`, x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ];
+    async function _cableNet(u){ for(const mk of _cableProxies){ try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
     async function fetchSubcables(){
-      const cableUrl='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
-      const lpUrl='https://www.submarinecablemap.com/api/v3/landing-point/landing-point-geo.json';
-      const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`, x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ];
-      async function grab(u){ for(const mk of proxies){ try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features) return j; }catch(_){} } return null; }
-      const [cab,lp]=await Promise.all([grab(cableUrl),grab(lpUrl)]);
-      return {cab,lp};
+      const [cCache,lCache]=await Promise.all([_cableCached(CABLE_URL),_cableCached(CABLE_LP_URL)]);
+      if(cCache){ /* draw from the kept copy now, and refresh behind it */
+        Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]).then(([c2,l2])=>{
+          try{ if(c2&&GE().layers.hasSource('src-subcables')) GE().layers.setSourceData('src-subcables',c2); }catch(_){}
+          try{ if(l2&&GE().layers.hasSource('src-subcables-lp')) GE().layers.setSourceData('src-subcables-lp',l2); }catch(_){}
+        });
+        return {cab:cCache,lp:lCache,fromCache:true};
+      }
+      const [cab,lp]=await Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]);
+      return {cab,lp,fromCache:false};
     }
+    /* The app — not the user — is switching this box off. Recorded on the element so the session
+       snapshot can tell the two apart (js/app-body.js reads `imAutoOff`). */
+    function autoUncheck(id){ const cb=document.getElementById(id); if(!cb) return;
+      cb.dataset.imAutoOff='1'; cb.checked=false;
+      const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');
+      const ex=r&&r.querySelector('.lyr-extras'); if(ex) ex.style.display='none'; }
+    let _subcableTries=0;
     function addSubcables(){
       if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); return; }
       if(_subcablesLoading) return; _subcablesLoading=true;
       fetchSubcables().then(({cab,lp})=>{
         _subcablesLoading=false;
-        if(!cab){ const cb=document.getElementById('dl-subcables'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } try{ satToast(HOST.lang==='jp'?'海底ケーブルデータを取得できませんでした':HOST.lang==='de'?'Seekabel-Daten nicht verfügbar':HOST.lang==='ru'?'Данные о подводных кабелях недоступны':HOST.lang==='es'?'Datos de cables submarinos no disponibles':'Submarine cable data unavailable'); }catch(_){} return; }
+        if(!cab){
+          /* (#R188) three volunteer proxies all refusing at the same second is a bad minute, not an
+             answer. Back off and ask again while the box is still ticked; only a fourth failure is
+             reported — and even then as `imAutoOff`, which the session does not record as a choice. */
+          const cb=document.getElementById('dl-subcables');
+          if(cb&&cb.checked&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
+            setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); },wait); return; }
+          _subcableTries=0; autoUncheck('dl-subcables');
+          try{ satToast(HOST.lang==='jp'?'海底ケーブルデータを取得できませんでした':HOST.lang==='de'?'Seekabel-Daten nicht verfügbar':HOST.lang==='ru'?'Данные о подводных кабелях недоступны':HOST.lang==='es'?'Datos de cables submarinos no disponibles':'Submarine cable data unavailable'); }catch(_){} return; }
+        _subcableTries=0;
         /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
            「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
 
@@ -3323,6 +3515,8 @@ window.IntMapModules.dataLayers=function(HOST){
             console.warn('addSubcables: the style never accepted the cable layers'); return;
           }
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
+          /* the layer is up — whatever an earlier failure recorded is settled (#R188) */
+          try{ const cb=document.getElementById('dl-subcables'); if(cb&&cb.dataset) delete cb.dataset.imAutoOff; }catch(_){}
         };
         build(12);
       });

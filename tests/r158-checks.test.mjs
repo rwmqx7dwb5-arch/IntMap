@@ -41,7 +41,13 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
   ok('cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt);',
     'the camera comes from one look-ahead geometry');
   ok('const _D=_D_LOOK', 'at a FIXED distance, which is what makes centre and zoom stable at every attitude');
-  ok('const _pk=1-Math.exp(-Math.max(0.001,dt)/0.055); st._cP+=(pitchT-st._cP)*_pk;', 'time-based pitch low-pass (no 1-frame spike)');
+  /* (#R188) the STEADY-STATE constant is still 0.055 and the filter is still time-based; the only
+     change is that an airborne "current map view" start runs a 1.2 s intro at a slower tau so the
+     first frame is the view the user pressed START on. `_camSeed` is dropped when the window ends,
+     after which this line evaluates to exactly the #R158 expression. */
+  ok('const _pk=1-Math.exp(-Math.max(0.001,dt)/(_intro>0?0.42:0.055)); st._cP+=(pitchT-st._cP)*_pk;',
+    'time-based pitch low-pass (no 1-frame spike)');
+  ok('if(age>=st._camSeed.ms) st._camSeed=null;', 'and the intro is bounded, so 0.055 comes back');
   ok('if(_qn>1e-9&&Math.abs(_qn-1)>1e-6) st.q=', 'attitude quaternion normalised');
   ok('const sane=!!(cam&&cam.center&&_fin(cam.center.lng)', 'every camera output validated (NaN/Inf/range)');
   ok('if(_dC>9000||_dZ>3){ okCam=false;', 'abnormal one-frame jump is skipped (safety net)');
