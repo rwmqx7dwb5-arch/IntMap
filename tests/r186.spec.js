@@ -35,7 +35,14 @@ test('R186 launch screen: covers the app from the first frame and lifts on real 
   expect(await page.evaluate(() => document.body.classList.contains('booting'))).toBe(false);
 });
 
-test('R186 defaults: Köppen and the submarine cables are painting on a first visit', async ({ page }) => {
+/* ⚠ These two are the tests that are ABOUT the default layers, so they opt OUT of the suppression
+   the config applies to every other test (playwright.config.js `storageState` — see the note there
+   for the 9,160 ms vs 3,192 ms measurement behind it). The first needs a genuinely empty profile;
+   the second writes its own saved session. This is where the shipped default is pinned. */
+test.describe('R186 default layers', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('R186 defaults: Köppen and the submarine cables are painting on a first visit', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('/');
   await booted(page);
@@ -49,7 +56,7 @@ test('R186 defaults: Köppen and the submarine cables are painting on a first vi
   expect(r).toEqual({ climateBox: true, cablesBox: true, climate: true, cables: true });
 });
 
-test('R186 defaults: a session that switched one off is not overruled on the next load', async ({ page }) => {
+  test('R186 defaults: a session that switched one off is not overruled on the next load', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: ['dl-subcables'], tabInit: true })));
@@ -62,6 +69,7 @@ test('R186 defaults: a session that switched one off is not overruled on the nex
   }));
   expect(r.cables).toBe(true);
   expect(r.climate, '"default on" must not mean "cannot be turned off"').toBe(false);
+  });
 });
 
 test('R186 sky: the star field is projected with the renderer\'s own camera', async ({ page }) => {

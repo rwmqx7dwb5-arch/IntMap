@@ -44,6 +44,19 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     baseURL: BASE,
+    /* ══ (#R186) EVERY TEST GETS THE BOOT IT WAS WRITTEN FOR ═══════════════════════════════════════
+       #R186 made Köppen and the submarine cables default-ON, and MEASURED what that costs every boot:
+       ready at 9,160 ms against 3,192 ms with them suppressed — a multi-megabyte climate raster and a
+       cable network fetched through a CORS relay, on every page load. `canDraw` is unchanged at
+       ~400 ms; it is the SETTLING that grows. On a runner with no GPU that lands on the tests that are
+       already minutes long and marginal, and they begin failing on load rather than on their merits.
+       Seeding the saved-session key the app itself reads suppresses those layers before anything is
+       built, so the 350-odd tests that are not ABOUT them boot exactly as they always did. The two
+       that ARE about them opt out — see tests/r186.spec.js, which is where that default is pinned. */
+    storageState: {
+      cookies: [],
+      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"layers":[],"tabInit":true}' }] }],
+    },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',
     colorScheme: 'light',
