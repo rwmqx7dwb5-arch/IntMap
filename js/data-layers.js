@@ -2259,12 +2259,24 @@ window.IntMapModules.dataLayers=function(HOST){
        arriving mid-sweep must not start a second one on top of it — the two would interleave their
        partial results and the layer would flicker between them. The in-flight sweep is aborted and
        the new one takes over; `_planeSweep` is the token that says which one is allowed to publish. */
-    let _planeSweep=0, _planeStats=null;
+    let _planeSweep=0, _planeStats=null, _planeBusy=false;
     async function fetchPlanes(){
+      /* ⚠ (#R186) A SWEEP THAT IS ALREADY RUNNING IS LEFT TO FINISH. The token below exists so a
+         stale sweep cannot publish into a layer that has moved on — but using it to abort on every
+         new request threw away work that had already been done: on a slow machine each sweep took
+         longer than the gap between two moveends, so every one was killed by the next and the
+         positions it had collected were lost. tests/r174 measured that as an aircraft track with 2
+         legs where five fixes had been fed to it. Skipping is right and abandoning is not: the
+         running sweep is about to publish the same view, and the next poll covers anything newer. */
+      if(_planeBusy) return;
       _lastPlaneFetch=Date.now();
       /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
       if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; _planeCover=null; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
       const mine=++_planeSweep;
+      _planeBusy=true;
+      try{ return await _sweep(mine); } finally { _planeBusy=false; }
+    }
+    async function _sweep(mine){
       const circles=planeCircles();
       updatePlanesZoomHint();
       const t0=Date.now();
