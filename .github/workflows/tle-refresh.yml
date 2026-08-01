@@ -5,11 +5,17 @@
 # outcome the brief rules out (「何も表示されないのは論外」). The app therefore ships a real element
 # set of its own (data/tle/), and this job is what stops that copy from going stale: it rebuilds it
 # from CelesTrak — or, when CelesTrak cannot be reached, from SatNOGS DB, which mirrors the same
-# Space-Track / CelesTrak elements — and commits it only when the file actually changed.
+# Space-Track / CelesTrak elements.
 #
 # Element sets are re-issued on a roughly two-hour timescale for low orbits, but a snapshot is a
 # FALLBACK, not the live path: twice a day keeps its worst case at ~12 h old, which SGP4 propagates
 # to a few kilometres for LEO, and the layer states the age of the elements it used either way.
+#
+# ⚠ IT OPENS A PULL REQUEST RATHER THAN PUSHING. `main` carries a ruleset requiring a pull request
+# with NO bypass actors, so `github-actions[bot]` cannot push to it either — a job that committed
+# straight to main would have failed on every run that actually had an update, which is every run
+# that mattered. Checked with `gh api repos/.../rulesets`: rules = deletion, pull_request,
+# required_status_checks, non_fast_forward; bypass_actors = [].
 name: TLE snapshot
 
 on:
@@ -19,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: tle-snapshot
@@ -34,16 +41,28 @@ jobs:
           node-version: 20
       - name: Rebuild data/tle from the live sources
         run: node scripts/build-tle-snapshot.mjs
-      - name: Commit only if the catalogue actually moved
+      - name: Open a pull request when the catalogue actually moved
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet -- data/tle; then
-            echo "catalogue unchanged — nothing to commit"
+            echo "catalogue unchanged — nothing to propose"
             exit 0
           fi
+          BRANCH="data/tle-refresh"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
           git add data/tle
           git commit -m "data: refresh the bundled satellite catalogue
 
-          Rebuilt by .github/workflows/tle-refresh.yml (#R185)."
-          git push
+          Rebuilt by .github/workflows/tle-refresh.yml (#R185). Source and object count are in
+          data/tle/catalogue.json."
+          git push --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "data: refresh the bundled satellite catalogue" \
+              --body "$(node -e 'const m=require("./data/tle/catalogue.json");console.log(`Rebuilt by the scheduled \`TLE snapshot\` workflow.\n\n| | |\n|---|---|\n| source | ${m.source} |\n| objects | ${m.objects} |\n| newest epoch | ${m.newestEpoch} |\n| median element age | ${m.medianElementAgeHours} h |\n\nThis is the copy the live-satellite layer falls back to when CelesTrak cannot be reached (#R185). Real element sets, propagated by SGP4 in real time; the app reports their age.`)')"
+          else
+            echo "an open pull request already tracks this branch — it now carries the newer catalogue"
+          fi
