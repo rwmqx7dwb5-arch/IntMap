@@ -257,11 +257,22 @@ window.IntMapCesiumEngine=(function(){
            the order wanted anyway: the offline picture underneath, the real imagery over it. */
         const add=(prov)=>{ try{ const L=new Cesium.ImageryLayer(prov,{}); L.show=!!this._wantWorldBase;
           this._scene.imageryLayers.add(L,0); this._worldBase.push(L); this._scene.requestRender(); return L; }catch(e){ console.warn('[cesium] whole-globe imagery layer rejected',e); return null; } };
+        /* ⚠ GIBS'S EPSG:4326 GRID IS NOT A QUADTREE, AND ASSUMING IT WAS DREW A BLACK CAP.
+           Cesium's default GeographicTilingScheme doubles from 2 × 1, so it asked for 2/3/3 and got
+           `TileOutOfRange` — measured against the live service, and confirmed from the service's own
+           capabilities, which declare the 500 m matrices as
+               L0 2×1   L1 3×2   L2 5×3   L3 10×5   L4 20×10   L5 40×20   L6 80×40   L7 160×80   L8 320×160
+           The first three levels are ceil-rounded and their tiles are not even square (72°×60° at
+           L2), so no doubling scheme can express them. From L3 ON it is exactly a doubling of 10 × 5
+           square 36° tiles — so THAT is the pyramid, entered at its own level 0, with `customTags`
+           adding the three GIBS levels back onto the path. Nothing here is a guess: every dimension
+           comes from WMTSCapabilities.xml, and every level this asks for answered 200. */
         if(Cesium.UrlTemplateImageryProvider&&Cesium.GeographicTilingScheme){
           add(new Cesium.UrlTemplateImageryProvider({
-            url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{z}/{y}/{x}.jpeg',
-            tilingScheme:new Cesium.GeographicTilingScheme(),
-            tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:8, rectangle:rect,
+            url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{gibsZ}/{y}/{x}.jpeg',
+            customTags:{ gibsZ:(prov,x,y,level)=>level+3 },
+            tilingScheme:new Cesium.GeographicTilingScheme({numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5}),
+            tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5, rectangle:rect,
             credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
           }));
         }

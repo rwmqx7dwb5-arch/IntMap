@@ -152,6 +152,13 @@ test('R187 Cesium: the polar cap comes from a tiled ±90° source', () => {
   assert.match(src, /UrlTemplateImageryProvider/, 'a tiled provider is needed');
   assert.match(src, /GeographicTilingScheme/, 'and it must not be Mercator — that is the whole problem');
   assert.match(src, /gibs\.earthdata\.nasa\.gov\/wmts\/epsg4326/, 'GIBS EPSG:4326 reaches ±90°');
+  /* ⚠ AND ITS GRID IS NOT A QUADTREE. Cesium's default scheme doubles from 2 × 1 and asked GIBS for
+     2/3/3, which answers `TileOutOfRange` — the cap went BLACK, which is worse than the smear it
+     replaced. The service declares 500 m as L0 2×1, L1 3×2, L2 5×3, L3 10×5, L4 20×10 … so only
+     L3 onward is a doubling pyramid, and that is the one this enters. */
+  assert.match(src, /numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5/, 'the pyramid starts at GIBS L3 (10 × 5)');
+  assert.match(src, /customTags:\{ gibsZ:\(prov,x,y,level\)=>level\+3 \}/, 'and the three skipped levels go back onto the path');
+  assert.match(src, /maximumLevel:5/, 'L3 + 5 = GIBS L8, the deepest 500 m level');
   assert.match(src, /SingleTileImageryProvider/, 'the bundled picture stays as the offline floor');
   /* and both follow the basemap, so a bright blue cap no longer sits on the dark map */
   assert.match(src, /setWorldBase\(on\)\{/, 'the floor must be switchable');
