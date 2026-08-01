@@ -25,7 +25,14 @@
        and a dissolve rather than a slide. It comes FIRST in the stylesheet because it is the first
        thing painted, and the rules are self-contained so no later cascade can move it.
        `body.booting` freezes scrolling underneath while the app assembles itself. */
-    .boot-splash{ position:fixed; inset:0; z-index:200000; display:flex; align-items:center; justify-content:center;
+    /* ⚠ pointer-events:none — A LAUNCH SCREEN IS A COVER, NOT AN INPUT TRAP. Without it this element
+       is a full-viewport z-index-200000 lid over the map, and every gesture made before it lifts is
+       swallowed. That is #R182's own finding («input arrives and nothing happens = the UI is covering
+       the canvas»), and it showed up here as three camera tests that pass on main and fail on this
+       branch — a tilt that never tilted and a drag that never dragged, because the splash ate them.
+       An iOS launch screen does not capture input either; letting an early tap reach the app under it
+       is the better behaviour as well as the compatible one. */
+    .boot-splash{ position:fixed; inset:0; z-index:200000; pointer-events:none; display:flex; align-items:center; justify-content:center;
       background:var(--bg-color); opacity:1; transition:opacity 0.42s cubic-bezier(0.4,0,0.2,1); }
     .boot-splash.boot-gone{ opacity:0; pointer-events:none; }
     .boot-inner{ display:flex; flex-direction:column; align-items:center; gap:26px;

@@ -12,11 +12,31 @@
 //      numbers are exact and the test does not depend on who happens to be flying (#R170b).
 import { test, expect } from '@playwright/test';
 
+/* ⚠ (#R186) THESE TESTS GESTURE ON THE MAP, SO THE MAP HAS TO BE UNDER THE POINTER.
+   #R186 made Köppen and the submarine cables on by default, which also opens their legends — and the
+   Köppen legend occupies roughly x 465-745 of the map area, exactly where the drags below start.
+   Measured with document.elementsFromPoint(700,500): `SPAN.kl-nm > DIV#koppen-legend > CANVAS`, and
+   the camera then did not move at all (0 m) because the gesture never reached the renderer. That is
+   #R182's own finding — input arrives and nothing happens because the UI is covering the canvas.
+   The subject here is the CAMERA, not the legends, so the boot restores the conditions these tests
+   were written against rather than moving the gestures: moving them would change the drag geometry
+   the distance assertions are tuned to, which would be adjusting the answer to fit. */
+const clearDefaultLayers = async (page) => {
+  await page.evaluate(() => {
+    (window.IntMapDefaultLayers || []).forEach((id) => {
+      const cb = document.getElementById(id);
+      if (cb && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+  });
+  await page.waitForTimeout(400);
+};
+
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1500);
+  await clearDefaultLayers(page);
 };
 
 /* How much of the lower half of the viewport is NOT the background wash? A cockpit looking at

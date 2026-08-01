@@ -10,11 +10,26 @@
 //      a stubbed ADS-B feed (#R170b) so the numbers are exact.
 import { test, expect } from '@playwright/test';
 
+/* ⚠ (#R186) See the same note in tests/r172.spec.js. Köppen is on by default now, its legend covers
+   the part of the map these drags start on, and a gesture that lands on a legend never reaches the
+   renderer — measured as a tilt drag that moved the camera exactly 0 m. The subject here is the
+   viewpoint, so the boot restores the map these tests were written against. */
+const clearDefaultLayers = async (page) => {
+  await page.evaluate(() => {
+    (window.IntMapDefaultLayers || []).forEach((id) => {
+      const cb = document.getElementById(id);
+      if (cb && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+  });
+  await page.waitForTimeout(400);
+};
+
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1500);
+  await clearDefaultLayers(page);
 };
 
 /* the eye, as the engine reports it */
