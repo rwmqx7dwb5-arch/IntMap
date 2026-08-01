@@ -1327,6 +1327,9 @@ js/
                                     SGP4 自身の半長軸が決める遠地点 a(1+e) の1.5倍を超えたら捨てる
                                     （IMP-8 は本物の270,956km で1.04倍＝残る）。80km未満は再突入。
                                     捨てた数は `state().diverged`。26KB
+                                    同梱カタログの更新は `.github/workflows/tle-refresh.yml`（1日2回）。
+                                    ⚠ **main へは push できない**（ruleset が pull_request 必須・
+                                    bypass_actors 空＝`github-actions[bot]` も対象）ので**PRを開く**。
   satellite-detail.js               (#R184) **人工衛星の詳細カード `IntMapSatPanel`**。航空機カードの `.acp-*` を
                                     そのまま使う（第2のUI語彙を作らない）。軌道種別は**フィードのラベルではなく
                                     周期・離心率・傾斜角から導く**。遠地点／近地点は平均運動と離心率から
