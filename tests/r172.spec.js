@@ -20,23 +20,25 @@ import { test, expect } from '@playwright/test';
    #R182's own finding — input arrives and nothing happens because the UI is covering the canvas.
    The subject here is the CAMERA, not the legends, so the boot restores the conditions these tests
    were written against rather than moving the gestures: moving them would change the drag geometry
-   the distance assertions are tuned to, which would be adjusting the answer to fit. */
+   the distance assertions are tuned to, which would be adjusting the answer to fit.
+
+   Written as a SAVED SESSION rather than as two clicks after boot: #R186's default-on layers are
+   suppressed by exactly this path, so they are never created at all — cheaper than creating and then
+   removing them on a runner with no GPU, where this file's heaviest test is already at its
+   wall-clock budget. addInitScript runs before the app's own scripts, so it is read on the first
+   tick. */
 const clearDefaultLayers = async (page) => {
-  await page.evaluate(() => {
-    (window.IntMapDefaultLayers || []).forEach((id) => {
-      const cb = document.getElementById(id);
-      if (cb && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-    });
+  await page.addInitScript(() => {
+    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: [], tabInit: true })); } catch (_) {}
   });
-  await page.waitForTimeout(400);
 };
 
 const boot = async page => {
+  await clearDefaultLayers(page);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1500);
-  await clearDefaultLayers(page);
 };
 
 /* How much of the lower half of the viewport is NOT the background wash? A cockpit looking at
