@@ -2112,8 +2112,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          installed now — before anyone presses Satellite — precisely so that pressing it does not
          start with a wait. */
       try{ window.IntMapSky&&window.IntMapSky.start(); }catch(_){}
-      try{ if(window.IntMapWorldBase){ window.IntMapWorldBase.warm(); window.IntMapWorldBase.install();
-        window.IntMapWorldBase.apply(currentMapType==='sat'); } }catch(_){}
+      /* (#R186) The floor's picture is 284 KB and decoding it is a few milliseconds — but neither is
+         on the critical path of a map that is still settling. Register the protocol and the layer now
+         (so pressing Satellite has nothing to set up), and pre-decode the picture when the browser is
+         next idle. If Satellite is already on, apply() warms it immediately anyway. */
+      try{ if(window.IntMapWorldBase){ window.IntMapWorldBase.install();
+        window.IntMapWorldBase.apply(currentMapType==='sat');
+        const _warm=()=>{ try{ window.IntMapWorldBase.warm(); }catch(_){} };
+        if(window.requestIdleCallback) requestIdleCallback(_warm,{timeout:8000}); else setTimeout(_warm,3000);
+      } }catch(_){}
       try{ _applySkyAtmosphere(currentMapType==='sat'); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means

@@ -16,7 +16,10 @@ test('R186 launch screen: covers the app from the first frame and lifts on real 
   /* Vite content-hashes the img src at build time, which is what makes the icon cacheable */
   expect(await page.locator('#boot-splash img').getAttribute('src')).toMatch(/IntMap\.Icon[-.]/);
   await booted(page);
-  await page.waitForTimeout(700);
+  /* The splash dissolves over 420 ms and is then removed. Wait for the RESULT — a fixed sleep is a
+     test of the runner's load, and on a busy CI runner 700 ms was not enough (it passed on retry,
+     which is the signature of a timing assertion rather than a behavioural one). */
+  await page.locator('#boot-splash').waitFor({ state: 'detached', timeout: 15_000 });
   expect(await page.locator('#boot-splash').count()).toBe(0);
   const marks = await page.evaluate(() => window.__imBoot.marks());
   /* the milestones have to be the real ones, in order — not a timer pretending to be progress */
@@ -101,19 +104,24 @@ test('R186 sky: real stars are drawn behind the globe in dark mode', async ({ pa
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
   await booted(page);
-  await page.waitForTimeout(1500);
-  const r = await page.evaluate(() => {
+  /* …and here too: wait for the RESULT — pixels on the canvas — rather than for a stopwatch. The
+     camera is still settling for a while after boot and each settle clears and redraws the sky, so a
+     fixed sleep is a test of the runner's load (it failed once and passed on retry in CI). */
+  const count = () => {
     const cv = document.getElementById('space-canvas');
-    if (!cv) return { err: 'no canvas' };
-    const g = cv.getContext('2d');
-    const w = Math.min(cv.width, 700), h = Math.min(cv.height, 500);
-    const d = g.getImageData(0, 0, w, h).data;
+    if (!cv || !cv.width) return -1;
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
     let lit = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) lit++;
-    return { lit, sampled: w * h, on: document.body.classList.contains('space-sky-on'),
-             mapBg: getComputedStyle(document.getElementById('map')).backgroundColor,
-             last: window.IntMapSky.state().last };
-  });
-  expect(r.err).toBeUndefined();
+    return lit;
+  };
+  await page.waitForFunction(count, null, BOOT).catch(() => {});
+  await page.waitForFunction((fn) => new Function('return (' + fn + ')()')() > 200, count.toString(), BOOT);
+  const r = await page.evaluate((fn) => ({
+    lit: new Function('return (' + fn + ')()')(),
+    on: document.body.classList.contains('space-sky-on'),
+    mapBg: getComputedStyle(document.getElementById('map')).backgroundColor,
+    last: window.IntMapSky.state().last,
+  }), count.toString());
   expect(r.on).toBe(true);
   /* #map has to give up --bg-color, or the black it paints is the very thing being replaced */
   expect(r.mapBg).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
