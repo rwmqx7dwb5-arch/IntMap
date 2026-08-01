@@ -131,11 +131,16 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
   assert.match(water, /function Heap\(cap\)\{/, 'a real min-heap, so the flood is O(n log n)');
   assert.match(water, /filled\[nk\]=Math\.max\(surf\[nk\],filled\[k\]\);/, 'priority-flood fills to the spill level');
   assert.match(water, /parent\[nk\]=k;/, 'and the pop order doubles as the drainage tree');
-  assert.match(water, /for\(let q=cnt-1;q>=0;q--\)\{ const k=order\[q\]; const v=own\[k\]\+inflow\[k\]; through\[k\]=v;/,
+  assert.match(water, /for\(let q=cnt-1;q>=0;q--\)\{\s*\n?\s*const k=order\[q\]; const v=own\[k\]\+inflow\[k\]; through\[k\]=v;/,
     'one reverse sweep routes every cubic metre downstream');
-  /* the fix: sum what is generated inside plus what the tree carries in, with no outlet ambiguity */
-  assert.match(water, /const depOwn=new Float64Array\(deps\.length\), depExt=new Float64Array\(deps\.length\);/, 'inflow is accumulated exactly');
-  assert.match(water, /if\(dp2>=0&&dp2!==dk\) depExt\[dp2\]\+=through\[k\];/, 'from every upstream cell outside the basin');
+  /* (#R186) The FIX this test was written for — "a basin's inflow is what reaches it, not what one
+     outlet cell happens to carry" — is now stated more strongly than the R176 form it pinned. Every
+     cell inside a basin hands its water to the BASIN, so the sum has no outlet in it at all, and the
+     basin is settled once (when the last of its cells has been visited) rather than read off a cell.
+     Same guarantee, expressed by the code that replaced it. */
+  assert.match(water, /const depIn=new Float64Array\(deps\.length\);/, 'inflow is accumulated per basin, exactly');
+  assert.match(water, /if\(myDep>=0\)\{ depIn\[myDep\]\+=v;/, 'every cell inside a basin contributes to the basin, not to a neighbour');
+  assert.match(water, /if\(depOrder\[myDep\]===q\) settle\(myDep\)/, 'and the level is solved once its inflow is complete');
   assert.doesNotMatch(water, /vin=through\[dp\.outlet\];/, 'and never read off a single outlet cell again');
   /* the products the request names */
   assert.match(water, /dp\.level=dp\.spill; dp\.over=vin-dp\.capacity;/, '決壊: a full basin overtops by exactly the excess');

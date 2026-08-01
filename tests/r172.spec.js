@@ -12,7 +12,29 @@
 //      numbers are exact and the test does not depend on who happens to be flying (#R170b).
 import { test, expect } from '@playwright/test';
 
+/* ⚠ (#R186) THESE TESTS GESTURE ON THE MAP, SO THE MAP HAS TO BE UNDER THE POINTER.
+   #R186 made Köppen and the submarine cables on by default, which also opens their legends — and the
+   Köppen legend occupies roughly x 465-745 of the map area, exactly where the drags below start.
+   Measured with document.elementsFromPoint(700,500): `SPAN.kl-nm > DIV#koppen-legend > CANVAS`, and
+   the camera then did not move at all (0 m) because the gesture never reached the renderer. That is
+   #R182's own finding — input arrives and nothing happens because the UI is covering the canvas.
+   The subject here is the CAMERA, not the legends, so the boot restores the conditions these tests
+   were written against rather than moving the gestures: moving them would change the drag geometry
+   the distance assertions are tuned to, which would be adjusting the answer to fit.
+
+   Written as a SAVED SESSION rather than as two clicks after boot: #R186's default-on layers are
+   suppressed by exactly this path, so they are never created at all — cheaper than creating and then
+   removing them on a runner with no GPU, where this file's heaviest test is already at its
+   wall-clock budget. addInitScript runs before the app's own scripts, so it is read on the first
+   tick. */
+const clearDefaultLayers = async (page) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: [], tabInit: true })); } catch (_) {}
+  });
+};
+
 const boot = async page => {
+  await clearDefaultLayers(page);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});

@@ -9,7 +9,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.placeLabels=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -105,6 +105,38 @@ window.IntMapModules.placeLabels=function(HOST){
          kilometres of terrain at low zoom and metres at high zoom → the ▲ visibly pointed at different terrain
          at every zoom. The string is now LEFT-anchored: the ▲ glyph itself sits ON the summit at every zoom. */
       if(!GE().layers.has('ofm-peak')) GE().layers.add({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      /* ══ (#R186) THE NAMES OF PLACES YOU GO TO ═════════════════════════════════════════════════
+         「Base map & labelsに、地点の名前も追加して。（例：地名などではなく、店舗名や施設名など）」
+
+         Settlement names come from the `place` layer above and water/terrain names from `waterway`,
+         `water_name` and `mountain_peak`. Shops, restaurants, stations, hospitals, schools, museums
+         and hotels are none of those — in the OpenMapTiles schema they are the `poi` layer, which
+         the app has simply never drawn. Same source, same tiles, same fonts; nothing new is fetched.
+
+         TWO THINGS ABOUT `poi` THAT DECIDE THE SHAPE OF THIS LAYER:
+           · It starts at z14. Below that the tiles carry no POIs at all, so a lower minzoom would
+             not show more, it would only ask the renderer to look.
+           · It is DENSE — a city block can hold dozens. OpenMapTiles already answers that with
+             `rank`, its own per-tile importance ordering (1 = the one to keep). So the filter opens
+             the rank window as the zoom goes in, and `symbol-sort-key` hands the same ordering to
+             the collision test, which means the label that survives a crowded corner is the one the
+             tile itself considers most significant rather than whichever came first in the buffer.
+             ⚠ `["zoom"]` inside a FILTER is only re-evaluated at integer zooms — that is exactly
+             what a per-tile rank window wants, so it is used deliberately here and nowhere else.
+         A dot marks the point itself: the text is offset off the feature, and without the dot the
+         name would float with nothing under it. */
+      if(!GE().layers.has('ofm-poi-dot')) GE().layers.add({id:'ofm-poi-dot',type:'circle',source:'ofm','source-layer':'poi',minzoom:14,
+        filter:['all',['has','name'],['<=',['coalesce',['get','rank'],1],['step',['zoom'],8,15,16,16,40,17,1e6]]],
+        layout:{visibility:'none'},
+        paint:{'circle-radius':['interpolate',['linear'],['zoom'],14,2.1,18,3.4],'circle-color':'#ffb454','circle-stroke-color':'rgba(0,0,0,0.55)','circle-stroke-width':0.9,'circle-opacity':0.95}});
+      if(!GE().layers.has('ofm-poi')) GE().layers.add({id:'ofm-poi',type:'symbol',source:'ofm','source-layer':'poi',minzoom:14,
+        filter:['all',['has','name'],['<=',['coalesce',['get','rank'],1],['step',['zoom'],8,15,16,16,40,17,1e6]]],
+        layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,
+          'text-size':['interpolate',['linear'],['zoom'],14,10.5,16,11.5,18,13],
+          'text-max-width':9,'text-optional':true,'text-padding':3,
+          'symbol-sort-key':['coalesce',['get','rank'],1],
+          'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.55,'text-justify':'auto'},
+        paint:{'text-color':'#ffd9a0','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.25}});
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
@@ -201,6 +233,18 @@ window.IntMapModules.placeLabels=function(HOST){
         GE().layers.setLayout('geo-sea','visibility',showGeo?'visible':'none'); GE().layers.setLayout('geo-sea','text-field',['get',gl]); }
       /* (#R64) populate the pinned lake/peak anchors immediately when the toggle turns on */
       if(showGeo) setTimeout(()=>{ try{ harvestStableLabels(); }catch(_){} },250); }catch(_){}
+    /* (#R186) shop / facility names: their own toggle, the same language expression as every other
+       OFM-sourced label, and light/dark text for the same reason the settlement names have it. The
+       dot follows the same visibility so a name can never be left pointing at nothing. */
+    try{ const showPoi = HOST.poiOn && (sat || HOST.mapLabelsViaVector());
+      if(GE().layers.has('ofm-poi-dot')) GE().layers.setLayout('ofm-poi-dot','visibility',showPoi?'visible':'none');
+      if(GE().layers.has('ofm-poi')){ GE().layers.setLayout('ofm-poi','visibility',showPoi?'visible':'none');
+        GE().layers.setLayout('ofm-poi','text-field',nameExpr);
+        const lightPoi = sat || isDark;
+        GE().layers.setPaint('ofm-poi','text-color', lightPoi?'#ffd9a0':'#8a5300');
+        GE().layers.setPaint('ofm-poi','text-halo-color', lightPoi?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.92)');
+      }
+    }catch(_){}
     /* (#R103) ROOT FIX for "過去に戻っても国名が変わらない (変化なし)": while the time machine is on a past year the
        MODERN country labels must stay hidden (the era names come from imtb-lbl/lbl2). applyLabelLang runs on many
        events (styledata, cb-names, language change…) and was unconditionally RE-SHOWING ofm-country based on namesOn,

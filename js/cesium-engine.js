@@ -149,7 +149,19 @@ window.IntMapCesiumEngine=(function(){
          own version of, and every one of them is weight a map does not need. */
       this._widget=new Cesium.CesiumWidget(this._container,{
         baseLayer:false,                            /* NO Ion imagery — the app supplies its own */
-        skyBox:false, skyAtmosphere:new Cesium.SkyAtmosphere(),
+        /* ══ (#R186) THE REAL SKY, WHICH THIS ENGINE ALREADY HAD ══════════════════════════════
+           「実際の時刻や位置に忠実な星空、遠くに見える太陽にして。」
+           `skyBox:false` was switching off the one thing that answers this exactly. Left
+           undefined, CesiumWidget builds SkyBox.createEarthSkyBox() — the Tycho-2 star map that
+           ships in Assets/Textures/SkyBox/ — and, in the same branch, a real Sun and Moon. The
+           star cube is oriented by Transforms.computeIcrfToFixedMatrix at the scene's own time,
+           so it turns with sidereal time and is correct for the viewer's position by
+           construction; the Sun and Moon are drawn at their computed ephemeris positions. This
+           is not decoration made to look astronomical — it is the same class of thing
+           js/space-sky.js builds for MapLibre, and it was already in the bundle.
+           The clock those positions are read from is driven from the app's master clock below,
+           so the time machine moves the sky. */
+        skyAtmosphere:new Cesium.SkyAtmosphere(),
         requestRenderMode:true, maximumRenderTimeChange:Infinity,
         scene3DOnly:false,
         contextOptions:{ webgl:{ alpha:false, antialias:o.antialias!==false, preserveDrawingBuffer:!!o.preserveDrawingBuffer,
@@ -191,6 +203,55 @@ window.IntMapCesiumEngine=(function(){
       this._camera=scene.camera;
       this._globe=scene.globe;
       this._globe.baseColor=Cesium.Color.fromCssColorString('#0b1220');
+      /* ══ (#R186) THE BLACK POLES ═══════════════════════════════════════════════════════════════
+         「Cesiumでは南極・北極付近が衛星画像のない真っ黒だから、どうにかして。」
+         Not a tile that failed: Web Mercator is defined to ±85.0511° and this engine draws the
+         Earth to ±90°, so for the two caps there is NO tile in any of the app's sources to ask for
+         — every one of them is a WebMercatorTilingScheme. What showed there was `baseColor`.
+         The fix is a source that is not Mercator. data/world-basemap.jpg is the bundled
+         equirectangular NASA Blue Marble the MapLibre side uses as its no-wait floor
+         (js/world-base.js); as a single whole-globe tile with a GeographicTilingScheme it covers
+         −180…180 by −90…90, poles included, and sits at the BOTTOM of the imagery collection —
+         `_reorderImagery` raises every app layer above whatever else is in there, so it stays
+         underneath without any ordering work. Where Mercator imagery exists it is completely
+         hidden by it; where none can exist, it is real satellite imagery instead of black. */
+      try{
+        const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
+          ||new URL('data/world-basemap.jpg',document.baseURI).toString();
+        const rect=Cesium.Rectangle.fromDegrees(-180,-90,180,90);
+        const add=(prov)=>{ try{ const L=new Cesium.ImageryLayer(prov,{}); this._scene.imageryLayers.add(L,0); this._worldBase=L; this._scene.requestRender(); }catch(_){} };
+        if(Cesium.SingleTileImageryProvider&&Cesium.SingleTileImageryProvider.fromUrl){
+          Cesium.SingleTileImageryProvider.fromUrl(worldUrl,{rectangle:rect,tileWidth:2048,tileHeight:1024})
+            .then(add).catch(e=>console.warn('[cesium] whole-globe base imagery unavailable',e));
+        } else if(Cesium.SingleTileImageryProvider){
+          add(new Cesium.SingleTileImageryProvider({url:worldUrl,rectangle:rect}));
+        }
+      }catch(e){ console.warn('[cesium] whole-globe base imagery',e); }
+      /* ══ (#R186) THE SKY FOLLOWS THE APP'S CLOCK, NOT ITS OWN ══════════════════════════════════
+         The star box, the Sun and the Moon are all read from `widget.clock.currentTime`, and a bare
+         Cesium clock free-runs on the system clock. That is right while the app is live — and wrong
+         the moment the time machine moves, which is the whole reason IntMap has ONE master clock
+         (window.IntMapTime, #R94). So the widget's clock is pushed from it: pinned when the user is
+         viewing another moment, free-running when they are back at now.
+         ⚠ requestRenderMode is on, so nothing redraws unless something asks. A sky that is correct
+         and never repainted is a sky frozen at boot, which would look exactly like the bug this
+         replaces — hence the slow heartbeat. 30 s is a quarter of a degree of sidereal rotation. */
+      try{
+        const syncClock=()=>{ try{
+          const T=window.IntMapTime; const c=this._widget&&this._widget.clock; if(!c) return;
+          let ms=null, live=true;
+          if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; }
+          try{ if(T&&T.isLive) live=!!T.isLive(); }catch(_){}
+          if(ms==null) return;
+          c.shouldAnimate=live;
+          if(!live||Math.abs(Cesium.JulianDate.toDate(c.currentTime).getTime()-ms)>1000)
+            c.currentTime=Cesium.JulianDate.fromDate(new Date(ms));
+          this._scene.requestRender();
+        }catch(_){} };
+        syncClock();
+        try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(syncClock); }catch(_){}
+        this._skyTick=setInterval(()=>{ if(!document.hidden) syncClock(); },30000);
+      }catch(_){}
       this._globe.showGroundAtmosphere=true;
       this._globe.depthTestAgainstTerrain=false;    /* markers must not sink into a hill */
       this._globe.enableLighting=false;

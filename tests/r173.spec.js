@@ -10,7 +10,22 @@
 //      a stubbed ADS-B feed (#R170b) so the numbers are exact.
 import { test, expect } from '@playwright/test';
 
+/* ⚠ (#R186) See the same note in tests/r172.spec.js. Köppen is on by default now, its legend covers
+   the part of the map these drags start on, and a gesture that lands on a legend never reaches the
+   renderer — measured as a tilt drag that moved the camera exactly 0 m. The subject here is the
+   viewpoint, so the boot restores the map these tests were written against.
+
+   Written as a SAVED SESSION rather than as clicks after boot — the layers are then never created at
+   all, which is cheaper than creating and removing them on a runner with no GPU, where the cockpit
+   test in this file is already at its wall-clock budget. */
+const clearDefaultLayers = async (page) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: [], tabInit: true })); } catch (_) {}
+  });
+};
+
 const boot = async page => {
+  await clearDefaultLayers(page);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});

@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R185';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R186';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R185';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-01-R185';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-01-R186';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -191,6 +191,65 @@ window.__imBuild='R185';   /* (#R121) build marker — bump when verifying that 
   <link rel="stylesheet" href="css/intmap.css">
 </head>
 <body>
+<!-- ══ (#R186) THE LAUNCH SCREEN ═══════════════════════════════════════════════════════════════════
+     「サイトを開いた際は、起動中は完全に準備完了なるまで読み込み画面に。読み込み画面には、IntMapの
+       アイコン(IntMap.Icon.png)を使用し、iOS風の洗練されたUIに。」
+
+     STATIC MARKUP, FIRST IN THE BODY, ON PURPOSE. css/intmap.css is a render-blocking <link> in the
+     head, so by the time the parser reaches this element the styles for it already exist and it is
+     painted in the FIRST frame — before src/main.js (a deferred module) has even been fetched. A
+     splash injected by JavaScript would appear after the thing it is supposed to be covering.
+
+     It is dismissed by real milestones rather than by a timer: the app calls __imBoot.set() as the
+     modules land, the renderer appears, the style parses and the first idle arrives, and only then
+     does it fade. The 20-second failsafe below exists because a launch screen that cannot be
+     dismissed is worse than no launch screen at all — if a milestone never arrives it says so in the
+     console and reveals the app anyway. -->
+<div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
+  <div class="boot-inner">
+    <div class="boot-icon"><img src="IntMap.Icon.png" alt="IntMap" width="124" height="124" decoding="async" fetchpriority="high"></div>
+    <div class="boot-bar"><i id="boot-bar-fill"></i></div>
+    <div class="boot-note" id="boot-note"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('boot-splash'),
+      fill=document.getElementById('boot-bar-fill'),
+      note=document.getElementById('boot-note');
+  /* The five UI languages, seeded the same way the app seeds currentLang (intmap_settings.lang) —
+     this runs long before js/i18n.js exists, and a launch screen in the wrong language is the first
+     thing a returning user would see. */
+  var L={en:'Loading…',jp:'読み込み中…',de:'Wird geladen…',ru:'Загрузка…',es:'Cargando…'};
+  var lang='en';
+  try{ var s=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(s&&L[s.lang]) lang=s.lang; }catch(e){}
+  if(note) note.textContent=L[lang];
+  var pct=0, done=false, marks={};
+  function set(p,mark){
+    if(done) return pct;
+    if(mark) marks[mark]=Math.round(performance.now());
+    p=Math.max(pct,Math.min(100,+p||0)); pct=p;
+    if(fill) fill.style.width=p+'%';
+    return pct;
+  }
+  function finish(why){
+    if(done) return; done=true; marks[why||'ready']=Math.round(performance.now());
+    if(fill) fill.style.width='100%';
+    if(!el){ document.body.classList.remove('booting'); return; }
+    el.classList.add('boot-gone');
+    setTimeout(function(){ try{ el.parentNode&&el.parentNode.removeChild(el); }catch(e){} document.body.classList.remove('booting'); },460);
+  }
+  window.__imBoot={ set:set, done:finish, progress:function(){ return pct; },
+                    isDone:function(){ return done; }, marks:function(){ return marks; } };
+  document.body.classList.add('booting');
+  set(6,'html');
+  window.addEventListener('DOMContentLoaded',function(){ set(26,'dom'); });
+  window.addEventListener('load',function(){ set(42,'load'); });
+  setTimeout(function(){
+    if(!done){ console.warn('[boot] no ready signal after 20 s — revealing the app anyway. Milestones:',JSON.stringify(window.__imBoot.marks())); finish('timeout'); }
+  },20000);
+})();
+</script>
 <div class="operation-room">
   <div class="sidebar" id="sidebar">
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
@@ -316,6 +375,13 @@ window.__imBuild='R185';   /* (#R121) build marker — bump when verifying that 
              </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-geolabels" checked> <span data-i18n="geoLabels">Water &amp; terrain labels</span></label>
+             <!-- (#R186) 「Base map & labelsに、地点の名前も追加して。（例：地名などではなく、店舗名や施設名など）」 —
+                  the POINTS OF INTEREST in OpenMapTiles' `poi` layer: shops, restaurants, stations, hospitals,
+                  museums, hotels… i.e. the names of PLACES YOU GO TO, which is a different set from the
+                  settlement names above it and from the water/terrain names beside it. Its own toggle, so it
+                  follows the same pattern as its two neighbours and can be switched off; it is dense by nature
+                  and only appears from z14, so it starts OFF like Grid and Countries do. -->
+             <label class="layer-option"><input type="checkbox" id="cb-poi"> <span data-i18n="poiLabels">Shop &amp; facility names</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
