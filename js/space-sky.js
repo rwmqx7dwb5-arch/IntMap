@@ -168,7 +168,21 @@ window.IntMapSky=(function(){
           mag[i]=dv.getUint8(o+4)/20-2;
           const rgb=bvToRGB(dv.getInt8(o+5)/50);
           cr[i]=rgb[0]; cg[i]=rgb[1]; cb[i]=rgb[2]; }
-        stars={ n, ra, dec, mag, cr, cg, cb, precessedFor:null, pra:new Float32Array(n), pdec:new Float32Array(n) };
+        stars={ n, ra, dec, mag, cr, cg, cb, precessedFor:null, pra:new Float32Array(n), pdec:new Float32Array(n),
+                vx:new Float32Array(n), vy:new Float32Array(n), vz:new Float32Array(n),
+                css:new Array(n), sz:new Float32Array(n) };
+        /* ── (#R187) SIZE AND COLOUR ARE FUNCTIONS OF MAGNITUDE, AND MAGNITUDE NEVER CHANGES ──────
+           So they are not per-frame work. Building `rgba(r,g,b,a)` inside the draw loop meant ~99,000
+           string concatenations every frame on top of ~99,000 canvas state changes; the strings are
+           the same every time, so they are built once here. The curve is documented at its use site
+           in draw() — this is the same arithmetic, evaluated at load. */
+        for(let i=0;i<n;i++){
+          const v=mag[i];
+          const b=Math.max(0,Math.min(1,(9.8-v)/11.3));
+          const a=Math.min(1,0.14+Math.pow(b,1.5)*1.45);
+          stars.sz[i]=0.55+Math.pow(b,2.2)*3.7;
+          stars.css[i]='rgba('+cr[i]+','+cg[i]+','+cb[i]+','+a.toFixed(3)+')';
+        }
         starsLoading=null; schedule(); return stars;
       }).catch(e=>{ starErr=String(e&&e.message||e); starsLoading=null;
         console.warn('[sky] star catalogue unavailable — the sky falls back to the plain background:',starErr);
@@ -181,8 +195,37 @@ window.IntMapSky=(function(){
     if(!stars) return;
     const T=(julianDay(ms)-J2000)/36525;
     if(stars.precessedFor!=null&&Math.abs(T-stars.precessedFor)<1/36525) return;   /* < 1 day */
-    for(let i=0;i<stars.n;i++){ const p=precess(stars.ra[i],stars.dec[i],T); stars.pra[i]=p[0]; stars.pdec[i]=p[1]; }
+    for(let i=0;i<stars.n;i++){ const p=precess(stars.ra[i],stars.dec[i],T); stars.pra[i]=p[0]; stars.pdec[i]=p[1];
+      /* (#R187) …and the unit vector with it. See drawStars: the per-frame loop is now 99,000 long,
+         so the two sines and two cosines sphereVec() costs per star cannot be paid every frame. They
+         change only when the precession does — once a day of map time. */
+      const a=p[0]*D2R, b=p[1]*D2R, c=Math.cos(b);
+      stars.vx[i]=Math.sin(a)*c; stars.vy[i]=Math.sin(b); stars.vz[i]=Math.cos(a)*c; }
     stars.precessedFor=T;
+  }
+  /* ══ (#R187) THE WHOLE ROTATION AS ONE MATRIX ══════════════════════════════════════════════════
+     projectDirection() is the CONTRACT — it is what the tests check against map.project(), and it is
+     unchanged. What changes is that the bulk loop no longer calls it 99,000 times a frame.
+
+     Two identities make that exact rather than approximate:
+       · sphereVec(ra − gmst, dec) ≡ Ry(−gmst) · sphereVec(ra, dec)   — a rotation about the polar
+         axis IS the sidereal hour angle, so the catalogue's own unit vector can be precomputed and
+         the clock folded into the matrix;
+       · Ry(−lng) · Ry(−gmst) ≡ Ry(−(lng + gmst))                     — adjacent rotations about the
+         same axis compose.
+     So the renderer's chain Rz(roll)·Rx(−pitch)·Rz(bearing)·Rx(lat)·Ry(−lng) applied to
+     sphereVec(ra−gmst, dec) is one 3×3 matrix applied to a precomputed vector: nine multiplies a
+     star instead of four transcendentals plus five rotations.
+
+     ⚠ NOT TAKEN ON TRUST. tests/r187 builds this matrix and compares it to projectDirection() over a
+     grid of camera states and sky directions; if the two ever disagree the fast path is wrong. */
+  function viewMatrix(F,gmst){
+    const rows=[[1,0,0],[0,1,0],[0,0,1]];
+    const ap=(fn,r)=>{ for(let k=0;k<3;k++){ const v=fn([rows[0][k],rows[1][k],rows[2][k]],r);
+      rows[0][k]=v[0]; rows[1][k]=v[1]; rows[2][k]=v[2]; } };
+    ap(rotY,-(F.lng+gmst)*D2R); ap(rotX,F.lat*D2R);
+    ap(rotZ,F.bearingDeg*D2R); ap(rotX,-F.pitchDeg*D2R); ap(rotZ,(F.rollDeg||0)*D2R);
+    return rows;
   }
 
   /* ── the canvas ────────────────────────────────────────────────────────────────────────────── */
@@ -223,6 +266,7 @@ window.IntMapSky=(function(){
   }
   function draw(){
     raf=0;
+    const _t0=performance.now();
     if(!canvas()) return;
     if(!shouldDraw()){ cv.style.display='none'; document.body.classList.remove('space-sky-on'); return; }
     const F=GE().camera.viewFrame(); if(!F) return;
@@ -236,30 +280,44 @@ window.IntMapSky=(function(){
     if(stars){
       ensurePrecessed(ms);
       const W=F.width, H=F.height;
+      const M=viewMatrix(F,gm);
+      const m00=M[0][0],m01=M[0][1],m02=M[0][2],
+            m10=M[1][0],m11=M[1][1],m12=M[1][2],
+            m20=M[2][0],m21=M[2][1],m22=M[2][2];
+      const f=1/Math.tan(F.fovRad/2), aspect=W/H;
+      const ox=(-F.offsetX*2/W), oy=(F.offsetY*2/H);
+      const fa=f/aspect;
       for(let i=0;i<stars.n;i++){
-        const p=projectDirection(F,stars.pra[i]-gm,stars.pdec[i]);
-        if(!p) continue;
-        const x=p[0], y=p[1];
-        if(x<-4||y<-4||x>W+4||y>H+4) continue;
+        const vx=stars.vx[i], vy=stars.vy[i], vz=stars.vz[i];
+        const dz=m20*vx+m21*vy+m22*vz;
+        const w=-dz; if(!(w>1e-9)) continue;                     /* behind the camera */
+        const dx=m00*vx+m01*vy+m02*vz, dy=m10*vx+m11*vy+m12*vz;
+        const x=((fa*dx+ox*dz)/w*0.5+0.5)*W;
+        if(x<-4||x>W+4) continue;
+        const y=(0.5-(f*dy+oy*dz)/w*0.5)*H;
+        if(y<-4||y>H+4) continue;
         const v=stars.mag[i];
-        /* Size and opacity both follow the magnitude, which is the log of the real flux — the
-           ORDER is physical and never adjusted, only the mapping into pixels. Measured on a 1400×900
-           dark globe view the first curve put a magnitude-4 star at 0.26 alpha in a 0.9 px square,
-           which is faithful to a dark-sky naked eye and invisible on a screen at arm's length. The
-           exponent is gentler now, so the mid-magnitude bulk of the sky (which is what makes a sky
-           look like a sky) reads, while the brightest still stand well clear of it:
-               mag 6 → α 0.19, 0.7 px    mag 4 → α 0.39, 0.9 px
-               mag 2 → α 0.73, 1.5 px    mag 0 → α 1.00, 2.6 px    Sirius → α 1.00, 4.0 px + glow */
-        const b=Math.max(0,Math.min(1,(6.8-v)/8.3));
-        const bp=Math.pow(b,1.6);
-        const a=Math.min(1,0.16+bp*1.35);
-        const s=0.62+Math.pow(b,1.7)*3.4;
-        const col=stars.cr[i]+','+stars.cg[i]+','+stars.cb[i];
+        /* ── (#R187) THE CURVE, RE-FITTED FOR A CATALOGUE THAT GOES FOUR MAGNITUDES DEEPER ────────
+           Size and opacity both follow the magnitude, which is the log of the real flux — the ORDER
+           is physical and is never adjusted, only the mapping into pixels. #R186's curve ran out at
+           V 6.8 because that was the end of the Bright Star Catalogue; every Hipparcos star fainter
+           than that would have been pinned to the same floor, which would have drawn the deep sky as
+           a flat wash instead of as the graded thing it is. The span is now the catalogue's own:
+               V 9.5 → α 0.15, 0.6 px     V 6.5 → α 0.36, 0.8 px
+               V 4   → α 0.62, 1.3 px     V 2   → α 0.88, 2.2 px
+               V 0   → α 1.00, 3.2 px     Sirius (−1.44) → α 1.00, 4.2 px + glow
+           The faintest are individually almost nothing, which is correct — what they do is give the
+           Milky Way its brightness, because that band IS their density.
+           ⚠ It is EVALUATED IN loadStars, not here: magnitude never changes, so both outputs are
+           constants per star, and computing them in the loop cost ~99,000 pow() pairs and ~99,000
+           string builds a frame for an answer that was identical every time. */
+        const s=stars.sz[i];                                     /* precomputed at load — see loadStars */
         /* the brightest handful get the small halo the eye gives them */
-        if(v<1.6){ const g=ctx.createRadialGradient(x,y,0,x,y,s*2.6);
+        if(v<1.6){ const col=stars.cr[i]+','+stars.cg[i]+','+stars.cb[i];
+          const g=ctx.createRadialGradient(x,y,0,x,y,s*2.6);
           g.addColorStop(0,'rgba('+col+',0.42)'); g.addColorStop(1,'rgba('+col+',0)');
           ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s*2.6,0,6.283185307); ctx.fill(); }
-        ctx.fillStyle='rgba('+col+','+a.toFixed(3)+')';
+        ctx.fillStyle=stars.css[i];
         if(s<1.6) ctx.fillRect(x-s/2,y-s/2,s,s);
         else { ctx.beginPath(); ctx.arc(x,y,s/2,0,6.283185307); ctx.fill(); }
         drawn++;
@@ -284,7 +342,8 @@ window.IntMapSky=(function(){
       ctx.fillStyle='rgba(255,250,235,1)'; ctx.beginPath(); ctx.arc(sp[0],sp[1],rad,0,6.283185307); ctx.fill();
       sun={ x:sp[0], y:sp[1], radiusPx:rad };
     }
-    lastDraw={ ms, gmstDeg:gm, stars:drawn, sun, sunRa:S.ra, sunDec:S.dec, at:Date.now() };
+    lastDraw={ ms, gmstDeg:gm, stars:drawn, sun, sunRa:S.ra, sunDec:S.dec, at:Date.now(),
+               catalogue:stars?stars.n:0, drawMs:+(performance.now()-_t0).toFixed(2) };
   }
   function schedule(){ if(raf) return; raf=requestAnimationFrame(draw); }
 
@@ -318,6 +377,9 @@ window.IntMapSky=(function(){
     /* the astronomy and the camera, exposed by name so tests can check them against published
        values and against map.project() rather than against themselves (#R176) */
     gmstDeg, sunPosition, precess, bvToRGB, sphereVec,
+    /* (#R187) the composed rotation the bulk star loop uses, so a test can hold it against
+       projectDirection() rather than against itself */
+    viewMatrix,
     frame:()=>{ try{ return GE().camera.viewFrame(); }catch(_){ return null; } },
     projectDirection:(lng,lat,F)=>{ F=F||(()=>{ try{ return GE().camera.viewFrame(); }catch(_){ return null; } })(); return F?projectDirection(F,lng,lat):null; },
     projectSurface:(lng,lat,F)=>{ F=F||(()=>{ try{ return GE().camera.viewFrame(); }catch(_){ return null; } })(); return F?projectSurface(F,lng,lat):null; },

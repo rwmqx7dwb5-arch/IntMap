@@ -275,12 +275,43 @@ window.IntMapModules.widgets=function(HOST){
     /* (#R154) iOS-style colour-fill helpers for AQI / UV. _wgtColor paints the whole card the category colour (gradient,
        inline!important so it beats the sidebar-glass override) and picks dark/light text by luminance so every tier reads. */
     const _WL=(en,ja,de,ru,es)=>HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
-    function _shade(hex,amt){ try{ let h=String(hex).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); const f=amt/100; const mix=c=>Math.max(0,Math.min(255,Math.round(amt>0?c+(255-c)*f:c*(1+f)))); return 'rgb('+mix((n>>16)&255)+','+mix((n>>8)&255)+','+mix(n&255)+')'; }catch(_){ return hex; } }
     function _lum(hex){ try{ let h=String(hex).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return (0.2126*((n>>16)&255)+0.7152*((n>>8)&255)+0.0722*(n&255))/255; }catch(_){ return 0; } }
+    /* ══ (#R187) THE COLOURED CARDS ARE GLASS TOO ══════════════════════════════════════════════════
+       「AQI, UVIウィジェットはぼんやりと影を付けなくてよい。そして、全ウィジェットはガラス風の質感に。」
+
+       #R186 removed every OUTER shadow from `.wgt-card` and from `.wgt-colored` — and the report came
+       back, because on these two cards the soft shading was never outside the card. It was INSIDE it:
+       `linear-gradient(158deg, shade(col,+16), shade(col,−14))` darkened the bottom-right corner by
+       14%, which is exactly what a soft shadow looks like. And being an OPAQUE gradient set
+       inline-!important, it also overrode `--glass-fill` — so AQI and UV were the only two widgets in
+       the app that were not glass. One change answers both halves: a FLAT translucent tint.
+
+       Flat, so nothing on the card fades into a corner. Translucent, so `backdrop-filter` (which the
+       card already carries and which the opaque gradient was hiding) does the work and the card reads
+       as tinted glass like every other widget.
+
+       ⚠ AND THE TEXT COLOUR IS DECIDED ON WHAT THE EYE ACTUALLY SEES. Picking it from the raw category
+       colour was right while that colour was opaque; behind 58% alpha the surface is a blend of the
+       colour and whatever is under the glass, so #ffcc00 ("light → dark text") over a dark sidebar is
+       no longer light. The luminance test therefore runs on the COMPOSITED value: α·lum(colour) +
+       (1−α)·lum(surface), with the surface read from the live theme. Yellow keeps dark text in light
+       mode and takes white in dark mode, which is what the composite says. */
+    const _TINT_A=0.58;
+    function _themeLum(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'?0.11:0.93; }catch(_){ return 0.11; } }
     function _wgtColor(u,col){ try{ const card=document.querySelector('.wgt-card[data-u="'+u+'"]'); if(!card) return;
-        if(col){ card.classList.add('wgt-colored'); card.classList.toggle('wgt-on-light',_lum(col)>0.5);
-          card.style.setProperty('background','linear-gradient(158deg,'+_shade(col,16)+','+_shade(col,-14)+')','important'); }
-        else{ card.classList.remove('wgt-colored','wgt-on-light'); card.style.removeProperty('background'); } }catch(_){} }
+        if(col){ card.classList.add('wgt-colored'); card.setAttribute('data-tint',col);
+          const eff=_TINT_A*_lum(col)+(1-_TINT_A)*_themeLum();
+          card.classList.toggle('wgt-on-light',eff>0.5);
+          let h=String(col).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join('');
+          const n=parseInt(h,16);
+          card.style.setProperty('background','rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+_TINT_A+')','important'); }
+        else{ card.classList.remove('wgt-colored','wgt-on-light'); card.removeAttribute('data-tint'); card.style.removeProperty('background'); } }catch(_){} }
+    /* The composite luminance above depends on the THEME, and a theme switch does not refresh a
+       widget's data — so re-decide the text colour when the theme changes, from the tint the card is
+       already wearing. (`data-tint` is written by _wgtColor itself, so this can never invent one.) */
+    try{ window.addEventListener('intmap-theme',()=>{ try{
+      document.querySelectorAll('.wgt-card[data-tint]').forEach(c=>{
+        const u=c.getAttribute('data-u'); if(u) _wgtColor(u,c.getAttribute('data-tint')); }); }catch(_){} }); }catch(_){}
     function _wgtBig(num,unit,cat){ return String(num)+(unit?'<span class="wgt-unit">'+unit+'</span>':'')+(cat?'<span class="wgt-cat">'+cat+'</span>':''); }
     /* full US-AQI 6-tier scale (was 4 stops) — 5 languages */
     function _aqiCat(v){ if(v==null) return {col:null,label:''};

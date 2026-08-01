@@ -255,7 +255,10 @@ test('R186 aircraft: the sweep covers the viewport with tiled circles, not one',
   expect(r.wide.circles, 'a continent-wide view has to ask for more than one circle').toBeGreaterThan(4);
   expect(r.wide.circles).toBeLessThanOrEqual(r.budget);
   expect(r.wide.coverKmX).toBeGreaterThan(1500);
-  expect(r.minZoom).toBe(3);
+  /* (#R187) 「もっと増やして」 again: the budget went 16 → 48 circles and the floor z3 → z2. The
+     SHAPE of the plan is what this test is for and that is unchanged; the two numbers it pinned are
+     the ones the instruction moved. */
+  expect(r.minZoom).toBe(2);
 });
 
 test('R186 water: a source outside the working rectangle is not silently dropped', async ({ page }) => {
@@ -273,13 +276,16 @@ test('R186 water: a source outside the working rectangle is not silently dropped
     const before = TW.state();
     return { nx: g.nx, cellM: Math.round(g.cellM), bbox: g.bbox,
              hasAreaLayer: window.IntMapGeoEngine.layers.has('tw-area'),
-             hasFlowLayer: window.IntMapGeoEngine.layers.has('tw-flow'),
+             hasFlowLine: window.IntMapGeoEngine.layers.has('tw-flow'),
              solveMs: before.result && before.result.solveMs };
   });
   /* 384 cells over the view, not 256 — the grid was resampling 17 DEM samples into one cell */
   expect(r.nx).toBe(384);
   expect(r.hasAreaLayer).toBe(true);
-  expect(r.hasFlowLayer).toBe(true);
+  /* (#R187) 「一本の補助線はいらない」 — the traced course is drawn as WATER (an image overlay,
+     tw-flowimg) and the cyan polyline layer is gone. Asserted as an absence so the line cannot come
+     back by accident. */
+  expect(r.hasFlowLine).toBe(false);
   expect(r.solveMs).toBeLessThan(4000);
 });
 
@@ -316,13 +322,17 @@ test('R186 Cesium: a real star sky, a real Sun, and imagery at the poles', async
   /* The polar base layer is added when SingleTileImageryProvider.fromUrl RESOLVES, so waiting a fixed
      2.5 s for it was a test of how fast the machine decodes a 284 KB JPEG — it failed 3/3 in CI on
      exactly that. Wait for the layer. */
-  await page.waitForFunction(() => { try { return !!window.IntMapGeoEngine.raw()._worldBase; } catch (_) { return false; } }, null, BOOT);
+  /* (#R187) `_worldBase` is a LIST now — the bundled offline floor plus the tiled polar-capable GIBS
+     imagery over it, because one 2,048 × 1,024 picture stretched to the pole draws a radial smear
+     rather than a cap. It is created empty and filled as each provider resolves, so the wait is for
+     an entry rather than for the field. */
+  await page.waitForFunction(() => { try { const w = window.IntMapGeoEngine.raw()._worldBase; return !!(w && w.length); } catch (_) { return false; } }, null, BOOT);
   const r = await page.evaluate(() => {
     const v = window.IntMapGeoEngine.raw();
     return { skyBox: !!v._scene.skyBox, show: !!(v._scene.skyBox && v._scene.skyBox.show),
              sun: !!v._scene.sun, moon: !!v._scene.moon,
-             worldBase: !!v._worldBase,
-             atBottom: (() => { try { return v._scene.imageryLayers.get(0) === v._worldBase; } catch (_) { return false; } })(),
+             worldBase: !!(v._worldBase && v._worldBase.length),
+             atBottom: (() => { try { return v._worldBase.indexOf(v._scene.imageryLayers.get(0)) >= 0; } catch (_) { return false; } })(),
              /* the MapLibre star canvas must stay out of the way — two skies is one too many */
              spaceSky: window.IntMapSky.state().active };
   });

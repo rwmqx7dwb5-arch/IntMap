@@ -1,0 +1,236 @@
+/* ============================================================================
+ *  R187 — source-level checks (no browser)
+ * ----------------------------------------------------------------------------
+ *  The parts of this round that are decided by a CONSTANT or by a shipped file,
+ *  and would otherwise only be caught by looking at the screen.
+ * ==========================================================================*/
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+
+const read = (p) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
+const bytes = (p) => fs.readFileSync(path.join(process.cwd(), p));
+
+/* ── 1. the aircraft mark is the FIRST one again ─────────────────────────────────────────────── */
+test('R187 aircraft: the glyph is the original outline, stroke and size ramp', () => {
+  const src = read('js/data-layers.js');
+  /* The outline shipped from the first commit through #R164. Checked point by point rather than as
+     a blob so a "tidy-up" that nudges a vertex is a failure, not a silent redesign. */
+  const m = /_PLANE_ORIG\s*=\s*\[([\s\S]*?)\];/.exec(src);
+  assert.ok(m, '_PLANE_ORIG must exist');
+  const pts = JSON.parse('[' + m[1].replace(/\s+/g, '') + ']');
+  assert.deepEqual(pts, [[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
+                         [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]]);
+  /* a flat fill and a 1.6 px white line — no drop shadow, no white rim, no dark hairline */
+  const fn = /function ensurePlaneIcons\(\)\{[\s\S]*?\n    \}/.exec(src);
+  assert.ok(fn, 'ensurePlaneIcons must exist');
+  assert.match(fn[0], /lineWidth=1\.6/, 'the original 1.6 px stroke');
+  assert.match(fn[0], /const s=44\b/, 'the original 44-unit artwork');
+  assert.ok(!/shadowBlur/.test(fn[0]), 'the #R183 drop shadow is gone');
+  assert.ok(!/lineWidth=2\.6/.test(fn[0]), 'the #R183 white rim is gone');
+  /* the original size ramp */
+  assert.match(src, /'icon-size':\['interpolate',\['linear'\],\['zoom'\],2,0\.4,5,0\.58,9,0\.78\]/,
+    'the original icon-size ramp');
+  /* …and the flat glyph is what a default profile SEES: #R185 measured that the lifted 3-D body is
+     shown instead of it, so restoring the glyph without this changes nothing on screen. */
+  assert.match(src, /let planes3D=false;[\s\S]{0,120}getItem\('intmap_planes3d'\)==='1'/,
+    '3-D aircraft bodies must default OFF');
+});
+
+/* ── 2. the sweep is wider, and still paced at the measured rate ─────────────────────────────── */
+test('R187 aircraft: a bigger budget, the same requests per second', () => {
+  const src = read('js/data-layers.js');
+  assert.match(src, /PLANE_CIRCLE_NM\s*=\s*250\b/, '250 nm is still the API maximum (300 answers 403)');
+  assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the measured sustainable spacing must NOT move with the budget');
+  const b = /PLANE_CIRCLE_BUDGET=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(src);
+  assert.ok(b, 'the budget must be a two-branch mobile/desktop constant');
+  assert.equal(+b[2], 48, 'desktop budget');
+  assert.equal(+b[1], 12, 'mobile budget');
+  /* the poll interval has to be able to EXPRESS the full sweep — a clipped ceiling would mean
+     polling faster than the pace that was measured to be sustainable */
+  const cl = /Math\.max\(20000,Math\.min\((\d+),Math\.round\(n\*(\d+)\)\)\)/.exec(src);
+  assert.ok(cl, 'the poll interval must stay a clamped n×rate rule');
+  assert.ok(+cl[1] >= 48 * +cl[2], `a 48-circle sweep needs ${48 * +cl[2]} ms but the ceiling is ${cl[1]} ms`);
+});
+
+/* ── 3. POI labels are ranked by what kind of place it is ────────────────────────────────────── */
+test('R187 POI: the zoom window is on `class`, not on the tile sequence number', () => {
+  const src = read('js/place-labels.js');
+  assert.match(src, /const POI_TIER=\['match',\['get','class'\]/, 'the tier must be decided by class');
+  /* MEASURED (central Tokyo, z16): the old `rank ≤ 40` window admitted 2,769 of 12,134 POIs, led by
+     723 shops and 372 bus stops, and what survived collision was 24 bus stops and 14 shops. The
+     landmark classes must be in the FIRST tier and the street furniture must not be. */
+  const t1 = /\['hospital','university','college','school','railway',[\s\S]*?\],1,/.exec(src);
+  assert.ok(t1, 'tier 1 must exist');
+  for (const c of ['hospital', 'university', 'museum', 'park', 'police', 'railway', 'theatre'])
+    assert.ok(t1[0].includes(`'${c}'`), `${c} belongs in the first tier`);
+  for (const c of ['bus', 'entrance', 'bollard', 'waste_basket'])
+    assert.ok(!t1[0].includes(`'${c}'`), `${c} must not be in the first tier`);
+  /* the same expression drives collision, so a crowded corner keeps the landmark */
+  assert.match(src, /'symbol-sort-key':\['\+',\['\*',POI_TIER,1000\]/, 'the tier must also sort the collision test');
+  assert.match(src, /filter:POI_FILTER/, 'the dot and the label must share one filter');
+});
+
+/* ── 4. the numbers the user named ───────────────────────────────────────────────────────────── */
+test('R187 sea level: the default opacity is 60 %', () => {
+  const src = read('js/data-layers.js');
+  const m = /sealevel:([0-9.]+)/.exec(src);
+  assert.ok(m, 'the sealevel default must be in the opacities table');
+  assert.equal(+m[1], 0.60);
+});
+
+test('R187 atmosphere: the limb is blended thinner than saturation', () => {
+  const src = read('js/app-body.js');
+  const m = /'atmosphere-blend':\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+)/.exec(src);
+  assert.ok(m, 'the sky spec must still set atmosphere-blend');
+  /* 1.0 clipped the channels — an optically correct scattering term multiplied until it saturates
+     is what read as a cheap white collar, and as an over-bright sunlit limb. */
+  assert.ok(+m[1] < 0.8, `atmosphere-blend at z0 is ${m[1]} — that is back in the clipping range`);
+  assert.ok(+m[1] > 0.2, `atmosphere-blend at z0 is ${m[1]} — the atmosphere would be invisible`);
+  /* the SUN's own contribution to the shading came down with it */
+  assert.match(read('js/geo-engine.js'), /o\.intensity==null\?0\.3:o\.intensity/, 'light intensity 0.5 → 0.3');
+});
+
+/* ── 5. the widgets ──────────────────────────────────────────────────────────────────────────── */
+test('R187 widgets: the AQI / UV tint is flat and translucent, i.e. glass', () => {
+  const src = read('js/widgets.js');
+  /* The soft shading on these two cards was never OUTSIDE them: it was a 158° gradient that darkened
+     the bottom-right corner by 14 %. Flat, so nothing fades into a corner; translucent, so the
+     backdrop-filter the card already carries is what the eye sees. */
+  assert.ok(!/linear-gradient\(158deg,'\+_shade/.test(src), 'the colour gradient must be gone');
+  assert.ok(!/function _shade/.test(src), 'the shading helper has no remaining use');
+  const m = /const _TINT_A=([0-9.]+);/.exec(src);
+  assert.ok(m, 'the tint alpha must be a named constant');
+  assert.ok(+m[1] > 0.2 && +m[1] < 0.9, `a tint alpha of ${m[1]} is not translucent`);
+  assert.match(src, /card\.style\.setProperty\('background','rgba\(/, 'the tint must be a flat rgba');
+  /* the text colour has to be decided on the COMPOSITED surface, not on the raw category colour */
+  assert.match(src, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'contrast must be judged on the blend');
+});
+
+/* ── 6. the water draws water ────────────────────────────────────────────────────────────────── */
+test('R187 water: the traced course is a raster of water, not a polyline', () => {
+  const src = read('js/terrain-water.js');
+  assert.ok(!/id:'tw-flow'/.test(src), "the cyan guide line must be gone");
+  assert.ok(!/id:'tw-flow-case'/.test(src), 'and so must its casing');
+  assert.ok(!/properties:\{kind:'flow'\}/.test(src), 'and the feature that fed them');
+  assert.match(src, /function flowImage\(\)/, 'the course is rasterised instead');
+  /* width in ground metres — the DEM sampling the trace ran at. A pixel width would stop being a
+     river the moment the user zooms. */
+  assert.match(src, /const stepM=\(trace\.stepM&&isFinite\(trace\.stepM\)\)\?trace\.stepM:92/,
+    'the draw width comes from the trace sampling');
+  assert.match(src, /stepM:lastSpacingM/, 'the trace must record the sampling it used');
+  /* the rectangle and the end markers stay — they are not the line that was objected to */
+  assert.match(src, /id:'tw-area'/, 'the working rectangle stays');
+  assert.match(src, /kind:'end'/, 'the end label stays');
+  assert.match(src, /kind:'lake'/, 'the standing-water markers stay');
+  /* and the overlay is cleaned up with the others */
+  assert.match(src, /\[LYR_FLOW,IMG_FLOW\]/, 'wipe() must clear the course overlay too');
+});
+
+/* ── 7. a refused layer add is retried ───────────────────────────────────────────────────────── */
+test('R187 default layers: the cables survive a style that is not ready yet', () => {
+  const src = read('js/data-layers.js');
+  assert.match(src, /window\.IntMapDefaultLayers=\['dl-climate','dl-subcables'\]/, 'both still default on');
+  /* REPRODUCED on a cold load: whenStyleReady() hard-resolves after ~6 s (that escape hatch is #R41's
+     and is deliberate), MapLibre then refuses addSource with "Style is not done loading", and the old
+     code logged it and stopped — one of the two default layers on screen, which is the report. */
+  const fn = /function addSubcables\(\)\{[\s\S]*?\n    \}/.exec(src);
+  assert.ok(fn, 'addSubcables must exist');
+  assert.match(fn[0], /const build=\(tries\)=>/, 'the build step must be retryable');
+  assert.match(fn[0], /setTimeout\(\(\)=>build\(tries-1\),750\)/, 'and actually retry');
+  assert.match(fn[0], /build\(12\)/, 'with a bounded number of tries');
+  assert.match(fn[0], /cb&&cb\.checked/, 'and give up the moment the user unticks the box');
+});
+
+/* ── 8. the poles get tiled imagery, not one stretched row ───────────────────────────────────── */
+test('R187 Cesium: the polar cap comes from a tiled ±90° source', () => {
+  const src = read('js/cesium-engine.js');
+  /* An equirectangular image has ONE row of pixels for its topmost 0.176° of latitude; a single
+     whole-globe tile hands that row to the entire cap, which draws as a radial smear. */
+  assert.match(src, /UrlTemplateImageryProvider/, 'a tiled provider is needed');
+  assert.match(src, /GeographicTilingScheme/, 'and it must not be Mercator — that is the whole problem');
+  assert.match(src, /gibs\.earthdata\.nasa\.gov\/wmts\/epsg4326/, 'GIBS EPSG:4326 reaches ±90°');
+  assert.match(src, /SingleTileImageryProvider/, 'the bundled picture stays as the offline floor');
+  /* and both follow the basemap, so a bright blue cap no longer sits on the dark map */
+  assert.match(src, /setWorldBase\(on\)\{/, 'the floor must be switchable');
+  assert.match(read('js/world-base.js'), /GE\(\)\.scene\.setWorldBase/, 'one caller drives both engines');
+  assert.match(read('js/geo-engine.js'), /setWorldBase:on=>/, 'through the contract, not the raw handle');
+});
+
+/* ── 9. the sky is deep enough to be a sky ───────────────────────────────────────────────────── */
+test('R187 sky: the shipped catalogue is far deeper than the naked-eye sky', () => {
+  const b = bytes('data/stars.bin');
+  const n = b.readUInt32LE(8);
+  /* MEASURED before this round: 331 stars in view, 0.16 % of the space canvas lit, mean channel
+     value 0.396 / 255 — numerically black. The Bright Star Catalogue is the naked-eye sky and no
+     brightness curve turns 331 dots into one. */
+  assert.ok(n > 40000, `only ${n} stars — the naked-eye sky measured as black`);
+  const manifest = JSON.parse(read('data/stars.json'));
+  assert.match(manifest.source, /Hipparcos/i);
+  assert.ok(manifest.magnitude.max >= 9, `catalogue stops at V ${manifest.magnitude.max}`);
+  assert.ok(manifest.magnitude.min < -1, 'Sirius must be in it');
+});
+
+test('R187 sky: the fast star path is the same rotation as the contract', () => {
+  /* js/space-sky.js reads nothing at load time, so its geometry is testable without a browser.
+     projectDirection() is what tests/r186 checked against map.project(); viewMatrix() is the
+     composed form the 99,000-star loop uses. If they ever disagree the fast path is wrong. */
+  const ctx = { window: {}, document: { baseURI: 'http://x/' }, requestAnimationFrame: () => 0, setInterval: () => 0,
+                performance: { now: () => 0 } };
+  ctx.window.window = ctx.window;
+  vm.createContext(ctx);
+  vm.runInContext(read('js/space-sky.js'), ctx);
+  const S = ctx.window.IntMapSky;
+  const D2R = Math.PI / 180;
+  let worst = 0;
+  for (const F of [
+    { width: 1400, height: 900, fovRad: 0.6435, lng: 0, lat: 0, bearingDeg: 0, pitchDeg: 0, rollDeg: 0, offsetX: 0, offsetY: 0 },
+    { width: 1400, height: 900, fovRad: 0.6435, lng: 139.7, lat: 35.7, bearingDeg: 42, pitchDeg: 51, rollDeg: 0, offsetX: 0, offsetY: 0 },
+    { width: 900, height: 1400, fovRad: 0.6435, lng: -74, lat: -33.4, bearingDeg: -117, pitchDeg: 12, rollDeg: 7, offsetX: 60, offsetY: -40 },
+  ]) {
+    for (const gmst of [0, 97.3, 280.46]) {
+      const M = S.viewMatrix(F, gmst);
+      for (const ra of [0, 45, 131.9, 265, 349]) for (const dec of [-80, -20, 0, 37, 88]) {
+        const slow = S.projectDirection(ra - gmst, dec, F);
+        const v = S.sphereVec(ra, dec);
+        /* the fast path: one matrix, then the same projection */
+        const d = [0, 1, 2].map((r) => M[r][0] * v[0] + M[r][1] * v[1] + M[r][2] * v[2]);
+        const w = -d[2];
+        if (!(w > 1e-9)) { assert.equal(slow, null, 'both must agree a star is behind the camera'); continue; }
+        const f = 1 / Math.tan(F.fovRad / 2), aspect = F.width / F.height;
+        const x = (((f / aspect) * d[0] + (-F.offsetX * 2 / F.width) * d[2]) / w * 0.5 + 0.5) * F.width;
+        const y = (0.5 - (f * d[1] + (F.offsetY * 2 / F.height) * d[2]) / w * 0.5) * F.height;
+        assert.ok(slow, 'the contract must also place it');
+        worst = Math.max(worst, Math.hypot(x - slow[0], y - slow[1]));
+      }
+    }
+  }
+  assert.ok(worst < 1e-6, `the composed matrix drifts from projectDirection by ${worst} px`);
+  void D2R;
+});
+
+test('R187 sky: the brightness curve spans the whole catalogue', () => {
+  const src = read('js/space-sky.js');
+  /* #R186's curve ran out at V 6.8 because that was the end of BSC; every Hipparcos star fainter
+     than that would have been pinned to one floor value and the deep sky would be a flat wash. */
+  const m = /const b=Math\.max\(0,Math\.min\(1,\(([0-9.]+)-v\)\/([0-9.]+)\)\);/.exec(src);
+  assert.ok(m, 'the magnitude→brightness map must be a single readable expression');
+  const zero = +m[1];
+  assert.ok(zero >= 9.5, `stars fade out at V ${zero} but the catalogue goes to 9.5`);
+  /* and the per-frame cost is bounded by precomputing the unit vectors */
+  assert.match(src, /vx:new Float32Array\(n\)/, 'unit vectors are precomputed');
+  assert.match(src, /stars\.vx\[i\]=Math\.sin\(a\)\*c/, 'and filled at precession time, not per frame');
+});
+
+/* ── 10. the flight starts where the user is looking ─────────────────────────────────────────── */
+test('R187 flight sim: an airborne "current map view" start uses the real eye', () => {
+  const src = read('js/flight-sim.js');
+  assert.match(src, /if\(state\.loc==='__here'&&state\.mode!=='ground'\)/, 'scoped to the current-view airborne start');
+  assert.match(src, /GE\(\)\.camera\.eye\?GE\(\)\.camera\.eye\(\):null/, 'the viewpoint comes from the engine contract');
+  assert.match(src, /o\.keepAlt=true/, 'and start() must not overrule it with the +1,500 m clearance');
+  /* clamped to the AIRFRAME: a globe view at z2 puts the eye 10,000 km up and `ceil` is the point
+     where the model's own thrust already fades */
+  assert.match(src, /Math\.min\(eye\.alt,ceil\)/, 'clamped to the service ceiling, not to a round number');
+});

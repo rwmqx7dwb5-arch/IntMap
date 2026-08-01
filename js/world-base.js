@@ -139,6 +139,11 @@ window.IntMapWorldBase=(function(){
   function apply(satOn){
     try{
       if(!GE().hasRenderer()) return false;
+      /* (#R187) the OTHER engine's whole-globe floor is the polar cap imagery (js/cesium-engine.js),
+         and it wants the same answer to the same question. This module already owns "the floor under
+         the satellite view" and already gets told when that view changes, so it tells both. A
+         renderer without one simply returns false and nothing here depends on it. */
+      try{ if(GE().scene.setWorldBase) GE().scene.setWorldBase(!!satOn); }catch(_){}
       if(satOn&&!GE().layers.has(LYR)) install();
       if(!GE().layers.has(LYR)) return false;
       GE().layers.setLayout(LYR,'visibility',satOn?'visible':'none');

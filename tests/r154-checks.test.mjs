@@ -62,8 +62,16 @@ test('R154 #5 Draw — elevation profile for freehand lines', () => {
 
 test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', () => {
   assert.match(html, /function _wgtColor\(u,col\)\{/, 'card-colouring helper');
-  assert.match(html, /card\.classList\.toggle\('wgt-on-light',_lum\(col\)>0\.5\)/, 'luminance picks dark text on pale colours');
-  assert.match(html, /card\.style\.setProperty\('background','linear-gradient\(158deg,'\+_shade\(col,16\)\+','\+_shade\(col,-14\)\+'\)','important'\)/, 'gradient set inline!important (beats the glass override)');
+  /* (#R187) 「AQI, UVIウィジェットはぼんやりと影を付けなくてよい。そして、全ウィジェットはガラス風の
+     質感に。」 — the 158° gradient WAS the soft shading (it darkened the bottom-right corner by 14 %),
+     and being opaque it also overrode --glass-fill, making these the only two non-glass widgets. It
+     is a flat translucent tint now. What #R154 was really pinning survives: the whole card still
+     takes the category colour, inline-!important so it beats the sidebar-glass override, and the
+     text colour is still chosen by luminance — now on the COMPOSITED surface, because behind 58 %
+     alpha the raw colour is no longer what the eye sees. */
+  assert.match(html, /card\.classList\.toggle\('wgt-on-light',eff>0\.5\)/, 'luminance picks dark text on pale colours');
+  assert.match(html, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'and it is judged on the colour composited over the glass');
+  assert.match(html, /card\.style\.setProperty\('background','rgba\('[\s\S]{0,140}'important'\)/, 'flat translucent tint set inline!important (beats the glass override)');
   assert.match(html, /function _aqiCat\(v\)\{[\s\S]*Very unhealthy[\s\S]*Hazardous/, 'AQI uses the full 6-tier scale');
   assert.match(html, /function _uvCat\(v\)\{/, 'UV category helper');
   assert.match(html, /\.wgt-card\.wgt-colored\{color:#fff;min-height:122px;/, 'colored-card CSS present');

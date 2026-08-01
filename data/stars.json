@@ -1,13 +1,13 @@
 {
   "format": "IMSTAR1",
-  "count": 9096,
-  "bytes": 54588,
-  "source": "Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)",
-  "url": "http://tdc-www.harvard.edu/catalogs/bsc5.dat.gz",
-  "built": "2026-07-31T20:32:58.335Z",
+  "count": 98887,
+  "bytes": 593334,
+  "source": "Hipparcos Catalogue (ESA 1997, CDS I/239)",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat",
+  "built": "2026-08-01T16:29:32.921Z",
   "magnitude": {
-    "min": -1.46,
-    "max": 7.96
+    "min": -1.44,
+    "max": 9.5
   },
   "epoch": "J2000.0",
   "fields": [
