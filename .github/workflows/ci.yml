@@ -42,7 +42,7 @@ jobs:
       - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
         run: npm run test:checks
 
-  # ══ (#R186) THE BROWSER SUITE RUNS ON EIGHT MACHINES, NOT EIGHT WORKERS ═════════════════════════
+  # ══ (#R186) THE BROWSER SUITE RUNS ON TEN MACHINES, NOT TEN WORKERS ════════════════════════════
   # 360 real-browser tests on ONE runner took 70 minutes on a good day and over two hours on a bad
   # one — and the bad days are not random. `playwright.config.js` already records the mechanism from
   # #R184: when this job gets long, the timing-sensitive tests (the Cesium camera comparisons, the
@@ -51,21 +51,36 @@ jobs:
   #
   # Sharding fixes both halves at once, and it is the one lever that costs no coverage: every test
   # still runs, and `workers: 2` still means two browsers per machine, so the CONTENTION each test
-  # sees is exactly what it saw before. What changes is that eight machines carry an eighth each.
+  # sees is no worse than what it saw before. What changes is that ten machines share the work.
   # The gate job below keeps the single check name the branch has always reported.
   #
-  # ⚠ EIGHT, not four. Playwright shards by TEST COUNT, and the expensive specs are the ones with
-  # FEW tests that each take minutes (the Cesium camera comparisons, the flight cases). At four
-  # shards they all landed on the same machine and that shard was the whole job again. Eight
-  # spreads them and — more to the point — leaves each machine idle enough that they stop hitting
-  # their own timeouts, which is what they were actually failing on.
+  # ⚠ AND THE SUITE IS SPLIT IN TWO BEFORE IT IS SHARDED. Playwright shards by TEST COUNT, and the
+  # expensive specs are the ones with FEW tests that each take minutes — so eight shards still parked
+  # every `*-cesium*` file on one machine: that shard took ONE HOUR while the other seven finished in
+  # two to fifteen minutes, and four of its tests failed on load rather than on their merits (all four
+  # pass locally). More shards cannot fix that; only separating them can.
+  #
+  # So the 31 Cesium tests get four machines at ONE worker each — no intra-machine contention, which
+  # is the condition they pass under — and the other 329 get six machines at two workers. The split is
+  # in playwright.config.js behind IM_SUITE, which is unset everywhere else, so `npm test` locally is
+  # unchanged and no test can fall between the two halves (verified: 31 + 329 = 360, 4 + 44 = 48).
   browser:
-    name: Browser shard ${{ matrix.shard }}/8
+    name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false            # one slow shard must not hide the results of the other seven
+      fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        include:
+          - { suite: cesium, shard: 1, of: 4 }
+          - { suite: cesium, shard: 2, of: 4 }
+          - { suite: cesium, shard: 3, of: 4 }
+          - { suite: cesium, shard: 4, of: 4 }
+          - { suite: rest, shard: 1, of: 6 }
+          - { suite: rest, shard: 2, of: 6 }
+          - { suite: rest, shard: 3, of: 6 }
+          - { suite: rest, shard: 4, of: 6 }
+          - { suite: rest, shard: 5, of: 6 }
+          - { suite: rest, shard: 6, of: 6 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -83,13 +98,15 @@ jobs:
       - name: Install Playwright Chromium (+ OS deps)
         run: npx playwright install --with-deps chromium
       - name: Run Playwright tests (smoke + internal QA)
-        run: npx playwright test --shard=${{ matrix.shard }}/8
+        env:
+          IM_SUITE: ${{ matrix.suite }}
+        run: npx playwright test --shard=${{ matrix.shard }}/${{ matrix.of }}
       # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report-${{ matrix.suite }}-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
