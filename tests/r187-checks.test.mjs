@@ -63,13 +63,17 @@ test('R187 aircraft: a bigger budget, the same requests per second', () => {
   assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the measured sustainable spacing must NOT move with the budget');
   const b = /PLANE_CIRCLE_BUDGET=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(src);
   assert.ok(b, 'the budget must be a two-branch mobile/desktop constant');
-  assert.equal(+b[2], 48, 'desktop budget');
-  assert.equal(+b[1], 12, 'mobile budget');
+  /* (#R188) raised again, to 128 / 24, together with a triangular covering lattice — the report came
+     back a third time. What this test is really guarding is that the budget only ever GROWS and that
+     the pace never moves with it, so the numbers are checked as a floor rather than as an equality
+     (tests/r188-checks.test.mjs pins the current values). */
+  assert.ok(+b[2] >= 48, `desktop budget ${b[2]} must not fall below #R187's 48`);
+  assert.ok(+b[1] >= 12, `mobile budget ${b[1]} must not fall below #R187's 12`);
   /* the poll interval has to be able to EXPRESS the full sweep — a clipped ceiling would mean
      polling faster than the pace that was measured to be sustainable */
   const cl = /Math\.max\(20000,Math\.min\((\d+),Math\.round\(n\*(\d+)\)\)\)/.exec(src);
   assert.ok(cl, 'the poll interval must stay a clamped n×rate rule');
-  assert.ok(+cl[1] >= 48 * +cl[2], `a 48-circle sweep needs ${48 * +cl[2]} ms but the ceiling is ${cl[1]} ms`);
+  assert.ok(+cl[1] >= +b[2] * +cl[2], `a ${b[2]}-circle sweep needs ${+b[2] * +cl[2]} ms but the ceiling is ${cl[1]} ms`);
 });
 
 /* ── 3. POI labels are ranked by what kind of place it is ────────────────────────────────────── */
@@ -122,13 +126,15 @@ test('R187 widgets: the AQI / UV tint is flat and translucent, i.e. glass', () =
   assert.ok(m, 'the glass-mode tint alpha must be a named constant');
   assert.ok(+m[1] > 0.2 && +m[1] < 0.9, `a tint alpha of ${m[1]} is not translucent`);
   assert.match(src, /card\.style\.setProperty\('background','rgba\(/, 'the tint must be a flat rgba');
-  /* ⚠ …and it must FOLLOW the Solid/Frosted-Glass setting (#R33: 「全てのUIはこの設定に従うように」,
-     #R153: --glass-fill is opaque in Solid mode and translucent in the two glass modes). Solid is
-     the default, so an unconditionally translucent tint would make these the only see-through cards
-     on a solid board — the same kind of exception this round removes, pointing the other way. */
-  assert.match(src, /function _glassOn\(\)\{[\s\S]{0,200}sidebar-translucent[\s\S]{0,80}sidebar-glass2/,
-    'the appearance setting decides the alpha');
-  assert.match(src, /function _tintA\(\)\{ return _glassOn\(\)\?_TINT_GLASS:1; \}/, 'Solid mode stays opaque');
+  /* ⚠ SUPERSEDED BY #R188, ON PURPOSE. #R187 tied this alpha to the Solid/Frosted-Glass setting
+     (#R33/#R153), which meant 1.0 — fully opaque — in the default Solid mode. Measured afterwards:
+     every widget card was opaque and the AQI card was a slab of rgb(255,204,0), i.e. the request
+     「全ウィジェットはガラス風の質感に」 was not met for ANY of them. The user confirmed in #R188
+     that the widgets are glass regardless of the setting, so the alpha is now a constant and
+     `_glassOn` is gone. What #R187 established and #R188 keeps — flat, translucent, contrast judged
+     on the composite — is asserted above and below. See tests/r188-checks.test.mjs. */
+  assert.match(src, /function _tintA\(\)\{ return _TINT_GLASS; \}/,
+    'the tint alpha is a constant (#R188) — the appearance setting no longer decides it');
   /* the text colour has to be decided on the COMPOSITED surface, not on the raw category colour */
   assert.match(src, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'contrast must be judged on the blend');
 });

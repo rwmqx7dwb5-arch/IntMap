@@ -567,6 +567,11 @@ window.IntMapModules.terrainWater=function(HOST){
       const z=opt.z||TRACE_Z, maxKm=opt.maxKm||TRACE_MAX_KM;
       let lng=lng0, lat=lat0;
       const path=[[lng,lat]], lakes=[];
+      /* (#R188) the bed elevation under every path point, and every cell the window floods found
+         standing water in. Both are read from data the flood ALREADY computed — see the note above
+         flowImage() for what they are for. */
+      const elev=[], wet=[]; let wetCap=false;
+      const WET_MAX=140000, WET_MIN_D=0.3;
       let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1;
       let lastSpacingM=null;   /* (#R187) the window sampling — flowImage() draws the course this wide */
       const visited=new Set();
@@ -601,33 +606,69 @@ window.IntMapModules.terrainWater=function(HOST){
           const k0=W.at(lng,lat); if(k0<0){ end='nodata'; break; }
           const entryLng=lng, entryLat=lat;
           const entryE=W.surf[k0];
+          if(!elev.length) elev.push(entryE);
+          /* ⚠ (#R188) NOT EVERY CELL WITH `filled > surf` IS WATER, AND #R186 ALREADY SAID SO.
+             Inside a window, `filled − surf` means "how far this cell would have to fill before it
+             could leave THIS WINDOW", which is non-zero at every metre-scale dip along a valley floor
+             — #R186 measured that as 157 "lakes" over 125 km of river, and the first draft of this
+             round drew all 15,755 of them as standing water. That would be a map covered in water
+             that is not there.
+             The cells that ARE water are the ones a pool actually holds, and #R186 already has the
+             test for a pool: deep AND wide. So the collector below runs per POOL, from its deepest
+             cell, over the connected cells at or under that pool's own level — the real outline of a
+             real pond — and it is called only where the chain walk qualifies one, plus once for the
+             basin a trace ends in. The cap is reported (`wetCapped`), never silent (#R185). */
           /* The water at the entry has to rise this far before it can leave the window at all. More
              than 25 m of that is a lake, not a pothole, and under gravity the water stops there. */
           const need=W.filled[k0]-W.surf[k0];
           if(need>LAKE_STOP_M){
             let cells=0; for(let i=0;i<W.N;i++) if(W.filled[i]<=W.filled[k0]+1e-6&&W.filled[i]>W.surf[i]+1e-6) cells++;
+            /* (#R188) the basin the water STOPS in is the one place it certainly stands — collect its
+               outline so the trace ends in a lake shaped like the ground, not in a disc. */
+            collectPond(k0,W.filled[k0]);
             end='sink'; endInfo={ depthM:need, areaKm2:cells*W.cellAreaM2/1e6 }; break;
           }
+          /* (#R188) the outline of ONE pond: everything connected to `seed` whose flood level is at
+             or under `lev` and that the flood put water on. Bounded by the window and by the global
+             cap, so a window full of shallow roughness cannot become a lake. */
+          const collectPond=(seed,lev)=>{
+            if(seed<0||wet.length>=WET_MAX){ if(wet.length>=WET_MAX) wetCap=true; return 0; }
+            const seen=new Set([seed]); const stack=[seed]; let n2=0;
+            while(stack.length){
+              const k=stack.pop(); const ki=k%W.n, kj=(k/W.n)|0;
+              const d=W.filled[k]-W.surf[k];
+              if(!(d>WET_MIN_D)||W.filled[k]>lev+1e-6) continue;
+              const p=W.ll(k); wet.push([p[0],p[1],d]); n2++;
+              if(wet.length>=WET_MAX){ wetCap=true; break; }
+              for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){
+                if(!di&&!dj) continue;
+                const ni=ki+di, nj=kj+dj; if(ni<0||nj<0||ni>=W.n||nj>=W.n) continue;
+                const nk=nj*W.n+ni; if(seen.has(nk)) continue; seen.add(nk); stack.push(nk); }
+            }
+            return n2;
+          };
           /* the whole downstream path inside this window, in one walk */
           const chain=[]; { let k=k0, guard=0; while(k>=0&&guard++<4*W.n){ chain.push(k); k=W.parent[k]; } }
           if(chain.length<2){ end='flat'; break; }
-          let seaRun=0, poolRun=0, poolMax=0, poolStart=null, hitSea=false, prev=[lng,lat];
+          let seaRun=0, poolRun=0, poolMax=0, poolStart=null, hitSea=false, prev=[lng,lat], poolSeed=-1, poolLev=0;
           for(let a=1;a<chain.length;a++){
             const k=chain[a], p=W.ll(k), e=W.surf[k], sub=W.filled[k]-e;
-            const d=gcM(prev,p); distM+=d; prev=p; path.push(p); pts++;
+            const d=gcM(prev,p); distM+=d; prev=p; path.push(p); elev.push(e); pts++;
             /* ⚠ `filled − surf` inside a WINDOW is "how far this cell would have to fill to get out
                of the window", which along a valley floor is non-zero at every little dip — the first
                version marked 157 "lakes" over 125 km of river because of that. A pool is only worth
                calling a pool when it is both DEEP and WIDE: 3 m over at least eight cells (~0.1 km²).
                Anything under that is the metre-scale roughness of a 54 m DEM. */
-            if(sub>0.5){ if(!poolRun) poolStart=p; poolRun++; if(sub>poolMax) poolMax=sub; }
-            else { if(poolMax>3&&poolRun>=8) lakes.push({ at:poolStart, depthM:poolMax, areaKm2:poolRun*W.cellAreaM2/1e6 });
-              poolRun=0; poolMax=0; }
+            if(sub>0.5){ if(!poolRun){ poolStart=p; poolSeed=k; } poolRun++; if(sub>poolMax){ poolMax=sub; poolSeed=k; poolLev=W.filled[k]; } }
+            else { if(poolMax>3&&poolRun>=8){ lakes.push({ at:poolStart, depthM:poolMax, areaKm2:poolRun*W.cellAreaM2/1e6 });
+                     collectPond(poolSeed,poolLev); }        /* (#R188) …and its real outline, for drawing */
+              poolRun=0; poolMax=0; poolSeed=-1; poolLev=0; }
             if(e<=0){ seaRun+=d; if(seaRun>=SEA_RUN_M){ hitSea=true; endInfo={ elevM:e }; break; } }
             else seaRun=0;
             if(distM>=maxKm*1000) break;
           }
-          if(poolMax>3&&poolRun>=8) lakes.push({ at:poolStart, depthM:poolMax, areaKm2:poolRun*W.cellAreaM2/1e6 });
+          if(poolMax>3&&poolRun>=8){ lakes.push({ at:poolStart, depthM:poolMax, areaKm2:poolRun*W.cellAreaM2/1e6 });
+            collectPond(poolSeed,poolLev); }
           lng=prev[0]; lat=prev[1];
           { const dx=(lng-entryLng)*Math.cos(lat*D), dy=lat-entryLat, m=Math.hypot(dx,dy);
             if(m>1e-9){ headX=dx/m; headY=dy/m; } }
@@ -676,21 +717,124 @@ window.IntMapModules.terrainWater=function(HOST){
       if(seq!==traceSeq) return trace;
       trace={ path, lakes, end, endInfo, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
               stepM:lastSpacingM,                         /* (#R187) the DEM sampling the course was traced at */
+              elev, wet, wetCapped:wetCap,                /* (#R188) the bed profile and the flooded cells */
               from:[lng0,lat0], to:[lng,lat], at:Date.now() };
+      try{ trace.section=channelSections(trace); }catch(e){ trace.section=null; console.warn('channel sections',e); }
       draw();
       report();
       return trace;
+    }
+
+    /* ══ (#R188) THE WATER'S OWN EDGES, READ OFF THE ELEVATION DATA ════════════════════════════════
+       「（追記：補助線を単なるタイルに置き換えただけの手抜きはやめろ。意味がないことをするな。）」
+
+       #R187 deleted the 2.6-px polyline and drew the SAME polyline as a raster stroke of constant
+       width. The addendum is exactly right: a line rendered as a tile is still a line, and a channel
+       that is 92 m wide in a gorge and 92 m wide across a floodplain is not the water, it is the
+       path with a thickness. Nothing about the terrain reached the picture.
+
+       What reaches it now is the cross-section. At every sampled point along the course the DEM is
+       read on the PERPENDICULAR, out to ±1.1 km, and the water surface is raised until the wetted
+       area of that section matches what has to pass through it. The two edges of the wetted run are
+       the water's left and right banks — measured, at the elevation data's own resolution — so the
+       drawn body pinches into every gorge, spreads across every flat, and its depth comes out of the
+       same solve. There is no constant width anywhere in it.
+
+       ⚠ HOW MUCH WATER IS IN A SECTION IS NOT A GUESS EITHER. Continuity: the same volume passes
+       every section, and a section's area is inversely proportional to how fast the water crosses
+       it. Speed goes as √slope (the √ of the friction-slope term every open-channel formula shares),
+       and the bed slope at each point is measured from the trace's own elevation profile. So
+       A(s) ∝ 1/√S(s), scaled once so that ∫A ds equals the volume the user actually placed —
+       the 「1クリックの水量」 box. Steep reach → narrow and quick; flat reach → broad and slow. The
+       only free number is the user's own.
+
+       ⚠ AND WHERE THE ANSWER IS FINER THAN THE DATA, IT SAYS SO. A section narrower than one DEM
+       sample is a claim the elevation data cannot support, so it is drawn one sample wide and counted
+       in `belowRes` — reported in the panel rather than passed off as measurement. That is the same
+       argument #R187 made for using ground metres, applied where it is actually true instead of
+       everywhere.
+
+       Cost: the sections are decimated to at most 900 along the whole course and every DEM read is
+       from tiles the trace has already warmed, so this adds no network work at all. */
+    /* SEC_HALF is how far the transect looks for a bank. 24 samples (±1.1 km) was measured pinning a
+       flood plain at exactly the limit — 2,204 m on a 5×10⁸ m³ release down the Chikuma, i.e. the
+       number was the sampling and not the water. 40 samples (±1.8 km) clears it, and any section
+       that still reaches the end of its transect is COUNTED (`atLimit`) rather than passed off as a
+       measured bank (#R185: no silent caps). */
+    const SEC_MAX=900, SEC_HALF=40, SEC_DEPTH_MAX=80;
+    function channelSections(tr){
+      const path=tr&&tr.path, elev=tr&&tr.elev;
+      if(!path||path.length<3||!elev||elev.length<path.length) return null;
+      const z=tr.z, stepM=tr.stepM||92;
+      const V=Math.max(1,sources.reduce((s,x)=>s+Math.max(0,x.m3),0)||srcM3);
+      const n=path.length;
+      const keep=[]; const stride=Math.max(1,Math.ceil(n/SEC_MAX));
+      for(let i=1;i<n-1;i+=stride) keep.push(i);
+      if(!keep.length) return null;
+      /* ds carried by each kept section, and the bed slope over a 5-sample window around it */
+      const M=keep.length, ds=new Float64Array(M), slope=new Float64Array(M);
+      const gc=(a,b)=>Math.hypot((b[0]-a[0])*111320*Math.cos(((a[1]+b[1])/2)*D),(b[1]-a[1])*110574);
+      for(let m=0;m<M;m++){ const i=keep[m];
+        const a=Math.max(0,i-stride), b=Math.min(n-1,i+stride);
+        ds[m]=Math.max(1,gc(path[a],path[b])/2);      /* the length of course this section speaks for */
+        const rw=Math.max(1,gc(path[Math.max(0,i-2)],path[Math.min(n-1,i+2)]));
+        const de=Math.max(0,elev[Math.max(0,i-2)]-elev[Math.min(n-1,i+2)]);
+        slope[m]=Math.max(1e-4,de/rw);
+      }
+      let tot=0; for(let m=0;m<M;m++) tot+=ds[m]/Math.sqrt(slope[m]);
+      const C=V/Math.max(1e-6,tot);                                  /* ∫A ds = V */
+      const out=new Array(M); let belowRes=0, atLimit=0, wMax=0, dMax=0, wSum=0;
+      const half=SEC_HALF, dt=stepM/2;                               /* transect sampling, finer than the trace */
+      const prof=new Float64Array(2*half+1);
+      for(let m=0;m<M;m++){
+        const i=keep[m], p=path[i];
+        const a=path[Math.max(0,i-1)], b=path[Math.min(n-1,i+1)];
+        const cosL=Math.max(0.05,Math.cos(p[1]*D));
+        let dx=(b[0]-a[0])*111320*cosL, dy=(b[1]-a[1])*110574;
+        const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+        const nx=-dy, ny=dx;                                          /* unit normal, in metres */
+        const bed=elev[i];
+        let lo=bed;
+        for(let t=-half;t<=half;t++){
+          const om=t*dt;
+          const lo2=p[0]+nx*om/(111320*cosL), la2=p[1]+ny*om/110574;
+          let e=demAt(lo2,la2,z); if(e==null||!isFinite(e)) e=bed+SEC_DEPTH_MAX;   /* unknown ground is a bank */
+          prof[t+half]=e; if(e<lo) lo=e;
+        }
+        const A=C/Math.sqrt(slope[m]);                 /* the wetted area continuity asks for here */
+        /* wetted area of the run CONNECTED to the centre, as a function of the water level */
+        const areaAt=(h)=>{ let acc=0;
+          for(let t=half;t>=0;t--){ if(prof[t]>=h) break; acc+=(h-prof[t])*dt; }
+          for(let t=half+1;t<=2*half;t++){ if(prof[t]>=h) break; acc+=(h-prof[t])*dt; }
+          return acc; };
+        let h0=lo, h1=lo+SEC_DEPTH_MAX;
+        if(areaAt(h1)<A) h0=h1;                                       /* the valley cannot hold it — take the cap */
+        else { for(let it=0;it<26;it++){ const hm=(h0+h1)/2; if(areaAt(hm)<A) h0=hm; else h1=hm; } }
+        const h=h0;
+        let left=0, right=0;
+        for(let t=half;t>=0;t--){ if(prof[t]>=h) break; left=(half-t)*dt; }
+        for(let t=half+1;t<=2*half;t++){ if(prof[t]>=h) break; right=(t-half)*dt; }
+        let wl=left, wr=right;
+        if(left>=half*dt-1e-9||right>=half*dt-1e-9) atLimit++;        /* the transect ran out before the bank did */
+        if(wl+wr<stepM){ belowRes++; wl=wr=stepM/2; }                 /* finer than the data — say so */
+        const dep=Math.max(0,h-lo);
+        out[m]={ i, lng:p[0], lat:p[1], nx, ny, wl, wr, depth:dep };
+        wSum+=(wl+wr); if(wl+wr>wMax) wMax=wl+wr; if(dep>dMax) dMax=dep;
+      }
+      return { list:out, volM3:V, belowRes, atLimit, meanWidthM:wSum/M, maxWidthM:wMax, maxDepthM:dMax,
+               sections:M, transectHalfM:half*dt };
     }
 
     /* ── (#R187) the traced course, rasterised as water ──────────────────────────────────────────
        Drawn into its own image overlay because the course leaves the working grid almost immediately
        — that is the whole point of tracing on the raw DEM — so it cannot share the grid's canvas.
 
-       WIDTH IS IN GROUND METRES, NOT PIXELS. The trace steps at the DEM's own sampling (`trace.stepM`,
-       ~92 m at the zoom it ran at), and that is the finest channel the elevation data can resolve, so
-       it is the honest width to draw: anything narrower claims precision the data does not have, and
-       anything fixed in pixels stops being a river the moment the user zooms. A floor of 3 canvas
-       pixels keeps a 600-km course from vanishing when the whole of it is on screen.
+       WIDTH IS IN GROUND METRES, NOT PIXELS — and (#R188) it is no longer ONE width. The two things
+       drawn here are the standing water the flood solved cell by cell (`trace.wet`) and the flowing
+       channel between the banks the cross-section solve measured (`trace.section`); both come out of
+       the DEM, so neither has a constant width anywhere. `trace.stepM` survives only as the floor:
+       one elevation sample is the finest channel the data can support, and a section narrower than
+       that is drawn at it and counted (`belowRes`).
 
        Palette and alpha are the shallow end of the standing-water ramp in draw(), so the course and
        the pooled water read as one body of water rather than as two features. */
@@ -699,43 +843,76 @@ window.IntMapModules.terrainWater=function(HOST){
                         try{ if(GE().layers.hasSource(IMG_FLOW)) GE().layers.removeSource(IMG_FLOW); }catch(_){} };
       const path=trace&&trace.path;
       if(!path||path.length<2){ clear(); return; }
-      /* the course's own extent, in mercator, with a margin for the stroke */
+      /* (#R188) the extent of the WATER, not of the line: the flooded cells reach well outside the
+         course wherever a lake or a terminal basin does, and clipping the canvas to the path would
+         cut exactly the parts that are not a line. */
       let x0=1,x1=0,y0=1,y1=0;
-      for(const p of path){ const x=mX(p[0]), y=mY(p[1]);
-        if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+      const grow=(lng,lat)=>{ const x=mX(lng), y=mY(lat);
+        if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; };
+      for(const p of path) grow(p[0],p[1]);
+      for(const w of (trace.wet||[])) grow(w[0],w[1]);
       const stepM=(trace.stepM&&isFinite(trace.stepM))?trace.stepM:92;
       const midLat=latOf((y0+y1)/2);
       const mPerMercY=CIRC*Math.cos(midLat*D);            /* metres per unit of mercator y at this latitude */
-      const padY=Math.max(2.5*stepM/mPerMercY,(y1-y0)*0.02+1e-6);
+      const bankM=Math.max(2.5*stepM,(trace.section&&trace.section.maxWidthM)?trace.section.maxWidthM:0);
+      const padY=Math.max(bankM/mPerMercY,(y1-y0)*0.02+1e-6);
       x0-=padY; x1+=padY; y0-=padY; y1+=padY;
       const spanX=Math.max(1e-9,x1-x0), spanY=Math.max(1e-9,y1-y0);
       /* A course that crosses ±180° comes out of mX() as a bbox spanning the whole world, and the
          overlay would be drawn across the wrong half of it. Draw nothing rather than something
          wrong — the panel still reports where the water went. */
       if(spanX>0.5){ clear(); return; }
-      /* one canvas, long side 1024 — enough that a 600 km course keeps its shape, cheap to encode */
-      const LONG=1024;
+      /* (#R188) THE CANVAS IS SIZED BY THE DATA, NOT BY A ROUND NUMBER. #R187's fixed 1,024 px put a
+         92 m DEM cell on 0.16 of a pixel over a 600 km course, which would erase every edge this
+         round computes. The long side is now whatever puts one DEM sample on one pixel, capped at
+         2,560 so a continental trace still encodes quickly (the cap is reported below). */
+      const longM=Math.max(spanX*CIRC*Math.max(0.05,Math.cos(midLat*D)),spanY*mPerMercY);
+      const LONG=Math.max(512,Math.min(2560,Math.round(longM/Math.max(1,stepM))));
       const W=Math.max(8,Math.round(spanX>=spanY?LONG:LONG*spanX/spanY));
       const H=Math.max(8,Math.round(spanY>=spanX?LONG:LONG*spanY/spanX));
       const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
       const g=cv.getContext('2d');
       const pxPerMercY=H/spanY;
-      const widthPx=Math.max(3,(stepM/mPerMercY)*pxPerMercY);
-      g.lineCap='round'; g.lineJoin='round';
-      g.beginPath();
-      for(let i=0;i<path.length;i++){
-        const X=(mX(path[i][0])-x0)/spanX*W, Y=(mY(path[i][1])-y0)/spanY*H;
-        if(i) g.lineTo(X,Y); else g.moveTo(X,Y);
+      const PX=(lng)=>(mX(lng)-x0)/spanX*W, PY=(lat)=>(mY(lat)-y0)/spanY*H;
+      const mToPx=(m)=>(m/mPerMercY)*pxPerMercY;
+      /* the standing-water ramp from draw(), so the course and the pooled water are ONE body */
+      const shade=(d)=>{ const t=Math.max(0,Math.min(1,d/6));
+        return 'rgba('+Math.round(96-46*t)+','+Math.round(196-52*t)+','+Math.round(255-12*t)+','+(0.72+0.2*t).toFixed(3)+')'; };
+      /* ── 1 · EVERY CELL THE FLOOD FOUND STANDING WATER IN, AT ITS OWN PLACE AND DEPTH ──────────
+         These are real solved depths on real DEM cells (trace.wet), so the lakes, the pools and the
+         terminal basin are drawn as the shapes they are — #R187 drew them as discs of equivalent
+         area, which is the same "a number, rendered" mistake the addendum is about. */
+      const cell=Math.max(1,mToPx(stepM));
+      const wet=(trace.wet||[]);
+      for(let i=0;i<wet.length;i++){ const w=wet[i];
+        const X=PX(w[0]), Y=PY(w[1]);
+        if(X<-cell||Y<-cell||X>W+cell||Y>H+cell) continue;
+        g.fillStyle=shade(w[2]); g.fillRect(X-cell/2,Y-cell/2,cell,cell); }
+      /* ── 2 · THE FLOWING CHANNEL, BANK TO BANK ────────────────────────────────────────────────
+         Consecutive cross-sections make a quad each: the water's left bank, the next section's left
+         bank, its right bank, this one's right bank. Width and depth both come from the DEM solve
+         (channelSections), so the body narrows and widens with the ground it is on. */
+      const sec=trace.section&&trace.section.list;
+      if(sec&&sec.length>1){
+        for(let m=0;m<sec.length-1;m++){
+          const a=sec[m], b=sec[m+1];
+          const cosA=Math.max(0.05,Math.cos(a.lat*D)), cosB=Math.max(0.05,Math.cos(b.lat*D));
+          const aL=[a.lng+a.nx*-a.wl/(111320*cosA), a.lat+a.ny*-a.wl/110574];
+          const aR=[a.lng+a.nx*  a.wr/(111320*cosA), a.lat+a.ny*  a.wr/110574];
+          const bL=[b.lng+b.nx*-b.wl/(111320*cosB), b.lat+b.ny*-b.wl/110574];
+          const bR=[b.lng+b.nx*  b.wr/(111320*cosB), b.lat+b.ny*  b.wr/110574];
+          g.beginPath();
+          g.moveTo(PX(aL[0]),PY(aL[1])); g.lineTo(PX(bL[0]),PY(bL[1]));
+          g.lineTo(PX(bR[0]),PY(bR[1])); g.lineTo(PX(aR[0]),PY(aR[1])); g.closePath();
+          g.fillStyle=shade((a.depth+b.depth)/2); g.fill();
+        }
+      } else {
+        /* no section solve (a path too short to have a perpendicular) — the course still gets drawn,
+           at the elevation data's own resolution, which is all that can honestly be claimed for it */
+        g.lineCap='round'; g.lineJoin='round'; g.beginPath();
+        for(let i=0;i<path.length;i++){ if(i) g.lineTo(PX(path[i][0]),PY(path[i][1])); else g.moveTo(PX(path[i][0]),PY(path[i][1])); }
+        g.strokeStyle=shade(0.5); g.lineWidth=Math.max(1,mToPx(stepM)); g.stroke();
       }
-      g.strokeStyle='rgba(96,196,255,0.86)'; g.lineWidth=widthPx; g.stroke();
-      /* the standing water the course ends in / passes through, at its measured area */
-      const disc=(at,areaKm2)=>{ if(!at) return;
-        const X=(mX(at[0])-x0)/spanX*W, Y=(mY(at[1])-y0)/spanY*H;
-        const rM=Math.sqrt(Math.max(0.02,areaKm2||0.05)*1e6/Math.PI);
-        const r=Math.max(widthPx*0.9,(rM/mPerMercY)*pxPerMercY);
-        g.fillStyle='rgba(64,170,255,0.80)'; g.beginPath(); g.arc(X,Y,r,0,6.283185307); g.fill(); };
-      (trace.lakes||[]).forEach(k=>disc(k.at,k.areaKm2));
-      if(trace.end==='lake'&&trace.endInfo) disc(path[path.length-1],trace.endInfo.areaKm2);
       const coords=[[lngOf(x0),latOf(y0)],[lngOf(x1),latOf(y0)],[lngOf(x1),latOf(y1)],[lngOf(x0),latOf(y1)]];
       /* under the grid's own water, so where both exist the solved depths win */
       paintImg(IMG_FLOW,LYR_FLOW,cv.toDataURL('image/png'),coords,
@@ -844,7 +1021,18 @@ window.IntMapModules.terrainWater=function(HOST){
         +(tracing?('<br><b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+L('tracing…','追跡中…','wird verfolgt…','трассировка…','trazando…')):'')
         +((!tracing&&trace)?('<br><b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+traceEndLabel()
           +(trace.lakes.length?(' · '+trace.lakes.length+' '+L('ponds crossed','箇所の窪地を通過','Senken gequert','пройдено котловин','depresiones cruzadas')):'')
-          +'<br><span style="opacity:0.72;">'+L('real DEM','実標高','echtes DEM','реальный DEM','DEM real')+' z'+trace.z+' · '+trace.steps+' '+L('steps','ステップ','Schritte','шагов','pasos')+'</span>'):'')); }
+          /* (#R188) the drawn water, in numbers — the section solve and the flooded cells behind it */
+          +(trace.section?('<br><b>'+L('Channel','水路','Gerinne','Русло','Cauce')+':</b> '
+            +L('width','幅','Breite','ширина','ancho')+' '+n(trace.section.meanWidthM)+'–'+n(trace.section.maxWidthM)+' m · '
+            +L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(trace.section.maxDepthM,1)+' m · '
+            +fmtM3(trace.section.volM3)):'')
+          +'<br><span style="opacity:0.72;">'+L('real DEM','実標高','echtes DEM','реальный DEM','DEM real')+' z'+trace.z+' · '+trace.steps+' '+L('steps','ステップ','Schritte','шагов','pasos')
+            +(trace.section?(' · '+trace.section.sections+' '+L('cross-sections','断面','Querprofile','сечений','secciones')
+              +' ±'+n(trace.section.transectHalfM)+' m'
+              +(trace.section.belowRes?(' · '+trace.section.belowRes+' '+L('below DEM resolution','DEM解像度未満','unter DEM-Auflösung','ниже разрешения DEM','bajo la resolución del DEM')):'')
+              +(trace.section.atLimit?(' · '+trace.section.atLimit+' '+L('wider than the transect','断面幅の上限に到達','breiter als das Profil','шире профиля','más ancho que el perfil')):'')):'')
+            +((trace.wet&&trace.wet.length)?(' · '+n(trace.wet.length)+' '+L('flooded cells','湛水セル','geflutete Zellen','затопленных ячеек','celdas inundadas')+(trace.wetCapped?' ('+L('capped','上限','begrenzt','предел','limitado')+')':'')):'')
+            +'</span>'):'')); }
 
     const BTN='padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
     const NUM='width:78px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;box-sizing:border-box;';
@@ -937,8 +1125,31 @@ window.IntMapModules.terrainWater=function(HOST){
       await new Promise(r=>setTimeout(r,520));
       return await build();
     }
-    function onClick(e){ if(!opened||!G) return;
+    /* ⚠ (#R188) THE OTHER SILENT NO-OP. #R186 found and fixed one cause of 「水を配置したときに、結果が
+       出ないことがある」 — a click outside the working rectangle. It left a second one in the very
+       first line of this handler: `if(!opened||!G) return`. `G` is null until build() has finished
+       reading the DEM (seconds, and longer on a cold tile cache) and stays null for good if that read
+       failed, so a click in either state was discarded without a word — exactly the same "nothing
+       happens" the report is about, from a different direction. A click now BUILDS if there is no
+       grid yet and then places the water, and says which is happening. */
+    let _pendingSrc=null;
+    async function onClickNoGrid(lng,lat){
+      if(_pendingSrc) return;                       /* one build at a time; the click is not lost, it is queued */
+      _pendingSrc=[lng,lat];
+      setStat(L('Reading the terrain here…','ここの地形を読み込み中…','Gelände wird hier gelesen…','Чтение рельефа здесь…','Leyendo el terreno aquí…'));
+      let ok=false;
+      try{ ok=await rebuildAround(lng,lat); }catch(_){ ok=false; }
+      const p=_pendingSrc; _pendingSrc=null;
+      if(!ok||!G){ setStat(L('The elevation data for this area could not be read — try another place or zoom out.',
+                             'この範囲の標高データを読み込めませんでした。別の場所か、少し広い表示でお試しください。',
+                             'Höhendaten für diesen Bereich nicht lesbar — anderer Ort oder herauszoomen.',
+                             'Не удалось прочитать данные о рельефе — выберите другое место или уменьшите масштаб.',
+                             'No se pudieron leer los datos de elevación — pruebe otro lugar o aleje el mapa.')); return; }
+      sources.push({lng:p[0],lat:p[1],m3:srcM3}); solve(); traceDownstream(p[0],p[1]);
+    }
+    function onClick(e){ if(!opened) return;
       const lng=e.lngLat.lng, lat=e.lngLat.lat;
+      if(!G){ if(mode==='source') onClickNoGrid(lng,lat); return; }
       if(mode==='levee'){ if(!drafting) drafting={pts:[],crest:leveeCrest,width:leveeWidth};
         drafting.pts.push([lng,lat]); draw(); }
       else if(mode==='source'){
