@@ -511,7 +511,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -2152,14 +2152,34 @@ window.IntMapModules.dataLayers=function(HOST){
        0.29 requests a second in the long run — a fraction of what the feed tolerates — while a
        close-in single-circle view still refreshes every 20 s exactly as it always did. The
        staleness a wide sweep buys is invisible: a minute of flight is 15 km, five pixels at z4. */
-    const PLANE_CIRCLE_NM=250;                       /* the API's hard maximum, verified by 403 above it */
-    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?6:16);
+    /* ══ (#R187) WIDER STILL ═══════════════════════════════════════════════════════════════════════
+       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」— re-reported after #R186.
+
+       Re-measured against the live API first, because the ceiling has to be the feed's and not a
+       guess: r=250 answers 200 (570 KB), r=300 and r=500 both answer 403, and there is no bounding-box
+       or all-aircraft endpoint (/v2/all is 404). So 250 nm per query still stands and the only way to
+       cover more sky is still more circles.
+
+       The budget is therefore raised from 16 to 48 (mobile 6 → 12). One circle's inscribed square is
+       615 km on a side, so the covered block grows from 4 × 4 = 2,460 × 2,460 km to 8 × 6 = 4,920 ×
+       3,690 km — a continent rather than a country group.
+
+       ⚠ THE PACE IS NOT RAISED WITH IT. #R186 measured where this feed cuts an address off: four
+       concurrent requests killed 9 of 20 outright, while 1.2 s spacing sustained 14 in a row. That
+       spacing is unchanged, which makes a full sweep ~58 s to issue, and the poll interval keeps its
+       3.5 s-per-circle rule so the long-run rate stays where #R186 left it (48 circles → one refresh
+       every 168 s ≈ 0.29 requests a second). The ceiling on that interval is raised to 180 s from 120
+       purely so the rule is not silently clipped — a clipped interval would mean asking FASTER than
+       the measured budget, which is the one thing that gets the address blocked. A close-in view is a
+       single circle and still refreshes every 20 s exactly as before. */
+    const PLANE_CIRCLE_NM=250;                       /* the API's hard maximum, re-verified by 403 above it (#R187) */
+    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?12:48);
     const PLANE_GAP_MS=1200;                         /* measured sustainable spacing — see above */
-    const PLANE_MAX_AIRCRAFT=20000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
+    const PLANE_MAX_AIRCRAFT=50000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
     /* Below this the covered block is a small fraction of an ocean-sized view and the old "zoom in"
-       prompt is still the honest answer. It used to be z5; a 30-circle sweep covers ~3,900 × 3,300 km,
-       which is a real region at z3-z4. */
-    const PLANES_MIN_ZOOM=3, SHIPS_MIN_ZOOM=6;
+       prompt is still the honest answer. It used to be z5, then z3; a 48-circle sweep covers roughly
+       4,900 × 3,700 km, which is a real region at z2. */
+    const PLANES_MIN_ZOOM=2, SHIPS_MIN_ZOOM=6;
     function zoomHintEl(id,onClickZoom){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
@@ -2354,9 +2374,11 @@ window.IntMapModules.dataLayers=function(HOST){
        20 s; a full 30-circle sweep settles at ~66 s, which is five pixels of aircraft movement at the
        zoom where a 30-circle sweep is what you get. */
     function planePollMs(){ const n=(_planeCover&&_planeCover.circles)||1;
-      /* one circle → the original 20 s; a full 16-circle sweep takes ~19 s to issue, so its gap is
-         set well clear of that (3.5 s a circle) and the feed sees 0.29 requests a second */
-      return Math.max(20000,Math.min(120000,Math.round(n*3500))); }
+      /* one circle → the original 20 s; a full 48-circle sweep takes ~58 s to issue, so its gap is
+         set well clear of that (3.5 s a circle) and the feed sees 0.29 requests a second.
+         (#R187) the ceiling is 180 s so a 48-circle sweep's interval is the rule's answer and not a
+         clip — clipping it would mean polling FASTER than the measured budget. */
+      return Math.max(20000,Math.min(180000,Math.round(n*3500))); }
     function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
       clearInterval(planesTimer); clearTimeout(planesTimer);
       planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
@@ -2472,7 +2494,12 @@ window.IntMapModules.dataLayers=function(HOST){
        renderer's metres are above the GROUND, otherwise above SEA LEVEL. Airborne aircraft get the ground
        under the map centre subtracted so their altitude means AMSL either way; aircraft ON the ground are
        left at 0 so they sit on the terrain instead of hovering over it. */
-    let planes3D=true; try{ planes3D=localStorage.getItem('intmap_planes3d')!=='0'; }catch(_){}
+    /* (#R187) DEFAULT OFF. 「航空機のマークは最初のデザインに戻して」 — and #R185 established that the
+       lifted 3-D body, not the flat glyph, is what the default view shows, so the first design only
+       actually returns to the screen if the flat glyph is the default again. The toggle is unchanged:
+       anyone who switches 3-D on still gets the lifted body, and an existing '1' in storage is
+       honoured, so a user who had already turned it on keeps it. */
+    let planes3D=false; try{ planes3D=localStorage.getItem('intmap_planes3d')==='1'; }catch(_){}
     let _planes3DStats={features:0,lifted:0,maxAlt:0,offsetM:0};
     const PLANE3D_SRC='src-planes-3d', PLANE3D_LYR='lyr-planes-3d', PLANE3D_POST='lyr-planes-post';
     /* ===== (#R173) THE TRACK OF A CLICKED AIRCRAFT =========================================
@@ -2560,8 +2587,20 @@ window.IntMapModules.dataLayers=function(HOST){
        nearest aircraft within a finger-sized radius wins. The ground footprint keeps working too — the
        post is a real thing to click at — so both ways of aiming at an aeroplane select the same one. */
     const PICK_PX=16;
+    /* ⚠ (#R187) WHERE THE AIRCRAFT IS DRAWN DEPENDS ON WHICH RENDERING IS ON, AND THE PICK HAS TO
+       ASK THE SAME QUESTION AS THE DRAWING. In 3-D the body stands at its reported altitude; the flat
+       glyph is a symbol at the ground position. #R174's rule — "a pick that used a different offset
+       would look for the aeroplane somewhere it is not" — is the reason this exists, and making the
+       flat glyph the default (see planes3D) is exactly the case it had never been asked about:
+       `pickPlane` began with `if(!planes3D) return null`, so with 2-D restored, clicking an aircraft
+       would have selected nothing, opened no detail card and drawn no track. Found by tests/r175,
+       which is about the card and not about 3-D at all. */
+    function _planeDrawAlt(d){
+      if(!planes3D||d.onGround) return 0;
+      return Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-_groundAt(d.lng,d.lat));
+    }
     function pickPlane(pt){
-      if(!planes3D||!pt) return null;
+      if(!pt) return null;
       const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
       /* (#R174) the SAME per-aircraft ground the drawing uses — a pick that used a different offset would
          look for the aeroplane somewhere it is not */
@@ -2570,9 +2609,7 @@ window.IntMapModules.dataLayers=function(HOST){
       for(const d of planesData){
         if(d.lng==null||d.lat==null) continue;
         if(filt&&filt!=='all'&&d.type!==filt) continue;
-        const off=_groundAt(d.lng,d.lat);
-        const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        const p=pa([d.lng,d.lat],alt); if(!p) continue;
+        const p=pa([d.lng,d.lat],_planeDrawAlt(d)); if(!p) continue;
         const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
         if(q<bestD){ bestD=q; best=d; }
       }
@@ -2893,43 +2930,38 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
        rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
-    /* (#R183) 「Live aircraft trafficの飛行機アイコンはもっと目立つものに。」
-       Three separate reasons the old glyph was hard to see, only one of which was its size:
+    /* ══ (#R187) BACK TO THE FIRST DESIGN ═══════════════════════════════════════════════════════════
+       「航空機のマークは最初のデザインに戻して。」
 
-       1. IT WAS RASTERISED AT 1× ON A 2× SCREEN. `addImage` was handed a 44-px ImageData with no
-          pixelRatio, so MapLibre treated 44 canvas pixels as 44 CSS pixels and the GPU upscaled the
-          bitmap on every HiDPI display — a soft, smeared aeroplane. This is the same defect family as
-          the half-resolution rasters of #R178/#R179/#R180: the pixels were being thrown away at the
-          door. The icon is now drawn at devicePixelRatio and declared with it, so it is sharp at the
-          SAME on-screen size — sharper, not bigger.
-       2. NO SEPARATION FROM THE MAP. A flat fill with a 1.6-px white line vanishes over bright
-          satellite imagery, over snow, over a pale basemap. There is now a soft dark drop shadow
-          under the silhouette and a heavier white rim above it, so the glyph carries its own contrast
-          and reads on any background instead of depending on what is behind it.
-       3. THE SHAPE WAS A PAPER DART. Straight leading edges, no engines, no separate tailplane. The
-          outline below is a real airliner plan-form — swept wing, two nacelles, a tapered nose and a
-          distinct horizontal stabiliser — so it is recognisable as an aircraft at 30 px instead of
-          just as "an arrow".
+       #R183 answered 「飛行機アイコンはもっと目立つものに」 by replacing this glyph — a real airliner
+       plan-form, a white rim, a drop shadow, a larger size ramp — and #R185 carried the same treatment
+       into the lifted 3-D body. The verdict on all of it is in: the FIRST design is the wanted one.
 
-       The size ramp is raised too (0.4→0.52 at z2, 0.78→1.0 at z9), which is the part that was
-       actually asked for; the other three are why it was faint even at the old size. */
+       `_PLANE_ORIG` below is the outline this app shipped with, taken verbatim from the original
+       implementation (identical from the first commit through #R164, replaced in #R183). So are the
+       canvas size (44), the colours, the 1.6-px white stroke, and the size ramp restored at the layer.
+       There is no shadow, no rim, no halo: a flat fill and a thin white line, which is what was asked
+       for. `planes3D` now defaults OFF for the same reason — #R185 measured that the lifted body, not
+       this glyph, is what the user actually sees, so restoring the glyph while leaving the 3-D body
+       the default would have changed nothing on screen. The 3-D toggle itself is untouched and still
+       switches the lifted body back on for anyone who wants it.
+
+       ⚠ The ONE thing not reverted is the raster resolution. #R183 found `addImage` being handed a
+       44-px bitmap with no `pixelRatio`, so MapLibre treated 44 canvas pixels as 44 CSS pixels and the
+       GPU upscaled it on every HiDPI screen. That is a defect, not a design: drawing the same 44-unit
+       artwork at devicePixelRatio and declaring it produces the SAME on-screen size, just not blurred.
+       Reverting it would restore a bug rather than an appearance. */
+    const _PLANE_ORIG=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
+                       [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
     function ensurePlaneIcons(){
       if(!GE().hasRenderer()) return;
       const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
       const make=(color)=>{
-        const s=52, cv=document.createElement('canvas'); cv.width=s*dpr; cv.height=s*dpr;
+        const s=44, cv=document.createElement('canvas'); cv.width=s*dpr; cv.height=s*dpr;
         const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.translate(s/2,s/2);
-        const path=()=>{ ctx.beginPath(); _PLANE_PLAN.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); };
-        /* the shadow first, so it sits UNDER everything and never tints the body */
-        ctx.save(); ctx.shadowColor='rgba(0,0,0,0.55)'; ctx.shadowBlur=4.5; ctx.shadowOffsetY=1.6;
-        ctx.fillStyle='rgba(0,0,0,0.5)'; path(); ctx.fill(); ctx.restore();
-        /* white rim, then the body drawn inside it */
-        ctx.lineJoin='round'; ctx.lineCap='round';
-        ctx.strokeStyle='rgba(255,255,255,0.98)'; ctx.lineWidth=2.6; path(); ctx.stroke();
-        ctx.fillStyle=color; path(); ctx.fill();
-        /* a hairline of the body colour, darkened, along the rim keeps the shape crisp when the white
-           halo lands on white ground */
-        ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=0.9; path(); ctx.stroke();
+        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+        ctx.beginPath(); _PLANE_ORIG.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+        ctx.fill(); ctx.stroke();
         return { data:ctx.getImageData(0,0,s*dpr,s*dpr), pixelRatio:dpr };
       };
       const add=(id,color)=>{ try{ if(!GE().scene.hasImage(id)){ const m=make(color); GE().scene.addImage(id,m.data,{pixelRatio:m.pixelRatio}); } }catch(_){} };
@@ -3003,7 +3035,7 @@ window.IntMapModules.dataLayers=function(HOST){
         GE().layers.add({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
           visibility:'none',
           'icon-image':['case',['==',['get','sel'],1],'plane-sel',['match',['get','type'],'military','plane-mil','plane-civ']],
-          'icon-size':['interpolate',['linear'],['zoom'],2,0.52,5,0.74,9,1.0],
+          'icon-size':['interpolate',['linear'],['zoom'],2,0.4,5,0.58,9,0.78],   /* (#R187) the original ramp — see ensurePlaneIcons */
           'icon-rotate':['coalesce',['get','heading'],0],
           'icon-rotation-alignment':'map',
           'icon-allow-overlap':true,
@@ -3254,14 +3286,45 @@ window.IntMapModules.dataLayers=function(HOST){
       fetchSubcables().then(({cab,lp})=>{
         _subcablesLoading=false;
         if(!cab){ const cb=document.getElementById('dl-subcables'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } try{ satToast(HOST.lang==='jp'?'海底ケーブルデータを取得できませんでした':HOST.lang==='de'?'Seekabel-Daten nicht verfügbar':HOST.lang==='ru'?'Данные о подводных кабелях недоступны':HOST.lang==='es'?'Datos de cables submarinos no disponibles':'Submarine cable data unavailable'); }catch(_){} return; }
-        try{
-          if(!GE().layers.hasSource('src-subcables')) GE().layers.addSource('src-subcables',{type:'geojson',data:cab});
-          GE().layers.add({id:'lyr-subcables-glow',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':3.2,'line-opacity':0.20,'line-blur':3}},beforeId);
-          GE().layers.add({id:'lyr-subcables',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':['interpolate',['linear'],['zoom'],0,0.6,4,1.1,8,2],'line-opacity':opacities.subcables}},beforeId);
-          if(lp){ if(!GE().layers.hasSource('src-subcables-lp')) GE().layers.addSource('src-subcables-lp',{type:'geojson',data:lp});
-            GE().layers.add({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
+        /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
+           「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
+
+           Reproduced on a cold first load, and the console says it outright:
+               addSubcables Error: Style is not done loading.
+           whenStyleReady() resolves for real when the style is parsed, but it also HARD-RESOLVES
+           after ~6 s (#R41 put that there because the promise could otherwise hang forever and the
+           layer would never appear at all). On a slow first load — and #R186 measured that its own two
+           new default layers push "ready" from 3.2 s to 9.2 s, so this load is exactly the slow one —
+           the hard resolve wins, MapLibre refuses addSource, and the old code logged the refusal and
+           stopped. The box stayed ticked, the row stayed lit, and the layer did not exist: one of the
+           two default layers on screen, which is the report.
+
+           Köppen survives the same race because its branch polls for `lyr-climate` for 5 s and calls
+           setVis when it appears. This gives the cables the same persistence at the point where it
+           actually failed: build, and if the style refused, wait and build again. Bounded (12 tries
+           over ~9 s), abandoned the moment the user unticks the box, and a no-op once the layers are
+           there — so the successful path is byte-for-byte what it was. */
+        const build=(tries)=>{
+          try{
+            if(!GE().layers.hasSource('src-subcables')) GE().layers.addSource('src-subcables',{type:'geojson',data:cab});
+            if(!GE().layers.has('lyr-subcables-glow')) GE().layers.add({id:'lyr-subcables-glow',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':3.2,'line-opacity':0.20,'line-blur':3}},beforeId);
+            if(!GE().layers.has('lyr-subcables')) GE().layers.add({id:'lyr-subcables',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':['interpolate',['linear'],['zoom'],0,0.6,4,1.1,8,2],'line-opacity':opacities.subcables}},beforeId);
+            if(lp){ if(!GE().layers.hasSource('src-subcables-lp')) GE().layers.addSource('src-subcables-lp',{type:'geojson',data:lp});
+              if(!GE().layers.has('lyr-subcables-pts')) GE().layers.add({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
+          }catch(e){
+            /* the style refused this add — it is not parsed yet however hard whenStyleReady insisted */
+            const cb=document.getElementById('dl-subcables');
+            if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
+            console.warn('addSubcables',e); return;
+          }
+          if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
+            const cb=document.getElementById('dl-subcables');
+            if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
+            console.warn('addSubcables: the style never accepted the cable layers'); return;
+          }
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
-        }catch(e){ console.warn('addSubcables',e); }
+        };
+        build(12);
       });
     }
     /* === Contour lines — generated on the fly from the terrarium DEM ===
@@ -3594,8 +3657,9 @@ window.IntMapModules.dataLayers=function(HOST){
       /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
       screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
         const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-        const off=_groundAt(d.lng,d.lat), alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        return pa([d.lng,d.lat],alt); },
+        /* (#R187) …and it answers for the rendering that is ON — see _planeDrawAlt. This is the
+           "where is it drawn" diagnostic, so it has to move with the drawing. */
+        return pa([d.lng,d.lat],_planeDrawAlt(d)); },
       pickAt:pt=>{ const d=pickPlane(pt); return d?d.icao24:null; },
       trackStats:k=>trackStats(k||selectedPlane),
       find:q=>{ const s2=String(q||'').trim().toUpperCase(); if(!s2) return null;

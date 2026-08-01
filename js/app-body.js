@@ -590,7 +590,24 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{
       if(!sat){ if(_applySkyAtmosphere._on){ _applySkyAtmosphere._on=false; GE().scene.setSky(undefined); if(!_sunSimOwnsLight()) GE().scene.setSunDirection(null); } return; }
       _applySkyAtmosphere._on=true;
-      GE().scene.setSky({'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,4,0.92,7,0.6,10,0.25,13,0.05,15,0]});
+      /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
+         「（追記：質感がチープかつ、読み込み時の動作が不安定で視覚的に美しくない。）」 and
+         「SatelliteのGlobeの地球の日光当たってる側が、ちょっと明るくしすぎ。」
+
+         Screenshotted at z1.4 over Asia: the globe wore a fat, desaturated white-grey collar, and the
+         sunward limb was blown to near-white over the Atlantic. Both come from the same number.
+         #R186 set `atmosphere-blend` to 1.0 at z0 — full strength — and full strength is not the
+         atmosphere being accurate, it is the accurate scattering integral multiplied until it
+         saturates. Once a channel clips there is no colour left in it, which is exactly why an
+         optically correct Rayleigh+Mie term ends up looking like a cheap white glow: the blue is
+         still being computed and then thrown away by the clip.
+
+         Halved at the wide end and tapered faster, so the limb is a THIN band that still carries its
+         own colour — the blue-white close in, the deeper blue above it — and the lit side of the disc
+         keeps the imagery's own contrast instead of being washed toward white. The scattering model
+         underneath is untouched: this is only how much of it is blended over the globe, which is the
+         one knob the spec offers and the one the two reports are about. */
+      GE().scene.setSky({'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]});
       _aimSun();
     }catch(_){}
   }

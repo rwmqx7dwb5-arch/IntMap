@@ -215,14 +215,85 @@ window.IntMapCesiumEngine=(function(){
          `_reorderImagery` raises every app layer above whatever else is in there, so it stays
          underneath without any ordering work. Where Mercator imagery exists it is completely
          hidden by it; where none can exist, it is real satellite imagery instead of black. */
+      /* ══ (#R187) …AND ONE 2,048 × 1,024 PICTURE IS NOT A POLAR CAP ═════════════════════════════
+         「Cesiumでは南極・北極付近が衛星画像のない真っ黒だから、どうにかして。」— re-reported.
+
+         #R186's diagnosis above is right and its cure was half a cure. Screenshotted at the poles:
+         they are no longer black, they are a RADIAL SMEAR. An equirectangular image has one row of
+         pixels for its topmost 0.176° of latitude, and a single whole-globe tile hands that one row
+         to the entire polar cap, so it is stretched into streaks radiating from the axis — and being
+         permanently on, that bright blue smear also sat on top of the DARK basemap in Map mode,
+         where nothing about it belongs.
+
+         The real answer is a source that is genuinely tiled AND genuinely reaches ±90°. NASA GIBS
+         publishes exactly that: EPSG:4326 (geographic, not Mercator) WMTS, nine levels down to 500 m,
+         `Access-Control-Allow-Origin: *`, and its level-0 grid is 2 × 1 tiles — which is Cesium's
+         GeographicTilingScheme default, so the two line up without a custom scheme. Verified against
+         the live service (z2, z4 and BlueMarble_NextGeneration all answer 200 image/jpeg). At the
+         cap the projection still converges, as every equirectangular source must, but it converges
+         from 500-metre imagery instead of from one row, so what is drawn there is Antarctica.
+
+         The bundled picture stays UNDERNEATH as the offline floor: if GIBS is unreachable the caps
+         are still imagery rather than baseColor, which is the failure mode #R186 was fixing.
+
+         And both now FOLLOW THE BASEMAP (setWorldBase, driven by js/world-base.js) — satellite view
+         gets the imagery, map view gets the map's own baseColor back. */
+      this._worldBase=[];
       try{
+        const rect=Cesium.Rectangle.fromDegrees(-180,-90,180,90);
+        /* Hidden until told otherwise: js/world-base.js is the single authority on whether the
+           satellite view is on, and app-body calls it once the map loads — which is always AFTER
+           this constructor, because changing engine is a reload (js/engine-select.js).
+           ⚠ Each provider reads this flag when it RESOLVES, not a value captured now: the tiled one
+           is created synchronously but the bundled floor arrives from a promise, and setWorldBase()
+           can easily land in between. */
+        this._wantWorldBase=false;
+        /* ⚠ EVERY INSERT IS AT INDEX 0, AND THAT IS NOT A STYLE CHOICE. The imagery collection is
+           EMPTY when this constructor runs — the app's own layers arrive later — so `add(layer, 1)`
+           is out of range and throws, which is precisely how the tiled provider silently failed to
+           be added the first time (measured: `_worldBase.length === 1`, and the cap on screen was
+           still the stretched single tile). Index 0 is always valid, and because the bundled floor
+           resolves from a promise it lands AFTER the tiled layer and therefore below it — which is
+           the order wanted anyway: the offline picture underneath, the real imagery over it. */
+        const add=(prov)=>{ try{ const L=new Cesium.ImageryLayer(prov,{}); L.show=!!this._wantWorldBase;
+          this._scene.imageryLayers.add(L,0); this._worldBase.push(L); this._scene.requestRender(); return L; }catch(e){ console.warn('[cesium] whole-globe imagery layer rejected',e); return null; } };
+        /* ⚠ GIBS'S EPSG:4326 GRID IS NOT A QUADTREE, AND ASSUMING IT WAS DREW A BLACK CAP.
+           Cesium's default GeographicTilingScheme doubles from 2 × 1, so it asked for 2/3/3 and got
+           `TileOutOfRange` — measured against the live service, and confirmed from the service's own
+           capabilities, which declare the 500 m matrices as
+               L0 2×1   L1 3×2   L2 5×3   L3 10×5   L4 20×10   L5 40×20   L6 80×40   L7 160×80   L8 320×160
+           The first three levels are ceil-rounded and their tiles are not even square (72°×60° at
+           L2), so no doubling scheme can express them. From L3 ON it is exactly a doubling of 10 × 5
+           square 36° tiles — so THAT is the pyramid, entered at its own level 0, with `customTags`
+           adding the three GIBS levels back onto the path. Nothing here is a guess: every dimension
+           comes from WMTSCapabilities.xml, and every level this asks for answered 200. */
+        /* ⚠ AND IT IS SCOPED TO THE CAPS, WHICH ARE ITS ONLY JOB. Given the whole globe as its
+           rectangle, this layer fetches tiles for wherever the camera is — including 3 km over the
+           Alps with a flight simulator running, where every one of them is hidden behind the app's
+           own satellite imagery and none of them is why the layer exists. Measured: on a CI runner
+           with no GPU that extra traffic was enough to make tests/r184-cesium-fs fail three times
+           out of three (「the aircraft flies and the camera is at the aircraft」) while main was
+           green. Web Mercator ends at ±85.0511°, so the two bands beyond it are exactly the ground
+           no other source can cover, and Cesium only requests tiles that intersect a layer's
+           rectangle — so away from the poles this now costs nothing at all. */
+        if(Cesium.UrlTemplateImageryProvider&&Cesium.GeographicTilingScheme){
+          const MERC_EDGE=85.0511287798066;
+          [[MERC_EDGE,90],[-90,-MERC_EDGE]].forEach(([s,n])=>{
+            add(new Cesium.UrlTemplateImageryProvider({
+              url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{gibsZ}/{y}/{x}.jpeg',
+              customTags:{ gibsZ:(prov,x,y,level)=>level+3 },
+              tilingScheme:new Cesium.GeographicTilingScheme({numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5}),
+              tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5,
+              rectangle:Cesium.Rectangle.fromDegrees(-180,s,180,n),
+              credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
+            }));
+          });
+        }
         const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
           ||new URL('data/world-basemap.jpg',document.baseURI).toString();
-        const rect=Cesium.Rectangle.fromDegrees(-180,-90,180,90);
-        const add=(prov)=>{ try{ const L=new Cesium.ImageryLayer(prov,{}); this._scene.imageryLayers.add(L,0); this._worldBase=L; this._scene.requestRender(); }catch(_){} };
         if(Cesium.SingleTileImageryProvider&&Cesium.SingleTileImageryProvider.fromUrl){
           Cesium.SingleTileImageryProvider.fromUrl(worldUrl,{rectangle:rect,tileWidth:2048,tileHeight:1024})
-            .then(add).catch(e=>console.warn('[cesium] whole-globe base imagery unavailable',e));
+            .then(add).catch(e=>console.warn('[cesium] bundled whole-globe floor unavailable',e));
         } else if(Cesium.SingleTileImageryProvider){
           add(new Cesium.SingleTileImageryProvider({url:worldUrl,rectangle:rect}));
         }
@@ -984,6 +1055,16 @@ window.IntMapCesiumEngine=(function(){
         const want=this._layers.filter(l=>l.imagery).map(l=>l.imagery);
         want.forEach(L=>{ try{ coll.raiseToTop(L); }catch(_){} });
       }catch(_){}
+    }
+    /* (#R187) show/hide the whole-globe polar floor with the basemap. Called by js/world-base.js,
+       which is the module that already owns "the whole-globe floor" and already receives the
+       satellite flag — so one caller drives both engines. */
+    setWorldBase(on){
+      const list=this._worldBase; if(!Array.isArray(list)) return false;
+      list.forEach(L=>{ try{ L.show=!!on; }catch(_){} });
+      this._wantWorldBase=!!on;
+      try{ this._scene.requestRender(); }catch(_){}
+      return true;
     }
     setVisible(id,on){
       const rec=this._layerById.get(id); if(!rec) return;
@@ -1906,6 +1987,11 @@ window.IntMapCesiumEngine=(function(){
       setLight(l){ const v=V(); if(v) v.setLight(l); },
       setSky(s){ const v=V(); if(v) v.setSky(s); },
       getSky(){ const v=V(); return v?v.getSky():null; },
+      /* (#R187) the polar-cap imagery, switched with the basemap by js/world-base.js. ⚠ It has to be
+         listed HERE and not only on the view: the engine contract calls the ADAPTER, and a method
+         that exists only on the view reads as "this engine has no such thing" and silently no-ops —
+         which is exactly how the caps stayed hidden in satellite mode the first time round. */
+      setWorldBase(on){ const v=V(); return v?v.setWorldBase(on):false; },
       setTerrain(t){ const v=V(); return v?v.setTerrain(t):false; },
       getTerrain(){ const v=V(); return v?v.getTerrain():null; },
       addImage(id,img){ const v=V(); return v?v.addImage(id,img):false; },

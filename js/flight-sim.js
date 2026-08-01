@@ -728,6 +728,39 @@ window.IntMapModules.flightSim=function(HOST){
         else if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; icao=a[0]; } }
         else if(opts.lng!=null){ o.lng=+opts.lng; o.lat=+opts.lat; }
         if(state.mode==='ground') o.onGround=true; else o.alt=(o.elev!=null?o.elev+2500:2500);
+        /* ══ (#R187) "CURRENT MAP VIEW" MEANS THE VIEW YOU ARE ACTUALLY IN ══════════════════════════
+           「フライトシミュレーターのcurrent map viewのairborne開始時は、高度は一律ではなく、実際に今
+             見てる画角と高度で開始するように。」
+
+           Every airborne start used the same two numbers regardless of what was on screen: a flat
+           2,500 m above sea level, then start() lifted it to ground + 1,500 m (_clrLift). Whether the
+           user was looking down a valley from 800 m or across a continent from 300 km, the flight
+           began at the same height — which is the 「一律」 in the report.
+
+           The renderer already knows where the eye is: camera.eye() is the viewpoint #R172 exposed and
+           #R177/#R181 corrected for the globe (it answers on the sphere, not on a tangent plane, which
+           is why it can be trusted at low zoom). So an airborne start from "Current map view" takes
+           the eye's OWN position and altitude, and `keepAlt` tells start() not to overrule it — the
+           ground clearance drops to +30 m, which still cannot spawn inside a mountain but no longer
+           discards the altitude that was asked for. Heading is unchanged: start() already reads the
+           map's bearing, which is the other half of 「今見てる画角」.
+
+           ⚠ CLAMPED TO THE AIRFRAME, NOT TO A ROUND NUMBER. A globe view at z2 puts the eye some
+           10,000 km up; a 737 there has no air to fly in and `ac.ceil` (the service ceiling, already
+           the point where thrust fades in stepFixed) is the real limit of the model. So the eye's
+           altitude is used as-is whenever it is inside the envelope — which is exactly the case this
+           instruction is about — and clamped to the aircraft's own ceiling when it is not. */
+        if(state.loc==='__here'&&state.mode!=='ground'){
+          try{
+            const eye=(GE().camera.eye?GE().camera.eye():null);
+            if(eye&&isFinite(eye.alt)&&isFinite(eye.lng)&&isFinite(eye.lat)){
+              const acx=(AIRCRAFT[state.ac]||AC()), ceil=(acx&&acx.ceil)||12000;
+              o.lng=eye.lng; o.lat=eye.lat;
+              o.alt=Math.max(150,Math.min(eye.alt,ceil));
+              o.keepAlt=true;
+            }
+          }catch(_){}
+        }
         /* (#R119) REAL RUNWAY spawn: fetch the airport's actual runways (OurAirports, both-end coordinates),
            take the longest, spawn ON its threshold heading down the true centreline; the runway line also
            drives the landing-corridor evaluation + PAPI. Bounded to 8 s — falls back to the curated
