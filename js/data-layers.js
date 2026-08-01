@@ -3142,12 +3142,18 @@ window.IntMapModules.dataLayers=function(HOST){
         planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },20000);
         fetchPlanes();
         /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
-        /* (#R186) the minimum gap between two view-driven sweeps scales with the sweep, for the same
-           reason the poll interval does — at 1.5 s a wide sweep would still be running when the next
-           one was allowed to start. Close in (one circle) it is the original 1.5 s. */
+        /* ⚠ (#R186) The minimum gap between two view-driven sweeps is HOW LONG THE SWEEP TAKES — the
+           number of circles times their spacing — and NOT a fraction of the poll interval. The first
+           version used planePollMs()/4, which is 5 s even for a ONE-circle sweep whose floor is 20 s
+           for a quite different reason; that quietly tripled the close-in refetch gap from the 1.5 s
+           it had always been, and tests/r174 caught it exactly (a track that accumulated 2 legs over
+           five moveends instead of 5). One circle is 1.5 s, as before; sixteen circles is 19 s, which
+           is the time those sixteen requests actually occupy. */
         if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){
             try{ refreshTrafficLayer('planes'); }catch(_){}   /* (#R186) re-draw from what we already hold: the 3-D cull is viewport-shaped when the sky is very busy, and the per-aircraft ground offset follows the view */
-            clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>Math.max(1500,planePollMs()/4)) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
+            clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{
+              const sweepMs=Math.max(1500,(((_planeCover&&_planeCover.circles)||1)*PLANE_GAP_MS));
+              if(Date.now()-_lastPlaneFetch>sweepMs) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
         updatePlanesZoomHint();
       } else {
         startShips();
