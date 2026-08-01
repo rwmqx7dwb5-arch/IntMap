@@ -238,7 +238,33 @@ window.IntMapCesiumEngine=(function(){
 
          And both now FOLLOW THE BASEMAP (setWorldBase, driven by js/world-base.js) — satellite view
          gets the imagery, map view gets the map's own baseColor back. */
-      this._worldBase=[];
+      /* ══ (#R188) …AND A CAP THAT IS ONLY LIT IN SATELLITE VIEW IS STILL A BLACK CAP ═══════════════
+         「Cesiumでは南極・北極付近が衛星画像のない真っ黒だから、どうにかして。」— reported a third time.
+
+         Measured before changing anything, at the pole, on the built app:
+
+             satellite basemap, 88°S, z3  →  mean channel 239.3 / 255, dark pixels 0 %
+             MAP basemap,       88°S, z3  →  mean channel   0.56/ 255, dark pixels 99.4 %
+             MAP basemap,       88°N, z3  →  mean channel  12.0 / 255, dark pixels 99.99 %
+
+         So #R187's imagery works — and #R187 also tied it to the SATELLITE basemap, on the reasoning
+         that a satellite picture peeking through a street map is a different map. The app opens in
+         MAP view, which is where the caps are 0.56/255. The half that was fixed is not the half
+         anybody looks at.
+
+         The cure is not to un-tie it but to make the cap wear the map's clothes. Cesium's
+         ImageryLayer carries the same colour controls the app's own basemap rasters already use
+         (#R34 measured the Carto dark tiles and chose saturation/brightness/contrast for them), so
+         the polar bands are now ALWAYS shown and simply switch treatment with the basemap:
+         untouched under satellite, and desaturated + level-matched under the map, dark or light.
+         What lands there is real 500-metre imagery of real ice in the map's own palette, instead of
+         `baseColor`.
+
+         ⚠ The bundled whole-globe picture is a different object and still follows the satellite view
+         alone: it is ONE equirectangular tile, so at the cap it is the radial smear #R187 replaced,
+         and it has no business under a street map. It stays the offline floor for satellite view. */
+      this._worldBase=[];       /* everything that follows the satellite basemap */
+      this._polarBase=[];       /* the two polar bands — always on, treatment follows the basemap */
       try{
         const rect=Cesium.Rectangle.fromDegrees(-180,-90,180,90);
         /* Hidden until told otherwise: js/world-base.js is the single authority on whether the
@@ -255,8 +281,11 @@ window.IntMapCesiumEngine=(function(){
            still the stretched single tile). Index 0 is always valid, and because the bundled floor
            resolves from a promise it lands AFTER the tiled layer and therefore below it — which is
            the order wanted anyway: the offline picture underneath, the real imagery over it. */
-        const add=(prov)=>{ try{ const L=new Cesium.ImageryLayer(prov,{}); L.show=!!this._wantWorldBase;
-          this._scene.imageryLayers.add(L,0); this._worldBase.push(L); this._scene.requestRender(); return L; }catch(e){ console.warn('[cesium] whole-globe imagery layer rejected',e); return null; } };
+        const add=(prov,polar)=>{ try{ const L=new Cesium.ImageryLayer(prov,{});
+          /* (#R188) a polar band is shown whatever the basemap is; only its treatment changes */
+          L.show=polar?true:!!this._wantWorldBase;
+          this._scene.imageryLayers.add(L,0); (polar?this._polarBase:this._worldBase).push(L);
+          this._scene.requestRender(); return L; }catch(e){ console.warn('[cesium] whole-globe imagery layer rejected',e); return null; } };
         /* ⚠ GIBS'S EPSG:4326 GRID IS NOT A QUADTREE, AND ASSUMING IT WAS DREW A BLACK CAP.
            Cesium's default GeographicTilingScheme doubles from 2 × 1, so it asked for 2/3/3 and got
            `TileOutOfRange` — measured against the live service, and confirmed from the service's own
@@ -286,7 +315,7 @@ window.IntMapCesiumEngine=(function(){
               tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5,
               rectangle:Cesium.Rectangle.fromDegrees(-180,s,180,n),
               credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
-            }));
+            }),true);
           });
         }
         const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
@@ -297,6 +326,11 @@ window.IntMapCesiumEngine=(function(){
         } else if(Cesium.SingleTileImageryProvider){
           add(new Cesium.SingleTileImageryProvider({url:worldUrl,rectangle:rect}));
         }
+        /* (#R188) the map's palette is a theme decision, and the theme changes without the basemap
+           changing — so re-run the treatment on the same signal js/space-sky.js watches. */
+        this._polarTreatment();
+        try{ new MutationObserver(()=>this._polarTreatment())
+               .observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']}); }catch(_){}
       }catch(e){ console.warn('[cesium] whole-globe base imagery',e); }
       /* ══ (#R186) THE SKY FOLLOWS THE APP'S CLOCK, NOT ITS OWN ══════════════════════════════════
          The star box, the Sun and the Moon are all read from `widget.clock.currentTime`, and a bare
@@ -1063,8 +1097,39 @@ window.IntMapCesiumEngine=(function(){
       const list=this._worldBase; if(!Array.isArray(list)) return false;
       list.forEach(L=>{ try{ L.show=!!on; }catch(_){} });
       this._wantWorldBase=!!on;
+      this._polarTreatment();
       try{ this._scene.requestRender(); }catch(_){}
       return true;
+    }
+    /* (#R188) How the polar bands are coloured. Satellite view wants the imagery as it comes; the map
+       wants it to read as part of the map, so it is desaturated and levelled to the basemap's own
+       tone — the same two decisions #R34 made for the Carto rasters, in Cesium's own controls
+       (brightness/contrast/saturation/gamma are all multiplicative around 1). Both settings are
+       re-applied on a theme change, because the light map and the dark map are different targets.
+       Nothing here can hide the band: the lowest of these still puts the cap two orders of magnitude
+       above the 0.56/255 it was measured at. */
+    _polarTreatment(){
+      const list=this._polarBase; if(!Array.isArray(list)||!list.length) return;
+      let dark=true; try{ dark=document.documentElement.getAttribute('data-theme')!=='light'; }catch(_){}
+      const sat=!!this._wantWorldBase;
+      /* ⚠ THESE FOUR NUMBERS WERE SWEPT, NOT PICKED. A single dim factor makes ice glow and ocean
+         vanish, because the two caps are not the same picture: measured on the raw GIBS tiles, the
+         Antarctic cap is 143/255 and the Arctic cap 48.9 (and 48.9 is the BRIGHTEST Arctic of the
+         three Blue Marble products — NextGeneration and ShadedRelief are both 19, which is why the
+         bathymetry variant stays). The first attempt, brightness 0.62 with contrast just over 1, put
+         Antarctica at 151 on a dark map whose own ground is 9.4 — a searchlight — and left the Arctic
+         at 9.4, i.e. still black. Lowering CONTRAST is what moves the two towards each other, so the
+         sweep was over contrast and brightness together, measured at 88°S and 88°N:
+
+             b .62 c 1.06 → S 151.1  N  9.4      b .34 c .80 → S 90.9  N 30.8
+             b .42 c 0.90 → S 103.5  N 20.1      b .26 c .72 → S 80.8  N 39.5
+
+         The second row is the one taken: Antarctica reads as a pale cap and the Arctic Ocean as
+         water, both inside the dark basemap's own range (its land ≈ 45, its ocean ≈ 10, #R34), and
+         NEITHER of them is the 0.56/255 this instruction is about. */
+      const t=sat?{b:1,c:1,s:1,g:1}:(dark?{b:0.42,c:0.90,s:0.35,g:1}:{b:1.22,c:0.92,s:0.34,g:0.9});
+      list.forEach(L=>{ try{ L.brightness=t.b; L.contrast=t.c; L.saturation=t.s; L.gamma=t.g; L.show=true; }catch(_){} });
+      try{ this._scene.requestRender(); }catch(_){}
     }
     setVisible(id,on){
       const rec=this._layerById.get(id); if(!rec) return;

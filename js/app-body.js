@@ -3352,6 +3352,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const KEY='intmap_session2'; let _restoring=true, _saveT=null, _tabInit=false;
     function _snapshot(){ try{
       const layers=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(cb.checked&&cb.id) layers.push(cb.id); });
+      /* ⚠ (#R188) A LAYER THE APP SWITCHED OFF IS NOT A LAYER THE USER SWITCHED OFF. When the
+         submarine-cable download failed, js/data-layers.js unticked the box — and this snapshot
+         reads ticked boxes, so the next toggle of anything wrote a session with that layer absent.
+         _restore() below then treats an absent DEFAULT-ON id as "the user turned it off" and unticks
+         it deliberately on every later load: one outage at a volunteer CORS proxy became a permanent
+         「片方しかつかない」. `imAutoOff` is set only by the app's own failure path (autoUncheck) and
+         cleared the moment a real click touches the box, so the session keeps wanting the layer. */
+      (window.IntMapDefaultLayers||[]).forEach(id=>{ const cb=document.getElementById(id);
+        if(cb&&!cb.checked&&cb.dataset&&cb.dataset.imAutoOff==='1'&&layers.indexOf(id)<0) layers.push(id); });
       let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
       return { v:2, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
         base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
@@ -3359,7 +3368,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
     window._imSaveSession=_save;
     /* save on the events that change persisted state */
-    try{ document.addEventListener('change',e=>{ try{ if(e.target&&e.target.closest&&e.target.closest('#layer-dropdown')) _save(); }catch(_){} },true); }catch(_){}
+    try{ document.addEventListener('change',e=>{ try{ if(e.target&&e.target.closest&&e.target.closest('#layer-dropdown')){
+      /* (#R188) a REAL interaction settles the question the `imAutoOff` mark was holding open — from
+         here on the box says what the user wants, either way. Synthetic change events (the default-on
+         dispatcher, the session restore) are not trusted and leave the mark alone. */
+      if(e.isTrusted&&e.target.dataset) delete e.target.dataset.imAutoOff;
+      _save(); } }catch(_){} },true); }catch(_){}
     try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
     try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>_save()); }catch(_){}
