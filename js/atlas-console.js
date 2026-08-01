@@ -1302,6 +1302,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       'historical borders':'beta-dl-histb','歴史的国境':'beta-dl-histb','ukraine frontline':'beta-dl-ukrfront','frontline':'beta-dl-ukrfront','前線':'beta-dl-ukrfront',
       'railway':'cb-rail2','railways':'cb-rail2','rail':'cb-rail2','trains':'cb-rail2','鉄道':'cb-rail2','roads':'cb-roads','道路':'cb-roads',
       'borders':'cb-borders','country borders':'cb-borders','国境':'cb-borders','place names':'cb-names','地名':'cb-names',
+      /* (#R186) the shop/facility names — a third label set beside place names and water/terrain names
+         (standing rule: every feature is operable from Atlas) */
+      'poi':'cb-poi','points of interest':'cb-poi','shops':'cb-poi','shop names':'cb-poi','facilities':'cb-poi',
+      'venues':'cb-poi','店舗':'cb-poi','施設':'cb-poi','施設名':'cb-poi','店舗名':'cb-poi',
       'time zones':'dl-tz','timezones':'dl-tz','タイムゾーン':'dl-tz','時間帯':'dl-tz',
       'webcams':'dl-webcams','webcam':'dl-webcams','ライブカメラ':'dl-webcams','ウェブカメラ':'dl-webcams',
       'pipelines':'pipelines','nuclear':'nuclear','nuclear sites':'nuclear','chokepoints':'chokepoints',

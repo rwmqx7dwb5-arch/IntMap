@@ -124,6 +124,12 @@ import '../js/article-reader.js';
 import '../js/community-board.js';
 import '../js/map-readout.js';
 import '../js/elevation-profile.js';
+/* (#R186) the real night sky behind the globe (stars from the bundled Bright Star Catalogue, the Sun
+   at its true position) and the coarse whole-Earth satellite base that removes the blank-tile wait.
+   Both publish a window API and do nothing until app-body starts them, so their position in this
+   list only has to be BEFORE js/app-body.js — like every other module here. */
+import '../js/space-sky.js';
+import '../js/world-base.js';
 
 /* (#R175) LAST, deliberately: js/app-body.js is index.html's old inline body, and it must register its
    DOMContentLoaded listener only after every module above has published its globals — exactly the order

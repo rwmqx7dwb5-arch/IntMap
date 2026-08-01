@@ -58,7 +58,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!ok){ if(!apply()) document.addEventListener('DOMContentLoaded',apply); }
   }catch(_){} })();
   let isGridOn=false, toolMode=null, measurePoints=[];
-  let namesOn=true, countryInfoOn=false, geoLabelsOn=true;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */
+  let namesOn=true, countryInfoOn=false, geoLabelsOn=true, poiOn=false;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */   /* (#R186) …and the shop/facility names are a third, independent set (cb-poi) */
   let map=null, markersArray=[], forceHoverLayers=new Set();
   /* ===== (#R170) canDraw() — the ONE predicate the whole app uses before touching the style =====
      "Is it safe to addSource / addLayer RIGHT NOW?" This is NOT the same question as
@@ -361,7 +361,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get analyzeContext(){ return analyzeContext; }, get appendNewsBatch(){ return appendNewsBatch; },
     get elevText(){ return elevText; }, get fetchBathymetry(){ return fetchBathymetry; },
     get fetchViaProxy(){ return fetchViaProxy; }, get fmtElevVal(){ return fmtElevVal; },
-    get forceHoverLayers(){ return forceHoverLayers; }, get geoLabelsOn(){ return geoLabelsOn; },
+    get forceHoverLayers(){ return forceHoverLayers; }, get geoLabelsOn(){ return geoLabelsOn; }, get poiOn(){ return poiOn; },
     get geoLayersDB(){ return geoLayersDB; }, get imIsPro(){ return imIsPro; },
     get mapLabelsViaVector(){ return mapLabelsViaVector; }, get newsLangs(){ return newsLangs; },
     get renderCommunity(){ return renderCommunity; }, get renderReaderMode(){ return renderReaderMode; },
@@ -535,7 +535,69 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     [0,1].forEach(i=>{ const L='sat-fx-'+i; if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',(sat&&i===satActive)?'visible':'none'); });
     if(sat){ try{ satRenderController(); }catch(_){} }
     try{ satRefreshReadout(); }catch(_){}
+    /* (#R186) the coarse whole-Earth floor under the satellite tiles (js/world-base.js) and the
+       real-scale atmosphere around the globe — both belong to the satellite basemap, so both follow
+       the same `sat` the base layers above do. */
+    try{ window.IntMapWorldBase&&window.IntMapWorldBase.apply(sat); }catch(_){}
+    try{ _applySkyAtmosphere(sat); }catch(_){}
   }
+  /* ══ (#R186) THE ATMOSPHERE, AT ITS REAL SIZE AND ITS REAL COLOUR ═══════════════════════════════
+     「MapLibreでも、Satelliteでは、地球の大気が見えるように。（実寸・実色）」
+
+     The renderer already contains the right thing and it was switched off. MapLibre's globe draws a
+     Rayleigh + Mie scattering integral — planet 6,371 km, atmosphere 6,471 km, per-wavelength
+     Rayleigh coefficients (5.5, 13.0, 22.4)e−6, Mie 21e−6, scale heights 8 km and 1.2 km, tone-mapped
+     and gamma-corrected — which is 実寸・実色 by construction rather than by a hand-picked gradient.
+     But it is multiplied by `atmosphere-blend`, and a style with no `sky` block gets 0: the app has
+     never had a `sky`, so the multiplier has always been zero and the comment in set3D() claiming
+     "the globe already renders its own atmosphere" was describing something that never ran.
+
+     The Sun's direction comes from `style.light`, and the app's default light is a fixed viewport
+     lamp — which would put the terminator glow wherever the user happened to be looking. It is set
+     from the REAL Sun instead (js/space-sky.js computes the sub-solar point from the map's own
+     clock), so the lit limb is the lit limb.
+
+     `atmosphere-blend` falls off with zoom because the effect is a limb: at street level the camera
+     is inside it and a full-strength halo would be a wash over the imagery. Only that one property
+     is set — sky-color/horizon-color/fog-color are left alone, because fog is not supported on the
+     globe and setting it there is what fills the console with warnings. */
+  function _sunOverheadPoint(){
+    try{ const S=window.IntMapSky; if(!S||!S.sunPosition) return null;
+      let ms=Date.now(); try{ const T=window.IntMapTime; if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
+      const s=S.sunPosition(ms), g=S.gmstDeg(ms);
+      return { lng:((s.ra-g+540)%360)-180, lat:s.dec };
+    }catch(_){ return null; }
+  }
+  /* ⚠ The sun direction and the scene LIGHT are the same setting — MapLibre's atmosphere shader reads
+     `style.light`, there is no separate uniform for it. The Sun & shadow simulator (window.IntMapSun)
+     also drives that light while it is open, and it aims it at the sun for the moment the user is
+     studying, which is a more specific request than "now". So it wins: while its panel is open the
+     atmosphere is left with whatever light the simulator has set. */
+  function _sunSimOwnsLight(){ try{ const s=window.IntMapSun&&window.IntMapSun.state&&window.IntMapSun.state(); return !!(s&&s.open); }catch(_){ return false; } }
+  /* ⚠ …and the FLIGHT SIMULATOR owns the sky outright while it runs. It sets its own cockpit sky in
+     start() and restores whatever was there in stop(), so anything this function does in between is
+     both wrong and destructive: measured, a basemap switch during a flight cleared the sim's
+     `sky-color` to undefined (tests/r174 «the renderer's own sky is what a cockpit sees»). A window
+     with a pilot in it is a more specific request than "the satellite view has an atmosphere". */
+  function _skyIsOwnedElsewhere(){
+    try{ const FS=window.IntMapFlightSim; if(FS&&FS.active&&FS.active()) return true; }catch(_){}
+    return false;
+  }
+  function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false; const p=_sunOverheadPoint(); if(!p) return false;
+    try{ return GE().scene.setSunDirection(p); }catch(_){ return false; } }
+  function _applySkyAtmosphere(sat){
+    if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
+    try{
+      if(!sat){ if(_applySkyAtmosphere._on){ _applySkyAtmosphere._on=false; GE().scene.setSky(undefined); if(!_sunSimOwnsLight()) GE().scene.setSunDirection(null); } return; }
+      _applySkyAtmosphere._on=true;
+      GE().scene.setSky({'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,4,0.92,7,0.6,10,0.25,13,0.05,15,0]});
+      _aimSun();
+    }catch(_){}
+  }
+  /* The sub-solar point moves 15° an hour, and the time machine can move it by years in one step, so
+     re-aim the light on the master clock as well as on the basemap switch. */
+  try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ try{ if(_applySkyAtmosphere._on) _aimSun(); }catch(_){} }); }catch(_){}
+  setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on) _aimSun(); }catch(_){} },60000);
   /* ===== Language-aware vector place labels (OpenFreeMap, free, no key) ===== */
   /* (#R21) Map mode now ALWAYS uses the same crisp OFM vector labels as satellite mode ("mapを選択した
      際も、同じ地名ラベルにして。（mapの旧来の地名ラベルは廃止）") — the labeled carto base is retired, the
@@ -1095,6 +1157,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      map through window.__imap, so publishing it here (rather than one event later) is what makes
      `GE()` answer for real from the first factory onward instead of quietly no-op'ing until 'load'. */
   try{ window.__imap=map; }catch(_){}
+  /* (#R186) LAUNCH-SCREEN MILESTONE 3 of 5: the renderer object exists. The remaining two — the
+     style is parsed, and the first idle after the default layers have been switched on — are
+     reported from the map's own 'load' handler below. If there is no renderer at all (no WebGL,
+     a blocked chunk) the launch screen must not sit there forever waiting for events that will
+     never fire, so say ready now and let the app show whatever it can. */
+  try{ if(window.__imBoot){ if(GE().hasRenderer()) window.__imBoot.set(58,'renderer');
+    else { console.warn('[boot] no renderer — revealing the app without waiting for the map'); window.__imBoot.done('no-renderer'); } } }catch(_){}
 
   /* ── (#R168) SEVENTH SPLIT — six SUBJECT modules carved out of the core (Architecture.md §3.1 #R168).
    *  #R167 emptied the file of self-contained BLOCKS; what remained was one dense core in which no
@@ -2037,6 +2106,42 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._applyBorders(); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
       GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
+      /* (#R186) the real night sky behind the globe, and the whole-Earth floor under the satellite
+         tiles. Both start here because both need a renderer; the sky decides for itself whether the
+         conditions (dark theme, globe, an engine with no sky of its own) are met, and the floor is
+         installed now — before anyone presses Satellite — precisely so that pressing it does not
+         start with a wait. */
+      try{ window.IntMapSky&&window.IntMapSky.start(); }catch(_){}
+      /* (#R186) The floor's picture is 284 KB and decoding it is a few milliseconds — but neither is
+         on the critical path of a map that is still settling. Register the protocol and the layer now
+         (so pressing Satellite has nothing to set up), and pre-decode the picture when the browser is
+         next idle. If Satellite is already on, apply() warms it immediately anyway. */
+      try{ if(window.IntMapWorldBase){ window.IntMapWorldBase.install();
+        window.IntMapWorldBase.apply(currentMapType==='sat');
+        const _warm=()=>{ try{ window.IntMapWorldBase.warm(); }catch(_){} };
+        if(window.requestIdleCallback) requestIdleCallback(_warm,{timeout:8000}); else setTimeout(_warm,3000);
+      } }catch(_){}
+      try{ _applySkyAtmosphere(currentMapType==='sat'); }catch(_){}
+      /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
+         usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
+         the first thing the user sees should be the finished map, not a bare basemap that grows
+         Köppen and the cables a second later. So the default-layer dispatch is FORCED rather than
+         waited for, and the screen lifts on the idle after it.
+         Both stages carry their own escape: an idle can be delayed indefinitely by one slow tile
+         host, and a launch screen that outlives the app it is covering is the worse failure. */
+      try{ if(window.__imBoot&&!window.__imBoot.isDone()){
+        window.__imBoot.set(80,'style');
+        let staged=false;
+        const stage=()=>{ if(staged) return; staged=true;
+          try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
+          setTimeout(()=>{ try{ window.__imBoot.set(96,'layers'); }catch(_){}
+            let ended=false; const go=()=>{ if(ended) return; ended=true; try{ window.__imBoot.done('idle'); }catch(_){} };
+            try{ GE().events.once('idle',go); }catch(_){ go(); }
+            setTimeout(go,3000);
+          },380); };
+        try{ GE().events.once('idle',stage); }catch(_){ setTimeout(stage,900); }
+        setTimeout(stage,6000);
+      } }catch(_){}
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
        context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
@@ -2315,6 +2420,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   { const _gl=document.getElementById('cb-geolabels'); if(_gl) _gl.addEventListener('change',(e)=>{ geoLabelsOn=e.target.checked;
     const ap=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} };
     ap(); [120,400,1000].forEach(ms=>setTimeout(ap,ms)); }); }
+  /* (#R186) shop / facility names — the same shape as the two toggles above it, including the
+     re-assert schedule: the OFM vector source can finish loading a beat after the first apply, and
+     #R34 already recorded that a single call sometimes toggles nothing. */
+  { const _po=document.getElementById('cb-poi'); if(_po) _po.addEventListener('change',(e)=>{ poiOn=e.target.checked;
+    const ap=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} };
+    ap(); [120,400,1000].forEach(ms=>setTimeout(ap,ms)); }); }
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
     /* (#R40) Now sourced from the OFM `boundary` layer (see ensureBordersLayer). Same retry treatment as
@@ -2409,8 +2520,23 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (retry-hardened) change handlers once at startup so the layers are created + shown on first load; they
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
      hash, so this only sets the initial default — unchecking one still sticks for the session. */
-  (function(){ const fire=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&!c.__defFired){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
-    try{ if(GE().ready()) setTimeout(fire,300); GE().events.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); }catch(_){} })();
+  /* (#R186) …and the same treatment for the two THEMATIC layers that are now on out of the box
+     (window.IntMapDefaultLayers = Köppen climate + submarine cables). Their rows are built by
+     js/data-layers.js a moment later than this static HTML, so the ids simply join the same retry
+     list: `fire` skips a box that does not exist yet and the 1,600 ms pass catches it. The
+     `__defFired` latch keeps it to one dispatch each however many times fire() runs. */
+  (function(){ const IDS=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].concat(window.IntMapDefaultLayers||[]);
+    /* Read the saved layer set ONCE, synchronously, so the default-on decision and the session
+       restore (which runs ~600 ms later) can never disagree for a few hundred milliseconds — that
+       gap would show as Köppen appearing and then vanishing on every reload for a user who had
+       switched it off. `null` = no saved session at all, i.e. the defaults apply unopposed. */
+    let saved=null; try{ const s=JSON.parse(localStorage.getItem('intmap_session2')||'null'); if(s&&Array.isArray(s.layers)) saved=s.layers; }catch(_){}
+    const wanted=id=>!saved || (window.IntMapDefaultLayers||[]).indexOf(id)<0 || saved.indexOf(id)>=0;
+    const fire=()=>IDS().forEach(id=>{ const c=document.getElementById(id); if(!c||c.__defFired) return;
+      if(!wanted(id)){ c.__defFired=true; if(c.checked){ c.checked=false; const r=c.closest('.lyr-row'); if(r) r.classList.remove('on'); const ex=r&&r.querySelector('.lyr-extras'); if(ex) ex.style.display='none'; } return; }
+      if(c.checked){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
+    window.__imFireDefaultLayers=fire;
+    try{ if(GE().ready()) setTimeout(fire,300); GE().events.on('load',()=>setTimeout(fire,300)); setTimeout(fire,600); setTimeout(fire,1600); setTimeout(fire,2600); }catch(_){} })();
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
@@ -3244,6 +3370,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof terrain3D!=='undefined'&&terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
       /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
       const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
+      /* (#R186) …and switch a DEFAULT-ON layer back off when this saved session says the user had it
+         off. Restore has only ever turned layers ON, which was right while every thematic layer
+         started off: absence from the snapshot then meant "nothing to do". Now that Köppen and the
+         submarine cables start ON, absence means the user switched one off, and re-checking it on
+         every reload would make it impossible to keep off. Only the default-on ids are treated this
+         way — for every other layer "absent" still means "was already off". */
+      const defOff=(window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0); let offTries=0;
+      (function pollOff(){ offTries++; const left=[];
+        defOff.forEach(id=>{ const cb=document.getElementById(id);
+          if(cb){ if(cb.checked){ cb.__defFired=true; try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } else cb.__defFired=true; }
+          else left.push(id); });
+        if(left.length&&offTries<25){ defOff.length=0; defOff.push.apply(defOff,left); setTimeout(pollOff,220); } })();
       (function poll(){ tries++; const pending=[];
         want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
         if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
@@ -4227,6 +4365,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!cb) return null;
     if(cb.id==='cb-names')     return {key:'names', label:t('placeNames')};
     if(cb.id==='cb-geolabels') return {key:'geolabels', label:t('geoLabels')||'Water & terrain labels'};
+    if(cb.id==='cb-poi')       return {key:'poi', label:t('poiLabels')||'Shop & facility names'};   /* (#R186) */
     if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
     if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }

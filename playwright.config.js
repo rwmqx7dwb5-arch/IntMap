@@ -21,11 +21,21 @@ export default defineConfig({
   // green on main for eight consecutive runs and passing on both trees locally. The measurement it
   // produced is pinned by r184-imagery.spec.js, which DOES run here. Run the instrument deliberately
   // with `npm run test:profile` when investigating performance.
-  testIgnore: /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/,
+  // (#R186) …and CI can ask for one HALF of the suite. Measured: the `*-cesium*` specs are a handful
+  // of tests that each take minutes on a runner with no GPU, so sharding by test count parks them all
+  // on one machine — that shard took ONE HOUR while the six others finished in two to fifteen minutes,
+  // and four of its tests failed on load rather than on their merits (all four pass locally).
+  // Splitting them out lets CI give them machines of their own at one worker, which is the condition
+  // they pass under. IM_SUITE is unset everywhere else, so `npm test` locally is unchanged.
+  testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/ : undefined,
+  testIgnore: process.env.IM_SUITE === 'rest'
+    ? /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js|-cesium.*\.spec\.js$/
+    : /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/,
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast
-  workers: isCI ? 2 : undefined,
+  // one browser per machine for the Cesium half — contention is exactly what it fails on
+  workers: isCI ? (process.env.IM_SUITE === 'cesium' ? 1 : 2) : undefined,
   timeout: 60_000,                // index.html is a large single-file app — allow a generous boot budget
   expect: { timeout: 10_000 },
   reporter: isCI
@@ -34,6 +44,23 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     baseURL: BASE,
+    /* ══ (#R186) EVERY TEST GETS THE BOOT IT WAS WRITTEN FOR ═══════════════════════════════════════
+       #R186 made Köppen and the submarine cables default-ON, and MEASURED what that costs every boot:
+       ready at 9,160 ms against 3,192 ms with them suppressed — a multi-megabyte climate raster and a
+       cable network fetched through a CORS relay, on every page load. `canDraw` is unchanged at
+       ~400 ms; it is the SETTLING that grows. On a runner with no GPU that lands on the tests that are
+       already minutes long and marginal, and they begin failing on load rather than on their merits.
+       Seeding the saved-session key the app itself reads suppresses those layers before anything is
+       built, so the 350-odd tests that are not ABOUT them boot exactly as they always did. The two
+       that ARE about them opt out — see tests/r186.spec.js, which is where that default is pinned. */
+    storageState: {
+      cookies: [],
+      /* ⚠ `layers` ONLY. An earlier version also seeded `tabInit:true`, which is the flag that says
+         "this profile has already been offered the default tab" — and that broke tests/r170's «fresh
+         desktop profile: Countries open», because a fresh profile is exactly what it is about. The
+         seed must say the least it can: which layers, and nothing else about the session. */
+      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"layers":[]}' }] }],
+    },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',
     colorScheme: 'light',

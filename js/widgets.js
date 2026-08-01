@@ -109,10 +109,16 @@ window.IntMapModules.widgets=function(HOST){
       '.wgt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'+
       /* (#R39) iOS-refined card: rounder corners, a softer layered shadow, a hairline top highlight, and a
          tactile press state — matching the iOS widget look ("よりiOS風の洗練されたデザインに"). */
-      '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset,0 8px 24px rgba(0,0,0,0.12);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
-      '.wgt-card:not(.editing):active{transform:scale(0.972);box-shadow:0 2px 10px rgba(0,0,0,0.14);}'+
+      /* (#R186) …WITHOUT the ambient drop shadow. 「ウィジェットの周りにぼんやりと影を付けなくてよい」 —
+         so every OUTER shadow is gone from the card and from all three of its states. The remaining
+         `inset` rule is not a shadow around the card: it is the 1-px top highlight that draws the
+         glass edge INSIDE the border, and removing it would flatten the surface rather than the halo
+         the request is about. The press/hover TRANSFORMS stay — the tactile response was never the
+         complaint. */
+      '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
+      '.wgt-card:not(.editing):active{transform:scale(0.972);box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;}'+
       /* (#R41) subtle iOS hover-lift on desktop ("よりiOS風の洗練されたデザインに") */
-      '@media(hover:hover){ .wgt-card:not(.editing):hover{transform:translateY(-1.5px);box-shadow:0 1px 0 rgba(255,255,255,0.12) inset,0 12px 30px rgba(0,0,0,0.16);} }'+
+      '@media(hover:hover){ .wgt-card:not(.editing):hover{transform:translateY(-1.5px);box-shadow:0 1px 0 rgba(255,255,255,0.12) inset;} }'+
       /* (#R40) extra iOS refinement: a soft diagonal glass sheen BEHIND the content (content gets z-index:1). */
       '.wgt-card::before{content:"";position:absolute;inset:0;z-index:0;border-radius:22px;background:linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0) 46%);pointer-events:none;}'+
       '.wgt-card>*{position:relative;z-index:1;}'+
@@ -127,7 +133,7 @@ window.IntMapModules.widgets=function(HOST){
       /* (#R154) AQI / UV rebuilt iOS-style — the WHOLE card takes the category colour as its background ("現在の数字の
          色を背景にして。iOS風に。"). _wgtColor() sets the gradient inline!important (beats the glass override) and adds
          .wgt-colored (+ .wgt-on-light for pale colours → dark text, else white) so contrast holds on every tier. */
-      '.wgt-card.wgt-colored{color:#fff;min-height:122px;border-color:rgba(255,255,255,0.14);box-shadow:0 1px 0 rgba(255,255,255,0.18) inset,0 10px 26px rgba(0,0,0,0.20);}'+
+      '.wgt-card.wgt-colored{color:#fff;min-height:122px;border-color:rgba(255,255,255,0.14);box-shadow:0 1px 0 rgba(255,255,255,0.18) inset;}'+   /* (#R186) no ambient drop shadow — see .wgt-card above */
       '.wgt-card.wgt-colored.wgt-on-light{color:#1c1c1e;border-color:rgba(0,0,0,0.08);}'+
       '.wgt-card.wgt-colored::before{background:linear-gradient(158deg,rgba(255,255,255,0.22),rgba(255,255,255,0) 58%);}'+
       '.wgt-card.wgt-colored.wgt-on-light::before{background:linear-gradient(158deg,rgba(255,255,255,0.32),rgba(255,255,255,0) 58%);}'+
