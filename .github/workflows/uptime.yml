@@ -41,7 +41,7 @@ jobs:
 
       - name: Open / close incident issue
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           OK: ${{ steps.probe.outputs.ok }}
           STATUS: ${{ steps.probe.outputs.status }}
