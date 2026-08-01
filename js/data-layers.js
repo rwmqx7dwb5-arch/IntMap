@@ -2587,8 +2587,20 @@ window.IntMapModules.dataLayers=function(HOST){
        nearest aircraft within a finger-sized radius wins. The ground footprint keeps working too — the
        post is a real thing to click at — so both ways of aiming at an aeroplane select the same one. */
     const PICK_PX=16;
+    /* ⚠ (#R187) WHERE THE AIRCRAFT IS DRAWN DEPENDS ON WHICH RENDERING IS ON, AND THE PICK HAS TO
+       ASK THE SAME QUESTION AS THE DRAWING. In 3-D the body stands at its reported altitude; the flat
+       glyph is a symbol at the ground position. #R174's rule — "a pick that used a different offset
+       would look for the aeroplane somewhere it is not" — is the reason this exists, and making the
+       flat glyph the default (see planes3D) is exactly the case it had never been asked about:
+       `pickPlane` began with `if(!planes3D) return null`, so with 2-D restored, clicking an aircraft
+       would have selected nothing, opened no detail card and drawn no track. Found by tests/r175,
+       which is about the card and not about 3-D at all. */
+    function _planeDrawAlt(d){
+      if(!planes3D||d.onGround) return 0;
+      return Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-_groundAt(d.lng,d.lat));
+    }
     function pickPlane(pt){
-      if(!planes3D||!pt) return null;
+      if(!pt) return null;
       const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
       /* (#R174) the SAME per-aircraft ground the drawing uses — a pick that used a different offset would
          look for the aeroplane somewhere it is not */
@@ -2597,9 +2609,7 @@ window.IntMapModules.dataLayers=function(HOST){
       for(const d of planesData){
         if(d.lng==null||d.lat==null) continue;
         if(filt&&filt!=='all'&&d.type!==filt) continue;
-        const off=_groundAt(d.lng,d.lat);
-        const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        const p=pa([d.lng,d.lat],alt); if(!p) continue;
+        const p=pa([d.lng,d.lat],_planeDrawAlt(d)); if(!p) continue;
         const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
         if(q<bestD){ bestD=q; best=d; }
       }
@@ -3647,8 +3657,9 @@ window.IntMapModules.dataLayers=function(HOST){
       /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
       screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
         const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-        const off=_groundAt(d.lng,d.lat), alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        return pa([d.lng,d.lat],alt); },
+        /* (#R187) …and it answers for the rendering that is ON — see _planeDrawAlt. This is the
+           "where is it drawn" diagnostic, so it has to move with the drawing. */
+        return pa([d.lng,d.lat],_planeDrawAlt(d)); },
       pickAt:pt=>{ const d=pickPlane(pt); return d?d.icao24:null; },
       trackStats:k=>trackStats(k||selectedPlane),
       find:q=>{ const s2=String(q||'').trim().toUpperCase(); if(!s2) return null;

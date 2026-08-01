@@ -267,14 +267,27 @@ window.IntMapCesiumEngine=(function(){
            square 36° tiles — so THAT is the pyramid, entered at its own level 0, with `customTags`
            adding the three GIBS levels back onto the path. Nothing here is a guess: every dimension
            comes from WMTSCapabilities.xml, and every level this asks for answered 200. */
+        /* ⚠ AND IT IS SCOPED TO THE CAPS, WHICH ARE ITS ONLY JOB. Given the whole globe as its
+           rectangle, this layer fetches tiles for wherever the camera is — including 3 km over the
+           Alps with a flight simulator running, where every one of them is hidden behind the app's
+           own satellite imagery and none of them is why the layer exists. Measured: on a CI runner
+           with no GPU that extra traffic was enough to make tests/r184-cesium-fs fail three times
+           out of three (「the aircraft flies and the camera is at the aircraft」) while main was
+           green. Web Mercator ends at ±85.0511°, so the two bands beyond it are exactly the ground
+           no other source can cover, and Cesium only requests tiles that intersect a layer's
+           rectangle — so away from the poles this now costs nothing at all. */
         if(Cesium.UrlTemplateImageryProvider&&Cesium.GeographicTilingScheme){
-          add(new Cesium.UrlTemplateImageryProvider({
-            url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{gibsZ}/{y}/{x}.jpeg',
-            customTags:{ gibsZ:(prov,x,y,level)=>level+3 },
-            tilingScheme:new Cesium.GeographicTilingScheme({numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5}),
-            tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5, rectangle:rect,
-            credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
-          }));
+          const MERC_EDGE=85.0511287798066;
+          [[MERC_EDGE,90],[-90,-MERC_EDGE]].forEach(([s,n])=>{
+            add(new Cesium.UrlTemplateImageryProvider({
+              url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{gibsZ}/{y}/{x}.jpeg',
+              customTags:{ gibsZ:(prov,x,y,level)=>level+3 },
+              tilingScheme:new Cesium.GeographicTilingScheme({numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5}),
+              tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5,
+              rectangle:Cesium.Rectangle.fromDegrees(-180,s,180,n),
+              credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
+            }));
+          });
         }
         const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
           ||new URL('data/world-basemap.jpg',document.baseURI).toString();

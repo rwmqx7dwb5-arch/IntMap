@@ -39,6 +39,23 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
     '3-D aircraft bodies must default OFF');
 });
 
+/* ── 1b. …and the click still finds the aircraft it can now see ──────────────────────────────── */
+test('R187 aircraft: the pick follows the rendering that is on', () => {
+  const src = read('js/data-layers.js');
+  /* Caught by tests/r175 — which is about the DETAIL CARD and not about 3-D at all. `pickPlane`
+     opened with `if(!planes3D) return null`, so the moment the flat glyph became the default again,
+     clicking an aircraft selected nothing, opened no card and drew no track. A default change is not
+     allowed to take a feature with it. */
+  assert.ok(!/function pickPlane\(pt\)\{\s*\n?\s*if\(!planes3D/.test(src),
+    'pickPlane must not bail out when the flat glyph is the rendering');
+  assert.match(src, /function _planeDrawAlt\(d\)\{[\s\S]{0,200}if\(!planes3D\|\|d\.onGround\) return 0;/,
+    'the drawn altitude is 0 for the flat glyph and the reported altitude for the 3-D body');
+  /* the pick and the "where is it drawn" diagnostic must BOTH go through it — a pick that used a
+     different offset would look for the aeroplane somewhere it is not (#R174) */
+  const uses = src.match(/_planeDrawAlt\(d\)/g) || [];
+  assert.ok(uses.length >= 2, `only ${uses.length} caller(s) of _planeDrawAlt — pick and screenPos must agree`);
+});
+
 /* ── 2. the sweep is wider, and still paced at the measured rate ─────────────────────────────── */
 test('R187 aircraft: a bigger budget, the same requests per second', () => {
   const src = read('js/data-layers.js');
@@ -166,6 +183,14 @@ test('R187 Cesium: the polar cap comes from a tiled ±90° source', () => {
   assert.match(src, /numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5/, 'the pyramid starts at GIBS L3 (10 × 5)');
   assert.match(src, /customTags:\{ gibsZ:\(prov,x,y,level\)=>level\+3 \}/, 'and the three skipped levels go back onto the path');
   assert.match(src, /maximumLevel:5/, 'L3 + 5 = GIBS L8, the deepest 500 m level');
+  /* ⚠ …and scoped to the two bands Mercator cannot reach, which is the layer's ONLY job. Given the
+     whole globe it fetches tiles wherever the camera is — including under a flight simulator, where
+     they are all hidden behind the app's own imagery. Measured: that cost failed
+     tests/r184-cesium-fs three times out of three on a GPU-less runner while main was green. */
+  assert.match(src, /const MERC_EDGE=85\.0511287798066;/, 'the Mercator edge is the boundary, named');
+  assert.match(src, /\[\[MERC_EDGE,90\],\[-90,-MERC_EDGE\]\]/, 'one layer per cap, not one over the world');
+  assert.ok(!/rectangle:rect,\s*\n\s*credit:'NASA EOSDIS GIBS/.test(src),
+    'the tiled polar source must not claim the whole globe');
   assert.match(src, /SingleTileImageryProvider/, 'the bundled picture stays as the offline floor');
   /* and both follow the basemap, so a bright blue cap no longer sits on the dark map */
   assert.match(src, /setWorldBase\(on\)\{/, 'the floor must be switchable');

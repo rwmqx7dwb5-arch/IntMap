@@ -142,6 +142,11 @@ test('R185 aircraft: the 3-D body carries its own outline and its altitude is it
     await new Promise(r => setTimeout(r, 900));
     const cb = document.getElementById('dl-planes');
     if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    /* (#R187) #R185's point was that the 3-D body is what the user SEES, so the flat glyph's rim and
+       halo were invisible work. 「航空機のマークは最初のデザインに戻して」 has since made the flat
+       glyph the default again — which does not retire the 3-D body or anything this test checks about
+       it, so the test turns it on rather than assuming it. */
+    window.IntMapPlanes3D.set(true);
   });
   const ok = await page.waitForFunction(() => {
     try { const s = window.IntMapPlanes3D && window.IntMapPlanes3D.state(); return !!(s && s.planes > 0); }
@@ -152,7 +157,7 @@ test('R185 aircraft: the 3-D body carries its own outline and its altitude is it
   const s = await page.evaluate(() => window.IntMapPlanes3D.state());
   console.log('R185 aircraft ·', s.aircraft, 'aircraft ·', s.features, 'features · detailed', s.detailed,
     '· lifted', s.lifted, '· maxAlt', s.maxAlt);
-  expect(s.on, 'the 3-D body is what the app shows by default — that is what had to get louder').toBe(true);
+  expect(s.on, 'the 3-D body is switched on for this test (#R187 made the flat glyph the default again)').toBe(true);
   expect(s.aircraft).toBeGreaterThan(0);
   /* ten parts per aircraft when detailed (two outline plates + eight solids), three when not */
   expect(s.features).toBeGreaterThanOrEqual(s.aircraft * (s.detailed ? 10 : 3));
