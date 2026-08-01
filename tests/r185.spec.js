@@ -15,7 +15,14 @@ const boot = async (page, engine) => {
 };
 
 test('R185 Cesium: a pan that does not change the tile cover rebuilds no layers', async ({ page }) => {
-  test.setTimeout(240_000);
+  /* (#R186) 240 s → 360 s. This is a WALL-CLOCK budget, not the thing under test: what is asserted is
+     that a pan which does not cross a tile boundary rebuilds no layers, and that answer is a count,
+     not a duration. Measured on three builds of #R186 (with the sky, without it, without the polar
+     imagery) the answer was identical every time — median 0 dirty layers per flush, max 14 — while
+     the wall clock swung from 45 s to 91 s purely with how much layer data happened to have loaded.
+     On a CI runner roughly three times slower than the dev machine, 240 s was marginal and it began
+     timing out; the measurement it protects is unchanged. */
+  test.setTimeout(360_000);
   await boot(page, 'cesium');
   await page.evaluate(async () => {
     document.getElementById('btn-view-sat').click(); await new Promise(r => setTimeout(r, 700));
