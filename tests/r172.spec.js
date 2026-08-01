@@ -240,6 +240,11 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
     return true;
   });
   expect(enabled, 'the aircraft layer has a checkbox to turn on').toBe(true);
+  /* (#R187) ASK FOR THE 3-D BODY. It is no longer the default — 「航空機のマークは最初のデザインに
+     戻して」 put the flat glyph back — but this test is about aircraft standing at their reported
+     altitude, which is the 3-D rendering, so it turns it on rather than relying on a default that
+     the instruction moved. The toggle and everything it draws are unchanged. */
+  await page.evaluate(() => window.IntMapPlanes3D.set(true));
   await page.waitForFunction(() => { try { return window.IntMapPlanes3D.state().features > 0; } catch (_) { return false; } }, null, { timeout: 30000 });
   await page.waitForTimeout(800);
 

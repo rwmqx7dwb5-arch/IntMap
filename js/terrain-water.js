@@ -54,7 +54,7 @@ window.IntMapModules.terrainWater=function(HOST){
     const latOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
 
     const IMG_TERR='tw-terr-src', LYR_TERR='tw-terr', IMG_WATER='tw-water-src', LYR_WATER='tw-water',
-          VEC='tw-vec-src';
+          IMG_FLOW='tw-flow-src', LYR_FLOW='tw-flowimg', VEC='tw-vec-src';
 
     /* ---- the working grid --------------------------------------------------------------------- */
     let G=null;        /* {NX,NY,xW,yN,dx,dy,cellM,areaM2,z,base:Float32Array} */
@@ -88,12 +88,23 @@ window.IntMapModules.terrainWater=function(HOST){
          grid there (see onClick) instead of doing nothing. */
       if(!GE().layers.has('tw-area')) GE().layers.add({id:'tw-area',type:'line',source:VEC,filter:['==',['get','kind'],'area'],
         paint:{'line-color':'#7fd4ff','line-width':1.4,'line-opacity':0.5,'line-dasharray':[4,3]}});
-      /* (#R186) the traced watercourse — a dark casing under a bright core, the way every other
-         line feature in this app draws a route, so it reads over terrain and over satellite alike */
-      if(!GE().layers.has('tw-flow-case')) GE().layers.add({id:'tw-flow-case',type:'line',source:VEC,filter:['==',['get','kind'],'flow'],
-        layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#04222f','line-width':6,'line-opacity':0.55,'line-blur':1}});
-      if(!GE().layers.has('tw-flow')) GE().layers.add({id:'tw-flow',type:'line',source:VEC,filter:['==',['get','kind'],'flow'],
-        layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#3ec8ff','line-width':2.6,'line-opacity':0.98}});
+      /* ══ (#R187) THE WATER GOES THERE — IT IS NOT A LINE POINTING AT WHERE THE WATER WOULD GO ═════
+         「（追記：一本の補助線はいらない。余計な機能を追加するな。）」
+
+         #R186 computed the right thing and drew the wrong object. Where the water goes was traced on
+         the real DEM, window by window, all the way to the sea or to the basin it cannot leave — and
+         then rendered as a 2.6-px cyan polyline: a guide line laid over the map, which is what the
+         addendum rejects. The instruction it was answering asks for the opposite: 「水は流れなくなる
+         地点または海に到達した地点まで…描画すること」— the WATER, drawn that far.
+
+         So the two line layers are gone and the traced course is rasterised into the same kind of
+         image overlay the standing water already uses (see flowImage), in the same palette, at a
+         width set by the DEM sampling the trace was computed at rather than by a pixel count. It
+         reads as a watercourse at every zoom because it is drawn in ground units — zoom in and it
+         stays the width of the channel the elevation data can resolve, instead of staying 2.6 px.
+
+         Nothing new is computed and no feature is added: the same traceDownstream() result is simply
+         drawn as what it is. */
       if(!GE().layers.has('tw-lake')) GE().layers.add({id:'tw-lake',type:'circle',source:VEC,filter:['==',['get','kind'],'lake'],
         paint:{'circle-radius':4.5,'circle-color':'#7fd4ff','circle-stroke-color':'#04283a','circle-stroke-width':1.6,'circle-opacity':0.9}});
       if(!GE().layers.has('tw-end')) GE().layers.add({id:'tw-end',type:'symbol',source:VEC,filter:['==',['get','kind'],'end'],
@@ -109,7 +120,7 @@ window.IntMapModules.terrainWater=function(HOST){
           GE().layers.add({id:lyrId,type:'raster',source:srcId,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},
             (before&&GE().layers.has(before))?before:undefined); }
       }catch(_){} }
-    function wipe(){ [[LYR_WATER,IMG_WATER],[LYR_TERR,IMG_TERR]].forEach(([l,s])=>{
+    function wipe(){ [[LYR_WATER,IMG_WATER],[LYR_TERR,IMG_TERR],[LYR_FLOW,IMG_FLOW]].forEach(([l,s])=>{
         try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} try{ if(GE().layers.hasSource(s)) GE().layers.removeSource(s); }catch(_){} });
       setVec([]); }
 
@@ -439,6 +450,7 @@ window.IntMapModules.terrainWater=function(HOST){
         return (i>=0&&j>=0&&i<n&&j<n)?(j*n+i):-1; };
       const ll=(k)=>[clng+((k%n)-(n-1)/2)*dLng, clat+(((k/n)|0)-(n-1)/2)*dLat];
       return { n, N, surf:surfW, filled:filledW, parent:parentW, at, ll,
+               spacingM,                                  /* (#R187) the width flowImage() draws the course at */
                cellAreaM2:spacingM*spacingM };
     }
     /* ⚠ (#R186) ONE PIT, ANSWERED — AND WHY IT CANNOT ASK "AM I IN A PIT?".
@@ -556,6 +568,7 @@ window.IntMapModules.terrainWater=function(HOST){
       let lng=lng0, lat=lat0;
       const path=[[lng,lat]], lakes=[];
       let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1;
+      let lastSpacingM=null;   /* (#R187) the window sampling — flowImage() draws the course this wide */
       const visited=new Set();
       let headX=0, headY=0;      /* the unit heading of the last window's travel, for the frame bias */
       const pixM=()=>CIRC*Math.max(0.05,Math.cos(lat*D))/(Math.pow(2,z)*256);
@@ -570,7 +583,7 @@ window.IntMapModules.terrainWater=function(HOST){
             rounds++; await warmBlock(lng,lat,z); warmC=[lng,lat];
             if(seq!==traceSeq){ end='superseded'; break; }
           }
-          const spacing=pixM()*1.5;
+          const spacing=pixM()*1.5; lastSpacingM=spacing;
           /* ⚠ THE WINDOW LOOKS FORWARD. Centred exactly on where the last one left off, a window
              contains as much of the ground already travelled as of the ground ahead — and a
              window-local minimax escape has no idea which is which, so it can perfectly well leave
@@ -662,10 +675,71 @@ window.IntMapModules.terrainWater=function(HOST){
       } finally { if(seq===traceSeq) tracing=false; }
       if(seq!==traceSeq) return trace;
       trace={ path, lakes, end, endInfo, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
+              stepM:lastSpacingM,                         /* (#R187) the DEM sampling the course was traced at */
               from:[lng0,lat0], to:[lng,lat], at:Date.now() };
       draw();
       report();
       return trace;
+    }
+
+    /* ── (#R187) the traced course, rasterised as water ──────────────────────────────────────────
+       Drawn into its own image overlay because the course leaves the working grid almost immediately
+       — that is the whole point of tracing on the raw DEM — so it cannot share the grid's canvas.
+
+       WIDTH IS IN GROUND METRES, NOT PIXELS. The trace steps at the DEM's own sampling (`trace.stepM`,
+       ~92 m at the zoom it ran at), and that is the finest channel the elevation data can resolve, so
+       it is the honest width to draw: anything narrower claims precision the data does not have, and
+       anything fixed in pixels stops being a river the moment the user zooms. A floor of 3 canvas
+       pixels keeps a 600-km course from vanishing when the whole of it is on screen.
+
+       Palette and alpha are the shallow end of the standing-water ramp in draw(), so the course and
+       the pooled water read as one body of water rather than as two features. */
+    function flowImage(){
+      const clear=()=>{ try{ if(GE().layers.has(LYR_FLOW)) GE().layers.remove(LYR_FLOW); }catch(_){}
+                        try{ if(GE().layers.hasSource(IMG_FLOW)) GE().layers.removeSource(IMG_FLOW); }catch(_){} };
+      const path=trace&&trace.path;
+      if(!path||path.length<2){ clear(); return; }
+      /* the course's own extent, in mercator, with a margin for the stroke */
+      let x0=1,x1=0,y0=1,y1=0;
+      for(const p of path){ const x=mX(p[0]), y=mY(p[1]);
+        if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+      const stepM=(trace.stepM&&isFinite(trace.stepM))?trace.stepM:92;
+      const midLat=latOf((y0+y1)/2);
+      const mPerMercY=CIRC*Math.cos(midLat*D);            /* metres per unit of mercator y at this latitude */
+      const padY=Math.max(2.5*stepM/mPerMercY,(y1-y0)*0.02+1e-6);
+      x0-=padY; x1+=padY; y0-=padY; y1+=padY;
+      const spanX=Math.max(1e-9,x1-x0), spanY=Math.max(1e-9,y1-y0);
+      /* A course that crosses ±180° comes out of mX() as a bbox spanning the whole world, and the
+         overlay would be drawn across the wrong half of it. Draw nothing rather than something
+         wrong — the panel still reports where the water went. */
+      if(spanX>0.5){ clear(); return; }
+      /* one canvas, long side 1024 — enough that a 600 km course keeps its shape, cheap to encode */
+      const LONG=1024;
+      const W=Math.max(8,Math.round(spanX>=spanY?LONG:LONG*spanX/spanY));
+      const H=Math.max(8,Math.round(spanY>=spanX?LONG:LONG*spanY/spanX));
+      const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+      const g=cv.getContext('2d');
+      const pxPerMercY=H/spanY;
+      const widthPx=Math.max(3,(stepM/mPerMercY)*pxPerMercY);
+      g.lineCap='round'; g.lineJoin='round';
+      g.beginPath();
+      for(let i=0;i<path.length;i++){
+        const X=(mX(path[i][0])-x0)/spanX*W, Y=(mY(path[i][1])-y0)/spanY*H;
+        if(i) g.lineTo(X,Y); else g.moveTo(X,Y);
+      }
+      g.strokeStyle='rgba(96,196,255,0.86)'; g.lineWidth=widthPx; g.stroke();
+      /* the standing water the course ends in / passes through, at its measured area */
+      const disc=(at,areaKm2)=>{ if(!at) return;
+        const X=(mX(at[0])-x0)/spanX*W, Y=(mY(at[1])-y0)/spanY*H;
+        const rM=Math.sqrt(Math.max(0.02,areaKm2||0.05)*1e6/Math.PI);
+        const r=Math.max(widthPx*0.9,(rM/mPerMercY)*pxPerMercY);
+        g.fillStyle='rgba(64,170,255,0.80)'; g.beginPath(); g.arc(X,Y,r,0,6.283185307); g.fill(); };
+      (trace.lakes||[]).forEach(k=>disc(k.at,k.areaKm2));
+      if(trace.end==='lake'&&trace.endInfo) disc(path[path.length-1],trace.endInfo.areaKm2);
+      const coords=[[lngOf(x0),latOf(y0)],[lngOf(x1),latOf(y0)],[lngOf(x1),latOf(y1)],[lngOf(x0),latOf(y1)]];
+      /* under the grid's own water, so where both exist the solved depths win */
+      paintImg(IMG_FLOW,LYR_FLOW,cv.toDataURL('image/png'),coords,
+               GE().layers.has(LYR_WATER)?LYR_WATER:undefined);
     }
 
     /* ---- drawing -------------------------------------------------------------------------------- */
@@ -701,15 +775,18 @@ window.IntMapModules.terrainWater=function(HOST){
           px[o]=Math.round(80+40*s); px[o+1]=Math.round(220-30*s); px[o+2]=255; px[o+3]=Math.round(70+150*s); } }
       ct.putImageData(im,0,0);
       paintImg(IMG_WATER,LYR_WATER,cv.toDataURL('image/png'),coords);
+      /* (#R187) 2b — and the traced course beyond the grid, as water rather than as a line */
+      try{ flowImage(); }catch(_){}
 
       /* 3 — levees, the line being drawn, water sources, and an arrow at every overtopping spill */
       const feats=[];
       /* (#R186) the working rectangle, so the user can see where an edit will land */
       feats.push({type:'Feature',geometry:{type:'LineString',coordinates:[
         [G.bbox[0],G.bbox[1]],[G.bbox[2],G.bbox[1]],[G.bbox[2],G.bbox[3]],[G.bbox[0],G.bbox[3]],[G.bbox[0],G.bbox[1]]]},properties:{kind:'area'}});
-      /* (#R186) …and the traced watercourse, its lakes and where it ends */
+      /* (#R187) the traced watercourse is WATER now (flowImage above); what stays as a marker is the
+         standing water it passes through and the label saying how it ended, which is information the
+         picture cannot carry */
       if(trace&&trace.path&&trace.path.length>1){
-        feats.push({type:'Feature',geometry:{type:'LineString',coordinates:trace.path},properties:{kind:'flow'}});
         trace.lakes.forEach(k=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:k.at},properties:{kind:'lake'}}));
         const lastPt=trace.path[trace.path.length-1];
         feats.push({type:'Feature',geometry:{type:'Point',coordinates:lastPt},properties:{kind:'end',label:traceEndLabel()}});

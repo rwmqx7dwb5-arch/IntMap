@@ -1245,8 +1245,12 @@ function _m(){ return window.__imap||null; }
         const cl=Math.cos(la), sl=Math.sin(la), cp=Math.cos(ph), sp=Math.sin(ph);
         const polar=Math.acos(Math.max(-1,Math.min(1,-cl*cp)))/D;
         const azim=Math.atan2(sl*cp,-sp)/D;
+        /* (#R187) intensity 0.5 → 0.3. The same light drives the atmosphere's sun AND the shading of
+           every fill-extrusion, and 「日光当たってる側が、ちょっと明るくしすぎ」 is about both: the lit
+           limb and the buildings under it were being lit to the same excess. The DIRECTION — the part
+           that has to be true — is unchanged. */
         m.setLight({ anchor:'map', position:[1.5,azim,polar],
-                     color:o.color||'#ffffff', intensity:(o.intensity==null?0.5:o.intensity) });
+                     color:o.color||'#ffffff', intensity:(o.intensity==null?0.3:o.intensity) });
         return true;
       }catch(_){ return false; } },
     setSky(s){ const m=_m(); try{ if(m&&m.setSky) m.setSky(s); }catch(_){} },
@@ -1463,6 +1467,10 @@ function _m(){ return window.__imap||null; }
     scene:{ getStyle:()=>A().getStyle(), setLight:l=>A().setLight(l),
       /* (#R186) "the Sun is overhead at this point" — see the adapter for why it is stated that way */
       setSunDirection:o=>A().setSunDirection?A().setSunDirection(o):false,
+      /* (#R187) the whole-globe floor under the satellite view. MapLibre draws it as a layer
+         (js/world-base.js); Cesium draws it as the polar-cap imagery a Mercator source cannot
+         reach. Absent on an engine that has neither, and the caller treats that as "nothing to do". */
+      setWorldBase:on=>A().setWorldBase?A().setWorldBase(on):false,
       setSky:s=>A().setSky(s), getSky:()=>A().getSky(),
       setTerrain:t=>A().setTerrain(t), getTerrain:()=>A().getTerrain(),
       addImage:(id,img,o)=>A().addImage(id,img,o), hasImage:id=>A().hasImage(id), removeImage:id=>A().removeImage(id),

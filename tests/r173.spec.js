@@ -207,6 +207,9 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.72, 35.68], zoom: 9.5, pitch: 60, bearing: 0 }));
   await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+  /* (#R187) a LIFTED aircraft is the 3-D rendering, which is no longer the default (the first flat
+     glyph is, per 「最初のデザインに戻して」) — so this test asks for it by name. */
+  await page.evaluate(() => window.IntMapPlanes3D.set(true));
   await page.waitForTimeout(3500);
   for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
 

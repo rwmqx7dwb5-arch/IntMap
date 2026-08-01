@@ -168,6 +168,9 @@ test('a double-click zoom keeps the aircraft track on screen', async ({ page }) 
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.71, 35.67], zoom: 11, pitch: 45, bearing: 0 }));
   await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+  /* (#R187) this asserts on `lyr-plane-track-3d`, i.e. the 3-D track — no longer the default since
+     the first flat glyph was restored, so it is asked for by name. */
+  await page.evaluate(() => window.IntMapPlanes3D.set(true));
   await page.waitForTimeout(3500);
   for (let i = 0; i < 4; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
   await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));

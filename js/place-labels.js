@@ -125,16 +125,54 @@ window.IntMapModules.placeLabels=function(HOST){
              what a per-tile rank window wants, so it is used deliberately here and nowhere else.
          A dot marks the point itself: the text is offset off the feature, and without the dot the
          name would float with nothing under it. */
+      /* ══ (#R187) WHAT KIND OF PLACE IT IS DECIDES WHETHER IT IS DRAWN ═══════════════════════════
+         「（追記：店以外もいろいろ地点を追加して。）」
+
+         #R186 gated this layer on OpenMapTiles' `rank`, on the belief that rank is a per-tile
+         IMPORTANCE ordering. MEASURED over the tiles for central Tokyo at z16, it is not: the rank
+         histogram is flat — 72, 72, 71, 71, 71 … — i.e. rank is a sequence number, not a score. So the
+         window `rank ≤ 40` was an arbitrary slice, and of the 12,134 POIs in view it admitted 2,769,
+         of which the two largest groups were **shop (723) and bus stops (372)** while restaurants fell
+         from 1,903 to 41. What survived collision on screen was 74 labels: 24 bus stops and 14 shops,
+         with one bank, one bakery, one school. Convenience stores and bus stops — which is the report.
+
+         The window is therefore on the one field that DOES say what a place is: `class`. Four tiers,
+         opened by zoom, so a hospital, a university, a station, a museum or a park appears as soon as
+         the layer does, ordinary shops and restaurants join a zoom later, and street furniture (bus
+         stops, entrances, benches, bollards) comes last instead of first. Nothing is removed — every
+         class the tiles carry is still reachable, just no longer ahead of the landmarks.
+
+         The same expression is the `symbol-sort-key`, so the collision test resolves a crowded corner
+         the same way: the hospital keeps its label and the vending machine loses it. `rank` stays as
+         the tie-break WITHIN a tier, which is the one job the flat sequence is fit for. */
+      const POI_TIER=['match',['get','class'],
+        /* 1 — the things a person navigates by */
+        ['hospital','university','college','school','railway','aerodrome','airport','bus_station','ferry_terminal','harbor',
+         'museum','attraction','monument','castle','memorial','place_of_worship','town_hall','police','fire_station',
+         'library','theatre','stadium','sports_centre','park','zoo','cemetery','embassy','prison'],1,
+        /* 2 — everyday destinations */
+        ['bank','post','pharmacy','doctors','dentist','lodging','cinema','art_gallery','garden','playground','marketplace',
+         'grocery','supermarket','fuel','golf','swimming_pool','picnic_site','veterinary','childcare','community_centre',
+         'bicycle_rental','car_rental','information','recycling','shelter'],2,
+        /* 3 — shops, food and drink, offices */
+        ['shop','clothing_store','bakery','butcher','alcohol_shop','music','bicycle','car','hairdresser','laundry',
+         'ice_cream','restaurant','cafe','fast_food','bar','beer','office','atm','parking','toilets','pitch',
+         'basketball','running','yoga'],3,
+        /* 4 — street furniture: real, useful up close, and never worth a landmark's place */
+        4];
+      const POI_GATE=['<=',POI_TIER,['step',['zoom'],1,15,2,16,3,17,4]];
+      const POI_FILTER=['all',['has','name'],POI_GATE];
       if(!GE().layers.has('ofm-poi-dot')) GE().layers.add({id:'ofm-poi-dot',type:'circle',source:'ofm','source-layer':'poi',minzoom:14,
-        filter:['all',['has','name'],['<=',['coalesce',['get','rank'],1],['step',['zoom'],8,15,16,16,40,17,1e6]]],
+        filter:POI_FILTER,
         layout:{visibility:'none'},
         paint:{'circle-radius':['interpolate',['linear'],['zoom'],14,2.1,18,3.4],'circle-color':'#ffb454','circle-stroke-color':'rgba(0,0,0,0.55)','circle-stroke-width':0.9,'circle-opacity':0.95}});
       if(!GE().layers.has('ofm-poi')) GE().layers.add({id:'ofm-poi',type:'symbol',source:'ofm','source-layer':'poi',minzoom:14,
-        filter:['all',['has','name'],['<=',['coalesce',['get','rank'],1],['step',['zoom'],8,15,16,16,40,17,1e6]]],
+        filter:POI_FILTER,
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,
           'text-size':['interpolate',['linear'],['zoom'],14,10.5,16,11.5,18,13],
           'text-max-width':9,'text-optional':true,'text-padding':3,
-          'symbol-sort-key':['coalesce',['get','rank'],1],
+          /* tier first, the tile's own sequence as the tie-break inside it */
+          'symbol-sort-key':['+',['*',POI_TIER,1000],['coalesce',['get','rank'],1]],
           'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.55,'text-justify':'auto'},
         paint:{'text-color':'#ffd9a0','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.25}});
       _placeLabelsAdded=true;

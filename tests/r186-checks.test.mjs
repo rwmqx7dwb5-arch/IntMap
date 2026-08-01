@@ -21,12 +21,15 @@ test('R186 stars: the bundled catalogue is a real all-sky bright-star list', () 
   const n = b.readUInt32LE(8);
   assert.equal(b.length, 12 + n * 6, 'the record count and the file length must agree');
   /* The Bright Star Catalogue holds ~9,100 stars to V≈6.5 — the naked-eye sky. Far fewer than that
-     would be a truncated download rather than a sky. */
+     would be a truncated download rather than a sky.
+     (#R187) The shipped catalogue is HIPPARCOS now (~98,900 to V 9.5): the naked-eye sky measured
+     0.16 % lit pixels behind the globe, i.e. black, and no brightness curve fixes a star COUNT. BSC
+     is still the build's fallback, so the floor stays where it was and the source may be either. */
   assert.ok(n >= 5000, `only ${n} stars — that is not an all-sky catalogue`);
   const manifest = JSON.parse(read('data/stars.json'));
   assert.equal(manifest.count, n);
   assert.equal(manifest.epoch, 'J2000.0');
-  assert.match(manifest.source, /Bright Star Catalogue/i);
+  assert.match(manifest.source, /Hipparcos|Bright Star Catalogue/i);
 });
 
 test('R186 stars: named stars are where the catalogue says they are', () => {
@@ -41,14 +44,19 @@ test('R186 stars: named stars are where the catalogue says they are', () => {
     v: b.readUInt8(16 + i * 6) / 20 - 2,
     bv: b.readInt8(17 + i * 6) / 50,
   });
+  /* ⚠ (#R187) B−V IS A MEASUREMENT, AND TWO CATALOGUES CAN MEASURE IT DIFFERENTLY. Betelgeuse is a
+     semiregular variable: the Bright Star Catalogue lists B−V 1.85, Hipparcos measured 1.50, and
+     both are real values for the same star. The build ships whichever source answered, so the
+     acceptable values are listed rather than one being declared correct. Position and V magnitude
+     stay strict — those are what prove the byte layout and the quantisation are intact. */
   const known = [
-    ['Sirius', 101.287, -16.716, -1.46, 0.00],
-    ['Vega', 279.234, 38.784, 0.03, 0.00],
-    ['Arcturus', 213.915, 19.182, -0.05, 1.23],
-    ['Betelgeuse', 88.793, 7.407, 0.45, 1.85],
-    ['Polaris', 37.954, 89.264, 1.97, 0.60],
+    ['Sirius', 101.287, -16.716, -1.46, [0.00]],
+    ['Vega', 279.234, 38.784, 0.03, [0.00]],
+    ['Arcturus', 213.915, 19.182, -0.05, [1.23]],
+    ['Betelgeuse', 88.793, 7.407, 0.45, [1.85, 1.50]],
+    ['Polaris', 37.954, 89.264, 1.97, [0.60]],
   ];
-  for (const [name, ra, dec, v, bv] of known) {
+  for (const [name, ra, dec, v, bvs] of known) {
     let best = null, bd = Infinity;
     for (let i = 0; i < n; i++) {
       const s = at(i);
@@ -58,7 +66,8 @@ test('R186 stars: named stars are where the catalogue says they are', () => {
     /* 30 arcsec is far coarser than the 20 arcsec quantisation and far finer than any mix-up */
     assert.ok(bd * 3600 < 30, `${name}: nearest catalogue star is ${(bd * 3600).toFixed(1)}" away`);
     assert.ok(Math.abs(best.v - v) < 0.12, `${name}: V ${best.v.toFixed(2)} vs ${v}`);
-    assert.ok(Math.abs(best.bv - bv) < 0.06, `${name}: B-V ${best.bv.toFixed(2)} vs ${bv}`);
+    assert.ok(bvs.some((bv) => Math.abs(best.bv - bv) < 0.06),
+      `${name}: B-V ${best.bv.toFixed(2)} matches none of ${bvs.join(' / ')}`);
   }
 });
 
@@ -127,8 +136,9 @@ test('R186 aircraft: the sweep is paced to what the feed actually tolerates', ()
      of quiet. These three constants ARE that measurement. */
   assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the 1.2 s spacing is the measured sustainable pace');
   assert.match(src, /PLANE_CIRCLE_NM\s*=\s*250\b/, '250 nm is the API maximum (300 answers 403)');
-  assert.match(src, /PLANES_MIN_ZOOM\s*=\s*3\b/, 'the tiled sweep lowered the floor from z5 to z3');
-  assert.ok(/PLANE_MAX_AIRCRAFT\s*=\s*20000\b/.test(src), 'the count cap is no longer one circle wide');
+  /* (#R187) the floor and the cap moved again with the wider budget — see tests/r187-checks */
+  assert.match(src, /PLANES_MIN_ZOOM\s*=\s*2\b/, 'the tiled sweep lowered the floor from z5 to z3 to z2');
+  assert.ok(/PLANE_MAX_AIRCRAFT\s*=\s*50000\b/.test(src), 'the count cap is no longer one circle wide');
   /* concurrency must be gone — a parallel sweep is what tripped the block */
   assert.ok(!/PLANE_CONCURRENCY/.test(src), 'the sweep must be sequential');
 });

@@ -44,11 +44,34 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 const OUT_DIR = path.join(process.cwd(), 'data');
+/* ══ (#R187) DEEPER, BECAUSE THE NAKED-EYE SKY IS NOT ENOUGH SKY ═══════════════════════════════════
+   「現在、ダークモードでは地球の背景は真っ黒だが…」 — reported again after #R186 shipped the Bright
+   Star Catalogue. Measured on the built site: of the space canvas behind the globe, 0.16% of pixels
+   carried any light at all and the mean channel value was 0.396 out of 255. Numerically black, which
+   is what the report says.
+
+   The renderer was only half the reason. The other half is the catalogue: BSC5 is the naked-eye sky
+   (V ≲ 6.5, 9,096 stars over the whole sphere), and 331 of them fell inside the view. No brightness
+   curve turns 331 dots into a sky — it turns them into 331 brighter dots.
+
+   HIPPARCOS (ESA 1997, CDS I/239) is the same kind of source — an authoritative astrometric
+   catalogue with measured V and B−V for every entry — and it holds 118,218 stars, thirteen times as
+   many. That matters for more than density: the Milky Way is not a painted band, it is where the
+   stars are, and a catalogue this deep DRAWS it because the stars really are concentrated there.
+   Nothing here is synthesised; going deeper is the difference.
+
+   BSC5 stays as the fallback, so a build that cannot reach CDS still ships the sky it shipped before
+   rather than no sky at all. */
+const MAG_LIMIT = Number(process.env.STAR_MAG_LIMIT || 9.5);
 const SOURCES = [
-  'http://tdc-www.harvard.edu/catalogs/bsc5.dat.gz',
-  'https://cdsarc.cds.unistra.fr/ftp/V/50/catalog.gz',
+  { url: 'https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat', parse: 'hip',
+    name: 'Hipparcos Catalogue (ESA 1997, CDS I/239)' },
+  { url: 'http://tdc-www.harvard.edu/catalogs/bsc5.dat.gz', parse: 'bsc',
+    name: 'Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)' },
+  { url: 'https://cdsarc.cds.unistra.fr/ftp/V/50/catalog.gz', parse: 'bsc',
+    name: 'Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)' },
 ];
-const TIMEOUT_MS = Number(process.env.STAR_TIMEOUT_MS || 90000);
+const TIMEOUT_MS = Number(process.env.STAR_TIMEOUT_MS || 300000);
 
 const get = async (url) => {
   const ac = new AbortController();
@@ -83,6 +106,33 @@ function parseBSC(text) {
   return out;
 }
 
+/* The Hipparcos main record is pipe-separated fixed-width ASCII. The field numbers below are the
+   catalogue's own (ReadMe I/239, "Byte-by-byte Description of file: hip_main.dat"), counted as
+   `line.split('|')` indices:
+       5   Vmag        · Johnson V magnitude — the brightness the renderer draws with
+       8   RAdeg       · right ascension, degrees, ICRS ≈ J2000 (the epoch the renderer precesses FROM)
+       9   DEdeg       · declination, degrees
+       37  B-V         · the measured colour index the renderer turns into a temperature and an RGB
+   Records with no astrometric solution leave RAdeg/DEdeg blank; they are dropped, not guessed at,
+   exactly as the BSC parser drops HR slots with no position. B−V is missing for a small number of
+   entries — those keep the same 0.6 default the BSC path uses (an ordinary yellow-white star), which
+   is a stated fallback rather than an invented measurement. */
+function parseHIP(text) {
+  const out = [];
+  for (const line of text.split('\n')) {
+    if (line.length < 80 || line[0] !== 'H') continue;
+    const f = line.split('|');
+    if (f.length < 38) continue;
+    const ra = parseFloat(f[8]), dec = parseFloat(f[9]), v = parseFloat(f[5]);
+    if (!Number.isFinite(ra) || !Number.isFinite(dec) || !Number.isFinite(v)) continue;
+    if (v > MAG_LIMIT) continue;
+    const bv = parseFloat(f[37]);
+    out.push({ ra: ((ra % 360) + 360) % 360, dec: Math.max(-90, Math.min(90, dec)), v,
+               bv: Number.isFinite(bv) ? bv : 0.6 });
+  }
+  return out;
+}
+
 function encode(stars) {
   const buf = Buffer.alloc(12 + stars.length * 6);
   buf.write('IMSTAR1\0', 0, 'latin1');
@@ -99,13 +149,13 @@ function encode(stars) {
 
 const main = async () => {
   let raw = null, used = null, err = [];
-  for (const url of SOURCES) {
-    try { raw = await get(url); used = url; break; }
-    catch (e) { err.push(url + ': ' + (e && e.message || e)); }
+  for (const src of SOURCES) {
+    try { raw = await get(src.url); used = src; break; }
+    catch (e) { err.push(src.url + ': ' + (e && e.message || e)); }
   }
   if (!raw) { console.error('[stars] every source failed:\n  ' + err.join('\n  ')); process.exit(1); }
   if (raw[0] === 0x1f && raw[1] === 0x8b) raw = zlib.gunzipSync(raw);
-  const stars = parseBSC(raw.toString('latin1'));
+  const stars = (used.parse === 'hip' ? parseHIP : parseBSC)(raw.toString('latin1'));
   if (stars.length < 5000) { console.error('[stars] only ' + stars.length + ' parsed — refusing to ship a partial sky'); process.exit(1); }
   /* Brightest first, so a renderer that ever wants to draw only the top N gets the top N without
      sorting 9,000 entries on the main thread. */
@@ -115,13 +165,13 @@ const main = async () => {
   fs.writeFileSync(path.join(OUT_DIR, 'stars.bin'), bin);
   const manifest = {
     format: 'IMSTAR1', count: stars.length, bytes: bin.length,
-    source: 'Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren 1991)',
-    url: used, built: new Date().toISOString(),
+    source: used.name,
+    url: used.url, built: new Date().toISOString(),
     magnitude: { min: +stars[0].v.toFixed(2), max: +stars[stars.length - 1].v.toFixed(2) },
     epoch: 'J2000.0', fields: ['ra_deg', 'dec_deg', 'vmag', 'b_v'],
   };
   fs.writeFileSync(path.join(OUT_DIR, 'stars.json'), JSON.stringify(manifest, null, 2) + '\n');
-  console.log('[stars] ' + stars.length + ' stars, ' + bin.length + ' bytes, V ' + manifest.magnitude.min + '…' + manifest.magnitude.max + ' from ' + used);
+  console.log('[stars] ' + stars.length + ' stars, ' + bin.length + ' bytes, V ' + manifest.magnitude.min + '…' + manifest.magnitude.max + ' from ' + used.url);
 };
 
 main().catch((e) => { console.error('[stars] ' + (e && e.stack || e)); process.exit(1); });
