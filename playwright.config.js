@@ -55,7 +55,11 @@ export default defineConfig({
        that ARE about them opt out — see tests/r186.spec.js, which is where that default is pinned. */
     storageState: {
       cookies: [],
-      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"layers":[],"tabInit":true}' }] }],
+      /* ⚠ `layers` ONLY. An earlier version also seeded `tabInit:true`, which is the flag that says
+         "this profile has already been offered the default tab" — and that broke tests/r170's «fresh
+         desktop profile: Countries open», because a fresh profile is exactly what it is about. The
+         seed must say the least it can: which layers, and nothing else about the session. */
+      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"layers":[]}' }] }],
     },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',
