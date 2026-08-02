@@ -41,6 +41,13 @@ test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable 
   assert.match(dl, /海底ケーブルレイヤーを追加できませんでした/, '…and says so');
 });
 
+test('R189 defaults: buildLegend survives a missing legend element', () => {
+  const src = read('js/data-layers.js');
+  assert.match(src, /function buildLegend\(\)\{\s*\n\s*const lg=document\.getElementById\('koppen-legend'\);[\s\S]{0,400}if\(!lg\) return;/,
+    'the default-on dispatcher fires synthetic changes up to 2.6 s after boot — with the legend ' +
+    'element absent this wrote innerHTML on null and killed the change handler uncaught');
+});
+
 /* ── 3 · Cesium poles: a live URL is not imagery when the network says no ────────────────────── */
 test('R189 cesium: GIBS failure arms the bundled-floor fallback in map view', () => {
   const src = read('js/cesium-engine.js');

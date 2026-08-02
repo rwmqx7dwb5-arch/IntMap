@@ -1775,6 +1775,10 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
+      /* (#R189) the default-on dispatcher fires synthetic changes up to 2.6 s after boot — if the
+         legend element is not in the DOM at that moment (measured: tests/r151 removes it between
+         ticks), this wrote innerHTML on null and the whole change handler died uncaught */
+      if(!lg) return;
       const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${HOST.lang==='jp'?'選択解除':HOST.lang==='de'?'Auswahl aufheben':HOST.lang==='ru'?'Снять выделение':HOST.lang==='es'?'Quitar selección':'Clear selection'}</button>`:'';
       const dragTitle=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move';
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
