@@ -57,7 +57,7 @@ test('the cockpit camera is the eye→target one, which can look up (#R173 solve
   const src = stripComments(R('js/flight-sim.js'));
   assert.doesNotMatch(src, /_cockpitCam|_AXIS_MARGIN/, 'the clamped-axis solve is gone');
   assert.match(src, /const _D_LOOK=1800/, 'the look-ahead is a fixed distance again');
-  assert.match(src, /camera\.fromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract */,
+  assert.match(src, /camera\.fromTo\(\{lng:cEyeLng,lat:cEyeLat\},cEyeAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract; (#R189) via the intro-blend aliases whose steady state is eLng/eLat/camAlt */,
     'centre and zoom come from the eye→target pair, stable at every attitude');
   assert.match(src, /setMaxPitch\(179\)/, 'and the renderer is allowed past the vertical');
 });

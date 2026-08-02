@@ -1,0 +1,171 @@
+/* ============================================================================
+ *  R189 — eight reports: the aircraft glyph's storage generation, both default
+ *  layers healing poisoned sessions, the Cesium polar offline fallback, the
+ *  water tracer's TDZ crash + talweg + resolution ladder + discharge, the
+ *  flight sim's framing seed, max-zoom @2x, and the seismic overhaul (real-time
+ *  playback, JMA scale, terrain-aware painted intensity, free-drawn rupture,
+ *  polar-safe rings).
+ *  Source-level checks: each one pins the exact code that fixed a report, so a
+ *  refactor that silently undoes it fails here with the reason attached.
+ * ==========================================================================*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const root = new URL('..', import.meta.url);
+const read = (p) => readFileSync(new URL(p, root), 'utf8');
+
+/* ── 1 · aircraft: a '1' stored under the default-TRUE era is not a choice ───────────────────── */
+test('R189 aircraft: the planes3D storage key is generation-bumped', () => {
+  const src = read('js/data-layers.js');
+  assert.match(src, /const PLANES3D_KEY='intmap_planes3d2';/, 'a NEW key, so the old value cannot override');
+  assert.match(src, /localStorage\.removeItem\('intmap_planes3d'\)/, 'and the legacy key is removed');
+  assert.match(src, /localStorage\.setItem\(PLANES3D_KEY,planes3D\?'1':'0'\)/, 'the toggle writes the new key');
+  /* the glyph itself is untouched — byte-identical to the first commit (#R187) */
+  assert.match(src, /const _PLANE_ORIG=\[\[0,-19\]/, 'the original outline stays');
+});
+
+/* ── 2 · defaults: sessions written before #R188 are healed ONCE ─────────────────────────────── */
+test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable cache', () => {
+  const body = read('js/app-body.js');
+  assert.match(body, /defv:189/, 'the snapshot stamps its generation');
+  assert.match(body, /if\(!\(\+s\.defv>=189\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
+    'a pre-R188 session gets the default-on ids back once');
+  const sw = read('sw.js');
+  assert.match(sw, /!\/\^intmap-subcables-\/\.test\(k\)/,
+    'the SW activate purge spares the page-owned cable cache');
+  const dl = read('js/data-layers.js');
+  /* the build() give-up path is no longer silent */
+  assert.match(dl, /console\.warn\('addSubcables',e\); autoUncheck\('dl-subcables'\);/,
+    'a style that never accepts the layers unticks with imAutoOff…');
+  assert.match(dl, /海底ケーブルレイヤーを追加できませんでした/, '…and says so');
+});
+
+/* ── 3 · Cesium poles: a live URL is not imagery when the network says no ────────────────────── */
+test('R189 cesium: GIBS failure arms the bundled-floor fallback in map view', () => {
+  const src = read('js/cesium-engine.js');
+  assert.match(src, /this\._polarFallback=false;/, 'the fallback is armed only by an actual failure');
+  assert.match(src, /band\.errorEvent\.addEventListener\(\(\)=>\{ if\(!this\._polarFallback\)\{ this\._polarFallback=true; this\._polarTreatment\(\); \}/,
+    'a failed polar tile arms it');
+  assert.match(src, /L\.show=this\._wantWorldBase\|\|fb;/,
+    'the floor shows under the map basemap once armed (only the caps can show through)');
+  /* and the perf defaults that were never set */
+  assert.match(src, /this\._globe\.tileCacheSize=_mob\?512:1536;/, 'the tile cache is no longer the default 100');
+  assert.match(src, /if\(!_mob\) this\._globe\.preloadSiblings=true;/, 'desktop preloads pan neighbours');
+});
+
+/* ── 4 · water: the TDZ crash, the talweg, the ladder, the discharge, the honesty ────────────── */
+test('R189 water: collectPond is declared before the sink branch that calls it', () => {
+  const src = read('js/terrain-water.js');
+  const decl = src.indexOf('const collectPond=(seed,lev)=>{');
+  const sink = src.indexOf("end='sink'; endInfo={ depthM:need");
+  assert.ok(decl > 0 && sink > 0, 'both sites exist');
+  assert.ok(decl < sink,
+    'the collector must be declared BEFORE the terminal-basin branch uses it — #R188 wrote it after, ' +
+    'so every sink-ending trace died on a TDZ ReferenceError with no catch: the 「結果が出ない」 report');
+  /* …and an exception can no longer vanish: it becomes an ending */
+  assert.match(src, /\} catch\(err\)\{[\s\S]{0,400}end='error'; endInfo=\{ message:/,
+    'a trace exception is recorded and drawn, not silently rejected');
+  assert.match(src, /case 'error':/, 'and the panel can say it');
+});
+test('R189 water: the course follows the talweg, at a resolution ladder, with a settable discharge', () => {
+  const src = read('js/terrain-water.js');
+  assert.match(src, /function channelChain\(W,k0\)\{/, 'MFD accumulation over the window');
+  assert.match(src, /order\.sort\(\(a,b\)=>filled\[b\]-filled\[a\]\);/, 'processed down the FILLED surface');
+  assert.match(src, /const chain=channelChain\(W,k0\);/, 'and the walk uses it instead of the flood escape');
+  assert.match(src, /TRACE_Z_NEAR=\[\[10,13\],\[50,12\]\]/, 'z13 near the source, z12 to 50 km, z11 beyond');
+  assert.match(src, /const zWant=zFor\(distM\); if\(zWant!==z\)\{ z=zWant; warmC=null; \}/, 'stepped per window');
+  /* the discharge control (#R189 「水の水流は設定可能に」) */
+  assert.match(src, /let flowM3s=null; const CHEZY_K=40;/, 'a discharge state with a physical speed law');
+  assert.match(src, /class="tw-fq"/, 'and its input in the source-mode panel');
+  assert.match(src, /setFlow\(m3s\)\{/, 'and its API');
+  const atlas = read('js/atlas-console.js');
+  assert.ok(atlas.includes('"flowM3s"?:num'), 'and the SYS catalogue advertises it (#R115)');
+  /* honesty: a DEM outage is refused, not simulated */
+  assert.match(src, /if\(miss>NX\*NY\*0\.3\)\{/, 'a third of the rectangle missing refuses the build');
+  assert.match(src, /unchecked:!!v\.unchecked/, 'an unverifiable sea test is carried');
+  assert.match(src, /（未確認・データ欠損）/, '…and labelled');
+  assert.match(src, /セルは補間（DEM欠損）/, 'interpolated cells are counted in the panel');
+});
+test('R189 water/seismic: the panels are opaque', () => {
+  for (const f of ['js/terrain-water.js', 'js/seismic.js']) {
+    const src = read(f);
+    assert.match(src, /background:var\(--card-bg,#1c1c1e\)/, `${f} uses the opaque card colour`);
+    assert.ok(!/panel\.style\.cssText=[^\n]*var\(--popup-bg/.test(src),
+      `${f} no longer builds its panel on the translucent popup colour`);
+  }
+});
+
+/* ── 5 · flight sim: the framing is the third fact ───────────────────────────────────────────── */
+test('R189 flight sim: the seed carries the eye and the look distance, and the intro flies them in', () => {
+  const src = read('js/flight-sim.js');
+  assert.match(src, /o\.viewCam\.eye=\{ lng:eye\.lng, lat:eye\.lat, alt:eye\.alt \};/, 'the map eye is captured');
+  assert.match(src, /o\.viewCam\.dist=Math\.max\(200,Math\.hypot\(dx,dy,eye\.alt\)\);/, 'with its eye→centre distance');
+  assert.match(src, /eye:_se, dist:\(isFinite\(vc\.dist\)&&vc\.dist>0\)\?\+vc\.dist:null,/, 'stored on the seed');
+  assert.match(src, /let cEyeLng=eLng, cEyeLat=eLat, cEyeAlt=camAlt, _Darm=_D_LOOK;/,
+    'steady state = the #R158 camera exactly');
+  assert.match(src, /if\(_intro>0&&st\._camSeed&&st\._camSeed\.eye\)\{/, 'blended only while the seed lives');
+  assert.match(src, /if\(okCam&&st\._camPrev&&_intro<=0\)\{/,
+    'the one-frame-jump guard stands aside during the intro flight (the centre is MEANT to move fast)');
+});
+
+/* ── 6 · satellite: the deepest zoom is no longer the one half-resolution view ───────────────── */
+test('R189 satellite: the @2x stitch reaches the map maximum zoom', () => {
+  const src = read('js/app-body.js');
+  assert.match(src, /if\(!_satHiDPI\|\|z>=20\) return null;/,
+    'z19 — the max-zoom view — now stitches from real z20 children where Esri has them');
+});
+
+/* ── 7 · seismic: the overhaul ───────────────────────────────────────────────────────────────── */
+test('R189 seismic: real-time playback with a visible, settable rate', () => {
+  const src = read('js/seismic.js');
+  assert.match(src, /let speed=1; const SPEEDS=\[1,2,5,10,30,60,120,300\];/, '×1 default, a real choice list');
+  assert.match(src, /tSec=\(tSec\+\(now-last\)\/1000\*speed\)%MAXT;/, 'wall-clock seconds × rate — not 10 s per 90 ms');
+  assert.match(src, /class="sq-spd"/, 'the rate is on the panel');
+  assert.match(src, /setSpeed\(v\)\{/, 'and callable');
+});
+test('R189 seismic: JMA scale as a labelled conversion, MMI honesty intact', () => {
+  const src = read('js/seismic.js');
+  assert.match(src, /function jmaI\(pgv\)\{ return 2\.68\+1\.72\*Math\.log10\(Math\.max\(1e-6,pgv\)\); \}/,
+    'Fujimoto & Midorikawa 2005');
+  assert.match(src, /\{ min:6\.5, id:'7',  col:'#B40068' \}/, 'the JMA published colours, 震度7 included');
+  assert.match(src, /class="sq-scale"/, 'the scale is switchable on the panel');
+  /* the honesty strings r176 pinned still hold — MMI is still not shindo, and the JMA view says
+     what it is */
+  assert.ok(/NOT the JMA shindo scale/.test(src) && /気象庁震度階級ではありません/.test(src), 'MMI disclaimer kept');
+  assert.match(src, /計測震度換算（藤本・翠川 2005）/, 'the JMA view is declared a conversion');
+  const refs = read('js/reference-data.js');
+  assert.ok(refs.includes('Fujimoto & Midorikawa (2005)'), 'credited');
+  assert.ok(refs.includes('Wald & Allen (2007)'), 'and the Vs30 proxy too');
+});
+test('R189 seismic: the intensity is a terrain-aware painted field, not contour circles', () => {
+  const src = read('js/seismic.js');
+  assert.match(src, /async function buildField\(\)\{/, 'the field is built from the DEM');
+  assert.match(src, /VS30_BINS=\[\[1e-4,180\],\[2\.2e-3,240\],\[6\.3e-3,300\],\[0\.018,360\],\[0\.05,490\],\[0\.10,620\],\[0\.138,760\]\];/,
+    'Wald & Allen 2007 active-tectonic slope table');
+  assert.match(src, /const pgv=prof\.at\(rM\)\*\(amp\/ampRef\);/, 'one RVT profile, one multiply per cell');
+  assert.match(src, /else if\(e0<=0\)\{ sea\+\+; vs\[k\]=-1; continue; \}/, 'sea cells are not painted');
+  assert.match(src, /LYR_IMG='seis-mmi-fill'/, 'rendered as a raster fill');
+  assert.ok(!/id:'seis-mmi',/.test(src), 'the dashed contour layer is gone');
+  assert.ok(!/'seis-mmi-lbl'/.test(src), 'and its labels with it');
+  assert.match(src, /DEM取得不可のため一様地盤で表示/, 'a DEM outage is declared, not hidden');
+});
+test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-source fronts', () => {
+  const src = read('js/seismic.js');
+  assert.match(src, /const MU=RHO\*BETA\*BETA, VRUP_KMS=0\.75\*BETA\/1000;/, 'μ=ρβ², Vr=0.75β');
+  assert.match(src, /const M0=MU\*\(areaKm2\*1e6\)\*Math\.max\(0\.01,slipM\);/, 'M0 = μ·A·D̄');
+  assert.match(src, /mw:\(Math\.log10\(M0\)-9\.1\)\/1\.5/, 'Mw back through Hanks & Kanamori');
+  assert.match(src, /function faultDistKm\(lng,lat\)\{/, 'Rrup: zero inside, nearest edge outside');
+  assert.match(src, /function faultFrontLines\(radiusAtDelay\)\{/, 'fronts are the delayed-union envelope');
+  assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
+  const atlas = read('js/atlas-console.js');
+  assert.ok(atlas.includes('"scale"?:"mmi"|"jma"'), 'the SYS catalogue advertises the scale');
+  assert.ok(atlas.includes('"slip"?:m'), '…and the slip');
+});
+test('R189 seismic: rings go through the polar-safe helpers', () => {
+  const src = read('js/seismic.js');
+  assert.match(src, /HOST\.diskOutlineLines\(centre,a\*D\*RE,180\)/, 'circular fronts use the shared seam/pole machinery');
+  assert.match(src, /HOST\._splitLineToWindows\(ringPts\)/, 'and the finite-source envelope is seam-split the same way');
+  assert.match(src, /Math\.max\(-89\.99,Math\.min\(89\.99,la2\/D\)\)/, 'destAng clamps the asin pole case');
+  assert.match(src, /const h=Math\.sin\(dla\)\*Math\.sin\(dla\)/, 'gcDelta is the haversine now');
+});

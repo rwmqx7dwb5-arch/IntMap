@@ -66,6 +66,12 @@ window.IntMapModules.terrainWater=function(HOST){
     let panel=null, opened=false, busy=false, building=false;
     let mode='pan';    /* pan | raise | lower | levee | source */
     let brushM=400, brushStrength=20, leveeCrest=8, leveeWidth=60, srcM3=1e6;
+    /* (#R189) 「水の水流は設定可能に」 — the channel's DISCHARGE (m³/s). null = the #R188 behaviour:
+       the whole placed volume laid along the course by continuity. A number here scales every
+       cross-section from Q = A·v with v = K·√S instead, so the same course can be drawn carrying a
+       stream or a flood. K is a Chézy-like bulk speed factor: v = 40·√S gives 1.3 m/s on a 0.1 %
+       grade — the middle of what real lowland rivers run. */
+    let flowM3s=null; const CHEZY_K=40;
     let drafting=null; /* a levee being drawn */
     let undoStack=[];
 
@@ -163,7 +169,19 @@ window.IntMapModules.terrainWater=function(HOST){
             let v=demElevBilinear(lng,lat,z); if(v==null) v=demElevAt(lng,lat,null,z);
             if(v==null){ miss++; v=NaN; }
             base[j*NX+i]=v; } }
-        /* a hole in the DEM would become a hole in the terrain; carry the nearest known value instead */
+        /* a hole in the DEM would become a hole in the terrain; carry the nearest known value instead.
+           (#R189) …for ISOLATED gaps. When a third of the rectangle never arrived, "carry the nearest
+           known value" is not repair, it is invention — the solver would route convincing-looking
+           water over ground nobody measured, and a trace on the resulting flat fiction reads
+           「海に到達」. Refuse and say why instead. */
+        if(miss>NX*NY*0.3){
+          setStat('⚠ '+L('The elevation data for this area could not be read — try again, or another place.',
+                          'この範囲の標高データを読み込めませんでした。もう一度、または別の場所でお試しください。',
+                          'Höhendaten für diesen Bereich nicht lesbar — erneut versuchen oder anderen Ort wählen.',
+                          'Не удалось прочитать данные о рельефе — попробуйте ещё раз или в другом месте.',
+                          'No se pudieron leer los datos de elevación — inténtelo de nuevo u otro lugar.'));
+          return false;
+        }
         if(miss) fillHoles(base,NX,NY);
         G={ NX,NY,xW,yN,dx,dy,cellM,areaM2:cellM*cellM,z,base,
             bbox:[lngOf(xW),latOf(yN),lngOf(xE),latOf(yS)], midLat, demMissing:miss };
@@ -412,7 +430,13 @@ window.IntMapModules.terrainWater=function(HOST){
        directions rather than 8, because an 8-direction walk on a continuous surface produces the same
        staircase artefact D8 produces on a grid. Both caps — 600 km of path and 260 DEM tiles — are
        REPORTED when they bite; a trace that quietly gave up would read as "the water ends here". */
-    const TRACE_Z=11, TRACE_MAX_KM=600, TRACE_TILE_ROUNDS=42;
+    /* (#R189) RESOLUTION WHERE IT MATTERS. #R188's own measurement said it: at a fixed z11, 454 of
+       498 cross-sections came out BELOW the DEM's resolution — and the head of the course, right
+       where the user clicked, is exactly where the channel is narrowest relative to the data. The
+       trace now starts at z13 (~19 m a sample) for the first 10 km, z12 to 50 km, and z11 beyond,
+       where the river is wide enough for 76 m samples to see it. The tile budget rises with it and,
+       as always, is REPORTED when it bites. */
+    const TRACE_Z=11, TRACE_Z_NEAR=[[10,13],[50,12]], TRACE_MAX_KM=600, TRACE_TILE_ROUNDS=64;
     const LAKE_STOP_M=25;          /* fill depth above which a basin is a lake, not a pit */
     const SEA_RUN_M=1500;          /* continuous distance at or below 0 m that counts as the sea */
     let trace=null, tracing=false, traceSeq=0;
@@ -452,6 +476,65 @@ window.IntMapModules.terrainWater=function(HOST){
       return { n, N, surf:surfW, filled:filledW, parent:parentW, at, ll,
                spacingM,                                  /* (#R187) the width flowImage() draws the course at */
                cellAreaM2:spacingM*spacingM };
+    }
+    /* ══ (#R189) THE ESCAPE PATH IS NOT THE RIVER ═════════════════════════════════════════════════
+       The priority flood's `parent` chain answers "which way OUT of the window with the least rise"
+       — fill-and-spill, the right question for whether water can leave at all, and the wrong one
+       for which way the channel runs: at a confluence the least-rise route to the border can walk
+       out over a side saddle. Real water follows the TALWEG — the branch carrying the largest
+       catchment. So each window now gets the same MFD accumulation sweep solve() already runs on
+       the working grid: every cell sheds its area to its lower neighbours weighted by slope^1.1,
+       processed in descending order of the FILLED surface (a lake passes its water to its spill,
+       not to its floor), and the walk from the entry follows the strictly-descending neighbour with
+       the LARGEST accumulated catchment. On a filled flat there is no descending neighbour and the
+       flood's parent — the spill route — is exactly the right fallback, so lakes are still crossed
+       the way #R186 set up. Termination is unchanged: accumulation steps strictly descend the
+       filled surface and parent steps walk the flood's own tree, so no cycle is possible. */
+    function channelChain(W,k0){
+      const n=W.n, N=W.N, filled=W.filled;
+      const order=new Uint32Array(N); for(let k=0;k<N;k++) order[k]=k;
+      order.sort((a,b)=>filled[b]-filled[a]);
+      const acc=new Float32Array(N).fill(1);
+      const DI=[-1,1,0,0,-1,1,-1,1], DJ=[0,0,-1,1,-1,-1,1,1],
+            DD=[1,1,1,1,Math.SQRT2,Math.SQRT2,Math.SQRT2,Math.SQRT2];
+      const wbuf=new Float64Array(8);
+      for(let o=0;o<N;o++){ const k=order[o], ki=k%n, kj=(k/n)|0;
+        let sum=0;
+        for(let d=0;d<8;d++){ const ni=ki+DI[d], nj=kj+DJ[d];
+          if(ni<0||nj<0||ni>=n||nj>=n){ wbuf[d]=0; continue; }
+          const dz=filled[k]-filled[nj*n+ni];
+          wbuf[d]=dz>1e-6?Math.pow(dz/DD[d],1.1):0; sum+=wbuf[d]; }
+        if(sum>0){ for(let d=0;d<8;d++){ if(!wbuf[d]) continue;
+            acc[(kj+DJ[d])*n+(ki+DI[d])]+=acc[k]*wbuf[d]/sum; } }
+        else { const p=W.parent[k]; if(p>=0) acc[p]+=acc[k]; }
+      }
+      const chain=[k0]; let k=k0, guard=0;
+      const border=(kk)=>{ const ki=kk%n, kj=(kk/n)|0; return ki===0||kj===0||ki===n-1||kj===n-1; };
+      while(guard++<4*N){
+        if(border(k)) break;
+        let best=-1, bestA=-1;
+        const ki=k%n, kj=(k/n)|0;
+        for(let d=0;d<8;d++){ const ni=ki+DI[d], nj=kj+DJ[d];
+          if(ni<0||nj<0||ni>=n||nj>=n) continue;
+          const nk=nj*n+ni;
+          if(filled[nk]<filled[k]-1e-6&&acc[nk]>bestA){ bestA=acc[nk]; best=nk; } }
+        if(best<0){
+          /* a filled flat: walk the spill route across the WHOLE flat in one go. Taking a single
+             parent step and handing back to the accumulation walk can ping-pong — the parent leads
+             along the spill tree, the accumulation pulls back toward the flat's deep line — and a
+             measured Chikuma trace ended in a false 'lake' at a braided reach because of exactly
+             that oscillation. Following `parent` until the surface actually drops is the same flat
+             crossing #R186 shipped, kept verbatim for the one ground it is right on. */
+          const lev=filled[k]; let k2=W.parent[k], hop=0, moved=false;
+          while(k2>=0&&hop++<4*N){ chain.push(k2); k=k2; moved=true;
+            if(border(k2)||filled[k2]<lev-1e-6) break;
+            k2=W.parent[k2]; }
+          if(!moved||k2<0) break;
+          continue;
+        }
+        chain.push(best); k=best;
+      }
+      return chain;
     }
     /* ⚠ (#R186) ONE PIT, ANSWERED — AND WHY IT CANNOT ASK "AM I IN A PIT?".
        The first version of this did ask, and it stopped every trace after one step. The walk samples a
@@ -564,16 +647,21 @@ window.IntMapModules.terrainWater=function(HOST){
     async function traceDownstream(lng0,lat0,opt){
       opt=opt||{};
       const seq=++traceSeq; tracing=true;
-      const z=opt.z||TRACE_Z, maxKm=opt.maxKm||TRACE_MAX_KM;
+      const zFix=+opt.z||0, maxKm=opt.maxKm||TRACE_MAX_KM;
+      /* (#R189) the resolution ladder — finest near the source, where the channel is narrowest */
+      const zFor=(dM)=>{ if(zFix) return zFix;
+        for(const [km,zz] of TRACE_Z_NEAR) if(dM<km*1000) return zz; return TRACE_Z; };
+      let z=zFor(0);
       let lng=lng0, lat=lat0;
       const path=[[lng,lat]], lakes=[];
       /* (#R188) the bed elevation under every path point, and every cell the window floods found
          standing water in. Both are read from data the flood ALREADY computed — see the note above
-         flowImage() for what they are for. */
-      const elev=[], wet=[]; let wetCap=false;
+         flowImage() for what they are for. (#R189) `spac` records the DEM sampling each point was
+         traced at, because the ladder above means it is no longer one number. */
+      const elev=[], wet=[], spac=[]; let wetCap=false;
       const WET_MAX=140000, WET_MIN_D=0.3;
-      let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1;
-      let lastSpacingM=null;   /* (#R187) the window sampling — flowImage() draws the course this wide */
+      let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0;
+      let minSpacingM=null;    /* (#R187/#R189) the finest window sampling — flowImage() sizes by it */
       const visited=new Set();
       let headX=0, headY=0;      /* the unit heading of the last window's travel, for the frame bias */
       const pixM=()=>CIRC*Math.max(0.05,Math.cos(lat*D))/(Math.pow(2,z)*256);
@@ -582,13 +670,15 @@ window.IntMapModules.terrainWater=function(HOST){
       try{
         while(distM<maxKm*1000&&windows<160){
           if(seq!==traceSeq){ end='superseded'; break; }
+          const zWant=zFor(distM); if(zWant!==z){ z=zWant; warmC=null; }   /* (#R189) step down the ladder */
           const tileDeg=360/Math.pow(2,z), dLatT=tileDeg*Math.max(0.05,Math.cos(lat*D));
           if(!warmC||Math.abs(lng-warmC[0])>tileDeg*0.5||Math.abs(lat-warmC[1])>dLatT*0.5){
             if(rounds>=TRACE_TILE_ROUNDS){ end='tiles'; break; }
             rounds++; await warmBlock(lng,lat,z); warmC=[lng,lat];
             if(seq!==traceSeq){ end='superseded'; break; }
           }
-          const spacing=pixM()*1.5; lastSpacingM=spacing;
+          const spacing=pixM()*1.5;
+          if(minSpacingM==null||spacing<minSpacingM) minSpacingM=spacing;
           /* ⚠ THE WINDOW LOOKS FORWARD. Centred exactly on where the last one left off, a window
              contains as much of the ground already travelled as of the ground ahead — and a
              window-local minimax escape has no idea which is which, so it can perfectly well leave
@@ -606,7 +696,31 @@ window.IntMapModules.terrainWater=function(HOST){
           const k0=W.at(lng,lat); if(k0<0){ end='nodata'; break; }
           const entryLng=lng, entryLat=lat;
           const entryE=W.surf[k0];
-          if(!elev.length) elev.push(entryE);
+          if(!elev.length){ elev.push(entryE); spac.push(spacing); }
+          /* (#R188/#R189) the outline of ONE pond: everything connected to `seed` whose flood level
+             is at or under `lev` and that the flood put water on. Bounded by the window and by the
+             global cap, so a window full of shallow roughness cannot become a lake.
+             ⚠ (#R189) DECLARED BEFORE ITS FIRST USE. #R188 wrote this as a `const` BELOW the
+             terminal-basin branch that calls it — a temporal-dead-zone ReferenceError, so every
+             trace that ended in a basin (`end='sink'` — the advertised 「水は流れなくなる地点」
+             ending!) rejected instead of drawing, with no catch anywhere on the caller side. That
+             is the 「結果が出ないことがある」 the user kept reporting, verbatim. */
+          const collectPond=(seed,lev)=>{
+            if(seed<0||wet.length>=WET_MAX){ if(wet.length>=WET_MAX) wetCap=true; return 0; }
+            const seen=new Set([seed]); const stack=[seed]; let n2=0;
+            while(stack.length){
+              const k=stack.pop(); const ki=k%W.n, kj=(k/W.n)|0;
+              const d=W.filled[k]-W.surf[k];
+              if(!(d>WET_MIN_D)||W.filled[k]>lev+1e-6) continue;
+              const p=W.ll(k); wet.push([p[0],p[1],d,W.spacingM]); n2++;
+              if(wet.length>=WET_MAX){ wetCap=true; break; }
+              for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){
+                if(!di&&!dj) continue;
+                const ni=ki+di, nj=kj+dj; if(ni<0||nj<0||ni>=W.n||nj>=W.n) continue;
+                const nk=nj*W.n+ni; if(seen.has(nk)) continue; seen.add(nk); stack.push(nk); }
+            }
+            return n2;
+          };
           /* ⚠ (#R188) NOT EVERY CELL WITH `filled > surf` IS WATER, AND #R186 ALREADY SAID SO.
              Inside a window, `filled − surf` means "how far this cell would have to fill before it
              could leave THIS WINDOW", which is non-zero at every metre-scale dip along a valley floor
@@ -628,32 +742,14 @@ window.IntMapModules.terrainWater=function(HOST){
             collectPond(k0,W.filled[k0]);
             end='sink'; endInfo={ depthM:need, areaKm2:cells*W.cellAreaM2/1e6 }; break;
           }
-          /* (#R188) the outline of ONE pond: everything connected to `seed` whose flood level is at
-             or under `lev` and that the flood put water on. Bounded by the window and by the global
-             cap, so a window full of shallow roughness cannot become a lake. */
-          const collectPond=(seed,lev)=>{
-            if(seed<0||wet.length>=WET_MAX){ if(wet.length>=WET_MAX) wetCap=true; return 0; }
-            const seen=new Set([seed]); const stack=[seed]; let n2=0;
-            while(stack.length){
-              const k=stack.pop(); const ki=k%W.n, kj=(k/W.n)|0;
-              const d=W.filled[k]-W.surf[k];
-              if(!(d>WET_MIN_D)||W.filled[k]>lev+1e-6) continue;
-              const p=W.ll(k); wet.push([p[0],p[1],d]); n2++;
-              if(wet.length>=WET_MAX){ wetCap=true; break; }
-              for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){
-                if(!di&&!dj) continue;
-                const ni=ki+di, nj=kj+dj; if(ni<0||nj<0||ni>=W.n||nj>=W.n) continue;
-                const nk=nj*W.n+ni; if(seen.has(nk)) continue; seen.add(nk); stack.push(nk); }
-            }
-            return n2;
-          };
-          /* the whole downstream path inside this window, in one walk */
-          const chain=[]; { let k=k0, guard=0; while(k>=0&&guard++<4*W.n){ chain.push(k); k=W.parent[k]; } }
+          /* the whole downstream path inside this window, in one walk — (#R189) the talweg by MFD
+             accumulation, not the flood's least-rise escape; see channelChain() */
+          const chain=channelChain(W,k0);
           if(chain.length<2){ end='flat'; break; }
           let seaRun=0, poolRun=0, poolMax=0, poolStart=null, hitSea=false, prev=[lng,lat], poolSeed=-1, poolLev=0;
           for(let a=1;a<chain.length;a++){
             const k=chain[a], p=W.ll(k), e=W.surf[k], sub=W.filled[k]-e;
-            const d=gcM(prev,p); distM+=d; prev=p; path.push(p); elev.push(e); pts++;
+            const d=gcM(prev,p); distM+=d; prev=p; path.push(p); elev.push(e); spac.push(spacing); pts++;
             /* ⚠ `filled − surf` inside a WINDOW is "how far this cell would have to fill to get out
                of the window", which along a valley floor is non-zero at every little dip — the first
                version marked 157 "lakes" over 125 km of river because of that. A pool is only worth
@@ -682,7 +778,11 @@ window.IntMapModules.terrainWater=function(HOST){
              height of the basin rim. One extra flood, and only ever on the last step of a trace. */
           if(hitSea){
             const v=await seaCheck(lng,lat);
-            if(v.sea){ endInfo=Object.assign(endInfo||{},{connectedKm2:v.connectedKm2}); end='sea'; break; }
+            /* (#R189) `unchecked` means the TEST failed (its own DEM window did not arrive), not
+               that the answer is yes — a network outage was being rendered as a confident
+               「海に到達」. Keep the ending (the ground here IS at sea level) but say the sea
+               itself was not verified. */
+            if(v.sea){ endInfo=Object.assign(endInfo||{},{connectedKm2:v.connectedKm2, unchecked:!!v.unchecked}); end='sea'; break; }
             end='sink'; endInfo={ depthM:null, areaKm2:v.connectedKm2||0, belowSeaLevel:true }; break;
           }
           if(distM>=maxKm*1000){ end='cap'; break; }
@@ -700,24 +800,75 @@ window.IntMapModules.terrainWater=function(HOST){
             /* Coming back to a window we have already used means the descent is no longer taking us
                anywhere — and measured on a trace from Chamonix, the place that happens is LAKE
                GENEVA. A large body of standing water has no slope for a steepest-descent walk to
-               follow, so this is not a failure of the trace, it is the trace arriving at one. Say
-               which: how much flat ground is at this level answers whether it is a lake or a genuine
-               dead end. (Finding a flat lake's OUTFLOW needs flow accumulation over the whole basin,
-               which is not something this tracer claims to do — so it reports where it got to.) */
-            let flat=0; { const V=floodWindow(lng,lat,N_WIN,spacing,z), vk=V?V.at(lng,lat):-1;
-              if(V&&vk>=0){ const e=V.surf[vk]; for(let i=0;i<V.N;i++) if(Math.abs(V.surf[i]-e)<0.6) flat++;
-                endInfo={ areaKm2:flat*V.cellAreaM2/1e6, elevM:e }; } }
-            end=(flat>200)?'lake':'loop';
-            break;
+               follow, so this is not a failure of the trace, it is the trace arriving at one.
+               ══ (#R189) …UNLESS THE FLAT IS SIMPLY WIDER THAN THE WINDOW. Measured on the Chikuma:
+               the trace ended 「静水域に広がる」 on the Kawanakajima plain — a flat river PLAIN wider
+               than one window, 200 km short of the Japan Sea the real river reaches. The window
+               flood cannot see across a flat larger than itself, but a WIDER window can: before
+               declaring an ending, flood once at 3× the spacing and walk its talweg. If that leaves
+               the flat downhill and genuinely elsewhere, the trace continues from there (the coarse
+               crossing is recorded at its own spacing — the panel's per-point resolution carries
+               it); if even the wide window finds no way on, the ending stands, honestly. Bounded:
+               six escalations a trace. */
+            let escaped=false;
+            if(escal<6){
+              /* the 3× window spans ~5 tiles a side at this zoom — warm them, or floodWindow sees
+                 >40 % missing and returns null (which read as "no way on" and hid the escape) */
+              try{ const td=360/Math.pow(2,z), dLt=td*Math.max(0.05,Math.cos(lat*D));
+                const pts3=[]; for(let j=-2;j<=2;j++) for(let i=-2;i<=2;i++)
+                  pts3.push([lng+i*td, Math.max(-84,Math.min(84,lat+j*dLt))]);
+                await warmDEMTiles(pts3,z,15000,null);
+              }catch(_){}
+              if(seq!==traceSeq){ end='superseded'; break; }
+              const V3=floodWindow(lng,lat,N_WIN,spacing*3,z), vk3=V3?V3.at(lng,lat):-1;
+              /* ⚠ the gate is 3× looser than the fine window's: at 3× spacing a narrow gorge
+                 (立ヶ花 on the Chikuma is ~200 m wide) can vanish between samples, and the coarse
+                 flood then "fills" tens of metres that the real valley does not need — that fill is
+                 the SAMPLING, not the water. 75 m still stops at every real closed deep basin. */
+              if(V3&&vk3>=0&&(V3.filled[vk3]-V3.surf[vk3])<=LAKE_STOP_M*3){
+                const ch3=channelChain(V3,vk3);
+                if(ch3.length>2){
+                  const exit=ch3[ch3.length-1], pExit=V3.ll(exit);
+                  const eHere=V3.surf[vk3], eExit=V3.surf[exit];
+                  const moved=gcM([lng,lat],pExit);
+                  if(moved>halfM*1.2&&eExit<=eHere+0.5){
+                    escal++; escaped=true;
+                    let pv=[lng,lat];
+                    for(let a2=1;a2<ch3.length;a2++){ const p=V3.ll(ch3[a2]);
+                      const dd=gcM(pv,p); distM+=dd; pv=p;
+                      path.push(p); elev.push(V3.surf[ch3[a2]]); spac.push(V3.spacingM); pts++;
+                      if(distM>=maxKm*1000) break; }
+                    lng=pv[0]; lat=pv[1];
+                    { const dx=(lng-entryLng)*Math.cos(lat*D), dy=lat-entryLat, m=Math.hypot(dx,dy);
+                      if(m>1e-9){ headX=dx/m; headY=dy/m; } }
+                  }
+                }
+              }
+            }
+            if(!escaped){
+              /* Say which: how much flat ground is at this level answers whether it is a lake or a
+                 genuine dead end. */
+              let flat=0; { const V=floodWindow(lng,lat,N_WIN,spacing,z), vk=V?V.at(lng,lat):-1;
+                if(V&&vk>=0){ const e=V.surf[vk]; for(let i=0;i<V.N;i++) if(Math.abs(V.surf[i]-e)<0.6) flat++;
+                  endInfo={ areaKm2:flat*V.cellAreaM2/1e6, elevM:e }; } }
+              end=(flat>200)?'lake':'loop';
+              break;
+            }
           }
           visited.add(key);
         }
         if(windows>=160&&end==='cap') end='windows';
+      } catch(err){
+        /* (#R189) no caller of this function has a .catch — an exception here USED to reject the
+           promise and the screen showed nothing at all (the TDZ bug above rode exactly this hole).
+           An error is an ending like any other: record it, draw what was traced, and say so. */
+        end='error'; endInfo={ message:String((err&&err.message)||err) };
+        console.warn('traceDownstream',err);
       } finally { if(seq===traceSeq) tracing=false; }
       if(seq!==traceSeq) return trace;
       trace={ path, lakes, end, endInfo, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
-              stepM:lastSpacingM,                         /* (#R187) the DEM sampling the course was traced at */
-              elev, wet, wetCapped:wetCap,                /* (#R188) the bed profile and the flooded cells */
+              stepM:minSpacingM,                          /* (#R189) the FINEST sampling on the ladder */
+              elev, wet, spac, wetCapped:wetCap,          /* (#R188/#R189) bed profile, flooded cells, per-point sampling */
               from:[lng0,lat0], to:[lng,lat], at:Date.now() };
       try{ trace.section=channelSections(trace); }catch(e){ trace.section=null; console.warn('channel sections',e); }
       draw();
@@ -763,10 +914,14 @@ window.IntMapModules.terrainWater=function(HOST){
        measured bank (#R185: no silent caps). */
     const SEC_MAX=900, SEC_HALF=40, SEC_DEPTH_MAX=80;
     function channelSections(tr){
-      const path=tr&&tr.path, elev=tr&&tr.elev;
+      const path=tr&&tr.path, elev=tr&&tr.elev, spacArr=tr&&tr.spac;
       if(!path||path.length<3||!elev||elev.length<path.length) return null;
       const z=tr.z, stepM=tr.stepM||92;
       const V=Math.max(1,sources.reduce((s,x)=>s+Math.max(0,x.m3),0)||srcM3);
+      /* (#R189) the user's discharge, if set — see flowM3s above. Q=A·v with v=K√S gives
+         A(s) = (Q/K)/√S(s): the same 1/√S shape continuity always had, scaled by a real m³/s
+         instead of a stored volume. */
+      const Q=(flowM3s!=null&&isFinite(flowM3s)&&flowM3s>0)?+flowM3s:null;
       const n=path.length;
       const keep=[]; const stride=Math.max(1,Math.ceil(n/SEC_MAX));
       for(let i=1;i<n-1;i+=stride) keep.push(i);
@@ -782,12 +937,17 @@ window.IntMapModules.terrainWater=function(HOST){
         slope[m]=Math.max(1e-4,de/rw);
       }
       let tot=0; for(let m=0;m<M;m++) tot+=ds[m]/Math.sqrt(slope[m]);
-      const C=V/Math.max(1e-6,tot);                                  /* ∫A ds = V */
-      const out=new Array(M); let belowRes=0, atLimit=0, wMax=0, dMax=0, wSum=0;
-      const half=SEC_HALF, dt=stepM/2;                               /* transect sampling, finer than the trace */
+      const C=(Q!=null)?(Q/CHEZY_K):(V/Math.max(1e-6,tot));           /* Q/v, or ∫A ds = V (#R188) */
+      const out=new Array(M); let belowRes=0, atLimit=0, wMax=0, dMax=0, wSum=0, thMax=0;
+      const half=SEC_HALF;
       const prof=new Float64Array(2*half+1);
       for(let m=0;m<M;m++){
         const i=keep[m], p=path[i];
+        /* (#R189) the transect samples at HALF THIS POINT'S OWN DEM spacing — the resolution ladder
+           means the head of the course is measured at ~10 m and the lower reaches at ~46 m, each
+           the finest its own data supports */
+        const stM=(spacArr&&isFinite(spacArr[i])&&spacArr[i]>0)?spacArr[i]:stepM;
+        const dt=stM/2; if(half*dt>thMax) thMax=half*dt;
         const a=path[Math.max(0,i-1)], b=path[Math.min(n-1,i+1)];
         const cosL=Math.max(0.05,Math.cos(p[1]*D));
         let dx=(b[0]-a[0])*111320*cosL, dy=(b[1]-a[1])*110574;
@@ -816,13 +976,13 @@ window.IntMapModules.terrainWater=function(HOST){
         for(let t=half+1;t<=2*half;t++){ if(prof[t]>=h) break; right=(t-half)*dt; }
         let wl=left, wr=right;
         if(left>=half*dt-1e-9||right>=half*dt-1e-9) atLimit++;        /* the transect ran out before the bank did */
-        if(wl+wr<stepM){ belowRes++; wl=wr=stepM/2; }                 /* finer than the data — say so */
+        if(wl+wr<stM){ belowRes++; wl=wr=stM/2; }                     /* finer than the data — say so */
         const dep=Math.max(0,h-lo);
         out[m]={ i, lng:p[0], lat:p[1], nx, ny, wl, wr, depth:dep };
         wSum+=(wl+wr); if(wl+wr>wMax) wMax=wl+wr; if(dep>dMax) dMax=dep;
       }
-      return { list:out, volM3:V, belowRes, atLimit, meanWidthM:wSum/M, maxWidthM:wMax, maxDepthM:dMax,
-               sections:M, transectHalfM:half*dt };
+      return { list:out, volM3:V, flowM3s:Q, belowRes, atLimit, meanWidthM:wSum/M, maxWidthM:wMax, maxDepthM:dMax,
+               sections:M, transectHalfM:thMax };
     }
 
     /* ── (#R187) the traced course, rasterised as water ──────────────────────────────────────────
@@ -882,9 +1042,11 @@ window.IntMapModules.terrainWater=function(HOST){
          These are real solved depths on real DEM cells (trace.wet), so the lakes, the pools and the
          terminal basin are drawn as the shapes they are — #R187 drew them as discs of equivalent
          area, which is the same "a number, rendered" mistake the addendum is about. */
-      const cell=Math.max(1,mToPx(stepM));
+      /* (#R189) each flooded cell is drawn at ITS OWN window's sampling — the resolution ladder
+         means cells near the source are ~3× finer than cells 100 km downstream */
       const wet=(trace.wet||[]);
       for(let i=0;i<wet.length;i++){ const w=wet[i];
+        const cell=Math.max(1,mToPx((w[3]&&isFinite(w[3]))?w[3]:stepM));
         const X=PX(w[0]), Y=PY(w[1]);
         if(X<-cell||Y<-cell||X>W+cell||Y>H+cell) continue;
         g.fillStyle=shade(w[2]); g.fillRect(X-cell/2,Y-cell/2,cell,cell); }
@@ -984,7 +1146,11 @@ window.IntMapModules.terrainWater=function(HOST){
       if(!trace) return '';
       const km=trace.km<10?trace.km.toFixed(1):Math.round(trace.km);
       switch(trace.end){
-        case 'sea': return '🌊 '+L('Reaches the sea','海に到達','Erreicht das Meer','Достигает моря','Llega al mar')+' · '+km+' km';
+        case 'sea': return '🌊 '+L('Reaches the sea','海に到達','Erreicht das Meer','Достигает моря','Llega al mar')
+          /* (#R189) the connectedness test could not run (its DEM window failed) — say so instead of
+             passing a network outage off as a verified ocean */
+          +((trace.endInfo&&trace.endInfo.unchecked)?(' '+L('(unverified — data missing)','（未確認・データ欠損）','(unbestätigt — Daten fehlen)','(не подтверждено — нет данных)','(sin verificar — faltan datos)')):'')
+          +' · '+km+' km';
         case 'sink': { const d=trace.endInfo&&isFinite(trace.endInfo.depthM)?Math.round(trace.endInfo.depthM):null;
           const bsl=trace.endInfo&&trace.endInfo.belowSeaLevel;
           return '⏹ '+L('Flow stops here','ここで流れが止まる','Fluss endet hier','Течение здесь заканчивается','El flujo se detiene aquí')
@@ -996,6 +1162,7 @@ window.IntMapModules.terrainWater=function(HOST){
         case 'loop': return '⏹ '+L('Flow stops here','ここで流れが止まる','Fluss endet hier','Течение здесь заканчивается','El flujo se detiene aquí')+' · '+km+' km';
         case 'flat': return '⏹ '+L('Flow stops here (flat)','ここで流れが止まる（平坦）','Fluss endet hier (flach)','Течение останавливается (равнина)','El flujo se detiene (llano)')+' · '+km+' km';
         case 'nodata': return '⚠ '+L('No elevation data beyond here','ここから先は標高データなし','Keine Höhendaten weiter','Дальше нет данных о высоте','Sin datos de elevación')+' · '+km+' km';
+        case 'error': return '⚠ '+L('The trace failed here','ここで追跡が失敗','Verfolgung hier fehlgeschlagen','Трассировка здесь прервалась','El trazado falló aquí')+' · '+km+' km';
         case 'tiles': return '… '+L('traced as far as the elevation budget allows','標高データの上限まで追跡','bis zum Datenlimit verfolgt','прослежено до предела данных','trazado hasta el límite de datos')+' · '+km+' km';
         case 'steps':
         case 'cap': return '… '+L('still flowing at the 600 km limit','600 km の上限でもまだ流下中','fließt noch bei 600 km','всё ещё течёт на 600 км','sigue fluyendo al llegar a 600 km')+' · '+km+' km';
@@ -1016,7 +1183,9 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<br><b>'+L('Overtopping','決壊・越流','Überströmen','Перелив','Desbordamiento')+':</b> '
         +(result.breaches.length?(result.breaches.length+' '+L('spill points','箇所','Stellen','точек','puntos')+' · '+L('largest','最大','größte','наибольший','mayor')+' '+fmtM3(result.breaches[0].over))
           :L('none — everything is held','なし（すべて湛水）','keines','нет','ninguno'))
-        +'<br><span style="opacity:0.72;">'+n(G.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+G.NX+'×'+G.NY+' · DEM z'+G.z+' · MFD · '+result.solveMs+' ms</span>'
+        +'<br><span style="opacity:0.72;">'+n(G.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+G.NX+'×'+G.NY+' · DEM z'+G.z+' · MFD · '+result.solveMs+' ms'
+        /* (#R189) a repaired DEM hole is a guess — say how many cells are guessed, never silently */
+        +(G.demMissing?(' · ⚠ '+n(G.demMissing)+' '+L('cells interpolated (no DEM)','セルは補間（DEM欠損）','Zellen interpoliert (kein DEM)','ячеек интерполировано (нет DEM)','celdas interpoladas (sin DEM)')):'')+'</span>'
         /* (#R186) the long-range answer: where the water goes after it leaves the working rectangle */
         +(tracing?('<br><b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+L('tracing…','追跡中…','wird verfolgt…','трассировка…','trazando…')):'')
         +((!tracing&&trace)?('<br><b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+traceEndLabel()
@@ -1025,7 +1194,7 @@ window.IntMapModules.terrainWater=function(HOST){
           +(trace.section?('<br><b>'+L('Channel','水路','Gerinne','Русло','Cauce')+':</b> '
             +L('width','幅','Breite','ширина','ancho')+' '+n(trace.section.meanWidthM)+'–'+n(trace.section.maxWidthM)+' m · '
             +L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(trace.section.maxDepthM,1)+' m · '
-            +fmtM3(trace.section.volM3)):'')
+            +(trace.section.flowM3s?('Q '+n(trace.section.flowM3s)+' m³/s'):fmtM3(trace.section.volM3))):'')
           +'<br><span style="opacity:0.72;">'+L('real DEM','実標高','echtes DEM','реальный DEM','DEM real')+' z'+trace.z+' · '+trace.steps+' '+L('steps','ステップ','Schritte','шагов','pasos')
             +(trace.section?(' · '+trace.section.sections+' '+L('cross-sections','断面','Querprofile','сечений','secciones')
               +' ±'+n(trace.section.transectHalfM)+' m'
@@ -1090,8 +1259,13 @@ window.IntMapModules.terrainWater=function(HOST){
         p.querySelector('.tw-lc').onchange=e=>leveeCrest=Math.max(1,+e.target.value||8);
         p.querySelector('.tw-lw').onchange=e=>leveeWidth=Math.max(10,+e.target.value||60);
       } else if(mode==='source'){
-        p.innerHTML='<label style="'+ROW+'">'+L('Volume per click (m³)','1クリックの水量 (m³)','Volumen je Klick (m³)','Объём за клик (м³)','Volumen por clic (m³)')+'<input class="tw-sv" type="number" min="1" step="100000" value="'+srcM3+'" style="'+NUM+'"></label>';
+        p.innerHTML='<label style="'+ROW+'">'+L('Volume per click (m³)','1クリックの水量 (m³)','Volumen je Klick (m³)','Объём за клик (м³)','Volumen por clic (m³)')+'<input class="tw-sv" type="number" min="1" step="100000" value="'+srcM3+'" style="'+NUM+'"></label>'
+          /* (#R189) 「水の水流は設定可能に」 — empty = the volume-continuity behaviour (#R188) */
+          +'<label style="'+ROW+'margin-top:6px;">'+L('Discharge (m³/s)','流量 (m³/s)','Durchfluss (m³/s)','Расход (м³/с)','Caudal (m³/s)')+'<input class="tw-fq" type="number" min="0" step="50" value="'+(flowM3s!=null?flowM3s:'')+'" placeholder="'+L('auto','自動','auto','авто','auto')+'" style="'+NUM+'"></label>';
         p.querySelector('.tw-sv').onchange=e=>srcM3=Math.max(1,+e.target.value||1e6);
+        p.querySelector('.tw-fq').onchange=e=>{ const v=parseFloat(e.target.value);
+          flowM3s=(isFinite(v)&&v>0)?v:null;
+          if(trace){ try{ trace.section=channelSections(trace); }catch(_){} draw(); report(); } };
       } else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>';
     }
     function setMode(m){ mode=m; drafting=null;
@@ -1101,10 +1275,13 @@ window.IntMapModules.terrainWater=function(HOST){
 
     /* ---- map interaction -------------------------------------------------------------------------- */
     let painting=false, paintRaf=0;
-    function onDown(e){ if(!opened||!G) return;
+    function onDown(e){ if(!opened) return;
       if(mode==='raise'||mode==='lower'){
+        /* (#R189) the brush had the same silent first line the water source had (#R188): no grid →
+           the stroke vanished without a word. Build one around the stroke and say so. */
+        if(!G){ rebuildAround(e.lngLat.lng,e.lngLat.lat).then(ok=>{ if(ok) solve(); else _bldFail(); }); return; }
         /* (#R186) same trap as the water source: a brush stroke outside the rectangle painted nothing */
-        if(!cellOf(e.lngLat.lng,e.lngLat.lat)){ rebuildAround(e.lngLat.lng,e.lngLat.lat).then(ok=>{ if(ok) solve(); }); return; }
+        if(!cellOf(e.lngLat.lng,e.lngLat.lat)){ rebuildAround(e.lngLat.lng,e.lngLat.lat).then(ok=>{ if(ok) solve(); else _bldFail(); }); return; }
         painting=true; pushUndo(); paintBrush(e.lngLat.lng,e.lngLat.lat,mode==='raise'?1:-1); schedule(); } }
     function onMove(e){ if(!painting) return; paintBrush(e.lngLat.lng,e.lngLat.lat,mode==='raise'?1:-1); schedule(); }
     function onUp(){ if(painting){ painting=false; solve(); } }
@@ -1119,6 +1296,13 @@ window.IntMapModules.terrainWater=function(HOST){
        outside it REBUILDS the grid around that click instead of being discarded. Rebuilding costs a
        DEM read, so it is only done when the click really is outside. */
     function inGrid(lng,lat){ return !!cellOf(lng,lat); }
+    /* (#R189) the shared "the DEM did not arrive" message — every rebuild path says it now instead
+       of leaving the stat stuck on "Moving the working area here…" */
+    function _bldFail(){ setStat('⚠ '+L('The elevation data for this area could not be read — try another place or zoom out.',
+                             'この範囲の標高データを読み込めませんでした。別の場所か、少し広い表示でお試しください。',
+                             'Höhendaten für diesen Bereich nicht lesbar — anderer Ort oder herauszoomen.',
+                             'Не удалось прочитать данные о рельефе — выберите другое место или уменьшите масштаб.',
+                             'No se pudieron leer los datos de elevación — pruebe otro lugar o aleje el mapa.')); }
     async function rebuildAround(lng,lat){
       setStat(L('Moving the working area here…','作業範囲をここへ移動中…','Arbeitsbereich wird hierher verschoben…','Рабочая область переносится сюда…','Moviendo el área de trabajo…'));
       try{ GE().camera.easeTo({center:[lng,lat],duration:420}); }catch(_){}
@@ -1149,11 +1333,14 @@ window.IntMapModules.terrainWater=function(HOST){
     }
     function onClick(e){ if(!opened) return;
       const lng=e.lngLat.lng, lat=e.lngLat.lat;
-      if(!G){ if(mode==='source') onClickNoGrid(lng,lat); return; }
+      if(!G){ if(mode==='source') onClickNoGrid(lng,lat);
+        /* (#R189) a levee click before the grid exists was the last silent drop — build and say so */
+        else if(mode==='levee') rebuildAround(lng,lat).then(ok=>{ if(!ok) _bldFail(); });
+        return; }
       if(mode==='levee'){ if(!drafting) drafting={pts:[],crest:leveeCrest,width:leveeWidth};
         drafting.pts.push([lng,lat]); draw(); }
       else if(mode==='source'){
-        if(!inGrid(lng,lat)){ rebuildAround(lng,lat).then(ok=>{ if(!ok) return;
+        if(!inGrid(lng,lat)){ rebuildAround(lng,lat).then(ok=>{ if(!ok){ _bldFail(); return; }
           sources.push({lng,lat,m3:srcM3}); solve(); traceDownstream(lng,lat); }); return; }
         sources.push({lng,lat,m3:srcM3}); solve();
         /* (#R186) …and follow it out of the rectangle: 「水は流れなくなる地点または海に到達した地点まで」 */
@@ -1176,7 +1363,10 @@ window.IntMapModules.terrainWater=function(HOST){
     /* ---- lifecycle -------------------------------------------------------------------------------- */
     async function open(o){
       if(!panel){ panel=document.createElement('div'); panel.id='tw-panel';
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        /* (#R189) 「ポップアップは透過するな」 — --card-bg is opaque in BOTH themes (#fff / #1c1c1e);
+           --popup-bg was rgba(...,0.72/0.74) with no backdrop-filter, i.e. the map showed through
+           unblurred behind the numbers. */
+        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
       if(o&&o.lng!=null){ try{ GE().camera.flyTo({center:[o.lng,o.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:600}); }catch(_){}
@@ -1214,6 +1404,11 @@ window.IntMapModules.terrainWater=function(HOST){
             levelM:dp.level, spillM:dp.spill, overflowM3:dp.over||0, full:(dp.over||0)>0 }:null }; },
       undo,
       setRain(mm){ rainMm=Math.max(0,+mm||0); const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=rainMm; return solve(); },
+      /* (#R189) the channel discharge — null/0 restores the volume-continuity behaviour (#R188) */
+      setFlow(m3s){ const v=parseFloat(m3s); flowM3s=(isFinite(v)&&v>0)?v:null;
+        const f=panel&&panel.querySelector('.tw-fq'); if(f) f.value=(flowM3s!=null?flowM3s:'');
+        if(trace){ try{ trace.section=channelSections(trace); }catch(_){} draw(); report(); }
+        return flowM3s; },
       addSource(lng,lat,m3){ sources.push({lng,lat,m3:Math.max(0,+m3||srcM3)}); const r=solve();
         /* (#R186) the same follow-through a click gets, so Atlas and the tests see the same feature */
         traceDownstream(lng,lat); return r; },
@@ -1243,8 +1438,8 @@ window.IntMapModules.terrainWater=function(HOST){
       addLevee(pts,crest,width){ if(!Array.isArray(pts)||pts.length<2) return false;
         levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)}); solve(); return true; },
       clearWater(){ sources=[]; rainMm=0; const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
-      state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox}:null,
-        levees:levees.length, sources:sources.length, rainMm, tracing,
+      state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox,demMissing:G.demMissing||0}:null,
+        levees:levees.length, sources:sources.length, rainMm, flowM3s, tracing,
         trace: trace?{ end:trace.end, km:trace.km, steps:trace.steps, lakes:trace.lakes.length, z:trace.z }:null,
         result: result?{ storedM3:result.storedM3, floodKm2:result.floodKm2, maxDepth:result.maxDepth,
           breaches:result.breaches.length, biggestOver:result.breaches[0]?result.breaches[0].over:0,

@@ -35,7 +35,9 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
     'the original icon-size ramp');
   /* …and the flat glyph is what a default profile SEES: #R185 measured that the lifted 3-D body is
      shown instead of it, so restoring the glyph without this changes nothing on screen. */
-  assert.match(src, /let planes3D=false;[\s\S]{0,120}getItem\('intmap_planes3d'\)==='1'/,
+  /* (#R189) the key is generation-bumped so a '1' stored under the R172–R186 default-TRUE era can
+     no longer override the default — see r189-checks for the migration itself */
+  assert.match(src, /let planes3D=false;[\s\S]{0,160}getItem\(PLANES3D_KEY\)==='1'/,
     '3-D aircraft bodies must default OFF');
 });
 
@@ -150,7 +152,10 @@ test('R187 water: the traced course is a raster of water, not a polyline', () =>
      river the moment the user zooms. */
   assert.match(src, /const stepM=\(trace\.stepM&&isFinite\(trace\.stepM\)\)\?trace\.stepM:92/,
     'the draw width comes from the trace sampling');
-  assert.match(src, /stepM:lastSpacingM/, 'the trace must record the sampling it used');
+  /* (#R189) the resolution ladder means it is no longer one number — the trace records the finest
+     sampling (stepM) plus a per-point array (spac) */
+  assert.match(src, /stepM:minSpacingM/, 'the trace must record the sampling it used');
+  assert.match(src, /elev, wet, spac, wetCapped:wetCap/, '…and the per-point sampling of the ladder');
   /* the rectangle and the end markers stay — they are not the line that was objected to */
   assert.match(src, /id:'tw-area'/, 'the working rectangle stays');
   assert.match(src, /kind:'end'/, 'the end label stays');
