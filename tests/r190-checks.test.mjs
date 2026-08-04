@@ -205,6 +205,11 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /function _epiSeaDepth\(\)\{/, 'the depth is asked for at every zoom that might be warm');
   assert.match(src, /if\(fld&&fld\.z\) zs\.push\(fld\.z\);/, 'the field’s own level first — its warm grid covers the epicentre');
   assert.match(src, /function warmEpi\(\)\{/, 'and one tile is warmed so the answer exists before it is needed');
+  /* ⚠ measured on production: the button rendered and a screening call a moment later returned null,
+     because the DEM LRU had evicted that tile while the field build warmed a thousand others. */
+  assert.match(src, /if\(_epiElev&&_epiElev\.k===k\) return _epiElev\.v;/, 'a known sea depth is remembered…');
+  assert.match(src, /\{ _epiElev=\{k,v:e\}; return e; \}/, '…keyed on the epicentre, so moving it re-reads');
+  assert.doesNotMatch(src, /_epiElev=\{k,v:null\}/, 'and "not known yet" is never cached as an answer');
   assert.match(src, /_tsuShown=!!tsunamiCase\(\);/, 'render records what it drew…');
   assert.match(src, /if\(opened&&_t!==_tsuShown\)\{ _tsuShown=_t; render\(\); \}/,
     '…so the panel re-renders exactly once, when the availability flips');
