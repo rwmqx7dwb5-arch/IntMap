@@ -2151,18 +2151,52 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          waited for, and the screen lifts on the idle after it.
          Both stages carry their own escape: an idle can be delayed indefinitely by one slow tile
          host, and a launch screen that outlives the app it is covering is the worse failure. */
+      /* ══ (#R190) THE LAUNCH SCREEN WAS WAITING IN SERIES, AND LIFTING BEFORE THE END ═══════════════
+         「初期画面のローディングが遅い。また、ローディング画面終了後も読み込みが終わっていない。
+           これでは初期画面の意味がない。」
+
+         Both halves of that came out of the same shape. #R186's sequence was:
+             wait for idle #1  →  fire the default layers  →  wait 380 ms  →  wait for idle #2
+         The default layers were not ASKED FOR until the basemap had already gone quiet, so their
+         download (a multi-megabyte climate raster and the cable network) started after the basemap's
+         instead of alongside it — the two waits ran end to end when they could have overlapped. That
+         is the 「遅い」. And the second wait had a 3-second escape, so on exactly the slow load the
+         escape exists for, the screen lifted with those layers still arriving — 「終了後も読み込みが
+         終わっていない」.
+
+         Now the default layers are fired IMMEDIATELY at style-ready, so everything downloads at once,
+         and the screen lifts only when the map is idle AND the layers it was told to wait for are
+         actually on the map. The escapes are still there — a launch screen that outlives its app is
+         the worse failure (#R186) — but they are now the failure path rather than the normal one:
+         20 s total, and the console says which milestone never arrived. */
       try{ if(window.__imBoot&&!window.__imBoot.isDone()){
         window.__imBoot.set(80,'style');
-        let staged=false;
-        const stage=()=>{ if(staged) return; staged=true;
-          try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
-          setTimeout(()=>{ try{ window.__imBoot.set(96,'layers'); }catch(_){}
-            let ended=false; const go=()=>{ if(ended) return; ended=true; try{ window.__imBoot.done('idle'); }catch(_){} };
-            try{ GE().events.once('idle',go); }catch(_){ go(); }
-            setTimeout(go,3000);
-          },380); };
-        try{ GE().events.once('idle',stage); }catch(_){ setTimeout(stage,900); }
-        setTimeout(stage,6000);
+        /* concurrently, not after: this is the whole speed-up */
+        try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
+        window.__imBoot.set(88,'layers-fired');
+        let ended=false;
+        const go=(why)=>{ if(ended) return; ended=true; try{ window.__imBoot.done(why||'ready'); }catch(_){} };
+        /* "the default layers are actually painting" — asked of the renderer, never of a checkbox
+           (#R170: `isStyleLoaded()` is not "may I add layers", and a ticked box is not a drawn layer). */
+        const _pending=()=>{ let n=0; try{
+            (window.IntMapDefaultLayers||[]).forEach(id=>{
+              const cb=document.getElementById(id);
+              if(!cb||!cb.checked) return;                       /* the user's own session may not want it */
+              const p=window.__imLayerPainted&&window.__imLayerPainted(id);
+              if(p===false) n++;                                 /* null = "no id table" → nothing to wait for */
+            });
+          }catch(_){}
+          return n; };
+        let waits=0;
+        const settle=()=>{ if(ended) return;
+          const left=_pending();
+          try{ window.__imBoot.set(left?92:97,'layers'); }catch(_){}
+          if(!left){ try{ GE().events.once('idle',()=>go('idle')); }catch(_){ go('idle'); }
+            setTimeout(()=>go('idle-timeout'),2500); return; }
+          if(++waits>28){ console.warn('[boot] default layers still not on the map after ~14 s — revealing anyway'); go('layers-timeout'); return; }
+          setTimeout(settle,500); };
+        try{ GE().events.once('idle',settle); }catch(_){ setTimeout(settle,900); }
+        setTimeout(settle,4000);
       } }catch(_){}
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
@@ -3369,8 +3403,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
       /* (#R189) `defv` stamps WHICH generation of default-on handling wrote this session. Sessions
          written before #R188's imAutoOff fix (defv absent) may record an outage as an opt-out, and
-         no amount of fixing the writer heals what is already in storage — the reader has to. */
-      return { v:2, defv:189, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
+         no amount of fixing the writer heals what is already in storage — the reader has to.
+         ⚠ (#R190) BUMPED TO 190, and the reason is the same one, one layer deeper. Measured on a real
+         profile this round: `{"defv":189,"layers":[…,"dl-climate"]}` — stamped as a considered choice,
+         with the cables absent, because every session written between #R189 and now was written while
+         the cable download could only succeed if a volunteer CORS proxy happened to be up. #R189's
+         imAutoOff guard only helps when the app is the one unticking a box it had already ticked; a
+         profile whose very first load never got the layer at all had nothing to guard. Now that the
+         data comes from our own origin (supabase/functions/cable-geo) the failure that produced those
+         sessions cannot recur, so one more generation of them is healed once. */
+      return { v:2, defv:190, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
         base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
         year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
     function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
@@ -3414,7 +3456,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          from "the download failed and autoUncheck switched it off" — so an absent default-on id in
          such a session is NOT evidence of a choice. Re-add the default-on ids once; the next save
          stamps defv:189 and from then on an absence really is the user's opt-out and is honoured. */
-      if(!(+s.defv>=189)) (window.IntMapDefaultLayers||[]).forEach(id=>{ if(want.indexOf(id)<0) want.push(id); });
+      /* (#R190) …and the same argument, one generation on: see the ⚠ note in _snapshot. Anything
+         stamped below 190 was written while the cable layer's success depended on a stranger's
+         server, so its absence is not evidence either. */
+      if(!(+s.defv>=190)) (window.IntMapDefaultLayers||[]).forEach(id=>{ if(want.indexOf(id)<0) want.push(id); });
       /* (#R186) …and switch a DEFAULT-ON layer back off when this saved session says the user had it
          off. Restore has only ever turned layers ON, which was right while every thematic layer
          started off: absence from the snapshot then meant "nothing to do". Now that Köppen and the

@@ -232,33 +232,22 @@ test('R183: the aircraft icon is declared at devicePixelRatio', () => {
   assert.match(DL, /addImage\([^)]*\{\s*pixelRatio/, 'and DECLARED with it, or MapLibre still scales it');
 });
 
-test('R183: the 3-D aircraft body is built from parts at DIFFERENT heights', () => {
-  // One plan-view polygon with a uniform thickness reads as a paper cut-out when the map is tilted.
-  const m = DL.match(/_P_LEVELS\s*=\s*\{([^}]*)\}/);
-  assert.ok(m, '_P_LEVELS must exist');
-  const levels = {};
-  for (const part of m[1].matchAll(/(\w+)\s*:\s*\[([\d.]+)\s*,\s*([\d.]+)\]/g)) {
-    levels[part[1]] = [Number(part[2]), Number(part[3])];
-  }
-  for (const k of ['fuselage', 'wing', 'stab', 'fin']) assert.ok(levels[k], `${k} level`);
-  for (const [k, v] of Object.entries(levels)) assert.ok(v[1] > v[0], `${k} must have height`);
-  // the shape of an aeroplane: the fin stands above everything, the wing sits below the spine
-  assert.ok(levels.fin[1] > levels.fuselage[1], 'the fin must reach above the fuselage');
-  assert.ok(levels.wing[0] < levels.fuselage[1], 'the wing is mounted on the fuselage, not above it');
-  assert.ok(levels.wing[1] < levels.stab[0], 'the stabiliser sits above the wing line');
-});
-
-test('R183: the detail budget is on aircraft COUNT, not on zoom', () => {
-  // Gating on the glyph's on-screen size never fired: `half` is clamped to a 26-px minimum at every
-  // zoom, so half/mpp is pinned at 13 below ~z15. Measured: 53 aircraft, 91 features, zero parts.
-  assert.match(DL, /DETAIL_MAX_AIRCRAFT/, 'the budget must be a count');
-  assert.doesNotMatch(DL, /const\s+DETAIL_PX/, 'the zoom-based gate was the wrong axis and is gone');
-  assert.match(DL, /detailed\s*=\s*list\.length\s*<=\s*DETAIL_MAX_AIRCRAFT/);
+/* ⚠ #R190 WITHDREW the multi-part body. 「Live aircraft trafficの飛行機のマークはat real altitude中も
+   昔のものに戻して。」 — the lifted aircraft is ONE polygon of the original outline again, so the
+   level table, the rim/halo plates and the aircraft-count budget that switched between the detailed
+   and plain versions are gone. These three assertions pinned that construction; what survives of
+   #R183 here is the counter's LESSON, which is why the last one is kept and pointed at the shape the
+   count actually has now. */
+test('R190: the lifted aircraft is the original silhouette, not a multi-part airliner', () => {
+  assert.match(DL, /const _PLANE_OUTLINE=_PLANE_ORIG;/, "the 3-D body draws the 2-D glyph's own outline");
+  assert.doesNotMatch(DL, /_P_LEVELS/, 'the part-height table is gone');
+  assert.doesNotMatch(DL, /DETAIL_MAX_AIRCRAFT/, 'and the budget that chose between the two bodies');
+  assert.match(DL, /coordinates:\[planeRing\(d\.lng,d\.lat,d\.heading,half\)\]/, 'one ring per aircraft');
 });
 
 test('R183: the "lifted" counter counts aircraft, not the parts they are made of', () => {
-  // #R181's lesson: suspect what a counter counts. One aircraft became four features this round.
-  assert.match(DL, /part\s*===\s*'fuselage'/, 'aircraft are counted by their fuselage');
+  // #R181's lesson: suspect what a counter counts. Kept through #R190, pointed at 'body'.
+  assert.match(DL, /part==='body'/, 'aircraft are counted by the one solid that IS the aeroplane');
   assert.match(DL, /aircraft:\s*bodies\.length/, 'and reported under their own name');
 });
 
