@@ -42,6 +42,9 @@ window.IntMapModules.seismic=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
+  /* (#R189) the DEM the intensity field reads — the same samplers terrain-water uses */
+  const warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
+        demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan, isMobile=HOST.isMobile;
 
   window.IntMapSeismic=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
@@ -260,29 +263,272 @@ window.IntMapModules.seismic=function(HOST){
       return ROMAN[i]+' — '+w; }
 
     /* ---- geometry ------------------------------------------------------------------------------- */
-    function gcDelta(a,b){ const la1=a[1]*D, la2=b[1]*D, dl=(b[0]-a[0])*D;
-      return Math.acos(Math.max(-1,Math.min(1,Math.sin(la1)*Math.sin(la2)+Math.cos(la1)*Math.cos(la2)*Math.cos(dl))))/D; }
+    /* (#R189) haversine, not the acos law of cosines — acos loses ~√ε of precision at small Δ,
+       which is exactly the near-field where the intensity is computed. Same form as app-body's. */
+    function gcDelta(a,b){ const la1=a[1]*D, la2=b[1]*D, dla=(b[1]-a[1])*D/2, dlo=(b[0]-a[0])*D/2;
+      const h=Math.sin(dla)*Math.sin(dla)+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo)*Math.sin(dlo);
+      return 2*Math.asin(Math.min(1,Math.sqrt(h)))/D; }
     function destAng(a,brgDeg,angDeg){ const la1=a[1]*D, lo1=a[0]*D, dR=angDeg*D, br=brgDeg*D;
-      const la2=Math.asin(Math.sin(la1)*Math.cos(dR)+Math.cos(la1)*Math.sin(dR)*Math.cos(br));
+      const la2=Math.asin(Math.max(-1,Math.min(1,Math.sin(la1)*Math.cos(dR)+Math.cos(la1)*Math.sin(dR)*Math.cos(br))));
       const lo2=lo1+Math.atan2(Math.sin(br)*Math.sin(dR)*Math.cos(la1),Math.cos(dR)-Math.sin(la1)*Math.sin(la2));
-      return [((lo2/D+540)%360)-180, la2/D]; }
-    function ring(centre,angDeg,steps){ const out=[]; const n=steps||180;
-      for(let i=0;i<=n;i++) out.push(destAng(centre,i*360/n,Math.min(179.9,Math.max(0.02,angDeg))));
-      return out; }
+      return [((lo2/D+540)%360)-180, Math.max(-89.99,Math.min(89.99,la2/D))]; }   /* (#R189) clamped: asin can emit ±90 exactly */
+    /* ══ (#R189) A WAVEFRONT NEAR A POLE IS NOT A LIST OF INDEPENDENTLY WRAPPED VERTICES ═══════════
+       「地震波が極地付近を通過するとバグるのをどうにかしろ。」 The old ring() wrapped every vertex
+       into [-180,180) on its own, so a front crossing the antimeridian emitted +179.4 → −179.6 and
+       the LineString swept horizontally across the whole map; a front enclosing a pole never closed;
+       and a source AT a pole degenerated onto one meridian (cos(±90°)=0 kills the atan2 numerator).
+       The app already owns the machinery that solves all three — HOST.diskOutlineLines splits at the
+       seam with boundary points inserted (#R176, the radius tool's rings) — and seismic.js was the
+       ONE consumer that re-derived rings by hand instead of using it. */
+    function ringLines(centre,angDeg){
+      const a=Math.min(179.9,Math.max(0.02,angDeg));
+      try{ const w=HOST.diskOutlineLines(centre,a*D*RE,180); if(w&&w.length) return w; }catch(_){}
+      const out=[]; for(let i=0;i<=180;i++) out.push(destAng(centre,i*2,a));   /* renderer-less fallback */
+      return [out];
+    }
 
     /* ---- state ---------------------------------------------------------------------------------- */
     let epi=null, depthKm=10, mw=7.0, tSec=0, playing=0, panel=null, opened=false, stations=[], picking=false;
     const MAXT=2400;
+    /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
+       TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
+    let speed=1; const SPEEDS=[1,2,5,10,30,60,120,300];
+    /* (#R189) which intensity scale the panel and the painted field speak — MMI or JMA (converted) */
+    let scale='mmi';
+
+    /* ══ (#R189) JMA INSTRUMENTAL INTENSITY (計測震度への換算) ══════════════════════════════════════
+       「震度階級は気象庁のものにも変えられるように。」 The conversion is Fujimoto & Midorikawa (2005):
+       I = 2.68 + 1.72·log10(PGV cm/s) — the published regression between PGV and the JMA
+       instrumental intensity. It is a CONVERSION from this model's PGV, not the JMA's own
+       computation (which band-filters the full three-component waveform), and the disclaimer says
+       so. Class boundaries are the real scale: 5弱/5強 split at 5.0, 6弱/6強 at 6.0, 7 from 6.5.
+       Colours are the JMA's published map colours (気象庁 配色基準). */
+    function jmaI(pgv){ return 2.68+1.72*Math.log10(Math.max(1e-6,pgv)); }
+    const JMA_CLASSES=[
+      { min:0.5, id:'1',  col:'#F2F2FF' }, { min:1.5, id:'2',  col:'#00AAFF' },
+      { min:2.5, id:'3',  col:'#0041FF' }, { min:3.5, id:'4',  col:'#FAE696' },
+      { min:4.5, id:'5-', col:'#FFE600' }, { min:5.0, id:'5+', col:'#FF9900' },
+      { min:5.5, id:'6-', col:'#FF2800' }, { min:6.0, id:'6+', col:'#A50021' },
+      { min:6.5, id:'7',  col:'#B40068' } ];
+    function jmaClass(I){ let c=null; for(const k of JMA_CLASSES){ if(I>=k.min) c=k; } return c; }
+    function jmaLabel(id){ return id.replace('-',L(' lower','弱',' schwach',' слаб.',' débil')).replace('+',L(' upper','強',' stark',' сильн.',' fuerte')); }
+    /* the USGS ShakeMap colours for the MMI fill; nothing painted under II */
+    const MMI_CLASSES=[
+      { min:2, id:'II–III', col:'#bfccff' }, { min:4, id:'IV',  col:'#a0e6ff' },
+      { min:5, id:'V',   col:'#80ffff' },    { min:6, id:'VI',  col:'#7aff93' },
+      { min:7, id:'VII', col:'#ffff00' },    { min:8, id:'VIII',col:'#ffc800' },
+      { min:9, id:'IX',  col:'#ff9100' },    { min:10,id:'X+',  col:'#ff0000' } ];
+    function mmiClass(I){ let c=null; for(const k of MMI_CLASSES){ if(I>=k.min) c=k; } return c; }
+
+    /* ══ (#R189) FINITE RUPTURE FROM A FREE-DRAWN AREA ═════════════════════════════════════════════
+       「フリーで描画した範囲の震源域とし、平均滑り幅を設定すればマグニチュードや震度分布が出るようにも
+       して。」 The seismic moment of a finite rupture is its DEFINITION: M0 = μ·A·D̄, with the
+       rigidity μ = ρβ² from the same constants the ground-motion chain already uses (3.3×10¹⁰ Pa),
+       A the drawn area (spherical excess — HOST.ringArea) and D̄ the user's average slip. Mw comes
+       back through Hanks & Kanamori. And the rupture is not just a magnitude source: the distance
+       every receiver uses becomes Rrup — zero inside the drawn area, the distance to its nearest
+       edge outside — which is what makes the intensity field FOLLOW THE FAULT'S SHAPE instead of
+       spreading in circles from one point. The wavefronts get the same treatment (see draw()):
+       each front is the envelope of fronts from points across the rupture, delayed by the rupture
+       propagation itself at Vr = 0.75β from the hypocentre. */
+    const MU=RHO*BETA*BETA, VRUP_KMS=0.75*BETA/1000;
+    let fault=null;      /* { ring:[[lng,lat]…], areaKm2, slipM, mw, centroid } */
+    let faultSlip=2;     /* the average slip D̄ (m) the next drawn rupture is given */
+    function faultDerive(areaKm2,slipM){
+      const M0=MU*(areaKm2*1e6)*Math.max(0.01,slipM);
+      return { M0, mw:(Math.log10(M0)-9.1)/1.5 };
+    }
+    function faultSet(ring,slipM){
+      if(!Array.isArray(ring)||ring.length<3) return false;
+      let aKm2=0; try{ aKm2=HOST.ringArea(ring); }catch(_){ aKm2=0; }   /* spherical excess, in km² */
+      if(!(aKm2>0)) return false;
+      let cx=0, cy=0; ring.forEach(p=>{ cx+=p[0]; cy+=p[1]; });
+      const centroid=[cx/ring.length, cy/ring.length];
+      const d=faultDerive(aKm2,slipM);
+      fault={ ring:ring.map(p=>[+p[0],+p[1]]), areaKm2:aKm2, slipM:+slipM, mw:Math.max(3,Math.min(9.6,d.mw)), M0:d.M0, centroid };
+      mw=fault.mw;
+      if(!epi) epi=centroid.slice();
+      return true;
+    }
+    function faultClear(){ fault=null; }
+    /* surface distance to the rupture: 0 inside, else nearest edge — local-equirect (a hand-drawn
+       rupture is a local object; one that crosses the antimeridian is normalised into the
+       centroid's window first) */
+    function faultDistKm(lng,lat){
+      if(!fault||!fault.ring||fault.ring.length<3) return null;
+      const R2=fault.ring, cosL=Math.max(0.05,Math.cos(lat*D));
+      const nrm=(lo)=>{ let x=lo-lng; while(x>180)x-=360; while(x<-180)x+=360; return x*cosL; };
+      let inside=false;
+      for(let i=0,j=R2.length-1;i<R2.length;j=i++){
+        const xi=nrm(R2[i][0]), yi=R2[i][1]-lat, xj=nrm(R2[j][0]), yj=R2[j][1]-lat;
+        if(((yi>0)!==(yj>0))&&(0<(xj-xi)*(0-yi)/(yj-yi)+xi)) inside=!inside; }
+      if(inside) return 0;
+      let best=Infinity;
+      for(let i=0,j=R2.length-1;i<R2.length;j=i++){
+        const ax=nrm(R2[j][0]), ay=R2[j][1]-lat, bx=nrm(R2[i][0]), by=R2[i][1]-lat;
+        const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
+        const t=L2>0?Math.max(0,Math.min(1,(-(ax*dx+ay*dy))/L2)):0;
+        const px=ax+dx*t, py=ay+dy*t;
+        const dKm=Math.hypot(px*111.320,py*110.574);
+        if(dKm<best) best=dKm; }
+      return best;
+    }
+    /* the surface distance every receiver actually uses — Rrup with a fault, epicentral without */
+    function distKmTo(lng,lat){
+      const f=faultDistKm(lng,lat); if(f!=null) return f;
+      return epi?gcDelta(epi,[lng,lat])*D*RE:0;
+    }
+
+    /* ══ (#R189) THE INTENSITY IS A PAINTED FIELD, AND THE GROUND IS IN IT ═══════════════════════
+       「震度分布は単に線を引くのではなく、地形を考慮したうえで色塗りするように。」「単に震央から同心円状に
+       広がるだけのクソシミュレーションはやめろ。忠実なシミュレーションにしろ。」
+       Two things made the old dashed contours perfect circles: a POINT distance and ONE site class
+       for the whole planet. Both are replaced:
+       · the distance is Rrup to the drawn rupture when one exists (faultDistKm above);
+       · the site term varies cell by cell, read off the REAL DEM: Vs30 is estimated from
+         topographic slope — Wald & Allen (2007), the USGS's own global Vs30 proxy, active-tectonic
+         table — with the slope measured over ~900 m (the scale the proxy was regressed at), and it
+         enters the SAME quarter-wavelength amplification the model already used. Plains and basins
+         amplify, hard steep ground does not: the painted field follows the terrain because the
+         terrain is in the numbers, not because anything is drawn by hand.
+       COST: PGV scales LINEARLY with the amplification factor (rvt() is linear in the spectral
+       scale), so the whole field needs ONE 1-D profile of the full RVT chain over log-spaced Rrup
+       plus one multiply per cell — not 30,000 RVT integrals.
+       HONESTY: cells at or below 0 m elevation are left unpainted (the slope proxy has no meaning
+       on the sea), cells with no DEM fall back to the panel's site class and are counted, and past
+       MMI_MAX_KM nothing is painted at all — the same range statement the table already makes. */
+    let fld=null, fldSeq=0, fldBusy=false, fldT=null;
+    const VS30_BINS=[[1e-4,180],[2.2e-3,240],[6.3e-3,300],[0.018,360],[0.05,490],[0.10,620],[0.138,760]];
+    function vs30FromSlope(s){
+      if(!(s>0)||s<VS30_BINS[0][0]) return 180;
+      let pv=VS30_BINS[0];
+      for(let i=1;i<VS30_BINS.length;i++){ const b=VS30_BINS[i];
+        if(s<b[0]){ const f=(Math.log(s)-Math.log(pv[0]))/(Math.log(b[0])-Math.log(pv[0]));
+          return pv[1]+(b[1]-pv[1])*f; }
+        pv=b; }
+      return Math.min(1500,760+(s-0.138)*2400);
+    }
+    function ampOf(vs30){ const rho=1800+(Math.max(150,Math.min(1500,vs30))-180)/(1500-180)*(2600-1800);
+      return Math.sqrt((RHO*BETA)/(rho*vs30)); }
+    /* one full-chain PGV profile over log-spaced hypocentral distance, interpolated in log-log */
+    function pgvProfile(){
+      const n=140, rr=new Float64Array(n), out=new Float64Array(n);
+      const r0=Math.max(1,depthKm||1), r1=Math.sqrt(MMI_MAX_KM*MMI_MAX_KM+depthKm*depthKm)*1.02;
+      for(let i=0;i<n;i++){ const r=r0*Math.pow(r1/r0,i/(n-1)); rr[i]=r; out[i]=Math.max(1e-9,motion(mw,r*1000).pgv); }
+      return { rr, out,
+        at(rM){ const r=Math.max(rr[0],Math.min(rr[n-1],rM/1000));
+          let lo=0,hi=n-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(rr[m]<=r) lo=m; else hi=m; }
+          const span=Math.log(rr[hi])-Math.log(rr[lo])||1;
+          const f=(Math.log(r)-Math.log(rr[lo]))/span;
+          return out[lo]*Math.pow(out[hi]/out[lo],f); } };
+    }
+    const mX=lng=>(180+lng)/360, mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
+    const latOfY=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
+    const SRC_IMG='seis-mmi-img', LYR_IMG='seis-mmi-fill';
+    function paintField(){
+      try{
+        if(!fld||!fld.url){ if(GE().layers.has(LYR_IMG)) GE().layers.remove(LYR_IMG);
+          if(GE().layers.hasSource(SRC_IMG)) GE().layers.removeSource(SRC_IMG); return; }
+        if(!_imCanDraw()) return;
+        if(GE().layers.hasSource(SRC_IMG)){
+          const ok=GE().layers.updateImage&&GE().layers.updateImage(SRC_IMG,{url:fld.url,coordinates:fld.coords});
+          if(ok===false){ try{ GE().layers.remove(LYR_IMG); }catch(_){} try{ GE().layers.removeSource(SRC_IMG); }catch(_){} }
+        }
+        if(!GE().layers.hasSource(SRC_IMG)){
+          GE().layers.addSource(SRC_IMG,{type:'image',url:fld.url,coordinates:fld.coords});
+          GE().layers.add({id:LYR_IMG,type:'raster',source:SRC_IMG,
+            paint:{'raster-opacity':0.55,'raster-fade-duration':0}},
+            GE().layers.has('seis-ring')?'seis-ring':undefined);
+        }
+      }catch(_){}
+    }
+    function schedField(){ clearTimeout(fldT); fldT=setTimeout(()=>{ buildField(); },260); }
+    async function buildField(){
+      const seq=++fldSeq;
+      if(!epi){ fld=null; paintField(); return; }
+      fldBusy=true; if(opened) report();
+      const t0=performance.now();
+      try{
+        const prof=pgvProfile();
+        const ampRef=siteAmp();
+        /* how far anything at all is painted: the softest plausible site against the lowest class */
+        const floorPgv=(scale==='jma')?Math.pow(10,(0.5-2.68)/1.72):Math.pow(10,(2-2.35)/3.47);
+        const ampMax=ampOf(180);
+        let rEdge=30;
+        for(let k=prof.rr.length-1;k>=0;k--){ if(prof.out[k]*(ampMax/ampRef)>=floorPgv){ rEdge=Math.max(30,prof.rr[k]); break; } }
+        rEdge=Math.min(rEdge,MMI_MAX_KM);
+        const C0=fault?fault.centroid:epi;
+        let halfKm=rEdge; if(fault){ let mx=0; fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>mx) mx=d2; }); halfKm+=mx; }
+        const cosC=Math.max(0.1,Math.cos(C0[1]*D));
+        const dLng=halfKm/(111.32*cosC), dLat=halfKm/110.574;
+        const W=C0[0]-dLng, E=C0[0]+dLng;
+        const Nn=Math.min(85,C0[1]+dLat), Ss=Math.max(-85,C0[1]-dLat);
+        const N=(typeof isMobile==='function'&&isMobile())?96:176;
+        const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
+        const spanKm=2*halfKm;
+        let z=Math.max(4,Math.min(11,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
+        const est=(zz)=>{ const tk=40075*cosC/Math.pow(2,zz); const nn=spanKm/tk+1; return nn*nn*0.85; };
+        while(z>4&&est(z)>380) z--;
+        try{
+          const warm=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
+            warm.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
+          await warmDEMTiles(warm,z,20000,null);
+        }catch(_){}
+        if(seq!==fldSeq) return;
+        const vs=new Float32Array(N*N), Ival=new Float32Array(N*N);
+        let painted=0, sea=0, noDem=0;
+        const dsM=900, dLngS=dsM/(111320*cosC), dLatS=dsM/110574;
+        const cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+        const ctx=cv.getContext('2d'), im=ctx.createImageData(N,N), px=im.data;
+        const hex=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+        for(let j=0;j<N;j++){
+          const la=latOfY(y0+(j+0.5)*dy);
+          for(let i=0;i<N;i++){
+            const lo=W+(i+0.5)*dx, k=j*N+i, o=k*4;
+            const km=distKmTo(lo,la);
+            if(km>MMI_MAX_KM){ vs[k]=0; continue; }
+            let e0=demElevBilinear(lo,la,z); if(e0==null) e0=demElevAt(lo,la,null,z);
+            let amp;
+            if(e0==null){ noDem++; vs[k]=0; amp=ampRef; }
+            else if(e0<=0){ sea++; vs[k]=-1; continue; }
+            else {
+              let ex=demElevBilinear(lo+dLngS,la,z); if(ex==null) ex=e0;
+              let ey=demElevBilinear(lo,Math.max(-85,Math.min(85,la+dLatS)),z); if(ey==null) ey=e0;
+              const slope=Math.hypot(ex-e0,ey-e0)/dsM;
+              const v=vs30FromSlope(slope); vs[k]=v; amp=ampOf(v);
+            }
+            const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
+            const pgv=prof.at(rM)*(amp/ampRef);
+            const I=(scale==='jma')?jmaI(pgv):Math.max(1,Math.min(12,3.47*Math.log10(Math.max(1e-6,pgv))+2.35));
+            Ival[k]=I;
+            const cls=(scale==='jma')?jmaClass(I):mmiClass(I);
+            if(!cls) continue;
+            const c=hex(cls.col); px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
+          }
+          if((j&7)===7){ await new Promise(r=>setTimeout(r,0)); if(seq!==fldSeq) return; }
+        }
+        ctx.putImageData(im,0,0);
+        fld={ url:cv.toDataURL('image/png'),
+          coords:[[W,Nn],[E,Nn],[E,Ss],[W,Ss]],
+          W, E, y0, dy, dx, N, vs, Ival, z,
+          vs30At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
+            if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.vs[j*this.N+i]; return v>0?v:null; },
+          stats:{ cells:N*N, painted, sea, noDem, z, spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge),
+                  terrain:noDem<N*N*0.5, ms:Math.round(performance.now()-t0) } };
+        paintField();
+      } finally { if(seq===fldSeq){ fldBusy=false; if(opened) report(); } }
+    }
 
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      /* (#R189) the intensity CONTOUR LINES ('seis-mmi' + labels) are gone — the intensity is the
+         painted field (see buildField/paintField), which is what the instruction asks for. */
+      if(!GE().layers.has('seis-fault-fill')) GE().layers.add({id:'seis-fault-fill',type:'fill',source:SRC,filter:['==',['get','kind'],'fault'],
+        paint:{'fill-color':'#ff3b30','fill-opacity':0.13}});
+      if(!GE().layers.has('seis-fault-line')) GE().layers.add({id:'seis-fault-line',type:'line',source:SRC,filter:['==',['get','kind'],'fault'],
+        paint:{'line-color':'#ff3b30','line-width':1.8,'line-dasharray':[2,1.5],'line-opacity':0.9}});
       if(!GE().layers.has('seis-ring')) GE().layers.add({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
         paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.92}});
-      if(!GE().layers.has('seis-mmi')) GE().layers.add({id:'seis-mmi',type:'line',source:SRC,filter:['==',['get','kind'],'mmi'],
-        paint:{'line-color':['get','col'],'line-width':1.4,'line-opacity':0.75,'line-dasharray':[3,2]}});
-      if(!GE().layers.has('seis-mmi-lbl')) GE().layers.add({id:'seis-mmi-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'mmilbl'],
-        layout:{'text-field':['get','label'],'text-size':11,'text-allow-overlap':true},
-        paint:{'text-color':['get','col'],'text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
       if(!GE().layers.has('seis-sta')) GE().layers.add({id:'seis-sta',type:'circle',source:SRC,filter:['==',['get','kind'],'station'],
         paint:{'circle-radius':5,'circle-color':'#ffffff','circle-stroke-color':'#222','circle-stroke-width':1.6}});
       if(!GE().layers.has('seis-epi')) GE().layers.add({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
@@ -305,34 +551,78 @@ window.IntMapModules.seismic=function(HOST){
       return out; }
 
     const PH=[ {k:'P',col:'#ff3b30',w:2.6}, {k:'S',col:'#ff9f0a',w:2.6} ];
-    function draw(){
+    /* (#R189) initial great-circle bearing — for the finite-source front envelope below */
+    function bearingTo(a,b){ const la1=a[1]*D, la2=b[1]*D, dl=(b[0]-a[0])*D;
+      return (Math.atan2(Math.sin(dl)*Math.cos(la2),Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dl))/D+360)%360; }
+    /* ══ (#R189) A FINITE SOURCE HAS A FINITE FRONT ══════════════════════════════════════════════
+       With a drawn rupture the front at time t is the ENVELOPE of the fronts from every point of
+       the rupture, each delayed by the rupture's own propagation from the hypocentre (Vr = 0.75β).
+       The envelope of a union of circles is evaluated as its support function per bearing —
+       exact for the convex hull of the union, which is what a wavefront looks like within the
+       sampling of the ring — and the hypocentre's own circle keeps every bearing defined. The ring
+       is built in CONTINUOUS longitude and split at the seam by the same helper every other ring
+       uses, so the polar/antimeridian behaviour is identical to ringLines(). */
+    function faultFrontLines(radiusAtDelay){
+      const r0=radiusAtDelay(0); if(r0==null) return null;
+      const K=[{off:0,phi:0,delay:0}];
+      if(fault&&fault.ring&&fault.ring.length>=3){
+        const R2=fault.ring, step=Math.max(1,Math.floor(R2.length/20));
+        for(let i=0;i<R2.length;i+=step){ const p=R2[i];
+          K.push({ off:gcDelta(epi,p), phi:bearingTo(epi,p), delay:gcDelta(epi,p)*D*RE/VRUP_KMS }); } }
+      const NB2=144, ringPts=[]; let prev=null;
+      for(let a2=0;a2<=NB2;a2++){ const b=a2*360/NB2; let R=r0;
+        for(let k2=1;k2<K.length;k2++){ const k=K[k2], r=radiusAtDelay(k.delay); if(r==null) continue;
+          const cand=k.off*Math.cos((b-k.phi)*D)+r; if(cand>R) R=cand; }
+        const p=destAng(epi,b,Math.min(179.9,Math.max(0.02,R)));
+        let lo=p[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; }
+        ringPts.push([lo,p[1]]); prev=lo; }
+      try{ const w=HOST._splitLineToWindows(ringPts); if(w&&w.length) return w; }catch(_){}
+      return [ringPts.map(p=>[((p[0]+540)%360)-180,p[1]])];
+    }
+    /* the wavefront features alone — cheap enough for a real-time tick (the intensity field and the
+       report do NOT depend on tSec, so the playback loop calls this and only this) */
+    function drawFronts(){
       if(!epi){ setData([]); return; }
       const feats=[{type:'Feature',geometry:{type:'Point',coordinates:epi},properties:{kind:'epi'}}];
-      PH.forEach(ph=>{ const d=frontDelta(ph.k,depthKm,tSec);
-        if(d!=null&&d>0.02) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ring(epi,d)},properties:{kind:'ring',col:ph.col,w:ph.w}}); });
+      if(fault&&fault.ring&&fault.ring.length>=3)
+        feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[...fault.ring,fault.ring[0]]]},properties:{kind:'fault'}});
+      const emit=(lines,props)=>{ (lines||[]).forEach(seg=>feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:props})); };
+      PH.forEach(ph=>{ const rad=(delay)=>{ const d=frontDelta(ph.k,depthKm,Math.max(0,tSec-delay)); return (d!=null&&d>0.02)?d:null; };
+        const lines=fault?faultFrontLines(rad):((rad(0)!=null)?ringLines(epi,rad(0)):null);
+        if(lines) emit(lines,{kind:'ring',col:ph.col,w:ph.w}); });
       /* surface waves — group velocity along the great circle, not ray theory */
-      [['#0a84ff',3.5],['#bf5af2',4.4]].forEach(([col,vkm])=>{ const d=(vkm*tSec)/(RE*D);
-        if(d>0.02&&d<179) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ring(epi,d)},properties:{kind:'ring',col,w:1.8}}); });
-      mmiRings().forEach(r=>{ const col=r.I>=8?'#ff2d2d':r.I>=6?'#ff9f0a':r.I>=4?'#ffd60a':'#8e8e93';
-        feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ring(epi,r.deg,120)},properties:{kind:'mmi',col}});
-        feats.push({type:'Feature',geometry:{type:'Point',coordinates:destAng(epi,90,r.deg)},properties:{kind:'mmilbl',col,label:ROMAN[r.I]}}); });
+      [['#0a84ff',3.5],['#bf5af2',4.4]].forEach(([col,vkm])=>{
+        const rad=(delay)=>{ const d=(vkm*Math.max(0,tSec-delay))/(RE*D); return (d>0.02&&d<179)?d:null; };
+        const lines=fault?faultFrontLines(rad):((rad(0)!=null)?ringLines(epi,rad(0)):null);
+        if(lines) emit(lines,{kind:'ring',col,w:1.8}); });
       stations.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station'}}));
       setData(feats);
-      report();
     }
+    function draw(){ drawFronts(); report(); }
 
     /* ---- the answer for one place ----------------------------------------------------------------- */
     function at(lng,lat){
       if(!epi) return null;
-      const deg=gcDelta(epi,[lng,lat]), km=deg*D*RE;
+      /* travel times run from the HYPOCENTRE (where the rupture starts); the shaking runs from the
+         RUPTURE (Rrup — zero over the drawn fault), which is what a finite source means (#R189) */
+      const deg=gcDelta(epi,[lng,lat]), kmEpi=deg*D*RE;
+      const km=distKmTo(lng,lat);
       const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
       const tP=arrival('P',depthKm,deg), tS=arrival('S',depthKm,deg);
-      const tR=km/3.5, tL=km/4.4;
+      const tR=kmEpi/3.5, tL=kmEpi/4.4;
       const m=motion(mw,rM);
+      /* (#R189) the ground under THIS point, when the field has read it off the DEM */
+      let vs30=null;
+      try{ if(fld&&fld.vs30At){ vs30=fld.vs30At(lng,lat); } }catch(_){}
+      let pgv=m.pgv, pga=m.pga, pgaG=m.pgaG;
+      if(vs30){ const f=ampOf(vs30)/m.amp; pgv*=f; pga*=f; pgaG*=f; }
+      const mmi=Math.max(1,Math.min(12,3.47*Math.log10(Math.max(1e-6,pgv))+2.35));
+      const jma=jmaI(pgv);
+      const calibrated=(m.inRange&&pgv>=0.5&&mmi<=9.5);
       /* the ground is moving from S until the surface train has passed, plus the rupture's own length */
       const dur=(tS!=null)?Math.max(m.srcDurS, (tR-tS)+m.srcDurS):m.srcDurS;
-      return { deg, km, tP, tS, tRayleigh:tR, tLove:tL, durS:dur, mmi:m.mmi, pgv:m.pgv, pga:m.pga, pgaG:m.pgaG,
-        inRange:m.inRange, calibrated:m.calibrated };   /* carried through, or the table prints an MMI the model does not claim */
+      return { deg, km, tP, tS, tRayleigh:tR, tLove:tL, durS:dur, mmi, jma, vs30, pgv, pga, pgaG,
+        inRange:m.inRange, calibrated };   /* carried through, or the table prints an intensity the model does not claim */
     }
     const fmtT=s=>{ if(s==null||!isFinite(s)) return '—'; let t=Math.round(s); const m=Math.floor(t/60), ss=t%60;
       return m?(m+'m '+String(ss).padStart(2,'0')+'s'):(ss+'s'); };   /* round first, or 13m 59.6s prints "13m 60s" */
@@ -341,51 +631,113 @@ window.IntMapModules.seismic=function(HOST){
     const NUM='width:84px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;box-sizing:border-box;';
     const ROW='font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;';
     const BTN='padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;';
+    /* (#R189) every control that changes the PHYSICS goes through this — redraw, re-report, and
+       rebuild the painted field (debounced; the wavefront tick never comes through here) */
+    function refresh(){ draw(); schedField(); }
     function render(){ if(!panel) return;
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         +'<button class="sq-pick" style="'+BTN+'width:100%;background:var(--primary-color);color:#fff;border:none;font-weight:700;">◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')+'</button>'
+        /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
+        +'<div style="display:flex;gap:5px;">'
+          +'<button class="sq-fdraw" style="'+BTN+'flex:1;">'+(_fDrawing
+              ?('✔ '+L('Use the drawn area','描いた範囲を取り込む','Gezeichnete Fläche übernehmen','Взять нарисованную область','Usar el área dibujada'))
+              :('✏ '+L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura')))+'</button>'
+          +(fault?('<button class="sq-fclear" style="'+BTN+'">✕</button>'):'')
+        +'</div>'
+        +'<label style="'+ROW+'">'+L('Average slip (m)','平均すべり量 (m)','Mittlerer Versatz (m)','Средняя подвижка (м)','Deslizamiento medio (m)')+'<input class="sq-slip" type="number" min="0.1" max="80" step="0.1" value="'+faultSlip+'" style="'+NUM+'"></label>'
+        +(fault?('<div class="sq-finfo" style="font-size:11px;color:var(--text-muted);">'
+          +L('Rupture','震源域','Bruchfläche','Очаг','Ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km² · D̄ '+fault.slipM+' m → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'):'')
         +'<label style="'+ROW+'">'+L('Depth (km)','深さ (km)','Tiefe (km)','Глубина (км)','Profundidad (km)')+'<input class="sq-d" type="number" min="0" max="700" step="5" value="'+depthKm+'" style="'+NUM+'"></label>'
-        +'<label style="'+ROW+'">'+L('Magnitude (Mw)','規模 (Mw)','Magnitude (Mw)','Магнитуда (Mw)','Magnitud (Mw)')+'<input class="sq-m" type="number" min="3" max="9.6" step="0.1" value="'+mw+'" style="'+NUM+'"></label>'
+        +'<label style="'+ROW+'">'+L('Magnitude (Mw)','規模 (Mw)','Magnitude (Mw)','Магнитуда (Mw)','Magnitud (Mw)')+'<input class="sq-m" type="number" min="3" max="9.6" step="0.1" value="'+mw.toFixed(1)+'"'+(fault?' disabled title="'+L('Set by the drawn rupture — remove it to edit','描いた震源域から決まります（解除で編集可）','Durch die Bruchfläche bestimmt','Задана нарисованным очагом','Fijada por la ruptura dibujada')+'"':'')+' style="'+NUM+'"></label>'
         +'<label style="'+ROW+'">'+L('Stress drop (MPa)','応力降下量 (MPa)','Spannungsabfall (MPa)','Сброс напряжений (МПа)','Caída de esfuerzo (MPa)')+'<input class="sq-sd" type="number" min="0.3" max="30" step="0.5" value="'+stressDropMPa+'" style="'+NUM+'"></label>'
-        +'<label style="'+ROW+'">'+L('Ground at the site','地盤','Untergrund','Грунт','Terreno')
+        /* (#R189) which intensity scale is spoken — MMI, or the JMA scale via the PGV conversion */
+        +'<label style="'+ROW+'">'+L('Intensity scale','震度階級','Intensitätsskala','Шкала интенсивности','Escala de intensidad')
+          +'<select class="sq-scale" style="'+NUM+'width:132px;">'
+          +'<option value="mmi"'+(scale==='mmi'?' selected':'')+'>MMI</option>'
+          +'<option value="jma"'+(scale==='jma'?' selected':'')+'>'+L('JMA (shindo)','気象庁震度','JMA (Shindo)','JMA (синдо)','JMA (shindo)')+'</option>'
+          +'</select></label>'
+        +'<label style="'+ROW+'">'+L('Ground (no-DEM fallback)','地盤（DEM欠損時）','Untergrund (ohne DEM)','Грунт (без DEM)','Terreno (sin DEM)')
           +'<select class="sq-site" style="'+NUM+'width:132px;">'
           +'<option value="hard">'+L('hard rock (Vs30 1500)','固い岩盤 (Vs30 1500)','Festgestein (Vs30 1500)','скала (Vs30 1500)','roca dura (Vs30 1500)')+'</option>'
           +'<option value="rock">'+L('rock (Vs30 760)','岩盤 (Vs30 760)','Fels (Vs30 760)','порода (Vs30 760)','roca (Vs30 760)')+'</option>'
           +'<option value="stiff">'+L('stiff soil (Vs30 360)','硬い地盤 (Vs30 360)','steifer Boden (Vs30 360)','плотный грунт (Vs30 360)','suelo firme (Vs30 360)')+'</option>'
           +'<option value="soft">'+L('soft soil (Vs30 180)','軟弱地盤 (Vs30 180)','weicher Boden (Vs30 180)','мягкий грунт (Vs30 180)','suelo blando (Vs30 180)')+'</option>'
           +'</select></label>'
+        /* (#R189) real-time playback with a visible rate */
         +'<div style="display:flex;align-items:center;gap:8px;"><button class="sq-play" style="'+BTN+'width:36px;">▶</button>'
-          +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="1" value="'+tSec+'" style="flex:1;">'
+          +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="1" value="'+Math.round(tSec)+'" style="flex:1;">'
+          +'<select class="sq-spd" style="'+NUM+'width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
           +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
         +'<button class="sq-real" style="'+BTN+'width:100%;">🌎 '+L('Load a recent real earthquake','最近の実際の地震を読み込む','Echtes Beben laden','Загрузить реальное землетрясение','Cargar un sismo real')+'</button>'
+        +'<div class="sq-leg" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:10px;color:var(--text-muted);"></div>'
         +'<div class="sq-out" style="font-size:11.5px;color:var(--text-main);line-height:1.6;"></div>'
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic point source (Brune spectrum, trilinear spreading, Q=300, κ=0.035 s, quarter-wavelength site amplification) and the intensity is Modified Mercalli from PGV (Wald et al. 1999) — it is NOT the JMA shindo scale, and MMI is only shown where that relation is calibrated. A point source has no fault plane and no basin, so near a large rupture the real shaking is stronger than this. Educational model: in a real emergency follow the official authorities.',
-           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的点震源モデル（Bruneスペクトル・三折れ幾何減衰・Q=300・κ=0.035秒・1/4波長則による地盤増幅）、震度はPGVから求めた改正メルカリ震度（Wald et al. 1999）で、気象庁震度階級ではありません。相関式の適用範囲外では震度を表示しません。点震源のため断層面や堆積盆地の効果は含まれず、大地震の震源近傍では実際の揺れはこれより強くなります。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
-           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Punktquelle (Brune, trilineare Ausbreitung, Q=300, κ=0,035 s, Viertelwellenlängen-Verstärkung). Intensität = Modified Mercalli aus PGV (Wald et al. 1999), NICHT die JMA-Skala. Eine Punktquelle kennt keine Bruchfläche: nahe grossen Beben ist es real stärker. Nur Bildungsmodell.',
-           'Времена — трассировка лучей по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический точечный источник (Брун, трёхзвенное расхождение, Q=300, κ=0,035 с, усиление по четверти длины волны). Интенсивность — MMI по PGV (Wald et al. 1999), а не шкала JMA. Точечный источник не знает плоскости разрыва: вблизи крупных землетрясений реально сильнее. Учебная модель.',
-           'Llegadas por trazado de rayos en IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: fuente puntual estocástica (Brune, dispersión trilineal, Q=300, κ=0,035 s, amplificación de cuarto de onda). Intensidad = Mercalli Modificada desde PGV (Wald et al. 1999), NO la escala JMA. Una fuente puntual no tiene plano de falla: cerca de grandes rupturas el sacudimiento real es mayor. Modelo educativo.')
+        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic source (Brune spectrum, trilinear spreading, Q=300, κ=0.035 s); with a drawn rupture, distance is to the rupture (M₀ = μAD̄) and wavefronts carry the rupture propagation (Vr = 0.75β). The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification; sea cells are not painted. MMI is from PGV (Wald et al. 1999) and is NOT the JMA shindo scale; the JMA display is a CONVERSION from PGV (Fujimoto & Midorikawa 2005), not the JMA\'s own waveform computation. Intensity is only offered inside the models\' range. Educational model: in a real emergency follow the official authorities.',
+           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的震源モデル（Bruneスペクトル・三折れ幾何減衰・Q=300・κ=0.035秒）。震源域を描くと距離は断層面まで（M₀=μAD̄）となり、波面は破壊伝播（Vr=0.75β）を含みます。地盤は実地形から：地形勾配によるVs30推定（Wald & Allen 2007）を1/4波長則に入れ、海域は塗りません。MMIはPGVからのWald et al. 1999で、これは気象庁震度階級ではありません。震度表示はPGVからの計測震度換算（藤本・翠川 2005）であり、気象庁の観測波形計算そのものではありません。相関式の適用範囲外では震度を表示しません。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
+           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Quelle (Brune, Q=300, κ=0,035 s); mit gezeichneter Bruchfläche gilt die Distanz zur Fläche (M₀=μAD̄) und die Fronten tragen die Bruchausbreitung. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV (Wald et al. 1999) — NICHT die JMA-Skala; die JMA-Anzeige ist eine UMRECHNUNG (Fujimoto & Midorikawa 2005). Nur Bildungsmodell.',
+           'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический источник (Брун, Q=300, κ=0,035 с); с нарисованным очагом расстояние — до разрыва (M₀=μAD̄), фронты несут распространение разрыва. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV (Wald et al. 1999), это не шкала JMA; отображение JMA — ПЕРЕСЧЁТ (Fujimoto & Midorikawa 2005). Учебная модель.',
+           'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: fuente estocástica (Brune, Q=300, κ=0,035 s); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV (Wald et al. 1999), NO la escala JMA; la vista JMA es una CONVERSIÓN (Fujimoto & Midorikawa 2005). Modelo educativo.')
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
       panel.querySelector('.sq-pick').onclick=()=>startPick();
-      panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); draw(); };
-      panel.querySelector('.sq-m').onchange=e=>{ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); draw(); };
-      panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); draw(); };
-      const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; draw(); }; }
-      const tl=panel.querySelector('.sq-t'); tl.oninput=()=>{ tSec=+tl.value; panel.querySelector('.sq-tv').textContent=fmtT(tSec); draw(); };
+      panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
+      const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
+      panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
+        if(fault){ faultSet(fault.ring,faultSlip); render(); } refresh(); };
+      panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); refresh(); };
+      panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); refresh(); } };
+      panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); refresh(); };
+      const sc=panel.querySelector('.sq-scale'); if(sc){ sc.onchange=e=>{ scale=(e.target.value==='jma')?'jma':'mmi'; legend(); refresh(); }; }
+      const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; refresh(); }; }
+      const tl=panel.querySelector('.sq-t'); tl.oninput=()=>{ tSec=+tl.value; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); };
+      const sp=panel.querySelector('.sq-spd'); if(sp){ sp.onchange=e=>{ speed=Math.max(1,+e.target.value||1); }; }
+      /* (#R189) REAL time by default: the front advances by wall-clock seconds × the chosen rate.
+         The old loop hard-coded 10 s of simulation every 90 ms ≈ 111× and nothing on screen said so. */
       const pb=panel.querySelector('.sq-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; }
-        else { pb.textContent='⏸'; playing=setInterval(()=>{ tSec=(tSec+10)%MAXT; tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); draw(); },90); } };
+        else { pb.textContent='⏸'; let last=performance.now();
+          playing=setInterval(()=>{ const now=performance.now();
+            tSec=(tSec+(now-last)/1000*speed)%MAXT; last=now;
+            tl.value=Math.round(tSec); panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); },90); } };
       panel.querySelector('.sq-real').onclick=()=>loadReal();
       try{ makeDraggable(panel,panel.querySelector('.sq-head')); }catch(_){}
+      legend();
       report();
+    }
+    /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
+    function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;
+      const cls=(scale==='jma')?JMA_CLASSES:MMI_CLASSES;
+      el.innerHTML=cls.map(k=>'<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2.5px;background:'+k.col+';display:inline-block;border:1px solid rgba(128,128,128,0.35);"></span>'+((scale==='jma')?jmaLabel(k.id):k.id)+'</span>').join('');
+    }
+    /* (#R189) the rupture draw flow: press once → the shared free-draw tool is live; press again →
+       its loop becomes the rupture (area → M₀ → Mw). The tool is the SAME free-draw every other
+       feature uses (#R141's currentGeometry), not a private reimplementation. */
+    let _fDrawing=false;
+    function toggleFaultDraw(){
+      const DT=window.DrawTool;
+      if(!DT||!DT.start||!DT.currentGeometry){ return; }
+      if(!_fDrawing){ _fDrawing=true; try{ DT.start(); }catch(_){} render(); return; }
+      _fDrawing=false;
+      let ring=null;
+      try{ const g=DT.currentGeometry();
+        if(g&&g.type==='Polygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0].length>=4) ring=g.coordinates[0].slice(0,-1);
+        else if(g&&g.type==='MultiPolygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0][0]&&g.coordinates[0][0].length>=4) ring=g.coordinates[0][0].slice(0,-1);
+      }catch(_){}
+      try{ DT.exit&&DT.exit(); }catch(_){}
+      if(ring&&faultSet(ring,faultSlip)){ render(); refresh(); }
+      else { render(); const o=panel&&panel.querySelector('.sq-out');
+        if(o) o.insertAdjacentHTML('afterbegin','<div style="color:#ff9f0a;margin-bottom:4px;">'+L('No closed area was drawn — draw a loop, then press the button again.','閉じた範囲が描かれていません。ループを描いてからもう一度押してください。','Keine geschlossene Fläche — Schleife zeichnen, dann erneut drücken.','Замкнутая область не нарисована — нарисуйте контур и нажмите снова.','No se dibujó un área cerrada — dibuje un lazo y pulse de nuevo.')+'</div>'); }
     }
     function report(){ const o=panel&&panel.querySelector('.sq-out'); if(!o) return;
       if(!epi){ o.innerHTML=L('Place an epicentre to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
       const s=source(mw);
       const notFelt=L('not felt','無感','—','—','—');
+      const jp=scale==='jma';
+      const iCell=(a)=>{ if(!a.calibrated) return '<span style="opacity:0.6;font-weight:400;">'+notFelt+'</span>';
+        if(jp){ const c=jmaClass(a.jma); return c?jmaLabel(c.id):'<span style="opacity:0.6;font-weight:400;">'+notFelt+'</span>'; }
+        return ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
         return '<tr><td style="padding:1px 6px 1px 0;white-space:nowrap;">'+c.name+'</td>'
           +'<td style="padding:1px 6px;text-align:right;">'+Math.round(a.km).toLocaleString()+' km</td>'
@@ -393,17 +745,27 @@ window.IntMapModules.seismic=function(HOST){
           +'<td style="padding:1px 6px;text-align:right;color:#ffb020;">'+fmtT(a.tS)+'</td>'
           +'<td style="padding:1px 6px;text-align:right;">'+fmtT(a.durS)+'</td>'
           +'<td style="padding:1px 6px;text-align:right;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
-          +'<td style="padding:1px 0 1px 6px;text-align:right;font-weight:700;">'
-            +(a.calibrated?ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]:'<span style="opacity:0.6;font-weight:400;">'+notFelt+'</span>')+'</td></tr>'; }).join('');
+          +'<td style="padding:1px 0 1px 6px;text-align:right;font-weight:700;">'+iCell(a)+'</td></tr>'; }).join('');
       o.innerHTML='<div><b>M'+mw.toFixed(1)+'</b> · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km · M<sub>0</sub> '+s.M0.toExponential(2)+' N·m'
-        +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+L('rupture radius','破壊半径','Bruchradius','радиус разрыва','radio de ruptura')+' '+s.rupKm.toFixed(1)+' km</div>'
+        +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+(fault
+          ?(L('rupture','震源域','Bruch','очаг','ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km²')
+          :(L('rupture radius','破壊半径','Bruchradius','радиус разрыва','radio de ruptura')+' '+s.rupKm.toFixed(1)+' km'))+'</div>'
+        /* (#R189) the painted field says what it is standing on — or that it is still reading it */
+        +(fldBusy?('<div style="opacity:0.75;">'+L('Reading the terrain for the intensity map…','震度分布のため地形を読み込み中…','Gelände für die Intensitätskarte wird gelesen…','Чтение рельефа для карты интенсивности…','Leyendo el terreno para el mapa de intensidad…')+'</div>')
+          :(fld&&fld.stats?('<div style="opacity:0.72;font-size:10.5px;">'
+            +(fld.stats.terrain
+              ?L('Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM','震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007）','Intensitätsfeld: Vs30 aus Hangneigung, echtes DEM','Поле интенсивности: Vs30 по уклону, реальный DEM','Campo de intensidad: Vs30 por pendiente, DEM real')
+              :('⚠ '+L('DEM unavailable — uniform site class used','DEM取得不可のため一様地盤で表示','DEM nicht verfügbar — einheitlicher Untergrund','DEM недоступен — однородный грунт','DEM no disponible — terreno uniforme')))
+            +' · z'+fld.stats.z+' · '+fld.stats.painted.toLocaleString()+'/'+fld.stats.cells.toLocaleString()+' '+L('cells','セル','Zellen','ячеек','celdas')
+            +(fld.stats.noDem?(' · '+fld.stats.noDem.toLocaleString()+' '+L('no DEM','DEM欠損','ohne DEM','без DEM','sin DEM')):'')
+            +' · '+fld.stats.ms+' ms</div>'):''))
         +'<table style="margin-top:6px;font-size:11px;border-collapse:collapse;width:100%;"><thead><tr style="color:var(--text-muted);">'
         +'<th style="text-align:left;font-weight:600;">'+L('Place','地点','Ort','Место','Lugar')+'</th>'
         +'<th style="text-align:right;font-weight:600;">Δ</th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
         +'<th style="text-align:right;font-weight:600;color:#ffb020;">S</th>'
         +'<th style="text-align:right;font-weight:600;">'+L('shaking','継続','Dauer','длит.','durac.')+'</th>'
         +'<th style="text-align:right;font-weight:600;">PGV</th>'
-        +'<th style="text-align:right;font-weight:600;">MMI</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th></tr></thead><tbody>'+rows+'</tbody></table>'
         +'<div style="margin-top:5px;opacity:0.75;">'+L('Click the map to add a place to this table.','地図をクリックすると地点を追加できます。','Karte klicken, um einen Ort hinzuzufügen.','Кликните по карте, чтобы добавить место.','Haga clic en el mapa para añadir un lugar.')+'</div>';
     }
     /* the table: whatever the user clicked, plus the nearest well-known places already in the app */
@@ -419,7 +781,7 @@ window.IntMapModules.seismic=function(HOST){
     let pickH=null;
     function endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
     function startPick(){ endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
-      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; endPick(); draw(); }; try{ GE().events.once('click',pickH); }catch(_){} }
+      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function onClick(e){ if(!opened||picking||!epi) return;
       stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
       if(stations.length>6) stations.shift(); draw(); }
@@ -435,36 +797,54 @@ window.IntMapModules.seismic=function(HOST){
         if(!f) throw 0;
         epi=[f.geometry.coordinates[0],f.geometry.coordinates[1]];
         depthKm=Math.max(0,Math.round(f.geometry.coordinates[2]||10));
+        faultClear();   /* (#R189) a real point event replaces any drawn rupture */
         mw=Math.round(f.properties.mag*10)/10;
-        const d=panel.querySelector('.sq-d'), m=panel.querySelector('.sq-m'); if(d) d.value=depthKm; if(m) m.value=mw;
+        const d=panel.querySelector('.sq-d'), m=panel.querySelector('.sq-m'); if(d) d.value=depthKm; if(m){ m.value=mw; m.disabled=false; }
         try{ GE().camera.flyTo({center:epi,zoom:3,duration:900}); }catch(_){}
         tSec=0; const tl=panel.querySelector('.sq-t'); if(tl) tl.value=0;
-        draw();
+        refresh();
         if(o) o.insertAdjacentHTML('afterbegin','<div style="margin-bottom:5px;">📡 '+String(f.properties.place||'').replace(/[<>&]/g,'')+'</div>');
       }catch(_){ if(o) o.innerHTML=L('Could not reach the USGS feed.','USGSのフィードに接続できませんでした。','USGS-Feed nicht erreichbar.','Не удалось получить данные USGS.','No se pudo acceder al feed del USGS.'); }
     }
 
     function open(o){
       if(!panel){ panel=document.createElement('div'); panel.id='sq-panel';
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        /* (#R189) 「ポップアップは透過するな」 — --card-bg is opaque in BOTH themes (#fff / #1c1c1e);
+           --popup-bg was rgba with no backdrop-filter, so the map showed through under the table. */
+        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
-      if(o&&o.lng!=null){ epi=[o.lng,o.lat]; if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); draw(); }
-      else draw();
+      if(o&&o.lng!=null){ epi=[o.lng,o.lat]; if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
+      else refresh();
       return true; }
     function close(){ opened=false; endPick(); if(playing){ clearInterval(playing); playing=0; }
+      if(_fDrawing){ try{ window.DrawTool&&window.DrawTool.exit&&window.DrawTool.exit(); }catch(_){} _fDrawing=false; }
+      fldSeq++; fld=null; try{ paintField(); }catch(_){}
       if(panel) panel.style.display='none'; setData([]); return true; }
     window.addEventListener('intmap-lang',()=>{ if(opened) render(); });
 
     return { open, close, draw, at, arrival, curve, source, motion, mmiRings,
-      setEpicentre(lng,lat){ epi=[lng,lat]; draw(); return true; },
+      setEpicentre(lng,lat){ epi=[lng,lat]; refresh(); return true; },
       setParams(o){ o=o||{}; if(o.depth!=null) depthKm=Math.max(0,Math.min(700,+o.depth));
-        if(o.mw!=null) mw=Math.max(3,Math.min(9.6,+o.mw)); if(o.t!=null) tSec=Math.max(0,Math.min(MAXT,+o.t));
+        if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); if(o.t!=null) tSec=Math.max(0,Math.min(MAXT,+o.t));
         if(o.stressDrop!=null) stressDropMPa=Math.max(0.3,Math.min(30,+o.stressDrop));
-        if(opened) render(); draw(); return true; },
+        if(o.scale==='mmi'||o.scale==='jma') scale=o.scale;                       /* (#R189) */
+        if(o.speed!=null&&isFinite(+o.speed)&&+o.speed>0) speed=Math.max(0.1,Math.min(1000,+o.speed));
+        if(o.slip!=null){ faultSlip=Math.max(0.1,Math.min(80,+o.slip||faultSlip));
+          if(fault) faultSet(fault.ring,faultSlip); }
+        if(opened) render(); refresh(); return true; },
       loadReal,
-      setSite(id){ if(SITES.some(s=>s.id===id)){ siteId=id; if(opened) render(); draw(); return true; } return false; },
-      state:()=>({ open:opened, epi:epi?epi.slice():null, depthKm, mw, tSec, stressDropMPa, siteId, siteAmp:siteAmp(),
+      setSite(id){ if(SITES.some(s=>s.id===id)){ siteId=id; if(opened) render(); refresh(); return true; } return false; },
+      /* (#R189) the new controls, callable — the Atlas rule: every feature drives from a call */
+      setScale(v){ if(v==='mmi'||v==='jma'){ scale=v; if(opened) render(); refresh(); return true; } return false; },
+      setSpeed(v){ const n=+v; if(isFinite(n)&&n>0){ speed=Math.max(0.1,Math.min(1000,n)); if(opened) render(); return true; } return false; },
+      setFault(ring,slip){ if(slip!=null) faultSlip=Math.max(0.1,Math.min(80,+slip||faultSlip));
+        const ok=faultSet(ring,faultSlip); if(ok){ if(opened) render(); refresh(); } return ok; },
+      clearFault(){ faultClear(); if(opened) render(); refresh(); return true; },
+      rebuildField:()=>buildField(),
+      state:()=>({ open:opened, epi:epi?epi.slice():null, depthKm, mw, tSec, speed, scale, stressDropMPa, siteId, siteAmp:siteAmp(),
+        fault:fault?{ areaKm2:Math.round(fault.areaKm2), slipM:fault.slipM, mw:+fault.mw.toFixed(2), points:fault.ring.length }:null,
+        field:(fld&&fld.stats)?fld.stats:null, fieldBusy:fldBusy,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
   })();
 };

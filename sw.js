@@ -60,11 +60,14 @@ function isTileRequest(url) {
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    // Drop EVERY cache except the current tile cache. This SW only ever caches immutable tiles (never the
-    // HTML/app shell), but purging any legacy cache name too guarantees a stale index.html can't survive
-    // here and resurface as an "old version" (#R16 先祖返り defence on the hosted path).
+    // Drop EVERY cache except the current tile cache and the page's own data caches. This SW only ever
+    // caches immutable tiles (never the HTML/app shell), but purging any legacy cache name too guarantees
+    // a stale index.html can't survive here and resurface as an "old version" (#R16 先祖返り defence on the
+    // hosted path). (#R189) 'intmap-subcables-v1' is written by PAGE JS as the offline copy of the
+    // submarine-cable GeoJSON (#R188) — deleting it here on every deploy silently re-created the
+    // 「片方しかつかない」 outage window this SW was never meant to own. Keep page-owned intmap-* caches.
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => k !== CACHE && !/^intmap-subcables-/.test(k)).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });

@@ -135,7 +135,9 @@ test('R188 water: the drawn body comes from DEM cross-sections, not from one wid
   const src = read('js/terrain-water.js');
   assert.match(src, /function channelSections\(tr\)\{/, 'there must be a cross-section solve');
   /* continuity: A ∝ 1/√S, scaled once so ∫A ds is the volume the user placed */
-  assert.match(src, /const C=V\/Math\.max\(1e-6,tot\);/, 'the scale comes from the placed volume');
+  /* (#R189) the scale is the placed volume by default, or the user's discharge when set */
+  assert.match(src, /const C=\(Q!=null\)\?\(Q\/CHEZY_K\):\(V\/Math\.max\(1e-6,tot\)\);/,
+    'the scale comes from the placed volume, or from the set discharge');
   assert.match(src, /const A=C\/Math\.sqrt\(slope\[m\]\);/, 'section area follows 1/√slope');
   assert.match(src, /const areaAt=\(h\)=>\{ let acc=0;/, 'the level is solved against the real section');
   assert.match(src, /for\(let it=0;it<26;it\+\+\)\{ const hm=\(h0\+h1\)\/2;/, 'by bisection on the wetted area');
@@ -160,7 +162,8 @@ test('R188 water: the drawn body comes from DEM cross-sections, not from one wid
   assert.ok(!/g\.strokeStyle='rgba\(96,196,255,0\.86\)'; g\.lineWidth=widthPx; g\.stroke\(\);/.test(src),
     'the #R187 constant-width stroke must be gone');
   /* a claim finer than the data is counted, never passed off as measurement (#R185: no silent caps) */
-  assert.match(src, /if\(wl\+wr<stepM\)\{ belowRes\+\+; wl=wr=stepM\/2; \}/,
+  /* (#R189) the floor is each section's OWN sampling on the resolution ladder */
+  assert.match(src, /if\(wl\+wr<stM\)\{ belowRes\+\+; wl=wr=stM\/2; \}/,
     'sections below the DEM resolution must be counted');
   assert.match(src, /trace\.section\.belowRes/, '…and reported in the panel');
   /* the canvas must resolve one DEM sample, or every edge above is thrown away at draw time */
@@ -170,7 +173,7 @@ test('R188 water: the drawn body comes from DEM cross-sections, not from one wid
   /* and the second silent no-op: a click before the grid exists */
   assert.ok(!/function onClick\(e\)\{ if\(!opened\|\|!G\) return;/.test(src),
     'a click with no grid yet must not be discarded');
-  assert.match(src, /if\(!G\)\{ if\(mode==='source'\) onClickNoGrid\(lng,lat\); return; \}/,
+  assert.match(src, /if\(!G\)\{ if\(mode==='source'\) onClickNoGrid\(lng,lat\);/,
     'it must build and then place the water');
 });
 
@@ -193,7 +196,7 @@ test('R188 flight sim: "current map view" carries the tilt, clamped to the airfr
   assert.match(src, /\} else \{ st\.thr=Math\.max\(0\.02,Math\.min\(1,Drag\/\(ac\.Tmax\*densF\)\)\);/,
     'the no-argument branch is still the level trim');
   /* the camera intro: frame one is the view START was pressed on */
-  assert.match(src, /st\._camSeed=\{ pitch:\+opts\.viewCam\.pitch,/, 'the seed is stored on the flight state');
+  assert.match(src, /st\._camSeed=\{ pitch:\+vc\.pitch,/, 'the seed is stored on the flight state');   /* (#R189) the seed also carries eye+dist */
   assert.match(src, /st\._cB=sd\?sd\.bearing:bearingT; st\._cR=sd\?sd\.roll:rollT; st\._cP=sd\?sd\.pitch:pitchT;/,
     'the smoother starts from the map view, not the aeroplane');
   assert.match(src, /const cap=\(_intro>0\?110:900\)\*Math\.max\(0\.001,dt\)/, 'and eases rather than cuts');

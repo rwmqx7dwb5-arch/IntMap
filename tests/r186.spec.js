@@ -59,7 +59,10 @@ test.describe('R186 default layers', () => {
   test('R186 defaults: a session that switched one off is not overruled on the next load', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: ['dl-subcables'], tabInit: true })));
+  /* (#R189) `defv:189` — a session WITHOUT the stamp predates #R188's imAutoOff fix, and its
+     absences can be an outage's poison as easily as a choice, so the restore heals them once.
+     Only a stamped session's absence is a choice, which is what this test is about. */
+  await page.evaluate(() => localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, defv: 189, layers: ['dl-subcables'], tabInit: true })));
   await page.reload();
   await booted(page);
   await page.waitForTimeout(2500);

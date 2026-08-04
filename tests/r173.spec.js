@@ -20,7 +20,9 @@ import { test, expect } from '@playwright/test';
    test in this file is already at its wall-clock budget. */
 const clearDefaultLayers = async (page) => {
   await page.addInitScript(() => {
-    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, layers: [], tabInit: true })); } catch (_) {}
+    /* (#R189) `defv` — without the generation stamp `_restore()` reads this as a pre-#R188 session
+       whose absences may be an outage's poison, and heals the default-on layers back on. */
+    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, defv: 189, layers: [], tabInit: true })); } catch (_) {}
   });
 };
 

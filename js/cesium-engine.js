@@ -305,19 +305,34 @@ window.IntMapCesiumEngine=(function(){
            green. Web Mercator ends at ±85.0511°, so the two bands beyond it are exactly the ground
            no other source can cover, and Cesium only requests tiles that intersect a layer's
            rectangle — so away from the poles this now costs nothing at all. */
+        /* ══ (#R189) …AND A CAP WHOSE IMAGERY IS A LIVE URL IS BLACK WHEREVER THAT URL IS NOT. ═════
+           Fourth report. #R188's bands and treatment measure correct on this machine — but the bands
+           are a NETWORK dependency with no failure path: if gibs.earthdata.nasa.gov cannot be
+           reached (offline, DNS, a corporate proxy, an Earthdata outage), the band layers render
+           nothing, and in MAP view the bundled floor underneath is hidden (`show=_wantWorldBase`),
+           so what shows is `baseColor` — the original black, on someone else's network. The floor
+           was kept satellite-only because one equirectangular row smeared over a cap is worse than
+           a proper tile (#R187) — but it is NOT worse than black. So the bands' errorEvent now arms
+           a fallback: the moment a polar tile actually fails, the bundled floor is shown in map
+           view too, wearing the same map treatment as the bands. While GIBS answers, nothing
+           changes — the fallback only exists where the report exists. */
+        this._polarFallback=false;
         if(Cesium.UrlTemplateImageryProvider&&Cesium.GeographicTilingScheme){
           const MERC_EDGE=85.0511287798066;
           [[MERC_EDGE,90],[-90,-MERC_EDGE]].forEach(([s,n])=>{
-            add(new Cesium.UrlTemplateImageryProvider({
+            const band=new Cesium.UrlTemplateImageryProvider({
               url:'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{gibsZ}/{y}/{x}.jpeg',
               customTags:{ gibsZ:(prov,x,y,level)=>level+3 },
               tilingScheme:new Cesium.GeographicTilingScheme({numberOfLevelZeroTilesX:10,numberOfLevelZeroTilesY:5}),
               tileWidth:512, tileHeight:512, minimumLevel:0, maximumLevel:5,
               rectangle:Cesium.Rectangle.fromDegrees(-180,s,180,n),
               credit:'NASA EOSDIS GIBS — Blue Marble (shaded relief + bathymetry)'
-            }),true);
+            });
+            try{ if(band.errorEvent&&band.errorEvent.addEventListener)
+              band.errorEvent.addEventListener(()=>{ if(!this._polarFallback){ this._polarFallback=true; this._polarTreatment(); } }); }catch(_){}
+            add(band,true);
           });
-        }
+        } else { this._polarFallback=true; }   /* no band at all (trimmed build) → the floor is all there is */
         const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
           ||new URL('data/world-basemap.jpg',document.baseURI).toString();
         if(Cesium.SingleTileImageryProvider&&Cesium.SingleTileImageryProvider.fromUrl){
@@ -361,6 +376,18 @@ window.IntMapCesiumEngine=(function(){
       this._globe.depthTestAgainstTerrain=false;    /* markers must not sink into a hill */
       this._globe.enableLighting=false;
       scene.highDynamicRange=false;
+      /* ══ (#R189) THE CACHE WAS THE DEFAULT, AND THE DEFAULT IS A HUNDRED TILES ═══════════════════
+         `tileCacheSize` was never set, so it sat at Cesium's default 100 — about one screenful.
+         Panning away and back re-downloaded (or at best re-decoded) everything, which is exactly
+         where #R185 measured the cost living: in the frames where the camera MOVES. 512 desktop /
+         256 mobile is a 5× working set at a bounded memory cost.
+         ⚠ `preloadSiblings` was tried here and WITHDRAWN the same round: it keeps
+         `globe.tilesLoaded` churning (every loaded tile queues eight more), and both the app's own
+         settle logic and tests/r180-cesium wait on that flag — measured on CI as r180 ⑥ and
+         r184-fs ② timing out three retries straight, on runners where R188 was green. A knob that
+         changes the meaning of "the globe is quiet" is not a performance setting. */
+      try{ const _mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+        this._globe.tileCacheSize=_mob?256:512; }catch(_){}
       /* ══ (#R184) FXAA IS NOT A SECOND OPINION ON TOP OF MSAA — IT IS A BLUR ═══════════
          This used to run FXAA AND MSAA together, on the reasoning that MSAA smooths
          geometry edges while FXAA also smooths the textured interior. Measured on one
@@ -1129,6 +1156,16 @@ window.IntMapCesiumEngine=(function(){
          NEITHER of them is the 0.56/255 this instruction is about. */
       const t=sat?{b:1,c:1,s:1,g:1}:(dark?{b:0.42,c:0.90,s:0.35,g:1}:{b:1.22,c:0.92,s:0.34,g:0.9});
       list.forEach(L=>{ try{ L.brightness=t.b; L.contrast=t.c; L.saturation=t.s; L.gamma=t.g; L.show=true; }catch(_){} });
+      /* (#R189) the offline fallback: once a GIBS polar tile has actually FAILED, the bundled floor
+         is shown under the map basemap too — the Mercator basemap covers ±85.05°, so the only place
+         it can show through is exactly the two caps — wearing the same treatment as the bands. While
+         GIBS answers, the floor stays a satellite-view object (#R187's smear stays retired). */
+      const fb=!!this._polarFallback;
+      (this._worldBase||[]).forEach(L=>{ try{
+        L.show=this._wantWorldBase||fb;
+        if(!this._wantWorldBase&&fb){ L.brightness=t.b; L.contrast=t.c; L.saturation=t.s; L.gamma=t.g; }
+        else { L.brightness=1; L.contrast=1; L.saturation=1; L.gamma=1; }
+      }catch(_){} });
       try{ this._scene.requestRender(); }catch(_){}
     }
     setVisible(id,on){

@@ -32,7 +32,7 @@ test('the cockpit camera can look up: no axis clamp, no padding compensation', (
   const code = stripComments(R('js/flight-sim.js'));
   assert.doesNotMatch(code, /_cockpitCam|_AXIS_MARGIN/, 'the clamped-axis camera is gone');
   assert.doesNotMatch(code, /padding:pad|setPadding/, 'and nothing compensates with the projection centre');
-  assert.match(code, /camera\.fromTo\(\{lng:eLng,lat:eLat\},camAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract */,
+  assert.match(code, /camera\.fromTo\(\{lng:cEyeLng,lat:cEyeLat\},cEyeAlt,\{lng:tLng,lat:tLat\},tAlt\)/   /* (#R178) the same call, asked of the contract; (#R189) via the intro-blend aliases whose steady state is eLng/eLat/camAlt */,
     'the eye→target camera is back — its pitch comes out of the geometry, so it passes 90°');
   assert.match(code, /setMaxPitch\(179\)/, 'and the renderer is allowed to go there');
 });
