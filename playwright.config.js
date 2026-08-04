@@ -27,10 +27,19 @@ export default defineConfig({
   // and four of its tests failed on load rather than on their merits (all four pass locally).
   // Splitting them out lets CI give them machines of their own at one worker, which is the condition
   // they pass under. IM_SUITE is unset everywhere else, so `npm test` locally is unchanged.
-  testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/ : undefined,
-  testIgnore: process.env.IM_SUITE === 'rest'
-    ? /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js|-cesium.*\.spec\.js$/
-    : /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/,
+  // ⚠ (#R190) …and "run it deliberately with `npm run test:profile`" was not true: the ignore above
+  // is unconditional, so that script has never been able to select the file it names — measured this
+  // round while looking for a frame-time instrument for the renderer work ("No tests found"). The
+  // exclusion is what everything above says it is; it simply has to step aside for the one command
+  // whose whole purpose is to run it. IM_PROFILE is set by that npm script and by nothing else, so
+  // CI, `npm test` and both IM_SUITE halves are byte-identical to before.
+  testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/
+    : (process.env.IM_PROFILE === '1' ? /r184-imagery-profile\.spec\.js$/ : undefined),
+  testIgnore: process.env.IM_PROFILE === '1'
+    ? /prod-smoke\.spec\.js/
+    : (process.env.IM_SUITE === 'rest'
+      ? /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js|-cesium.*\.spec\.js$/
+      : /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/),
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast
