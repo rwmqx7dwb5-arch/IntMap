@@ -117,8 +117,10 @@ test('R185 aircraft: the altitude readers do not read a part base', () => {
   assert.match(src, /acAlt:alt/, 'every part carries the aircraft’s own altitude');
   assert.match(src, /lifted:bodies\.filter\(f=>\(\+f\.properties\.acAlt\|\|0\)>0\)/);
   assert.match(src, /maxAlt:Math\.round\(bodies\.reduce\(\(m2,f\)=>Math\.max\(m2,\+f\.properties\.acAlt\|\|0\),0\)\)/);
-  /* and the aircraft count is still one feature per aeroplane, not one per plate */
-  assert.match(src, /f\.properties\.part==='fuselage'\|\|f\.properties\.part==='body'/);
+  /* and the aircraft count is still one feature per aeroplane. (#R190 withdrew the multi-part body,
+     so 'body' is the only name left — but `acAlt` and the named lookup both stay, because they are
+     what stopped the counters reading a part's base as the aeroplane's altitude.) */
+  assert.match(src, /f\.properties\.part==='body'/);
 });
 
 test('R185 cesium: the redraw gate asks what the layers actually depend on', () => {

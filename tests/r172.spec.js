@@ -31,7 +31,7 @@ const clearDefaultLayers = async (page) => {
   await page.addInitScript(() => {
     /* (#R189) `defv` — without the generation stamp `_restore()` reads this as a pre-#R188 session
        whose absences may be an outage's poison, and heals the default-on layers back on. */
-    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, defv: 189, layers: [], tabInit: true })); } catch (_) {}
+    try { localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, defv: 190, layers: [], tabInit: true })); } catch (_) {}
   });
 };
 
@@ -258,20 +258,14 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
   expect(s.lifted, 'two are airborne; the third is on the ground and stays on it').toBe(2);
   expect(s.maxAlt, '36,000 ft = 10,973 m').toBeGreaterThan(10900);
   expect(s.maxAlt).toBeLessThan(11050);
-  /* (#R183) One aircraft is FOUR extrusions now — fuselage, wing, stabiliser, fin, at four
-     different heights, which is what makes it read as an aircraft rather than a flat plate when the
-     map is tilted. So `features` is no longer one-per-aircraft and the old magic 5 would only be
-     re-derivable by accident. The invariant that number actually encoded is asserted directly:
-     three aircraft, two of them airborne and therefore carrying a post down to the ground. */
+  /* (#R183/#R185 built the body from four then ten parts; #R190 WITHDREW all of it — the lifted
+     aircraft is the original silhouette again, one polygon.) The invariant these lines have always
+     really encoded is stated directly rather than through a magic number: one solid per aircraft,
+     plus exactly one post under each airborne one. */
   expect(s.aircraft, 'three aircraft, however many parts each is drawn from').toBe(3);
-  /* (#R185) …and TEN now — two outline plates (a white rim over a dark halo, which is how a
-     fill-extrusion gets an outline at all) under eight solids: two fuselage sections, the wing, two
-     engine nacelles, the stabiliser and a two-stage fin. The magic number is not the contract;
-     "one aircraft is drawn from a fixed number of parts, and each airborne one adds exactly one
-     post" is — so read the part count out of the state rather than restating it here. */
   const parts = (s.features - 2) / s.aircraft;
   expect(Number.isInteger(parts), 'every aircraft is drawn from the same number of parts').toBe(true);
-  expect(parts, 'the detailed body is many parts; the plain one is a silhouette with its outline').toBe(s.detailed ? 10 : 3);
+  expect(parts, '#R190: the original silhouette is ONE polygon').toBe(1);
   expect(s.features, 'bodies + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * parts + 2);
 
   // the flat rendering is still one click away, and it is exclusive

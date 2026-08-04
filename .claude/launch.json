@@ -141,6 +141,19 @@
       ],
       "port": 4203,
       "url": "http://127.0.0.1:4203"
+    },
+    {
+      "name": "intmap-preview-r190",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4207"
+      ],
+      "port": 4207,
+      "url": "http://127.0.0.1:4207"
     }
   ]
 }

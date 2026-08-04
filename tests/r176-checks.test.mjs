@@ -168,7 +168,7 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
   assert.match(quake, /function siteAmp\(\)\{/, 'and quarter-wavelength site amplification');
   /* honesty: MMI is not shindo, and it is not offered outside the model's range */
   assert.match(quake, /3\.47\*Math\.log10\(Math\.max\(1e-6,pgv\)\)\+2\.35/, 'Wald et al. 1999 for the intensity');
-  assert.match(quake, /const MMI_MAX_KM=1000;/, 'with a stated range');
+  assert.match(quake, /const MMI_CALIB_KM=1000;/, 'with a stated range');
   assert.match(quake, /calibrated:\(inRange&&pgv>=0\.5&&mmi<=9\.5\)/, 'and a flag for "outside what the relation supports"');
   assert.ok(/NOT the JMA shindo scale/.test(quake) && /気象庁震度階級ではありません/.test(quake), 'and it says so in the panel');
 });

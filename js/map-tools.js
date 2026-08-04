@@ -235,7 +235,15 @@ window.IntMapModules.drawTool=function(HOST){
     /* ---- panel ---- */
     function jp(){ return HOST.lang==='jp'; }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='draw-panel'; panel.style.display='none'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
-    function renderPanel(){ const p=ensurePanel(); p.style.display='block';
+    /* ══ (#R190) A HOST FEATURE THAT DRIVES THE DRAW TOOL DOES NOT WANT ITS PANEL ══════════════════
+       「フリー描画中にdrawポップアップは表示しないように。」 The seismic simulator borrows this tool to
+       capture a rupture outline (#R189 — deliberately the SHARED tool, not a private copy of it), and
+       the tool's own panel then covers the seismic panel with length/area/smoothing readouts that
+       belong to a measurement the user did not ask for. `start({silent:true})` suppresses the panel
+       for the borrowed session only; everything else about the tool is unchanged, and exit() clears
+       the flag so the next ordinary Draw behaves exactly as before. */
+    let silent=false;
+    function renderPanel(){ const p=ensurePanel(); if(silent){ p.style.display='none'; return; } p.style.display='block';
       /* (#R139) touch devices trace by PRESS-DRAG-RELEASE (not tap) — the hint must say so, or a user taps and
          nothing draws. Detect coarse pointers and give the right instruction; 5 languages. */
       const _L5=(en,ja,de,ru,es)=>HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
@@ -350,12 +358,16 @@ window.IntMapModules.drawTool=function(HOST){
 
     const api={
       active(){ return state!=='off'; },
-      start(pt){ try{ if(typeof exitTool==='function') exitTool(); }catch(_){}
+      /* (#R190) `opt.silent` hides this tool's own panel for a session another feature is driving
+         (see the note by renderPanel). `pt` keeps its old meaning; opt is a separate argument so no
+         existing call site changes. */
+      start(pt,opt){ try{ if(typeof exitTool==='function') exitTool(); }catch(_){}
+        silent=!!(opt&&opt.silent)||!!(pt&&pt.silent);
         ensureLayers(); wire(); GE().render.canvas().style.cursor='crosshair'; setBtn(true);
         if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; silent=false; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon for the area-monitor feature.
          Finishes the stroke first if it is still being drawn, so "monitor this drawn area" works mid-gesture. */

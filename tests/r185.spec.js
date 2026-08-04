@@ -155,15 +155,14 @@ test('R185 aircraft: the 3-D body carries its own outline and its altitude is it
   /* the ADS-B feed is live and keyless; if it is not answering, this assertion has nothing to say */
   test.skip(!ok, 'live aircraft feed returned nothing here');
   const s = await page.evaluate(() => window.IntMapPlanes3D.state());
-  console.log('R185 aircraft ·', s.aircraft, 'aircraft ·', s.features, 'features · detailed', s.detailed,
+  console.log('R185 aircraft ·', s.aircraft, 'aircraft ·', s.features,
     '· lifted', s.lifted, '· maxAlt', s.maxAlt);
-  expect(s.on, 'the 3-D body is switched on for this test (#R187 made the flat glyph the default again)').toBe(true);
+  expect(s.on, 'the 3-D body is switched on for this test (#R190 made it the default again)').toBe(true);
   expect(s.aircraft).toBeGreaterThan(0);
-  /* ten parts per aircraft when detailed (two outline plates + eight solids), three when not */
-  expect(s.features).toBeGreaterThanOrEqual(s.aircraft * (s.detailed ? 10 : 3));
-  /* the aircraft count is not the feature count — #R183's lesson, and the plates would have
-     multiplied it again */
-  expect(s.aircraft).toBeLessThan(s.features);
+  /* (#R190) the multi-part body is withdrawn — one solid per aircraft, plus a post under each
+     airborne one. The invariant #R183/#R185 encoded here is still the one that matters: the aircraft
+     count is derived by NAME, never from the feature total (#R181: suspect what a counter counts). */
+  expect(s.features).toBeGreaterThanOrEqual(s.aircraft);
   /* an altitude read off a part's base would now be tens of metres high for a parked aeroplane */
   expect(s.maxAlt).toBeLessThan(25000);
   if (s.lifted === 0) expect(s.maxAlt).toBe(0);

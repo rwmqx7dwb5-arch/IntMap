@@ -715,13 +715,37 @@ window.IntMapModules.flightSim=function(HOST){
              moved from the runway button to this one, matching the `mode:'air'` initial state below. */
           +'<button class="fss-m" data-m="ground">🛫 '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
           +'<button class="fss-m on" data-m="air">🛩 '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
+        /* (#R190) 「高度は一律ではなく、実際に今見てる画角と高度で」 — say what an airborne start from
+           THIS view will actually use, before it is pressed. The number is the eye's own altitude,
+           clamped to the chosen machine's service ceiling (a 737 has no air to fly in at 300 km);
+           when the clamp bites, this line says so instead of leaving every wide view to begin at the
+           same height with no explanation. It also states the tilt that will be flown (#R190). */
+        +'<div class="fss-note" style="margin-top:9px;font-size:11px;color:#9fc3e6;line-height:1.5;min-height:16px;"></div>'
         +'<div class="fss-btns"><button class="fss-cancel">'+LL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar')+'</button><button class="fss-go">'+LL('START ▸','スタート ▸','START ▸','СТАРТ ▸','INICIAR ▸')+'</button></div></div>';
       document.body.appendChild(ov);
       const state={ ac:selAc, loc:((opts.fromEnd&&lastEnd)?'__last':'__here'), mode:'air' };   /* (#R170) airborne default + resume from the last end point */
       try{ const _s0=ov.querySelector('.fss-sel'); if(_s0) _s0.value=state.loc; }catch(_){}
-      ov.querySelectorAll('.fss-ac').forEach(b=>b.onclick=()=>{ state.ac=b.getAttribute('data-ac'); ov.querySelectorAll('.fss-ac').forEach(x=>x.classList.toggle('on',x===b)); });
-      const sel=ov.querySelector('.fss-sel'); sel.onchange=()=>{ state.loc=sel.value; };
-      ov.querySelectorAll('.fss-m').forEach(b=>b.onclick=()=>{ state.mode=b.getAttribute('data-m'); ov.querySelectorAll('.fss-m').forEach(x=>x.classList.toggle('on',x===b)); });
+      /* (#R190) the live preview of what "Current map view + airborne" resolves to */
+      const _note=ov.querySelector('.fss-note');
+      function _syncNote(){ if(!_note) return; _note.innerHTML='';
+        if(state.loc!=='__here'||state.mode!=='air') return;
+        try{
+          const eye=(GE().camera.eye?GE().camera.eye():null); if(!eye||!isFinite(eye.alt)) return;
+          const a2=AIRCRAFT[state.ac]||AIRCRAFT[acKey], ceil=(a2&&a2.ceil)||12000;
+          const use=Math.max(150,Math.min(eye.alt,ceil)), capped=eye.alt>ceil;
+          const p2=(GE().camera.getPitch?GE().camera.getPitch():null);
+          const km=(v)=>v>=1000?((v/1000).toFixed(v>=10000?0:1)+' km'):(Math.round(v)+' m');
+          const bits=[LL('Start altitude','開始高度','Starthöhe','Высота старта','Altitud inicial')+' '+km(use)
+            +(capped?(' <span style="color:#ffd23f;">('+LL('view is at','視点は','Blick bei','вид на','vista a')+' '+km(eye.alt)+' — '
+              +LL('limited by this aircraft’s ceiling','機体の実用上昇限度で制限','Dienstgipfelhöhe','ограничено потолком','techo de servicio')+')</span>'):'')];
+          if(p2!=null&&isFinite(p2)) bits.push(LL('flight path','飛行経路角','Bahnwinkel','угол наклона','trayectoria')+' '+Math.round(p2-90)+'°');
+          _note.innerHTML=bits.join(' · ');
+        }catch(_){}
+      }
+      ov.querySelectorAll('.fss-ac').forEach(b=>b.onclick=()=>{ state.ac=b.getAttribute('data-ac'); ov.querySelectorAll('.fss-ac').forEach(x=>x.classList.toggle('on',x===b)); _syncNote(); });
+      const sel=ov.querySelector('.fss-sel'); sel.onchange=()=>{ state.loc=sel.value; _syncNote(); };
+      ov.querySelectorAll('.fss-m').forEach(b=>b.onclick=()=>{ state.mode=b.getAttribute('data-m'); ov.querySelectorAll('.fss-m').forEach(x=>x.classList.toggle('on',x===b)); _syncNote(); });
+      _syncNote();
       ov.querySelector('.fss-cancel').onclick=()=>ov.remove();
       ov.querySelector('.fss-go').onclick=async()=>{ const o={ aircraft:state.ac }; let icao=null;
         if(state.loc==='__last'&&lastEnd){ o.lng=lastEnd.lng; o.lat=lastEnd.lat; if(isFinite(lastEnd.hdg)) o.hdg=lastEnd.hdg; }   /* (#R170) resume from where the last flight ended */
@@ -860,7 +884,33 @@ window.IntMapModules.flightSim=function(HOST){
       if(opts.onGround && ac.Tmax<=0) opts=Object.assign({},opts,{onGround:false});   /* (#R100) an engineless glider can't roll for take-off → a runway choice becomes an aerotow RELEASE: an airborne start (the settle lifts it to a safe release height), not a 33 m/s ground "warp" */
       if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
         st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st._fieldElev=(opts.elev!=null?+opts.elev:null); st._fLL=[st.lng,st.lat]; st._maxAlt=st.alt; st._maxV=0; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }   /* (#R117) stats start from the runway; (#R118) _fLL = the airport anchor point */   /* (#R117) remember the airport's REAL field elevation — DEM reads far off it while tiles load are rejected */
-      else computeTrim(opts.viewGamma);   /* (#R188) "current map view" hands over the tilt it was showing */
+      else { computeTrim(opts.viewGamma);   /* (#R188) "current map view" hands over the tilt it was showing */
+        /* ══ (#R190) 「（画角が水平で強制的に始まる）」 — AND IT REALLY WAS ═════════════════════════════
+           Measured on the shipped build (z9.5 / pitch 45 / bearing 70 → START): the camera does begin
+           at 9.50/45.0/70.0 — #R189's intro seed works — and by t = 2.0 s it is at pitch 90.5 and it
+           stays there for ever. Because computeTrim() clamps the requested flight-path angle into the
+           envelope of STEADY flight (between the idle glide angle and the full-thrust climb angle),
+           a 45° look-down became about −4° of descent, the nose came level within a second, and the
+           cockpit view — which is the nose — went horizontal. The seed was a 1.2-second flourish over
+           an aeroplane that had already been levelled.
+
+           Confirmed with the user this round: fly the aeroplane at that angle. So the trim above still
+           solves the throttle, the elevator trim and the speed for the steady case, and then the
+           ATTITUDE is set to the angle the view was actually showing. The aeroplane is out of trim,
+           which is the point — it pulls out of the dive, or decelerates in the zoom climb, as a real
+           one does. Nothing "forces" it level; the physics flies it there, and the cockpit view goes
+           with the nose, so frame one and second one are both the picture START was pressed on.
+
+           ⚠ ONE LIMIT, AND IT IS A PHYSICAL ONE, NOT A ROUND NUMBER. The app's default map view is
+           straight down (pitch 0 → γ = −90°), so without a limit every start from an untilted map
+           would be a vertical dive — at low altitude, an instant crash. The limit is the height the
+           recovery needs: pulling n g out of a dive at γ costs h = V²(1−cos γ)/(g(n−1)), so the
+           steepest ENTERABLE dive is the one whose pull-out fits in the height under the aeroplane.
+           With room, any angle is honoured (a 45° dive from 15 km is flown as a 45° dive). Without
+           it, the angle is reduced to the steepest one that can still be flown out of — and the
+           envelope clamp is no longer what decides. */
+        st._wantGamma=(opts.viewGamma!=null&&isFinite(opts.viewGamma))?+opts.viewGamma:null;
+      }
       /* (#R188) …and the CAMERA starts where the map was, not where the aeroplane points. Read before
          the basemap/projection switches below touch the camera, so it is genuinely the view the user
          pressed START on. The frame loop consumes and clears it. */
@@ -921,6 +971,9 @@ window.IntMapModules.flightSim=function(HOST){
          not disappear — it becomes ground +30 m, so a late DEM read can still never spawn inside a hill. */
       { const tr0=_terrRead(st.lng,st.lat), plaus0=tr0.ok&&(st._fieldElev==null||Math.abs(tr0.v-st._fieldElev)<150);   /* (#R117) a half-loaded DEM can read e.g. −1439 m at Haneda — never settle the runway onto garbage */
         if(plaus0){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+_clrLift()); } else st._settleTerr=true; }
+      /* (#R190) …and NOW the view's angle can be flown, because the height under the aeroplane is
+         known: the pull-out room is what limits it (see the note at computeTrim's call site). */
+      try{ if(st._wantGamma!=null&&!opts.onGround) _flyViewGamma(st._wantGamma); }catch(_){}
       try{ HANDLERS.forEach(h=>GE().input.set(h,false)); }catch(_){}
       try{ _FSBLOCK.forEach(ev=>window.addEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) map features become display-only (see _fsBlocker) */
       /* (#R102) FULLSCREEN WITHIN IntMap — the map is lifted above all app chrome (see .fs-flying CSS), covering the whole
@@ -1027,6 +1080,29 @@ window.IntMapModules.flightSim=function(HOST){
       const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((GE().camera.getBearing?GE().camera.getBearing():90)*Math.PI/180);
       st.q=qFromEuler(0,aT+gamma,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
+    /* ══ (#R190) FLY THE ANGLE THE VIEW WAS SHOWING ═══════════════════════════════════════════════
+       See the long note at start()'s computeTrim call. computeTrim has already solved the throttle,
+       the elevator trim and the speed; this sets the ATTITUDE to the map's own tilt, so the aeroplane
+       genuinely begins in that dive or that climb and flies itself out of it. Body-axis velocity is
+       untouched (speed and angle of attack are the trim's), so rotating the nose rotates the flight
+       path with it — which is exactly what pointing an aeroplane somewhere does.
+       The only limit is the height the recovery needs: h = V²(1−cos γ)/(g(n−1)) for an n-g pull-out,
+       so the steepest enterable dive is the one that fits under the aeroplane, with 200 m to spare.
+       Returns the angle actually flown. */
+    function _flyViewGamma(vg){ if(!st||vg==null||!isFinite(vg)) return null;
+      const ac2=AC(), Vt=Math.max(20,st.V||ac2.Vcruise), CAP=85*Math.PI/180;
+      const _gr=(st.lastTerr!=null&&isFinite(st.lastTerr))?st.lastTerr:0;
+      const h=Math.max(0,(st.alt-_gr)-200);
+      const n=Math.max(1.6,Math.min(4,ac2.gLim||3));
+      const c=1-h*g0*(n-1)/Math.max(1,Vt*Vt);
+      const gMin=(c<=-1)?-CAP:-Math.min(CAP,Math.acos(Math.max(-1,Math.min(1,c))));
+      const gam=Math.max(gMin,Math.min(CAP,vg));
+      const aT=st.aoa||0, yaw=st.psi;
+      st.gamma=gam; st.theta=aT+gam; st.q=qFromEuler(0,aT+gam,yaw); st.om=[0,0,0];
+      st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
+      st.vs=Vt*Math.sin(gam); st.G=Math.cos(gam); st._acc=0;
+      st._flownGamma=gam; st._wantGamma=null;
+      return gam; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
       st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; st.fuel=(ac.fuelKg>0)?ac.fuelKg:null; computeTrim(); }   /* (#R120) R-reset also refuels */
     function crash(why){ if(resultShown) return; if(st&&why) st._crashWhy=why;   /* (#R117) keep the reason for the result screen */

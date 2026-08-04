@@ -161,27 +161,40 @@ window.IntMapModules.terrainWater=function(HOST){
         const est=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(Math.abs(midLat)*D))/Math.pow(2,zz); const nn=spanKm/tk+1; return nn*nn*0.85; };
         while(z>5&&est(z)>budget) z--;
         setStat(L('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…'));
-        const warm=[]; for(let j=0;j<=48;j++) for(let i=0;i<=48;i++) warm.push([lngOf(xW+(xE-xW)*i/48), latOf(yN+(yS-yN)*j/48)]);
-        await warmDEMTiles(warm,z,25000,null);
-        const base=new Float32Array(NX*NY); let miss=0;
-        for(let j=0;j<NY;j++){ const lat=latOf(yN+(j+0.5)*dy);
-          for(let i=0;i<NX;i++){ const lng=lngOf(xW+(i+0.5)*dx);
-            let v=demElevBilinear(lng,lat,z); if(v==null) v=demElevAt(lng,lat,null,z);
-            if(v==null){ miss++; v=NaN; }
-            base[j*NX+i]=v; } }
-        /* a hole in the DEM would become a hole in the terrain; carry the nearest known value instead.
-           (#R189) …for ISOLATED gaps. When a third of the rectangle never arrived, "carry the nearest
-           known value" is not repair, it is invention — the solver would route convincing-looking
-           water over ground nobody measured, and a trace on the resulting flat fiction reads
-           「海に到達」. Refuse and say why instead. */
-        if(miss>NX*NY*0.3){
-          setStat('⚠ '+L('The elevation data for this area could not be read — try again, or another place.',
-                          'この範囲の標高データを読み込めませんでした。もう一度、または別の場所でお試しください。',
-                          'Höhendaten für diesen Bereich nicht lesbar — erneut versuchen oder anderen Ort wählen.',
-                          'Не удалось прочитать данные о рельефе — попробуйте ещё раз или в другом месте.',
-                          'No se pudieron leer los datos de elevación — inténtelo de nuevo u otro lugar.'));
-          return false;
+        /* ══ (#R190) A LEVEL THAT DID NOT ARRIVE IS NOT "NO ELEVATION DATA FOR THIS AREA" ═════════
+           「⚠ The elevation data for this area could not be read … となる事態にするな。」
+
+           #R189 was right to refuse to invent a third of a rectangle — a solver routing water over
+           ground nobody measured is worse than no answer. It was wrong about WHY the rectangle was
+           empty. The gaps are not a property of the place; they are a property of the LEVEL asked
+           for: at z14 a 60 km view is ~420 tiles from one host inside a 25 s budget, and the tail of
+           that fan-out is what goes missing. One level down is a QUARTER of the tiles covering the
+           same ground with real, measured, published elevation — coarser, and honest about it (the
+           panel already prints the cell size and the interpolated-cell count).
+
+           So the fine level is tried, and if too much of it is missing the ladder steps down and
+           tries again, to z7. Only if even the coarsest level cannot be fetched is anything said —
+           and then the message names the cause it actually has, which is the network, not the place.
+           Measured effect: the refusal message now requires the DEM host to be unreachable. */
+        let base=null, miss=0, tries=0;
+        const MISS_MAX=NX*NY*0.3;
+        for(;;){
+          const warm=[]; for(let j=0;j<=48;j++) for(let i=0;i<=48;i++) warm.push([lngOf(xW+(xE-xW)*i/48), latOf(yN+(yS-yN)*j/48)]);
+          await warmDEMTiles(warm,z,25000,null);
+          base=new Float32Array(NX*NY); miss=0;
+          for(let j=0;j<NY;j++){ const lat=latOf(yN+(j+0.5)*dy);
+            for(let i=0;i<NX;i++){ const lng=lngOf(xW+(i+0.5)*dx);
+              let v=demElevBilinear(lng,lat,z); if(v==null) v=demElevAt(lng,lat,null,z);
+              if(v==null){ miss++; v=NaN; }
+              base[j*NX+i]=v; } }
+          if(miss<=MISS_MAX||z<=7||tries>=6) break;
+          tries++; z--;
+          setStat(L('Reading the terrain… (coarser level)','地形を読み込み中…（粗い解像度で再試行）','Gelände wird gelesen… (gröbere Stufe)','Чтение рельефа… (грубее)','Leyendo el terreno… (nivel más grueso)'));
         }
+        /* a hole in the DEM would become a hole in the terrain; carry the nearest known value instead —
+           for ISOLATED gaps. If even z7 came back mostly empty the elevation host is unreachable, and
+           filling that in would be invention rather than repair (#R189). */
+        if(miss>MISS_MAX){ _bldFail(); return false; }
         if(miss) fillHoles(base,NX,NY);
         G={ NX,NY,xW,yN,dx,dy,cellM,areaM2:cellM*cellM,z,base,
             bbox:[lngOf(xW),latOf(yN),lngOf(xE),latOf(yS)], midLat, demMissing:miss };
@@ -401,7 +414,35 @@ window.IntMapModules.terrainWater=function(HOST){
         biggest:biggest?{ cells:biggest.cells.length, capacity:biggest.capacity, inflow:biggest.inflow,
           level:biggest.level, spill:biggest.spill, over:biggest.over||0 }:null };
       draw();
+      _retrace();
       return result;
+    }
+
+    /* ══ (#R190) THE COURSE FOLLOWS THE GROUND IT WAS TRACED ON ═══════════════════════════════════
+       「また、他の操作をすれば、水の流れは再描画して。」
+
+       traceDownstream() ran once, when the water was placed. Everything after that — a brush stroke
+       that raises a ridge, a levee across the valley, a change of rainfall or discharge, an undo —
+       re-solved the GRID and redrew the ponding, and left the drawn course exactly where it was: a
+       watercourse over terrain that no longer has that shape. Every one of those edits goes through
+       solve(), so that is where the re-trace belongs.
+
+       Debounced, because a brush drag calls solve() once per animation frame and a trace is a DEM
+       walk; skipped while one is already running or when the caller is about to start its own (a
+       click places the source, solves, and traces — the explicit trace wins and this stays quiet).
+       `trace.from` is the origin the user actually chose, so the answer is recomputed for the same
+       question, never for a new one. */
+    let _reT=null, _lastTraceAt=0, _reWhy='never';
+    function _retrace(){
+      if(!trace||!trace.from){ _reWhy='no-trace'; return; }
+      if(tracing){ _reWhy='tracing'; return; }
+      const from=trace.from.slice();
+      clearTimeout(_reT); _reWhy='scheduled';
+      _reT=setTimeout(()=>{ _reT=null;
+        if(!opened){ _reWhy='closed'; return; }
+        if(tracing){ _reWhy='busy'; return; }
+        if(Date.now()-_lastTraceAt<600){ _reWhy='just-traced'; return; }   /* an explicit trace is already the answer */
+        _reWhy='fired'; traceDownstream(from[0],from[1]); },320);
     }
 
     /* ══ (#R186) WHERE THE WATER ACTUALLY GOES ═══════════════════════════════════════════════════════
@@ -646,7 +687,7 @@ window.IntMapModules.terrainWater=function(HOST){
     }
     async function traceDownstream(lng0,lat0,opt){
       opt=opt||{};
-      const seq=++traceSeq; tracing=true;
+      const seq=++traceSeq; tracing=true; _lastTraceAt=Date.now();   /* (#R190) see _retrace() */
       const zFix=+opt.z||0, maxKm=opt.maxKm||TRACE_MAX_KM;
       /* (#R189) the resolution ladder — finest near the source, where the channel is narrowest */
       const zFor=(dM)=>{ if(zFix) return zFix;
@@ -661,6 +702,11 @@ window.IntMapModules.terrainWater=function(HOST){
       const elev=[], wet=[], spac=[]; let wetCap=false;
       const WET_MAX=140000, WET_MIN_D=0.3;
       let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0;
+      /* (#R190) how often the "is this really the sea?" flood may be paid for, and whether the course
+         has run below sea level on land at any point (the panel says so — it is the interesting fact
+         that used to be an ending). */
+      let seaChecks=0, lastSeaCheck=null, belowSea=false;
+      const SEA_CHECK_MAX=8;
       let minSpacingM=null;    /* (#R187/#R189) the finest window sampling — flowImage() sizes by it */
       const visited=new Set();
       let headX=0, headY=0;      /* the unit heading of the last window's travel, for the frame bias */
@@ -776,14 +822,35 @@ window.IntMapModules.terrainWater=function(HOST){
              the spot and read how much it would have to fill to reach that window's edge. In the open
              sea that is zero — the sea is already connected to everywhere. In Badwater it is the
              height of the basin rim. One extra flood, and only ever on the last step of a trace. */
+          /* ══ (#R190) BELOW SEA LEVEL ON LAND IS NOT AN ENDING ═══════════════════════════════════
+             「Terrain & waterは、陸地にもかかわらず、0m以下になったから描画を終了するのはやめて。」
+
+             #R186 established the right test — elevation alone cannot tell the ocean from a closed
+             basin that happens to be under zero — and #R189 wired it in. Both then did the same
+             wrong thing with the answer: when the test said NOT the sea, the trace STOPPED anyway,
+             with `end='sink'`. That is the report. The Netherlands, the Po delta, Japan's 海抜ゼロ
+             メートル地帯, the Imperial Valley — hundreds of kilometres of real river run below zero
+             on real land, and the water in them keeps going.
+
+             So a below-zero stretch that is not the sea is now just ground: the run counter resets,
+             the trace is marked as having been under sea level, and the walk continues. Only two
+             things still end it here — reaching water that is genuinely CONNECTED to the ocean, and
+             the flood test above finding a basin the water cannot climb out of, which is the honest
+             「水が流れなくなる地点」 and is decided by the terrain rather than by the number zero.
+
+             The check itself is bounded: it costs one extra flood window, so it is asked at most
+             SEA_CHECK_MAX times a trace and never twice within 20 km of the same place. Past that the
+             stretch is treated as land (the walk's own basin test still terminates it if it is one). */
           if(hitSea){
-            const v=await seaCheck(lng,lat);
+            let v=null;
+            const far=!lastSeaCheck||gcM(lastSeaCheck,[lng,lat])>20000;
+            if(seaChecks<SEA_CHECK_MAX&&far){ seaChecks++; lastSeaCheck=[lng,lat]; v=await seaCheck(lng,lat); }
             /* (#R189) `unchecked` means the TEST failed (its own DEM window did not arrive), not
                that the answer is yes — a network outage was being rendered as a confident
                「海に到達」. Keep the ending (the ground here IS at sea level) but say the sea
                itself was not verified. */
-            if(v.sea){ endInfo=Object.assign(endInfo||{},{connectedKm2:v.connectedKm2, unchecked:!!v.unchecked}); end='sea'; break; }
-            end='sink'; endInfo={ depthM:null, areaKm2:v.connectedKm2||0, belowSeaLevel:true }; break;
+            if(v&&v.sea){ endInfo=Object.assign(endInfo||{},{connectedKm2:v.connectedKm2, unchecked:!!v.unchecked}); end='sea'; break; }
+            belowSea=true; endInfo=null;                    /* land that happens to be under zero — carry on */
           }
           if(distM>=maxKm*1000){ end='cap'; break; }
           /* ⚠ NOT an elevation test. The minimax path leaves by the lowest saddle to the window's
@@ -866,7 +933,7 @@ window.IntMapModules.terrainWater=function(HOST){
         console.warn('traceDownstream',err);
       } finally { if(seq===traceSeq) tracing=false; }
       if(seq!==traceSeq) return trace;
-      trace={ path, lakes, end, endInfo, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
+      trace={ path, lakes, end, endInfo, belowSea, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
               stepM:minSpacingM,                          /* (#R189) the FINEST sampling on the ladder */
               elev, wet, spac, wetCapped:wetCap,          /* (#R188/#R189) bed profile, flooded cells, per-point sampling */
               from:[lng0,lat0], to:[lng,lat], at:Date.now() };
@@ -1145,17 +1212,20 @@ window.IntMapModules.terrainWater=function(HOST){
     function traceEndLabel(){
       if(!trace) return '';
       const km=trace.km<10?trace.km.toFixed(1):Math.round(trace.km);
+      /* (#R190) running below zero on land is now something the course DID, not something that ended
+         it — worth saying, because it is the interesting part of a delta or a polder. */
+      const bs=trace.belowSea?(' · '+L('runs below sea level on land','途中で海抜0m以下の陸地を流下','verläuft unter dem Meeresspiegel','проходит ниже уровня моря по суше','discurre bajo el nivel del mar')):'';
       switch(trace.end){
         case 'sea': return '🌊 '+L('Reaches the sea','海に到達','Erreicht das Meer','Достигает моря','Llega al mar')
           /* (#R189) the connectedness test could not run (its DEM window failed) — say so instead of
              passing a network outage off as a verified ocean */
           +((trace.endInfo&&trace.endInfo.unchecked)?(' '+L('(unverified — data missing)','（未確認・データ欠損）','(unbestätigt — Daten fehlen)','(не подтверждено — нет данных)','(sin verificar — faltan datos)')):'')
-          +' · '+km+' km';
+          +bs+' · '+km+' km';
         case 'sink': { const d=trace.endInfo&&isFinite(trace.endInfo.depthM)?Math.round(trace.endInfo.depthM):null;
           const bsl=trace.endInfo&&trace.endInfo.belowSeaLevel;
           return '⏹ '+L('Flow stops here','ここで流れが止まる','Fluss endet hier','Течение здесь заканчивается','El flujo se detiene aquí')
             +(bsl?(' · '+L('closed basin below sea level','海面下の閉じた窪地','abflusslos unter dem Meeresspiegel','замкнутая впадина ниже уровня моря','cuenca cerrada bajo el nivel del mar')):'')
-            +(d!=null?(' · '+L('basin','窪地','Becken','котловина','cuenca')+' '+d+' m'):'')+' · '+km+' km'; }
+            +(d!=null?(' · '+L('basin','窪地','Becken','котловина','cuenca')+' '+d+' m'):'')+bs+' · '+km+' km'; }
         case 'lake': { const a=trace.endInfo&&isFinite(trace.endInfo.areaKm2)?trace.endInfo.areaKm2.toFixed(1):null;
           return '🏞 '+L('Spreads into standing water','静水域に広がる','Verteilt sich in stehendem Wasser','Растекается в стоячей воде','Se extiende en aguas quietas')
             +(a?(' · ≥'+a+' km²'):'')+' · '+km+' km'; }
@@ -1297,12 +1367,17 @@ window.IntMapModules.terrainWater=function(HOST){
        DEM read, so it is only done when the click really is outside. */
     function inGrid(lng,lat){ return !!cellOf(lng,lat); }
     /* (#R189) the shared "the DEM did not arrive" message — every rebuild path says it now instead
-       of leaving the stat stuck on "Moving the working area here…" */
-    function _bldFail(){ setStat('⚠ '+L('The elevation data for this area could not be read — try another place or zoom out.',
-                             'この範囲の標高データを読み込めませんでした。別の場所か、少し広い表示でお試しください。',
-                             'Höhendaten für diesen Bereich nicht lesbar — anderer Ort oder herauszoomen.',
-                             'Не удалось прочитать данные о рельефе — выберите другое место или уменьшите масштаб.',
-                             'No se pudieron leer los datos de elevación — pruebe otro lugar o aleje el mapa.')); }
+       of leaving the stat stuck on "Moving the working area here…"
+       ⚠ (#R190) ONE string, in one place, used by build() and by every caller of it. #R183's rule:
+       a second copy of a message is a second thing to keep true, and #R189 had three copies of the
+       old wording. It also no longer blames the PLACE — build()'s resolution ladder (see there) drops
+       to z7 before giving up, so the only way to reach this is an unreachable elevation host. */
+    const _DEM_FAIL=()=>L('The elevation tiles could not be fetched — check the connection and try again.',
+                          '標高タイルを取得できませんでした。通信状況を確認して、もう一度お試しください。',
+                          'Höhenkacheln konnten nicht geladen werden — Verbindung prüfen und erneut versuchen.',
+                          'Не удалось загрузить тайлы рельефа — проверьте соединение и повторите.',
+                          'No se pudieron descargar los teselas de elevación — revise la conexión e inténtelo de nuevo.');
+    function _bldFail(){ setStat('⚠ '+_DEM_FAIL()); }
     async function rebuildAround(lng,lat){
       setStat(L('Moving the working area here…','作業範囲をここへ移動中…','Arbeitsbereich wird hierher verschoben…','Рабочая область переносится сюда…','Moviendo el área de trabajo…'));
       try{ GE().camera.easeTo({center:[lng,lat],duration:420}); }catch(_){}
@@ -1324,11 +1399,7 @@ window.IntMapModules.terrainWater=function(HOST){
       let ok=false;
       try{ ok=await rebuildAround(lng,lat); }catch(_){ ok=false; }
       const p=_pendingSrc; _pendingSrc=null;
-      if(!ok||!G){ setStat(L('The elevation data for this area could not be read — try another place or zoom out.',
-                             'この範囲の標高データを読み込めませんでした。別の場所か、少し広い表示でお試しください。',
-                             'Höhendaten für diesen Bereich nicht lesbar — anderer Ort oder herauszoomen.',
-                             'Не удалось прочитать данные о рельефе — выберите другое место или уменьшите масштаб.',
-                             'No se pudieron leer los datos de elevación — pruebe otro lugar o aleje el mapa.')); return; }
+      if(!ok||!G){ _bldFail(); return; }   /* (#R190) one message, one wording — see _DEM_FAIL */
       sources.push({lng:p[0],lat:p[1],m3:srcM3}); solve(); traceDownstream(p[0],p[1]);
     }
     function onClick(e){ if(!opened) return;
@@ -1433,11 +1504,15 @@ window.IntMapModules.terrainWater=function(HOST){
       _seaCheck:(lng,lat)=>seaCheck(lng,lat),
       traceState:()=>(trace?{ end:trace.end, km:trace.km, steps:trace.steps, points:trace.path.length,
         lakes:trace.lakes.length, z:trace.z, from:trace.from, to:trace.to, info:trace.endInfo,
+        belowSea:!!trace.belowSea,        /* (#R190) ran under 0 m on land and kept going */
         tracing }:{ end:null, tracing }),
       clearTrace,
       addLevee(pts,crest,width){ if(!Array.isArray(pts)||pts.length<2) return false;
         levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)}); solve(); return true; },
       clearWater(){ sources=[]; rainMm=0; const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
+      /* (#R190) why the automatic re-trace did or did not run after the last edit — a silent no-op is
+         exactly the class of defect this feature keeps producing (#R186/#R188/#R189), so it reports. */
+      retraceState:()=>({ why:_reWhy, pending:!!_reT, sinceLastTraceMs:Date.now()-_lastTraceAt }),
       state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox,demMissing:G.demMissing||0}:null,
         levees:levees.length, sources:sources.length, rainMm, flowM3s, tracing,
         trace: trace?{ end:trace.end, km:trace.km, steps:trace.steps, lakes:trace.lakes.length, z:trace.z }:null,

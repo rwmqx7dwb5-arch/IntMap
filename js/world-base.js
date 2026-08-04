@@ -50,20 +50,75 @@ window.IntMapWorldBase=(function(){
     catch(_){ return 'data/world-basemap.jpg'; }
   }
 
-  /* The bundled picture, decoded once. Everything downstream waits on this ONE promise, so a screen
-     full of tile requests is one decode and not a hundred. */
-  let img=null, loading=null, failed=null;
+  /* ══ (#R190) THE FLOOR HAS TO LOOK LIKE THE THING IT IS A FLOOR FOR ══════════════════════════════
+     「衛星画像が、読み込み前と読み込み後で全然色味が違う。初期読み込みされる衛星画像を、全然色味の
+       違う衛星画像にするな。」
+
+     #R186 chose NASA Blue Marble for this picture — public domain, real satellite imagery, real
+     bathymetry, already one of the app's attributed sources, and the only whole-Earth equirectangular
+     source that also answers the poles for Cesium. All of that is still right. What was never checked
+     is whether it looks like the tiles that paint OVER it, and it does not: Blue Marble is a saturated
+     MODIS composite, Esri World Imagery at low zoom is a hazy Landsat mosaic that is much lighter and
+     much greener. So the globe visibly changes colour as the tiles land, which is the report.
+
+     MEASURED FROM THE PAGE, over the sixteen z2 World_Imagery tiles and the matching windows of this
+     picture (mean channel value, 0-255):
+
+         Esri  R 85.5  G 121.3  B 125.9
+         Blue  R 72.4  G  84.3  B 101.1        ← the same Earth, 37 units less green
+
+     A per-channel least squares over those sixteen pairs fits it almost exactly (R² 0.97 / 0.98 /
+     0.96, RMSE ≈ 12/255), so the correction is one affine map per channel, applied ONCE to the decoded
+     picture and baked into an offscreen canvas that everything downstream draws from. The file on disk
+     is untouched — this is a colour match to the imagery it stands in for, not a new data source, and
+     the attribution is unchanged.
+
+     ⚠ The correction is applied HERE rather than in the MapLibre paint properties because `raster-*`
+     adjustments are luminance/saturation knobs, not per-channel ones, and because the SAME canvas has
+     to reach the other engine (js/cesium-engine.js takes `bitmapUrl()` for its whole-globe floor). */
+  const TONE=[[1.1011,5.81],[0.9225,43.53],[0.9787,26.94]];   /* [gain, offset] per channel — see above */
+  function toneMap(im){
+    try{
+      const w=im.naturalWidth||im.width, h=im.naturalHeight||im.height;
+      if(!(w>0&&h>0)) return im;
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      const g=cv.getContext('2d',{alpha:false, willReadFrequently:true});
+      g.drawImage(im,0,0);
+      const d=g.getImageData(0,0,w,h), p=d.data;
+      /* one 256-entry table per channel — 2 M pixels is 6 M table lookups, not 6 M multiplies */
+      const lut=TONE.map(([k,b])=>{ const t=new Uint8ClampedArray(256);
+        for(let v=0;v<256;v++) t[v]=k*v+b; return t; });
+      const l0=lut[0], l1=lut[1], l2=lut[2];
+      for(let i=0;i<p.length;i+=4){ p[i]=l0[p[i]]; p[i+1]=l1[p[i+1]]; p[i+2]=l2[p[i+2]]; }
+      g.putImageData(d,0,0);
+      return cv;
+    }catch(e){ console.warn('[world-base] tone match unavailable — using the picture as shipped',e); return im; }
+  }
+
+  /* The bundled picture, decoded once and colour-matched once. Everything downstream waits on this ONE
+     promise, so a screen full of tile requests is one decode and not a hundred. */
+  let img=null, loading=null, failed=null, blobUrl=null;
   function source(){
     if(img) return Promise.resolve(img);
     if(loading) return loading;
     loading=new Promise((res,rej)=>{
       const im=new Image();
       im.decoding='async';
-      im.onload=()=>{ img=im; loading=null; res(im); };
+      im.onload=()=>{ img=toneMap(im); loading=null; res(img); };
       im.onerror=()=>{ failed='image failed to load'; loading=null; rej(new Error(failed)); };
       im.src=url();
     }).catch(e=>{ console.warn('[world-base] '+(e&&e.message||e)+' — the satellite view keeps its old blank-tile behaviour'); throw e; });
     return loading;
+  }
+  /* The colour-matched picture as a URL, for consumers that can only take one (Cesium's
+     SingleTileImageryProvider). Falls back to the file itself if the canvas cannot be exported. */
+  function bitmapUrl(){
+    if(blobUrl) return Promise.resolve(blobUrl);
+    return source().then(c=>new Promise((res)=>{
+      if(!c||!c.toBlob){ res(url()); return; }
+      try{ c.toBlob(b=>{ try{ blobUrl=b?URL.createObjectURL(b):url(); }catch(_){ blobUrl=url(); } res(blobUrl); },'image/jpeg',0.9); }
+      catch(_){ res(url()); }
+    })).catch(()=>url());
   }
 
   /* Mercator y (0..1 over the whole world) → latitude in degrees. */
@@ -119,8 +174,16 @@ window.IntMapWorldBase=(function(){
       if(!GE().hasRenderer()||!GE().canDraw()) return false;
       if(!registerProtocol()) return false;
       if(!GE().layers.hasSource(SRC)){
+        /* (#R190) maxzoom 4 → 6. #R186 chose 4 on the ground that the source picture is 2,048 px
+           around the equator, so anything past z2 is upscaling and carries no new information. That
+           is true, and it was the right call while the floor was a DIFFERENT-looking picture: an
+           upscaled Blue Marble under Esri tiles reads as a second map, so the less of it the better.
+           Now that it is colour-matched to the tiles it stands in for (see TONE above), the trade
+           reverses — an out-of-focus patch of the right imagery is what "still loading" should look
+           like, and a hole is not. Two more levels cost nothing but a few sub-millisecond canvas
+           tiles and keep the globe whole through a deep jump. */
         GE().layers.addSource(SRC,{ type:'raster', tiles:[PROTO+'://{z}/{x}/{y}'], tileSize:TILE,
-          minzoom:0, maxzoom:4,
+          minzoom:0, maxzoom:6,
           attribution:'Base imagery: NASA EOSDIS GIBS — Blue Marble (Shaded Relief & Bathymetry)' });
       }
       if(!GE().layers.has(LYR)){
@@ -152,10 +215,10 @@ window.IntMapWorldBase=(function(){
   }
 
   return {
-    url, install, apply, registerProtocol,
+    url, bitmapUrl, install, apply, registerProtocol,
     /* pre-decode the picture so the first tile request is a canvas copy and not a download */
     warm:()=>source().catch(()=>null),
-    state:()=>({ ready:!!img, failed, tilesMade:made, protocol:protoOn,
+    state:()=>({ ready:!!img, failed, tilesMade:made, protocol:protoOn, toned:!!(img&&img.getContext),
       layer:(()=>{ try{ return GE().layers.has(LYR); }catch(_){ return false; } })(),
       visible:(()=>{ try{ return GE().layers.has(LYR)&&GE().layers.getLayout(LYR,'visibility')==='visible'; }catch(_){ return false; } })() }),
   };
