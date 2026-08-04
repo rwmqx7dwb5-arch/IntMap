@@ -56,9 +56,10 @@ test('R189 cesium: GIBS failure arms the bundled-floor fallback in map view', ()
     'a failed polar tile arms it');
   assert.match(src, /L\.show=this\._wantWorldBase\|\|fb;/,
     'the floor shows under the map basemap once armed (only the caps can show through)');
-  /* and the perf defaults that were never set */
-  assert.match(src, /this\._globe\.tileCacheSize=_mob\?512:1536;/, 'the tile cache is no longer the default 100');
-  assert.match(src, /if\(!_mob\) this\._globe\.preloadSiblings=true;/, 'desktop preloads pan neighbours');
+  /* and the perf default that was never set — preloadSiblings was tried and withdrawn (it changes
+     what globe.tilesLoaded MEANS; CI measured r180 ⑥ / r184-fs ② timing out because of it) */
+  assert.match(src, /this\._globe\.tileCacheSize=_mob\?256:512;/, 'the tile cache is no longer the default 100');
+  assert.ok(!/preloadSiblings=true/.test(src), 'preloadSiblings stays withdrawn');
 });
 
 /* ── 4 · water: the TDZ crash, the talweg, the ladder, the discharge, the honesty ────────────── */

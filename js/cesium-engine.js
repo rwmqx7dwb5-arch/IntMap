@@ -379,15 +379,15 @@ window.IntMapCesiumEngine=(function(){
       /* ══ (#R189) THE CACHE WAS THE DEFAULT, AND THE DEFAULT IS A HUNDRED TILES ═══════════════════
          `tileCacheSize` was never set, so it sat at Cesium's default 100 — about one screenful.
          Panning away and back re-downloaded (or at best re-decoded) everything, which is exactly
-         where #R185 measured the cost living: in the frames where the camera MOVES. The MapLibre
-         side has kept 2,048–8,192 raster tiles since #R180 for the same reason; the globe now holds
-         a comparable working set (tiles here are quadtree nodes with textures — still far under the
-         raster budget MapLibre spends). `preloadSiblings` asks for the eight neighbours of every
-         rendered tile so a pan starts from imagery instead of from blur; phones keep the defaults
-         (RAM and radio budgets, the same line #R178 drew for @2x). */
+         where #R185 measured the cost living: in the frames where the camera MOVES. 512 desktop /
+         256 mobile is a 5× working set at a bounded memory cost.
+         ⚠ `preloadSiblings` was tried here and WITHDRAWN the same round: it keeps
+         `globe.tilesLoaded` churning (every loaded tile queues eight more), and both the app's own
+         settle logic and tests/r180-cesium wait on that flag — measured on CI as r180 ⑥ and
+         r184-fs ② timing out three retries straight, on runners where R188 was green. A knob that
+         changes the meaning of "the globe is quiet" is not a performance setting. */
       try{ const _mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
-        this._globe.tileCacheSize=_mob?512:1536;
-        if(!_mob) this._globe.preloadSiblings=true; }catch(_){}
+        this._globe.tileCacheSize=_mob?256:512; }catch(_){}
       /* ══ (#R184) FXAA IS NOT A SECOND OPINION ON TOP OF MSAA — IT IS A BLUR ═══════════
          This used to run FXAA AND MSAA together, on the reasoning that MSAA smooths
          geometry edges while FXAA also smooths the textured interior. Measured on one
