@@ -1017,7 +1017,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     async function _toBitmap(c){ return c.transferToImageBitmap?c.transferToImageBitmap():await createImageBitmap(c); }
     /* the four z+1 children as ONE 512×512 tile, or null when they are not all real imagery */
     async function _sat2x(z,y,x,signal){
-      if(!_satHiDPI||z>=19) return null;
+      /* (#R189) was `z>=19`: the stitch stopped one level short of the map's own maximum zoom, so
+         the deepest view — the one where the user is squinting at detail — was the one view left at
+         half resolution on HiDPI. Esri serves real z20 imagery over major cities; where it does not,
+         the four children are placeholders, the attempt abandons itself, and the _satDepth memo
+         (#R179) makes sure that lesson is only ever paid for once per neighbourhood. */
+      if(!_satHiDPI||z>=20) return null;
       /* (#R179) …and not where the imagery is already known to stop shallower than the level this
          needs. See _satDepth: four placeholder fetches per tile is the cost of asking anyway. */
       const stop=_satKnownStop(z,x,y);
@@ -3362,7 +3367,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       (window.IntMapDefaultLayers||[]).forEach(id=>{ const cb=document.getElementById(id);
         if(cb&&!cb.checked&&cb.dataset&&cb.dataset.imAutoOff==='1'&&layers.indexOf(id)<0) layers.push(id); });
       let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
-      return { v:2, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
+      /* (#R189) `defv` stamps WHICH generation of default-on handling wrote this session. Sessions
+         written before #R188's imAutoOff fix (defv absent) may record an outage as an opt-out, and
+         no amount of fixing the writer heals what is already in storage — the reader has to. */
+      return { v:2, defv:189, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
         base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
         year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
     function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
@@ -3401,6 +3409,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof terrain3D!=='undefined'&&terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
       /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
       const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
+      /* (#R189) ONE-TIME MIGRATION of poisoned sessions. Every session written before #R188 shipped
+         (no `defv` stamp) was written by a snapshot that could not tell "the user switched it off"
+         from "the download failed and autoUncheck switched it off" — so an absent default-on id in
+         such a session is NOT evidence of a choice. Re-add the default-on ids once; the next save
+         stamps defv:189 and from then on an absence really is the user's opt-out and is honoured. */
+      if(!(+s.defv>=189)) (window.IntMapDefaultLayers||[]).forEach(id=>{ if(want.indexOf(id)<0) want.push(id); });
       /* (#R186) …and switch a DEFAULT-ON layer back off when this saved session says the user had it
          off. Restore has only ever turned layers ON, which was right while every thematic layer
          started off: absence from the snapshot then meant "nothing to do". Now that Köppen and the

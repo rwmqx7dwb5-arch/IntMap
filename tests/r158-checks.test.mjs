@@ -38,9 +38,13 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
      while the pilot looked to 165°), so the assertions follow the #R158 geometry again. */
   /* (#R178) spelled through the engine contract — camera.fromTo IS calculateCameraOptionsFromTo,
      asked of the adapter instead of of MapLibre. Same geometry, same arguments. */
-  ok('cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt);',
+  /* (#R189) the eye and the look-arm ride the intro blend now (cEye* / _Darm), whose STEADY-STATE
+     initialisers are exactly the #R158 values — the blend only exists while _camSeed is alive. */
+  ok('cam=GE().camera.fromTo({lng:cEyeLng,lat:cEyeLat},cEyeAlt,{lng:tLng,lat:tLat},tAlt);',
     'the camera comes from one look-ahead geometry');
-  ok('const _D=_D_LOOK', 'at a FIXED distance, which is what makes centre and zoom stable at every attitude');
+  ok('let cEyeLng=eLng, cEyeLat=eLat, cEyeAlt=camAlt, _Darm=_D_LOOK;',
+    'whose steady state is the eye at the aircraft and the FIXED #R158 look distance');
+  ok('const _D=_Darm', 'the arm is a constant once the intro seed is dropped');
   /* (#R188) the STEADY-STATE constant is still 0.055 and the filter is still time-based; the only
      change is that an airborne "current map view" start runs a 1.2 s intro at a slower tau so the
      first frame is the view the user pressed START on. `_camSeed` is dropped when the window ends,

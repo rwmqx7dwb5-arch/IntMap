@@ -1775,6 +1775,10 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
+      /* (#R189) the default-on dispatcher fires synthetic changes up to 2.6 s after boot — if the
+         legend element is not in the DOM at that moment (measured: tests/r151 removes it between
+         ticks), this wrote innerHTML on null and the whole change handler died uncaught */
+      if(!lg) return;
       const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${HOST.lang==='jp'?'選択解除':HOST.lang==='de'?'Auswahl aufheben':HOST.lang==='ru'?'Снять выделение':HOST.lang==='es'?'Quitar selección':'Clear selection'}</button>`:'';
       const dragTitle=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move';
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
@@ -2626,9 +2630,15 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R187) DEFAULT OFF. 「航空機のマークは最初のデザインに戻して」 — and #R185 established that the
        lifted 3-D body, not the flat glyph, is what the default view shows, so the first design only
        actually returns to the screen if the flat glyph is the default again. The toggle is unchanged:
-       anyone who switches 3-D on still gets the lifted body, and an existing '1' in storage is
-       honoured, so a user who had already turned it on keeps it. */
-    let planes3D=false; try{ planes3D=localStorage.getItem('intmap_planes3d')==='1'; }catch(_){}
+       anyone who switches 3-D on still gets the lifted body.
+       (#R189) The report came back a third time — and the flat glyph, its colours and its size ramp
+       are byte-identical to the first commit, so the only path left to a "new" marker on someone's
+       screen is the OLD storage key: from #R172 to #R186 the default was TRUE, so a '1' written back
+       then records the era's default, not a choice (#R188's lesson verbatim). The key generation is
+       bumped: the legacy key is ignored and removed, and only a toggle flipped AFTER this ships is
+       honoured. */
+    const PLANES3D_KEY='intmap_planes3d2';
+    let planes3D=false; try{ planes3D=localStorage.getItem(PLANES3D_KEY)==='1'; localStorage.removeItem('intmap_planes3d'); }catch(_){}
     let _planes3DStats={features:0,lifted:0,maxAlt:0,offsetM:0};
     const PLANE3D_SRC='src-planes-3d', PLANE3D_LYR='lyr-planes-3d', PLANE3D_POST='lyr-planes-post';
     /* ===== (#R173) THE TRACK OF A CLICKED AIRCRAFT =========================================
@@ -3021,7 +3031,7 @@ window.IntMapModules.dataLayers=function(HOST){
         offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
-    function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem('intmap_planes3d',planes3D?'1':'0'); }catch(_){}
+    function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem(PLANES3D_KEY,planes3D?'1':'0'); }catch(_){}
       try{ const on=GE().layers.get('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible';
         const on3=GE().layers.get(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible';
         if(on||on3) applyPlanesMode(true); }catch(_){}
@@ -3507,12 +3517,17 @@ window.IntMapModules.dataLayers=function(HOST){
             /* the style refused this add — it is not parsed yet however hard whenStyleReady insisted */
             const cb=document.getElementById('dl-subcables');
             if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
-            console.warn('addSubcables',e); return;
+            /* (#R189) giving up QUIETLY here left the one state #R187 was hunting: box ticked, layer
+               absent. Say so the same way the download path does — imAutoOff, so the session still
+               wants the layer, and a toast, so the screen is not silently missing what the row claims. */
+            console.warn('addSubcables',e); autoUncheck('dl-subcables');
+            try{ satToast(HOST.lang==='jp'?'海底ケーブルレイヤーを追加できませんでした':HOST.lang==='de'?'Seekabel-Ebene konnte nicht hinzugefügt werden':HOST.lang==='ru'?'Не удалось добавить слой подводных кабелей':HOST.lang==='es'?'No se pudo añadir la capa de cables submarinos':'Could not add the submarine-cable layer'); }catch(_){} return;
           }
           if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
             const cb=document.getElementById('dl-subcables');
             if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
-            console.warn('addSubcables: the style never accepted the cable layers'); return;
+            console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables');
+            try{ satToast(HOST.lang==='jp'?'海底ケーブルレイヤーを追加できませんでした':HOST.lang==='de'?'Seekabel-Ebene konnte nicht hinzugefügt werden':HOST.lang==='ru'?'Не удалось добавить слой подводных кабелей':HOST.lang==='es'?'No se pudo añadir la capa de cables submarinos':'Could not add the submarine-cable layer'); }catch(_){} return;
           }
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
           /* the layer is up — whatever an earlier failure recorded is settled (#R188) */

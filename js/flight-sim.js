@@ -788,6 +788,23 @@ window.IntMapModules.flightSim=function(HOST){
             if(_p!=null&&isFinite(_p)){
               o.viewGamma=(_p-90)*Math.PI/180;
               o.viewCam={ pitch:_p, bearing:(isFinite(_b)?_b:0), roll:(isFinite(_r)?_r:0) };
+              /* ══ (#R189) THE FRAMING IS THE THIRD FACT. ═══════════════════════════════════════════
+                 #R188 carried the angles (pitch/bearing/roll) and the report still came back — because
+                 the SCALE never did. The cockpit camera aims a fixed 1,800 m ahead, so however well
+                 frame one's angles matched, its zoom was whatever the clamped altitude gave: from any
+                 view shallower than ~z13.5 the eye clamp saturated at the service ceiling and every
+                 start LOOKED identical — the 「一律」. The seed now records the map's own EYE position
+                 and its eye→centre DISTANCE; the frame loop starts the camera exactly there (same
+                 framing, same zoom, whatever the zoom was) and flies it into the cockpit over the
+                 intro window. The AIRCRAFT still spawns inside its envelope — a machine cannot fly at
+                 300 km — but the picture now starts as the picture the user pressed START on. */
+              try{ const c0=GE().camera.getCenter();
+                if(eye&&c0&&isFinite(eye.alt)&&isFinite(c0.lng)&&isFinite(c0.lat)){
+                  const cosL=Math.cos(((eye.lat+c0.lat)/2)*Math.PI/180);
+                  const dx=(c0.lng-eye.lng)*111320*cosL, dy=(c0.lat-eye.lat)*110574;
+                  o.viewCam.eye={ lng:eye.lng, lat:eye.lat, alt:eye.alt };
+                  o.viewCam.dist=Math.max(200,Math.hypot(dx,dy,eye.alt));
+                } }catch(_){}
             }
           }catch(_){}
         }
@@ -847,9 +864,16 @@ window.IntMapModules.flightSim=function(HOST){
       /* (#R188) …and the CAMERA starts where the map was, not where the aeroplane points. Read before
          the basemap/projection switches below touch the camera, so it is genuinely the view the user
          pressed START on. The frame loop consumes and clears it. */
-      if(opts.viewCam&&isFinite(opts.viewCam.pitch)) st._camSeed={ pitch:+opts.viewCam.pitch,
-        bearing:(isFinite(opts.viewCam.bearing)?+opts.viewCam.bearing:0),
-        roll:(isFinite(opts.viewCam.roll)?+opts.viewCam.roll:0), t0:performance.now(), ms:1200 };
+      if(opts.viewCam&&isFinite(opts.viewCam.pitch)){ const vc=opts.viewCam;
+        /* (#R189) the seed carries the map's eye POSITION and look DISTANCE too — see the pre-flight
+           card. A big altitude cut gets a slightly longer window so the descent is a move, not a drop. */
+        const _se=(vc.eye&&isFinite(vc.eye.alt)&&isFinite(vc.eye.lng)&&isFinite(vc.eye.lat))?{lng:+vc.eye.lng,lat:+vc.eye.lat,alt:+vc.eye.alt}:null;
+        const _gap=_se?Math.abs(_se.alt-st.alt):0;
+        st._camSeed={ pitch:+vc.pitch,
+          bearing:(isFinite(vc.bearing)?+vc.bearing:0),
+          roll:(isFinite(vc.roll)?+vc.roll:0),
+          eye:_se, dist:(isFinite(vc.dist)&&vc.dist>0)?+vc.dist:null,
+          t0:performance.now(), ms:(_gap>10000?2000:1200) }; }
       prevCam={ center:GE().camera.getCenter(), zoom:GE().camera.getZoom(), bearing:GE().camera.getBearing(), pitch:GE().camera.getPitch(), roll:(GE().camera.getRoll?GE().camera.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
@@ -1494,12 +1518,25 @@ window.IntMapModules.flightSim=function(HOST){
          DEM refresh can't put the eye inside the ground. */
       const _grd=(st._terrF!=null&&isFinite(st._terrF))?st._terrF:((st.lastTerr!=null&&isFinite(st.lastTerr))?st.lastTerr:0);
       const camAlt=Math.max(st.alt, _grd+2.5);
+      /* (#R189) THE FRAMING RIDES THE SAME INTRO. While the seed is alive the EYE starts at the
+         map's own eye and the look-arm at the map's own eye→centre distance, both easing into the
+         cockpit values — so frame one is the exact picture START was pressed on (same zoom included,
+         which #R188's angle-only seed never carried), at every map zoom, and the move to the cockpit
+         is one continuous camera flight. After the window the constants are untouched #R174. */
+      let cEyeLng=eLng, cEyeLat=eLat, cEyeAlt=camAlt, _Darm=_D_LOOK;
+      if(_intro>0&&st._camSeed&&st._camSeed.eye){
+        const _s=1-_intro, _ez=_s*_s*(3-2*_s), sd=st._camSeed;
+        cEyeLng=sd.eye.lng+(eLng-sd.eye.lng)*_ez;
+        cEyeLat=sd.eye.lat+(eLat-sd.eye.lat)*_ez;
+        cEyeAlt=Math.max(sd.eye.alt+(camAlt-sd.eye.alt)*_ez, _grd+2.5);
+        if(sd.dist) _Darm=sd.dist+(_D_LOOK-sd.dist)*_ez;
+      }
       /* (#R174) the #R158/#R172 camera, restored: a target a FIXED distance ahead along the SMOOTHED nose,
          handed to calculateCameraOptionsFromTo. Centre and zoom are stable at every attitude because the arm
          is constant, and the pitch is whatever the geometry says — including past 90° when the nose is up. */
-      const _D=_D_LOOK, _elR=(90-pitch)*D2R, _cE=Math.cos(_elR), _sE=Math.sin(_elR), _bR=bearing*D2R;
+      const _D=_Darm, _elR=(90-pitch)*D2R, _cE=Math.cos(_elR), _sE=Math.sin(_elR), _bR=bearing*D2R;
       const _nx=_cE*Math.cos(_bR), _ny=_cE*Math.sin(_bR), _nz=_sE;   /* down-positive nz (matches fwd[2]) */
-      const tLat=eLat+_D*_nx/mLatM, tLng=eLng+_D*_ny/mLonM, tAlt=camAlt-_D*_nz;
+      const tLat=cEyeLat+_D*_nx/mLatM, tLng=cEyeLng+_D*_ny/mLonM, tAlt=cEyeAlt-_D*_nz;
       try{ if(GE().camera.isAnimating&&GE().camera.isAnimating()) GE().camera.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
       /* (#R184) ON AN ENGINE WHOSE CAMERA IS A POSITION, SAY THE POSITION.
          Everything below this branch is MapLibre's indirect solve: its camera is a centre + zoom +
@@ -1514,16 +1551,17 @@ window.IntMapModules.flightSim=function(HOST){
          untouched, and an engine that does not declare the capability never reaches this line. */
       let posCam=false;
       if(GE().can&&GE().can('eyeIsPosition')&&GE().camera.setEye){
-        try{ posCam=!!GE().camera.setEye({ lng:eLng, lat:eLat, alt:camAlt,
+        try{ posCam=!!GE().camera.setEye({ lng:cEyeLng, lat:cEyeLat, alt:cEyeAlt,
           bearing:bearing, pitch:pitch, roll:roll }); }catch(_){ posCam=false; }
-        if(posCam) st._cam={ center:{lng:eLng,lat:eLat}, bearing:bearing, pitch:pitch, roll:roll, alt:camAlt };
+        if(posCam) st._cam={ center:{lng:cEyeLng,lat:cEyeLat}, bearing:bearing, pitch:pitch, roll:roll, alt:cEyeAlt };
         /* if it refused, fall through to the solve below rather than freeze the view */
       }
-      let cam=null; if(!posCam){ try{ if(GE().camera.fromTo) cam=GE().camera.fromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){} }
+      let cam=null; if(!posCam){ try{ if(GE().camera.fromTo) cam=GE().camera.fromTo({lng:cEyeLng,lat:cEyeLat},cEyeAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){} }
       const _fin=v=>typeof v==='number'&&isFinite(v);
       const sane=!!(cam&&cam.center&&_fin(cam.center.lng)&&_fin(cam.center.lat)&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing==null?0:cam.bearing)&&_fin(cam.pitch==null?0:cam.pitch)&&_fin(roll)&&Math.abs(cam.center.lat)<=89.5);
       let okCam=sane;
-      if(okCam&&st._camPrev){ const _dC=Math.hypot((cam.center.lng-st._camPrev.lng)*mLonM,(cam.center.lat-st._camPrev.lat)*mLatM), _dZ=Math.abs(cam.zoom-st._camPrev.zoom);
+      /* (#R189) …but not during the intro flight: a seed 300 km up MEANS to move the centre fast */
+      if(okCam&&st._camPrev&&_intro<=0){ const _dC=Math.hypot((cam.center.lng-st._camPrev.lng)*mLonM,(cam.center.lat-st._camPrev.lat)*mLatM), _dZ=Math.abs(cam.zoom-st._camPrev.zoom);
         if(_dC>9000||_dZ>3){ okCam=false; st._camSkip=(st._camSkip||0)+1; try{ window.__fsCamSkips=(window.__fsCamSkips||0)+1; }catch(_){} } }   /* abnormal one-frame jump → skip (never happens with FromTo geometry; a real defence, not a mask) */
       /* (#R173, kept) …but a SANE camera is never skipped for more than a few frames in a row. The comparison
          is against the last ACCEPTED camera, so a genuinely large move (a reset, a respawn, an altitude that
