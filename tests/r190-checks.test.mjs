@@ -165,6 +165,9 @@ test('R190 seismic: the field reaches the end of the lowest class and declares i
   assert.match(src, /const inRange=rKm<=MMI_CALIB_KM;/,
     'the TABLE still refuses to print an intensity outside the calibrated range');
   assert.match(src, /if\(km>MMI_CALIB_KM\) beyondCalib\+\+;/, 'and the painted cells beyond it are counted');
+  /* ⚠ the RINGS are quoted numbers, not a labelled picture, so they stay inside the calibrated range.
+     Splitting the two constants moved them by accident; tests/r176 ⑤ caught it at 1,129 km. */
+  assert.match(src, /const maxDeg=MMI_CALIB_KM\/\(RE\*D\);/, 'mmiRings stays inside the calibrated range');
   /* the readout cannot speak a scale the field was not painted in */
   assert.match(src, /const vs=new Float32Array\(N\*N\), pgvArr=new Float32Array\(N\*N\);/,
     'the field stores PGV, not the intensity of whichever scale was active');

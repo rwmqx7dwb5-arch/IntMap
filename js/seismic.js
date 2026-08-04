@@ -640,10 +640,15 @@ window.IntMapModules.seismic=function(HOST){
       return true; }catch(_){ return false; } }
     function setData(f){ try{ if(ensure()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:f||[]}); }catch(_){} }
 
-    /* the radius at which MMI falls through each integer — the spatial answer to 「推定震度」 */
+    /* The radius at which MMI falls through each integer — the spatial answer to 「推定震度」.
+       ⚠ (#R190) These are QUOTED NUMBERS, like the table, so they live inside MMI_CALIB_KM and not
+       inside the painting limit. Splitting the two constants moved this by accident and tests/r176 ⑤
+       caught it immediately (a ring at 1,129 km against its "stay inside the model's stated range"
+       assertion). The painted field may reach further BECAUSE it is labelled an extrapolation on
+       screen; a number in a list carries no such label, so it does not go there. */
     function mmiRings(){ const out=[]; if(!epi) return out;
       const peak=motion(mw,depthKm*1000).mmi;
-      const maxDeg=MMI_MAX_KM/(RE*D);
+      const maxDeg=MMI_CALIB_KM/(RE*D);
       for(let I=Math.min(11,Math.floor(peak));I>=2;I--){
         let lo=0, hi=maxDeg;
         for(let k=0;k<40;k++){ const mid=(lo+hi)/2;
