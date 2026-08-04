@@ -66,7 +66,7 @@ export default defineConfig({
          the cables back on for all ~350 tests, i.e. exactly the 9,160 ms boot this seed exists to
          avoid. MEASURED as three straight timeouts of r174 «zooming in still moves the viewpoint»
          and three more tests turned flaky. Bump this with the generation in js/app-body.js. */
-      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":189,"layers":[]}' }] }],
+      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":190,"layers":[]}' }] }],
     },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',

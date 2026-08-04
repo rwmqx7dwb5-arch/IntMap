@@ -333,14 +333,21 @@ window.IntMapCesiumEngine=(function(){
             add(band,true);
           });
         } else { this._polarFallback=true; }   /* no band at all (trimmed build) → the floor is all there is */
-        const worldUrl=(window.IntMapWorldBase&&window.IntMapWorldBase.url&&window.IntMapWorldBase.url())
-          ||new URL('data/world-basemap.jpg',document.baseURI).toString();
-        if(Cesium.SingleTileImageryProvider&&Cesium.SingleTileImageryProvider.fromUrl){
-          Cesium.SingleTileImageryProvider.fromUrl(worldUrl,{rectangle:rect,tileWidth:2048,tileHeight:1024})
-            .then(add).catch(e=>console.warn('[cesium] bundled whole-globe floor unavailable',e));
-        } else if(Cesium.SingleTileImageryProvider){
-          add(new Cesium.SingleTileImageryProvider({url:worldUrl,rectangle:rect}));
-        }
+        /* (#R190) the COLOUR-MATCHED picture, not the file: js/world-base.js maps the bundled Blue
+           Marble onto the Esri World Imagery tone the satellite tiles actually have, so this floor no
+           longer changes colour the moment the tiles land. `bitmapUrl()` is a promise for a blob of
+           that canvas and falls back to the plain file if the export is refused. */
+        const _wb=window.IntMapWorldBase;
+        const worldUrlP=(_wb&&_wb.bitmapUrl)?_wb.bitmapUrl()
+          :Promise.resolve((_wb&&_wb.url&&_wb.url())||new URL('data/world-basemap.jpg',document.baseURI).toString());
+        worldUrlP.then(worldUrl=>{
+          if(Cesium.SingleTileImageryProvider&&Cesium.SingleTileImageryProvider.fromUrl){
+            Cesium.SingleTileImageryProvider.fromUrl(worldUrl,{rectangle:rect,tileWidth:2048,tileHeight:1024})
+              .then(add).catch(e=>console.warn('[cesium] bundled whole-globe floor unavailable',e));
+          } else if(Cesium.SingleTileImageryProvider){
+            add(new Cesium.SingleTileImageryProvider({url:worldUrl,rectangle:rect}));
+          }
+        }).catch(e=>console.warn('[cesium] bundled whole-globe floor unavailable',e));
         /* (#R188) the map's palette is a theme decision, and the theme changes without the basemap
            changing — so re-run the treatment on the same signal js/space-sky.js watches. */
         this._polarTreatment();
@@ -385,9 +392,13 @@ window.IntMapCesiumEngine=(function(){
          `globe.tilesLoaded` churning (every loaded tile queues eight more), and both the app's own
          settle logic and tests/r180-cesium wait on that flag — measured on CI as r180 ⑥ and
          r184-fs ② timing out three retries straight, on runners where R188 was green. A knob that
-         changes the meaning of "the globe is quiet" is not a performance setting. */
+         changes the meaning of "the globe is quiet" is not a performance setting.
+         (#R190) 512 → 768 on desktop (256 → 320 on phones). Same knob, same argument, one more step:
+         the working set that a tilt-and-pan back over a city touches is bigger than one screenful of
+         terrain meshes plus their imagery, and this is the only cache between it and the network. It
+         changes no flag anyone waits on — which is precisely the property `preloadSiblings` lacked. */
       try{ const _mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
-        this._globe.tileCacheSize=_mob?256:512; }catch(_){}
+        this._globe.tileCacheSize=_mob?320:768; }catch(_){}
       /* ══ (#R184) FXAA IS NOT A SECOND OPINION ON TOP OF MSAA — IT IS A BLUR ═══════════
          This used to run FXAA AND MSAA together, on the reasoning that MSAA smooths
          geometry edges while FXAA also smooths the textured interior. Measured on one

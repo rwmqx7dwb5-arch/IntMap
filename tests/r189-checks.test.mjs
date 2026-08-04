@@ -18,8 +18,8 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 /* ── 1 · aircraft: a '1' stored under the default-TRUE era is not a choice ───────────────────── */
 test('R189 aircraft: the planes3D storage key is generation-bumped', () => {
   const src = read('js/data-layers.js');
-  assert.match(src, /const PLANES3D_KEY='intmap_planes3d2';/, 'a NEW key, so the old value cannot override');
-  assert.match(src, /localStorage\.removeItem\('intmap_planes3d'\)/, 'and the legacy key is removed');
+  assert.match(src, /const PLANES3D_KEY='intmap_planes3d3';/, 'a NEW key, so the old value cannot override (#R190 bumped it with the default)');
+  assert.match(src, /localStorage\.removeItem\('intmap_planes3d'\); localStorage\.removeItem\('intmap_planes3d2'\)/, 'and BOTH legacy keys are removed');
   assert.match(src, /localStorage\.setItem\(PLANES3D_KEY,planes3D\?'1':'0'\)/, 'the toggle writes the new key');
   /* the glyph itself is untouched — byte-identical to the first commit (#R187) */
   assert.match(src, /const _PLANE_ORIG=\[\[0,-19\]/, 'the original outline stays');
@@ -28,9 +28,9 @@ test('R189 aircraft: the planes3D storage key is generation-bumped', () => {
 /* ── 2 · defaults: sessions written before #R188 are healed ONCE ─────────────────────────────── */
 test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable cache', () => {
   const body = read('js/app-body.js');
-  assert.match(body, /defv:189/, 'the snapshot stamps its generation');
-  assert.match(body, /if\(!\(\+s\.defv>=189\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
-    'a pre-R188 session gets the default-on ids back once');
+  assert.match(body, /defv:190/, 'the snapshot stamps its generation (#R190 bumped it — see js/app-body.js)');
+  assert.match(body, /if\(!\(\+s\.defv>=190\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
+    'a session from an older generation gets the default-on ids back once');
   const sw = read('sw.js');
   assert.match(sw, /!\/\^intmap-subcables-\/\.test\(k\)/,
     'the SW activate purge spares the page-owned cable cache');
@@ -77,7 +77,7 @@ test('R189 cesium: GIBS failure arms the bundled-floor fallback in map view', ()
     'the floor shows under the map basemap once armed (only the caps can show through)');
   /* and the perf default that was never set — preloadSiblings was tried and withdrawn (it changes
      what globe.tilesLoaded MEANS; CI measured r180 ⑥ / r184-fs ② timing out because of it) */
-  assert.match(src, /this\._globe\.tileCacheSize=_mob\?256:512;/, 'the tile cache is no longer the default 100');
+  assert.match(src, /this\._globe\.tileCacheSize=_mob\?320:768;/, 'the tile cache is no longer the default 100');
   assert.ok(!/preloadSiblings=true/.test(src), 'preloadSiblings stays withdrawn');
 });
 
@@ -109,7 +109,10 @@ test('R189 water: the course follows the talweg, at a resolution ladder, with a 
   const atlas = read('js/atlas-console.js');
   assert.ok(atlas.includes('"flowM3s"?:num'), 'and the SYS catalogue advertises it (#R115)');
   /* honesty: a DEM outage is refused, not simulated */
-  assert.match(src, /if\(miss>NX\*NY\*0\.3\)\{/, 'a third of the rectangle missing refuses the build');
+  /* (#R190) the refusal survives, but only after the resolution ladder has been walked: a level
+     that did not arrive is not "no elevation data for this area". */
+  assert.match(src, /const MISS_MAX=NX\*NY\*0\.3;/, 'a third of the rectangle missing still refuses the build');
+  assert.match(src, /if\(miss<=MISS_MAX\|\|z<=7\|\|tries>=6\) break;/, '…after stepping down to a coarser level first');
   assert.match(src, /unchecked:!!v\.unchecked/, 'an unverifiable sea test is carried');
   assert.match(src, /（未確認・データ欠損）/, '…and labelled');
   assert.match(src, /セルは補間（DEM欠損）/, 'interpolated cells are counted in the panel');
@@ -175,7 +178,8 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
   assert.match(src, /LYR_IMG='seis-mmi-fill'/, 'rendered as a raster fill');
   assert.ok(!/id:'seis-mmi',/.test(src), 'the dashed contour layer is gone');
   assert.ok(!/'seis-mmi-lbl'/.test(src), 'and its labels with it');
-  assert.match(src, /DEM取得不可のため一様地盤で表示/, 'a DEM outage is declared, not hidden');
+  /* (#R190) the fallback is declared — and now names the real cause, which is resolution, not outage */
+  assert.match(src, /この範囲では地形が粗く一様地盤で表示/, 'an unusable site term is declared, not hidden');
 });
 test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-source fronts', () => {
   const src = read('js/seismic.js');

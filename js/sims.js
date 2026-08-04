@@ -777,9 +777,21 @@ window.IntMapModules.disaster=function(HOST){
       else if(hazard==='tsunami'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Wave height at coast (m)','沿岸波高 (m)','Wellenhöhe (m)','Высота волны (м)','Altura de ola (m)')+'<input type="number" class="dz-wh" min="1" max="40" value="'+waveH+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-wh'); el.onchange=()=>{ waveH=Math.max(1,+el.value||8); if(origin) run(); }; }
       else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
       else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
-    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ origin=ll; run(); } }
+    /* (#R190) `hazard` and the hazard's own parameter may now arrive WITH the location. The seismic
+       simulator hands this panel a tsunamigenic event (js/seismic.js → openTsunami), and it has to be
+       able to say "tsunami, this coast, about this wave" in one call: setting them afterwards would
+       run the model once under the previous hazard first. Every existing caller passes {lng,lat} only
+       and behaves exactly as before. */
+    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex';
+      if(ll&&ll.hazard&&HAZ().some(h=>h[0]===ll.hazard)){ hazard=ll.hazard; try{ syncHaz&&syncHaz(); }catch(_){} }
+      if(ll&&ll.waveH!=null&&isFinite(+ll.waveH)) waveH=Math.max(1,Math.min(40,+ll.waveH));
+      if(ll&&ll.floodM!=null&&isFinite(+ll.floodM)) floodM=Math.max(1,Math.min(60,+ll.floodM));
+      try{ renderParam&&renderParam(); }catch(_){}
+      if(ll&&ll.lng!=null){ origin=ll; run(); } }
     function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
-    return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
+    return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); },
+      state:()=>({ hazard, waveH, floodM, origin:origin?{lng:origin.lng,lat:origin.lat}:null }),   /* (#R190) */
+      _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 };
 
 window.IntMapModules.earthReplay=function(HOST){

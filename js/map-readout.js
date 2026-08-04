@@ -230,6 +230,15 @@ window.IntMapModules.mapReadout=function(HOST){
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
     /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */
     try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(HOST._crLng,HOST._crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s'); parts.push(`<span class="cr-wind">${sp} ${card}</span>`); } } }catch(_){}
+    /* ══ (#R190) THE INTENSITY UNDER THE CURSOR ═══════════════════════════════════════════════════
+       「ホバー地点の震度は色付きで左下の座標標高常時表示欄に表示して。」 The value and its colour come
+       from the seismic simulator's OWN painted field (IntMapSeismic.intensityAt), not from a second
+       computation here — the corner and the map can then never disagree, which is exactly the defect
+       #R136 records when a detector and a painter are written twice. Absent while the simulator is
+       closed or the point is outside the painted area. */
+    try{ const S=window.IntMapSeismic;
+      if(S&&S.intensityAt){ const q=S.intensityAt(HOST._crLng,HOST._crLat);
+        if(q&&q.label) parts.push(`<span class="cr-seis" style="color:${q.col};font-weight:700;">${q.label}</span>`); } }catch(_){}
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
     if(!parts.length){ el.style.display='none'; return; }
     el.style.display='flex';

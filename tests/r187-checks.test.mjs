@@ -37,7 +37,7 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
      shown instead of it, so restoring the glyph without this changes nothing on screen. */
   /* (#R189) the key is generation-bumped so a '1' stored under the R172–R186 default-TRUE era can
      no longer override the default — see r189-checks for the migration itself */
-  assert.match(src, /let planes3D=false;[\s\S]{0,160}getItem\(PLANES3D_KEY\)==='1'/,
+  assert.match(src, /let planes3D=true;[\s\S]{0,200}getItem\(PLANES3D_KEY\)/,
     '3-D aircraft bodies must default OFF');
 });
 

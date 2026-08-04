@@ -170,9 +170,22 @@ window.IntMapModules.seismic=function(HOST){
     }
 
     /* ---- source and ground motion --------------------------------------------------------------- */
-    const RHO=2700, BETA=3500, QS=300, RAD=0.55, FREE=2.0, KAPPA=0.035;
-    /* rock density kg/m³, S velocity m/s, quality factor, average S radiation pattern, free-surface
-       factor, and the near-surface high-frequency decay κ (s) — Anderson & Hough 1984. */
+    const RHO=2700, BETA=3500, RAD=0.55, FREE=2.0, KAPPA=0.035;
+    /* rock density kg/m³, S velocity m/s, average S radiation pattern, free-surface factor, and the
+       near-surface high-frequency decay κ (s) — Anderson & Hough 1984. */
+    /* ══ (#R190) THE CRUST DOES NOT ATTENUATE EVERY FREQUENCY EQUALLY ═══════════════════════════════
+       「シミュレーションの精度、忠実性を根本的に大幅に高めて。」
+       A constant Q was the one clearly-wrong physical assumption left in the ground-motion chain.
+       Anelastic attenuation in the crust is measured to be strongly frequency-dependent — Q(f) = Q₀·f^η
+       — and the value used here, Q = 180·f^0.45, is the southern-California crustal Q of Raoof,
+       Herrmann & Malagnini (1999), the one the stochastic method is normally run with for an active
+       region. It is not a fitted curve: it is the published relation, and both numbers are exposed in
+       the panel so the assumption stays visible and adjustable, like every other one in this file.
+       WHAT IT CHANGES. A single Q = 300 over-attenuates high frequencies close in (where Q(f) is well
+       above 300 for f > 3 Hz) and under-attenuates them far out (Q(1 Hz) = 180 < 300). PGA is carried
+       by exactly those high frequencies, so the near-field peak was being suppressed and the far-field
+       tail exaggerated — the shape of the whole intensity field, not a scale factor on it. */
+    let QS0=180, QETA=0.45;
     let stressDropMPa=3.0;
     function source(mw){
       const M0=Math.pow(10,1.5*mw+9.1);                          /* N·m — Hanks & Kanamori 1979 */
@@ -216,7 +229,30 @@ window.IntMapModules.seismic=function(HOST){
        source, which no real site is. Vs30 is the parameter every building code already uses, so the
        four choices are the NEHRP class boundaries. The 1/√2 also below splits the motion onto the two
        horizontal components, as the stochastic method defines it. */
-    const MMI_MAX_KM=1000;                                    /* the ground-motion model's range */
+    /* ══ (#R190) THE PAINT REACHES THE EDGE OF THE SCALE, AND SAYS WHERE IT LEFT ITS CALIBRATION ══
+       「震度分布の描画は震度1の範囲が終わる範囲まで行うように。」
+       #R189 stopped every intensity at 1,000 km, on the correct ground that the trilinear spreading
+       (Atkinson & Boore 1995) is a REGIONAL law and extrapolating it across a continent is not
+       measurement. Measured this round for an M7.2 at 15 km: MMI II falls at 699 km on rock and past
+       1,000 km on the softest ground, so that limit was clipping the outer class off the map — which
+       is the report. Bigger events clip far more.
+       The distinction the old constant conflated is between "where the model is CALIBRATED" and
+       "where it is still worth drawing". Both are stated now: the field is painted to wherever the
+       lowest class of the active scale actually ends, and everything past MMI_CALIB_KM is declared as
+       extrapolated — in the panel and in the disclaimer. The TABLE is unchanged: `calibrated` still
+       goes false past the calibrated range, so no numeric intensity is printed for a city the model
+       cannot speak for. A drawn colour that is labelled an extrapolation is honest; a colour that
+       silently stops mid-scale is the thing being reported.
+
+       ⚠ AND THE OUTER LIMIT IS 1,500 km, NOT "wherever the arithmetic goes". Measured with 3,000 km:
+       an M9 field spans 6,000 km, which is 82,944 cells over a box the DEM cannot cover — 71 % of the
+       cells came back with no elevation at all (so no sea mask and no site term), 91 % of what WAS
+       painted was extrapolated, and the build took 20.5 s. A picture that is mostly fallback over
+       mostly-unknown ground is not more faithful than a smaller one, it just covers more of the
+       screen. 1,500 km holds the whole lowest class for every event up to about M8 and most of an M9's,
+       at a resolution the terrain data actually supports. */
+    const MMI_CALIB_KM=1000;                                  /* where the regional law is calibrated */
+    const MMI_MAX_KM=1500;                                    /* and where it stops being drawn at all */
     const SITES=[ {id:'hard', vs30:1500, rho:2600}, {id:'rock', vs30:760, rho:2200},
                   {id:'stiff',vs30:360,  rho:2000}, {id:'soft', vs30:180, rho:1800} ];
     let siteId='rock';
@@ -226,7 +262,9 @@ window.IntMapModules.seismic=function(HOST){
       const s=source(mw), r=Math.max(1000,rM), rKm=r/1000;
       /* the displacement spectral level, with the trilinear spreading folded in */
       const omega0=RAD*FREE*(1/Math.SQRT2)*siteAmp()*s.M0/(4*Math.PI*RHO*BETA*BETA*BETA)*spread(rKm)/1000;
-      const path=f=>Math.exp(-Math.PI*f*r/(QS*BETA))*Math.exp(-Math.PI*KAPPA*f);
+      /* (#R190) Q(f) = Q₀·f^η — see the note by QS0. The exponent leaves f^(1−η) in the exponent, which
+         is why a constant Q cannot be tuned to imitate it: the two curves cross. */
+      const path=f=>Math.exp(-Math.PI*f*r/(QS0*Math.pow(Math.max(0.01,f),QETA)*BETA))*Math.exp(-Math.PI*KAPPA*f);
       const disp=f=>omega0/(1+(f/s.fc)*(f/s.fc))*path(f);           /* Brune ω⁻² source */
       const velS=f=>2*Math.PI*f*disp(f);
       const accS=f=>(2*Math.PI*f)*(2*Math.PI*f)*disp(f);
@@ -237,12 +275,12 @@ window.IntMapModules.seismic=function(HOST){
       /* Wald et al. (1999) was regressed on MMI V-IX and is an extrapolation outside it; below about
          0.5 cm/s it returns numbers under I, which is not a scale value but "not felt". Say that
          rather than printing a Roman numeral the relation cannot support. */
-      const mmi=Math.max(1,Math.min(12,3.47*Math.log10(Math.max(1e-6,pgv))+2.35));   /* Wald et al. 1999 */
+      const mmi=mmiOf(pgv);                                          /* Wald et al. 1999 — see mmiOf */
       /* AND THE MODEL HAS A RANGE. The trilinear spreading is a REGIONAL law: past roughly a thousand
          kilometres the wave is travelling through the mantle, not along the crust, and extrapolating
          1/√R there gave MMI III at 7,500 km for an M9 — a number with no meaning. Beyond MMI_MAX_KM
          the arrival times are still ray theory and still good; the intensity simply is not offered. */
-      const inRange=rKm<=MMI_MAX_KM;
+      const inRange=rKm<=MMI_CALIB_KM;
       return { pgv, pga, pgaG:pgaMs2/9.80665, mmi, inRange, calibrated:(inRange&&pgv>=0.5&&mmi<=9.5),
         fc:s.fc, M0:s.M0, rupKm:s.rupKm, srcDurS:s.durS, gmDurS:Td, amp:siteAmp() };
     }
@@ -304,6 +342,9 @@ window.IntMapModules.seismic=function(HOST){
        so. Class boundaries are the real scale: 5弱/5強 split at 5.0, 6弱/6強 at 6.0, 7 from 6.5.
        Colours are the JMA's published map colours (気象庁 配色基準). */
     function jmaI(pgv){ return 2.68+1.72*Math.log10(Math.max(1e-6,pgv)); }
+    /* (#R190) the MMI conversion as ONE function — it was written out twice (motion() and the field
+       loop) and the two copies are what let the readout speak the wrong scale. Wald et al. 1999. */
+    function mmiOf(pgv){ return Math.max(1,Math.min(12,3.47*Math.log10(Math.max(1e-6,pgv))+2.35)); }
     const JMA_CLASSES=[
       { min:0.5, id:'1',  col:'#F2F2FF' }, { min:1.5, id:'2',  col:'#00AAFF' },
       { min:2.5, id:'3',  col:'#0041FF' }, { min:3.5, id:'4',  col:'#FAE696' },
@@ -425,6 +466,13 @@ window.IntMapModules.seismic=function(HOST){
     const mX=lng=>(180+lng)/360, mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
     const latOfY=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
     const SRC_IMG='seis-mmi-img', LYR_IMG='seis-mmi-fill';
+    /* ══ (#R190) THE PAINT'S OPACITY IS A CONTROL, AND ITS DEFAULT IS NOT 0.55 ═════════════════════
+       「震度の塗は透明度選択を可能に。デフォルト透明度が薄すぎる。」 (confirmed this round: the
+       intensity fill — it is the only painted surface the simulator has.) 0.55 let the basemap read
+       through strongly enough that the 震度 colours were hard to tell apart, which is the report;
+       0.85 keeps the coastline and the place names legible underneath while the colour is the colour
+       of the class. The slider writes straight to the layer — no rebuild, so it is instant. */
+    let fldOpacity=0.85;
     function paintField(){
       try{
         if(!fld||!fld.url){ if(GE().layers.has(LYR_IMG)) GE().layers.remove(LYR_IMG);
@@ -437,17 +485,31 @@ window.IntMapModules.seismic=function(HOST){
         if(!GE().layers.hasSource(SRC_IMG)){
           GE().layers.addSource(SRC_IMG,{type:'image',url:fld.url,coordinates:fld.coords});
           GE().layers.add({id:LYR_IMG,type:'raster',source:SRC_IMG,
-            paint:{'raster-opacity':0.55,'raster-fade-duration':0}},
+            paint:{'raster-opacity':fldOpacity,'raster-fade-duration':0}},
             GE().layers.has('seis-ring')?'seis-ring':undefined);
         }
+        setFieldOpacity(fldOpacity);
       }catch(_){}
     }
+    function setFieldOpacity(v){ fldOpacity=Math.max(0.05,Math.min(1,+v||0));
+      try{ if(GE().layers.has(LYR_IMG)) GE().layers.setPaint(LYR_IMG,'raster-opacity',fldOpacity); }catch(_){}
+      return fldOpacity; }
+    /* ══ (#R190) THE FIELD IS COMPUTED WHEN IT IS ASKED FOR ═══════════════════════════════════════
+       「計算開始ボタンを設置し、LOC方式でローディング表示もして。」 (confirmed: the Line-of-Sight
+       style — a real percentage and a progress bar.) Every parameter used to kick off a full DEM read
+       260 ms after it was touched, so dragging the magnitude spinner queued a dozen terrain reads and
+       the panel spent its life saying 「読み込み中」. Now the physics controls mark the field STALE
+       and the ▶ button computes it. `schedField` remains the internal entry point so the callable API
+       (setParams / setFault / Atlas) behaves exactly as it did — the button is for the human. */
+    let fldStale=false, fldPct=0;
+    function markStale(){ fldStale=true; if(opened) report(); }
     function schedField(){ clearTimeout(fldT); fldT=setTimeout(()=>{ buildField(); },260); }
     async function buildField(){
       const seq=++fldSeq;
       if(!epi){ fld=null; paintField(); return; }
-      fldBusy=true; if(opened) report();
+      fldBusy=true; fldStale=false; fldPct=0; if(opened) report();
       const t0=performance.now();
+      const prog=(p)=>{ fldPct=Math.max(0,Math.min(100,Math.round(p))); if(opened) _setProg(); };
       try{
         const prof=pgvProfile();
         const ampRef=siteAmp();
@@ -463,21 +525,48 @@ window.IntMapModules.seismic=function(HOST){
         const dLng=halfKm/(111.32*cosC), dLat=halfKm/110.574;
         const W=C0[0]-dLng, E=C0[0]+dLng;
         const Nn=Math.min(85,C0[1]+dLat), Ss=Math.max(-85,C0[1]-dLat);
-        const N=(typeof isMobile==='function'&&isMobile())?96:176;
+        /* (#R190) MORE CELLS. 176 across a 2,000 km field is an 11 km cell, which is coarser than the
+           terrain the site term is read off — the picture was quantised well below the information in
+           it. 288 on desktop is 2.7× the cells for 2.7× the work, which the ms figure in the panel
+           reports as always; phones stay proportionally smaller. */
+        const N=(typeof isMobile==='function'&&isMobile())?128:288;
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
-        let z=Math.max(4,Math.min(11,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
+        let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
         const est=(zz)=>{ const tk=40075*cosC/Math.pow(2,zz); const nn=spanKm/tk+1; return nn*nn*0.85; };
-        while(z>4&&est(z)>380) z--;
+        while(z>4&&est(z)>520) z--;
         try{
           const warm=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
             warm.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
-          await warmDEMTiles(warm,z,20000,null);
+          prog(6);
+          /* (#R190) 20 s was the whole of a slow build: the timeout, not the arithmetic. A field this
+             wide is answered by whatever arrived — the cells that did not are counted and declared. */
+          await warmDEMTiles(warm,z,12000,(f)=>prog(6+34*(+f||0)));
         }catch(_){}
+        prog(40);
         if(seq!==fldSeq) return;
-        const vs=new Float32Array(N*N), Ival=new Float32Array(N*N);
-        let painted=0, sea=0, noDem=0;
-        const dsM=900, dLngS=dsM/(111320*cosC), dLatS=dsM/110574;
+        /* ⚠ (#R190) THE FIELD STORES PGV, NOT AN INTENSITY. It used to store the intensity of the
+           scale that happened to be active when it was built, and the cursor readout then read that
+           array — so switching MMI→JMA reported an MMI number as a 震度 (measured: 8.63 → 「震度7」)
+           until the next rebuild. PGV is what the model computes; both scales are one line from it.
+           The PAINT still belongs to the scale it was drawn for, and `fld.scale` records which. */
+        const vs=new Float32Array(N*N), pgvArr=new Float32Array(N*N);
+        let painted=0, sea=0, noDem=0, coarse=0, beyondCalib=0;
+        /* ══ (#R190) A SLOPE MEASURED FINER THAN THE DATA IS NOT A SLOPE ═══════════════════════════
+           Wald & Allen's Vs30 proxy is regressed on slope at ~30 arc-seconds (≈900 m), and #R189 asked
+           the DEM for exactly that baseline — at whatever zoom the tile budget allowed. At the zooms a
+           continental field actually uses, one DEM pixel is kilometres across, so a ±900 m pair lands
+           INSIDE one pixel and comes back with the interpolated (i.e. flattened) gradient. A flattened
+           gradient is a small slope, a small slope is the softest Vs30 bin, and the softest bin is the
+           largest amplification — so the coarser the field, the softer the whole world got. That is a
+           systematic bias, not noise, and it ran in the direction that makes the map look worst.
+           Two things fix it: measure the slope over the DEM'S OWN sample spacing when that is coarser
+           than 900 m (a real gradient at a stated scale, rather than a fictional one at 900 m), and
+           when the spacing is coarser than 2 km, do not pretend at all — fall back to the panel's site
+           class for that cell and COUNT it, the way a missing DEM is counted. */
+        const demSpacingM=40075017*Math.max(0.05,cosC)/(Math.pow(2,z)*256);
+        const dsM=Math.max(900,demSpacingM*1.25), slopeUsable=demSpacingM<=2000;
+        const dLngS=dsM/(111320*cosC), dLatS=dsM/110574;
         const cv=document.createElement('canvas'); cv.width=N; cv.height=N;
         const ctx=cv.getContext('2d'), im=ctx.createImageData(N,N), px=im.data;
         const hex=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -491,6 +580,7 @@ window.IntMapModules.seismic=function(HOST){
             let amp;
             if(e0==null){ noDem++; vs[k]=0; amp=ampRef; }
             else if(e0<=0){ sea++; vs[k]=-1; continue; }
+            else if(!slopeUsable){ coarse++; vs[k]=0; amp=ampRef; }   /* (#R190) see the note by dsM */
             else {
               let ex=demElevBilinear(lo+dLngS,la,z); if(ex==null) ex=e0;
               let ey=demElevBilinear(lo,Math.max(-85,Math.min(85,la+dLatS)),z); if(ey==null) ey=e0;
@@ -499,23 +589,33 @@ window.IntMapModules.seismic=function(HOST){
             }
             const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
             const pgv=prof.at(rM)*(amp/ampRef);
-            const I=(scale==='jma')?jmaI(pgv):Math.max(1,Math.min(12,3.47*Math.log10(Math.max(1e-6,pgv))+2.35));
-            Ival[k]=I;
+            pgvArr[k]=pgv;
+            const I=(scale==='jma')?jmaI(pgv):mmiOf(pgv);
             const cls=(scale==='jma')?jmaClass(I):mmiClass(I);
             if(!cls) continue;
+            if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
             const c=hex(cls.col); px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
           }
-          if((j&7)===7){ await new Promise(r=>setTimeout(r,0)); if(seq!==fldSeq) return; }
+          if((j&7)===7){ prog(40+58*(j+1)/N); await new Promise(r=>setTimeout(r,0)); if(seq!==fldSeq) return; }
         }
         ctx.putImageData(im,0,0);
+        prog(99);
         fld={ url:cv.toDataURL('image/png'),
           coords:[[W,Nn],[E,Nn],[E,Ss],[W,Ss]],
-          W, E, y0, dy, dx, N, vs, Ival, z,
+          W, E, y0, dy, dx, N, vs, pgv:pgvArr, z, scale,
           vs30At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
             if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.vs[j*this.N+i]; return v>0?v:null; },
-          stats:{ cells:N*N, painted, sea, noDem, z, spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge),
-                  terrain:noDem<N*N*0.5, ms:Math.round(performance.now()-t0) } };
+          /* (#R190) the PGV the FIELD computed at one point — what the readout under the cursor
+             converts, so the number in the corner and the colour on the map come from the same cell
+             and cannot drift apart (#R136's lesson: a detector and a painter written twice). */
+          pgvAt(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
+            if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.pgv[j*this.N+i]; return v>0?v:null; },
+          stats:{ cells:N*N, painted, sea, noDem, coarse, beyondCalib, calibKm:MMI_CALIB_KM, z, demSpacingM:Math.round(demSpacingM),
+                  slopeBaselineM:Math.round(dsM), slopeUsable,
+                  spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge),
+                  terrain:(noDem+coarse)<N*N*0.5, ms:Math.round(performance.now()-t0) } };
         paintField();
+        prog(100);
       } finally { if(seq===fldSeq){ fldBusy=false; if(opened) report(); } }
     }
 
@@ -632,8 +732,12 @@ window.IntMapModules.seismic=function(HOST){
     const ROW='font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;';
     const BTN='padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;';
     /* (#R189) every control that changes the PHYSICS goes through this — redraw, re-report, and
-       rebuild the painted field (debounced; the wavefront tick never comes through here) */
+       rebuild the painted field (debounced; the wavefront tick never comes through here).
+       (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
+       explicit requests for an answer, so they still compute. The panel's own spinners call
+       `touch()` instead, which marks the field stale and waits for the ▶ button — see markStale. */
     function refresh(){ draw(); schedField(); }
+    function touch(){ draw(); markStale(); }
     function render(){ if(!panel) return;
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
@@ -666,32 +770,65 @@ window.IntMapModules.seismic=function(HOST){
           +'<option value="stiff">'+L('stiff soil (Vs30 360)','硬い地盤 (Vs30 360)','steifer Boden (Vs30 360)','плотный грунт (Vs30 360)','suelo firme (Vs30 360)')+'</option>'
           +'<option value="soft">'+L('soft soil (Vs30 180)','軟弱地盤 (Vs30 180)','weicher Boden (Vs30 180)','мягкий грунт (Vs30 180)','suelo blando (Vs30 180)')+'</option>'
           +'</select></label>'
+        /* (#R190) the crustal Q — the assumption the far field is most sensitive to, kept visible and
+           adjustable like the stress drop above (see the note by QS0). */
+        +'<label style="'+ROW+'">'+L('Crustal Q = Q₀·f^η','地殻の Q = Q₀·f^η','Krusten-Q = Q₀·f^η','Q коры = Q₀·f^η','Q cortical = Q₀·f^η')
+          +'<span style="display:flex;gap:5px;"><input class="sq-q0" type="number" min="30" max="2000" step="10" value="'+QS0+'" title="Q₀" style="'+NUM+'width:62px;">'
+          +'<input class="sq-qe" type="number" min="0" max="1" step="0.05" value="'+QETA+'" title="η" style="'+NUM+'width:62px;"></span></label>'
+        /* ══ (#R190) 「震度の塗は透明度選択を可能に」 ═══════════════════════════════════════════════ */
+        +'<label style="'+ROW+'">'+L('Intensity fill opacity','震度分布の不透明度','Deckkraft der Fläche','Непрозрачность заливки','Opacidad del relleno')
+          +'<span style="display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;">'
+          +'<input type="range" class="sq-op" min="5" max="100" step="5" value="'+Math.round(fldOpacity*100)+'" style="width:112px;">'
+          +'<b class="sq-opv" style="min-width:34px;text-align:right;color:var(--text-main);">'+Math.round(fldOpacity*100)+'%</b></span></label>'
+        /* ══ (#R190) 「計算開始ボタンを設置し、LOC方式でローディング表示もして」 (LOS style: real % + bar) */
+        +'<button class="sq-run" style="'+BTN+'width:100%;background:var(--primary-color);color:#fff;border:none;font-weight:700;">▶ '
+          +L('Compute the intensity map','震度分布を計算','Intensitätskarte berechnen','Рассчитать поле интенсивности','Calcular el mapa de intensidad')+'</button>'
+        +'<div class="sq-prog" style="display:none;">'
+          +'<div class="sq-progl" style="margin-bottom:4px;font-size:11px;color:var(--text-muted);"></div>'
+          +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
+          +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></i></div></div>'
         /* (#R189) real-time playback with a visible rate */
         +'<div style="display:flex;align-items:center;gap:8px;"><button class="sq-play" style="'+BTN+'width:36px;">▶</button>'
           +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="1" value="'+Math.round(tSec)+'" style="flex:1;">'
           +'<select class="sq-spd" style="'+NUM+'width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
           +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
         +'<button class="sq-real" style="'+BTN+'width:100%;">🌎 '+L('Load a recent real earthquake','最近の実際の地震を読み込む','Echtes Beben laden','Загрузить реальное землетрясение','Cargar un sismo real')+'</button>'
+        /* ══ (#R190) 「津波が発生するとされるような地震だった場合、津波シミュレーターも使えるように。」
+           Shown only when THIS event meets the tsunamigenic conditions (see tsunamiCase): the app
+           already owns an inundation model driven by the real DEM (js/sims.js, hazard 'tsunami'), so
+           this hands it the epicentre and a wave height derived from the same source parameters —
+           it does not add a second model. */
+        +(function(){ const t=tsunamiCase(); return t?('<button class="sq-tsu" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">🌊 '
+          +L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')
+          +' <span style="opacity:0.75;">('+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m)</span></button>'
+          +'<div style="font-size:10px;color:var(--text-muted);margin-top:-3px;">'+t.why+'</div>'):''; })()
         +'<div class="sq-leg" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:10px;color:var(--text-muted);"></div>'
         +'<div class="sq-out" style="font-size:11.5px;color:var(--text-main);line-height:1.6;"></div>'
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic source (Brune spectrum, trilinear spreading, Q=300, κ=0.035 s); with a drawn rupture, distance is to the rupture (M₀ = μAD̄) and wavefronts carry the rupture propagation (Vr = 0.75β). The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification; sea cells are not painted. MMI is from PGV (Wald et al. 1999) and is NOT the JMA shindo scale; the JMA display is a CONVERSION from PGV (Fujimoto & Midorikawa 2005), not the JMA\'s own waveform computation. Intensity is only offered inside the models\' range. Educational model: in a real emergency follow the official authorities.',
-           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的震源モデル（Bruneスペクトル・三折れ幾何減衰・Q=300・κ=0.035秒）。震源域を描くと距離は断層面まで（M₀=μAD̄）となり、波面は破壊伝播（Vr=0.75β）を含みます。地盤は実地形から：地形勾配によるVs30推定（Wald & Allen 2007）を1/4波長則に入れ、海域は塗りません。MMIはPGVからのWald et al. 1999で、これは気象庁震度階級ではありません。震度表示はPGVからの計測震度換算（藤本・翠川 2005）であり、気象庁の観測波形計算そのものではありません。相関式の適用範囲外では震度を表示しません。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
-           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Quelle (Brune, Q=300, κ=0,035 s); mit gezeichneter Bruchfläche gilt die Distanz zur Fläche (M₀=μAD̄) und die Fronten tragen die Bruchausbreitung. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV (Wald et al. 1999) — NICHT die JMA-Skala; die JMA-Anzeige ist eine UMRECHNUNG (Fujimoto & Midorikawa 2005). Nur Bildungsmodell.',
-           'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический источник (Брун, Q=300, κ=0,035 с); с нарисованным очагом расстояние — до разрыва (M₀=μAD̄), фронты несут распространение разрыва. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV (Wald et al. 1999), это не шкала JMA; отображение JMA — ПЕРЕСЧЁТ (Fujimoto & Midorikawa 2005). Учебная модель.',
-           'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: fuente estocástica (Brune, Q=300, κ=0,035 s); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV (Wald et al. 1999), NO la escala JMA; la vista JMA es una CONVERSIÓN (Fujimoto & Midorikawa 2005). Modelo educativo.')
+        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic source (Brune spectrum, trilinear spreading, frequency-dependent crustal Q = Q₀·f^η after Raoof, Herrmann & Malagnini 1999, κ = 0.035 s); with a drawn rupture, distance is to the rupture (M₀ = μAD̄) and wavefronts carry the rupture propagation (Vr = 0.75β). The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification, measured over the DEM\'s own sample spacing and skipped where that is coarser than 2 km; sea cells are not painted. MMI is from PGV (Wald et al. 1999) and is NOT the JMA shindo scale; the JMA display is a CONVERSION from PGV (Fujimoto & Midorikawa 2005), not the JMA\'s own waveform computation. The painted field runs to the end of the lowest class of the chosen scale; past 1,000 km the regional spreading law is extrapolated, the panel says how much of the field that is, and the table still declines to print an intensity there. Educational model: in a real emergency follow the official authorities.',
+           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的震源モデル（Bruneスペクトル・三折れ幾何減衰・周波数依存の地殻Q = Q₀·f^η（Raoof, Herrmann & Malagnini 1999）・κ=0.035秒）。震源域を描くと距離は断層面まで（M₀=μAD̄）となり、波面は破壊伝播（Vr=0.75β）を含みます。地盤は実地形から：地形勾配によるVs30推定（Wald & Allen 2007）を1/4波長則に入れます。勾配はDEMの実サンプル間隔で測り、2 kmより粗い場合は使いません。海域は塗りません。MMIはPGVからのWald et al. 1999で、これは気象庁震度階級ではありません。震度表示はPGVからの計測震度換算（藤本・翠川 2005）であり、気象庁の観測波形計算そのものではありません。塗りは選択した階級の最下位クラスが終わる範囲まで描きますが、1,000 kmを超える範囲は地域減衰式の外挿であり、その量をパネルに表示し、表には震度を表示しません。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
+           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Quelle (Brune, Q = Q₀·f^η (Raoof et al. 1999), κ = 0,035 s); mit gezeichneter Bruchfläche gilt die Distanz zur Fläche (M₀=μAD̄) und die Fronten tragen die Bruchausbreitung. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV (Wald et al. 1999) — NICHT die JMA-Skala; die JMA-Anzeige ist eine UMRECHNUNG (Fujimoto & Midorikawa 2005). Die Fläche reicht bis zum Ende der untersten Klasse; jenseits 1.000 km ist das Abklinggesetz extrapoliert. Nur Bildungsmodell.',
+           'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический источник (Брун, Q = Q₀·f^η (Raoof et al. 1999), κ = 0,035 с); с нарисованным очагом расстояние — до разрыва (M₀=μAD̄), фронты несут распространение разрыва. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV (Wald et al. 1999), это не шкала JMA; отображение JMA — ПЕРЕСЧЁТ (Fujimoto & Midorikawa 2005). Поле рисуется до конца низшего класса; дальше 1 000 км — экстраполяция. Учебная модель.',
+           'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: fuente estocástica (Brune, Q = Q₀·f^η (Raoof et al. 1999), κ = 0,035 s); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV (Wald et al. 1999), NO la escala JMA; la vista JMA es una CONVERSIÓN (Fujimoto & Midorikawa 2005). El campo se pinta hasta el final de la clase más baja; más allá de 1.000 km la ley regional está extrapolada. Modelo educativo.')
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
       panel.querySelector('.sq-pick').onclick=()=>startPick();
       panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
       panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
-        if(fault){ faultSet(fault.ring,faultSlip); render(); } refresh(); };
-      panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); refresh(); };
-      panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); refresh(); } };
-      panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); refresh(); };
-      const sc=panel.querySelector('.sq-scale'); if(sc){ sc.onchange=e=>{ scale=(e.target.value==='jma')?'jma':'mmi'; legend(); refresh(); }; }
-      const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; refresh(); }; }
+        if(fault){ faultSet(fault.ring,faultSlip); render(); } touch(); };
+      panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); };
+      panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } };
+      panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); };
+      const q0=panel.querySelector('.sq-q0'); if(q0) q0.onchange=e=>{ QS0=Math.max(30,Math.min(2000,+e.target.value||180)); touch(); };
+      const qe=panel.querySelector('.sq-qe'); if(qe) qe.onchange=e=>{ QETA=Math.max(0,Math.min(1,+e.target.value)); touch(); };
+      const op=panel.querySelector('.sq-op');
+      if(op) op.oninput=e=>{ const v=setFieldOpacity((+e.target.value||85)/100);
+        const b=panel.querySelector('.sq-opv'); if(b) b.textContent=Math.round(v*100)+'%'; };
+      const run=panel.querySelector('.sq-run'); if(run) run.onclick=()=>{ if(!epi){ report(); return; } buildField(); };
+      const tsu=panel.querySelector('.sq-tsu'); if(tsu) tsu.onclick=()=>openTsunami();
+      const sc=panel.querySelector('.sq-scale'); if(sc){ sc.onchange=e=>{ scale=(e.target.value==='jma')?'jma':'mmi'; legend(); touch(); }; }
+      const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; touch(); }; }
       const tl=panel.querySelector('.sq-t'); tl.oninput=()=>{ tSec=+tl.value; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); };
       const sp=panel.querySelector('.sq-spd'); if(sp){ sp.onchange=e=>{ speed=Math.max(1,+e.target.value||1); }; }
       /* (#R189) REAL time by default: the front advances by wall-clock seconds × the chosen rate.
@@ -706,6 +843,47 @@ window.IntMapModules.seismic=function(HOST){
       legend();
       report();
     }
+    /* (#R190) the LOS-style progress readout (a real percentage and a bar), driven by buildField */
+    function _setProg(){ if(!panel) return;
+      const box=panel.querySelector('.sq-prog'), bar=panel.querySelector('.sq-progb'), lbl=panel.querySelector('.sq-progl');
+      if(!box) return;
+      if(!fldBusy){ box.style.display='none'; return; }
+      box.style.display='block';
+      if(bar) bar.style.width=fldPct+'%';
+      if(lbl) lbl.innerHTML=L('Computing the intensity map','震度分布を計算中','Intensitätskarte wird berechnet','Расчёт поля интенсивности','Calculando el mapa de intensidad')
+        +' <b style="color:var(--text-main);">'+fldPct+'%</b>';
+    }
+    /* ══ (#R190) IS THIS EVENT TSUNAMIGENIC? ══════════════════════════════════════════════════════
+       「津波が発生するとされるような地震だった場合、津波シミュレーターも使えるように。」
+       The screening conditions are the ones tsunami warning centres actually use, and they are three:
+       the source has to be UNDER THE SEA, SHALLOW, and large enough to displace water. The JMA/PTWC
+       operational thresholds are Mw ≥ 6.5 and focal depth ≤ 100 km for a tsunami to be considered at
+       all (JMA issues its own advisories from about M6.5 shallow offshore), so those are the gates.
+       The wave height offered to the inundation model is NOT invented: it is the empirical
+       relationship between moment magnitude and maximum near-field tsunami height, log10 Hmax =
+       0.5·Mw − 3.3 (Abe 1979/1981 tsunami-magnitude scale, rearranged), clamped to the range the
+       inundation model accepts. The button says it is an estimate, and js/sims.js lets the user
+       override it — nothing here replaces the coastal wave height with a claim of its own. */
+    function tsunamiCase(){
+      if(!epi) return null;
+      const M=fault?fault.mw:mw;
+      if(!(M>=6.5)||!(depthKm<=100)) return null;
+      /* under the sea? the same DEM the intensity field reads. Unknown → not offered (never guessed). */
+      let e0=null; try{ e0=demElevBilinear(epi[0],epi[1],6); if(e0==null) e0=demElevAt(epi[0],epi[1],null,6); }catch(_){}
+      if(e0==null||e0>0) return null;
+      const waveM=Math.max(1,Math.min(40,Math.round(Math.pow(10,0.5*M-3.3)*10)/10));
+      return { waveM, M, why:L('Offshore, M'+M.toFixed(1)+', focal depth '+Math.round(depthKm)+' km, sea floor '+Math.round(-e0)+' m — meets the M≥6.5 / ≤100 km screening used for tsunami advisories.',
+        '海域・M'+M.toFixed(1)+'・震源深さ '+Math.round(depthKm)+' km・海底 −'+Math.round(-e0)+' m — 津波注意報等の判定基準（M6.5以上・深さ100 km以下）に該当します。',
+        'Offshore, M'+M.toFixed(1)+', Tiefe '+Math.round(depthKm)+' km — erfüllt die Tsunami-Screening-Kriterien (M≥6,5 / ≤100 km).',
+        'В море, M'+M.toFixed(1)+', глубина '+Math.round(depthKm)+' км — соответствует критериям оповещения о цунами (M≥6,5 / ≤100 км).',
+        'En el mar, M'+M.toFixed(1)+', profundidad '+Math.round(depthKm)+' km — cumple los criterios de alerta de tsunami (M≥6,5 / ≤100 km).') };
+    }
+    function openTsunami(){ const t=tsunamiCase(); if(!t||!epi) return false;
+      const D2=window.IntMapDisaster; if(!D2||!D2.open) return false;
+      /* hazard and wave height FIRST, then the origin — open(ll) runs the model as soon as it has one,
+         and running it under the previous hazard would draw a flood before drawing the tsunami. */
+      try{ D2.open({ lng:epi[0], lat:epi[1], hazard:'tsunami', waveH:t.waveM }); }catch(_){ return false; }
+      return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
     function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;
       const cls=(scale==='jma')?JMA_CLASSES:MMI_CLASSES;
@@ -718,7 +896,9 @@ window.IntMapModules.seismic=function(HOST){
     function toggleFaultDraw(){
       const DT=window.DrawTool;
       if(!DT||!DT.start||!DT.currentGeometry){ return; }
-      if(!_fDrawing){ _fDrawing=true; try{ DT.start(); }catch(_){} render(); return; }
+      /* (#R190) 「フリー描画中にdrawポップアップは表示しないように。」 — the tool's own measurement
+         panel is not part of drawing a rupture; it covered this one. See DrawTool.start's `silent`. */
+      if(!_fDrawing){ _fDrawing=true; try{ DT.start(null,{silent:true}); }catch(_){ try{ DT.start(); }catch(__){} } render(); return; }
       _fDrawing=false;
       let ring=null;
       try{ const g=DT.currentGeometry();
@@ -731,6 +911,7 @@ window.IntMapModules.seismic=function(HOST){
         if(o) o.insertAdjacentHTML('afterbegin','<div style="color:#ff9f0a;margin-bottom:4px;">'+L('No closed area was drawn — draw a loop, then press the button again.','閉じた範囲が描かれていません。ループを描いてからもう一度押してください。','Keine geschlossene Fläche — Schleife zeichnen, dann erneut drücken.','Замкнутая область не нарисована — нарисуйте контур и нажмите снова.','No se dibujó un área cerrada — dibuje un lazo y pulse de nuevo.')+'</div>'); }
     }
     function report(){ const o=panel&&panel.querySelector('.sq-out'); if(!o) return;
+      _setProg();
       if(!epi){ o.innerHTML=L('Place an epicentre to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
       const s=source(mw);
       const notFelt=L('not felt','無感','—','—','—');
@@ -750,15 +931,28 @@ window.IntMapModules.seismic=function(HOST){
         +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+(fault
           ?(L('rupture','震源域','Bruch','очаг','ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km²')
           :(L('rupture radius','破壊半径','Bruchradius','радиус разрыва','radio de ruptura')+' '+s.rupKm.toFixed(1)+' km'))+'</div>'
-        /* (#R189) the painted field says what it is standing on — or that it is still reading it */
-        +(fldBusy?('<div style="opacity:0.75;">'+L('Reading the terrain for the intensity map…','震度分布のため地形を読み込み中…','Gelände für die Intensitätskarte wird gelesen…','Чтение рельефа для карты интенсивности…','Leyendo el terreno para el mapa de intensidad…')+'</div>')
+        /* (#R190) the painted field says what it is standing on — or that it is out of date and the
+           ▶ button is what brings it back (the progress bar itself lives above, .sq-prog). */
+        +(fldBusy?''
+          :(fldStale?('<div style="color:#ffd23f;">'+L('The parameters changed — press ▶ to recompute the intensity map.','設定を変更しました。▶ を押すと震度分布を再計算します。','Parameter geändert — ▶ drücken, um neu zu rechnen.','Параметры изменены — нажмите ▶ для пересчёта.','Los parámetros cambiaron — pulse ▶ para recalcular.')+'</div>')
           :(fld&&fld.stats?('<div style="opacity:0.72;font-size:10.5px;">'
             +(fld.stats.terrain
               ?L('Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM','震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007）','Intensitätsfeld: Vs30 aus Hangneigung, echtes DEM','Поле интенсивности: Vs30 по уклону, реальный DEM','Campo de intensidad: Vs30 por pendiente, DEM real')
-              :('⚠ '+L('DEM unavailable — uniform site class used','DEM取得不可のため一様地盤で表示','DEM nicht verfügbar — einheitlicher Untergrund','DEM недоступен — однородный грунт','DEM no disponible — terreno uniforme')))
-            +' · z'+fld.stats.z+' · '+fld.stats.painted.toLocaleString()+'/'+fld.stats.cells.toLocaleString()+' '+L('cells','セル','Zellen','ячеек','celdas')
+              :('⚠ '+L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme')))
+            +' · z'+fld.stats.z+' ('+fld.stats.demSpacingM.toLocaleString()+' m'
+            /* (#R190) the slope baseline actually used, because the Vs30 proxy is calibrated at ~900 m
+               and a field wider than the DEM can resolve does not get to pretend otherwise */
+            +(fld.stats.slopeUsable?(' → '+L('slope over','勾配基線','Neigung über','уклон на','pendiente en')+' '+fld.stats.slopeBaselineM.toLocaleString()+' m'):'')+')'
+            +' · '+fld.stats.painted.toLocaleString()+'/'+fld.stats.cells.toLocaleString()+' '+L('cells','セル','Zellen','ячеек','celdas')
+            +' · '+L('out to','到達範囲','bis','до','hasta')+' '+fld.stats.rEdgeKm.toLocaleString()+' km'
+            /* (#R190) the paint reaches the end of the scale; past the calibrated range it says so */
+            +(fld.stats.beyondCalib?(' · <span style="color:#ffd23f;">'+fld.stats.beyondCalib.toLocaleString()+' '
+              +L('cells beyond the calibrated '+fld.stats.calibKm+' km (extrapolated)','セルは較正範囲 '+fld.stats.calibKm+' km 超（外挿）',
+                 'Zellen jenseits '+fld.stats.calibKm+' km (extrapoliert)','ячеек дальше '+fld.stats.calibKm+' км (экстраполяция)',
+                 'celdas más allá de '+fld.stats.calibKm+' km (extrapolado)')+'</span>'):'')
             +(fld.stats.noDem?(' · '+fld.stats.noDem.toLocaleString()+' '+L('no DEM','DEM欠損','ohne DEM','без DEM','sin DEM')):'')
-            +' · '+fld.stats.ms+' ms</div>'):''))
+            +(fld.stats.coarse?(' · '+fld.stats.coarse.toLocaleString()+' '+L('unresolved slope','勾配不明','Neigung unbestimmt','уклон не определён','pendiente sin resolver')):'')
+            +' · '+fld.stats.ms+' ms</div>'):'')))
         +'<table style="margin-top:6px;font-size:11px;border-collapse:collapse;width:100%;"><thead><tr style="color:var(--text-muted);">'
         +'<th style="text-align:left;font-weight:600;">'+L('Place','地点','Ort','Место','Lugar')+'</th>'
         +'<th style="text-align:right;font-weight:600;">Δ</th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
@@ -842,7 +1036,27 @@ window.IntMapModules.seismic=function(HOST){
         const ok=faultSet(ring,faultSlip); if(ok){ if(opened) render(); refresh(); } return ok; },
       clearFault(){ faultClear(); if(opened) render(); refresh(); return true; },
       rebuildField:()=>buildField(),
+      /* (#R190) the field's own value at one point, with the class colour — read by the always-on
+         corner readout (js/map-readout.js). Returns null when the simulator is closed, the field has
+         not been computed, or the point is outside it: a readout that guesses is worse than none. */
+      intensityAt(lng,lat){ if(!opened||!fld||!fld.pgvAt) return null;
+        const pgv=fld.pgvAt(lng,lat); if(pgv==null||!isFinite(pgv)) return null;
+        /* the ACTIVE scale, converted from the stored PGV — never a number left over from the scale
+           the field happened to be painted in (see the ⚠ note in buildField) */
+        if(scale==='jma'){ const I=jmaI(pgv); const c=jmaClass(I); if(!c) return null;
+          return { scale:'jma', I:+I.toFixed(2), pgv:+pgv.toFixed(2), col:c.col,
+                   label:L('Shindo','震度','Shindo','Синдо','Shindo')+' '+jmaLabel(c.id) }; }
+        const I2=mmiOf(pgv); const c2=mmiClass(I2); if(!c2) return null;
+        return { scale:'mmi', I:+I2.toFixed(2), pgv:+pgv.toFixed(2), col:c2.col, label:'MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(I2)))] }; },
+      /* (#R190) 「震度の塗は透明度選択を可能に」 — callable, like every other control (#R82) */
+      setOpacity:(v)=>setFieldOpacity(v),
+      opacity:()=>fldOpacity,
+      /* (#R190) 「津波…も使えるように」 — the screening result and the hand-off, both callable */
+      tsunami:()=>tsunamiCase(),
+      openTsunami,
       state:()=>({ open:opened, epi:epi?epi.slice():null, depthKm, mw, tSec, speed, scale, stressDropMPa, siteId, siteAmp:siteAmp(),
+        Q0:QS0, Qeta:QETA, opacity:fldOpacity, fieldStale:fldStale, fieldPct:fldPct,   /* (#R190) */
+        tsunami:(()=>{ const t=tsunamiCase(); return t?{waveM:t.waveM,mw:+t.M.toFixed(2)}:null; })(),
         fault:fault?{ areaKm2:Math.round(fault.areaKm2), slipM:fault.slipM, mw:+fault.mw.toFixed(2), points:fault.ring.length }:null,
         field:(fld&&fld.stats)?fld.stats:null, fieldBusy:fldBusy,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
