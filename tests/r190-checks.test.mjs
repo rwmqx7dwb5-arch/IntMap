@@ -145,7 +145,7 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   assert.match(src, /class="sq-op"/, 'with a slider in the panel');
   assert.match(src, /class="sq-run"/, 'the compute button');
   assert.match(src, /function markStale\(\)\{/, 'parameters mark the field stale instead of rebuilding');
-  assert.match(src, /function touch\(\)\{ draw\(\); markStale\(\); \}/, '…for the panel’s own spinners');
+  assert.match(src, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); \}/, '…for the panel’s own spinners');
   assert.match(src, /class="sq-progb"/, 'the LOS-style bar');
   assert.match(src, /fldPct\+'%'/, 'with a real percentage');
   assert.match(src, /await warmDEMTiles\(warm,z,12000,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\)\)/,
@@ -196,6 +196,15 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /Math\.pow\(10,0\.5\*M-3\.3\)/, 'wave height from the Abe tsunami-magnitude relation');
   assert.match(src, /D2\.open\(\{ lng:epi\[0\], lat:epi\[1\], hazard:'tsunami', waveH:t\.waveM \}\)/,
     'handed to the existing inundation model — no second model is written');
+  /* ⚠ the screening asks the DEM, and render() asks the screening — so it has to survive a tile that
+     has not arrived yet. Measured before this: an offshore M9.0 screened correctly through the API
+     and the BUTTON was never drawn, because render() had already asked and got "unknown". */
+  assert.match(src, /function _epiSeaDepth\(\)\{/, 'the depth is asked for at every zoom that might be warm');
+  assert.match(src, /if\(fld&&fld\.z\) zs\.push\(fld\.z\);/, 'the field’s own level first — its warm grid covers the epicentre');
+  assert.match(src, /function warmEpi\(\)\{/, 'and one tile is warmed so the answer exists before it is needed');
+  assert.match(src, /_tsuShown=!!tsunamiCase\(\);/, 'render records what it drew…');
+  assert.match(src, /if\(opened&&_t!==_tsuShown\)\{ _tsuShown=_t; render\(\); \}/,
+    '…so the panel re-renders exactly once, when the availability flips');
   const sims = read('js/sims.js');
   assert.match(sims, /if\(ll&&ll\.hazard&&HAZ\(\)\.some\(h=>h\[0\]===ll\.hazard\)\)/,
     'which accepts the hazard with the location, so it never runs once under the previous one');

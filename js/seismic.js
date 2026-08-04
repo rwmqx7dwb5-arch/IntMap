@@ -616,7 +616,11 @@ window.IntMapModules.seismic=function(HOST){
                   terrain:(noDem+coarse)<N*N*0.5, ms:Math.round(performance.now()-t0) } };
         paintField();
         prog(100);
-      } finally { if(seq===fldSeq){ fldBusy=false; if(opened) report(); } }
+      } finally { if(seq===fldSeq){ fldBusy=false;
+        /* (#R190) the build warmed the DEM around the epicentre, so the tsunami screening may have an
+           answer now that it did not have when the panel was drawn — see syncTsunami. */
+        const _t=!!tsunamiCase();
+        if(opened&&_t!==_tsuShown){ _tsuShown=_t; render(); } else if(opened) report(); } }
     }
 
     function ensure(){ try{ if(!_imCanDraw()) return false;
@@ -736,8 +740,8 @@ window.IntMapModules.seismic=function(HOST){
        (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
        explicit requests for an answer, so they still compute. The panel's own spinners call
        `touch()` instead, which marks the field stale and waits for the ▶ button — see markStale. */
-    function refresh(){ draw(); schedField(); }
-    function touch(){ draw(); markStale(); }
+    function refresh(){ draw(); warmEpi(); schedField(); }
+    function touch(){ draw(); warmEpi(); markStale(); }
     function render(){ if(!panel) return;
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
@@ -840,6 +844,10 @@ window.IntMapModules.seismic=function(HOST){
             tl.value=Math.round(tSec); panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); },90); } };
       panel.querySelector('.sq-real').onclick=()=>loadReal();
       try{ makeDraggable(panel,panel.querySelector('.sq-head')); }catch(_){}
+      /* (#R190) whatever this render just decided about the tsunami button IS the shown state —
+         recording it here is what stops syncTsunami re-rendering in a loop */
+      _tsuShown=!!tsunamiCase();
+      warmEpi();
       legend();
       report();
     }
@@ -864,12 +872,40 @@ window.IntMapModules.seismic=function(HOST){
        0.5·Mw − 3.3 (Abe 1979/1981 tsunami-magnitude scale, rearranged), clamped to the range the
        inundation model accepts. The button says it is an estimate, and js/sims.js lets the user
        override it — nothing here replaces the coastal wave height with a claim of its own. */
+    /* ⚠ (#R190) THE SCREENING NEEDS A TILE THAT MAY NOT BE THERE YET. `render()` asks this question
+       while it builds the panel, and at that moment the DEM under a brand-new epicentre has not been
+       fetched — so the honest answer is "unknown", the button is not drawn, and nothing ever draws it
+       again. Measured: an offshore M9.0 at 143.05/38.30 screened correctly through the API 1.5 s
+       later and the BUTTON was still absent.
+       Two halves: ask at every zoom that might be warm (the field's own level first — its warm grid
+       covers the epicentre), and warm one tile on open/pick so the answer exists before it is needed.
+       `_tsuShown` below re-renders the panel exactly once, when the availability flips. */
+    let _tsuShown=null, _tsuWarm=null;
+    function _epiSeaDepth(){
+      if(!epi) return null;
+      const zs=[]; if(fld&&fld.z) zs.push(fld.z);
+      [8,7,6,5].forEach(z=>{ if(zs.indexOf(z)<0) zs.push(z); });
+      for(const z of zs){
+        let e=null; try{ e=demElevBilinear(epi[0],epi[1],z); if(e==null) e=demElevAt(epi[0],epi[1],null,z); }catch(_){}
+        if(e!=null&&isFinite(e)) return e;
+      }
+      return null;
+    }
+    /* one tile, so "is the epicentre at sea?" is answerable without waiting for a whole field */
+    function warmEpi(){ if(!epi) return; const k=epi[0].toFixed(2)+'/'+epi[1].toFixed(2);
+      if(_tsuWarm===k) return; _tsuWarm=k;
+      try{ warmDEMTiles([[epi[0],epi[1]]],6,8000,null).then(()=>{ syncTsunami(); }); }catch(_){}
+    }
+    /* the panel carries the button only while the case holds; re-render when that flips (never on
+       every build — it would throw away focus and scroll position for nothing) */
+    function syncTsunami(){ const t=!!tsunamiCase();
+      if(t===_tsuShown) return; _tsuShown=t; if(opened) render(); }
     function tsunamiCase(){
       if(!epi) return null;
       const M=fault?fault.mw:mw;
       if(!(M>=6.5)||!(depthKm<=100)) return null;
       /* under the sea? the same DEM the intensity field reads. Unknown → not offered (never guessed). */
-      let e0=null; try{ e0=demElevBilinear(epi[0],epi[1],6); if(e0==null) e0=demElevAt(epi[0],epi[1],null,6); }catch(_){}
+      const e0=_epiSeaDepth();
       if(e0==null||e0>0) return null;
       const waveM=Math.max(1,Math.min(40,Math.round(Math.pow(10,0.5*M-3.3)*10)/10));
       return { waveM, M, why:L('Offshore, M'+M.toFixed(1)+', focal depth '+Math.round(depthKm)+' km, sea floor '+Math.round(-e0)+' m — meets the M≥6.5 / ≤100 km screening used for tsunami advisories.',
