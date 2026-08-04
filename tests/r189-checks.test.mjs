@@ -41,6 +41,25 @@ test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable 
   assert.match(dl, /海底ケーブルレイヤーを追加できませんでした/, '…and says so');
 });
 
+/* The migration reaches every saved session — INCLUDING the ones the test suite writes for itself.
+   The Playwright seed (#R186) exists to say "this profile has already opted out of the default-on
+   layers" so ~350 tests boot in 3.2 s instead of 9.2 s; unstamped, `_restore()` healed them all
+   back on and CI measured three straight timeouts of r174 «zooming in still moves the viewpoint»
+   plus three newly-flaky tests. Whatever generation js/app-body.js writes, the seeds must claim. */
+test('R189 defaults: every test-suite session seed carries the CURRENT generation', () => {
+  const gen = /defv:(\d+)/.exec(read('js/app-body.js'));
+  assert.ok(gen, 'js/app-body.js stamps a generation');
+  const seeds = ['playwright.config.js', 'tests/r172.spec.js', 'tests/r173.spec.js', 'tests/r186.spec.js'];
+  for (const f of seeds) {
+    const src = read(f);
+    for (const m of src.matchAll(/intmap_session2[\s\S]{0,200}?\{[\s\S]{0,200}?\}/g)) {
+      const stamp = /["']?defv["']?\s*:\s*(\d+)/.exec(m[0]);
+      assert.ok(stamp, `${f}: a session seed without defv is healed back to the default-on layers`);
+      assert.equal(stamp[1], gen[1], `${f}: the seed's generation must track js/app-body.js`);
+    }
+  }
+});
+
 test('R189 defaults: buildLegend survives a missing legend element', () => {
   const src = read('js/data-layers.js');
   assert.match(src, /function buildLegend\(\)\{\s*\n\s*const lg=document\.getElementById\('koppen-legend'\);[\s\S]{0,400}if\(!lg\) return;/,

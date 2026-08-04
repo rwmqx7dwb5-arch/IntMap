@@ -58,8 +58,15 @@ export default defineConfig({
       /* ⚠ `layers` ONLY. An earlier version also seeded `tabInit:true`, which is the flag that says
          "this profile has already been offered the default tab" — and that broke tests/r170's «fresh
          desktop profile: Countries open», because a fresh profile is exactly what it is about. The
-         seed must say the least it can: which layers, and nothing else about the session. */
-      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"layers":[]}' }] }],
+         seed must say the least it can: which layers, and nothing else about the session.
+         ⚠ …plus `defv`, which is not "something about the session" but the STATEMENT THAT IT IS ONE.
+         (#R189) an unstamped session predates #R188's imAutoOff fix, so its absences can be an
+         outage's poison rather than a choice, and `_restore()` heals them once. This seed is the one
+         place in the suite that asserts an absence IS a choice — unstamped, the heal put Köppen and
+         the cables back on for all ~350 tests, i.e. exactly the 9,160 ms boot this seed exists to
+         avoid. MEASURED as three straight timeouts of r174 «zooming in still moves the viewpoint»
+         and three more tests turned flaky. Bump this with the generation in js/app-body.js. */
+      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":189,"layers":[]}' }] }],
     },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',
