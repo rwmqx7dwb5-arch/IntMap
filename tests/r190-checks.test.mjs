@@ -31,8 +31,11 @@ test('R190 aircraft: the lifted body is the original glyph, and "at real altitud
   assert.doesNotMatch(src, /_PLANE_PLAN/, 'and the airliner plan-form it was grown from');
   assert.doesNotMatch(src, /DETAIL_MAX_AIRCRAFT/, 'and the budget that switched between the two bodies');
   assert.doesNotMatch(src, /rgba\(255,255,255,0\.97\)/, 'the white rim plate is gone');
-  /* one polygon per aircraft, at the #R172 size */
-  assert.match(src, /coordinates:\[planeRing\(d\.lng,d\.lat,d\.heading,half\)\]/, 'one ring per aircraft');
+  /* one aeroplane per aircraft, at the #R172 size.
+     (#R191) the body ring is now the shared outline INSET by the glyph's own stroke and a second ring
+     carries the stroke itself (see _PLANE_CORE / _PLANE_RIM) — still the one silhouette this test is
+     about, and still one aeroplane per aircraft. The stroke's own geometry is pinned in tests/r191. */
+  assert.match(src, /coordinates:\[planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\]/, 'one aeroplane per aircraft');
   assert.match(src, /const half=Math\.max\(60, 13\*mpp\);/, 'and the original 13-px half-length');
   /* the default, and the storage generation that makes the default reachable */
   assert.match(src, /const PLANES3D_KEY='intmap_planes3d3';/, 'a new key generation');
@@ -170,7 +173,13 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
 test('R190 seismic: the field reaches the end of the lowest class and declares its extrapolation', () => {
   const src = read('js/seismic.js');
   assert.match(src, /const MMI_CALIB_KM=1000;/, 'where the regional law is calibrated');
-  assert.match(src, /const MMI_MAX_KM=1500;/, 'and where the paint stops (measured: 3,000 km was 71 % no-DEM)');
+  /* (#R191) 1,500 km is still the number this test was written about — it is the range the DEM can
+     support, and #R190's measurement (3,000 km ⇒ 71 % of cells with no elevation at all) is exactly
+     why. It is now called MMI_TERRAIN_KM, because #R191 separated "how far the terrain-driven field
+     goes" from "where the lowest class ends" — the second was what the report was about, and it is
+     MMI_MAX_KM. The rest of this test is unchanged and still passes. */
+  assert.match(src, /const MMI_TERRAIN_KM=1500;/, 'and where the terrain-driven paint stops (measured: 3,000 km was 71 % no-DEM)');
+  assert.match(src, /const rFine=Math\.min\(rEdge,MMI_TERRAIN_KM\);/, 'the fine field is bounded by it');
   assert.match(src, /const inRange=rKm<=MMI_CALIB_KM;/,
     'the TABLE still refuses to print an intensity outside the calibrated range');
   assert.match(src, /if\(km>MMI_CALIB_KM\) beyondCalib\+\+;/, 'and the painted cells beyond it are counted');

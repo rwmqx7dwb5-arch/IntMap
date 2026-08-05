@@ -75,7 +75,9 @@ test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real c
   ok('async function _satCrop(buf, dz, subX, subY)', 'nearest real ancestor cropped to the child quadrant');
   ok('for(let up=0; up<13 && az>1; up++)', 'walk-up deep enough for open ocean (Esri imagery ends ~z8)');
   ok("tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']", 'base satellite source uses the protocol, with a direct-Esri fallback');
-  ok('if(first&&first.buf) return {data: first.buf.slice(0)}; throw e;', 'any error falls back to raw bytes (never worse than before)');
+  /* (#R191) the crop path returns an ImageBitmap now (no JPEG round-trip), so 'never worse than
+     before' is stated where it lives: a failed crop still answers with the original bytes. */
+  ok("return {data:first.buf, buf:first.buf, mode:'raw'};", 'a failed crop falls back to raw bytes (never worse than before)');
   ok('window.IntMapSatProto=', 'testable resolve hook exposed');
 });
 

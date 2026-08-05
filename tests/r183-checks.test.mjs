@@ -242,7 +242,11 @@ test('R190: the lifted aircraft is the original silhouette, not a multi-part air
   assert.match(DL, /const _PLANE_OUTLINE=_PLANE_ORIG;/, "the 3-D body draws the 2-D glyph's own outline");
   assert.doesNotMatch(DL, /_P_LEVELS/, 'the part-height table is gone');
   assert.doesNotMatch(DL, /DETAIL_MAX_AIRCRAFT/, 'and the budget that chose between the two bodies');
-  assert.match(DL, /coordinates:\[planeRing\(d\.lng,d\.lat,d\.heading,half\)\]/, 'one ring per aircraft');
+  /* (#R191) one AEROPLANE per aircraft, drawn as the glyph is drawn: the outline inset by its own
+     1.6-px stroke, with that stroke as a second ring. #R185's multi-part airliner and its rim PLATE
+     stay gone — which is what the two doesNotMatch assertions above are for. */
+  assert.match(DL, /coordinates:\[planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\]/, 'one aeroplane per aircraft');
+  assert.doesNotMatch(DL, /rgba\(255,255,255,0\.97\)/, 'and the rim plate is still gone');
 });
 
 test('R183: the "lifted" counter counts aircraft, not the parts they are made of', () => {

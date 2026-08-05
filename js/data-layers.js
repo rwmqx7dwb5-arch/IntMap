@@ -64,7 +64,7 @@ window.IntMapModules.dataLayers=function(HOST){
       widgetsBtn:"Widgets", measureBtn:"📏 Messen", areaBtn:"📐 Fläche",
       ctxDropPin:"Pin hier setzen", ctxMeasureFrom:"Messung hier beginnen", ctxPostHere:"Hier posten (Community)", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
       lyrEEZ:"Maritime AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)",
-      planesZoomHint:"🔍 Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"🔍 Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenendatum",
+      planesZoomHint:"Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenendatum",
       commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Veröffentlichen", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte anzeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Beliebt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
       compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
       satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ausweichquelle umgeschaltet",
@@ -2206,9 +2206,14 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!on){ el.style.display='none'; return; }
       if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; return; }
       /* (#R186) …and when the budget covers only part of a very wide view, SAY SO rather than letting
-         a partly-filled sky read as an empty one. `_planeCover` is set by the planner below, so this
-         reports what the last sweep actually asked for, not an estimate. */
-      if(_planeCover&&_planeCover.clipped){ el.textContent=t('planesAreaHint')||t('planesZoomHint'); el.style.display='block'; return; }
+         a partly-filled sky read as an empty one.
+         (#R191) The question is asked about THE VIEW ON SCREEN NOW — planeCircles(false) plans without
+         adopting the plan — not about `_planeCover`, which belongs to the sweep that is running and can
+         be minutes old. Reading the running sweep's answer is what left the notice up long after the
+         user had zoomed into a view one circle covers («ズームインで全域表示がいつまでも出てくる»).
+         A clipped sweep always covers the CENTRAL block, so a view zoomed inside it really is complete. */
+      let clipped=false; try{ const p=planeCircles(false); clipped=!!(p&&p.cover&&p.cover.clipped); }catch(_){}
+      if(clipped){ el.textContent=t('planesAreaHint')||t('planesZoomHint'); el.style.display='block'; return; }
       el.style.display='none';
     }
     /* ── (#R186) THE SWEEP PLAN: which circles cover the view ──────────────────────────────────────
@@ -2255,7 +2260,7 @@ window.IntMapModules.dataLayers=function(HOST){
        now abandoned — which is only safe because what it had already published survives). */
     const PLANE_LATTICE_MARGIN=0.96;    /* shrink the ideal covering step so the corners overlap slightly */
     let _planeCover=null;
-    function planeCircles(){
+    function planeCircles(commit){
       const NM=1.852, toR=Math.PI/180;
       let c={lat:48,lng:8}, b=null;
       try{ if(GE().hasRenderer()){ c=GE().camera.getCenter(); b=GE().camera.getBounds(); } }catch(_){}
@@ -2306,11 +2311,19 @@ window.IntMapModules.dataLayers=function(HOST){
         const db=Math.pow((((b[1]-c.lng+540)%360)-180)*Math.cos(c.lat*toR),2)+Math.pow(b[0]-c.lat,2);
         return da-db;
       });
-      _planeCover={ nx, ny, wantX, wantY, clipped, circles:out.length,
+      const cover={ nx, ny, wantX, wantY, clipped, circles:out.length,
                     coverKmX:nx*stepKm, coverKmY:ny*rowKm, spanKmX, spanKmY,
                     /* the lattice itself, so a carried-over aircraft can be asked "has the sweep
                        already looked where you are?" in O(1) — see _sweep()'s publish step */
                     c, dLat, rows, stepKm, rowKm };
+      out.cover=cover;
+      /* (#R191) `commit === false` PLANS WITHOUT ADOPTING. The hint below needs to know whether THIS
+         view can be covered, and `_planeCover` is the running sweep's plan — which is replaced only
+         when the next sweep starts, i.e. after as much as 154 s for a 128-circle block. That is why
+         「ズームインで全域表示がいつまでも出てくる」: the answer on screen belonged to a view the
+         user had already left. The planner is cheap (≤128 cells), so the question is simply asked
+         again about the current viewport instead of being remembered. */
+      if(commit!==false) _planeCover=cover;
       return out;
     }
     /* Which lattice cell a position falls in, or null when it is outside the planned block. The
@@ -2837,6 +2850,85 @@ window.IntMapModules.dataLayers=function(HOST){
     const _PLANE_ORIG=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
                        [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
     const _PLANE_OUTLINE=_PLANE_ORIG;
+    /* ══ (#R191) THE ORIGINAL MARK'S WHITE STROKE, IN THE LIFTED RENDERING TOO ═════════════════════
+       「元に戻せと言っているのに、色を勝手に変えるな。」 #R190 gave the lifted body the original
+       SILHOUETTE and stopped there, so the two renderings still drew different marks — measured over
+       866 aircraft at z10.5: the flat glyph carries 0.037 white-outline pixels per body pixel and the
+       lifted body 0.012. The original mark is not a bare blue shape: `ensurePlaneIcons` fills it and
+       then strokes it with 1.6 px of white on a 44-unit canvas whose half-length is 19, i.e. a stroke
+       that straddles the path by 0.8 units either side. That stroke is half the mark's identity.
+       An extrusion has no stroke, so the outward half of it is drawn as its own polygon UNDER the
+       body (see refreshPlanes3D: `part:'rim'`, extruded 8 % less tall so the body always wins the
+       depth test where they overlap and only the 0.8 units that stick out are seen).
+       ⚠ MITRED, NOT SCALED. #R185's rim was the whole plan-form grown about its centre, which puts
+       more outset at the nose and the wingtips than beside the fuselage — a scaled copy, not a
+       stroke. This offsets each vertex along the mitre of its two edge normals, so the band is 0.8
+       units wide everywhere, exactly as the canvas stroke is. The mitre is limited at 2.6 units so
+       the 2.2-unit-wide fuselage notches cannot spike. */
+    const _PLANE_STROKE=0.8;                                  /* half of ensurePlaneIcons' 1.6-px stroke */
+    function _outsetRing(pts,w){
+      const n=pts.length, area=(()=>{ let a=0; for(let i=0,j=n-1;i<n;j=i++) a+=(pts[j][0]*pts[i][1]-pts[i][0]*pts[j][1]); return a; })();
+      const sgn=area>0?1:-1;                                  /* so the offset always goes OUTWARD */
+      const en=[];                                            /* one outward unit normal per edge */
+      for(let i=0;i<n;i++){ const a=pts[i], b=pts[(i+1)%n];
+        const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
+        en.push([sgn*dy/L, -sgn*dx/L]); }
+      const out=[];
+      for(let i=0;i<n;i++){ const p=en[(i-1+n)%n], q=en[i];
+        const mx=p[0]+q[0], my=p[1]+q[1], d=1+(p[0]*q[0]+p[1]*q[1]);
+        const k=(d>0.05)?(w/d):(w/0.05);
+        const ox=mx*k, oy=my*k, m=Math.hypot(ox,oy), lim=Math.abs(w)*3.25;
+        const s=(m>lim&&m>0)?(lim/m):1;
+        out.push([pts[i][0]+ox*s, pts[i][1]+oy*s]); }
+      return out;
+    }
+    /* `ctx.fill()` then `ctx.stroke()` puts HALF the 1.6-px line inside the path and half outside, so the
+       glyph's blue ends 0.8 units short of the outline and its white ring is 1.6 units wide. The lifted
+       mark is built the same way round: the body is the outline INSET by 0.8, the stroke is it OUTSET by
+       0.8, and the mark's overall size is unchanged (the ring reaches exactly where the canvas one does). */
+    const _PLANE_RIM=_outsetRing(_PLANE_OUTLINE,_PLANE_STROKE);
+    const _PLANE_CORE=_outsetRing(_PLANE_OUTLINE,-_PLANE_STROKE);
+    /* ══ (#R191) A `fill-extrusion` NEVER RENDERS THE COLOUR IT IS GIVEN ═══════════════════════════
+       MapLibre lights every extrusion in the vertex shader — read it in fill_extrusion.vertex.glsl:
+
+           color += vec4(0.03);                              // a fixed ambient, on every channel
+           directional = clamp(dot(normal/16384.0, u_lightpos), 0, 1);
+           directional = mix(1-I, max(1-luminance+I, 1), directional);
+           v_color.rgb = clamp(color.rgb * directional * u_lightcolor, …, 1.0);
+
+       so the mark's declared `#1e90ff` reached the screen as rgb(35,141,245) while the flat glyph —
+       an icon, which is not lit — reached it as rgb(30,144,255). That is the reported colour change,
+       and it is not something the aircraft layer chose.
+
+       Two exits were measured and rejected. There is no per-layer escape in 5.24: the paint
+       properties are opacity/color/pattern/translate/height/base/vertical-gradient — no
+       emissive-strength. And `light.intensity = 0` DOES make every extrusion render its exact colour
+       in every projection (measured: rgb(38,152,255) at z8 globe, z13 Mercator and at 62° of pitch,
+       all identical) — but the light is a STYLE property, and with it flat the 3-D buildings lose
+       their form completely: walls and roofs become one tone (screenshotted over Midtown).
+
+       What is left is to ask for the colour that comes out right, which needs `directional`. It is
+       not a free variable: measured with a white body, it is 0.933 under the globe projection —
+       stable across z4→z10, off-centre views, 55° of pitch and 90° of bearing — and 1.0 under
+       Mercator, which the app switches to at z12. So the compensation is a two-stop zoom ramp
+       matching the renderer's own transition band, and it is exact except where a channel is already
+       at the ceiling: blue 255 needs 1.075 of a channel under the globe, so it stays at 245 there.
+       Measured result — globe rgb(30,144,245), Mercator rgb(30,144,255) against the glyph's
+       rgb(30,144,255): two channels exact instead of none, and the third as close as the renderer
+       can be asked to go. tests/r191 pins the constants against live pixels. */
+    const _FE_AMBIENT=0.03;                                   /* the shader's fixed ambient term */
+    const _FE_DIR_GLOBE=0.933, _FE_DIR_MERC=1.0;              /* measured roof `directional`, per projection */
+    const _FE_Z0=11.5, _FE_Z1=13;                             /* the globe→Mercator transition band */
+    function _feHex(hex,dir){
+      const n=parseInt(hex.slice(1),16), ch=[(n>>16)&255,(n>>8)&255,n&255];
+      return '#'+ch.map(v=>{ const want=v/255;
+        const need=Math.max(0,Math.min(1,want/dir-_FE_AMBIENT));
+        return Math.round(need*255).toString(16).padStart(2,'0'); }).join('');
+    }
+    /* the two-stop zoom ramp above, built from a factory so every plane layer states its colours once.
+       ⚠ The zoom expression has to be the OUTERMOST one — MapLibre rejects `['zoom']` nested inside a
+       data expression — which is why the factory is called twice rather than wrapped once. */
+    const _feRamp=(mk)=>['interpolate',['linear'],['zoom'],_FE_Z0,mk(_FE_DIR_GLOBE),_FE_Z1,mk(_FE_DIR_MERC)];
     /* Turn a list of aircraft-frame offsets into a lng/lat ring. `pts` are in the SCREEN convention the
        2-D glyph uses (+y = aft), in units where the half-length is 19; `halfM` is that half-length in
        real ground metres. Shared by the whole-aircraft silhouette and by every 3-D part below. */
@@ -2850,7 +2942,6 @@ window.IntMapModules.dataLayers=function(HOST){
         out.push([lng+e/mLng, lat+n/mLat]);
       }
       out.push(out[0]); return out; }
-    function planeRing(lng,lat,hdg,halfM){ return planeRingPts(lng,lat,hdg,halfM,_PLANE_OUTLINE); }
     /* (#R183) 「立体的に見たときの感じもリアルに。」
        #R172 gave the aircraft their real ALTITUDE, which was the important half. What stood there was
        one flat plan-view polygon given a uniform thickness — a cookie-cutter plate. #R183 split that
@@ -2931,7 +3022,14 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R190) ONE polygon per aircraft — the original silhouette, standing at its own altitude.
            `part:'body'` is kept on it so every reader that resolves a rendered feature back to an
            aircraft (the pick fallback, the stats, the tests) asks the same question it always did. */
-        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRing(d.lng,d.lat,d.heading,half)]},
+        /* (#R191) …preceded by the original glyph's white stroke, which is the other half of the mark
+           (see _PLANE_RIM). It is extruded 8 % less tall than the body and pushed first, so where the
+           two overlap the depth test keeps the body and only the 0.8 units of outset are white — a
+           stroke, not a plate under the aeroplane. It carries the same properties, so a click that
+           lands on the stroke still resolves to the aircraft. */
+        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_RIM)]},
+          properties:Object.assign({},props,{ alt, top:alt+thick*0.92, part:'rim' }) });
+        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_CORE)]},
           properties:Object.assign({},props,{ alt, top:alt+thick, part:'body' }) });
         /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
            fallback resolves a rendered feature back to an aircraft through `properties.icao24`
@@ -3118,15 +3216,21 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!GE().layers.hasSource(PLANE3D_SRC)) GE().layers.addSource(PLANE3D_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PLANE3D_POST)) GE().layers.add({id:PLANE3D_POST,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['==',['get','post'],1], layout:{visibility:'none'},
-          paint:{ 'fill-extrusion-color':['match',['get','type'],'military','#ff3b30','#1e90ff'],
+          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex('#1e90ff',d)]),
             'fill-extrusion-opacity':Math.min(0.5,opacities.planes*0.5),
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         if(!GE().layers.has(PLANE3D_LYR)) GE().layers.add({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['!=',['get','post'],1], layout:{visibility:'none'},
           paint:{ /* (#R173) the selected aircraft is the one whose track is drawn — say so in its colour.
-                     (#R190) the rim/halo cases went with the plates — the mark is the original one. */
-            'fill-extrusion-color':['case',
-              ['==',['get','sel'],1],'#ffd23f',['match',['get','type'],'military','#ff3b30','#1e90ff']],
+                     (#R190) the rim/halo cases went with the plates — the mark is the original one.
+                     (#R191) …and the original mark's own white stroke came back with it (see
+                     _PLANE_RIM), so `part:'rim'` is a case again — but it is the 0.8-unit outset of
+                     ensurePlaneIcons' stroke, not #R185's whole-plan-form plate, and there is still
+                     no halo. Every colour goes through _feHex so the extrusion renders the glyph's
+                     colour rather than the shader's idea of it. */
+            'fill-extrusion-color':_feRamp(d=>['case',
+              ['==',['get','part'],'rim'],_feHex('#ffffff',d),
+              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex('#1e90ff',d)]]),
             'fill-extrusion-opacity':opacities.planes,
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as
@@ -3262,6 +3366,7 @@ window.IntMapModules.dataLayers=function(HOST){
            is the time those sixteen requests actually occupy. */
         if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){
             try{ refreshTrafficLayer('planes'); }catch(_){}   /* (#R186) re-draw from what we already hold: the 3-D cull is viewport-shaped when the sky is very busy, and the per-aircraft ground offset follows the view */
+            updatePlanesZoomHint();                           /* (#R191) a PAN changes the required coverage too, not just a zoom */
             clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{
               const sweepMs=Math.max(1500,(((_planeCover&&_planeCover.circles)||1)*PLANE_GAP_MS));
               if(Date.now()-_lastPlaneFetch>sweepMs) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }

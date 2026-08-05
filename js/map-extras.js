@@ -137,7 +137,7 @@ window.IntMapModules.layerHoverPopup=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
      In the NORMAL state (Countries(info) OFF, no measuring tool, not already isolated), tapping a country
-     NAME place-label pops a small "🔍 Isolate <country>" button at the tap point. Tapping it isolates that
+     NAME place-label pops a small "Isolate <country>" button at the tap point. Tapping it isolates that
      country. (When Countries(info) is ON, the country detail popup already carries its own Isolate button.) */
   (function(){
     if(!GE().hasRenderer()) return; let pop=null, hideT=null;
@@ -218,11 +218,11 @@ window.IntMapModules.layerSearch=function(HOST){
         box.style.cssText='position:relative;z-index:6;padding:2px 0 7px;';
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">';
         const inp=box.querySelector('input');
-        inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…';
+        inp.placeholder=jp()?'レイヤーを検索…':'Search layers…';
         inp.addEventListener('input',()=>filter(inp.value));
         inp.addEventListener('click',e=>e.stopPropagation());
         inp.addEventListener('keydown',e=>e.stopPropagation());
-        window.addEventListener('intmap-lang',()=>{ inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…'; });
+        window.addEventListener('intmap-lang',()=>{ inp.placeholder=jp()?'レイヤーを検索…':'Search layers…'; });
       }
       /* (#R65) the Active-layers bar owns the very top (sticky) — the search box slots in right below it */
       { const act=document.getElementById('layer-active-section');
