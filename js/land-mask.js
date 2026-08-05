@@ -22,6 +22,12 @@
  *  fine field near the coast, which is why the DEM still answers first there and this is only
  *  consulted where the DEM has nothing to say.
  *
+ *  ⚠ AND A 19.5 km CELL ON A COAST ANSWERS FOR THE CELL, NOT FOR THE POINT. Each pixel is the
+ *  MAJORITY of what is inside it (three scanlines, see scripts/build-land-mask.mjs), so
+ *  isLand(139.76, 35.68) — central Tokyo — is FALSE: the cell that contains it is mostly Tokyo Bay.
+ *  That is the right answer for a 19.5 km cell and the wrong answer for a street corner, which is
+ *  exactly why nothing asks this where the DEM can speak.
+ *
  *  It is deliberately its own module and not part of the seismic simulator: "where is the land" is a
  *  fact about the Earth, not about earthquakes, and anything else that needs it should ask here
  *  rather than grow a second copy (#R136).

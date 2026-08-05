@@ -36,12 +36,20 @@ const W = 2048, H = 1024;
 const SRC = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_land.geojson';
 
 /* ── the rasteriser ────────────────────────────────────────────────────────────────────────────
-   One scanline per output row, at the row's CENTRE latitude. For each polygon, every ring
-   contributes its crossings of that latitude and the spans between alternate crossings are land —
-   the even-odd rule, which is what makes a ring inside another ring a hole (the Caspian, the Great
-   Lakes) without any special case. */
+   Scanlines through each output row. For each polygon, every ring contributes its crossings of that
+   latitude and the spans between alternate crossings are land — the even-odd rule, which is what
+   makes a ring inside another ring a hole (the Caspian, the Great Lakes) without any special case.
+
+   ⚠ THREE SCANLINES PER ROW, NOT ONE. A single line through the row's centre asks "is the middle of
+   this pixel land?", and a 0.176° pixel is 19.6 km tall — big enough that the answer at its centre
+   is not the answer for the pixel. Measured on the first build: TOKYO came back sea, because the
+   centre latitude of its row (35.60°N) falls in Tokyo Bay while the rest of the pixel is the city.
+   Sampling at ¼, ½ and ¾ of the row and taking the majority makes the pixel answer for the pixel,
+   which is what a mask at this resolution is for. Verified after: Tokyo, Sendai, London, Mongolia,
+   Sahara land; open Pacific sea. */
+const SUB = [0.25, 0.5, 0.75];
 function rasterise(features) {
-  const bits = new Uint8Array(W * H);          /* one byte per pixel while filling; packed at the end */
+  const hits = new Uint8Array(W * H);          /* how many sub-rows of this pixel are land */
   const polys = [];
   for (const f of features) {
     const g = f.geometry; if (!g) continue;
@@ -55,32 +63,40 @@ function rasterise(features) {
     return { s, n };
   });
   const xs = [];
+  const row = new Uint8Array(W);
   for (let j = 0; j < H; j++) {
-    const lat = 90 - (j + 0.5) * (180 / H);
-    for (let k = 0; k < polys.length; k++) {
-      if (lat < boxes[k].s || lat > boxes[k].n) continue;
-      xs.length = 0;
-      for (const ring of polys[k]) {
-        for (let i = 0, m = ring.length - 1; i < ring.length; m = i++) {
-          const a = ring[m], b = ring[i];
-          if ((a[1] > lat) === (b[1] > lat)) continue;             /* does not cross this latitude */
-          xs.push(a[0] + (lat - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+    for (const frac of SUB) {
+      const lat = 90 - (j + frac) * (180 / H);
+      row.fill(0);
+      for (let k = 0; k < polys.length; k++) {
+        if (lat < boxes[k].s || lat > boxes[k].n) continue;
+        xs.length = 0;
+        for (const ring of polys[k]) {
+          for (let i = 0, m = ring.length - 1; i < ring.length; m = i++) {
+            const a = ring[m], b = ring[i];
+            if ((a[1] > lat) === (b[1] > lat)) continue;           /* does not cross this latitude */
+            xs.push(a[0] + (lat - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+          }
+        }
+        if (xs.length < 2) continue;
+        xs.sort((p, q) => p - q);
+        for (let i = 0; i + 1 < xs.length; i += 2) {
+          let i0 = Math.round((xs[i] + 180) / 360 * W), i1 = Math.round((xs[i + 1] + 180) / 360 * W);
+          if (i1 < i0) { const t = i0; i0 = i1; i1 = t; }
+          i0 = Math.max(0, i0); i1 = Math.min(W, i1);
+          /* a span thinner than one pixel still marks the pixel it falls in — an island narrower
+             than 19 km is still land, and dropping it would punch a hole in the mask exactly where
+             a coastal city sits */
+          if (i1 === i0 && i0 < W) row[i0] = 1;
+          for (let x = i0; x < i1; x++) row[x] = 1;
         }
       }
-      if (xs.length < 2) continue;
-      xs.sort((p, q) => p - q);
-      for (let i = 0; i + 1 < xs.length; i += 2) {
-        let i0 = Math.round((xs[i] + 180) / 360 * W), i1 = Math.round((xs[i + 1] + 180) / 360 * W);
-        if (i1 < i0) { const t = i0; i0 = i1; i1 = t; }
-        i0 = Math.max(0, i0); i1 = Math.min(W, i1);
-        /* a span thinner than one pixel still marks the pixel it falls in — an island narrower than
-           19 km is still land, and dropping it would punch a hole in the mask exactly where a
-           coastal city sits */
-        if (i1 === i0 && i0 < W) bits[j * W + i0] = 1;
-        for (let x = i0; x < i1; x++) bits[j * W + x] = 1;
-      }
+      for (let x = 0; x < W; x++) if (row[x]) hits[j * W + x]++;
     }
   }
+  const bits = new Uint8Array(W * H);
+  const need = Math.ceil(SUB.length / 2);      /* the majority of the pixel */
+  for (let i = 0; i < bits.length; i++) bits[i] = (hits[i] >= need) ? 1 : 0;
   return bits;
 }
 
