@@ -2174,8 +2174,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         /* concurrently, not after: this is the whole speed-up */
         try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
         window.__imBoot.set(88,'layers-fired');
+        /* ⚠ (#R190) THE ENDING NAMES ARE A CONTRACT, NOT A LABEL. tests/r186 asserts that exactly ONE
+           of `idle` / `timeout` / `no-renderer` is recorded — "a launch screen that lifts without
+           saying why is the failure mode", in its own words. The first draft here invented
+           `idle-timeout` and `layers-timeout`, which are outside that vocabulary, so on a runner slow
+           enough to take an escape the screen lifted correctly and the test found NO ending at all
+           (measured in CI: layers painted at 9,290 ms, escape at 12,134 ms, zero recognised endings).
+           It passed elsewhere only because those runners reached `idle` first — a latent flake.
+           Which escape fired is still said, in the console, where a diagnosis is read. */
         let ended=false;
-        const go=(why)=>{ if(ended) return; ended=true; try{ window.__imBoot.done(why||'ready'); }catch(_){} };
+        const go=(why)=>{ if(ended) return; ended=true; try{ window.__imBoot.done(why||'idle'); }catch(_){} };
         /* "the default layers are actually painting" — asked of the renderer, never of a checkbox
            (#R170: `isStyleLoaded()` is not "may I add layers", and a ticked box is not a drawn layer). */
         const _pending=()=>{ let n=0; try{
@@ -2192,8 +2200,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
           const left=_pending();
           try{ window.__imBoot.set(left?92:97,'layers'); }catch(_){}
           if(!left){ try{ GE().events.once('idle',()=>go('idle')); }catch(_){ go('idle'); }
-            setTimeout(()=>go('idle-timeout'),2500); return; }
-          if(++waits>28){ console.warn('[boot] default layers still not on the map after ~14 s — revealing anyway'); go('layers-timeout'); return; }
+            setTimeout(()=>{ if(!ended) console.warn('[boot] the layers are painted but the map did not go idle within 2.5 s — revealing anyway'); go('timeout'); },2500); return; }
+          if(++waits>28){ console.warn('[boot] default layers still not on the map after ~14 s — revealing anyway'); go('timeout'); return; }
           setTimeout(settle,500); };
         try{ GE().events.once('idle',settle); }catch(_){ setTimeout(settle,900); }
         setTimeout(settle,4000);

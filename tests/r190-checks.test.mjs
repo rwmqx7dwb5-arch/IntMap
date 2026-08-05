@@ -127,7 +127,7 @@ test('R190 flight sim: the view\'s tilt becomes the aeroplane\'s flight path', (
 /* ── 6 · the launch screen ───────────────────────────────────────────────────────────────────── */
 test('R190 boot: the default layers are fired at style-ready, and the screen waits for them', () => {
   const body = read('js/app-body.js');
-  const m = /window\.__imBoot\.set\(80,'style'\);([\s\S]{0,2200}?)setTimeout\(settle,4000\);/.exec(body);
+  const m = /window\.__imBoot\.set\(80,'style'\);([\s\S]{0,3600}?)setTimeout\(settle,4000\);/.exec(body);
   assert.ok(m, 'the launch-screen block must still be one readable sequence');
   assert.ok(m[1].indexOf('__imFireDefaultLayers') < m[1].indexOf('GE().events.once(\'idle\',settle)'),
     'the layers are asked for BEFORE the first idle, so the downloads overlap');
@@ -135,6 +135,15 @@ test('R190 boot: the default layers are fired at style-ready, and the screen wai
     'and the screen lifts on layers that are really on the map, not on ticked boxes');
   const dl = read('js/data-layers.js');
   assert.match(dl, /window\.__imLayerPainted=check;/, 'answered by the existing reconciler, not a second id table');
+  /* ⚠ the ending NAMES are tests/r186's contract: exactly one of idle / timeout / no-renderer, because
+     "a launch screen that lifts without saying why is the failure mode". Inventing `idle-timeout` and
+     `layers-timeout` made a slow runner record NO recognised ending (measured in CI: layers at
+     9,290 ms, escape at 12,134 ms). Which escape fired is said in the console instead. */
+  for (const bad of ['idle-timeout', 'layers-timeout']) {
+    assert.ok(!body.includes(`go('${bad}')`), `${bad} is outside the ending vocabulary r186 pins`);
+  }
+  assert.match(body, /const go=\(why\)=>\{ if\(ended\) return; ended=true; try\{ window\.__imBoot\.done\(why\|\|'idle'\)/,
+    'and the default ending is one of them');
 });
 
 /* ── 7 · the seismic simulator ───────────────────────────────────────────────────────────────── */
@@ -205,6 +214,11 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /function _epiSeaDepth\(\)\{/, 'the depth is asked for at every zoom that might be warm');
   assert.match(src, /if\(fld&&fld\.z\) zs\.push\(fld\.z\);/, 'the field’s own level first — its warm grid covers the epicentre');
   assert.match(src, /function warmEpi\(\)\{/, 'and one tile is warmed so the answer exists before it is needed');
+  /* ⚠ measured on production: the button rendered and a screening call a moment later returned null,
+     because the DEM LRU had evicted that tile while the field build warmed a thousand others. */
+  assert.match(src, /if\(_epiElev&&_epiElev\.k===k\) return _epiElev\.v;/, 'a known sea depth is remembered…');
+  assert.match(src, /\{ _epiElev=\{k,v:e\}; return e; \}/, '…keyed on the epicentre, so moving it re-reads');
+  assert.doesNotMatch(src, /_epiElev=\{k,v:null\}/, 'and "not known yet" is never cached as an answer');
   assert.match(src, /_tsuShown=!!tsunamiCase\(\);/, 'render records what it drew…');
   assert.match(src, /if\(opened&&_t!==_tsuShown\)\{ _tsuShown=_t; render\(\); \}/,
     '…so the panel re-renders exactly once, when the availability flips');
