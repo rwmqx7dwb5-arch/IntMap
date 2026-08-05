@@ -34,10 +34,13 @@ test('R191 aircraft: the lifted mark carries the glyph colour and the glyph stro
   assert.match(src, /const _PLANE_CORE=_outsetRing\(_PLANE_OUTLINE,-_PLANE_STROKE\);/, 'inward half');
   assert.ok(src.indexOf('const _PLANE_OUTLINE=') < src.indexOf('const _PLANE_RIM='),
     'the outline is declared before the two rings derived from it (#R167/#R183/#R189/#R190 TDZ)');
-  /* the rim is pushed FIRST and extruded shorter, so the body wins the depth test where they meet */
+  /* the rim is pushed FIRST, and (#R192) it is a RING rather than a larger plate drawn 8 % lower:
+     two coplanar surfaces 0.35 px apart are a tie the depth buffer cannot break, and disjoint
+     geometry has no tie to break. See tests/r192-checks. */
   const rimAt = src.indexOf("part:'rim'"), bodyAt = src.indexOf("part:'body'");
   assert.ok(rimAt > 0 && bodyAt > rimAt, 'the stroke is emitted before the body');
-  assert.match(src, /top:alt\+thick\*0\.92, part:'rim'/, 'and 8 % shorter than it');
+  assert.match(src, /planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\.slice\(\)\.reverse\(\)/,
+    'and the body outline is the stroke ring’s hole');
   /* #R185's plate and halo stay gone */
   assert.doesNotMatch(src, /rgba\(255,255,255,0\.97\)/, 'the rim PLATE is still gone');
   assert.doesNotMatch(src, /_P_LEVELS|_PLANE_PLAN/, 'and so is the eight-part airliner');
@@ -87,8 +90,11 @@ test('R191 seismic: the ground-motion chain names its models and uses their numb
     'and NO copy of Wald 1999 survives — at() carried a third one');
   /* the two class floors are inverted from the same relations, not written out again */
   assert.match(s, /function pgvAtMMI\(I\)/, 'the MMI inverse');
-  assert.match(s, /function pgvAtJMA\(I\)/, 'the JMA inverse');
-  assert.match(s, /const floorPgv=\(scale==='jma'\)\?PGV_FLOOR_JMA:PGV_FLOOR_MMI;/, 'and the paint edge uses them');
+  /* (#R192) the JMA side is no longer a PGV regression at all — see tests/r192-checks. The inverse
+     that bounds the painted edge is now the one for the level 計測震度 is defined on. */
+  assert.match(s, /function a0AtJMA\(I\)/, 'the JMA inverse, in the quantity the scale is computed from');
+  assert.match(s, /const arr=jmaScale\?prof\.a0s:prof\.out, floor=jmaScale\?A0_FLOOR_JMA:PGV_FLOOR_MMI;/,
+    'and the paint edge walks whichever profile the active scale reads');
   /* Yenier & Atkinson 2014 equivalent point-source depth, only for a POINT source */
   assert.match(s, /function heffKm\(mw\)\{ return Math\.pow\(10,-0\.405\+0\.235\*mw\); \}/, 'Yenier & Atkinson 2014');
   assert.match(s, /if\(!fault\)\{ const h=heffKm\(mw\)\*1000; r=Math\.sqrt\(r\*r\+h\*h\); \}/,
@@ -112,9 +118,13 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
   assert.match(s, /async function buildFar\(prof,box,rFine,rEdge,seq\)/, 'the annulus has its own pass');
   assert.match(s, /coords:\[\[-180,85\],\[180,85\],\[180,-85\],\[-180,-85\]\]/,
     'drawn as a WHOLE-WORLD raster, so no box can wrap the antimeridian or degenerate at a pole');
-  assert.match(s, /if\(land\)\{ const e=land\.at\(lo,la\); if\(e==null\|\|e<=0\)\{ seaSkipped\+\+; continue; \} \}/,
+  /* (#R192) …and the land test is no longer a DEM read at all — a mask that half-arrives is what
+     painted the ocean. It is the bundled raster, and a missing one means no annulus rather than a
+     painted sea. See tests/r192-checks. */
+  assert.match(s, /if\(land\.isLand\(lo,la\)!==true\)\{ seaSkipped\+\+; continue; \}/,
     'and it does not paint the sea, because the fine field does not either');
-  assert.match(s, /if\(sn&&sn\.have>=sn\.want\*0\.5\) land=sn;/, 'a half-loaded coastline is not used as one');
+  assert.ok(/the far field is not drawn rather than painted over the sea/.test(s),
+    'and with no mask at all it draws nothing — it never falls back to painting everything');
 });
 
 test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come out striped', () => {

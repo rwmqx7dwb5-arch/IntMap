@@ -155,6 +155,16 @@ window.__imBuild='R191';   /* (#R121) build marker — bump when verifying that 
   });
   </script>
 
+  <!-- (#R192) The four hosts every cold start needs before it can draw anything (base-map tiles,
+       label glyphs, satellite imagery): open the connection while the bundle is still parsing, so the
+       first tile does not pay DNS + TCP + TLS. Hints only — nothing waits on them, and only hosts the
+       FIRST VIEW genuinely uses are listed. See DEV-NOTES #R192 §6. -->
+  <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin>
+  <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin>
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
   <title>IntMap — Explore the world. Ask the map.</title>
 
   <meta

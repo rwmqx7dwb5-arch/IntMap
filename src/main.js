@@ -66,6 +66,9 @@ import '../js/routing-ops.js';
 import '../js/street-view.js';
 import '../js/flight-sim.js';
 import '../js/time-borders.js';
+/* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
+   window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
+import './sat-worker-client.js';
 import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';
@@ -78,7 +81,17 @@ import '../js/playground.js';
 import '../js/map-tools.js';
 import '../js/viewshed.js';                 /* (#R176) IntMapModules.los, moved out of map-tools.js */
 import '../js/terrain-water.js';            /* (#R176) sculpt the terrain, route the water */
+/* (#R192) "where is the land" — the bundled 1-bit world mask (data/land-mask.png). Ahead of the
+   seismic simulator because that is its first caller, but it is a fact about the Earth and not
+   about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
+   second copy. Nothing loads until someone calls warm(). */
+import '../js/land-mask.js';
+
 import '../js/seismic.js';                  /* (#R176) P/S/surface waves through IASP91 */
+/* (#R192) the tsunami propagation model — linear long waves over the real sea floor, initialised
+   from the same event the seismic panel is already describing. After seismic.js because that is
+   what hands it an event; it registers itself and computes nothing until asked. */
+import '../js/tsunami.js';
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 import '../js/weather.js';
 import '../js/layer-packs.js';

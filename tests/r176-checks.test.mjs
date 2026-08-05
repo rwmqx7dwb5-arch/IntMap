@@ -176,7 +176,10 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
   /* …and the "not felt" floor is the scales' own lowest classes now, not a PGV constant that belonged
      to Wald's validity range — 0.5 cm/s is MMI 1.3 under Wald and MMI 3.3 under Worden. */
   assert.match(quake, /calibrated:\(inRange&&pgv>=PGV_FELT&&mmi<=9\.5\)/, 'and a flag for "outside what the relation supports"');
-  assert.match(quake, /const PGV_FELT=Math\.min\(PGV_FLOOR_JMA,PGV_FLOOR_MMI\);/, 'neither scale muted by the other');
+  /* (#R192) the two scales stopped being one quantity: 震度 is the JMA level a₀ and MMI is the
+     felt-band PGV, so the "not felt" floor for MMI is its own class floor. */
+  assert.match(quake, /const PGV_FELT=PGV_FLOOR_MMI;/, 'the MMI floor is the MMI class floor');
+  assert.match(quake, /const A0_FLOOR_JMA=a0AtJMA\(JMA_CLASSES\[0\]\.min\);/, 'and 震度1 has its own, in a₀');
   assert.ok(/NOT the JMA shindo scale/.test(quake) && /気象庁震度階級ではありません/.test(quake), 'and it says so in the panel');
 });
 

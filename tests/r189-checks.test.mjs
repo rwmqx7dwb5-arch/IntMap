@@ -156,14 +156,20 @@ test('R189 seismic: real-time playback with a visible, settable rate', () => {
 });
 test('R189 seismic: JMA scale as a labelled conversion, MMI honesty intact', () => {
   const src = read('js/seismic.js');
-  assert.match(src, /function jmaI\(pgv\)\{ return 2\.68\+1\.72\*Math\.log10\(Math\.max\(1e-6,pgv\)\); \}/,
-    'Fujimoto & Midorikawa 2005');
+  /* (#R192) 震度 is no longer converted from PGV at all — it is the JMA's own computation, off the
+     JMA-filtered acceleration. #R189's own note said the regression was standing in for exactly
+     that. See tests/r192-checks. */
+  assert.match(src, /function jmaOfA0\(a0\)\{ return 2\*Math\.log10\(Math\.max\(1e-6,a0\)\)\+0\.94; \}/,
+    '気象庁「計測震度の算出方法」');
   assert.match(src, /\{ min:6\.5, id:'7',  col:'#B40068' \}/, 'the JMA published colours, 震度7 included');
   assert.match(src, /class="sq-scale"/, 'the scale is switchable on the panel');
   /* the honesty strings r176 pinned still hold — MMI is still not shindo, and the JMA view says
      what it is */
   assert.ok(/NOT the JMA shindo scale/.test(src) && /気象庁震度階級ではありません/.test(src), 'MMI disclaimer kept');
-  assert.match(src, /計測震度換算（藤本・翠川 2005）/, 'the JMA view is declared a conversion');
+  /* (#R192) …and it is no longer a conversion: the panel now says the shindo is the JMA's own
+     computation. The claim the test is really about — that the panel STATES what the number is —
+     is unchanged. */
+  assert.match(src, /震度は換算ではなく気象庁「計測震度の算出方法」そのものです/, 'the JMA view says what it is');
   const refs = read('js/reference-data.js');
   assert.ok(refs.includes('Fujimoto & Midorikawa (2005)'), 'credited');
   assert.ok(refs.includes('Wald & Allen (2007)'), 'and the Vs30 proxy too');
@@ -173,7 +179,7 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
   assert.match(src, /async function buildField\(\)\{/, 'the field is built from the DEM');
   assert.match(src, /VS30_BINS=\[\[1e-4,180\],\[2\.2e-3,240\],\[6\.3e-3,300\],\[0\.018,360\],\[0\.05,490\],\[0\.10,620\],\[0\.138,760\]\];/,
     'Wald & Allen 2007 active-tectonic slope table');
-  assert.match(src, /const pgv=prof\.at\(rM\)\*\(amp\/ampRef\);/, 'one RVT profile, one multiply per cell');
+  assert.match(src, /const pgv=prof\.at\(rM\)\*g, a0=prof\.a0At\(rM\)\*g;/, 'one RVT profile, one multiply per cell');
   assert.match(src, /else if\(e0<=0\)\{ sea\+\+; vs\[k\]=-1; continue; \}/, 'sea cells are not painted');
   assert.match(src, /LYR_IMG='seis-mmi-fill'/, 'rendered as a raster fill');
   assert.ok(!/id:'seis-mmi',/.test(src), 'the dashed contour layer is gone');

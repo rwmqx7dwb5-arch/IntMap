@@ -680,8 +680,24 @@ window.IntMapModules.timeBorders=function(HOST){
     (function warm(){ const pf=()=>{ csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
         let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); };
       /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
-         parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path. */
-      setTimeout(pf,900); })();
+         parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path.
+         ══ (#R192) …EXCEPT 900 ms IS NOT OFF THE BOOT PATH ═══════════════════════════════════════════
+         「起動時の読み込みをもっと早く。」 Measured on a cold load: data/cshapes.js is 5.5 MB and it
+         started at 1,243 ms — while the first satellite tiles, the Köppen raster and the country
+         borders were still arriving, and it is a <script>, so the main thread also PARSES 5.5 MB of
+         literal at whatever moment that lands. It was the largest single item on the boot path and
+         nothing on screen was waiting for it.
+         It is still eager, and #R122's reason still holds — the first time-travel must not block on
+         it — but it now waits for the browser to say the main thread is FREE (requestIdleCallback,
+         with a 6 s ceiling so a permanently busy page still gets it, and a floor of the map's own
+         first idle). On Data Saver or 2G it is not prefetched at all: there the 5.5 MB is a real cost
+         and the time machine can fetch it when it is actually opened. */
+      const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+          if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
+        if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); };
+      let started=false; const once=()=>{ if(started) return; started=true; go(); };
+      try{ GE().events.once('idle',()=>setTimeout(once,400)); }catch(_){}
+      setTimeout(once,4000); })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
