@@ -36,7 +36,9 @@ test('R190 aircraft: the lifted body is the original glyph, and "at real altitud
      carries the stroke itself (see _PLANE_CORE / _PLANE_RIM) — still the one silhouette this test is
      about, and still one aeroplane per aircraft. The stroke's own geometry is pinned in tests/r191. */
   assert.match(src, /coordinates:\[planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\]/, 'one aeroplane per aircraft');
-  assert.match(src, /const half=Math\.max\(60, 13\*mpp\);/, 'and the original 13-px half-length');
+  /* (#R192) the size is the GLYPH's own ramp now, at every zoom — the 60 m floor was making the
+     lifted mark 2.7x too big past z14.5. See tests/r192-checks. */
+  assert.match(src, /const half=iconHalfPx\*mpp;/, 'and the original 13-px half-length');
   /* the default, and the storage generation that makes the default reachable */
   assert.match(src, /const PLANES3D_KEY='intmap_planes3d3';/, 'a new key generation');
   assert.match(src, /let planes3D=true;/, 'default ON — 「at real altitudeはデフォルトで選択状態に」');
@@ -187,8 +189,11 @@ test('R190 seismic: the field reaches the end of the lowest class and declares i
      Splitting the two constants moved them by accident; tests/r176 ⑤ caught it at 1,129 km. */
   assert.match(src, /const maxDeg=MMI_CALIB_KM\/\(RE\*D\);/, 'mmiRings stays inside the calibrated range');
   /* the readout cannot speak a scale the field was not painted in */
-  assert.match(src, /const vs=new Float32Array\(N\*N\), pgvArr=new Float32Array\(N\*N\);/,
-    'the field stores PGV, not the intensity of whichever scale was active');
+  /* (#R192) …and the a0 the JMA scale is computed from, beside it: the argument is unchanged (store
+     the QUANTITY, not an intensity), it just needs two quantities now that the two scales read
+     different bands of the same motion. */
+  assert.match(src, /pgvArr=new Float32Array\(N\*N\), a0Arr=new Float32Array\(N\*N\)/,
+    'the field stores the quantities, not the intensity of whichever scale was active');
   assert.match(src, /pgvAt\(lo,la\)\{/, 'and the readout converts it');
   assert.match(src, /function mmiOf\(pgv\)\{/, 'one MMI conversion, not two copies that can drift');
   const ro = read('js/map-readout.js');

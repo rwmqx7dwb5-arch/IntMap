@@ -75,16 +75,28 @@ test('R191 seismic: the field reaches the end of the lowest class, and only over
                 far: window.IntMapGeoEngine.layers.has('seis-mmi-far') } };
   });
   test.skip(!r.has, 'the seismic simulator is not installed here');
-  /* an M9 reaches thousands of kilometres — the whole point of the report */
+  /* an M9 reaches thousands of kilometres — the whole point of the report.
+     ⚠ (#R192) …but not SEVEN thousand. #R191 pinned > 4,000 km, which was 震度1 converted from a PGV
+     the 0.02 Hz integration bound was setting: a 50-second swell nobody feels, coloured in across
+     Asia. 震度 is the JMA's own computation now, and the lowest class ends where 震度1 was actually
+     reported for this earthquake. The claim this line is really about — that the paint is NOT
+     clipped at the fine field's 1,500 km — is unchanged and still checked. */
   expect(r.field, 'the fine field was built').toBeTruthy();
-  expect(r.field.rEdgeKm, 'an M9 carries 震度1 far past the old 1,500 km cap').toBeGreaterThan(4000);
+  expect(r.field.rEdgeKm, 'an M9 carries 震度1 past the fine field').toBeGreaterThan(r.terrainKm);
+  expect(r.field.rEdgeKm, 'and stops where it can be felt, not three continents away').toBeLessThan(3200);
   expect(r.field.rFineKm, 'while the terrain-driven part stays where the DEM can support it').toBe(r.terrainKm);
   expect(r.far, 'so the annulus beyond the terrain is drawn').toBeTruthy();
   expect(r.layers.far, 'as its own layer, under the fine one').toBe(true);
-  expect(r.far.painted, 'and it painted something').toBeGreaterThan(1000);
+  /* (#R192) …and how much depends on the SCALE and the ground. The annulus is computed for the
+     panel's own site class (there is no terrain out there to read), while its outer edge is the
+     softest plausible ground — so for 震度 on rock, where the class ends inside the 1,500 km fine
+     field, the honest answer is that the band paints nothing at all. What this test is really about
+     is that it is CONSIDERED and that whatever it does paint is land, which is checked below. */
+  expect(r.far.N, 'the annulus was rasterised').toBeGreaterThan(0);
   /* …on LAND only, exactly like the fine field. Painting the ocean is what punched a rectangle
      through the middle of the rings the first time this was built. */
-  expect(r.far.landMask, 'the coarse land mask loaded').toBe(true);
+  expect(r.far.landMask, 'the land mask loaded').toBe(true);
+  expect(r.far.landSource, '(#R192) …and it is the bundled one, which cannot half-arrive').toBe('bundled');
   expect(r.far.sea, 'and most of a whole-world annulus around Japan is sea').toBeGreaterThan(r.far.painted);
   /* the fine field read a frozen DEM — the striping fix */
   expect(r.field.demTiles, 'the field snapshotted its own DEM tiles').toBeGreaterThan(0);

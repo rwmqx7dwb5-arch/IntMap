@@ -2850,6 +2850,21 @@ window.IntMapModules.dataLayers=function(HOST){
     const _PLANE_ORIG=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
                        [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
     const _PLANE_OUTLINE=_PLANE_ORIG;
+    /* ══ (#R192) ONE SIZE RAMP, READ BY BOTH RENDERINGS ════════════════════════════════════════════
+       The glyph's size on screen is `icon-size` × the artwork, and the lifted body's size is metres of
+       ground. They were written as two independent numbers and drifted apart (see refreshPlanes3D).
+       This is the ramp — the original one, restored by #R187 — stated ONCE: the symbol layer builds
+       its `icon-size` expression from it and the extrusion evaluates it at the current zoom, so
+       "the same mark" is true by construction rather than by two matching constants. */
+    const _PLANE_SIZE=[[2,0.4],[5,0.58],[9,0.78]];
+    function _planeIconSize(z){
+      const t=_PLANE_SIZE; const zz=(+z||0);
+      if(zz<=t[0][0]) return t[0][1];
+      for(let i=1;i<t.length;i++){ if(zz<=t[i][0]){ const a=t[i-1], b=t[i];
+        return a[1]+(b[1]-a[1])*(zz-a[0])/(b[0]-a[0]); } }
+      return t[t.length-1][1];
+    }
+    const _planeIconSizeExpr=()=>['interpolate',['linear'],['zoom']].concat(_PLANE_SIZE.reduce((a,p)=>a.concat(p),[]));
     /* ══ (#R191) THE ORIGINAL MARK'S WHITE STROKE, IN THE LIFTED RENDERING TOO ═════════════════════
        「元に戻せと言っているのに、色を勝手に変えるな。」 #R190 gave the lifted body the original
        SILHOUETTE and stopped there, so the two renderings still drew different marks — measured over
@@ -2857,9 +2872,9 @@ window.IntMapModules.dataLayers=function(HOST){
        lifted body 0.012. The original mark is not a bare blue shape: `ensurePlaneIcons` fills it and
        then strokes it with 1.6 px of white on a 44-unit canvas whose half-length is 19, i.e. a stroke
        that straddles the path by 0.8 units either side. That stroke is half the mark's identity.
-       An extrusion has no stroke, so the outward half of it is drawn as its own polygon UNDER the
-       body (see refreshPlanes3D: `part:'rim'`, extruded 8 % less tall so the body always wins the
-       depth test where they overlap and only the 0.8 units that stick out are seen).
+       An extrusion has no stroke, so it is drawn as its own polygon (see refreshPlanes3D:
+       `part:'rim'`) — (#R192) a RING, outer boundary _PLANE_RIM and inner boundary _PLANE_CORE, which
+       is exactly the annulus `ctx.stroke()` paints and shares no surface with the body.
        ⚠ MITRED, NOT SCALED. #R185's rim was the whole plan-form grown about its centre, which puts
        more outset at the nose and the wingtips than beside the fuselage — a scaled copy, not a
        stroke. This offsets each vertex along the mitre of its two edge normals, so the band is 0.8
@@ -2997,13 +3012,35 @@ window.IntMapModules.dataLayers=function(HOST){
       const list=_cullFor3D(all||[]);
       _gndFresh();
       const mpp=_mppCentre();
-      /* (#R190) the #R172 sizes, restored with the #R172 shape: 13 px of half-length (~26 px across)
-         with a metre floor so an aircraft is still visible at world zoom. #R185 had raised this to 19
-         to match the glyph IT had drawn; the original glyph's own ramp (icon-size 0.4→0.78, see
-         ensurePlaneIcons) draws 7.6–14.8 px of half-length, so 13 is what the two share. */
-      const half=Math.max(60, 13*mpp);                 /* never smaller than ~26 px across */
+      /* ══ (#R192) THE SAME MARK MEANS THE SAME NUMBER OF PIXELS ═════════════════════════════════════
+         「Live aircraft trafficの飛行機のマークはat real altitude中もそうでないときと同じデザインに。」
+         — reported for the fourth round. #R187 restored the glyph, #R190 gave the lifted body the same
+         silhouette, #R191 matched the colour and put the white stroke back. What none of them checked
+         is HOW BIG the two marks are, and they were never the same size:
+
+             half-length on screen      z5      z9      z12     z15     z17
+             flat glyph (icon-size)   11.0px  14.8px  14.8px  14.8px  14.8px
+             lifted (#R190 sizes)     13.0px  13.0px  13.0px  40.0px  160px
+
+         Measured on a live aircraft over Frankfurt at z15: the lifted mark's bounding box is 41 × 82
+         px against the glyph's 19 × 26. The cause is the metre FLOOR — `max(60, 13·mpp)` reads as a
+         minimum size but 13·mpp IS 13 px at every zoom, so the floor only ever binds deep in, where it
+         pins the mark to a 120 m aeroplane and it grows without limit. That is a different mark.
+
+         So the size is taken from the glyph's OWN ramp — the interpolation in the symbol layer below,
+         evaluated at the same zoom — and the floor is gone with it. The two renderings are now the
+         same picture at every zoom; only the parallax of the altitude separates them, which is the
+         whole point of the mode.
+
+         AND IT IS NOT A BLOCK. #R190 gave the extrusion 2.2 px of thickness so it would "not be a
+         zero-height sheet"; that thickness is what a tilted camera sees as lit side walls, i.e. a
+         solid object where the flat rendering has a flat mark. It is now sub-pixel (0.35 px), which is
+         enough to separate the body from its own white stroke in the depth buffer and too little to
+         draw a wall at any pitch. */
+      const iconHalfPx=19*_planeIconSize(GE().camera.getZoom());
+      const half=iconHalfPx*mpp;                       /* exactly the glyph's half-length, in ground metres */
       const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
-      const thick=Math.max(30, 2.2*mpp);               /* give the glyph body so it is not a zero-height sheet */
+      const thick=0.35*mpp;                            /* sub-pixel: enough for the depth test, never a wall */
       const feats=[];
       for(const d of list){
         if(d.lng==null||d.lat==null) continue;
@@ -3023,12 +3060,16 @@ window.IntMapModules.dataLayers=function(HOST){
            `part:'body'` is kept on it so every reader that resolves a rendered feature back to an
            aircraft (the pick fallback, the stats, the tests) asks the same question it always did. */
         /* (#R191) …preceded by the original glyph's white stroke, which is the other half of the mark
-           (see _PLANE_RIM). It is extruded 8 % less tall than the body and pushed first, so where the
-           two overlap the depth test keeps the body and only the 0.8 units of outset are white — a
-           stroke, not a plate under the aeroplane. It carries the same properties, so a click that
-           lands on the stroke still resolves to the aircraft. */
-        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_RIM)]},
-          properties:Object.assign({},props,{ alt, top:alt+thick*0.92, part:'rim' }) });
+           (see _PLANE_RIM). It carries the same properties, so a click that lands on the stroke still
+           resolves to the aircraft.
+           (#R192) …and it is a RING — outer boundary outset 0.8, inner boundary the body's own outline
+           — rather than a larger plate drawn 8 % lower. `ctx.stroke()` paints an annulus and nothing
+           underneath; two overlapping extrusions at 0.35 px of separation are two coplanar surfaces
+           asking a depth buffer to break a tie it cannot see. Disjoint geometry has no tie to break. */
+        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[
+            planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_RIM),
+            planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_CORE).slice().reverse()]},
+          properties:Object.assign({},props,{ alt, top:alt+thick, part:'rim' }) });
         feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_CORE)]},
           properties:Object.assign({},props,{ alt, top:alt+thick, part:'body' }) });
         /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
@@ -3061,6 +3102,10 @@ window.IntMapModules.dataLayers=function(HOST){
       _planes3DStats={ features:feats.length, aircraft:bodies.length,
         lifted:bodies.filter(f=>(+f.properties.acAlt||0)>0).length,
         maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.acAlt||0),0)),
+        /* (#R192) the mark's size AS DRAWN, in screen pixels, beside the size the flat glyph draws at
+           the same zoom. Two numbers that must be the same number — this is the contract four rounds
+           of 「同じデザインに」 have been about, and it is the one thing nobody had measured. */
+        halfPx:+(half/mpp).toFixed(2), glyphHalfPx:+iconHalfPx.toFixed(2), thickPx:+(thick/mpp).toFixed(2),
         offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
     }
     function planes3DOn(){ return planes3D; }
@@ -3205,7 +3250,7 @@ window.IntMapModules.dataLayers=function(HOST){
         GE().layers.add({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
           visibility:'none',
           'icon-image':['case',['==',['get','sel'],1],'plane-sel',['match',['get','type'],'military','plane-mil','plane-civ']],
-          'icon-size':['interpolate',['linear'],['zoom'],2,0.4,5,0.58,9,0.78],   /* (#R187) the original ramp — see ensurePlaneIcons */
+          'icon-size':_planeIconSizeExpr(),   /* (#R187) the original ramp — (#R192) stated once, in _PLANE_SIZE */
           'icon-rotate':['coalesce',['get','heading'],0],
           'icon-rotation-alignment':'map',
           'icon-allow-overlap':true,
@@ -3940,6 +3985,7 @@ window.IntMapModules.dataLayers=function(HOST){
           sweep:_planeStats, cover:_planeCover, culled3D:_planes3DCulled, minZoom:PLANES_MIN_ZOOM,
           circleBudget:PLANE_CIRCLE_BUDGET(), maxAircraft:PLANE_MAX_AIRCRAFT, pollMs:planePollMs(), gapMs:PLANE_GAP_MS,
           lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
+          halfPx:s2.halfPx, glyphHalfPx:s2.glyphHalfPx, thickPx:s2.thickPx,   /* (#R192) same mark = same pixels */
           visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
           flatVisible:(()=>{ try{ return !!(GE().layers.has('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
           selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
