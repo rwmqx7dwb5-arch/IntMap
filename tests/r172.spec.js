@@ -259,14 +259,17 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
   expect(s.maxAlt, '36,000 ft = 10,973 m').toBeGreaterThan(10900);
   expect(s.maxAlt).toBeLessThan(11050);
   /* (#R183/#R185 built the body from four then ten parts; #R190 WITHDREW all of it — the lifted
-     aircraft is the original silhouette again, one polygon.) The invariant these lines have always
-     really encoded is stated directly rather than through a magic number: one solid per aircraft,
-     plus exactly one post under each airborne one. */
+     aircraft is the original silhouette again.) The invariant these lines have always really encoded
+     is stated directly rather than through a magic number: the same number of parts per aircraft,
+     plus exactly one post under each airborne one.
+     (#R191) that number is TWO: the original glyph is a fill AND a 1.6-px white stroke, so the lifted
+     mark is the outline inset by the stroke plus the stroke itself. `aircraft` still counts aeroplanes
+     (it asks for `part:'body'` by name, which is exactly why #R190 made it do that). */
   expect(s.aircraft, 'three aircraft, however many parts each is drawn from').toBe(3);
   const parts = (s.features - 2) / s.aircraft;
   expect(Number.isInteger(parts), 'every aircraft is drawn from the same number of parts').toBe(true);
-  expect(parts, '#R190: the original silhouette is ONE polygon').toBe(1);
-  expect(s.features, 'bodies + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * parts + 2);
+  expect(parts, '#R191: the silhouette and the glyph’s own white stroke').toBe(2);
+  expect(s.features, 'bodies + strokes + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * parts + 2);
 
   // the flat rendering is still one click away, and it is exclusive
   const flat = await page.evaluate(() => { window.IntMapPlanes3D.set(false); return window.IntMapPlanes3D.state(); });
