@@ -885,16 +885,24 @@ window.IntMapModules.seismic=function(HOST){
        Two halves: ask at every zoom that might be warm (the field's own level first — its warm grid
        covers the epicentre), and warm one tile on open/pick so the answer exists before it is needed.
        `_tsuShown` below re-renders the panel exactly once, when the availability flips. */
-    let _tsuShown=null, _tsuWarm=null;
+    let _tsuShown=null, _tsuWarm=null, _epiElev=null;
+    /* ⚠ (#R190) …AND THE ANSWER IS REMEMBERED, because the tile it came from does not stay.
+       Measured on production: the button rendered for an offshore M9.0 and a screening call a moment
+       later returned null — the DEM LRU had evicted the tile under the epicentre while the field
+       build warmed a thousand others. A button that is visible and does nothing is worse than no
+       button. The sea floor under a fixed point does not change, so the first real reading for THIS
+       epicentre is kept and re-used; moving the epicentre clears it (see the key). */
     function _epiSeaDepth(){
       if(!epi) return null;
+      const k=epi[0].toFixed(4)+'/'+epi[1].toFixed(4);
+      if(_epiElev&&_epiElev.k===k) return _epiElev.v;
       const zs=[]; if(fld&&fld.z) zs.push(fld.z);
       [8,7,6,5].forEach(z=>{ if(zs.indexOf(z)<0) zs.push(z); });
       for(const z of zs){
         let e=null; try{ e=demElevBilinear(epi[0],epi[1],z); if(e==null) e=demElevAt(epi[0],epi[1],null,z); }catch(_){}
-        if(e!=null&&isFinite(e)) return e;
+        if(e!=null&&isFinite(e)){ _epiElev={k,v:e}; return e; }
       }
-      return null;
+      return null;   /* not known YET — never cached, so a warmed tile can still answer later */
     }
     /* one tile, so "is the epicentre at sea?" is answerable without waiting for a whole field */
     function warmEpi(){ if(!epi) return; const k=epi[0].toFixed(2)+'/'+epi[1].toFixed(2);
