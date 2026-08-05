@@ -31,7 +31,9 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
   assert.ok(!/shadowBlur/.test(fn[0]), 'the #R183 drop shadow is gone');
   assert.ok(!/lineWidth=2\.6/.test(fn[0]), 'the #R183 white rim is gone');
   /* the original size ramp */
-  assert.match(src, /'icon-size':\['interpolate',\['linear'\],\['zoom'\],2,0\.4,5,0\.58,9,0\.78\]/,
+  /* (#R192) the ramp is stated once, in _PLANE_SIZE, and BOTH renderings read it — see
+     tests/r192-checks. The numbers are the same original ones. */
+  assert.match(src, /const _PLANE_SIZE=\[\[2,0\.4\],\[5,0\.58\],\[9,0\.78\]\];/,
     'the original icon-size ramp');
   /* …and the flat glyph is what a default profile SEES: #R185 measured that the lifted 3-D body is
      shown instead of it, so restoring the glyph without this changes nothing on screen. */

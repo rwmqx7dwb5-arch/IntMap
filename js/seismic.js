@@ -27,12 +27,16 @@
  *  regression: Ω0 = R·F·M0 / (4π ρ β³ r) with the average radiation pattern R = 0.55 and the free
  *  surface factor F = 2, attenuated by exp(−π f r / (Q β)). PGV ≈ 2π fc Ω0 and PGA ≈ (2π fc)² Ω0.
  *  Doing it this way means the assumptions are visible and adjustable (stress drop, Q, rock density)
- *  instead of hidden inside coefficients — and it is honest about what it omits: a point source, no
- *  finite rupture, no site amplification, no basin resonance.
+ *  instead of hidden inside coefficients — and it is honest about what it omits: with no rupture
+ *  drawn it is a point source, so a megathrust is under-stated near its own coast (measured for 2011
+ *  Tōhoku in DEV-NOTES #R192), and there is no basin resonance.
  *
- *  INTENSITY — MMI from PGV by Wald, Quitoriano, Heaton & Kanamori (1999): MMI = 3.47 log10(PGV) +
- *  2.35, PGV in cm/s. This is the Modified Mercalli scale. It is NOT the JMA 震度 scale, and the
- *  panel says so rather than quietly presenting one as the other.
+ *  INTENSITY — each scale from the band it is defined on (#R192). MMI is Worden et al. (2012), the
+ *  GMICE ShakeMap converts PGV with, fed the PGV a strong-motion record actually delivers (4-pole
+ *  high-pass at 0.1 Hz). 震度 is the JMA's own computation — 気象庁「計測震度の算出方法」: the period
+ *  filter, the 10 Hz high-cut, the 0.5 Hz low-cut, and the level exceeded for a total of 0.3 s. They
+ *  are DIFFERENT SCALES of different quantities, and the panel says so rather than quietly presenting
+ *  one as the other.
  *
  *  DURATION — from this model's own arrivals, so it explains itself: the ground is moving from the S
  *  arrival until the surface-wave train has gone by, and the rupture adds its own length 1/fc.
@@ -188,12 +192,34 @@ window.IntMapModules.seismic=function(HOST){
        tail exaggerated — the shape of the whole intensity field, not a scale factor on it. */
     let QS0=180, QETA=0.45;
     let stressDropMPa=3.0;
+    /* ══ (#R192) A GREAT EARTHQUAKE IS NOT ONE CIRCULAR CRACK ══════════════════════════════════════
+       Brune's single-corner ω⁻² spectrum puts the whole source in one number, and for a large event
+       that number is very small: at M9 with Δσ = 3 MPa the corner is 0.0075 Hz, so EVERYTHING an
+       engineering instrument or a person responds to sits on the f⁻² slope, hundreds of times below
+       the plateau. Measured on this model: at M9 it under-predicts the observed 震度 near the source
+       by about two whole classes (2011 Tōhoku, Sendai: 4.1 against the observed 6強), and the ratio
+       grows with magnitude — which is exactly the defect the two-corner source was published for.
+       ATKINSON & SILVA (2000, BSSA 90(2), 255-274) fit a two-corner spectrum to the empirical
+       California data — a low corner fa carrying the moment and a high corner fb carrying the
+       radiated high frequency, mixed by ε:
+           log₁₀ fa = 2.181 − 0.496 M      log₁₀ fb = 2.41 − 0.408 M     log₁₀ ε = 0.605 − 0.255 M
+           S(f) = (1−ε)/(1+(f/fa)²) + ε/(1+(f/fb)²)
+       It reduces to a single corner for small events (ε → 1 and fb → fa near M4) and departs from it
+       exactly where the single corner fails. The stress drop stays what it is — the CRACK RADIUS and
+       the source duration are still Brune's, and Δσ is still the panel's adjustable assumption; what
+       changes is the SHAPE of the spectrum between the two corners.
+       ⚠ VERIFIED BEFORE ADOPTION, against BSSA14 (Boore, Stewart, Seyhan & Atkinson 2014) at
+       Vs30 = 760 m/s — see the table in DEV-NOTES #R192. */
     function source(mw){
       const M0=Math.pow(10,1.5*mw+9.1);                          /* N·m — Hanks & Kanamori 1979 */
       const dSigma=stressDropMPa*1e6;
       const fc=0.49*BETA*Math.pow(dSigma/M0,1/3);                /* Hz — Brune 1970 */
       const rupKm=Math.pow(7*M0/(16*dSigma),1/3)/1000;           /* circular-crack radius */
-      return { M0, fc, rupKm, durS:1/fc };
+      const fa=Math.pow(10,2.181-0.496*mw), fb=Math.pow(10,2.41-0.408*mw);
+      const eps=Math.min(1,Math.pow(10,0.605-0.255*mw));
+      /* the normalised displacement shape: 1 at f → 0, and ω⁻² past the upper corner */
+      const shape=(f)=>(1-eps)/(1+(f/fa)*(f/fa))+eps/(1+(f/fb)*(f/fb));
+      return { M0, fc, fa, fb, eps, shape, rupKm, durS:1/fc };
     }
     /* GEOMETRICAL SPREADING — 1/R only holds while the direct S wave is the biggest arrival. Past about
        70 km the post-critical Moho reflection takes over and the decay flattens, then surface waves
@@ -226,6 +252,73 @@ window.IntMapModules.seismic=function(HOST){
        ξ → 1 (narrow band). Measured against the old form over this model's own spectra: the peak
        factor falls by 3–7 % for acceleration (broadband, ξ ≈ 0.6-0.7) and is within 1 % for velocity,
        i.e. the correction is where it should be — on PGA, which the asymptote over-predicted. */
+    /* ══ (#R192) THE ONLY PART OF THE MOTION AN INTENSITY SCALE IS ABOUT ═══════════════════════════
+       「シミュレーションの精度、忠実性を根本的に…高めて。（現在の分布は過大評価すぎに思える。）」
+
+       Both intensity scales measure FELT shaking, and the model was feeding them a number that is not
+       felt shaking. `rvt` integrates the Fourier spectrum from 0.02 Hz, and a Brune ω⁻² source has its
+       VELOCITY spectrum peak exactly at the corner frequency — which for an M9 is 0.0075 Hz, a
+       133-second period. Measured on this model's own spectra: at M9, the velocity energy in the
+       0.02 Hz bin is a HUNDRED TIMES the energy at 1 Hz, both at 100 km and at 7,000 km. So the PGV
+       that fed the intensity was set by the lower LIMIT OF THE INTEGRATION — an arbitrary constant —
+       and it described a 50-second swell that no one feels and no accelerograph reports as PGV.
+       That is the over-estimate: at 7,000 km almost nothing above 0.1 Hz survives the path, the
+       0.02 Hz swell does, and it was being coloured in as 震度1 across three continents.
+
+       An intensity is therefore computed from the band its own definition covers:
+
+         · 震度 — the JMA's own filter, exactly (気象庁「計測震度の算出方法」): the period-effect
+           term f^-0.5, the 10 Hz high-cut and the 0.5 Hz low-cut, then the level exceeded for a TOTAL
+           of 0.3 s. See jmaFilter / jmaA0. No conversion, no regression, no free constant.
+         · MMI — Worden et al. (2012)'s GMICE on PGV, with PGV taken over the band a strong-motion
+           record can actually deliver it in. Real PGV is read off an instrument-corrected record with
+           a high-pass corner; below it the trace is drift, not ground motion. 0.1 Hz is the corner
+           used across strong-motion processing (PEER/NGA, K-NET, ShakeMap inputs), applied here as a
+           4-pole Butterworth amplitude so nothing is discarded at a step.
+
+       PGA keeps the whole band — it is carried far above 1 Hz, where the filter is 1. */
+    const FELT_HP=0.1, FELT_POLES=4;
+    const feltHP=(f)=>1/Math.sqrt(1+Math.pow(FELT_HP/Math.max(1e-4,f),2*FELT_POLES));
+    /* 気象庁 計測震度 — the three filters, as published. y = f/10 for the high-cut. */
+    function jmaFilter(f){
+      if(!(f>0)) return 0;
+      const y=f/10, y2=y*y, y4=y2*y2, y6=y4*y2, y8=y4*y4, y10=y8*y2, y12=y6*y6;
+      const hc=1/Math.sqrt(1+0.694*y2+0.241*y4+0.0557*y6+0.009664*y8+0.00134*y10+0.000155*y12);
+      const lc=Math.sqrt(Math.max(0,1-Math.exp(-Math.pow(f/0.5,3))));
+      return hc*lc/Math.sqrt(f);
+    }
+    /* Abramowitz & Stegun 7.1.26 — erfc to ~1.5e-7, which is far past what the level below needs */
+    function erfc(x){ const z=Math.abs(x), t=1/(1+0.5*z);
+      const y=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+
+        t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+      return x>=0?y:2-y; }
+    /* ⚠ THE JMA LEVEL IS NOT A PEAK. 計測震度 is defined as the acceleration a₀ that the VECTOR of the
+       three filtered components exceeds for a TOTAL of 0.3 seconds — a duration statement, not a
+       maximum. Random-vibration theory answers it directly: for a stationary Gaussian process the
+       fraction of time above a level is known in closed form, so a₀ solves Td·P(|a|>a₀) = 0.3 s.
+       The vector of three Gaussian components is Maxwell-distributed,
+           P(|a| > uσ) = erfc(u/√2) + √(2/π)·u·e^(−u²/2),
+       with σ the equivalent isotropic rms: this model computes ONE horizontal component (the 1/√2 in
+       omega0 splits the motion onto the two of them), and the vertical is taken at the usual V/H = 2/3,
+       so σ² = σ_h²(2 + (2/3)²)/3. Isotropising an anisotropic vector is an approximation and is stated
+       as one; it moves a₀ by 10 %, i.e. 0.08 of an intensity class. */
+    const JMA_VH=2/3;
+    function jmaA0(spec,Td){
+      const f0=0.02, f1=40, N=400; let m0=0;
+      const lg0=Math.log(f0), lg1=Math.log(f1), dl=(lg1-lg0)/N;
+      for(let i=0;i<=N;i++){ const f=Math.exp(lg0+i*dl), w=(i===0||i===N)?1:(i%2?4:2);
+        const A=spec(f)*jmaFilter(f); m0+=w*A*A*(f*dl)/3; }
+      m0*=2/Math.max(0.05,Td);
+      const sh=Math.sqrt(Math.max(0,m0));
+      if(!(sh>0)) return 0;
+      const se=sh*Math.sqrt((2+JMA_VH*JMA_VH)/3);
+      const need=0.3/Math.max(0.05,Td);                       /* the fraction of the record above a₀ */
+      if(need>=1) return 0;                                   /* shorter than 0.3 s — no level qualifies */
+      const P=(u)=>erfc(u/Math.SQRT2)+Math.sqrt(2/Math.PI)*u*Math.exp(-u*u/2);
+      let lo=0, hi=12;
+      for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(P(m)>need) lo=m; else hi=m; }
+      return se*(lo+hi)/2;
+    }
     function rvt(spec,Td){
       /* spectral moments m0, m2, m4 by log-spaced Simpson over 0.02-40 Hz */
       const f0=0.02, f1=40, N=400; let m0=0, m2=0, m4=0;
@@ -327,7 +420,7 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R190) Q(f) = Q₀·f^η — see the note by QS0. The exponent leaves f^(1−η) in the exponent, which
          is why a constant Q cannot be tuned to imitate it: the two curves cross. */
       const path=f=>Math.exp(-Math.PI*f*r/(QS0*Math.pow(Math.max(0.01,f),QETA)*BETA))*Math.exp(-Math.PI*KAPPA*f);
-      const disp=f=>omega0/(1+(f/s.fc)*(f/s.fc))*path(f);           /* Brune ω⁻² source */
+      const disp=f=>omega0*s.shape(f)*path(f);                      /* (#R192) two-corner source — see source() */
       const velS=f=>2*Math.PI*f*disp(f);
       const accS=f=>(2*Math.PI*f)*(2*Math.PI*f)*disp(f);
       /* ══ (#R191) THE PATH DURATION IS PIECEWISE, AND IT IS THE SAME PAPER AS THE SPREADING ═════════
@@ -343,8 +436,12 @@ window.IntMapModules.seismic=function(HOST){
          and 42.6 s instead of 50 s at 1,000 km. */
       const Tp=(rKm<=10)?0:(rKm<=70)?(0.16*(rKm-10)):(rKm<=130)?(9.6-0.03*(rKm-70)):(7.8+0.04*(rKm-130));
       const Td=s.durS+Tp;
-      const pgvMs=rvt(velS,Td), pgaMs2=rvt(accS,Td);
+      /* (#R192) the velocity an instrument reports — see FELT_HP. PGA keeps the whole band. */
+      const velF=f=>velS(f)*feltHP(f);
+      const pgvMs=rvt(velF,Td), pgaMs2=rvt(accS,Td);
       const pgv=pgvMs*100, pga=pgaMs2*100;                          /* cm/s, cm/s² */
+      /* (#R192) …and 震度 by its own definition, off the JMA-filtered acceleration (cm/s²) */
+      const a0=jmaA0(accS,Td)*100;
       /* Wald et al. (1999) was regressed on MMI V-IX and is an extrapolation outside it; below about
          0.5 cm/s it returns numbers under I, which is not a scale value but "not felt". Say that
          rather than printing a Roman numeral the relation cannot support. */
@@ -359,7 +456,8 @@ window.IntMapModules.seismic=function(HOST){
          and is MMI 3.3 under Worden's, so keeping it would have silenced two whole classes the moment
          the conversion improved. The floor is the lower of the two scales' own lowest classes, so
          neither scale is muted by the other's threshold. */
-      return { pgv, pga, pgaG:pgaMs2/9.80665, mmi, inRange, calibrated:(inRange&&pgv>=PGV_FELT&&mmi<=9.5),
+      return { pgv, pga, pgaG:pgaMs2/9.80665, mmi, a0, jma:jmaOfA0(a0), inRange,
+        calibrated:(inRange&&pgv>=PGV_FELT&&mmi<=9.5),
         fc:s.fc, M0:s.M0, rupKm:s.rupKm, srcDurS:s.durS, gmDurS:Td, pathDurS:Tp, heffKm:(fault?0:heffKm(mw)), amp:siteAmp() };
     }
     const ROMAN=['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
@@ -420,14 +518,21 @@ window.IntMapModules.seismic=function(HOST){
     let scale=scaleForLang();
     function pickScale(v){ if(v!=='mmi'&&v!=='jma') return false; scale=v; scaleSet=true; return true; }
 
-    /* ══ (#R189) JMA INSTRUMENTAL INTENSITY (計測震度への換算) ══════════════════════════════════════
-       「震度階級は気象庁のものにも変えられるように。」 The conversion is Fujimoto & Midorikawa (2005):
-       I = 2.68 + 1.72·log10(PGV cm/s) — the published regression between PGV and the JMA
-       instrumental intensity. It is a CONVERSION from this model's PGV, not the JMA's own
-       computation (which band-filters the full three-component waveform), and the disclaimer says
-       so. Class boundaries are the real scale: 5弱/5強 split at 5.0, 6弱/6強 at 6.0, 7 from 6.5.
-       Colours are the JMA's published map colours (気象庁 配色基準). */
-    function jmaI(pgv){ return 2.68+1.72*Math.log10(Math.max(1e-6,pgv)); }
+    /* ══ (#R189) JMA INSTRUMENTAL INTENSITY (計測震度) ═════════════════════════════════════════════
+       「震度階級は気象庁のものにも変えられるように。」 #R189 converted it from PGV with Fujimoto &
+       Midorikawa (2005), I = 2.68 + 1.72·log₁₀(PGV), and its own note said what was wrong with that:
+       it is a REGRESSION standing in for the JMA's actual computation, which filters the three-
+       component waveform.
+       ══ (#R192) SO THE FILTER IS DONE, AND THE REGRESSION IS GONE ══════════════════════════════════
+       計測震度 = 2·log₁₀(a₀) + 0.94, where a₀ (cm/s²) is the level the filtered three-component vector
+       exceeds for a total of 0.3 s — 気象庁「計測震度の算出方法」, computed here by jmaA0 from the
+       model's own acceleration spectrum. That is the definition, not a fit to it, and it is why the
+       far field collapsed to something that can actually be felt: the 0.5 Hz low-cut removes exactly
+       the long-period swell that a PGV regression was reading as 震度1 at 7,000 km.
+       Class boundaries are the real scale: 5弱/5強 split at 5.0, 6弱/6強 at 6.0, 7 from 6.5. Colours
+       are the JMA's published map colours (気象庁 配色基準). */
+    function jmaOfA0(a0){ return 2*Math.log10(Math.max(1e-6,a0))+0.94; }
+    function a0AtJMA(I){ return Math.pow(10,(I-0.94)/2); }
     /* ══ (#R191) THE MODIFIED MERCALLI CONVERSION IS THE ONE SHAKEMAP USES ═══════════════════════════
        (#R190) …as ONE function — it was written out twice (motion() and the field loop) and the two
        copies are what let the readout speak the wrong scale. ⚠ THERE WAS A THIRD COPY, in at(), which
@@ -451,7 +556,6 @@ window.IntMapModules.seismic=function(HOST){
        written out again, so a change to either conversion moves the painted edge with it (#R190's
        lesson: two copies of one number always drift). */
     function pgvAtMMI(I){ return Math.pow(10,(I<=4.559)?((I-3.78)/1.47):((I-2.89)/3.16)); }
-    function pgvAtJMA(I){ return Math.pow(10,(I-2.68)/1.72); }
     const JMA_CLASSES=[
       { min:0.5, id:'1',  col:'#F2F2FF' }, { min:1.5, id:'2',  col:'#00AAFF' },
       { min:2.5, id:'3',  col:'#0041FF' }, { min:3.5, id:'4',  col:'#FAE696' },
@@ -459,10 +563,13 @@ window.IntMapModules.seismic=function(HOST){
       { min:5.5, id:'6-', col:'#FF2800' }, { min:6.0, id:'6+', col:'#A50021' },
       { min:6.5, id:'7',  col:'#B40068' } ];
     function jmaClass(I){ let c=null; for(const k of JMA_CLASSES){ if(I>=k.min) c=k; } return c; }
-    /* the two scales' lowest classes as PGV, and the lower of them (see motion()'s `calibrated`) */
-    const PGV_FLOOR_JMA=pgvAtJMA(JMA_CLASSES[0].min);            /* 震度1 — 0.054 cm/s */
+    /* (#R192) each scale's LOWEST class, in the quantity that scale is computed from — inverted from
+       the relations above rather than written out again (#R190's lesson: two copies of one number
+       always drift). They are no longer the same quantity, which is the point: 震度1 is a level of
+       JMA-filtered acceleration and MMI II is a PGV. */
+    const A0_FLOOR_JMA=a0AtJMA(JMA_CLASSES[0].min);              /* 震度1 — 0.60 cm/s² */
     const PGV_FLOOR_MMI=pgvAtMMI(2);                             /* MMI II — 0.062 cm/s */
-    const PGV_FELT=Math.min(PGV_FLOOR_JMA,PGV_FLOOR_MMI);
+    const PGV_FELT=PGV_FLOOR_MMI;
     function jmaLabel(id){ return id.replace('-',L(' lower','弱',' schwach',' слаб.',' débil')).replace('+',L(' upper','強',' stark',' сильн.',' fuerte')); }
     /* the USGS ShakeMap colours for the MMI fill; nothing painted under II */
     const MMI_CLASSES=[
@@ -562,17 +669,23 @@ window.IntMapModules.seismic=function(HOST){
     }
     function ampOf(vs30){ const rho=1800+(Math.max(150,Math.min(1500,vs30))-180)/(1500-180)*(2600-1800);
       return Math.sqrt((RHO*BETA)/(rho*vs30)); }
-    /* one full-chain PGV profile over log-spaced hypocentral distance, interpolated in log-log */
+    /* One full-chain profile over log-spaced hypocentral distance, interpolated in log-log.
+       (#R192) It carries BOTH quantities the map can be painted with — the felt-band PGV that the MMI
+       GMICE takes, and the JMA level a₀ that IS 計測震度. They are not one number times a constant
+       (that is the whole point of #R192: the two scales look at different bands), so a profile that
+       carried only PGV could not answer for the JMA scale at all. Both are linear in the site
+       amplification, so one profile still serves every cell (#R189). */
     function pgvProfile(){
-      const n=140, rr=new Float64Array(n), out=new Float64Array(n);
+      const n=140, rr=new Float64Array(n), out=new Float64Array(n), a0s=new Float64Array(n);
       const r0=Math.max(1,depthKm||1), r1=Math.sqrt(MMI_MAX_KM*MMI_MAX_KM+depthKm*depthKm)*1.02;
-      for(let i=0;i<n;i++){ const r=r0*Math.pow(r1/r0,i/(n-1)); rr[i]=r; out[i]=Math.max(1e-9,motion(mw,r*1000).pgv); }
-      return { rr, out,
-        at(rM){ const r=Math.max(rr[0],Math.min(rr[n-1],rM/1000));
-          let lo=0,hi=n-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(rr[m]<=r) lo=m; else hi=m; }
-          const span=Math.log(rr[hi])-Math.log(rr[lo])||1;
-          const f=(Math.log(r)-Math.log(rr[lo]))/span;
-          return out[lo]*Math.pow(out[hi]/out[lo],f); } };
+      for(let i=0;i<n;i++){ const r=r0*Math.pow(r1/r0,i/(n-1)); rr[i]=r;
+        const m=motion(mw,r*1000); out[i]=Math.max(1e-9,m.pgv); a0s[i]=Math.max(1e-9,m.a0); }
+      const interp=(arr,rM)=>{ const r=Math.max(rr[0],Math.min(rr[n-1],rM/1000));
+        let lo=0,hi=n-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(rr[m]<=r) lo=m; else hi=m; }
+        const span=Math.log(rr[hi])-Math.log(rr[lo])||1;
+        const f=(Math.log(r)-Math.log(rr[lo]))/span;
+        return arr[lo]*Math.pow(arr[hi]/arr[lo],f); };
+      return { rr, out, a0s, at(rM){ return interp(out,rM); }, a0At(rM){ return interp(a0s,rM); } };
     }
     const mX=lng=>(180+lng)/360, mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
     const latOfY=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
@@ -660,21 +773,24 @@ window.IntMapModules.seismic=function(HOST){
          grey RECTANGLE punched through the middle of the rings: the fine field's box, where the ocean
          is left unpainted, surrounded by far-field colour that covered the same ocean. Two rules for
          one picture is worse than either rule.
-         A whole-world land mask does not need the terrain, only its sign, so it is read at z3: 64 tiles
-         cover the Earth at ~20 km a pixel, which is finer than this raster's own 52 km cell and about
-         one twentieth of the tile budget. Phones take z2 (16 tiles) against their 104 km cell. If fewer
-         than half the tiles answer, the mask is not used at all and `landMask` says so — a half-loaded
-         coastline would carve holes that look like data. */
-      const zc=(typeof isMobile==='function'&&isMobile())?2:3;
+         ══ (#R192) …AND THAT TEST MUST NOT DEPEND ON THE NETWORK ═══════════════════════════════════
+         「震度分布の色塗りが、たまにバグって海もべた塗になる場合がある。」 THIS IS THAT BUG, and it is
+         the line #R191 wrote to be careful: the mask was 64 z3 DEM tiles, and when fewer than half of
+         them arrived the mask was dropped and every cell was painted — the whole ocean, in colour.
+         「たまに」 is exactly what a tile fetch is. A cold cache, a slow radio, or `_demCacheTrim`
+         evicting under a continental field all produce it, and none of them is visible to the user.
+         Land and sea are the same today as yesterday, so the answer now SHIPS with the app:
+         js/land-mask.js decodes data/land-mask.png, a 1-bit 2048 × 1024 raster of Natural Earth's
+         1:50m land (19.6 KB, ~19.5 km a pixel, finer than this raster's own 52 km cell). No request,
+         no timeout, no failure mode that ends in a painted sea.
+         AND IT FAILS CLOSED. If the mask cannot be decoded at all, the annulus is not drawn — a
+         missing picture is a missing picture, while a painted ocean is a wrong one. */
       let land=null;
       try{
-        const pts=[]; const step=180/(1<<zc);
-        for(let la=-80;la<=80;la+=step/2) for(let lo=-180;lo<180;lo+=step/2) pts.push([lo,la]);
-        await warmDEMTiles(pts,zc,9000,null);
-        if(seq!==fldSeq) return;
-        const sn=(typeof demSnapshot==='function')?demSnapshot(-180,-85,180,85,zc):null;
-        if(sn&&sn.have>=sn.want*0.5) land=sn;
+        const LM=window.IntMapLandMask;
+        if(LM){ await LM.warm(); if(seq!==fldSeq) return; if(LM.ready()) land=LM; }
       }catch(_){}
+      if(!land){ console.warn('[seismic] the land mask is unavailable — the far field is not drawn rather than painted over the sea'); return; }
       const la0=C0[1]*D, sinA=Math.sin(la0), cosA=Math.cos(la0);
       const cosDL=new Float64Array(NF);
       for(let i=0;i<NF;i++) cosDL[i]=Math.cos((-180+(i+0.5)*dxF-C0[0])*D);
@@ -687,10 +803,11 @@ window.IntMapModules.seismic=function(HOST){
           if(km<=rFine||km>rEdge) continue;
           const lo=-180+(i+0.5)*dxF;
           if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;   /* the fine image owns this */
-          if(land){ const e=land.at(lo,la); if(e==null||e<=0){ seaSkipped++; continue; } }
+          if(land.isLand(lo,la)!==true){ seaSkipped++; continue; }
           const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
-          const pgv=prof.at(rM);
-          const I=(scale==='jma')?jmaI(pgv):mmiOf(pgv);
+          /* (#R192) each scale from its own quantity — there is no site term out here, so both are
+             the profile's reference-site value */
+          const I=(scale==='jma')?jmaOfA0(prof.a0At(rM)):mmiOf(prof.at(rM));
           const cl=(scale==='jma')?jmaClass(I):mmiClass(I);
           if(!cl) continue;
           const o=(j*NF+i)*4, rgb=hx(cl.col);
@@ -702,7 +819,8 @@ window.IntMapModules.seismic=function(HOST){
       if(seq!==fldSeq) return;
       ctx.putImageData(im,0,0);
       fldFar={ url:cv.toDataURL('image/png'), coords:[[-180,85],[180,85],[180,-85],[-180,-85]],
-               N:NF, painted, extrap, sea:seaSkipped, landMask:!!land, landZoom:zc,
+               N:NF, painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
+               landCellKm:(land.state?land.state().cellKm:null),
                rFineKm:Math.round(rFine), rEdgeKm:Math.round(rEdge) };
       paintFar();
     }
@@ -726,12 +844,14 @@ window.IntMapModules.seismic=function(HOST){
         const prof=pgvProfile();
         const ampRef=siteAmp();
         /* how far anything at all is painted: the softest plausible site against the lowest class.
-           (#R191) inverted from the SAME conversions the colours use (pgvAtJMA / pgvAtMMI), so the
-           edge follows the relation instead of repeating two of its constants. */
-        const floorPgv=(scale==='jma')?PGV_FLOOR_JMA:PGV_FLOOR_MMI;
+           (#R191) inverted from the SAME conversions the colours use, so the edge follows the relation
+           instead of repeating two of its constants. (#R192) …and it now walks the profile the ACTIVE
+           scale is computed from — a₀ for 震度, PGV for MMI. */
+        const jmaScale=(scale==='jma');
+        const arr=jmaScale?prof.a0s:prof.out, floor=jmaScale?A0_FLOOR_JMA:PGV_FLOOR_MMI;
         const ampMax=ampOf(180);
         let rEdge=30;
-        for(let k=prof.rr.length-1;k>=0;k--){ if(prof.out[k]*(ampMax/ampRef)>=floorPgv){ rEdge=Math.max(30,prof.rr[k]); break; } }
+        for(let k=prof.rr.length-1;k>=0;k--){ if(arr[k]*(ampMax/ampRef)>=floor){ rEdge=Math.max(30,prof.rr[k]); break; } }
         rEdge=Math.min(rEdge,MMI_MAX_KM);
         /* (#R191) the FINE field is bounded by the terrain, not by the class — see MMI_TERRAIN_KM.
            Everything past it is the far field, which needs no DEM and is drawn by buildFar(). */
@@ -767,7 +887,10 @@ window.IntMapModules.seismic=function(HOST){
            array — so switching MMI→JMA reported an MMI number as a 震度 (measured: 8.63 → 「震度7」)
            until the next rebuild. PGV is what the model computes; both scales are one line from it.
            The PAINT still belongs to the scale it was drawn for, and `fld.scale` records which. */
-        const vs=new Float32Array(N*N), pgvArr=new Float32Array(N*N);
+        /* (#R192) …and the JMA level beside the PGV. #R190 stored PGV rather than an intensity so the
+           readout could change scale without a rebuild; that argument now needs BOTH quantities,
+           because the two scales no longer read the same band of the same motion. */
+        const vs=new Float32Array(N*N), pgvArr=new Float32Array(N*N), a0Arr=new Float32Array(N*N);
         let painted=0, sea=0, noDem=0, coarse=0, beyondCalib=0;
         /* ══ (#R190) A SLOPE MEASURED FINER THAN THE DATA IS NOT A SLOPE ═══════════════════════════
            Wald & Allen's Vs30 proxy is regressed on slope at ~30 arc-seconds (≈900 m), and #R189 asked
@@ -795,6 +918,9 @@ window.IntMapModules.seismic=function(HOST){
            the cache past its budget and evicted the tiles this very field was reading. */
         const snap=(typeof demSnapshot==='function')?demSnapshot(W,Ss,E,Nn,z):null;
         const demAt=snap?((lo,la)=>snap.at(lo,la)):((lo,la)=>demElevBilinear(lo,la,z));
+        /* (#R192) the bundled land/sea sign, for the cells the DEM did not answer for — see below */
+        let landMask=null;
+        try{ const LM=window.IntMapLandMask; if(LM){ await LM.warm(); if(seq!==fldSeq) return; if(LM.ready()) landMask=LM; } }catch(_){}
         for(let j=0;j<N;j++){
           const la=latOfY(y0+(j+0.5)*dy);
           for(let i=0;i<N;i++){
@@ -803,6 +929,14 @@ window.IntMapModules.seismic=function(HOST){
             if(km>MMI_MAX_KM){ vs[k]=0; continue; }
             const e0=demAt(lo,la);
             let amp;
+            /* ⚠ (#R192) A CELL WITH NO ELEVATION IS NOT A CELL ON LAND. This branch used to paint —
+               with the panel's site class — and over water that is the same reported bug as the far
+               field's, one grid finer: a missing tile put colour on the sea. The bundled mask
+               (js/land-mask.js, ~19.5 km) answers where the DEM cannot, and where even that is
+               unavailable the cell is left unpainted and counted. The DEM still answers FIRST, so
+               nothing about the coastline the field can actually see is coarsened. */
+            if(e0==null&&landMask&&landMask.isLand(lo,la)===false){ sea++; vs[k]=-1; continue; }
+            if(e0==null&&!landMask){ noDem++; vs[k]=0; continue; }
             if(e0==null){ noDem++; vs[k]=0; amp=ampRef; }
             else if(e0<=0){ sea++; vs[k]=-1; continue; }
             else if(!slopeUsable){ coarse++; vs[k]=0; amp=ampRef; }   /* (#R190) see the note by dsM */
@@ -813,9 +947,10 @@ window.IntMapModules.seismic=function(HOST){
               const v=vs30FromSlope(slope); vs[k]=v; amp=ampOf(v);
             }
             const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
-            const pgv=prof.at(rM)*(amp/ampRef);
-            pgvArr[k]=pgv;
-            const I=(scale==='jma')?jmaI(pgv):mmiOf(pgv);
+            const g=amp/ampRef;                                  /* both quantities are linear in it */
+            const pgv=prof.at(rM)*g, a0=prof.a0At(rM)*g;
+            pgvArr[k]=pgv; a0Arr[k]=a0;
+            const I=(scale==='jma')?jmaOfA0(a0):mmiOf(pgv);
             const cls=(scale==='jma')?jmaClass(I):mmiClass(I);
             if(!cls) continue;
             if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
@@ -827,14 +962,17 @@ window.IntMapModules.seismic=function(HOST){
         prog(99);
         fld={ url:cv.toDataURL('image/png'),
           coords:[[W,Nn],[E,Nn],[E,Ss],[W,Ss]],
-          W, E, y0, dy, dx, N, vs, pgv:pgvArr, z, scale,
+          W, E, y0, dy, dx, N, vs, pgv:pgvArr, a0:a0Arr, z, scale,
           vs30At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
             if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.vs[j*this.N+i]; return v>0?v:null; },
           /* (#R190) the PGV the FIELD computed at one point — what the readout under the cursor
              converts, so the number in the corner and the colour on the map come from the same cell
-             and cannot drift apart (#R136's lesson: a detector and a painter written twice). */
+             and cannot drift apart (#R136's lesson: a detector and a painter written twice).
+             (#R192) …and the JMA level from the same cell, for the same reason. */
           pgvAt(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
             if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.pgv[j*this.N+i]; return v>0?v:null; },
+          a0At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
+            if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.a0[j*this.N+i]; return v>0?v:null; },
           stats:{ cells:N*N, painted, sea, noDem, coarse, beyondCalib, calibKm:MMI_CALIB_KM, z, demSpacingM:Math.round(demSpacingM),
                   slopeBaselineM:Math.round(dsM), slopeUsable,
                   spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge), rFineKm:Math.round(rFine),
@@ -952,17 +1090,18 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R189) the ground under THIS point, when the field has read it off the DEM */
       let vs30=null;
       try{ if(fld&&fld.vs30At){ vs30=fld.vs30At(lng,lat); } }catch(_){}
-      let pgv=m.pgv, pga=m.pga, pgaG=m.pgaG;
-      if(vs30){ const f=ampOf(vs30)/m.amp; pgv*=f; pga*=f; pgaG*=f; }
+      let pgv=m.pgv, pga=m.pga, pgaG=m.pgaG, a0=m.a0;
+      if(vs30){ const f=ampOf(vs30)/m.amp; pgv*=f; pga*=f; pgaG*=f; a0*=f; }
       /* (#R191) …through mmiOf, like every other reader. This was the THIRD copy of the conversion
          (#R190 found two), and it is exactly why a copy is dangerous: it kept Wald 1999 while the
-         model moved to Worden 2012, so the table and the map would have disagreed by a class. */
+         model moved to Worden 2012, so the table and the map would have disagreed by a class.
+         (#R192) …and 震度 comes off the JMA level, which is the scale's own definition. */
       const mmi=mmiOf(pgv);
-      const jma=jmaI(pgv);
+      const jma=jmaOfA0(a0);
       const calibrated=(m.inRange&&pgv>=PGV_FELT&&mmi<=9.5);
       /* the ground is moving from S until the surface train has passed, plus the rupture's own length */
       const dur=(tS!=null)?Math.max(m.srcDurS, (tR-tS)+m.srcDurS):m.srcDurS;
-      return { deg, km, tP, tS, tRayleigh:tR, tLove:tL, durS:dur, mmi, jma, vs30, pgv, pga, pgaG,
+      return { deg, km, tP, tS, tRayleigh:tR, tLove:tL, durS:dur, mmi, jma, a0, vs30, pgv, pga, pgaG,
         inRange:m.inRange, calibrated };   /* carried through, or the table prints an intensity the model does not claim */
     }
     const fmtT=s=>{ if(s==null||!isFinite(s)) return '—'; let t=Math.round(s); const m=Math.floor(t/60), ss=t%60;
@@ -1046,11 +1185,11 @@ window.IntMapModules.seismic=function(HOST){
         +'<div class="sq-leg" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:10px;color:var(--text-muted);"></div>'
         +'<div class="sq-out" style="font-size:11.5px;color:var(--text-main);line-height:1.6;"></div>'
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic method (Brune source; trilinear geometrical spreading AND path duration after Atkinson & Boore 1995; frequency-dependent crustal Q = Q₀·f^η after Raoof, Herrmann & Malagnini 1999; κ = 0.035 s; and the Cartwright & Longuet-Higgins 1956 peak factor with its bandwidth term). A point source carries the equivalent point-source depth that reproduces near-field saturation, log₁₀ h = −0.405 + 0.235·M (Yenier & Atkinson 2014); with a drawn rupture the distance is to the rupture itself (M₀ = μAD̄), no equivalent depth is added, and wavefronts carry the rupture propagation (Vr = 0.75β). The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification, measured over the DEM\'s own sample spacing and skipped where that is coarser than 2 km; sea cells are not painted. MMI is converted from PGV with the ShakeMap relation of Worden et al. 2012 and is NOT the JMA shindo scale; the JMA display is a CONVERSION from PGV (Fujimoto & Midorikawa 2005), not the JMA\'s own waveform computation. The painted field runs to the end of the lowest class of the chosen scale: within 1,500 km it follows the terrain, and beyond that one cell is wider than the landforms inside it, so the field is a function of distance alone and is drawn as such. Past 1,000 km the regional spreading law is extrapolated, the panel says how much of the field that is, and the table still declines to print an intensity there. Educational model: in a real emergency follow the official authorities.',
-           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的震源モデル（Bruneスペクトル、三折れ幾何減衰と経路継続時間（Atkinson & Boore 1995）、周波数依存の地殻Q = Q₀·f^η（Raoof, Herrmann & Malagnini 1999）、κ=0.035秒、帯域項を含むCartwright & Longuet-Higgins 1956のピークファクター）です。点震源の場合は近距離の飽和を再現する等価点震源深さ log₁₀ h = −0.405 + 0.235·M（Yenier & Atkinson 2014）を含みます。震源域を描くと距離は断層面まで（M₀=μAD̄）となり等価深さは加えず、波面は破壊伝播（Vr=0.75β）を含みます。地盤は実地形から：地形勾配によるVs30推定（Wald & Allen 2007）を1/4波長則に入れます。勾配はDEMの実サンプル間隔で測り、2 kmより粗い場合は使いません。海域は塗りません。MMIはPGVからShakeMapと同じWorden et al. 2012で換算しており、気象庁震度階級ではありません。震度表示はPGVからの計測震度換算（藤本・翠川 2005）であり、気象庁の観測波形計算そのものではありません。塗りは選択した階級の最下位クラスが終わる範囲まで描きます。1,500 km以内は地形に従い、それより外側は1セルが地形の変化より広いため、距離だけの関数として描きます。1,000 kmを超える範囲は地域減衰式の外挿であり、その量をパネルに表示し、表には震度を表示しません。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
-           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Methode (Brune-Quelle; trilineare Abnahme UND Pfaddauer nach Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; Peakfaktor nach Cartwright & Longuet-Higgins 1956). Eine Punktquelle trägt die äquivalente Herdtiefe log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); mit gezeichneter Bruchfläche gilt die Distanz zur Fläche (M₀=μAD̄) ohne diese Zusatztiefe, und die Fronten tragen die Bruchausbreitung. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV nach Worden et al. 2012 (die ShakeMap-Relation) — NICHT die JMA-Skala; die JMA-Anzeige ist eine UMRECHNUNG (Fujimoto & Midorikawa 2005). Die Fläche reicht bis zum Ende der untersten Klasse: bis 1.500 km folgt sie dem Gelände, darüber hinaus nur noch der Distanz. Jenseits 1.000 km ist das Abklinggesetz extrapoliert. Nur Bildungsmodell.',
-           'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический метод (источник Бруна; геометрическое расхождение И длительность пути по Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 с; пик-фактор Cartwright & Longuet-Higgins 1956). Точечный источник получает эквивалентную глубину log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); с нарисованным очагом расстояние — до разрыва (M₀=μAD̄), фронты несут распространение разрыва. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV по Worden et al. 2012 (реляция ShakeMap), это не шкала JMA; отображение JMA — ПЕРЕСЧЁТ (Fujimoto & Midorikawa 2005). Поле рисуется до конца низшего класса: до 1 500 км — по рельефу, дальше — только по расстоянию. Дальше 1 000 км — экстраполяция. Учебная модель.',
-           'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: método estocástico (fuente de Brune; atenuación geométrica Y duración de trayecto según Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; factor de pico de Cartwright & Longuet-Higgins 1956). Una fuente puntual lleva la profundidad equivalente log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV según Worden et al. 2012 (la relación de ShakeMap), NO la escala JMA; la vista JMA es una CONVERSIÓN (Fujimoto & Midorikawa 2005). El campo se pinta hasta el final de la clase más baja: hasta 1.500 km sigue el terreno, más allá sólo la distancia. Más allá de 1.000 km la ley regional está extrapolada. Modelo educativo.')
+        +L('Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic method (Brune source; trilinear geometrical spreading AND path duration after Atkinson & Boore 1995; frequency-dependent crustal Q = Q₀·f^η after Raoof, Herrmann & Malagnini 1999; κ = 0.035 s; and the Cartwright & Longuet-Higgins 1956 peak factor with its bandwidth term). A point source carries the equivalent point-source depth that reproduces near-field saturation, log₁₀ h = −0.405 + 0.235·M (Yenier & Atkinson 2014); with a drawn rupture the distance is to the rupture itself (M₀ = μAD̄), no equivalent depth is added, and wavefronts carry the rupture propagation (Vr = 0.75β). The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification, measured over the DEM\'s own sample spacing and skipped where that is coarser than 2 km; sea cells are not painted. MMI is converted with the ShakeMap relation of Worden et al. 2012 from PGV taken over the band a strong-motion record delivers it in (4-pole high-pass at 0.1 Hz), and is NOT the JMA shindo scale. The JMA shindo IS its own definition here (気象庁「計測震度の算出方法」): the period-effect, 10 Hz high-cut and 0.5 Hz low-cut filters applied to the acceleration spectrum, then the level exceeded for a total of 0.3 s, I = 2·log₁₀ a₀ + 0.94 — the three components isotropised at V/H = 2/3 rather than simulated separately. The painted field runs to the end of the lowest class of the chosen scale: within 1,500 km it follows the terrain, and beyond that one cell is wider than the landforms inside it, so the field is a function of distance alone and is drawn as such. Past 1,000 km the regional spreading law is extrapolated, the panel says how much of the field that is, and the table still declines to print an intensity there. Educational model: in a real emergency follow the official authorities.',
+           '到達時刻は地球モデルIASP91のレイトレーシング、表面波は群速度3.5／4.4 km/sです。地動は確率論的震源モデル（Bruneスペクトル、三折れ幾何減衰と経路継続時間（Atkinson & Boore 1995）、周波数依存の地殻Q = Q₀·f^η（Raoof, Herrmann & Malagnini 1999）、κ=0.035秒、帯域項を含むCartwright & Longuet-Higgins 1956のピークファクター）です。点震源の場合は近距離の飽和を再現する等価点震源深さ log₁₀ h = −0.405 + 0.235·M（Yenier & Atkinson 2014）を含みます。震源域を描くと距離は断層面まで（M₀=μAD̄）となり等価深さは加えず、波面は破壊伝播（Vr=0.75β）を含みます。地盤は実地形から：地形勾配によるVs30推定（Wald & Allen 2007）を1/4波長則に入れます。勾配はDEMの実サンプル間隔で測り、2 kmより粗い場合は使いません。海域は塗りません。MMIはShakeMapと同じWorden et al. 2012による換算で、PGVは強震記録が実際に出せる帯域（0.1 Hz・4次ハイパス）で求めています。気象庁震度階級ではありません。震度は換算ではなく気象庁「計測震度の算出方法」そのものです（周期補正・10 Hzハイカット・0.5 Hzローカットを加速度スペクトルに適用し、合計0.3秒間超える加速度a₀から I = 2·log₁₀a₀ + 0.94）。3成分は個別に計算せずV/H=2/3で等方化しています。塗りは選択した階級の最下位クラスが終わる範囲まで描きます。1,500 km以内は地形に従い、それより外側は1セルが地形の変化より広いため、距離だけの関数として描きます。1,000 kmを超える範囲は地域減衰式の外挿であり、その量をパネルに表示し、表には震度を表示しません。教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。',
+           'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Methode (Brune-Quelle; trilineare Abnahme UND Pfaddauer nach Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; Peakfaktor nach Cartwright & Longuet-Higgins 1956). Eine Punktquelle trägt die äquivalente Herdtiefe log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); mit gezeichneter Bruchfläche gilt die Distanz zur Fläche (M₀=μAD̄) ohne diese Zusatztiefe, und die Fronten tragen die Bruchausbreitung. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV nach Worden et al. 2012 (die ShakeMap-Relation), PGV im nutzbaren Band eines Starkbebenschriebs (Hochpass 0,1 Hz) — NICHT die JMA-Skala. Die JMA-Shindo folgt hier ihrer eigenen Definition (気象庁): Periodenfilter, 10-Hz-Hochschnitt, 0,5-Hz-Tiefschnitt, dann der insgesamt 0,3 s überschrittene Pegel, I = 2·log₁₀ a₀ + 0,94. Die Fläche reicht bis zum Ende der untersten Klasse: bis 1.500 km folgt sie dem Gelände, darüber hinaus nur noch der Distanz. Jenseits 1.000 km ist das Abklinggesetz extrapoliert. Nur Bildungsmodell.',
+           'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический метод (источник Бруна; геометрическое расхождение И длительность пути по Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 с; пик-фактор Cartwright & Longuet-Higgins 1956). Точечный источник получает эквивалентную глубину log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); с нарисованным очагом расстояние — до разрыва (M₀=μAD̄), фронты несут распространение разрыва. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV по Worden et al. 2012 (реляция ShakeMap), PGV берётся в полосе, которую даёт запись сильных движений (ФВЧ 0,1 Гц); это не шкала JMA. Синдо JMA вычисляется по её собственному определению (気象庁): фильтры периода, 10 Гц и 0,5 Гц, затем уровень, превышаемый суммарно 0,3 с, I = 2·log₁₀ a₀ + 0,94. Поле рисуется до конца низшего класса: до 1 500 км — по рельефу, дальше — только по расстоянию. Дальше 1 000 км — экстраполяция. Учебная модель.',
+           'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: método estocástico (fuente de Brune; atenuación geométrica Y duración de trayecto según Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; factor de pico de Cartwright & Longuet-Higgins 1956). Una fuente puntual lleva la profundidad equivalente log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV según Worden et al. 2012 (la relación de ShakeMap), con PGV en la banda que entrega un registro de movimiento fuerte (paso alto 0,1 Hz); NO es la escala JMA. El shindo JMA sigue aquí su propia definición (気象庁): filtros de periodo, corte alto de 10 Hz y corte bajo de 0,5 Hz, y el nivel superado durante 0,3 s en total, I = 2·log₁₀ a₀ + 0,94. El campo se pinta hasta el final de la clase más baja: hasta 1.500 km sigue el terreno, más allá sólo la distancia. Más allá de 1.000 km la ley regional está extrapolada. Modelo educativo.')
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
       panel.querySelector('.sq-pick').onclick=()=>startPick();
@@ -1159,10 +1298,18 @@ window.IntMapModules.seismic=function(HOST){
         'В море, M'+M.toFixed(1)+', глубина '+Math.round(depthKm)+' км — соответствует критериям оповещения о цунами (M≥6,5 / ≤100 км).',
         'En el mar, M'+M.toFixed(1)+', profundidad '+Math.round(depthKm)+' km — cumple los criterios de alerta de tsunami (M≥6,5 / ≤100 km).') };
     }
+    /* ══ (#R192) THE HAND-OFF IS TO THE PROPAGATION MODEL ══════════════════════════════════════════
+       「津波が発生するとされるような地震だった場合、波の伝播のわかるアニメーション津波シミュレーターも
+         使えるように。」 #R190 wired this button to js/sims.js, which floods a 26 km box around the
+       epicentre up to a chosen wave height — an INUNDATION model, and one that says nothing about
+       propagation. It is still the right tool for the last kilometre and it is still reachable (the
+       propagation panel opens it at the coast the wave actually hits hardest), but the button asked
+       for here is the one that shows the wave crossing the ocean. */
     function openTsunami(){ const t=tsunamiCase(); if(!t||!epi) return false;
+      const T=window.IntMapTsunami;
+      if(T&&T.open){ try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm }); return true; }catch(_){} }
+      /* the propagation model is not installed in this build — the inundation model still is */
       const D2=window.IntMapDisaster; if(!D2||!D2.open) return false;
-      /* hazard and wave height FIRST, then the origin — open(ll) runs the model as soon as it has one,
-         and running it under the previous hazard would draw a flood before drawing the tsunami. */
       try{ D2.open({ lng:epi[0], lat:epi[1], hazard:'tsunami', waveH:t.waveM }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
@@ -1330,10 +1477,11 @@ window.IntMapModules.seismic=function(HOST){
          not been computed, or the point is outside it: a readout that guesses is worse than none. */
       intensityAt(lng,lat){ if(!opened||!fld||!fld.pgvAt) return null;
         const pgv=fld.pgvAt(lng,lat); if(pgv==null||!isFinite(pgv)) return null;
-        /* the ACTIVE scale, converted from the stored PGV — never a number left over from the scale
-           the field happened to be painted in (see the ⚠ note in buildField) */
-        if(scale==='jma'){ const I=jmaI(pgv); const c=jmaClass(I); if(!c) return null;
-          return { scale:'jma', I:+I.toFixed(2), pgv:+pgv.toFixed(2), col:c.col,
+        /* the ACTIVE scale, from the quantity that scale is computed from — never a number left over
+           from the scale the field happened to be painted in (see the ⚠ note in buildField) */
+        if(scale==='jma'){ const a0=fld.a0At?fld.a0At(lng,lat):null; if(a0==null) return null;
+          const I=jmaOfA0(a0); const c=jmaClass(I); if(!c) return null;
+          return { scale:'jma', I:+I.toFixed(2), pgv:+pgv.toFixed(2), a0:+a0.toFixed(2), col:c.col,
                    label:L('Shindo','震度','Shindo','Синдо','Shindo')+' '+jmaLabel(c.id) }; }
         const I2=mmiOf(pgv); const c2=mmiClass(I2); if(!c2) return null;
         return { scale:'mmi', I:+I2.toFixed(2), pgv:+pgv.toFixed(2), col:c2.col, label:'MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(I2)))] }; },
@@ -1349,7 +1497,7 @@ window.IntMapModules.seismic=function(HOST){
         fault:fault?{ areaKm2:Math.round(fault.areaKm2), slipM:fault.slipM, mw:+fault.mw.toFixed(2), points:fault.ring.length }:null,
         field:(fld&&fld.stats)?fld.stats:null, fieldBusy:fldBusy,
         /* (#R191) the terrain-free annulus that carries the lowest class to its end */
-        far:fldFar?{ N:fldFar.N, painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landZoom:fldFar.landZoom, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
+        far:fldFar?{ N:fldFar.N, painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
         scaleSet, terrainKm:MMI_TERRAIN_KM, maxKm:MMI_MAX_KM,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
   })();

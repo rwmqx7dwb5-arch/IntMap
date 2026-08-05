@@ -1065,9 +1065,37 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       }catch(_){ return null; }
       finally{ if(bmps) bmps.forEach(b=>{ try{ b&&b.close&&b.close(); }catch(_){} }); }
     }
+    /* ══ (#R192) …AND ALL OF IT RUNS IN A WORKER ═══════════════════════════════════════════════════
+       Measured panning Tokyo at z12: the desktop @2x path spent 8.9 s in long tasks inside a 6 s pan
+       (75 of them, worst 275 ms) at 4.8 fps, against a phone's 0.40 s and 22.6 fps — four decodes,
+       four draws and a canvas transfer per tile, on the thread that has to paint the map. Same work,
+       wrong thread. src/sat-worker-client.js drives src/sat-worker.js, which posts back a
+       TRANSFERABLE ImageBitmap; the depth memo is MIRRORED back here so `depth()`/`wouldStitch()`
+       still answer synchronously, and the main-thread path above stays as the fallback. See
+       DEV-NOTES #R192 §5. */
+    let _satWReady=false;
+    function _satWorker(){
+      const W=window.IntMapSatWorker;
+      if(!W||!W.available()) return false;
+      if(!_satWReady){ _satWReady=true;
+        W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX,
+          /* the worker learned how deep the imagery goes — keep the MIRROR current, because
+             `depth()` and `wouldStitch()` below answer synchronously and the tests ask them that way */
+          depth:(rows)=>{ for(const [k,have,stop] of rows){
+            let v=_satDepth.get(k); if(!v){ v={have:null,stop:null}; _satDepth.set(k,v);
+              if(_satDepth.size>_SAT_DEPTH_MAX){ const f=_satDepth.keys().next().value; _satDepth.delete(f); } }
+            v.have=have; v.stop=stop; } } }); }
+      return true;
+    }
+    function _satViaWorker(z,y,x,hi,signal){
+      if(!_satWorker()) return null;
+      return window.IntMapSatWorker.tile(z,y,x,hi,signal);
+    }
     GE().scene.addProtocol('imapsat', async (params, abortController)=>{
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
+      const via=_satViaWorker(z,y,x,_satHiDPI,signal);
+      if(via){ try{ const r=await via; if(r&&r.data) return {data:r.data}; }catch(_){ /* fall through to the thread */ } }
       try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
       /* (#R191) an ImageBitmap goes straight through; a cached ArrayBuffer is copied, because MapLibre
          transfers the buffer it is handed and a transferred buffer would empty the cache entry. */
@@ -1095,8 +1123,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       wouldStitch:(z,x,y)=>{ if(!_satHiDPI||(z|0)>=19) return false;
         const st=_satKnownStop(z|0,x|0,y|0); return !(st!=null&&(z|0)+1>st); },
       depthEntries:()=>_satDepth.size,
-      tile2x:async(z,y,x)=>{ try{ const b=await _sat2x(z|0,y|0,x|0,null);
-        return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap)}:{ok:false}; }
+      /* (#R192) whether the pipeline is running off the main thread, and the same 2× tile asked for
+         through whichever path is live — a test that wants the stitched pixels should not have to
+         know which thread produced them. */
+      worker:()=>!!_satWorker(),
+      tile2x:async(z,y,x)=>{
+        /* ⚠ (#R192) GATED ON _satHiDPI, exactly as _sat2x is. This hook means "what the @2x path
+           would produce", and on a 1× display that path does not run — routing it to the worker
+           unconditionally made a 1× screen build the stitch after all (caught by tests/r178 ①). */
+        try{ const via=_satHiDPI?_satViaWorker(z|0,y|0,x|0,true,null):null;
+          if(via){ const r=await via;
+            const b=r&&r.data;
+            if(b&&b.width===512) return {ok:true, w:b.width, h:b.height, bitmap:true, via:'worker'};
+          } }catch(_){}
+        try{ const b=await _sat2x(z|0,y|0,x|0,null);
+        return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap), via:'main'}:{ok:false}; }
         catch(e){ return {ok:false, err:String(e&&e.message||e)}; } } };
   } }catch(_){}
   try{
@@ -5028,6 +5069,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and reached from the map's right-click menu and from Atlas (never from the Measure menu). ===== */
   window.IntMapModules.terrainWater(IM_HOST);   /* sculpt the ground, drop water, watch it route */
   window.IntMapModules.seismic(IM_HOST);        /* P/S/surface wavefronts, arrivals, intensity */
+  /* (#R192) 「波の伝播のわかるアニメーション津波シミュレーター」 — linear long waves over the real
+     sea floor, offered by the seismic panel when the event screens as tsunamigenic. After seismic,
+     because that is what hands it an event. */
+  window.IntMapModules.tsunami(IM_HOST);
   window.IntMapModules.insolation(IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
 
   /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
