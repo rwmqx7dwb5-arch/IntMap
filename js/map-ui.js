@@ -210,6 +210,17 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'@media(max-width:768px){#layer-sidebar-r{z-index:1460;box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
         +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
         +'#layer-sidebar-r.open{transform:translateX(0);pointer-events:auto;visibility:visible;}'
+        /* ══ (#R191) THE LAYER SIDEBAR FOLLOWS THE APPEARANCE SETTING LIKE EVERY OTHER SURFACE ═══════
+           「レイヤーサイドバーは無条件で透過するな。」 The rule above paints it with --sidebar-bg, which
+           is rgba(255,255,255,0.85) / rgba(28,28,30,0.85) — translucent in EVERY mode, including
+           「不透過（デフォルト）」. Settings › サイドバーの外観 has said Solid / Frosted / More frosted
+           since #R33 («全てのUIはこの設定に従うように»), and the left .sidebar has honoured it since
+           #R104; this panel was simply never wired to it. Solid now paints the same recessed
+           --panel-bg the left sidebar uses (so its rows read as elevated tiles) with the blur off —
+           a blur behind an opaque fill is GPU work nobody can see. The two frosted modes keep the
+           frosted material above untouched, which is the other half of the instruction: not
+           unconditionally opaque either. */
+        +'body:not(.sidebar-translucent):not(.sidebar-glass2) #layer-sidebar-r{background:var(--panel-bg,var(--card-bg));backdrop-filter:none;-webkit-backdrop-filter:none;}'
         +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,env(safe-area-inset-top));}'
         +'#layer-sidebar-r .lsr-head b{font-size:16px;color:var(--text-main);}'
         +'#layer-sidebar-r .lsr-x{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;border-radius:8px;padding:2px 8px;}'

@@ -291,6 +291,47 @@ window.IntMapModules.mapReadout=function(HOST){
     const total=keys.size||1;
     return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(onProgress){ try{ onProgress((total-pending)/total); }catch(_){} } if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,90); })(); });
   }
+  /* ══ (#R191) A SNAPSHOT, SO A PICTURE BUILT OVER SEVERAL FRAMES CANNOT CHANGE UNDER IT ═════════════
+     「震度分布の色塗りが、たまにバグって縞々になる場合がある。」 — and the stripes are horizontal, in
+     bands, which is the shape of the answer. The intensity field paints ~83,000 cells and yields to the
+     event loop every eight rows so it can show a percentage; each row then asks THIS cache for its
+     elevations. Between two yields the cache is not the same object it was:
+       · tiles requested by warmDEMTiles keep ARRIVING (its timeout returns whatever landed, and the
+         rest resolve later), so a row computed at 3 s sees ground a row computed at 1 s did not — no
+         DEM means the panel's fallback site class, a DEM means the slope-derived one, and the two
+         differ by a whole amplification factor;
+       · and `_demCacheTrim` EVICTS while it does. The budget is 560 tiles on desktop and 140 on a
+         phone; a continental field asks for up to 520 of its own, and every mouse move over the map
+         inserts more at a different zoom. Tiles the field had already used get dropped mid-build.
+     Both make the picture depend on WHEN a row was computed, in bands exactly as wide as the yield
+     interval. This hands the caller a fixed set of decoded tile buffers — strong references, so no
+     eviction can reach them, and no new request can add to them — and every sample the field takes
+     comes out of that set. What is missing is missing for the whole picture, and is counted once. */
+  function demSnapshot(w,s,e,n,z){
+    const tiles=new Map(); const N=Math.pow(2,z);
+    const t0=_ll2tile(Math.max(-179.999,w),Math.min(85,n),z), t1=_ll2tile(Math.min(179.999,e),Math.max(-85,s),z);
+    const x0=Math.max(0,Math.floor(t0.x)-1), x1=Math.min(N-1,Math.floor(t1.x)+1);
+    const y0=Math.max(0,Math.floor(t0.y)-1), y1=Math.min(N-1,Math.floor(t1.y)+1);
+    let have=0, want=0;
+    for(let yi=y0;yi<=y1;yi++) for(let xi=x0;xi<=x1;xi++){
+      want++; const d=_demPix(_demCache.get(z+'/'+xi+'/'+yi));
+      if(d){ have++; tiles.set(xi+'/'+yi,d); } }
+    return { z, want, have, missing:want-have,
+      /* the same bilinear read as demElevBilinear, against the frozen buffers */
+      at(lng,lat){
+        if(lat>85||lat<-85) return null;
+        const tl=_ll2tile(lng,lat,z), xi=Math.floor(tl.x), yi=Math.floor(tl.y);
+        if(xi<0||yi<0||xi>=N||yi>=N) return null;
+        const d=tiles.get(xi+'/'+yi); if(!d) return null;
+        const fx=(tl.x-xi)*256-0.5, fy=(tl.y-yi)*256-0.5;
+        const ax=Math.max(0,Math.min(255,Math.floor(fx))), ay=Math.max(0,Math.min(255,Math.floor(fy)));
+        const bx=Math.min(255,ax+1), by=Math.min(255,ay+1);
+        const tx=Math.max(0,Math.min(1,fx-ax)), ty=Math.max(0,Math.min(1,fy-ay));
+        const el=(px,py)=>{ const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768; };
+        const p=el(ax,ay), q=el(bx,ay), r=el(ax,by), u=el(bx,by);
+        return (p*(1-tx)+q*tx)*(1-ty)+(r*(1-tx)+u*tx)*ty;
+      } };
+  }
   /* (#R18) Bilinear DEM sample for the viewshed — smooths the stair-stepping of nearest-pixel sampling so
      ridge lines (which decide what's blocked) are physically truer. Reads the 4 surrounding texels and
      interpolates; falls back to nearest at tile edges. Tiles must already be warm (LOS warms them first). */
@@ -391,5 +432,5 @@ const _wxCache=new Map();
     }catch(_){}
   }
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&GE().hasRenderer())s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
-  return { _demZoomForSpan, demElevAt, demElevBilinear, demZoomForMap, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
+  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demZoomForMap, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
 };

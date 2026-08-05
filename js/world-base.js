@@ -190,7 +190,9 @@ window.IntMapWorldBase=(function(){
         const before=GE().layers.has('layer-sat')?'layer-sat':undefined;
         GE().layers.add({ id:LYR, type:'raster', source:SRC,
           layout:{visibility:'none'},
-          paint:{'raster-fade-duration':0,'raster-opacity':1} }, before);
+          /* (#R191) the same 180 ms the satellite layer above it fades with — see the note there. The
+             floor is what a view fades FROM, so a hard swap here is half the flicker. */
+          paint:{'raster-fade-duration':180,'raster-opacity':1} }, before);
       }
       return true;
     }catch(e){ console.warn('[world-base] install',e); return false; }
