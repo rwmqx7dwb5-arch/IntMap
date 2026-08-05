@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -54,6 +55,28 @@ test('R192 seismic: land/sea is a bundled fact, and a missing mask never paints 
   assert.ok(man.landFraction > 0.25 && man.landFraction < 0.42,
     'and a plausible land fraction for an equirectangular raster (29 % of area, stretched at the poles)');
   assert.ok(fs.statSync(path.join(ROOT, 'data/land-mask.png')).size < 60000, 'it is small enough to ship');
+
+  /* ⚠ and the RASTER ITSELF is checked, not just its manifest: decode the shipped PNG and ask it
+     about places whose answer is not in dispute. A mask that was silently all-zero would satisfy
+     every other assertion in this file and would leave the far field painting nothing at all. */
+  const png = fs.readFileSync(path.join(ROOT, 'data/land-mask.png'));
+  let q = 8, idat = [], W = 0, H = 0;
+  while (q < png.length) { const len = png.readUInt32BE(q), type = png.toString('ascii', q + 4, q + 8);
+    if (type === 'IHDR') { W = png.readUInt32BE(q + 8); H = png.readUInt32BE(q + 12);
+      assert.equal(png[q + 16], 1, '1 bit per pixel'); assert.equal(png[q + 17], 0, 'greyscale'); }
+    if (type === 'IDAT') idat.push(png.subarray(q + 8, q + 8 + len));
+    q += 12 + len; }
+  const raw = zlib.inflateSync(Buffer.concat(idat)), rowBytes = W >> 3;
+  const isLand = (lng, lat) => { const i = Math.floor((lng + 180) / 360 * W), j = Math.floor((90 - lat) / 180 * H);
+    return ((raw[j * (rowBytes + 1) + 1 + (i >> 3)] >> (7 - (i & 7))) & 1) === 1; };
+  for (const [name, lng, lat, want] of [
+    ['inland Tokyo', 139.70, 35.75, true], ['Sendai', 140.87, 38.27, true], ['Osaka', 135.50, 34.69, true],
+    ['London', -0.10, 51.50, true], ['New York', -74.00, 40.71, true], ['Mongolia', 100, 45, true],
+    ['the Sahara', 10, 25, true], ['the Amazon', -60, -3, true], ['Sydney', 151.00, -33.87, true],
+    ['the open Pacific', -150, 20, false], ['the mid-Atlantic', -30, 0, false],
+    ['the Southern Ocean', 0, -60, false], ['the Caspian', 51, 42, false],
+    ['the Indian Ocean', 75, -20, false], ['Tokyo Bay', 139.83, 35.55, false],
+  ]) assert.equal(isLand(lng, lat), want, name + ' should be ' + (want ? 'land' : 'sea'));
 });
 
 /* ── 3 · each intensity scale is computed from the band it is defined on ─────────────────────── */
