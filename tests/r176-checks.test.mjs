@@ -167,9 +167,16 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
   assert.match(quake, /function spread\(rKm\)\{/, 'trilinear geometrical spreading');
   assert.match(quake, /function siteAmp\(\)\{/, 'and quarter-wavelength site amplification');
   /* honesty: MMI is not shindo, and it is not offered outside the model's range */
-  assert.match(quake, /3\.47\*Math\.log10\(Math\.max\(1e-6,pgv\)\)\+2\.35/, 'Wald et al. 1999 for the intensity');
+  /* (#R191) the intensity conversion moves from Wald et al. 1999 (one line fitted over MMI V-IX) to
+     Worden et al. 2012 — the GMICE ShakeMap itself uses, verified against the PGV values USGS prints
+     for the class boundaries. What this assertion is really about is unchanged: the panel converts
+     PGV with a NAMED published relation and says it is not the JMA scale. */
+  assert.match(quake, /\(lg<=0\.53\)\?\(3\.78\+1\.47\*lg\):\(2\.89\+3\.16\*lg\)/, 'Worden et al. 2012 for the intensity');
   assert.match(quake, /const MMI_CALIB_KM=1000;/, 'with a stated range');
-  assert.match(quake, /calibrated:\(inRange&&pgv>=0\.5&&mmi<=9\.5\)/, 'and a flag for "outside what the relation supports"');
+  /* …and the "not felt" floor is the scales' own lowest classes now, not a PGV constant that belonged
+     to Wald's validity range — 0.5 cm/s is MMI 1.3 under Wald and MMI 3.3 under Worden. */
+  assert.match(quake, /calibrated:\(inRange&&pgv>=PGV_FELT&&mmi<=9\.5\)/, 'and a flag for "outside what the relation supports"');
+  assert.match(quake, /const PGV_FELT=Math\.min\(PGV_FLOOR_JMA,PGV_FLOOR_MMI\);/, 'neither scale muted by the other');
   assert.ok(/NOT the JMA shindo scale/.test(quake) && /気象庁震度階級ではありません/.test(quake), 'and it says so in the panel');
 });
 

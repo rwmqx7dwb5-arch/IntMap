@@ -59,8 +59,15 @@ test('R147/R152 Street View coverage is a cyan light-blue, THINNER line (R152 dr
   assert.ok(!/'raster-brightness-min':0\.5,'raster-contrast':0\.15/.test(html), 'R152: the brightness-min+contrast glow pair is gone');
 });
 
-test('R147 #9 satellite base layer has instant tile fade (no 300ms cross-fade)', () => {
-  assert.match(html, /id:'layer-sat'[\s\S]{0,140}'raster-fade-duration':0/, 'layer-sat fade 0');
+test('R147 #9 satellite base layer does not use MapLibre’s 300 ms cross-fade', () => {
+  /* (#R191) #R147 was right that 300 ms of half-drawn imagery under a moving finger reads as lag, and
+     that is still the contract here. But 0 is a HARD SWAP per tile, and a screenful of children
+     replacing their parents one at a time is exactly the reported 点滅 — plus at 0 there is nothing
+     holding the parent while the child loads. 180 ms is under the threshold at which a transition
+     reads as a delay. What this test pins is the range: fast, and not MapLibre's default. */
+  const m = /id:'layer-sat'[\s\S]{0,140}'raster-fade-duration':(\d+)/.exec(html);
+  assert.ok(m, 'layer-sat declares a fade duration');
+  assert.ok(+m[1] < 300, `layer-sat fade is faster than MapLibre's 300 ms default (got ${m[1]})`);
   assert.match(html, /'satellite':\{type:'raster',tiles:\(window\.__imSatProto\?\['imapsat/, 'satellite source uses the R158 tile protocol (grey-tile fix)');
   assert.match(html, /'satellite':\{type:'raster'[\s\S]{0,400}maxzoom:19,attribution/, 'satellite source maxzoom cap 19');
 });

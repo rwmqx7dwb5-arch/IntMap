@@ -111,7 +111,7 @@ test('#1 Companies compare has a sortable table (Countries parity)', async () =>
 });
 
 // ---- #7 Köppen fit helper + #9 satellite instant fade --------------------
-test('#7/#9 Köppen legend fit helper present and satellite layer fades instantly', async () => {
+test('#7/#9 Köppen legend fit helper present and the satellite layer does not use the 300 ms default', async () => {
   const r = await page.evaluate(() => {
     const out = { fitFn: typeof window._fitKoppenLegend };
     try {
@@ -122,7 +122,11 @@ test('#7/#9 Köppen legend fit helper present and satellite layer fades instantl
     return out;
   });
   expect(r.fitFn).toBe('function');
-  if (r.satFade !== 'no-layer' && r.satFade !== undefined) expect(r.satFade).toBe(0);
+  /* (#R191) 0 was a HARD SWAP per tile, and a screenful of children replacing their parents one at a
+     time is the reported 点滅; it is also what left nothing holding the parent while a child loaded.
+     What #R147 was really about — not MapLibre's 300 ms default, which reads as lag under a moving
+     finger — is what this pins. */
+  if (r.satFade !== 'no-layer' && r.satFade !== undefined) expect(r.satFade).toBeLessThan(300);
 });
 
 // ---- boot honesty --------------------------------------------------------

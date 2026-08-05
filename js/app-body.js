@@ -226,7 +226,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get areaHTML(){ return areaHTML; },             get ringArea(){ return ringArea; },
     get fmtLL(){ return fmtLL; },                   get hasTurf(){ return hasTurf; },
     get demElevAt(){ return demElevAt; },           get demElevBilinear(){ return demElevBilinear; },
-    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; },
+    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; },
     get layerCbInfo(){ return layerCbInfo; },       get renderLayerFavs(){ return renderLayerFavs; },
     get removePin(){ return removePin; },           get setupIntelLayers(){ return setupIntelLayers; },
     /* ── (#R167) members added for the sixth split (legal / feedback / onboarding / mobile-ui /
@@ -907,12 +907,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const _SAT_HOSTS=['https://server.arcgisonline.com','https://services.arcgisonline.com'];
     const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]+'/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;
     const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
-    const _satCache=new Map(), _SAT_CACHE_MAX=800;
+    /* (#R191) 「モバイル版で、衛星画像が圧倒的に重い」 — these two Maps hold JPEG BYTES, and 800 + 1,200
+       entries of Esri imagery is 20-60 MB of ArrayBuffers sitting beside MapLibre's own tile cache (whose
+       mobile budget #R21 deliberately cut to 640-1,024 tiles for the same reason). They were sized for a
+       desktop and never re-read on a phone. Cut to a quarter there — a phone's viewport holds a fraction
+       of the tiles a monitor does, so the hit rate barely moves, and the memory does. */
+    const _satMob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+    const _satCache=new Map(), _SAT_CACHE_MAX=(_satMob?200:800);
     const _satCacheGet=k=>{ const v=_satCache.get(k); if(v!==undefined){ _satCache.delete(k); _satCache.set(k,v); } return v; };
     const _satCachePut=(k,v)=>{ _satCache.set(k,v); if(_satCache.size>_SAT_CACHE_MAX){ const f=_satCache.keys().next().value; _satCache.delete(f); } };
     /* raw-fetch cache (keyed z/x/y) so the ancestor walk-up reuses the SHARED low-zoom tiles — over open ocean many z18
        children resolve to the same z8 ancestor, which is then fetched once, not per child. */
-    const _satRaw=new Map(), _SAT_RAW_MAX=1200;
+    const _satRaw=new Map(), _SAT_RAW_MAX=(_satMob?300:1200);
     /* ══ (#R179) HOW DEEP ESRI'S IMAGERY ACTUALLY GOES, LEARNED FROM THE TILES THAT ARRIVE ═══════
        Esri's native maximum zoom varies by place (#R158: z19 city, z18 rural, z17 desert, z16 open
        sea) and past it every tile is the grey placeholder. The @2x stitch below builds a tile from
@@ -960,28 +966,44 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const r=await fetch(_satUrl(z,y,x),{signal,mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
       const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
       return out; }
+    /* ══ (#R191) THE CROPPED TILE WAS TRANSCODED TWICE, ON THE MAIN THREAD ═══════════════════════════
+       「衛星画像の読み込み時の動作を、極限までシームレスにして。」「モバイル版で、衛星画像が圧倒的に重い。」
+       #R178's note says this path "returns a bitmap now too, which drops a full JPEG encode per tile
+       over ocean and desert" — but it never did: it decoded the ancestor, drew the sub-quadrant, then
+       RE-ENCODED the result to JPEG at quality 0.92, handed those bytes to MapLibre, and MapLibre
+       decoded them a second time. Two extra image codecs per tile, both on the main thread, on exactly
+       the views (open water, desert, anywhere Esri stops early) where nearly every tile takes this
+       path — and phones are where the main thread is scarcest.
+       MapLibre's protocol contract accepts an ImageBitmap directly ("User using addProtocol can
+       directly return HTMLImageElement/ImageBitmap", image_request.ts) and the @2x stitch above has
+       been doing exactly that since #R178. So this returns the bitmap it already has.
+       It also stops holding the cropped BYTES: they were the largest thing in the cache and they were
+       never the cheap thing to keep. What is worth keeping is the ANCESTOR, which `_satRaw` already
+       holds — a repeat is then a decode-and-draw with no network and no encode, and one z8 ocean tile
+       serves hundreds of its descendants. */
     async function _satCrop(buf, dz, subX, subY){ const bmp=await createImageBitmap(new Blob([buf])); const n=1<<dz, cell=bmp.width/n;
       let c; if(typeof OffscreenCanvas!=='undefined'){ c=new OffscreenCanvas(256,256); } else { c=document.createElement('canvas'); c.width=256; c.height=256; }
       const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
       ctx.drawImage(bmp, subX*cell, subY*cell, cell, cell, 0,0,256,256); try{ bmp.close&&bmp.close(); }catch(_){}
-      const blob=c.convertToBlob?await c.convertToBlob({type:'image/jpeg',quality:0.92}):await new Promise(res=>c.toBlob(res,'image/jpeg',0.92));
-      return await blob.arrayBuffer(); }
-    /* resolve one tile to REAL imagery bytes. mode: 'native' (Esri had it) | 'cropped' (upscaled from nearest real ancestor)
-       | 'raw' (placeholder kept — no real ancestor found). Shared by the protocol + a debug hook so it is E2E-testable. */
-    async function _satResolve(z,y,x,signal){ const key=z+'/'+x+'/'+y; const hit=_satCacheGet(key); if(hit) return {buf:hit, mode:hit.__mode||'cache'};
+      return c.transferToImageBitmap?c.transferToImageBitmap():await createImageBitmap(c); }
+    /* resolve one tile to REAL imagery. mode: 'native' (Esri had it) | 'cropped' (upscaled from the
+       nearest real ancestor) | 'raw' (placeholder kept — no real ancestor found). `data` is an
+       ArrayBuffer for the byte paths and an ImageBitmap for the cropped one; both are things MapLibre's
+       protocol contract accepts. Shared by the protocol + a debug hook so it is E2E-testable. */
+    async function _satResolve(z,y,x,signal){ const key=z+'/'+x+'/'+y; const hit=_satCacheGet(key); if(hit) return {data:hit, buf:hit, mode:hit.__mode||'cache'};
       const first=await _satFetch(z,y,x,signal);
       /* (#R179) THIS is where the depth is learned, because this is where it is discovered — see
          _satNote. A native tile proves imagery reaches z; the ancestor walk below measures exactly
          how far short of z it stops. */
-      if(!first.placeholder){ _satNoteHave(z,x,y,z); first.buf.__mode='native'; _satCachePut(key, first.buf); return {buf:first.buf, mode:'native'}; }
+      if(!first.placeholder){ _satNoteHave(z,x,y,z); first.buf.__mode='native'; _satCachePut(key, first.buf); return {data:first.buf, buf:first.buf, mode:'native'}; }
       /* placeholder → walk up to the nearest REAL ancestor, crop its sub-quadrant, upscale */
       let az=z, ax=x, ay=y, dz=0, real=null;
       for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
         let got=null; try{ got=await _satFetch(az,ay,ax,signal); }catch(_){ break; }
         if(!got.placeholder){ real=got; break; } }
       if(real){ _satNoteStop(z,x,y,az);   /* az is real and az+1 was the placeholder — a STOP */
-        try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
-      return {buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
+        try{ const bmp=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); return {data:bmp, mode:'cropped'}; }catch(_){} }
+      return {data:first.buf, buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
     }
     /* ══ (#R178) THE IMAGERY IS HALF-RESOLUTION ON EVERY HIDPI SCREEN ═══════════════════════════
        MapLibre picks the tile zoom from `coveringZoomLevel(zoom + log2(512/tileSize))` — read it in
@@ -1047,14 +1069,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
       try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
-      let first=null;
-      try{ const res=await _satResolve(z,y,x,signal); return {data: res.buf.slice(0)}; }
-      catch(e){ if(first&&first.buf) return {data: first.buf.slice(0)}; throw e; }
+      /* (#R191) an ImageBitmap goes straight through; a cached ArrayBuffer is copied, because MapLibre
+         transfers the buffer it is handed and a transferred buffer would empty the cache entry. */
+      const res=await _satResolve(z,y,x,signal);
+      return {data:(res.data&&res.data.byteLength!==undefined)?res.data.slice(0):res.data};
     });
     window.__imSatProto=true;
     /* debug/test hook — resolve a tile and report byte length + mode (native/cropped/raw). Lets an E2E test assert that a
        known placeholder area (open ocean, rural) comes back as real cropped imagery, and a city as native, against LIVE Esri. */
-    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX,
+    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null);
+        /* (#R191) …and `bytes` is only meaningful for the byte paths now; the cropped one answers with
+           the bitmap's own size, which is what a test asking "is this real imagery" should look at. */
+        return {mode:r.mode, bytes:(r.buf?r.buf.byteLength:null), w:(r.data&&r.data.width)||null, h:(r.data&&r.data.height)||null}; }
+      catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX,
       /* (#R178) the HiDPI decision and the stitched tile, so an E2E test can prove against LIVE Esri
          that a 2× screen really gets 512 px of imagery per 256-unit tile — and that a 1× screen is
          left exactly as it was. Reporting the decision separately matters: "no @2x tile" is the right
@@ -1144,7 +1171,22 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
-        layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},   /* (#R147) instant satellite tiles (no 300ms cross-fade) so fast zoom/pan is comfortable, esp. on mobile ("衛星画像の読み込みが…快適に") — matches every other raster overlay */
+        /* ══ (#R191) A TILE SHOULD ARRIVE, NOT APPEAR ═══════════════════════════════════════════════
+           「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
+           #R147 set this to 0 against MapLibre's 300 ms default, and it was right about the default:
+           300 ms of half-drawn imagery under a moving finger reads as lag. But 0 is the other extreme
+           — it is a HARD SWAP, per tile. Zooming in, each child replaces its parent the instant it
+           lands, so a screenful becomes a checkerboard of sharp and blurry squares flipping one at a
+           time, and that flipping is the reported 点滅. `raster-fade-duration` is also what holds the
+           parent while the child loads; at 0 there is nothing holding it.
+           180 ms is under the ~200 ms at which a transition stops reading as a delay and still long
+           enough for the eye to see one image become another instead of being replaced by it. The
+           whole-Earth floor beneath (js/world-base.js) gets the same number, so the very first paint
+           of a view fades from the floor rather than snapping off it — and #R190 already made the two
+           the same colour, which is what makes a cross-fade between them read as one picture
+           sharpening. Every OTHER raster overlay keeps 0: they are data layers, not photographs, and
+           a half-faded thermal-anomaly value is a wrong value. */
+        layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':180}},
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':0}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
@@ -1353,6 +1395,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); }
+  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames */
   const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 

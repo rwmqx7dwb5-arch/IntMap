@@ -76,7 +76,7 @@ const MODULES = {
   newsFeed:         { file: 'js/news-feed.js', k: 'IM_NEWSFEED', exports: ['aiTranslateTitles', 'fetchData', 'loadNewsFromSupabase', 'startNews'] },
   articleReader:    { file: 'js/article-reader.js', k: 'IM_READER', exports: ['openArticleInSidebar'] },
   communityBoard:   { file: 'js/community-board.js', k: 'IM_COMMBOARD', exports: ['cmAddPost', 'cmEditPost', 'commCatLabel', 'imViewProfile', 'loadCommunity', 'openComposeModal', 'renderCommList', 'setupCommunityLayer', 'visibleCommunityPosts'] },
-  mapReadout:       { file: 'js/map-readout.js', k: 'IM_READOUT', exports: ['_demZoomForSpan', 'demElevAt', 'demElevBilinear', 'demZoomForMap', 'fetchBathymetry', 'fmtElevVal', 'fmtLL', 'handleMapClick', 'refreshGrid', 'renderCoordReadout', 'setGrid', 'showMeasureTip', 'updateCompass', 'updateCoord', 'updateLayerReadout', 'warmDEMTiles'] },
+  mapReadout:       { file: 'js/map-readout.js', k: 'IM_READOUT', exports: ['_demZoomForSpan', 'demElevAt', 'demElevBilinear', 'demSnapshot', 'demZoomForMap', 'fetchBathymetry', 'fmtElevVal', 'fmtLL', 'handleMapClick', 'refreshGrid', 'renderCoordReadout', 'setGrid', 'showMeasureTip', 'updateCompass', 'updateCoord', 'updateLayerReadout', 'warmDEMTiles'] },
   elevationProfile: { file: 'js/elevation-profile.js', k: 'IM_ELEVPROF', exports: ['_openProfilePanel'] },
 };
 const NAMES = Object.keys(MODULES);

@@ -171,7 +171,12 @@ test('aircraft are lifted with real geometry, because this renderer cannot lift 
   assert.match(d, /PLANE3D_LYR='lyr-planes-3d'/, 'a 3-D layer exists');
   assert.match(d, /type:'fill-extrusion',source:PLANE3D_SRC/, 'it is extrusion geometry — MapLibre 5.24 has no symbol-z-offset');
   assert.match(d, /'fill-extrusion-base':\['get','alt'\]/, 'the base is the aircraft\'s own altitude, per feature');
-  assert.match(d, /function planeRing\(lng,lat,hdg,halfM\)/, 'the glyph is an aeroplane turned to its track, built in ground metres');
+  /* (#R191) the shared helper is `planeRingPts(…,pts)`; `planeRing` was a one-argument wrapper for the
+     bare outline and went when the mark gained its stroke (the body is the outline INSET by it, the
+     stroke is it OUTSET). Still an aeroplane, still turned to its track, still built in ground metres —
+     which is what this assertion is about. */
+  assert.match(d, /function planeRingPts\(lng,lat,hdg,halfM,pts\)/, 'the glyph is an aeroplane turned to its track, built in ground metres');
+  assert.match(d, /const _PLANE_CORE=_outsetRing\(_PLANE_OUTLINE,-_PLANE_STROKE\);/, 'and the body is that outline');
   assert.match(d, /const alt=d\.onGround\?0:Math\.max\(0,\(d\.geoAlt!=null\?d\.geoAlt:\(d\.baroAlt!=null\?d\.baroAlt:0\)\)-off\)/,
     'airborne aircraft get the ground offset taken off (renderer metres are above the DEM when terrain is on); aircraft ON the ground stay at 0 so they sit on it');
   assert.match(d, /function planesLayerOn\(\)/, '"is the layer on" must accept either rendering — asking after one by name reports the other as off');
