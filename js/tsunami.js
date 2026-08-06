@@ -674,6 +674,11 @@ window.IntMapModules.tsunami=function(HOST){
       if(epi) body+='<div style="font-size:11.5px;color:var(--text-main);">M '+mw.toFixed(1)+' · '
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';
+      /* (#R196) the seismic panel changed the event under us — say so, then recompute (see follow) */
+      if(srcPending) body+='<div class="tsu-follow" style="font-size:11px;color:#ffd23f;">'
+        +L('The earthquake changed — recomputing the propagation.','地震の条件が変わりました — 伝播を再計算します。',
+           'Das Beben hat sich geändert — Ausbreitung wird neu berechnet.','Землетрясение изменилось — пересчёт распространения.',
+           'El terremoto cambió — recalculando la propagación.')+'</div>';
       body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
         +L('Simulate','計算時間','Simulieren','Смоделировать','Simular')
         +'<select class="tsu-hours" style="flex:1;'+BTN+'">'
@@ -811,6 +816,35 @@ window.IntMapModules.tsunami=function(HOST){
       }); }catch(_){}
     }
 
+    /* ══ (#R196) THE SOURCE IS NOT FROZEN AT open() ════════════════════════════════════════════════
+       「津波シミュレーターも、初期の地震しか対応していない。」 It was true by construction: epi / mw /
+       depthKm were only ever written by `open()`, so whatever the seismic panel happened to be
+       describing at the moment the 🌊 button was pressed was the only event this model could ever
+       show. Moving the epicentre, redrawing the rupture or changing the magnitude next door left the
+       wave on screen belonging to an earthquake that no longer existed — and nothing said so.
+
+       `follow()` is the seismic panel pushing its CURRENT source here (js/seismic.js
+       syncTsunamiSource). It does nothing unless this panel is open, ignores a source identical to
+       the one already running, and DEBOUNCES: a magnitude spinner emits a change per keystroke and a
+       solve is tens of seconds, so the run that starts is the one the user stopped on. `build()`'s
+       own `seq` guard retires anything already in flight, and the worker job is aborted with it. */
+    let followT=0, srcPending=false;
+    const srcKey=()=>(epi?epi[0].toFixed(4)+'/'+epi[1].toFixed(4):'—')+'/'+mw.toFixed(2)+'/'+depthKm.toFixed(1);
+    let ranKey=null;
+    function follow(o){
+      o=o||{};
+      if(!opened||o.lng==null||o.lat==null||!isFinite(+o.lng)||!isFinite(+o.lat)) return false;
+      const nMw=(o.mw!=null&&isFinite(+o.mw))?Math.max(6,Math.min(9.6,+o.mw)):mw;
+      const nD=(o.depth!=null&&isFinite(+o.depth))?Math.max(0,Math.min(200,+o.depth)):depthKm;
+      const want=(+o.lng).toFixed(4)+'/'+(+o.lat).toFixed(4)+'/'+nMw.toFixed(2)+'/'+nD.toFixed(1);
+      if(want===srcKey()&&want===ranKey&&!srcPending) return false;    /* already this event, already run */
+      if(want===srcKey()&&srcPending) return true;                     /* same edit, timer already armed */
+      epi=[+o.lng,+o.lat]; mw=nMw; depthKm=nD;
+      srcPending=true; render();                    /* the header shows the new source at once */
+      clearTimeout(followT);
+      followT=setTimeout(()=>{ srcPending=false; if(!opened) return; ranKey=srcKey(); build(); },900);
+      return true;
+    }
     /* ---- lifecycle -------------------------------------------------------------------------------- */
     function open(o){
       o=o||{};
@@ -820,14 +854,16 @@ window.IntMapModules.tsunami=function(HOST){
       if(o.depth!=null) depthKm=Math.max(0,Math.min(200,+o.depth));
       if(o.hours!=null) hours=Math.max(1,Math.min(24,+o.hours));
       opened=true; panel.style.display='flex'; render(); wireClick();
+      clearTimeout(followT); srcPending=false; ranKey=srcKey();
       if(epi&&o.run!==false) build();
       return true;
     }
     function close(){ opened=false; pause(); seq++;
+      clearTimeout(followT); srcPending=false;
       try{ if(jobId&&window.IntMapTsunamiWorker) window.IntMapTsunamiWorker.abort(jobId); }catch(_){}
       busy=false; if(panel) panel.style.display='none'; clearPaint(); return true; }
 
-    return { open, close, play, pause, setFrame, setTime:setTimeS, at,
+    return { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
       setHours(h){ hours=Math.max(1,Math.min(24,+h||6)); if(opened) render(); return true; },
       setSpeed(s){ speed=Math.max(1,Math.min(3600,+s||180)); if(opened) render(); return true; },
       setOpacity(v){ opacity=Math.max(0.1,Math.min(1,+v>1?(+v/100):+v));
@@ -838,6 +874,7 @@ window.IntMapModules.tsunami=function(HOST){
       run:()=>build(), openInundation,
       state:()=>({ open:opened, epi:epi?epi.slice():null, mw, depthKm, hours, speed, opacity, showMax,
         showIso, ampM:sim?+ampNow().toFixed(3):null, busy, pct, err:lastErr, playing:!!playing,
+        following:!!srcPending,                                   /* (#R196) a queued re-run from the seismic panel */
         tSim:Math.round(tSim), worker:!!(window.IntMapTsunamiWorker&&window.IntMapTsunamiWorker.available()),
         sim:sim?{ N:sim.N, cellKm:sim.cellKm, dt:+(sim.dt||0).toFixed(2), steps:sim.steps||0,
           frames:sim.frames.length, nFrames:sim.nFrames, running:!!sim.running,

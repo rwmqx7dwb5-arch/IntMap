@@ -1178,7 +1178,11 @@ function _m(){ return window.__imap||null; }
         } else if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
         cv._imDraw=o.draw;
         try{ o.draw(cv.getContext('2d'),W,H); }catch(_){}
-        if(!m.getSource(id)) m.addSource(id,{type:'canvas',canvas:cv,coordinates:o.coordinates,animate:false});
+        /* (#R196) …and a dynamic image may carry an ATTRIBUTION. The tsunami's pixels are the app's
+           own arithmetic and need none; the night-lights image is NASA's VIIRS Black Marble and does,
+           so the renderer's attribution control has to be told. */
+        if(!m.getSource(id)) m.addSource(id,Object.assign({type:'canvas',canvas:cv,coordinates:o.coordinates,animate:false},
+          o.attribution?{attribution:o.attribution}:{}));
         const lid=id+'-lyr';
         if(!m.getLayer(lid)) m.addLayer({ id:lid, type:'raster', source:id,
           paint:{ 'raster-opacity':(o.opacity==null?1:o.opacity), 'raster-fade-duration':0,

@@ -412,8 +412,17 @@ window.IntMapModules.rf=function(HOST){
       } else if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('No terrain data here.','この地点の地形データがありません。','Keine Geländedaten.','Нет данных.','Sin datos.'); }
     }catch(_){}
       busy=false; }
-    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    function startPick(){ _endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
+    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
+    function startPick(){ _endPick(); picking=true;
+      const P=window.IntMapPick;
+      if(P&&P.start&&P.start({ panel,
+        hint:RF('Tap the map to place the antenna.','地図をタップしてアンテナを設置してください。','Zum Setzen der Antenne auf die Karte tippen.','Нажмите на карту, чтобы разместить антенну.','Toca el mapa para colocar la antena.'),
+        onPick:(ll)=>{ picking=false; ant={lng:ll.lng,lat:ll.lat}; run(); },
+        onCancel:()=>{ picking=false; } })) return;
+      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rf-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       const inC='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
@@ -565,9 +574,17 @@ window.IntMapModules.sun=function(HOST){
           +SN('of the view','の面積','der Ansicht','вида','de la vista')+' · '+r.steps+' '+SN('sun positions','時刻で判定','Sonnenstände','положений','posiciones')
           +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas'));
       }catch(_){ } engBusy=false; }
-    function endPick(){ try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    function pickPoint(){ endPick(); try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
+    function endPick(){ try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
+    function pickPoint(){ endPick();
       engSay(SN('Click the point to analyse.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
+      const P=window.IntMapPick;
+      if(P&&P.start&&P.start({ panel,
+        hint:SN('Tap the point to analyse.','解析する地点をタップしてください。','Auf den zu analysierenden Punkt tippen.','Нажмите на точку для анализа.','Toca el punto a analizar.'),
+        onPick:(ll)=>{ analysePoint(ll.lng,ll.lat); } })) return;
+      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickH=async e=>{ endPick(); await analysePoint(e.lngLat.lng,e.lngLat.lat); };
       try{ GE().events.once('click',pickH); }catch(_){} }
     async function analysePoint(lng,lat){ if(engBusy||!ENG()) return null; engBusy=true;
@@ -751,8 +768,17 @@ window.IntMapModules.disaster=function(HOST){
     }catch(_){ setStat(DZ('Simulation failed — try again.','計算に失敗しました。','Fehlgeschlagen.','Ошибка.','Falló.')); } busy=false; }
     function setStat(h){ if(panel){ const s=panel.querySelector('.dz-stat'); if(s) s.innerHTML=h; } }
     let floodM=5, waveH=8;
-    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    function startPick(){ _endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
+    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
+    function startPick(){ _endPick(); picking=true;
+      const P=window.IntMapPick;
+      if(P&&P.start&&P.start({ panel,
+        hint:DZ('Tap the map to place the source.','地図をタップして発生地点を置いてください。','Zum Setzen der Quelle auf die Karte tippen.','Нажмите на карту, чтобы указать источник.','Toca el mapa para colocar el origen.'),
+        onPick:(ll)=>{ picking=false; origin={lng:ll.lng,lat:ll.lat}; run(); },
+        onCancel:()=>{ picking=false; } })) return;
+      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['tsunami','🌊 '+DZ('Tsunami','津波','Tsunami','Цунами','Tsunami')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';

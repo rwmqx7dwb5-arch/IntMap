@@ -96,10 +96,21 @@ window.IntMapModules.satProto=function(HOST){
       if(v.stop==null||d>v.stop) v.stop=d; }
     /* null = no positive evidence that imagery stops before the level asked for, so try. */
     function _satKnownStop(z,x,y){ const v=_satDepth.get(_satCell(z,x,y)); return v?v.stop:null; }
-    async function _satFetch(z,y,x,signal){ const rk=z+'/'+x+'/'+y; const c=_satRaw.get(rk); if(c){ _satRaw.delete(rk); _satRaw.set(rk,c); return c; }
-      const r=await fetch(_satUrl(z,y,x),{signal,mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
-      const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
-      return out; }
+    /* ══ (#R196) A TILE IS FETCHED ONCE — see the long note in src/sat-worker.js ═══════════════════
+       Measured on an emulated iPhone: 891 satellite requests for 137 distinct tiles in a six-second
+       pan, the worst tile fetched 24 times — once per pan step — because MapLibre's abort reached
+       `fetch` and the response was thrown away mid-flight. The bytes are already on the wire; the
+       fetch completes and is cached, so the re-request is instant. The abort still stops the
+       ancestor WALK, where the saving is a request not yet made. This is the fallback path; the
+       worker above is what normally runs, and the two are kept byte-for-byte in step. */
+    const _satFly=new Map();
+    function _satFetch(z,y,x){ const rk=z+'/'+x+'/'+y; const c=_satRaw.get(rk); if(c){ _satRaw.delete(rk); _satRaw.set(rk,c); return Promise.resolve(c); }
+      const live=_satFly.get(rk); if(live) return live;
+      const p=(async()=>{
+        const r=await fetch(_satUrl(z,y,x),{mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
+        const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); }
+        return out; })().finally(()=>{ _satFly.delete(rk); });
+      _satFly.set(rk,p); return p; }
     /* ══ (#R191) THE CROPPED TILE WAS TRANSCODED TWICE, ON THE MAIN THREAD ═══════════════════════════
        「衛星画像の読み込み時の動作を、極限までシームレスにして。」「モバイル版で、衛星画像が圧倒的に重い。」
        #R178's note says this path "returns a bitmap now too, which drops a full JPEG encode per tile
@@ -125,7 +136,7 @@ window.IntMapModules.satProto=function(HOST){
        ArrayBuffer for the byte paths and an ImageBitmap for the cropped one; both are things MapLibre's
        protocol contract accepts. Shared by the protocol + a debug hook so it is E2E-testable. */
     async function _satResolve(z,y,x,signal){ const key=z+'/'+x+'/'+y; const hit=_satCacheGet(key); if(hit) return {data:hit, buf:hit, mode:hit.__mode||'cache'};
-      const first=await _satFetch(z,y,x,signal);
+      const first=await _satFetch(z,y,x);
       /* (#R179) THIS is where the depth is learned, because this is where it is discovered — see
          _satNote. A native tile proves imagery reaches z; the ancestor walk below measures exactly
          how far short of z it stops. */
@@ -143,11 +154,12 @@ window.IntMapModules.satProto=function(HOST){
       const _hint=_satKnownStop(z,x,y);
       if(_hint!=null&&_hint<z&&_hint>=1){ const d=z-_hint;
         if(d>1&&d<=13){ let got=null;
-          try{ got=await _satFetch(_hint,y>>d,x>>d,signal); }catch(_){ got=null; }
+          try{ got=await _satFetch(_hint,y>>d,x>>d); }catch(_){ got=null; }
           if(got&&!got.placeholder){ real=got; az=_hint; dz=d; }
           else if(got){ az=_hint; ax=x>>d; ay=y>>d; dz=d; } } }
-      if(!real) for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
-        let got=null; try{ got=await _satFetch(az,ay,ax,signal); }catch(_){ break; }
+      if(!real) for(let up=0; up<13 && az>1; up++){ if(signal&&signal.aborted) break;   /* (#R196) the walk is where an abort still saves a request */
+        az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
+        let got=null; try{ got=await _satFetch(az,ay,ax); }catch(_){ break; }
         if(!got.placeholder){ real=got; break; } }
       if(real){ _satNoteStop(z,x,y,az);   /* az is real and az+1 was the placeholder — a STOP */
         try{ const bmp=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); return {data:bmp, mode:'cropped'}; }catch(_){} }
@@ -193,13 +205,14 @@ window.IntMapModules.satProto=function(HOST){
          the four children are placeholders, the attempt abandons itself, and the _satDepth memo
          (#R179) makes sure that lesson is only ever paid for once per neighbourhood. */
       if(!_satHiDPI||z>=20) return null;
+      if(signal&&signal.aborted) return null;   /* (#R196) */
       /* (#R179) …and not where the imagery is already known to stop shallower than the level this
          needs. See _satDepth: four placeholder fetches per tile is the cost of asking anyway. */
       const stop=_satKnownStop(z,x,y);
       if(stop!=null&&z+1>stop) return null;
       const q=[[0,0],[1,0],[0,1],[1,1]];
       let kids;
-      try{ kids=await Promise.all(q.map(([dx,dy])=>_satFetch(z+1,2*y+dy,2*x+dx,signal))); }catch(_){ return null; }
+      try{ kids=await Promise.all(q.map(([dx,dy])=>_satFetch(z+1,2*y+dy,2*x+dx))); }catch(_){ return null; }
       if(!kids.every(k=>k&&!k.placeholder)) return null;
       /* (#R179) all four are real, so imagery reaches at least one level past this tile */
       _satNoteHave(z,x,y,z+1);
