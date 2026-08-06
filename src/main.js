@@ -69,6 +69,9 @@ import '../js/time-borders.js';
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
 import './sat-worker-client.js';
+/* (#R193) …and the tsunami solver's, which publishes window.IntMapTsunamiWorker and starts nothing
+   until the propagation panel asks for a run (src/tsunami-worker.js). */
+import './tsunami-worker-client.js';
 import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';

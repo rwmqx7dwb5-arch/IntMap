@@ -109,11 +109,18 @@ test('R192 seismic: 震度 is the JMA definition, MMI is fed the band an instrum
 /* ── 4 · the tsunami model ───────────────────────────────────────────────────────────────────── */
 test('R192 tsunami: linear long waves over the real sea floor, from an Okada source', () => {
   const s = read('js/tsunami.js');
+  /* ⚠ (#R193) THE EQUATIONS MOVED, SO THESE ASSERTIONS MOVED WITH THEM. #R192 pinned the leapfrog
+     step inside js/tsunami.js; #R193 put the solver in a worker (src/tsunami-worker.js) because
+     running it on the page was the whole defect. What this test is FOR — a C-grid carrying the
+     spherical metric and a CFL-bounded step rather than a flat box with a chosen dt — is unchanged,
+     and is asserted against the file that now holds it. Pinning the old location would only assert
+     that nothing had improved. */
+  const w = read('src/tsunami-worker.js');
   assert.match(s, /window\.IntMapTsunami=/, 'the module publishes itself');
   /* the equations: a C-grid with the spherical metric, not a flat box */
-  assert.match(s, /M\[a\]=\(hf>0\)\?\(\(M\[a\]-dt\*G\*hf\*\(eta\[b\]-eta\[a\]\)\*invDx\)\*sponge\[a\]\):0;/, 'the momentum equation');
-  assert.match(s, /eta\[k\]=\(eta\[k\]-dt\*\(\(me-mw2\)\*invDx\+\(nn-ns\)\/\(dyM\*cj\)\)\)\*sponge\[k\];/, 'continuity, with cos φ');
-  assert.match(s, /const dt=Math\.max\(1,0\.45\*Math\.min\(dxMin,dyM\)\/Math\.max\(1,cMax\)\);/, 'and a CFL time step');
+  assert.match(w, /let f = M\[a\] - gdt \* D \* \(eta\[b\] - eta\[a\]\) \* idx;/, 'the momentum equation');
+  assert.match(w, /const v = \(eta\[k\] - dt \* \(\(me - mw\) \* idx \+ \(nn - ns\) \* inv\)\) \* sponge\[k\];/, 'continuity, with cos φ');
+  assert.match(w, /const dt = Math\.max\(0\.5, 0\.45 \* lim\);/, 'and a CFL time step');
   /* Okada, with the branch trap that a naive transcription falls into */
   assert.match(s, /function okadaUz\(x,y,depth,L2,W2,dipDeg,slip\)/, 'Okada (1985) uz');
   assert.match(s, /Math\.atan\(xi\*eta\/\(q\*R\)\)/, 'the PRINCIPAL value, not atan2');
@@ -124,10 +131,14 @@ test('R192 tsunami: linear long waves over the real sea floor, from an Okada sou
   assert.match(s, /let dipAz=Math\.atan2\(dHx,dHy\)\/D;/, 'the strike comes from the bathymetric gradient');
   /* the antimeridian: a Pacific domain crosses it, and demSnapshot clamps at ±180 */
   assert.match(s, /const snapB=\(eLng>180\)\?demSnapshot\(-180,sLat,wrapLng\(eLng\),nLat,z\)/, 'two snapshots across the date line');
-  /* Green's law only where the linear solution it shoals is still valid */
-  assert.match(s, /const k=j\*N\+i; if\(h\[k\]<200\) continue;/, 'the coastal estimate starts at the shelf');
-  /* frames are quantised — 120 float frames of 320² is 49 MB */
-  assert.match(s, /const q=new Int16Array\(N\*N\);/, 'the animation is stored at 1 mm');
+  /* Green's law only where the linear solution it shoals is still valid — same rule; #R193 keeps the
+     depth on this thread as Int16 metres because h itself is transferred to the worker */
+  assert.match(s, /const d=sim\.depth\[k\];/, 'the coastal estimate reads the depth it kept');
+  assert.match(s, /if\(d<200\) continue;/, 'and starts at the shelf');
+  /* frames are quantised. #R192 stored 1 mm in an Int16; #R193 compands to an Int8 along the cube
+     root the colour ramp already uses — half the memory at the same visible resolution. */
+  assert.match(w, /const q = new Int8Array\(n2\);/, 'the animation is quantised, not stored as floats');
+  assert.match(w, /Math\.round\(127 \* Math\.cbrt\(a > 1 \? 1 : a\)\)/, 'on the same curve as the colour ramp');
   /* and it is reachable the way everything in this app is reachable (#R82) */
   const seis = read('js/seismic.js');
   assert.match(seis, /if\(T&&T\.open\)\{ try\{ T\.open\(\{ lng:epi\[0\], lat:epi\[1\], mw:\(fault\?fault\.mw:mw\), depth:depthKm \}\); return true; \}catch\(_\)\{\} \}/,
