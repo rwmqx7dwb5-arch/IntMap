@@ -169,6 +169,30 @@ test('R195 ⑦: a spec with no recorded time is scheduled, not treated as free',
     'the hand-carved flight suite is gone — the planner is what spreads those specs now');
 });
 
+/* ── ⑧ main's own result is kept, so attribution is a lookup and not a 12-minute experiment ───── */
+test('R195 ⑧: a failure is classified against main without re-running main', () => {
+  const base = JSON.parse(rd('tests/baseline.json'));
+  assert.equal(base.ref, 'main', 'the baseline is main\'s, and says so');
+  const n = Object.keys(base.tests || {}).length;
+  assert.ok(n > 200, `the baseline covers the suite; it has ${n} entries`);
+  /* the three outcomes must all be expressible — a run that only ever records "passed" would
+     classify every real pre-existing failure as MINE and send the next round chasing itself */
+  const kinds = new Set(Object.values(base.tests).map((t) => t.status));
+  assert.ok(kinds.has('passed'), 'passes are recorded');
+  assert.ok(kinds.has('flaky') || kinds.has('failed'),
+    'and so is main failing — otherwise ALSO ON MAIN can never be the answer');
+
+  const src = rd('scripts/baseline.mjs');
+  assert.match(src, /b\.status === 'passed' \? 'MINE' : 'ALSO ON MAIN'/, 'the verdict rule');
+  assert.match(src, /!b \? 'UNKNOWN'/, 'a test main never recorded is UNKNOWN, never someone else\'s problem');
+  /* ⚠ only main may write it: a branch recording its own results would define its own "normal" */
+  const ci = rd('.github/workflows/ci.yml');
+  assert.match(ci, /if: \$\{\{ github\.ref == 'refs\/heads\/main' && !cancelled\(\) \}\}[\s\S]{0,200}?baseline\.mjs --update/,
+    'the baseline is written only on main');
+  assert.match(ci, /if: \$\{\{ failure\(\) \}\}[\s\S]{0,200}?baseline\.mjs --classify/,
+    'and a red PR job says which failures main does not have');
+});
+
 /* ── ⑥ the local worker count is written down, not remembered ─────────────────────────────────── */
 test('R195 ⑥: a local run does not need a flag nobody can remember', () => {
   const cfg = rd('playwright.config.js');

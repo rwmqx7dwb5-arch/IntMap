@@ -121,6 +121,15 @@ jobs:
         env:
           IM_SUITE: ${{ matrix.suite }}
         run: npx playwright test ${{ steps.plan.outputs.files }}
+      # (#R195) …and say, right here, which of the failures main does NOT have. The rule is to prove
+      # a failure is yours before touching it, and the way that was carried out was to re-run main by
+      # hand at ~10 minutes a go — while CI had already run every test on main and discarded the
+      # answer. tests/baseline.json is main's own last result; this reads it. It never fails the job:
+      # the verdict is information for whoever reads the log, and the tests themselves decide red.
+      - name: Which of these does main not have?
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: node scripts/baseline.mjs --classify test-results/junit.xml
       # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
@@ -131,6 +140,25 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+          if-no-files-found: ignore
+      # (#R195) …and on MAIN, the run's own result BECOMES the baseline, together with the timings the
+      # shard planner packs by. Both are committed by the job below, so the next PR inherits them.
+      # ⚠ Only main writes: a branch that recorded its own results would define its own "normal".
+      - name: Keep this result as main's baseline
+        if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+        continue-on-error: true
+        run: |
+          node scripts/baseline.mjs --update test-results/junit.xml
+          node scripts/shard-plan.mjs --update test-results/junit.xml
+      - name: Upload the baseline fragment
+        if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-${{ matrix.suite }}-${{ matrix.shard }}
+          path: |
+            tests/baseline.json
+            tests/durations.json
+          retention-days: 7
           if-no-files-found: ignore
 
   # One check, whatever the shard count is — so the PR still reports a single browser result and any
