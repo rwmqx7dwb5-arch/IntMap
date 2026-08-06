@@ -141,7 +141,7 @@ test('R189 flight sim: the seed carries the eye and the look distance, and the i
 
 /* ── 6 · satellite: the deepest zoom is no longer the one half-resolution view ───────────────── */
 test('R189 satellite: the @2x stitch reaches the map maximum zoom', () => {
-  const src = read('js/app-body.js');
+  const src = read('js/sat-proto.js');   /* (#R195) the protocol moved out of the shell, byte for byte */
   assert.match(src, /if\(!_satHiDPI\|\|z>=20\) return null;/,
     'z19 — the max-zoom view — now stitches from real z20 children where Esri has them');
 });

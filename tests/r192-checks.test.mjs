@@ -165,7 +165,7 @@ test('R192 imagery: the tile pipeline is a worker, with the main thread kept as 
   const c = read('src/sat-worker-client.js');
   assert.match(c, /new Worker\(new URL\('\.\/sat-worker\.js',import\.meta\.url\),\{type:'module'\}\)/, 'started by its own client module');
   assert.match(c, /it\.onerror=\(\)=>\{ try\{ it\.terminate\(\); \}catch\(_\)\{\} w=null;/, 'a dying worker does not take the imagery with it');
-  const s = read('js/app-body.js');
+  const s = read('js/sat-proto.js');   /* (#R195) the protocol moved out of the shell, byte for byte */
   assert.match(s, /if\(via\)\{ try\{ const r=await via; if\(r&&r\.data\) return \{data:r\.data\}; \}catch\(_\)\{ \/\* fall through to the thread \*\/ \} \}/,
     'and a worker failure falls through to the main-thread path rather than losing the tile');
   assert.match(c, /if\(typeof Worker!=='function'\|\|typeof OffscreenCanvas!=='function'\|\|typeof createImageBitmap!=='function'\) return null;/,

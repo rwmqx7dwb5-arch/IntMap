@@ -44,7 +44,13 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast
   // one browser per machine for the Cesium half — contention is exactly what it fails on
-  workers: isCI ? (process.env.IM_SUITE === 'cesium' ? 1 : 2) : undefined,
+  // ⚠ (#R195) …AND THE LOCAL DEFAULT IS 2, WRITTEN DOWN RATHER THAN REMEMBERED. `undefined` gave
+  // Playwright's default of half the CPU cores, and at that width this machine produces failures that
+  // are contention, not regressions — a full run then has to be repeated, and a run is ~48 minutes.
+  // The instruction was to pass `--workers=2` by hand every time; #R186 forgot once and threw away
+  // 45 minutes, and #R194 had to re-derive the same number. A flag nobody can forget is the fix.
+  // Override deliberately with PW_WORKERS=<n> when measuring the machine itself.
+  workers: isCI ? (process.env.IM_SUITE === 'cesium' ? 1 : 2) : Number(process.env.PW_WORKERS || 2),
   timeout: 60_000,                // index.html is a large single-file app — allow a generous boot budget
   expect: { timeout: 10_000 },
   reporter: isCI
