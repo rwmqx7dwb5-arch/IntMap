@@ -140,8 +140,14 @@ window.IntMapNightSide=(function(){
   /* ── the layers ──────────────────────────────────────────────────────────────────────────────── */
   const LIM=85.051129;
   const COORDS=[[-180,LIM],[180,LIM],[180,-LIM],[-180,-LIM]];
+  /* ⚠ (#R196) 512, NOT 1024. MEASURED: the first version painted a 1024² image — a million pixels,
+     each with its own trigonometry — the moment the camera reached a wide zoom, and that is a single
+     synchronous long task in the middle of a gesture. tests/r186's aircraft sweep, which zooms to
+     z4.2 and then has ten seconds to observe a re-plan, went from ~10 s on main to ~26 s here and
+     failed one run in three. At the zoom this is visible at, the Earth is 400-500 px across, so 512
+     is already oversampled; the phone gets 256. */
   function imgSize(){ let mob=false; try{ mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){}
-    return mob?512:1024; }
+    return mob?256:512; }
   function beforeId(){
     for(const id of ['ofm-country','ofm-city','ofm-other','tool-poly'])
       { try{ if(GE().layers.has(id)) return id; }catch(_){} }
@@ -151,32 +157,50 @@ window.IntMapNightSide=(function(){
     try{ const T=window.IntMapTime; if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) return v; } }catch(_){}
     return Date.now();
   }
+  /* ⚠ (#R196) THE HOT LOOP IS SEPARABLE, SO IT IS SEPARATED. The solar elevation at (lat, lng) is
+     sinφ·sinδ + cosφ·cosδ·cos H, and H depends only on the LONGITUDE while φ depends only on the ROW
+     — so cos H is computed once per column and the two φ terms once per row, leaving one multiply and
+     one add per pixel. The `asin` is gone too: nightness is a function of the elevation, and the
+     elevation is monotonic in its sine, so the two thresholds are compared as SINES and the inverse
+     is only taken inside the twilight band (a few per cent of the image). Measured on the same
+     picture, this is what took the wide-zoom paint off the profile. */
   function drawLights(ctx,W,H){
     ctx.clearRect(0,0,W,H);
     const rows=(()=>{ try{ return GE().layers.imageRowLatitudes(COORDS,H); }catch(_){ return null; } })();
     const S=solar(new Date(clockMs()));
     const out=ctx.createImageData(W,H), o=out.data;
     const L=lights;
+    if(!L){ ctx.putImageData(out,0,0); return; }
+    const sinDec=Math.sin(S.dec), cosDec=Math.cos(S.dec);
+    const th0=D*(280.16+360.9856235*S.d)-S.ra;
+    /* per COLUMN: cos H, and the source column */
+    const cosH=new Float64Array(W), sx=new Int32Array(W);
+    for(let c=0;c<W;c++){ const lng=-180+360*(c+0.5)/W;
+      cosH[c]=Math.cos(th0+D*lng);
+      sx[c]=Math.max(0,Math.min(L.w-1,Math.round((lng+180)/360*L.w))); }
+    const SIN_DAY=0, SIN_NIGHT=Math.sin(-12*D);          /* the two ends of the twilight ramp, as sines */
+    const y0=Math.log(Math.tan(Math.PI/4+LIM*D/2));
     for(let r=0;r<H;r++){
       const lat=rows?rows[r]:(LIM-(2*LIM)*(r+0.5)/H);
+      const ph=lat*D, a=Math.sin(ph)*sinDec, b=Math.cos(ph)*cosDec;
       /* the source mosaic is Web-Mercator, so its own row for this latitude is a Mercator lookup */
-      let sy=0;
-      if(L){ const my=Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,lat))*D/2));
-        const y0=Math.log(Math.tan(Math.PI/4+LIM*D/2));
-        sy=Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h))); }
+      const my=Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,lat))*D/2));
+      const sy=Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h)));
+      const rowBase=sy*L.w, oBase=r*W*4;
       for(let c=0;c<W;c++){
-        const lng=-180+360*(c+0.5)/W;
-        const n=nightAt(S,lng,lat);
-        const k=(r*W+c)*4;
-        if(n<=0.01||!L){ o[k+3]=0; continue; }
-        const sx=Math.max(0,Math.min(L.w-1,Math.round((lng+180)/360*L.w)));
-        const j=(sy*L.w+sx)*4;
-        const R=L.d[j], G=L.d[j+1], B=L.d[j+2];
-        const lum=(R*0.30+G*0.59+B*0.11)/255;
+        const k=oBase+c*4;
+        const sinEl=a+b*cosH[c];
+        if(sinEl>=SIN_DAY){ o[k+3]=0; continue; }        /* day: nothing to draw, and no arithmetic */
+        let n;
+        if(sinEl<=SIN_NIGHT) n=1;
+        else { const el=Math.asin(sinEl)/D, t=(-el)/12; n=t*t*(3-2*t); }
+        const j2=(rowBase+sx[c])*4;
+        const R=L.d[j2], G2=L.d[j2+1], B=L.d[j2+2];
+        const lum=(R*0.30+G2*0.59+B*0.11)/255;
         if(lum<=0.02){ o[k+3]=0; continue; }
         /* the lights keep their own colour; only how much of them survives is ours */
         o[k]=Math.min(255,Math.round(R*1.15+18));
-        o[k+1]=Math.min(255,Math.round(G*1.10+14));
+        o[k+1]=Math.min(255,Math.round(G2*1.10+14));
         o[k+2]=Math.min(255,Math.round(B*1.00+8));
         o[k+3]=Math.round(255*n*Math.pow(lum,0.72));
       }
@@ -186,8 +210,25 @@ window.IntMapNightSide=(function(){
 
   function zoomNow(){ try{ const c=GE().camera.get(); return (c&&isFinite(c.zoom))?c.zoom:99; }catch(_){ return 99; } }
 
+  /* ══ (#R196) THIS IS THE MapLibre IMPLEMENTATION OF SOMETHING CESIUM ALREADY HAS ══════════════════
+     ⚠ MEASURED, AND IT WAS A REAL REGRESSION. Built on Cesium, these layers stopped the camera:
+     `tests/r182-cesium.spec.js` ③ («easeTo lands on the camera it was asked for») passed on main in
+     33.8 s and FAILED here — the camera never left its starting longitude at all — and passed again
+     the moment this module was switched off. Whole-globe clamped-to-ground polygons are not a cheap
+     thing to hand Cesium, and a scene that cannot finish a frame cannot finish a camera flight.
+
+     It is also unnecessary there. Cesium's globe has REAL solar lighting (`globe.enableLighting`),
+     and js/cesium-engine.js turns it on from exactly the call this round now makes for every
+     basemap — `scene.setSunDirection()`, the same one that aims MapLibre's atmosphere. So Cesium
+     gets its night side from its own renderer, computed per fragment, and this module is what gives
+     MapLibre — which has no such thing — the same effect.
+     ⚠ WHAT CESIUM THEREFORE DOES NOT HAVE is the zoom ramp and the VIIRS city lights. Cesium's
+     ImageryLayer has `dayAlpha`/`nightAlpha` for exactly that; wiring the Black Marble layer through
+     them is the way to do it there, and it is NOT done here rather than shipped unverified. */
+  function engineIsMapLibre(){ try{ return GE().id()==='maplibre'; }catch(_){ return true; } }
   function build(){
     if(built) return true;
+    if(!engineIsMapLibre()) return false;
     try{ if(!GE().hasRenderer()||!GE().canDraw()) return false; }catch(_){ return false; }
     const b=beforeId();
     try{
@@ -237,7 +278,7 @@ window.IntMapNightSide=(function(){
   /* ⚠ built LAZILY. A session that never leaves street level pays nothing: no layers, no GIBS
      request, no arithmetic — the check below is a zoom comparison on moveend. */
   function consider(){
-    if(!enabled) return;
+    if(!enabled||!engineIsMapLibre()) return;
     if(zoomNow()>ZMAX+0.4){ return; }
     if(!built){ if(build()) refresh(true); }
     else refresh(false);

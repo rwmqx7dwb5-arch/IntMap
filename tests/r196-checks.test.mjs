@@ -156,6 +156,13 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
   assert.match(n, /if\(zoomNow\(\)>ZMAX\+0\.4\)\{ return; \}/, 'nothing is built until the camera is wide enough');
   /* …and the GIBS request is not on the boot path — the app opens at zoom 1.7 */
   assert.match(n, /requestIdleCallback\(_lights,\{timeout:6000\}\)/, 'the city lights wait for the first idle');
+  /* ⚠ MapLibre ONLY — measured: whole-globe clamped-to-ground polygons stopped Cesium's camera
+     outright (tests/r182-cesium ③ passed on main, failed here, passed again with this switched off),
+     and Cesium does not need them: its globe has real solar lighting, driven by the same
+     setSunDirection() call this round now makes for every basemap. */
+  assert.match(n, /function engineIsMapLibre\(\)/, 'the engine is checked');
+  assert.match(n, /if\(!engineIsMapLibre\(\)\) return false;/, 'build() refuses on a second engine');
+  assert.match(n, /if\(!enabled\|\|!engineIsMapLibre\(\)\) return;/, 'and so does the moveend hook');
   assert.ok(existsSync(join(ROOT, 'js/night-side.js')));
   assert.ok(rd('src/main.js').includes("import '../js/night-side.js';"), 'the entry imports it');
 });

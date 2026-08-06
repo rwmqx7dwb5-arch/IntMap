@@ -1167,7 +1167,16 @@ js/
                                     （ラスタレイヤーは形で切り抜けないので、マスクを画素に入れる）。
                                     画像の配置は **`imageRowLatitudes()`**（#R195）経由。⚠ ズームの傾斜は
                                     **スタイル式**（`interpolate`＋`zoom`）なので毎フレームの JS は0。
-                                    ⚠ カメラが十分広くなるまでレイヤーも GIBS 要求も**作らない**。
+                                    ⚠ カメラが十分広くなるまでレイヤーも GIBS 要求も**作らない**（要求は最初の idle）。
+                                    ⚠ **MapLibre 専用**。Cesium の globe には本物の太陽照明
+                                    （`globe.enableLighting`）があり、`scene.setSunDirection()`（今回全ベースマップで
+                                    呼ぶようにしたその呼び出し）から入るので、向こうはレンダラが夜側を描く。
+                                    —— しかも入れると**壊れる**: 全球サイズの clamped-to-ground ポリゴンで
+                                    フレームが終わらず、`tests/r182-cesium` ③（easeTo）で**カメラが一度も動かない**
+                                    （main 33.8 s pass / 入れると fail / 切ると 36.6 s pass）。
+                                    ⚠ その代わり **Cesium にはズームの傾斜と夜間光が無い**。
+                                    ImageryLayer の `dayAlpha`/`nightAlpha` がそのための仕組みだが、
+                                    **検証していないので出していない**。
 
   sat-proto.js                      (#R195 で `js/app-body.js` から259行そのまま分離／中身は #R158–#R193)
                                     **`imapsat://` タイルプロトコル**——Esri World_Imagery の取得、灰色

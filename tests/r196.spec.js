@@ -76,7 +76,11 @@ test('R196 ② the tsunami model follows the earthquake it came from', async ({ 
 
   const r = await page.evaluate(async () => {
     const until = async (f, ms) => { const e = performance.now() + ms; while (performance.now() < e) { if (f()) return true; await new Promise((r2) => setTimeout(r2, 200)); } return false; };
-    window.IntMapTsunami.open({ lng: 142.37, lat: 38.32, mw: 9.0, depth: 24, hours: 3 });
+    /* one hour of propagation, not three: this test is about WHOSE earthquake the model is
+       showing, and the answer does not depend on how far the wave has travelled. The solve is the
+       whole cost of the test — steps scale with the simulated time — and #R196's own note is that a
+       spec nobody has measured is charged the median and mis-packs the shard it lands on. */
+    window.IntMapTsunami.open({ lng: 142.37, lat: 38.32, mw: 9.0, depth: 24, hours: 1 });
     await until(() => { const s = window.IntMapTsunami.state(); return (s.sim && !s.busy) || s.err; }, 260_000);
     const first = window.IntMapTsunami.state();
 
