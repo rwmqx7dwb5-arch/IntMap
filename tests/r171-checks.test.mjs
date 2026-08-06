@@ -175,8 +175,10 @@ test('the tilt ceiling is a real setting, wired both ways, in five languages', (
   assert.match(INDEX, /tl\.value=window\.IntMapTilt\.isUnlimited\(\)\?'unlimited':'standard'/, 'opening Settings reflects the saved state');
   assert.match(INDEX, /window\.IntMapTilt\.set\(tl\.value==='unlimited'\)/, 'Apply commits it');
   const i18n = R('js/i18n.js');
+  /* (#R200) the en/jp tables for these keys are in js/i18n-late.js now — see tests/r200-checks ①. */
+  const LATE = R('js/i18n-late.js');
   for (const k of ['lblTiltLimit', 'tiltStandard', 'tiltUnlimited', 'tiltHint']) {
-    assert.ok(INDEX.includes(k + ':'), `${k} missing from the en/jp tables in index.html`);
+    assert.ok(INDEX.includes(k + ':') || LATE.includes(k + ':'), `${k} missing from the en/jp tables`);
     assert.equal((i18n.match(new RegExp('\\b' + k + ':', 'g')) || []).length, 3, `${k} must exist in de, ru and es`);
   }
 });
@@ -197,7 +199,8 @@ test('the viewpoint-altitude readout is a real setting, in five languages, and s
   assert.match(INDEX, /window\.IntMapEyeAlt\.set\(ea\.value==='on'\)/, 'Apply commits it');
   const i18n = R('js/i18n.js');
   for (const k of ['lblEyeAlt', 'eyeAltOff', 'eyeAltOn']) {
-    assert.ok(INDEX.includes(k + ':'), `${k} missing from the en/jp tables in index.html`);
+    /* (#R200) …in js/i18n-late.js now, with the rest of the late keys. */
+    assert.ok(INDEX.includes(k + ':') || R('js/i18n-late.js').includes(k + ':'), `${k} missing from the en/jp tables`);
     assert.equal((i18n.match(new RegExp('\\b' + k + ':', 'g')) || []).length, 3, `${k} must exist in de, ru and es`);
   }
   const readout = stripComments(R('js/map-readout.js'));

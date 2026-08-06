@@ -254,7 +254,16 @@ try {
     /* (#R178) …and js/geo-engine.js, which is where the renderer adapter moved. It instantiates
        IntMapModules.solid3d (the closed-body custom layer), so it is a factory CALL SITE now. */
     const engineF = ALL.find((x) => x.rel === 'js/geo-engine.js');
-    const t = read(bodyF) + '\n' + read(idx) + '\n' + (engineF ? read(engineF) : '');   // where factories are called from
+    /* (#R200) …and every js/ file js/app-body.js STATICALLY IMPORTS. Those are not "modules" in the
+       registry sense — they are pieces of the application body that now live in their own files, moved
+       there verbatim — so a factory call that travelled with one of them is still a call from the page.
+       Without this the check reported js/tile-warm.js as "defined but never called" the moment the
+       block that mounts it moved into js/label-occlusion.js: the mount had not disappeared, only the
+       file it sits in had changed. #R199 taught the reachability half of this check the same lesson. */
+    const bodySib = [...read(bodyF).matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)]
+      .map((m) => ALL.find((x) => x.rel === 'js/' + m[1])).filter(Boolean);
+    const t = read(bodyF) + '\n' + read(idx) + '\n' + (engineF ? read(engineF) : '')
+      + '\n' + bodySib.map(read).join('\n');   // where factories are called from
     const e = read(entry);
     const imported = new Set([...e.matchAll(/import\s+'\.\.\/(js\/[^']+)'/g)].map((m) => m[1]));
     /* (#R180) …and the ones reached by DYNAMIC import from a module that IS in the entry.
