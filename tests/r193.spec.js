@@ -58,9 +58,17 @@ test('R193 tsunami: the solve is off the page, streams, and animates without an 
   expect(phys.mid.arrivalS).toBeLessThan(3 * 3600);
   /* and it has not reached Guam in three hours, because Guam is more than three hours away */
   expect(phys.guam.arrivalS === null || phys.guam.arrivalS > 2.5 * 3600).toBe(true);
-  /* the model resolved a real sea floor rather than falling back to a constant depth */
-  expect(phys.sim.noData).toBe(0);
-  expect(phys.sim.seaCells).toBeGreaterThan(1000);
+  /* The model resolved a real sea floor rather than falling back to a constant depth.
+     ⚠ (#R197) `noData` IS GONE, AND ITS ABSENCE IS THE STRONGER STATEMENT. It counted the cells whose
+     DEM tile had not arrived — #R192 measured 19 % of an ocean-wide box running on a constant. There
+     are no tiles now: the sea floor is data/bathymetry.png, bundled, complete, and read before the
+     first time step, so there is no quantity left to be non-zero. What is asserted instead is the
+     domain that replaced the box — global, one fixed resolution, both hemispheres. */
+  expect(phys.sim.noData, 'there is no missing-data counter left to report').toBeUndefined();
+  expect(phys.sim.global).toBe(true);
+  expect(phys.sim.nx).toBe(1440);
+  expect(phys.sim.ny).toBe(640);
+  expect(phys.sim.seaCells).toBeGreaterThan(500000);   /* the whole ocean, not a box of it */
 
   /* ③ the picture is a texture the renderer owns, and refreshing it is cheap */
   const paint = await page.evaluate(() => {
