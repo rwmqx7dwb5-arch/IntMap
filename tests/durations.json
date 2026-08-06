@@ -55,5 +55,6 @@
   "tests/r150.spec.js": 9,
   "tests/r151.spec.js": 23,
   "tests/r156.spec.js": 12,
-  "tests/security.spec.js": 9
+  "tests/security.spec.js": 9,
+  "tests/r200.spec.js": 26
 }
