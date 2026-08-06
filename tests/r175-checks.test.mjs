@@ -159,13 +159,24 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
      4.8 MB, and putting it in src/main.js would undo that. A file nothing imports at all still
      fails, which is the case worth catching. */
   const dyn = new Set();
+  /* (#R199) …and the third form: a STATIC sibling import from another js/ file. The six subsystems the
+     Atlas kernel shed this round are named ES exports — `import { makeAtlasReply } from './atlas-reply.js'`
+     — rather than window.IntMapModules registrations, because 「読み込み順序にも依存しています」 was the
+     complaint and a named binding answers it: the bundler resolves it, a typo is a build error, and the
+     import graph (not this list) fixes the order. Reachability is what this test asserts, and a named
+     import is the strongest evidence of it, not the weakest. */
+  const sib = new Set();
   for (const f of jsFiles) {
-    for (const m of readFileSync(join(ROOT, 'js', f), 'utf8').matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+    const t = readFileSync(join(ROOT, 'js', f), 'utf8');
+    for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+    for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
+    for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
   }
-  for (const f of jsFiles) assert.ok(imported.includes('js/' + f) || dyn.has('js/' + f),
+  for (const f of jsFiles) assert.ok(imported.includes('js/' + f) || dyn.has('js/' + f) || sib.has('js/' + f),
     `js/${f} is never imported by src/main.js, and no reachable module import()s it either`);
   for (const rel of imported) assert.ok(existsSync(join(ROOT, rel)), `src/main.js imports ${rel}, which does not exist`);
   for (const rel of dyn) assert.ok(existsSync(join(ROOT, rel)), `a js/ module dynamically imports ${rel}, which does not exist`);
+  for (const rel of sib) assert.ok(existsSync(join(ROOT, rel)), `a js/ module imports ${rel}, which does not exist`);
   /* (#R178) js/geo-engine.js is imported FIRST, and that ordering is load-bearing: every module below
      is written against window.IntMapGeoEngine and calls it from its factory, which runs at import
      time. newsgeo stays first among the MODULES. */
@@ -181,20 +192,44 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
   assert.equal(new Set(imported).size, imported.length, 'no module is imported twice');
 });
 
-test('R175 ③: no js/ module has a top-level declaration — the reason ESM is safe here', () => {
+test('R175 ③: no js/ module has an UNEXPORTED top-level declaration, and every export is imported by name', () => {
   /* This is THE property the whole migration rests on. A classic script's top-level `const`/`function`
      is a global; a module's is private. Every one of these files publishes itself on `window` and has
      no top-level declaration at all, so bundling them cannot change a single name resolution — and if
-     someone ever adds one, this test fails before the silent breakage ships. */
+     someone ever adds one, this test fails before the silent breakage ships.
+     ⚠ (#R199) …with one form now named EXPLICITLY rather than passing by accident: `export function
+     makeAtlasReply(…)`. Until this round the walk below matched `FunctionDeclaration` on ast.body, and an
+     exported one is wrapped in an ExportNamedDeclaration — so it would have slipped through silently, and
+     a test that lets a whole category through by accident is not a test. The category is ALLOWED, and the
+     reason is the invariant itself rather than an exception to it: an exported binding is module-private
+     exactly like a non-exported one, it cannot become a global, and it is reachable ONLY through an
+     explicit `import` — which is strictly more checkable than the window.IntMapModules registry the user
+     asked us to stop depending on. So: unexported top-level declarations still fail (they are the ones
+     that would have been globals), and each export must be imported somewhere by name, or it is dead. */
   const offenders = [];
+  const exported = [];
+  const importedNames = new Set();
   for (const f of jsFiles) {
-    const ast = acorn.parse(readFileSync(join(ROOT, 'js', f), 'utf8'), { ecmaVersion: 'latest', sourceType: 'module' });
+    const src = readFileSync(join(ROOT, 'js', f), 'utf8');
+    for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\//g)) {
+      for (const n of m[1].split(',')) { const nm = n.trim().split(/\s+as\s+/)[0].trim(); if (nm) importedNames.add(nm); }
+    }
+    const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
     for (const n of ast.body) {
+      if (n.type === 'ExportNamedDeclaration' && n.declaration) {
+        const d = n.declaration;
+        if (d.id) exported.push({ file: f, name: d.id.name });
+        else (d.declarations || []).forEach((x) => { if (x.id && x.id.name) exported.push({ file: f, name: x.id.name }); });
+        continue;
+      }
+      if (n.type === 'ExportDefaultDeclaration' || n.type === 'ExportAllDeclaration') { offenders.push(`js/${f}: default/star export — export the factory by name`); continue; }
       if (n.type === 'FunctionDeclaration' || n.type === 'ClassDeclaration') offenders.push(`js/${f}: ${n.type} ${n.id && n.id.name}`);
       if (n.type === 'VariableDeclaration') offenders.push(`js/${f}: ${n.kind} declaration`);
     }
   }
-  assert.deepEqual(offenders, [], 'these must be wrapped or attached to window instead:\n' + offenders.join('\n'));
+  assert.deepEqual(offenders, [], 'these must be wrapped, exported, or attached to window instead:\n' + offenders.join('\n'));
+  const dead = exported.filter((e) => !importedNames.has(e.name)).map((e) => `js/${e.file}: ${e.name}`);
+  assert.deepEqual(dead, [], 'exported but never imported by name — dead code:\n' + dead.join('\n'));
 });
 
 test('R175 ③: index.html is markup again — the program is not inlined in it', () => {

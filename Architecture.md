@@ -940,9 +940,13 @@ js/
   cameras.js                        (#R164) ライブカメラレイヤー（Overpass webcams＋TfL/Caltrans等・`#dl-webcams` 行）。27KB。
                                     **唯一 window.* を公開しないモジュール**＝prod-smoke はDOM行 `#dl-webcams` で検証
   atlas-console.js                  (#R165) **Atlasカーネル `window.IntMapConsole`**（NLコンソール＝意図ディスパッチ・
-                                    約90アクションカタログ・AIリサーチ/ビジョン・ハイライト/計測/半径実行・返信描画）。941KB＝最大。
+                                    約90アクションカタログ・AIリサーチ/ビジョン・ハイライト/計測/半径実行・返信描画）。
                                     ファクトリ引数＝(map, IM_HOST)。**初の READ-WRITE ホストメンバー**利用モジュール
                                     （measurePoints/radiusColor/radiusKm/unitMode/userTheme を setter 経由で書く。§3.1 #R165）
+                                    ⚠ (#R199) **6,580行 → 5,237行**。6つの部分系が下記の**本物の ES モジュール**として
+                                    出て行った（`import { makeAtlasReply } from './atlas-reply.js'` ——
+                                    `window.IntMapModules` にも `src/main.js` の順序付きリストにも載らない）。
+                                    残った5,209行は**1バイトも変わっていない**（#R199 で機械的に照合）。
   ── 以下 (#R166) の7本（第5弾・590KB／5,048行）。**1ファイル＝1ブロックではなく「主題ごとに束ねる」**
      （41ブロックを7ファイルに）。各ファイルが複数のファクトリを持ち、**どのファクトリも元のブロックが
      あった位置でそのまま呼ばれる**＝実行順は不変（§3.1 #R166）─────────────
@@ -1186,6 +1190,57 @@ js/
                                     ⚠ その代わり **Cesium にはズームの傾斜と夜間光が無い**。
                                     ImageryLayer の `dayAlpha`/`nightAlpha` がそのための仕組みだが、
                                     **検証していないので出していない**。
+
+  ── 以下 (#R199) の7本。**この7本だけは `window.IntMapModules` に載らない**——名前付き ES export を
+     `import` で受ける（`makeAtlasReply` など）。理由は指摘そのもの：「モジュールは依然として
+     window.IntMapModules に登録され、読み込み順序にも依存しています」。名前付き束縛なら**バンドラが解決する**ので
+     綴り違いは実行時の undefined ではなく**ビルドエラー**になり、順序は `src/main.js` の一覧ではなく
+     **import グラフ**が決める。ホストの closure 値は `HOST`（IM_HOST）と `CTX`（呼び出し側の束縛そのものを
+     shorthand で渡す）で受け、**元の名前に再束縛**するので本文は逐語のまま。
+     `tests/r199-checks.test.mjs` が**両ファイルから導出**して「返す名前＝受け取る名前」「読む CTX＝渡す CTX」を検査する ───
+
+  atlas-reply.js                    (#R199 で `js/atlas-console.js` から248行そのまま分離／中身は #R62–#R159)
+                                    **返信の描画** `makeAtlasReply`——重複段落の除去、段組みの整形、
+                                    KaTeX/コード/GFM表の保護パス、タイポグラフィ、ChatGPT風ソースカード
+                                    （アグリゲータURL復号・SNS/UGC除外）。地図もアプリ状態も触らない純テキスト→HTML。
+                                    借りる名前7・返す名前7。
+  atlas-geo-resolve.js              (#R199 で `js/atlas-console.js` から452行そのまま分離／中身は #R44–#R143)
+                                    **場所の解決とカメラの寄せ** `makeAtlasGeoResolve`——直示語（here/そこ）と
+                                    「現在地」、Nominatim ジオコード（首都→重心の罠つき）、堅牢な範囲、
+                                    地域ボックスと方角スライス、ジオ検証の階段、GPT地域リゾルバ（IndexedDB
+                                    キャッシュ＋自己テスト）、`placeExtent`/`flyToBox`。借りる名前22・返す名前16。
+                                    ⚠ **逐語でない行が1行だけある**：`geocode()` の直示フォールバックが読む
+                                    `_lastPlace` はカーネルが5か所で再代入する `let` なので、**生きたサンク**
+                                    `CTX.lastPlace()` 経由にした（ファクトリ時に捕まえると古い値になる）。
+  atlas-controls.js                 (#R199 で `js/atlas-console.js` から105行そのまま分離／中身は #R43–#R82)
+                                    **本物のUIコントロールを押す面** `makeAtlasControls`——カーネル優先の実行経路
+                                    （`kexec`）、コントロールの検索と実行とカタログ、`window.IntMap*` のメソッド
+                                    ディスパッチ、Atlasが名指しできないコントロールを報告する `IntMapUIAudit`。
+  atlas-sources.js                  (#R199 で `js/atlas-console.js` から178行そのまま分離／中身は #R69–#R80)
+                                    **外部の証拠源** `makeAtlasSources`——Wikidata の元首/首相、GDELT と
+                                    Google News の記事取得、Wikipedia 要約、Overpass の POI セレクタ表、
+                                    Wikidata POI クエリ。取得と正規化だけ＝**描画は一切しない**。
+  atlas-sims.js                     (#R199 で `js/atlas-console.js` から239行そのまま分離／中身は #R72–#R135)
+                                    **時間を進める重ね描き** `makeAtlasSims`——大円飛行、コリオリ補正つきの
+                                    弾道解と地上軌跡と高度プロファイル、爆風リング、標高グリッド、
+                                    歴史勢力図の塗り。すべて「幾何を計算し、エンジンに渡し、進める」形。
+  atlas-verify.js                   (#R199 で `js/atlas-console.js` から149行そのまま分離／中身は #R150/#R156)
+                                    **回答をコード側で検証する** `makeAtlasVerify`——名前の正規化と確信ゲート、
+                                    本文からの地名抽出、**厳密有理数**での算術検証（浮動小数を使わない）、
+                                    引用ドメインの監査、mapped/unplaced/ambiguous の判定。全部が純関数。
+  theme-sky.js                      (#R199 で `js/app-body.js` から233行分離／中身は #R99–#R196)
+                                    **色と太陽の位置** `makeThemeSky`——UIテーマとスキン、ベースマップの
+                                    light/dark 対、そこから決まるラベル/国境の可視、そして #R196 の本物の大気
+                                    （直下点、カメラ位置での太陽高度から決まる地平線色、MapLibre の sky 7項目、
+                                    マスタークロックと1分ティックの再照準）。
+                                    ⚠ **233行中222行が逐語**。残り11行は全部**同じ1つの理由**＝#R165 の規則：
+                                    app-body が実行時に**再代入する** closure 値は IM_HOST の生きたアクセサ経由で読む
+                                    （`userTheme`＝読み書き両方・`currentMapType`→`HOST.mapType`・`namesOn`・
+                                    `bordersOn`・`satActive`・`satPanelDismissed`）。それ以外＝関数は全部 CTX で元の名前のまま。
+                                    ⚠ `js/theme-sky.js` は `appShell()` に**入れていない**——入れると
+                                    「シェルが小さくなった」という測定そのものが無意味になる。代わりに
+                                    #R186/#R187/#R196 の空のアサーションを**このファイル名で直接**訊くようにした
+                                    （連結を検索するより厳しい）。
 
   sat-proto.js                      (#R195 で `js/app-body.js` から259行そのまま分離／中身は #R158–#R193)
                                     **`imapsat://` タイルプロトコル**——Esri World_Imagery の取得、灰色
