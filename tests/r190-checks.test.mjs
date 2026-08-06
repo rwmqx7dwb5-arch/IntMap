@@ -68,7 +68,8 @@ test('R190 default layers: the cables come through our own origin', () => {
     '…and before the volunteer proxies, which are now only the last resort');
 
   /* the stored sessions written while that dependency existed are healed once */
-  const body = read('js/app-body.js');
+  /* (#R200) …in js/session-tabs.js, where the session block lives since this round. */
+  const body = read('js/session-tabs.js');
   assert.match(body, /defv:190/, 'the snapshot stamps the new generation');
   assert.match(body, /if\(!\(\+s\.defv>=190\)\)/, 'and an older stamp gets the default-on ids back once');
 });

@@ -242,7 +242,9 @@ window.IntMapSky=(function(){
     return cv;
   }
   function mapClock(){
-    try{ const T=window.IntMapTime; if(T&&T.now) { const d=T.now(); const ms=(d instanceof Date)?d.getTime():+d; if(isFinite(ms)) return ms; } }catch(_){}
+    /* ⚠ (#R200) `T.now` is not on window.IntMapTime (see js/theme-sky.js) — the star field had been
+       drawn for the wall clock since #R187 whatever the master clock said. `when()` is the real one. */
+    try{ const T=window.IntMapTime; if(T&&T.when) { const d=T.when(); const ms=(d instanceof Date)?d.getTime():+d; if(isFinite(ms)) return ms; } }catch(_){}
     return Date.now();
   }
   /* Dark theme + a globe + an engine with no sky of its own. `forced` is the manual override the

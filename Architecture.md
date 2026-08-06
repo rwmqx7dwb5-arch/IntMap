@@ -1242,6 +1242,49 @@ js/
                                     #R186/#R187/#R196 の空のアサーションを**このファイル名で直接**訊くようにした
                                     （連結を検索するより厳しい）。
 
+  ── 以下 (#R200) の6本。#R199 と**同じ仕組み**（名前付き ES export ＋ `import`、`window.IntMapModules`
+     にも `src/main.js` の一覧にも**載せない**）で、今度は `js/app-body.js` を 5,149 → **4,685行**にした。
+     借りる名前は CTX（呼び出し側の束縛を shorthand で渡す＝元の名前に再束縛するので本文は逐語）、
+     app-body が**再代入する**値だけ IM_HOST の生きたアクセサ（#R165 の規則）。
+     移した504行のうち**490行が1バイトも変わっていない**。`tests/r200-checks.test.mjs` が
+     **両ファイルから導出**して検査する ───
+
+  session-tabs.js                   (#R200 で `js/app-body.js` から173行分離／中身は #R11–#R195)
+                                    **タブと、リロードをまたいで戻ってくるもの** `makeSessionTabs`——
+                                    セッション永続化（`intmap_session2`：ONのレイヤー・開いているタブ・
+                                    ベースマップ・3-D・左右サイドバー・時間旅行の年、`defv` 世代印つき）、
+                                    デスクトップ初回起動の既定タブ、タブのIntMapOSコマンド登録、
+                                    タブ文字サイズのフィット、レイヤーon/offのOSコマンド表。
+                                    借りる名前3（CTX）＋3（HOST: `mode`/`mapType`/`terrain3D`）・返す名前0。
+                                    ⚠ #R186/#R188/#R189/#R190/#R195/#R170 の**セッション系アサーションは
+                                    このファイル名で直接**訊くように直した（連結を検索するより厳しい）。
+  layer-dropdown.js                 (#R200 で `js/app-body.js` から82行分離／中身は #R18–#R62)
+                                    **レイヤーメニューとそのアコーディオン** `makeLayerDropdown`——開閉、
+                                    外側クリックで閉じる、`#map-container` への持ち上げ（入れ子
+                                    backdrop-filter の回避）、グループの折り畳み。返す名前は `_collapseGroup` 1つ。
+  layer-favs.js                     (#R200 で `js/app-body.js` から61行分離／中身は #R16/#R17)
+                                    **★を付けたレイヤーとチップ列** `makeLayerFavs`——レイヤー行の読み取り
+                                    （`layerCbInfo`）、★の注入、チップの描画。返す名前2。
+                                    ⚠ **この2つ＋`_collapseGroup` は `const` で受け取ってはいけない**。
+                                    `js/map-ui.js` が IM_HOST 経由でこれらを**1,800行手前で**掴むので、
+                                    const だと TDZ で `ReferenceError` になり**起動そのものが落ちる**
+                                    （このラウンドで実際に落とした）。app-body 側は **巻き上げ関数の shim**
+                                    （`function layerCbInfo(){ return _IM_LFAVS.layerCbInfo.apply(this,arguments); }`）
+                                    ——移す前と同じく「名前は最初の行から在る」を保つ。#R168 の規則そのもの。
+  premium-plan.js                   (#R200 で `js/app-body.js` から55行分離／中身は #R14)
+                                    **プレミアム欄**（全機能無料）`makePremiumPlan`——自前のi18nキーと
+                                    スタイルとDOMを持つ自己完結UI。`refreshProUI()` が全部を解放し
+                                    `openProModal()` は no-op。借りる名前3・返す名前0。
+  screenshot.js                     (#R200 で `js/app-body.js` から36行分離／中身は #R18)
+                                    **スクリーンショット** `makeScreenshot`——地図キャンバス＋凡例＋
+                                    スケールを1枚のPNGに合成（コントロールは外す）。**idle を待ってから**
+                                    撮るので、描き終わったフレームが写る。借りる名前5・返す名前0。
+  time-countries.js                 (#R200 で `js/app-body.js` から97行分離／中身は #R94)
+                                    **その年のCountriesタブ** `makeTimeCountries`——マスタークロックが過去に
+                                    行くと、その年の World Bank 実データを取得して `countryStats` に重ね、
+                                    塗り・行・国カードを当時の姿にする（「今」に戻すと完全に復元）。
+                                    借りる名前4＋1（HOST: `countryDataLoaded`）・返す名前0。
+
   sat-proto.js                      (#R195 で `js/app-body.js` から259行そのまま分離／中身は #R158–#R193)
                                     **`imapsat://` タイルプロトコル**——Esri World_Imagery の取得、灰色
                                     プレースホルダの判定（≤3,500 B）、最も近い実写祖先からの切り出し、
@@ -2387,6 +2430,28 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 
 **夜側と夜間光（`js/night-side.js`）。** 上記モジュール表を参照。ズームの傾斜は**スタイル式**で、
 毎フレームの JavaScript は0。太陽が動いたときだけ塗り直す（1分ごと＋時計イベント）。
+
+**(#R200) 暗さは「目に届く合成値」で書く。** 「引いたときの黒さをよりきつくして」に対し、まず
+**算術を直した**：#R196 は入れ子の5枚に `SHADE_MAX/RINGS.length` という**同じ**不透明度を与え、
+その総和を全体の暗さと呼んでいた。⚠ **アルファは足し算ではない**——0.156 を5枚重ねても
+`(1−0.156)^5 = 0.428` が下から見えるので、最も深い夜は**57%**（アプリの既定ズーム1.7では**51%**）で、
+隣に書いてある 0.78 は何も意味していなかった。今は `NIGHT_PROFILE`＝**各リングで実際に届く合成値**
+（0°:0.10 / −3°:0.34 / −6°:0.62 / −9°:0.85 / −12°:**0.94**）を唯一の記述とし、
+各リングのアルファは `1−Π(1−aᵢ)` を解いて**導出**する（#R198 のラベルサイズと同じ形＝関係を1か所に置く）。
+0° を #R196 より**明るく**したのは意図的で、終端線に段差があると「夜」ではなく「ポリゴン」に見えるため。
+⚠ ズーム式は**最外側のまま**で、リングの選択は**ストップの出力側**の `match`（zoom 式を入れ子にすると
+MapLibre は黙って拒否する＝#R196 が踏んだ罠）。実測（z1.2・対日点・海上・効果ON/OFF比較）:
+**輝度 191.6 → 24.7（−87%）**、薄明側は −62%〜−80% の階調。
+
+**(#R200) 太陽はマスタークロックに従う（2つの独立した欠陥を修正）。** ①`js/theme-sky.js` の
+`IntMapTime.on(...)` 登録は**ファクトリ本体**にあり、`window.IntMapTime` が作られる**約2,200行手前**で
+走っていたので**一度も登録されていなかった**（`_applySkyAtmosphere` から呼ぶ `_followClock()` に変更）。
+②⚠ **`IntMapTime.now()` は存在しない**。公開面は `get/when/iso/year/isLive/min/state/on/set/setYear/
+setDaysAgo/setNow` で、`now` は IIFE 内の**私有**ヘルパ。`if(T&&T.now)` と書かれた4か所
+（`theme-sky` / `night-side` / `space-sky` / `cesium-engine`）は**全て常に false** で、空・終端線・
+夜間光・星空・Cesium の時計が**壁時計のまま**だった。全て `when()` に修正し、
+`tests/r200-checks.test.mjs` が **`js/app-body.js` から公開面を読み出して**照合する。
+実測（東京・2026-06-21）: 15:00Z（現地深夜）で地平線 `#0a1526`・03:00Z（現地正午）で `#c9dcf0`。
 
 **衛星タイルは一度しか取らない（`src/sat-worker.js` / `js/sat-proto.js` / `js/tile-warm.js`）。**
 3つの独立した「同じタイルをもう一度取る」経路を閉じた: ①HTTP fetch に **abort signal を渡さない**

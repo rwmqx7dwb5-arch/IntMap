@@ -367,7 +367,10 @@ window.IntMapCesiumEngine=(function(){
         const syncClock=()=>{ try{
           const T=window.IntMapTime; const c=this._widget&&this._widget.clock; if(!c) return;
           let ms=null, live=true;
-          if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; }
+          /* ⚠ (#R200) `T.now` is not on window.IntMapTime (see js/theme-sky.js), so `ms` stayed null
+             and the `if(ms==null) return;` below made this heartbeat a no-op: Cesium's clock — and
+             therefore its real solar lighting — never followed the master clock at all. */
+          if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; }
           try{ if(T&&T.isLive) live=!!T.isLive(); }catch(_){}
           if(ms==null) return;
           c.shouldAnimate=live;
