@@ -56,8 +56,22 @@ try {
 
 /* ── the two lazy ones. Failures are swallowed on purpose: both features already handle "the global is
       not there" and saying so twice would only add a console error to a working page. */
-import('html2canvas').then((m) => { window.html2canvas = m.default || m; }).catch(() => {});
-import('katex').then(async (m) => {
-  await import('katex/dist/katex.min.css');
-  window.katex = m.default || m;
-}).catch(() => {});
+/* ⚠ (#R193) …AND "LAZY" HAS TO MEAN LATER, NOT JUST SEPARATELY. The comment above says these
+      "cost nothing until first paint is done", and measured on a cold load that was not true: being
+      their own chunks put them on their own requests, but the requests were issued the instant this
+      module evaluated — katex 258 KB and html2canvas 198 KB, both starting at 373 ms, ahead of the
+      first base-map tile. Splitting a bundle only helps if the split half is also DEFERRED.
+      So the same two dynamic imports, behind the browser's own idle signal, with a ceiling so a
+      permanently busy page still ends up with them. The contract at the call sites is unchanged:
+      asynchronously available, gracefully absent, never awaited. */
+(function lazyVendors() {
+  const load = () => {
+    import('html2canvas').then((m) => { window.html2canvas = m.default || m; }).catch(() => {});
+    import('katex').then(async (m) => {
+      await import('katex/dist/katex.min.css');
+      window.katex = m.default || m;
+    }).catch(() => {});
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(load, { timeout: 6000 });
+  else setTimeout(load, 2500);
+})();

@@ -921,6 +921,78 @@ window.IntMapCesiumEngine=(function(){
       this._layers.filter(l=>l.def.source===id).forEach(l=>this._rebuildLayer(l));
       return true;
     }
+    /* ══ (#R193) THE ANIMATED QUAD, AND WHY IT TAKES TWO CANVASES HERE ═══════════════════════════
+       The contract (js/geo-engine.js) is "here is a draw callback; upload what it paints, whenever I
+       say the pixels moved". MapLibre satisfies it with one canvas and a `canvas` source.
+
+       Cesium cannot, and the reason is worth writing down because it looks like the code is being
+       wasteful. A material's `image` uniform is compared BY IDENTITY: `Material` only rebuilds its
+       texture when the value it is handed is not the value it already has. Hand back the same canvas
+       element with new pixels in it and nothing happens — the globe keeps showing the first frame it
+       ever saw, forever, with no error anywhere. So the adapter keeps TWO canvases and alternates:
+       paint into the one that is not currently on screen, then hand that one over, and the identity
+       really has changed. The extra canvas costs one allocation for the life of the layer; painting
+       happens once per touch either way.
+
+       It is an ENTITY rectangle rather than an imagery layer for the same class of reason: Cesium's
+       imagery is tiled and cached, so a provider would have to invalidate and re-request every tile
+       per frame. A rectangle with an ImageMaterialProperty is one quad and one texture. */
+    addDynamicImage(id,o,before){
+      if(!o||typeof o.draw!=='function') return false;
+      if(!Cesium) return false;
+      try{
+        this._dynImg=this._dynImg||new Map();
+        this.removeDynamicImage(id);
+        const W=Math.max(1,o.width|0), H=Math.max(1,o.height|0);
+        const mk=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; return c; };
+        const rec={ id, draw:o.draw, cv:[mk(),mk()], at:0, W, H, opacity:(o.opacity==null?1:o.opacity) };
+        const c=o.coordinates||[];
+        const lngs=c.map(p=>p[0]), lats=c.map(p=>p[1]);
+        rec.rect=Cesium.Rectangle.fromDegrees(Math.min.apply(null,lngs),Math.min.apply(null,lats),
+                                              Math.max.apply(null,lngs),Math.max.apply(null,lats));
+        try{ rec.draw(rec.cv[0].getContext('2d'),W,H); }catch(_){}
+        rec.entity=this._dynEntities().add({
+          rectangle:{ coordinates:rec.rect, height:0,
+            material:new Cesium.ImageMaterialProperty({
+              image:new Cesium.CallbackProperty(()=>rec.cv[rec.at],false),
+              transparent:true,
+              color:new Cesium.CallbackProperty(()=>Cesium.Color.WHITE.withAlpha(rec.opacity),false) }) }
+        });
+        this._dynImg.set(id,rec);
+        this._scene.requestRender();
+        return true;
+      }catch(_){ return false; }
+    }
+    _dynEntities(){
+      if(!this._dynDS){ this._dynDS=new Cesium.CustomDataSource('im-dyn'); this._dsColl.add(this._dynDS); }
+      return this._dynDS.entities;
+    }
+    touchDynamicImage(id){
+      const rec=this._dynImg&&this._dynImg.get(id); if(!rec) return false;
+      const next=rec.at^1;
+      try{ rec.draw(rec.cv[next].getContext('2d'),rec.W,rec.H); }catch(_){ return false; }
+      rec.at=next;                    /* the CallbackProperty now returns a different object — see above */
+      try{ this._scene.requestRender(); }catch(_){}
+      return true;
+    }
+    setDynamicImageOpacity(id,v){ const rec=this._dynImg&&this._dynImg.get(id); if(!rec) return false;
+      rec.opacity=Math.max(0,Math.min(1,+v)); try{ this._scene.requestRender(); }catch(_){} return true; }
+    setDynamicImageCoords(id,coords){
+      const rec=this._dynImg&&this._dynImg.get(id); if(!rec) return false;
+      if(!Cesium) return false;
+      try{ const lngs=coords.map(p=>p[0]), lats=coords.map(p=>p[1]);
+        rec.rect=Cesium.Rectangle.fromDegrees(Math.min.apply(null,lngs),Math.min.apply(null,lats),
+                                              Math.max.apply(null,lngs),Math.max.apply(null,lats));
+        rec.entity.rectangle.coordinates=rec.rect; this._scene.requestRender(); return true; }catch(_){ return false; }
+    }
+    hasDynamicImage(id){ return !!(this._dynImg&&this._dynImg.get(id)); }
+    removeDynamicImage(id){
+      const rec=this._dynImg&&this._dynImg.get(id); if(!rec) return false;
+      try{ this._dynEntities().remove(rec.entity); }catch(_){}
+      this._dynImg.delete(id);
+      try{ this._scene.requestRender(); }catch(_){}
+      return true;
+    }
     /* ══ (#R181) `sourcedata` HAS TO CARRY `isSourceLoaded`, OR THREE HANDLERS ARE DEAD ═══════
        The event fired — 12 times against MapLibre's 95 in the audit, which looked like a mere
        difference of frequency — but it carried only `{sourceId}`, and every subscriber in the app
@@ -2067,6 +2139,14 @@ window.IntMapCesiumEngine=(function(){
       sourceData(id){ const v=V(); return v?v.sourceData(id):null; },
       setSourceTiles(id,t){ const v=V(); return v?v.setSourceTiles(id,t):false; },
       updateImageSource(id,o){ const v=V(); return v?v.updateImageSource(id,o):false; },
+      /* (#R193) the animated geographic quad — see the view class for why this engine needs two
+         canvases where MapLibre needs one */
+      addDynamicImage(id,o,b){ const v=V(); return v?v.addDynamicImage(id,o,b):false; },
+      touchDynamicImage(id){ const v=V(); return v?v.touchDynamicImage(id):false; },
+      setDynamicImageOpacity(id,x){ const v=V(); return v?v.setDynamicImageOpacity(id,x):false; },
+      setDynamicImageCoords(id,c){ const v=V(); return v?v.setDynamicImageCoords(id,c):false; },
+      hasDynamicImage(id){ const v=V(); return v?v.hasDynamicImage(id):false; },
+      removeDynamicImage(id){ const v=V(); return v?v.removeDynamicImage(id):false; },
       hasLayer(id){ const v=V(); return v?v.hasLayer(id):false; },
       getLayer(id){ const v=V(); return v?v.getLayer(id):null; },
       addLayer(d,b){ const v=V(); if(v) v.addLayer(d,b); },

@@ -1115,6 +1115,78 @@ function _m(){ return window.__imap||null; }
     queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
     hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)) m.addSource(id,d); },
     setSourceData(id,data){ const m=_m(); const s=m&&m.getSource(id); if(s&&s.setData) s.setData(data); }, removeSource(id){ const m=_m(); try{ if(m&&m.getSource(id)) m.removeSource(id); }catch(_){} },
+    /* ══ (#R193) A PICTURE OVER A GEOGRAPHIC QUAD THAT CHANGES EVERY FRAME ══════════════════════
+       The app had exactly one way to put a computed field on the map: an `image` source holding a
+       URL, repointed with updateImage. Every consumer therefore paid a PNG ENCODE plus a base64
+       data-URL plus a decode for each new picture, which is fine at one picture per user action and
+       ruinous at sixty per second — measured on the #R192 tsunami panel, that path alone held
+       playback to 9.3 fps and advanced two frames in eight seconds.
+
+       So the contract gets the thing an animation actually needs: a surface the app paints into and
+       an engine that uploads it as a texture, with no encoder anywhere. `draw(ctx, w, h)` is called
+       by the ENGINE whenever it needs the current picture, which is what lets the two renderers
+       disagree about how to get it:
+
+         · MapLibre has a `canvas` source. One canvas, painted on demand; `play()`/`pause()` is how
+           that source is told the pixels moved, and pausing between touches is what keeps a still
+           frame from re-uploading a texture sixty times a second for no reason.
+         · Cesium re-uploads a material's image only when the VALUE changes by identity, so the same
+           canvas handed back every frame would never appear to change. Its adapter keeps two and
+           alternates — see js/cesium-engine.js. The app must not know that, which is the whole point
+           of it being a draw callback rather than a canvas.
+
+       An engine without either answers false and the caller keeps whatever it had. */
+    addDynamicImage(id,o,before){
+      const m=_m(); if(!m||!o||typeof o.draw!=='function') return false;
+      try{
+        const W=Math.max(1,o.width|0), H=Math.max(1,o.height|0);
+        let cv=this._dynImg&&this._dynImg.get(id);
+        if(!cv){
+          cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+          if(!this._dynImg) this._dynImg=new Map();
+          this._dynImg.set(id,cv);
+        } else if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
+        cv._imDraw=o.draw;
+        try{ o.draw(cv.getContext('2d'),W,H); }catch(_){}
+        if(!m.getSource(id)) m.addSource(id,{type:'canvas',canvas:cv,coordinates:o.coordinates,animate:false});
+        const lid=id+'-lyr';
+        if(!m.getLayer(lid)) m.addLayer({ id:lid, type:'raster', source:id,
+          paint:{ 'raster-opacity':(o.opacity==null?1:o.opacity), 'raster-fade-duration':0,
+                  'raster-resampling':(o.smooth===false?'nearest':'linear') } },
+          (before&&m.getLayer(before))?before:undefined);
+        return true;
+      }catch(_){ return false; }
+    },
+    /* the pixels moved: repaint and let the source copy the canvas on the next frame, then stop it
+       copying again until the next touch */
+    touchDynamicImage(id){
+      const m=_m(); if(!m) return false;
+      const cv=this._dynImg&&this._dynImg.get(id); if(!cv) return false;
+      try{ cv._imDraw&&cv._imDraw(cv.getContext('2d'),cv.width,cv.height); }catch(_){}
+      try{
+        const s=m.getSource(id); if(!s||!s.play) return false;
+        s.play();
+        /* the stop timer is PER IMAGE. One shared timer would let a second dynamic image's touch
+           cancel the first one's pause, and a canvas source left playing repaints the whole map every
+           frame forever — the exact cost this primitive exists to avoid. */
+        if(cv._imStop) clearTimeout(cv._imStop);
+        cv._imStop=setTimeout(()=>{ try{ const s2=_m()&&_m().getSource(id); s2&&s2.pause&&s2.pause(); }catch(_){} },140);
+        m.triggerRepaint&&m.triggerRepaint();
+        return true;
+      }catch(_){ return false; }
+    },
+    setDynamicImageOpacity(id,v){ const m=_m(); try{ if(m&&m.getLayer(id+'-lyr')) m.setPaintProperty(id+'-lyr','raster-opacity',v); return true; }catch(_){ return false; } },
+    setDynamicImageCoords(id,c){ const m=_m(); try{ const s=m&&m.getSource(id); if(s&&s.setCoordinates){ s.setCoordinates(c); return true; } }catch(_){} return false; },
+    hasDynamicImage(id){ const m=_m(); return !!(m&&m.getSource(id)); },
+    removeDynamicImage(id){
+      const m=_m();
+      try{ const c0=this._dynImg&&this._dynImg.get(id); if(c0&&c0._imStop) clearTimeout(c0._imStop); }catch(_){}
+      try{ if(m&&m.getLayer(id+"-lyr")) m.removeLayer(id+"-lyr"); }catch(_){}
+      try{ const s=m&&m.getSource(id); if(s&&s.pause) s.pause(); }catch(_){}
+      try{ if(m&&m.getSource(id)) m.removeSource(id); }catch(_){}
+      try{ this._dynImg&&this._dynImg.delete(id); }catch(_){}
+      return true;
+    },
     hasLayer(id){ const m=_m(); return !!(m&&m.getLayer(id)); }, addLayer(d,b){ const m=_m(); if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
     setVisible(id,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }, isVisible(id){ const m=_m(); if(!(m&&m.getLayer(id))) return false; try{ return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return true; } },
     setPaint(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setPaintProperty(id,p,v); }, setLayout(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,p,v); },
@@ -1459,6 +1531,15 @@ function _m(){ return window.__imap||null; }
       setFilter:(id,f)=>A().setFilter(id,f), getFilter:id=>A().getFilter(id),
       getFeatureState:f=>A().getFeatureState(f),
       updateImage:(id,o)=>A().updateImageSource(id,o),
+      /* (#R193) a geographic quad the app repaints every frame, with no encoder in the path — see
+         the adapter. `draw(ctx,w,h)` is called BY THE ENGINE; `touchDynamicImage` says the pixels
+         moved. An engine without the primitive answers false and the caller keeps its old path. */
+      addDynamicImage:(id,o,b)=>A().addDynamicImage?A().addDynamicImage(id,o,b):false,
+      touchDynamicImage:id=>A().touchDynamicImage?A().touchDynamicImage(id):false,
+      setDynamicImageOpacity:(id,v)=>A().setDynamicImageOpacity?A().setDynamicImageOpacity(id,v):false,
+      setDynamicImageCoords:(id,c)=>A().setDynamicImageCoords?A().setDynamicImageCoords(id,c):false,
+      hasDynamicImage:id=>A().hasDynamicImage?A().hasDynamicImage(id):false,
+      removeDynamicImage:id=>A().removeDynamicImage?A().removeDynamicImage(id):false,
       sourceData:id=>A().sourceData?A().sourceData(id):null,
       setSourceTiles:(id,t)=>A().setSourceTiles?A().setSourceTiles(id,t):false },
     /* (#R178) THE SCENE rather than a layer — sky, light, terrain attachment, sprite atlas and

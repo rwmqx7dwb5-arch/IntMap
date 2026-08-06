@@ -773,11 +773,23 @@ window.__imBuild='R191';   /* (#R121) build marker — bump when verifying that 
      so a CDN outage can never break an Atlas reply. auto-render is NOT used — the renderer calls
      katex.renderToString(…, {throwOnError:false}) per expression so a single broken formula never breaks the reply. -->
 
+<!-- Microsoft Clarity.
+     (#R193) 「起動時の読み込みをもっと早く。」 The tag itself is unchanged and so is the project id; the
+     only difference is WHEN the <script> is inserted. It used to go in the moment this line parsed, so
+     it competed for the connection and the main thread with the first map tiles — measured on a
+     CPU-throttled phone, Clarity's own frames accounted for ~770 ms of an eight-second satellite pan,
+     with its DOM measurement (getBoundingClientRect, measureText) on top. Inserting it at the
+     browser's first idle keeps the tool and everything it records, and takes it off the boot path.
+     The queue shim (`window.clarity(...)`) is defined IMMEDIATELY, exactly as before, so any call made
+     before the tag lands is still queued and replayed — nothing that used it has to change.
+     ⚠ Session replay therefore starts a second or two into the visit rather than at the first byte.
+     To go back to loading it eagerly, drop the requestIdleCallback wrapper. -->
 <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
+    (function(c,l,a,r,i){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        var ins=function(){ var t=l.createElement(r); t.async=1; t.src="https://www.clarity.ms/tag/"+i;
+            var y=l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t,y); };
+        if(typeof requestIdleCallback==='function') requestIdleCallback(ins,{timeout:6000}); else setTimeout(ins,2500);
     })(window, document, "clarity", "script", "x2colhytq7");
 </script>
 </body>
