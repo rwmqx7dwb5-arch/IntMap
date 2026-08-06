@@ -871,6 +871,10 @@ data/
   ecoregions_2017.geojson/.js   エコリージョン（自前ホスト。PMTiles が dead だったため geojson 化）
   railways_gauge.json           世界の鉄道（軌間別）
   volcanoes_gvp.json            火山（Smithsonian GVP 完新世）
+  gazetteer-world.json          (#R198) 世界の地名の長い尾（3,482件・241か国・258 KB）。出典＝GeoNames
+                                `cities15000`（CC BY 4.0、場所と人口）＋ Wikidata（CC0、ja/de/ru/es のラベルを
+                                GeoNames id = P1566 で引く）。`scripts/build-gazetteer.mjs` が生成し、
+                                `js/gazetteer.js` の `warm()` が**必要になった時に**取得する（同梱しない）。
 koppen_mercator_*.png           ケッペン気候区分のベース画像（期間別）。
 koppen_mercator_*_4k.png        モバイル用の軽量版（OOMクラッシュ対策。モバイルは 4k png を使う）
 _koppen_convert.py              ケッペンTIFF→PNG 変換スクリプト（データ前処理。実行時には不要）
@@ -880,6 +884,10 @@ js/
   i18n.js                           (#R162) EN/JP/DE/RU/ES のUI文字列表（純データ・実行時に不変）。`window.IntMapI18N`。
                                     index.html 側は `const i18n=window.IntMapI18N;` で従来どおり束縛し直すだけ。
   gazetteer.js                      (#R162) 非AI locator の組込み地名表（`_BUILTIN_GZ`＋`_EXTRA_GZ`）。`window.IntMapGazetteer`。
+                                    (#R198) **長い尾**が加わった：`warm()` が `data/gazetteer-world.json`（3,482行・
+                                    241か国・258 KB）を**最初に必要になった時に取得**し、`index()` が curated 2表と
+                                    合わせて matcher 形の索引を返す（world 到着で1度だけ無効化）。同梱しないのは
+                                    #R195 の起動転送 189 KB を戻さないため。ビルドは `scripts/build-gazetteer.mjs`。
   reference-data.js                 (#R162) ダッシュボードカード（`DEFAULT_DASH_CARDS`＋`_dc`）とデータ出典表
                                     （`DATA_SOURCES`）。`window.IntMapRefData`。
   layer-previews.js                 (#R162) `IntMapLayerPreviews`。ファクトリ引数＝(countryStats, geoLayersDB, loadCountryData)
@@ -1190,6 +1198,14 @@ js/
                                     プロバイダエラー分類・1日上限とその表示・AI設定パネル・`askAI`/`askAIJSON`）。24KB
   place-labels.js                   (#R169) 地名/海洋ラベル（`ensurePlaceLabels`＝`ofm-*` シンボル群の生成・
                                     安定ラベルの収穫・`applyLabelLang`＝`name:<lang>` 切替・地理レイヤー）。28KB
+                                    (#R198) `ofm-admin1`（州・省・県）を追加。サイズは全て `js/label-scale.js` から。
+  label-scale.js                    (#R198) **地図上の全テキストサイズの唯一の出所** `window.IntMapLabelScale`。
+                                    `place(kind)`＝地名ラベルの階段（country/admin1/city/other/era）、
+                                    `sub(w)`／`subCase(cond,a,b)`＝地名以外（`w ≤ 1` はクランプ）。
+                                    `sub(w)(z) ≤ floor(REF(z)·0.88) < REF(z)` が構成上あらゆるズームで成立
+                                    （REF＝PLACE の各点最大）。⚠ 返すのは必ず**ズームが最外側**の
+                                    `interpolate`（#R73 で入れ子が addLayer を黙って落とした）。DOM も
+                                    レンダラも触らないので Node で検証（`tests/r198-checks.test.mjs`）。
   window-manager.js                 (#R169) フローティングパネルの共通機構（`makeDraggable`／`addEdgeResize`／
                                     `registerWindow`／`bringToFront`）。11KB
   search-geocode.js                 (#R169) 検索ボックス（自然文の前処理・ローカル地名のあいまい一致・
@@ -1945,6 +1961,16 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 - **基盤切替**：`btn-view-map/sat` と `applyTheme()`＋`_reassertBase()`（スタイルロード競合に強いポーリング再適用）。
 - **投影**：Flat(mercator)/Globe。3D地形は terrarium DEM（複数ホストで並列フェッチ、モバイルは maxzoom 13 でRAM安全）。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country/city/other` を生成（冪等）。`cb-names`(既定ON)で表示。
+- **地方行政区分ラベル (#R198)**：同じ `place` レイヤの **`state` / `province`** クラスから `ofm-admin1`。
+  実測でこの2クラスが日本の都道府県（`province`・rank 5）・アメリカの州（`state`・rank 1）・中国の省
+  （rank 2）・ドイツ／オーストラリアの州（rank 3）を持つ。⚠ `poi.rank`（#R187 で通し番号と実測）と違い
+  ここでの `rank` は**面積で世界規模にそろった順序**なので、ズームの階段は国別ではなく rank 別
+  （z3.2→1・3.8→2・4.6→3・5.3→4・6.0→5・6.8→6、maxzoom 9）。`cb-names` に属し、`applyLabelLang` が
+  5言語と明暗を与え、時間旅行中は `ofm-country` と同じ理由で隠れる。ラベルの STACK では `ofm-city` の**下**
+  （＝都市名が衝突に勝つ）。クリック／ホバーの一覧には**入れていない**（#R198 は名前だけの要求）。
+- **ラベルのサイズ (#R198)**：全レイヤーが `window.IntMapLabelScale`（`js/label-scale.js`）から取る。
+  地名ラベルは #R198 以前より全クラス小さく（国 10→15 が 9→13、都市 11→15 が 9.5→13 など）、
+  地名以外は必ずその基準の 0.88 倍以下（最大だった海洋名 19.3 → 11.4）。
 - **施設・店舗名 (#R186)**：同じ `ofm` の **`poi`** レイヤから `ofm-poi`（テキスト）＋`ofm-poi-dot`（点）。z14〜、
   `rank` の窓をズームで開き `symbol-sort-key` で衝突順も同じ順序に。`cb-poi`（既定OFF）。
 - **背後の星空と太陽 (#R186)**：`js/space-sky.js`。ダークテーマ＋globe＋自前の空を持たないエンジンのときだけ、

@@ -83,7 +83,7 @@ window.IntMapModules.terrainWater=function(HOST){
       if(!GE().layers.has('tw-draft-line')) GE().layers.add({id:'tw-draft-line',type:'line',source:VEC,filter:['==',['get','kind'],'draft'],
         paint:{'line-color':'#ffd23f','line-width':3,'line-dasharray':[2,1.5],'line-opacity':0.95}});
       if(!GE().layers.has('tw-breach')) GE().layers.add({id:'tw-breach',type:'symbol',source:VEC,filter:['==',['get','kind'],'breach'],
-        layout:{'text-field':['get','label'],'text-size':13,'text-allow-overlap':true,'text-rotate':['get','rot'],'text-rotation-alignment':'map'},
+        layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(1),'text-allow-overlap':true,'text-rotate':['get','rot'],'text-rotation-alignment':'map'},
         paint:{'text-color':'#ff3b30','text-halo-color':'#fff','text-halo-width':1.6}});
       if(!GE().layers.has('tw-src')) GE().layers.add({id:'tw-src',type:'circle',source:VEC,filter:['==',['get','kind'],'source'],
         paint:{'circle-radius':6,'circle-color':'#29b6f6','circle-stroke-color':'#04283a','circle-stroke-width':2}});
@@ -114,7 +114,7 @@ window.IntMapModules.terrainWater=function(HOST){
       if(!GE().layers.has('tw-lake')) GE().layers.add({id:'tw-lake',type:'circle',source:VEC,filter:['==',['get','kind'],'lake'],
         paint:{'circle-radius':4.5,'circle-color':'#7fd4ff','circle-stroke-color':'#04283a','circle-stroke-width':1.6,'circle-opacity':0.9}});
       if(!GE().layers.has('tw-end')) GE().layers.add({id:'tw-end',type:'symbol',source:VEC,filter:['==',['get','kind'],'end'],
-        layout:{'text-field':['get','label'],'text-size':12,'text-allow-overlap':true,'text-offset':[0,-0.9],'text-anchor':'bottom'},
+        layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.92),'text-allow-overlap':true,'text-offset':[0,-0.9],'text-anchor':'bottom'},
         paint:{'text-color':'#eaf7ff','text-halo-color':'rgba(0,20,32,0.9)','text-halo-width':1.8}});
       return true; }catch(_){ return false; } }
     function setVec(feats){ try{ if(ensureVec()) GE().layers.setSourceData(VEC,{type:'FeatureCollection',features:feats||[]}); }catch(_){} }

@@ -10,6 +10,7 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.placeLabels=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const LS=window.IntMapLabelScale;      /* (#R198) every text size on the map comes from js/label-scale.js */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -49,9 +50,42 @@ window.IntMapModules.placeLabels=function(HOST){
       if(!GE().layers.hasSource('ofm')) GE().layers.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
-      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
-      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
+      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
+      /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
+         「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
+           の州、中国の省など。）」
+
+         The app has drawn state/province BORDERS since #R32 and has never drawn their NAMES. Same
+         `place` source-layer as the settlements above; the classes are `state` and `province`, which
+         MEASURED over the live tiles carry exactly the units named in the request — 41 Japanese
+         prefectures (class `province`, rank 5), 50 US states (`state`, rank 1), the Chinese provinces
+         (`state`, rank 2), the German Länder and Australian states (`state`, rank 3) — each with the
+         same `name:xx` fields every other label here localises through.
+
+         ⚠ `rank` IS NOT A SEQUENCE NUMBER HERE. #R187 measured that `poi.rank` is one (a flat 72, 72,
+         71 … histogram) and stopped gating on it. For state/province it is the opposite: the measured
+         values group by SIZE across the whole planet — 1 for US states, 2 for Chinese provinces and
+         Canadian provinces, 3 for German/Australian/Spanish/Italian regions, 4 for Russian oblasts,
+         5 for Japanese prefectures, 6 for the smallest units — so it is exactly the "how far out is
+         this thing still worth naming" ordering a zoom ladder wants. A unit appears when it is big
+         enough on screen to hold its name, which is why the ladder is by rank and not by country.
+
+         maxzoom 9: past that the label point is the unit's centroid sitting in the middle of streets
+         that have their own names, and the region it belongs to is no longer the question being asked.
+         ⚠ The order it is ADDED in here decides nothing: js/app-body.js's label STACK is re-asserted on
+         idle and styledata, and that list is where ofm-admin1 is placed below ofm-city — so a crowded
+         view resolves in the city's favour. It is deliberately NOT in the label-click / hover-popup
+         lists (js/map-ui.js): this round was asked for the NAMES, and making a region label open an
+         outline would be a behaviour nobody asked for. */
+      const A1_RANK=['<=',['coalesce',['get','rank'],6],['step',['zoom'],0, 3.2,1, 3.8,2, 4.6,3, 5.3,4, 6.0,5, 6.8,6]];
+      if(!GE().layers.has('ofm-admin1')) GE().layers.add({id:'ofm-admin1',type:'symbol',source:'ofm','source-layer':'place',minzoom:3.2,maxzoom:9,
+        filter:['all',['has','name'],['in',['get','class'],['literal',['state','province']]],A1_RANK],
+        layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
+          'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,
+          'symbol-sort-key':['coalesce',['get','rank'],6]},
+        paint:{'text-color':'#c6d3ea','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.2}});
+      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
@@ -60,7 +94,7 @@ window.IntMapModules.placeLabels=function(HOST){
          POINT label geometry) but drawn with symbol-placement:line — line placement on a point lands the label
          off the actual river. River/canal names live in the `waterway` LINE layer; placing them there makes them
          follow the real river line on the basemap (aligned). */
-      if(!GE().layers.has('ofm-river')) GE().layers.add({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'waterway',minzoom:6,filter:['in',['get','class'],['literal',['river','canal']]],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],6,10,12,13],'text-max-angle':38,'text-letter-spacing':0.02,'symbol-spacing':350},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!GE().layers.has('ofm-river')) GE().layers.add({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'waterway',minzoom:6,filter:['in',['get','class'],['literal',['river','canal']]],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-angle':38,'text-letter-spacing':0.02,'symbol-spacing':350},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       /* (#R62) sea/ocean/bay labels moved OFF the vector tiles: water_name label points are stored PER TILE, so the
          visible label jumped to a different point at every zoom level ("ズームに応じて位置がどんどんずれてしまう").
          OFM now only supplies LAKE names (compact bodies → no visible drift); seas/oceans/gulfs come from the fixed
@@ -80,10 +114,10 @@ window.IntMapModules.placeLabels=function(HOST){
       try{ if(!GE().layers.hasSource('stab-water-src')) GE().layers.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
       /* (#R69) both water layers additionally gate each pin on its first-seen tile zoom (`mz`, see _harvestOne)
          so zoomed-in harvests don't flood lower zooms ("水域ラベルが…過剰な数見えすぎ"). */
-      if(!GE().layers.has('ofm-water')) GE().layers.add({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['all',['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!GE().layers.has('ofm-water')) GE().layers.add({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['all',['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       /* (#R65) seas/bays/straits/gulfs from the SAME pinned dynamic source (visible from low zoom) — every
          named water body worldwide gets a stable label, not just the curated majors. */
-      if(!GE().layers.has('ofm-water2')) GE().layers.add({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':13.5},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
+      if(!GE().layers.has('ofm-water2')) GE().layers.add({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':LS.sub(1)},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
       try{ if(!GE().layers.hasSource('geo-sea-src')){
         const S=window.SEA_LABELS||[];
         GE().layers.addSource('geo-sea-src',{type:'geojson',data:{type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7]}}))}});
@@ -95,7 +129,10 @@ window.IntMapModules.placeLabels=function(HOST){
          and because the harvester dedupes any name already in the gazetteer, the majors were labelled NOWHERE.
          Rewritten with zoom outermost and the big/small distinction inside each stop output (valid form). */
       if(!GE().layers.has('geo-sea')) GE().layers.add({id:'geo-sea',type:'symbol',source:'geo-sea-src',minzoom:0,filter:['<=',['get','z'],['+',['zoom'],0.001]],layout:{visibility:'none','symbol-sort-key':['get','z'],'text-field':['get','en'],'text-font':FONTI,'text-letter-spacing':0.08,'text-max-width':8,
-        'text-size':['interpolate',['linear'],['zoom'],1,['case',['==',['get','big'],1],11,10],2,['case',['==',['get','big'],1],12.7,10],4,['case',['==',['get','big'],1],16,12],5,['case',['==',['get','big'],1],16.8,13],8,['case',['==',['get','big'],1],19,15.3],9,['case',['==',['get','big'],1],19.3,16]]},
+        /* (#R198) …and that valid form is now produced by LS.subCase, which keeps zoom outermost by
+           construction. An ocean used to be the BIGGEST text on the map (19.3 px against a city's 15);
+           it is a non-place label, so it is now under the place ladder like every other one. */
+        'text-size':LS.subCase(['==',['get','big'],1],1,0.86)},
         paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}}); }catch(_){}
       /* (#R63) peaks: CONSTANT text size — size interpolation read as sliding. (#R67) rendered DIRECTLY from the
          mountain_peak tiles (point nodes are sub-pixel accurate at every zoom's own tiles).
@@ -104,7 +141,7 @@ window.IntMapModules.placeLabels=function(HOST){
          point — the ▲ marker sat half-a-string-width LEFT of the summit, a constant SCREEN offset that spans
          kilometres of terrain at low zoom and metres at high zoom → the ▲ visibly pointed at different terrain
          at every zoom. The string is now LEFT-anchored: the ▲ glyph itself sits ON the summit at every zoom. */
-      if(!GE().layers.has('ofm-peak')) GE().layers.add({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      if(!GE().layers.has('ofm-peak')) GE().layers.add({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':LS.sub(0.92),'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       /* ══ (#R186) THE NAMES OF PLACES YOU GO TO ═════════════════════════════════════════════════
          「Base map & labelsに、地点の名前も追加して。（例：地名などではなく、店舗名や施設名など）」
 
@@ -169,7 +206,7 @@ window.IntMapModules.placeLabels=function(HOST){
       if(!GE().layers.has('ofm-poi')) GE().layers.add({id:'ofm-poi',type:'symbol',source:'ofm','source-layer':'poi',minzoom:14,
         filter:POI_FILTER,
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,
-          'text-size':['interpolate',['linear'],['zoom'],14,10.5,16,11.5,18,13],
+          'text-size':LS.sub(0.86),
           'text-max-width':9,'text-optional':true,'text-padding':3,
           /* tier first, the tile's own sequence as the tie-break inside it */
           'symbol-sort-key':['+',['*',POI_TIER,1000],['coalesce',['get','rank'],1]],
@@ -289,13 +326,18 @@ window.IntMapModules.placeLabels=function(HOST){
        overriding _applyBorders → the present-day country names kept reappearing under/over the era labels. Keep
        ofm-country hidden here whenever travelling. City/other place labels stay (they aren't country names). */
     const _travelingLbl=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
-    ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
-      const _showThis=(id==='ofm-country'&&_travelingLbl)?false:show;
+    /* (#R198) ofm-admin1 joins this list, not a list of its own: a prefecture name IS a place name —
+       it follows the same "Place names" switch, the same language expression and the same light/dark
+       rule. It also hides while the time machine is on a past year, for the reason ofm-country does
+       (#R103): today's prefectures over a 1900 map are the modern claim the era labels replace. */
+    ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
+      const _showThis=((id==='ofm-country'||id==='ofm-admin1')&&_travelingLbl)?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
       GE().layers.setLayout(id,'text-field',nameExpr);
-      /* dark map / satellite → light text; light map → dark text */
+      /* dark map / satellite → light text; light map → dark text. The admin-1 tier is deliberately
+         quieter than the settlement it contains — it names the ground, it is not the destination. */
       const lightText = sat || isDark;
-      GE().layers.setPaint(id,'text-color', lightText?(id==='ofm-country'?'#eaf0ff':'#ffffff'):'#1b1b1f');
+      GE().layers.setPaint(id,'text-color', lightText?(id==='ofm-country'?'#eaf0ff':id==='ofm-admin1'?'#c6d3ea':'#ffffff'):(id==='ofm-admin1'?'#54607a':'#1b1b1f'));
       GE().layers.setPaint(id,'text-halo-color', lightText?'rgba(0,0,0,0.8)':'rgba(255,255,255,0.9)');
     });
   }
@@ -340,7 +382,7 @@ window.IntMapModules.placeLabels=function(HOST){
         if(_pipe) GE().layers.add({id:key+'-casing',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'#1f0d05','line-width':['interpolate',['linear'],['zoom'],1,3,4,5.5,8,10],'line-opacity':0.6}});
         GE().layers.add({id:key+'-line',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,1.6,4,3.2,8,5.5]:3.5,'line-opacity':0.97}});
         GE().layers.add({id:key+'-pt',type:'circle',source:key,filter:['==','marker',1],layout:{visibility:'none'},paint:{'circle-radius':5,'circle-color':data.color,'circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.95}});
-        GE().layers.add({id:key+'-label',type:'symbol',source:key,filter:['has','label'],layout:{visibility:'none','text-field':['get','label'],'text-size':12,'text-font':['literal',['Noto Sans Regular']],'text-offset':[0,1.1],'text-anchor':'top','text-allow-overlap':false,'symbol-placement':'point'},paint:{'text-color':data.color,'text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':1.8}});
+        GE().layers.add({id:key+'-label',type:'symbol',source:key,filter:['has','label'],layout:{visibility:'none','text-field':['get','label'],'text-size':LS.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'text-offset':[0,1.1],'text-anchor':'top','text-allow-overlap':false,'symbol-placement':'point'},paint:{'text-color':data.color,'text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':1.8}});
       }catch(e){ console.warn('geoLayer add fail',key,e); }
     }
     updateGeoLayers();

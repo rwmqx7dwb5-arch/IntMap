@@ -119,13 +119,13 @@ window.IntMapModules.dashExtended=function(HOST){
       try{
         if(!GE().layers.hasSource('r7-disputes')){ GE().layers.addSource('r7-disputes',{type:'geojson',data:disputesFC()});
           GE().layers.add({id:'r7-disputes-line',type:'line',source:'r7-disputes',layout:{visibility:'none','line-cap':'round'},paint:{'line-color':'#ff4d4d','line-width':2.2,'line-dasharray':[2,2],'line-opacity':0.92}});
-          GE().layers.add({id:'r7-disputes-label',type:'symbol',source:'r7-disputes',layout:{visibility:'none','symbol-placement':'line-center','text-field':['get','label'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ff7a7a','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+          GE().layers.add({id:'r7-disputes-label',type:'symbol',source:'r7-disputes',layout:{visibility:'none','symbol-placement':'line-center','text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ff7a7a','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
         }
         if(!GE().layers.hasSource('r7-airdef')){ GE().layers.addSource('r7-airdef',{type:'geojson',data:airDefFC()});
           GE().layers.add({id:'r7-airdef-fill',type:'fill',source:'r7-airdef',filter:['==','$type','Polygon'],layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.1}});
           GE().layers.add({id:'r7-airdef-line',type:'line',source:'r7-airdef',filter:['==','$type','LineString'],layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.1,'line-opacity':0.55}});
           GE().layers.add({id:'r7-airdef-pt',type:'circle',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none'},paint:{'circle-radius':4,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':1.5}});
-          GE().layers.add({id:'r7-airdef-label',type:'symbol',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none','text-field':['get','label'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}});
+          GE().layers.add({id:'r7-airdef-label',type:'symbol',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none','text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}});
         }
         return true;
       }catch(e){ return false; }

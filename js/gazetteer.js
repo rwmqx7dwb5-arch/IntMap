@@ -375,5 +375,73 @@ window.IntMapGazetteer=(function(){
     ['city',['Goma','ゴマ'],29.22,-1.68,'Goma','ゴマ'],
     ['city',['Port Sudan','ポートスーダン'],37.22,19.62,'Port Sudan','ポートスーダン']
   ];
-  return { builtin:_BUILTIN_GZ, extra:_EXTRA_GZ };
+  /* ══ (#R198) THE LONG TAIL — data/gazetteer-world.json ═══════════════════════════════════════
+     「Gazetteerを今の10倍の網羅性に。」
+
+     The 334 rows above are the places world news is ABOUT and they are unchanged: hand-checked
+     coordinates, hand-written Japanese, and a type (`flashpoint` outranks `city` outranks `country`)
+     that the scorer depends on. Ten times that many rows cannot be written by hand and should not
+     be — so the rest of the world arrives from the published sources instead, built by
+     scripts/build-gazetteer.mjs (GeoNames CC BY 4.0 for the places, Wikidata CC0 for the names in
+     ja/de/ru/es) and read here.
+
+     ⚠ IT IS FETCHED, NOT BUNDLED, AND THAT IS THE WHOLE DESIGN. #R195 got the startup transfer to
+     189 KB; putting a 200 KB table in the module graph would undo that for a feature nobody has
+     asked for yet on the first frame. So this file loads on first NEED — the news locator starting
+     a pass, or the search box being used — the same shape as js/land-mask.js and js/bathymetry.js.
+     Until then the app behaves exactly as it did, because the curated rows are still synchronous.
+
+     ⚠ AND IT IS ADDITIVE ONLY. A world row whose name is already a curated surface form was dropped
+     at BUILD time, so nothing here can move a place the curated table already knows. The rows enter
+     the deterministic engine through IntMapNewsGeo.register(), which files them at rank 3 — below
+     everything curated — for the same reason. */
+  const WORLD_URL=(function(){ try{ return new URL('data/gazetteer-world.json',
+    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return 'data/gazetteer-world.json'; } })();
+  let _worldRows=null, _worldPromise=null, _worldMeta=null;
+  /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
+     of twenty thousand are not the same claim about a headline, and the scorer already knows how to
+     rank `city` above `country`; this is the only judgement the conversion makes. */
+  function _rowsFrom(doc){
+    const out=[];
+    for(const r of (doc&&doc.rows)||[]){
+      const en=r[0], ja=r[1], lng=+r[3], lat=+r[4], pop=+r[5]||0, alt=r[6]||[];
+      if(!en||!isFinite(lng)||!isFinite(lat)) continue;
+      const terms=[en]; if(ja) terms.push(ja);
+      for(const a of alt){ if(a&&terms.indexOf(a)<0) terms.push(a); }
+      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en]);
+    }
+    return out;
+  }
+  /* Resolves to the row array (possibly empty — a build that was never run, or an offline session,
+     is a smaller gazetteer and not a broken one). Never rejects, and never fetches twice. */
+  function warm(){
+    if(_worldPromise) return _worldPromise;
+    _worldPromise=(async()=>{
+      try{
+        const r=await fetch(WORLD_URL,{cache:'force-cache'});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const doc=await r.json();
+        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length};
+        _worldRows=_rowsFrom(doc);
+      }catch(e){ _worldRows=[]; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
+      try{ window.dispatchEvent(new Event('intmap-gazetteer-world')); }catch(_){}
+      return _worldRows;
+    })();
+    return _worldPromise;
+  }
+  /* (#R198) …and the matcher-shaped index built from all three sets. It lived as one expression in
+     js/app-body.js, which could only ever see the two synchronous ones; it is here now because THIS
+     file is what knows when a third arrives. Memoised, invalidated exactly once (when the world rows
+     land), so `HOST.BUILTIN_GAZETTEER` stays the free property read every caller treats it as. */
+  let _index=null;
+  function index(){
+    if(_index) return _index;
+    const acc={};
+    const feed=(rows)=>{ for(const [type,terms,lng,lat,en,jp] of rows){ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
+    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows);
+    _index=acc; return acc;
+  }
+  try{ window.addEventListener('intmap-gazetteer-world',()=>{ _index=null; }); }catch(_){}
+  return { builtin:_BUILTIN_GZ, extra:_EXTRA_GZ, warm, index,
+    world:()=>_worldRows, worldMeta:()=>_worldMeta, worldUrl:WORLD_URL, _rowsFrom };
 })();

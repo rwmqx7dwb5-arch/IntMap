@@ -41,7 +41,11 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   'IntMapVolume3D',       // js/volume3d.js  (#R170, never listed here)
   'IntMapTilt',           // js/view-controls.js
   'IntMapDrone',          // js/drone-nav.js (#R174) — a whole feature, invisible if the file is missing
-  'IntMapAircraftPanel']; // js/aircraft-detail.js (#R175) — the live-aircraft detail card
+  'IntMapAircraftPanel',  // js/aircraft-detail.js (#R175) — the live-aircraft detail card
+  // (#R198) js/label-scale.js — if this file fails to deploy, every symbol layer that asks it for a
+  // size throws inside its own try and the map comes up with NO LABELS AT ALL. Exactly the failure
+  // shape this list exists for.
+  'IntMapLabelScale'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

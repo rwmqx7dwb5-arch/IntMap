@@ -311,7 +311,7 @@ window.IntMapModules.runwaySearch=function(HOST){
     }
     function ensureLayers(){ if(GE().layers.hasSource(SRC)) return; try{ GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       GE().layers.add({id:LYR,type:'circle',source:SRC,paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,8,6],'circle-color':['case',['get','mil'],'#ff453a','#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-      GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       /* Click a pin → the same info popup (#47). */
       GE().events.onLayer('click',LYR,e=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}, c=e.features[0].geometry.coordinates; showRwyPopup({ name:p.name, apt:p.apt, muni:p.muni, mil:(p.mil===true||p.mil==='true'), len:+p.len||0, n:+p.n||0, rwy:p.rwy||'', coords:c }); });
       GE().events.onLayer('mouseenter',LYR,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',LYR,()=>{ GE().render.canvas().style.cursor=''; });

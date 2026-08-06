@@ -179,7 +179,12 @@ test('R162 #7 the data survived the move intact (all 5 languages, real row count
   }
   const gz = rd('js/gazetteer.js');
   assert.ok((gz.match(/\['flashpoint',/g) || []).length > 10, 'flashpoint rows survived');
-  assert.ok(gz.includes('return { builtin:_BUILTIN_GZ, extra:_EXTRA_GZ };'), 'gazetteer exports both arrays');
+  /* (#R198) the export grew — `warm`/`index`/`world` joined it when the long tail
+     (data/gazetteer-world.json) became a third source — so this asks the question it always meant:
+     BOTH curated arrays are still the thing this file hands out. Pinning the literal return line
+     would only be pinning the day it was written. */
+  assert.match(gz, /return \{[^}]*\bbuiltin:_BUILTIN_GZ\b/, 'gazetteer still exports the built-in array');
+  assert.match(gz, /return \{[^}]*\bextra:_EXTRA_GZ\b/, 'gazetteer still exports the extra array');
   const ref = rd('js/reference-data.js');
   assert.ok((ref.match(/_dc\(/g) || []).length > 100, 'dashboard cards survived');
   assert.ok(ref.includes('return { dashCards:DEFAULT_DASH_CARDS, dataSources:DATA_SOURCES };'), 'reference-data exports both tables');

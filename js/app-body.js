@@ -354,7 +354,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     set measureSnapClose(v){ measureSnapClose=v; },
     set newsFiltered(v){ newsFiltered=v; },
     /* read-only for these modules (live getters as ever) */
-    get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return BUILTIN_GAZETTEER; },
+    /* (#R198) BUILTIN_GAZETTEER asks js/gazetteer.js on every read rather than closing over one
+     * snapshot: the world rows (data/gazetteer-world.json) arrive after boot, and a captured object
+     * would be the pre-#R198 table forever. */
+    get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return window.IntMapGazetteer.index(); },
     get GEO_LABEL_JP(){ return GEO_LABEL_JP; }, get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
     get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; },
     get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; },
@@ -1103,8 +1106,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
           {id:'grid-equator',type:'line',source:'grid-source',filter:['==','kind','equator'],paint:{'line-color':'#ff3b30','line-opacity':0.95,'line-width':2.0}},
           {id:'grid-prime',type:'line',source:'grid-source',filter:['==','kind','prime'],paint:{'line-color':'#ff9500','line-opacity':0.85,'line-width':1.6}},
-          {id:'grid-labels',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['!=','kind','cross']],layout:{'text-field':['get','label'],'text-size':12,'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-ignore-placement':false,'symbol-placement':'point'},paint:{'text-color':'#1d4ed8','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0}},
-          {id:'grid-labels-cross',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['==','kind','cross']],layout:{'text-field':['get','label'],'text-size':10,'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-offset':[0.6,-0.6]},paint:{'text-color':'#475569','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.5}},
+          {id:'grid-labels',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['!=','kind','cross']],layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-ignore-placement':false,'symbol-placement':'point'},paint:{'text-color':'#1d4ed8','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0}},
+          {id:'grid-labels-cross',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['==','kind','cross']],layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.78),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-offset':[0.6,-0.6]},paint:{'text-color':'#475569','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.5}},
           {id:'tool-poly',type:'fill',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true]],paint:{'fill-color':['coalesce',['get','color'],'#007aff'],'fill-opacity':['coalesce',['get','opacity'],0.18]}},
           {id:'tool-poly-line',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true],['!=','noStroke',true]],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.8}},
           {id:'tool-ring-line',type:'line',source:'tool-source',filter:['==','ringline',true],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.85}},
@@ -1420,7 +1423,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        & names actually change ("年代を変更しても国境や国名が変化しない" root: era layers could be buried after a
        styledata/base swap once the old R94m moveLayer-to-top was removed to stop a flicker loop). inPlace() already
        guards against thrashing, so this cannot re-introduce the loop. imtb layers only exist while travelling. */
-    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
+    /* (#R198) 'ofm-admin1' (states / provinces / prefectures) enters the stack BELOW ofm-city, which by the
+       rule stated just above means a city name wins the collision against the region containing it. It sits
+       above the peaks for the same reason in the other direction. This list is what decides that — the order
+       these layers are ADDED in is transient, because raise() re-asserts this one on idle and styledata. */
+    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
@@ -1514,7 +1521,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R162) moved to js/gazetteer.js — see Architecture.md "File layout". */
   const _BUILTIN_GZ=window.IntMapGazetteer.builtin, _EXTRA_GZ=window.IntMapGazetteer.extra;
-  const BUILTIN_GAZETTEER=_BUILTIN_GZ.concat(_EXTRA_GZ).reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
+  /* (#R198) the reduce that used to build this index moved into js/gazetteer.js — see the note there.
+     Nothing in THIS file reads it any more; HOST.BUILTIN_GAZETTEER (above) calls index() on every
+     access, because the world rows (data/gazetteer-world.json) arrive after boot and a captured
+     object would be the pre-#R198 table forever. */
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_ORG_GZ,_DEMONYM_GZ,sourceDict}=window.IntMapTables;
   /* Precompiled longest-first matchers. Latin keys use word boundaries so short acronyms

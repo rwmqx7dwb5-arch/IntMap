@@ -43,7 +43,7 @@ window.IntMapModules.cameras=function(HOST){
       if(!GE().layers.hasSource('webcams-src')) GE().layers.addSource('webcams-src',{type:'geojson',data:fc()});
       if(!GE().layers.has('webcams-pt')){
         GE().layers.add({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
+        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':window.IntMapLabelScale.sub(1),'text-allow-overlap':false}});
         GE().events.onLayer('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
         GE().events.onLayer('mouseenter','webcams-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','webcams-pt',()=>{ GE().render.canvas().style.cursor=''; });

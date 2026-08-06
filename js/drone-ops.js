@@ -387,7 +387,7 @@ window.IntMapModules.droneOps=function(HOST){
           'circle-color':['case',['==',['get','reach'],1],'#30d158','#8e8e93'],
           'circle-stroke-color':'#ffffff','circle-stroke-width':1.6,'circle-opacity':0.92 } });
       if(!E.layers.has(SITE_LBL)) E.layers.add({ id:SITE_LBL, type:'symbol', source:SITE_SRC, minzoom:11,
-        layout:{ 'text-field':['get','label'], 'text-size':10.5, 'text-offset':[0,1.2], 'text-anchor':'top',
+        layout:{ 'text-field':['get','label'], 'text-size':window.IntMapLabelScale.sub(0.86), 'text-offset':[0,1.2], 'text-anchor':'top',
           'text-allow-overlap':false, 'text-optional':true },
         paint:{ 'text-color':'#30d158','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3 } });
       return true;
