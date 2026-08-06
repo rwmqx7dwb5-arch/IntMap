@@ -154,7 +154,7 @@ test('R191 seismic: Japanese defaults to the JMA scale, and a chosen scale latch
 
 /* ── 6 · the satellite path ──────────────────────────────────────────────────────────────────── */
 test('R191 satellite: the cropped tile is no longer transcoded twice', () => {
-  const a = read('js/app-body.js');
+  const a = read('js/sat-proto.js');   /* (#R195) the protocol moved out of the shell, byte for byte */
   const crop = a.slice(a.indexOf('async function _satCrop'), a.indexOf('async function _satResolve'));
   assert.ok(!/convertToBlob|toBlob/.test(crop), 'no JPEG re-encode');
   assert.match(crop, /return c\.transferToImageBitmap\?c\.transferToImageBitmap\(\):await createImageBitmap\(c\);/,
@@ -166,7 +166,7 @@ test('R191 satellite: the cropped tile is no longer transcoded twice', () => {
 });
 
 test('R191 satellite: a phone gets phone-sized caches, and tiles arrive instead of appearing', () => {
-  const a = read('js/app-body.js');
+  const a = read('js/sat-proto.js') + read('js/app-body.js');   /* (#R195) protocol + the shell's own tile budgets */
   assert.match(a, /const _satMob=\/Mobi\|Android\|iPhone\|iPad\/\.test\(navigator\.userAgent\);/, 'one device test');
   assert.match(a, /_SAT_CACHE_MAX=\(_satMob\?200:800\)/, 'the resolved-tile cache is quartered on a phone');
   assert.match(a, /_SAT_RAW_MAX=\(_satMob\?300:1200\)/, 'and so is the raw-fetch cache');

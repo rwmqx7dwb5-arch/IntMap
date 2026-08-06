@@ -1133,6 +1133,14 @@ js/
      `map` 生成直後に生成でき、index.html には巻き上げシムだけが残る（§3.1 #R169）─────────────
   satellite.js                      (#R169) 衛星画像のコントローラ（プロバイダ表・BYOK鍵・日付ステップ・
                                     二重バッファのクロスフェード・タイル/認証エラー時の自動フォールバック）。19KB
+  sat-proto.js                      (#R195 で `js/app-body.js` から259行そのまま分離／中身は #R158–#R193)
+                                    **`imapsat://` タイルプロトコル**——Esri World_Imagery の取得、灰色
+                                    プレースホルダの判定（≤3,500 B）、最も近い実写祖先からの切り出し、
+                                    撮像深度メモ（have/stop）、@2x ステッチ、`src/sat-worker.js` への受け渡し、
+                                    テスト用フック `window.IntMapSatProto`。⚠ シェルから借りている値は
+                                    **`_hiDPITiles` の1つだけ**で `IM_HOST.hiDPITiles` 経由（継承させると
+                                    @2x が無言で止まる）。⚠ 呼び出し位置は動かせない——このファクトリが立てる
+                                    `window.__imSatProto` を下流のスタイル定義が読む。22KB
   ai-core.js                        (#R169) Atlas AI のトランスポート層（`aiCallServerFull`＝ai-proxy 呼び出し・
                                     プロバイダエラー分類・1日上限とその表示・AI設定パネル・`askAI`/`askAIJSON`）。24KB
   place-labels.js                   (#R169) 地名/海洋ラベル（`ensurePlaceLabels`＝`ofm-*` シンボル群の生成・
@@ -2227,6 +2235,52 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 **起動（`js/time-borders.js` ＋ `index.html`）。** `data/cshapes.js`（5.5 MB）は `requestIdleCallback`
 （上限6秒、地図の `idle` 後）まで待つ。Data Saver / 2G では**先読みしない**。`index.html` は最初の描画が
 必ず使う4ホストへ `preconnect`。実測: 起動時の追加ダウンロードが **10.4 MB → 4.8 MB**、ヒープ 228→159 MB。
+
+### #R195 補足（画像の行はレンダラの行／ホバーは1回の判定／サイドバーは記憶される／中心部から259行）
+
+指示8件。**現在の姿**だけをここに残す（経緯と実測は DEV-NOTES.md #R195）。
+
+**動的画像の縦方向の写像（`js/geo-engine.js` / `js/cesium-engine.js` / `js/tsunami.js`）。**
+`layers.imageRowLatitudes(coordinates, height)` が**契約**になった——「画像の第 r 行はどの緯度に
+描かれるか」をエンジンが答える。MapLibre は4隅を Web メルカトルに変換した**1枚の四角形**として
+テクスチャを線形補間する（globe 投影も「メルカトル座標を球に巻いた」ものなので同じ）ので
+**メルカトル Y の逆変換**を返し、Cesium の `rectangle` は**地理座標**なので緯度の線形を返す。
+⚠ **等緯度間隔で標本化した場を MapLibre の画像ソースに渡すと位置がずれる**——これは
+ケッペン層が「Web メルカトルに再投影した PNG を同梱する」ことで避けている「latitude drift」と
+同じ現象で、契約のどこにも書かれていなかった。津波の描画側は `chooseImgH()` でテクスチャの高さを
+決め（メルカトルが圧縮する側で1格子行が欠測しない高さ・上限 2048）、`rowMap(H)` で
+**画像行→格子行**の対応表を作り、`drawField` はその表で塗る。最近傍であって補間ではない
+（陸マスクを跨いで混ぜないため）。
+
+**ホバーの一括判定（`js/geo-engine.js` の `_hoverHub`）。**
+`events.onLayer('mousemove'|'mouseenter'|'mouseleave', id, cb)` はレンダラの委譲を**使わない**。
+登録された全レイヤーを1回の `queryRenderedFeatures` で判定し、レイヤーごとに振り分ける。
+`mouseenter` は特徴量つき・`mouseleave` は特徴量なし・`mousemove` はそのレイヤーの上にいるときだけ、
+という**委譲と同一の意味**を保つ（`tests/r195.spec.js` が実レンダラで固定）。⚠ **同期**であって
+アニメーションフレームへの束ねではない——束ねると「イベント→ツールチップ」の順序が変わり、
+既存テストがその順序で書かれている（#R182）。`click` の委譲はレンダラのまま。
+
+**サイドバーの開閉（`js/app-body.js` / `js/map-ui.js`）。**
+セッション（`intmap_session2`）に `sbOpen`（左）と `lsrOpen`（右のレイヤーパネル）が入る。
+⚠ **復元は同期で、早い**——`_restore()`（地図 load の 600 ms 後）でやると一度違う位置で見えてから
+直る。左は DOM が存在する時点でクラスを当て、右は `window._imSessionUI` を読んで自分で開く。
+初回訪問は従来どおり（電話では左が畳まれ、右は閉じたまま）。
+
+**衛星タイルプロトコル（`js/sat-proto.js`）。** `imapsat://` の一切——プレースホルダ判定・祖先の
+切り出し・撮像深度メモ・@2x のステッチ・`src/sat-worker.js` への受け渡し——が
+`js/app-body.js` から**259行そのまま**出た（アプリシェル 8,492 → **8,233 行**、`tests/r168-checks` の
+上限は 8,600 → **8,300 に下げ直した**）。⚠ 外から借りている値は **`_hiDPITiles` の1つだけ**で、
+`IM_HOST.hiDPITiles` で明示的に渡す——継承させると `undefined` になり、例外も `typeof` ガードにも
+掛からずに **@2x が全員で静かに止まる**。`scripts/check-split-scope.mjs` がその門。
+⚠ 呼び出し位置は動かせない：このファクトリが立てる `window.__imSatProto` を、その数百行下の
+スタイル定義が読んで `imapsat://` と Esri 直を選ぶ。
+
+**国境データの2段読み込み（`js/countries-ui.js`）。** 行（名前・人口・ISO・地域）は Natural Earth の
+**110m（189 KB）**から作り、**10m（4,335 KB）の幾何は `requestIdleCallback` で後から**差し替える。
+既定の起動では 10m の幾何は**1画素も描かれない**（見えている国境線は OFM 由来、`country-fill` は
+`visibility:'none'` で Countries(info) を点けたときだけ）。⚠ **差し替えは merge であって置換ではない**
+——`countryStats[code]` は PPP・指標の穴埋め・タイムマシンが**その場で書き換えている**ので、
+レコードごと作り直すとそれらが静かに消える。幾何が決める `area/_area/density/bbox` だけを更新する。
 
 ### #R193 補足（津波は届け方を作り直した／祖先探索はメモを見る／遅延は分割ではない）
 

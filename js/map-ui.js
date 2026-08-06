@@ -421,7 +421,8 @@ window.IntMapModules.layerSidebar=function(HOST){
       try{ GE().events.on('click',open._mapCloser); }catch(_){}
       /* (#R160) overlay: the map-container did NOT change size, so no resize/recentre — just let the search-pill
          layout recompute against the now-open panel (the right-anchored HUD slides left via CSS). */
-      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
+      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}
+      try{ window._imSaveSession&&window._imSaveSession(); }catch(_){} }   /* (#R195) remember it */
     function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
       if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
       try{ if(open._mapCloser&&GE().hasRenderer()) GE().events.off('click',open._mapCloser); }catch(_){}
@@ -429,13 +430,21 @@ window.IntMapModules.layerSidebar=function(HOST){
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
       /* (#R160) overlay: closing the panel doesn't resize the map — just recompute the search-pill layout. */
-      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }
-    function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
+      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}
+      try{ window._imSaveSession&&window._imSaveSession(); }catch(_){} }   /* (#R195) remember it */
+    /* (#R195) every route in and out of this panel records itself, so the next load can restore it */
+    function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open();
+      try{ window._imSaveSession&&window._imSaveSession(); }catch(_){} }
     function apply(){ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail'); if(!isMob()) open(); } else { close(); document.body.classList.remove('lsr-avail'); } }   /* (#R107) build on mobile too; only auto-OPEN on desktop (mobile opens on the layer button) */
     setTimeout(()=>{ try{ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail');
       /* (#R72) PRE-BUILD the tile grid while idle so the FIRST open is instant too */
       const pre=()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){} };
       if('requestIdleCallback' in window) requestIdleCallback(pre,{timeout:4000}); else setTimeout(pre,2500);
+      /* (#R195) 「再読み込み時に、サイドバーの開閉状態を保持するように。」 Boot has always left this panel
+         closed, so a user who had it open lost it on every reload. It re-opens only when the last
+         session actually ended with it open — a first visit still boots closed, which is the
+         behaviour the line below was written for and the one nobody asked to change. */
+      if(window._imSessionUI&&window._imSessionUI.right===true&&!isMob()) open();
     } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was

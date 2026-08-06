@@ -146,6 +146,11 @@ import '../js/elevation-profile.js';
    list only has to be BEFORE js/app-body.js — like every other module here. */
 import '../js/space-sky.js';
 import '../js/world-base.js';
+/* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
+   ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
+   registers a factory; js/app-body.js calls it from the exact point the code used to occupy, because
+   the style object below that point reads the flag the factory sets. */
+import '../js/sat-proto.js';
 
 /* (#R175) LAST, deliberately: js/app-body.js is index.html's old inline body, and it must register its
    DOMContentLoaded listener only after every module above has published its globals — exactly the order
@@ -176,6 +181,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
+  'satProto',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);

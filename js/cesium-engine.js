@@ -937,6 +937,22 @@ window.IntMapCesiumEngine=(function(){
        It is an ENTITY rectangle rather than an imagery layer for the same class of reason: Cesium's
        imagery is tiled and cached, so a provider would have to invalidate and re-request every tile
        per frame. A rectangle with an ImageMaterialProperty is one quad and one texture. */
+    /* (#R195) …and here the answer is the trivial one, which is exactly why it has to be asked.
+       A Cesium `rectangle` is GEOGRAPHIC: its texture runs linearly in latitude, so an
+       equal-latitude-step field was always right on this engine and wrong on the default one. That
+       asymmetry is why the bug survived — #R188's lesson, that fixing the side you are not looking
+       at fixes nothing, run backwards. */
+    imageRowLatitudes(coordinates,height){
+      const H=Math.max(1,height|0);
+      if(!coordinates||!coordinates.length) return null;
+      let n=-90,s=90;
+      for(let k=0;k<coordinates.length;k++){ const la=+coordinates[k][1];
+        if(!isFinite(la)) continue; if(la>n) n=la; if(la<s) s=la; }
+      if(!(n>s)) return null;
+      const out=new Float64Array(H);
+      for(let r=0;r<H;r++) out[r]=n+(s-n)*(r+0.5)/H;
+      return out;
+    }
     addDynamicImage(id,o,before){
       if(!o||typeof o.draw!=='function') return false;
       if(!Cesium) return false;
@@ -2142,6 +2158,8 @@ window.IntMapCesiumEngine=(function(){
       /* (#R193) the animated geographic quad — see the view class for why this engine needs two
          canvases where MapLibre needs one */
       addDynamicImage(id,o,b){ const v=V(); return v?v.addDynamicImage(id,o,b):false; },
+      /* (#R195) geographic here, Mercator on MapLibre — the painter asks rather than assumes */
+      imageRowLatitudes(c,h){ const v=V(); return v?v.imageRowLatitudes(c,h):null; },
       touchDynamicImage(id){ const v=V(); return v?v.touchDynamicImage(id):false; },
       setDynamicImageOpacity(id,x){ const v=V(); return v?v.setDynamicImageOpacity(id,x):false; },
       setDynamicImageCoords(id,c){ const v=V(); return v?v.setDynamicImageCoords(id,c):false; },
