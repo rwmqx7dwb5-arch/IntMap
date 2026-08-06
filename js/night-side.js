@@ -277,11 +277,25 @@ window.IntMapNightSide=(function(){
 
   /* ⚠ built LAZILY. A session that never leaves street level pays nothing: no layers, no GIBS
      request, no arithmetic — the check below is a zoom comparison on moveend. */
+  /* ⚠ (#R196) NOTHING THIS MODULE DOES HAPPENS INSIDE A GESTURE. `consider` is called from `moveend`,
+     which is the busiest moment in the app: the renderer is uploading tiles, every other layer is
+     reacting, and two tests measure exactly that window — tests/r170 gives a freshly ticked layer
+     1,500 ms to paint, and tests/r186's aircraft sweep zooms out and then has ten seconds to observe
+     a re-plan. Building a source and a layer there is work in the wrong place even when it is small,
+     so the whole build is deferred to the first IDLE after the camera settles. The effect is only
+     visible at whole-Earth zooms, where nobody is waiting on a frame; the cost of being a moment late
+     is nothing, and the cost of being early is a test that measures the app's responsiveness. */
+  let _pend=0;
   function consider(){
     if(!enabled||!engineIsMapLibre()) return;
     if(zoomNow()>ZMAX+0.4){ return; }
-    if(!built){ if(build()) refresh(true); }
-    else refresh(false);
+    if(built){ refresh(false); return; }
+    if(_pend) return; _pend=1;
+    const go=()=>{ _pend=0;
+      if(!enabled||zoomNow()>ZMAX+0.4) return;      /* the camera moved on while we waited */
+      if(build()) refresh(true); };
+    try{ if(window.requestIdleCallback) requestIdleCallback(go,{timeout:2500}); else setTimeout(go,700); }
+    catch(_){ setTimeout(go,700); }
   }
   function wire(){
     if(wired) return; wired=true;
