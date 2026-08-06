@@ -69,7 +69,11 @@ const RW = {
   radiusColor:        { v: 'radiusColor',        owners: ['atlas-console.js', 'tool-panel.js'] },
   radiusKm:           { v: 'radiusKm',           owners: ['atlas-console.js', 'tool-panel.js'] },
   unitMode:           { v: 'unitMode',           owners: ['atlas-console.js'] },
-  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js'] },
+  /* (#R199) …and js/theme-sky.js, deliberately: the theme + sky block left js/app-body.js this round,
+     and the ONE thing in it that writes closure state is applyTheme's own skin fallback
+     (`if(_SKINS.includes(HOST.userTheme)) HOST.userTheme='auto'` — a retired skin resets to auto).
+     It reaches the same closure variable through the same accessor pair as the Atlas command does. */
+  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js', 'theme-sky.js'] },
   /* `mode`'s getter sits with the other mutable state (it predates the setter), so only the pairing
      over the same closure variable is required — not that both halves share a line. */
   mode:               { v: 'currentMode',        owners: ['playground.js'], oneLinePair: false },

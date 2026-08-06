@@ -307,7 +307,7 @@ window.IntMapModules.weatherEC=function(HOST){
         if(cfg.type==='isobars'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:omUrl(cfg.variable)});
           if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
-          if(!GE().layers.has(cfg.id+'-lbl')) GE().layers.add({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+          if(!GE().layers.has(cfg.id+'-lbl')) GE().layers.add({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
           /* Wind directional barbs (vector 'wind-arrows' layer; needs &arrows=true). Color darkens with speed. */
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:omUrl(cfg.variable,'&arrows=true')});

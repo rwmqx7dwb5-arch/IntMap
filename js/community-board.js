@@ -57,7 +57,7 @@ window.IntMapModules.communityBoard=function(HOST){
         'circle-color':catColor,'circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'
       }});
       _LY().add({id:'community-labels',type:'symbol',source:'community-points',layout:{
-        'text-field':['get','short'],'text-size':11,'text-font':['literal',['Noto Sans Regular']],
+        'text-field':['get','short'],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left','text-offset':[1.1,0],'text-allow-overlap':false,'text-optional':true,'text-max-width':14
       },paint:{'text-color':'#0a6b32','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0,'text-opacity':0.95}});
       let hoverComm=null;

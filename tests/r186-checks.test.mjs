@@ -222,7 +222,8 @@ test('R186 the atmosphere yields to whoever owns the sky more specifically', () 
      undefined (tests/r174 «the renderer's own sky is what a cockpit sees»). A window with a pilot in
      it, and the sun-and-shadow simulator studying one particular moment, are both more specific
      requests than "the satellite view has an atmosphere". */
-  const src = read('js/app-body.js');
+  /* (#R199) the sky and everything that decides its colour live in js/theme-sky.js now. */
+  const src = read('js/theme-sky.js');
   assert.match(src, /function _skyIsOwnedElsewhere\(\)/);
   assert.match(src, /IntMapFlightSim; if\(FS&&FS\.active&&FS\.active\(\)\) return true/);
   assert.match(src, /if\(!GE\(\)\.hasRenderer\(\)\|\|_skyIsOwnedElsewhere\(\)\) return;/, 'the guard has to be on the way IN, not only on the restore');

@@ -48,6 +48,12 @@ import '../js/wx-source.js';
    contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
    whole table be tested without a browser. */
 import '../js/place-framing.js';
+/* (#R198) …and the same shape for the other "how big should this be" decision: js/label-scale.js is the
+   ONE ladder every text size on the map comes from, and the only thing that can hold "a non-place label
+   is smaller than a place label" as a property rather than a coincidence. Pure arithmetic — no DOM, no
+   renderer, no app state — so it is verified in Node, and it must precede every module that builds a
+   symbol layer, which is all of them. */
+import '../js/label-scale.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
@@ -200,7 +206,7 @@ const MODULE_FACTORIES = [
   'satProto', 'tileWarm',
 ];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');

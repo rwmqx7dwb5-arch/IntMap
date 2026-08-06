@@ -595,7 +595,7 @@ window.IntMapModules.tsunami=function(HOST){
           paint:{'line-color':'rgba(255,255,255,0.85)','line-width':1.1,'line-dasharray':[3,2]}});
         if(!GE().layers.has(LYR_ISOL)) GE().layers.add({id:LYR_ISOL,type:'symbol',source:SRC_ISO,
           layout:{visibility:showIso?'visible':'none','symbol-placement':'line','text-field':['get','label'],
-                  'text-size':11,'text-font':['literal',['Noto Sans Regular']]},
+                  'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},
           paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}});
       }catch(_){}
     }
