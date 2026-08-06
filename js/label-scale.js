@@ -43,7 +43,7 @@ window.IntMapLabelScale=(function(){
      that #R103 gave it (it was 9.5→13 against the modern 10→15). */
   const PLACE={
     country:[[1,9],[4,13]],
-    admin1 :[[3.2,9.5],[7,11.5]],
+    admin1 :[[4,9.5],[7,11.5]],
     city   :[[3,9.5],[10,13]],
     other  :[[7,9],[13,11]],
     era    :[[1,8.5],[4,12]]

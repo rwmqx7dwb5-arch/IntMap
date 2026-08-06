@@ -78,8 +78,24 @@ window.IntMapModules.placeLabels=function(HOST){
          view resolves in the city's favour. It is deliberately NOT in the label-click / hover-popup
          lists (js/map-ui.js): this round was asked for the NAMES, and making a region label open an
          outline would be a behaviour nobody asked for. */
-      const A1_RANK=['<=',['coalesce',['get','rank'],6],['step',['zoom'],0, 3.2,1, 3.8,2, 4.6,3, 5.3,4, 6.0,5, 6.8,6]];
-      if(!GE().layers.has('ofm-admin1')) GE().layers.add({id:'ofm-admin1',type:'symbol',source:'ofm','source-layer':'place',minzoom:3.2,maxzoom:9,
+      /* ⚠ THE BREAKPOINTS ARE INTEGERS, AND THAT IS NOT A STYLE CHOICE. `['zoom']` inside a FILTER is
+         re-evaluated only at INTEGER zooms — the app's own #R186 note says so about the POI gate, and
+         this ladder was written with fractional stops (3.2 / 3.8 / 4.6 / 5.3 / 6.0 / 6.8) anyway.
+         MEASURED consequence: Australia's states are rank 3, so they claimed to appear at z4.6, and at
+         z4.6 the filter is evaluated at zoom 4, where the threshold is still 2 — six states present in
+         the tiles and NOT ONE drawn, at exactly the zoom you look at Australia. Germany (also rank 3)
+         hid the bug because you look at Germany at z5+, where floor(z) happens to agree.
+         Integer stops mean the ladder does what it reads as.
+         ⚠ AND rank 3 HAS TO ENTER AT z4, NOT z5. Measured again after the first fix: at z5 Australia
+         no longer fits on screen, so only the one state whose label point is still in view gets drawn
+         (South Australia, 1 of 6). The zoom at which you look at Australia IS z4 — the same z4 that
+         already draws US states — and rank does not mean area here (Australia's states are far larger
+         than the German Länder that share rank 3), so a ladder that separates them by zoom separates
+         them by nothing. Each stop is pinned to a zoom verified by rendering: z4 → ranks 1-3, US (20),
+         China (10), Brazil (16), India, Germany, Australia; z5 → rank 4, Russia (7); z6 → rank 5, the
+         Japanese prefectures (11 at z6.2); z7 → everything left. */
+      const A1_RANK=['<=',['coalesce',['get','rank'],6],['step',['zoom'],0, 4,3, 5,4, 6,5, 7,6]];
+      if(!GE().layers.has('ofm-admin1')) GE().layers.add({id:'ofm-admin1',type:'symbol',source:'ofm','source-layer':'place',minzoom:4,maxzoom:9,
         filter:['all',['has','name'],['in',['get','class'],['literal',['state','province']]],A1_RANK],
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
           'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,
