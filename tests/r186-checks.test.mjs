@@ -173,9 +173,12 @@ test('R186 widgets: no ambient shadow around a widget card', () => {
 });
 
 test('R186 defaults: Köppen and the submarine cables are named once, and read by three places', () => {
-  const dl = read('js/data-layers.js'), ab = read('js/app-body.js');
+  /* (#R200) the reader is js/session-tabs.js now — the session block left js/app-body.js for its own
+     real ES module. Asked of that file directly rather than of a concatenation: stricter, because a
+     third move would have to say so here. */
+  const dl = read('js/data-layers.js'), ab = read('js/session-tabs.js');
   assert.match(dl, /window\.IntMapDefaultLayers\s*=\s*\['dl-climate','dl-subcables'\]/);
-  assert.ok(/IntMapDefaultLayers/.test(ab), 'app-body must read the same list');
+  assert.ok(/IntMapDefaultLayers/.test(ab), 'the session block must read the same list');
   /* …and the session restore must be able to turn one OFF again, or "default on" becomes "stuck on" */
   assert.match(ab, /defOff/, 'the restore has to switch a default-on layer back off when the session says so');
 });

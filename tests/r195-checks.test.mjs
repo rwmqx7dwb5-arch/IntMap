@@ -16,6 +16,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 const appBody = rd('js/app-body.js');
+/* (#R200) the session/tab subject left js/app-body.js for its own real ES module. These assertions
+   are pointed at the file that HOLDS each half now rather than at a concatenation: if the snapshot
+   ever moves again, "not in this file" is a failure, which is what a source-level guard is for. */
+const sessionTabs = rd('js/session-tabs.js');
 const mapUi = rd('js/map-ui.js');
 const geoEngine = rd('js/geo-engine.js');
 const cesium = rd('js/cesium-engine.js');
@@ -30,17 +34,19 @@ test('R195 ①: the session key the sidebar reads is the key the session writes'
      the saved layer list, and #R195's early read of the sidebar states. A fourth appearing without a
      reason, or any of them drifting, is what this pins — the sidebars restore from a key written
      ~2,500 lines away, and a typo there would fail silently as "the state was never saved". */
-  const keys = [...appBody.matchAll(/'intmap_session2'/g)].length;
-  assert.equal(keys, 3, `'intmap_session2' should appear exactly three times in js/app-body.js `
+  /* (#R200) …and the WRITER is now js/session-tabs.js while the two early reads stayed behind, so the
+     count is taken across both files and each site is pinned to the file it lives in. */
+  const keys = [...appBody.matchAll(/'intmap_session2'/g)].length + [...sessionTabs.matchAll(/'intmap_session2'/g)].length;
+  assert.equal(keys, 3, `'intmap_session2' should appear exactly three times across js/app-body.js + js/session-tabs.js `
     + `(the KEY, the early layer read, the early sidebar read); found ${keys}`);
-  assert.match(appBody, /const KEY='intmap_session2'/, 'the persistence block still owns the key');
+  assert.match(sessionTabs, /const KEY='intmap_session2'/, 'the persistence block still owns the key');
   assert.match(appBody, /localStorage\.getItem\('intmap_session2'\)/, 'the sidebar read uses the same key');
 });
 
 test('R195 ①: both sidebars are recorded, and every route out of them records itself', () => {
-  assert.match(appBody, /sbOpen,\s*lsrOpen/, 'the snapshot carries both sidebar states');
-  assert.match(appBody, /sbOpen=!el\.classList\.contains\('collapsed'\)/, 'the left state is read off the DOM');
-  assert.match(appBody, /lsrOpen=el\.classList\.contains\('open'\)/, 'the right state is read off the DOM');
+  assert.match(sessionTabs, /sbOpen,\s*lsrOpen/, 'the snapshot carries both sidebar states');
+  assert.match(sessionTabs, /sbOpen=!el\.classList\.contains\('collapsed'\)/, 'the left state is read off the DOM');
+  assert.match(sessionTabs, /lsrOpen=el\.classList\.contains\('open'\)/, 'the right state is read off the DOM');
   assert.match(appBody, /window\._imSessionUI=_sessUI/, 'the wanted state is published for the layer panel');
   /* the left toggle, and the right panel's open/close/toggle, all save */
   const saves = [...mapUi.matchAll(/window\._imSaveSession&&window\._imSaveSession\(\)/g)].length;

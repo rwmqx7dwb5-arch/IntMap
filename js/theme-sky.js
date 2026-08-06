@@ -130,7 +130,14 @@ export function makeThemeSky(HOST, CTX) {
      globe and setting it there is what fills the console with warnings. */
   function _sunOverheadPoint(){
     try{ const S=window.IntMapSky; if(!S||!S.sunPosition) return null;
-      let ms=Date.now(); try{ const T=window.IntMapTime; if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
+      /* ⚠ (#R200) IT ASKED FOR A METHOD THAT DOES NOT EXIST. window.IntMapTime's surface is
+         get / when / iso / year / isLive / min / state / on / set / setYear / setDaysAgo / setNow —
+         there is no `now()`. (`const now=()=>new Date()` is a PRIVATE helper inside that IIFE.) So
+         `if(T&&T.now)` was false on every build since #R196 and the sun was aimed by the wall clock
+         no matter where the time machine stood. Four files carried the same line; all four are fixed,
+         and tests/r200-checks derives the real surface from js/app-body.js so this cannot come back.
+         `when()` is the one to call: it returns the travelled instant, or now when the clock is live. */
+      let ms=Date.now(); try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
       const s=S.sunPosition(ms), g=S.gmstDeg(ms);
       return { lng:((s.ra-g+540)%360)-180, lat:s.dec };
     }catch(_){ return null; }
@@ -203,6 +210,7 @@ export function makeThemeSky(HOST, CTX) {
   }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
+    _followClock();
     try{
       _applySkyAtmosphere._on=true;
       /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
@@ -249,8 +257,30 @@ export function makeThemeSky(HOST, CTX) {
     }catch(_){}
   }
   /* The sub-solar point moves 15° an hour, and the time machine can move it by years in one step, so
-     re-aim the light on the master clock as well as on the basemap switch. */
-  try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ try{ if(_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} }); }catch(_){}
+     re-aim the light on the master clock as well as on the basemap switch.
+
+     ⚠ (#R200) THIS SUBSCRIPTION HAD NEVER RUN — not once, on any build, since #R196 wrote it. It was
+     a statement in the factory BODY, i.e. it executed the moment js/app-body.js instantiated this
+     module, and js/app-body.js creates `window.IntMapTime` about 2,200 lines LATER in the same
+     closure. So the guard `window.IntMapTime && window.IntMapTime.on` was false every single time and
+     the subscriber list stayed empty: travelling to another date left the sky, the horizon band and
+     the scene light on the OLD sun until the 60-second interval below happened to come round. Moving
+     the file in #R199 changed nothing about that (the condition is the same before and after), which
+     is why it is a #R196 defect rather than a #R199 regression.
+
+     The fix is not a longer guard, it is subscribing at a moment when the clock exists. _followClock()
+     is called from _applySkyAtmosphere, which first runs inside map-load — long after IntMapTime is
+     built — and it attaches exactly once however many times the theme is re-applied. */
+  function _followClock(){
+    if(_followClock._on) return false;
+    try{
+      const T=window.IntMapTime;
+      if(!(T&&T.on)) return false;
+      _followClock._on=true;
+      T.on(()=>{ try{ if(_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} });
+      return true;
+    }catch(_){ return false; }
+  }
   setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} },60000);
   return { applyTheme, _applySkyAtmosphere, _skyFollowCamera };
 }

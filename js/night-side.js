@@ -51,8 +51,39 @@ window.IntMapNightSide=(function(){
   const RAMP=ramp(1);
   const ZMAX=4.6;                       /* above this the ramp is 0 — nothing is built */
   const SHADE='#03060f';
-  const RINGS=[0,-3,-6,-9,-12];         /* solar elevation, degrees: day → astronomical twilight */
-  const SHADE_MAX=0.78;                 /* total darkening at full night, at the widest zoom */
+
+  /* ══ (#R200) 「引いたときの黒さをよりきつくして」 ═══════════════════════════════════════════════════
+     Two things had to change, and the ARITHMETIC came first — the number would have been guesswork
+     without it. #R196 gave all five nested polygons the SAME opacity, `SHADE_MAX / RINGS.length`,
+     and called the sum the total darkness. ⚠ ALPHA DOES NOT ADD. Five coats of 0.156 leave
+     (1 − 0.156)^5 = 0.428 of the basemap showing, so the deepest night was 57 % dark while the
+     constant next to it said 78 % — and at the zoom the app actually opens at (1.7, ramp 0.86) it
+     was 51 %. That gap is the reported 「黒さが足りない」, and no amount of raising a number that is
+     not what it claims to be would have been an answer.
+
+     So the darkness is now stated as what the EYE gets — the composite over the basemap at each
+     ring's own solar elevation, at the widest zoom — and the per-ring alphas are DERIVED from it:
+     the rings are nested, so the k-th one sees 1 − Π(1 − aᵢ) for i ≤ k, which inverts exactly.
+     Stating the relation once (the way #R198 did for label sizes) is what keeps it true: change a
+     row below and the layer still delivers that composite, because nothing else is written down.
+
+     The profile itself is darker than #R196's everywhere past the terminator (0.34/0.62/0.85/0.94
+     against 0.29/0.40/0.49/0.57) and deliberately LIGHTER at 0° (0.10 against 0.156): the twilight
+     band is ~1,300 km wide seen from space, and a hard step at the terminator is the one artefact
+     that reads as "a polygon" rather than as night. */
+  const NIGHT_PROFILE=[[0,0.10],[-3,0.34],[-6,0.62],[-9,0.85],[-12,0.94]];
+  const RINGS=NIGHT_PROFILE.map((p)=>p[0]);   /* solar elevation, degrees: day → astronomical twilight */
+  const SHADE_MAX=NIGHT_PROFILE[NIGHT_PROFILE.length-1][1];   /* the composite at full night, widest zoom */
+  const RING_ALPHA=(function(){ const out=[]; let clear=1;    /* clear = Π(1−aᵢ) so far */
+    for(const p of NIGHT_PROFILE){ const rest=1-p[1]; out.push(+Math.max(0,Math.min(1,1-rest/clear)).toFixed(5)); clear=rest; }
+    return out; })();
+  /* ⚠ THE ZOOM EXPRESSION IS STILL THE OUTERMOST ONE (see the note above — MapLibre rejects a nested
+     one and addLayer swallows the rejection). The per-ring choice therefore rides on the STOP OUTPUT,
+     which is where a `match` is allowed; the last stop is a literal 0 because at zero scale every
+     branch is zero, and "the ramp ends at 0" is what tests/r196.spec.js reads off the live style. */
+  const shadeOpacity=()=>['interpolate',['linear'],['zoom']].concat(
+    ...RAMP_STOPS.map(([z,v])=>[z, v<=0 ? 0
+      : ['match',['get','elev']].concat(...RINGS.map((e,i)=>[e,+(RING_ALPHA[i]*v).toFixed(5)])).concat([0])]));
 
   let built=false, lights=null, lightsTried=false, lastKey='', enabled=true, wired=false, lastErr=null;
 
@@ -154,7 +185,10 @@ window.IntMapNightSide=(function(){
     return undefined;
   }
   function clockMs(){
-    try{ const T=window.IntMapTime; if(T&&T.now){ const d=T.now(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) return v; } }catch(_){}
+    /* ⚠ (#R200) `T.now` IS NOT PART OF window.IntMapTime — see the note in js/theme-sky.js. This
+       guard was false on every build since #R196, so the terminator and the city-lights mask were
+       drawn for the wall clock even with the time machine years away. `when()` is the real one. */
+    try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) return v; } }catch(_){}
     return Date.now();
   }
   /* ⚠ (#R196) THE HOT LOOP IS SEPARABLE, SO IT IS SEPARATED. The solar elevation at (lat, lng) is
@@ -234,7 +268,7 @@ window.IntMapNightSide=(function(){
     try{
       if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:ringFC(new Date(clockMs()))});
       if(!GE().layers.has(LYR)) GE().layers.add({ id:LYR, type:'fill', source:SRC,
-        paint:{ 'fill-color':SHADE, 'fill-opacity':ramp(SHADE_MAX/RINGS.length), 'fill-antialias':false } }, b);
+        paint:{ 'fill-color':SHADE, 'fill-opacity':shadeOpacity(), 'fill-antialias':false } }, b);
       if(!GE().layers.has(LYR)) return false;         /* addLayer swallows a rejected paint expression */
     }catch(_){ return false; }
     built=true;
@@ -310,7 +344,10 @@ window.IntMapNightSide=(function(){
 
   return { apply, refresh:()=>refresh(true), setEnabled, destroy,
     state:()=>({ built, enabled, lights:!!lights, err:lastErr, zoom:zoomNow(), rings:RINGS.length,
-                 shadeMax:SHADE_MAX, zMax:ZMAX }),
+                 shadeMax:SHADE_MAX, zMax:ZMAX, ringAlpha:RING_ALPHA.slice(), profile:NIGHT_PROFILE.map((p)=>p.slice()) }),
+    /* pure: the composite darkness the profile promises at ring k, so a test can check the layer
+       delivers the RELATION rather than a copied constant */
+    _composite:(k)=>{ let clear=1; for(let i=0;i<=k&&i<RING_ALPHA.length;i++) clear*=(1-RING_ALPHA[i]); return 1-clear; },
     /* pure, so the arithmetic can be checked without a renderer */
     _nightAt:(lng,lat,date)=>nightAt(solar(date||new Date(clockMs())),lng,lat),
     _ringFC:(date)=>ringFC(date||new Date(clockMs())) };

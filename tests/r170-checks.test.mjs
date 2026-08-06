@@ -123,7 +123,10 @@ test('desktop defaults to normal mode; workspace is opt-in', () => {
 });
 
 test('a fresh desktop boot selects the Countries tab, once', () => {
-  const s = stripComments(INDEX);
+  /* (#R200) the tab bar and the session that restores it are js/session-tabs.js now — a real ES
+     module, so this asks THAT file rather than the page shell. Not a loosening: the shell no longer
+     contains any of these four lines, so pointed at it every assertion below would fail. */
+  const s = stripComments(R('js/session-tabs.js'));
   assert.match(s, /function _defaultTab\(\)/);
   assert.match(s, /IntMapOS\.exec\('tab\.stats',\{source:'default'\}\)/, 'the default tab must be Countries (tab.stats)');
   assert.match(s, /_tabInit=true/, 'it must record that it has run so it never overrides a user who closed every tab');
