@@ -61,7 +61,10 @@ test('R196 ①b js/tile-warm.js carries the prefetch block, and takes its five v
   assert.match(w, /HOST\.mapType!=='sat'/, 'the basemap is read from IM_HOST, not closed over');
   assert.match(w, /HOST\.satState\.providerId/, 'the provider is read from IM_HOST');
   assert.match(shell, /get satBuildTiles\(\)\{ return satBuildTiles; \}/, 'IM_HOST must publish satBuildTiles');
-  assert.match(shell, /window\.IntMapModules\.tileWarm\(IM_HOST\)/, 'the shell calls the factory where the code used to be');
+  /* (#R200) …from js/label-occlusion.js now: the mount sat inside the label/occlusion block, which
+     left js/app-body.js this round. The call did not move relative to the code around it — the file
+     did — so this asks the file that holds it. */
+  assert.match(rd('js/label-occlusion.js'), /window\.IntMapModules\.tileWarm\(HOST\)/, 'the block that always mounted it still does');
   assert.ok(rd('src/main.js').includes("import '../js/tile-warm.js';"), 'the entry imports it');
   assert.ok(rd('src/main.js').includes("import '../js/geodesy.js';"), 'the entry imports js/geodesy.js');
   assert.match(rd('src/main.js'), /'satProto', 'tileWarm',/, 'the factory guard knows about tileWarm');

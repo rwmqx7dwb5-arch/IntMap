@@ -73,7 +73,11 @@ const RW = {
      and the ONE thing in it that writes closure state is applyTheme's own skin fallback
      (`if(_SKINS.includes(HOST.userTheme)) HOST.userTheme='auto'` — a retired skin resets to auto).
      It reaches the same closure variable through the same accessor pair as the Atlas command does. */
-  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js', 'theme-sky.js'] },
+  /* (#R200) …and js/keyboard-shortcuts.js, also deliberately: the desktop `t` shortcut cycles
+     light → dark → auto, which is one of the two places in the app that CHOOSE a theme (the other is
+     the Settings select it drives). It reaches the same closure variable through the same accessor
+     pair, and it is the only host state that whole file writes. */
+  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js', 'theme-sky.js', 'keyboard-shortcuts.js'] },
   /* `mode`'s getter sits with the other mutable state (it predates the setter), so only the pairing
      over the same closure variable is required — not that both halves share a line. */
   mode:               { v: 'currentMode',        owners: ['playground.js'], oneLinePair: false },

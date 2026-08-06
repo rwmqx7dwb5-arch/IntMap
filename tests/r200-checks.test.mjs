@@ -1,9 +1,9 @@
 /* ============================================================================
- *  IntMap · #R200 — six more subjects out of the core, a hook that had never run,
+ *  IntMap · #R200 — ten more subjects out of the core, a hook that had never run,
  *                   and a darkness that is now the one the eye gets
  * ----------------------------------------------------------------------------
  *  「最大の問題は、中心部がまだ巨大なことです」 continues from #R199, on the other file:
- *  js/app-body.js 5,149 → 4,685 lines, in six REAL ES modules (static `import`, no
+ *  js/app-body.js 5,149 → 4,360 lines, in TEN real ES modules (static `import`, no
  *  window.IntMapModules entry, no line in src/main.js's ordered list).
  *
  *  As in #R199, what makes that safe is not that code moved — it is that BOTH SIDES of every
@@ -32,7 +32,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const CORE = read('js/app-body.js');
 
-/* The six files and the one name each exports. Every other list below is READ OUT of the sources. */
+/* The ten files and the one name each exports. Every other list below is READ OUT of the sources. */
 const MODULES = [
   ['js/session-tabs.js', 'makeSessionTabs'],
   ['js/layer-dropdown.js', 'makeLayerDropdown'],
@@ -40,6 +40,12 @@ const MODULES = [
   ['js/premium-plan.js', 'makePremiumPlan'],
   ['js/screenshot.js', 'makeScreenshot'],
   ['js/time-countries.js', 'makeTimeCountries'],
+  /* the second pass: every section of js/app-body.js was swept for its surface, and these four
+     measured 2/2/6/5 inbound against 0/0/0/1 outbound — cleaner cuts than anything in the first. */
+  ['js/i18n-late.js', 'makeI18nLate'],
+  ['js/wheel-zoom.js', 'makeWheelZoom'],
+  ['js/keyboard-shortcuts.js', 'makeKeyboardShortcuts'],
+  ['js/label-occlusion.js', 'makeLabelOcclusion'],
 ];
 
 /* ── read a module: its CTX rebinds, the names it returns, every CTX.x it touches ── */
@@ -121,7 +127,7 @@ function readCallSite(fnName) {
   return hit;
 }
 
-test('R200 ①: the six subjects are real ES modules — no registry, no load order', () => {
+test('R200 ①: the ten subjects are real ES modules — no registry, no load order', () => {
   for (const [rel] of MODULES) {
     const src = read(rel);
     assert.doesNotMatch(src, /window\.IntMapModules(\.\w+|\[[^\]]+\])?\s*=(?!=)/,
@@ -159,26 +165,39 @@ test('R200 ②: what each module returns is what the core takes; what it reads i
 });
 
 test('R200 ③: the values app-body REASSIGNS are read live off IM_HOST, never captured', () => {
-  /* The 14 non-verbatim lines of the 504 moved ones are all this rule (#R165's). For each HOST member
+  /* The 21 non-verbatim lines of the 852 moved ones are all this rule (#R165's). For each HOST member
      a module reads, js/app-body.js must still own the closure variable behind a live getter — a
      captured copy is the #R162 failure mode with a longer fuse. */
   const seen = new Set();
   for (const [rel, fn] of MODULES) for (const k of readModule(rel, fn).host) seen.add(`${rel}:${k}`);
   assert.deepEqual([...seen].sort(), [
+    'js/i18n-late.js:lang',
+    'js/keyboard-shortcuts.js:lang',
+    'js/keyboard-shortcuts.js:userTheme',
+    'js/label-occlusion.js:markersArray',
+    'js/label-occlusion.js:proj',
     'js/layer-favs.js:lang',
     'js/premium-plan.js:mapType',
     'js/session-tabs.js:mapType',
     'js/session-tabs.js:mode',
     'js/session-tabs.js:terrain3D',
     'js/time-countries.js:countryDataLoaded',
-  ], 'the live-accessor surface of the six modules');
-  for (const k of ['mode', 'mapType', 'terrain3D', 'lang', 'countryDataLoaded']) {
+  ], 'the live-accessor surface of the ten modules');
+  for (const k of ['mode', 'mapType', 'terrain3D', 'lang', 'countryDataLoaded', 'proj', 'markersArray', 'userTheme']) {
     assert.match(CORE, new RegExp(`get ${k}\\(\\)\\{ return \\w+; \\}`), `IM_HOST still owns ${k} behind a live getter`);
   }
-  /* …and none of the six WRITES host state: every one of them was chosen for that. The RW contract
-     (tests/r165-checks.test.mjs) is the audit for the members that are written; keeping this round's
-     six out of it is what keeps the cut from adding shared mutable state. */
-  for (const [rel] of MODULES) assert.doesNotMatch(read(rel), /HOST\.\w+\s*=(?!=)/, `${rel} must not write host state`);
+  /* …and only ONE of the ten writes host state: the `t` shortcut cycles light → dark → auto. It goes
+     through IM_HOST's accessor pair and is named as an owner in tests/r165-checks.test.mjs, which is
+     the audit for written members. Every other module was chosen so nothing but reads crosses the cut. */
+  for (const [rel] of MODULES) {
+    if (rel === 'js/keyboard-shortcuts.js') {
+      assert.match(read(rel), /HOST\.userTheme=nx/, 'the theme shortcut writes through the accessor pair');
+      assert.match(read('tests/r165-checks.test.mjs'), /'theme-sky\.js', 'keyboard-shortcuts\.js'\]/,
+        '…and the RW contract names it as an owner');
+      continue;
+    }
+    assert.doesNotMatch(read(rel), /HOST\.\w+\s*=(?!=)/, `${rel} must not write host state`);
+  }
 });
 
 test('R200 ④b: the names the layers menu hands back are HOISTED, because they are read earlier', () => {
@@ -186,8 +205,8 @@ test('R200 ④b: the names the layers menu hands back are HOISTED, because they 
      names js/map-ui.js captures off IM_HOST must be function DECLARATIONS in js/app-body.js (available
      from the closure's first line, as they were before they moved), and js/map-ui.js's mount must still
      come BEFORE the block that fills the handle in — which is precisely why a const cannot work here. */
-  for (const nm of ['_collapseGroup', 'layerCbInfo', 'renderLayerFavs']) {
-    assert.match(CORE, new RegExp(`^  function ${nm}\\(\\)\\{ return _IM_L(DROP|FAVS)\\.${nm}\\.apply\\(this,arguments\\); \\}$`, 'm'),
+  for (const nm of ['_collapseGroup', 'layerCbInfo', 'renderLayerFavs', 'updateOcclusion']) {
+    assert.match(CORE, new RegExp(`^  function ${nm}\\(\\)\\{ return _IM_[A-Z]+\\.${nm}\\.apply\\(this,arguments\\); \\}$`, 'm'),
       `${nm} must be a hoisted shim`);
     assert.doesNotMatch(CORE, new RegExp(`const \\{[^}]*\\b${nm}\\b[^}]*\\} = make`), `${nm} must not come back as a const`);
   }
@@ -207,14 +226,14 @@ test('R200 ④: no module inherited a closure variable', () => {
 test('R200 ⑤: the core keeps shrinking, and the ceiling follows the floor DOWN', () => {
   /* #R195's rule. Set from the measured floor at the end of this round with tight headroom, and it
      must come down again when the next subject leaves.
-       js/app-body.js      5,375 (#R198) → 5,149 (#R199) → 4,685 (#R200)   budget 4,750
+       js/app-body.js      5,375 (#R198) → 5,149 (#R199) → 4,360 (#R200)   budget 4,400
        js/atlas-console.js 6,580 (#R198) → 5,237 (#R199) → untouched here  budget 5,300 */
   const n = (p) => read(p).split('\n').length;
   const body = n('js/app-body.js');
-  assert.ok(body < 4_750, `js/app-body.js is ${body} lines; it was 5,149 before #R200 and must not grow back`);
+  assert.ok(body < 4_400, `js/app-body.js is ${body} lines; it was 5,149 before #R200 and must not grow back`);
   assert.ok(n('js/atlas-console.js') < 5_300, 'js/atlas-console.js keeps #R199\'s ceiling');
   const moved = MODULES.reduce((a, [rel]) => a + n(rel), 0);
-  assert.ok(moved > 450, `the six modules hold ${moved} lines — the core shrank by moving, not by losing`);
+  assert.ok(moved > 900, `the ten modules hold ${moved} lines — the core shrank by moving, not by losing`);
 });
 
 test('R200 ⑥: the sky subscribes to the master clock at a moment when the clock EXISTS', () => {
