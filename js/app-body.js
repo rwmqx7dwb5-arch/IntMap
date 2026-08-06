@@ -1577,7 +1577,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     })();
     return gdpPPPPromise;
   }
-  function applyCountryVisibility(){ if(!GE().hasRenderer()||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none'; GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
+  /* (#R195) the held 10 m country geometry (js/countries-ui.js) reaches the renderer HERE — the one
+     moment something is about to draw it. Flushed before the layers are shown, so the first frame
+     with Countries(info) on already carries the fine outline rather than the 110 m stand-in. */
+  window._imFlushCountryGeo=function(){ try{
+    const hi=window._imCountryGeoPending; if(!hi) return false;
+    if(!(GE().hasRenderer()&&GE().layers.hasSource('countries'))) return false;
+    if(!countryInfoOn) return false;
+    GE().layers.setSourceData('countries',hi); window._imCountryGeoPending=null; return true;
+  }catch(_){ return false; } };
+  function applyCountryVisibility(){ if(!GE().hasRenderer()||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none';
+    if(countryInfoOn){ try{ window._imFlushCountryGeo(); }catch(_){} }
+    GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
   const cName=(s,f)=>(currentLang==='jp'&&s&&s.nameJp)?s.nameJp:(s&&s.nameEn)||f||'—';

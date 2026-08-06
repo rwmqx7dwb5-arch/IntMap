@@ -123,22 +123,38 @@ window.IntMapModules.countriesUi=function(HOST){
             const upgrade=async()=>{
               const hi=await grab('ne_10m_admin_0_countries.geojson');
               if(!(hi&&hi.features&&hi.features.length)) return;
-              const best=new Map();
-              hi.features.forEach(f=>{
-                const p=f.properties||{};
+              /* ⚠ (#R195) IN CHUNKS, WITH A YIELD. This walks ~548,000 vertices and runs turf.area on
+                 every feature; as one loop it is a single long task, and it lands 4-10 s after boot —
+                 the window the renderer tests assert in. Nothing here is urgent, so it gives the
+                 thread back every 16 features. Same reason the tsunami's bathymetry pass yields every
+                 8 rows (#R193): the work is fine, holding the thread while doing it is not. */
+              const best=new Map(), fs=hi.features;
+              for(let i=0;i<fs.length;i++){
+                const f=fs[i], p=f.properties||{};
                 let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
-                if(!code||code==='-99'){ f.id=undefined; return; }
+                if(!code||code==='-99'){ f.id=undefined; continue; }
                 f.id=code; if(f.properties) f.properties.__code=code;
                 let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
                 /* (#R15) the largest-area polygon per code is the mainland — same rule as above */
                 const cur=best.get(code); if(!cur||area>cur.area) best.set(code,{area,f});
-              });
+                if((i&15)===15) await new Promise(r=>setTimeout(r,0));
+              }
               best.forEach((v,code)=>{ const s=HOST.countryStats[code]; if(!s) return;
                 s.area=Math.round(v.area); s._area=v.area;
                 s.density=(s.pop&&v.area)?s.pop/v.area:null;
                 s.bbox=_bboxOf(v.f)||s.bbox; });
               HOST.countryGeo=hi; window.countryGeo=hi;
-              try{ if(_LY()&&_LY().hasSource('countries')) _LY().setSourceData('countries',hi); }catch(_){}
+              /* ⚠ (#R195) DO NOT PUSH IT AT THE RENDERER UNLESS SOMETHING WILL DRAW IT. The 10 m
+                 collection is 258 features and ~548,000 vertices; handing that to the engine rebuilds
+                 every feature on the main thread. `country-fill`/`country-line` are created hidden and
+                 only shown by Countries(info), so on a default session that rebuild is pure cost with
+                 nothing on screen to show for it — and it lands 4-10 s after boot, right where the
+                 renderer tests are asserting. It cost two CI runs: on Cesium, r180 ④ and ⑤ went red
+                 («the drawn feature is pickable», «entities 0») while every other shard stayed green,
+                 and the same specs pass on main. Hold it instead, and flush it the moment the layer
+                 is actually made visible (window._imFlushCountryGeo, called by applyCountryVisibility). */
+              window._imCountryGeoPending=hi;
+              try{ if(typeof window._imFlushCountryGeo==='function') window._imFlushCountryGeo(); }catch(_){}
               try{ HOST.rebuildGeoIndex(); }catch(_){}
             };
             const go=()=>{ let slow=false;
