@@ -1,0 +1,17 @@
+{
+  "source": "AWS Terrain Tiles (terrarium) — ETOPO1 bathymetry, SRTM/GMTED/NED topography",
+  "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+  "zoom": 5,
+  "width": 1440,
+  "height": 720,
+  "degrees": 0.25,
+  "projection": "equirectangular, -180..180 × 90..-90, pixel centres at (i+0.5), (j+0.5)",
+  "encoding": "R*256+G = mean depth of the sea samples in the cell (metres, 0 = none); B = sea fraction × 255",
+  "mercatorLimitDeg": 85.0511,
+  "coveredRows": "±85.051° — rows outside carry sea fraction 0",
+  "cellsCoveredFraction": 0.9472,
+  "seaCellFraction": 0.6713,
+  "maxDepthM": 9985,
+  "bytes": 1290949,
+  "built": "2026-08-06T14:56:51.976Z"
+}

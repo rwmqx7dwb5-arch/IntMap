@@ -224,8 +224,11 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /if\(!\(M>=6\.5\)\|\|!\(depthKm<=100\)\) return null;/, 'M≥6.5 and ≤100 km');
   assert.match(src, /if\(e0==null\|\|e0>0\) return null;/, 'and under the sea, read from the DEM');
   assert.match(src, /Math\.pow\(10,0\.5\*M-3\.3\)/, 'wave height from the Abe tsunami-magnitude relation');
-  assert.match(src, /D2\.open\(\{ lng:epi\[0\], lat:epi\[1\], hazard:'tsunami', waveH:t\.waveM \}\)/,
-    'handed to the existing inundation model — no second model is written');
+  /* ⚠ (#R197) this used to assert the hand-off went to js/sims.js's `tsunami` hazard. That hazard has
+     been removed — 「災害シミュレータからは津波シミュレータを削除しろ」 — and the hand-off now goes to the
+     propagation model and nowhere else. The screening above is unchanged and is what this test is for. */
+  assert.match(src, /const T=window\.IntMapTsunami; if\(!T\|\|!T\.open\) return false;/,
+    'handed to the propagation model, and to nothing else');
   /* ⚠ the screening asks the DEM, and render() asks the screening — so it has to survive a tile that
      has not arrived yet. Measured before this: an offshore M9.0 screened correctly through the API
      and the BUTTON was never drawn, because render() had already asked and got "unknown". */

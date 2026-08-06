@@ -1,30 +1,36 @@
 /* ============================================================================
- *  IntMap · THE TSUNAMI SOLVER, OFF THE MAIN THREAD  (#R193)
+ *  IntMap · THE TSUNAMI SOLVER, OFF THE MAIN THREAD  (#R193, made GLOBAL in #R197)
  * ----------------------------------------------------------------------------
- *  「津波が発生するとされるような地震だった場合、波の伝播のわかるアニメーション津波シミュレーター
- *    も使えるように。（追記：まったくのごみ。徹底的に作り直せ。）」
+ *  「津波シミュレータのシミュレート範囲は全球に。また、精度と忠実性を根本的に大幅に強化して。」
  *
- *  MEASURED FIRST, on the #R192 module, Tōhoku M9.1 / 6 h / 320²:
+ *  #R193 moved the solve off the page. #R197 moves the MODEL off the page — the sea floor, the fault
+ *  and the initial sea surface are built here too — and makes the domain the whole planet.
  *
- *      building the model     9.5 s wall, of which 6.6 s BLOCKED the main thread (worst task 900 ms)
- *      playing it back        9.3 fps, and it advanced 2 of its 74 frames in eight seconds
- *                             — i.e. ~5 minutes to watch the wave cross the Pacific once
+ *  ── WHAT WAS WRONG WITH A BOX ───────────────────────────────────────────────────────────────────
+ *  Up to #R196 the domain was a lat/lon box around the epicentre, sized from the run length, capped
+ *  at ±52° of latitude and ±170° of longitude and clipped to ±78°. Three things follow from that,
+ *  and all three are errors in the answer rather than in the picture:
  *
- *  Both numbers come from the same decision: the solver ran on the page, in an async function that
- *  yielded every eighth stored frame, and playback re-encoded a 320² canvas to a PNG data URL and
- *  swapped a whole image source on EVERY animation frame. The physics was never the problem. The
- *  delivery was, and this file is the first half of the answer: everything below happens in a worker
- *  and what crosses back is a transferable buffer.
+ *   · a wave that reaches the edge is GONE. The Pacific is 160° wide; a Chilean source with a 6 h
+ *     box never contains Japan, and a 24 h box that does contain it is 340° wide — nearly the globe,
+ *     but built as if the two edges were unrelated;
+ *   · the two edges ARE the same meridian, and the sponge that stopped them reflecting also removed
+ *     energy that should have kept going. Every trans-Pacific arrival was low;
+ *   · the box was re-cut per run, so the cell size changed with the length of the run — 22 km for a
+ *     6 h Tōhoku run, 40 km for 24 h. The model's resolution depended on how long you asked to watch.
+ *
+ *  Now: −180…180 by −80…80 at 0.25°, 1440 × 640, and LONGITUDE IS PERIODIC. Column NX−1's eastern
+ *  neighbour is column 0, in every one of the three equations. There is no edge in longitude, so
+ *  nothing reflects off one and nothing leaves through one; a wave that crosses the Pacific arrives,
+ *  keeps going, and comes back.
  *
  *  ── THE EQUATIONS ───────────────────────────────────────────────────────────────────────────────
  *  Shallow-water (long-wave) in flux form on a spherical Arakawa C-grid, leapfrog in time — what JMA,
  *  TUNAMI-N2 and COMCOT solve offshore:
  *
- *      ∂M/∂t = −g·D·(1/(R cosφ))·∂η/∂λ − τ_x        M, N: volume flux (m²/s)
- *      ∂N/∂t = −g·D·(1/R)·∂η/∂φ       − τ_y        D = h + η: TOTAL depth
+ *      ∂M/∂t − f·N = −g·D·(1/(R cosφ))·∂η/∂λ − τ_x     M, N: volume flux (m²/s)
+ *      ∂N/∂t + f·M = −g·D·(1/R)·∂η/∂φ       − τ_y     D = h + η: TOTAL depth
  *      ∂η/∂t = −(1/(R cosφ))·[ ∂M/∂λ + ∂(N cosφ)/∂φ ]
- *
- *  Two things here are new against #R192, and both matter where a tsunami actually hurts:
  *
  *   · the pressure term uses the TOTAL depth D = h + η, not the still-water depth h. In 4 km of ocean
  *     that is a 0.02 % correction and invisible; over a 30 m shelf with a 5 m wave it is 17 %, and it
@@ -34,48 +40,197 @@
  *     value the Japanese operational models use over an ocean floor). Negligible in deep water by
  *     D^(7/3); dominant on the shelf, and the reason an unfrictioned long-wave model over-predicts
  *     coastal amplitude.
+ *   · (#R197) CORIOLIS, f = 2Ω·sinφ. It was absent while the domain was a box a few hours wide, where
+ *     it is a rounding error. Over a run that is now allowed to be thirty hours and to cross a whole
+ *     ocean it is not: f⁻¹ at mid-latitude is about 3 h, so the far field of a trans-Pacific tsunami
+ *     is rotated by an angle of order one. It is carried explicitly — f·Δt ≈ 4×10⁻³ here, four orders
+ *     inside the explicit stability limit, so it costs two multiplies and no time step.
  *
  *  ⚠ ADVECTION (∂(M²/D)/∂x …) IS DELIBERATELY ABSENT, and this is a measurement rather than a
  *  simplification: at these cell sizes the Froude number in the open ocean is M/(D·√(gD)) ≈ 1e−4, so
  *  the advective terms are four orders below the pressure term, while an upwind advection stencil on a
- *  20 km grid adds its own numerical diffusion that is larger than the term it models. What it would
- *  change — the last kilometre, where the wave is a bore — this grid cannot resolve at all, and that
- *  is what the inundation model is for. Stated so nobody has to re-derive it.
+ *  28 km grid adds its own numerical diffusion that is larger than the term it models. What it would
+ *  change — the last kilometre, where the wave is a bore — this grid cannot resolve at all.
  *
  *  ⚠ THE KAJIURA FILTER IS ALSO ABSENT, for the same kind of reason. The sea surface does not copy the
  *  sea floor exactly: the response is low-passed over a length of order the water depth (Kajiura 1963),
  *  usually approximated by a Gaussian of σ ≈ 0.75·h. With h ≈ 4–6 km that is σ ≈ 3–4.5 km, and this
- *  grid's cell is 20–30 km. The filter would be entirely inside one cell — it is already applied, by
- *  the sampling. Adding it would be arithmetic that changes nothing, which #R191 established is worth
+ *  grid's cell is 28 km. The filter would be entirely inside one cell — it is already applied, by the
+ *  sampling. Adding it would be arithmetic that changes nothing, which #R191 established is worth
  *  saying rather than doing.
+ *
+ *  ⚠ FREQUENCY DISPERSION IS ALSO ABSENT, AND HERE IS THE SIZE OF IT — stated because a global model
+ *  is exactly where it would accumulate. The shortest wave this grid carries is about 4Δx ≈ 112 km;
+ *  in 4 km of water its true phase speed is √(tanh(kh)/kh) = 0.992 of the long-wave speed, so after
+ *  10,000 km it lags the modelled front by ~80 km, i.e. about 6 minutes in 13 hours. The leading
+ *  wave, which is what an arrival time is read off, is much longer than that and lags by less. A
+ *  Boussinesq term would be an implicit solve at every step for a correction smaller than the
+ *  bathymetry's own uncertainty at 0.25°.
+ *
+ *  ── ⚠ THE POLES, AND WHY THE TIME STEP DOES NOT COLLAPSE ────────────────────────────────────────
+ *  A lat/lon cell narrows as cosφ. At 80° it is 4.8 km against 27.8 km at the equator, and the CFL
+ *  condition would take Δt down by the same factor — 11,500 steps for a 30 h run instead of 4,000,
+ *  for cells that are almost all land or ice. The standard answer, and the one used here, is a POLAR
+ *  FILTER (Arakawa & Lamb 1977): poleward of 60° the field is smoothed ALONG each latitude circle
+ *  with a circular box filter whose width is cos(60°)/cosφ cells, applied twice so the filter's own
+ *  sidelobes do not survive. That removes exactly the zonal wavenumbers whose phase speed would
+ *  break the step, and the step is then set by the cell at 60°.
+ *
+ *  ⚠ It is an approximation, so it is CHECKED rather than trusted: the run carries a bound on |η| and
+ *  returns an error instead of a picture if the field ever leaves it. A model that blew up quietly
+ *  would look like a tsunami.
  *
  *  ── STABILITY ───────────────────────────────────────────────────────────────────────────────────
  *  Δt from the CFL condition with a 0.45 margin, evaluated PER CELL — its own width against its own
- *  depth — rather than pairing the narrowest cell in the domain with the deepest one. ⚠ Verified not to
- *  change the answer: halving the margin to 0.25 moved the modelled Guam arrival by 24 s in 6,668, so
- *  the step is not what sets the travel times and the faster setting is the honest one to ship.
+ *  depth — rather than pairing the narrowest cell in the domain with the deepest one, and with the
+ *  width poleward of the filter latitude taken as the filter's own effective width.
  *
  *  ── WHAT COMES BACK ─────────────────────────────────────────────────────────────────────────────
  *  Frames STREAM as they are produced, so the animation is watchable long before the run ends. Each
  *  is the surface elevation companded into an Int8: q = sign(η)·round(127·(|η|/A)^(1/3)) against the
  *  run's own peak A. The cube root is the same curve the colour ramp uses, so one step of q is ~0.8 %
- *  of the ramp everywhere — 120 frames of 512² is 31 MB this way against 63 MB of Int16 and 126 MB of
- *  Float32. The ANALYSIS fields (maximum crest, first arrival) are never quantised; they are computed
- *  here in full precision and sent once at the end.
+ *  of the ramp everywhere.
+ *
+ *  ⚠ THE FRAMES ARE DECIMATED AND THE ANALYSIS IS NOT. 1440 × 640 Int8 is 921 KB a frame and 140 of
+ *  them is 126 MB, which is not a thing to hold in a tab. The picture is decimated by `dec` (2 on a
+ *  desktop → 720 × 320, 31 MB for the whole run) by AREA AVERAGE, which is what drawing the same
+ *  field at half the resolution means. The maximum crest, the minimum trough and the first-arrival
+ *  time are never quantised and never decimated: they are computed here in full precision on the full
+ *  grid and sent once at the end, because they are what gets read as numbers.
  * ==========================================================================*/
 'use strict';
 /* eslint-disable no-unused-vars */
 const RE = 6371000, G = 9.80665, DEG = Math.PI / 180;
 const MANNING = 0.025;                 /* s·m^(−1/3) — ocean floor, Kotani et al. 1998 */
 const ARRIVE = 0.01;                   /* m — the level a DART buoy calls an arrival */
+const OMEGA = 7.2921159e-5;            /* rad/s — Earth's rotation rate, for the Coriolis parameter */
+const SANE = 500;                      /* m — |η| above this is not a tsunami, it is a divergence */
+const MU = 3.0e10;                     /* Pa — rigidity, for the seismic moment */
 
 let abort = 0;
 
+/* ══ OKADA (1985) — the vertical surface displacement of one rectangular dislocation ═══════════════
+   Moved here from js/tsunami.js in #R197 so the whole model is built off the main thread. Unchanged
+   from #R192, which verified it against the published test case (L=3, W=2, d=4, δ=70°, observation
+   (2,3): dip-slip uz = −3.5639e−2 against Okada's −3.564e−2 — tests/r197-checks.test.mjs runs that
+   case against THIS file rather than asserting on its text).
+   ⚠ arctan OF A RATIO, not atan2 — see the note inside. */
+function okadaUz(x, y, depth, L2, W2, dipDeg, slip) {
+  const dip = dipDeg * DEG, sd = Math.sin(dip), cd = Math.cos(dip);
+  const cdS = (Math.abs(cd) < 1e-6) ? 1e-6 : cd;          /* vertical faults are a limit, not a case */
+  const p = y * cd + depth * sd;
+  const f = (xi, eta) => {
+    const q = y * sd - depth * cd;
+    const R = Math.sqrt(xi * xi + eta * eta + q * q); if (!(R > 0)) return 0;
+    const dt = eta * sd - q * cd;
+    const X = Math.sqrt(xi * xi + q * q);
+    /* ⚠ PRINCIPAL value. The two-argument form adds ±π wherever the numerator and denominator change
+       sign, and the Chinnery difference then keeps that jump as a plateau: measured before #R192
+       fixed it, a constant −5.14 m of "subsidence" 400 km behind the fault, which is exactly
+       slip·sinδ. Deformation must decay to zero away from a finite source. */
+    const den = xi * (R + X) * cdS;
+    const I5 = (Math.abs(cd) < 1e-6) ? (-0.5 * xi * q / Math.pow(R + dt, 2))
+      : ((Math.abs(den) < 1e-12) ? 0 : (0.5 * (2 / cdS) * Math.atan((eta * (X + q * cdS) + X * (R + X) * sd) / den)));
+    const t1 = (R + xi) !== 0 ? dt * q / (R * (R + xi)) : 0;
+    const t2 = sd * ((Math.abs(q * R) > 1e-12) ? Math.atan(xi * eta / (q * R)) : 0);
+    return t1 + t2 - I5 * sd * cdS;
+  };
+  const v = f(x, p) - f(x, p - W2) - f(x - L2, p) + f(x - L2, p - W2);
+  return -(slip / (2 * Math.PI)) * v;
+}
+
+/* Wells & Coppersmith (1994), reverse faulting: subsurface rupture length and down-dip width from the
+   moment magnitude, and the average slip that carries the moment over that area. */
+function faultGeom(M) {
+  const Lk = Math.pow(10, 0.58 * M - 2.42), Wk = Math.min(Lk, Math.pow(10, 0.41 * M - 1.61));
+  const M0 = Math.pow(10, 1.5 * M + 9.1);
+  const slip = M0 / (MU * Lk * 1000 * Wk * 1000);
+  return { L: Lk * 1000, W: Wk * 1000, slip, M0 };
+}
+
+/* ══ THE SOURCE IS A TAPERED SUB-FAULT GRID, NOT ONE RECTANGLE (#R193) ═════════════════════════════
+   A uniform-slip rectangle puts the same displacement everywhere and steps to zero at the edge. Real
+   ruptures taper. Splitting the plane into SUB_S × SUB_W sub-faults, weighting each by a raised taper
+   along strike and down dip, and RE-NORMALISING so Σ(slip·area) is exactly M0/μ, keeps the magnitude
+   honest while giving the peaked centre and the soft edges an inversion recovers. */
+const SUB_S = 8, SUB_W = 3;
+/* ⚠ √sin, NOT sin. Transcribing this into the worker for #R197 I wrote a plain raised sine, which is
+   a different — narrower — slip distribution, and tests/r193-checks.test.mjs caught it by recomputing
+   the taper independently. The published form this module was verified with is the square root of the
+   raised sine, and the clamp keeps the endpoints off the zeros. */
+function taper(s){ return Math.sqrt(Math.sin(Math.PI*Math.max(0.001,Math.min(0.999,s)))); }
+function subFaults(g, dipDeg, topDepth) {
+  const dl = g.L / SUB_S, dw = g.W / SUB_W, out = [], wts = [];
+  let wsum = 0;
+  for (let a = 0; a < SUB_S; a++) for (let b = 0; b < SUB_W; b++) {
+    const w = taper((a + 0.5) / SUB_S) * taper((b + 0.5) / SUB_W);
+    wts.push(w); wsum += w;
+  }
+  const norm=(SUB_S*SUB_W)/Math.max(1e-9,wsum);
+  let k = 0;
+  for (let a = 0; a < SUB_S; a++) for (let b = 0; b < SUB_W; b++) {
+    /* ⚠ the sub-fault's own top edge, measured down dip from the plane's top — the shallow strips
+       must sit shallow. Both forms reduce to the correct single rectangle when SUB_W is 1, which is
+       exactly why an earlier version that got this wrong survived the first look. */
+    out.push({
+      x0: a * dl, y0: (g.W - (b + 1) * dw) * Math.cos(dipDeg * DEG),
+      d0: topDepth + (b + 1) * dw * Math.sin(dipDeg * DEG),
+      L: dl, W: dw, slip: g.slip * wts[k++] * norm
+    });
+  }
+  return out;
+}
+
+/* ── the bundled sea floor → this grid ──────────────────────────────────────────────────────────
+   data/bathymetry.png is 0.25° equirectangular over the whole globe: R*256+G is the mean depth of the
+   cell's SEA samples in metres and B is the cell's sea fraction × 255 (scripts/build-bathymetry.mjs).
+   The model grid is the same 0.25° in longitude, so a cell maps to a cell and there is no resampling
+   at all at dec 1; at coarser grids the block is averaged.
+
+   ⚠ WET/DRY IS THE SEA FRACTION, NOT THE MEAN ELEVATION. A cell that is 60 % ocean is ocean, at the
+   depth of its ocean part. Deciding it from an average that includes a 2,000 m mountain would make
+   every steep coast a wall two cells out to sea, and Green's law would then shoal the wave on a shelf
+   that is not there. */
+function seaFloor(bathy, nx, ny, lat0, lat1) {
+  const bw = bathy.w, bh = bathy.h, px = bathy.rgb;
+  const h = new Float32Array(nx * ny), land = new Uint8Array(nx * ny), depth = new Int16Array(nx * ny);
+  let seaCells = 0;
+  const stepX = bw / nx, stepY = (bh * (lat1 - lat0) / 180) / ny;
+  const row0 = bh * (90 - lat1) / 180;
+  for (let j = 0; j < ny; j++) {
+    /* model row j is at latitude lat0 + (j+0.5)·dφ, counting NORTH; the image counts SOUTH from 90 */
+    const jy0 = row0 + (ny - 1 - j) * stepY, jy1 = jy0 + stepY;
+    const b0 = Math.max(0, Math.floor(jy0)), b1 = Math.min(bh - 1, Math.max(b0, Math.ceil(jy1) - 1));
+    for (let i = 0; i < nx; i++) {
+      const ix0 = i * stepX, ix1 = ix0 + stepX;
+      const a0 = Math.max(0, Math.floor(ix0)), a1 = Math.min(bw - 1, Math.max(a0, Math.ceil(ix1) - 1));
+      let sd = 0, sf = 0, n = 0;
+      for (let by = b0; by <= b1; by++) {
+        const base = by * bw;
+        for (let bx = a0; bx <= a1; bx++) {
+          const o = (base + bx) * 3;
+          sd += px[o] * 256 + px[o + 1];
+          sf += px[o + 2];
+          n++;
+        }
+      }
+      const k = j * nx + i;
+      const frac = n ? (sf / n) / 255 : 0;
+      const d = n ? sd / n : 0;
+      /* wet if the majority of the cell is sea AND that sea is deeper than the grid can carry as
+         water — under 10 m over a 28 km cell is a beach, and it is a wall for this model */
+      if (frac >= 0.5 && d > 10) { h[k] = d; depth[k] = Math.min(32000, Math.round(d)); seaCells++; }
+      else { h[k] = 0; land[k] = 1; depth[k] = 0; }
+    }
+  }
+  return { h, land, depth, seaCells };
+}
+
 /* Companding — see the header. A is the run's peak |η|. */
-function compand(eta, q, n, A) {
+function compand(src, q, n, A) {
   const inv = 1 / (A > 0 ? A : 1);
   for (let k = 0; k < n; k++) {
-    const v = eta[k];
+    const v = src[k];
     if (v === 0) { q[k] = 0; continue; }
     const a = Math.abs(v) * inv;
     const s = Math.round(127 * Math.cbrt(a > 1 ? 1 : a));
@@ -83,39 +238,132 @@ function compand(eta, q, n, A) {
   }
 }
 
-function run(m) {
-  const N = m.N | 0, n2 = N * N;
-  const h = new Float32Array(m.h);
-  const eta = new Float32Array(m.eta0);        /* the initial sea surface IS the sea-floor displacement */
-  const sLat = m.sLat, nLat = m.nLat, dLam = m.dLam, dPhi = m.dPhi;
-  const hours = m.hours, wantFrames = Math.max(24, Math.min(240, m.frames | 0));
+function post(o, t) { self.postMessage(o, t || []); }
 
-  /* per-row geometry: cell centres and the northern face, and the metric factors that go with them */
-  const cosC = new Float64Array(N), cosN = new Float64Array(N), invDx = new Float64Array(N);
-  const latOf = (j) => sLat + (j + 0.5) * (nLat - sLat) / N;
+function run(m) {
+  const id = m.id;
+  const nx = m.nx | 0, ny = m.ny | 0, n2 = nx * ny;
+  const lat0 = m.lat0, lat1 = m.lat1;
+  const dLam = (2 * Math.PI) / nx;                      /* the whole circle — this is the global grid */
+  const dPhi = ((lat1 - lat0) / ny) * DEG;
+  const hours = Math.max(0.25, Math.min(30, m.hours));
+  const wantFrames = Math.max(24, Math.min(240, m.frames | 0));
+  const dec = Math.max(1, m.dec | 0);
+  const filtLat = (m.filtLat != null ? m.filtLat : 60);
+
+  /* ── 1. the sea floor ─────────────────────────────────────────────────────────────────────── */
+  const sf = seaFloor(m.bathy, nx, ny, lat0, lat1);
+  const h = sf.h, land = sf.land, depth = sf.depth;
+  if (!(sf.seaCells > 0)) return { err: 'nosea' };
+  post({ id, type: 'progress', pct: 8, phase: 'floor' });
+  if (abort === id) return null;
+
+  /* ── 2. the fault ─────────────────────────────────────────────────────────────────────────── */
+  const lng0 = m.src.lng, srcLat = m.src.lat, mw = m.src.mw, depthKm = m.src.depthKm;
+  const latOf = (j) => lat0 + (j + 0.5) * (lat1 - lat0) / ny;
+  const lngOf = (i) => -180 + (i + 0.5) * 360 / nx;
+  const colOf = (lo) => { let c = Math.floor((((lo + 180) % 360) + 360) % 360 / 360 * nx); return c >= nx ? nx - 1 : c; };
+  const rowOf = (la) => { let r = Math.floor((la - lat0) / (lat1 - lat0) * ny); return r < 0 ? 0 : (r >= ny ? ny - 1 : r); };
+
+  /* the strike, read off the sea floor: a subduction interface runs along the isobaths, so ∇h gives
+     the down-dip direction and the strike is 90° from it. Sampled from the model's own depth field. */
+  const depthAtLL = (lo, la) => {
+    const r = rowOf(la), c = colOf(lo);
+    return h[r * nx + c];
+  };
+  const eps = 0.6;
+  const dHx = depthAtLL(lng0 + eps, srcLat) - depthAtLL(lng0 - eps, srcLat);
+  const dHy = depthAtLL(lng0, srcLat + eps) - depthAtLL(lng0, srcLat - eps);
+  let dipAz = Math.atan2(dHx, dHy) / DEG; if (!isFinite(dipAz)) dipAz = 90;
+  const strike = (dipAz + 90 + 360) % 360;
+  const dipDeg = 15;                                    /* a subduction interface at tsunami depths */
+  const g = faultGeom(mw);
+  const topDepth = Math.max(2000, depthKm * 1000 - g.W * Math.sin(dipDeg * DEG) / 2);
+  const botDepth = topDepth + g.W * Math.sin(dipDeg * DEG);
+  const subs = subFaults(g, dipDeg, topDepth);
+  const sA = Math.sin(strike * DEG), cA = Math.cos(strike * DEG);
+  const mPerLat = 111320, mPerLngAt = (la) => 111320 * Math.cos(la * DEG);
+
+  /* ══ WHERE THE SOURCE STOPS, AND WHY IT MAY NOT STOP ABRUPTLY (#R193) ══════════════════════════
+     ⚠ MEASURED THE HARD WAY. The sub-fault sum is 24 Okada evaluations a cell, so a window of SIX
+     rupture lengths — 4,326 km each way for an M9 — is 13.5 million evaluations. Narrowing it to
+     2.2 L looked obviously right and was obviously wrong: at 1,586 km an M9's static field is still
+     ~1 cm, so cutting there left a STEP in the initial sea surface, and a step is broadband. It
+     radiated a sharp front at √(gh) that tripped the 1 cm arrival threshold long before the real
+     long-period wave built up — the modelled first arrival at Guam fell from 3 h 11 to 1 h 51
+     against an observed 3–4 h. So the window stays wide, and the cost is dealt with where it lives:
+     past about two rupture lengths the static field of a finite source depends only on its moment,
+     so one equivalent rectangle carrying the same M0 gives the same answer as twenty-four tapered
+     strips for a twenty-fourth of the arithmetic, blended across a band so nothing is discontinuous. */
+  const eta = new Float32Array(n2);
+  const nearM = 2.2 * g.L, farM = Math.max(6 * g.L, 2500e3);
+  const blend0 = nearM, blend1 = 2.6 * g.L;
+  const cosW = (g.W * Math.cos(dipDeg * DEG)) / 2;
+  const one = (xs, ys) => okadaUz(xs + g.L / 2, ys + cosW, botDepth, g.L, g.W, dipDeg, g.slip);
+  const many = (xs, ys) => {
+    let u = 0;
+    for (let s2 = 0; s2 < subs.length; s2++) {
+      const f = subs[s2];
+      const v = okadaUz(xs + g.L / 2 - f.x0, ys + cosW - f.y0, f.d0, f.L, f.W, dipDeg, f.slip);
+      if (isFinite(v)) u += v;
+    }
+    return u;
+  };
+  let upMax = 0, downMax = 0;
+  /* only the rows and columns the window can reach — on a global grid the source is a small patch */
+  const jS = rowOf(srcLat - farM / mPerLat - 1), jN = rowOf(srcLat + farM / mPerLat + 1);
+  const srcCol = colOf(lng0), srcRow = rowOf(srcLat);
+  for (let j = jS; j <= jN; j++) {
+    const la = latOf(j), mpl = Math.max(1, mPerLngAt(la));
+    const dI = Math.min(nx >> 1, Math.ceil(farM / (mpl * 360 / nx)) + 1);
+    for (let c = -dI; c <= dI; c++) {
+      let i = (srcCol + c) % nx; if (i < 0) i += nx;
+      const lo = lngOf(i);
+      const dx = (((lo - lng0 + 540) % 360) - 180) * mpl, dy = (la - srcLat) * mPerLat;
+      const r = Math.max(Math.abs(dx), Math.abs(dy));
+      if (r > farM) continue;
+      const xs = dx * sA + dy * cA;                     /* into the fault frame: x along strike */
+      const ys = -dx * cA + dy * sA;
+      let uz;
+      if (r <= blend0) uz = many(xs, ys);
+      else if (r >= blend1) uz = one(xs, ys);
+      else { const w = (r - blend0) / (blend1 - blend0); uz = (1 - w) * many(xs, ys) + w * one(xs, ys); }
+      if (!isFinite(uz)) continue;
+      eta[j * nx + i] = uz;
+      if (uz > upMax) upMax = uz; if (uz < downMax) downMax = uz;
+    }
+    if ((j & 63) === 0) { if (abort === id) return null; }
+  }
+  post({ id, type: 'progress', pct: 18, phase: 'source' });
+  if (abort === id) return null;
+
+  /* ── 3. geometry, the time step, and the polar filter ─────────────────────────────────────── */
+  const cosC = new Float64Array(ny), cosN = new Float64Array(ny), invDx = new Float64Array(ny);
+  const cor = new Float64Array(ny), filtW = new Int32Array(ny);
+  const cosFilt = Math.cos(filtLat * DEG);
   let dxMin = 1e18;
-  for (let j = 0; j < N; j++) {
+  for (let j = 0; j < ny; j++) {
     const la = latOf(j);
     cosC[j] = Math.cos(la * DEG);
-    cosN[j] = Math.cos((la + 0.5 * (nLat - sLat) / N) * DEG);
+    cosN[j] = Math.cos((la + 0.5 * (lat1 - lat0) / ny) * DEG);
     const dxM = RE * cosC[j] * dLam;
     invDx[j] = 1 / dxM;
-    if (dxM < dxMin) dxMin = dxM;
+    cor[j] = 2 * OMEGA * Math.sin(la * DEG);
+    /* the filter's width in cells, odd, and 1 (= no filter) equatorward of filtLat */
+    let w = 1;
+    if (Math.abs(la) > filtLat) { w = Math.round(cosFilt / Math.max(1e-6, cosC[j])); if (w < 3) w = 3; if (!(w & 1)) w++; if (w > nx) w = nx | 1; }
+    filtW[j] = w;
+    /* the EFFECTIVE width for the CFL: a filtered row behaves like a row of the filter's own width */
+    const dxEff = dxM * (w > 1 ? w : 1);
+    if (dxEff < dxMin) dxMin = dxEff;
   }
   const dyM = RE * dPhi, invDy = 1 / dyM;
 
-  /* ══ THE TIME STEP IS SET BY ONE CELL, SO IT HAD BETTER BE A CELL THAT EXISTS ═════════════════
-     CFL wants Δt < Δx/√(gh) EVERYWHERE, and taking the narrowest cell in the domain against the
-     deepest cell in the domain is two different cells' worth of pessimism. Measured on the Tōhoku
-     domain: the box reaches 78°N, where a longitude cell is 5.5 km wide against 23 km at the source,
-     and pairing that sliver with the 11 km trench gave Δt = 7.95 s and 2,718 steps for six hours.
-     The condition is PER CELL — its own width against its own depth — and the Arctic cells that are
-     narrow are not the cells that are deep. Same stability, materially fewer steps, and the number
-     that comes out is the true limit rather than a bound on it. */
   let hMax = 0, lim = 1e18;
-  for (let j = 0; j < N; j++) {
-    const dxRow = RE * cosC[j] * dLam, dl = Math.min(dxRow, dyM), row = j * N;
-    for (let i = 0; i < N; i++) {
+  for (let j = 0; j < ny; j++) {
+    const dxRow = RE * cosC[j] * dLam * (filtW[j] > 1 ? filtW[j] : 1);
+    const dl = Math.min(dxRow, dyM), row = j * nx;
+    for (let i = 0; i < nx; i++) {
       const d = h[row + i]; if (d <= 0) continue;
       if (d > hMax) hMax = d;
       const c = Math.sqrt(G * d);
@@ -127,167 +375,263 @@ function run(m) {
   const total = hours * 3600, steps = Math.ceil(total / dt);
   const everyN = Math.max(1, Math.floor(steps / wantFrames));
   const nFrames = Math.floor((steps - 1) / everyN) + 1;
+  const cellKm = Math.round(RE * Math.cos(srcLat * DEG) * dLam / 1000);
 
+  const fx = Math.floor(nx / dec), fy = Math.floor(ny / dec);
+  const landD = new Uint8Array(fx * fy);
+  for (let j = 0; j < fy; j++) for (let i = 0; i < fx; i++) {
+    let wet = 0;
+    for (let b = 0; b < dec; b++) for (let a = 0; a < dec; a++) if (!land[(j * dec + b) * nx + i * dec + a]) wet++;
+    landD[j * fx + i] = wet ? 0 : 1;
+  }
+
+  post({
+    id, type: 'model', nx, ny, fx, fy, dec, lat0, lat1, dt, steps, total, nFrames, cellKm,
+    strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0,
+    eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
+    land, depth, landD
+  }, [land.buffer, depth.buffer, landD.buffer]);
+  if (abort === id) return null;
+
+  /* ── 4. the run ───────────────────────────────────────────────────────────────────────────── */
   const M = new Float32Array(n2);              /* flux across the EAST face of (i,j) */
   const Nf = new Float32Array(n2);             /* flux across the NORTH face of (i,j) */
   const emax = new Float32Array(n2);
   const emin = new Float32Array(n2);
   const tarr = new Float32Array(n2); tarr.fill(-1);
 
-  /* A sponge on the outer ring so a wave LEAVES the domain instead of reflecting back into it. */
-  const SP = Math.max(6, Math.round(N * 0.04));
-  const sponge = new Float32Array(n2);
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-    const d = Math.min(Math.min(i, N - 1 - i), Math.min(j, N - 1 - j));
-    sponge[j * N + i] = (d < SP) ? (1 - 0.05 * Math.pow((SP - d) / SP, 2)) : 1;
+  /* ⚠ THE ONLY SPONGE LEFT IS AT THE TWO LATITUDE WALLS. #R193 damped all four edges of its box; on a
+     global grid the two meridional "edges" are the same meridian and are stitched instead. The 80°
+     walls are still walls, and a wave that reaches them would reflect, so the outermost rows absorb.
+     It is a per-ROW factor now, not a per-cell field: 640 numbers rather than 921,600. */
+  const SP = Math.max(4, Math.round(ny * 0.03));
+  const spongeRow = new Float64Array(ny);
+  for (let j = 0; j < ny; j++) {
+    const d = Math.min(j, ny - 1 - j);
+    spongeRow[j] = (d < SP) ? (1 - 0.05 * Math.pow((SP - d) / SP, 2)) : 1;
   }
+  /* which latitude circles contain any water at all — Antarctica's interior and the high Arctic are
+     whole rows of nothing, and skipping them costs one byte a row to know */
+  const rowSea = new Uint8Array(ny);
+  for (let j = 0; j < ny; j++) { const row = j * nx; for (let i = 0; i < nx; i++) if (h[row + i] > 0) { rowSea[j] = 1; break; } }
 
-  /* the run's peak, for the companding — seeded from the source and raised as the run finds bigger */
   let peak = 0;
   for (let k = 0; k < n2; k++) { const a = Math.abs(eta[k]); if (a > peak) peak = a; }
   const A = Math.max(0.05, peak);
 
-  const frames = [];                            /* {t, q} — streamed out in batches */
   const gdt = G * dt, fricC = G * MANNING * MANNING * dt;
-  let t = 0, sent = 0;
+  let t = 0, sent = 0, framesOut = 0;
   const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const batch = [];
 
   /* ══ THE LIGHT CONE ═══════════════════════════════════════════════════════════════════════════
      Nothing outside a radius of cMax·t from the source can be anything but exactly zero — the
      equations have a finite propagation speed and cMax is the fastest cell in the domain, so this is
-     an identity, not an approximation, and it holds through any number of reflections. Integrating
-     only inside that circle turns an O(steps·N²) run into one whose cost grows with the area the
-     wave has actually reached: the swept area is ∫(πr²)dt = (1/3)·πR²·T against πR²·T, i.e. THREE
-     TIMES less arithmetic over a run sized so the wave just reaches the boundary at the end.
-     Recomputed every 16 steps with a four-cell margin, which is more than the 2.3 cells the fastest
-     possible wave can cross in that time. */
-  let bj0 = N, bj1 = -1, bi0 = N, bi1 = -1;
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (eta[j * N + i] !== 0) {
-    if (j < bj0) bj0 = j; if (j > bj1) bj1 = j; if (i < bi0) bi0 = i; if (i > bi1) bi1 = i;
+     an identity, not an approximation. Integrating only inside that circle turns an O(steps·nx·ny)
+     run into one whose cost grows with the area the wave has reached.
+     ⚠ ON A PERIODIC GRID the column window is an ARC, not an interval: it is kept as a start column
+     and a length, and it stops growing at nx (the whole circle). */
+  let bj0 = ny, bj1 = -1, bc0 = 0, bc1 = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) if (eta[j * nx + i] !== 0) {
+    if (j < bj0) bj0 = j; if (j > bj1) bj1 = j;
+    let d = i - srcCol; if (d > nx / 2) d -= nx; if (d < -nx / 2) d += nx;
+    if (d < bc0) bc0 = d; if (d > bc1) bc1 = d;
   }
-  if (bj1 < bj0) { bj0 = 0; bj1 = N - 1; bi0 = 0; bi1 = N - 1; }
-  const i0Row = new Int32Array(N), i1Row = new Int32Array(N);
-  let J0 = 0, J1 = N - 1;
-  /* A box around the source, grown by the reach — a strict SUPERSET of the light cone, which is what
-     correctness needs, computed in O(N) rather than by walking the front. The longitudinal margin is
-     per row because a degree of longitude is not a fixed distance. */
+  if (bj1 < bj0) { bj0 = srcRow; bj1 = srcRow; }
+  const cs = new Int32Array(ny), cl = new Int32Array(ny);
+  let J0 = 0, J1 = ny - 1;
   function windowAt(tNow) {
     const reach = cMax * tNow + 4 * Math.min(dxMin, dyM);
-    const dJ = Math.ceil(reach / (RE * dPhi));
-    J0 = Math.max(0, bj0 - dJ); J1 = Math.min(N - 1, bj1 + dJ);
+    const dJ = Math.ceil(reach / dyM);
+    J0 = Math.max(0, bj0 - dJ); J1 = Math.min(ny - 1, bj1 + dJ);
     for (let j = J0; j <= J1; j++) {
+      /* ⚠ A FILTERED ROW IS ALWAYS TAKEN WHOLE. The polar filter spreads a value along the latitude
+         circle faster than the physical wave crosses the same cells (two box passes of half-width
+         (w−1)/2 against 0.45·w cells a step), so a light cone drawn from the wave speed alone would
+         no longer be a superset of the support and the filter would push energy out through its own
+         edge. Those rows are a quarter of the grid at most and they only enter the window once the
+         wave has actually reached 60°, which is late in any run. */
+      if (filtW[j] > 1) { cs[j] = 0; cl[j] = nx; continue; }
       const dI = Math.ceil(reach / Math.max(1, RE * cosC[j] * dLam));
-      i0Row[j] = Math.max(0, bi0 - dI); i1Row[j] = Math.min(N - 1, bi1 + dI);
+      const len = (bc1 - bc0 + 1) + 2 * dI;
+      if (len >= nx) { cs[j] = 0; cl[j] = nx; }
+      else { let s0 = (srcCol + bc0 - dI) % nx; if (s0 < 0) s0 += nx; cs[j] = s0; cl[j] = len; }
     }
   }
   windowAt(0);
 
+  /* the polar filter, applied in place along one latitude circle — a circular running mean, twice */
+  const fbuf = new Float32Array(nx);
+  function zonalFilter(arr, row, w) {
+    const half = (w - 1) >> 1, inv = 1 / w;
+    for (let pass = 0; pass < 2; pass++) {
+      let sum = 0;
+      for (let k = -half; k <= half; k++) { let i = k % nx; if (i < 0) i += nx; sum += arr[row + i]; }
+      for (let i = 0; i < nx; i++) {
+        fbuf[i] = sum * inv;
+        let out = i - half; if (out < 0) out += nx;
+        let inn = i + half + 1; if (inn >= nx) inn -= nx;
+        sum += arr[row + inn] - arr[row + out];
+      }
+      for (let i = 0; i < nx; i++) arr[row + i] = fbuf[i];
+    }
+  }
+
+  let diverged = false;
+  const fbufD = new Float32Array(fx * fy);      /* hoisted: 140 frames is 140 allocations otherwise */
   for (let s = 0; s < steps; s++) {
-    if (abort === m.id) return null;
+    if (abort === id) return null;
     if ((s & 15) === 0) windowAt(t);
 
-    /* ── momentum, on the faces ──────────────────────────────────────────────────────────────── */
+    /* ── momentum: the zonal flux, on the EAST face ────────────────────────────────────────── */
     for (let j = J0; j <= J1; j++) {
-      const row = j * N, idx = invDx[j];
-      const a0 = Math.max(0, i0Row[j] - 1), a1 = Math.min(N - 2, i1Row[j]);
-      for (let i = a0; i <= a1; i++) {
-        const a = row + i, b = a + 1;
+      if (!rowSea[j]) continue;                 /* a latitude circle with no water in it at all */
+      const row = j * nx, idx = invDx[j], f = cor[j], sp = spongeRow[j];
+      const south = (j > 0) ? -nx : 0;          /* hoisted: the row below, or this one at j = 0 */
+      const len = cl[j], st = cs[j];
+      let i = st === 0 && len === nx ? 0 : ((st - 1 + nx) % nx);
+      const count = (len === nx) ? nx : len + 1;
+      for (let c = 0; c < count; c++) {
+        const ip = (i + 1 === nx) ? 0 : i + 1;
+        const a = row + i, b = row + ip;
         const ha = h[a], hb = h[b];
-        if (ha <= 0 || hb <= 0) { M[a] = 0; continue; }
-        /* total depth at the face (the nonlinear term that matters — see the header) */
+        if (ha <= 0 || hb <= 0) { M[a] = 0; i = ip; continue; }
         const D = 0.5 * (ha + eta[a] + hb + eta[b]);
-        if (D <= 1) { M[a] = 0; continue; }
-        let f = M[a] - gdt * D * (eta[b] - eta[a]) * idx;
-        /* ⚠ Manning friction ONLY WHERE IT IS NOT ZERO TO THE FLOAT. τ ∝ D^(−7/3): against the
-           shelf value at 50 m, a 4 km ocean floor damps 10^(−5.4) as hard. Measured, evaluating it
-           everywhere cost 1.4 billion Math.pow calls and 80 % of this file's whole run time to
-           change nothing at all in deep water. Below 500 m it is the term that decides the coastal
-           amplitude and it is computed exactly — semi-implicit in |M|, so it can never reverse the
-           flux. D^(7/3) as D²·cbrt(D): cbrt is an intrinsic, pow with a fractional exponent is not. */
+        if (D <= 1) { M[a] = 0; i = ip; continue; }
+        /* the meridional flux at this face, for Coriolis and for the friction speed */
+        const nn = 0.25 * (Nf[a] + Nf[b] + Nf[a + south] + Nf[b + south]);
+        let fl = M[a] - gdt * D * (eta[b] - eta[a]) * idx + dt * f * nn;
+        /* ⚠ Manning friction ONLY WHERE IT IS NOT ZERO TO THE FLOAT. τ ∝ D^(−7/3): against the shelf
+           value at 50 m, a 4 km ocean floor damps 10^(−5.4) as hard. Measured, evaluating it
+           everywhere cost 1.4 billion Math.pow calls and 80 % of this file's run time to change
+           nothing in deep water. Below 500 m it decides the coastal amplitude and is computed
+           exactly — semi-implicit in |M|, so it can never reverse the flux. D^(7/3) as D²·cbrt(D):
+           cbrt is an intrinsic, pow with a fractional exponent is not. */
         if (D < 500) {
-          const nn = 0.25 * (Nf[a] + Nf[b] + (j > 0 ? Nf[a - N] + Nf[b - N] : 0));
-          const sp = Math.sqrt(f * f + nn * nn);
-          if (sp > 0) f /= (1 + fricC * sp / (D * D * Math.cbrt(D)));
+          const spd = Math.sqrt(fl * fl + nn * nn);
+          if (spd > 0) fl /= (1 + fricC * spd / (D * D * Math.cbrt(D)));
         }
-        M[a] = f * sponge[a];
+        M[a] = fl * sp;
+        i = ip;
       }
-      if (a1 >= N - 2) M[row + N - 1] = 0;
     }
-    for (let j = J0; j <= Math.min(J1, N - 2); j++) {
-      const row = j * N, up = row + N;
-      const a0 = Math.max(0, i0Row[j] - 1), a1 = Math.min(N - 1, i1Row[j] + 1);
-      for (let i = a0; i <= a1; i++) {
+    /* ── momentum: the meridional flux, on the NORTH face ──────────────────────────────────── */
+    for (let j = J0; j <= Math.min(J1, ny - 2); j++) {
+      if (!rowSea[j] && !rowSea[j + 1]) continue;
+      const row = j * nx, up = row + nx, f = cor[j], sp = spongeRow[j];
+      const len = cl[j], st = cs[j];
+      let i = st === 0 && len === nx ? 0 : ((st - 1 + nx) % nx);
+      const count = (len === nx) ? nx : len + 2;
+      for (let c = 0; c < count; c++) {
         const a = row + i, b = up + i;
         const ha = h[a], hb = h[b];
-        if (ha <= 0 || hb <= 0) { Nf[a] = 0; continue; }
+        if (ha <= 0 || hb <= 0) { Nf[a] = 0; i = (i + 1 === nx) ? 0 : i + 1; continue; }
         const D = 0.5 * (ha + eta[a] + hb + eta[b]);
-        if (D <= 1) { Nf[a] = 0; continue; }
-        let f = Nf[a] - gdt * D * (eta[b] - eta[a]) * invDy;
+        if (D <= 1) { Nf[a] = 0; i = (i + 1 === nx) ? 0 : i + 1; continue; }
+        const im = (i === 0) ? nx - 1 : i - 1;
+        const mm = 0.25 * (M[a] + M[b] + M[row + im] + M[up + im]);
+        let fl = Nf[a] - gdt * D * (eta[b] - eta[a]) * invDy - dt * f * mm;
         if (D < 500) {
-          const mm = 0.25 * (M[a] + M[b] + (i > 0 ? M[a - 1] + M[b - 1] : 0));
-          const sp = Math.sqrt(f * f + mm * mm);
-          if (sp > 0) f /= (1 + fricC * sp / (D * D * Math.cbrt(D)));
+          const spd = Math.sqrt(fl * fl + mm * mm);
+          if (spd > 0) fl /= (1 + fricC * spd / (D * D * Math.cbrt(D)));
         }
-        Nf[a] = f * sponge[a];
+        Nf[a] = fl * sp;
+        i = (i + 1 === nx) ? 0 : i + 1;
       }
     }
-    if (J1 >= N - 1) for (let i = 0; i < N; i++) Nf[(N - 1) * N + i] = 0;
+    if (J1 >= ny - 1) { const r = (ny - 1) * nx; for (let i = 0; i < nx; i++) Nf[r + i] = 0; }
 
     /* ── continuity ──────────────────────────────────────────────────────────────────────────── */
     for (let j = J0; j <= J1; j++) {
-      const row = j * N, idx = invDx[j], cj = cosC[j], cn = cosN[j], cs = (j > 0 ? cosN[j - 1] : cn);
-      const inv = 1 / (dyM * cj);
-      const a0 = Math.max(0, i0Row[j]), a1 = Math.min(N - 1, i1Row[j]);
-      for (let i = a0; i <= a1; i++) {
+      if (!rowSea[j]) continue;
+      const row = j * nx, idx = invDx[j], cj = cosC[j], cn = cosN[j], cs2 = (j > 0 ? cosN[j - 1] : cn);
+      const inv = 1 / (dyM * cj), sp = spongeRow[j];
+      const south = (j > 0) ? -nx : 0, csS = (j > 0) ? cs2 : 0;
+      const len = cl[j], st = cs[j];
+      let i = st;
+      for (let c = 0; c < len; c++) {
         const k = row + i;
-        if (h[k] <= 0) { eta[k] = 0; continue; }
-        const mw = (i > 0) ? M[k - 1] : 0, me = M[k];
-        const ns = (j > 0) ? Nf[k - N] * cs : 0, nn = Nf[k] * cn;
-        const v = (eta[k] - dt * ((me - mw) * idx + (nn - ns) * inv)) * sponge[k];
+        if (h[k] <= 0) { eta[k] = 0; i = (i + 1 === nx) ? 0 : i + 1; continue; }
+        const im = (i === 0) ? nx - 1 : i - 1;
+        const mwf = M[row + im], me = M[k];
+        const ns = Nf[k + south] * csS, nnf = Nf[k] * cn;
+        /* ⚠ (#R197) NO BRANCH AROUND THE ANALYSIS UPDATE, AND THE REASON IS A MEASUREMENT ABOUT THE
+           MEASUREMENT. Guarding these three reads on "did anything happen in this cell" looks like an
+           obvious saving, and the first timing said it cost 39 % (14.6 s → 20.3 s). Repeating the
+           same build three times gave 13.2 / 16.3 / 14.9 s — the ±20 % is this machine, not the code,
+           and the "regression" was noise. Neither form is measurably faster than the other, so the
+           simpler one stays. Written down because the next person to look at this loop will have the
+           same idea, and the answer is "it does not matter — do not spend the day on it". */
+        const v = (eta[k] - dt * ((me - mwf) * idx + (nnf - ns) * inv)) * sp;
         eta[k] = v;
         if (v > emax[k]) emax[k] = v;
-        if (v < emin[k]) emin[k] = v;
-        if (tarr[k] < 0 && (v >= ARRIVE || v <= -ARRIVE)) tarr[k] = t;
+        else if (v < emin[k]) emin[k] = v;
+        if ((v >= ARRIVE || v <= -ARRIVE) && tarr[k] < 0) tarr[k] = t;
+        i = (i + 1 === nx) ? 0 : i + 1;
       }
+      const w = filtW[j];
+      if (w > 1) { zonalFilter(eta, row, w); zonalFilter(M, row, w); }
     }
     t += dt;
 
     if (s % everyN === 0 || s === steps - 1) {
-      const q = new Int8Array(n2);
-      compand(eta, q, n2, A);
-      frames.push({ t, q });
-      /* stream: the animation must be watchable before the run ends, so the FIRST frame leaves on
-         its own and the rest go in sixes */
-      if (frames.length === 1 || frames.length - sent >= 6 || s === steps - 1) {
-        const batch = frames.slice(sent); sent = frames.length;
-        const bufs = batch.map(f => f.q.buffer);
-        self.postMessage({ id: m.id, type: 'frames', frames: batch.map(f => ({ t: f.t, q: f.q })), nFrames, done: (s === steps - 1) }, bufs);
-        self.postMessage({ id: m.id, type: 'progress', pct: Math.round(100 * (s + 1) / steps), frames: frames.length, nFrames });
+      /* the picture: an AREA AVERAGE over dec×dec, then companded */
+      if (dec === 1) fbufD.set(eta);
+      else {
+        const invD = 1 / (dec * dec);
+        for (let j = 0; j < fy; j++) {
+          for (let i = 0; i < fx; i++) {
+            let acc = 0;
+            for (let b = 0; b < dec; b++) { const r = (j * dec + b) * nx + i * dec; for (let a = 0; a < dec; a++) acc += eta[r + a]; }
+            fbufD[j * fx + i] = acc * invD;
+          }
+        }
+      }
+      let mx = 0;
+      for (let k = 0; k < fbufD.length; k++) { const v = fbufD[k] < 0 ? -fbufD[k] : fbufD[k]; if (v > mx) mx = v; }
+      if (!(mx < SANE)) { diverged = true; break; }
+      const q = new Int8Array(fx * fy);
+      compand(fbufD, q, fx * fy, A);
+      batch.push({ t, q });
+      framesOut++;
+      /* stream: the animation must be watchable before the run ends, so the FIRST frame leaves on its
+         own and the rest go in sixes */
+      if (framesOut === 1 || batch.length >= 6 || s === steps - 1) {
+        const out = batch.splice(0, batch.length);
+        post({ id, type: 'frames', frames: out, nFrames, fx, fy, done: (s === steps - 1) }, out.map(f => f.q.buffer));
+        post({ id, type: 'progress', pct: 18 + Math.round(82 * (s + 1) / steps), frames: framesOut, nFrames });
+        sent = framesOut;
       }
     }
   }
+  if (diverged) return { err: 'diverged' };
 
   return {
-    N, dt, steps, total, nFrames, amp: A,
+    nx, ny, dt, steps, total, nFrames: framesOut, amp: A,
     emax, emin, tarr,
     cMax: Math.round(cMax), hMax: Math.round(hMax),
     ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0)
   };
 }
 
-self.onmessage = (ev) => {
+/* ⚠ GUARDED so Node can load this file and call run()/okadaUz() directly — tests/r197-checks.test.mjs
+   verifies Okada against the published case and integrates a small analytic basin without a browser. */
+const onMsg = (ev) => {
   const m = ev.data || {};
   if (m.type === 'abort') { abort = m.id; return; }
   if (m.type !== 'run') return;
   try {
+    if (m.bathy && m.bathy.rgb && !(m.bathy.rgb instanceof Uint8Array)) m.bathy.rgb = new Uint8Array(m.bathy.rgb);
     const out = run(m);
-    if (!out) { self.postMessage({ id: m.id, type: 'aborted' }); return; }
-    self.postMessage({
-      id: m.id, type: 'done', N: out.N, dt: out.dt, steps: out.steps, total: out.total,
+    if (!out) { post({ id: m.id, type: 'aborted' }); return; }
+    if (out.err) { post({ id: m.id, type: 'error', err: out.err }); return; }
+    post({
+      id: m.id, type: 'done', nx: out.nx, ny: out.ny, dt: out.dt, steps: out.steps, total: out.total,
       nFrames: out.nFrames, amp: out.amp, cMax: out.cMax, hMax: out.hMax, ms: out.ms,
       emax: out.emax, emin: out.emin, tarr: out.tarr
     }, [out.emax.buffer, out.emin.buffer, out.tarr.buffer]);
   } catch (e) {
-    self.postMessage({ id: m.id, type: 'error', err: String((e && e.message) || e) });
+    post({ id: m.id, type: 'error', err: String((e && e.message) || e) });
   }
 };
+if (typeof self !== 'undefined' && self && typeof self.postMessage === 'function') self.onmessage = onMsg;
