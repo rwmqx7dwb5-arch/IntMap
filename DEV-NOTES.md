@@ -131,9 +131,17 @@ z6.2 で日本の都道府県11件**——指示が名指しした3例がその�
 （`js/label-scale.js` は新規、admin-1 は `js/place-labels.js`、gazetteer は `js/gazetteer.js`）ので
 **悪化はしていないが改善もしていない**。抽出面の調査だけは済んでいる：`js/atlas-console.js` の
 **1544〜1777行（234行）が `window.IntMapRegionResolver`** で、既に独自の window 名を公開している
-自己完結した部分系。閉包への自由参照は10個（`composeRegion` / `_nomExtent` / `_validGeo` / `geo` /
-`_lnorm` / `_cgPoly` / `_clipGeoRect` / `askAI` / `resolveCountrySync` / `GE`）だけなので、
-#R194 の `js/sat-proto.js` と同じ受け渡しで出せる。次のラウンドの最初の仕事。
+自己完結した部分系。
+
+⚠ **ただし「自由参照は10個」は grep の見立てで、間違いだった。** acorn でスコープを解いて数え直すと
+**約20個**ある：`HOST` / `GE` / `composeRegion` / `_nomExtent` / `_validGeo` / `geo` / `_lnorm` /
+`_cgPoly` / `_clipGeoRect` / `askAIJSONEnvelope` / `resolveCountrySync` に加えて、ハイライト描画側の
+内部ヘルパ **`_bboxSoftPoly` / `_codesGeo` / `_expandRegionCompound` / `_geoArea` / `_geoVerifyCache` /
+`_hlLegendHtml` / `_hlPaletteColor` / `_ptInGeo` / `fbbox` / `regionGroup`**。
+20個の受け渡し面を、**ブラウザ全件を回せない状態で**（このラウンドは GitHub Actions が詰まっていた）
+late に作るのは、まさに利用者が言っている「一つの変更が予想外の場所へ影響する」を増やす側の行為なので
+**やらなかった**。次のラウンドは①先に `_hl*` 系ヘルパを resolver 側へ寄せて面を10個以下に減らし、
+②`scripts/check-split-scope.mjs` と #R194 の「移送はバイト一致で証明」を通す、の順で。
 
 ⚠ **`origin/main` へリベースした（#R197 の PR #92 の上ではなく）。** 理由は測って分かったこと：
 **PR #92 は CI が赤**で、ブラウザ4シャード＋CodeQL が落ちている。うち3件はこの機械でも**再現した**
