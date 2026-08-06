@@ -65,7 +65,8 @@ test('R188 aircraft: a 154-second sweep publishes as it goes, centre first', () 
 
 /* ── 2. the default layers: a failed download is not a preference ────────────────────────────── */
 test('R188 default layers: the cable data is kept, and an outage is never saved as a choice', () => {
-  const dl = read('js/data-layers.js'), ab = read('js/app-body.js');
+  /* (#R200) the snapshot moved to js/session-tabs.js with the rest of the session block. */
+  const dl = read('js/data-layers.js'), ab = read('js/session-tabs.js');
   assert.match(dl, /window\.IntMapDefaultLayers=\['dl-climate','dl-subcables'\];/,
     'both layers still start on');
   /* measured: the direct fetch is `TypeError: Failed to fetch` every time (no ACAO), so this layer

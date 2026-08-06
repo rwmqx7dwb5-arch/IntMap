@@ -27,8 +27,9 @@ test('R189 aircraft: the planes3D storage key is generation-bumped', () => {
 
 /* ── 2 · defaults: sessions written before #R188 are healed ONCE ─────────────────────────────── */
 test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable cache', () => {
-  const body = read('js/app-body.js');
-  assert.match(body, /defv:190/, 'the snapshot stamps its generation (#R190 bumped it — see js/app-body.js)');
+  /* (#R200) the session block is js/session-tabs.js now — a real ES module, imported by name. */
+  const body = read('js/session-tabs.js');
+  assert.match(body, /defv:190/, 'the snapshot stamps its generation (#R190 bumped it — see js/session-tabs.js)');
   assert.match(body, /if\(!\(\+s\.defv>=190\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
     'a session from an older generation gets the default-on ids back once');
   const sw = read('sw.js');
@@ -47,15 +48,15 @@ test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable 
    back on and CI measured three straight timeouts of r174 «zooming in still moves the viewpoint»
    plus three newly-flaky tests. Whatever generation js/app-body.js writes, the seeds must claim. */
 test('R189 defaults: every test-suite session seed carries the CURRENT generation', () => {
-  const gen = /defv:(\d+)/.exec(read('js/app-body.js'));
-  assert.ok(gen, 'js/app-body.js stamps a generation');
+  const gen = /defv:(\d+)/.exec(read('js/session-tabs.js'));
+  assert.ok(gen, 'js/session-tabs.js stamps a generation');
   const seeds = ['playwright.config.js', 'tests/r172.spec.js', 'tests/r173.spec.js', 'tests/r186.spec.js'];
   for (const f of seeds) {
     const src = read(f);
     for (const m of src.matchAll(/intmap_session2[\s\S]{0,200}?\{[\s\S]{0,200}?\}/g)) {
       const stamp = /["']?defv["']?\s*:\s*(\d+)/.exec(m[0]);
       assert.ok(stamp, `${f}: a session seed without defv is healed back to the default-on layers`);
-      assert.equal(stamp[1], gen[1], `${f}: the seed's generation must track js/app-body.js`);
+      assert.equal(stamp[1], gen[1], `${f}: the seed's generation must track js/session-tabs.js`);
     }
   }
 });
