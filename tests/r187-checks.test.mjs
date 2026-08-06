@@ -107,7 +107,10 @@ test('R187 sea level: the default opacity is 60 %', () => {
 });
 
 test('R187 atmosphere: the limb is blended thinner than saturation', () => {
-  const src = read('js/app-body.js');
+  /* (#R199) …and the file it reads is js/theme-sky.js now: the theme + sky block left js/app-body.js
+     whole this round. Pointing the assertion at the file the thing actually lives in is stricter than
+     the concatenation it used to search, not looser — the ramps must be in the sky module or nowhere. */
+  const src = read('js/theme-sky.js');
   /* ⚠ (#R196) THERE ARE TWO RAMPS NOW, and this test's finding applies to ONE of them. #R187's
      complaint — 「質感がチープ」「日光当たってる側が、ちょっと明るくしすぎ」 — was measured over the
      SATELLITE imagery, where the channels clip. #R196 gave the map basemap a sky too, and over a

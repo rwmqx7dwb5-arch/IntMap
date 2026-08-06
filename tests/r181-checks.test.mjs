@@ -177,7 +177,9 @@ test('R181 ④: the fit asks the sphere when the scene is one', () => {
 /* ══ ⑤ THE DEFAULT ENGINE: applyTheme CALLED SOMETHING THAT CALLED IT BACK ═════════════════ */
 
 test('R181 ⑤: applyTheme cannot re-enter itself', () => {
-  const src = R('js/app-body.js');
+  /* (#R199) applyTheme moved to js/theme-sky.js with the rest of the theme + sky block. The guard is
+     asked of the file that now holds the function — stricter than the old location, same claim. */
+  const src = R('js/theme-sky.js');
   assert.match(src, /if\(applyTheme\._busy\) return;/,
     'pressing Satellite threw RangeError: Maximum call stack size exceeded on the DEFAULT ' +
     'engine — applyTheme rebuilds a sprite, which fires styledata synchronously, and the ' +

@@ -71,7 +71,7 @@ window.IntMapModules.newsUi=function(HOST){
          (#R15) Shown for publisher-located pins too, not just subject pins. */
       GE.layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
-        'text-size':11.5,
+        'text-size':window.IntMapLabelScale.sub(0.92),
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
         'text-offset':[1.25,0],

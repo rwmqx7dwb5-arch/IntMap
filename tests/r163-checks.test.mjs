@@ -104,7 +104,18 @@ test('R163 #2 IM_HOST exists and EVERY member is an accessor — never a capture
       checked++;
       const g = d.match(/^get\s+([A-Za-z_$][\w$]*)\(\)\{\s*return\s+([A-Za-z_$][\w$]*);\s*\}$/);
       const s = d.match(/^set\s+([A-Za-z_$][\w$]*)\(v\)\{\s*([A-Za-z_$][\w$]*)=v;\s*\}$/);
-      assert.ok(g || s, `every IM_HOST member must be a plain getter or the setter half of a RW pair; found: ${d}`);
+      /* (#R198) A THIRD ACCESSOR FORM: a getter that DELEGATES to a module rather than returning a
+         closure variable — `get X(){ return window.IntMapY.z(); }`. It arrived because the gazetteer
+         index is no longer derivable from the two synchronous tables alone: the world rows
+         (data/gazetteer-world.json) land after boot, and the file that knows when is js/gazetteer.js,
+         not the shell. This does NOT loosen the invariant the test exists for. The rule is "never a
+         captured value", and a delegating getter is the strongest possible version of that — it holds
+         no value at all, so there is nothing to go stale. What stays forbidden is exactly what was
+         forbidden before: a shorthand (`imToast,`) or an assignment (`imToast: imToast`), both of
+         which freeze the value at object-literal time. The delegation target must be a published
+         window.IntMap* module, so the reference is to something this file can name and check. */
+      const dg = d.match(/^get\s+([A-Za-z_$][\w$]*)\(\)\{\s*return\s+window\.(IntMap[\w$]*)\.[\w$]+\(\);\s*\}$/);
+      assert.ok(g || s || dg, `every IM_HOST member must be a plain getter, a module-delegating getter, or the setter half of a RW pair; found: ${d}`);
       if (g) getters.set(g[1], g[2]);
       if (s) setters.set(s[1], s[2]);
     }

@@ -1202,7 +1202,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!GE().layers.has('nato-line')) GE().layers.add({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
       if(!GE().layers.hasSource('src-tropic')) GE().layers.addSource('src-tropic',{type:'geojson',data:tropicFC()});
       if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
-      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(HOST.lang==='jp'?'北回帰線 (北緯23.4°)':HOST.lang==='de'?'Wendekreis des Krebses (23,4°N)':HOST.lang==='ru'?'Северный тропик (23,4° с.ш.)':HOST.lang==='es'?'Trópico de Cáncer (23,4°N)':'Tropic of Cancer (23.4°N)'),'text-size':11,'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
+      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(HOST.lang==='jp'?'北回帰線 (北緯23.4°)':HOST.lang==='de'?'Wendekreis des Krebses (23,4°N)':HOST.lang==='ru'?'Северный тропик (23,4° с.ш.)':HOST.lang==='es'?'Trópico de Cáncer (23,4°N)':'Tropic of Cancer (23.4°N)'),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
     }
     function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){} }
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
@@ -3711,7 +3711,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const dark=document.documentElement.getAttribute('data-theme')==='dark';
         GE().layers.add({ id:'contour-lines', type:'line', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none'},
           paint:{ 'line-color': dark?'rgba(220,180,120,0.6)':'rgba(150,100,40,0.7)', 'line-width':['match',['get','level'],1,1.3,0.55], 'line-opacity':opacities.contours } }, beforeId);
-        GE().layers.add({ id:'contour-labels', type:'symbol', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none','symbol-placement':'line','symbol-spacing':320,'text-size':10,'text-field':['concat',['to-string',['get','ele']],' m'],'text-font':['Noto Sans Regular'],'text-allow-overlap':false},
+        GE().layers.add({ id:'contour-labels', type:'symbol', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none','symbol-placement':'line','symbol-spacing':320,'text-size':window.IntMapLabelScale.sub(0.82),'text-field':['concat',['to-string',['get','ele']],' m'],'text-font':['Noto Sans Regular'],'text-allow-overlap':false},
           paint:{ 'text-color': dark?'#e8c890':'#7a5320', 'text-halo-color': dark?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.8)', 'text-halo-width':1.2 } }, beforeId);
         return true;
       }catch(e){ console.warn('addContours',e); return false; }
@@ -4167,7 +4167,7 @@ window.IntMapModules.dataLayers=function(HOST){
          ensureBordersLayer / ensureRefLayers / applyCountryVisibility), so the heal is a single gentle
          re-fire of the change event (see BASE branch below) — no off→on flicker of the whole label stack. */
       const BASE={
-        'cb-names':['ofm-country','ofm-city','ofm-other'],
+        'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line'],'cb-countries':['country-fill'],

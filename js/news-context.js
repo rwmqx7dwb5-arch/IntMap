@@ -73,6 +73,24 @@ window.IntMapModules.newsContext=function(HOST){
         extra.push({ terms:g.terms, lng:g.loc[0], lat:g.loc[1], type, name_en:(g.name&&g.name.en)||g.terms[0], name_jp:(g.name&&g.name.jp)||'' }); } }
       if(extra.length) window.IntMapNewsGeo.register(extra);
     } }catch(_){}
+    /* ══ (#R198) …and the WORLD rows, on the same seam, at the same rank ═════════════════════════
+       「Gazetteerを今の10倍の網羅性に。」 data/gazetteer-world.json is fetched, not bundled (see
+       js/gazetteer.js), so the first pass through here almost always runs without it and places
+       exactly what it placed before. `warm()` starts the fetch and fires `intmap-gazetteer-world`
+       when the rows land; this function is re-entered then, and register() is idempotent by
+       construction (its REGISTERED signature set), so the second pass adds them once and a third
+       adds nothing. Registered at rank 3 — below every curated entity — because the whole point is
+       that coverage must not be able to move a place the curated table already knows. */
+    try{ const GZ=window.IntMapGazetteer;
+      if(GZ&&GZ.warm){
+        const w=GZ.world&&GZ.world();
+        if(w===null){ if(!rebuildGeoIndex._worldHooked){ rebuildGeoIndex._worldHooked=true;
+            try{ window.addEventListener('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} },{once:true}); }catch(_){} }
+          GZ.warm(); }
+        else if(w&&w.length&&window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
+          window.IntMapNewsGeo.register(w.map(([type,terms,lng,lat,en,jp])=>({ terms, lng, lat, type, name_en:en, name_jp:jp })));
+        }
+      } }catch(_){}
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     HOST.geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
     HOST.geoDB.forEach(g=>{

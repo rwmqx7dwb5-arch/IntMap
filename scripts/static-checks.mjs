@@ -266,14 +266,27 @@ try {
        that. So a dynamic import from an already-reachable js/ file counts as reachable, and a
        file nothing imports at all still fails. */
     const dyn = new Set();
+    /* (#R199) …and the STATIC sibling import — `import { makeAtlasReply } from './atlas-reply.js';`
+       inside another js/ file. This is the third and strongest form of reachability, and until this
+       round the check could not see it: the six subsystems the Atlas kernel shed are named ES exports,
+       not window.IntMapModules registrations, precisely because 「読み込み順序にも依存しています」 was
+       the complaint. A named binding is resolved by the bundler — a typo is a BUILD error rather than an
+       undefined at runtime — and the import graph, not src/main.js's list, decides the order. */
+    const sib = new Set();
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      for (const m of read(f).matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+      const t = read(f);
+      for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
+      for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
+      for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
     }
     for (const rel of dyn) {
       if (!ALL.some((x) => x.rel === rel)) err('split', `a js/ module dynamically imports ${rel}, which does not exist`);
     }
+    for (const rel of sib) {
+      if (!ALL.some((x) => x.rel === rel)) err('split', `a js/ module imports ${rel}, which does not exist`);
+    }
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      if (!imported.has(f.rel) && !dyn.has(f.rel)) err('split', `${f.rel} exists but nothing imports it (add import '../${f.rel}'; to src/main.js, or import() it from a module that is imported)`);
+      if (!imported.has(f.rel) && !dyn.has(f.rel) && !sib.has(f.rel)) err('split', `${f.rel} exists but nothing imports it (add import '../${f.rel}'; to src/main.js, or import() it from a module that is imported)`);
     }
     // …and nothing may be imported that no longer exists (a dangling import breaks the whole bundle).
     for (const rel of imported) {

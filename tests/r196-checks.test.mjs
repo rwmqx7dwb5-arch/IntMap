@@ -113,15 +113,20 @@ test('R196 ③a the flight simulator sets NO distance fog', () => {
 
 test('R196 ③b the sky is set for EVERY basemap, and set3D no longer fights it', () => {
   const shell = appShell(new URL('../', import.meta.url));
+  /* (#R199) the sky itself moved to js/theme-sky.js — one coherent subject, taken out of app-body
+     whole. set3D stayed behind, so the "one owner" claim is still asked of the shell; the sky's own
+     declarations are now asked of the file that holds them, which is stricter than searching a
+     concatenation. The satellite-only gate must be absent from BOTH. */
+  const sky = rd('js/theme-sky.js');
   assert.doesNotMatch(shell, /if\(currentProj!=='globe'\)\{ try\{ GE\(\)\.scene\.setSky/,
     'set3D must not install a second sky — one owner (#R196)');
-  assert.match(shell, /'sky-horizon-blend':0\.55/, 'the atmosphere band is declared');
-  assert.match(shell, /'fog-ground-blend':1/, 'no ground fog on the map either');
+  assert.match(sky, /'sky-horizon-blend':0\.55/, 'the atmosphere band is declared');
+  assert.match(sky, /'fog-ground-blend':1/, 'no ground fog on the map either');
   /* the horizon colour follows the Sun, so it cannot be a constant */
-  assert.match(shell, /function _horizonColour\(\)/);
-  assert.match(shell, /function _sunElevAtCentre\(\)/);
+  assert.match(sky, /function _horizonColour\(\)/);
+  assert.match(sky, /function _sunElevAtCentre\(\)/);
   /* …and the early return that made this satellite-only is gone */
-  assert.doesNotMatch(shell, /if\(!sat\)\{ if\(_applySkyAtmosphere\._on\)/, 'the satellite-only gate is gone');
+  assert.doesNotMatch(shell + sky, /if\(!sat\)\{ if\(_applySkyAtmosphere\._on\)/, 'the satellite-only gate is gone');
 });
 
 test('R196 ③c the tile prefetch remembers what it has already asked for', () => {
@@ -206,10 +211,17 @@ test('R196 ⑥ the propagation model follows the seismic panel, debounced', () =
   assert.match(s, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); syncTsunamiSource\(\); \}/);
 });
 
-test('R196 ⑧ the build stamps name this round', () => {
+test('R196 ⑧ the build stamps have moved on from this round', () => {
+  /* ⚠ (#R199) this pinned R196's own two values, and #R174 already wrote down why that is the wrong
+     shape: a test that pins the CURRENT round's stamp goes quiet the moment the round ends — it keeps
+     passing while the stamp goes stale, which is exactly what happened through #R198 (shipped at
+     R196). Same correction #R176 made to #R175's copy: assert the NEGATIVE here, and let the current
+     round pin its exact value in its own checks file (tests/r199-checks.test.mjs ⑥). */
   const idx = rd('index.html');
-  assert.match(idx, /window\.__imBuild='R196';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-06-R196';/);
+  assert.doesNotMatch(idx, /window\.__imBuild='R196';/, 'the build marker must move every round');
+  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='2026-08-06-R196';/, 'and so must the anti-stale-version stamp');
+  assert.match(idx, /window\.__imBuild='R\d+';/, 'both are still round stamps');
+  assert.match(idx, /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R\d+';/);
 });
 
 /* ── ⑦ THE LOCAL RUN IS PLANNED ────────────────────────────────────────────────────────────── */

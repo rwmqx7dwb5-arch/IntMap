@@ -95,6 +95,10 @@ window.IntMapModules.searchGeocode=function(HOST){
     /* (#R15e) Make sure the bundled country data is loading so local country/capital matches are available
        (the gazetteer is always loaded; countryStats may not be until Stats is opened). Non-blocking. */
     try{ if(typeof HOST.loadCountryData==='function' && (typeof HOST.countryStats==='undefined' || !HOST.countryStats || !Object.keys(HOST.countryStats).length)) HOST.loadCountryData(); }catch(_){}
+    /* (#R198) …and the world gazetteer, for the same reason and on the same terms: localFuzzyPlaces
+       below reads HOST.BUILTIN_GAZETTEER, which is 3,482 rows larger once this resolves. Non-blocking
+       — this search runs against whatever is loaded now, the next one against more. */
+    try{ if(window.IntMapGazetteer&&window.IntMapGazetteer.warm) window.IntMapGazetteer.warm(); }catch(_){}
     const pq=preprocessNLQuery(q);
     const local=localFuzzyPlaces(q);
     const seen=new Set();
