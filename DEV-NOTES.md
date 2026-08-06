@@ -75,7 +75,8 @@
 移送の証明（機械で取った）：**504行のうち490行が1バイトも変わっていない**。変わった14行
 （識別子20個）は全部**同じ1つの理由**＝#R165 の規則で、app-body が再代入する値だけ IM_HOST の
 生きたアクセサ経由（`currentMode`→`HOST.mode`・`currentMapType`→`HOST.mapType`・`terrain3D`・
-`currentLang`→`HOST.lang`・`countryDataLoaded`）。**残った側も 4,645/4,645行が同一**。
+`currentLang`→`HOST.lang`・`countryDataLoaded`）。**残った側も 4,645/4,645行が同一**——
+ただし②で足した**巻き上げ shim の17行だけは純粋な追加**で、これを除いての一致（機械で取った）。
 6本のうち**HOST に書き戻すものは1つも無い**——そう選んだ（`tests/r200-checks ③` が検査する）。
 
 ### ② ⚠ **自分で回帰を作り、ブラウザだけがそれを見つけた**——const は「同じ名前」ではない
