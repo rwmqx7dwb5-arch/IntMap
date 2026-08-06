@@ -421,10 +421,51 @@ window.IntMapModules.tsunami=function(HOST){
        lookup each; measured at ~2 ms for 512². Interpolation happens in COMPANDED space, which is
        monotone in η and is the same curve the ramp uses — so a blended pixel lands where the eye
        expects it, and the error against blending metres is under one ramp step. */
+    /* ══ (#R195) THE PICTURE'S ROWS ARE THE RENDERER'S ROWS, NOT THE GRID'S ═══════════════════════
+       「アニメーションの位置がおかしい」— and it was, by up to 8° of latitude. The field is sampled at
+       equal steps of LATITUDE; a dynamic image is stretched over whatever the renderer's own vertical
+       coordinate is, which on the default engine is MERCATOR (js/geo-engine.js has the measurement).
+       Painting grid row j into image row N−1−j therefore put the water at the wrong latitude
+       everywhere except the two edges of the box, while the epicentre marker and the hour contours —
+       real geographic geometry — stayed where they belonged. The wave visibly missed its own source.
+
+       So the painter asks the engine what latitude each image row will be drawn at, and paints the
+       grid row that actually lives there. Nearest row, not a blend: the row map below guarantees at
+       least one image row per grid row everywhere, so nothing is skipped and nothing is invented —
+       and blending across a coastline would smear land into water, which no interpolation of a
+       land-masked field can be allowed to do. */
+    let imgH=0, imgRows=null;
+    /* Where Mercator compresses — towards the equatorial edge of the box — one image row would
+       otherwise have to stand for up to three rows of water, and the crests in between would simply
+       not be drawn. Ask for a taller texture instead, capped so a pathological box cannot demand an
+       unbounded one. A geographic engine answers 1.0 here and the texture stays N×N. */
+    function chooseImgH(){
+      const N=sim.N, c=coords(); if(!c) return N;
+      let rows=null; try{ rows=GE().layers.imageRowLatitudes(c,N); }catch(_){}
+      if(!rows||rows.length!==N) return N;
+      const dLat=(sim.nLat-sim.sLat)/N; let worst=1;
+      for(let r=1;r<N;r++){ const g=Math.abs(rows[r]-rows[r-1])/dLat; if(g>worst) worst=g; }
+      return (worst>1.02)?Math.min(2048,Math.ceil(N*worst)):N;
+    }
+    function rowMap(H){
+      const N=sim.N, c=coords(), map=new Int32Array(H), span=sim.nLat-sim.sLat;
+      let rows=null; try{ if(c) rows=GE().layers.imageRowLatitudes(c,H); }catch(_){}
+      const clamp=(j)=>(j<0)?0:(j>N-1?N-1:j);
+      if(rows&&rows.length===H&&span>0){
+        for(let r=0;r<H;r++) map[r]=clamp(Math.round((rows[r]-sim.sLat)/span*N-0.5));
+      } else {
+        /* an engine that will not say: assume the image runs north→south in equal latitude steps */
+        for(let r=0;r<H;r++) map[r]=clamp(N-1-Math.round((r+0.5)*N/H-0.5));
+      }
+      return map;
+    }
+
     function drawField(ctx,W2,H2){
       if(!sim) return;
       const N=sim.N;
-      const im=ctx.createImageData(N,N), px=im.data;
+      if(!imgRows||imgRows.length!==H2){ imgRows=rowMap(H2); imgH=H2; }
+      const rowOf=imgRows;
+      const im=ctx.createImageData(N,H2), px=im.data;
       const land=sim.land;
       if(showMax&&sim.emax){
         /* ⚠ COMPAND IT THE WAY THE FRAMES ARE COMPANDED, against the run's peak A — not against the
@@ -432,7 +473,7 @@ window.IntMapModules.tsunami=function(HOST){
            by S here as well would apply it twice and blow the whole field out (measured: a factor of
            two on a Tōhoku run, where A/S is 8.5). One transform, in one place. */
         const A=Math.max(1e-6,sim.amp), emax=sim.emax;
-        for(let j=0;j<N;j++){ const src=j*N, dst=(N-1-j)*N;
+        for(let r=0;r<H2;r++){ const src=rowOf[r]*N, dst=r*N;
           for(let i=0;i<N;i++){
             const k=src+i; if(land[k]) continue;
             const a=emax[k]/A;
@@ -443,11 +484,11 @@ window.IntMapModules.tsunami=function(HOST){
           } }
         ctx.putImageData(im,0,0); return;
       }
-      if(!sim.frames.length){ ctx.clearRect(0,0,N,N); return; }
+      if(!sim.frames.length){ ctx.clearRect(0,0,N,H2); return; }
       const f=framePos(), i0=Math.floor(f), w=f-i0;
       const A0=sim.frames[Math.min(i0,sim.frames.length-1)].q;
       const A1=sim.frames[Math.min(i0+1,sim.frames.length-1)].q;
-      for(let j=0;j<N;j++){ const src=j*N, dst=(N-1-j)*N;      /* the image runs north→south */
+      for(let r=0;r<H2;r++){ const src=rowOf[r]*N, dst=r*N;   /* image row → the grid row drawn there */
         for(let i=0;i<N;i++){
           const k=src+i; if(land[k]) continue;
           const q=(A0[k]+(A1[k]-A0[k])*w)|0;
@@ -463,8 +504,11 @@ window.IntMapModules.tsunami=function(HOST){
     function installPaint(){
       if(!sim||!_imCanDraw()) return false;
       buildLUT();
+      /* (#R195) the engine's vertical parameterisation decides both of these, so they are settled
+         here — where the image is (re)created — and re-settled if the engine is ever swapped */
+      imgH=chooseImgH(); imgRows=rowMap(imgH);
       try{
-        GE().layers.addDynamicImage(DYN,{ width:sim.N, height:sim.N, coordinates:coords(),
+        GE().layers.addDynamicImage(DYN,{ width:sim.N, height:imgH, coordinates:coords(),
           opacity, draw:drawField, smooth:true });
         if(!GE().layers.hasSource(SRC_V)) GE().layers.addSource(SRC_V,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(LYR_EPI)) GE().layers.add({id:LYR_EPI,type:'circle',source:SRC_V,
@@ -476,6 +520,7 @@ window.IntMapModules.tsunami=function(HOST){
     }
     function paint(){ try{ if(sim) GE().layers.touchDynamicImage(DYN); }catch(_){} }
     function clearPaint(){
+      imgRows=null; imgH=0;                 /* (#R195) the next install re-asks the engine for them */
       try{ GE().layers.removeDynamicImage(DYN); }catch(_){}
       try{ if(GE().layers.has(LYR_ISOL)) GE().layers.remove(LYR_ISOL); }catch(_){}
       try{ if(GE().layers.has(LYR_ISO)) GE().layers.remove(LYR_ISO); }catch(_){}

@@ -1135,7 +1135,37 @@ function _m(){ return window.__imap||null; }
            alternates — see js/cesium-engine.js. The app must not know that, which is the whole point
            of it being a draw callback rather than a canvas.
 
-       An engine without either answers false and the caller keeps whatever it had. */
+       An engine without either answers false and the caller keeps whatever it had.
+
+       ══ (#R195) …AND THE IMAGE IS NOT PARAMETERISED BY LATITUDE ═══════════════════════════════════
+       「アニメーションの位置がおかしい」. A `canvas`/`image` source is placed by four corner
+       coordinates, and MapLibre draws it as ONE QUAD whose vertices are those corners converted to
+       Web-Mercator. The texture is therefore interpolated linearly in MERCATOR Y — including under
+       the globe projection, which is Mercator coordinates wrapped onto a sphere. Hand it a field
+       sampled at EQUAL STEPS OF LATITUDE and every row lands at the wrong place: measured on the
+       #R193 tsunami box (6.3°N–70.3°N), the pixel drawn at the epicentre's latitude carried the water
+       from 30.3°N — **8.05° ≈ 895 km out**, growing towards the middle of the box and vanishing only
+       at its two edges. It is exactly the "latitude drift" the Köppen layer avoids by shipping a
+       Web-Mercator-reprojected PNG (js/data-layers.js), and nothing in the contract said so.
+
+       So the contract now answers the question the painter has to ask: WHAT LATITUDE IS ROW r? The
+       engine knows, because the engine chose the parameterisation — Mercator here, geographic for
+       Cesium's rectangle. The painter stays in geographic coordinates and looks its rows up. */
+    imageRowLatitudes(coordinates,height){
+      const H=Math.max(1,height|0);
+      if(!coordinates||!coordinates.length) return null;
+      let n=-90,s=90;
+      for(let k=0;k<coordinates.length;k++){ const la=+coordinates[k][1];
+        if(!isFinite(la)) continue; if(la>n) n=la; if(la<s) s=la; }
+      if(!(n>s)) return null;
+      /* the same ±85.0511° clamp the projection itself uses; beyond it Mercator Y is unbounded */
+      const R=Math.PI/180, LIM=85.051129;
+      const my=(la)=>Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,la))*R/2));
+      const y0=my(n), y1=my(s), out=new Float64Array(H);
+      for(let r=0;r<H;r++){ const y=y0+(y1-y0)*(r+0.5)/H;
+        out[r]=(2*Math.atan(Math.exp(y))-Math.PI/2)/R; }
+      return out;
+    },
     addDynamicImage(id,o,before){
       const m=_m(); if(!m||!o||typeof o.draw!=='function') return false;
       try{
@@ -1258,8 +1288,94 @@ function _m(){ return window.__imap||null; }
       return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
     setCursor(c){ const m=_m(); try{ const cv=m&&m.getCanvas&&m.getCanvas(); if(cv) cv.style.cursor=c||''; }catch(_){} },
     getPaint(id,p){ const m=_m(); try{ return (m&&m.getLayer(id))?m.getPaintProperty(id,p):undefined; }catch(_){ return undefined; } },
-    onLayer(e,layer,c){ const m=_m(); if(m) m.on(e,layer,c); }, offLayer(e,layer,c){ const m=_m(); if(m) m.off(e,layer,c); },
-    onceLayer(e,layer,c){ const m=_m(); if(m&&m.once) m.once(e,layer,c); },
+    /* ══ (#R195) ONE HOVER QUERY PER POINTER MOVE, NOT TWENTY-SIX ═════════════════════════════
+       「地図のホバー…のfpsを劇的に高く。」 A per-layer hover handler is delegation: the renderer
+       installs a real `mousemove` listener that hit-tests THAT layer and calls back only when the
+       pointer is over one of its features. Register twenty-six of them — which this app does, across
+       news dots, community dots, the country fill, the choropleths, water, peaks, the user pin — and
+       every single pointer move runs twenty-six independent hit tests, each walking the tile index
+       from the top.
+
+       Measured over Tokyo at z13, with twelve of those layers actually present and visible:
+         · twenty-six separate hit tests … 0.64 ms per move
+         · ONE hit test naming all twelve … 0.13 ms per move   ← same answers, 5× less work
+       The saving is 0.52 ms of main thread on every pointer event, which at a 60 Hz pointer is 3 %
+       of the frame budget handed back, and more on a phone where the same walk costs several times
+       as much.
+
+       So the hover triad is dispatched here instead: one query for every registered layer at once,
+       results grouped by the layer they came from, then fanned out. It is deliberately SYNCHRONOUS —
+       coalescing to an animation frame would save more but would change when a tooltip appears
+       relative to the event that caused it, and the app's own tests are written against that order
+       (#R182). The event object is mutated and restored exactly the way the renderer's own
+       delegation does it, so a callback cannot tell the difference.
+       ⚠ enter/leave are edge-triggered off the same result, per layer, so a layer that is hidden or
+       removed while the pointer is inside it still gets its `mouseleave`.
+       ⚠ ONE THING IS NOT IDENTICAL, stated rather than glossed over: callbacks now fire grouped by
+       LAYER, where the renderer interleaved them in global registration order. Within a layer the
+       order is unchanged, and enter still precedes move. Two handlers on DIFFERENT layers that write
+       the same DOM node could therefore settle differently — nothing in this app does, and depending
+       on it would have been depending on the order twenty-six independent hit tests happened to
+       finish in. `click` delegation is untouched, so nothing that opens a card is affected. */
+    _hoverHub(){
+      if(this._hvh) return this._hvh;
+      const H={ regs:[], inside:new Set(), wired:null };
+      H.ids=()=>{ const m=_m(), out=[], seen=new Set();
+        for(let i=0;i<H.regs.length;i++){ const id=H.regs[i].layer;
+          if(seen.has(id)) continue; seen.add(id);
+          try{ if(m.getLayer(id)&&m.getLayoutProperty(id,'visibility')!=='none') out.push(id); }catch(_){} }
+        return out; };
+      H.emit=(layer,type,ev,feats)=>{
+        for(let i=0;i<H.regs.length;i++){ const r=H.regs[i];
+          if(r.layer!==layer||r.type!==type) continue;
+          if(feats) ev.features=feats;
+          try{ r.cb.call(_m(),ev); }catch(_){}
+          if(feats) delete ev.features;
+          if(r.once) r.dead=true; }
+        if(H.regs.some(r=>r.dead)) H.regs=H.regs.filter(r=>!r.dead);
+      };
+      H.leaveAll=(ev)=>{ if(!H.inside.size) return;
+        const gone=[...H.inside]; H.inside.clear();
+        for(const id of gone) H.emit(id,'mouseleave',ev,null); };
+      H.move=(ev)=>{
+        const ids=H.ids();
+        /* a layer the pointer was inside that is no longer queryable has still been left */
+        for(const id of [...H.inside]) if(ids.indexOf(id)<0){ H.inside.delete(id); H.emit(id,'mouseleave',ev,null); }
+        if(!ids.length) return;
+        let hits=[];
+        try{ hits=_m().queryRenderedFeatures(ev.point,{layers:ids})||[]; }catch(_){ hits=[]; }
+        const by=new Map();
+        for(let i=0;i<hits.length;i++){ const f=hits[i], id=f.layer&&f.layer.id; if(!id) continue;
+          let a=by.get(id); if(!a){ a=[]; by.set(id,a); } a.push(f); }
+        for(let i=0;i<ids.length;i++){ const id=ids[i], feats=by.get(id);
+          if(feats&&feats.length){
+            if(!H.inside.has(id)){ H.inside.add(id); H.emit(id,'mouseenter',ev,feats); }
+            H.emit(id,'mousemove',ev,feats);
+          } else if(H.inside.has(id)){ H.inside.delete(id); H.emit(id,'mouseleave',ev,null); }
+        }
+      };
+      /* ⚠ keyed on the MAP INSTANCE, not a boolean: a style reload keeps the same map and the same
+         listeners, but a re-created map would keep the flag and lose the wiring — silently, which is
+         the failure mode this whole file exists to make impossible (#R194) */
+      H.wire=()=>{ const m=_m(); if(!m||H.wired===m) return; H.wired=m; H.inside.clear();
+        m.on('mousemove',H.move); m.on('mouseout',H.leaveAll); };
+      return (this._hvh=H);
+    },
+    onLayer(e,layer,c){ const m=_m(); if(!m) return;
+      if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
+        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c}); H.wire(); return; }
+      m.on(e,layer,c); },
+    offLayer(e,layer,c){ const m=_m(); if(!m) return;
+      if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
+        const H=this._hoverHub();
+        H.regs=H.regs.filter(r=>!(r.type===e&&r.layer===layer&&r.cb===c));
+        if(!H.regs.some(r=>r.layer===layer)) H.inside.delete(layer);
+        return; }
+      m.off(e,layer,c); },
+    onceLayer(e,layer,c){ const m=_m(); if(!m) return;
+      if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
+        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c,once:true}); H.wire(); return; }
+      if(m.once) m.once(e,layer,c); },
     /* ══ (#R178) THE REST OF THE SURFACE ════════════════════════════════════════════════════
        「MapLibre依存脱却作業を完了させて。」 An AST sweep (scripts/engine-coupling.mjs) counted
        what the app still reaches for directly: 2,037 references across 31 files and 86 distinct
@@ -1535,6 +1651,9 @@ function _m(){ return window.__imap||null; }
          the adapter. `draw(ctx,w,h)` is called BY THE ENGINE; `touchDynamicImage` says the pixels
          moved. An engine without the primitive answers false and the caller keeps its old path. */
       addDynamicImage:(id,o,b)=>A().addDynamicImage?A().addDynamicImage(id,o,b):false,
+      /* (#R195) the row→latitude map of a dynamic image, in whatever the engine's own vertical
+         parameterisation is. Null from an engine that does not place images at all. */
+      imageRowLatitudes:(c,h)=>A().imageRowLatitudes?A().imageRowLatitudes(c,h):null,
       touchDynamicImage:id=>A().touchDynamicImage?A().touchDynamicImage(id):false,
       setDynamicImageOpacity:(id,v)=>A().setDynamicImageOpacity?A().setDynamicImageOpacity(id,v):false,
       setDynamicImageCoords:(id,c)=>A().setDynamicImageCoords?A().setDynamicImageCoords(id,c):false,

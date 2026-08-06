@@ -77,7 +77,7 @@ test('R193 ⑥ both engines implement the dynamic-image primitive', () => {
 });
 
 test('R193 ⑦ the ancestor walk starts from what the depth memo already knows', () => {
-  const w = read('src/sat-worker.js'), a = read('js/app-body.js');
+  const w = read('src/sat-worker.js'), a = read('js/sat-proto.js');   /* (#R195) protocol split out */
   assert.match(w, /const hint = knownStop\(z, x, y\);/, 'the worker consults the memo');
   assert.match(a, /const _hint=_satKnownStop\(z,x,y\);/, 'and so does the main-thread fallback');
   /* a stale hint must not be trusted blindly: the walk resumes from there */

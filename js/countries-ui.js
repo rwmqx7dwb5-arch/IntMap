@@ -38,11 +38,28 @@ window.IntMapModules.countriesUi=function(HOST){
         /* (#R13) Highest-resolution Natural Earth borders (10 m) so the boundary lines are crisp and
            track the real borders — the user reported the 50 m lines were too coarse and ran parallel-
            offset from reality. 10 m gzips to ~4.7 MB and loads async (doesn't block the map), with a
-           graceful fall back to 50 m then 110 m if it can't be fetched. */
+           graceful fall back to 50 m then 110 m if it can't be fetched.
+           ══ (#R195) …BUT NOTHING ON SCREEN IS WAITING FOR THE GEOMETRY ═══════════════════════════
+           「起動時の読み込みをもっと早く。」 Measured on a cold load after #R193's work: this file is
+           **4,335 KB starting at 2,024 ms** — the largest download left anywhere on the boot path, now
+           that #R192 moved cshapes to idle. And on a default boot NOT ONE PIXEL of it is drawn: the
+           visible border line comes from the OFM boundary layer (#R40, `ensureBordersLayer`), and
+           `country-fill`/`country-line` are created with `visibility:'none'` and only shown when the
+           user ticks Countries(info) — manual since #R83. What the boot actually needs from this file
+           is the ATTRIBUTES: the names, populations, ISO codes and regions the Countries tab lists,
+           and that tab is the desktop default (#R170), so it is what the user is waiting on.
+
+           The attributes are identical at every Natural Earth scale. So: fetch the 110 m file — the
+           same table, ~17× smaller — draw the rows from it, and pull the 10 m geometry in when the
+           browser is idle, replacing the geometry WITHOUT disturbing the records (see upgrade below).
+           The 10 m outline still ends up in `countryGeo`, so hit-testing, the silhouette quiz and the
+           projection viewer are exactly as precise as before; they simply are not what boot pays for. */
         const NE='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/';
-        try{ const r=await fetch(NE+'ne_10m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){}
-        if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_50m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
-        if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_110m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
+        const grab=async(f)=>{ try{ const r=await fetch(NE+f); if(r.ok) return await r.json(); }catch(e){} return null; };
+        let coarse=true;
+        gj=await grab('ne_110m_admin_0_countries.geojson');
+        if(!(gj&&gj.features)) gj=await grab('ne_50m_admin_0_countries.geojson');
+        if(!(gj&&gj.features)){ gj=await grab('ne_10m_admin_0_countries.geojson'); coarse=false; }
         if(gj&&gj.features){
           HOST.countryGeo=gj; window.countryGeo=HOST.countryGeo;   /* reused by the projection viewer (#16,#17) */
           /* [w,s,e,n] of a feature's rings — no turf, because this is arithmetic over coordinates and
@@ -90,6 +107,67 @@ window.IntMapModules.countriesUi=function(HOST){
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };
           });
+          /* ══ (#R195) …AND THE 10 m OUTLINE ARRIVES WHEN THE BROWSER IS FREE ═══════════════════════
+             The same shape #R192 gave the CShapes bundle: eager, because the first Countries(info)
+             hover must not block on 4.3 MB, but gated on the main thread being idle with a ceiling so
+             a permanently busy page still gets it, and a floor of the map's own first idle.
+
+             ⚠ IT MERGES, IT DOES NOT REPLACE THE RECORD. `countryStats[code]` is enriched IN PLACE
+             after this load by at least three other things — the PPP pass (#R22), the indicator
+             gap-fill, and the time machine's snapshot/restore — so handing each code a fresh object
+             here would silently drop whichever of them had already run. Only the three fields the
+             GEOMETRY decides are refreshed; every other attribute is identical at 110 m and 10 m
+             (Natural Earth keeps one attribute table across scales), which is exactly why the small
+             file could stand in for the rows in the first place. */
+          if(coarse){
+            const upgrade=async()=>{
+              const hi=await grab('ne_10m_admin_0_countries.geojson');
+              if(!(hi&&hi.features&&hi.features.length)) return;
+              /* ⚠ (#R195) IN CHUNKS, WITH A YIELD. This walks ~548,000 vertices and runs turf.area on
+                 every feature; as one loop it is a single long task, and it lands 4-10 s after boot —
+                 the window the renderer tests assert in. Nothing here is urgent, so it gives the
+                 thread back every 16 features. Same reason the tsunami's bathymetry pass yields every
+                 8 rows (#R193): the work is fine, holding the thread while doing it is not. */
+              const best=new Map(), fs=hi.features;
+              for(let i=0;i<fs.length;i++){
+                const f=fs[i], p=f.properties||{};
+                let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
+                if(!code||code==='-99'){ f.id=undefined; continue; }
+                f.id=code; if(f.properties) f.properties.__code=code;
+                let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
+                /* (#R15) the largest-area polygon per code is the mainland — same rule as above */
+                const cur=best.get(code); if(!cur||area>cur.area) best.set(code,{area,f});
+                if((i&15)===15) await new Promise(r=>setTimeout(r,0));
+              }
+              best.forEach((v,code)=>{ const s=HOST.countryStats[code]; if(!s) return;
+                s.area=Math.round(v.area); s._area=v.area;
+                s.density=(s.pop&&v.area)?s.pop/v.area:null;
+                s.bbox=_bboxOf(v.f)||s.bbox; });
+              HOST.countryGeo=hi; window.countryGeo=hi;
+              /* ⚠ (#R195) DO NOT PUSH IT AT THE RENDERER UNLESS SOMETHING WILL DRAW IT. The 10 m
+                 collection is 258 features and ~548,000 vertices; handing that to the engine rebuilds
+                 every feature on the main thread. `country-fill`/`country-line` are created hidden and
+                 only shown by Countries(info), so on a default session that rebuild is pure cost with
+                 nothing on screen to show for it — and it lands 4-10 s after boot, right where the
+                 renderer tests are asserting. It cost two CI runs: on Cesium, r180 ④ and ⑤ went red
+                 («the drawn feature is pickable», «entities 0») while every other shard stayed green,
+                 and the same specs pass on main. Hold it instead, and flush it the moment the layer
+                 is actually made visible (window._imFlushCountryGeo, called by applyCountryVisibility). */
+              window._imCountryGeoPending=hi;
+              try{ if(typeof window._imFlushCountryGeo==='function') window._imFlushCountryGeo(); }catch(_){}
+              try{ HOST.rebuildGeoIndex(); }catch(_){}
+            };
+            const go=()=>{ let slow=false;
+              try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+                slow=!!(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))); }catch(_){}
+              const run=()=>{ upgrade().catch(()=>{}); };
+              if(slow) setTimeout(run,15000);              /* on Data Saver the 4.3 MB is a real cost */
+              else if(typeof requestIdleCallback==='function') requestIdleCallback(run,{timeout:6000});
+              else setTimeout(run,3000); };
+            let started=false; const once=()=>{ if(started) return; started=true; go(); };
+            try{ GE().events.once('idle',()=>setTimeout(once,400)); }catch(_){}
+            setTimeout(once,4000);
+          }
         }
       }catch(e){ console.warn('country load failed',e); }
       finally{

@@ -43,10 +43,17 @@ jobs:
         run: npm run check:static
       - name: Renderer-decoupling gate (#R178)
         run: npm run check:engine
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Browser smoke + internal QA (gate)
-        run: npx playwright test tests/smoke.spec.js tests/internal-qa.spec.js
+      # ══ (#R195) THE BROWSER GATE IS NOT RE-RUN HERE ═══════════════════════════════════════════════
+      # 「マージ→本番デプロイ→検証 ←遅すぎる」. This job used to install Chromium and re-run
+      # tests/smoke.spec.js + tests/internal-qa.spec.js — four to six minutes spent re-proving, on one
+      # machine, something CI had just proved on twelve, for the IDENTICAL tree. main is protected by
+      # the required "Browser smoke + internal QA" check (it refused an --admin merge of this very PR),
+      # so a commit cannot reach this workflow without having passed the whole suite, smoke and QA
+      # included. Re-running two of those specs adds no information; it only delays the deploy.
+      #
+      # What is NOT duplication, and stays: the two static gates above (seconds, and they guard the
+      # BUILD rather than the tests), and the post-deploy smoke against the LIVE URL below — that one
+      # tests something no pre-merge run can, namely the thing actually published.
       # (#R175) The site is a Vite build now, so what ships is dist/ — bundled, minified, hashed and
       # code-split — not the committed sources. `vite build` is deterministic from the checked-out
       # tree, and the browser gate above already ran against a build of this same commit (Playwright's

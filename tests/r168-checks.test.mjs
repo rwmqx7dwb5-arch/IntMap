@@ -255,8 +255,15 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
      +29 across index.html/vendor/main.
      Growth of an ADAPTER when the contract grows is not the regression this guards against. The
      shell is nonetheless close to its budget: js/app-body.js's satellite-protocol block (~250 lines,
-     self-contained) is the obvious next thing to move out under standing rule 13. */
-  assert.ok(lines < 8_600, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+     self-contained) is the obvious next thing to move out under standing rule 13.
+     ⚠ (#R195) 8,600 → 8,300, because the paragraph above named a debt and this round PAID it rather
+     than carrying it. js/sat-proto.js took the 259-line satellite block out whole (8,492 → 8,233),
+     so the budget goes back down to fit — a ceiling raised once and never lowered stops asserting
+     anything at all, which is #R194's lesson in one line. Headroom is 67 lines, deliberately tight.
+     The next surface to leave under standing rule 13 is js/atlas-console.js (6,571 lines), which is
+     not in this shell but is the other half of 「中心部がまだ巨大」; it needs a split of its own
+     because its themes — the planner, the SYS catalogue, the renderer — are interleaved, not stacked. */
+  assert.ok(lines < 8_300, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,

@@ -60,10 +60,22 @@ jobs:
   # two to fifteen minutes, and four of its tests failed on load rather than on their merits (all four
   # pass locally). More shards cannot fix that; only separating them can.
   #
-  # So the 31 Cesium tests get four machines at ONE worker each — no intra-machine contention, which
-  # is the condition they pass under — and the other 329 get six machines at two workers. The split is
-  # in playwright.config.js behind IM_SUITE, which is unset everywhere else, so `npm test` locally is
-  # unchanged and no test can fall between the two halves (verified: 31 + 329 = 360, 4 + 44 = 48).
+  # ══ (#R195) …AND SEPARATING FAMILIES BY HAND IS ITSELF THE DEFECT ═══════════════════════════════
+  # 「今回だけで終わるな。そもそもの構造をどうにかしろ」. The paragraph above is the record of noticing
+  # ONE heavy family and carving it out. It worked, and it did not generalise: this round the shards
+  # came out 2m11, 2m20, 7m14, 8m51, 11m17 and **35m58**, because the flight-sim specs had clumped
+  # exactly the way the Cesium ones once did. Carving those out too would have bought one round.
+  #
+  # The cause is that `--shard=i/n` divides by TEST COUNT while this suite's files run from 2 s to
+  # 689 s. So CI does not use `--shard`. scripts/shard-plan.mjs packs the spec FILES into groups of
+  # equal MEASURED time (tests/durations.json) and hands each job its own list. Measured plan at the
+  # time of writing: five `rest` groups of ~599 s each, against 131 s … 2,158 s under count-sharding.
+  # A spec that becomes slow redistributes itself on the next `--update`; nobody has to notice first.
+  #
+  # The one thing still stated per-file is which specs need a machine to THEMSELVES — #R186 measured
+  # that for Cesium — and it lives in tests/durations.json as `solo`, as data rather than as a regex.
+  # Group counts are chosen so no group exceeds the largest single file (r182-cesium, 650 s): more
+  # groups cannot go below that, and fewer would waste the parallelism.
   browser:
     name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
@@ -75,12 +87,14 @@ jobs:
           - { suite: cesium, shard: 2, of: 4 }
           - { suite: cesium, shard: 3, of: 4 }
           - { suite: cesium, shard: 4, of: 4 }
-          - { suite: rest, shard: 1, of: 6 }
-          - { suite: rest, shard: 2, of: 6 }
-          - { suite: rest, shard: 3, of: 6 }
-          - { suite: rest, shard: 4, of: 6 }
-          - { suite: rest, shard: 5, of: 6 }
-          - { suite: rest, shard: 6, of: 6 }
+          - { suite: rest, shard: 1, of: 8 }
+          - { suite: rest, shard: 2, of: 8 }
+          - { suite: rest, shard: 3, of: 8 }
+          - { suite: rest, shard: 4, of: 8 }
+          - { suite: rest, shard: 5, of: 8 }
+          - { suite: rest, shard: 6, of: 8 }
+          - { suite: rest, shard: 7, of: 8 }
+          - { suite: rest, shard: 8, of: 8 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,10 +111,29 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright Chromium (+ OS deps)
         run: npx playwright install --with-deps chromium
+      # (#R195) the file list comes from the measured plan, not from --shard. The planner FAILS on an
+      # empty group rather than returning nothing, because `playwright test` with no paths runs the
+      # whole suite — a silent 40-minute job that looks like a pass.
+      - name: Plan this machine's share (measured time, not test count)
+        id: plan
+        run: |
+          set -euo pipefail
+          FILES=$(node scripts/shard-plan.mjs --pool ${{ matrix.suite }} --group ${{ matrix.shard }} --of ${{ matrix.of }})
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "this machine runs:" && printf '%s\n' $FILES
       - name: Run Playwright tests (smoke + internal QA)
         env:
           IM_SUITE: ${{ matrix.suite }}
-        run: npx playwright test --shard=${{ matrix.shard }}/${{ matrix.of }}
+        run: npx playwright test ${{ steps.plan.outputs.files }}
+      # (#R195) …and say, right here, which of the failures main does NOT have. The rule is to prove
+      # a failure is yours before touching it, and the way that was carried out was to re-run main by
+      # hand at ~10 minutes a go — while CI had already run every test on main and discarded the
+      # answer. tests/baseline.json is main's own last result; this reads it. It never fails the job:
+      # the verdict is information for whoever reads the log, and the tests themselves decide red.
+      - name: Which of these does main not have?
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: node scripts/baseline.mjs --classify test-results/junit.xml
       # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
@@ -111,6 +144,25 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+          if-no-files-found: ignore
+      # (#R195) …and on MAIN, the run's own result BECOMES the baseline, together with the timings the
+      # shard planner packs by. Both are committed by the job below, so the next PR inherits them.
+      # ⚠ Only main writes: a branch that recorded its own results would define its own "normal".
+      - name: Keep this result as main's baseline
+        if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+        continue-on-error: true
+        run: |
+          node scripts/baseline.mjs --update test-results/junit.xml
+          node scripts/shard-plan.mjs --update test-results/junit.xml
+      - name: Upload the baseline fragment
+        if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-${{ matrix.suite }}-${{ matrix.shard }}
+          path: |
+            tests/baseline.json
+            tests/durations.json
+          retention-days: 7
           if-no-files-found: ignore
 
   # One check, whatever the shard count is — so the PR still reports a single browser result and any
