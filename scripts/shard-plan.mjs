@@ -55,7 +55,11 @@ function load() {
   const solo = raw.solo || [];
   const times = {};
   for (const [k, v] of Object.entries(raw)) if (k !== 'solo' && typeof v === 'number') times[k] = v;
-  return { times, solo };
+  /* per-TEST times come from main's own baseline (scripts/baseline.mjs) — the same record that
+     answers "does this fail on main too". One measurement, two uses. */
+  const BL = join(ROOT, 'tests', 'baseline.json');
+  const perTest = existsSync(BL) ? (JSON.parse(readFileSync(BL, 'utf8')).tests || {}) : {};
+  return { times, solo, perTest };
 }
 
 /* every spec that exists, so a file added without a measurement still gets scheduled */
@@ -77,15 +81,67 @@ function pack(items, n) {
   return groups;
 }
 
+/* ══ SPLITTING THE FILES THAT ARE THEMSELVES THE FLOOR ══════════════════════════════════════════
+   Packing whole files bounds CI below by the LARGEST FILE, and measured on main that is
+   tests/r174.spec.js at 651 s — three of its nine tests are 294 s, 150 s and 120 s. No number of
+   machines goes under that while the file is the unit. Playwright takes `file:line` on the command
+   line, and tests/baseline.json records each test's own time, so a file that is bigger than the
+   target is expanded into its tests and they spread.
+
+   ⚠ A LINE NUMBER IS NOT A STABLE NAME. Editing a spec moves its tests, and asking for a line that
+   no longer starts a test is "no tests found" — a job that passes without running anything. So every
+   expanded id is CHECKED against the file's current `test(` lines, and any file whose lines no longer
+   agree falls back to being scheduled whole. Being slow is recoverable; silently running nothing is
+   not. */
+/* the lines that START A TEST — `test.describe(` is a group, not a test, and counting it made every
+   file look like it had one more test than the baseline knew, so nothing ever expanded */
+function testLinesOf(file) {
+  const src = readFileSync(join(ROOT, file), 'utf8').split('\n');
+  const at = new Set();
+  for (let i = 0; i < src.length; i++) {
+    const l = src[i];
+    if (/^\s*test\s*\(/.test(l) || /^\s*test\.(only|skip|fixme|fail|slow)\s*\(/.test(l)) at.add(i + 1);
+  }
+  return at;
+}
+
+function expand(file, perTest) {
+  const ids = Object.keys(perTest).filter((k) => k.startsWith(file + ':'));
+  if (ids.length < 2) return null;
+  const lines = testLinesOf(file);
+  const idLines = new Set();
+  const items = [];
+  for (const id of ids) {
+    const line = +id.slice(file.length + 1).split(':')[0];
+    if (!lines.has(line)) return null;                 /* the file moved — schedule it whole */
+    idLines.add(line);
+    items.push({ file: `${file}:${line}`, cost: perTest[id].time || 0 });
+  }
+  /* …and every test the file declares TODAY must be covered, or some would never run at all */
+  for (const l of lines) if (!idLines.has(l)) return null;
+  return items;
+}
+
 function plan(pool, n) {
-  const { times, solo } = load();
+  const { times, solo, perTest } = load();
   const all = specs();
   const known = Object.values(times).filter((v) => v > 0).sort((a, b) => a - b);
   const median = known.length ? known[known.length >> 1] : 30;
   const mine = all.filter((f) => (pool === 'cesium') === isSolo(f, solo));
   /* a solo pool runs one worker, so its wall-clock IS its serial time; the rest run two */
   const div = pool === 'cesium' ? 1 : 2;
-  return pack(mine.map((f) => ({ file: f, cost: (times[f] == null ? median : times[f]) / div })), n);
+  const total = mine.reduce((a, f) => a + (times[f] == null ? median : times[f]), 0) / div;
+  const target = total / n;
+  const items = [];
+  for (const f of mine) {
+    const cost = (times[f] == null ? median : times[f]) / div;
+    /* only the files that are themselves over the target are worth expanding — every extra argument
+       is another chance for a line to drift, and the small files are already spread fine */
+    const parts = cost > target ? (() => { try { return expand(f, perTest); } catch (_) { return null; } })() : null;
+    if (parts) for (const p of parts) items.push({ file: p.file, cost: p.cost / div });
+    else items.push({ file: f, cost });
+  }
+  return pack(items, n);
 }
 
 if (has('--update')) {

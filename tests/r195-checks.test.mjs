@@ -147,14 +147,29 @@ test('R195 ⑦: the measured shard plan runs every spec exactly once, and is bal
     }
   }
   /* ⚠ THE PROPERTY THAT MATTERS: nothing falls between the pools, and nothing runs twice. The old
-     hand-split asserted this in a comment ("31 + 329 = 360"); it is checked now. */
+     hand-split asserted this in a comment ("31 + 329 = 360"); it is checked now.
+     An entry may be a whole file or one test of it (`tests/x.spec.js:233`) — a file over the target
+     is expanded so its own tests can spread. Either way every spec must be represented. */
   const expected = readdirSync(join(ROOT, 'tests'))
     .filter((f) => f.endsWith('.spec.js'))
     .filter((f) => !/^prod-smoke\.spec\.js$|^r184-imagery-profile\.spec\.js$/.test(f))
     .map((f) => 'tests/' + f).sort();
-  assert.deepEqual([...seen].sort(), expected,
-    'every spec CI is meant to run appears in exactly one group');
-  assert.equal(new Set(seen).size, seen.length, 'and no spec is run twice');
+  const fileOf = (e) => e.replace(/:\d+$/, '');
+  assert.deepEqual([...new Set(seen.map(fileOf))].sort(), expected,
+    'every spec CI is meant to run appears in the plan');
+  assert.equal(new Set(seen).size, seen.length, 'and nothing is scheduled twice');
+
+  /* ⚠ AND AN EXPANDED FILE MUST BE EXPANDED COMPLETELY. Asking for `x.spec.js:233` runs that test
+     and no other, so a file that is expanded but missing one of its tests loses it silently — the
+     exact failure mode ("ran nothing, reported green") this whole mechanism must not have. */
+  const expanded = new Set(seen.filter((e) => /:\d+$/.test(e)).map(fileOf));
+  for (const f of expanded) {
+    const src = readFileSync(join(ROOT, f), 'utf8').split('\n');
+    const lines = src.reduce((a, l, i) => (/^\s*test(\.(only|skip|fixme|fail|slow))?\s*\(/.test(l) ? a.concat(i + 1) : a), []);
+    const got = seen.filter((e) => fileOf(e) === f && /:\d+$/.test(e)).map((e) => +e.split(':').pop()).sort((a, b) => a - b);
+    assert.deepEqual(got, lines.sort((a, b) => a - b),
+      `${f} is expanded, so every one of its tests must appear — otherwise the missing ones never run`);
+  }
 });
 
 test('R195 ⑦: a spec with no recorded time is scheduled, not treated as free', () => {

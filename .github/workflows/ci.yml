@@ -83,14 +83,18 @@ jobs:
       fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
         include:
-          - { suite: cesium, shard: 1, of: 3 }
-          - { suite: cesium, shard: 2, of: 3 }
-          - { suite: cesium, shard: 3, of: 3 }
-          - { suite: rest, shard: 1, of: 5 }
-          - { suite: rest, shard: 2, of: 5 }
-          - { suite: rest, shard: 3, of: 5 }
-          - { suite: rest, shard: 4, of: 5 }
-          - { suite: rest, shard: 5, of: 5 }
+          - { suite: cesium, shard: 1, of: 4 }
+          - { suite: cesium, shard: 2, of: 4 }
+          - { suite: cesium, shard: 3, of: 4 }
+          - { suite: cesium, shard: 4, of: 4 }
+          - { suite: rest, shard: 1, of: 8 }
+          - { suite: rest, shard: 2, of: 8 }
+          - { suite: rest, shard: 3, of: 8 }
+          - { suite: rest, shard: 4, of: 8 }
+          - { suite: rest, shard: 5, of: 8 }
+          - { suite: rest, shard: 6, of: 8 }
+          - { suite: rest, shard: 7, of: 8 }
+          - { suite: rest, shard: 8, of: 8 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
