@@ -277,8 +277,11 @@ test('R180 ③: the Cesium capabilities are honest about what it does NOT do', (
 test('R180 ③: every new user-visible string exists in all five languages', () => {
   const KEYS = ['lblEngine', 'engineMapLibre', 'engineCesium', 'engineHint', 'engineSwitching',
                 'engineFellBack', 'engineActive'];
-  const body = R('js/app-body.js'), i18n = R('js/i18n.js');
-  /* en + jp live with the other Map-behaviour strings in app-body; de/ru/es in js/i18n.js */
+  /* (#R200) the late Object.assign(i18n.xx,{…}) tail left js/app-body.js for js/i18n-late.js — a real
+     ES module app-body imports by name. The question is unchanged (does every string exist in five
+     languages?); only the file that answers it moved, and asking THAT file is the stricter form. */
+  const body = R('js/i18n-late.js'), i18n = R('js/i18n.js');
+  /* en + jp live with the other Map-behaviour strings; de/ru/es in js/i18n.js */
   for (const k of KEYS) {
     const inBody = [...body.matchAll(new RegExp(`\\b${k}\\s*:`, 'g'))].length;
     const inI18n = [...i18n.matchAll(new RegExp(`\\b${k}\\s*:`, 'g'))].length;

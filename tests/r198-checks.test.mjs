@@ -118,7 +118,9 @@ test('R198 ②b: it is wired into every list a place-label layer belongs to', ()
   assert.ok(/'cb-names':\[[^\]]*'ofm-admin1'/.test(read('js/data-layers.js')),
     'the layer-audit map for the Place-names switch (#R79) must know it, or a checked-but-blank ' +
     'state would never be healed');
-  const body = read('js/app-body.js');
+  /* (#R200) the "names and borders above every data layer" self-heal is js/label-occlusion.js now —
+     it left js/app-body.js with the rest of that subject. Asked of that file directly. */
+  const body = read('js/label-occlusion.js');
   const stack = /const STACK=\[([^\]]*)\]/.exec(body);
   assert.ok(stack, 'the label STACK still exists');
   const ids = stack[1].split(',').map((s) => s.trim().replace(/'/g, ''));

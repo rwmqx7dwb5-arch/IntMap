@@ -32,6 +32,10 @@
 /* (#R199) A real ES import, not window.IntMapModules: the theme/sky subsystem is a named binding the
    bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
 import { makeThemeSky } from './theme-sky.js';
+import { makeI18nLate } from './i18n-late.js';
+import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
+import { makeLabelOcclusion } from './label-occlusion.js';
+import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
 import { makePremiumPlan } from './premium-plan.js';
@@ -137,10 +141,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      what these three were before they moved — so the NAME is available from the first line of the
      closure again and only the IMPLEMENTATION arrives later, at the position the block always had.
      Same shim shape, and same reason, as the six modules at #R168's mount point below. */
-  let _IM_LDROP=null, _IM_LFAVS=null;
+  let _IM_LDROP=null, _IM_LFAVS=null, _IM_LABELOCCLUSION=null;
   function _collapseGroup(){ return _IM_LDROP._collapseGroup.apply(this,arguments); }
   function layerCbInfo(){ return _IM_LFAVS.layerCbInfo.apply(this,arguments); }
   function renderLayerFavs(){ return _IM_LFAVS.renderLayerFavs.apply(this,arguments); }
+  /* …and the marker occluder, for the same reason: IM_HOST publishes it, the map event wiring calls
+     it on every `move`, and both would be reaching for a const that its own line had not run yet. */
+  function updateOcclusion(){ return _IM_LABELOCCLUSION.updateOcclusion.apply(this,arguments); }
   /* ===== (#R163) IM_HOST — the HOST INTERFACE every split-out module receives =====
      All of this app's code lives inside ONE DOMContentLoaded closure, so the names declared at its
      top level are closure variables, NOT globals. A block moved into js/ simply loses them — and
@@ -178,6 +185,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get radiusItems(){ return radiusItems; },
     /* datasets — countryGeo is REPLACED when the boundary file lands; countryStats is filled in place */
     get countryGeo(){ return countryGeo; },         get countryStats(){ return countryStats; },
+    /* (#R200) the news/dashboard markers, for js/label-occlusion.js. A getter and not a captured copy
+     * for the usual reason and a real one: clearMarkers() REPLACES the array, so a module holding the
+     * old one would go on hiding markers that are no longer on the map. */
+    get markersArray(){ return markersArray; },
     /* stable helpers (function declarations / consts — never rebound, but still getters for the reasons above) */
     /* (#R170) canDraw = "is it safe to addSource/addLayer right now?" — see the declaration above for why
      * that is NOT the same question as map.isStyleLoaded(). */
@@ -676,82 +687,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R62) ESC now TOGGLES the sidebar (open AND close), not close-only. */
     document.getElementById('btn-toggle-sidebar').click();
   });
-  /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
-     ignored while typing. `?` opens a 5-language cheat-sheet. Esc(sidebar) + Ctrl/⌘+K(Atlas) live elsewhere. ===== */
-  (function(){
-    const KL=(en,j,de,ru,es)=>({en,jp:j,de,ru,es})[currentLang]||en;
-    function helpModal(){
-      let m=document.getElementById('kbd-help-modal');
-      if(m){ m.style.display=(m.style.display==='none'||!m.style.display)?'flex':'none'; return; }
-      m=document.createElement('div'); m.id='kbd-help-modal'; m.className='modal';
-      m.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);';
-      const rows=[
-        ['Esc',KL('Toggle sidebar','サイドバーの開閉','Seitenleiste ein/aus','Показать/скрыть панель','Mostrar/ocultar panel')],
-        ['Ctrl/⌘+K '+KL('or','または','oder','или','o')+' A',KL('Atlas console','Atlas コンソール','Atlas-Konsole','Консоль Atlas','Consola Atlas')],
-        ['/',KL('Focus place search','場所検索へフォーカス','Ortssuche fokussieren','Фокус на поиск','Enfocar búsqueda')],
-        ['L',KL('Layers panel','レイヤー選択','Ebenen','Слои','Capas')],
-        ['N / I / S / C',KL('News / Info / Countries / Community tab','ニュース / 情報 / 国 / コミュニティ','News / Info / Länder / Community','Новости / Инфо / Страны / Сообщество','Noticias / Info / Países / Comunidad')],
-        ['B',KL('Map ⇄ satellite','地図 ⇄ 衛星','Karte ⇄ Satellit','Карта ⇄ спутник','Mapa ⇄ satélite')],
-        ['1 / 2 / 3',KL('Globe / flat / 3D terrain','地球儀 / 平面 / 3D地形','Globus / flach / 3D','Глобус / плоская / 3D','Globo / plano / 3D')],
-        ['G',KL('Coordinate grid','座標グリッド','Koordinatengitter','Сетка координат','Cuadrícula')],
-        ['M / R / D',KL('Measure / radius / draw tool','計測 / 半径 / 描画ツール','Messen / Radius / Zeichnen','Измерение / радиус / рисование','Medir / radio / dibujar')],
-        ['W',KL('Widgets','ウィジェット','Widgets','Виджеты','Widgets')],
-        ['T',KL('Theme (light → dark → auto)','テーマ切替（ライト→ダーク→自動）','Design (hell → dunkel → auto)','Тема (светлая → тёмная → авто)','Tema (claro → oscuro → auto)')],
-        ['F',KL('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')],
-        ['0',KL('Reset north','北を上に','Norden ausrichten','Сброс на север','Restablecer norte')],
-        ['+ / −',KL('Zoom in / out','ズームイン / アウト','Zoom rein / raus','Приблизить / отдалить','Acercar / alejar')],
-        ['?',KL('This help','このヘルプ','Diese Hilfe','Эта справка','Esta ayuda')]
-      ];
-      m.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b style="font-size:15px;">⌨ '+KL('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')+'</b><button id="kbd-x" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;">✕</button></div>'
-        +rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.12);font-size:12.5px;"><span style="font-family:ui-monospace,monospace;color:var(--primary-color);font-weight:700;white-space:nowrap;">'+r[0]+'</span><span style="text-align:right;color:var(--text-main);">'+r[1]+'</span></div>').join('')
-        +'</div>';
-      m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
-      document.body.appendChild(m);
-      m.querySelector('#kbd-x').onclick=()=>{ m.style.display='none'; };
-    }
-    /* (#R72) discoverable entry points: Settings button + Atlas ("ショートカットキーの説明がどこにもない") */
-    window.IntMapKbdHelp=helpModal;
-    setTimeout(()=>{ try{ const b=document.getElementById('btn-kbd-help'); if(b) b.onclick=()=>{ try{ const m0=document.getElementById('settings-modal'); if(m0) m0.style.display='none'; }catch(_){} helpModal(); }; }catch(_){} },1200);
-    const click=id=>{ const el=document.getElementById(id); if(el) el.click(); };
-    document.addEventListener('keydown',(e)=>{
-      if(e.ctrlKey||e.metaKey||e.altKey) return;
-      if(typeof isMobile==='function'&&isMobile()) return;
-      const ae=document.activeElement, tag=ae&&ae.tagName;
-      if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
-      const k=e.key;
-      if(k==='Escape'){ const hm=document.getElementById('kbd-help-modal'); if(hm&&hm.style.display!=='none'){ hm.style.display='none'; } return; }
-      const K=k.toLowerCase();
-      let done=true;
-      switch(true){
-        case (k==='?'): helpModal(); break;
-        case (k==='/'): { const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp){ inp.focus(); try{ inp.select(); }catch(_){} } break; }
-        case (K==='a'): try{ window.IntMapConsole&&window.IntMapConsole.toggle(); }catch(_){} break;
-        case (K==='l'): click('btn-layers'); break;
-        case (K==='n'): click('btn-news'); break;
-        case (K==='i'): click('btn-info'); break;
-        case (K==='s'): click('btn-stats'); break;
-        case (K==='c'): click('btn-community'); break;
-        case (K==='b'): { const sat=document.getElementById('btn-view-sat'); click(sat&&sat.classList.contains('active')?'btn-view-map':'btn-view-sat'); break; }
-        case (k==='1'): click('btn-view-globe'); break;
-        case (k==='2'): click('btn-view-flat'); break;
-        case (k==='3'): click('btn-view-3d'); break;
-        case (K==='g'): click('btn-tool-grid'); break;
-        case (K==='m'): click('btn-tool-measure'); break;
-        case (K==='r'): click('btn-tool-radius'); break;
-        case (K==='d'): click('btn-tool-draw'); break;
-        case (K==='w'): { try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle) window.IntMapWidgets.toggle(); else click('btn-widgets'); }catch(_){} break; }
-        case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof userTheme!=='undefined'?userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof userTheme!=='undefined'){ userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast('🎨 '+nx); }catch(_){} }catch(_){} break; }
-        case (K==='f'): { try{ if(document.fullscreenElement){ document.exitFullscreen&&document.exitFullscreen().catch(()=>{}); } else { const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){} break; }
-        case (k==='0'): click('btn-compass'); break;
-        case (k==='+'||k==='='): try{ GE().camera.zoomIn(); }catch(_){} break;
-        case (k==='-'||k==='_'): try{ GE().camera.zoomOut(); }catch(_){} break;
-        default: done=false;
-      }
-      if(done) e.preventDefault();
-    });
-  })();
-
+  /* (#R200) moved to js/keyboard-shortcuts.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeKeyboardShortcuts(IM_HOST, { GE, applyTheme, imToast, isMobile });
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
   /* ══ (#R179) WHETHER THIS SCREEN WANTS DOUBLE-DENSITY TILES — ONE rule, ONE owner ═════════════
@@ -1138,171 +1076,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     GE().input.set('keyboard',true);
     GE().input.set('dragRotate',true);
   }catch(_){} }
-  /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
-     The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
-     zoom-toward-the-cursor UX on the globe ("カーソル地点へとズームされるというUXがなくなってしまった").
-     MapLibre's native scrollZoom zooms about the pointer correctly under every projection, so it is
-     back as the single wheel path. On top of it, a user-tunable NAVIGATION SENSITIVITY (Settings →
-     "Map navigation"): zoom multiplies the wheel/pinch rates, pan scales the drag inertia. Defaults
-     (1.0×) reproduce the long-standing feel exactly. */
-  try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan', lblNavInertia:'Inertia' });
-       Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）', lblNavInertia:'慣性（0で無効）' }); }catch(_){}
-  if(GE().hasRenderer()){
-    window.imNavZoomSens = window.imNavZoomSens || 1;
-    window.imNavPanSens  = window.imNavPanSens  || 1;
-    if(window.imNavInertia==null) window.imNavInertia=1;   /* (#R23) 1=default glide, 0=instant stop */
-    window._applyNavSens = function(){
-      const z=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
-      const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
-      const iner=Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
-      try{
-        GE().input.set('scrollZoom',true);
-        GE().input.setZoomRate(z*(1/300),true);   /* 1.0 = the long-standing default feel */
-        GE().input.setZoomRate(z*(1/90));         /* trackpad pinch */
-      }catch(_){}
-      /* (#R22/#R23) iOS-like momentum, now with a dedicated INERTIA control ("慣性を0から既定まで調整可能に"):
-         Pan scales the fling speed, Inertia scales the glide DURATION and can disable it entirely (0). On a
-         1:1 touch/mouse drag the glide is the only thing these sliders can change — so this is also what makes
-         the Pan/Inertia sliders visibly affect MOBILE behavior. */
-      try{
-        if(iner<=0.02){ GE().input.set('dragPan',true); }   /* glide off → stops on release */
-        else { GE().input.set('dragPan',true); }
-      }catch(_){}
-      try{ GE().input.set('touchZoomRotate',true); }catch(_){}
-      /* (#R25/#21) Take over double-tap zoom so its amount follows the Zoom slider on touch (built-in is a
-         fixed +1). The custom dblclick handler does the sensitivity-scaled easeTo. */
-      try{ GE().input.set('doubleClickZoom',false); }catch(_){}
-    };
-    window._applyNavSens();
-    /* (#R27) MOBILE PINCH-ZOOM sensitivity. MapLibre exposes no pinch-rate API, so the slider used to do
-       NOTHING for the most common mobile zoom gesture ("zoomの感度設定をしても動作に反映されない"). This is a
-       custom 2-finger pinch that scales the zoom delta by the slider. It engages ONLY when the user has
-       CHANGED the setting (sens !== 1) — at the default, MapLibre's native pinch is left fully intact, so
-       there is zero regression risk for everyone who never touched the slider. */
-    (function(){
-      const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
-      let active=false, startDist=0, startZoom=0;
-      const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
-      const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return GE().coords.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
-      cv.addEventListener('touchstart',(e)=>{
-        if(sens()===1) return;                                 /* default feel → MapLibre handles it */
-        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom();
-          try{ GE().input.set('touchZoomRotate',false); }catch(_){} }
-      },{passive:true});
-      cv.addEventListener('touchmove',(e)=>{
-        if(!active||!e.touches||e.touches.length!==2) return;
-        const d=dist(e.touches); if(startDist<=0) return;
-        const z=startZoom + Math.log2(d/startDist)*sens();
-        try{ GE().camera.easeTo({zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
-        if(e.cancelable) e.preventDefault();
-      },{passive:false});
-      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ GE().input.set('touchZoomRotate',true); }catch(_){} } };
-      cv.addEventListener('touchend',end); cv.addEventListener('touchcancel',end);
-    })();
-    /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
-       dragPan with defaults, which would silently drop the user's inertia choice. */
-    try{ GE().events.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
-  }
-  /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
-     最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
-     re-adds), so instead of chasing every add-site, re-assert the label/border stack on idle+styledata —
-     the same self-heal pattern as the country-isolation mask. They are slotted just BELOW the measurement
-     tool layers (your own drawings stay on top of everything). Guarded: only moves when actually out of
-     place, so there's no repaint loop. */
-  if(GE().hasRenderer()){ (function(){
-    /* (#R72) 'geo-sea' moved ABOVE the city/other labels: symbol collision gives priority to the TOPMOST layer,
-       so coastal city names were eating the sea names — a view framing the whole East China Sea showed harbour
-       towns but not 東シナ海. Seas now lose only to country names. */
-    /* (#R104) the era time-travel layers (imtb-*) are part of the label stack too, so the historical borders + era
-       country names are guaranteed to sit ABOVE the raster base and data layers while travelling — the map's borders
-       & names actually change ("年代を変更しても国境や国名が変化しない" root: era layers could be buried after a
-       styledata/base swap once the old R94m moveLayer-to-top was removed to stop a flicker loop). inPlace() already
-       guards against thrashing, so this cannot re-introduce the loop. imtb layers only exist while travelling. */
-    /* (#R198) 'ofm-admin1' (states / provinces / prefectures) enters the stack BELOW ofm-city, which by the
-       rule stated just above means a city name wins the collision against the region containing it. It sits
-       above the peaks for the same reason in the other direction. This list is what decides that — the order
-       these layers are ADDED in is transient, because raise() re-asserts this one on idle and styledata. */
-    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
-    /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
-       the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
-       user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
-    /* (#R37) News pins/bands + the user pin + community pins are ANNOTATIONS, not data layers — they belong
-       ABOVE the place-name labels ("地名ラベルは、ニュースピンの帯よりも後ろに表示して。いまは帯が地名ラベルに
-       さえぎられてしまっている"). Adding them here keeps the bands fully visible over labels instead of being
-       clipped by them, while real DATA layers (choropleths, rasters) still sit beneath the labels. */
-    const isOwn=(id)=>/^(tool|draw|los|route|place-hl|news|dash|user-pin|comm)-/.test(id)||id==='iso-mask';
-    /* (#R25) ROOT CAUSE labels kept getting buried by land-cover/relief/etc.: the old top-scan declared
-       "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
-       label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
-       re-raising. Now require EVERY label layer to sit above EVERY data layer. */
-    function inPlace(){ try{ const ls=GE().scene.getStyle().layers.map(l=>l.id);
-      let lowestStack=Infinity, highestData=-1;
-      ls.forEach((id,i)=>{ if(STACK.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
-      if(lowestStack===Infinity) return true;     /* no labels present yet */
-      return lowestStack>highestData;             /* all labels above all data → nothing to do */
-    }catch(_){ return true; } }
-    /* (#R26) ROOT CAUSE the labels STAYED buried: the old raise moved labels to just-below `tool-poly`, but a
-       raster added with NO beforeId (or above tool-poly) then sat ABOVE the labels — and re-raising kept
-       putting them below it (and could thrash). Now: move the labels to the ABSOLUTE TOP, THEN lift the
-       user's own overlays (tools/drawings/mask) back above the labels in their existing order. Result:
-       data BELOW labels BELOW your own drawings — labels are visible over EVERY data layer, every time. */
-    function raise(){ try{ if(inPlace()) return;
-      STACK.forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
-      const ls=GE().scene.getStyle().layers.map(l=>l.id);
-      ls.forEach(id=>{ if(isOwn(id) && GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* own overlays back above labels */
-    }catch(_){} }
-    window._raiseLabelLayers=raise;
-    let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
-    GE().events.on('idle',sched); GE().events.on('styledata',sched);
-  })(); }
-
-  /* (#R21) Mobile memory-pressure guard: Chrome-on-Android exposes performance.memory; when the JS
-     heap nears its limit we proactively drop the big REBUILDABLE caches before the OS kills the tab
-     ("重い動作をすると頻繁にブラウザが落ちます") — display quality is untouched, everything lazily
-     reloads on next use. No-op where the API doesn't exist (iOS Safari). */
-  (function(){
-    if(!(typeof isMobile==='function'&&isMobile())) return;
-    const frac=()=>{ try{ const m=performance.memory; return m?m.usedJSHeapSize/m.jsHeapSizeLimit:0; }catch(_){ return 0; } };
-    let hot=0;
-    setInterval(()=>{ const f=frac(); if(!f) return;
-      if(f>0.85){ if(++hot<2) return; hot=0;
-        try{ const cb=document.getElementById('dl-climate'); if(!cb||!cb.checked){
-          window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
-          window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; } }catch(_){}
-        try{ window.dispatchEvent(new Event('intmap-mem-pressure')); }catch(_){}
-      } else hot=0;
-    },8000);
-  })();
-
-  /* ══ (#R196) MOVED TO js/tile-warm.js ═════════════════════════════════════════════
-     110 lines: the service-worker tile cache and the predictive prefetch, including the memo this
-     round added after measuring 865 Esri requests for 112 distinct tiles in one six-second phone pan.
-     It is called from HERE, at the point the code used to occupy, because it registers `moveend` and
-     `move` handlers and their order relative to the rest of this file's handlers is observable.
-     ⚠ The five values it needs (mapType, satState, satProviderById, satBuildTiles, isMobile) are
-     handed over through IM_HOST rather than closed over — see scripts/check-split-scope.mjs. */
-  try{ window.IntMapModules.tileWarm(IM_HOST); }catch(_){}
-
-  function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
-  let _occAllVis=false;
-  function updateOcclusion(){
-    if(!GE().hasRenderer()) return;
-    /* Flat map: every marker is visible. Do the bulk write ONCE (guarded) instead of on every pan
-       frame — redundant style writes were a needless per-move cost on phones (#3). */
-    if(currentProj!=='globe'){ if(!_occAllVis){ markersArray.forEach(m=>m.getElement().style.visibility='visible'); _occAllVis=true; } return; }
-    _occAllVis=false;
-    /* Globe: hide markers on the far hemisphere. Use a unit-vector DOT PRODUCT (no per-marker acos)
-       and only touch the DOM when a marker's visibility actually flips — this removes the layout
-       thrash that made globe pan/zoom stutter on mobile (#3). */
-    const c=GE().camera.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
-    const cx=Math.cos(cla)*Math.cos(clo), cy=Math.cos(cla)*Math.sin(clo), cz=Math.sin(cla);
-    const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of center ⇒ on the near side */
-    markersArray.forEach(m=>{ const ll=m.getLngLat(), la=ll.lat*r, lo=ll.lng*r, cla2=Math.cos(la);
-      const dot=cla2*Math.cos(lo)*cx + cla2*Math.sin(lo)*cy + Math.sin(la)*cz;
-      const el=m.getElement(), vis=dot>TH?'visible':'hidden'; if(el.style.visibility!==vis) el.style.visibility=vis; });
-  }
-
+  /* (#R200) moved to js/wheel-zoom.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeWheelZoom(IM_HOST, { GE, i18n });
+  /* (#R200) moved to js/label-occlusion.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  _IM_LABELOCCLUSION = makeLabelOcclusion(IM_HOST, { GE, isMobile });
   /* =============================================================================
    *  EXPANDED GEO DICTIONARY — drives accurate news pin placement.
    *  Longer keywords are checked first to prefer "Tel Aviv" over "Israel".
@@ -3526,113 +3305,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.recordLogin=recordLogin;
 
 
-  /* =====================================================================
-   *  ROUND 3 — settings persistence, scrollbars, translucent sidebar,
-   *  screenshot, layer favorites, data-source list, unified time slider,
-   *  animated wind layer, and assorted polish. Self-contained; runs after
-   *  every other declaration so all helpers above are available.
-   * ===================================================================== */
-  Object.assign(i18n.en,{ favLayers:"Favorite layers", uploadGeoJSON:"Upload GeoJSON", screenshotBtn:"Screenshot (hides controls, keeps legends)",
-    lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
-    lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
-    lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centerd)", flatPanFree:"Free pan (wrap around the world)",
-    /* (#R180) the rendering engine */
-    lblEngine:"Map engine", engineMapLibre:"MapLibre — 2-D/3-D map (default)", engineCesium:"Cesium — true 3-D globe with real terrain",
-    engineHint:"Cesium renders the Earth as a real ellipsoid at every zoom, with the same satellite imagery and the same elevation data. It is downloaded only when selected, and switching reloads the page. Contour lines and the closed 3-D solid tool stay MapLibre-only.",
-    engineSwitching:"Switching engine — reloading…", engineFellBack:"Cesium could not start, so this session is running on MapLibre.",
-    engineActive:"Running on: ",
-    /* (#R171) tilt ceiling + viewpoint altitude */
-    lblTiltLimit:"Map tilt limit", tiltStandard:"Standard — up to 78° (default)", tiltUnlimited:"Unlimited — the full 0–180° range",
-    tiltHint:"Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.",
-    lblEyeAlt:"Viewpoint altitude in the readout", eyeAltOff:"Off (default)", eyeAltOn:"On — show the camera's altitude",
-    lblNewsCountries:"News by country media", newsCountriesHint:"Pull headlines from the media of the countries you pick (multiple allowed).",
-    lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
-    screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
-    lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
-    blueberryBtn:"Support", blueberryTitle:"Support IntMap",
-    blueberryBody:"My goal is to build a map where geography, climate, history, ecology, demographics, and world events can be explored in one place.\nIntMap is developed independently and is continuously expanding with new layers, datasets, and features.\nIf you enjoy using IntMap and would like to support its future development, you can contribute below.",
-    blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe)." });
-  Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", uploadGeoJSON:"GeoJSONを読み込む", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
-    lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
-    lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
-    lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
-    /* (#R180) 描画エンジン */
-    lblEngine:"地図エンジン", engineMapLibre:"MapLibre — 2D/3D地図（既定）", engineCesium:"Cesium — 実地形つきの真の3D地球儀",
-    engineHint:"Cesiumはどのズームでも地球を実際の楕円体として描き、衛星画像も標高データも同じものを使います。選択したときだけダウンロードされ、切り替えるとページを再読み込みします。等高線と閉じた3D立体ツールはMapLibre専用のままです。",
-    engineSwitching:"エンジンを切り替えます — 再読み込み中…", engineFellBack:"Cesiumを起動できなかったため、このセッションはMapLibreで動作しています。",
-    engineActive:"現在の動作: ",
-    /* (#R171) 傾きの上限・視点高度 */
-    lblTiltLimit:"地図の傾きの制限", tiltStandard:"標準 — 78°まで（既定）", tiltUnlimited:"無制限 — 0〜180°の全範囲",
-    tiltHint:"無制限にすると、地平線を越えて真上を向くところまで倒せます。180°を超えた角度は方位を反転した同じ視線になるため、方位磁針を右クリックすれば0〜360°の任意の角度を数値で指定できます。",
-    lblEyeAlt:"常時表示欄に視点の高度", eyeAltOff:"オフ（既定）", eyeAltOn:"オン — 視点位置の高度を表示",
-    lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国のメディアの見出しを取得します（複数選択可）。",
-    lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
-    screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",
-    lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
-    blueberryBtn:"サポート", blueberryTitle:"IntMapを支援する",
-    blueberryBody:"IntMapは、地理・気候・歴史・生態・人口・世界の出来事をひとつの画面で探索できる地図を目指しています。\nIntMapは個人で開発しており、新しいレイヤー・データセット・機能を継続的に追加しています。\nIntMapを気に入っていただけて、今後の開発を応援したい方は、下記からご支援いただけます。",
-    blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。" });
-  /* (#R114) Accent colour picker — Settings → the UI accent (buttons, active tabs, sliders). 5 languages. */
-  Object.assign(i18n.en,{ lblAccent:"Accent color", accentDefault:"Default", accentCustom:"Custom color" });
-  Object.assign(i18n.jp,{ lblAccent:"アクセントカラー", accentDefault:"デフォルト", accentCustom:"カスタムカラー" });
-  try{ Object.assign(i18n.de,{ lblAccent:"Akzentfarbe", accentDefault:"Standard", accentCustom:"Eigene Farbe" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblAccent:"Акцентный цвет", accentDefault:"По умолчанию", accentCustom:"Свой цвет" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblAccent:"Color de acento", accentDefault:"Predeterminado", accentCustom:"Color personalizado" }); }catch(_){}
-  /* (#R137) Countries rank-number toggle — 5 languages. */
-  Object.assign(i18n.en,{ lblShowRank:"Rank numbers (Countries)", showRankOff:"Off", showRankOn:"On (default)" });
-  Object.assign(i18n.jp,{ lblShowRank:"順位の数字（Countries）", showRankOff:"非表示", showRankOn:"表示（デフォルト）" });
-  try{ Object.assign(i18n.de,{ lblShowRank:"Rangnummern (Länder)", showRankOff:"Aus", showRankOn:"An (Standard)" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblShowRank:"Номера рейтинга (страны)", showRankOff:"Выкл.", showRankOn:"Вкл. (по умолчанию)" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblShowRank:"Números de rango (Países)", showRankOff:"Desactivado", showRankOn:"Activado (predeterminado)" }); }catch(_){}
-  /* (#R42) Share-this-view + Atlas console button tooltips — 5 languages. */
-  Object.assign(i18n.en,{ shareView:"Share this view (copy link)", atlasBtn:"Atlas — ask in plain language (beta) · Ctrl/⌘+K" });
-  Object.assign(i18n.jp,{ shareView:"この表示を共有（リンクをコピー）", atlasBtn:"Atlas — 自然言語で操作（beta）· Ctrl/⌘+K" });
-  try{ Object.assign(i18n.de,{ shareView:"Diese Ansicht teilen (Link kopieren)", atlasBtn:"Atlas — in normaler Sprache fragen (Beta) · Strg/⌘+K" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ shareView:"Поделиться этим видом (копировать ссылку)", atlasBtn:"Atlas — запрос обычными словами (бета) · Ctrl/⌘+K" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ shareView:"Compartir esta vista (copiar enlace)", atlasBtn:"Atlas — pregunta en lenguaje natural (beta) · Ctrl/⌘+K" }); }catch(_){}
-  /* (#R62) layer-panel position setting — 5 languages */
-  Object.assign(i18n.en,{ lblLayerPanel:"Layer panel", layerPanelClassic:"Classic dropdown", layerPanelRight:"Right sidebar (visual, with previews)" });
-  Object.assign(i18n.jp,{ lblLayerPanel:"レイヤー選択欄", layerPanelClassic:"従来のドロップダウン", layerPanelRight:"右サイドバー（プレビュー付き・刷新版）" });
-  try{ Object.assign(i18n.de,{ lblLayerPanel:"Ebenen-Auswahl", layerPanelClassic:"Klassisches Dropdown", layerPanelRight:"Rechte Seitenleiste (visuell, mit Vorschau)" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblLayerPanel:"Панель слоёв", layerPanelClassic:"Классический список", layerPanelRight:"Правая панель (визуальная, с предпросмотром)" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblLayerPanel:"Panel de capas", layerPanelClassic:"Desplegable clásico", layerPanelRight:"Barra lateral derecha (visual, con vistas previas)" }); }catch(_){}
-  /* (#R72) keyboard-shortcut help entry — 5 languages */
-  Object.assign(i18n.en,{ lblKbd:"Keyboard shortcuts", viewKbd:"⌨ View keyboard shortcuts (or press ?)" });
-  Object.assign(i18n.jp,{ lblKbd:"キーボードショートカット", viewKbd:"⌨ ショートカット一覧を表示（? キーでも開けます）" });
-  try{ Object.assign(i18n.de,{ lblKbd:"Tastaturkürzel", viewKbd:"⌨ Tastaturkürzel anzeigen (oder ? drücken)" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblKbd:"Горячие клавиши", viewKbd:"⌨ Показать горячие клавиши (или нажмите ?)" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblKbd:"Atajos de teclado", viewKbd:"⌨ Ver atajos de teclado (o pulsa ?)" }); }catch(_){}
-  /* (#R63) bottom news/markets ticker setting — 5 languages */
-  Object.assign(i18n.en,{ lblTicker:"Bottom ticker (news & markets)", tickerOff:"Off (default)", tickerOn:"On — thin strip below the map", tkItems:"Shown items", tkNews:"News headlines", tkgFx:"Forex", tkgIdx:"Indices", tkgCom:"Commodities", tkgCrypto:"Crypto" });
-  Object.assign(i18n.jp,{ lblTicker:"下部ティッカー（ニュース・マーケット）", tickerOff:"オフ（デフォルト）", tickerOn:"オン — 地図の下に細い帯を表示", tkItems:"表示する項目", tkNews:"ニュース見出し", tkgFx:"為替", tkgIdx:"株価指数", tkgCom:"商品", tkgCrypto:"暗号資産" });
-  try{ Object.assign(i18n.de,{ lblTicker:"Ticker unten (News & Märkte)", tickerOff:"Aus (Standard)", tickerOn:"An — schmaler Streifen unter der Karte", tkItems:"Angezeigte Einträge", tkNews:"Schlagzeilen", tkgFx:"Devisen", tkgIdx:"Indizes", tkgCom:"Rohstoffe", tkgCrypto:"Krypto" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblTicker:"Нижняя бегущая строка (новости и рынки)", tickerOff:"Выкл (по умолчанию)", tickerOn:"Вкл — тонкая полоса под картой", tkItems:"Показывать", tkNews:"Заголовки новостей", tkgFx:"Валюты", tkgIdx:"Индексы", tkgCom:"Товары", tkgCrypto:"Крипто" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblTicker:"Cinta inferior (noticias y mercados)", tickerOff:"Desactivada (predeterminado)", tickerOn:"Activada — franja fina bajo el mapa", tkItems:"Elementos mostrados", tkNews:"Titulares", tkgFx:"Divisas", tkgIdx:"Índices", tkgCom:"Materias primas", tkgCrypto:"Cripto" }); }catch(_){}
-  /* (#R102) new Countries sort keys (indicator pulldown labels + ascending/descending toggle) — 5 languages */
-  Object.assign(i18n.en,{ sortLife:"Life expectancy", sortTfr:"Fertility rate", sortAsc:"Ascending", sortDesc:"Descending", sortDir:"Toggle ascending / descending" });
-  Object.assign(i18n.jp,{ sortLife:"平均寿命", sortTfr:"合計特殊出生率", sortAsc:"昇順", sortDesc:"降順", sortDir:"昇順・降順を切り替え" });
-  try{ Object.assign(i18n.de,{ sortLife:"Lebenserwartung", sortTfr:"Geburtenrate", sortAsc:"Aufsteigend", sortDesc:"Absteigend", sortDir:"Auf-/absteigend umschalten" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ sortLife:"Прод. жизни", sortTfr:"Рождаемость", sortAsc:"По возрастанию", sortDesc:"По убыванию", sortDir:"Переключить порядок" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ sortLife:"Esperanza de vida", sortTfr:"Fecundidad", sortAsc:"Ascendente", sortDesc:"Descendente", sortDir:"Cambiar orden" }); }catch(_){}
-  /* (#R102) ticker symbol/item picker in Settings — builds checkboxes from IntMapTicker's symbol registry + a News toggle,
-     grouped by category; each change is applied & persisted immediately via IntMapTicker.setConfig. */
-  window._populateTickerSyms=function(){ try{ const host=document.getElementById('ticker-syms'); const TK=window.IntMapTicker; if(!host||!TK||!TK.getConfig) return;
-    const cf=TK.getConfig(); const L=(k)=>{ try{ return (i18n[currentLang]&&i18n[currentLang][k])||i18n.en[k]||k; }catch(_){ return k; } };
-    const groups=[['fx',L('tkgFx')],['idx',L('tkgIdx')],['com',L('tkgCom')],['crypto',L('tkgCrypto')]];
-    let html='<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">'+L('tkItems')+'</div>';
-    html+='<div style="display:flex;flex-wrap:wrap;gap:6px 12px;">';
-    groups.forEach(([g,gl])=>{ const items=cf.list.filter(s=>s.g===g); if(!items.length) return;
-      html+='<div style="flex:1 1 44%;min-width:130px;"><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.03em;margin:2px 0 3px;">'+gl+'</div>';
-      items.forEach(s=>{ html+='<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 0;cursor:pointer;"><input type="checkbox" data-tks="'+s.k+'"'+(cf.syms.has(s.k)?' checked':'')+'> '+s.l+'</label>'; });
-      html+='</div>'; });
-    html+='</div>';
-    html+='<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 0 0;margin-top:6px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));cursor:pointer;"><input type="checkbox" data-tknews="1"'+(cf.news?' checked':'')+'> '+L('tkNews')+'</label>';
-    host.innerHTML=html;
-    const commit=()=>{ const syms=Array.from(host.querySelectorAll('input[data-tks]:checked')).map(c=>c.getAttribute('data-tks'));
-      const news=!!host.querySelector('input[data-tknews]:checked'); try{ TK.setConfig({syms,news}); }catch(_){} };
-    host.querySelectorAll('input[data-tks],input[data-tknews]').forEach(c=>c.addEventListener('change',commit));
-  }catch(_){} };
-
+  /* (#R200) moved to js/i18n-late.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
