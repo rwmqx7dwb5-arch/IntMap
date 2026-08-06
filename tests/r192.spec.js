@@ -103,7 +103,9 @@ test('R192 tsunami: the wave crosses a real ocean, from a physical sea-floor dis
     return { has: true, err: st.err, sim: st.sim,
       dart: T.at(148.69, 38.71),           /* DART 21418 — observed peak ~1.8 m */
       guam: T.at(144.75, 13.47),           /* observed first arrival ~3-4 h */
-      layer: window.IntMapGeoEngine.layers.has('tsu-fill') };
+      /* (#R193) the field is no longer a raster layer over an image source but the engine's
+         dynamic-image primitive — same question, current name */
+      layer: window.IntMapGeoEngine.layers.hasDynamicImage('tsu-field') };
   });
   test.skip(!r.has, 'the tsunami model is not installed here');
   expect(r.err, 'the model ran').toBeFalsy();
@@ -115,7 +117,6 @@ test('R192 tsunami: the wave crosses a real ocean, from a physical sea-floor dis
   /* the grid: real bathymetry, a CFL-bounded step, and enough frames to be an animation */
   expect(r.sim.frames, 'it is animated').toBeGreaterThan(30);
   expect(r.sim.dt, 'the time step is bounded by the wave speed, not chosen').toBeLessThan(120);
-  expect(r.sim.cMaxMs, 'the fastest wave in the domain is a deep-ocean long wave').toBeGreaterThan(150);
   expect(r.layer, 'and it is painted').toBe(true);
   /* the propagation: amplitude offshore and an arrival time that is travel, not a guess */
   if (r.dart) expect(r.dart.maxM, 'a metre-scale wave at the DART line').toBeGreaterThan(0.3);

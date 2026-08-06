@@ -632,9 +632,28 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
         return; }
       /* nothing matched → labelled gradient stays (should be near-zero rows) */ }
     /* (#R73) bounded image-preload queue — applies each tile as soon as ITS image arrived */
-    const _imgQ=[]; let _imgBusy=0;
+    /* ══ (#R193) …AND IT MAY NOT START ON THE BOOT PATH ═══════════════════════════════════════════
+       「起動時の読み込みをもっと早く。」 Measured on a cold load: the self-hosted example tiles
+       (preview_contours / _wind / _basemap / _plates / _ecoregions / _nightlights, ~950 KB together)
+       plus a couple of dozen live GIBS and Carto tiles were fetched between 8 and 12 seconds after
+       boot, because the layer list is PREBUILT off-screen and `into()` queues every row as it is
+       built. Nobody has looked at the panel at that point.
+
+       ⚠ The fix is NOT an IntersectionObserver. #R72 tried that and #R73 had to undo it: tiles
+       registered while the panel was off-screen never got a second look and sat on their gradient
+       placeholder forever (「一切変化なし」). The queue stays exactly as #R73 built it — same order,
+       same bound of four, same immediate application — and only its START moves: it opens when the
+       panel is actually shown (kick()), or at the browser's first idle, whichever comes first. So a
+       user who opens the panel in the first second sees the same thing they saw before, and a user
+       who never opens it never pays for it during boot. */
+    const _imgQ=[]; let _imgBusy=0, _imgOpen=false;
+    function _openQueue(){ if(_imgOpen) return; _imgOpen=true; _imgPump(); }
+    (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
+      try{ const E=window.IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
+      setTimeout(go,6000); })();
     function _queueImg(el,id,url){ _imgQ.push({el,id,url}); _imgPump(); }
-    function _imgPump(){ while(_imgBusy<4&&_imgQ.length){ const j=_imgQ.shift(); _imgBusy++;
+    function _imgPump(){ if(!_imgOpen) return;
+      while(_imgBusy<4&&_imgQ.length){ const j=_imgQ.shift(); _imgBusy++;
       const done=()=>{ _imgBusy--; _imgPump(); };
       try{ const im=new Image();
         im.onload=()=>{ cache[j.id]=j.url; try{ apply(j.el,j.url); }catch(_){} done(); };
@@ -647,7 +666,8 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
       _ioMap.set(el,fn); _io.observe(el); }
     /* (#R73) safety net: fire any still-pending lazy previews inside a container (called when the sidebar
        actually OPENS — IO can miss elements that were registered while the panel was prebuilt off-screen). */
-    function kick(container){ try{ (container||document).querySelectorAll('.lst-prev:not(.has-prev)').forEach(el=>{
+    function kick(container){ _openQueue();     /* (#R193) the panel is on screen — the queue starts NOW */
+      try{ (container||document).querySelectorAll('.lst-prev:not(.has-prev)').forEach(el=>{
       const fn=_ioMap.get(el); if(fn){ _ioMap.delete(el); try{ _io&&_io.unobserve(el); }catch(_){} try{ fn(); }catch(_){} } }); }catch(_){} }
     return { into, kick, stats:()=>({q:_imgQ.length,busy:_imgBusy,inflight:_imgQ.slice(0,4).map(j=>j.id)}) };
 };

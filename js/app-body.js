@@ -998,7 +998,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!first.placeholder){ _satNoteHave(z,x,y,z); first.buf.__mode='native'; _satCachePut(key, first.buf); return {data:first.buf, buf:first.buf, mode:'native'}; }
       /* placeholder → walk up to the nearest REAL ancestor, crop its sub-quadrant, upscale */
       let az=z, ax=x, ay=y, dz=0, real=null;
-      for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
+      /* (#R193) …STARTING WHERE THE MEMO ALREADY SAYS THE IMAGERY IS. #R179's depth memo knew that
+         over open ocean Esri stops around z8, and the stitch consulted it, but this walk did not: it
+         climbed one level at a time, and each level is a SEQUENTIAL round trip. Nine of them per tile,
+         for every tile on screen, after the first tile had already established the answer. The jump is
+         VERIFIED — a stale hint falls back to the ordinary walk from that level and corrects the memo
+         — so the answer is identical and only the number of round trips changes. Kept byte-for-byte in
+         step with src/sat-worker.js, which is the path that normally runs; this one is the fallback
+         and the one the E2E hooks call. */
+      const _hint=_satKnownStop(z,x,y);
+      if(_hint!=null&&_hint<z&&_hint>=1){ const d=z-_hint;
+        if(d>1&&d<=13){ let got=null;
+          try{ got=await _satFetch(_hint,y>>d,x>>d,signal); }catch(_){ got=null; }
+          if(got&&!got.placeholder){ real=got; az=_hint; dz=d; }
+          else if(got){ az=_hint; ax=x>>d; ay=y>>d; dz=d; } } }
+      if(!real) for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
         let got=null; try{ got=await _satFetch(az,ay,ax,signal); }catch(_){ break; }
         if(!got.placeholder){ real=got; break; } }
       if(real){ _satNoteStop(z,x,y,az);   /* az is real and az+1 was the placeholder — a STOP */
@@ -5615,8 +5629,22 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
      strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
      the search then practically never comes back empty, without delaying initial load. */
+  /* ══ (#R193) …AND 4 s IS NOT LATE ENOUGH EITHER ═══════════════════════════════════════════════════
+     「起動時の読み込みをもっと早く。」 Measured on a cold load: the Natural Earth 10 m country file is
+     4.3 MB and started at 2,846 ms — while the first satellite tiles and the Köppen raster were still
+     arriving, so it competed for the connection with everything the user can actually see. Nothing on
+     screen waits for it: it warms the LOCAL gazetteer, and every real consumer (the Countries tab, the
+     search box on focus, Atlas) calls loadCountryData() itself and awaits the same latched promise.
+     Same treatment #R192 gave data/cshapes.js, for the same reason and with the same guarantees: still
+     eager, but behind the map's own first idle and the browser's idle callback, with a ceiling so a
+     permanently busy page still gets it, and not at all on Data Saver or 2G. */
   (function(){ const warm=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} };
-    if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000}); else setTimeout(warm,3000); })();
+    const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+        if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
+      if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:7000}); else setTimeout(warm,4000); };
+    let started=false; const once=()=>{ if(started) return; started=true; go(); };
+    try{ GE().events.once('idle',()=>setTimeout(once,300)); }catch(_){}
+    setTimeout(once,5000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
   /* (#R104) Start / welcome page REMOVED per request ("スタートページはいらない") — the auto-shown first-run
      card no longer appears. The builder (`_imWelcome`) is KEPT so nothing is deleted (still reachable if ever

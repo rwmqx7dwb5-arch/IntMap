@@ -1415,7 +1415,39 @@ window.IntMapModules.dataLayers=function(HOST){
     function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
     /* (#R23) The DISPLAY texture is the lighter 4k PNG on phones — the full 8192² PNG is a ~268 MB GPU
        texture that crashes iPhone Safari ("重い動作でブラウザが落ちる"); desktops keep the full 8192². */
-    function koppenDisplayURL(p){ let u=koppenURLFor(p||window._koppenPeriod); try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){} return u; }
+    /* ══ (#R193) THE FIRST KÖPPEN PICTURE IS THE SMALL ONE ════════════════════════════════════════
+       「起動時の読み込みをもっと早く。」 Köppen is one of the two default-on layers
+       (window.IntMapDefaultLayers), so on a cold desktop load the 8192²-wide era PNG — 2.2 MB —
+       started at 985 ms, ahead of every base-map tile. The SAME map exists at 4k, 754 KB, produced by
+       the same pipeline with the same palette, and phones have been using it since #R23.
+       So: paint the 4k immediately and swap the full-resolution one in when the browser is idle. The
+       layer ends up exactly where it was — this only changes WHICH of the two identical maps is on
+       screen for the first second or two, and the difference between them is invisible until the
+       user zooms past about z5. Phones stay on the 4k for good, as before. */
+    function koppenSmallURL(p){ return koppenURLFor(p||window._koppenPeriod).replace(/\.png$/,'_4k.png'); }
+    function koppenFullURL(p){ return koppenURLFor(p||window._koppenPeriod); }
+    function koppenPhone(){ try{ return typeof isMobile==='function'&&isMobile(); }catch(_){ return false; } }
+    function koppenDisplayURL(p){ return koppenPhone()?koppenSmallURL(p):koppenSmallURL(p); }
+    /* raise the on-screen raster to the full-resolution file once nothing is waiting on the thread */
+    let _kUpgraded='';
+    function koppenUpgrade(p){
+      if(koppenPhone()) return;                       /* #R23: phones keep the 4k texture — RAM */
+      const per=p||window._koppenPeriod, full=koppenFullURL(per);
+      if(_kUpgraded===full) return;
+      const run=()=>{ try{
+          if(_kUpgraded===full) return;
+          if(!GE().layers.hasSource('src-climate')) return;
+          if(window._koppenPeriod!==per) return;      /* the era moved on while we waited */
+          _kUpgraded=full; KURL=full;
+          GE().layers.updateImage('src-climate',{url:full,coordinates:KCOORDS});
+        }catch(_){} };
+      const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(run,{timeout:8000}); else setTimeout(run,3000); };
+      try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+        if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
+      let started=false; const once=()=>{ if(started) return; started=true; go(); };
+      try{ GE().events.once('idle',()=>setTimeout(once,300)); }catch(_){}
+      setTimeout(once,5000);
+    }
     /* The sampling/highlight WORK image is ALWAYS the 4k PNG (downscaled to ≤2048² for CPU pixel ops):
        decoding the 8192² just to read a 2048² work canvas wasted ~200 MB on desktop too. */
     function koppenWorkURL(p){ return koppenURLFor(p).replace(/\.png$/,'_4k.png'); }
@@ -1752,6 +1784,10 @@ window.IntMapModules.dataLayers=function(HOST){
       window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
       window._koppenCodeIdx=null; window._koppenSrcData=null;
       try{ if(GE().layers.hasSource('src-climate')) GE().layers.updateImage('src-climate',{url:KURL,coordinates:KCOORDS}); }catch(e){}
+      /* (#R193) a NEW era is a new pair of files: show the small one at once (which is what KURL is
+         now) and let the full-resolution one arrive behind it. Switching eras is the one moment a
+         user is watching this layer, so the small file landing first is the point, not a compromise. */
+      _kUpgraded=''; koppenUpgrade(period);
       try{ buildLegend(); }catch(_){}
       if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     };
@@ -1769,6 +1805,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const _lblAnchor=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id))||beforeId;
         GE().layers.add({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},_lblAnchor);
       } else { setVis('lyr-climate',true); }
+      koppenUpgrade(window._koppenPeriod);     /* (#R193) the full-resolution file, once the page is idle */
       try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
       buildLegend();
       if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
