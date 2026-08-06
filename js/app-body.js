@@ -32,6 +32,12 @@
 /* (#R199) A real ES import, not window.IntMapModules: the theme/sky subsystem is a named binding the
    bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
 import { makeThemeSky } from './theme-sky.js';
+import { makeLayerDropdown } from './layer-dropdown.js';
+import { makeLayerFavs } from './layer-favs.js';
+import { makePremiumPlan } from './premium-plan.js';
+import { makeScreenshot } from './screenshot.js';
+import { makeSessionTabs } from './session-tabs.js';
+import { makeTimeCountries } from './time-countries.js';
 
 window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
@@ -119,6 +125,22 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      fine pointer (a mouse/trackpad) — even a touchscreen laptop — should read as a "click" device. */
   const _imTouchPrimary=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
   window._imTouchPrimary=_imTouchPrimary;
+  /* ══ (#R200) HOISTED SHIMS FOR THE THREE NAMES THE LAYERS MENU HANDS BACK ═══════════════════════
+     ⚠ MEASURED, AND IT KILLED THE BOOT. The layers menu and the layer favourites left this file for
+     js/layer-dropdown.js and js/layer-favs.js this round, and the first version took their three
+     names back as `const {…} = makeX(…)` AT THE POSITION THE BLOCKS HAD OCCUPIED — line ~1,928 and
+     line ~3,720. But `layerCbInfo` / `renderLayerFavs` are ALSO read off IM_HOST by js/map-ui.js,
+     which is instantiated at line 1,944: a `const` is in the temporal dead zone until its own line
+     runs, so that read threw `ReferenceError: Cannot access … before initialization`, the boot
+     aborted there, and IntMapOS / the session persistence / the year-aware Countries tab / the
+     premium section were never created at all. A function DECLARATION is hoisted — which is exactly
+     what these three were before they moved — so the NAME is available from the first line of the
+     closure again and only the IMPLEMENTATION arrives later, at the position the block always had.
+     Same shim shape, and same reason, as the six modules at #R168's mount point below. */
+  let _IM_LDROP=null, _IM_LFAVS=null;
+  function _collapseGroup(){ return _IM_LDROP._collapseGroup.apply(this,arguments); }
+  function layerCbInfo(){ return _IM_LFAVS.layerCbInfo.apply(this,arguments); }
+  function renderLayerFavs(){ return _IM_LFAVS.renderLayerFavs.apply(this,arguments); }
   /* ===== (#R163) IM_HOST — the HOST INTERFACE every split-out module receives =====
      All of this app's code lives inside ONE DOMContentLoaded closure, so the names declared at its
      top level are closure variables, NOT globals. A block moved into js/ simply loses them — and
@@ -1917,88 +1939,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
 
-  /* ===== Layer dropdown ===== */
-  const layerDropdown=document.getElementById('layer-dropdown');
-  document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation();
-    /* (#R62) opt-in RIGHT layer sidebar (Settings → Layer panel) intercepts on desktop */
-    if(window.imLayerPanel==='right' && window.IntMapLayerSidebar){ try{ window.IntMapLayerSidebar.toggle(); return; }catch(_){} }   /* (#R107) also intercept on mobile — the right sidebar layer panel now works on phones */
-    layerDropdown.classList.toggle('show');
-    /* (#R18) Frosted-glass fix: a backdrop-filter NESTED inside another backdrop-filtered surface
-       (.map-view-group toolbar) can only sample within the parent's backdrop root — the map behind was
-       never blurred, so in the frosted modes the dropdown read as "完全に透明". Hoist it out to
-       #map-container (top of the stacking/backdrop tree) and aim it under the Layers button; the shared
-       --glass-* material then frosts it exactly like every other surface. Mobile keeps its sheet mount. */
-    try{
-      if(layerDropdown.classList.contains('show') && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){
-        const mc=document.getElementById('map-container');
-        if(!layerDropdown.__home && layerDropdown.parentNode){ const ph=document.createComment('home'); layerDropdown.parentNode.insertBefore(ph,layerDropdown); layerDropdown.__home=ph; }
-        if(mc && layerDropdown.parentElement!==mc) mc.appendChild(layerDropdown);
-        const br=e.currentTarget.getBoundingClientRect(), mr=mc.getBoundingClientRect();
-        layerDropdown.style.top=(br.bottom-mr.top+8)+'px';
-        layerDropdown.style.right=Math.max(8,Math.round(mr.right-br.right))+'px';
-        layerDropdown.style.left='auto'; layerDropdown.style.marginTop='0'; layerDropdown.style.zIndex='1300';
-      }
-    }catch(_){}
-  });
-  /* (#R7-legend-x) A click anywhere on the document used to collapse the Layers dropdown — including a
-     click on a layer's legend ✕ (which sits OUTSIDE the dropdown). Keep the dropdown open when the
-     click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
-  document.addEventListener('click',(e)=>{ if(e.target.closest&&e.target.closest('.data-legend,.koppen-legend,.koppen-info-pop,.layer-popup-x,.legend-min,#layer-sidebar-r')) return; if(layerDropdown.classList.contains('lsr-mode')) return; layerDropdown.classList.remove('show'); });
-  /* (#R27) Robust, idempotent fallback for every legend × that carries a data-x layer id. A legend's
-     innerHTML is rebuilt on date/opacity/era changes, which replaces the × node and can drop its direct
-     .onclick — leaving "凡例の×を押しても反応しない". This delegated listener survives every rebuild. It is
-     idempotent (acts only if the layer is still checked), so it never double-fires with a surviving
-     direct onclick (that one runs first and unchecks; this then sees checked===false and no-ops). */
-  document.addEventListener('click',(e)=>{
-    const x=e.target.closest&&e.target.closest('.layer-popup-x'); if(!x) return;
-    const lg=x.closest&&x.closest('.data-legend');
-    /* (#R40) Resolve the controlling id from data-x → the legend's cbId → its container id, then try EVERY
-       checkbox-id convention used across the app. This is what makes "凡例の×を押してもレイヤーが消えない"
-       finally reliable for every legend type (generic, worldcover/eco, GIBS, round-9, beta), not just dl-*. */
-    let id=x.getAttribute('data-x');
-    if(!id && lg){ id=(lg.dataset&&lg.dataset.cbId)||''; if(!id && lg.id) id=lg.id.replace(/^data-legend-/,''); }
-    const bare=(id||'').replace(/^eco-/,'').replace(/^gx-/,'').replace(/^dl-/,'');
-    if(id){
-      const cands=[id,'dl-'+id,'eco-dl-'+id,'gx-'+id,'l9-dl-'+id,'beta-dl-'+id,bare,'dl-'+bare,'eco-dl-'+bare,'gx-'+bare,'ox-'+bare];
-      let cb=null; for(const k of cands){ cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb) break; }
-      if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
-      /* (#R41) BELT-AND-SUSPENDERS — the canonical uncheck above is the clean path, but "凡例の×を押しても
-         レイヤーが消えない" still happened when the controlling checkbox couldn't be resolved (custom/legacy
-         legends) or its change handler didn't fully hide. So ALSO hide every map layer that matches this id
-         directly, regardless of the checkbox. Idempotent + specific (exact ids + lyr-/-fill/-line variants). */
-      try{ if(GE().scene.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
-        GE().scene.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ GE().layers.setLayout(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
-    }
-    /* always close the legend element itself + re-tile, so the × is never a dead button */
-    if(lg){ try{ lg.style.display='none'; }catch(_){} }
-    try{ window.tileLegends&&window.tileLegends(); }catch(_){}
-    try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){}
-  });
-  /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
-  function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
-    while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
-  function _layerGroupToggle(header){ const collapsed=header.classList.toggle('lyr-collapsed'); header.dataset.userToggled='1';
-    _lyrGroupItems(header).forEach(el=>{ el.style.display=collapsed?'none':''; }); }
-  function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
-    _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
-  /* (#R18) Mobile shows EVERY group expanded. If groups were collapsed on desktop and the layout then
-     crossed to mobile (rotation / resize / split-screen), the collapse's display:none rows survived the
-     move into the sheet → rows missing / headers stacked ("Toolsの欄がぐちゃっと"). Reset on mobile entry. */
-  window._expandAllLayerGroups=function(){ try{
-    layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
-    layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
-    /* (#R29) On mobile, re-collapse ONLY "Others (beta)" so it stays a pulldown ("Others(beta)だけプルダウン")
-       — unless the user has explicitly opened it this session. Every other group stays expanded. */
-    try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const oh=Array.from(layerDropdown.querySelectorAll('.lyr-head')).find(h=>h.getAttribute('data-i18n')==='lyrGrpOthers'); if(oh && !oh.dataset.userToggled) _collapseGroup(oh); } }catch(_){}
-  }catch(_){} };
-  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
-    /* (#R29) Mobile: every group is expanded EXCEPT "Others (beta)", which IS a pulldown the user can
-       collapse/expand ("Others(beta)だけプルダウン…元に戻せ"). Other headers stay plain labels on mobile. */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ if(h.getAttribute('data-i18n')!=='lyrGrpOthers') return; }
-    _layerGroupToggle(h); } });
-  /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
-  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
-  layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
+  /* (#R200) moved to js/layer-dropdown.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  _IM_LDROP = makeLayerDropdown(IM_HOST, { GE });
   /* ===== (#R62) RIGHT layer sidebar (opt-in via Settings → Layer panel) — the layer list REPARENTED into a
      full-height right sidebar that mirrors the left one, with a search box and a PREVIEW SQUARE on every row
      (real tile thumbnails where a stable endpoint exists, a deterministic colour swatch + icon otherwise).
@@ -2971,179 +2914,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); }
     renderUI();
   }
-  /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
-     (those ride the URL hash). Now the ACTIVE LAYERS, the open TAB, the time-machine YEAR, the base map (Map/Satellite)
-     and 3-D terrain are saved to localStorage and restored on load. Map lat/lng/zoom/projection stay in the hash. ===== */
-  (function(){
-    const KEY='intmap_session2'; let _restoring=true, _saveT=null, _tabInit=false;
-    function _snapshot(){ try{
-      const layers=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(cb.checked&&cb.id) layers.push(cb.id); });
-      /* ⚠ (#R188) A LAYER THE APP SWITCHED OFF IS NOT A LAYER THE USER SWITCHED OFF. When the
-         submarine-cable download failed, js/data-layers.js unticked the box — and this snapshot
-         reads ticked boxes, so the next toggle of anything wrote a session with that layer absent.
-         _restore() below then treats an absent DEFAULT-ON id as "the user turned it off" and unticks
-         it deliberately on every later load: one outage at a volunteer CORS proxy became a permanent
-         「片方しかつかない」. `imAutoOff` is set only by the app's own failure path (autoUncheck) and
-         cleared the moment a real click touches the box, so the session keeps wanting the layer. */
-      (window.IntMapDefaultLayers||[]).forEach(id=>{ const cb=document.getElementById(id);
-        if(cb&&!cb.checked&&cb.dataset&&cb.dataset.imAutoOff==='1'&&layers.indexOf(id)<0) layers.push(id); });
-      let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
-      /* (#R189) `defv` stamps WHICH generation of default-on handling wrote this session. Sessions
-         written before #R188's imAutoOff fix (defv absent) may record an outage as an opt-out, and
-         no amount of fixing the writer heals what is already in storage — the reader has to.
-         ⚠ (#R190) BUMPED TO 190, and the reason is the same one, one layer deeper. Measured on a real
-         profile this round: `{"defv":189,"layers":[…,"dl-climate"]}` — stamped as a considered choice,
-         with the cables absent, because every session written between #R189 and now was written while
-         the cable download could only succeed if a volunteer CORS proxy happened to be up. #R189's
-         imAutoOff guard only helps when the app is the one unticking a box it had already ticked; a
-         profile whose very first load never got the layer at all had nothing to guard. Now that the
-         data comes from our own origin (supabase/functions/cable-geo) the failure that produced those
-         sessions cannot recur, so one more generation of them is healed once. */
-      /* (#R195) …and which sidebars were open. Read off the DOM rather than off a flag, so a panel
-         closed by any route — the button, Esc, the layer-panel setting — is recorded the same way. */
-      let sbOpen=null, lsrOpen=null;
-      try{ const el=document.getElementById('sidebar'); if(el) sbOpen=!el.classList.contains('collapsed'); }catch(_){}
-      try{ const el=document.getElementById('layer-sidebar-r'); if(el) lsrOpen=el.classList.contains('open'); }catch(_){}
-      return { v:2, defv:190, layers, tabInit:_tabInit, mode:(typeof currentMode!=='undefined'?currentMode:null),
-        base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
-        sbOpen, lsrOpen,
-        year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
-    function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
-    window._imSaveSession=_save;
-    /* save on the events that change persisted state */
-    try{ document.addEventListener('change',e=>{ try{ if(e.target&&e.target.closest&&e.target.closest('#layer-dropdown')){
-      /* (#R188) a REAL interaction settles the question the `imAutoOff` mark was holding open — from
-         here on the box says what the user wants, either way. Synthetic change events (the default-on
-         dispatcher, the session restore) are not trusted and leave the mark alone. */
-      if(e.isTrusted&&e.target.dataset) delete e.target.dataset.imAutoOff;
-      _save(); } }catch(_){} },true); }catch(_){}
-    try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
-    try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
-    try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>_save()); }catch(_){}
-    /* (#R170) DESKTOP BOOT → open the Countries tab ("デスクトップ版は通常モードをデフォルトに。（Countries が選択
-       された状態で）"). #R11 deliberately left every tab deselected; that stays true for mobile (the tab is a bottom
-       sheet, so auto-opening one would cover the map) and for workspace mode (which has its own windows).
-       It fires ONCE per browser profile and records `tabInit` in the session snapshot, so:
-         · a first-time desktop visitor lands on Countries;
-         · so does an existing desktop user whose saved session has no tab — the #R101 workspace default meant
-           currentMode was never set, and without this they would drop into an empty sidebar after the switch;
-         · but a user who then deselects every tab is NOT overridden on the next reload (tabInit is already true).
-       `if(!currentMode)` additionally means it can never stomp a tab the restore below already opened. */
-    function _defaultTab(){ try{
-      _tabInit=true; setTimeout(_save,1800);   /* persist the "already offered" flag once _restoring has cleared */
-      if(currentMode) return;
-      if(typeof isMobile==='function' ? isMobile() : window.innerWidth<=768) return;
-      if(document.body.classList.contains('ws-mode')) return;
-      if(window.IntMapOS) IntMapOS.exec('tab.stats',{source:'default'});
-    }catch(_){} }
-    function _restore(){ let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ setTimeout(_defaultTab,500); setTimeout(()=>{ _restoring=false; },1600); return; }
-      _tabInit=!!s.tabInit;
-      if(!s.mode&&!_tabInit) setTimeout(_defaultTab,500);
-      /* base map + 3-D first (they swap the style) */
-      try{ if(s.base==='sat'&&currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
-      try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof terrain3D!=='undefined'&&terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
-      /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
-      const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
-      /* (#R189) ONE-TIME MIGRATION of poisoned sessions. Every session written before #R188 shipped
-         (no `defv` stamp) was written by a snapshot that could not tell "the user switched it off"
-         from "the download failed and autoUncheck switched it off" — so an absent default-on id in
-         such a session is NOT evidence of a choice. Re-add the default-on ids once; the next save
-         stamps defv:189 and from then on an absence really is the user's opt-out and is honoured. */
-      /* (#R190) …and the same argument, one generation on: see the ⚠ note in _snapshot. Anything
-         stamped below 190 was written while the cable layer's success depended on a stranger's
-         server, so its absence is not evidence either. */
-      if(!(+s.defv>=190)) (window.IntMapDefaultLayers||[]).forEach(id=>{ if(want.indexOf(id)<0) want.push(id); });
-      /* (#R186) …and switch a DEFAULT-ON layer back off when this saved session says the user had it
-         off. Restore has only ever turned layers ON, which was right while every thematic layer
-         started off: absence from the snapshot then meant "nothing to do". Now that Köppen and the
-         submarine cables start ON, absence means the user switched one off, and re-checking it on
-         every reload would make it impossible to keep off. Only the default-on ids are treated this
-         way — for every other layer "absent" still means "was already off". */
-      const defOff=(window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0); let offTries=0;
-      (function pollOff(){ offTries++; const left=[];
-        defOff.forEach(id=>{ const cb=document.getElementById(id);
-          if(cb){ if(cb.checked){ cb.__defFired=true; try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } else cb.__defFired=true; }
-          else left.push(id); });
-        if(left.length&&offTries<25){ defOff.length=0; defOff.push.apply(defOff,left); setTimeout(pollOff,220); } })();
-      (function poll(){ tries++; const pending=[];
-        want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
-        if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
-      /* open the saved tab */
-      try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',monitors:'tab.monitors',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!currentMode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
-      /* set the time-machine year */
-      try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
-      setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
-    /* run the restore once the map + initial layer UI are ready */
-    try{ if(GE().hasRenderer()){ GE().events.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
-  })();
-  /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
-  IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
-  IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Companies tab', btn:'btn-info', group:'tab'});   /* (#R139) Information → Companies (command id kept) */
-  IntMapOS.register('tab.stats', ()=>setMode('stats','btn-stats'), {label:'Countries tab', btn:'btn-stats', group:'tab'});
-  IntMapOS.register('tab.monitors', ()=>setMode('monitors','btn-monitors'), {label:'Monitors tab', btn:'btn-monitors', group:'tab'});   /* (#R141) area monitors */
-  /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
-     #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
-  const _atlasTab=()=>{ try{ if(document.body.classList.contains('ws-mode')){ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); } else setMode('atlas','btn-community'); }catch(_){} };
-  IntMapOS.register('tab.atlas', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});
-  IntMapOS.register('tab.community', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});   /* legacy alias */
-  document.getElementById('btn-news').onclick=()=>IntMapOS.exec('tab.news',{source:'ui'});
-  /* Saved is now a sub-filter inside the News tab (keeps btn-news active) */
-  document.getElementById('newsfilter-all').onclick=()=>{ if(currentMode!=='news') setMode('news','btn-news'); };
-  document.getElementById('newsfilter-saved').onclick=()=>{ if(currentMode!=='saved') setMode('saved','btn-news'); };
-  document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
-  document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
-  document.getElementById('btn-monitors').onclick=()=>IntMapOS.exec('tab.monitors',{source:'ui'});   /* (#R141) */
-  /* (#R98) Community feature removed — this sidebar button is the Atlas tab. (#R112) It now behaves like the other
-     tabs (News/Info/Countries): a true kernel tab command that renders Atlas INSIDE the sidebar/bottom-sheet. */
-  document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.atlas',{source:'ui'});
-  /* (#R122) auto-fit the News/Information/Countries/Atlas tab labels: the largest font (≤14px) that keeps every
-     label on ONE line inside its equal-width button, in every language — so the text is as large as possible
-     yet never wraps or overflows ("ボタンサイズに応じてテキストサイズも変更…はみ出さない…改行されない"). */
-  function _fitTabFont(){ try{ const btns=[...document.querySelectorAll('.control-panel .mode-btn')]; if(!btns.length||!btns[0].clientWidth) return;
-    let fs=14; btns.forEach(b=>b.style.fontSize=fs+'px');
-    const fits=()=>btns.every(b=>b.scrollWidth<=b.clientWidth+0.5);
-    let guard=0; while(fs>10 && !fits() && guard++<20){ fs-=0.5; btns.forEach(b=>b.style.fontSize=fs+'px'); } }catch(_){} }
-  window._fitTabFont=_fitTabFont;
-  /* (#R124) the tab labels visibly resized on load ("読み込み時に毎回うにょうにょ変わる") because the fit ran THREE
-     times (0 / 300 / 1200 ms) and each staggered run recomputed a different size as fonts + layout settled. Run it
-     ONCE, when the measurement is actually stable (fonts loaded), and otherwise only re-fit when something genuinely
-     moves — a window resize or a language change. */
-  try{ const _fitStable=()=>{ const btns=document.querySelectorAll('.control-panel .mode-btn'); if(!btns.length||!btns[0].clientWidth){ requestAnimationFrame(_fitStable); return; } _fitTabFont(); };
-    if(document.fonts&&document.fonts.ready&&document.fonts.ready.then){ document.fonts.ready.then(()=>requestAnimationFrame(_fitStable)); }   /* definitive: fonts loaded → measurement is final → fit ONCE */
-    else { requestAnimationFrame(()=>requestAnimationFrame(_fitStable)); }   /* no fonts API → single deferred fit */
-    window.addEventListener('resize',()=>{ clearTimeout(_fitTabFont._t); _fitTabFont._t=setTimeout(_fitTabFont,120); });
-    window.addEventListener('intmap-lang',()=>setTimeout(_fitTabFont,30)); }catch(_){}
-  /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
-     so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
-  try{
-    IntMapOS.register('time.now', ()=>{ window.IntMapTime.setNow({source:'os'}); }, {label:'Time · now (live)', group:'time'});
-    IntMapOS.register('time.year', (ctx)=>{ const y=+((ctx&&ctx.params&&ctx.params.year)); if(y>=window.IntMapTime.min) window.IntMapTime.setYear(y,{source:'os'}); }, {label:'Time · set year', group:'time'});
-    IntMapOS.register('time.set', (ctx)=>{ const p=(ctx&&ctx.params)||{}; if(p.year!=null) window.IntMapTime.setYear(+p.year,{source:'os'}); else if(p.date!=null) window.IntMapTime.set(new Date(p.date),{source:'os'}); else if(p.daysAgo!=null) window.IntMapTime.setDaysAgo(+p.daysAgo,{source:'os'}); else window.IntMapTime.setNow({source:'os'}); }, {label:'Time · set instant', group:'time'});
-  }catch(_){}
-  /* (#R119) KERNEL COMMAND EXPANSION — every major subsystem gets a first-class OS command (UI, Atlas and any
-     future shell submit the SAME intents; the registrations are thin wrappers over each module's own API, so the
-     logic still lives in exactly one place). Commands taking params read ctx.params. Registered lazily (modules
-     defined later in the file) — each run() resolves its module at call time. */
-  (function(){ const REGL=[
-    ['layer.on',   (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · on (params.id = checkbox id)','layer'],
-    ['layer.off',  (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · off (params.id)','layer'],
-    ['atlas.open', ()=>{ window.IntMapConsole&&window.IntMapConsole.open(); }, 'Atlas · open','atlas'],
-    ['atlas.close',()=>{ window.IntMapConsole&&window.IntMapConsole.close(); }, 'Atlas · close','atlas'],
-    ['compare.open',(p)=>{ if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
-    ['compare.clear',()=>{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }, 'Country comparison · clear map paint','compare'],
-    ['flightsim.setup',(p)=>{ window.IntMapFlightSim&&window.IntMapFlightSim.setup(p||{}); }, 'Flight simulator · pre-flight screen','sim'],
-    ['flightsim.stop', ()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.stop(); }, 'Flight simulator · stop','sim'],
-    ['workspace.enter',()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.open&&window.IntMapWorkspace.open(); }, 'Workspace mode · enter','ws'],
-    ['workspace.exit', ()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.close&&window.IntMapWorkspace.close(); }, 'Workspace mode · exit','ws'],
-    ['objects.open', ()=>{ window.IntMapObjects&&window.IntMapObjects.open(); }, 'Map objects · open list','objects'],
-    ['objects.remove',(p)=>{ const ok=!!(window.IntMapObjects&&window.IntMapObjects.remove&&window.IntMapObjects.remove(p&&p.id)); return {ok}; }, 'Map objects · remove (params.id)','objects'],
-    ['ticker.on',  ()=>{ window.imTicker='on'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · on','ui'],
-    ['ticker.off', ()=>{ window.imTicker='off'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · off','ui'],
-    ['settings.open',()=>{ const b=document.getElementById('btn-open-settings')||document.querySelector('[id*=open-settings]'); if(b) b.click(); }, 'Settings · open','ui'],
-    ['isolate.exit',()=>{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }, 'Isolate · exit','map'],
-    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
-  ];
-  REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
+  /* (#R200) moved to js/session-tabs.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeSessionTabs(IM_HOST, { GE, isMobile, setMode });
 
   /* ===== Language ===== */
   function setLang(lang){
@@ -3497,61 +3270,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapModules.dataLayers(IM_HOST);
   /* ================ END GROUP 3 ================ */
 
-  /* ===================== GROUP 4: PREMIUM / PRO PLAN =====================
-   *  Fully self-contained (own i18n keys, own <style>, own DOM) so it can never
-   *  collide with the map/layer logic, the [data-theme] CSS, or the i18n loop.
-   *  Adds a locked "Premium features" section at the very BOTTOM of the layer
-   *  dropdown (runs after GROUP 3 has appended its rows) and a centered, iOS
-   *  liquid-glass pricing modal that floats above the map without blocking it.
-   *  ===================================================================== */
-  (function(){
-    /* --- i18n keys (merged in; reuses the existing data-i18n update loop) --- */
-    Object.assign(i18n.en,{ proSection:"Premium features", proArchive:"🔒 10-Year Time-Travel Archive", proIntel:"🔒 RU·CN Local Primary-Source Intel", proModalTitle:"Unlock IntMap Pro", proModalSub:"Go beyond the live map — deep historical archives and primary-source intelligence." });
-    Object.assign(i18n.jp,{ proSection:"プレミアム機能", proArchive:"🔒 過去10年のタイムトラベルアーカイブ", proIntel:"🔒 露・中ローカル一次情報インテリジェンス", proModalTitle:"IntMap Pro を解放", proModalSub:"ライブマップの先へ — 深層アーカイブと一次情報インテリジェンス。" });
-
-    /* --- styles (scoped under .premium-* / .ppm-* ; theme-aware via vars) --- */
-    const style=document.createElement('style');
-    style.textContent=`
-      .premium-divider{ border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:6px 0 2px; }
-      .premium-group-title{ display:flex; align-items:center; gap:6px; }
-      .premium-group-title::before{ content:"✦"; color:#d4a017; font-size:11px; }
-      .premium-option{ position:relative; }
-      .premium-option input[type="checkbox"]{ accent-color:#caa24a; }
-      .premium-option span[data-i18n]{ flex:1; min-width:0; }
-      .premium-option:hover{ background:linear-gradient(90deg, rgba(212,160,23,0.14), rgba(212,160,23,0.02)); }
-      .premium-option .pro-pill{ flex-shrink:0; font-size:9px; font-weight:800; letter-spacing:0.4px; padding:2px 6px; border-radius:6px; color:#7a5a00; background:linear-gradient(135deg,#ffe08a,#e9b949); box-shadow:0 1px 2px rgba(0,0,0,0.18); }
-
-      /* Modal: always laid out (display:flex) but inert when hidden
-         (pointer-events:none) so the map underneath stays fully interactive. */
-      .ppm-overlay{ position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.42); -webkit-backdrop-filter:saturate(160%) blur(14px); backdrop-filter:saturate(160%) blur(14px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.3s ease, visibility 0.3s ease; }
-      .ppm-overlay.show{ opacity:1; visibility:visible; pointer-events:auto; }
-      .ppm-card{ position:relative; width:min(940px,96vw); max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border-radius:26px; padding:30px 30px 26px; transform:scale(0.92) translateY(20px); opacity:0; transition:transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.32s ease; }
-      .ppm-overlay.show .ppm-card{ transform:scale(1) translateY(0); opacity:1; }
-      .ppm-close{ position:absolute; top:13px; right:14px; width:32px; height:32px; border:none; cursor:pointer; font-size:22px; font-weight:300; line-height:1; color:var(--text-muted); background:transparent; display:flex; align-items:center; justify-content:center; transition:color 0.2s ease; z-index:3; }
-      .ppm-close:hover{ color:var(--text-main); }
-      .ppm-head{ text-align:center; margin-bottom:22px; padding:0 6px; }
-      .ppm-badge{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.2px; padding:5px 13px; border-radius:999px; color:#7a5a00; background:linear-gradient(135deg,#ffe08a,#e9b949); box-shadow:0 2px 8px rgba(233,185,73,0.4); margin-bottom:12px; }
-      .ppm-title{ margin:0; font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--text-main); }
-      .ppm-sub{ margin:8px auto 0; max-width:520px; font-size:15px; line-height:1.5; color:var(--text-muted); }
-      .ppm-stripe{ border-radius:16px; overflow:hidden; min-height:120px; }
-      @media (max-width:768px){
-        .ppm-card{ width:100%; max-height:92vh; border-radius:22px; padding:24px 14px 18px; }
-        .ppm-title{ font-size:21px; }
-        .ppm-sub{ font-size:13px; }
-      }`;
-    document.head.appendChild(style);
-
-    /* (#R10) Premium/Pro section + pricing modal REMOVED — the app is fully free. The two former
-       "premium" layers (proArchive / proIntel) were name-only with no real data, so they're deleted
-       entirely (not unlocked). refreshProUI + openProModal are kept as harmless stubs so any lingering
-       caller (satellite settings, account menu) does nothing instead of erroring. */
-    window.refreshProUI=function(){
-      try{ if(typeof currentMapType!=='undefined' && currentMapType==='sat' && typeof satRenderController==='function') satRenderController(); }catch(_){}
-      try{ const sm=document.getElementById('settings-modal'); if(sm && sm.style.display==='flex' && typeof satRenderKeyInputs==='function') satRenderKeyInputs(); }catch(_){}
-    };
-    window.openProModal=function(){};   /* no-op: there is no paid plan */
-    try{ window.refreshProUI(); }catch(_){}
-  })();
+  /* (#R200) moved to js/premium-plan.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makePremiumPlan(IM_HOST, { i18n, satRenderController, satRenderKeyInputs });
   /* (#R167) moved to js/news-timeline.js — see Architecture.md §3.1. */
   window.IntMapModules.newsTimeline(IM_HOST);
 
@@ -4006,104 +3727,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
   window.IntMapModules.layoutReflow(IM_HOST);
 
-  /* ---------- Screenshot (#18) — keeps legends, hides controls ---------- */
-  async function takeScreenshot(){
-    if(!GE().hasRenderer()) return;
-    const btn=document.getElementById('btn-screenshot'); if(btn) btn.disabled=true;
-    document.body.classList.add('capture-mode');
-    try{
-      /* let in-flight tiles finish so we don't capture a half-loaded frame */
-      try{ await aiWaitMapIdle(2500); }catch(_){}
-      /* 1 — read the WebGL frame synchronously INSIDE a render tick (the reliable way to capture a
-         canvas created without preserveDrawingBuffer), and composite the animated-wind 2D canvas. */
-      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=GE().render.canvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
-        try{ const wb=document.getElementById('wind-bg-canvas'); if(wb && wb.style.display!=='none' && wb.width) cx.drawImage(wb,0,0,o.width,o.height); }catch(_){}
-        try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
-        res(o); }catch(_){ res(null); } }; try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
-      const out=document.createElement('canvas');
-      const cont=document.getElementById('map-container');
-      out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
-      const ctx=out.getContext('2d'); if(mapCv) ctx.drawImage(mapCv,0,0);
-      const scale=out.width/cont.clientWidth;
-      /* 2 — DOM overlays (legends, markers, timebar) via html2canvas, skipping the WebGL canvases */
-      if(typeof html2canvas!=='undefined'){
-        try{
-          const ov=await html2canvas(cont,{backgroundColor:null,useCORS:true,logging:false,scale,
-            ignoreElements:el=> el.tagName==='CANVAS' || (el.classList&&el.classList.contains('maplibregl-canvas')) });
-          ctx.drawImage(ov,0,0,out.width,out.height);
-        }catch(_){}
-      }
-      document.body.classList.remove('capture-mode');
-      const flash=document.createElement('div'); flash.className='screenshot-flash'; document.body.appendChild(flash);
-      requestAnimationFrame(()=>{ flash.classList.add('go'); setTimeout(()=>flash.remove(),520); });
-      out.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='IntMap_'+ymdISO(new Date())+'_'+Date.now().toString().slice(-5)+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),6000); }, 'image/png');
-      try{ imToast(t('screenshotSaved')); }catch(_){}
-    }catch(e){ document.body.classList.remove('capture-mode'); console.warn('screenshot',e); }
-    finally{ if(btn) btn.disabled=false; }
-  }
-  { const b=document.getElementById('btn-screenshot'); if(b) b.onclick=takeScreenshot; }
+  /* (#R200) moved to js/screenshot.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeScreenshot(IM_HOST, { GE, aiWaitMapIdle, imToast, t, ymdISO });
 
-  /* ---------- Layer favorites (#16) — star any layer, quick-pick chips on top ---------- */
-  function layerCbInfo(cb){
-    if(!cb) return null;
-    if(cb.id==='cb-names')     return {key:'names', label:t('placeNames')};
-    if(cb.id==='cb-geolabels') return {key:'geolabels', label:t('geoLabels')||'Water & terrain labels'};
-    if(cb.id==='cb-poi')       return {key:'poi', label:t('poiLabels')||'Shop & facility names'};   /* (#R186) */
-    if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
-    if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
-    if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
-    if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const row=cb.closest('.layer-option')||cb.closest('.lyr-row'); const sp=row&&(row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
-    /* (#R17/#R18) Some layer rows couldn't be favorited because their checkbox id isn't `dl-…` (land-cover /
-       ecoregions `eco-dl-*`, Round-9 `l9-dl-*`) OR the row uses `.lyr-row` without a `.layer-option` wrapper.
-       Give EVERY layer-row checkbox that has an id a star, keyed by its id, sourcing the label from the
-       nearest label span in EITHER container. (cb-grid is a utility → no star.) */
-    if(cb.id==='cb-grid') return null;
-    const row=cb.closest('.layer-option')||cb.closest('.lyr-row');
-    if(row && cb.id){ const sp=row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')||row.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)'); const label=((sp?sp.textContent:cb.id)||'').trim(); if(label) return {key:'data:'+cb.id, label}; }
-    return null;
-  }
-  function allLayerCbs(){ return Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).filter(cb=>cb.id!=='cb-names-x'); }
-  function cbForKey(key){
-    return allLayerCbs().find(cb=>{ const i=layerCbInfo(cb); return i&&i.key===key; })||null;
-  }
-  function renderLayerFavs(){
-    const sec=document.getElementById('layer-fav-section'), wrap=document.getElementById('layer-fav-chips'); if(!sec||!wrap) return;
-    wrap.innerHTML='';
-    const favs=window.imLayerFavs.filter(k=>cbForKey(k));
-    sec.classList.toggle('has-favs',favs.length>0);
-    favs.forEach(key=>{
-      const cb=cbForKey(key); const info=layerCbInfo(cb); if(!info) return;
-      const chip=document.createElement('button'); chip.className='layer-fav-chip'+(cb.checked?' on':'');
-      chip.innerHTML=(info.color?`<span class="lfc-sw" style="background:${info.color}"></span>`:'')+escapeHtml(info.label);
-      chip.onclick=()=>{ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true})); renderLayerFavs(); };
-      wrap.appendChild(chip);
-    });
-    /* keep star states in sync */
-    document.querySelectorAll('#layer-dropdown .lyr-star').forEach(st=>{ st.classList.toggle('on', window.imLayerFavs.includes(st.dataset.key)); });
-  }
-  function injectLayerStars(){
-    allLayerCbs().forEach(cb=>{
-      /* (#R18) accept rows that use .lyr-row without a .layer-option wrapper too, so no layer is left
-         without a favorite star ("お気に入りボタンをできないレイヤーがある"). */
-      const opt=cb.closest('.layer-option')||cb.closest('.lyr-row'); if(!opt||opt.querySelector('.lyr-star')) return;
-      const info=layerCbInfo(cb); if(!info) return;
-      const star=document.createElement('button'); star.className='lyr-star'+(window.imLayerFavs.includes(info.key)?' on':'');
-      star.type='button'; star.title='Favorite'; star.dataset.key=info.key; star.textContent='★';
-      star.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
-        const i=window.imLayerFavs.indexOf(info.key);
-        if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
-        star.classList.toggle('on'); saveSettings(); renderLayerFavs();
-      };
-      opt.appendChild(star);
-      /* reflect on/off chip state when the underlying layer toggles */
-      cb.addEventListener('change',renderLayerFavs);
-    });
-    renderLayerFavs();
-  }
-  /* layers are built by the GROUP-3 IIFE (already run) + static ones; inject now and once more after idle */
-  injectLayerStars(); setTimeout(injectLayerStars,1200); setTimeout(injectLayerStars,2800);   /* (#R17) extra pass so late-mounted modules (eco/l9/ECMWF, ~1.5–1.6 s) all get fav stars */
-  /* (#R17) also (re)inject stars whenever the Layers panel is opened — covers any module that mounted late */
-  try{ const _bl=document.getElementById('btn-layers'); if(_bl) _bl.addEventListener('click',()=>setTimeout(injectLayerStars,40)); }catch(_){}
+  /* (#R200) moved to js/layer-favs.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, geoLayersDB, i18n, saveSettings, t });
 
   /* ---------- Data sources & attribution modal (#37) ---------- */
   /* (#R162) moved to js/reference-data.js — see Architecture.md "File layout". */
@@ -4235,103 +3865,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R162) moved to js/history.js — see Architecture.md "File layout". */
   window.IntMapMaddison=window.IntMapModules.maddison();
 
-  /* ============================================================================
-   *  (#R94) INTMAP TIME · COUNTRIES — the Countries tab, the country choropleths, the hover read-outs
-   *  and the open country card all become YEAR-AWARE. When the master clock travels to a past year the
-   *  real World Bank figures for THAT year (GDP, GDP/capita, population, life-expectancy, fertility,
-   *  internet use, military spending) are fetched and overlaid onto countryStats, so the whole app shows
-   *  the world as it was; returning to "Now" restores the present. Honest by construction: WB annual
-   *  series begin in 1960 (deeper past keeps the latest figures with a clear banner), and indicators
-   *  WITHOUT a WB annual series (HDI/UNDP, Democracy Index/EIU) are never relabelled with the wrong year.
-   *  ========================================================================== */
-  window.IntMapTimeCountries=(function(){
-    const WB_FLOOR=1960;
-    /* field on countryStats ← World Bank indicator (all-countries, one year). scale normalises to the
-       units countryStats already uses (gdp & milSpend in US$ billions; the rest raw). */
-    const FIELDS=[
-      {f:'gdp',      ind:'NY.GDP.MKTP.CD', scale:1e-9},
-      {f:'gdppc',    ind:'NY.GDP.PCAP.CD', scale:1},
-      {f:'pop',      ind:'SP.POP.TOTL',    scale:1},
-      {f:'lifeExp',  ind:'SP.DYN.LE00.IN', scale:1},
-      {f:'tfr',      ind:'SP.DYN.TFRT.IN', scale:1},
-      {f:'internet', ind:'IT.NET.USER.ZS', scale:1},
-      {f:'milSpend', ind:'MS.MIL.XPND.CD', scale:1e-9}
-    ];
-    const yearCache={};        /* year -> { field -> {iso3 -> value} } */
-    let base=null;             /* present-day snapshot of the overlaid fields (+ density) */
-    let curYear=null;          /* the year currently overlaid, or null */
-    let seq=0, deb=null;
-    function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
-    function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
-      try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
-      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
-    /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
-       IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
-       A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
-    async function fetchYear(year){ if(yearCache[year]) return yearCache[year];
-      const out={}; FIELDS.forEach(F=>out[F.f]={});
-      for(const F of FIELDS){ try{
-        const c=('AbortController' in window)?new AbortController():null, tm=c?setTimeout(()=>{try{c.abort();}catch(_){}}, 12000):null;
-        const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+F.ind+'?format=json&per_page=400&date='+year, c?{signal:c.signal}:undefined);
-        const j=await r.json(); if(tm) clearTimeout(tm);
-        (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) out[F.f][iso]=+row.value*F.scale; } });
-      }catch(_){} }
-      if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
-      return out; }
-    function overlay(year,data){ snapshotBase();
-      /* (#R94i) Maddison covers 1900–2018; for 2019+ there is NO Maddison year → keep the World Bank NOMINAL
-         figures (and mark the basis NOT-real so the banner/labels say World Bank, not "real 2011 int$"). */
-      const M=window.IntMapMaddison, useM=!!(M&&M.ready()&&year<=(M.maxYear||2018));
-      try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
-        FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
-        /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
-           country back to 1900, and the only source before the World Bank's 1960 floor. WB nominal is discarded
-           for GDP while travelling so a historical ranking is on ONE basis; life-exp/fertility/internet/military
-           stay World Bank. Population prefers Maddison, else keeps the WB value (head-count is basis-free). */
-        if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year);
-          s.gdp=(mg!=null)?mg:(M.has(iso,year)?null:s.gdp);
-          s.gdppc=(mpc!=null)?mpc:(M.has(iso,year)?null:s.gdppc);
-          if(mp!=null) s.pop=mp; }
-        s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
-      } }catch(_){}
-      curYear=year; window._imTimeYear=year; window._imTimeReal=useM;
-      /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
-      try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
-      /* then rename/re-flag the remaining single countries to their era identity (Qing/ROC, German Empire, …) */
-      try{ if(window.IntMapHistId) window.IntMapHistId.apply(window.IntMapTime.when()); }catch(_){}
-    }
-    function repaint(){
-      try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof searchVal==='function')?searchVal():''); }catch(_){}
-      try{ if(typeof window._imReapplyChoros==='function') window._imReapplyChoros(); }catch(_){}
-      try{ if(typeof window._imCountryCardRefresh==='function') window._imCountryCardRefresh(); }catch(_){}
-      try{ if(typeof window._imTimeSyncedRefresh==='function') window._imTimeSyncedRefresh(); }catch(_){}
-    }
-    window.IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
-      deb=setTimeout(async()=>{
-        const y=e.year;
-        if(e.isLive || y>=new Date().getFullYear()){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
-        const MFLOOR=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;
-        if(y<MFLOOR){ /* before the Maddison historical series → keep present figures, flag the floor */
-          if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
-        window._imTimePreWB=null;
-        if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
-        try{ if(!countryDataLoaded) await loadCountryData(); }catch(_){}
-        try{ await window.IntMapMaddison.load(); }catch(_){}
-        if(my!==seq) return;
-        /* (#R110) TWO-PHASE update so the Countries tab reflects the new year IMMEDIATELY ("タイムマシンでの年代変更が、
-           すぐにCountriesに反映されない。時間がかかる"): PHASE 1 overlays the LOCAL Maddison GDP / population /
-           GDP-per-capita + the former-state identities right away (zero network) and repaints, so the tab, choropleths
-           and open card update at once. PHASE 2 then fetches the World Bank life-expectancy / fertility / internet /
-           military series for the year (the slow, throttled, sequential part) and repaints again when it lands. */
-        const emptyWB={}; FIELDS.forEach(F=>emptyWB[F.f]={});
-        restore(); overlay(y,emptyWB); repaint();
-        let data; try{ data=(y>=WB_FLOOR)?await fetchYear(y):null; }catch(_){ data=null; }   /* WB annual series from 1960; earlier years = Maddison only */
-        if(my!==seq) return;              /* superseded by a newer time change */
-        if(data){ FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; }); overlay(y,data); repaint(); }
-      }, 340);
-    });
-    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore };
-  })();
+  /* (#R200) moved to js/time-countries.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. */
+  makeTimeCountries(IM_HOST, { countryStats, loadCountryData, renderStats, searchVal });
 
   /* ============================================================================
    *  (#R94b) HISTORICAL / FORMER STATES — when the master clock is inside a former country's real lifespan,
