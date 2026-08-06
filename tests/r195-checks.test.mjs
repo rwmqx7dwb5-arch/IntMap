@@ -7,7 +7,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -123,6 +124,49 @@ test('R195 ⑤: the country table loads coarse-first and upgrades the geometry a
   assert.match(countries, /s\.area=Math\.round\(v\.area\); s\._area=v\.area;/, 'the upgrade merges');
   assert.doesNotMatch(countries, /best\.forEach\(\(v,code\)=>\{[\s\S]{0,300}?HOST\.countryStats\[code\]=\{/,
     'the upgrade must never replace a stats record wholesale');
+});
+
+/* ── ⑦ the CI plan covers every spec exactly once ─────────────────────────────────────────────── */
+test('R195 ⑦: the measured shard plan runs every spec exactly once, and is balanced', () => {
+  const ci = rd('.github/workflows/ci.yml');
+  /* the group counts CI actually asks for — read them rather than assuming, so this test tracks
+     the workflow instead of a copy of it */
+  const of = {};
+  for (const m of ci.matchAll(/\{ suite: (\w+), shard: \d+, of: (\d+) \}/g)) of[m[1]] = +m[2];
+  assert.ok(of.rest && of.cesium, 'both pools appear in the matrix');
+
+  const run = (a) => execFileSync(process.execPath, [join(ROOT, 'scripts/shard-plan.mjs'), ...a],
+    { cwd: ROOT, encoding: 'utf8' });
+  const seen = [];
+  for (const pool of ['rest', 'cesium']) {
+    for (let g = 1; g <= of[pool]; g++) {
+      const files = run(['--pool', pool, '--group', String(g), '--of', String(of[pool])]).trim().split(/\s+/);
+      assert.ok(files.length && files[0], `${pool} group ${g} is not empty — an empty list makes ` +
+        'playwright run the WHOLE suite, which reads as a very slow pass');
+      seen.push(...files);
+    }
+  }
+  /* ⚠ THE PROPERTY THAT MATTERS: nothing falls between the pools, and nothing runs twice. The old
+     hand-split asserted this in a comment ("31 + 329 = 360"); it is checked now. */
+  const expected = readdirSync(join(ROOT, 'tests'))
+    .filter((f) => f.endsWith('.spec.js'))
+    .filter((f) => !/^prod-smoke\.spec\.js$|^r184-imagery-profile\.spec\.js$/.test(f))
+    .map((f) => 'tests/' + f).sort();
+  assert.deepEqual([...seen].sort(), expected,
+    'every spec CI is meant to run appears in exactly one group');
+  assert.equal(new Set(seen).size, seen.length, 'and no spec is run twice');
+});
+
+test('R195 ⑦: a spec with no recorded time is scheduled, not treated as free', () => {
+  const src = rd('scripts/shard-plan.mjs');
+  assert.match(src, /times\[f\] == null \? median : times\[f\]/,
+    'an unmeasured spec is charged the median — otherwise a new slow file is invisible to the plan');
+  assert.match(src, /process\.exit\(1\)/, 'and an empty group is an error rather than "run everything"');
+  /* the solo property is data, not another regex in the config */
+  const dur = JSON.parse(rd('tests/durations.json'));
+  assert.ok(Array.isArray(dur.solo) && dur.solo.length, 'tests/durations.json carries the solo list');
+  assert.doesNotMatch(rd('playwright.config.js'), /IM_SUITE === 'flight'/,
+    'the hand-carved flight suite is gone — the planner is what spreads those specs now');
 });
 
 /* ── ⑥ the local worker count is written down, not remembered ─────────────────────────────────── */

@@ -33,6 +33,24 @@ export default defineConfig({
   // exclusion is what everything above says it is; it simply has to step aside for the one command
   // whose whole purpose is to run it. IM_PROFILE is set by that npm script and by nothing else, so
   // CI, `npm test` and both IM_SUITE halves are byte-identical to before.
+  /* ══ (#R195) …AND CI NO LONGER SHARDS BY TEST COUNT AT ALL ═══════════════════════════════════════
+     「いやじゃあ待ち時間をどうにかしろや」「今回だけで終わるな。そもそもの構造をどうにかしろ」
+
+     The note above describes carving ONE heavy family out by regex. That worked, and it was about to
+     be done a second time: this round's shards came out 2m11, 2m20, 7m14, 8m51, 11m17 — and **35m58**,
+     because the flight-sim specs had clumped the way the Cesium ones once did. Splitting them out by
+     hand would have fixed today and guaranteed a third round of it later, since `--shard=i/n` divides
+     by TEST COUNT and this suite's files run anywhere from 2 s to 689 s.
+
+     So CI does not use `--shard` any more. scripts/shard-plan.mjs packs the spec FILES into groups of
+     equal MEASURED time (tests/durations.json, refreshed from the JUnit XML CI already writes), and
+     each job is handed its own file list. A newly slow spec redistributes itself; nobody has to
+     notice it first. The only thing still expressed per-file is which specs need a machine to
+     themselves — #R186 measured that for Cesium, and it now lives in that file as data rather than
+     as another regex here.
+
+     IM_SUITE therefore selects only the WORKER COUNT and the ignore list; the FILES come from the
+     planner. It is unset everywhere else, so `npm test` locally is unchanged and still runs the lot. */
   testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/
     : (process.env.IM_PROFILE === '1' ? /r184-imagery-profile\.spec\.js$/ : undefined),
   testIgnore: process.env.IM_PROFILE === '1'
