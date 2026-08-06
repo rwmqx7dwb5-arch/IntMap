@@ -108,12 +108,20 @@ test('R187 sea level: the default opacity is 60 %', () => {
 
 test('R187 atmosphere: the limb is blended thinner than saturation', () => {
   const src = read('js/app-body.js');
-  const m = /'atmosphere-blend':\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+)/.exec(src);
-  assert.ok(m, 'the sky spec must still set atmosphere-blend');
+  /* ⚠ (#R196) THERE ARE TWO RAMPS NOW, and this test's finding applies to ONE of them. #R187's
+     complaint — 「質感がチープ」「日光当たってる側が、ちょっと明るくしすぎ」 — was measured over the
+     SATELLITE imagery, where the channels clip. #R196 gave the map basemap a sky too, and over a
+     dark vector basemap nothing clips, so that one is blended harder (swept and screenshotted at
+     0.55 / 0.80 / 1.00). The satellite number is still the one this test guards. */
+  const all = [...src.matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),4,/g)].map((x) => +x[1]);
+  assert.ok(all.length >= 2, 'both atmosphere ramps must still be there');
+  assert.match(src, /'atmosphere-blend':\(sat/, 'the strength is chosen by basemap');
+  const sat = Math.min(...all), map = Math.max(...all);
   /* 1.0 clipped the channels — an optically correct scattering term multiplied until it saturates
      is what read as a cheap white collar, and as an over-bright sunlit limb. */
-  assert.ok(+m[1] < 0.8, `atmosphere-blend at z0 is ${m[1]} — that is back in the clipping range`);
-  assert.ok(+m[1] > 0.2, `atmosphere-blend at z0 is ${m[1]} — the atmosphere would be invisible`);
+  assert.ok(sat < 0.8, `the satellite atmosphere-blend at z0 is ${sat} — that is back in the clipping range`);
+  assert.ok(sat > 0.2, `the satellite atmosphere-blend at z0 is ${sat} — the atmosphere would be invisible`);
+  assert.ok(map <= 1.0 && map > sat, `the map ramp is ${map} — stronger than satellite, never past full`);
   /* the SUN's own contribution to the shading came down with it */
   assert.match(read('js/geo-engine.js'), /o\.intensity==null\?0\.3:o\.intensity/, 'light intensity 0.5 → 0.3');
 });

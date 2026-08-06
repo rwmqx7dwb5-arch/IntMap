@@ -957,7 +957,20 @@ window.IntMapModules.flightSim=function(HOST){
          のに余計なことをするな」. This is the #R99 spec, unchanged since, restored verbatim: a real blue
          gradient, pale horizon haze, distance fog. Nothing of the sim's is drawn behind the map, and the
          pre-flight sky is put back on exit (prevView.sky). */
-      try{ if(GE().scene.setSky) GE().scene.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
+      /* ══ (#R196) …AND NO DISTANCE HAZE ═══════════════════════════════════════════════════════════
+         「MapLibre時のフライトシミュレーターで、遠くを白く霞ませるエフェクトはやめろ。」
+         That wash is the FOG half of the block above, and the spec says exactly which two numbers
+         produce it: `fog-ground-blend` is "0 is the map centre and 1 is the horizon", so 0.35 started
+         the fog barely a third of the way out and painted #dbe6f0 over everything beyond; and
+         `horizon-fog-blend` is "0 is the horizon colour only, 1 is the fog colour only", so 0.55 put
+         half of that same wash into the horizon band as well. Both are moved to the end of their own
+         range — fog only exactly at the horizon, and a horizon that is the horizon colour — which
+         removes the haze without removing the sky. `fog-color` is left declared because it is what
+         those two numbers blend towards; with them at 1/0 it contributes nothing, and deleting the
+         key would silently hand MapLibre its own default (#ffffff) instead.
+         ⚠ The SKY half is untouched: sky-color / horizon-color / sky-horizon-blend and the
+         atmosphere are the #R99 spec that #R174's 「空を勝手に描くな」 settled. */
+      try{ if(GE().scene.setSky) GE().scene.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0,'fog-color':'#dbe6f0','fog-ground-blend':1,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
       try{ if(typeof HOST.mapType==='undefined'||HOST.mapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */

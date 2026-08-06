@@ -50,6 +50,17 @@ npm run test:smoke       # does the app boot + render its shell?
 npm run test:qa          # IntMap's own in-page QA harnesses
 ```
 
+**(#R196) `npm test`'s browser half runs through `scripts/run-tests.mjs`, not `playwright test`
+directly.** It asks `scripts/shard-plan.mjs` — the same measured-time planner CI has used since
+#R195 — for the spec files in longest-first order, runs the ordinary pool at two workers, and then
+runs the specs marked `solo` in `tests/durations.json` (the `-cesium` family) at ONE worker, because
+#R186 measured that contention is what those fail on. Same files, same config, same assertions; it
+only changes the order and the width. If the plan cannot cover every spec that exists it says so and
+falls back to a plain `playwright test` over the whole directory — never to a subset.
+
+Override the width with `PW_WORKERS=<n>` when measuring the machine itself, and set `PORT` when
+another worktree already has a server on 4173.
+
 Run a single test by title:
 
 ```bash

@@ -89,6 +89,18 @@ import '../js/terrain-water.js';            /* (#R176) sculpt the terrain, route
    about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
    second copy. Nothing loads until someone calls warm(). */
 import '../js/land-mask.js';
+/* (#R196) "place this on the map" as ONE gesture — it hides the requesting panel while the click is
+   awaited, because on a phone that panel is what the user was being asked to tap through. It
+   publishes window.IntMapPick synchronously and holds no state until someone calls start(). */
+import '../js/map-pick.js';
+/* (#R196) index.html's TENTH split — the antimeridian / pole-safe geometry the measurement tools,
+   the seismic rings and the dashboard all build their shapes with. Pure functions of coordinates:
+   no DOM, no renderer, no app state, so it needed no handover and is testable in Node. */
+import '../js/geodesy.js';
+/* (#R196) index.html's ELEVENTH split — the service-worker tile cache and the directional prefetch.
+   It only registers a factory; js/app-body.js calls it from the exact point the code used to occupy,
+   because it attaches `moveend`/`move` handlers whose order relative to the shell's is observable. */
+import '../js/tile-warm.js';
 
 import '../js/seismic.js';                  /* (#R176) P/S/surface waves through IASP91 */
 /* (#R192) the tsunami propagation model — linear long waves over the real sea floor, initialised
@@ -146,6 +158,10 @@ import '../js/elevation-profile.js';
    list only has to be BEFORE js/app-body.js — like every other module here. */
 import '../js/space-sky.js';
 import '../js/world-base.js';
+/* (#R196) the day/night side of the planet and the city lights on it, both fading in as the camera
+   pulls back to the whole-Earth view. Publishes window.IntMapNightSide and builds nothing — not a
+   layer, not the GIBS request — until the camera is first wide enough for either to be visible. */
+import '../js/night-side.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
    registers a factory; js/app-body.js calls it from the exact point the code used to occupy, because
@@ -181,7 +197,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto',
+  'satProto', 'tileWarm',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming'].filter((k) => !window[k]);

@@ -159,7 +159,10 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   assert.match(src, /class="sq-op"/, 'with a slider in the panel');
   assert.match(src, /class="sq-run"/, 'the compute button');
   assert.match(src, /function markStale\(\)\{/, 'parameters mark the field stale instead of rebuilding');
-  assert.match(src, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); \}/, '…for the panel’s own spinners');
+  /* (#R196) …and it now also pushes the changed event to the propagation model next door, which is
+     the whole of 「津波シミュレーターも、初期の地震しか対応していない」. The three things this test
+     is about — draw, warm, mark stale — are unchanged and still in that order. */
+  assert.match(src, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); syncTsunamiSource\(\); \}/, '…for the panel’s own spinners');
   assert.match(src, /class="sq-progb"/, 'the LOS-style bar');
   assert.match(src, /fldPct\+'%'/, 'with a real percentage');
   assert.match(src, /await warmDEMTiles\(warm,z,12000,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\)\)/,

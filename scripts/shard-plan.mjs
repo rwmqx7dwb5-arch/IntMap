@@ -126,8 +126,18 @@ function plan(pool, n) {
   const { times, solo, perTest } = load();
   const all = specs();
   const known = Object.values(times).filter((v) => v > 0).sort((a, b) => a - b);
-  const median = known.length ? known[known.length >> 1] : 30;
+  /* ══ (#R196) AN UNMEASURED FILE IS CHARGED THE 75th PERCENTILE, NOT THE MEDIAN ══════════════
+     #R195's rule was that a new spec is "never silently treated as free", and the median delivered
+     that. It is still a GUESS, and the guess is optimistic by construction: half of the measured
+     files are heavier than it. Measured this round — tests/r196.spec.js really costs 174 s and was
+     charged 78, so it landed on the group that already held r186 (317 s) and r192 (98 s), and the
+     job failed on a test whose margin that contention ate. The p75 is still cheap when the new file
+     turns out to be small and no longer under-books a heavy one; and the stderr notice below means
+     nobody has to infer from a red job that a spec was never measured. */
+  const median = known.length ? known[Math.min(known.length - 1, Math.floor(known.length * 0.75))] : 30;
   const mine = all.filter((f) => (pool === 'cesium') === isSolo(f, solo));
+  const unmeasured = mine.filter((f) => times[f] == null);
+  if (unmeasured.length) console.error(`shard-plan: ${unmeasured.length} spec(s) have no measured time and are charged ${median}s each — refresh with --update: ${unmeasured.join(', ')}`);
   /* a solo pool runs one worker, so its wall-clock IS its serial time; the rest run two */
   const div = pool === 'cesium' ? 1 : 2;
   const total = mine.reduce((a, f) => a + (times[f] == null ? median : times[f]), 0) / div;

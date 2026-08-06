@@ -1116,8 +1116,18 @@ window.IntMapModules.seismic=function(HOST){
        (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
        explicit requests for an answer, so they still compute. The panel's own spinners call
        `touch()` instead, which marks the field stale and waits for the ▶ button — see markStale. */
-    function refresh(){ draw(); warmEpi(); schedField(); }
-    function touch(){ draw(); warmEpi(); markStale(); }
+    /* ══ (#R196) …AND THE PROPAGATION MODEL FOLLOWS ═══════════════════════════════════════════════
+       「津波シミュレーターも、初期の地震しか対応していない。」 The 🌊 button hands an event over once;
+       after that the two panels described different earthquakes. Every path that changes THIS event
+       now pushes it next door. `follow` is inert unless that panel is open, and it debounces, so a
+       spinner being dragged does not start a solve per keystroke — see js/tsunami.js. */
+    function syncTsunamiSource(){
+      try{ const T=window.IntMapTsunami; if(!T||!T.follow||!epi) return;
+        T.follow({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm });
+      }catch(_){}
+    }
+    function refresh(){ draw(); warmEpi(); schedField(); syncTsunamiSource(); }
+    function touch(){ draw(); warmEpi(); markStale(); syncTsunamiSource(); }
     function render(){ if(!panel) return;
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
@@ -1405,9 +1415,28 @@ window.IntMapModules.seismic=function(HOST){
       return out.slice(0,12);
     }
     let pickH=null;
-    function endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null; try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    function startPick(){ endPick(); picking=true; try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
-      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
+    function endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    /* ══ (#R196) THE EPICENTRE CAN BE MOVED AGAIN ══════════════════════════════════════════════════
+       「地震シミュレーター、地点を選びなおせない。」 The gesture was never broken; the PANEL was
+       standing on the map it asked to be tapped. Measured at 390 × 844: this panel is 362 × 669 at
+       (16, 80), so on a phone the only reachable pixels are two 16 px slivers and the app's own
+       sidebar — `document.elementsFromPoint` at the tap point returned `DIV.sidebar collapsed`, never
+       the canvas. window.IntMapPick (js/map-pick.js) hides the panel for the duration of the click
+       and brings it straight back, so the map is reachable on every screen. */
+    function startPick(){ endPick(); picking=true;
+      const P=window.IntMapPick;
+      if(P&&P.start){
+        const ok=P.start({ panel, hidePanel:true,
+          hint:L('Tap the map to place the epicentre.','地図をタップして震源地を置いてください。','Zum Setzen des Epizentrums auf die Karte tippen.','Нажмите на карту, чтобы указать эпицентр.','Toca el mapa para colocar el epicentro.'),
+          onPick:(ll)=>{ picking=false; epi=[ll.lng,ll.lat]; _epiElev=null; refresh(); },
+          onCancel:()=>{ picking=false; } });
+        if(ok) return;
+      }
+      /* no pick module in this build — the original behaviour, unchanged */
+      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
+      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; _epiElev=null; endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function onClick(e){ if(!opened||picking||!epi) return;
       stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
       if(stations.length>6) stations.shift(); draw(); }
