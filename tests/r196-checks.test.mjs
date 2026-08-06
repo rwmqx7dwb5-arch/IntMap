@@ -154,6 +154,8 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
   assert.match(n, /if\(!GE\(\)\.layers\.has\(LYR\)\) return false;/, 'a rejected paint expression is caught');
   assert.match(n, /imageRowLatitudes/, 'the lights image is placed through the engine’s row→latitude map (#R195)');
   assert.match(n, /if\(zoomNow\(\)>ZMAX\+0\.4\)\{ return; \}/, 'nothing is built until the camera is wide enough');
+  /* …and the GIBS request is not on the boot path — the app opens at zoom 1.7 */
+  assert.match(n, /requestIdleCallback\(_lights,\{timeout:6000\}\)/, 'the city lights wait for the first idle');
   assert.ok(existsSync(join(ROOT, 'js/night-side.js')));
   assert.ok(rd('src/main.js').includes("import '../js/night-side.js';"), 'the entry imports it');
 });
@@ -170,6 +172,17 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
   assert.match(seismic, /picking=false; epi=\[ll\.lng,ll\.lat\]/, 'and sets the epicentre from the pick');
   const sims = rd('js/sims.js');
   assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 6, 'the three pickers in js/sims.js use it');
+});
+
+/* ── ⑤b ATLAS DRIVES IT ───────────────────────────────────────────────
+   STANDING: every feature is operable from Atlas. ⚠ #R115's lesson is that an action parameter the SYS
+   catalogue does not mention DOES NOT EXIST to the planner — so all three places are checked. */
+test('R196 ⑤b the night side is an Atlas action, in the dispatch AND in the catalogue', () => {
+  const a = rd('js/atlas-console.js');
+  assert.match(a, /case 'nightSide': \{/, 'the dispatch handles it');
+  assert.match(a, /window\.IntMapNightSide\.setEnabled\(want\)/, 'and really drives the module');
+  assert.match(a, /nightSide:\{ lbl:\(\)=>L\('Night side of the Earth'/, 'it is a listed on/off surface');
+  assert.match(a, /\{"type":"nightSide","on":bool\}/, 'and the SYS catalogue declares it');
 });
 
 /* ── ⑥ THE TSUNAMI FOLLOWS THE EARTHQUAKE ──────────────────────────────────────────────────── */

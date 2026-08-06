@@ -197,13 +197,20 @@ window.IntMapNightSide=(function(){
       if(!GE().layers.has(LYR)) return false;         /* addLayer swallows a rejected paint expression */
     }catch(_){ return false; }
     built=true;
-    /* the lights arrive when they arrive; the shade never waits for the network */
-    loadLights().then((L)=>{ if(!L||!built) return;
+    /* ⚠ THE LIGHTS ARE NOT ON THE BOOT PATH. The app opens at zoom 1.7, so `consider()` fires the
+       first time it is called — and #R192/#R193/#R195 each spent part of a round taking megabytes OFF
+       that path (Köppen, cshapes, the 4.3 MB border geometry). Sixteen Black Marble tiles is not the
+       size of any of those, but the rule is the rule: the SHADE needs no network and appears at once,
+       the LIGHTS are fetched on the first idle. Same escape hatch as js/world-base.js — an idle can be
+       delayed indefinitely by one slow tile, so there is a timeout behind it. */
+    const _lights=()=>{ loadLights().then((L)=>{ if(!L||!built) return;
       try{ const N=imgSize();
         GE().layers.addDynamicImage(DYN,{ width:N, height:N, coordinates:COORDS, opacity:RAMP, draw:drawLights,
           attribution:'City lights: NASA EOSDIS GIBS — VIIRS Black Marble' }, beforeId());
       }catch(_){}
-    });
+    }); };
+    try{ if(window.requestIdleCallback) requestIdleCallback(_lights,{timeout:6000}); else setTimeout(_lights,2500); }
+    catch(_){ setTimeout(_lights,2500); }
     return true;
   }
   function destroy(){
