@@ -51,16 +51,49 @@ function noteStop(z, x, y, d) { if (!isFinite(d)) return; const v = hold(z, x, y
   dirty.set(cell(z, x, y), v); }
 function knownStop(z, x, y) { const v = depth.get(cell(z, x, y)); return v ? v.stop : null; }
 
-async function fetchTile(z, y, x, signal) {
+/* ══ (#R196) A TILE IS FETCHED ONCE ═══════════════════════════════════════════════════════════════
+   「モバイル版で、衛星画像が圧倒的に重い」— MEASURED on an emulated iPhone (390×844, DPR 3), satellite
+   on over Tokyo at z12, a six-second pan of twenty-four steps:
+
+       satellite tile requests        891
+       DISTINCT tiles among them      137
+       tiles asked for more than once  73
+       worst single tile              24 times — once per pan step
+
+   6.5× the bytes the view needs, on the connection least able to afford them. The cause is not the
+   cache size: it is that the request was CANCELLED. MapLibre aborts a tile the moment it leaves the
+   set it needs, the abort reached `fetch`, the response was discarded mid-flight, and nothing was
+   ever stored — so the next step asked for the same tile from scratch. A pan is exactly the motion
+   that keeps tiles crossing that boundary, which is why the worst offender matches the step count.
+
+   Two changes, both here:
+
+   ① THE HTTP FETCH IS NOT ABORTABLE. Once the bytes are on the wire, cancelling them costs the same
+      bandwidth and guarantees paying it again. The fetch runs to completion and populates `raw`, so
+      the re-request that follows is free and INSTANT — which is also the seam the same round was
+      asked to close (「点滅軽減」): a tile panned back into view is already here.
+      The abort still does its job where the saving is real — the ancestor WALK stops between levels,
+      and an abandoned tile's reply is never posted.
+
+   ② IN-FLIGHT REQUESTS ARE SHARED. The ancestor walk means many z18 tiles resolve through the same
+      z8 parent, and four stitch children are asked for at once; without this they raced and fetched
+      the same URL several times over. */
+const inflight = new Map();       /* z/x/y → Promise<{buf,placeholder}> while the bytes are on the wire */
+function fetchTile(z, y, x) {
   const k = z + '/' + x + '/' + y;
-  const c = raw.get(k); if (c) { raw.delete(k); raw.set(k, c); return c; }
-  const r = await fetch(url(z, y, x), { signal, mode: 'cors', credentials: 'omit' });
-  if (!r.ok) throw new Error('sat http ' + r.status);
-  const buf = await r.arrayBuffer();
-  const out = { buf, placeholder: buf.byteLength <= PLACEHOLDER_MAX };
-  raw.set(k, out);
-  if (raw.size > RAW_MAX) { const f = raw.keys().next().value; raw.delete(f); }
-  return out;
+  const c = raw.get(k); if (c) { raw.delete(k); raw.set(k, c); return Promise.resolve(c); }
+  const live = inflight.get(k); if (live) return live;
+  const p = (async () => {
+    const r = await fetch(url(z, y, x), { mode: 'cors', credentials: 'omit' });
+    if (!r.ok) throw new Error('sat http ' + r.status);
+    const buf = await r.arrayBuffer();
+    const out = { buf, placeholder: buf.byteLength <= PLACEHOLDER_MAX };
+    raw.set(k, out);
+    if (raw.size > RAW_MAX) { const f = raw.keys().next().value; raw.delete(f); }
+    return out;
+  })().finally(() => { inflight.delete(k); });
+  inflight.set(k, p);
+  return p;
 }
 function canvas(w, h) { return new OffscreenCanvas(w, h); }
 async function crop(buf, dz, sx, sy) {
@@ -75,11 +108,12 @@ async function crop(buf, dz, sx, sy) {
 /* the four z+1 children as ONE 512² tile, or null when they are not all real imagery */
 async function stitch2x(z, y, x, signal) {
   if (z >= 20) return null;
+  if (signal && signal.aborted) return null;
   const stop = knownStop(z, x, y);
   if (stop != null && z + 1 > stop) return null;
   const q = [[0, 0], [1, 0], [0, 1], [1, 1]];
   let kids;
-  try { kids = await Promise.all(q.map(([dx, dy]) => fetchTile(z + 1, 2 * y + dy, 2 * x + dx, signal))); } catch (_) { return null; }
+  try { kids = await Promise.all(q.map(([dx, dy]) => fetchTile(z + 1, 2 * y + dy, 2 * x + dx))); } catch (_) { return null; }
   if (!kids.every(k => k && !k.placeholder)) return null;
   noteHave(z, x, y, z + 1);
   let bmps = null;
@@ -111,7 +145,7 @@ async function stitch2x(z, y, x, signal) {
    ⚠ It cannot start ABOVE the remembered level either: `stop` is "the deepest level that is real", so
    the tile there is exactly the one we want and asking for its parent would throw away detail. */
 async function resolve(z, y, x, signal) {
-  const first = await fetchTile(z, y, x, signal);
+  const first = await fetchTile(z, y, x);
   if (!first.placeholder) { noteHave(z, x, y, z); return { mode: 'native', buf: first.buf }; }
   let az = z, ax = x, ay = y, dz = 0, real = null;
   const hint = knownStop(z, x, y);
@@ -119,15 +153,18 @@ async function resolve(z, y, x, signal) {
     const d = z - hint;
     if (d > 1 && d <= 13) {
       let got = null;
-      try { got = await fetchTile(hint, y >> d, x >> d, signal); } catch (_) { got = null; }
+      try { got = await fetchTile(hint, y >> d, x >> d); } catch (_) { got = null; }
       if (got && !got.placeholder) { real = got; az = hint; dz = d; }
       else if (got) { az = hint; ax = x >> d; ay = y >> d; dz = d; }   /* the hint was stale — walk on from here */
     }
   }
   if (!real) {
     for (let up = 0; up < 13 && az > 1; up++) {
+      /* (#R196) THIS is where an abort is worth honouring: each level is its own round trip, so
+         stopping between them saves requests that have not been made yet. */
+      if (signal && signal.aborted) break;
       az--; ax = ax >> 1; ay = ay >> 1; dz++;
-      let got = null; try { got = await fetchTile(az, ay, ax, signal); } catch (_) { break; }
+      let got = null; try { got = await fetchTile(az, ay, ax); } catch (_) { break; }
       if (!got.placeholder) { real = got; break; }
     }
   }

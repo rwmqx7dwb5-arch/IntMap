@@ -311,6 +311,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get recordLogin(){ return recordLogin; }, get refreshNewsPill(){ return refreshNewsPill; },
     get renderCoCompareFixed(){ return renderCoCompareFixed; }, get renderCommList(){ return renderCommList; },
     get satHasKey(){ return satHasKey; }, get satProviderById(){ return satProviderById; },
+    /* (#R196) js/tile-warm.js builds the prefetch URLs from it */
+    get satBuildTiles(){ return satBuildTiles; },
     get satRenderController(){ return satRenderController; }, get satRevertToFallback(){ return satRevertToFallback; },
     get satState(){ return satState; }, get scheduleNewsDeclutter(){ return scheduleNewsDeclutter; },
     get setupCommunityLayer(){ return setupCommunityLayer; }, get showCoCompare(){ return showCoCompare; },
@@ -588,10 +590,58 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false; const p=_sunOverheadPoint(); if(!p) return false;
     try{ return GE().scene.setSunDirection(p); }catch(_){ return false; } }
+  /* ══ (#R196) THE SKY IS NOT A PROPERTY OF THE BASEMAP ═════════════════════════════════════════════
+     「Cesiumと同じ大気・空のエフェクトをMapLibreでも。完全に同一な見た目にしろ。（現在は空が真っ暗である
+       ため）」 — MEASURED, both engines, same camera, dark theme (test-results/sky):
+
+       globe z1.6, the band just inside the limb   MapLibre [34,33,34] grey     Cesium [31,41,55] blue
+       z5 pitch 60, the band above the horizon     MapLibre [46,46,46] grey     Cesium a bright blue arc
+       z5 pitch 60, the sky above that             MapLibre pure black          Cesium black + stars
+
+     Two separate defects with one cause. `_applySkyAtmosphere` returned early unless the SATELLITE
+     basemap was on, so on the default map basemap the style carried no `sky` at all — and with no
+     `sky` block MapLibre's atmosphere multiplier is 0 AND there is no sky quad above the horizon, so
+     what fills it is the container's CSS colour. That is the 真っ暗 in the report, exactly.
+
+     ⚠ SETTING ONLY `atmosphere-blend` IS NOT ENOUGH AND IS NOT SAFE. Every other sky property then
+     takes its SPEC DEFAULT — sky-color #88C6FC, horizon/fog #ffffff, fog-ground-blend 0.5 — i.e. a
+     permanent daylight-blue dome and the same white distance wash this round was told to remove from
+     the flight simulator. So all seven are stated:
+
+       sky-color         deep space. Cesium's sky above the atmosphere is its star box: black.
+       horizon-color     THE ATMOSPHERE BAND, and the one thing that has to follow the Sun — Cesium's
+                         SkyAtmosphere is bright over the day side and dark over the night side, so
+                         this is interpolated on the Sun's elevation AT THE MAP CENTRE.
+       sky-horizon-blend 0.55 — a thin band, matching the arc in the Cesium capture.
+       fog-*             off (ground-blend 1 = fog only exactly at the horizon, horizon-fog-blend 0 =
+                         the horizon band is the horizon colour). Cesium draws no ground haze here.
+       atmosphere-blend  unchanged from #R187 — the Rayleigh+Mie limb, tapered by zoom.
+
+     ⚠ ONE OWNER. js/flight-sim.js owns the sky outright while a flight is running (_skyIsOwnedElsewhere)
+     and set3D's own mercator-only sky block is gone — two writers meant the last one to run decided,
+     which is why a basemap switch during a flight once cleared the cockpit sky (#R174). */
+  const _SKY_SPACE='#060b16';
+  const _SKY_H_NIGHT='#0a1526', _SKY_H_DAY='#c9dcf0';
+  function _mix(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const A=p(a),B=p(b),u=Math.max(0,Math.min(1,t));
+    return '#'+[0,1,2].map(i=>Math.round(A[i]+(B[i]-A[i])*u).toString(16).padStart(2,'0')).join(''); }
+  /* how high the Sun stands over the point the camera is looking at, in degrees */
+  function _sunElevAtCentre(){
+    const s=_sunOverheadPoint(); if(!s) return null;
+    let c=null; try{ c=GE().camera.getCenter(); }catch(_){}
+    if(!c||!isFinite(c.lat)||!isFinite(c.lng)) return null;
+    const R=Math.PI/180, a=c.lat*R, b=s.lat*R, dl=(c.lng-s.lng)*R;
+    const cos=Math.sin(a)*Math.sin(b)+Math.cos(a)*Math.cos(b)*Math.cos(dl);
+    return 90-Math.acos(Math.max(-1,Math.min(1,cos)))/R;
+  }
+  function _horizonColour(){
+    const e=_sunElevAtCentre(); if(e==null) return _SKY_H_DAY;
+    const t=Math.max(0,Math.min(1,(e+6)/12));
+    return _mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
+  }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     try{
-      if(!sat){ if(_applySkyAtmosphere._on){ _applySkyAtmosphere._on=false; GE().scene.setSky(undefined); if(!_sunSimOwnsLight()) GE().scene.setSunDirection(null); } return; }
       _applySkyAtmosphere._on=true;
       /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
          「（追記：質感がチープかつ、読み込み時の動作が不安定で視覚的に美しくない。）」 and
@@ -610,14 +660,36 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          keeps the imagery's own contrast instead of being washed toward white. The scattering model
          underneath is untouched: this is only how much of it is blended over the globe, which is the
          one knob the spec offers and the one the two reports are about. */
-      GE().scene.setSky({'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]});
+      const hz=_horizonColour();
+      _applySkyAtmosphere._hz=hz;
+      GE().scene.setSky({
+        'sky-color':_SKY_SPACE, 'sky-horizon-blend':0.55,
+        'horizon-color':hz, 'horizon-fog-blend':0,
+        'fog-color':hz, 'fog-ground-blend':1,
+        /* ⚠ TWO STRENGTHS, EACH SETTLED BY ITS OWN MEASUREMENT. #R187 halved this to 0.55 because a
+           full-strength limb over BRIGHT SATELLITE IMAGERY clipped to white — 「質感がチープ」. That
+           finding is about the imagery, and it stands. Over the dark vector basemap nothing clips and
+           0.55 reads as a hairline next to Cesium's halo, so the map basemap gets 0.80 (swept at
+           0.55 / 0.80 / 1.00 and screenshotted; past 0.80 the picture stops changing). */
+        'atmosphere-blend':(sat
+          ?['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]
+          :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0])});
       _aimSun();
+    }catch(_){}
+  }
+  /* the horizon band follows the Sun, and the Sun's elevation depends on WHERE the camera is looking
+     as much as on the clock — so this is re-evaluated when the camera settles too. It re-sets the sky
+     only when the colour has actually moved, because setSky re-parses the block. */
+  function _skyFollowCamera(){
+    try{ if(!_applySkyAtmosphere._on||_skyIsOwnedElsewhere()) return;
+      const hz=_horizonColour(); if(hz===_applySkyAtmosphere._hz) return;
+      _applySkyAtmosphere(currentMapType==='sat');
     }catch(_){}
   }
   /* The sub-solar point moves 15° an hour, and the time machine can move it by years in one step, so
      re-aim the light on the master clock as well as on the basemap switch. */
-  try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ try{ if(_applySkyAtmosphere._on) _aimSun(); }catch(_){} }); }catch(_){}
-  setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on) _aimSun(); }catch(_){} },60000);
+  try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ try{ if(_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} }); }catch(_){}
+  setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} },60000);
   /* ===== Language-aware vector place labels (OpenFreeMap, free, no key) ===== */
   /* (#R21) Map mode now ALWAYS uses the same crisp OFM vector labels as satellite mode ("mapを選択した
      際も、同じ地名ラベルにして。（mapの旧来の地名ラベルは廃止）") — the labeled carto base is retired, the
@@ -1400,86 +1472,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     },8000);
   })();
 
-  /* =============================================================================
-   *  TILE ACCELERATION — persistent disk cache (Service Worker) + predictive
-   *  pan/zoom prefetch. Quality is never reduced: identical tile URLs, just
-   *  served from cache on revisit and fetched a beat early in the travel
-   *  direction so they're already there when the viewport arrives.
-   *  ============================================================================= */
-  let _tileSW=null;
-  function registerTileSW(){
-    try{
-      if(!('serviceWorker' in navigator)) return;                       /* unsupported */
-      if(location.protocol!=='https:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; /* SW needs a secure context (file:// can't) */
-      navigator.serviceWorker.register('sw.js').then(reg=>{
-        _tileSW=navigator.serviceWorker.controller||reg.active||reg.waiting||reg.installing||null;
-      }).catch(()=>{});
-      navigator.serviceWorker.addEventListener('controllerchange',()=>{ _tileSW=navigator.serviceWorker.controller; });
-    }catch(_){}
-  }
-  const _lng2x=(lng,z)=>Math.floor((lng+180)/360*Math.pow(2,z));
-  const _lat2y=(lat,z)=>{ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); };
-  const _tileUrl=(tpl,z,x,y)=>tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y);
-  let _prevCenter=null, _prefetchT=null;
-  function predictivePrefetch(aggressive){
-    if(!GE().hasRenderer() || currentMapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
-    const p=satProviderById(satState.providerId); if(!p) return;
-    let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
-    if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
-    /* (#R178) WARM THE LEVEL THAT WILL ACTUALLY BE FETCHED. On a HiDPI display the satellite protocol
-       serves each tile by stitching the four children one level deeper (see the imapsat block — the
-       imagery was otherwise running at half the screen's resolution), so the widest ring here was
-       warming a level that is now only the fallback. `_satZBias` shifts the whole prefetch — the
-       viewport ring, the travel lead and the zoom-in anticipation — onto the level the protocol
-       consumes. 0 on a 1x screen, so nothing changes there. */
-    /* …and ONLY for the provider that actually stitches. `imapsat` serves the Esri base layer; the
-       other providers (Sentinel-2, GIBS, the BYOK ones) are plain XYZ sources whose displayed level
-       is unchanged, so biasing their prefetch would warm a level nothing fetches — the exact defect
-       this is fixing, pointed the other way. */
-    const _satZBias=(function(){ try{ return (p.id==='esri'&&window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.hiDPI())?1:0; }catch(_){ return 0; } })();
-    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom())+_satZBias)), n=Math.pow(2,z);
-    const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
-    let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
-    if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
-    let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
-    _prevCenter={lng:c.lng,lat:c.lat};
-    /* (#R151) FLIGHT LEAD: in the sim the camera moves continuously and fast, so a 3-tile lead can't keep the imagery
-       ahead of the aircraft ("3D衛星画像の生成が飛行に追い付いていない"). When called aggressively (flight loop), warm a
-       DEEPER ring in the direction of travel AND, if the map is tilted (3D/oblique), one zoom level SHALLOWER too so the
-       far horizon tiles the oblique view pulls in are resident before they scroll into frame. */
-    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
-    const urls=[];
-    const _side=(k)=>{ if(dx>0) for(let y=y0-1;y<=y1+1;y++) push(x1+k,y); else if(dx<0) for(let y=y0-1;y<=y1+1;y++) push(x0-k,y);
-      if(dy>0) for(let x=x0-1;x<=x1+1;x++) push(x,y1+k); else if(dy<0) for(let x=x0-1;x<=x1+1;x++) push(x,y0-k); };
-    for(let k=1;k<=RING;k++) _side(k);
-    if(aggressive && dx&&dy){ for(let k=1;k<=RING;k++){ push((dx>0?x1:x0)+dx*k,(dy>0?y1:y0)+ (dy>0?1:-1)*k); } }   /* diagonal corner ahead for a banking turn */
-    /* (#R8) Anticipate a zoom-IN: warm the center tiles one AND two levels deeper so the next pinch is
-       already resident (the user asked for "Unthinkable Speed" satellite). */
-    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
-    /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
-    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
-    /* (#R178) what level this call chose, for observation. Inferring it from network traffic does not
-       work once the protocol is stitching @2x tiles: the RENDER path then fetches the children one
-       level below the displayed zoom, and those outnumber the prefetch ring (measured at map z11 on a
-       2x screen: 18 requests at z12 from the ring, 41 at z13 from the children). */
-    try{ predictivePrefetch.lastLevel={ z, bias:_satZBias, mapZoom:Math.round(GE().camera.getZoom()), n:urls.length }; }catch(_){}
-    if(!urls.length) return;
-    const _mob=(typeof isMobile==='function'&&isMobile());
-    const uniq=[...new Set(urls)].slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
-    if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
-    uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
-  }
-  registerTileSW();
-  if(GE().hasRenderer()) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
-  /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
-     tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
-     the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
-  let _movePfT=0;
-  if(GE().hasRenderer()) GE().events.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
-  /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
-     every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
-     couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
-  try{ window._imPredictivePrefetch=predictivePrefetch; }catch(_){}
+  /* ══ (#R196) MOVED TO js/tile-warm.js ═════════════════════════════════════════════
+     110 lines: the service-worker tile cache and the predictive prefetch, including the memo this
+     round added after measuring 865 Esri requests for 112 distinct tiles in one six-second phone pan.
+     It is called from HERE, at the point the code used to occupy, because it registers `moveend` and
+     `move` handlers and their order relative to the rest of this file's handlers is observable.
+     ⚠ The five values it needs (mapType, satState, satProviderById, satBuildTiles, isMobile) are
+     handed over through IM_HOST rather than closed over — see scripts/check-split-scope.mjs. */
+  try{ window.IntMapModules.tileWarm(IM_HOST); }catch(_){}
 
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   let _occAllVis=false;
@@ -1687,117 +1687,24 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
   const SNAP_PX=22;                  /* screen-space radius that counts as "on the first point" */
-  /* ===== Antimeridian / pole-safe geometry for the measurement tools (#5,#6,#25) =====
-     MapLibre (renderWorldCopies:false) cannot draw a polygon or line whose longitudes jump across
-     ±180°, and a geodesic circle big enough to swallow a pole both crosses that seam AND wraps the
-     pole. These helpers build geometry in CONTINUOUS (unwrapped) longitude, then split it into
-     pieces that each stay inside [-180,180] — adding a polar cap, or using the antipodal
-     complement — so a radius ring or great-circle area stays correct ANYWHERE on Earth. */
-  const _R_EARTH_KM=6371.0088, _HALF_CIRCUM=Math.PI*_R_EARTH_KM;            /* ≈ 20015 km */
-  const _d2r=d=>d*Math.PI/180, _r2d=r=>r*180/Math.PI;
-  const _clampLat=la=>Math.max(-89.9999,Math.min(89.9999,la));
-  function _dest(lon,lat,brgDeg,distKm){                                    /* geodesic destination */
-    const dr=distKm/_R_EARTH_KM, br=_d2r(brgDeg), la1=_d2r(lat), lo1=_d2r(lon);
-    const la2=Math.asin(Math.min(1,Math.max(-1,Math.sin(la1)*Math.cos(dr)+Math.cos(la1)*Math.sin(dr)*Math.cos(br))));
-    const lo2=lo1+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la1), Math.cos(dr)-Math.sin(la1)*Math.sin(la2));
-    return [_r2d(lo2), _r2d(la2)];
-  }
-  function _gcPoints(a,b,n){                                                /* great-circle a→b, unwrapped lon */
-    const la1=_d2r(a[1]),lo1=_d2r(a[0]),la2=_d2r(b[1]),lo2=_d2r(b[0]);
-    const d=2*Math.asin(Math.min(1,Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2)));
-    if(!isFinite(d)||d<1e-9) return [[a[0],_clampLat(a[1])],[b[0],_clampLat(b[1])]];
-    const out=[]; let prev=null;
-    for(let i=0;i<=n;i++){ const f=i/n, A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
-      const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2);
-      const y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2);
-      const z=A*Math.sin(la1)+B*Math.sin(la2);
-      let lat=_r2d(Math.atan2(z,Math.sqrt(x*x+y*y))), lon=_r2d(Math.atan2(y,x));
-      if(prev!=null){ while(lon-prev>180)lon-=360; while(lon-prev<-180)lon+=360; } out.push([lon,_clampLat(lat)]); prev=lon; }
-    return out;
-  }
-  /* closed great-circle ring through pts (each edge densified), longitudes continuous */
-  function _gcRingUnwrapped(pts,nPerEdge){
-    const closed=[...pts,pts[0]]; const ring=[]; let prev=null;
-    for(let i=0;i<closed.length-1;i++){ const seg=_gcPoints(closed[i],closed[i+1],nPerEdge);
-      seg.forEach(p=>{ let lo=p[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,p[1]]); prev=lo; }); }
-    return ring;
-  }
-  function _clipHalf(poly,x,keepGE){                                        /* Sutherland–Hodgman vs a vertical line */
-    const out=[]; const n=poly.length; if(!n) return out;
-    for(let i=0;i<n;i++){ const a=poly[i], b=poly[(i+1)%n];
-      const ai=keepGE?a[0]>=x:a[0]<=x, bi=keepGE?b[0]>=x:b[0]<=x;
-      if(ai) out.push(a);
-      if(ai!==bi){ const t=(x-a[0])/(b[0]-a[0]); out.push([x, a[1]+(b[1]-a[1])*t]); } }
-    return out;
-  }
-  /* split a polygon given in CONTINUOUS lon into 1+ rings, each shifted into [-180,180] */
-  function _splitPolyToWindows(poly){
-    let mn=Infinity,mx=-Infinity; poly.forEach(p=>{ if(p[0]<mn)mn=p[0]; if(p[0]>mx)mx=p[0]; });
-    const rings=[]; for(let k=Math.floor((mn+180)/360);k<=Math.floor((mx+180)/360);k++){
-      let c=_clipHalf(poly,k*360-180,true); if(c.length<3) continue;
-      c=_clipHalf(c,k*360+180,false); if(c.length<3) continue;
-      rings.push(c.map(p=>[p[0]-k*360,_clampLat(p[1])])); }
-    return rings;
-  }
-  /* split a CONTINUOUS-lon line into segments, each shifted into [-180,180] */
-  function _splitLineToWindows(line){
-    const segs=[]; let cur=[];
-    for(let i=0;i<line.length;i++){ const p=line[i];
-      if(cur.length){ const prev=cur[cur.length-1]; const k0=Math.round(prev[0]/360), k1=Math.round(p[0]/360);
-        if(k0!==k1){ /* crossed a seam → break, inserting boundary points */
-          const x=(Math.max(k0,k1))*360-180; const t=(x-prev[0])/(p[0]-prev[0]); const ly=prev[1]+(p[1]-prev[1])*t;
-          cur.push([x,ly]); segs.push(cur); cur=[[x,ly]]; } }
-      cur.push(p); }
-    if(cur.length) segs.push(cur);
-    return segs.map(s=>{ const k=Math.round(s[Math.floor(s.length/2)][0]/360); return s.map(p=>[p[0]-k*360,_clampLat(p[1])]); }).filter(s=>s.length>=2);
-  }
-  /* geodesic-disk fill polygons (array of GeoJSON Polygon coord arrays) for a radius circle */
-  function diskFillPolys(center,radiusKm,steps){
-    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const dNP=(90-clat)/180*_HALF_CIRCUM, dSP=(90+clat)/180*_HALF_CIRCUM, npIn=R>dNP, spIn=R>dSP;
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
-    if(npIn&&spIn){                                                         /* disk covers ~everything → world minus antipodal hole */
-      const antiLon=((clon+180+540)%360)-180;
-      const holes=diskFillPolys([antiLon,-clat],_HALF_CIRCUM-R,steps).map(poly=>poly[0]);
-      return [[[[-180,-89.9999],[180,-89.9999],[180,89.9999],[-180,89.9999],[-180,-89.9999]], ...holes]];
-    }
-    if(npIn||spIn){                                                         /* one pole inside → cap to the pole line */
-      const cap=89.9999*(npIn?1:-1), capPoly=ring.concat([[ring[ring.length-1][0],cap],[ring[0][0],cap]]);
-      return _splitPolyToWindows(capPoly).map(r=>[r]);
-    }
-    return _splitPolyToWindows(ring).map(r=>[r]);                           /* ordinary disk, maybe seam-split */
-  }
-  /* geodesic-disk outline lines (array of LineString coord arrays) */
-  function diskOutlineLines(center,radiusKm,steps){
-    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
-    return _splitLineToWindows(ring);
-  }
-
-  /* CLAMP coordinates rather than dropping whole features (#5,#25): polar great-circle math can
-     push a latitude past ±90 or emit a stray non-finite value. The old code discarded the entire
-     feature, so a measurement passing near a pole simply vanished. Now we clamp latitude into the
-     renderable band and only drop a vertex that is truly non-finite, so the shape stays visible. */
-  function sanitizeFeatures(feats){
-    const fixPos=p=>(Array.isArray(p)&&isFinite(p[0])&&isFinite(p[1]))?[p[0],Math.max(-89.9999,Math.min(89.9999,p[1]))]:null;
-    const fixCoords=(c)=>{ if(!Array.isArray(c)) return null; if(typeof c[0]==='number') return fixPos(c);
-      const out=c.map(fixCoords).filter(x=>x!=null); return out; };
-    const out=[];
-    feats.forEach(f=>{ try{ if(!f||!f.geometry) return; const g=f.geometry; const fixed=fixCoords(g.coordinates);
-      if(fixed==null) return;
-      const okPoint=(g.type==='Point')&&Array.isArray(fixed)&&fixed.length===2&&typeof fixed[0]==='number';
-      const okLine=(g.type==='LineString')&&Array.isArray(fixed)&&fixed.length>=2;
-      const okPoly=(g.type==='Polygon')&&Array.isArray(fixed)&&fixed[0]&&fixed[0].length>=4;
-      const okML=(g.type==='MultiLineString')&&Array.isArray(fixed)&&fixed.length>=1;
-      const okMP=(g.type==='MultiPolygon')&&Array.isArray(fixed)&&fixed.length>=1;
-      if(okPoint||okLine||okPoly||okML||okMP){ out.push({...f,geometry:{...g,coordinates:fixed}}); }
-    }catch(_){} });
-    return out;
-  }
+  /* ══ (#R196) MOVED VERBATIM TO js/geodesy.js ════════════════════════════════════
+     111 lines of antimeridian / pole-safe geometry — the seam clipping, the polar caps, the geodesic
+     disk and the feature sanitiser. It reads nothing from this scope, so the move needed no handover
+     at all, and tests/r196-checks.test.mjs proves the 111 lines are byte-identical to what was here.
+     ⚠ Re-bound under the ORIGINAL names below: IM_HOST publishes five of them and js/tool-panel.js,
+     js/seismic.js, js/dash-extended.js and js/atlas-console.js read them through it. */
+  /* ⚠ HOISTED FUNCTION DECLARATIONS, NOT `const`. Five of these six are bound AT FACTORY TIME by
+     js/tool-panel.js, js/seismic.js, js/dash-extended.js and js/atlas-console.js through IM_HOST, and
+     a factory can run before a `const` further down this closure is initialised — which is exactly
+     #R167's dead-zone rule and #R189's silent total loss. Written as declarations they are defined
+     from the first line of the closure, like every other IM_HOST function. (Caught by
+     tests/r167-checks.test.mjs #5 on the first attempt, which is what that test is for.) */
+  function _gcRingUnwrapped(){ return window.IntMapGeodesy._gcRingUnwrapped.apply(null,arguments); }
+  function _splitPolyToWindows(){ return window.IntMapGeodesy._splitPolyToWindows.apply(null,arguments); }
+  function _splitLineToWindows(){ return window.IntMapGeodesy._splitLineToWindows.apply(null,arguments); }
+  function diskFillPolys(){ return window.IntMapGeodesy.diskFillPolys.apply(null,arguments); }
+  function diskOutlineLines(){ return window.IntMapGeodesy.diskOutlineLines.apply(null,arguments); }
+  function sanitizeFeatures(){ return window.IntMapGeodesy.sanitizeFeatures.apply(null,arguments); }
   function refreshTool(){ if(GE().layers.hasSource('tool-source')) GE().layers.setSourceData('tool-source',{type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
 
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
@@ -2025,6 +1932,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         if(window.requestIdleCallback) requestIdleCallback(_warm,{timeout:8000}); else setTimeout(_warm,3000);
       } }catch(_){}
       try{ _applySkyAtmosphere(currentMapType==='sat'); }catch(_){}
+      /* (#R196) the horizon band follows where the camera is looking; the night side and the city
+         lights build themselves the first time the camera is wide enough for either to be visible. */
+      try{ GE().events.on('moveend',_skyFollowCamera); }catch(_){}
+      try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
          the first thing the user sees should be the finished map, not a bare basemap that grows
@@ -3247,9 +3158,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':currentLang==='de'?'3D-Gelände konnte nicht geladen werden':currentLang==='ru'?'Не удалось загрузить 3D-рельеф':currentLang==='es'?'No se pudo cargar el terreno 3D':'Could not load 3D terrain'); }catch(_){} return; }
       terrain3D=true; syncBtns();
       try{ GE().scene.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
-      /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
-         (and fog isn't supported on globe, which otherwise spams console warnings). */
-      if(currentProj!=='globe'){ try{ GE().scene.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
+      /* ⚠ (#R196) THIS NO LONGER SETS THE SKY. It used to install a mercator-only block — a blue dome
+         plus fog-ground-blend 0.35, i.e. the same white distance wash the flight simulator was told to
+         drop this round — which then FOUGHT _applySkyAtmosphere for ownership: whichever ran last won,
+         and the sky changed depending on the order in which 3-D and the basemap were toggled. The sky
+         has one owner now (_applySkyAtmosphere) and it covers every projection, so switching terrain
+         on simply leaves it alone. */
       /* (#R7-3D-notilt) Do NOT move the camera when 3D is enabled. The user asked that selecting 3D
          change nothing on screen — terrain is attached so relief appears the moment THEY tilt
          (right-drag / two-finger), but we never auto-pitch or auto-zoom. */

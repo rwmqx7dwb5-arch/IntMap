@@ -79,7 +79,10 @@ test('R151 #7 satellite: flight + tilted-move prefetch keeps 3D imagery ahead', 
   assert.match(html, /function predictivePrefetch\(aggressive\)\{/, 'prefetch takes an aggressive flag');
   assert.match(html, /const RING=aggressive\?7:3/, 'flight uses a deeper directional ring');
   assert.match(html, /window\._imPredictivePrefetch\(true\)/, 'flight loop calls it aggressively');
-  assert.match(html, /if\(currentMapType!=='sat'\) return; const now=Date\.now\(\); if\(\(GE\(\)\.camera\.getPitch\(\)\|\|0\)>25 && now-_movePfT>320\)\{ _movePfT=now; predictivePrefetch\(true\); \}/   /* (#R178) the pitch is read through the engine contract now — same trigger, same numbers */, 'tilted 3D drag warms tiles mid-move');
+  /* (#R178) the pitch is read through the engine contract; (#R196) the block moved whole to
+     js/tile-warm.js, so the basemap comes from IM_HOST rather than from the shell's own variable —
+     same trigger, same numbers, same handler. */
+  assert.match(html, /if\(HOST\.mapType!=='sat'\) return; const now=Date\.now\(\); if\(\(GE\(\)\.camera\.getPitch\(\)\|\|0\)>25 && now-_movePfT>320\)\{ _movePfT=now; predictivePrefetch\(true\); \}/, 'tilted 3D drag warms tiles mid-move');
 });
 
 test('R151 #8 Street View ON auto-shows coverage (restored on close)', () => {

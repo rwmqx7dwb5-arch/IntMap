@@ -262,8 +262,15 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
      anything at all, which is #R194's lesson in one line. Headroom is 67 lines, deliberately tight.
      The next surface to leave under standing rule 13 is js/atlas-console.js (6,571 lines), which is
      not in this shell but is the other half of 「中心部がまだ巨大」; it needs a split of its own
-     because its themes — the planner, the SYS catalogue, the renderer — are interleaved, not stacked. */
-  assert.ok(lines < 8_300, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+     because its themes — the planner, the SYS catalogue, the renderer — are interleaved, not stacked.
+     ⚠ (#R196) 8,300 → 8,200. This round added to the shell (a real sky in every basemap, the
+     prefetch memo, the pick hand-off) and then took more out than it put in: js/geodesy.js carried
+     off the 111-line antimeridian/pole-safe block and js/tile-warm.js the 110-line tile-acceleration
+     block, 8,363 → 8,171. Same rule as #R195 — the ceiling follows the floor DOWN, never the other
+     way. Headroom is 29 lines.
+     The next surface named by 「中心部がまだ巨大」 is still js/atlas-console.js (6,571 lines), which
+     is not in this shell and needs a split of its own. */
+  assert.ok(lines < 8_200, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,
