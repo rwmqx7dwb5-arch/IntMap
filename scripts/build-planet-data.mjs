@@ -103,9 +103,23 @@ async function textures() {
   return man;
 }
 
-/* ── the gazetteer table ─────────────────────────────────────────────────────────────────────── */
-const strip = (s) => s.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'")
-  .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+/* ── the gazetteer table ───────────────────────────────────────────────────────────────────────
+   ⚠ TAG-STRIPPING BY REGEX IS NOT SANITISATION, AND CODEQL SAID SO. Two real objections to the first
+   version, both worth fixing even though this runs at BUILD time over one known page and its output
+   is a JSON file of place names that the app draws with canvas fillText:
+     · one `replace(/<[^>]*>/g,'')` pass can MANUFACTURE a tag — `<<b>script>` becomes `<script>` —
+       so the strip repeats until the string stops changing;
+     · unescaping `&amp;` first and `&lt;` after can double-unescape, turning `&amp;lt;` into `<`.
+       Entities are decoded in ONE pass by a single alternation instead, so nothing a decode produces
+       is fed back into another decode.
+   What ships is then verified rather than trusted: parseGazetteer rejects any name that still holds
+   a metacharacter, so a page change cannot put markup into data/planet-names.json. */
+const ENT = { '&amp;': '&', '&#39;': "'", '&apos;': "'", '&quot;': '"', '&lt;': '<', '&gt;': '>', '&nbsp;': ' ' };
+function strip(s) {
+  let prev;
+  do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
+  return s.replace(/&(?:amp|#39|apos|quot|lt|gt|nbsp);/g, (m) => ENT[m]).replace(/\s+/g, ' ').trim();
+}
 
 function parseGazetteer(html, target) {
   const cell = (row, cls) => {
@@ -121,6 +135,12 @@ function parseGazetteer(html, target) {
     const name = cell(row, 'cleanFeatureNameColumn')[0];
     const tgt = cell(row, 'targetColumn')[0];
     if (!name || (tgt && tgt.toLowerCase() !== target.toLowerCase())) continue;
+    /* ⚠ AND THE RESULT IS CHECKED, NOT ASSUMED. An IAU feature name is letters, digits, spaces and a
+       few punctuation marks (an apostrophe is legitimate — O'Neill is a real lunar crater), so what is
+       rejected is MARKUP: anything with < > & or a double quote left in it is a parse that went wrong, and
+       it must not reach data/planet-names.json. Failing loudly at build time is the whole point of
+       doing this here rather than in the browser. */
+    if (/[<>&"]/.test(name)) throw new Error('gazetteer name still contains markup: ' + JSON.stringify(name));
     const ll = cell(row, 'centerLatLonColumn');
     const lat = parseFloat(ll[0]), lon = parseFloat(ll[1]);
     if (!isFinite(lat) || !isFinite(lon)) continue;

@@ -55,6 +55,12 @@ window.IntMapModules.space=function(HOST){
     'use strict';
     const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
     const EPH=()=>window.IntMapEphemeris;
+    /* ⚠ (#R138) EVERY VALUE THAT REACHES THE DOM GOES THROUGH THE ONE SANITISER. Two of the strings
+       this panel builds HTML from are DATA rather than literals — the body colour out of
+       js/ephemeris.js and the body name out of the language table — and CodeQL was right to say so
+       even though both are ours today: a table is exactly the thing that later grows an entry from a
+       file. The feature labels are drawn on a canvas with fillText and never touch innerHTML. */
+    const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
     const D2R=Math.PI/180, AU=149597870.7;
 
     /* ---- state ------------------------------------------------------------------------------- */
@@ -568,8 +574,8 @@ window.IntMapModules.space=function(HOST){
           const on=id===focus;
           return '<button class="sp-b" data-b="'+id+'" style="'+BTN+'text-align:left;'
             +(on?'background:rgba(255,210,63,0.18);border-color:rgba(255,210,63,0.6);':'')+'">'
-            +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(EPH().body(id).colour)+';margin-right:6px;"></span>'
-            +bodyName(id)+'</button>';
+            +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+S(EPH().body(id).colour)+';margin-right:6px;"></span>'
+            +S(bodyName(id))+'</button>';
         }).join('');
         side.querySelectorAll('.sp-b').forEach(b=>b.onclick=()=>{ setFocus(b.getAttribute('data-b')); });
       }
@@ -578,8 +584,8 @@ window.IntMapModules.space=function(HOST){
     }
     function infoHtml(){
       const E=EPH(), jd=jdNow(), id=focus, b=E.body(id); if(!b) return '';
-      let s='<div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+bodyName(id)+'</div>';
-      const pr=(k,v)=>'<div style="display:flex;justify-content:space-between;gap:8px;"><span style="opacity:.72;">'+k+'</span><b>'+v+'</b></div>';
+      let s='<div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+S(bodyName(id))+'</div>';
+      const pr=(k,v)=>'<div style="display:flex;justify-content:space-between;gap:8px;"><span style="opacity:.72;">'+S(k)+'</span><b>'+S(v)+'</b></div>';
       s+=pr(L('Radius','半径','Radius','Радиус','Radio'),Math.round(b.rKm).toLocaleString()+' km');
       s+=pr(L('Mass','質量','Masse','Масса','Masa'),b.massKg.toExponential(3).replace('e+',' × 10^')+' kg');
       s+=pr(L('Rotation','自転','Rotation','Вращение','Rotación'),
