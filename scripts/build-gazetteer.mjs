@@ -179,7 +179,14 @@ async function main() {
 
   /* Keep the most populous worldwide, and — separately — the largest place in every country, so a
      small country is never absent just because nowhere in it clears a global threshold. */
-  const TARGET = LIMIT || 3400;
+  /* (#R198) 15,000, not 3,400. MEASURED: at 3,400 the population floor of the global block lands at
+     ~164,000 — which reads as "ten times the rows" and still cannot find Tuzla (110 k), Kamloops
+     (90 k) or Rovaniemi (62 k), i.e. exactly the long tail the request was about. 15,000 puts the
+     floor near 40,000 people. The two costs were measured rather than feared: the file is ~1.1 MB
+     (fetched on first need, never on the boot path — see js/gazetteer.js), and registering the rows
+     into the locator is 6.0 ms per 1,000 rows on this machine, so ~90 ms once. js/gazetteer.js caps
+     the phone at MOBILE_CAP rows for that second reason. */
+  const TARGET = LIMIT || 15000;
   const keep = [], seenCountry = new Set(), seenName = new Set();
   const admit = (r) => {
     const key = r.en.toLowerCase();

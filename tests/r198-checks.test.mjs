@@ -159,7 +159,7 @@ test('R198 ③a: the built table is ten times the curated one, and every row is 
   }
   assert.ok(new Set(doc.rows.map((r) => r[2])).size >= 200,
     'the long tail covers the world, not one continent');
-  assert.ok(doc.rows.filter((r) => r[1]).length > 1500, 'most rows carry a real Japanese name');
+  assert.ok(doc.rows.filter((r) => r[1]).length > 5000, 'thousands of rows carry a real Japanese name');
 });
 
 test('R198 ③b: the client turns those rows into the shape the locator already speaks', () => {
@@ -180,7 +180,7 @@ test('R198 ③b: the client turns those rows into the shape the locator already 
   assert.ok(before.city.length > 200, 'the curated rows are there synchronously, as ever');
 });
 
-test('R198 ③c: 3,482 more places cost the deterministic locator NOTHING', async () => {
+test('R198 ③c: the world rows cost the deterministic locator NOTHING', async () => {
   const { CORPUS } = await import('./newsgeo-corpus.mjs');
   const { HOLDOUT } = await import('./newsgeo-holdout.mjs');
   const { evaluate } = await import('../scripts/newsgeo-eval.mjs');
@@ -193,7 +193,7 @@ test('R198 ③c: 3,482 more places cost the deterministic locator NOTHING', asyn
   const rows = win.IntMapGazetteer._rowsFrom(JSON.parse(readFileSync(WORLD, 'utf8')));
   const added = NG.register(rows.map(([type, terms, lng, lat, en, jp]) =>
     ({ terms, lng, lat, type, name_en: en, name_jp: jp })));
-  assert.ok(added > 3000, `only ${added} rows registered`);
+  assert.ok(added > 10_000, `only ${added} rows registered`);
 
   const after = { c: evaluate(CORPUS), h: evaluate(HOLDOUT) };
   assert.ok(after.c.nw >= base.c.nw,

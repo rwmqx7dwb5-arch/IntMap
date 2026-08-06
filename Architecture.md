@@ -871,7 +871,7 @@ data/
   ecoregions_2017.geojson/.js   エコリージョン（自前ホスト。PMTiles が dead だったため geojson 化）
   railways_gauge.json           世界の鉄道（軌間別）
   volcanoes_gvp.json            火山（Smithsonian GVP 完新世）
-  gazetteer-world.json          (#R198) 世界の地名の長い尾（3,482件・241か国・258 KB）。出典＝GeoNames
+  gazetteer-world.json          (#R198) 世界の地名の長い尾（15,048件・240か国・1.06 MB・人口下限 37,493人）。出典＝GeoNames
                                 `cities15000`（CC BY 4.0、場所と人口）＋ Wikidata（CC0、ja/de/ru/es のラベルを
                                 GeoNames id = P1566 で引く）。`scripts/build-gazetteer.mjs` が生成し、
                                 `js/gazetteer.js` の `warm()` が**必要になった時に**取得する（同梱しない）。
@@ -884,8 +884,9 @@ js/
   i18n.js                           (#R162) EN/JP/DE/RU/ES のUI文字列表（純データ・実行時に不変）。`window.IntMapI18N`。
                                     index.html 側は `const i18n=window.IntMapI18N;` で従来どおり束縛し直すだけ。
   gazetteer.js                      (#R162) 非AI locator の組込み地名表（`_BUILTIN_GZ`＋`_EXTRA_GZ`）。`window.IntMapGazetteer`。
-                                    (#R198) **長い尾**が加わった：`warm()` が `data/gazetteer-world.json`（3,482行・
-                                    241か国・258 KB）を**最初に必要になった時に取得**し、`index()` が curated 2表と
+                                    (#R198) **長い尾**が加わった：`warm()` が `data/gazetteer-world.json`（15,048行・
+                                    240か国・1.06 MB。人口の下限 37,493人。⚠ 携帯は上位6,000行だけ登録する
+                                    ——登録は実測 6.0 ms/1,000行）を**最初に必要になった時に取得**し、`index()` が curated 2表と
                                     合わせて matcher 形の索引を返す（world 到着で1度だけ無効化）。同梱しないのは
                                     #R195 の起動転送 189 KB を戻さないため。ビルドは `scripts/build-gazetteer.mjs`。
   reference-data.js                 (#R162) ダッシュボードカード（`DEFAULT_DASH_CARDS`＋`_dc`）とデータ出典表

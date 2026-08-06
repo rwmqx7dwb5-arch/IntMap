@@ -386,7 +386,7 @@ window.IntMapGazetteer=(function(){
      ja/de/ru/es) and read here.
 
      ⚠ IT IS FETCHED, NOT BUNDLED, AND THAT IS THE WHOLE DESIGN. #R195 got the startup transfer to
-     189 KB; putting a 200 KB table in the module graph would undo that for a feature nobody has
+     189 KB; putting a 1 MB table in the module graph would undo that for a feature nobody has
      asked for yet on the first frame. So this file loads on first NEED — the news locator starting
      a pass, or the search box being used — the same shape as js/land-mask.js and js/bathymetry.js.
      Until then the app behaves exactly as it did, because the curated rows are still synchronous.
@@ -401,9 +401,18 @@ window.IntMapGazetteer=(function(){
   /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
      of twenty thousand are not the same claim about a headline, and the scorer already knows how to
      rank `city` above `country`; this is the only judgement the conversion makes. */
+  /* ⚠ (#R198) THE PHONE TAKES THE HEAD OF THE LIST. Registering the rows into the deterministic
+     locator MEASURES at 6.0 ms per 1,000 on a desktop, so 15,048 is ~90 ms once — fine there, and
+     roughly four times that on a phone, which is a long task for a device this app has already been
+     told is struggling. The file is sorted by population, so the first 6,000 rows are the 6,000 most
+     populous places on Earth: the cap costs the smallest towns and nothing else. Same reasoning as
+     the #R193 mobile caps on the satellite tile caches. */
+  const MOBILE_CAP=6000;
+  function _isMobile(){ try{ return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){ return false; } }
   function _rowsFrom(doc){
-    const out=[];
+    const out=[], cap=_isMobile()?MOBILE_CAP:Infinity;
     for(const r of (doc&&doc.rows)||[]){
+      if(out.length>=cap) break;
       const en=r[0], ja=r[1], lng=+r[3], lat=+r[4], pop=+r[5]||0, alt=r[6]||[];
       if(!en||!isFinite(lng)||!isFinite(lat)) continue;
       const terms=[en]; if(ja) terms.push(ja);
