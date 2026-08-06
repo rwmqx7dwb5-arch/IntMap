@@ -1243,7 +1243,7 @@ js/
                                     （連結を検索するより厳しい）。
 
   ── 以下 (#R200) の6本。#R199 と**同じ仕組み**（名前付き ES export ＋ `import`、`window.IntMapModules`
-     にも `src/main.js` の一覧にも**載せない**）で、今度は `js/app-body.js` を 5,149 → **4,685行**にした。
+     にも `src/main.js` の一覧にも**載せない**）で、今度は `js/app-body.js` を 5,149 → **4,360行**にした（下の4本を含む）。
      借りる名前は CTX（呼び出し側の束縛を shorthand で渡す＝元の名前に再束縛するので本文は逐語）、
      app-body が**再代入する**値だけ IM_HOST の生きたアクセサ（#R165 の規則）。
      移した504行のうち**490行が1バイトも変わっていない**。`tests/r200-checks.test.mjs` が
@@ -1284,6 +1284,34 @@ js/
                                     行くと、その年の World Bank 実データを取得して `countryStats` に重ね、
                                     塗り・行・国カードを当時の姿にする（「今」に戻すと完全に復元）。
                                     借りる名前4＋1（HOST: `countryDataLoaded`）・返す名前0。
+
+  ── (#R200) 2回目。**全セクションを面測定で掃いて**上位を採った4本（上の6本より綺麗な切り口だった）───
+
+  i18n-late.js                      (#R200 で `js/app-body.js` から107行分離／中身は #R20–#R79)
+                                    **遅れて足された翻訳** `makeI18nLate`——後のラウンドが足した UI 文字列を
+                                    5言語ぶん共有 i18n 表へマージする（誰かが読むより前に）＋ティッカーの
+                                    設定パネル。借りる名前1（CTX `i18n`）＋1（HOST `lang`）・返す名前0。
+                                    ⚠ `r171`/`r180 ③` の「5言語に在るか」はこのファイルに訊く。
+  wheel-zoom.js                     (#R200 で `js/app-body.js` から66行分離／中身は #R20)
+                                    **ホイールと操作感度** `makeWheelZoom`——MapLibre 本来のカーソル追従
+                                    ズーム（#R20 が戻したもの）と、その後ろの操作感度（ホイール/ピンチ率と
+                                    ドラッグ慣性）＋その設定UIと5言語の文字列。借りる名前2・返す名前0。
+  keyboard-shortcuts.js             (#R200 で `js/app-body.js` から76行分離／中身は #R62/#R72)
+                                    **キーボードと `?` の一覧** `makeKeyboardShortcuts`——修飾キー無しの
+                                    デスクトップ用ショートカット（入力中は無視）と5言語のチートシート。
+                                    ⚠ `t` がテーマを light→dark→auto と回すので、**このラウンドで唯一
+                                    HOST に書き戻すファイル**（`HOST.userTheme`）。`tests/r165-checks` の
+                                    owner 一覧に**意識的に追加**した。
+  label-occlusion.js                (#R200 で `js/app-body.js` から99行分離／中身は #R19/#R196)
+                                    **地名を最前面に、球の裏側のマーカーを隠す** `makeLabelOcclusion`——
+                                    どちらも「乱す側を全部追いかけるのではなく、idle で真実を貼り直す」
+                                    という同じ考え方の自己修復。マーカーは HTML なのでレンダラは隠して
+                                    くれない。借りる名前2（CTX）＋2（HOST `proj`/`markersArray`）・
+                                    返す名前1（`updateOcclusion`＝**巻き上げ shim 経由**）。
+                                    ⚠ `IntMapModules.tileWarm` のマウントはこのブロックに乗っていたので
+                                    一緒に移った——`scripts/static-checks.mjs` の「ページ」の定義を
+                                    **app-body が静的 import する兄弟ファイルまで**広げた（でないと
+                                    「定義されているが誰も呼ばない」と誤検出する）。
 
   sat-proto.js                      (#R195 で `js/app-body.js` から259行そのまま分離／中身は #R158–#R193)
                                     **`imapsat://` タイルプロトコル**——Esri World_Imagery の取得、灰色
