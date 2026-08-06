@@ -632,7 +632,11 @@ window.IntMapModules.space=function(HOST){
         'Pluto wird in seiner gemessenen Farbe gezeichnet — es liegt keine globale Oberflächenkarte bei.',
         'Плутон показан своим измеренным цветом: глобальной карты поверхности в комплекте нет.',
         'Plutón se dibuja con su color medido: no se incluye un mapa global de su superficie.')):'';
-      return s1+'<br>'+s2+s3+(lastErr?('<br><span style="color:#ff9f0a;">'+String(lastErr).slice(0,120)+'</span>'):'');
+      /* ⚠ `lastErr` IS THE ONE STRING HERE THAT NOBODY IN THIS FILE WROTE. It carries whatever a failed
+         fetch, a rejected texture or a WebGL context error said — i.e. text from outside — and it was
+         the one CodeQL was still pointing at after the obvious two were fixed. Through the sanitiser
+         like everything else that reaches innerHTML (#R138). */
+      return s1+'<br>'+s2+s3+(lastErr?('<br><span style="color:#ff9f0a;">'+S(String(lastErr).slice(0,120))+'</span>'):'');
     }
 
     /* ⚠ OPEN ON THE DAY SIDE. Measured on the first working build:選んだ天体が真っ黒 — Mars came up
