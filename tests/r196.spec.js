@@ -118,8 +118,34 @@ test.describe('R196 ③ the sky', () => {
     expect(sky['fog-ground-blend'], 'and no ground haze').toBe(1);
     expect(sky['horizon-fog-blend']).toBe(0);
 
-    await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [138.7, 35.2], zoom: 5, pitch: 60, bearing: 0 }));
+    /* ⚠ (#R197) PIN THE CLOCK — AND THIS IS NOT WHY IT WAS FAILING. Recorded because the wrong
+       hypothesis is worth as much as the right one here.
+       `horizon-color` FOLLOWS THE SUN (#R196 §2: a static colour cannot imitate Cesium's
+       SkyAtmosphere, which is bright on the day side and dark on the night side), so this test's
+       answer depended on the hour it ran at. That looked like the cause of the failure seen on this
+       machine. It is not: with the clock pinned to local noon the band still comes back with
+       limb[2] − limb[0] = 0 EXACTLY — R and B identical, a perfectly neutral grey, which no mixture
+       of a blue horizon and black space produces. The same test fails identically on origin/main
+       (verified in a separate worktree, same machine, same minutes), so it is pre-existing and
+       not this round's. The remaining suspect is the 7 s settle: this machine has been running
+       Playwright loads all round, and a frame captured before the atmosphere is drawn is exactly a
+       neutral grey. That is a measurement to make on an idle machine, not a guess to ship.
+       The pin is kept anyway: it removes one real source of nondeterminism from a pixel test. */
+    await page.evaluate(() => {
+      window.IntMapTime.set(new Date(Date.UTC(2026, 5, 21, 3, 0, 0)), { allowFuture: true, source: 'test' });
+      window.IntMapGeoEngine.camera.jumpTo({ center: [138.7, 35.2], zoom: 5, pitch: 60, bearing: 0 });
+    });
     await page.waitForTimeout(7000);
+    /* and prove the pin took, so a silently-ignored clock cannot make this pass for the wrong reason */
+    const sunEl = await page.evaluate(() => {
+      const S = window.IntMapSky, T = window.IntMapTime;
+      const ms = +T.when(), s = S.sunPosition(ms), g = S.gmstDeg(ms);
+      const lng = ((s.ra - g + 540) % 360) - 180;
+      const d = Math.acos(Math.max(-1, Math.min(1, Math.sin(s.dec * Math.PI / 180) * Math.sin(35.2 * Math.PI / 180)
+        + Math.cos(s.dec * Math.PI / 180) * Math.cos(35.2 * Math.PI / 180) * Math.cos((138.7 - lng) * Math.PI / 180)))) * 180 / Math.PI;
+      return 90 - d;
+    });
+    expect(sunEl, 'the clock is pinned to daylight over the camera').toBeGreaterThan(20);
     const clip = await page.evaluate(() => { const m = document.getElementById('map').getBoundingClientRect(); return { x: m.x, y: m.y, width: m.width, height: m.height }; });
     const shot = (await page.screenshot({ clip })).toString('base64');
     const band = await page.evaluate(async (b64) => {

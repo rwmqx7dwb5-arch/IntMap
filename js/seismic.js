@@ -1184,10 +1184,11 @@ window.IntMapModules.seismic=function(HOST){
           +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
         +'<button class="sq-real" style="'+BTN+'width:100%;">🌎 '+L('Load a recent real earthquake','最近の実際の地震を読み込む','Echtes Beben laden','Загрузить реальное землетрясение','Cargar un sismo real')+'</button>'
         /* ══ (#R190) 「津波が発生するとされるような地震だった場合、津波シミュレーターも使えるように。」
-           Shown only when THIS event meets the tsunamigenic conditions (see tsunamiCase): the app
-           already owns an inundation model driven by the real DEM (js/sims.js, hazard 'tsunami'), so
-           this hands it the epicentre and a wave height derived from the same source parameters —
-           it does not add a second model. */
+           Shown only when THIS event meets the tsunamigenic conditions (see tsunamiCase). It hands the
+           epicentre, the magnitude and the focal depth to the ONE tsunami model this app has — the
+           propagation simulator (js/tsunami.js). ⚠ (#R197) it no longer has an alternative to fall back
+           on: js/sims.js's `tsunami` hazard has been removed. The estimated wave height shown on the
+           button is from the screening (Abe's tsunami-magnitude relation), not from the model. */
         +(function(){ const t=tsunamiCase(); return t?('<button class="sq-tsu" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">🌊 '
           +L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')
           +' <span style="opacity:0.75;">('+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m)</span></button>'
@@ -1315,12 +1316,14 @@ window.IntMapModules.seismic=function(HOST){
        propagation. It is still the right tool for the last kilometre and it is still reachable (the
        propagation panel opens it at the coast the wave actually hits hardest), but the button asked
        for here is the one that shows the wave crossing the ocean. */
+    /* ⚠ (#R197) THERE IS EXACTLY ONE TSUNAMI MODEL, AND THIS BUTTON OPENS IT OR NOTHING.
+       「勝手に災害シミュレータ内の津波シミュレータを起動するな。」 #R192 left a fallback here: if the
+       propagation module was absent, this opened js/sims.js's disaster panel on its `tsunami` hazard —
+       a 26 km bathtub — under the same button and with no way to tell which one you got. That hazard no
+       longer exists (js/sims.js), and this no longer looks for a second model to run instead. */
     function openTsunami(){ const t=tsunamiCase(); if(!t||!epi) return false;
-      const T=window.IntMapTsunami;
-      if(T&&T.open){ try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm }); return true; }catch(_){} }
-      /* the propagation model is not installed in this build — the inundation model still is */
-      const D2=window.IntMapDisaster; if(!D2||!D2.open) return false;
-      try{ D2.open({ lng:epi[0], lat:epi[1], hazard:'tsunami', waveH:t.waveM }); }catch(_){ return false; }
+      const T=window.IntMapTsunami; if(!T||!T.open) return false;
+      try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
     function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;

@@ -24,6 +24,9 @@ window.IntMapTsunamiWorker=(function(){
       it.onmessage=(ev)=>{
         const m=ev.data||{}; const j=jobs.get(m.id); if(!j) return;
         if(m.type==='frames'){ try{ j.onFrames&&j.onFrames(m.frames,m.nFrames,!!m.done); }catch(_){} return; }
+        /* (#R197) the worker builds the model too — the sea floor, the fault and the initial surface —
+           so it reports the finished model before the first time step rather than being handed one. */
+        if(m.type==='model'){ try{ j.onModel&&j.onModel(m); }catch(_){} return; }
         if(m.type==='progress'){ try{ j.onProgress&&j.onProgress(m.pct,m.frames,m.nFrames); }catch(_){} return; }
         if(m.type==='done'){ jobs.delete(m.id); try{ j.res(m); }catch(_){} return; }
         if(m.type==='aborted'){ jobs.delete(m.id); try{ j.res(null); }catch(_){} return; }
@@ -39,14 +42,17 @@ window.IntMapTsunamiWorker=(function(){
 
   return {
     available:()=>!!worker(),
-    /* Run one model. `o` carries the grid, the sea floor and the initial surface; the two callbacks
-       are called as the run proceeds. Resolves with the analysis fields, or null if it was aborted. */
-    run(o,onFrames,onProgress){
+    /* Run one model. `o` carries the grid, the bundled sea-floor image and the source parameters; the
+       callbacks are called as the run proceeds. Resolves with the analysis fields, or null if aborted.
+       ⚠ (#R197) the bathymetry buffer is TRANSFERRED, so the caller must hand over a copy it does not
+       need again — js/bathymetry.js keeps the master and slices a fresh view per run. */
+    run(o,onFrames,onProgress,onModel){
       const it=worker(); if(!it) return null;
       const id=++seq;
-      const p=new Promise((res,rej)=>{ jobs.set(id,{res,rej,onFrames,onProgress}); });
+      const p=new Promise((res,rej)=>{ jobs.set(id,{res,rej,onFrames,onProgress,onModel}); });
       const msg=Object.assign({type:'run',id},o);
-      try{ it.postMessage(msg,[o.h,o.eta0]); }
+      const xfer=[]; try{ if(o.bathy&&o.bathy.rgb&&o.bathy.rgb.buffer) xfer.push(o.bathy.rgb.buffer); }catch(_){}
+      try{ it.postMessage(msg,xfer); }
       catch(_){ jobs.delete(id); return null; }
       return { id, promise:p };
     },

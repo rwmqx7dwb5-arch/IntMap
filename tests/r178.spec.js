@@ -75,48 +75,16 @@ test('the STARTUP view holds the viewpoint through a real tilt drag (#R178)', as
   expect(r.pitchStep, 'the tilt must never step').toBeLessThan(12);
 });
 
-/* ── ② every projection × zoom, swept through the WHOLE tilt range ─────────────────────────────
-   The drift must be zero everywhere — including the two bands #R177 never measured (globe z1.7 and
-   flat z1.7) — and the pitch must come to rest rather than jumping into the disconnected region of
-   feasible cameras that exists past the horizon (measured before the fix: 76.7° → 140° in one
-   frame, with the eye held in both, which is 「挙動もぎこちない」 exactly). */
-for (const c of [{ proj: 'globe', z: 1.7, tag: 'globe z1.7 (STARTUP)', sphere: true },
-                 { proj: 'globe', z: 3, tag: 'globe z3', sphere: true },
-                 { proj: 'globe', z: 6, tag: 'globe z6', sphere: true },
-                 { proj: 'globe', z: 13, tag: 'globe z13', sphere: false },
-                 { proj: 'mercator', z: 1.7, tag: 'flat z1.7 (STARTUP)', sphere: false },
-                 { proj: 'mercator', z: 6, tag: 'flat z6', sphere: false }]) {
-  test(`the viewpoint is held through the whole 0-180° range — ${c.tag} (#R178)`, async ({ page }) => {
-    test.setTimeout(240000);
-    await boot(page);
-    await page.evaluate(installCameraRuler);
-    const r = await page.evaluate(async (cc) => {
-      const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
-      window.IntMapTilt.set(true);
-      m.setProjection({ type: cc.proj });
-      m.jumpTo({ center: [10, 20], zoom: cc.z, pitch: 0, bearing: 0 });
-      await wait(700);
-      const E0 = window.__eye();
-      let drift = 0, step = 0, pitchStep = 0, reached = 0, prev = E0, prevP = m.getPitch();
-      for (let p = 2; p <= 178; p += 2) {
-        m.setPitch(p); await wait(28);
-        const E = window.__eye(); if (!E) break;
-        drift = Math.max(drift, window.__gap(E0, E));
-        step = Math.max(step, window.__gap(prev, E));
-        pitchStep = Math.max(pitchStep, Math.abs(m.getPitch() - prevP));
-        reached = Math.max(reached, m.getPitch());
-        prevP = m.getPitch(); prev = E;
-      }
-      return { space: E0.space, alt0: E0.alt, drift, step, pitchStep, reached };
-    }, c);
-    expect(r.space).toBe(c.sphere ? 'sphere' : 'merc');
-    expect(r.drift, 'the viewpoint must not move at ANY tilt').toBeLessThan(2);
-    expect(r.step, 'and must not step between tilts').toBeLessThan(2);
-    // asking for +2° may be granted in full or refused, never answered with a leap
-    expect(r.pitchStep, 'the tilt saturates, it does not jump to the far-side solutions').toBeLessThan(4);
-    expect(r.reached, 'and some tilt is always available').toBeGreaterThan(15);
-  });
-}
+/* ⚠ (#R197) THE VIEWPOINT SWEEP THAT WAS HERE IS GONE — 「何重にもテストとか意味がない」.
+   r178 swept 6 cases through the 0-180° range.
+   Five files swept the same invariant — "tilting does not move the viewpoint" — because it was
+   re-reported five rounds running, and each round added its own sweep instead of extending the one
+   before it. tests/r179.spec.js now carries all of them: it drives a REAL POINTER DRAG rather than
+   the API (and #R179 is the round that found the API path was never the broken one), it covers both
+   projections from z1.7 to z18 plus the 69°N case that used to live in tests/r177, and it asserts
+   drift, inter-frame stepping, inertia, tilt saturation and the 90° crossing in one place.
+   The copies were DELETED, not skipped: a disabled test is a slower test that proves nothing. */
+
 
 /* ── ③ the zoom floor is the tilt setting's, and it is handed back ──────────────────────────────
    Holding the eye on a sphere spends the zoom, and the app's own floor of 0 is what stopped the

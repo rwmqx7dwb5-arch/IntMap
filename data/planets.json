@@ -1,0 +1,85 @@
+{
+  "built": "2026-08-06T20:14:05.819Z",
+  "textures": {
+    "sun": {
+      "file": "data/planets/sun.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 822427,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_sun.jpg"
+    },
+    "mercury": {
+      "file": "data/planets/mercury.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 872555,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_mercury.jpg"
+    },
+    "venus": {
+      "file": "data/planets/venus.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 885075,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_venus_surface.jpg"
+    },
+    "earth": {
+      "file": "data/planets/earth.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 463087,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg"
+    },
+    "moon": {
+      "file": "data/planets/moon.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 1053869,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_moon.jpg"
+    },
+    "mars": {
+      "file": "data/planets/mars.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 750547,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_mars.jpg"
+    },
+    "jupiter": {
+      "file": "data/planets/jupiter.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 498976,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg"
+    },
+    "saturn": {
+      "file": "data/planets/saturn.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 199916,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_saturn.jpg"
+    },
+    "uranus": {
+      "file": "data/planets/uranus.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 77751,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg"
+    },
+    "neptune": {
+      "file": "data/planets/neptune.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 241580,
+      "source": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg"
+    }
+  },
+  "names": {
+    "mercury": 599,
+    "venus": 700,
+    "moon": 700,
+    "mars": 700,
+    "pluto": 73
+  },
+  "textureSource": "Solar System Scope planetary textures (CC BY 4.0), assembled from NASA/JPL/USGS imagery",
+  "nameSource": "USGS Gazetteer of Planetary Nomenclature (IAU-approved names, public domain)",
+  "keptPerBody": 700
+}

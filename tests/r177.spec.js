@@ -18,122 +18,27 @@ const boot = async page => {
   await page.waitForTimeout(1200);
 };
 
-/* ── ① 「視点の位置を変えるなと言っているのに、変わる。高度が明らかに変わっている」 ────────────
-   The FIFTH report. Measured on the #R176 build with the ruler above:
+/* ⚠ (#R197) THE VIEWPOINT SWEEP THAT WAS HERE IS GONE — 「何重にもテストとか意味がない」.
+   r177 swept 7 cases for viewpoint hold; #R175's dolly guard survives in r179.
+   Five files swept the same invariant — "tilting does not move the viewpoint" — because it was
+   re-reported five rounds running, and each round added its own sweep instead of extending the one
+   before it. tests/r179.spec.js now carries all of them: it drives a REAL POINTER DRAG rather than
+   the API (and #R179 is the round that found the API path was never the broken one), it covers both
+   projections from z1.7 to z18 plus the 69°N case that used to live in tests/r177, and it asserts
+   drift, inter-frame stepping, inertia, tilt saturation and the 90° crossing in one place.
+   The copies were DELETED, not skipped: a disabled test is a slower test that proves nothing. */
 
-       globe z3  Tokyo   drift 7,115 km   eye altitude 8,573 km → 1,948 km during one drag
-       globe z6  Tokyo         475 km                 1,072 km →   610 km
-       globe z10 Tokyo        27.6 km                  67.0 km →  39.4 km
-       flat  z6  Tromsø       64.4 km                   453 km →   388 km
-       z12 Tokyo               193 m                 16,522 m → 16,588 m
 
-   …while the ruler #R176 shipped read 0 m for every one of them, because it WAS the fix. */
-for (const c of [{ proj: 'globe', z: 3, lng: 139.767, lat: 35.681, tag: 'globe z3 Tokyo' },
-                 { proj: 'globe', z: 6, lng: 139.767, lat: 35.681, tag: 'globe z6 Tokyo' },
-                 { proj: 'globe', z: 10, lng: 139.767, lat: 35.681, tag: 'globe z10 Tokyo' },
-                 { proj: 'globe', z: 12, lng: 139.767, lat: 35.681, tag: 'globe z12 Tokyo' },
-                 { proj: 'globe', z: 6, lng: 15.0, lat: 69.65, tag: 'globe z6 Tromso' },
-                 { proj: 'mercator', z: 6, lng: 15.0, lat: 69.65, tag: 'flat z6 Tromso' },
-                 { proj: 'mercator', z: 12, lng: 139.767, lat: 35.681, tag: 'flat z12 Tokyo' }]) {
-  test(`unlimited tilt holds the viewpoint still — ${c.tag}`, async ({ page }) => {
-    test.setTimeout(180000);
-    await boot(page);
-    await page.evaluate(installCameraRuler);
-    const r = await page.evaluate(async (cc) => {
-      const m = window.__imap, el = m.getCanvasContainer();
-      const frame = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
-      const b = el.getBoundingClientRect();
-      const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height / 2);
-      const fire = (t, type, x, y, buttons) => t.dispatchEvent(new MouseEvent(type,
-        { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons, ctrlKey: true, view: window }));
-      window.IntMapTilt.set(false);
-      m.setProjection({ type: cc.proj });
-      m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
-      await frame(); await frame();
-      window.IntMapTilt.set(true);
-      m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
-      await frame(); await frame();
-      const E0 = window.__eye();
-      fire(el, 'mousedown', cx, cy, 1); await frame();
-      let y = cy, prev = E0, drift = 0, jump = 0, altMin = E0.alt, altMax = E0.alt;
-      for (let i = 0; i < 18; i++) {
-        y -= 6; fire(document, 'mousemove', cx, y, 1); await frame();
-        const E = window.__eye();
-        drift = Math.max(drift, window.__gap(E0, E));
-        jump = Math.max(jump, window.__gap(prev, E));
-        altMin = Math.min(altMin, E.alt); altMax = Math.max(altMax, E.alt);
-        prev = E;
-      }
-      fire(document, 'mouseup', cx, y, 0); await frame();
-      return { space: E0.space, drift, jump, alt0: E0.alt, altMin, altMax, endPitch: m.getPitch() };
-    }, c);
-    expect(r.endPitch, 'the drag really tilted the map').toBeGreaterThan(30);
-    expect(r.drift, 'the viewpoint must not move').toBeLessThan(1);
-    expect(r.jump, 'and it must not jump between frames').toBeLessThan(1);
-    // 「高度が明らかに変わっている」 — the altitude is part of the viewpoint, stated separately
-    // because it is the half of the complaint a horizontal-only check would pass.
-    expect(Math.abs(r.altMax - r.alt0), 'the eye altitude must not climb').toBeLessThan(1);
-    expect(Math.abs(r.alt0 - r.altMin), 'the eye altitude must not fall').toBeLessThan(1);
-  });
-}
+/* ⚠ (#R197) THE VIEWPOINT SWEEP THAT WAS HERE IS GONE — 「何重にもテストとか意味がない」.
+   r177 swept 7 cases for stepping through 0-180°.
+   Five files swept the same invariant — "tilting does not move the viewpoint" — because it was
+   re-reported five rounds running, and each round added its own sweep instead of extending the one
+   before it. tests/r179.spec.js now carries all of them: it drives a REAL POINTER DRAG rather than
+   the API (and #R179 is the round that found the API path was never the broken one), it covers both
+   projections from z1.7 to z18 plus the 69°N case that used to live in tests/r177, and it asserts
+   drift, inter-frame stepping, inertia, tilt saturation and the 90° crossing in one place.
+   The copies were DELETED, not skipped: a disabled test is a slower test that proves nothing. */
 
-/* ── ①b 「挙動もぎこちない」 — the other half of the report ──────────────────────────────────────
-   Holding the viewpoint is not enough on its own: the FRAME-TO-FRAME step has to stay small even
-   where the eye cannot be held. On the sphere it cannot be, past a certain tilt — the pivot the eye
-   implies leaves ±85.051° and the zoom that goes with it leaves the map's range — and the first
-   version of this round's fallback simply reverted to the proposal's own camera there, which is a
-   different camera from the frame before: measured on a full 0-180° sweep at globe z4, a 32,010 km
-   single-frame jump at the moment the exact solution went out of range.
-   So the answer degrades along a ladder whose rungs agree at their boundaries, and this sweeps the
-   WHOLE tilt range to prove there is no step anywhere in it. */
-for (const c of [{ proj: 'globe', z: 3, tag: 'globe z3' },
-                 { proj: 'globe', z: 4, tag: 'globe z4' },
-                 { proj: 'globe', z: 8, tag: 'globe z8' },
-                 { proj: 'globe', z: 13, tag: 'globe z13' },
-                 { proj: 'mercator', z: 6, tag: 'flat z6' }]) {
-  test(`tilting through the whole 0-180° range never steps — ${c.tag}`, async ({ page }) => {
-    test.setTimeout(240000);
-    await boot(page);
-    await page.evaluate(installCameraRuler);
-    const r = await page.evaluate(async (cc) => {
-      const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
-      window.IntMapTilt.set(true);
-      m.setProjection({ type: cc.proj });
-      m.jumpTo({ center: [139.767, 35.681], zoom: cc.z, pitch: 0, bearing: 0 });
-      await wait(500);
-      const E0 = window.__eye();
-      let prev = E0, heldTo = 0;
-      const steps = [];
-      for (let p = 2; p <= 178; p += 2) {
-        m.setPitch(p); await wait(45);
-        const E = window.__eye();
-        steps.push({ p, j: window.__gap(prev, E), alt: E.alt });
-        if (window.__gap(E0, E) < 1) heldTo = p;
-        prev = E;
-      }
-      /* only while the viewpoint is still ABOVE THE SURFACE. Past the reach of the sphere's
-         parameterisation the camera keeps descending, and once it is inside the Earth "where the
-         viewpoint is" has stopped denoting anything a user can see — measuring smoothness there
-         would be measuring noise. */
-      const real = steps.filter(s => s.alt >= 0);
-      const moving = real.filter(s => s.j > 1).map(s => s.j).sort((x, y) => x - y);
-      const worst = real.reduce((a, s) => (s.j > a.j ? s : a), real[0] || { j: 0, p: 0 });
-      return { space: E0.space, alt0: Math.round(E0.alt), heldTo, atJump: worst.p, jump: worst.j,
-               median: moving.length ? moving[Math.floor(moving.length / 2)] : 0, aboveGround: real.length };
-    }, c);
-    // the eye is held EXACTLY as far as the parameterisation reaches…
-    expect(r.heldTo, `${c.tag}: held the viewpoint only to pitch ${r.heldTo}`).toBeGreaterThanOrEqual(60);
-    /* …and past that it still MOVES rather than jumps. Past the reach the camera genuinely has to
-       travel — on a sphere the eye cannot stay put once the zoom the geometry wants is below the
-       map's minimum, which at globe z4 is pitch 86 — so the invariant is not "small" but "no
-       discontinuity": no single frame may be far out of line with the rest of the sweep. The stepped
-       version failed this by 32x (8,956 km against a ~280 km ramp). Frames that do not move at all
-       are excluded from the median, since they are the held part of the range. */
-    if (r.median > 0)
-      expect(r.jump, `${c.tag}: worst step ${Math.round(r.jump)} m at pitch ${r.atJump} vs median ${Math.round(r.median)} m`)
-        .toBeLessThan(r.median * 4);
-  });
-}
 
 /* ── ② the readout's viewpoint IS the renderer's viewpoint ──────────────────────────────────────
    camera.eye() feeds the always-on 「視点」 chip, the 3-D solid shader's camera, and the tilt

@@ -114,7 +114,11 @@ test('R193 ⑧ nothing large is fetched on the boot path that nobody is waiting 
 test('R193 ⑨ the sub-fault source preserves the moment the magnitude implies', async () => {
   /* The taper weights are re-normalised so the MEAN slip is the Wells & Coppersmith value: a source
      that quietly changed the magnitude would be a physics bug hiding in a cosmetic change. */
-  const m = read('js/tsunami.js');
+  /* ⚠ (#R197) THE SOURCE MOVED, THE PROPERTY DID NOT. Okada and the sub-fault grid are evaluated in
+     src/tsunami-worker.js now (a global grid is 921,600 cells and none of that belongs on the page),
+     so this reads the worker. tests/r197-checks.test.mjs additionally RUNS the normalisation and
+     checks that area × slip gives back the magnitude, which is what this assertion is protecting. */
+  const m = read('src/tsunami-worker.js');
   assert.match(m, /const norm=\(SUB_S\*SUB_W\)\/Math\.max\(1e-9,wsum\);/, 'the weights are normalised');
   /* recompute the normalisation the same way the module does and check it is exactly mean-preserving */
   const SUB_S = 8, SUB_W = 3;
