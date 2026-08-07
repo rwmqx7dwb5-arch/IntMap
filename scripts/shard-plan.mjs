@@ -171,7 +171,14 @@ if (has('--update')) {
     const xml = readFileSync(f, 'utf8');
     /* JUnit from Playwright: <testcase name="…" classname="tests/x.spec.js:12:1 › …" time="3.4"> */
     for (const m of xml.matchAll(/classname="([^"]*?\.spec\.js)[^"]*"[^>]*?time="([\d.]+)"/g)) {
-      acc[m[1]] = (acc[m[1]] || 0) + Math.round(+m[2]);
+      /* ⚠ (#R201) NORMALISE THE KEY. Playwright writes the classname RELATIVE TO testDir, so what
+         comes out of a CI junit is `r179.spec.js` while `specs()` — and therefore every lookup in
+         plan() and every entry in the committed table — says `tests/r179.spec.js`. An `--update`
+         that wrote the raw form produced a file in which NOTHING matched: every spec would be
+         charged p75 and the packing would be a guess with a measurement sitting next to it.
+         Measured on the twelve fragments of a real green main run, which is how this was found. */
+      const key = m[1].startsWith('tests/') ? m[1] : 'tests/' + m[1].replace(/^\.?\//, '');
+      acc[key] = (acc[key] || 0) + Math.round(+m[2]);
     }
   }
   if (!Object.keys(acc).length) { console.error('shard-plan --update: no testcase timings found'); process.exit(1); }

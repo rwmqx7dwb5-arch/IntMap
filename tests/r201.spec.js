@@ -124,21 +124,22 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
     const wrap = (x) => ((x % 360) + 540) % 360 - 180;
     const now = new Date(), utc = now.getUTCHours() + now.getUTCMinutes() / 60;
     const anti = wrap(wrap((12 - utc) * 15) + 180);
-    /* ⚠ POINT THE CAMERA AT THE PLACE BEING MEASURED. The antisolar meridian is wherever the clock
-       puts it, and on a GLOBE the far side of the planet still projects to a screen position — so a
-       fixed camera samples empty space whenever the test happens to run at the wrong hour, reads 0,
-       and blames the basemap. (Inherited from #R200's version of this measurement, where it was a
-       latent flake rather than a visible one.) */
-    m.jumpTo({ center: [anti, -10], zoom: 1.2, pitch: 0, bearing: 0 });
-    await new Promise((r) => setTimeout(r, 1200));
-    await settle();
+    /* ⚠ MERCATOR, AND THE WHOLE WORLD IN ONE FRAME. Two things made the globe version of this
+       measurement unstable, and both are about WHERE the point is rather than about the effect:
+       the antisolar meridian is wherever the clock puts it, and on a globe the FAR SIDE of the
+       planet still projects to a screen position — so the sample can land on empty space (read 0)
+       or on the limb (read a fraction). Flat, at the widest zoom, the point being measured is on
+       screen at a fixed place at every hour of the day. CI measured 0.49 twice from that coupling
+       while this machine and production both give > 0.9. */
+    m.setProjection({ type: 'mercator' });
+    m.jumpTo({ center: [anti, 0], zoom: 1.1, pitch: 0, bearing: 0 });
     const sample = () => {
       const cv = m.getCanvas(), g = document.createElement('canvas');
       g.width = cv.width; g.height = cv.height;
       const cx = g.getContext('2d'); cx.drawImage(cv, 0, 0);
       const d = cx.getImageData(0, 0, cv.width, cv.height).data;
       const sx = cv.width / cv.clientWidth, sy = cv.height / cv.clientHeight;
-      const p = m.project([anti, -25]);
+      const p = m.project([anti, -20]);
       const c = Math.round(p.x * sx), r = Math.round(p.y * sy);
       if (!(r > 4 && c > 4 && r < cv.height - 4 && c < cv.width - 4)) return null;
       let s = 0, n = 0;
@@ -148,12 +149,24 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
     window.IntMapNightSide.setEnabled(false);
     await settle();
     const off = sample();
+    /* ⚠ WAIT FOR THE REBUILD, DO NOT TIME IT. `setEnabled(true)` schedules `consider()`, which builds
+       on the next IDLE (up to a 2.5 s fallback) and only then paints — so a fixed 1,500 ms is a test
+       of how fast the runner is, and on a loaded one it sampled a half-built effect: CI measured
+       0.567 three times while this machine and production both give > 0.9. Wait for the state the
+       assertion is about, then force the repaint. */
     window.IntMapNightSide.setEnabled(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    for (let i = 0; i < 120 && !window.IntMapNightSide.state().built; i++) await new Promise((r) => setTimeout(r, 250));
+    window.IntMapNightSide.refresh();
+    await new Promise((r) => setTimeout(r, 600));
     await settle();
     const on = sample();
-    return { anti: +anti.toFixed(1), on, off };
+    const built = window.IntMapNightSide.state().built;
+    /* put the projection back — ③ is about the ZOOM FLOOR, which is the globe's */
+    m.setProjection({ type: 'globe' });
+    await new Promise((r) => setTimeout(r, 800));
+    return { anti: +anti.toFixed(1), on, off, built };
   });
+  expect(px.built, 'the night side rebuilt after being switched back on').toBe(true);
   expect(px.off, 'the unshaded basemap has to be bright enough to measure against').toBeGreaterThan(60);
   expect(1 - px.on / px.off, `night side at ${px.anti}°: ${px.off} → ${px.on}`).toBeGreaterThan(0.9);
 
