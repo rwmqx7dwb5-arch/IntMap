@@ -2443,6 +2443,13 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 ホバー1回でモデル行列を11,000枚作ることになる）／
 `render.getRenderScale/setRenderScale`（描画解像度。Cesium 側の同じ量は `resolutionScale`）。
 
+**⚠ CI から main へは push できない（そして push すべきでもない）。** `Protect main` ルールセットは
+PRとステータスチェックを要求しバイパス実行者を持たない。#R195 以来コメントが約束していた
+「計測時間を commit するジョブ」は**原理的に作れない**——`tests/durations.json` /
+`tests/baseline.json` は**前回の実行の出力**であってソースではないので、**Actions キャッシュ**で運ぶ
+（`timings` が `actions/cache/save`、`browser` が `restore` して `--merge`）。既定ブランチのキャッシュは
+PR の実行から読めるので、向きが合っている。
+
 **⚠ 遠クリップ面は絵だけの設定ではない。** `getBounds()` の入力でもあるので、pitch 0 で伸ばすと
 `js/terrain-water.js` が**視界に合わせて張る**モデルが広がり、同じ 400 万 m³ が薄まって
 `tests/r176`「堤防で囲むと水が溜まる」が 4 m → 0.077 m になった（main では通る）。

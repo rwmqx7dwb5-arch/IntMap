@@ -185,8 +185,14 @@ test('R202 ③h the timing tables finally have a writer, and it cannot delete wh
   assert.match(bl, /has\('--merge'\)/, 'and so can baseline');
   assert.match(sp, /carried over/, 'a partial fragment set must not drop the specs it does not mention');
   assert.match(ci, /timings:/, 'and CI has the job the comment has been promising since #R195');
-  assert.match(ci, /contents: write/, 'which is the only job in the workflow that writes');
-  assert.match(ci, /\[skip ci\]/, 'and its commit does not start another run');
+  /* ⚠ AND IT DOES NOT COMMIT THEM. The first version pushed to main and came back GH013: the
+     «Protect main» ruleset requires a pull request and status checks and lists no bypass actors.
+     That rule is right, and a DERIVED measurement is the wrong thing to weaken it for — so the
+     tables travel by cache, which a pull-request run can read from the default branch. */
+  assert.doesNotMatch(ci, /git push origin HEAD:main/, 'nothing in CI pushes to main');
+  assert.match(ci, /actions\/cache\/save@v4/, 'the measured times are published as a cache');
+  assert.match(ci, /actions\/cache\/restore@v4[\s\S]{0,200}intmap-timings-/, 'and the browser job restores them');
+  assert.match(ci, /--merge _timecache\/durations\.json/, 'merging them into the committed table before planning');
 });
 
 test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice', () => {
