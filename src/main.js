@@ -135,6 +135,11 @@ import '../js/news-ui.js';
 import '../js/companies-ui.js';
 import '../js/tool-panel.js';
 import '../js/solid3d.js';
+/* (#R202) the orbit-point custom layer, behind IntMapGeoEngine.layers.addOrbit — the same shape as
+   solid3d.js: a MapLibre adapter implementation detail that only js/geo-engine.js reaches for. */
+import '../js/orbit-points.js';
+/* (#R202) the gesture-time render resolution — measured, mobile-only; see the file header. */
+import '../js/render-scale.js';
 import '../js/volume3d.js';
 import '../js/view-controls.js';
 import '../js/drone-nav.js';
@@ -217,7 +222,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm',
+  'satProto', 'tileWarm', 'orbitPoints', 'renderScale',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale'].filter((k) => !window[k]);

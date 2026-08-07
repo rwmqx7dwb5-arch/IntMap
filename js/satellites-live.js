@@ -150,6 +150,17 @@ window.IntMapModules.satellitesLive=function(HOST){
 
   const SRC='src-sats', LYR='lyr-sats', LBL='lyr-sats-lbl', HALO='lyr-sats-halo';
   const TRK_SRC='src-sat-track', TRK='lyr-sat-track', FOOT='lyr-sat-foot', FOOTLN='lyr-sat-foot-line';
+  /* ══ (#R202) …AND THE SAME OBJECTS, IN ORBIT ═══════════════════════════════════════════════════
+     「すべての地球周囲にある衛星をリアルタイムで実場所でアニメーションで見られるレイヤーを作って。」
+     The layers above draw each object at its SUB-SATELLITE POINT, which is where it is on the map
+     and not where it is. `ORB` is the same catalogue at its own altitude, through the engine's
+     orbit3d primitive (js/orbit-points.js on MapLibre, a PointPrimitiveCollection on Cesium): on the
+     globe the objects stand off the surface in a shell, the far side of the planet hides the ones
+     behind it, and the motion between propagations is carried by the RATE rather than by a step.
+     Both readings are kept, because they answer different questions — the dot in orbit is where the
+     spacecraft is, the icon on the ground is the place it is over, and the footprint belongs to the
+     second one. */
+  const ORB='lyr-sats-orbit';
   const ALL_LAYERS=[FOOT,FOOTLN,TRK,HALO,LYR,LBL];
   /* Above this many objects the names stop being drawn at all — see the label layer's filter. */
   const LABEL_MAX=600;
@@ -172,6 +183,10 @@ window.IntMapModules.satellitesLive=function(HOST){
   let visibleOnly=false;                   /* show only what is above the horizon from the map centre */
   let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
   let _diverged=0;                         /* (#R185) objects dropped this tick because SGP4 diverged on them */
+  /* (#R202) the orbit rendering: whether the engine can do it, whether the layer is in, and the
+     mercator/altitude triples the pick projects — kept here because the pick has to agree with what
+     the shader drew, and the shader's own copy lives on the GPU. */
+  let orbOn=false, orbAt=0, orbMercAlt=null, orbRate=null, orbIds=null;
   /* (#R185) called the FIRST time a catalogue lands, from whichever rung of the ladder answered, so
      the layer can go visible on the shipped copy instead of waiting out the network's timeouts. */
   let _onPrimed=null;
@@ -419,8 +434,23 @@ window.IntMapModules.satellitesLive=function(HOST){
         }
         let lit=null;
         if(sun){ try{ const f=SAT.shadowFraction(sun,pv.position); if(isFinite(f)) lit=(f<0.5); }catch(_){} }
+        /* ══ (#R202) WHERE IT WILL BE ONE SECOND FROM NOW — for free ═════════════════════════════
+           The orbit layer carries the motion between propagations from a RATE, and the rate has to
+           be in the same coordinates as the position. Propagating a second time would double the
+           catalogue's SGP4 bill (21 ms → 42 ms); the ECI velocity SGP4 already returned gives the
+           same answer to first order for nothing: advance the inertial position by v·1 s, advance
+           GMST by the Earth's own rotation over that second, and read the geodetic point again.
+           One extra eciToGeodetic per object, which is a few hundred nanoseconds. */
+        let lng2=lng, lat2=lat, alt2=gd.height;
+        if(pv.velocity){
+          try{
+            const g2=SAT.eciToGeodetic({x:pv.position.x+pv.velocity.x, y:pv.position.y+pv.velocity.y, z:pv.position.z+pv.velocity.z}, gmst+7.2921159e-5);
+            const a2=SAT.degreesLat(g2.latitude), o2=SAT.degreesLong(g2.longitude);
+            if(isFinite(a2)&&isFinite(o2)){ lat2=a2; lng2=o2; alt2=g2.height; }
+          }catch(_){}
+        }
         out.push({ id:s.id, name:s.name, intl:s.intl, epoch:s.epoch, deep:(s.satrec.method==='d'),
-          lng, lat, altKm:gd.height, velKmS:v, headingDeg:hdg,
+          lng, lat, altKm:gd.height, lng2, lat2, alt2Km:alt2, velKmS:v, headingDeg:hdg,
           eci:pv.position, eciV:pv.velocity, gmst,
           /* minutes per revolution, straight off the mean motion the elements carry */
           periodMin:s.satrec.no?(2*Math.PI/s.satrec.no):null,
@@ -596,8 +626,47 @@ window.IntMapModules.satellitesLive=function(HOST){
         'text-allow-overlap':false, 'text-optional':true },
         paint:{ 'text-color':'#ffd23f', 'text-halo-color':'rgba(0,0,0,0.85)', 'text-halo-width':1.4,
                 'text-opacity':opacity } });
+      /* (#R202) the orbit cloud, added LAST so it draws over the map and is depth-tested against the
+         globe the renderer has already drawn. An engine that cannot do it says so — the ground
+         layers above are then the whole of the picture, which is what every engine had before. */
+      if(!orbOn){
+        try{ orbOn=!!E.layers.addOrbit(ORB); }catch(_){ orbOn=false; }
+      }
       return true;
     }catch(e){ lastErr=String(e&&e.message||e); return false; }
+  }
+  /* the colour and size each object is drawn with in orbit — the same regime palette the ground
+     halo uses, so the two readings of one catalogue cannot disagree */
+  const ORB_RGB={ geo:[255,138,61], meo:[143,123,255], heo:[255,92,138], leo:[58,209,255] };
+  const ORB_PX={ geo:5.2, meo:4.6, heo:4.6, leo:3.8 };
+  function paintOrbit(list){
+    if(!orbOn) return;
+    const n=list.length;
+    const pack=new Array(n);
+    const ma=new Float32Array(n*3), rt=new Float32Array(n*3), ids=new Array(n);
+    for(let i=0;i<n;i++){
+      const f=list[i], b=bandOf(f), c=ORB_RGB[b]||ORB_RGB.leo;
+      const sel=(f.id===selected);
+      const a=Math.round(255*opacity*(f.sunlit===false?0.42:0.92));
+      pack[i]={ lng:f.lng, lat:f.lat, altKm:f.altKm, lng2:f.lng2, lat2:f.lat2, alt2Km:f.alt2Km,
+        rgba:sel?[255,255,255,Math.max(a,200)]:[c[0],c[1],c[2],a], size:sel?(ORB_PX[b]+4):(ORB_PX[b]||3.8) };
+      /* the pick's own copy, in the coordinates layers.projectMercAlt takes */
+      const m=_merc(f.lng,f.lat), m2=_merc(f.lng2,f.lat2);
+      ma[i*3]=m[0]; ma[i*3+1]=m[1]; ma[i*3+2]=f.altKm*1000;
+      let dx=m2[0]-m[0]; if(dx>0.5) dx-=1; else if(dx<-0.5) dx+=1;
+      rt[i*3]=dx; rt[i*3+1]=m2[1]-m[1]; rt[i*3+2]=(f.alt2Km-f.altKm)*1000;
+      ids[i]=f.id;
+    }
+    orbAt=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+    orbMercAlt=ma; orbRate=rt; orbIds=ids;
+    try{ GE().layers.setOrbit(ORB,{ list:pack, t0:orbAt, visible:on, opacity }); }catch(_){}
+  }
+  /* mercator [0..1], unclamped in y — the same map js/orbit-points.js uses, restated here because
+     the pick must land on the pixel the shader drew and a second definition would drift from it */
+  function _merc(lng,lat){
+    const x=(180+lng)/360;
+    const p=Math.max(-89.9999,Math.min(89.9999,lat))*Math.PI/180;
+    return [x,(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+p/2)))/360];
   }
   function shown(){
     if(!visibleOnly) return fixes;
@@ -621,6 +690,7 @@ window.IntMapModules.satellitesLive=function(HOST){
           hdg:(f.headingDeg==null?0:Math.round(f.headingDeg)), band:bandOf(f), lbl:named,
           sel:(f.id===selected)?1:0 } })) });
     }catch(_){}
+    paintOrbit(list);
     paintSelection();
     try{ if(window.IntMapSatPanel&&window.IntMapSatPanel.isOpen()) window.IntMapSatPanel.refresh(); }catch(_){}
   }
@@ -642,6 +712,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       if(E.layers.has(LYR)) E.layers.setPaint(LYR,'icon-opacity',['*',opacity,['case',['==',['get','sunlit'],false],0.55,1]]);
       if(E.layers.has(HALO)) E.layers.setPaint(HALO,'circle-opacity',['*',opacity,['case',['==',['get','sunlit'],false],0.35,0.72]]);
       if(E.layers.has(LBL)) E.layers.setPaint(LBL,'text-opacity',opacity);
+      if(orbOn) E.layers.setOrbit(ORB,{opacity});          /* (#R202) the cloud follows the same slider */
     }catch(_){}
     return opacity; }
 
@@ -650,13 +721,41 @@ window.IntMapModules.satellitesLive=function(HOST){
      "click the thing you can see" means the same in both layers. */
   function pickAt(pt,radiusPx){
     const E=GE(); if(!E||!pt) return null;
-    const R=radiusPx||18, list=shown(); let best=null, bestD=R*R;
+    const R=radiusPx||18;
+    /* ⚠ (#R202) THE PICK FOLLOWS THE DRAWING. While the orbit cloud is up, the pixel an object
+       occupies is its position AT ALTITUDE, which on a globe is nowhere near its ground point — the
+       #R184 defect the aircraft layer had, one level up. layers.projectMercAlt runs the SAME
+       matrix the shader used over the whole array at once (a per-point projectAltitude would build
+       eleven thousand model matrices in one mouse move), and the rate is applied here too so the
+       answer matches the frame on screen rather than the last propagation. */
+    if(orbOn&&orbMercAlt&&orbIds){
+      const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      const dt=Math.max(0,Math.min(4,(now-orbAt)/1000));
+      const n=orbIds.length, q=new Float32Array(n*3);
+      for(let i=0;i<n;i++){
+        q[i*3]=orbMercAlt[i*3]+orbRate[i*3]*dt;
+        q[i*3+1]=orbMercAlt[i*3+1]+orbRate[i*3+1]*dt;
+        q[i*3+2]=orbMercAlt[i*3+2]+orbRate[i*3+2]*dt;
+      }
+      let scr=null; try{ scr=E.layers.projectMercAlt(q); }catch(_){}
+      if(scr){
+        let best=null, bestD=R*R;
+        for(let i=0;i<n;i++){
+          const x=scr[i*2], y=scr[i*2+1];
+          if(!isFinite(x)||!isFinite(y)) continue;
+          const dx=x-pt.x, dy=y-pt.y, d=dx*dx+dy*dy;
+          if(d<bestD){ bestD=d; best=orbIds[i]; }
+        }
+        if(best!=null) return best;
+      }
+    }
+    const list=shown(); let best=null, bestD=R*R;
     for(let i=0;i<list.length;i++){
       const f=list[i];
       let p=null; try{ p=E.coords.project([f.lng,f.lat]); }catch(_){}
       if(!p) continue;
-      const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
-      if(q<bestD){ bestD=q; best=f; }
+      const dx=p.x-pt.x, dy=p.y-pt.y, q2=dx*dx+dy*dy;
+      if(q2<bestD){ bestD=q2; best=f; }
     }
     return best?best.id:null;
   }
@@ -756,6 +855,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     unwire();
     const E=GE(); if(!E) return true;
     try{ ALL_LAYERS.forEach(id=>{ if(E.layers.has(id)) E.layers.setVisible(id,false); }); }catch(_){}
+    try{ if(orbOn) E.layers.setOrbit(ORB,{visible:false}); }catch(_){}
     try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el&&el.dataset.owner==='sats'){ el.style.display='none'; el.dataset.owner=''; } }catch(_){}
     try{ const P=window.IntMapSatPanel; if(P&&P.isOpen()) P.close(); }catch(_){}
     return true;

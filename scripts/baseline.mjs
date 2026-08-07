@@ -65,6 +65,26 @@ function parse(paths) {
   return out;
 }
 
+/* (#R202) the same missing half as shard-plan's — union the per-shard fragments a main run uploads,
+   so main's own last result is what a branch is compared against instead of a hand-pasted snapshot. */
+if (has('--merge')) {
+  const list = files('--merge');
+  const old = existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : { tests: {} };
+  const tests = { ...(old.tests || {}) };
+  let read = 0, n = 0;
+  for (const f of list) {
+    if (!existsSync(f)) continue;
+    let j = null;
+    try { j = JSON.parse(readFileSync(f, 'utf8')); } catch (_) { continue; }
+    read++;
+    for (const [k, v] of Object.entries(j.tests || {})) { tests[k] = v; n++; }
+  }
+  if (!read) { console.error('baseline --merge: no fragments'); process.exit(1); }
+  writeFileSync(FILE, JSON.stringify({ ref: 'main', tests }, null, 1) + '\n');
+  console.log(`baseline: merged ${read} fragment(s), ${n} results (${Object.keys(tests).length} known)`);
+  process.exit(0);
+}
+
 if (has('--update')) {
   const got = parse(files('--update'));
   if (!Object.keys(got).length) { console.error('baseline --update: no <testcase> found'); process.exit(1); }
