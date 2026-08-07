@@ -1348,6 +1348,230 @@
   "tests/r172.spec.js:65:1": {
    "status": "passed",
    "time": 39.4
+  },
+  "r182-cesium.spec.js": {
+   "status": "passed",
+   "time": 211.934
+  },
+  "r184-cesium-fs.spec.js": {
+   "status": "passed",
+   "time": 63.657
+  },
+  "r180-cesium.spec.js": {
+   "status": "passed",
+   "time": 2.993
+  },
+  "r181-cesium.spec.js": {
+   "status": "passed",
+   "time": 3.235
+  },
+  "r145.spec.js": {
+   "status": "passed",
+   "time": 0.004
+  },
+  "r157.spec.js": {
+   "status": "passed",
+   "time": 0.003
+  },
+  "r171.spec.js": {
+   "status": "passed",
+   "time": 33.508
+  },
+  "r174.spec.js": {
+   "status": "passed",
+   "time": 21.788
+  },
+  "r197.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r201.spec.js": {
+   "status": "passed",
+   "time": 5.033
+  },
+  "r146.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r161.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r163.spec.js": {
+   "status": "passed",
+   "time": 0.007
+  },
+  "r169.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r179-engine.spec.js": {
+   "status": "passed",
+   "time": 20.29
+  },
+  "r186.spec.js": {
+   "status": "passed",
+   "time": 12.082
+  },
+  "r195.spec.js": {
+   "status": "passed",
+   "time": 26.897
+  },
+  "monitors.spec.js": {
+   "status": "passed",
+   "time": 1.747
+  },
+  "r142.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r164.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r173.spec.js": {
+   "status": "passed",
+   "time": 166.576
+  },
+  "r178-imagery.spec.js": {
+   "status": "passed",
+   "time": 17.09
+  },
+  "r179-imagery.spec.js": {
+   "status": "passed",
+   "time": 33.481
+  },
+  "r149.spec.js": {
+   "status": "passed",
+   "time": 0.004
+  },
+  "r159.spec.js": {
+   "status": "passed",
+   "time": 5.852
+  },
+  "r166.spec.js": {
+   "status": "passed",
+   "time": 0.002
+  },
+  "r167.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r179.spec.js": {
+   "status": "passed",
+   "time": 86.346
+  },
+  "r191.spec.js": {
+   "status": "passed",
+   "time": 8.957
+  },
+  "r192.spec.js": {
+   "status": "passed",
+   "time": 2.943
+  },
+  "r200.spec.js": {
+   "status": "passed",
+   "time": 13.691
+  },
+  "internal-qa.spec.js": {
+   "status": "passed",
+   "time": 0.126
+  },
+  "r143.spec.js": {
+   "status": "passed",
+   "time": 0.006
+  },
+  "r184-routing.spec.js": {
+   "status": "passed",
+   "time": 184.478
+  },
+  "r185.spec.js": {
+   "status": "passed",
+   "time": 5.625
+  },
+  "security.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r151.spec.js": {
+   "status": "passed",
+   "time": 0.006
+  },
+  "r160.spec.js": {
+   "status": "passed",
+   "time": 1.654
+  },
+  "r170.spec.js": {
+   "status": "passed",
+   "time": 18.776
+  },
+  "r176.spec.js": {
+   "status": "passed",
+   "time": 10.606
+  },
+  "r178.spec.js": {
+   "status": "passed",
+   "time": 8.284
+  },
+  "r196.spec.js": {
+   "status": "passed",
+   "time": 19.764
+  },
+  "smoke.spec.js": {
+   "status": "passed",
+   "time": 0.258
+  },
+  "r147.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r156.spec.js": {
+   "status": "passed",
+   "time": 0.053
+  },
+  "r165.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r172.spec.js": {
+   "status": "passed",
+   "time": 18.164
+  },
+  "r177.spec.js": {
+   "status": "passed",
+   "time": 17.099
+  },
+  "r184-drone.spec.js": {
+   "status": "passed",
+   "time": 12.943
+  },
+  "r184-satellites.spec.js": {
+   "status": "passed",
+   "time": 13.896
+  },
+  "r193.spec.js": {
+   "status": "passed",
+   "time": 10.327
+  },
+  "r150.spec.js": {
+   "status": "passed",
+   "time": 0.001
+  },
+  "r168.spec.js": {
+   "status": "passed",
+   "time": 0.004
+  },
+  "r175.spec.js": {
+   "status": "passed",
+   "time": 15.58
+  },
+  "r180-imagery.spec.js": {
+   "status": "passed",
+   "time": 7.291
+  },
+  "r184-imagery.spec.js": {
+   "status": "passed",
+   "time": 8.143
   }
  }
 }
