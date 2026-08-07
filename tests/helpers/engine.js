@@ -35,6 +35,14 @@ export async function seedEngine(page, engine) {
 
 /**
  * Boot the app on `engine` in one page load and wait until it can draw.
+ *
+ * ⚠ …AND IN TWO WHEN THE PAGE IS ALREADY RUNNING THE OTHER ONE. `tests/r182-cesium.spec.js ①a/①b`
+ * boot BOTH engines inside a single test, on a single page, because the whole test is a comparison
+ * between them. The seed above only writes the key if nothing has — which is the property that keeps
+ * "switch back to MapLibre" honest — so a second call would have been a no-op and the wait below
+ * would have timed out. CI found it (two tests, 90 s timeout, three attempts each); the seeding is
+ * for a FRESH page, and an already-booted one is switched the way the Settings panel switches it:
+ * write the key, reload. That is the case the extra load was always genuinely for.
  * @param {import('@playwright/test').Page} page
  * @param {'cesium'|'maplibre'} engine
  * @param {{url?: string, timeout?: number}} [opts]
@@ -42,8 +50,20 @@ export async function seedEngine(page, engine) {
 export async function bootEngine(page, engine, opts) {
   const url = (opts && opts.url) || '/?rafshim=1';
   const timeout = (opts && opts.timeout) || 120_000;
-  await seedEngine(page, engine);
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const live = await page.evaluate(() => {
+    try { return (window.IntMapGeoEngine && typeof window.IntMapGeoEngine.id === 'function') ? window.IntMapGeoEngine.id() : null; }
+    catch (_) { return null; }
+  }).catch(() => null);
+  /* ⚠ NO EARLY-OUT WHEN IT IS ALREADY THAT ENGINE. A caller that boots twice is asking for a fresh
+     page, not for a fast answer, and skipping the load would hand it whatever the last test left
+     behind. What this helper removes is the FIRST of two loads, nothing else. */
+  if (live) {
+    await page.evaluate((e) => { try { localStorage.setItem('intmap_engine', e); } catch (_) { /* ignore */ } }, engine);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  } else {
+    await seedEngine(page, engine);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+  }
   await page.waitForFunction((e) => !!window.__imap && !!window.IntMapGeoEngine
     && typeof window.IntMapGeoEngine.id === 'function' && window.IntMapGeoEngine.id() === e, engine, { timeout });
   await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, { timeout });

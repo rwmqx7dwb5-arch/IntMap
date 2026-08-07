@@ -170,6 +170,16 @@ test('r201 ④a no spec chooses its renderer with a second page load', () => {
       offenders.push(f + ': ' + m[0].slice(0, 60).replace(/\s+/g, ' '));
   }
   assert.deepEqual(offenders, [], 'boot the engine with tests/helpers/engine.js instead');
+  /* ⚠ AND THE HELPER STILL HANDLES THE CASE THE SECOND LOAD WAS REALLY FOR. tests/r182-cesium ①a/①b
+     boot BOTH engines inside one test on one page, because the test IS the comparison. The seed only
+     writes the key when nothing has (which is what keeps "switch back to MapLibre" honest), so an
+     already-booted page has to be switched the old way — write and reload. CI found this: two tests,
+     90 s timeout, three attempts each. */
+  const ENG = read('tests/helpers/engine.js');
+  assert.match(ENG, /const live = await page\.evaluate\(/, 'the helper asks what is already running');
+  assert.match(ENG, /if \(live\) \{[\s\S]{0,400}?page\.reload\(/, 'and switches an already-booted page by reloading');
+  assert.match(ENG, /\} else \{[\s\S]{0,200}?seedEngine\(page, engine\);[\s\S]{0,120}?page\.goto\(/,
+    'while a fresh page still gets exactly one load');
 });
 
 test('r201 ④b the seed the suite boots with lives in exactly one place', () => {
