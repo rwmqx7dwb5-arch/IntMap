@@ -1486,6 +1486,14 @@ window.IntMapModules.dataLayers=function(HOST){
       const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false; cx.drawImage(im,0,0,c.width,c.height);
       window._koppenImg=im; window._koppenCanvas=c; window._koppenReady=true;
     }
+    /* ⚠ (#R201) THE 738 KB PNG THAT LOOKS LIKE IT IS FETCHED TWICE IS NOT. Measured on the local
+       preview it arrives at t≈320 ms (this Image) and again at t≈810 ms (the renderer's own fetch for
+       the display raster), 738 KB each — which reads exactly like a cache-key split between the
+       Image's no-cors request and MapLibre's cors fetch. It is not: `scripts/serve.mjs` sends
+       `cache-control: no-store`, so the preview cannot cache anything. MEASURED AGAINST PRODUCTION
+       (github.io, real headers) the second request is `transferSize: 0` — a cache hit. The candidate
+       fix for this was written, measured and REMOVED; what is on the record instead is that the
+       instrument had the defect. */
     function loadKoppenCanvas(){
       if(window._koppenImg) return Promise.resolve();
       return new Promise(resolve=>{

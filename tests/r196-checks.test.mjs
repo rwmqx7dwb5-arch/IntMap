@@ -159,7 +159,14 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
      one, and addLayer swallows the rejection, so the layer silently did not exist */
   assert.doesNotMatch(n, /\['\*',\['get','a'\],RAMP\]/, 'no zoom expression nested inside another');
   assert.match(n, /const ramp=\(k\)=>\['interpolate',\['linear'\],\['zoom'\]\]/, 'the scale multiplies the STOPS');
-  assert.match(n, /if\(!GE\(\)\.layers\.has\(LYR\)\) return false;/, 'a rejected paint expression is caught');
+  /* ⚠ (#R201) the rejection is now CAUGHT AND ANSWERED rather than caught and abandoned: the polar
+     cap's opacity is data-driven, so if MapLibre ever refuses that form the layer is re-added with a
+     plain ramp instead of the night side losing its poles. The property is the same one — addLayer
+     swallows a rejected paint expression, so the layer is READ BACK. */
+  assert.match(n, /if\(!GE\(\)\.layers\.has\(LYR\)\)\{[\s\S]{0,120}?lastErr='cap-expression';/,
+    'a rejected paint expression is detected, and answered with a form that cannot be rejected');
+  assert.match(n, /if\(!GE\(\)\.layers\.hasDynamicImage\(DYN\)\) return false;/,
+    'and the image — which now carries the whole effect — is read back too');
   assert.match(n, /imageRowLatitudes/, 'the lights image is placed through the engine’s row→latitude map (#R195)');
   assert.match(n, /if\(zoomNow\(\)>ZMAX\+0\.4\)\{ return; \}/, 'nothing is built until the camera is wide enough');
   /* …and the GIBS request is not on the boot path — the app opens at zoom 1.7 */

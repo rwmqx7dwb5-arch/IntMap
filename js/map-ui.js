@@ -737,13 +737,24 @@ window.IntMapModules.labelPopup=function(HOST){
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
       showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true}); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
+    /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
+       「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」 #R198 added `ofm-admin1` (prefectures,
+       states, provinces) as NAMES only and wrote down that leaving it out of these lists was deliberate.
+       It was the wrong call: a prefecture name looks exactly like a city name on the map, so a tap that
+       does nothing reads as a broken label rather than as a decision. It joins every list in this
+       function — the per-layer click, the cursor, the exact-hit query and the padded-tap fallback — with
+       `onLabel(false)`, which is what `ofm-city` and `ofm-other` already get: the same popup, the same
+       Copy / Wikipedia / AI brief / Isolate / Move row, and the same real boundary from IntMapOutline
+       (a region HAS an area, so the area tools are not suppressed the way water/terrain labels are). */
+    const PLACE_LBL=['ofm-country','ofm-admin1','ofm-city','ofm-other'];
+    const ALL_LBL=PLACE_LBL.concat(['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak']);
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
-      ['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
+      ALL_LBL.forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
       GE().events.on('click',(e)=>{ try{
-        const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id)); if(!ls.length) return;
+        const ls=ALL_LBL.filter(id=>GE().layers.get(id)); if(!ls.length) return;
         const hit=GE().coords.queryRenderedFeatures(e.point,{layers:ls});
         if(hit.length) return;   /* exact glyph hit → the per-layer onLabel handler already opened the popup */
         /* (#R23) PADDED hit-box: a finger tap almost never lands on the exact label glyph, so the popup

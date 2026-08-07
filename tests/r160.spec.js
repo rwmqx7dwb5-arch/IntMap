@@ -4,13 +4,14 @@
 // (C) Changing a setting no longer force-reopens the right sidebar ("設定を変更すると勝手に右サイドバーが出てくる").
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } }); // desktop classic mode
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() }); // desktop classic mode
   await installHermeticRouting(context);
   // Force CLASSIC (non-workspace) mode so the left/right sidebars are the real classic panels (ws-mode makes them
   // floating windows). The reported bugs live in classic mode.

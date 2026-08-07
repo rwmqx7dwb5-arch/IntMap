@@ -3,16 +3,12 @@
 // Each one pins a behaviour that was found by MEASURING the running app, and each is written as
 // the measurement rather than as the code — so it keeps holding if the implementation moves.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 120_000 };
 
-const boot = async (page, engine) => {
-  await page.goto('/');
-  await page.evaluate((e) => { try { localStorage.setItem('intmap_engine', e); } catch (_) {} }, engine);
-  await page.reload();
-  await page.waitForFunction((e) => !!window.IntMapGeoEngine && window.IntMapGeoEngine.id() === e
-    && window.IntMapGeoEngine.canDraw(), engine, BOOT);
-};
+/* (#R201) ONE page load — see tests/helpers/engine.js */
+const boot = (page, engine) => bootEngine(page, engine, { url: '/', timeout: BOOT.timeout });
 
 test('R185 Cesium: a pan that does not change the tile cover rebuilds no layers', async ({ page }) => {
   /* (#R186) 240 s → 360 s. This is a WALL-CLOCK budget, not the thing under test: what is asserted is

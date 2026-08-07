@@ -6,12 +6,14 @@
  *    完全に主要天体をシミュレートしたものも。（過去、live、未来があり、実際の日時と位置がすべて正確。
  *    物理要素も忠実に。）」
  *
- *  ── WHERE THE BUTTON IS ─────────────────────────────────────────────────────────────────────────
- *  Exactly where the request puts it: it appears when the map cannot zoom out any further, and it
- *  goes away again the moment it can. That is a real state — `camera.zoom <= minZoom + ε` — not a
- *  guess about "looks like the whole Earth", and it is read from the renderer through the engine
- *  contract so it is the same on both engines. Nothing about this file runs, loads or allocates until
- *  the button is pressed.
+ *  ── HOW YOU GET THERE (#R201 — 「ボタンで押す形式ではなく…ズームアウトし続ければそのまま宇宙まで」) ──
+ *  There is no button. The map's zoom floor is a real state — `camera.zoom <= minZoom + ε`, read from
+ *  the renderer through the engine contract so it is the same on both engines — and once the camera
+ *  is standing on it, the zoom-out the renderer can no longer spend is INTEGRATED instead: keep
+ *  pulling back and the integral fills, stop and it decays. At 1.6 zoom levels' worth the view
+ *  crosses over on a fade. The way back is the same integral mirrored — a zoom-IN the space camera
+ *  has nowhere to spend — and Escape and × still work. Nothing about this file runs, loads or
+ *  allocates until that crossing happens. See the long note above mount().
  *
  *  ── WHAT IS SIMULATED ───────────────────────────────────────────────────────────────────────────
  *  The Sun, the eight planets, Pluto and the Moon, from published elements (js/ephemeris.js — the JPL
@@ -64,7 +66,7 @@ window.IntMapModules.space=function(HOST){
     const D2R=Math.PI/180, AU=149597870.7;
 
     /* ---- state ------------------------------------------------------------------------------- */
-    let root=null, gl=null, cv=null, ov=null, octx=null, btn=null;
+    let root=null, gl=null, cv=null, ov=null, octx=null;
     let open=false, mode='system', focus='earth', scale='model';
     let live=true, timeMs=Date.now(), rate=0, playing=false, lastTick=0;
     let az=0.6, el=0.45, dist=70;           /* orbit camera, scene units */
@@ -705,10 +707,14 @@ window.IntMapModules.space=function(HOST){
       const up=()=>{ drag=null; };
       ov.addEventListener('pointerdown',dn); window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
       ov.addEventListener('wheel',(e)=>{ e.preventDefault();
+        /* (#R201) the same integral as the map's, mirrored: a zoom-IN the camera has nowhere left to
+           spend is how you come back down, so the way out and the way in are the one gesture. */
+        if(e.deltaY<0) pushIn(Math.min(0.5,-e.deltaY/300));
         dist=Math.max(mode==='body'?1.02:(scale==='real'?1e-5:0.02), Math.min(mode==='body'?60:1e4, dist*Math.exp(e.deltaY*0.0012))); },{passive:false});
       ov.addEventListener('touchmove',(e)=>{ if(e.touches.length===2){ e.preventDefault();
         const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-        if(pinch) dist=Math.max(mode==='body'?1.02:0.02,Math.min(mode==='body'?60:1e4,dist*pinch/d));
+        if(pinch){ if(d>pinch) pushIn(Math.log2(d/pinch));
+          dist=Math.max(mode==='body'?1.02:0.02,Math.min(mode==='body'?60:1e4,dist*pinch/d)); }
         pinch=d; } },{passive:false});
       ov.addEventListener('touchend',()=>{ pinch=0; });
       /* clicking a body focuses it — the same list the sidebar shows */
@@ -779,17 +785,37 @@ window.IntMapModules.space=function(HOST){
       lastFpsAt=performance.now(); frames=0; lastTick=0;
       refreshHUD();
       if(!raf) raf=requestAnimationFrame(render);
-      try{ if(btn) btn.style.display='none'; }catch(_){}
+      try{ if(gauge) gauge.style.opacity='0'; }catch(_){}
       return true;
     }
     function close(){
       open=false; if(root) root.style.display='none';
       if(raf){ cancelAnimationFrame(raf); raf=0; }
-      syncButton();
+      over=0; try{ if(gauge) gauge.style.opacity='0'; }catch(_){}
       return true;
     }
 
-    /* ══ the button: only at the far end of the zoom ══════════════════════════════════════════════ */
+    /* ══ (#R201) THE WAY IN IS THE ZOOM ITSELF, NOT A BUTTON ═════════════════════════════════════════
+       「宇宙を探索は、ボタンで押す形式ではなく、そのまま普段の状態から、ズームアウトし続ければそのまま
+         宇宙まで行き、画面も出てくる形式に。」
+
+       #R197 put a button at the zoom floor because the request it answered asked for one there. This
+       one asks for the opposite: the floor should not be a wall with a door in it, it should be a
+       place you keep going through. So the button is gone and what replaces it is the gesture that
+       was already being made — the zoom-out that the renderer has nowhere left to spend.
+
+       ⚠ THE RENDERER GIVES NO EVENT FOR A ZOOM THAT CANNOT HAPPEN. MapLibre clamps the camera at
+       minZoom and reports nothing, so "the user is still asking to zoom out" can only be read from
+       the INPUT. Two are watched, and they are the two that exist: the wheel/trackpad (deltaY > 0)
+       and a two-finger pinch that is closing. Both are read PASSIVELY — nothing here preventDefaults
+       anything, so at every zoom that is not the floor the map behaves exactly as it always has.
+
+       ⚠ AND IT HAS TO BE SUSTAINED, NOT INSTANTANEOUS. One flick past the floor must not launch
+       anybody into space, so the gesture is integrated in ZOOM LEVELS (the same unit the renderer
+       uses: MapLibre's wheel rate is one level per ~300 units of deltaY) and the integral decays back
+       to zero the moment the pushing stops. 「ズームアウトし続ければ」 is a duration, and this is it.
+       While it is filling, a non-interactive gauge says so — it is feedback for a gesture already
+       under way, not a control to press. */
     /* ⚠ ASK THE RENDERER, DO NOT ASSUME 0. js/geo-engine.js RAISES the effective minimum zoom in some
        projections, so "as far out as it goes" is a number that changes underneath this. */
     function minZoom(){
@@ -798,42 +824,124 @@ window.IntMapModules.space=function(HOST){
     }
     function zoomNow(){ try{ const c=GE().camera.get(); return (c&&isFinite(c.zoom))?c.zoom:99; }catch(_){ return 99; } }
     function atFloor(){ return zoomNow()<=minZoom()+0.06; }
-    function ensureButton(){
-      if(btn) return btn;
-      btn=document.createElement('button'); btn.id='space-btn'; btn.type='button';
-      btn.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:1250;display:none;'
-        +'padding:9px 16px;border-radius:999px;border:1px solid rgba(140,180,255,0.55);'
-        +'background:linear-gradient(180deg,rgba(20,26,48,0.92),rgba(10,12,26,0.92));color:#dce6ff;'
-        +'font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,0.45);'
-        +'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);';
-      btn.textContent='🪐 '+L('Explore space','宇宙を探索','Weltraum erkunden','Исследовать космос','Explorar el espacio');
-      btn.setAttribute('aria-label',btn.textContent);
-      btn.onclick=()=>openView({});
-      document.body.appendChild(btn);
-      return btn;
+
+    const OVER_TRIGGER=1.6;          /* zoom levels of refused zoom-out that mean "keep going" */
+    const OVER_DECAY=900;            /* ms of no input after which the gesture has stopped */
+    let over=0, overAt=0, gauge=null, gaugeFill=null, wiredMap=false, pinchD=0;
+
+    function ensureGauge(){
+      if(gauge) return gauge;
+      gauge=document.createElement('div'); gauge.id='space-approach';
+      gauge.style.cssText='position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:1250;'
+        +'pointer-events:none;opacity:0;transition:opacity 180ms ease;display:flex;flex-direction:column;'
+        +'align-items:center;gap:6px;font-size:12px;font-weight:700;color:#dce6ff;text-shadow:0 1px 6px rgba(0,0,0,0.8);';
+      const cap=document.createElement('div');
+      cap.textContent=L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio');
+      const bar=document.createElement('div');
+      bar.style.cssText='width:132px;height:4px;border-radius:99px;background:rgba(140,180,255,0.25);overflow:hidden;';
+      gaugeFill=document.createElement('div');
+      gaugeFill.style.cssText='height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#6ea8ff,#cfe0ff);';
+      bar.appendChild(gaugeFill); gauge.appendChild(cap); gauge.appendChild(bar);
+      document.body.appendChild(gauge);
+      return gauge;
     }
-    /* ⚠ NOTHING PER FRAME. The only work outside a gesture is one comparison on moveend. */
-    function syncButton(){
-      const want=!open&&atFloor();
-      if(!want){ if(btn) btn.style.display='none'; return; }
-      ensureButton().style.display='block';
+    function paintGauge(){
+      if(!over){ if(gauge) gauge.style.opacity='0'; return; }
+      const g=ensureGauge();
+      g.style.opacity='1';
+      gaugeFill.style.width=Math.round(100*Math.min(1,over/OVER_TRIGGER))+'%';
     }
+    /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
+    function pushOut(dz){
+      if(open||!(dz>0)) return;
+      if(!atFloor()){ if(over){ over=0; paintGauge(); } return; }
+      const t=(typeof performance!=='undefined'?performance.now():Date.now());
+      if(overAt&&t-overAt>OVER_DECAY) over=0;
+      overAt=t;
+      over=Math.min(OVER_TRIGGER*1.5, over+Math.min(0.5,dz));
+      if(over>=OVER_TRIGGER){ over=0; paintGauge(); enterFromZoom(); return; }
+      paintGauge();
+      if(overTmr) clearTimeout(overTmr);
+      overTmr=setTimeout(()=>{ over=0; paintGauge(); },OVER_DECAY);
+    }
+    let overTmr=0;
+    /* the same integral on the way back: a zoom-IN the space camera has nowhere to spend returns the
+       map. `close()` and Escape still exist; this is only the gesture's own inverse. */
+    let backIn=0, backAt=0, backTmr=0;
+    function pushIn(dz){
+      if(!open||!(dz>0)) return;
+      if(!atNearLimit()){ backIn=0; return; }
+      const t=(typeof performance!=='undefined'?performance.now():Date.now());
+      if(backAt&&t-backAt>OVER_DECAY) backIn=0;
+      backAt=t;
+      backIn=Math.min(OVER_TRIGGER*1.5, backIn+Math.min(0.5,dz));
+      if(backIn>=OVER_TRIGGER){ backIn=0; leaveToMap(); return; }
+      if(backTmr) clearTimeout(backTmr);
+      backTmr=setTimeout(()=>{ backIn=0; },OVER_DECAY);
+    }
+    function distFloor(){ return mode==='body'?1.02:(scale==='real'?1e-5:0.02); }
+    function atNearLimit(){ return dist<=distFloor()*1.02; }
+
+    /* ── the two crossings, both a fade so neither is a cut ───────────────────────────────────── */
+    function fadeRoot(from,to,ms,done){
+      if(!root){ if(done) done(); return; }
+      root.style.transition='opacity '+ms+'ms ease';
+      root.style.opacity=String(from);
+      requestAnimationFrame(()=>{ root.style.opacity=String(to);
+        setTimeout(()=>{ root.style.transition=''; if(done) done(); },ms+20); });
+    }
+    function enterFromZoom(){
+      if(open) return false;
+      if(!openView({ from:'zoom' })) return false;
+      fadeRoot(0,1,420);
+      return true;
+    }
+    function leaveToMap(){
+      if(!open) return false;
+      fadeRoot(1,0,320,()=>{ close(); if(root) root.style.opacity='1'; });
+      return true;
+    }
+
     function mount(){
-      try{ GE().events.on('moveend',syncButton); }catch(_){}
-      try{ GE().events.on('zoomend',syncButton); }catch(_){}
-      setTimeout(syncButton,1200);
+      if(wiredMap) return; wiredMap=true;
+      let cont=null; try{ cont=GE().render.canvasContainer&&GE().render.canvasContainer(); }catch(_){}
+      if(!cont) cont=document.getElementById('map')||document.body;
+      /* MapLibre's own wheel rate is one zoom level per ~300 units of deltaY (js/wheel-zoom.js sets
+         it), so the same divisor keeps this integral in the same unit the map is refusing to move in.
+         Line/page deltas are normalised the way the renderer normalises them. */
+      cont.addEventListener('wheel',(e)=>{
+        let d=e.deltaY||0; if(e.deltaMode===1) d*=16; else if(e.deltaMode===2) d*=100;
+        if(d>0) pushOut(Math.min(0.5,d/300));
+      },{passive:true});
+      cont.addEventListener('touchstart',(e)=>{ if(e.touches&&e.touches.length===2)
+        pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); },{passive:true});
+      cont.addEventListener('touchmove',(e)=>{
+        if(!e.touches||e.touches.length!==2) return;
+        const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+        if(pinchD>0&&d>0&&d<pinchD) pushOut(Math.log2(pinchD/d));
+        pinchD=d;
+      },{passive:true});
+      const endPinch=()=>{ pinchD=0; };
+      cont.addEventListener('touchend',endPinch,{passive:true});
+      cont.addEventListener('touchcancel',endPinch,{passive:true});
+      /* the map moved somewhere that is not the floor → the gesture is no longer about leaving */
+      try{ GE().events.on('moveend',()=>{ if(!open&&over&&!atFloor()){ over=0; paintGauge(); } }); }catch(_){}
     }
 
     return {
-      open:openView, close, mount, syncButton,
+      open:openView, close, mount,
       setBody:setFocus, setMode, setScale, setWhen, setLive, setRate,
       isOpen:()=>open, atFloor,
       bodies:()=>BODIES.slice(),
+      /* the two gesture integrals, exposed so a test can drive them without synthesising wheel events
+         on a renderer that may or may not have delivered them */
+      _pushOut:pushOut, _pushIn:pushIn, enterFromZoom, leaveToMap,
       /* read the middle of the next drawn frame — the only honest way to ask "is anything there" */
       _sample:(w,h)=>new Promise((res)=>{ if(!open||!gl){ res(null); return; } sampleReq={w:w||240,h:h||160,res}; }),
       state:()=>({ open, mode, focus, scale, live, when:new Date(nowMs()).toISOString(), rate, playing,
         dist:+dist.toFixed(5), fps, stars:starN, names:names?Object.keys(names).length:0,
-        textures:Object.keys(tex).length, buttonVisible:!!(btn&&btn.style.display!=='none'),
+        textures:Object.keys(tex).length, overzoom:+over.toFixed(3), overTrigger:OVER_TRIGGER,
+        gaugeVisible:!!(gauge&&gauge.style.opacity==='1'), atNearLimit:atNearLimit(),
         atFloor:atFloor(), err:lastErr })
     };
   })();

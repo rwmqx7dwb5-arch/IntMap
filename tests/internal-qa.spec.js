@@ -4,13 +4,16 @@
 // IntMap*QA / *Test / *Audit / *Health entry point and why the others are not run here.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  /* (#R201) its own context, so it needs the session seed the config only gives the `page`
+     fixture — without it this booted the slow way (#R186: 9,160 ms against 3,192 ms). */
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });

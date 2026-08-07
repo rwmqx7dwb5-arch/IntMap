@@ -157,9 +157,19 @@ window.IntMapModules.countriesUi=function(HOST){
               try{ if(typeof window._imFlushCountryGeo==='function') window._imFlushCountryGeo(); }catch(_){}
               try{ HOST.rebuildGeoIndex(); }catch(_){}
             };
+            /* ⚠ (#R201) A PHONE TAKES THE DATA-SAVER SCHEDULE, NOT THE DESKTOP ONE. Measured on a
+               390×844 session: 4.3 MB of 10 m geometry starts at t≈8 s, on the same connection the
+               satellite tiles are still using, for an outline that on a 390-pixel-wide screen is
+               indistinguishable from the 110 m one already loaded. That contention is the mechanism
+               behind 「モバイル版で、衛星画像が圧倒的に重い」 — the imagery is not heavy, it is queued.
+               NOTHING IS DROPPED: the upgrade still runs and still corrects the areas, densities and
+               bounding boxes; it simply waits until the view the user is actually looking at has
+               finished arriving. `_imFlushCountryGeo` (#R195) still pushes it at the renderer the
+               moment Countries(info) is switched on, whenever that happens. */
             const go=()=>{ let slow=false;
               try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
                 slow=!!(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))); }catch(_){}
+              try{ if(HOST.isMobile&&HOST.isMobile()) slow=true; }catch(_){}
               const run=()=>{ upgrade().catch(()=>{}); };
               if(slow) setTimeout(run,15000);              /* on Data Saver the 4.3 MB is a real cost */
               else if(typeof requestIdleCallback==='function') requestIdleCallback(run,{timeout:6000});

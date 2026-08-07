@@ -3,6 +3,7 @@
 // so anything network-bound (SV Google tiles, Yahoo prices) is asserted on its HONEST fallback.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapConsole', 'IntMapTime', 'IntMapCompanies'];
 
@@ -11,7 +12,7 @@ test.describe.configure({ mode: 'serial' });
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);

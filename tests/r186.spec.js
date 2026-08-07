@@ -3,6 +3,7 @@
 // Each one pins a behaviour that was found by MEASURING the running app, and each is written as the
 // measurement rather than as the code — so it keeps holding if the implementation moves.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 120_000 };
 const ready = (page) => page.waitForFunction(() => !!window.IntMapGeoEngine && window.IntMapGeoEngine.canDraw(), null, BOOT);
@@ -317,11 +318,8 @@ test('R186 water: the trace tells the sea from a closed basin below sea level', 
 
 test('R186 Cesium: a real star sky, a real Sun, and imagery at the poles', async ({ page }) => {
   test.setTimeout(240_000);
-  await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('intmap_engine', 'cesium'));
-  await page.reload();
-  await page.waitForFunction(() => !!window.IntMapGeoEngine && window.IntMapGeoEngine.id() === 'cesium'
-    && window.IntMapGeoEngine.canDraw(), null, BOOT);
+  /* (#R201) ONE page load — see tests/helpers/engine.js */
+  await bootEngine(page, 'cesium', { url: '/', timeout: BOOT.timeout });
   /* The polar base layer is added when SingleTileImageryProvider.fromUrl RESOLVES, so waiting a fixed
      2.5 s for it was a test of how fast the machine decodes a 284 KB JPEG — it failed 3/3 in CI on
      exactly that. Wait for the layer. */

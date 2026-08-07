@@ -10,6 +10,7 @@
 // dispatch result + IntMapAtlasDebug bookkeeping rather than pixels.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const CRITICAL_GLOBALS = ['IntMapConsole', 'IntMapAtlasDebug', 'IntMapRegionResolver'];
 
@@ -18,7 +19,7 @@ test.describe.configure({ mode: 'serial' });
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);

@@ -692,8 +692,18 @@ window.IntMapModules.timeBorders=function(HOST){
          with a 6 s ceiling so a permanently busy page still gets it, and a floor of the map's own
          first idle). On Data Saver or 2G it is not prefetched at all: there the 5.5 MB is a real cost
          and the time machine can fetch it when it is actually opened. */
+      /* ══ (#R201) …AND A PHONE IS THE SAME CASE AS DATA SAVER ═══════════════════════════════════
+         「モバイル版で、衛星画像が圧倒的に重い」. Measured on a 390×844 session: the page pulls ~20 MB, of
+         which the map tiles are ~1.5 MB — and 5.5 MB of the rest is THIS file, prefetched at t≈5 s,
+         while the satellite tiles the user is looking at are still arriving over the same connection.
+         The imagery is not heavy; it is queued behind things nothing on screen is waiting for.
+         The rule this line already applied to Data Saver and 2G now covers phones for the same
+         reason and with the same guarantee: the time machine still loads the bundle the first time it
+         is opened (csLoad() below is what actually draws), so nothing is lost — only the speculative
+         copy for a feature that has not been asked for. */
       const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
           if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
+        try{ if(HOST.isMobile&&HOST.isMobile()) return; }catch(_){}
         if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); };
       let started=false; const once=()=>{ if(started) return; started=true; go(); };
       try{ GE().events.once('idle',()=>setTimeout(once,400)); }catch(_){}

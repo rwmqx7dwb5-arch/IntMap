@@ -172,65 +172,12 @@ test.describe('R196 ③ the sky', () => {
   });
 });
 
-/* ── ④ 「ズームアウトするほど太陽の当たっていない部分が暗くなり、夜間光が見えるように」 ──── */
-test('R196 ④ the night side fades in as the camera pulls back, and is absent close in', async ({ page }) => {
-  test.setTimeout(240_000);
-  await ready(page);
-  /* wide enough for the effect to build itself */
-  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [0, 10], zoom: 1.2, pitch: 0, bearing: 0 }));
-  /* (#R196) the build is deferred to the first idle after the camera settles, so this waits for
-     it rather than assuming it happened inside the gesture */
-  await page.waitForFunction(() => window.IntMapNightSide.state().built, null, { timeout: 30000 });
-  const wide = await page.evaluate(() => window.IntMapNightSide.state());
-  expect(wide.built, 'the night side builds itself at a whole-Earth zoom').toBe(true);
-
-  const seen = await page.evaluate(() => {
-    const m = window.__imap;
-    return { shade: !!m.getLayer('im-night-shade'), op: m.getPaintProperty('im-night-shade', 'fill-opacity') };
-  });
-  expect(seen.shade, 'the shade layer really is in the style — a rejected paint expression is silent').toBe(true);
-  /* the ramp is a zoom expression, so panning and zooming cost the renderer what they already cost */
-  expect(Array.isArray(seen.op) && seen.op[0]).toBe('interpolate');
-  expect(seen.op[seen.op.length - 1], 'and it is zero by the time a continent fills the view').toBe(0);
-
-  /* the terminator is a real solar computation: midnight and noon on the same meridian differ */
-  const night = await page.evaluate(() => {
-    const d = new Date(Date.UTC(2026, 5, 21, 12, 0, 0));    /* solstice noon UTC: 0°E is lit */
-    return { lit: window.IntMapNightSide._nightAt(0, 0, d), dark: window.IntMapNightSide._nightAt(180, 0, d) };
-  });
-  expect(night.lit, 'the sub-solar meridian is day').toBeLessThan(0.05);
-  expect(night.dark, 'and the antimeridian is night').toBeGreaterThan(0.95);
-
-  /* ⚠ AND THE CITY LIGHTS ARE ONLY ON THE NIGHT SIDE. The mask is baked into the ALPHA of the
-     canvas because a raster layer cannot be clipped to a shape, so this is where a mistake in that
-     loop would hide — and the loop was rewritten once for speed (per-column cos H, no asin outside
-     the twilight band), which is exactly when a masked image quietly stops being masked. */
-  const lit = await page.evaluate(async () => {
-    const cv = window.__imap.getSource('im-night-lights') && window.__imap.getSource('im-night-lights').canvas;
-    if (!cv) return { skipped: 'the GIBS mosaic did not load in this run' };
-    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
-    /* the sub-solar longitude now, and its antipode, as image columns */
-    const S = window.IntMapSky, ms = Date.now();
-    const sp = S.sunPosition(ms), g = S.gmstDeg(ms);
-    const subLng = ((sp.ra - g + 540) % 360) - 180;
-    const col = (lng) => Math.round((((lng + 180) % 360) / 360) * cv.width);
-    /* ⚠ ROWS NEAR THE SUB-SOLAR LATITUDE ONLY. A whole column at the sub-solar longitude still
-       reaches into the winter pole, which is in POLAR NIGHT at every longitude — so "the sunlit
-       meridian" is a statement about a latitude band, not about a column. */
-    const rows = window.IntMapGeoEngine.layers.imageRowLatitudes(
-      [[-180, 85.051129], [180, 85.051129], [180, -85.051129], [-180, -85.051129]], cv.height);
-    const near = []; for (let y = 0; y < cv.height; y++) if (Math.abs(rows[y] - sp.dec) < 35) near.push(y);
-    const band = (c0) => { let a = 0, n = 0;
-      for (let x = c0 - 12; x <= c0 + 12; x++) { const xx = (x + cv.width) % cv.width;
-        for (const y of near) { a += d[((y * cv.width + xx) * 4) + 3]; n++; } }
-      return a / n; };
-    return { day: band(col(subLng)), night: band(col(subLng + 180)), rows: near.length, subLng: +subLng.toFixed(1), dec: +sp.dec.toFixed(1) };
-  });
-  if (!lit.skipped) {
-    expect(lit.day, `nothing is painted where the Sun is overhead: ${JSON.stringify(lit)}`).toBe(0);
-    expect(lit.night, `and the antisolar side really does carry lights: ${JSON.stringify(lit)}`).toBeGreaterThan(0);
-  }
-});
+/* ── ④ 「ズームアウトするほど…夜間光が見えるように」 → MOVED to tests/r201.spec.js ① ────────────
+   #R201 replaced the five nested twilight polygons this test measured with ONE per-pixel canvas
+   (「階段状で不自然」/「夜の部分は完全に夜間光レイヤーと同じ画像に」), so every assertion here was
+   about a mechanism that no longer exists. They are not weakened — r201 ① asserts the same solar
+   computation and the same on/off pixel comparison at a HIGHER threshold, plus the gradient the
+   old shape could not have. Deleted rather than duplicated: scripts/test-budget.mjs. */
 
 /* ── ⑤ 「モバイル版で、衛星画像が圧倒的に重い。」 ─────────────────────────────────────────── */
 test.describe('R196 ⑤ the satellite prefetch', () => {

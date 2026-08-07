@@ -4,6 +4,7 @@
 // (uncaught exception, missing UI, blank screen) from a blocked external API (benign).
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 // Critical globals that MUST exist for the app to be functional. (The page defines ~60
 // window.IntMap* modules; these are the load-bearing ones checked as a boot signal.)
@@ -17,7 +18,7 @@ test.describe.configure({ mode: 'serial' });
 let page, diag, response;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   // Count real DOCUMENT loads (survives reloads via sessionStorage; NOT incremented by the
   // app's same-document hash updates for shareable URLs). This is the honest reload-loop signal.

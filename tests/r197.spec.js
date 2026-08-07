@@ -9,13 +9,14 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
@@ -26,41 +27,17 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => { try { await page.context().close(); } catch { /* ignore */ } });
 
-test('R197 ① the space button exists only at the far end of the zoom', async () => {
-  /* it must NOT be there at the opening view */
-  const start = await page.evaluate(() => {
-    const b = document.getElementById('space-btn');
-    return { z: window.IntMapGeoEngine.camera.get().zoom, shown: !!(b && b.style.display !== 'none'),
-      atFloor: window.IntMapSpace.atFloor() };
-  });
-  expect(start.atFloor, `zoom ${start.z} is not the floor`).toBe(false);
-  expect(start.shown).toBe(false);
-
-  /* …and it must be there at the floor */
-  await page.evaluate(() => {
-    const z = window.IntMapGeoEngine.camera.getMinZoom();
-    window.IntMapGeoEngine.camera.jumpTo({ zoom: z });
-  });
-  await page.waitForFunction(() => window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
-  const at = await page.evaluate(() => {
-    const b = document.getElementById('space-btn');
-    const r = b.getBoundingClientRect();
-    return { text: b.textContent, w: r.width, h: r.height, onscreen: r.top > 0 && r.bottom < window.innerHeight };
-  });
-  expect(at.w).toBeGreaterThan(60);
-  expect(at.onscreen).toBe(true);
-
-  /* and it goes away again when the camera can zoom out — which is the half that is easy to forget */
-  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ zoom: 3 }));
-  await page.waitForFunction(() => !window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
-});
-
+/* ── ① the space BUTTON → GONE, and its subject moved to tests/r201.spec.js ③ ────────────────
+   「宇宙を探索は、ボタンで押す形式ではなく…ズームアウトし続ければそのまま宇宙まで行き」. There is no
+   #space-btn to assert on any more; what replaced it — the zoom-out integral at the floor, the
+   gauge, the crossing and the way back — is asserted in r201 ③. Deleted rather than duplicated. */
 test('R197 ② the explorer renders the solar system, with real stars and real textures', async () => {
   await page.evaluate(() => {
     window.IntMapGeoEngine.camera.jumpTo({ zoom: window.IntMapGeoEngine.camera.getMinZoom() });
   });
-  await page.waitForFunction(() => window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
-  await page.click('#space-btn');
+  /* (#R201) opened through the module rather than through the crossing gesture — the GESTURE is
+     r201 ③'s subject; what this test is about is what the renderer then draws. */
+  await page.evaluate(() => window.IntMapSpace.open({}));
   await page.waitForFunction(() => {
     const s = window.IntMapSpace.state();
     return s.open && s.stars > 1000 && s.textures >= 8;

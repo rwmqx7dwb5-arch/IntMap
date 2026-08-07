@@ -247,6 +247,33 @@
       "url": "http://127.0.0.1:4225"
     },
     {
+      "name": "intmap-vite-r201",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5201",
+        "--strictPort"
+      ],
+      "port": 5201,
+      "url": "http://localhost:5201"
+    },
+    {
+      "name": "intmap-preview-r201",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4227"
+      ],
+      "port": 4227,
+      "url": "http://127.0.0.1:4227"
+    },
+    {
       "name": "intmap-preview-r198",
       "runtimeExecutable": "node",
       "runtimeArgs": [

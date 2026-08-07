@@ -7,13 +7,14 @@
 // Hermetic: external hosts blocked, so the JSONP script load fails → nearestPano resolves null (never hangs/throws).
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const CRITICAL = ['IntMapConsole', 'IntMapCompanies', 'IntMapStreetView'];
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);

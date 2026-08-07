@@ -280,38 +280,20 @@ test('R200 ⑥b: every window.IntMapTime.<method> a module calls is one the cloc
   }
 });
 
-test('R200 ⑦: the night side states the darkness the EYE gets, and derives the per-ring alpha from it', () => {
-  const n = read('js/night-side.js');
-  /* the defect: five NESTED polygons sharing one opacity, summed as if alpha added */
-  assert.doesNotMatch(n, /SHADE_MAX\/RINGS\.length/, 'the per-ring alpha must not be a division of the total');
-  assert.match(n, /const NIGHT_PROFILE=\[\[0,0\.10\],\[-3,0\.34\],\[-6,0\.62\],\[-9,0\.85\],\[-12,0\.94\]\]/,
-    'the profile is the composite darkness at each ring, i.e. what is actually seen');
-  assert.match(n, /const RINGS=NIGHT_PROFILE\.map/, 'the ring elevations come from the profile — one place, not two');
-  assert.match(n, /const RING_ALPHA=\(function\(\)\{ const out=\[\]; let clear=1;/, 'and the alphas are derived from it');
+/* ── ⑦ the night side's darkness → REPLACED by tests/r201-checks.test.mjs ①a–①d ─────────────────
+   This test owned the five-ring arithmetic: NIGHT_PROFILE as the composite the eye gets, RING_ALPHA
+   derived from it by inverting 1 − Π(1 − aᵢ), and the `match` on `['get','elev']` that chose per ring.
+   #R201 deleted all of it — 「夜と昼の部分の変遷が階段状で不自然」 is a statement about FIVE FILLS, and
+   no choice of five alphas is not five steps. The alpha is computed per pixel now, so there is no
+   profile to invert and no ring to invert it for. What survived — the zoom expression is outermost,
+   the last stop is a literal 0, anything data-driven rides on the stop OUTPUT — is asserted in
+   r201-checks ①c against the mechanism that exists. Deleted rather than duplicated. */
 
-  /* the relation, recomputed here from the profile IN THE FILE — not from a copied number */
-  const prof = JSON.parse(/const NIGHT_PROFILE=(\[[^;]+\]);/.exec(n)[1]);
-  let clear = 1; const alpha = [];
-  for (const [, d] of prof) { const rest = 1 - d; alpha.push(1 - rest / clear); clear = rest; }
-  const composite = (k, s) => { let c = 1; for (let i = 0; i <= k; i++) c *= (1 - alpha[i] * s); return 1 - c; };
-  assert.ok(Math.abs(composite(prof.length - 1, 1) - prof[prof.length - 1][1]) < 1e-9,
-    'at the widest zoom the layer delivers exactly the profile');
-  assert.ok(composite(prof.length - 1, 1) > 0.9, 'full night is deep — 「引いたときの黒さをよりきつくして」');
-  assert.ok(composite(prof.length - 1, 0.86) > 0.85,
-    'and it is still deep at zoom 1.7, which is where the app opens (#R196 delivered 0.51 there)');
-  assert.ok(prof[0][1] < 0.156,
-    'while the first ring is LIGHTER than #R196 — a hard step at the terminator reads as a polygon, not as night');
-
-  /* ⚠ the zoom expression is still the outermost one, and the ramp still ends at 0 — tests/r196.spec.js
-     reads that last element off the LIVE style, so this is the source-side half of the same check */
-  assert.match(n, /const shadeOpacity=\(\)=>\['interpolate',\['linear'\],\['zoom'\]\]/, 'zoom stays outermost');
-  assert.match(n, /v<=0 \? 0/, 'the zero-scale stop is a literal 0');
-  assert.match(n, /\['match',\['get','elev'\]\]/, 'the per-ring choice rides on the stop OUTPUT, where it is allowed');
-});
-
-test('R200 ⑧: the build stamps name THIS round', () => {
-  /* the pin lives in the current round's file; #R199's copy became the negative form. */
+test('R200 ⑧: the build stamps have moved on from this round', () => {
+  /* (#R201) the negative form, the way #R199's became one: the exact pin belongs to the CURRENT
+     round's file (tests/r201-checks ⑥), and a stamp still naming R200 means a round shipped
+     without bumping it — which is the failure #R174 recorded. */
   const idx = read('index.html');
-  assert.match(idx, /window\.__imBuild='R200';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-07-R200';/);
+  assert.doesNotMatch(idx, /window\.__imBuild='R200';/);
+  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='[0-9-]+-R200';/);
 });

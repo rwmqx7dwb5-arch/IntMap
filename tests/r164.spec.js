@@ -6,13 +6,14 @@
 // were constructed in English follow it.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   await context.addInitScript(() => { try { localStorage.setItem('intmap_ws4', JSON.stringify({ on: false })); } catch { /* ignore */ } });
   page = await context.newPage();

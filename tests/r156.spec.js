@@ -11,13 +11,14 @@
 //   #6 send/stop button = accent when active/busy, previous white/black when idle
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const CRITICAL = ['IntMapConsole', 'IntMapAtlasDebug', 'katex'];
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);   // allows unpkg + jsDelivr (KaTeX) through, blocks everything else
   page = await context.newPage();
   diag = collectPageDiagnostics(page);

@@ -7,17 +7,12 @@
 // to a screenshot (a bearing that reads back as rounding, an event that never fires, a fit that
 // clips by 6%), which is exactly why they survived #R180's own browser suite.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
 
-const boot = async (page, engine) => {
-  await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
-  await page.evaluate((e) => { try { localStorage.setItem('intmap_engine', e); } catch (_) {} }, engine);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-  await expect.poll(() => page.evaluate(() => window.IntMapGeoEngine.id()), BOOT).toBe(engine);
-};
+/* (#R201) ONE page load — see tests/helpers/engine.js */
+const boot = (page, engine) => bootEngine(page, engine, BOOT);
 
 /* ── ① THE REPORTED DEFECT: THE IMAGERY IS THE RIGHT WAY UP ────────────────────────────────
    A flipped tile is flipped about ITS OWN centre, so the giveaway is not a mirrored map but a

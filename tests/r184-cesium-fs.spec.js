@@ -8,16 +8,11 @@
 // implement the method name and do nothing — so nothing here asserts "it did not throw". Every check
 // is that the CAMERA ACTUALLY WENT WHERE THE AEROPLANE IS.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 120_000 };
-const asCesium = async (page) => {
-  await page.goto('/?rafshim=1');
-  await page.evaluate(() => { try { localStorage.setItem('intmap_engine', 'cesium'); } catch (_) {} });
-  await page.reload();
-  await page.waitForFunction(() => !!window.__imap && window.IntMapGeoEngine
-    && window.IntMapGeoEngine.id && window.IntMapGeoEngine.id() === 'cesium', null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* (#R201) ONE page load — see tests/helpers/engine.js */
+const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
 
 /* ── ① THE CAPABILITIES THE SIMULATOR NEEDS ARE REALLY THERE ──────────────────────────────── */
 test('R184 Cesium FS ①: every camera capability the simulator drives is implemented, not stubbed', async ({ page }) => {

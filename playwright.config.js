@@ -4,8 +4,10 @@
 // zero-dependency local static server that serves the repo exactly like GitHub Pages.
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = Number(process.env.PORT || 4173);
-const BASE = `http://127.0.0.1:${PORT}`;
+/* (#R201) the port, the base URL and the seeded session live in tests/helpers/session-seed.js, so a
+   spec that opens its OWN context (r197, r201 — sharing one page across a describe is how they stay
+   cheap) cannot silently boot without the seed this config was the only holder of. */
+import { PORT, BASE, seededStorageState } from './tests/helpers/session-seed.js';
 const isCI = !!process.env.CI;
 
 export default defineConfig({
@@ -99,7 +101,7 @@ export default defineConfig({
          the cables back on for all ~350 tests, i.e. exactly the 9,160 ms boot this seed exists to
          avoid. MEASURED as three straight timeouts of r174 «zooming in still moves the viewpoint»
          and three more tests turned flaky. Bump this with the generation in js/app-body.js. */
-      origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":190,"layers":[]}' }] }],
+      origins: seededStorageState().origins,
     },
     timezoneId: 'UTC',            // stable regardless of the developer's / runner's timezone
     locale: 'en-US',

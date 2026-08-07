@@ -148,6 +148,15 @@ function plan(pool, n) {
     /* only the files that are themselves over the target are worth expanding — every extra argument
        is another chance for a line to drift, and the small files are already spread fine */
     const parts = cost > target ? (() => { try { return expand(f, perTest); } catch (_) { return null; } })() : null;
+    /* ⚠ (#R201) SAY SO WHEN A FILE THAT SHOULD SPLIT CANNOT. `expand` refuses whenever the baseline's
+       line numbers no longer match the file — which is right (running nothing is worse than running
+       slowly) — but it refuses SILENTLY, and the only symptom is that CI's wall clock doubles. It
+       happened in this round: editing tests/r182-cesium.spec.js by five lines moved every test in it,
+       and the cesium pool went straight back to 639 s in one group. The fix is to remap
+       tests/baseline.json (the titles are stable even when the lines are not); the point of this line
+       is that nobody has to work that out from a slow job. */
+    if (!parts && cost > target)
+      console.error(`shard-plan: ${f} is ${Math.round(cost)}s against a ${Math.round(target)}s target but cannot be split by test — tests/baseline.json's line numbers no longer match the file. Remap it (or refresh it from a main run) or this pool's wall clock is this file.`);
     if (parts) for (const p of parts) items.push({ file: p.file, cost: p.cost / div });
     else items.push({ file: f, cost });
   }

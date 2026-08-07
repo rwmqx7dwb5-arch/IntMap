@@ -1521,7 +1521,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          lights build themselves the first time the camera is wide enough for either to be visible. */
       try{ GE().events.on('moveend',_skyFollowCamera); }catch(_){}
       try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
-      /* (#R197) the space explorer's mount() — ONE moveend comparison; nothing exists until pressed */
+      /* (#R197/#R201) the space explorer's mount() — three passive input listeners that only add up
+         while the camera is standing on the zoom floor; nothing exists until the crossing happens */
       try{ window.IntMapModules.space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means

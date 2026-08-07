@@ -10,19 +10,12 @@
 // The MapLibre half matters just as much and is asserted first: the default session must not
 // be able to tell that a second engine exists.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
-const asCesium = async (page) => {
-  /* set the stored choice the way the Settings panel does and RELOAD — not addInitScript,
-     which survives page.reload() and would make "switch back to MapLibre" untestable. */
-  await page.goto('/?rafshim=1');
-  await page.evaluate(() => { try { localStorage.setItem('intmap_engine', 'cesium'); } catch (_) {} });
-  await page.reload();
-  await page.waitForFunction(() => !!window.__imap && window.IntMapGeoEngine
-    && window.IntMapGeoEngine.id && window.IntMapGeoEngine.id() === 'cesium', null, BOOT);
-  /* one settled frame with the boot style applied */
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* (#R201) ONE page load, not two — tests/helpers/engine.js seeds the stored choice before the
+   first script runs, and only if nothing has written it, so "switch back to MapLibre" still wins. */
+const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
 
 /* ── ⓪ THE DEFAULT IS UNTOUCHED ───────────────────────────────────────────────────────────
    The most important test in the file. MapLibre stays the default, and a default session must
