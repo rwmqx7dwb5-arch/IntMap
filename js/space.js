@@ -528,6 +528,8 @@ window.IntMapModules.space=function(HOST){
 
     /* ══ the HUD ══════════════════════════════════════════════════════════════════════════════════ */
     const BTN='padding:5px 9px;border-radius:8px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11.5px;cursor:pointer;';
+    /* (#R202) one segment of a two-option switch; `.on` is added by refreshChrome() below. */
+    const SEG='padding:5px 9px;border-radius:7px;border:none;background:transparent;color:rgba(255,255,255,0.62);font-size:11.5px;font-weight:600;cursor:pointer;';
     function fmtWhen(ms){
       const d=new Date(ms);
       if(!isFinite(+d)) return '—';
@@ -544,17 +546,60 @@ window.IntMapModules.space=function(HOST){
       if(r<31556952) return Math.round(r/86400)+' d/s';
       return '1 '+L('yr','年','J','г','a')+'/s';
     }
+    /* ══ (#R202) ANY MULTIPLIER, NOT SEVEN OF THEM ═══════════════════════════════════════════════
+       「時間進める速度の倍数は任意に変えられるように。また現在の状態に合わせられるLiveボタンを追加して。」
+
+       `rate` has always been "simulated seconds per real second", i.e. the multiplier itself — ×1 is
+       real time, ×86400 is a day a second. What was missing is a way to SAY a number: the only way in
+       was ⏩, which walked a seven-rung ladder, and ⏪ — which read `RATES[i+1]` exactly as ⏩ did and
+       then negated it, so it could not slow anything down and the speed could only ever go UP.
+       So: ⏪ and ⏩ now step DOWN and UP the same ladder (keeping the direction), and the multiplier is
+       also a plain field you can type into. Anything JS reads as a number is accepted — 2.5, 1e6, a
+       negative one to run time backwards — clamped only by what the clock itself can hold. */
+    const RATE_MAX=3.2e9;              /* ~100 yr/s: MIN_MS…MAX_MS crossed in a few minutes of real time */
+    function parseRate(s){
+      if(s==null) return null;
+      const t=String(s).trim().replace(/^[×xX*]\s*/,'').replace(/,/g,'');
+      if(!t) return null;
+      const v=Number(t);
+      if(!isFinite(v)) return null;
+      return Math.max(-RATE_MAX,Math.min(RATE_MAX,v));
+    }
+    /* the rung above / below the current speed, sign preserved. step(+1) from ×0 starts at the slowest
+       real rung rather than staying at zero, which is what "faster" means when you are paused. */
+    function rateStep(dir){
+      const sign=(rate<0)?-1:1, mag=Math.abs(rate);
+      let i;
+      if(dir>0){ i=RATES.findIndex(r=>r>mag+1e-9); if(i<0) i=RATES.length-1; }
+      else { i=0; for(let k=RATES.length-1;k>=0;k--){ if(RATES[k]<mag-1e-9){ i=k; break; } } }
+      return sign*RATES[i];
+    }
     function hud(){
       return '<div class="sp-bar" style="position:absolute;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0));pointer-events:auto;">'
         +'<button class="sp-close" style="'+BTN+'">✕ '+L('Back to the map','地図へ戻る','Zur Karte','К карте','Al mapa')+'</button>'
         +'<button class="sp-mode" style="'+BTN+'">'+(mode==='system'?('🌍 '+L('View the body','天体を見る','Körper ansehen','Смотреть тело','Ver el cuerpo')):('🪐 '+L('Solar system','太陽系','Sonnensystem','Солнечная система','Sistema solar')))+'</button>'
-        +'<button class="sp-scale" style="'+BTN+'">'+(scale==='real'?('📏 '+L('True scale','実寸大','Maßstabsgetreu','Реальный масштаб','Escala real')):('🔎 '+L('Model scale','モデル大','Modellmaßstab','Модельный масштаб','Escala modelo')))+'</button>'
+        /* ══ (#R202) THE SCALE CONTROL SHOWS BOTH CHOICES ═════════════════════════════════════════
+           「宇宙を探索で、実寸とモデル大に変えるボタンをもっとわかりやすくしろ。」
+           It was ONE button carrying ONE label, and a lone label on a toggle is ambiguous by
+           construction: 「実寸大」 could equally mean "you are in true scale" or "press for true
+           scale", and the two readings are opposites. A two-segment switch cannot be misread — both
+           options are on screen and the lit one is the state — and it is the same segmented control
+           the phone's Map/Satellite uses, so it is not a new invention (#R148). */
+        +'<span class="sp-seg" style="display:inline-flex;gap:2px;padding:2px;border-radius:9px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);">'
+        +'<button class="sp-scale" data-s="real" style="'+SEG+'">📏 '+L('True scale','実寸大','Maßstabsgetreu','Реальный масштаб','Escala real')+'</button>'
+        +'<button class="sp-scale" data-s="model" style="'+SEG+'">🔎 '+L('Model scale','モデル大','Modellmaßstab','Модельный масштаб','Escala modelo')+'</button>'
+        +'</span>'
         +'<span style="flex:1 1 8px;"></span>'
         +'<span class="sp-clock" style="font-size:11.5px;color:#e8e8e8;font-variant-numeric:tabular-nums;"></span>'
-        +'<button class="sp-live" style="'+BTN+'">'+L('Now','現在','Jetzt','Сейчас','Ahora')+'</button>'
-        +'<button class="sp-back" style="'+BTN+'">⏪</button>'
+        +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
+        +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
         +'<button class="sp-play" style="'+BTN+'">▶</button>'
-        +'<button class="sp-fwd" style="'+BTN+'">⏩</button>'
+        +'<button class="sp-fwd" style="'+BTN+'" title="'+S(L('Faster','速く','Schneller','Быстрее','Más rápido'))+'">⏩</button>'
+        /* any multiplier, typed. `sp-ratev` is what it currently is, in the unit the ladder speaks. */
+        +'<label class="sp-ratebox" style="display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:8px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11.5px;">'
+        +'<span style="opacity:.72;">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
+        +'<span>×</span><input class="sp-rate" type="text" inputmode="decimal" spellcheck="false" style="width:74px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.3);color:#fff;font-size:11.5px;font-variant-numeric:tabular-nums;padding:0 1px;">'
+        +'<span class="sp-ratev" style="opacity:.72;white-space:nowrap;"></span></label>'
         +'<input class="sp-when" type="datetime-local" style="'+BTN+'font-size:11px;">'
         +'</div>'
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
@@ -566,6 +611,31 @@ window.IntMapModules.space=function(HOST){
       const c=root.querySelector('.sp-clock');
       if(c) c.textContent=(live?('● '+L('live','ライブ','live','сейчас','en vivo')+' · '):'')+fmtWhen(nowMs());
       const p=root.querySelector('.sp-play'); if(p) p.textContent=playing&&!live?'⏸':'▶';
+      refreshChrome();
+    }
+    /* ══ (#R202) WHICH BUTTON IS THE STATE ═══════════════════════════════════════════════════════
+       The scale switch, the LIVE button and the speed field all show state rather than an action, so
+       they are re-lit from the state on every clock tick. The typed field is left alone WHILE IT HAS
+       FOCUS — writing into an input under the caret is how a value the user is halfway through typing
+       gets eaten. */
+    function refreshChrome(){
+      if(!root) return;
+      /* this runs on every clock tick; nothing below is worth a DOM write when nothing moved */
+      const sig=scale+'|'+live+'|'+rate;
+      if(sig===refreshChrome._sig) return;
+      refreshChrome._sig=sig;
+      root.querySelectorAll('.sp-scale').forEach(b=>{
+        const on=(b.getAttribute('data-s')===scale);
+        b.style.background=on?'#fff':'transparent';
+        b.style.color=on?'#000':'rgba(255,255,255,0.62)';
+      });
+      const lv=root.querySelector('.sp-live');
+      if(lv){ lv.style.background=live?'rgba(90,230,140,0.22)':'rgba(255,255,255,0.06)';
+        lv.style.borderColor=live?'rgba(90,230,140,0.75)':'rgba(255,255,255,0.22)';
+        lv.style.color=live?'#bdf7d2':'#f2f2f2'; }
+      const inp=root.querySelector('.sp-rate');
+      if(inp&&document.activeElement!==inp){ const v=String(rate); if(inp.value!==v) inp.value=v; }
+      const rv=root.querySelector('.sp-ratev'); if(rv) rv.textContent=live?L('(live)','（ライブ）','(live)','(сейчас)','(en vivo)'):rateLabel(Math.abs(rate))+((rate<0)?' ◀':'');
     }
     function refreshHUD(){
       if(!root||!open) return;
@@ -699,6 +769,7 @@ window.IntMapModules.space=function(HOST){
 
     /* ══ input ════════════════════════════════════════════════════════════════════════════════════ */
     function wire(){
+      refreshChrome._sig=null;    /* (#R202) the HUD was just (re)built — nothing on screen is lit yet */
       let drag=null, pinch=0;
       const dn=(e)=>{ if(e.target!==ov&&e.target!==cv) return; drag={x:e.clientX,y:e.clientY}; ov.setPointerCapture&&ov.setPointerCapture(e.pointerId); };
       const mv=(e)=>{ if(!drag) return;
@@ -732,14 +803,19 @@ window.IntMapModules.space=function(HOST){
       });
       root.querySelector('.sp-close').onclick=()=>close();
       root.querySelector('.sp-mode').onclick=()=>setMode(mode==='system'?'body':'system');
-      root.querySelector('.sp-scale').onclick=()=>setScale(scale==='real'?'model':'real');
+      root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
       root.querySelector('.sp-live').onclick=()=>setLive();
       root.querySelector('.sp-play').onclick=()=>{ if(live){ live=false; timeMs=Date.now(); }
         playing=!playing; if(playing&&!rate) rate=86400; lastTick=0; refreshHUD(); };
-      root.querySelector('.sp-fwd').onclick=()=>{ const i=RATES.indexOf(Math.abs(rate));
-        setRate((rate<0?-1:1)*RATES[Math.min(RATES.length-1,(i<0?0:i)+1)]); };
-      root.querySelector('.sp-back').onclick=()=>{ const i=RATES.indexOf(Math.abs(rate));
-        const nr=RATES[Math.min(RATES.length-1,(i<0?0:i)+1)]; setRate(-nr); };
+      root.querySelector('.sp-fwd').onclick=()=>setRate(rateStep(+1));
+      root.querySelector('.sp-back').onclick=()=>setRate(rateStep(-1));
+      /* (#R202) the typed multiplier. Applied on Enter and on blur, so a half-typed "1e" never becomes
+         a rate; an unreadable entry is rejected by putting the live value back rather than by an alert. */
+      const rIn=root.querySelector('.sp-rate');
+      const applyRate=()=>{ const v=parseRate(rIn.value); if(v==null){ rIn.value=String(rate); refreshChrome(); return; } setRate(v); rIn.value=String(rate); };
+      rIn.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); applyRate(); rIn.blur(); }
+        if(e.key!=='Escape') e.stopPropagation(); };   /* Escape must still reach the window handler that closes the view */
+      rIn.onchange=applyRate; rIn.onblur=applyRate;
       const w=root.querySelector('.sp-when');
       w.onchange=()=>{ if(w.value) setWhen(new Date(w.value+'Z')); };
       window.addEventListener('keydown',esc);

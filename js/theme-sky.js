@@ -16,7 +16,11 @@
  *  never captured when this factory ran. Those are userTheme (read AND written), currentMapType →
  *  HOST.mapType, namesOn, bordersOn, satActive, satPanelDismissed. Everything else — every function —
  *  arrives through CTX under its original name. tests/r199-checks.test.mjs enumerates both sets.
+ *
+ *  (#R202) It also imports js/sky-model.js — the scattering integral that decides `sky-color`. That
+ *  file is pure arithmetic with no DOM and no renderer, so tests/r202-checks.test.mjs runs it in Node.
  * ==========================================================================*/
+import { skyColour } from './sky-model.js';
 export function makeThemeSky(HOST, CTX) {
   const GE=CTX.GE, applyLabelLang=CTX.applyLabelLang, canDraw=CTX.canDraw, ensurePlaceLabels=CTX.ensurePlaceLabels, mapLabelsViaVector=CTX.mapLabelsViaVector, satRefreshReadout=CTX.satRefreshReadout, satRenderController=CTX.satRenderController;
   function applyTheme(){
@@ -189,8 +193,29 @@ export function makeThemeSky(HOST, CTX) {
      ⚠ ONE OWNER. js/flight-sim.js owns the sky outright while a flight is running (_skyIsOwnedElsewhere)
      and set3D's own mercator-only sky block is gone — two writers meant the last one to run decided,
      which is why a basemap switch during a flight once cleared the cockpit sky (#R174). */
+  /* ══ (#R202) `sky-color` WAS A CONSTANT, AND THE CONSTANT WAS DEEP SPACE ═════════════════════════
+     「Cesiumと同じ大気・空のエフェクトをMapLibreでも。完全に同一な見た目にしろ。（現在は空が真っ暗である
+       ため）」 — reported again, and the half #R196 did not do is why.
+
+     #R196 gave the style a `sky` block, which is what put a surface above the horizon at all. But it
+     set `sky-color` to _SKY_SPACE and left it there: at noon, standing on the ground, everything
+     above the thin horizon band was #060b16. Measured at Tokyo z14 pitch 75 at local noon, the top
+     of the frame was [45,52,64] on MapLibre against [85,112,130] on Cesium — darker, and grey where
+     Cesium is blue. Cesium is not choosing a hex; `SkyAtmosphere` integrates scattering, and no pair
+     of hexes agrees with an integral except at one Sun elevation and one eye height — and this app
+     flies from a street to low orbit and travels in time.
+
+     So the far end of the gradient is now computed: js/sky-model.js marches the same Rayleigh + Mie
+     model MapLibre's own globe shader uses, for THIS Sun elevation and THIS eye height, and returns
+     the colour. It goes blue in daylight, dusky through twilight, and to space both at night and as
+     the camera climbs out of the atmosphere — the last one for the same reason Cesium's does.
+     _SKY_SPACE remains as the floor the model itself converges to, and as the answer when the Sun's
+     position is unknown. */
   const _SKY_SPACE='#060b16';
-  const _SKY_H_NIGHT='#0a1526', _SKY_H_DAY='#c9dcf0';
+  /* ⚠ (#R202) _SKY_H_DAY MOVED ONTO CESIUM'S OWN NUMBER. #R196 picked #c9dcf0 = (201,220,240) by eye;
+     Cesium's SkyAtmosphere at the same camera and instant reads (194,204,209) in the band just above
+     the horizon (test-results/r202/sky-cesium-noonLow.png). Same instruction, measured answer. */
+  const _SKY_H_NIGHT='#0a1526', _SKY_H_DAY='#c2ccd1';
   function _mix(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
     const A=p(a),B=p(b),u=Math.max(0,Math.min(1,t));
     return '#'+[0,1,2].map(i=>Math.round(A[i]+(B[i]-A[i])*u).toString(16).padStart(2,'0')).join(''); }
@@ -207,6 +232,36 @@ export function makeThemeSky(HOST, CTX) {
     const e=_sunElevAtCentre(); if(e==null) return _SKY_H_DAY;
     const t=Math.max(0,Math.min(1,(e+6)/12));
     return _mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
+  }
+  /* the eye's own height above sea level — the model's other input, and the reason the sky goes to
+     space as you climb rather than only as the Sun sets */
+  function _eyeAltM(){
+    try{ const a=GE().camera.altitude(); if(isFinite(a)&&a>=0) return a; }catch(_){}
+    return 0;
+  }
+  /* how far the view direction is from the Sun's azimuth — a low Sun ahead of you is not the same
+     sky as the same low Sun behind you, and the bearing is something the camera already knows */
+  function _relAzimuth(){
+    try{
+      const s=_sunOverheadPoint(); if(!s) return 90;
+      const c=GE().camera.getCenter(); if(!c) return 90;
+      const R=Math.PI/180, a=c.lat*R, b=s.lat*R, dl=(s.lng-c.lng)*R;
+      const az=Math.atan2(Math.sin(dl)*Math.cos(b), Math.cos(a)*Math.sin(b)-Math.sin(a)*Math.cos(b)*Math.cos(dl))/R;
+      let brg=0; try{ brg=GE().camera.getBearing()||0; }catch(_){}
+      let d=Math.abs(((az-brg)%360+540)%360-180);
+      return d;
+    }catch(_){ return 90; }
+  }
+  function _skyColour(){
+    const e=_sunElevAtCentre(); if(e==null) return _SKY_SPACE;
+    try{
+      const c=skyColour(e,_eyeAltM(),_relAzimuth()).rgb;
+      /* ⚠ FLOORED AT _SKY_SPACE. The model has no starlight and no airglow, so deep night integrates
+         to (0,0,0) — blacker than the sky has ever actually been and blacker than #R196's measured
+         value for space. The floor is that measurement; above it the model decides. */
+      const f=[parseInt(_SKY_SPACE.slice(1,3),16),parseInt(_SKY_SPACE.slice(3,5),16),parseInt(_SKY_SPACE.slice(5,7),16)];
+      return '#'+[0,1,2].map(i=>Math.max(c[i],f[i]).toString(16).padStart(2,'0')).join('');
+    }catch(_){ return _SKY_SPACE; }
   }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
@@ -230,10 +285,10 @@ export function makeThemeSky(HOST, CTX) {
          keeps the imagery's own contrast instead of being washed toward white. The scattering model
          underneath is untouched: this is only how much of it is blended over the globe, which is the
          one knob the spec offers and the one the two reports are about. */
-      const hz=_horizonColour();
-      _applySkyAtmosphere._hz=hz;
+      const hz=_horizonColour(), sc=_skyColour();
+      _applySkyAtmosphere._hz=hz; _applySkyAtmosphere._sc=sc;
       GE().scene.setSky({
-        'sky-color':_SKY_SPACE, 'sky-horizon-blend':0.55,
+        'sky-color':sc, 'sky-horizon-blend':0.55,
         'horizon-color':hz, 'horizon-fog-blend':0,
         'fog-color':hz, 'fog-ground-blend':1,
         /* ⚠ TWO STRENGTHS, EACH SETTLED BY ITS OWN MEASUREMENT. #R187 halved this to 0.55 because a
@@ -252,7 +307,11 @@ export function makeThemeSky(HOST, CTX) {
      only when the colour has actually moved, because setSky re-parses the block. */
   function _skyFollowCamera(){
     try{ if(!_applySkyAtmosphere._on||_skyIsOwnedElsewhere()) return;
-      const hz=_horizonColour(); if(hz===_applySkyAtmosphere._hz) return;
+      /* (#R202) …and the far end of the gradient moves with the camera too: climbing out of the
+         atmosphere darkens the sky exactly as sunset does, so both ends are compared before the
+         block is re-parsed. */
+      const hz=_horizonColour(), sc=_skyColour();
+      if(hz===_applySkyAtmosphere._hz&&sc===_applySkyAtmosphere._sc) return;
       _applySkyAtmosphere(HOST.mapType==='sat');
     }catch(_){}
   }

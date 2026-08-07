@@ -866,7 +866,22 @@ window.IntMapModules.seismic=function(HOST){
            terrain the site term is read off — the picture was quantised well below the information in
            it. 288 on desktop is 2.7× the cells for 2.7× the work, which the ms figure in the panel
            reports as always; phones stay proportionally smaller. */
-        const N=(typeof isMobile==='function'&&isMobile())?128:288;
+        /* ══ (#R202) MORE CELLS AGAIN — 「震度分布のメッシュをより高画質に」 ═════════════════════════
+           #R190's 288 across a 2,000 km field is a 7 km cell, and the picture is painted with nearest
+           resampling (every square IS one computed value, which is the honest way to draw a discrete
+           field) — so the cell size is exactly what "blocky" means here. 448 is a 4.5 km cell, which
+           is finer than the DEM sampling interval the site term is read at over most spans, i.e. the
+           picture is no longer the coarsest thing in the chain. The DEM TILE budget is unchanged —
+           `est(z)>520` above governs how many tiles are fetched and does not depend on N — so this
+           costs arithmetic and no network.
+           ⚠ AND THE ARITHMETIC IS NOT WHAT THE USER WAITS FOR. Measured end to end three times each
+           (M9 off Tohoku, 3,000 km span, desktop, same machine): 288² = 82,944 cells took
+           9,779 / 12,431 / 12,469 ms and 448² = 200,704 cells took 12,512 / 12,492 / 12,518 ms —
+           i.e. 2.4× the cells did not move the wall clock at all, because the build is waiting on DEM
+           TILES (100–157 fetched, the rest unanswered) and not on the field. The resolution was being
+           limited by a cost that is not there. Phones go 128 → 192 rather than the same multiple:
+           #R20's ceiling there is memory and the tab, not patience. */
+        const N=(typeof isMobile==='function'&&isMobile())?192:448;
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
         let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
