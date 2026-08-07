@@ -629,9 +629,13 @@ window.IntMapModules.satellitesLive=function(HOST){
       /* (#R202) the orbit cloud, added LAST so it draws over the map and is depth-tested against the
          globe the renderer has already drawn. An engine that cannot do it says so — the ground
          layers above are then the whole of the picture, which is what every engine had before. */
-      if(!orbOn){
-        try{ orbOn=!!E.layers.addOrbit(ORB); }catch(_){ orbOn=false; }
-      }
+      /* ⚠ ASK THE RENDERER, not a flag we set once. `ensureLayers` re-asserts every other layer on
+         every paint for exactly this reason: a style operation can take a layer away, and a boolean
+         that remembers "we added it" would then never add it back. `orbOn` records whether the
+         ENGINE CAN do this at all — the layer's presence is a separate question with its own answer. */
+      let there=false; try{ there=E.layers.has(ORB); }catch(_){ there=false; }
+      if(there) orbOn=true;
+      else { try{ orbOn=!!E.layers.addOrbit(ORB); }catch(_){ orbOn=false; } }
       return true;
     }catch(e){ lastErr=String(e&&e.message||e); return false; }
   }
