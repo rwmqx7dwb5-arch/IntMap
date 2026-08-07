@@ -106,6 +106,21 @@ window.IntMapModules.space=function(HOST){
     const POS_P=0.42, POS_K=26, RAD_K=0.055;
     function posScale(au){ return scale==='real'?au:(POS_K*Math.pow(au,POS_P)); }
     function radScale(km){ return scale==='real'?(km/AU):(RAD_K*Math.pow(km/6378.137,1/3)); }
+    /* ══ ⚠ (#R203) THE MOON IS ITS OWN FAMILY, OR IT IS INSIDE THE EARTH ═════════════════════════════
+       「宇宙を探索で、モデル大にしたら地球と月が融合している」— and the arithmetic says exactly that.
+       Model scale compresses a HELIOCENTRIC distance, and the Moon's heliocentric distance is the
+       Earth's ± 0.00257 AU. So 26·1.0000^0.42 = 26.000 and 26·1.0026^0.42 = 26.028: the two bodies end
+       up 0.028 units apart while the Earth's model radius alone is 0.055 and the Moon's is 0.036. The
+       Moon was drawn INSIDE the Earth — not a tuning problem, a category error.
+
+       The file's own rule is that model scale keeps 「the ORDER and the RATIOS within each family」,
+       and the Moon is not a member of the Sun's family. It is placed relative to the Earth, by the
+       same power law applied to its GEOCENTRIC distance, with the constant chosen so that even at
+       perigee it clears both radii: 0.30·(356,500/384,400)^0.42 = 0.291 against 0.055 + 0.036 = 0.091.
+       Its own perigee-to-apogee ratio survives, which is what the ratio promise means here. True scale
+       is untouched — there the real geometry already separates them. */
+    const MOON_K=0.30, MOON_REF_KM=384400;
+    function moonSep(km){ return scale==='real'?(km/AU):(MOON_K*Math.pow(km/MOON_REF_KM,POS_P)); }
 
     /* ══ a very small matrix library ══════════════════════════════════════════════════════════════ */
     function mIdent(){ return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); }
@@ -193,7 +208,28 @@ window.IntMapModules.space=function(HOST){
        its measured colour and the panel says why. Its POSITION and its 73 IAU-approved feature names
        are as real as everything else here. */
     const NO_TEXTURE={ pluto:1 };
-    function texUrl(id){ try{ return new URL('data/planets/'+id+'.jpg',document.baseURI).toString(); }
+    /* ══ ⚠ (#R203) THE EARTH HERE IS THE APP'S OWN EARTH, NOT A SECOND ONE ═══════════════════════════
+       「そもそも、宇宙を探索専用に別の地球を作るな。そんな指示はしていない。勝手に別の地球に差し替えるな。」
+
+       It was. `data/planets/earth.jpg` was a 463 KB picture of the Earth that existed for this file
+       and for nothing else, while the app already ships one — data/world-basemap.jpg, the NASA Blue
+       Marble equirectangular that js/world-base.js draws UNDER the satellite tiles and that
+       js/cesium-engine.js uses for the polar caps. Two pictures of the same planet is exactly the
+       complaint, so there is now one, and js/world-base.js owns its URL.
+
+       ⚠ AND THE FIRST ANSWER WAS SUPPOSED TO BE THAT THERE IS NO SPHERE HERE AT ALL — the map's own
+       globe, still drawn by MapLibre, simply getting smaller as the camera pulls further out. THAT IS
+       MEASURED NOT TO BE AVAILABLE. MapLibre accepts `setMinZoom(-2)` and the transform follows it
+       (worldSize 512 → 256 → 128, the projected radius 77 → 40 → 20 px), but it DRAWS NOTHING below
+       zoom 0: sampled through a render tick at z −0.5 / −1 / −2 the canvas comes back [2,2,2] /
+       [1,1,1] / [0,0,0] and the screenshot is the page background through a transparent canvas. Its
+       tile pyramid has no level under 0 and the whole-Earth image floor is not drawn there either. So
+       the sphere stays, and what changes is everything that made it read as a DIFFERENT Earth: the
+       same picture, the same face, the same size across the crossing, in both directions. */
+    function texUrl(id){
+      if(id==='earth'){ try{ const W=window.IntMapWorldBase; if(W&&W.url) return W.url(); }catch(_){}
+        try{ return new URL('data/world-basemap.jpg',document.baseURI).toString(); }catch(_){ return 'data/world-basemap.jpg'; } }
+      try{ return new URL('data/planets/'+id+'.jpg',document.baseURI).toString(); }
       catch(_){ return 'data/planets/'+id+'.jpg'; } }
     /* Textures load ON DEMAND and one at a time per body: the whole set is 5.7 MB and a view of the
        whole system does not need any of them at more than a few pixels a body. */
@@ -276,6 +312,10 @@ window.IntMapModules.space=function(HOST){
       const m=E.moonGeocentric(jd), r=m.distKm/AU;
       const lo=(m.lonDeg-E.precessLonDeg(jd))*D2R, la=m.latDeg*D2R;   /* back to J2000, where the planets are */
       out.moon=[out.earth[0]+r*Math.cos(la)*Math.cos(lo), out.earth[1]+r*Math.cos(la)*Math.sin(lo), out.earth[2]+r*Math.sin(la)];
+      /* (#R203) …and the SAME offset kept as itself, because model scale has to compress it as a
+         geocentric distance rather than as a heliocentric one — see moonSep(). */
+      out._moonGeo=[Math.cos(la)*Math.cos(lo),Math.cos(la)*Math.sin(lo),Math.sin(la)];
+      out._moonKm=m.distKm;
       return out;
     }
 
@@ -345,6 +385,11 @@ window.IntMapModules.space=function(HOST){
       return new Float32Array([b.x[0],b.x[1],b.x[2],0, b.y[0],b.y[1],b.y[2],0, b.z[0],b.z[1],b.z[2],0, 0,0,0,1]);
     }
     function scenePos(pos,id,centre){
+      /* (#R203) the Moon is placed relative to the EARTH — see moonSep() for why it has to be */
+      if(id==='moon'&&pos._moonGeo&&isFinite(pos._moonKm)){
+        const e=scenePos(pos,'earth',[0,0,0]), g=pos._moonGeo, d=moonSep(pos._moonKm);
+        return [e[0]+g[0]*d-centre[0], e[1]+g[1]*d-centre[1], e[2]+g[2]*d-centre[2]];
+      }
       const p=pos[id]; const r=Math.hypot(p[0],p[1],p[2]);
       const s=r>0?posScale(r)/r:0;
       const v=[p[0]*s,p[1]*s,p[2]*s];
@@ -689,16 +734,16 @@ window.IntMapModules.space=function(HOST){
             'Maßstabsgetreu: 1 Einheit = 1 AE, Radien real — derzeit '+px.toFixed(px<1?3:1)+' px.',
             'Реальный масштаб: 1 единица = 1 а.е., радиусы настоящие — сейчас '+px.toFixed(px<1?3:1)+' px.',
             'Escala real: 1 unidad = 1 UA y los radios son reales — ahora '+px.toFixed(px<1?3:1)+' px.')
-        : L('Model scale: orbital radii ∝ r^'+POS_P+' and bodies ∝ ∛r, so the whole system is legible and the order and the ratios inside each family survive. Distances and sizes here are NOT to scale with each other.',
+        : L('Model scale: orbital radii ∝ r^'+POS_P+' and bodies ∝ ∛r, so the whole system is legible and the order and the ratios inside each family survive. The Moon is compressed about the EARTH by the same law, not about the Sun — compressing its heliocentric distance put it inside the Earth. Distances and sizes here are NOT to scale with each other.',
             'モデル大：軌道半径は r^'+POS_P+'、天体は ∛r で圧縮しています。全体が見える代わりに、距離と大きさの比は実際とは異なります。',
             'Modellmaßstab: Bahnradien ∝ r^'+POS_P+', Körper ∝ ∛r — nicht maßstabsgetreu zueinander.',
             'Модельный масштаб: радиусы орбит ∝ r^'+POS_P+', тела ∝ ∛r — не в одном масштабе.',
             'Escala modelo: radios ∝ r^'+POS_P+', cuerpos ∝ ∛r — no están a la misma escala.');
-      const s2=L('Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modelled — their phase cannot be computed faithfully from published elements alone.',
-        '位置：JPL 近似軌道要素（紀元前3000年〜紀元3000年）、月は ELP-2000/82 の短縮級数。表面：Solar System Scope のテクスチャ（CC BY 4.0、NASA/JPL/USGS 画像より）。地名：USGS 惑星地名辞典（IAU 承認）。恒星：ヒッパルコス星表。月以外の衛星は、公表要素だけでは位相を忠実に計算できないため扱っていません。',
-        'Positionen: JPL-Näherungselemente; Mond: ELP-2000/82. Oberflächen: Solar System Scope (CC BY 4.0). Namen: USGS/IAU. Sterne: Hipparcos.',
-        'Положения: приближённые элементы JPL; Луна: ELP-2000/82. Поверхности: Solar System Scope (CC BY 4.0). Названия: USGS/IAU. Звёзды: Hipparcos.',
-        'Posiciones: elementos aproximados de JPL; Luna: ELP-2000/82. Superficies: Solar System Scope (CC BY 4.0). Nombres: USGS/IAU. Estrellas: Hipparcos.');
+      const s2=L('Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery — except the Earth, which is the app’s own whole-Earth basemap (NASA Blue Marble via GIBS), the same picture the map draws under its satellite tiles. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modelled — their phase cannot be computed faithfully from published elements alone.',
+        '位置：JPL 近似軌道要素（紀元前3000年〜紀元3000年）、月は ELP-2000/82 の短縮級数。表面：Solar System Scope のテクスチャ（CC BY 4.0、NASA/JPL/USGS 画像より）。ただし地球はアプリ自身の全球ベース画像（NASA Blue Marble／GIBS 経由）＝地図が衛星タイルの下に敷いているものと同一。地名：USGS 惑星地名辞典（IAU 承認）。恒星：ヒッパルコス星表。月以外の衛星は、公表要素だけでは位相を忠実に計算できないため扱っていません。',
+        'Positionen: JPL-Näherungselemente; Mond: ELP-2000/82. Oberflächen: Solar System Scope (CC BY 4.0); die Erde ist die eigene Weltkarte der App (NASA Blue Marble). Namen: USGS/IAU. Sterne: Hipparcos.',
+        'Положения: приближённые элементы JPL; Луна: ELP-2000/82. Поверхности: Solar System Scope (CC BY 4.0); Земля — собственное изображение приложения (NASA Blue Marble). Названия: USGS/IAU. Звёзды: Hipparcos.',
+        'Posiciones: elementos aproximados de JPL; Luna: ELP-2000/82. Superficies: Solar System Scope (CC BY 4.0); la Tierra es el mapa base propio de la app (NASA Blue Marble). Nombres: USGS/IAU. Estrellas: Hipparcos.');
       const s3=(focus==='pluto')?('<br>'+L('Pluto is drawn in its measured colour: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labelled fictional by their author. Its position and its IAU names are real.',
         '冥王星は実測の色で描いています（全球表面図を同梱していないため。他所で配布されている準惑星の表面図は作者自身が「架空」と明記しています）。位置とIAU地名は実データです。',
         'Pluto wird in seiner gemessenen Farbe gezeichnet — es liegt keine globale Oberflächenkarte bei.',
@@ -858,6 +903,23 @@ window.IntMapModules.space=function(HOST){
       loadStars(); if(mode==='body'){ loadNames(); texture(focus); }
       dist=(mode==='body')?bodyDist():systemDist();
       if(mode==='body') faceSun();
+      /* ⚠ (#R203) ARRIVING FROM THE MAP IS NOT ARRIVING AT THE SOLAR SYSTEM. `systemDist()` is far
+         enough to hold Neptune's orbit, so the Earth the gesture was pulling away from disappeared in
+         the same frame it appeared — which is the whole of 「遷移を断絶的に勝手にするな」. When the
+         crossing hands over a size and a face, start there instead and let the same gesture carry on
+         outwards; the solar system is then something the user zooms out TO, not something they are
+         dropped into. */
+      if(o.match&&o.match.r>0){
+        mode='system'; focus='earth';
+        try{ resize(); }catch(_){}          /* FOVK() reads H, and the first resize is in render() */
+        texture('earth');
+        faceGeo(o.match.lat,o.match.lng);
+        try{
+          const R=radScale(EPH().body('earth').rKm);
+          const d=R*FOVK()/o.match.r;
+          if(isFinite(d)&&d>0) dist=Math.max(distFloor(),Math.min(1e4,d));
+        }catch(_){}
+      }
       lastFpsAt=performance.now(); frames=0; lastTick=0;
       refreshHUD();
       if(!raf) raf=requestAnimationFrame(render);
@@ -956,7 +1018,93 @@ window.IntMapModules.space=function(HOST){
       backTmr=setTimeout(()=>{ backIn=0; },OVER_DECAY);
     }
     function distFloor(){ return mode==='body'?1.02:(scale==='real'?1e-5:0.02); }
-    function atNearLimit(){ return dist<=distFloor()*1.02; }
+
+    /* ══ (#R203) THE CROSSING IS A SIZE, AND BOTH SIDES CAN STATE IT ═════════════════════════════════
+       「宇宙を探索での地球をはるかにズームインして普通の地球に戻るのではなく、同じサイズで戻るようにしろ。
+         宇宙を探索モードへの遷移を断絶的に勝手にするな。」
+
+       #R201 crossed over on a fade between two Earths of unrelated sizes: going out, `openView` set the
+       camera to `systemDist()` — far enough to hold Neptune's orbit, i.e. the Earth vanished in one
+       frame — and coming back needed `dist` driven all the way down to the floor (0.02 scene units,
+       ~50 zoom-in gestures) before the map was handed back at ITS min zoom, whatever size that was.
+       Neither direction preserved the one thing that makes two pictures read as one object.
+
+       So both sides measure the Earth's RADIUS ON SCREEN in CSS pixels and match it:
+         · the map's is measured, not derived — the engine's own `project()` of a point 90° away from
+           the centre is the disc's radius (#R186: transcribe, do not re-derive), and it scales with
+           2^zoom, which is what lets the return solve for a zoom;
+         · the scene's is R/dist × (h/2)/tan(fov/2), the projection this file already uses for labels.
+       Going out, the space camera starts at the distance that reproduces the map's radius. Coming
+       back, the map is entered at the zoom that reproduces the scene's. The fade is then between two
+       pictures of the same size, of the same face, lit the same way — 250 ms of cross-fade rather than
+       a cut, because they are the same object. */
+    const FOVK=()=>(H/Math.max(1,dpr))/(2*Math.tan(45*D2R/2));
+    /* the Earth's on-screen radius in the space scene, CSS px */
+    function earthRadiusPx(){
+      try{
+        const R=radScale(EPH().body('earth').rKm);
+        const jd=jdNow(), pos=positions(jd);
+        const centre=(mode==='system'&&focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
+        const p=(mode==='system')?scenePos(pos,'earth',centre):[0,0,0];
+        const d=Math.max(1e-9,Math.hypot(p[0]-0,p[1]-0,p[2]-0)+0)||0;
+        /* the camera orbits the origin at `dist`; the Earth sits at p */
+        const ce=Math.cos(el), se=Math.sin(el);
+        const eye=[dist*ce*Math.cos(az), dist*ce*Math.sin(az), dist*se];
+        const dd=Math.max(1e-9,Math.hypot(eye[0]-p[0],eye[1]-p[1],eye[2]-p[2]));
+        return R/dd*FOVK()+0*d;
+      }catch(_){ return 0; }
+    }
+    /* the map globe's on-screen radius in CSS px, asked of the renderer rather than derived */
+    function mapGlobeRadiusPx(){
+      try{
+        const c=GE().camera.getCenter(); if(!c) return 0;
+        const a=GE().coords.project([c.lng,c.lat]);
+        const b=GE().coords.project([c.lng+90,c.lat]);
+        if(!a||!b) return 0;
+        const r=Math.hypot(b.x-a.x,b.y-a.y);
+        return isFinite(r)&&r>0?r:0;
+      }catch(_){ return 0; }
+    }
+    /* aim the orbit camera at the geodetic point (lat,lng) of the Earth, so the face that was in
+       front of the map is the face that is in front here */
+    function faceGeo(lat,lng){
+      try{
+        const b=EPH().bodyBasis('earth',jdNow()); if(!b) return;
+        const la=lat*D2R, lo=lng*D2R, cl=Math.cos(la);
+        const d=[0,1,2].map(i=>b.x[i]*cl*Math.cos(lo)+b.y[i]*cl*Math.sin(lo)+b.z[i]*Math.sin(la));
+        const n=Math.hypot(d[0],d[1],d[2])||1;
+        az=Math.atan2(d[1]/n,d[0]/n);
+        el=Math.max(-1.5,Math.min(1.5,Math.asin(Math.max(-1,Math.min(1,d[2]/n)))));
+      }catch(_){}
+    }
+    /* the geodetic point the orbit camera is over — the inverse of faceGeo, for the way back */
+    function cameraGeo(){
+      try{
+        const b=EPH().bodyBasis('earth',jdNow()); if(!b) return null;
+        const ce=Math.cos(el), d=[ce*Math.cos(az),ce*Math.sin(az),Math.sin(el)];
+        const dot=(u)=>u[0]*d[0]+u[1]*d[1]+u[2]*d[2];
+        const x=dot(b.x), y=dot(b.y), z=dot(b.z);
+        return { lat:Math.asin(Math.max(-1,Math.min(1,z)))/D2R, lng:Math.atan2(y,x)/D2R };
+      }catch(_){ return null; }
+    }
+    /* ⚠ THE WAY BACK IS NOW A SIZE, NOT A FLOOR. A zoom-IN hands the map back as soon as the Earth is
+       at least as big as the map's own globe would be at its minimum zoom — which is the size the map
+       will come back at. Below that there is genuinely nowhere further in to go, so the old floor
+       remains as the second way of satisfying it. */
+    function atNearLimit(){
+      if(dist<=distFloor()*1.02) return true;
+      const r=earthRadiusPx(), m=handoverRadiusPx();
+      return !!(r>0&&m>0&&r>=m);
+    }
+    /* the map globe's radius at the zoom the map would be handed back at (its own minimum) */
+    function handoverRadiusPx(){
+      try{
+        const c=GE().camera.get(); if(!c||!isFinite(c.zoom)) return 0;
+        const r=mapGlobeRadiusPx(); if(!(r>0)) return 0;
+        let mz=0; try{ const v=GE().camera.getMinZoom(); if(isFinite(v)) mz=v; }catch(_){}
+        return r*Math.pow(2,mz-c.zoom);
+      }catch(_){ return 0; }
+    }
 
     /* ── the two crossings, both a fade so neither is a cut ───────────────────────────────────── */
     function fadeRoot(from,to,ms,done){
@@ -968,13 +1116,29 @@ window.IntMapModules.space=function(HOST){
     }
     function enterFromZoom(){
       if(open) return false;
-      if(!openView({ from:'zoom' })) return false;
-      fadeRoot(0,1,420);
+      /* (#R203) hand the map's own picture over: the same face, the same size, the same instant */
+      let seed=null;
+      try{
+        const c=GE().camera.getCenter(), r=mapGlobeRadiusPx();
+        if(c&&r>0) seed={ lat:c.lat, lng:c.lng, r };
+      }catch(_){}
+      if(!openView({ from:'zoom', match:seed })) return false;
+      fadeRoot(0,1,250);
       return true;
     }
     function leaveToMap(){
       if(!open) return false;
-      fadeRoot(1,0,320,()=>{ close(); if(root) root.style.opacity='1'; });
+      /* …and take it back the same way: the zoom whose globe is the size the Earth is right now, and
+         the centre the camera is standing over. 「同じサイズで戻るようにしろ」 */
+      try{
+        const want=earthRadiusPx(), now=mapGlobeRadiusPx(), c=GE().camera.get(), g=cameraGeo();
+        if(want>0&&now>0&&c&&isFinite(c.zoom)){
+          const zr=GE().camera.zoomRange?GE().camera.zoomRange():[0,22];
+          const z=Math.max(zr[0],Math.min(zr[1],c.zoom+Math.log2(want/now)));
+          GE().camera.jumpTo(g?{ center:[g.lng,g.lat], zoom:z }:{ zoom:z });
+        } else if(g){ GE().camera.jumpTo({ center:[g.lng,g.lat] }); }
+      }catch(_){}
+      fadeRoot(1,0,250,()=>{ close(); if(root) root.style.opacity='1'; });
       return true;
     }
 

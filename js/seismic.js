@@ -763,7 +763,10 @@ window.IntMapModules.seismic=function(HOST){
       fldFar=null;
       if(!epi||!(rEdge>rFine+1)){ paintFar(); return; }
       const C0=fault?fault.centroid:epi;
-      const NF=(typeof isMobile==='function'&&isMobile())?384:768;
+      /* (#R203) the FAR field is the same picture at the same request, and it is pure arithmetic —
+         #R191 measured the whole world at ~40 ms — so it gets the same step up: 1,024² is ~1.8 M cells
+         at two multiplies and one acos each. Phones 384 → 512. */
+      const NF=(typeof isMobile==='function'&&isMobile())?512:1024;
       const yT=mY(85), yB=mY(-85), dyF=(yB-yT)/NF, dxF=360/NF;
       const cv=document.createElement('canvas'); cv.width=NF; cv.height=NF;
       const ctx=cv.getContext('2d'), im=ctx.createImageData(NF,NF), px=im.data;
@@ -881,7 +884,20 @@ window.IntMapModules.seismic=function(HOST){
            TILES (100–157 fetched, the rest unanswered) and not on the field. The resolution was being
            limited by a cost that is not there. Phones go 128 → 192 rather than the same multiple:
            #R20's ceiling there is memory and the tab, not patience. */
-        const N=(typeof isMobile==='function'&&isMobile())?192:448;
+        /* ══ (#R203) AND AGAIN, BECAUSE THE MEASUREMENT SAYS IT IS STILL FREE ═══════════════════════
+           「震度分布のメッシュをより高画質に。」 — reported again after #R202's 288 → 448.
+           #R202's own measurement is the argument: 2.4× the cells did not move the wall clock at all
+           (9,779/12,431/12,469 ms at 288² against 12,512/12,492/12,518 ms at 448²), because the build
+           waits on DEM TILES. The cell is the last quantiser in the chain and it is still coarser than
+           what feeds it: 448 across a 2,000 km field is 4.5 km, while the DEM the site term is read
+           off is sampled at ~1 km over the same span. 640 is a 3.1 km cell — 2.0× the arithmetic of
+           448 against a cost that is not the arithmetic — and it is where this stops, because past it
+           the cell goes under the DEM's own sample spacing and the extra cells would be interpolation
+           rather than information (#R191: the calibrated range, the range terrain is available over,
+           and the range the class ends at are three different things).
+           The texture is the other budget and it is small: 640² RGBA is 1.6 MB. Phones go 192 → 288 —
+           #R20's ceiling there is memory and the tab, not patience. */
+        const N=(typeof isMobile==='function'&&isMobile())?288:640;
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
         let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));

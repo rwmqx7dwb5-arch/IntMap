@@ -33,23 +33,25 @@
  *  a subset is not, which is the same rule scripts/shard-plan.mjs states for its own empty groups.
  * ==========================================================================*/
 import { spawnSync, execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* (#R203) …and it runs ONE TIER. `npm test` is the core tier — 29 files, ~7 minutes of serial time
+   against the 85 the whole suite costs — and `npm run test:deep` is the other half. The list lives
+   in tests/durations.json; scripts/tiers.mjs is the only thing that reads it. */
+import { tierSpecs, wantedTier } from './tiers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const win = process.platform === 'win32';
 const NPX = win ? 'npx.cmd' : 'npx';
+const TIER = wantedTier(process.env);
 
-/* every spec the local run covers — the config's own testIgnore removes prod-smoke and the profiler */
-const allSpecs = () => readdirSync(join(ROOT, 'tests'))
-  .filter((f) => f.endsWith('.spec.js') && !/^(prod-smoke|r184-imagery-profile)\.spec\.js$/.test(f))
-  .map((f) => 'tests/' + f);
+/* every spec this run covers — the config's own testIgnore removes prod-smoke and the profiler */
+const allSpecs = () => tierSpecs(TIER);
 
 /* ask the planner for ONE group of one — that is its LPT ordering of the whole pool */
 function poolFiles(pool) {
   try {
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'shard-plan.mjs'), '--pool', pool, '--group', '1', '--of', '1'],
+    const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'shard-plan.mjs'), '--tier', TIER, '--pool', pool, '--group', '1', '--of', '1'],
       { cwd: ROOT, encoding: 'utf8' }).trim();
     return out ? out.split(/\s+/) : [];
   } catch (_) { return []; }
@@ -66,6 +68,8 @@ function run(files, workers, label) {
   return r.status == null ? 1 : r.status;   /* (#R191) a null status is a FAILURE, not a clean exit */
 }
 
+console.log(`run-tests: ${TIER} tier — ${allSpecs().length} spec file(s)`
+  + (TIER === 'core' ? ' (the deep tier runs nightly and after every merge; `npm run test:deep` runs it here)' : ''));
 const rest = poolFiles('rest');
 const solo = poolFiles('cesium');
 

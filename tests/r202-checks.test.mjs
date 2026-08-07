@@ -181,6 +181,9 @@ test('R202 ③g the far plane is corrected from a PRISTINE value, never from its
 
 test('R202 ③h the timing tables finally have a writer, and it cannot delete what it did not see', () => {
   const sp = rd('scripts/shard-plan.mjs'), bl = rd('scripts/baseline.mjs'), ci = rd('.github/workflows/ci.yml');
+  /* (#R203) the ten steps a browser shard runs moved into a composite action when the suite grew a
+     second tier — one copy of the recipe, two callers. The restore/merge half of this lives there. */
+  const act = rd('.github/actions/browser-tier/action.yml');
   assert.match(sp, /has\('--merge'\)/, 'shard-plan can union the per-shard fragments');
   assert.match(bl, /has\('--merge'\)/, 'and so can baseline');
   assert.match(sp, /carried over/, 'a partial fragment set must not drop the specs it does not mention');
@@ -191,12 +194,18 @@ test('R202 ③h the timing tables finally have a writer, and it cannot delete wh
      tables travel by cache, which a pull-request run can read from the default branch. */
   assert.doesNotMatch(ci, /git push origin HEAD:main/, 'nothing in CI pushes to main');
   assert.match(ci, /actions\/cache\/save@v4/, 'the measured times are published as a cache');
-  assert.match(ci, /actions\/cache\/restore@v4[\s\S]{0,200}intmap-timings-/, 'and the browser job restores them');
-  assert.match(ci, /--merge _timecache\/durations\.json/, 'merging them into the committed table before planning');
+  assert.match(act, /actions\/cache\/restore@v4[\s\S]{0,200}intmap-timings-/, 'and the browser job restores them');
+  assert.match(act, /--merge _timecache\/durations\.json/, 'merging them into the committed table before planning');
 });
 
 test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice', () => {
-  assert.match(rd('js/seismic.js'), /isMobile\(\)\)\?192:448;/, 'the intensity field is 448 across on desktop');
+  /* ⚠ (#R203) A RELATION, NOT A VALUE. This pinned 448 exactly, so the very next round that made the
+     mesh finer — the direction the instruction always points — broke a test whose own subject is
+     "it got finer". What #R202 established is the FLOOR; #R203 raised the mesh to 640/288. */
+  const seisN = /const N=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(rd('js/seismic.js'));
+  assert.ok(seisN, 'the intensity field still declares its grid where #R202 left it');
+  assert.ok(Number(seisN[2]) >= 448, `the desktop intensity field is ${seisN[2]}, coarser than #R202's 448`);
+  assert.ok(Number(seisN[1]) >= 192, `the mobile intensity field is ${seisN[1]}, coarser than #R202's 192`);
   const th = rd('js/theme-sky.js');
   assert.match(th, /import \{ skyColour \} from '\.\/sky-model\.js'/, 'theme-sky imports the model by name');
   assert.match(th, /'sky-color':sc/, 'and sky-color comes from it');
@@ -211,6 +220,7 @@ test('R202 ③j the build stamps name THIS round', () => {
      stamp late, re-ran only the two check files it thought were involved, and shipped a red CI: the
      assertion that broke was the PREVIOUS round's pin, in a file nobody had reason to look at. */
   const idx = rd('index.html');
-  assert.match(idx, /window\.__imBuild='R202';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-08-R202';/);
+  /* (#R203) …and this is now the NEGATIVE form, which is what the paragraph above says happens to it. */
+  assert.doesNotMatch(idx, /window\.__imBuild='R202';/, 'the build marker must move every round');
+  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='2026-08-08-R202';/, 'and so must the dated stamp');
 });
