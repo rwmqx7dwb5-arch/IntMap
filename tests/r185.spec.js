@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs';
 // (#R185) Browser regressions for this round.
 //
 // Each one pins a behaviour that was found by MEASURING the running app, and each is written as
 // the measurement rather than as the code — so it keeps holding if the implementation moves.
 import { test, expect } from '@playwright/test';
 import { bootEngine } from './helpers/engine.js';
+
+/* (#R202) the altitude below which js/satellites-live.js treats an object as re-entered and stops
+   drawing it. Derived rather than restated — see the assertion that uses it. */
+const DECAY_FLOOR_KM = (() => {
+  const src = readFileSync(new URL('../js/satellites-live.js', import.meta.url), 'utf8');
+  const m = src.match(/if\(!\(altKm>(\d+)\)\)\{ dropped\+\+/);
+  if (!m) throw new Error('r185: could not find the decay floor in js/satellites-live.js');
+  return Number(m[1]);
+})();
 
 const BOOT = { timeout: 120_000 };
 
@@ -122,7 +132,12 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
     return { n: l.length, zero, minAlt: Math.min(...alt), maxAlt: Math.max(...alt), hdg };
   });
   expect(pos.zero, 'a satellite we cannot propagate is dropped, never drawn at 0,0').toBe(0);
-  expect(pos.minAlt).toBeGreaterThan(100);        /* nothing orbits below the atmosphere */
+  /* ⚠ (#R202) THE FLOOR IS THE APP'S OWN, READ FROM THE APP. This asked for 100 km while
+     js/satellites-live.js drops an object at 80 — two numbers for one rule, and CelesTrak's active
+     catalogue eventually put something between them: a real satellite in its last decaying orbits,
+     reported at 83.5 km, which the app is designed to keep and this test then called a defect.
+     The number now comes from the source, so the pair cannot drift apart again. */
+  expect(pos.minAlt).toBeGreaterThan(DECAY_FLOOR_KM);
   expect(pos.maxAlt).toBeGreaterThan(30000);      /* the geostationary belt is in there */
   /* (#R185b) …and nothing beyond the Moon: SGP4 diverges silently on a few element sets, and one
      of them reported 9,244,632 km on a ninety-minute orbit. Found in production verification. */
