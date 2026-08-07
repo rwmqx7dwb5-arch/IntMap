@@ -95,6 +95,10 @@ import '../js/terrain-water.js';            /* (#R176) sculpt the terrain, route
    about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
    second copy. Nothing loads until someone calls warm(). */
 import '../js/land-mask.js';
+/* (#R197) …and "how deep is the sea here" — the bundled 0.25° global sea floor (data/bathymetry.png).
+   Same shape as the land mask: a fact about the Earth, one owner, and nothing fetched until the one
+   thing that needs a whole ocean at once — the global tsunami solver — calls warm(). */
+import '../js/bathymetry.js';
 /* (#R196) "place this on the map" as ONE gesture — it hides the requesting panel while the click is
    awaited, because on a phone that panel is what the user was being asked to tap through. It
    publishes window.IntMapPick synchronously and holds no state until someone calls start(). */
@@ -168,6 +172,16 @@ import '../js/world-base.js';
    pulls back to the whole-Earth view. Publishes window.IntMapNightSide and builds nothing — not a
    layer, not the GIBS request — until the camera is first wide enough for either to be visible. */
 import '../js/night-side.js';
+/* (#R197) THE SPACE EXPLORER, in two files for the two different kinds of thing it is.
+   js/ephemeris.js is arithmetic — the JPL approximate elements, the truncated ELP-2000/82 Moon and
+   the IAU rotational elements. No DOM, no renderer, no app state, so it is verified in Node
+   (tests/r197-space.test.mjs) against an independent solar series, against Kepler's third law, and
+   against the Moon's own libration.
+   js/space.js is the view: its own WebGL sphere renderer, the body list, the clock and the two
+   scales. It registers a factory and allocates NOTHING — no context, no texture, no star catalogue —
+   until the button at the far end of the zoom is pressed. */
+import '../js/ephemeris.js';
+import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
    registers a factory; js/app-body.js calls it from the exact point the code used to occupy, because

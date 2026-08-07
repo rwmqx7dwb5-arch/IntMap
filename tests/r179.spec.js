@@ -55,7 +55,10 @@ const tiltDrag = async (page, cc) => page.evaluate(async (c) => {
      at all. Measured while writing these tests: running the cases in sequence in one page turned
      flat z6 from 1,394,705 m of drift into 0, because the wrecked leftover from the case before
      it kept MapLibre's underground check quiet. Every case gets a fresh page AND a clean camera. */
-  m.jumpTo({ center: [139.767, 35.681], zoom: c.z, pitch: 0, bearing: 0, elevation: 0 });
+  /* (#R197) the centre is Tokyo unless the case names one — the consolidated sweep carries the
+     high-latitude case that used to live in tests/r177, and cos φ is exactly what the Mercator
+     camera model scales by, so 69°N is not the same test as 35°N. */
+  m.jumpTo({ center: [c.lng == null ? 139.767 : c.lng, c.lat == null ? 35.681 : c.lat], zoom: c.z, pitch: 0, bearing: 0, elevation: 0 });
   await wait(800);
   const el = m.getCanvasContainer(), b = el.getBoundingClientRect();
   const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height * 0.8);
@@ -108,7 +111,19 @@ for (const c of [{ proj: 'mercator', z: 1.7, tag: 'flat z1.7 (STARTUP)', sphere:
                  { proj: 'globe', z: 6, tag: 'globe z6', sphere: true, look: false },
                  { proj: 'globe', z: 9, tag: 'globe z9', sphere: true, look: true },
                  { proj: 'globe', z: 12.5, tag: 'globe z12.5', sphere: false, look: true },
-                 { proj: 'globe', z: 14, tag: 'globe z14', sphere: false, look: true }]) {
+                 { proj: 'globe', z: 14, tag: 'globe z14', sphere: false, look: true },
+                 /* ⚠ (#R197) TROMSØ, 69.65°N — the one case this sweep did not have and #R177's did.
+                    It is here because #R197 CONSOLIDATED the viewpoint invariant: 「何重にもテストとか
+                    意味がない」. The same property — "tilting does not move the viewpoint" — was being
+                    swept independently by tests/r176, r177, r178 and programmatically by r172 and r173,
+                    five extra files for one fact, because it was re-reported five rounds running. This
+                    sweep subsumes all of them: it drives a REAL POINTER DRAG (the others tilt through
+                    the API, and #R179 is the round that found the API path was not the broken one), it
+                    covers both projections and z1.7…z18 against their 3–7 cases, and it asserts drift,
+                    inter-frame stepping, inertia, saturation and the 90° crossing in one place. The
+                    superseded copies were deleted, not disabled. */
+                 { proj: 'globe', z: 6, lng: 18.96, lat: 69.65, tag: 'globe z6 Tromsø 69°N', sphere: true, look: false },
+                 { proj: 'mercator', z: 6, lng: 18.96, lat: 69.65, tag: 'flat z6 Tromsø 69°N', sphere: false, look: true }]) {
   test(`a real tilt drag holds the viewpoint — ${c.tag} (#R179)`, async ({ page }) => {
     test.setTimeout(180000);
     await boot(page);

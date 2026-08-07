@@ -1,0 +1,203 @@
+// @ts-check
+/* ============================================================================
+ *  R197 — in a real renderer: the space explorer, the button that opens it,
+ *         the global tsunami, and the tsunami that is no longer in the disaster panel
+ * ----------------------------------------------------------------------------
+ *  tests/r197-checks.test.mjs runs the physics in Node. This runs the parts that only exist when
+ *  there is a page: a WebGL context, a canvas that is actually painted, a zoom floor a camera can
+ *  reach, and a panel whose buttons are wired.
+ * ==========================================================================*/
+import { test, expect } from '@playwright/test';
+import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+
+test.describe.configure({ mode: 'serial' });
+
+let page, diag;
+
+test.beforeAll(async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  await installHermeticRouting(context);
+  page = await context.newPage();
+  diag = collectPageDiagnostics(page);
+  await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForFunction(() => !!window.__imap && !!document.getElementById('map'), null, { timeout: 60_000 });
+  await page.waitForFunction(() => !!window.IntMapSpace && !!window.IntMapEphemeris, null, { timeout: 60_000 });
+});
+
+test.afterAll(async () => { try { await page.context().close(); } catch { /* ignore */ } });
+
+test('R197 ① the space button exists only at the far end of the zoom', async () => {
+  /* it must NOT be there at the opening view */
+  const start = await page.evaluate(() => {
+    const b = document.getElementById('space-btn');
+    return { z: window.IntMapGeoEngine.camera.get().zoom, shown: !!(b && b.style.display !== 'none'),
+      atFloor: window.IntMapSpace.atFloor() };
+  });
+  expect(start.atFloor, `zoom ${start.z} is not the floor`).toBe(false);
+  expect(start.shown).toBe(false);
+
+  /* …and it must be there at the floor */
+  await page.evaluate(() => {
+    const z = window.IntMapGeoEngine.camera.getMinZoom();
+    window.IntMapGeoEngine.camera.jumpTo({ zoom: z });
+  });
+  await page.waitForFunction(() => window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
+  const at = await page.evaluate(() => {
+    const b = document.getElementById('space-btn');
+    const r = b.getBoundingClientRect();
+    return { text: b.textContent, w: r.width, h: r.height, onscreen: r.top > 0 && r.bottom < window.innerHeight };
+  });
+  expect(at.w).toBeGreaterThan(60);
+  expect(at.onscreen).toBe(true);
+
+  /* and it goes away again when the camera can zoom out — which is the half that is easy to forget */
+  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ zoom: 3 }));
+  await page.waitForFunction(() => !window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
+});
+
+test('R197 ② the explorer renders the solar system, with real stars and real textures', async () => {
+  await page.evaluate(() => {
+    window.IntMapGeoEngine.camera.jumpTo({ zoom: window.IntMapGeoEngine.camera.getMinZoom() });
+  });
+  await page.waitForFunction(() => window.IntMapSpace.state().buttonVisible, null, { timeout: 15_000 });
+  await page.click('#space-btn');
+  await page.waitForFunction(() => {
+    const s = window.IntMapSpace.state();
+    return s.open && s.stars > 1000 && s.textures >= 8;
+  }, null, { timeout: 40_000 });
+
+  const st = await page.evaluate(() => window.IntMapSpace.state());
+  expect(st.mode).toBe('system');
+  expect(st.stars).toBeGreaterThan(5000);      /* the naked-eye Hipparcos sky */
+  expect(st.live).toBe(true);
+
+  /* ⚠ THE CANVAS IS ACTUALLY PAINTED. A WebGL context that never draws still reports a size, so the
+     pixels are read back: a solar system on black must have lit pixels and must not be uniform. */
+  const px = await page.evaluate(() => window.IntMapSpace._sample(240, 160));
+  expect(px.max, 'the scene is not entirely black').toBeGreaterThan(60);
+  expect(px.lit, 'something is drawn in the middle of the view').toBeGreaterThan(20);
+});
+
+test('R197 ③ a planet is a globe with its IAU place names on it', async () => {
+  await page.evaluate(() => { window.IntMapSpace.setBody('mars'); window.IntMapSpace.setMode('body'); });
+  await page.waitForFunction(() => {
+    const s = window.IntMapSpace.state();
+    return s.mode === 'body' && s.focus === 'mars' && s.names > 0;
+  }, null, { timeout: 30_000 });
+  await page.waitForTimeout(1200);
+  /* the labels are drawn on the overlay canvas — check that ink reached it */
+  const ink = await page.evaluate(() => {
+    const ov = document.getElementById('space-ov');
+    const c = ov.getContext('2d');
+    const d = c.getImageData(0, 0, ov.width, ov.height).data;
+    let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++;
+    return n;
+  });
+  expect(ink, 'feature labels were painted onto the overlay').toBeGreaterThan(400);
+  const names = await page.evaluate(() => window.IntMapSpace.state());
+  expect(names.names).toBeGreaterThanOrEqual(5);   /* five bodies carry nomenclature */
+});
+
+test('R197 ④ past, live and future — the positions come from the ephemeris and move with the clock', async () => {
+  const r = await page.evaluate(() => {
+    const E = window.IntMapEphemeris;
+    const at = (iso) => {
+      const jd = E.julianDay(Date.parse(iso));
+      const m = E.heliocentric('mars', jd);
+      return { lon: Math.atan2(m.y, m.x) * 180 / Math.PI, r: m.r };
+    };
+    return { a: at('1600-06-01T00:00:00Z'), b: at('2026-06-01T00:00:00Z'), c: at('2400-06-01T00:00:00Z') };
+  });
+  /* Mars's heliocentric distance must stay inside its published perihelion/aphelion at every epoch */
+  for (const k of ['a', 'b', 'c']) {
+    expect(r[k].r).toBeGreaterThan(1.35);
+    expect(r[k].r).toBeLessThan(1.70);
+  }
+  /* and setting the clock to a date four centuries away must actually move the scene */
+  const moved = await page.evaluate(() => {
+    window.IntMapSpace.setMode('system');
+    window.IntMapSpace.setWhen(new Date('2400-06-01T00:00:00Z'));
+    const s1 = window.IntMapSpace.state();
+    window.IntMapSpace.setLive();
+    const s2 = window.IntMapSpace.state();
+    return { past: s1.when, live: s2.when, wasLive: s1.live, isLive: s2.live };
+  });
+  expect(moved.wasLive).toBe(false);
+  expect(moved.isLive).toBe(true);
+  expect(moved.past.slice(0, 4)).toBe('2400');
+});
+
+test('R197 ⑤ both scales are honest, and closing returns to the map', async () => {
+  const s = await page.evaluate(() => {
+    window.IntMapSpace.setScale('real');
+    const a = window.IntMapSpace.state();
+    window.IntMapSpace.setScale('model');
+    const b = window.IntMapSpace.state();
+    return { a, b };
+  });
+  expect(s.a.scale).toBe('real');
+  expect(s.b.scale).toBe('model');
+  await page.click('.sp-close');
+  await page.waitForFunction(() => !window.IntMapSpace.state().open, null, { timeout: 10_000 });
+  expect(await page.evaluate(() => document.getElementById('space-view').style.display)).toBe('none');
+});
+
+test('R197 ⑥ the disaster simulator no longer offers a tsunami', async () => {
+  const d = await page.evaluate(async () => {
+    window.IntMapDisaster.open({ lng: 139.7, lat: 35.6 });
+    await new Promise(r => setTimeout(r, 400));
+    const p = document.getElementById('dz-panel');
+    const btns = [...p.querySelectorAll('.dz-hz')].map(b => b.getAttribute('data-h'));
+    const took = window.IntMapDisaster.setHazard('tsunami');
+    const st = window.IntMapDisaster.state();
+    window.IntMapDisaster.clear();
+    return { btns, took, hazard: st.hazard, keys: Object.keys(st) };
+  });
+  expect(d.btns).not.toContain('tsunami');
+  expect(d.btns).toEqual(expect.arrayContaining(['flood', 'ash', 'smoke', 'radiation']));
+  expect(d.took, 'setHazard refuses a hazard it does not have').toBe(false);
+  expect(d.hazard).not.toBe('tsunami');
+  expect(d.keys).not.toContain('waveH');
+});
+
+test('R197 ⑦ the tsunami model is global, and it is the only tsunami there is', async () => {
+  const t = await page.evaluate(async () => {
+    /* the bundled sea floor, which is what makes a global domain possible */
+    const ok = await window.IntMapBathymetry.warm();
+    const bs = window.IntMapBathymetry.state();
+    /* a few known points, read straight out of the bundled grid */
+    const probe = {
+      mariana: window.IntMapBathymetry.depthAt(142.2, 11.35),
+      midPacific: window.IntMapBathymetry.depthAt(-150, 0),
+      sahara: window.IntMapBathymetry.depthAt(10, 25),
+      atlantic: window.IntMapBathymetry.depthAt(-30, 30)
+    };
+    const sea = {
+      mariana: window.IntMapBathymetry.seaFractionAt(142.2, 11.35),
+      sahara: window.IntMapBathymetry.seaFractionAt(10, 25)
+    };
+    return { ok, bs, probe, sea };
+  });
+  expect(t.ok).toBe(true);
+  expect(t.bs.width).toBe(1440);
+  expect(t.bs.height).toBe(720);
+  /* the deepest trench on Earth, averaged over a 28 km cell, is still kilometres deep */
+  expect(t.probe.mariana).toBeGreaterThan(5000);
+  expect(t.probe.midPacific).toBeGreaterThan(3000);
+  expect(t.sea.mariana).toBeGreaterThan(0.9);
+  /* and the Sahara is not sea */
+  expect(t.sea.sahara).toBeLessThan(0.1);
+  expect(t.probe.sahara).toBe(0);
+
+  const api = await page.evaluate(() => {
+    const T = window.IntMapTsunami;
+    return { keys: Object.keys(T), state: T.state() };
+  });
+  expect(api.keys).not.toContain('openInundation');
+  expect(api.state.worker, 'the solver runs in a worker').toBe(true);
+});
+
+test('R197 ⑧ no page errors were logged while all of that happened', async () => {
+  const errs = ((diag.pageErrors||[]).concat(diag.consoleErrors||[])).filter(e => !/CORS|Failed to fetch|net::ERR|NetworkError|503|429/i.test(String(e)));
+  expect(errs, JSON.stringify(errs.slice(0, 4))).toEqual([]);
+});

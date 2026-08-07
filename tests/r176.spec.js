@@ -18,90 +18,16 @@ const boot = async page => {
   await page.waitForTimeout(1200);
 };
 
-/* ── ① 「視点の位置を変えるなと言っているのに、変わる」 ─────────────────────────────────────────
-   The fourth report of this. Measured on the failing build with a real ctrl-drag: 22,218 km of
-   viewpoint drift at z3 and 58,506 m at z6 over Tromsø, with single-frame jumps of 23,152 km when
-   the old |lat|>89.5 guard declined a frame and the proposal was applied verbatim. Every previous
-   round measured at z12 — where the tangent plane it used is nearly true — and read 0.
-   The viewpoint is measured HERE in the renderer's own Mercator coordinates, which is the only
-   yardstick that does not share the bug. */
-for (const c of [{ z: 3, lng: 139.767, lat: 35.681, tag: 'z3 Tokyo' },
-                 { z: 6, lng: 15.0, lat: 69.65, tag: 'z6 Tromsø' },
-                 { z: 12, lng: 139.767, lat: 35.681, tag: 'z12 Tokyo' }]) {
-  test(`unlimited tilt holds the viewpoint still at ${c.tag}`, async ({ page }) => {
-    test.setTimeout(180000);
-    await boot(page);
-    await page.evaluate(installCameraRuler);
-    const r = await page.evaluate(async (cc) => {
-      const m = window.__imap, el = m.getCanvasContainer();
-      const frame = () => new Promise(res => requestAnimationFrame(() => res()));
-      const b = el.getBoundingClientRect();
-      const cx = Math.round(b.left + b.width / 2), cy = Math.round(b.top + b.height / 2);
-      const fire = (t, type, x, y, buttons) => t.dispatchEvent(new MouseEvent(type,
-        { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons, ctrlKey: true, view: window }));
-      /* (#R177) SUPERSEDED RULER, SAME QUESTION. What stood here was #R176's own correction written
-         out a second time — so it agreed with the fix and disagreed with the renderer by up to
-         7,115 km, and these three tests passed on a build whose viewpoint was visibly sliding. The
-         ruler now lives in ONE place (tests/helpers/camera-ruler.js) for exactly the reason the
-         geometry does in the app: two copies of it is how this went unnoticed for four rounds. */
-      window.IntMapTilt.set(false);
-      m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
-      await frame(); await frame();
-      window.IntMapTilt.set(true);
-      m.jumpTo({ center: [cc.lng, cc.lat], zoom: cc.z, pitch: 0, bearing: 0 });
-      await frame(); await frame();
-      const E0 = window.__eye();
-      fire(el, 'mousedown', cx, cy, 1); await frame();
-      let y = cy, prev = E0, drift = 0, jump = 0;
-      for (let i = 0; i < 18; i++) {
-        y -= 6; fire(document, 'mousemove', cx, y, 1); await frame(); await frame();
-        const E = window.__eye();
-        drift = Math.max(drift, window.__gap(E0, E));
-        jump = Math.max(jump, window.__gap(prev, E));
-        prev = E;
-      }
-      fire(document, 'mouseup', cx, y, 0); await frame();
-      return { drift, jump, endPitch: m.getPitch() };
-    }, c);
-    expect(r.endPitch, 'the drag really tilted the map').toBeGreaterThan(30);
-    expect(r.drift, 'the viewpoint must not move').toBeLessThan(1);
-    expect(r.jump, 'and it must not jump between frames').toBeLessThan(1);
-  });
-}
+/* ⚠ (#R197) THE VIEWPOINT SWEEP THAT WAS HERE IS GONE — 「何重にもテストとか意味がない」.
+   r176 swept 3 cases for viewpoint hold, plus the dolly guard r179 also carries.
+   Five files swept the same invariant — "tilting does not move the viewpoint" — because it was
+   re-reported five rounds running, and each round added its own sweep instead of extending the one
+   before it. tests/r179.spec.js now carries all of them: it drives a REAL POINTER DRAG rather than
+   the API (and #R179 is the round that found the API path was never the broken one), it covers both
+   projections from z1.7 to z18 plus the 69°N case that used to live in tests/r177, and it asserts
+   drift, inter-frame stepping, inertia, tilt saturation and the 90° crossing in one place.
+   The copies were DELETED, not skipped: a disabled test is a slower test that proves nothing. */
 
-test('a zoom is still a dolly at every tilt (#R175 must survive #R176)', async ({ page }) => {
-  test.setTimeout(180000);
-  await boot(page);
-  await page.evaluate(installCameraRuler);
-  const rows = await page.evaluate(async () => {
-    const m = window.__imap, el = m.getCanvasContainer();
-    const wait = ms => new Promise(res => setTimeout(res, ms));
-    const b = el.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
-    /* (#R177) same superseded-ruler note as above: this read the altitude with the correction's own
-       equation. It is the renderer's drawn camera now. */
-    const alt = () => window.__eye().alt;
-    const out = [];
-    for (const pitch of [0, 85, 110, 150]) {
-      window.IntMapTilt.set(false);
-      m.jumpTo({ center: [139.767, 35.681], zoom: 12, pitch: 0, bearing: 0 }); await wait(250);
-      window.IntMapTilt.set(true);
-      m.jumpTo({ center: [139.767, 35.681], zoom: 12, pitch: 0, bearing: 0 }); await wait(250);
-      m.setPitch(pitch); await wait(250);
-      const z0 = m.getZoom(), a0 = alt();
-      for (let i = 0; i < 4; i++) {
-        el.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
-        await wait(320);
-      }
-      out.push({ pitch, ratio: alt() / a0, expect: Math.pow(2, z0 - m.getZoom()) });
-    }
-    return out;
-  });
-  for (const r of rows) {
-    expect(r.expect, `zoom really changed at pitch ${r.pitch}`).toBeLessThan(0.9);
-    // the eye descends by exactly the zoom ratio — the same meaning tilted or not
-    expect(Math.abs(r.ratio - r.expect), `pitch ${r.pitch}: eye ratio ${r.ratio} vs zoom ratio ${r.expect}`).toBeLessThan(0.03);
-  }
-});
 
 /* ── ② Line of sight ───────────────────────────────────────────────────────────────────────── */
 test('the viewshed resolves per raster cell, and re-runs at the same site', async ({ page }) => {

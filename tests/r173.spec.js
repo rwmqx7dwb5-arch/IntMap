@@ -113,54 +113,6 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
   await page.evaluate(() => window.IntMapFlightSim.stop());
 });
 
-test('with the tilt ceiling lifted, tilting does not move the viewpoint — by any route', async ({ page }) => {
-  test.setTimeout(180000);
-  await boot(page);
-  await page.evaluate(() => { window.IntMapTilt.set(true);
-    window.__imap.jumpTo({ center: [139.76, 35.68], zoom: 12, pitch: 50, bearing: 0 }); });
-  await page.waitForTimeout(1500);
-
-  // 1. the ctrl-drag — the gesture a person actually uses
-  const a = await eye(page);
-  await page.keyboard.down('Control');
-  await page.mouse.move(640, 500); await page.mouse.down();
-  for (let i = 1; i <= 14; i++) { await page.mouse.move(640, 500 - i * 14); await page.waitForTimeout(30); }
-  await page.mouse.up(); await page.keyboard.up('Control');
-  await page.waitForTimeout(2000);
-  const b = await eye(page);
-  const pitch = await page.evaluate(() => window.__imap.getPitch());
-  expect(pitch, 'the drag really did lean past the horizon').toBeGreaterThan(100);
-  expect(metres(a, b), 'the viewpoint did not travel').toBeLessThan(60);
-  expect(Math.abs(b.alt - a.alt), 'and did not change height').toBeLessThan(60);
-
-  // 2. programmatic + eased tilt (the last frame of an ease used to wipe the anchor)
-  const c = await eye(page);
-  await page.evaluate(() => window.IntMapTilt.tiltTo(150));
-  await page.waitForTimeout(900);
-  await page.evaluate(() => window.__imap.easeTo({ pitch: 62, duration: 400 }));
-  await page.waitForTimeout(2200);
-  const d = await eye(page);
-  expect(metres(c, d)).toBeLessThan(60);
-  expect(Math.abs(d.alt - c.alt)).toBeLessThan(60);
-
-  // 3. a journey is still a journey
-  await page.evaluate(() => window.__imap.flyTo({ center: [2.3522, 48.8566], zoom: 11, pitch: 55, duration: 700 }));
-  await page.waitForTimeout(2800);
-  const paris = await page.evaluate(() => { const c2 = window.__imap.getCenter();
-    return Math.round(Math.hypot((c2.lng - 2.3522) * 73000, (c2.lat - 48.8566) * 111320)); });
-  expect(paris, 'flying somewhere tilted still lands there').toBeLessThan(200);
-
-  // 4. …and with the setting off, MapLibre's own behaviour is untouched
-  await page.evaluate(() => { window.IntMapTilt.set(false);
-    window.__imap.jumpTo({ center: [139.76, 35.68], zoom: 12, pitch: 30, bearing: 0 }); });
-  await page.waitForTimeout(1200);
-  const e = await eye(page);
-  await page.evaluate(() => window.__imap.easeTo({ pitch: 68, duration: 300 }));
-  await page.waitForTimeout(1800);
-  const f = await eye(page);
-  expect(metres(e, f), 'standard tilt still orbits the target, exactly as it always has').toBeGreaterThan(1000);
-});
-
 test('the 3-D volume is a closed body — one solid, with a floor', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);

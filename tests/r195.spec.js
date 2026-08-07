@@ -37,14 +37,35 @@ test('R195 tsunami: the painted wave sits on the epicentre it came from', async 
     const src = window.__imap.getSource('tsu-field');
     if (!src || !src.canvas) return { err: 'no canvas source' };
     const cv = src.canvas, c = src.coordinates;
-    window.IntMapTsunami.setTime(0);          /* t=0 is the co-seismic displacement, centred on the fault */
+    /* t = 0 is the co-seismic displacement, centred on the fault.
+       ⚠ (#R197) AND THE CANVAS HAS TO BE REPAINTED BEFORE IT IS READ. `setTime` marks the dynamic
+       image dirty; the engine redraws it on the next frame. Reading immediately therefore sampled
+       whatever was last drawn — the END of the run. That was harmless while the picture was a box
+       round the epicentre (the source is still the brightest row three hours later) and is not
+       harmless now the picture is the whole planet: measured, the brightest row of the t=3 h global
+       field is 38.7° from the epicentre, which is the failure this comment replaces. */
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
-    let best = -1, bestRow = 0;
+    /* ⚠ (#R197) THE ROW WITH THE STRONGEST PIXEL, NOT THE ROW WITH THE MOST INK. Both find the uplift
+       while the picture is a box round the epicentre. On the GLOBAL picture they disagree, and the
+       sum is the one that is wrong: Okada's far tail is evaluated inside a window measured in METRES
+       (±4,326 km for an M9.1), so at 77°N that window spans ±156° of LONGITUDE against ±49° at the
+       epicentre's own latitude. A thousand columns of one-centimetre tail out-sum two hundred columns
+       of nine-metre uplift, and the measured answer was 76.98°N — 38.7° from the source. The peak of
+       the co-seismic displacement is a maximum, so it is found by taking a maximum. */
+    let best = -1; const rowMax = [];
     for (let y = 0; y < cv.height; y++) {
       let s = 0;
-      for (let x = 0; x < cv.width; x++) s += d[(y * cv.width + x) * 4 + 3];
-      if (s > best) { best = s; bestRow = y; }
+      for (let x = 0; x < cv.width; x++) { const a = d[(y * cv.width + x) * 4 + 3]; if (a > s) s = a; }
+      rowMax.push(s); if (s > best) best = s;
     }
+    /* ⚠ AND THE MIDDLE OF THE PLATEAU, NOT ITS FIRST ROW. The colour ramp SATURATES: the core of a
+       nine-metre uplift is a band of rows that all reach the same alpha, so "the first row equal to
+       the maximum" is the NORTHERN EDGE of the source — measured 3.37° from the epicentre. The
+       displacement is symmetric about the fault, so the midpoint of the saturated band is the thing
+       being looked for. */
+    const hit = []; for (let y = 0; y < rowMax.length; y++) if (rowMax[y] >= best) hit.push(y);
+    const bestRow = hit[(hit.length - 1) >> 1];
     /* …this test's own projection arithmetic, deliberately not the app's ── */
     const R = Math.PI / 180;
     const my = (la) => Math.log(Math.tan(Math.PI / 4 + la * R / 2));
@@ -52,7 +73,7 @@ test('R195 tsunami: the painted wave sits on the epicentre it came from', async 
     const n = Math.max(...c.map((p) => p[1])), s2 = Math.min(...c.map((p) => p[1]));
     const v = (bestRow + 0.5) / cv.height;
     return {
-      w: cv.width, h: cv.height, north: n, south: s2, bestRow, opaque: best,
+      w: cv.width, h: cv.height, north: n, south: s2, bestRow, opaque: best, sim: window.IntMapTsunami.state().sim,
       latMercator: iy(my(n) + (my(s2) - my(n)) * v),   /* where MapLibre actually draws that row */
       latGeographic: n + (s2 - n) * v,                 /* where #R193 believed it did */
     };
@@ -62,11 +83,17 @@ test('R195 tsunami: the painted wave sits on the epicentre it came from', async 
   expect(r.opaque, 'the picture is not empty').toBeGreaterThan(0);
   /* the box is wide enough for the two readings to disagree — otherwise the test proves nothing */
   expect(Math.abs(r.latMercator - r.latGeographic)).toBeGreaterThan(4);
-  /* ⚠ THE ASSERTION. The uplift is painted at the latitude the renderer will draw it at. One grid
-     row of this box is ~0.13°, so a degree is a generous margin and 8° — the bug — is nowhere near. */
+  /* ⚠ THE ASSERTION. The uplift is painted at the latitude the renderer will draw it at. One row of
+     the picture is ~0.5° now (#R197: 1440 × 640 solved, decimated to 720 × 320 for the animation), so
+     a degree is a little over two rows and 8° — the bug — is nowhere near. */
   expect(Math.abs(r.latMercator - 38.32), 'the co-seismic uplift is drawn at the epicentre').toBeLessThan(1.2);
-  /* and the texture is tall enough that Mercator compression skips no row of water */
-  expect(r.h).toBeGreaterThanOrEqual(r.w);
+  /* ⚠ (#R197) …and the texture is tall enough that Mercator compression skips no row of water. That
+     used to be written `h >= w`, which was the same statement while the domain was a square box round
+     the epicentre. The domain is the planet now — 360° wide against 160° tall — so the picture is
+     legitimately wider than it is tall, and the property being pinned is the one chooseImgH() exists
+     for: the texture has MORE rows than the field has, because Mercator needs them. */
+  expect(r.h, 'the texture is taller than the field it draws').toBeGreaterThan(r.sim.fy);
+  expect(r.w, 'and exactly as wide as the field, which needs no resampling').toBe(r.sim.fx);
 });
 
 test('R195 hover: one hit test per pointer move, with the delegation semantics unchanged', async ({ page }) => {

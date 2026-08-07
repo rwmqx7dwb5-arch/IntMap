@@ -49,15 +49,39 @@
  *  ── WHAT IT STILL DOES NOT DO ───────────────────────────────────────────────────────────────────
  *  Cells are twenty-odd kilometres, so this is an OPEN-OCEAN model: arrival times and deep-water
  *  amplitude are meaningful, a harbour is not. Coastal height is a Green's-law estimate taken only
- *  from cells deeper than 200 m, where the linear solution it shoals is still valid. The last
- *  kilometre is one button away, in the inundation model that can resolve it.
+ *  from cells deeper than 200 m, where the linear solution it shoals is still valid.
+ *
+ *  ── #R197: THE DOMAIN IS THE PLANET, AND THIS IS THE ONLY TSUNAMI MODEL ─────────────────────────
+ *  「津波シミュレータのシミュレート範囲は全球に。また、精度と忠実性を根本的に大幅に強化して。
+ *    （勝手に災害シミュレータ内の津波シミュレータを起動するな。いまの津波シミュレータだけにして、
+ *      災害シミュレータからは津波シミュレータを削除しろ）」
+ *
+ *  What that changed is written up where each piece lives — the grid and the sea floor in build()
+ *  below, the equations and the boundaries in src/tsunami-worker.js. In summary:
+ *
+ *    · the domain is −180…180 by −80…80 at 0.25°, with LONGITUDE PERIODIC. There is no box for the
+ *      wave to run off the edge of, and nothing reflects off an edge that is not there;
+ *    · the sea floor is data/bathymetry.png — one bundled image, a measured depth in every cell,
+ *      instead of ninety DEM tiles of which #R192 measured 19 % never arriving;
+ *    · CORIOLIS is carried (hours of propagation across an ocean is where it starts to matter), the
+ *      initial surface adds the Tanioka & Satake (1996) horizontal-displacement term over sloping
+ *      sea floor, and the two latitude walls are radiating rather than reflecting;
+ *    · the run may be up to 30 hours, which is the far side of the planet and back to the source.
+ *
+ *  ⚠ AND THE INUNDATION HAND-OFF IS GONE. js/sims.js used to carry a second, unrelated "tsunami" —
+ *  a bathtub fill around one coast — that both this panel and the seismic panel could open. There is
+ *  now exactly one tsunami in this app, and it is this one.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.tsunami=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
-  const warmDEMTiles=HOST.warmDEMTiles, demSnapshot=HOST.demSnapshot, isMobile=HOST.isMobile;
+  /* ⚠ (#R197) TWO FEWER THINGS BORROWED FROM THE SHELL. `warmDEMTiles` and `demSnapshot` were this
+     module's link to the DEM tile pyramid, and the global model does not use tiles at all — the sea
+     floor is data/bathymetry.png (js/bathymetry.js). What is left from HOST is the drag helper and
+     the mobile test, neither of which is about the Earth. */
+  const isMobile=HOST.isMobile;
 
   window.IntMapTsunami=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
@@ -74,89 +98,41 @@ window.IntMapModules.tsunami=function(HOST){
     let dispAmp=null;                   /* metres at which the ramp saturates; null = automatic */
     let lastErr=null, probe=null;
 
-    /* ══ OKADA (1985) — the vertical surface displacement of one rectangular dislocation ═══════════
-       Unchanged from #R192, which verified it against the published test case (L=3, W=2, d=4,
-       δ=70°, observation (2,3): dip-slip uz = −3.5639e−2 against the published −3.564e−2).
-       ⚠ arctan OF A RATIO, not atan2 — see the note inside. */
-    function okadaUz(x,y,depth,L2,W2,dipDeg,slip){
-      const dip=dipDeg*D, sd=Math.sin(dip), cd=Math.cos(dip);
-      const cdS=(Math.abs(cd)<1e-6)?1e-6:cd;                 /* vertical faults are a limit, not a case */
-      const p=y*cd+depth*sd;
-      const f=(xi,eta)=>{
-        const q=y*sd-depth*cd;
-        const R=Math.sqrt(xi*xi+eta*eta+q*q); if(!(R>0)) return 0;
-        const dt=eta*sd-q*cd;
-        const X=Math.sqrt(xi*xi+q*q);
-        /* ⚠ PRINCIPAL value. The two-argument form adds ±π wherever the numerator and denominator
-           change sign, and the Chinnery difference then keeps that jump as a plateau: measured
-           before #R192 fixed it, a constant −5.14 m of "subsidence" 400 km behind the fault, which
-           is exactly slip·sinδ. Deformation must decay to zero away from a finite source. */
-        const den=xi*(R+X)*cdS;
-        const I5=(Math.abs(cd)<1e-6)?(-0.5*xi*q/Math.pow(R+dt,2))
-          :((Math.abs(den)<1e-12)?0:(0.5*(2/cdS)*Math.atan((eta*(X+q*cdS)+X*(R+X)*sd)/den)));
-        const t1=(R+xi)!==0?dt*q/(R*(R+xi)):0;
-        const t2=sd*((Math.abs(q*R)>1e-12)?Math.atan(xi*eta/(q*R)):0);
-        return t1+t2-I5*sd*cdS;
-      };
-      const v=f(x,p)-f(x,p-W2)-f(x-L2,p)+f(x-L2,p-W2);
-      return -(slip/(2*Math.PI))*v;
-    }
-
-    /* Wells & Coppersmith (1994), reverse faulting: subsurface rupture length and down-dip width from
-       the moment magnitude, and the average slip that carries the moment over that area. */
-    function faultGeom(M){
-      const Lk=Math.pow(10,0.58*M-2.42), Wk=Math.min(Lk,Math.pow(10,0.41*M-1.61));
-      const M0=Math.pow(10,1.5*M+9.1), MU=3.0e10;
-      const slip=M0/(MU*Lk*1000*Wk*1000);
-      return { L:Lk*1000, W:Wk*1000, slip, M0 };
-    }
-
-    /* ══ (#R193) THE SOURCE IS A TAPERED SUB-FAULT GRID, NOT ONE RECTANGLE ═════════════════════════
-       A uniform-slip rectangle puts the same displacement everywhere and steps to zero at the edge.
-       Real ruptures taper. Splitting the plane into NS × NW sub-faults, weighting each by a raised
-       taper along strike and down dip, and RE-NORMALISING so Σ(slip·area) is exactly M0/μ, keeps the
-       magnitude honest while giving the peaked centre and the soft edges an inversion recovers.
-       Evaluated only within six rupture lengths of the epicentre, where Okada is not already zero. */
-    const SUB_S=8, SUB_W=3;
-    function taper(s){ return Math.sqrt(Math.sin(Math.PI*Math.max(0.001,Math.min(0.999,s)))); }
-    function subFaults(g,dipDeg,topDepth){
-      const out=[]; const dl=g.L/SUB_S, dw=g.W/SUB_W;
-      let wsum=0; const wts=[];
-      for(let a=0;a<SUB_S;a++) for(let b=0;b<SUB_W;b++){
-        const w=taper((a+0.5)/SUB_S)*taper((b+0.5)/SUB_W); wts.push(w); wsum+=w;
-      }
-      const norm=(SUB_S*SUB_W)/Math.max(1e-9,wsum);     /* mean weight → 1, so ΣM0 is preserved */
-      let k=0;
-      for(let a=0;a<SUB_S;a++) for(let b=0;b<SUB_W;b++){
-        /* okadaUz measures x along strike from the plane's near edge and y from the plane's LOWER
-           edge, with `depth` the depth of that lower edge. So each sub-fault has to be expressed the
-           same way, about ITS OWN lower edge:
-             x0 — along-strike offset of this strip's near edge  = a·dl
-             y0 — horizontal offset of this strip's lower edge, measured UP-DIP from the plane's
-                  lower edge = (W − (b+1)·dw)·cos δ
-             d0 — the depth of this strip's lower edge = topDepth + (b+1)·dw·sin δ
-           ⚠ y0 was `b·dw·cos δ` when this was written, which is the same expression counted from the
-             wrong end: the strips came out MIRRORED down dip, so the deep low-slip strip sat where
-             the shallow high-slip one belongs. Measured on Tōhoku, that alone drove the subsidence
-             lobe from −3.5 m to −6.2 m and spread the initial field far too wide. Both forms reduce
-             to the correct single rectangle when SUB_W is 1, which is exactly why it survived the
-             first look. */
-        out.push({ x0:a*dl, y0:(g.W-(b+1)*dw)*Math.cos(dipDeg*D), d0:topDepth+(b+1)*dw*Math.sin(dipDeg*D),
-                   L:dl, W:dw, slip:g.slip*wts[k++]*norm });
-      }
-      return out;
-    }
+    /* ⚠ (#R197) THE SOURCE MATHS MOVED TO src/tsunami-worker.js.
+       Okada (1985), the Wells & Coppersmith (1994) fault dimensions and the tapered sub-fault grid used
+       to be evaluated HERE, over the model grid, on the main thread — 141,000 cells × 24 Okada terms,
+       yielded row by row. On a GLOBAL grid that is 921,600 cells and there is no reason for any of it to
+       be on the page: the worker already owns the integration, so it now owns the model. This file keeps
+       the panel, the picture and the reading of the result — nothing that is arithmetic about elasticity.
+       The published verification case travels with the code: tests/r197-checks.test.mjs RUNS okadaUz from
+       the worker against Okada Table 2 rather than asserting on its text. */
 
     /* ---- building the model ---------------------------------------------------------------------- */
-    /* The grid: finer than #R192's 320² on both classes of device, because the solve no longer runs
-       on the page and can afford it. 512² over a Pacific-wide box is ~22 km a cell. */
-    function gridN(){ return (typeof isMobile==='function'&&isMobile())?256:512; }
+    /* ══ (#R197) THE DOMAIN IS THE PLANET ═════════════════════════════════════════════════════════
+       0.25° everywhere: 1440 × 640 over −180…180 × −80…80. Two consequences worth stating, because
+       both used to be the other way round:
+
+        · the resolution NO LONGER DEPENDS ON THE RUN LENGTH. #R196 cut a box from the reach, so a
+          6 h Tōhoku run got 22 km cells and a 24 h run got 40 km ones — the same event modelled at
+          two resolutions depending on how long you asked to watch it;
+        · there is no box, so there is no edge. Longitude is periodic in the solver, and a wave that
+          leaves the western Pacific arrives in the east instead of being absorbed by a sponge.
+
+       ⚠ ±80° AND NOT ±90°. A lat/lon cell at the pole is a sliver, the metric terms divide by cosφ,
+       and the bundled sea floor stops at the Mercator limit of ±85.05° in any case. The polar filter
+       (src/tsunami-worker.js) is what keeps the time step sane between 60° and 80°.
+
+       ⚠ AND A PHONE GETS THE SAME PHYSICS AT HALF THE PICTURE. `dec` decimates the ANIMATION, not the
+       model: 720 × 320 frames on a desktop, 480 × 214 on a phone, against a 1440 × 640 solve in both
+       cases. #R193 shrank the grid on mobile, which changed the answer; this changes only the number
+       of pixels the answer is drawn into. */
+    const NX=1440, NY=640, LAT0=-80, LAT1=80;
+    function decNow(){ return (typeof isMobile==='function'&&isMobile())?3:2; }
     function wantFrames(){ return (typeof isMobile==='function'&&isMobile())?90:140; }
 
     const wrapLng=(v)=>((v+540)%360)-180;
-    function depthAt(snap,lo,la){ let e=null; try{ e=snap.at(lo,Math.max(-84,Math.min(84,la))); }catch(_){}
-      return (e==null)?0:-e; }
-    const yieldFrame=()=>new Promise(r=>setTimeout(r,0));
+    const latOfIdx=(j)=>LAT0+(j+0.5)*(LAT1-LAT0)/NY;
+    const lngOfIdx=(i)=>-180+(i+0.5)*360/NX;
 
     async function build(){
       if(!epi){ lastErr='no epicentre'; render(); return; }
@@ -164,168 +140,64 @@ window.IntMapModules.tsunami=function(HOST){
       clearPaint(); render();
       const t0=performance.now();
       try{
-        const N=gridN(), H=Math.max(1,Math.min(24,hours));
-        const reachKm=Math.min(9000, 0.33*3600*H);          /* 330 m/s ceiling, in km over the run */
-        const halfLat=Math.min(52, reachKm/111.32);
-        const lat0=epi[1], lng0=epi[0];
-        /* keep the box off the pole: a lat/lon cell there is a sliver and the CFL step collapses */
-        const nLat=Math.min(78, lat0+halfLat), sLat=Math.max(-78, lat0-halfLat);
-        const midLat=(nLat+sLat)/2, cosMid=Math.max(0.22,Math.cos(midLat*D));
-        const halfLng=Math.min(170, halfLat/cosMid);
-        const wLng=lng0-halfLng, eLng=lng0+halfLng;
-        const dPhi=(nLat-sLat)/N*D, dLam=(2*halfLng)/N*D;
-
-        /* ── the sea floor ───────────────────────────────────────────────────────────────────────
-           ONE DEM zoom for the whole domain, chosen so the tile count stays inside a budget rather
-           than by a constant: an ocean-wide box at z5 is 160 tiles and, measured in #R192, 34 of them
-           did not arrive inside the timeout — 19 % of the cells then ran on a fallback depth. */
-        let z=6;
-        const tilesAt=(zz)=>{ const n=Math.pow(2,zz);
-          return Math.ceil(n*(2*halfLng)/360+1)*Math.ceil(n*(nLat-sLat)/170+1); };
-        while(z>3&&tilesAt(z)>90) z--;
-        const warm=[]; const S=Math.min(64,N);
-        for(let j=0;j<=S;j++) for(let i=0;i<=S;i++)
-          warm.push([wrapLng(wLng+(2*halfLng)*i/S), sLat+(nLat-sLat)*j/S]);
-        await warmDEMTiles(warm,z,25000,(f)=>{ pct=Math.round(22*(+f||0)); if(opened) render(); });
+        const H=Math.max(1,Math.min(30,hours));
+        /* ── the sea floor: one bundled image, not ninety tiles ─────────────────────────────────
+           #R192 measured 34 of 160 DEM tiles missing the timeout on an ocean-wide box, and 19 % of
+           the cells then ran on a constant depth. A global domain cannot ask the network at all:
+           data/bathymetry.png is 0.25° over the whole world, 1.26 MB, cached after the first run,
+           and every cell in it has a measured depth. */
+        const B=window.IntMapBathymetry;
+        if(!B){ lastErr='nobathy'; busy=false; render(); return; }
+        pct=4; render();
+        const okB=await B.warm();
         if(my!==seq) return;
-        /* ⚠ THE BOX CROSSES THE ANTIMERIDIAN (#R192). A Pacific-wide domain from Japan runs to 208°E
-           and demSnapshot clamps to ±179.999, so every cell east of the date line came back with no
-           depth: 19,840 of 102,400 cells, the entire eastern Pacific. Two snapshots, one either side. */
-        const snapA=demSnapshot(Math.max(-180,wrapLng(wLng)),sLat,(eLng>180?179.999:wrapLng(eLng)),nLat,z);
-        const snapB=(eLng>180)?demSnapshot(-180,sLat,wrapLng(eLng),nLat,z)
-                  :((wLng<-180)?demSnapshot(wrapLng(wLng),sLat,180,nLat,z):null);
-        const snap={ have:snapA.have+(snapB?snapB.have:0), missing:snapA.missing+(snapB?snapB.missing:0),
-          at(lo,la){ const x=wrapLng(lo); let v=snapA.at(x,la); if(v==null&&snapB) v=snapB.at(x,la); return v; } };
-        pct=24; render();
+        if(!okB){ lastErr='nobathy'; busy=false; render(); return; }
+        pct=8; render();
 
-        const h=new Float32Array(N*N);           /* still-water depth, m (>0 = sea) */
-        /* ⚠ h.buffer is TRANSFERRED to the worker and is detached the moment it is posted, so the two
-           things this thread still needs from it are copied out first: the land mask the painter
-           tests every pixel against, and the depth Green's law shoals from. Int16 metres is exact
-           over the whole range of the ocean (−11,000 … 0) and costs 512 KB rather than a megabyte. */
-        const land=new Uint8Array(N*N), depth=new Int16Array(N*N);
-        const latOf=(j)=>sLat+(j+0.5)*(nLat-sLat)/N;
-        const lngOf=(i)=>wLng+(i+0.5)*(2*halfLng)/N;
-        let seaCells=0, noData=0;
-        const LM=window.IntMapLandMask;
-        for(let j=0;j<N;j++){
-          for(let i=0;i<N;i++){
-            const la=latOf(j), lo=lngOf(i);
-            let e=null; try{ e=snap.at(lo,la); }catch(_){}
-            if(e==null){ noData++;
-              /* the bundled mask still knows land from sea; an unknown DEPTH over known sea gets the
-                 ocean's own mean, which is the honest stand-in for "sea, depth unmeasured" */
-              const isL=LM&&LM.ready()?LM.isLand(lo,la):null;
-              e=(isL===false)?-3800:(isL===true?10:-3800);
-            }
-            const d=-e;
-            const k=j*N+i;
-            h[k]=(d>10)?d:0;                     /* under 10 m is coast: a wall for this grid */
-            depth[k]=Math.max(0,Math.min(32000,Math.round(h[k])));
-            if(h[k]>0){ seaCells++; } else land[k]=1;
-          }
-          /* the bathymetry pass is O(N²) bilinear reads — yielded by rows so a 512² grid never
-             holds the page for a frame (#R193's whole point) */
-          if((j&7)===7){ pct=24+Math.round(10*j/N); if(opened) render(); await yieldFrame(); if(my!==seq) return; }
-        }
-        if(!(seaCells>N*N*0.02)){ lastErr='land'; busy=false; render(); return; }
-
-        /* ── the initial sea surface ─────────────────────────────────────────────────────────────
-           Okada over a tapered sub-fault grid, with the strike taken from the sea floor: a
-           subduction interface runs along the isobaths, so ∇h gives the down-dip direction. */
-        const g=faultGeom(mw);
-        const eps=0.6;                                   /* degrees, for the gradient stencil */
-        const dHx=(depthAt(snap,lng0+eps,lat0)-depthAt(snap,lng0-eps,lat0));
-        const dHy=(depthAt(snap,lng0,lat0+eps)-depthAt(snap,lng0,lat0-eps));
-        /* down-dip points towards DEEPER water (the trench); strike is 90° from it */
-        let dipAz=Math.atan2(dHx,dHy)/D; if(!isFinite(dipAz)) dipAz=90;
-        const strike=(dipAz+90+360)%360;
-        const dipDeg=15;                                 /* a subduction interface at tsunami depths */
-        const eta0=new Float32Array(N*N);
-        const topDepth=Math.max(2000, depthKm*1000-g.W*Math.sin(dipDeg*D)/2);
-        const botDepth=topDepth+g.W*Math.sin(dipDeg*D);   /* the depth of the plane’s lower edge — the frame okadaUz works in */
-        const subs=subFaults(g,dipDeg,topDepth);
-        const sA=Math.sin(strike*D), cA=Math.cos(strike*D);
-        const mPerLat=111320, mPerLngAt=(la)=>111320*Math.cos(la*D);
-        let upMax=0, downMax=0;
-        /* ══ (#R193) WHERE THE SOURCE STOPS, AND WHY IT MAY NOT STOP ABRUPTLY ═════════════════════
-           ⚠ MEASURED THE HARD WAY. The sub-fault sum is 24 Okada evaluations a cell, so #R192's
-           window of SIX rupture lengths — 4,326 km each way for an M9, 141,000 cells — became 13.5
-           million evaluations and a 3.6 s task on this thread. Narrowing it to 2.2 L looked obviously
-           right and was obviously wrong: at 1,586 km an M9's static field is still ~1 cm, so cutting
-           there left a STEP in the initial sea surface, and a step is broadband. It radiated a sharp
-           front at √(gh) that tripped the 1 cm arrival threshold long before the real long-period wave
-           built up — the modelled first arrival at Guam fell from 3 h 11 to 1 h 51 against an observed
-           3–4 h, and the segment speeds along the path matched √(gh) exactly, which is the signature
-           of a front launched from the cut rather than from the fault.
-
-           So the window is wide again, and the COST is dealt with where it actually lives. Past about
-           two rupture lengths the static field of a finite source depends only on its moment, not on
-           how the slip is distributed inside it — so out there one equivalent rectangle carrying the
-           same M0 gives the same answer as twenty-four tapered strips, for a twenty-fourth of the
-           arithmetic. The two forms are blended across a band so nothing is discontinuous anywhere,
-           which is the property the whole problem turned on. */
-        const nearM=2.2*g.L, farM=Math.max(6*g.L, 2500e3);
-        const blend0=nearM, blend1=2.6*g.L;
-        const cosW=(g.W*Math.cos(dipDeg*D))/2;
-        const one=(xs,ys)=>okadaUz(xs+g.L/2, ys+cosW, botDepth, g.L, g.W, dipDeg, g.slip);
-        const many=(xs,ys)=>{ let u=0;
-          for(let s2=0;s2<subs.length;s2++){ const f=subs[s2];
-            const v=okadaUz(xs+g.L/2-f.x0, ys+cosW-f.y0, f.d0, f.L, f.W, dipDeg, f.slip);
-            if(isFinite(v)) u+=v; }
-          return u; };
-        for(let j=0;j<N;j++){ const la=latOf(j);
-          for(let i=0;i<N;i++){
-            const lo=lngOf(i);
-            const dx=((lo-lng0+540)%360-180)*mPerLngAt(la), dy=(la-lat0)*mPerLat;
-            const r=Math.max(Math.abs(dx),Math.abs(dy));
-            if(r>farM) continue;                       /* genuinely below a millimetre out here */
-            /* rotate into the fault frame: x along strike, y up-dip horizontally */
-            const xs= dx*sA+dy*cA;
-            const ys=-dx*cA+dy*sA;
-            let uz;
-            if(r<=blend0) uz=many(xs,ys);
-            else if(r>=blend1) uz=one(xs,ys);
-            else { const w=(r-blend0)/(blend1-blend0); uz=(1-w)*many(xs,ys)+w*one(xs,ys); }
-            if(!isFinite(uz)) continue;
-            eta0[j*N+i]=uz;
-            if(uz>upMax) upMax=uz; if(uz<downMax) downMax=uz;
-          }
-          if((j&7)===7){ pct=34+Math.round(8*j/N); if(opened) render(); await yieldFrame(); if(my!==seq) return; }
-        }
-        pct=42; render();
-
-        /* ── the run, in a worker ────────────────────────────────────────────────────────────────
-           Frames arrive in batches while it integrates, so the wave is on screen and playable long
-           before the last time step. The page never blocks. */
-        const geom={ N, wLng, eLng, sLat, nLat, dLam, dPhi, hours:H, frames:wantFrames(),
-                     cellKm:Math.round(RE*Math.cos(midLat*D)*dLam/1000) };
-        sim={ N, wLng, eLng, sLat, nLat, land, depth, frames:[], nFrames:0, total:H*3600, amp:1,
-              fault:g, strike, dipDeg, z, eta0Up:upMax, eta0Down:downMax,
-              demTiles:snap.have, demMissing:snap.missing, noData, seaCells, cellKm:geom.cellKm,
-              latOf, lngOf, running:true, emax:null, tarr:null, coastMax:0, coastAt:null };
-        installPaint();
-
+        /* ⚠ EVERYTHING ELSE HAPPENS IN THE WORKER. The sea floor, the fault, Okada over the sub-fault
+           grid and the integration are one job now: the main thread posts the parameters and a copy
+           of the bathymetry, and gets back a model. #R193 still built the grid and the initial surface
+           here, in yielded row loops, which on a global grid would be 921,600 cells of trigonometry
+           between two animation frames. */
         const W=window.IntMapTsunamiWorker;
+        if(!W||!W.available()){ lastErr='noworker'; busy=false; render(); return; }
+
+        const dec=decNow();
+        sim={ nx:NX, ny:NY, lat0:LAT0, lat1:LAT1, dec, fx:0, fy:0,
+              land:null, landD:null, depth:null, frames:[], nFrames:0, total:H*3600, amp:1,
+              latOf:latOfIdx, lngOf:lngOfIdx, running:true, emax:null, emin:null, tarr:null,
+              coastMax:0, coastAt:null, hours:H };
+
+        const onModel=(m)=>{
+          if(my!==seq||!sim) return;
+          sim.fx=m.fx; sim.fy=m.fy; sim.dec=m.dec;
+          sim.land=new Uint8Array(m.land); sim.landD=new Uint8Array(m.landD); sim.depth=new Int16Array(m.depth);
+          sim.dt=m.dt; sim.steps=m.steps; sim.total=m.total; sim.nFrames=m.nFrames; sim.cellKm=m.cellKm;
+          sim.strike=m.strike; sim.dipDeg=m.dipDeg; sim.seaCells=m.seaCells; sim.hMax=m.hMax; sim.cMax=m.cMax;
+          sim.fault={ L:m.faultL, W:m.faultW, slip:m.slip, M0:m.M0, mw };
+          sim.eta0Up=m.eta0Up; sim.eta0Down=m.eta0Down;
+          installPaint();
+          render();
+        };
         const onFrames=(fr,nf)=>{
           if(my!==seq||!sim) return;
           sim.nFrames=nf||sim.nFrames;
           for(const f of fr) sim.frames.push({ t:f.t, q:f.q });
-          if(sim.frames.length===fr.length){ tSim=0; buildLUT(); paint(); }
+          if(sim.frames.length===fr.length){ tSim=0; buildLUT(); paint(); frameCamera(); }
           render();
         };
-        const onProg=(p)=>{ if(my!==seq) return; pct=42+Math.round(56*(p/100)); if(opened) render(); };
+        const onProg=(p)=>{ if(my!==seq) return; pct=Math.max(pct,Math.round(p)); if(opened) render(); };
 
+        const job=W.run({ nx:NX, ny:NY, lat0:LAT0, lat1:LAT1, dec,
+                          bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm },
+                          hours:H, frames:wantFrames(), filtLat:60 }, onFrames, onProg, onModel);
+        if(!job){ lastErr='noworker'; busy=false; sim=null; render(); return; }
+        jobId=job.id;
         let out=null;
-        if(W&&W.available()){
-          const job=W.run(Object.assign({},geom,{ h:h.buffer, eta0:eta0.buffer }),onFrames,onProg);
-          if(job){ jobId=job.id; out=await job.promise; }
-        }
-        if(!out&&my===seq){
-          /* no worker (or it died): the model is still owed. Say so rather than pretending. */
-          if(!sim.frames.length){ lastErr='noworker'; busy=false; sim=null; clearPaint(); render(); return; }
-        }
+        try{ out=await job.promise; }
+        catch(e){ if(my!==seq) return; lastErr=String((e&&e.message)||e)||'solver'; busy=false; sim=null; clearPaint(); render(); return; }
         if(my!==seq) return;
+        if(!out){ if(!sim.frames.length){ lastErr='noworker'; busy=false; sim=null; clearPaint(); render(); return; } }
         if(out){
           sim.amp=out.amp; sim.dt=out.dt; sim.steps=out.steps; sim.total=out.total; sim.nFrames=out.nFrames;
           sim.emax=new Float32Array(out.emax); sim.emin=new Float32Array(out.emin);
@@ -337,7 +209,7 @@ window.IntMapModules.tsunami=function(HOST){
         }
         sim.running=false; sim.ms=Math.round(performance.now()-t0);
         pct=100; busy=false;
-        paint(); render(); frameCamera();
+        paint(); render();
       }catch(e){ lastErr=String(e&&e.message||e); busy=false; render(); }
     }
 
@@ -347,19 +219,21 @@ window.IntMapModules.tsunami=function(HOST){
        shallowest cell it could find, where η/h was already 0.16, and reported 27 m off Sanriku — the
        model's own arithmetic run past its validity, not a forecast. */
     function coastal(){
-      if(!sim||!sim.emax) return;
-      const N=sim.N, land=sim.land, emax=sim.emax;
+      if(!sim||!sim.emax||!sim.land) return;
+      const nx=sim.nx, ny=sim.ny, land=sim.land, emax=sim.emax;
       let best=0, at=null;
-      const nearLand=(i,j)=>{ for(let dj=-2;dj<=2;dj++) for(let di=-2;di<=2;di++){
-          const jj=j+dj, ii=i+di; if(jj<0||ii<0||jj>=N||ii>=N) continue;
-          if(land[jj*N+ii]) return true; } return false; };
-      for(let j=1;j<N-1;j++) for(let i=1;i<N-1;i++){
-        const k=j*N+i; if(land[k]) continue;
+      /* ⚠ (#R197) the neighbourhood WRAPS in longitude. On a global grid the column before 0 is
+         nx−1, and a coast on the antimeridian (the Aleutians, Fiji, Kamchatka) is a real coast. */
+      const nearLand=(i,j)=>{ for(let dj=-2;dj<=2;dj++){ const jj=j+dj; if(jj<0||jj>=ny) continue;
+          for(let di=-2;di<=2;di++){ let ii=(i+di)%nx; if(ii<0) ii+=nx;
+            if(land[jj*nx+ii]) return true; } } return false; };
+      for(let j=1;j<ny-1;j++) for(let i=0;i<nx;i++){
+        const k=j*nx+i; if(land[k]) continue;
         const d=sim.depth[k];
         if(d<200) continue;
         if(!nearLand(i,j)) continue;
         const v=emax[k]*Math.pow(d/10,0.25);
-        if(v>best){ best=v; at=[sim.lngOf(i),sim.latOf(j)]; }
+        if(v>best){ best=v; at=[lngOfIdx(i),latOfIdx(j)]; }
       }
       sim.coastMax=best; sim.coastAt=at;
     }
@@ -367,9 +241,14 @@ window.IntMapModules.tsunami=function(HOST){
        source. Scaling to the source is what made #R192 invisible: a 6 m uplift beside a 20 cm wave in
        mid-ocean puts the whole far field in the bottom 3 % of the ramp. */
     function autoAmp(){
-      if(!sim||!sim.emax) return;
+      if(!sim||!sim.emax||!sim.land) return;
       const v=[]; const emax=sim.emax, land=sim.land;
-      for(let k=0;k<emax.length;k+=3){ if(land[k]) continue; const a=emax[k]; if(a>0.001) v.push(a); }
+      /* ⚠ (#R197) EVERY SEVENTH CELL, NOT EVERY THIRD. The grid went from 262,144 cells to 921,600, so
+         the same stride would sort 300,000 numbers on the main thread the instant the run finished.
+         The quantity wanted is a PERCENTILE of a smooth field, which is exactly the statistic a
+         regular subsample estimates well; the stride keeps the sample near the size #R193 already
+         sorted, and the sample is spread over the whole ocean rather than over part of it. */
+      for(let k=0;k<emax.length;k+=7){ if(land[k]) continue; const a=emax[k]; if(a>0.001) v.push(a); }
       if(!v.length) return;
       v.sort((a,b)=>a-b);
       sim.autoAmp=Math.max(0.05,v[Math.floor(v.length*0.92)]);
@@ -434,63 +313,81 @@ window.IntMapModules.tsunami=function(HOST){
        least one image row per grid row everywhere, so nothing is skipped and nothing is invented —
        and blending across a coastline would smear land into water, which no interpolation of a
        land-masked field can be allowed to do. */
-    let imgH=0, imgRows=null;
-    /* Where Mercator compresses — towards the equatorial edge of the box — one image row would
+    let imgH=0, imgRows=null, maxD=null;
+    /* Where Mercator compresses — towards the equatorial edge of the picture — one image row would
        otherwise have to stand for up to three rows of water, and the crests in between would simply
-       not be drawn. Ask for a taller texture instead, capped so a pathological box cannot demand an
-       unbounded one. A geographic engine answers 1.0 here and the texture stays N×N. */
+       not be drawn. Ask for a taller texture instead, capped so a pathological case cannot demand an
+       unbounded one. A geographic engine answers 1.0 here and the texture stays fx × fy.
+       ⚠ (#R197) THE PICTURE'S GRID IS fx × fy, NOT THE MODEL'S. The frames are area-averaged down by
+       `dec` in the worker (a 1440 × 640 Int8 frame is 921 KB and 140 of them is 126 MB), so every row
+       number below counts display rows. The analysis fields are still full resolution and `at()`
+       reads them there. */
     function chooseImgH(){
-      const N=sim.N, c=coords(); if(!c) return N;
-      let rows=null; try{ rows=GE().layers.imageRowLatitudes(c,N); }catch(_){}
-      if(!rows||rows.length!==N) return N;
-      const dLat=(sim.nLat-sim.sLat)/N; let worst=1;
-      for(let r=1;r<N;r++){ const g=Math.abs(rows[r]-rows[r-1])/dLat; if(g>worst) worst=g; }
-      return (worst>1.02)?Math.min(2048,Math.ceil(N*worst)):N;
+      const NY2=sim.fy, c=coords(); if(!c||!NY2) return NY2||1;
+      let rows=null; try{ rows=GE().layers.imageRowLatitudes(c,NY2); }catch(_){}
+      if(!rows||rows.length!==NY2) return NY2;
+      const dLat=(sim.lat1-sim.lat0)/NY2; let worst=1;
+      for(let r=1;r<NY2;r++){ const g=Math.abs(rows[r]-rows[r-1])/dLat; if(g>worst) worst=g; }
+      return (worst>1.02)?Math.min(2048,Math.ceil(NY2*worst)):NY2;
     }
     function rowMap(H){
-      const N=sim.N, c=coords(), map=new Int32Array(H), span=sim.nLat-sim.sLat;
+      const NY2=sim.fy, c=coords(), map=new Int32Array(H), span=sim.lat1-sim.lat0;
       let rows=null; try{ if(c) rows=GE().layers.imageRowLatitudes(c,H); }catch(_){}
-      const clamp=(j)=>(j<0)?0:(j>N-1?N-1:j);
+      const clamp=(j)=>(j<0)?0:(j>NY2-1?NY2-1:j);
       if(rows&&rows.length===H&&span>0){
-        for(let r=0;r<H;r++) map[r]=clamp(Math.round((rows[r]-sim.sLat)/span*N-0.5));
+        for(let r=0;r<H;r++) map[r]=clamp(Math.round((rows[r]-sim.lat0)/span*NY2-0.5));
       } else {
         /* an engine that will not say: assume the image runs north→south in equal latitude steps */
-        for(let r=0;r<H;r++) map[r]=clamp(N-1-Math.round((r+0.5)*N/H-0.5));
+        for(let r=0;r<H;r++) map[r]=clamp(NY2-1-Math.round((r+0.5)*NY2/H-0.5));
       }
       return map;
     }
+    /* the maximum-crest field, decimated once to the picture's grid — by MAXIMUM, because that field
+       IS a maximum and averaging it would report a smaller peak than the model found */
+    function maxDecim(){
+      if(maxD||!sim||!sim.emax) return maxD;
+      const nx=sim.nx, dec=sim.dec, fx=sim.fx, fy=sim.fy, e=sim.emax;
+      const out=new Float32Array(fx*fy);
+      for(let j=0;j<fy;j++) for(let i=0;i<fx;i++){
+        let m=0;
+        for(let b=0;b<dec;b++){ const r=(j*dec+b)*nx+i*dec; for(let a=0;a<dec;a++){ const v=e[r+a]; if(v>m) m=v; } }
+        out[j*fx+i]=m;
+      }
+      maxD=out; return out;
+    }
 
     function drawField(ctx,W2,H2){
-      if(!sim) return;
-      const N=sim.N;
+      if(!sim||!sim.fx) return;
+      const FX=sim.fx;
       if(!imgRows||imgRows.length!==H2){ imgRows=rowMap(H2); imgH=H2; }
       const rowOf=imgRows;
-      const im=ctx.createImageData(N,H2), px=im.data;
-      const land=sim.land;
+      const im=ctx.createImageData(FX,H2), px=im.data;
+      const land=sim.landD;
       if(showMax&&sim.emax){
         /* ⚠ COMPAND IT THE WAY THE FRAMES ARE COMPANDED, against the run's peak A — not against the
            display amplitude. The lookup table already carries the display gain cbrt(A/S), so scaling
            by S here as well would apply it twice and blow the whole field out (measured: a factor of
            two on a Tōhoku run, where A/S is 8.5). One transform, in one place. */
-        const A=Math.max(1e-6,sim.amp), emax=sim.emax;
-        for(let r=0;r<H2;r++){ const src=rowOf[r]*N, dst=r*N;
-          for(let i=0;i<N;i++){
-            const k=src+i; if(land[k]) continue;
+        const A=Math.max(1e-6,sim.amp), emax=maxDecim();
+        if(!emax) return;
+        for(let r=0;r<H2;r++){ const src=rowOf[r]*FX, dst=r*FX;
+          for(let i=0;i<FX;i++){
+            const k=src+i; if(land&&land[k]) continue;
             const a=emax[k]/A;
             if(!(a>0)) continue;
-            let x=Math.cbrt(a>1?1:a);
+            const x=Math.cbrt(a>1?1:a);
             const q=Math.round(x*127), o=(dst+i)*4, li=(q+128)*4;
             px[o]=LUT[li]; px[o+1]=LUT[li+1]; px[o+2]=LUT[li+2]; px[o+3]=LUT[li+3];
           } }
         ctx.putImageData(im,0,0); return;
       }
-      if(!sim.frames.length){ ctx.clearRect(0,0,N,H2); return; }
+      if(!sim.frames.length){ ctx.clearRect(0,0,FX,H2); return; }
       const f=framePos(), i0=Math.floor(f), w=f-i0;
       const A0=sim.frames[Math.min(i0,sim.frames.length-1)].q;
       const A1=sim.frames[Math.min(i0+1,sim.frames.length-1)].q;
-      for(let r=0;r<H2;r++){ const src=rowOf[r]*N, dst=r*N;   /* image row → the grid row drawn there */
-        for(let i=0;i<N;i++){
-          const k=src+i; if(land[k]) continue;
+      for(let r=0;r<H2;r++){ const src=rowOf[r]*FX, dst=r*FX;   /* image row → the grid row drawn there */
+        for(let i=0;i<FX;i++){
+          const k=src+i; if(land&&land[k]) continue;
           const q=(A0[k]+(A1[k]-A0[k])*w)|0;
           if(q===0) continue;
           const o=(dst+i)*4, li=(q+128)*4;
@@ -500,15 +397,17 @@ window.IntMapModules.tsunami=function(HOST){
       ctx.putImageData(im,0,0);
     }
 
-    function coords(){ return sim?[[sim.wLng,sim.nLat],[sim.eLng,sim.nLat],[sim.eLng,sim.sLat],[sim.wLng,sim.sLat]]:null; }
+    /* ⚠ (#R197) THE WHOLE WORLD, AND THE FOUR CORNERS SAY SO. A dynamic image is placed by its four
+       corners; −180…180 is a full turn, which is exactly what the periodic solver produces. */
+    function coords(){ return sim?[[-180,sim.lat1],[180,sim.lat1],[180,sim.lat0],[-180,sim.lat0]]:null; }
     function installPaint(){
-      if(!sim||!_imCanDraw()) return false;
+      if(!sim||!sim.fx||!_imCanDraw()) return false;
       buildLUT();
       /* (#R195) the engine's vertical parameterisation decides both of these, so they are settled
          here — where the image is (re)created — and re-settled if the engine is ever swapped */
       imgH=chooseImgH(); imgRows=rowMap(imgH);
       try{
-        GE().layers.addDynamicImage(DYN,{ width:sim.N, height:imgH, coordinates:coords(),
+        GE().layers.addDynamicImage(DYN,{ width:sim.fx, height:imgH, coordinates:coords(),
           opacity, draw:drawField, smooth:true });
         if(!GE().layers.hasSource(SRC_V)) GE().layers.addSource(SRC_V,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(LYR_EPI)) GE().layers.add({id:LYR_EPI,type:'circle',source:SRC_V,
@@ -520,7 +419,7 @@ window.IntMapModules.tsunami=function(HOST){
     }
     function paint(){ try{ if(sim) GE().layers.touchDynamicImage(DYN); }catch(_){} }
     function clearPaint(){
-      imgRows=null; imgH=0;                 /* (#R195) the next install re-asks the engine for them */
+      imgRows=null; imgH=0; maxD=null;      /* (#R195) the next install re-asks the engine for them */
       try{ GE().layers.removeDynamicImage(DYN); }catch(_){}
       try{ if(GE().layers.has(LYR_ISOL)) GE().layers.remove(LYR_ISOL); }catch(_){}
       try{ if(GE().layers.has(LYR_ISO)) GE().layers.remove(LYR_ISO); }catch(_){}
@@ -536,21 +435,26 @@ window.IntMapModules.tsunami=function(HOST){
        "it reaches you at 04:20". */
     function isochrones(){
       if(!sim||!sim.tarr) return;
-      const N=sim.N, tarr=sim.tarr, land=sim.land;
+      const nx=sim.nx, ny=sim.ny, tarr=sim.tarr, land=sim.land;
       /* ⚠ ONE PASS OVER THE GRID, NOT ONE PER HOUR. The obvious shape — a marching-squares sweep per
          contour level — walked 512² cells twenty-four times through four closure calls each, and
          measured as a 2.6 s task on this thread, which is precisely the kind of freeze this rebuild
          exists to remove. A cell can only cross the levels between its own corner minimum and
          maximum, which for a travel-time field is almost always none or one, so the levels are tested
          INSIDE a single sweep and the arrays are read directly. */
-      const HRS=Math.min(24,Math.ceil(sim.total/3600));
+      const HRS=Math.min(30,Math.ceil(sim.total/3600));
       const segsBy=[]; for(let hh=0;hh<=HRS;hh++) segsBy.push([]);
-      const lngOf=sim.lngOf, latOf=sim.latOf;
-      for(let j=0;j<N-1;j++){
-        const r0=j*N, r1=r0+N;
+      const lngOf=lngOfIdx, latOf=latOfIdx;
+      /* ⚠ (#R197) THE LAST COLUMN'S EASTERN NEIGHBOUR IS THE FIRST. The cell walk stops one short of
+         nx in the loop bound and the wrap is handled by `ip`, so the contour closes across ±180
+         instead of leaving a seam there — which on a global grid is the middle of the Pacific and
+         exactly where the interesting hour lines are. */
+      for(let j=0;j<ny-1;j++){
+        const r0=j*nx, r1=r0+nx;
         const yA=latOf(j), yB=latOf(j+1);
-        for(let i=0;i<N-1;i++){
-          const k00=r0+i, k10=k00+1, k01=r1+i, k11=k01+1;
+        for(let i=0;i<nx;i++){
+          const ip=(i+1===nx)?0:i+1;
+          const k00=r0+i, k10=r0+ip, k01=r1+i, k11=r1+ip;
           if(land[k00]|land[k10]|land[k01]|land[k11]) continue;
           const v00=tarr[k00], v10=tarr[k10], v01=tarr[k01], v11=tarr[k11];
           if(v00<0||v10<0||v01<0||v11<0) continue;
@@ -606,10 +510,26 @@ window.IntMapModules.tsunami=function(HOST){
 
     /* …and look at it. A wave crossing the Pacific is not visible from whatever view the app happens
        to be on (measured in #R192: the model built correctly and the screenshot showed Africa). */
+    /* ⚠ (#R197) ONCE, AND ONLY IF THE VIEW WOULD MISS IT. The domain is the whole planet now, so
+       there is no box width to derive a zoom from, and re-framing on every recompute would fight a
+       user who has panned to the coast they care about. It runs when the FIRST frames arrive and only
+       if the epicentre is not already on screen — #R192's failure (the model built correctly and the
+       screenshot showed Africa) stays fixed without taking the camera away from anyone. */
+    let framedFor='';
     function frameCamera(){
       if(!sim||!epi) return;
-      try{ GE().camera.jumpTo({ center:[wrapLng(epi[0]), Math.max(-60,Math.min(60,epi[1]))],
-        zoom:Math.max(1.2,Math.min(4, Math.log2(360/(sim.eLng-sim.wLng))+0.6)), pitch:0 }); }catch(_){}
+      const key=epi[0].toFixed(2)+','+epi[1].toFixed(2);
+      if(framedFor===key) return;
+      framedFor=key;
+      try{
+        const c=GE().camera.get();
+        if(c&&isFinite(c.zoom)&&c.zoom<=3.2){
+          const dLng=Math.abs(((c.center[0]-epi[0]+540)%360)-180), dLat=Math.abs(c.center[1]-epi[1]);
+          if(dLng<50&&dLat<35) return;                 /* the source is already in view — leave it */
+        }
+        GE().camera.jumpTo({ center:[wrapLng(epi[0]), Math.max(-60,Math.min(60,epi[1]))],
+          zoom:2.2, pitch:0 });
+      }catch(_){}
     }
 
     /* ---- playback -------------------------------------------------------------------------------- */
@@ -682,7 +602,8 @@ window.IntMapModules.tsunami=function(HOST){
       body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
         +L('Simulate','計算時間','Simulieren','Смоделировать','Simular')
         +'<select class="tsu-hours" style="flex:1;'+BTN+'">'
-        +[3,6,9,12,18,24].map(h=>'<option value="'+h+'"'+(h===hours?' selected':'')+'>'+h+' h</option>').join('')
+        /* (#R197) up to 30 h — the far side of the planet and back. Chile→Japan is about 22 h. */
+        +[3,6,9,12,18,24,30].map(h=>'<option value="'+h+'"'+(h===hours?' selected':'')+'>'+h+' h</option>').join('')
         +'</select></label>';
       if(busy){
         body+='<div style="font-size:11.5px;color:var(--text-main);">'+L('Computing','計算中','Berechne','Расчёт','Calculando')+'… '+pct+'%'
@@ -692,9 +613,23 @@ window.IntMapModules.tsunami=function(HOST){
         body+='<button class="tsu-run" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">▶ '
           +(sim?L('Recompute','再計算','Neu berechnen','Пересчитать','Recalcular'):L('Compute propagation','伝播を計算','Ausbreitung berechnen','Рассчитать','Calcular propagación'))+'</button>';
       }
-      if(lastErr==='land') body+='<div style="font-size:11.5px;color:#ff9f0a;">'
-        +L('This epicentre is inland — there is no sea in the model domain.','この震源は内陸で、計算領域に海がありません。',
-           'Das Epizentrum liegt im Landesinneren.','Эпицентр на суше — в области нет моря.','El epicentro está tierra adentro.')+'</div>';
+      if(lastErr==='nosea') body+='<div style="font-size:11.5px;color:#ff9f0a;">'
+        +L('This epicentre is inland — there is no sea to displace here.','この震源は内陸で、動かす海がありません。',
+           'Das Epizentrum liegt im Landesinneren.','Эпицентр на суше — моря здесь нет.','El epicentro está tierra adentro.')+'</div>';
+      /* (#R197) the bundled sea floor is the model's one hard requirement, and it says so */
+      else if(lastErr==='nobathy') body+='<div style="font-size:11.5px;color:#ff453a;">'
+        +L('The global sea-floor data could not be loaded, so there is nothing to propagate the wave over.',
+           '全球の海底地形データを読み込めなかったため、波を伝播させる海がありません。',
+           'Die globalen Meeresboden-Daten konnten nicht geladen werden.',
+           'Не удалось загрузить глобальные данные о дне океана.',
+           'No se pudieron cargar los datos globales del fondo marino.')+'</div>';
+      /* (#R197) the polar filter is an approximation, so the run checks itself — see the worker */
+      else if(lastErr==='diverged') body+='<div style="font-size:11.5px;color:#ff453a;">'
+        +L('The solution left its physical bounds and was stopped — no picture is shown rather than a wrong one.',
+           '解が物理的な範囲を外れたため中止しました。誤った絵を出すより何も出しません。',
+           'Die Lösung verließ ihre physikalischen Grenzen und wurde gestoppt.',
+           'Решение вышло за физические границы и было остановлено.',
+           'La solución salió de sus límites físicos y se detuvo.')+'</div>';
       else if(lastErr==='noworker') body+='<div style="font-size:11.5px;color:#ff453a;">'
         +L('This browser cannot run the solver in a background thread, so the propagation model is unavailable here.',
            'このブラウザではバックグラウンドスレッドで計算できないため、伝播計算は利用できません。',
@@ -742,13 +677,12 @@ window.IntMapModules.tsunami=function(HOST){
           +L('Sea-floor uplift','海底の隆起','Hebung','Поднятие дна','Levantamiento')+' +'+sim.eta0Up.toFixed(2)+' m / '+sim.eta0Down.toFixed(2)+' m<br>'
           +L('Rupture','震源断層','Bruchfläche','Разрыв','Ruptura')+' '+Math.round(gm.L/1000)+' × '+Math.round(gm.W/1000)+' km · '
           +L('mean slip','平均滑り','Versatz','смещение','deslizamiento')+' '+gm.slip.toFixed(1)+' m<br>'
-          +L('Grid','格子','Gitter','Сетка','Malla')+' '+sim.N+'² · '+sim.cellKm+' km · Δt '+(sim.dt||0).toFixed(1)+' s · '+(sim.steps||0)+' '+L('steps','ステップ','Schritte','шагов','pasos')
+          +L('Grid','格子','Gitter','Сетка','Malla')+' '+sim.nx+'×'+sim.ny+' ('+L('global','全球','global','глобально','global')+', 0.25°) · '
+          +sim.cellKm+' km · Δt '+(sim.dt||0).toFixed(1)+' s · '+(sim.steps||0)+' '+L('steps','ステップ','Schritte','шагов','pasos')
           +' · '+((sim.solveMs||0)/1000).toFixed(1)+' s<br>'
           +L('Peak coastal height (Green’s law)','沿岸最大波高（グリーンの法則）','Küstenhöhe (Green)','Высота у берега (Грин)','Altura costera (Green)')
           +' ~'+(sim.coastMax||0).toFixed(1)+' m'
           +'</div>';
-        if(sim.coastAt) body+='<button class="tsu-inund" style="'+BTN+'width:100%;">🌊 '
-          +L('Inundation at the worst-hit coast','最大波高地点の浸水域','Überflutung an der Küste','Затопление на берегу','Inundación en la costa')+'</button>';
       }
       body+='<div style="font-size:10px;color:var(--text-muted);line-height:1.45;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
         +L('Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometres, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbour resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.',
@@ -779,24 +713,21 @@ window.IntMapModules.tsunami=function(HOST){
       const iso=q('.tsu-iso'); if(iso) iso.onchange=()=>{ showIso=!!iso.checked; applyIso(); };
       const op=q('.tsu-op'); if(op) op.oninput=()=>{ opacity=Math.max(0.1,Math.min(1,(+op.value||90)/100));
         try{ GE().layers.setDynamicImageOpacity(DYN,opacity); }catch(_){} };
-      const iu=q('.tsu-inund'); if(iu) iu.onclick=()=>openInundation();
     }
-    /* the LAST kilometre, which this grid cannot resolve — handed to the model that can (js/sims.js) */
-    function openInundation(){
-      if(!sim||!sim.coastAt) return false;
-      const D2=window.IntMapDisaster; if(!D2||!D2.open) return false;
-      try{ D2.open({ lng:sim.coastAt[0], lat:sim.coastAt[1], hazard:'tsunami', waveH:Math.max(1,Math.round(sim.coastMax)) }); }catch(_){ return false; }
-      return true;
-    }
+    /* ⚠ (#R197) THE HAND-OFF TO js/sims.js IS GONE. It opened the disaster panel's `tsunami` hazard — a
+       bathtub fill around one coast — from inside the propagation model's own panel, which is precisely
+       「勝手に災害シミュレータ内の津波シミュレータを起動する」. That hazard has been removed; this panel
+       reports the coastal height it can defend (Green's law, from cells deeper than 200 m) and stops there. */
 
     /* ---- reading the model at a point -------------------------------------------------------------- */
     function at(lng,lat){
-      if(!sim||!sim.tarr) return null;
-      const span=sim.eLng-sim.wLng;
-      const i=Math.floor((((+lng-sim.wLng+540)%360-180+360)%360)/(span/sim.N));
-      const j=Math.floor((+lat-sim.sLat)/((sim.nLat-sim.sLat)/sim.N));
-      if(!(i>=0&&j>=0&&i<sim.N&&j<sim.N)) return null;
-      const k=j*sim.N+i; if(sim.land[k]) return null;
+      if(!sim||!sim.tarr||!sim.land) return null;
+      /* ⚠ (#R197) longitude wraps and latitude does not: every meridian is inside the domain, but
+         ±80° is a real edge and a click beyond it has no cell rather than the nearest one. */
+      const i=Math.floor(((((+lng+180)%360)+360)%360)/(360/sim.nx));
+      const j=Math.floor((+lat-sim.lat0)/((sim.lat1-sim.lat0)/sim.ny));
+      if(!(i>=0&&j>=0&&i<sim.nx&&j<sim.ny)) return null;
+      const k=j*sim.nx+i; if(sim.land[k]) return null;
       const mx=sim.emax?sim.emax[k]:null;
       return { lng:+lng, lat:+lat, maxM:(mx!=null?+mx.toFixed(3):null),
         minM:(sim.emin?+sim.emin[k].toFixed(3):null),
@@ -852,7 +783,7 @@ window.IntMapModules.tsunami=function(HOST){
       if(o.lng!=null&&o.lat!=null) epi=[+o.lng,+o.lat];
       if(o.mw!=null) mw=Math.max(6,Math.min(9.6,+o.mw));
       if(o.depth!=null) depthKm=Math.max(0,Math.min(200,+o.depth));
-      if(o.hours!=null) hours=Math.max(1,Math.min(24,+o.hours));
+      if(o.hours!=null) hours=Math.max(1,Math.min(30,+o.hours));   /* (#R197) 30 h = the far side of the planet */
       opened=true; panel.style.display='flex'; render(); wireClick();
       clearTimeout(followT); srcPending=false; ranKey=srcKey();
       if(epi&&o.run!==false) build();
@@ -864,25 +795,28 @@ window.IntMapModules.tsunami=function(HOST){
       busy=false; if(panel) panel.style.display='none'; clearPaint(); return true; }
 
     return { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
-      setHours(h){ hours=Math.max(1,Math.min(24,+h||6)); if(opened) render(); return true; },
+      setHours(h){ hours=Math.max(1,Math.min(30,+h||6)); if(opened) render(); return true; },
       setSpeed(s){ speed=Math.max(1,Math.min(3600,+s||180)); if(opened) render(); return true; },
       setOpacity(v){ opacity=Math.max(0.1,Math.min(1,+v>1?(+v/100):+v));
         try{ GE().layers.setDynamicImageOpacity(DYN,opacity); }catch(_){} return opacity; },
       setAmplitude(m){ dispAmp=Math.max(0.005,Math.min(30,+m||0.2)); buildLUT(); paint(); if(opened) render(); return dispAmp; },
       showMaximum(v){ showMax=!!v; paint(); if(opened) render(); return showMax; },
       showContours(v){ showIso=!!v; applyIso(); if(opened) render(); return showIso; },
-      run:()=>build(), openInundation,
+      run:()=>build(),
       state:()=>({ open:opened, epi:epi?epi.slice():null, mw, depthKm, hours, speed, opacity, showMax,
         showIso, ampM:sim?+ampNow().toFixed(3):null, busy, pct, err:lastErr, playing:!!playing,
         following:!!srcPending,                                   /* (#R196) a queued re-run from the seismic panel */
         tSim:Math.round(tSim), worker:!!(window.IntMapTsunamiWorker&&window.IntMapTsunamiWorker.available()),
-        sim:sim?{ N:sim.N, cellKm:sim.cellKm, dt:+(sim.dt||0).toFixed(2), steps:sim.steps||0,
+        /* (#R197) the grid is two numbers now and it is the same two on every run and every device;
+           `demTiles`/`demMissing`/`noData` are gone because there is no longer anything that can be
+           missing — the sea floor ships with the app and covers every cell. */
+        sim:sim?{ nx:sim.nx, ny:sim.ny, fx:sim.fx, fy:sim.fy, dec:sim.dec, global:true,
+          lat0:sim.lat0, lat1:sim.lat1, cellKm:sim.cellKm, dt:+(sim.dt||0).toFixed(2), steps:sim.steps||0,
           frames:sim.frames.length, nFrames:sim.nFrames, running:!!sim.running,
-          totalS:sim.total, upliftM:+sim.eta0Up.toFixed(2), subsidenceM:+sim.eta0Down.toFixed(2),
-          strike:Math.round(sim.strike), dipDeg:sim.dipDeg, slipM:+sim.fault.slip.toFixed(1),
-          faultKm:[Math.round(sim.fault.L/1000),Math.round(sim.fault.W/1000)],
+          totalS:sim.total, upliftM:+(sim.eta0Up||0).toFixed(2), subsidenceM:+(sim.eta0Down||0).toFixed(2),
+          strike:Math.round(sim.strike||0), dipDeg:sim.dipDeg, slipM:sim.fault?+sim.fault.slip.toFixed(1):null,
+          faultKm:sim.fault?[Math.round(sim.fault.L/1000),Math.round(sim.fault.W/1000)]:null,
           coastMaxM:+(sim.coastMax||0).toFixed(2), coastAt:sim.coastAt, seaCells:sim.seaCells,
-          demTiles:sim.demTiles, demMissing:sim.demMissing, noData:sim.noData,
           ampM:sim.amp, autoAmpM:sim.autoAmp||null, solveMs:sim.solveMs||null, ms:sim.ms }:null }) };
   })();
 };

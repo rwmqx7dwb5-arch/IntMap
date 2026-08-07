@@ -35,6 +35,15 @@ jobs:
       # comment that says "the map. When…" never trips it, and a local `map` variable is not coupling.
       - name: Renderer-decoupling gate (only js/geo-engine.js may name MapLibre)
         run: npm run check:engine
+      # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
+      # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
+      # Every previous round fixed test time for that round and the suite grew back, because the
+      # convention was one new spec file per round and nothing counted the total. A round that wants
+      # to add test time now has to take at least as much out somewhere else, which is what forces
+      # consolidation instead of accumulation. Unmeasured specs are charged p75, so deleting a
+      # duration cannot buy headroom. See scripts/test-budget.mjs.
+      - name: Test-time budget (the ceiling only goes down)
+        run: npm run check:testbudget
       # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
       # which is exactly the kind of guard that must not be optional. `npm run test:checks` is the

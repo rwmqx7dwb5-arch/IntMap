@@ -118,36 +118,57 @@ test('R192 tsunami: linear long waves over the real sea floor, from an Okada sou
   const w = read('src/tsunami-worker.js');
   assert.match(s, /window\.IntMapTsunami=/, 'the module publishes itself');
   /* the equations: a C-grid with the spherical metric, not a flat box */
-  assert.match(w, /let f = M\[a\] - gdt \* D \* \(eta\[b\] - eta\[a\]\) \* idx;/, 'the momentum equation');
-  assert.match(w, /const v = \(eta\[k\] - dt \* \(\(me - mw\) \* idx \+ \(nn - ns\) \* inv\)\) \* sponge\[k\];/, 'continuity, with cos φ');
+  /* ⚠ (#R197) the same equation, plus the Coriolis term the global domain made necessary — the part
+     this test is for (the pressure gradient carrying the spherical metric factor `idx`) is unchanged */
+  assert.match(w, /let fl = M\[a\] - gdt \* D \* \(eta\[b\] - eta\[a\]\) \* idx \+ dt \* f \* nn;/, 'the momentum equation');
+  assert.match(w, /cor\[j\] = 2 \* OMEGA \* Math\.sin\(la \* DEG\);/, '…with a real Coriolis parameter');
+  /* ⚠ (#R197) `sponge` is a per-ROW factor now, not a 921,600-cell field: on a global grid the two
+     meridional "edges" are the same meridian and are stitched, so the only absorbing boundary left is
+     at the two latitude walls. The metric — 1/(R cosφ) on the zonal divergence and (N cosφ) on the
+     meridional one — is what this line is checked for and is unchanged. */
+  assert.match(w, /const v = \(eta\[k\] - dt \* \(\(me - mwf\) \* idx \+ \(nnf - ns\) \* inv\)\) \* sp;/, 'continuity, with cos φ');
+  assert.match(w, /const ns = Nf\[k \+ south\] \* csS, nnf = Nf\[k\] \* cn;/, '…the cos φ on the meridional flux');
+  /* and the edge that no longer exists */
+  assert.match(w, /THE ONLY SPONGE LEFT IS AT THE TWO LATITUDE WALLS/, 'longitude has no edge to absorb at');
   assert.match(w, /const dt = Math\.max\(0\.5, 0\.45 \* lim\);/, 'and a CFL time step');
-  /* Okada, with the branch trap that a naive transcription falls into */
-  assert.match(s, /function okadaUz\(x,y,depth,L2,W2,dipDeg,slip\)/, 'Okada (1985) uz');
-  assert.match(s, /Math\.atan\(xi\*eta\/\(q\*R\)\)/, 'the PRINCIPAL value, not atan2');
-  assert.doesNotMatch(s, /Math\.atan2\(xi\*eta,q\*R\)/, 'because atan2 leaves a plateau behind the fault');
-  assert.match(s, /const Lk=Math\.pow\(10,0\.58\*M-2\.42\), Wk=Math\.min\(Lk,Math\.pow\(10,0\.41\*M-1\.61\)\);/,
+  /* Okada, with the branch trap that a naive transcription falls into.
+     ⚠ (#R197) it lives in the worker now — see the note on R193 ⑨. tests/r197-checks.test.mjs RUNS it
+     against Okada's own Table 2, which is a stronger statement than any of these regexes. */
+  assert.match(w, /function okadaUz\(x, y, depth, L2, W2, dipDeg, slip\)/, 'Okada (1985) uz');
+  assert.match(w, /Math\.atan\(xi \* eta \/ \(q \* R\)\)/, 'the PRINCIPAL value, not atan2');
+  assert.doesNotMatch(w, /Math\.atan2\(xi \* eta, q \* R\)/, 'because atan2 leaves a plateau behind the fault');
+  assert.match(w, /const Lk = Math\.pow\(10, 0\.58 \* M - 2\.42\), Wk = Math\.min\(Lk, Math\.pow\(10, 0\.41 \* M - 1\.61\)\);/,
     'Wells & Coppersmith 1994, reverse faulting');
   /* the strike is read off the sea floor rather than guessed */
-  assert.match(s, /let dipAz=Math\.atan2\(dHx,dHy\)\/D;/, 'the strike comes from the bathymetric gradient');
-  /* the antimeridian: a Pacific domain crosses it, and demSnapshot clamps at ±180 */
-  assert.match(s, /const snapB=\(eLng>180\)\?demSnapshot\(-180,sLat,wrapLng\(eLng\),nLat,z\)/, 'two snapshots across the date line');
+  assert.match(w, /let dipAz = Math\.atan2\(dHx, dHy\) \/ DEG;/, 'the strike comes from the bathymetric gradient');
+  /* ⚠ (#R197) THE ANTIMERIDIAN STOPPED BEING A SPECIAL CASE. #R192 needed two DEM snapshots because a
+     Pacific box ran past +180° and the sampler clamped there. The grid is the whole planet now and
+     longitude is periodic, so there is no seam to work around — the assertion that replaced the old
+     one is that the wrap exists at all. */
+  assert.match(w, /const ip = \(i \+ 1 === nx\) \? 0 : i \+ 1;/, 'the last column\'s eastern neighbour is the first');
+  assert.doesNotMatch(s, /demSnapshot\(/, 'and no DEM snapshot is taken at all any more');
   /* Green's law only where the linear solution it shoals is still valid — same rule; #R193 keeps the
      depth on this thread as Int16 metres because h itself is transferred to the worker */
   assert.match(s, /const d=sim\.depth\[k\];/, 'the coastal estimate reads the depth it kept');
   assert.match(s, /if\(d<200\) continue;/, 'and starts at the shelf');
   /* frames are quantised. #R192 stored 1 mm in an Int16; #R193 compands to an Int8 along the cube
      root the colour ramp already uses — half the memory at the same visible resolution. */
-  assert.match(w, /const q = new Int8Array\(n2\);/, 'the animation is quantised, not stored as floats');
+  /* ⚠ (#R197) …and over the DISPLAY grid rather than the model grid: at 1440 × 640 a frame is 921 KB
+     and a run is 140 of them. The picture is area-averaged down by `dec`; the analysis fields are not
+     decimated and not quantised, which is the distinction this pair of assertions exists to keep. */
+  assert.match(w, /const q = new Int8Array\(fx \* fy\);/, 'the animation is quantised, not stored as floats');
+  assert.match(w, /emax, emin, tarr,/, 'and the analysis fields are returned in full precision');
   assert.match(w, /Math\.round\(127 \* Math\.cbrt\(a > 1 \? 1 : a\)\)/, 'on the same curve as the colour ramp');
   /* and it is reachable the way everything in this app is reachable (#R82) */
   const seis = read('js/seismic.js');
-  assert.match(seis, /if\(T&&T\.open\)\{ try\{ T\.open\(\{ lng:epi\[0\], lat:epi\[1\], mw:\(fault\?fault\.mw:mw\), depth:depthKm \}\); return true; \}catch\(_\)\{\} \}/,
+  assert.match(seis, /const T=window\.IntMapTsunami; if\(!T\|\|!T\.open\) return false;/,
     'the seismic panel hands the event over');
-  assert.match(seis, /const D2=window\.IntMapDisaster; if\(!D2\|\|!D2\.open\) return false;/,
-    'and the inundation model is still the fallback, not removed');
+  /* ⚠ (#R197) the assertion that used to live here — "and the inundation model is still the fallback,
+     not removed" — was inverted by 「災害シミュレータからは津波シミュレータを削除しろ」. It is now the
+     opposite claim, and tests/r197-checks.test.mjs holds the whole of it. */
   const atlas = read('js/atlas-console.js');
   assert.match(atlas, /if\(a\.hours!=null&&T\.setHours\) T\.setHours\(\+a\.hours\);/, 'Atlas drives it');
-  assert.match(atlas, /"hours"\?:3-24,"maximum"\?:bool,"play"\?:bool/, 'and the SYS catalogue documents the parameters');
+  assert.match(atlas, /"hours"\?:1-30,"maximum"\?:bool,"play"\?:bool/, 'and the SYS catalogue documents the parameters');
   /* five languages */
   ['津波伝播シミュレーション', 'Tsunami-Ausbreitung', 'Распространение цунами', 'Propagación de tsunami']
     .forEach(k => assert.ok(s.includes(k), 'the panel is translated: ' + k));

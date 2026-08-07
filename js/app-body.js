@@ -1521,6 +1521,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          lights build themselves the first time the camera is wide enough for either to be visible. */
       try{ GE().events.on('moveend',_skyFollowCamera); }catch(_){}
       try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
+      /* (#R197) the space explorer's mount() — ONE moveend comparison; nothing exists until pressed */
+      try{ window.IntMapModules.space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
          the first thing the user sees should be the finished map, not a bare basemap that grows

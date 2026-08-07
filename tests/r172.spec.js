@@ -107,45 +107,6 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   await page.waitForTimeout(1500);
 });
 
-test('with unlimited tilt the VIEWPOINT does not move — and standard tilt is untouched', async ({ page }) => {
-  test.setTimeout(180000);
-  await boot(page);
-  const eye = () => page.evaluate(() => {
-    const e = window.IntMapGeoEngine.camera.eye(), m = window.__imap;
-    return { lng: e.lng, lat: e.lat, alt: e.alt, pitch: m.getPitch(), zoom: m.getZoom() };
-  });
-  const drag = async () => {
-    await page.keyboard.down('Control');
-    await page.mouse.move(700, 500); await page.mouse.down();
-    for (let i = 1; i <= 12; i++) { await page.mouse.move(700, 500 - i * 18); await page.waitForTimeout(35); }
-    await page.mouse.up(); await page.keyboard.up('Control');
-    await page.waitForTimeout(1000);
-  };
-  const move = (a, b) => Math.hypot((b.lng - a.lng) * 90000, (b.lat - a.lat) * 110574);
-
-  // STANDARD — MapLibre orbits the eye around the map centre. That behaviour must not change.
-  await page.evaluate(() => { window.IntMapTilt.set(false); window.__imap.jumpTo({ center: [139.7, 35.68], zoom: 12, pitch: 40, bearing: 0 }); });
-  await page.waitForTimeout(900);
-  const s0 = await eye(); await drag(); const s1 = await eye();
-  expect(s1.pitch, 'the standard ceiling still stops at 78°').toBeLessThanOrEqual(78.5);
-  expect(move(s0, s1), 'standard tilt keeps orbiting, exactly as before').toBeGreaterThan(1000);
-
-  // UNLIMITED — the camera turns its head; the viewpoint stays where it is.
-  await page.evaluate(() => { window.IntMapTilt.set(true); window.__imap.jumpTo({ center: [139.7, 35.68], zoom: 12, pitch: 40, bearing: 0 }); });
-  await page.waitForTimeout(900);
-  const u0 = await eye(); await drag(); const u1 = await eye();
-  expect(u1.pitch, 'the ceiling really is lifted past the horizon').toBeGreaterThan(90);
-  expect(move(u0, u1), 'the viewpoint must not move at all — measured 0 m over a 40°→150° drag').toBeLessThan(150);
-  expect(Math.abs(u1.alt - u0.alt), 'nor its altitude').toBeLessThan(150);
-  expect(Math.abs(u1.zoom - u0.zoom), 'nor the scale').toBeLessThan(0.05);
-
-  // …and a flyTo that also travels still lands on its target (the pivot must not hijack a journey)
-  await page.evaluate(() => window.__imap.flyTo({ center: [2.35, 48.85], zoom: 9, pitch: 55, bearing: 20, duration: 600 }));
-  await page.waitForTimeout(2000);
-  const paris = await page.evaluate(() => { const c = window.__imap.getCenter(); return { lng: +c.lng.toFixed(3), lat: +c.lat.toFixed(3) }; });
-  expect(paris).toEqual({ lng: 2.35, lat: 48.85 });
-});
-
 test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);

@@ -719,29 +719,32 @@ window.IntMapModules.disaster=function(HOST){
       GE().layers.add({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     /* connected inundation (bathtub flood-fill) over the real DEM: flood cells reachable from the origin whose
-       ground is below the water surface. tsunami = same engine, water height attenuated inland + a propagation
-       front that advances with the time step; flood = uniform level that rises with the time step. */
-    async function inund(){ const isT=hazard==='tsunami'; const bufKm=isT?26:14, buf=bufKm/111;
+       ground is below the water surface — a uniform level that rises with the time step.
+       ⚠ (#R197) THERE IS NO TSUNAMI HAZARD HERE ANY MORE. 「災害シミュレータからは津波シミュレータを削除しろ」.
+       #R190 had put one in — the same flood-fill with the level set to a wave height and an attenuation of
+       0.35 m/km inland — and #R192 then wrote the real thing (js/tsunami.js: shallow-water propagation over
+       the whole sea floor). Two models for one phenomenon, one of them a bathtub, and the seismic panel and
+       Atlas could both land on the bathtub. The bathtub is gone; the propagation model is the tsunami. */
+    async function inund(){ const bufKm=14, buf=bufKm/111;
       const z=Math.max(6,Math.min(12,Math.round(13-Math.log2(bufKm)))); const bbox=[origin.lng-buf/Math.cos(origin.lat*Math.PI/180),origin.lat-buf,origin.lng+buf/Math.cos(origin.lat*Math.PI/180),origin.lat+buf];
       const samp=await window.IntMapTerrain.sampler(bbox,z); if(!samp) return null;
       const N=100, w0=bbox[0], s0=bbox[1], dLng=(bbox[2]-bbox[0])/N, dLat=(bbox[3]-bbox[1])/N;
       const E=new Float32Array(N*N); for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const e=samp.elevAt(w0+(i+0.5)*dLng,s0+(j+0.5)*dLat); E[j*N+i]=(e==null?9999:e); }
       const g0=samp.elevAt(origin.lng,origin.lat); if(g0==null) return null;
-      const level = isT ? (waveH) : (g0 + floodM*(tstep/6));        /* flood level rises over the step; tsunami uses wave height */
-      const frontKm = isT ? Math.min(bufKm, 0.72*Math.sqrt(9.81*Math.max(waveH,5))*3.6*tstep) : 1e9;   /* shallow-water wave speed × time */
+      const level = g0 + floodM*(tstep/6);                          /* flood level rises over the step */
       const ci=Math.min(N-1,Math.max(0,Math.round((origin.lng-w0)/dLng-0.5))), cj=Math.min(N-1,Math.max(0,Math.round((origin.lat-s0)/dLat-0.5)));
       const fl=new Uint8Array(N*N), dep=new Float32Array(N*N); const q=[cj*N+ci]; fl[cj*N+ci]=1; let head=0;
-      const lvlAt=(i,j)=>{ if(!isT) return level; const dk=_hav([origin.lng,origin.lat],[w0+(i+0.5)*dLng,s0+(j+0.5)*dLat]); if(dk>frontKm) return -1; return g0+Math.max(0,waveH-dk*0.35); };  /* wave attenuates ~0.35 m/km inland */
+      const lvlAt=()=>level;
       const SEA=-1;   /* elevations below this are existing ocean (terrarium bathymetry) — traversed for connectivity but never counted as "inundated land" */
       dep[cj*N+ci]=Math.max(0,lvlAt(ci,cj)-E[cj*N+ci]);
       while(head<q.length){ const cell=q[head++]; const i=cell%N, j=(cell/N)|0;
         [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{ const ni=i+d[0], nj=j+d[1]; if(ni<0||nj<0||ni>=N||nj>=N) return; const nc=nj*N+ni; if(fl[nc]) return; const lv=lvlAt(ni,nj); if(lv<0) return; const e=E[nc]; if(e<lv&&e<9000){ fl[nc]=1; dep[nc]=Math.max(0,lv-e); q.push(nc); } }); }
-      const cap=(isT?waveH:floodM*(tstep/6))+0.5;   /* newly-inundated LAND can only be as deep as the water rise; deeper cells were already below the water body (guards a source dropped on high ground) */
+      const cap=floodM*(tstep/6)+0.5;   /* newly-inundated LAND can only be as deep as the water rise; deeper cells were already below the water body (guards a source dropped on high ground) */
       const feats=[]; let cells=0, maxDep=0; for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const c=j*N+i; if(!fl[c]||dep[c]<=0.05||dep[c]>cap||E[c]<SEA) continue; cells++; if(dep[c]>maxDep)maxDep=dep[c];
         const dd=dep[c], col=dd<1?'#7ec8ff':dd<3?'#3a9bef':dd<6?'#1e6fd0':dd<12?'#12459e':'#0b2f6e';
         feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w0+i*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+j*dLat]]]},properties:{col:col,op:0.5}}); }
       const cellKm2=(dLng*111.32*Math.cos(origin.lat*Math.PI/180))*(dLat*110.54);
-      return { feats, areaKm2:Math.round(cells*cellKm2), maxDep:+maxDep.toFixed(1), level:+((isT?waveH:floodM*(tstep/6))).toFixed(1) }; }
+      return { feats, areaKm2:Math.round(cells*cellKm2), maxDep:+maxDep.toFixed(1), level:+(floodM*(tstep/6)).toFixed(1) }; }
     /* wind-advected downwind plume (ashfall / smoke): a widening cone from the source along the wind, banded by
        concentration; reach grows with the time step. Uses live Open-Meteo surface wind at the source. */
     let _wind=null, _windKey='';
@@ -759,15 +762,15 @@ window.IntMapModules.disaster=function(HOST){
       return { feats, reach:Math.round(reach), windSpd:w.spd, toward }; }
     async function run(){ if(!origin||busy) return; busy=true; try{ ensure(); setStat(DZ('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
       if(hazard==='radiation'){ try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
-      let r=null; if(hazard==='flood'||hazard==='tsunami') r=await inund(); else r=await plume();
+      let r=null; if(hazard==='flood') r=await inund(); else r=await plume();
       if(r){ const feats=(r.feats||[]).concat([{type:'Feature',geometry:{type:'Point',coordinates:[origin.lng,origin.lat]},properties:{}}]);
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-        if(hazard==='flood'||hazard==='tsunami') setStat('<b>'+DZ('Inundated area','浸水域','Überflutet','Затоплено','Inundado')+':</b> ~'+r.areaKm2.toLocaleString()+' km² · '+DZ('max depth','最大水深','max. Tiefe','глубина','profundidad')+' '+r.maxDep+' m · '+DZ('water','水位','Wasser','вода','agua')+' +'+r.level+' m');
+        if(hazard==='flood') setStat('<b>'+DZ('Inundated area','浸水域','Überflutet','Затоплено','Inundado')+':</b> ~'+r.areaKm2.toLocaleString()+' km² · '+DZ('max depth','最大水深','max. Tiefe','глубина','profundidad')+' '+r.maxDep+' m · '+DZ('water','水位','Wasser','вода','agua')+' +'+r.level+' m');
         else setStat('<b>'+DZ('Plume reach','到達距離','Reichweite','дальность','alcance')+':</b> ~'+r.reach+' km '+DZ('downwind','風下','abwind','по ветру','a favor')+' · '+DZ('wind','風速','Wind','ветер','viento')+' '+r.windSpd.toFixed(1)+' m/s');
       } else setStat(DZ('No terrain/wind data here.','この地点のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'));
     }catch(_){ setStat(DZ('Simulation failed — try again.','計算に失敗しました。','Fehlgeschlagen.','Ошибка.','Falló.')); } busy=false; }
     function setStat(h){ if(panel){ const s=panel.querySelector('.dz-stat'); if(s) s.innerHTML=h; } }
-    let floodM=5, waveH=8;
+    let floodM=5;
     function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
       try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
       try{ GE().render.canvas().style.cursor=''; }catch(_){} }
@@ -779,7 +782,9 @@ window.IntMapModules.disaster=function(HOST){
         onPick:(ll)=>{ picking=false; origin={lng:ll.lng,lat:ll.lat}; run(); },
         onCancel:()=>{ picking=false; } })) return;
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
-    const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['tsunami','🌊 '+DZ('Tsunami','津波','Tsunami','Цунами','Tsunami')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
+    /* (#R197) NO TSUNAMI. The tsunami is js/tsunami.js — the propagation model — and it is not opened
+       from here, nor is one launched behind the user's back by anything that lands in this panel. */
+    const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       panel.innerHTML='<div class="dz-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+DZ('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+'</span><button class="dz-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
@@ -789,7 +794,7 @@ window.IntMapModules.disaster=function(HOST){
         +'<button class="dz-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+DZ('Place source on map','発生地点を設置','Quelle setzen','Разместить','Colocar origen')+'</button>'
         +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">'+DZ('Time','経過時間','Zeit','Время','Tiempo')+'</span><input type="range" class="dz-t" min="1" max="12" value="3" style="flex:1;"><span class="dz-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:36px;text-align:right;">3 h</span></div>'
         +'<div class="dz-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood/tsunami = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水・津波＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。','Nur Bildungsnäherung.','Только образовательная модель.','Solo aproximación educativa.')+'</div></div>';
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modelled separately, by the propagation simulator.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。津波は別の伝播シミュレーターで扱います。','Nur Bildungsnäherung. Tsunamis: eigener Ausbreitungssimulator.','Только образовательная модель. Цунами — отдельный симулятор.','Solo aproximación educativa. Los tsunamis tienen su propio simulador.')+'</div></div>';
       document.body.appendChild(panel);
       panel.querySelector('.dz-close').onclick=()=>close();
       panel.querySelector('.dz-pick').onclick=()=>startPick();
@@ -800,24 +805,27 @@ window.IntMapModules.disaster=function(HOST){
     function syncHaz(){ if(!panel) return; panel.querySelectorAll('.dz-hz').forEach(b=>{ const on=b.getAttribute('data-h')===hazard; b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)'; }); }
     function renderParam(){ if(!panel) return; const p=panel.querySelector('.dz-param'); if(!p) return; const inC='width:100%;box-sizing:border-box;height:28px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 7px;';
       if(hazard==='flood'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Peak water rise (m)','最大水位上昇 (m)','Pegelanstieg (m)','Подъём воды (м)','Subida (m)')+'<input type="number" class="dz-fm" min="1" max="60" value="'+floodM+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-fm'); el.onchange=()=>{ floodM=Math.max(1,+el.value||5); if(origin) run(); }; }
-      else if(hazard==='tsunami'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Wave height at coast (m)','沿岸波高 (m)','Wellenhöhe (m)','Высота волны (м)','Altura de ola (m)')+'<input type="number" class="dz-wh" min="1" max="40" value="'+waveH+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-wh'); el.onchange=()=>{ waveH=Math.max(1,+el.value||8); if(origin) run(); }; }
       else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
       else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
-    /* (#R190) `hazard` and the hazard's own parameter may now arrive WITH the location. The seismic
-       simulator hands this panel a tsunamigenic event (js/seismic.js → openTsunami), and it has to be
-       able to say "tsunami, this coast, about this wave" in one call: setting them afterwards would
-       run the model once under the previous hazard first. Every existing caller passes {lng,lat} only
-       and behaves exactly as before. */
+    /* (#R190) `hazard` and the hazard's own parameter may arrive WITH the location, so a caller can say
+       "this hazard, this place, this parameter" in one call rather than running the model once under the
+       previous hazard first. Every other caller passes {lng,lat} only and behaves exactly as before.
+       ⚠ (#R197) `hazard:'tsunami'` is no longer one of HAZ(), so it no longer selects anything here —
+       the test below is the same membership test it always was, and it now REFUSES the removed hazard
+       rather than mapping it to a neighbour. */
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex';
       if(ll&&ll.hazard&&HAZ().some(h=>h[0]===ll.hazard)){ hazard=ll.hazard; try{ syncHaz&&syncHaz(); }catch(_){} }
-      if(ll&&ll.waveH!=null&&isFinite(+ll.waveH)) waveH=Math.max(1,Math.min(40,+ll.waveH));
       if(ll&&ll.floodM!=null&&isFinite(+ll.floodM)) floodM=Math.max(1,Math.min(60,+ll.floodM));
       try{ renderParam&&renderParam(); }catch(_){}
       if(ll&&ll.lng!=null){ origin=ll; run(); } }
     function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
-    return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); },
-      state:()=>({ hazard, waveH, floodM, origin:origin?{lng:origin.lng,lat:origin.lat}:null }),   /* (#R190) */
-      _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
+    return { open, run, clear:close,
+      /* (#R197) an unknown hazard is refused rather than stored: `setHazard('tsunami')` used to leave the
+         panel in a state no button could show and no parameter belonged to. */
+      setHazard:(h)=>{ if(!HAZ().some(k=>k[0]===h)) return false; hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); return true; },
+      hazards:()=>HAZ().map(h=>h[0]),
+      state:()=>({ hazard, floodM, origin:origin?{lng:origin.lng,lat:origin.lat}:null }),   /* (#R190) */
+      _inund:async(o,hz,ts,fm)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; return await inund(); } }; })();
 };
 
 window.IntMapModules.earthReplay=function(HOST){

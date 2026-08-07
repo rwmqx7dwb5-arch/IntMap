@@ -76,13 +76,18 @@ test('R195 ②: both engines answer "what latitude is image row r", and differen
 
 test('R195 ②: the tsunami painter asks for the row map instead of assuming N−1−j', () => {
   assert.match(tsunami, /GE\(\)\.layers\.imageRowLatitudes\(c,/, 'the painter asks the engine');
-  assert.match(tsunami, /const src=rowOf\[r\]\*N, dst=r\*N/, 'it paints the grid row that belongs at each image row');
+  /* ⚠ (#R197) THE GRID GOT A SECOND RESOLUTION, SO THE ROW WIDTH IS NOT `N` ANY MORE. The model is
+     1440 × 640 and the PICTURE is decimated from it (a full-resolution Int8 frame is 921 KB and a run
+     is 140 of them), so the painter's stride is the display width FX. The property under test is
+     unchanged and is still the one that matters: the row a pixel is painted from is the row the
+     ENGINE says is drawn there, not N−1−j. */
+  assert.match(tsunami, /const src=rowOf\[r\]\*FX, dst=r\*FX/, 'it paints the grid row that belongs at each image row');
   /* the old, wrong mapping must be gone from the draw path */
-  assert.doesNotMatch(tsunami, /const src=j\*N, dst=\(N-1-j\)\*N/,
+  assert.doesNotMatch(tsunami, /const src=j\*(N|FX), dst=\((N|FX)-1-j\)\*(N|FX)/,
     'the latitude-indexed image row is what put the wave 8° from its epicentre');
   /* the canvas is sized from the row map, not pinned to the grid */
   assert.match(tsunami, /height:imgH/, 'the texture height comes from chooseImgH()');
-  assert.match(tsunami, /Math\.min\(2048,Math\.ceil\(N\*worst\)\)/, 'and it is capped');
+  assert.match(tsunami, /Math\.min\(2048,Math\.ceil\(NY2\*worst\)\)/, 'and it is capped');
 });
 
 /* ── ③ one hit test per pointer move ─────────────────────────────────────────────────────────── */
