@@ -96,6 +96,13 @@ export function makeLabelOcclusion(HOST, CTX) {
      ⚠ The five values it needs (mapType, satState, satProviderById, satBuildTiles, isMobile) are
      handed over through HOST rather than closed over — see scripts/check-split-scope.mjs. */
   try{ window.IntMapModules.tileWarm(HOST); }catch(_){}
+  /* (#R202) …and beside it, the gesture-time render resolution (js/render-scale.js). Same reason for
+     the placement: it registers movestart/moveend handlers, and it is a no-op on desktop. */
+  try{ const RS=window.IntMapModules.renderScale(HOST); RS&&RS.start&&RS.start(); }catch(_){}
+  /* (#R202) …and the far plane that was cutting distant mountains off at a tenth of the horizon.
+     Switched on once for the life of the view: the adapter re-evaluates it on movement and leaves
+     the renderer's own number alone at pitches where the horizon is not what is binding. */
+  try{ GE().camera.setHorizonReach(true); }catch(_){}
 
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   let _occAllVis=false;

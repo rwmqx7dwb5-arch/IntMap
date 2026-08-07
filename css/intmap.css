@@ -1518,8 +1518,15 @@
       .m-seg-block{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
       .m-seg{ display:flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; }
       .m-seg-btn{ flex:1; min-height:40px; border:none; background:transparent; color:var(--text-muted); font-size:14px; font-weight:600; border-radius:8px; transition:0.2s; }
-      .m-seg-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 5px rgba(0,0,0,0.12); }
-      [data-theme="dark"] .m-seg-btn.active{ background:#3a3a3c; color:#fff; }
+      /* ══ (#R202) THE SELECTED SEGMENT IS WHITE-ON-BLACK, IN BOTH THEMES ══════════════════════════
+         「モバイル版で、Flat/Globe, Map/Satellite, 3Dの選択は、選択中を白背景黒文字に。」
+         The light theme already resolved to a white pill (--card-bg #fff / --text-main #1d1d1f), but
+         the DARK theme overrode it to #3a3a3c on white — a dark grey chip inside a dark grey track,
+         which is the state the report is about: on a phone in dark mode you cannot tell which of
+         Map/Satellite, Globe/Flat and 3D is the one that is on. Both themes now state the same pair
+         literally rather than through variables, so a later theme edit cannot take it back. */
+      .m-seg-btn.active{ background:#fff; color:#000; box-shadow:0 1px 5px rgba(0,0,0,0.12); }
+      [data-theme="dark"] .m-seg-btn.active{ background:#fff; color:#000; box-shadow:0 1px 6px rgba(0,0,0,0.5); }
 
       .m-tool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
       .m-tool-btn{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:15px 8px; border:none; border-radius:14px; background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:600; transition:0.18s; }

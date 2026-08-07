@@ -46,6 +46,11 @@ function _m(){ return window.__imap||null; }
        all, which is why 「下の面は色がついていない・多面体内部の空間も無色」 could not be answered by
        adding more extrusions. MapLibre can, through a custom GL layer (js/solid3d.js). */
     solid3d:true,
+    /* (#R202) can the renderer put an object at a real ALTITUDE — in orbit, not on the ground?
+       MapLibre can, through the same custom-layer contract solid3d uses: v5's shader prelude offers
+       projectTileFor3D(mercatorXY, metres) and it is correct on the globe as well as on the flat map
+       (js/orbit-points.js). An engine that cannot must say so rather than draw the ground point. */
+    orbit3d:true,
     /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
        NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
        MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
@@ -537,6 +542,8 @@ function _m(){ return window.__imap||null; }
   function makeMapLibreAdapter(_m){
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
   const _solids={};
+  /* (#R202) …and the same, for layers.addOrbit (js/orbit-points.js) */
+  const _orbits={};
   /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
   let _pd=null, _pdAt=0;
   let _appMinZoom=null, _eyePivot=false;
@@ -803,6 +810,93 @@ function _m(){ return window.__imap||null; }
        beyond 90° of pitch the camera goes UNDER the world. Unpinning it is the precondition for both
        eye-anchored tilt and the flight simulator's above-90° cockpit; it belongs in the contract because
        an engine whose camera is positional to begin with has nothing to unpin. */
+    /* ══ (#R202) THE DISTANCE THAT WAS BEING THROWN AWAY ═════════════════════════════════════════
+       「MapLibreの3D衛星画像や、フライトシミュレータ時に、ある程度遠くの山は地平線の奥に消えるように
+         消えてしまうのをやめて。（強制的に消されてしまう）」
+
+       It is the FAR PLANE, and it was measured rather than guessed. MapLibre caps the far plane at
+       ten times the camera's own height above sea level — `min(furthestDistance·1.01, horizonShift)`
+       with the shift at 0.1 — while the geometric horizon from a camera at height h is √(2Rh), which
+       for the 5,701 m eye in the Fuji capture is 270 km, or FORTY-SEVEN times h. Everything between
+       the two is cut, and because the cut is a plane rather than a horizon it comes out as the dead
+       straight edge in test-results/r202/terr-before.png with the sky sitting directly on it.
+
+       Verified by moving only this number: with the same camera, `overrideNearFarZ(near, far×6)` put
+       the terrain/sky edge at y=154 instead of y=177 — twenty-three rows of country that the plane
+       had been removing. So the reach is set from the geometry instead: the horizon at the camera's
+       own altitude, PLUS √(2R·4000) for a peak standing 4 km above the ground on the far side of it,
+       which is what makes a distant range appear over the horizon rather than in front of it.
+
+       ⚠ IT IS A MULTIPLIER ON THE RENDERER'S OWN NUMBER, not a distance in metres. MapLibre's far
+       plane lives in the transform's own units and the ratio it caps at (ten times the sea-level
+       distance) is the one thing published about it, so the ratio is what is corrected — deriving a
+       metre-to-unit scale here would be exactly the re-derivation #R186 warns against.
+       ⚠ AND NOT AT EVERY PITCH. Looking down, `furthestDistance·1.01` is the binding term and there
+       is nothing beyond it to show; stretching the plane there would only spend depth precision. */
+    setHorizonReach(on){
+      const m=_m(); if(!m||!m.transform) return false;
+      const t=m.transform;
+      if(!(t.overrideNearFarZ&&t.clearNearFarZOverride)) return false;
+      if(!on){ if(this._hzOff){ try{ this._hzOff(); }catch(_){} this._hzOff=null; }
+        try{ t.clearNearFarZOverride(); }catch(_){} return true; }
+      if(this._hzOff) return true;
+      const R=6371008.8, PEAK=4000;
+      let lastAlt=-1, pending=false;
+      /* ⚠ THE MULTIPLIER MUST ONLY EVER BE APPLIED TO A PRISTINE VALUE. `clearNearFarZOverride()`
+         restores automatic calculation but does NOT recompute the matrices on the spot, so reading
+         `farZ` on the next line still returns THE OVERRIDE — and multiplying that again compounds.
+         Measured: five moves took the far plane from 23,722 to 31,604,404, a ratio of 1,332 against
+         the ×8.7 the geometry asked for, which is a depth buffer thrown away. So the override is
+         cleared in one pass and applied in the NEXT one, and only when the transform says it is
+         calculating automatically again. */
+      const apply=(force)=>{
+        try{
+          const mm=_m(); if(!mm||!mm.transform) return;
+          const tr=mm.transform;
+          const alt=this.cameraAltitude();
+          if(!(alt>0)) return;
+          /* ⚠ ONLY WHEN THE HORIZON IS IN THE PICTURE — AND THIS IS NOT A TASTE JUDGEMENT, IT IS A
+             REGRESSION THIS ROUND CAUSED AND CAUGHT. The far plane is an input to `getBounds()` as
+             well as to what is drawn, so stretching it at pitch 0 widened the bounds — and
+             js/terrain-water.js FITS ITS MODEL TO THE BOUNDS. tests/r176 «a levee drawn on flat
+             ground creates a basin that holds water» went from 4 m of water to 0.077 m, because the
+             same four million cubic metres were being spread over a far bigger grid. It passes on
+             main and failed here, which is the whole of the attribution.
+             Looking down there is nothing beyond the horizon to reveal, so below 45° of pitch the
+             renderer's own number stands — which is what the note at the top of this method always
+             said this did. */
+          const tilted=((tr.pitch||0)>=45);
+          if(!tilted){ if(tr.autoCalculateNearFarZ===false){ try{ tr.clearNearFarZOverride(); }catch(_){} lastAlt=-1; pending=false; } return; }
+          const auto=(tr.autoCalculateNearFarZ!==false);
+          /* the altitude moves continuously in a flight; recomputing the plane every frame would
+             re-run the matrices twice a frame for a number that has barely changed */
+          const moved=(lastAlt<=0)||Math.abs(alt-lastAlt)/lastAlt>=0.05;
+          if(!auto){
+            if(!(force||moved)) return;
+            try{ tr.clearNearFarZOverride(); }catch(_){}
+            pending=true;
+            /* …and the next pass is scheduled rather than waited for: without this the extension
+               only lands on the move AFTER the one that needed it, so a jumpTo that settles leaves
+               the view with the renderer's own short plane until something else moves. */
+            setTimeout(()=>{ try{ apply(true); }catch(_){} },0);
+            return;
+          }
+          if(!(force||moved||pending)) return;
+          lastAlt=alt; pending=false;
+          const reach=Math.sqrt(2*R*alt+alt*alt)+Math.sqrt(2*R*PEAK);
+          const mult=reach/(10*alt);                 /* against MapLibre's own ten-times-h cap */
+          if(!(mult>1.05)) return;                   /* looking down: the far plane is not what binds */
+          const near=tr.nearZ, base=tr.farZ;
+          if(!(base>0)) return;
+          tr.overrideNearFarZ(near, base*Math.min(60,mult));
+        }catch(_){}
+      };
+      const onMove=()=>apply(false);
+      try{ m.on('move',onMove); m.on('moveend',()=>apply(true)); m.on('pitchend',()=>apply(true)); }catch(_){ return false; }
+      this._hzOff=()=>{ try{ m.off('move',onMove); }catch(_){} };
+      apply(true);
+      return true;
+    },
     setCenterClamped(on){ const m=_m(); try{ if(m&&m.setCenterClampedToGround){ m.setCenterClampedToGround(!!on); return true; } }catch(_){} return false; },
     /* (#R172) WHAT DOES TILTING PIVOT AROUND?
          'target' → the point on the map you are looking at (MapLibre's own behaviour, the default)
@@ -1237,6 +1331,12 @@ function _m(){ return window.__imap||null; }
     zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } },
     stop(){ const m=_m(); if(m&&m.stop) m.stop(); },
     resize(){ const m=_m(); if(m&&m.resize) m.resize(); }, triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }, getCanvas(){ const m=_m(); return (m&&m.getCanvas)?m.getCanvas():null; },
+    /* (#R202) HOW MANY DEVICE PIXELS PER CSS PIXEL THE RENDERER IS DRAWING. The app already chooses
+       this once at create time (#3: a phone at DPR 3 is capped to 2); this is the same number, asked
+       for and changed while running, which is what lets js/render-scale.js spend fewer fragments
+       during a gesture and all of them on the frame the gesture lands on. */
+    getRenderScale(){ const m=_m(); try{ return (m&&m.getPixelRatio)?m.getPixelRatio():null; }catch(_){ return null; } },
+    setRenderScale(r){ const m=_m(); try{ if(m&&m.setPixelRatio&&isFinite(r)&&r>0){ m.setPixelRatio(r); return true; } }catch(_){} return false; },
     setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
     /* (#R161) Phase-3 contract broadening — everything a self-contained OVERLAY subsystem needs so it
        can be written against the engine alone: readiness, the drawing surface's container + pixel size,
@@ -1282,6 +1382,59 @@ function _m(){ return window.__imap||null; }
         if(o&&!o.eye){ const e=this.eyePosition(); if(e) o=Object.assign({},o,{eye:e}); }
         L._set(o); return true; }catch(_){ return false; } },
     removeSolid(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _solids[id]; return true; },
+    /* ══ (#R202) OBJECTS IN ORBIT — a cloud of points at their own altitudes ═══════════════════════
+       「すべての地球周囲にある衛星をリアルタイムで実場所でアニメーションで見られるレイヤーを作って。」
+       Asked for as an intent — "these things are at these altitudes, draw them there" — because that
+       is what differs between engines: MapLibre answers with a `custom` layer over its own
+       projectTileFor3D (js/orbit-points.js), a Cesium-class engine answers with a point-primitive
+       collection, and an engine that can do neither says so via capabilities.orbit3d. The caller
+       supplies the propagation AND its rate, so the renderer can carry the motion between ticks
+       without the catalogue being re-propagated every frame. */
+    addOrbit(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
+      try{ if(!(window.IntMapModules&&window.IntMapModules.orbitPoints)) return false;
+        const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
+        const L=(_orbits[id]||(_orbits[id]=window.IntMapModules.orbitPoints().makeLayer(id)));
+        m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+    setOrbit(id,o){ const L=_orbits[id]; if(!L) return false;
+      try{ L._set(o); return true; }catch(_){ return false; } },
+    removeOrbit(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _orbits[id]; return true; },
+    /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
+       one-point form and builds a model matrix per call, which a hover over eleven thousand objects
+       cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
+       them by the one matrix the shader is using, so what can be clicked is what is drawn.
+       `xy` is [mercX, mercY, altitudeMetres] × n; the answer is [screenX, screenY] × n with NaN where
+       the object is behind the camera. */
+    projectMercAlt(xy){ const m=_m(); if(!m||!xy) return null;
+      try{
+        const t=m.transform; if(!(t&&t.getMatrixForModel&&t.getProjectionDataForCustomLayer)) return null;
+        /* ⚠ THIS IS projectAltitude'S ARITHMETIC, NOT A SECOND DERIVATION OF IT. The first version of
+           this method multiplied (mercatorX, mercatorY, altitude) by `mainMatrix` directly, which is
+           right in the flat regime and WRONG on the globe: there the prelude does not multiply, it
+           turns the mercator pair into a point on a sphere first, and the matrix comes after. It
+           returned NaN for every object and the pick silently fell back to the ground positions.
+           #R186's rule — do not re-derive a projection, transcribe it — applies to the renderer's own
+           model matrices too: getMatrixForModel is the supported answer and it is correct in both
+           regimes. What is batched here is everything AROUND it: the projection data is fetched once
+           for the whole array instead of once per point. */
+        const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+        if(!_pd||now-_pdAt>6){ _pd=t.getProjectionDataForCustomLayer(true); _pdAt=now; }
+        const A=(_pd||{}).mainMatrix; if(!A) return null;
+        const D2R=Math.PI/180;
+        const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
+        const n=(xy.length/3)|0, out=new Float32Array(n*2);
+        const ll={lng:0,lat:0};
+        for(let i=0;i<n;i++){
+          ll.lng=xy[i*3]*360-180;
+          ll.lat=(2*Math.atan(Math.exp((0.5-xy[i*3+1])*2*Math.PI))-Math.PI/2)/D2R;
+          const M=t.getMatrixForModel(ll,xy[i*3+2]);
+          if(!M){ out[i*2]=NaN; out[i*2+1]=NaN; continue; }
+          const x=M[12],y=M[13],z=M[14];
+          const cx=A[0]*x+A[4]*y+A[8]*z+A[12], cy=A[1]*x+A[5]*y+A[9]*z+A[13], cw=A[3]*x+A[7]*y+A[11]*z+A[15];
+          if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)){ out[i*2]=NaN; out[i*2+1]=NaN; continue; }
+          out[i*2]=(cx/cw*0.5+0.5)*W; out[i*2+1]=(0.5-cy/cw*0.5)*H;
+        }
+        return out;
+      }catch(_){ return null; } },
     /* (#R171) INPUT — hand the drag gesture to a tool for the length of a stroke. A tool that traces a
        shape has to stop the renderer panning underneath it; #R170's DrawTool reached straight for
        map.dragPan for this, which is precisely the kind of call a renderer-independent tool cannot make.
@@ -1601,6 +1754,8 @@ function _m(){ return window.__imap||null; }
       eye:()=>A().eyePosition?A().eyePosition():null,
       setEye:o=>A().setEye?A().setEye(o):false,
       setCenterClamped:v=>A().setCenterClamped?A().setCenterClamped(v):false,
+      /* (#R202) let the view reach its real horizon instead of the renderer's ten-times-h far plane */
+      setHorizonReach:v=>A().setHorizonReach?A().setHorizonReach(v):false,
       setTiltPivot:mo=>A().setTiltPivot?A().setTiltPivot(mo):false,
       /* (#R179) IS THE EYE PIVOT REALLY WHOLE? Two separate pieces have to be in place — the
          camera hook and the repair to the renderer's own underground correction that runs ahead
@@ -1641,6 +1796,10 @@ function _m(){ return window.__imap||null; }
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
       addSolid:(id,b)=>A().addSolid?A().addSolid(id,b):false, setSolid:(id,o)=>A().setSolid?A().setSolid(id,o):false,
       removeSolid:id=>A().removeSolid?A().removeSolid(id):false,
+      /* (#R202) objects at their own altitudes, and the batched projection that makes them clickable */
+      addOrbit:(id,b)=>A().addOrbit?A().addOrbit(id,b):false, setOrbit:(id,o)=>A().setOrbit?A().setOrbit(id,o):false,
+      removeOrbit:id=>A().removeOrbit?A().removeOrbit(id):false,
+      projectMercAlt:(a)=>A().projectMercAlt?A().projectMercAlt(a):null,
       /* (#R160) feature-state (hover/selection highlighting) through the engine */
       setFeatureState:(f,s)=>A().setFeatureState(f,s), removeFeatureState:(f,k)=>A().removeFeatureState(f,k),
       /* (#R161) read a paint property back (theme code needs to know the current value) */
@@ -1693,6 +1852,9 @@ function _m(){ return window.__imap||null; }
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
+      /* (#R202) the render resolution, read and written — see js/render-scale.js */
+      getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,
+      setRenderScale:r=>A().setRenderScale?A().setRenderScale(r):false,
       /* (#R178) the element gestures are dispatched on — NOT the canvas: MapLibre stacks markers
          and the attribution over it, and a synthetic pointer event has to land on the same node
          the renderer listens to. */

@@ -309,6 +309,21 @@ function run(m) {
     }
     return u;
   };
+  /* (#R202) how far the cell average is taken, and how finely — see the block in the loop below.
+     ⚠ SUB_N = 3 IS WHERE IT CONVERGES, and that was measured rather than assumed. The worker was run
+     in Node over a flat 4,000 m ocean (the harness tests/r197-checks.test.mjs already uses) at three
+     magnitudes, varying only the quadrature; the number is the model's own reported amplitude, m:
+
+         Mw 7.5   1×1 0.9117   3×3 0.7516   5×5 0.7430   7×7 0.7406
+         Mw 8.2   1×1 2.8780   3×3 2.7142   5×5 2.6954   7×7 2.6904
+         Mw 9.0   1×1 6.6819   3×3 6.9523   5×5 6.9763   7×7 6.9797
+
+     Two things follow. The centre sample is off by 23% at Mw 7.5 and by 4% at Mw 9 — bigger where
+     the rupture is small against a 28 km cell, which is the signature of quantisation — and it errs
+     in BOTH directions, so it was never a bias that could be corrected with a factor. And 3×3 lands
+     within 1.5% of 7×7 everywhere, at a ninth of the arithmetic. */
+  const SUB_N = 3, subR = 1.5 * g.L;
+  const cellLatM = ((lat1 - lat0) / ny) * mPerLat;
   let upMax = 0, downMax = 0;
   /* only the rows and columns the window can reach — on a global grid the source is a small patch */
   const jS = rowOf(srcLat - farM / mPerLat - 1), jN = rowOf(srcLat + farM / mPerLat + 1);
@@ -325,7 +340,31 @@ function run(m) {
       const xs = dx * sA + dy * cA;                     /* into the fault frame: x along strike */
       const ys = -dx * cA + dy * sA;
       let uz;
-      if (r <= blend0) uz = many(xs, ys);
+      if (r <= subR) {
+        /* ══ (#R202) THE SOURCE IS INTEGRATED OVER THE CELL, NOT SAMPLED AT ITS CENTRE ══════════
+           「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度に。」
+           A cell here is ~28 km across and the static field of a rupture varies over kilometres, so
+           taking ONE Okada value at the cell centre is point sampling a function that is not close
+           to constant across the cell — the peak lands wherever the grid happens to fall, and the
+           DISPLACED VOLUME (which is what sets the far-field amplitude) inherits that aliasing.
+           Inside SUB_R the cell is averaged over SUB_N × SUB_N points instead, which is a proper
+           midpoint quadrature of the same field: the initial sea surface stops depending on where
+           the grid lines happen to sit relative to the fault.
+           ⚠ THE COST IS BOUNDED BY WHERE IT IS SPENT. The sub-sampled disc is 1.5 rupture lengths;
+           beyond it one sample per cell is already resolving the field, and past 2.2 L the model has
+           been using a single equivalent rectangle since #R193 for exactly that reason. */
+        let acc = 0;
+        for (let a = 0; a < SUB_N; a++) {
+          const fy = ((a + 0.5) / SUB_N - 0.5) * cellLatM;
+          for (let b = 0; b < SUB_N; b++) {
+            const fx = ((b + 0.5) / SUB_N - 0.5) * (360 / nx) * mpl;
+            const v = many((dx + fx) * sA + (dy + fy) * cA, -(dx + fx) * cA + (dy + fy) * sA);
+            if (isFinite(v)) acc += v;
+          }
+        }
+        uz = acc / (SUB_N * SUB_N);
+      }
+      else if (r <= blend0) uz = many(xs, ys);
       else if (r >= blend1) uz = one(xs, ys);
       else { const w = (r - blend0) / (blend1 - blend0); uz = (1 - w) * many(xs, ys) + w * one(xs, ys); }
       if (!isFinite(uz)) continue;

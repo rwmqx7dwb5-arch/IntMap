@@ -1,0 +1,210 @@
+/* ============================================================================
+ *  R202 — the sky is computed, the source is integrated, and the far plane reaches the horizon
+ * ----------------------------------------------------------------------------
+ *  Twelve instructions, and the ones with physics or arithmetic behind them are checked by RUNNING
+ *  that arithmetic rather than by asserting on the text that contains it:
+ *
+ *    ① js/sky-model.js is pure — no DOM, no renderer — so the scattering integral runs here.
+ *    ② src/tsunami-worker.js loads into a Node vm (the harness tests/r197-checks.test.mjs built), so
+ *       the cell-averaged source is compared against the centre sample it replaces.
+ *
+ *  The rest are seam checks of the kind this suite has used since #R162: a capability that is
+ *  declared must be implemented, a contract method that is called must exist, and a value that two
+ *  files have to agree on is derived from one of them rather than written down twice.
+ * ==========================================================================*/
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+
+/* ── ① THE SKY, RUN ───────────────────────────────────────────────────────────────────────── */
+const SKY = await import(new URL('../js/sky-model.js', import.meta.url));
+
+test('R202 ①a the sky is blue in daylight and space at night — the defect this round is about', () => {
+  const noon = SKY.skyColour(80, 10, 90).rgb;
+  const night = SKY.skyColour(-20, 10, 90).rgb;
+  /* the reported defect: at noon, from the ground, MapLibre's sky-color was #060b16 = (6,11,22) */
+  assert.ok(noon[2] > 100, `a noon sky must be bright: got ${noon}`);
+  assert.ok(noon[2] > noon[1] && noon[1] > noon[0], `and blue: got ${noon}`);
+  assert.ok(night[2] < 12, `a deep-night sky is space: got ${night}`);
+});
+
+test('R202 ①b it falls with the Sun, monotonically, all the way through twilight', () => {
+  const lum = (e) => { const c = SKY.skyColour(e, 10, 90).rgb; return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const el = [80, 60, 40, 20, 10, 5, 0, -3, -6, -12, -18];
+  let prev = Infinity;
+  for (const e of el) { const v = lum(e); assert.ok(v <= prev + 0.5, `sun ${e}° is brighter than the step above it (${v} > ${prev})`); prev = v; }
+  assert.ok(lum(80) > 40 * lum(-12), 'and day and deep twilight are not the same picture');
+});
+
+test('R202 ①c …and with ALTITUDE, which is the half a two-hex ramp could never express', () => {
+  const lum = (a) => { const c = SKY.skyColour(80, a, 90).rgb; return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ground = lum(10), high = lum(30000), space = lum(300000);
+  assert.ok(ground > high * 3, `climbing out of the atmosphere must darken the sky: ${ground} vs ${high}`);
+  assert.ok(space < 6, `and from 300 km it is space: ${space}`);
+});
+
+test('R202 ①d the calibration against Cesium is the one in the file, still', () => {
+  /* Cesium's own SkyAtmosphere read [85,112,130] at the top of the frame for this camera and
+     instant (test-results/r202/sky-cesium-noonLow.png). The model is fitted to it; this is the
+     assertion that keeps a later exposure tweak from silently walking away from the measurement. */
+  const c = SKY.skyColour(77.2, 2500, 90).rgb;
+  assert.ok(Math.abs(c[0] - 85) <= 30 && Math.abs(c[1] - 112) <= 30 && Math.abs(c[2] - 130) <= 40,
+    `model ${c} against Cesium [85,112,130]`);
+});
+
+test('R202 ①e no arrangement of camera, Sun and view direction returns NaN', () => {
+  /* the one that caught a real defect: a ray pointing BELOW the horizon from exactly sea level. The
+     near root of the ground intersection is t = 0 there, so a `t > 0` clip let the march run
+     straight through the planet, exp(−h/H) overflowed and every channel came back NaN. */
+  for (const [alt, ve, se] of [[0, -30, 40], [0, 0, 0], [1e6, 89, -90], [10, 55, 90], [400000, -80, 20],
+    [0, -90, 90], [7e6, 55, 0], [-5, 55, 45], [10, 55, 720]]) {
+    const r = SKY.skyColour(se, alt, 90, ve);
+    assert.ok(r.linear.every((v) => isFinite(v) && v >= 0), `skyColour(${se},${alt},90,${ve}) = ${r.linear}`);
+    assert.match(r.hex, /^#[0-9a-f]{6}$/, `and a real colour: ${r.hex}`);
+  }
+});
+
+/* ── ② THE TSUNAMI SOURCE, RUN ────────────────────────────────────────────────────────────── */
+function loadWorker(src) {
+  const ctx = {
+    self: { postMessage: () => {} },
+    performance: { now: () => Number(process.hrtime.bigint() / 1000n) / 1000 },
+    console, Math, Float32Array, Float64Array, Int32Array, Int16Array, Int8Array, Uint8Array,
+    Number, Object, Array, isFinite, String, Error,
+  };
+  vm.createContext(ctx);
+  vm.runInContext(src + '\n;globalThis.__api={run,okadaUz,faultGeom,seaFloor};', ctx, { filename: 'tsunami-worker.js' });
+  return ctx.__api;
+}
+const flatOcean = (d, w, h) => {
+  const rgb = new Uint8Array(w * h * 3), q = Math.round(d);
+  for (let k = 0; k < w * h; k++) { rgb[k * 3] = q >> 8; rgb[k * 3 + 1] = q & 255; rgb[k * 3 + 2] = 255; }
+  return { w, h, rgb };
+};
+const RUN = { id: 1, nx: 1440, ny: 640, lat0: -80, lat1: 80, dec: 8, hours: 0.25, frames: 24 };
+const amp = (src, mw) => loadWorker(src).run({ ...RUN, bathy: flatOcean(4000, 720, 320), src: { lng: 143, lat: 38, mw, depthKm: 24 } }).amp;
+
+test('R202 ②a the source is INTEGRATED over the cell, and it changes the answer', () => {
+  const now = rd('src/tsunami-worker.js');
+  assert.match(now, /const SUB_N = 3, subR = 1\.5 \* g\.L;/, 'the quadrature is stated in one place');
+  const centre = now.replace('const SUB_N = 3, subR = 1.5 * g.L;', 'const SUB_N = 1, subR = -1;');
+  /* the smaller the rupture against a ~28 km cell, the more a centre sample aliases it */
+  const a75 = amp(centre, 7.5), b75 = amp(now, 7.5);
+  assert.ok(Math.abs(a75 - b75) / a75 > 0.1, `Mw 7.5: centre ${a75} vs averaged ${b75} — the point sample was not aliasing?`);
+});
+
+test('R202 ②b …and 3×3 is where it converges, which is why it is 3', () => {
+  const now = rd('src/tsunami-worker.js');
+  const at = (n) => amp(now.replace('const SUB_N = 3, subR = 1.5 * g.L;', `const SUB_N = ${n}, subR = 1.5 * g.L;`), 7.5);
+  const three = amp(now, 7.5), seven = at(7);
+  assert.ok(Math.abs(three - seven) / seven < 0.03, `3×3 ${three} against 7×7 ${seven} — not converged`);
+});
+
+/* ── ③ THE SEAMS ──────────────────────────────────────────────────────────────────────────── */
+test('R202 ③a orbit3d: declared by both engines, implemented by both, reached only through the contract', () => {
+  const ge = rd('js/geo-engine.js'), ce = rd('js/cesium-engine.js');
+  assert.match(ge, /orbit3d:true/, 'MapLibre declares it');
+  assert.match(ce, /orbit3d:true/, 'and so does Cesium');
+  for (const m of ['addOrbit', 'setOrbit', 'removeOrbit', 'projectMercAlt']) {
+    assert.match(ge, new RegExp(`${m}\\s*\\(`), `js/geo-engine.js implements ${m}`);
+    assert.match(ce, new RegExp(`${m}\\s*\\(`), `js/cesium-engine.js implements ${m}`);
+  }
+  /* the custom layer is the ADAPTER's business — nothing outside geo-engine may name it (#R173) */
+  const users = ['js/satellites-live.js', 'js/data-layers.js', 'js/app-body.js']
+    .filter((f) => /IntMapModules\.orbitPoints/.test(rd(f)));
+  assert.deepEqual(users, [], `only js/geo-engine.js may reach for the orbit layer; ${users} does`);
+});
+
+test('R202 ③b the pick projects at ALTITUDE, or it picks something that is not on screen', () => {
+  const s = rd('js/satellites-live.js');
+  assert.match(s, /projectMercAlt/, 'pickAt goes through the batched altitude projection');
+  assert.match(s, /orbMercAlt|orbRate/, 'and it holds the same mercator/altitude triples the layer drew');
+  /* the rate has to exist for the layer to move between propagations */
+  assert.match(s, /lng2/, 'propagateAll carries the one-second-later fix');
+  assert.match(s, /eciToGeodetic\(\{x:pv\.position\.x\+pv\.velocity\.x/, 'derived from the ECI velocity, not a second SGP4');
+});
+
+test('R202 ③c the satellite layer is in a group somebody would open', () => {
+  const dl = rd('js/data-layers.js');
+  assert.match(dl, /\['lyrGrpOrbit',\['sats'\]\]/, 'sats is in its own group');
+  assert.doesNotMatch(dl, /lyrGrpMaritime',\[[^\]]*'sats'/, 'and no longer under Oceans & maritime');
+  for (const l of ['en', 'jp', 'de', 'ru', 'es']) {
+    assert.match(dl, new RegExp(`i18n\\.${l},\\{ lyrGrpOrbit:`), `the group is named in ${l}`);
+  }
+});
+
+test('R202 ③d the selected mobile segment is white on black, in both themes', () => {
+  const css = rd('css/intmap.css');
+  const light = css.match(/\.m-seg-btn\.active\{([^}]*)\}/);
+  const dark = css.match(/\[data-theme="dark"\] \.m-seg-btn\.active\{([^}]*)\}/);
+  assert.ok(light && dark, 'both rules exist');
+  for (const [name, m] of [['light', light], ['dark', dark]]) {
+    assert.match(m[1], /background:#fff/, `${name}: white background`);
+    assert.match(m[1], /color:#000/, `${name}: black text`);
+  }
+});
+
+test('R202 ③e the space HUD shows both scales and takes any multiplier', () => {
+  const s = rd('js/space.js');
+  assert.match(s, /class="sp-scale" data-s="real"/, 'true scale is its own segment');
+  assert.match(s, /class="sp-scale" data-s="model"/, 'and so is model scale');
+  assert.match(s, /function parseRate/, 'the multiplier is parsed from free text');
+  assert.match(s, /class="sp-rate"/, 'and there is a field to type it into');
+  assert.match(s, /function rateStep/, 'the ladder steps both ways');
+  /* ⚠ the defect rateStep replaces: ⏪ read RATES[i+1] exactly as ⏩ did, so nothing could slow down */
+  assert.doesNotMatch(s, /sp-back'\)\.onclick=\(\)=>\{ const i=RATES\.indexOf/, 'the old one-way ladder is gone');
+  assert.match(s, /sp-live/, 'and Live is a control of its own');
+});
+
+test('R202 ③f the render scale is mobile-only, deferred, and armed only after the first idle', () => {
+  const s = rd('js/render-scale.js');
+  assert.match(s, /if\(!\(typeof isMobile==='function'&&isMobile\(\)\)\) return/, 'desktop is a no-op');
+  assert.match(s, /armed/, 'it arms rather than acting immediately');
+  assert.match(s, /setTimeout\(\(\)=>\{ try\{ if\(GE\(\)\.canDraw\(\)\) set\(r\); \}catch\(_\)\{\} \},0\)/,
+    'and the resize never happens synchronously inside the renderer event — that crashed the GL context');
+  assert.match(s, /IntMapFlightSim/, 'a flight is excluded: its camera never stops moving');
+});
+
+test('R202 ③g the far plane is corrected from a PRISTINE value, never from its own output', () => {
+  const ge = rd('js/geo-engine.js');
+  assert.match(ge, /setHorizonReach/, 'the contract has it');
+  assert.match(ge, /autoCalculateNearFarZ/, 'and it only multiplies while the transform is calculating automatically');
+  assert.match(ge, /clearNearFarZOverride/, 'clearing first');
+  assert.match(ge, /Math\.min\(60,mult\)/, 'with a ceiling, so depth precision has a floor');
+});
+
+test('R202 ③h the timing tables finally have a writer, and it cannot delete what it did not see', () => {
+  const sp = rd('scripts/shard-plan.mjs'), bl = rd('scripts/baseline.mjs'), ci = rd('.github/workflows/ci.yml');
+  assert.match(sp, /has\('--merge'\)/, 'shard-plan can union the per-shard fragments');
+  assert.match(bl, /has\('--merge'\)/, 'and so can baseline');
+  assert.match(sp, /carried over/, 'a partial fragment set must not drop the specs it does not mention');
+  assert.match(ci, /timings:/, 'and CI has the job the comment has been promising since #R195');
+  assert.match(ci, /contents: write/, 'which is the only job in the workflow that writes');
+  assert.match(ci, /\[skip ci\]/, 'and its commit does not start another run');
+});
+
+test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice', () => {
+  assert.match(rd('js/seismic.js'), /isMobile\(\)\)\?192:448;/, 'the intensity field is 448 across on desktop');
+  const th = rd('js/theme-sky.js');
+  assert.match(th, /import \{ skyColour \} from '\.\/sky-model\.js'/, 'theme-sky imports the model by name');
+  assert.match(th, /'sky-color':sc/, 'and sky-color comes from it');
+  assert.doesNotMatch(th, /'sky-color':_SKY_SPACE/, 'the constant deep-space sky is gone');
+});
+
+test('R202 ③j the build stamps name THIS round', () => {
+  /* #R174: both stamps sat at R171 through two rounds, so a reload could not be told apart from a
+     stale cache. The exact pin lives in the CURRENT round's file and becomes the negative form in
+     the next one (tests/r201-checks ⑥ is now that negative form).
+     ⚠ AND THIS IS WHY THE WHOLE NODE SUITE RUNS AFTER EVERY CHANGE, NOT ONCE. This round bumped the
+     stamp late, re-ran only the two check files it thought were involved, and shipped a red CI: the
+     assertion that broke was the PREVIOUS round's pin, in a file nobody had reason to look at. */
+  const idx = rd('index.html');
+  assert.match(idx, /window\.__imBuild='R202';/);
+  assert.match(idx, /window\.INTMAP_BUILD='2026-08-08-R202';/);
+});

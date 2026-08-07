@@ -124,6 +124,16 @@ function freeIdentifiers(src) {
          use of SAT look like a name that resolves to nothing at runtime, which is the exact defect
          this check exists to find and would be a false positive of the loudest kind */
       else if (s.type === 'ImportDeclaration') (s.specifiers || []).forEach((sp) => { if (sp.local) declare(sp.local.name); });
+      /* (#R202) `export function f(){}` is an ExportNamedDeclaration WRAPPING the declaration, so a
+         scan that only looks for FunctionDeclaration walks straight past it — and then every use of
+         `f` inside its own file reads as a name that resolves to nothing. This is #R199's lesson
+         (the same node type made a whole category invisible to the seam scanner) in a second place:
+         a module that exports two functions and has one call the other tripped this check three
+         times over for names declared four lines above the call. Unwrap and hoist. */
+      else if (s.type === 'ExportNamedDeclaration' && s.declaration) hoist([s.declaration]);
+      else if (s.type === 'ExportDefaultDeclaration' && s.declaration
+               && (s.declaration.type === 'FunctionDeclaration' || s.declaration.type === 'ClassDeclaration')
+               && s.declaration.id) declare(s.declaration.id.name);
     }
   };
 
