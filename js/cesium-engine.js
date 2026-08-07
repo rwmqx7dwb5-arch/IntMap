@@ -1689,6 +1689,79 @@ window.IntMapCesiumEngine=(function(){
         return w?{x:w.x,y:w.y}:{x:-1,y:-1};
       }catch(_){ return {x:-1,y:-1}; }
     }
+    /* ══ (#R202) ORBIT POINTS — Cesium's own primitive ═══════════════════════════════════════════
+       The contract's `addOrbit` asks for "these objects, at these altitudes, moving at these rates".
+       Cesium answers with a PointPrimitiveCollection: real Cartesian3 positions on a real ellipsoid,
+       so occlusion by the planet is the depth buffer's business and not ours. The rate is integrated
+       here, once per scene render, because Cesium's points take positions rather than a shader
+       uniform — the same numbers, applied on this side of the contract. */
+    addOrbit(id){
+      try{
+        this._orb=this._orb||{};
+        if(this._orb[id]) return true;
+        const col=this._scene.primitives.add(new Cesium.PointPrimitiveCollection());
+        this._orb[id]={ col, list:null, t0:0, visible:true, opacity:1 };
+        if(!this._orbTick){
+          this._orbTick=()=>{ try{ this._orbStep(); }catch(_){} };
+          try{ this._scene.preRender.addEventListener(this._orbTick); }catch(_){}
+        }
+        return true;
+      }catch(_){ return false; }
+    }
+    _orbStep(){
+      const all=this._orb; if(!all) return;
+      const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      for(const id of Object.keys(all)){
+        const O=all[id]; if(!O.list||!O.col) continue;
+        O.col.show=!!O.visible;
+        if(!O.visible) continue;
+        const dt=Math.max(0,Math.min(4,(now-O.t0)/1000));
+        const L=O.list;
+        for(let i=0;i<L.length;i++){
+          const f=L[i], pt=O.col.get(i); if(!pt) continue;
+          let dl=f.lng2-f.lng; if(dl>180) dl-=360; else if(dl<-180) dl+=360;
+          pt.position=Cesium.Cartesian3.fromDegrees(f.lng+dl*dt, f.lat+(f.lat2-f.lat)*dt,
+            (f.altKm+(f.alt2Km-f.altKm)*dt)*1000);
+        }
+      }
+    }
+    setOrbit(id,o){
+      try{
+        this._orb=this._orb||{}; const O=this._orb[id]; if(!O) return false;
+        if(o&&o.visible!=null) O.visible=!!o.visible;
+        if(o&&o.opacity!=null&&isFinite(o.opacity)) O.opacity=Math.max(0,Math.min(1,+o.opacity));
+        if(o&&o.list){
+          O.list=o.list; O.t0=(o.t0!=null)?o.t0:((typeof performance!=='undefined')?performance.now():Date.now());
+          O.col.removeAll();
+          for(let i=0;i<o.list.length;i++){
+            const f=o.list[i], c=f.rgba;
+            O.col.add({ position:Cesium.Cartesian3.fromDegrees(f.lng,f.lat,f.altKm*1000),
+              pixelSize:f.size, color:new Cesium.Color(c[0]/255,c[1]/255,c[2]/255,(c[3]/255)*O.opacity) });
+          }
+        }
+        try{ this._scene.requestRender&&this._scene.requestRender(); }catch(_){}
+        return true;
+      }catch(_){ return false; }
+    }
+    removeOrbit(id){
+      try{ const O=this._orb&&this._orb[id]; if(!O) return true;
+        this._scene.primitives.remove(O.col); delete this._orb[id]; return true; }catch(_){ return false; }
+    }
+    /* the batched pick projection. The contract speaks mercator + metres because that is what the
+       MapLibre layer holds; here it is turned back into lng/lat, which is what Cesium speaks. */
+    projectMercAlt(xy){
+      try{
+        if(!xy) return null;
+        const n=(xy.length/3)|0, out=new Float32Array(n*2), D2R=Math.PI/180;
+        for(let i=0;i<n;i++){
+          const lng=xy[i*3]*360-180;
+          const lat=(2*Math.atan(Math.exp((0.5-xy[i*3+1])*2*Math.PI))-Math.PI/2)/D2R;
+          const w=this.projectAltitude({lng,lat},xy[i*3+2]);
+          if(w){ out[i*2]=w.x; out[i*2+1]=w.y; } else { out[i*2]=NaN; out[i*2+1]=NaN; }
+        }
+        return out;
+      }catch(_){ return null; }
+    }
     projectAltitude(ll,alt){
       try{
         const c=normLngLat(ll);
@@ -2003,7 +2076,7 @@ window.IntMapCesiumEngine=(function(){
      never a value that looks like a yes. */
   const CESIUM_CAPS={ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true,
-    projection:true, extrusion3d:true, solid3d:false,
+    projection:true, extrusion3d:true, solid3d:false, orbit3d:true,
     /* the three things #R171/#R172 had to ask MapLibre for, and which a positional
        camera on a real ellipsoid simply has */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true,
@@ -2196,6 +2269,15 @@ window.IntMapCesiumEngine=(function(){
          stays false and the caller keeps its documented fallback rather than being
          handed something that looks like the feature and is not. */
       addSolid(){ return false; }, setSolid(){ return false; }, removeSolid(){ return false; },
+      /* (#R202) objects in orbit. Where MapLibre needs a custom GL layer for this, Cesium has the
+         primitive already — a PointPrimitiveCollection of Cartesian3s at real heights, in a scene
+         that is a real ellipsoid, so the far side of the planet occludes them without being asked.
+         What Cesium does NOT have is a per-frame extrapolation uniform, so the caller's rate is
+         applied here on the CPU at the same cadence the scene renders. */
+      addOrbit(id,b){ const v=V(); return v&&v.addOrbit?v.addOrbit(id,b):false; },
+      setOrbit(id,o){ const v=V(); return v&&v.setOrbit?v.setOrbit(id,o):false; },
+      removeOrbit(id){ const v=V(); return v&&v.removeOrbit?v.removeOrbit(id):false; },
+      projectMercAlt(a){ const v=V(); return v&&v.projectMercAlt?v.projectMercAlt(a):null; },
       /* scene */
       getStyle(){ const v=V(); return v?v.getStyle():null; },
       setLight(l){ const v=V(); if(v) v.setLight(l); },
@@ -2238,6 +2320,10 @@ window.IntMapCesiumEngine=(function(){
       onceLayer(e,l,c){ const v=V(); if(!v) return; const w=(x)=>{ v.offLayer(e,l,w); c(x); }; v.onLayer(e,l,w); },
       /* render surface */
       resize(){ const v=V(); if(v) v.resize(); },
+      /* (#R202) Cesium's own name for the same quantity is resolutionScale — a multiplier on the
+         canvas backing store, which is exactly what setRenderScale asks for. */
+      getRenderScale(){ const v=V(); try{ return v?v._widget.resolutionScale:null; }catch(_){ return null; } },
+      setRenderScale(r){ const v=V(); try{ if(v&&isFinite(r)&&r>0){ v._widget.resolutionScale=r; v._scene.requestRender&&v._scene.requestRender(); return true; } }catch(_){} return false; },
       triggerRepaint(){ const v=V(); if(v) v.triggerRepaint(); },
       getCanvas(){ const v=V(); return v?v.getCanvas():null; },
       getContainer(){ const v=V(); return v?v.getContainer():null; },

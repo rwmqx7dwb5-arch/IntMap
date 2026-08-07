@@ -163,6 +163,43 @@ function plan(pool, n) {
   return pack(items, n);
 }
 
+/* ══ (#R202) THE TABLE FINALLY HAS A WRITER ═════════════════════════════════════════════════════
+   「毎回毎回、テストに時間がかかりすぎ。いい加減にしろ。」
+   ci.yml has run `--update` on main since #R195 and uploaded the result as an artifact, next to a
+   comment saying "Both are committed by the job below". #R201 went looking for that job: THERE IS
+   NO SUCH JOB. Nothing has ever written tests/durations.json back to the repository, so the packing
+   has been done from whatever timings a human last pasted in — and by #R201 two of the eight `rest`
+   groups were planned at 254 s and actually took 695 s, which is the whole of the wall clock this
+   instruction is about. `--merge` is the missing half: it takes the twelve per-shard fragments the
+   run already produces and unions them, and the job that calls it commits the result. */
+if (has('--merge')) {
+  const files = process.argv.slice(process.argv.indexOf('--merge') + 1).filter((a) => !a.startsWith('--'));
+  const raw = existsSync(DUR) ? JSON.parse(readFileSync(DUR, 'utf8')) : {};
+  const acc = {};
+  let read = 0;
+  for (const f of files) {
+    if (!existsSync(f)) continue;
+    let j = null;
+    try { j = JSON.parse(readFileSync(f, 'utf8')); } catch (_) { continue; }
+    read++;
+    for (const [k, v] of Object.entries(j)) {
+      if (k === 'solo' || typeof v !== 'number') continue;
+      /* a file can only appear in one shard, so a collision means one of the fragments is stale —
+         the LARGER number is the safe one to plan with (it can only make a group shorter) */
+      acc[k] = Math.max(acc[k] || 0, Math.round(v));
+    }
+  }
+  if (!read || !Object.keys(acc).length) { console.error('shard-plan --merge: no fragments with timings'); process.exit(1); }
+  /* ⚠ a fragment set that covers only part of the suite must not DELETE the rest of the table: an
+     absent spec is charged p75 by plan(), which would silently re-open the packing defect above. */
+  const kept = {};
+  for (const [k, v] of Object.entries(raw)) if (k !== 'solo' && typeof v === 'number' && !(k in acc)) kept[k] = v;
+  const out = { ...acc, ...kept, solo: raw.solo || [] };
+  writeFileSync(DUR, JSON.stringify(out, null, 1) + '\n');
+  console.log(`shard-plan: merged ${read} fragment(s) → ${Object.keys(acc).length} measured, ${Object.keys(kept).length} carried over`);
+  process.exit(0);
+}
+
 if (has('--update')) {
   const files = process.argv.slice(process.argv.indexOf('--update') + 1).filter((a) => !a.startsWith('--'));
   const raw = existsSync(DUR) ? JSON.parse(readFileSync(DUR, 'utf8')) : {};

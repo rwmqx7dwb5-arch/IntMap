@@ -130,7 +130,11 @@ test('R184 #6: the new layer name exists in all five languages', () => {
 test('R184 #7: the satellite layer is registered, grouped, legended and toggled', () => {
   const dl = rd('js/data-layers.js');
   assert.match(dl, /\['sats','lyrSats'\]/, 'the layer row is declared with its i18n key');
-  assert.match(dl, /lyrGrpMaritime',\[[^\]]*'sats'/, 'it is filed into a group beside live aircraft');
+  /* (#R202) it was filed under lyrGrpMaritime «beside live aircraft», which is a fact about how the
+     two were built and not somewhere anyone looks for satellites — 「いや今衛星レイヤーなんてないわ」.
+     What #7 is actually about is that the row reaches a REAL group rather than falling through to
+     Others(beta), so it asks that, and the group it names is the one it is in now. */
+  assert.match(dl, /lyrGrpOrbit',\[[^\]]*'sats'/, 'it is filed into a real group of its own');
   assert.match(dl, /sats:\['Live satellites'/, 'it has a legend');
   assert.match(dl, /HAS_LEGEND=new Set\(\[[\s\S]{0,400}'sats'/, 'and the panel knows the legend exists');
   assert.match(dl, /id==='sats'\)\{ startSats\(\)/, 'switching it on starts it');

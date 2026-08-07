@@ -42,6 +42,16 @@ window.IntMapModules.dataLayers=function(HOST){
     Object.assign(i18n.es,{ lyrGrpClimate:"Clima y meteorología", lyrGrpHazard:"Riesgos y cielo nocturno", lyrGrpDemo:"Población y economía", lyrGrpGeoPol:"Geopolítica y defensa", lyrGrpOthers:"Otras (beta)", lyrGrpMaritime:"Océanos y marítimo", lyrGrpTerrain:"Terreno y tierra", lyrGrpIndic:"Indicadores y capas" });   /* (#R40) Spanish layer-group names */
     /* (#R41) Russian layer-group names were MISSING entirely → group headers showed English in RU. */
     Object.assign(i18n.ru,{ lyrGrpClimate:"Климат и погода", lyrGrpHazard:"Опасности и ночное небо", lyrGrpDemo:"Население и экономика", lyrGrpGeoPol:"Геополитика и оборона", lyrGrpOthers:"Прочее (бета)", lyrGrpMaritime:"Океаны и море", lyrGrpTerrain:"Рельеф и высота", lyrGrpIndic:"Индикаторы и слои" });
+    /* ══ (#R202) A GROUP CALLED WHAT IT IS ═══════════════════════════════════════════════════════
+       「いや今衛星レイヤーなんてないわ」— it was there, and it was filed under 「海洋・船舶」 (Oceans &
+       maritime), because #R184 put it beside the live-aircraft layer to say the two are built the
+       same way. That is a fact about the CODE, and nobody looking for satellites opens Oceans. A
+       layer nobody can find is a layer that does not exist, which is exactly what the report said. */
+    Object.assign(i18n.en,{ lyrGrpOrbit:"Space & orbit" });
+    Object.assign(i18n.jp,{ lyrGrpOrbit:"宇宙・軌道" });
+    Object.assign(i18n.de,{ lyrGrpOrbit:"Weltraum & Orbit" });
+    Object.assign(i18n.ru,{ lyrGrpOrbit:"Космос и орбита" });
+    Object.assign(i18n.es,{ lyrGrpOrbit:"Espacio y órbita" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
@@ -909,7 +919,10 @@ window.IntMapModules.dataLayers=function(HOST){
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
-          ['lyrGrpMaritime',['sst','eez','subcables','planes','sats','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer files beside live aircraft — 「Live aircraft trafficの要領で」. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
+             lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
+          ['lyrGrpOrbit',['sats']],
+          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],

@@ -216,11 +216,11 @@ test('r201 ⑤ the two multi-megabyte prefetches take the phone into account', (
 
 /* ══ ⑥ THE BUILD STAMPS NAME THIS ROUND ═══════════════════════════════════════════════════════ */
 
-test('r201 ⑥ the build stamps name THIS round', () => {
-  /* #R174: both stamps sat at R171 through two rounds, so a reload could not be told apart from a
-     stale cache. The exact pin lives in the current round's file and becomes the negative form in
-     the next one (see tests/r200-checks ⑧). */
+test('r201 ⑥ the build stamps have moved on from this round', () => {
+  /* (#R202) the negative form, on the schedule this test itself set out: the exact pin belongs to
+     the CURRENT round's file (tests/r202-checks ③j), and a stamp still naming R201 means a round
+     shipped without bumping it — which is the failure #R174 recorded. */
   const idx = read('index.html');
-  assert.match(idx, /window\.__imBuild='R201';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-07-R201';/);
+  assert.doesNotMatch(idx, /window\.__imBuild='R201';/);
+  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='[0-9-]+-R201';/);
 });
