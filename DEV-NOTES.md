@@ -219,6 +219,23 @@ _IM_LFAVS = makeLayerFavs(IM_HOST, { … });                                    
 - **#R197（PR #92・別セッション）はマージされていない**ので、津波の全球化と宇宙探索は
   まだ本番に無い。標準指示8により**他セッションのブランチには触っていない**。
 
+### ⑦ 出荷の記録（このラウンドは本番に出た）
+
+GitHub Actions の障害が緩んだあと、head `482c4cb` で **CI 14ジョブ全緑**
+（Static checks／Browser rest 8分割／Browser cesium 4分割／smoke+internal QA）、**CodeQL も success**。
+PR #93/#94/#95 として main にマージされ、`Deploy (production, Pages)` が公開した。
+
+**本番で確認した事実**（`https://rwmqx7dwb5-arch.github.io/IntMap/` を実際に読み込んで測った）:
+
+- `INTMAP_BUILD='2026-08-07-R200'` / `__imBuild='R200'`。`tests/prod-smoke.spec.js` は **16/16 パス**。
+- 出した10本ぶんが全部生きている：`IntMapOS`（10個超のコマンド）・`_imSaveSession`・
+  `IntMapTimeCountries.year`・`refreshProUI`・`_expandAllLayerGroups`・`imLayerFavs`。
+  **`before initialization` を含む pageerror は0件**（②の回帰が本番に出ていないことの確認）。
+- 夜側：`shadeMax 0.94`・リングαは導出値 `[0.1, 0.26667, 0.42424, 0.60526, 0.6]`・
+  合成の階段は `[0.10, 0.34, 0.62, 0.85, 0.94]`。
+- 空とクロック：東京で 15:00Z（現地深夜）`#0a1526` ／ 03:00Z（現地正午）`#c9dcf0`。
+  `Object.keys(window.IntMapTime)` に **`now` は無い**（③の前提そのもの）。
+
 ---
 
 ## R199 — **中心部を切るとき、動いた行を数えるな。渡した名前を数えろ** (tag `#R199`)
