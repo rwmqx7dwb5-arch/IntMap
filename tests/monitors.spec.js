@@ -6,13 +6,14 @@
 // success and never injects untrusted report/monitor text as live HTML.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diags;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diags = collectPageDiagnostics(page);

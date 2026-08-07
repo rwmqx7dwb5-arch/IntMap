@@ -46,9 +46,25 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    the 46 specs that had durations, while 55 spec files existed — the true figure was 107 min. A
    total that is computed from the files on disk rather than from the ones someone remembered to
    measure is the only kind worth having a ceiling on. */
-const BUDGET_S = 5200;                  /* 86.7 min — measured 85.7, headroom 1.0 min */
+const BUDGET_S = 5150;                  /* 85.8 min — measured 85.4, headroom 0.5 min */
 const HISTORY = [
   ['#R197', 5200, 'the viewpoint sweep merged out of r172/r173/r176/r177/r178 into r179 (−21.4 min), and nine specs that were CHARGED p75 were measured instead (−11.7 min of pure fiction)'],
+  /* ⚠ (#R201) AND THIS ROUND ADDED A SPEC AND STILL WENT DOWN, WHICH IS THE MECHANISM WORKING.
+     tests/r201.spec.js is new (+45 s) and had to be paid for:
+       · EIGHT specs chose their renderer by booting the app, writing `intmap_engine` into
+         localStorage, and booting AGAIN — the app reads the key at load, so the choice could not be
+         made after the load that had to honour it. tests/helpers/engine.js seeds it with
+         addInitScript BEFORE the first load, and only if nothing has written it (which is what keeps
+         "switch back to MapLibre" testable — the reason r180-cesium gave for not doing this).
+         MEASURED, 3 reps: the removed load is 1,047 ms (cesium) / 298 ms (maplibre) on the
+         development machine, which runs this suite at 0.68× of CI (r196 61 s/90 s, r200 18 s/26 s),
+         so 1.54 s / 0.44 s of CI time per boot. 41 boots × their engine = −56 s.
+       · tests/r197.spec.js lost the space-BUTTON test (the button is gone): 40 s → 6 s.
+     Net −45 s, and the ceiling follows it down. The cesium files will drop further than the figure
+     above the next time CI runs `shard-plan --update`: the per-boot saving on a runner with no GPU
+     is not 1 s (#R186 measured 9,160 ms vs 3,192 ms for a boot there), but a number that has only
+     been measured HERE is not a number to write into a table CI schedules from. */
+  ['#R201', 5150, 'eight specs stopped booting the app twice to choose a renderer (−56 s, measured per boot), and the space-button test went with the button (−34 s), which paid for tests/r201.spec.js (+45 s)'],
 ];
 
 const dur = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'durations.json'), 'utf8'));

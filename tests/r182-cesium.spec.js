@@ -12,16 +12,13 @@
 // Synthetic events would not exercise the reason six of these gestures were dead: Cesium calls
 // preventDefault on `pointerdown`, which suppresses the compatibility mouse events (#R181).
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
 
 const boot = async (page, engine) => {
-  await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
-  await page.evaluate((e) => { try { localStorage.setItem('intmap_engine', e); } catch (_) {} }, engine);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-  await expect.poll(() => page.evaluate(() => window.IntMapGeoEngine.id()), BOOT).toBe(engine);
+  /* (#R201) ONE page load — see tests/helpers/engine.js */
+  await bootEngine(page, engine, BOOT);
   /* ══ AND STOP THE APP CHASING ITS OWN TAIL ═══════════════════════════════════════════════
      js/map-ui.js writes the shared `#v=` URL when the map settles, and listens for
      `hashchange` to restore the camera from it — so every gesture is followed by a

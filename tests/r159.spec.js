@@ -3,13 +3,14 @@
 // (4) Toggling the LEFT sidebar does not visually pan the map (the edge anchor holds a fixed geo-point in place).
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } }); // desktop → sidebar is a flex sibling, anchor path active
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() }); // desktop → sidebar is a flex sibling, anchor path active
   await installHermeticRouting(context);
   // Force CLASSIC (non-workspace) mode: desktop otherwise defaults to ws-mode where the sidebar is a floating
   // window and the classic #sidebar is display:none — there the sidebar never reflows the map. The map-move the

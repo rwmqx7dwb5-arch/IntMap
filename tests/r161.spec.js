@@ -8,13 +8,14 @@
 //      and the broadened contract behaves like the raw map it wraps.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   // Hermetic routing blocks the basemap's vector source (tiles.openfreemap.org), and MapLibre never
   // reports a style as "loaded" while one of its sources is still pending — which is why layer-level

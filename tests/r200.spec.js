@@ -65,65 +65,13 @@ test('R200 ① every subject that left js/app-body.js is alive after boot', asyn
     'no reference error may escape the boot').toEqual([]);
 });
 
-/* ── ② the darkness, in pixels ────────────────────────────────────────────────────────────────── */
-test('R200 ② the night side darkens the map by what the profile promises', async ({ page }) => {
-  test.setTimeout(240_000);
-  await ready(page);
-  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [0, 10], zoom: 1.2, pitch: 0, bearing: 0 }));
-  await page.waitForFunction(() => { try { return window.IntMapNightSide.state().built; } catch (_) { return false; } }, null, { timeout: 60_000 });
-
-  /* the style the renderer really holds: the zoom ramp is outermost, each stop chooses per ring,
-     and the last stop is a literal 0 (a nested zoom expression would have been rejected silently) */
-  const op = await page.evaluate(() => window.__imap.getPaintProperty('im-night-shade', 'fill-opacity'));
-  expect(Array.isArray(op) && op[0]).toBe('interpolate');
-  expect(op[op.length - 1], 'the ramp still ends at zero').toBe(0);
-  const stop = op.find((x) => Array.isArray(x) && x[0] === 'match');
-  expect(stop, 'each stop carries the per-ring alphas').toBeTruthy();
-  expect(stop[1]).toEqual(['get', 'elev']);
-
-  /* and the composite the profile promises is the composite the module computes */
-  const model = await page.evaluate(() => {
-    const st = window.IntMapNightSide.state();
-    return { profile: st.profile, comp: st.profile.map((_, k) => +window.IntMapNightSide._composite(k).toFixed(4)) };
-  });
-  for (let k = 0; k < model.profile.length; k++)
-    expect(Math.abs(model.comp[k] - model.profile[k][1]), 'ring ' + k + ' delivers its stated darkness').toBeLessThan(1e-3);
-  expect(model.profile[model.profile.length - 1][1], 'full night is deep').toBeGreaterThan(0.9);
-
-  /* PIXELS: the same frame with the effect on and off, on the antisolar meridian */
-  const px = await page.evaluate(async () => {
-    const m = window.__imap;
-    const settle = () => new Promise((r) => { m.once('idle', r); setTimeout(r, 5000); });
-    const wrap = (x) => ((x % 360) + 540) % 360 - 180;
-    const now = new Date(), utc = now.getUTCHours() + now.getUTCMinutes() / 60;
-    const anti = wrap(wrap((12 - utc) * 15) + 180);
-    const sample = () => {
-      const cv = m.getCanvas(), g = document.createElement('canvas');
-      g.width = cv.width; g.height = cv.height;
-      const cx = g.getContext('2d'); cx.drawImage(cv, 0, 0);
-      const d = cx.getImageData(0, 0, cv.width, cv.height).data;
-      const sx = cv.width / cv.clientWidth, sy = cv.height / cv.clientHeight;
-      const p = m.project([anti, -25]);
-      const c = Math.round(p.x * sx), r = Math.round(p.y * sy);
-      if (!(r > 4 && c > 4 && r < cv.height - 4 && c < cv.width - 4)) return null;
-      let s = 0, n = 0;
-      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const k = ((r + dy) * cv.width + (c + dx)) * 4; s += 0.30 * d[k] + 0.59 * d[k + 1] + 0.11 * d[k + 2]; n++; }
-      return +(s / n).toFixed(1);
-    };
-    window.IntMapNightSide.setEnabled(false);
-    await settle();
-    const off = sample();
-    window.IntMapNightSide.setEnabled(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    await settle();
-    const on = sample();
-    return { anti: +anti.toFixed(1), on, off };
-  });
-  expect(px.off, 'the unshaded basemap has to be bright enough to measure against').toBeGreaterThan(60);
-  /* measured on this build: 191.6 → 24.7, i.e. 0.87. #R196's uniform 0.156 per ring would have left
-     0.57 — so 0.75 separates the two decisively while leaving room for basemap and city lights. */
-  expect(1 - px.on / px.off, `night side at ${px.anti}°: ${px.off} → ${px.on}`).toBeGreaterThan(0.75);
-});
+/* ── ② the darkness, in pixels → MOVED to tests/r201.spec.js ① ────────────────────────────────
+   This measured the five-ring composite (`im-night-shade` fill-opacity carrying a per-ring
+   `match`, and `_composite(k)` against the stated profile). #R201 deleted the rings: the night
+   side is one canvas whose alpha is computed per pixel, so there is no profile to check against
+   and no ring to check it for. r201 ① keeps the part that was about the RESULT — the same frame
+   with the effect on and off — and raises the threshold from 0.75 to 0.9, which the new
+   mechanism clears and the old one could not. Deleted rather than duplicated. */
 
 /* ── ③ the sky follows the master clock ───────────────────────────────────────────────────────── */
 test('R200 ③ moving the master clock moves the sun, the horizon and the terminator', async ({ page }) => {
@@ -138,14 +86,28 @@ test('R200 ③ moving the master clock moves the sun, the horizon and the termin
       const L = m.getLight();
       /* `painted` is the geometry the SOURCE really holds — proof that the night side repainted on the
          clock event, not just that its pure ring function would compute something different. */
-      const src = m.getSource('im-night-src');
-      const painted = (src && src._data && src._data.features && src._data.features[0])
-        ? src._data.features[0].geometry.coordinates[0][60][1] : null;
+      /* ⚠ (#R201) the terminator is no longer a ring of POLYGONS — it is the ALPHA of one canvas,
+         computed per pixel. So "the night side really repainted on the clock event" is read where it
+         now lives: the alpha the renderer is holding at Tokyo's own pixel. That is a stronger check
+         than the old one (which read a vertex of a polygon the module had recomputed) because it is
+         the value that reaches the screen. */
+      const cv = (m.getSource('im-night-lights') || {}).canvas;
+      let painted = null;
+      if (cv) {
+        const LIM = 85.051129, R = Math.PI / 180, my = (la) => Math.log(Math.tan(Math.PI / 4 + la * R / 2));
+        const col = Math.round((139.7 + 180) / 360 * cv.width);
+        const row = Math.round((my(LIM) - my(35.7)) / (2 * my(LIM)) * cv.height);
+        painted = cv.getContext('2d').getImageData(col, row, 1, 1).data[3];
+      }
       return { hz: m.getSky()['horizon-color'], sun: L && L.position ? L.position.map((x) => +(+x).toFixed(1)) : null,
-               ring: window.IntMapNightSide._ringFC().features[0].geometry.coordinates[0][60][1], painted };
+               night: window.IntMapNightSide._nightAt(139.7, 35.7), painted };
     };
     m.jumpTo({ center: [139.7, 35.7], zoom: 3.4 });             /* Tokyo: UTC+9 */
     await new Promise((r) => setTimeout(r, 1500));
+    /* ⚠ (#R201) the night side builds itself on the first IDLE after the camera settles, so waiting a
+       fixed moment for it is a test of how fast the machine is. `painted` was allowed to be null, which
+       meant the strongest assertion here could quietly not run at all. */
+    for (let i = 0; i < 60 && !window.IntMapNightSide.state().built; i++) await new Promise((r) => setTimeout(r, 500));
     const night = await at('2026-06-21T15:00:00Z');             /* midnight JST */
     const noon = await at('2026-06-21T03:00:00Z');              /* noon JST */
     window.IntMapTime.setNow({ source: 'r200' });
@@ -156,9 +118,11 @@ test('R200 ③ moving the master clock moves the sun, the horizon and the termin
   expect(seen.api, 'IntMapTime has no now() — every reader must use when()').not.toContain('now');
   expect(seen.night.hz, 'Tokyo at midnight has a night horizon').not.toBe(seen.noon.hz);
   expect(seen.night.sun[1], 'and the sun is on the other side of the planet').not.toBe(seen.noon.sun[1]);
-  expect(Math.abs(seen.night.ring - seen.noon.ring), 'the terminator ring moves with the clock too').toBeGreaterThan(30);
-  /* …and the layer really took the new geometry (the night side subscribes from wire(), which app-body
-     calls at map-load — i.e. after window.IntMapTime exists. js/theme-sky.js's copy did not, until now.) */
-  if (seen.night.painted != null && seen.noon.painted != null)
-    expect(Math.abs(seen.night.painted - seen.noon.painted), 'the painted source moved, not just the model').toBeGreaterThan(30);
+  /* the night side's own model followed the clock: Tokyo is dark at JST midnight and lit at JST noon */
+  expect(seen.night.night, 'Tokyo is in darkness at local midnight').toBeGreaterThan(0.9);
+  expect(seen.noon.night, 'and in daylight at local noon').toBeLessThan(0.05);
+  /* …and the CANVAS took it (the night side subscribes from wire(), which app-body calls at map-load
+     — i.e. after window.IntMapTime exists. js/theme-sky.js's copy did not, until #R200.) */
+  expect(seen.night.painted, 'the night canvas exists and was read').not.toBeNull();
+  expect(seen.night.painted - seen.noon.painted, 'the painted alpha moved, not just the model').toBeGreaterThan(200);
 });

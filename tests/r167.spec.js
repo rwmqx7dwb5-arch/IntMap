@@ -18,6 +18,7 @@
 //      code to RE-DERIVE the UI from the bare closure variable afterwards.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -41,7 +42,7 @@ const NEWS_SEED = {
 };
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   await context.addInitScript((seed) => {
     try {
