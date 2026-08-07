@@ -75,9 +75,11 @@ window.IntMapModules.placeLabels=function(HOST){
          that have their own names, and the region it belongs to is no longer the question being asked.
          ⚠ The order it is ADDED in here decides nothing: js/app-body.js's label STACK is re-asserted on
          idle and styledata, and that list is where ofm-admin1 is placed below ofm-city — so a crowded
-         view resolves in the city's favour. It is deliberately NOT in the label-click / hover-popup
-         lists (js/map-ui.js): this round was asked for the NAMES, and making a region label open an
-         outline would be a behaviour nobody asked for. */
+         view resolves in the city's favour.
+         ⚠ (#R201) IT IS IN THE LABEL-CLICK / HOVER LISTS. This note used to say the opposite, and the
+         reply to it was 「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」. A label that looks like
+         every other place label and answers nothing is not a smaller feature, it is a broken one — so
+         js/map-ui.js now wires ofm-admin1 exactly the way it wires ofm-city (cursor, popup, outline). */
       /* ⚠ THE BREAKPOINTS ARE INTEGERS, AND THAT IS NOT A STYLE CHOICE. `['zoom']` inside a FILTER is
          re-evaluated only at INTEGER zooms — the app's own #R186 note says so about the POI gate, and
          this ladder was written with fractional stops (3.2 / 3.8 / 4.6 / 5.3 / 6.0 / 6.8) anyway.

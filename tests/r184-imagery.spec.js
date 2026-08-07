@@ -18,16 +18,11 @@
 // is what 「どちらか一方犠牲はNG」 asks for. The absolute times are a fiction of the runner; the
 // direction and the sharpness figure are not.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 120_000 };
-const asCesium = async (page) => {
-  await page.goto('/?rafshim=1');
-  await page.evaluate(() => { try { localStorage.setItem('intmap_engine', 'cesium'); } catch (_) {} });
-  await page.reload();
-  await page.waitForFunction(() => !!window.__imap && window.IntMapGeoEngine
-    && window.IntMapGeoEngine.id && window.IntMapGeoEngine.id() === 'cesium', null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* (#R201) ONE page load — see tests/helpers/engine.js */
+const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
 
 /* ── ① THE ANTI-ALIASING POLICY IS A RULE, NOT A CONSTANT ─────────────────────────────────── */
 test('R184 imagery ①: MSAA scales down as the display resolves more, and never below 1', async ({ page }) => {

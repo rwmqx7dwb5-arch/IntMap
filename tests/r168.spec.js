@@ -32,6 +32,7 @@
 //     presence and factory are covered by #1, its scope and RW contract by r168-checks/r165-checks.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -65,7 +66,7 @@ const NE_STUB = {
 };
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   /* Registered AFTER the catch-all so it wins (Playwright runs the most recent matching handler
      first): the Natural Earth boundaries resolve instantly instead of downloading 4.7 MB. */

@@ -29,12 +29,21 @@ function isBootCdn(host) {
 /**
  * Block all external network except same-origin + the two boot CDNs.
  * Returns a list of blocked hosts (for debugging) that the caller may inspect.
+ *
+ * (#R201) `allow` names further hosts a spec genuinely needs. Determinism is the point of this
+ * helper, but a spec ABOUT a layer that only exists when its tiles arrive cannot be made hermetic
+ * — it can only be made to pass without testing anything. tests/r201.spec.js ② asserts what a tap
+ * on an OpenFreeMap `place` label does, so it lets that one host through and nothing else.
+ * @param {import('@playwright/test').BrowserContext} context
+ * @param {string[]} [allow] extra hostnames (exact or parent domain) to let through
  */
-export async function installHermeticRouting(context) {
+export async function installHermeticRouting(context, allow) {
   const blockedHosts = new Set();
+  const extra = allow || [];
+  const isAllowed = (h) => extra.some((a) => h === a || h.endsWith('.' + a));
   await context.route('**/*', (route) => {
     const host = hostOf(route.request().url());
-    if (isLocal(host) || isBootCdn(host)) return route.continue();
+    if (isLocal(host) || isBootCdn(host) || isAllowed(host)) return route.continue();
     blockedHosts.add(host);
     // Abort with a network-failure code the app's fetch/XHR handlers already expect.
     return route.abort('blockedbyclient');

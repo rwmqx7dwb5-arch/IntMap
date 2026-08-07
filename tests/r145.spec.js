@@ -8,6 +8,7 @@
 // External hosts are blocked (hermetic) so live Yahoo fetches fall back to honest snapshots — assertions stay deterministic.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { seededStorageState } from './helpers/session-seed.js';
 
 const CRITICAL_GLOBALS = ['IntMapConsole', 'IntMapCompanies'];
 
@@ -16,7 +17,7 @@ test.describe.configure({ mode: 'serial' });
 let page, diag;
 
 test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);

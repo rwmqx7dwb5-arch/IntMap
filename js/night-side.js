@@ -1,34 +1,62 @@
 /* ============================================================================
- *  IntMap · THE NIGHT SIDE OF THE EARTH — window.IntMapNightSide  (#R196)
+ *  IntMap · THE NIGHT SIDE OF THE EARTH — window.IntMapNightSide  (#R196 → rebuilt #R201)
  * ----------------------------------------------------------------------------
  *  「地球全体が見えるズームレベルから、さらにズームアウトするほど、太陽の当たっていない部分が暗くなり、
  *    夜間光が見えるように。」
+ *  追記①「引いたときの黒さをよりきつくして。」  追記②「夜と昼の部分の変遷が階段状で不自然。
+ *    また、夜の部分は完全に夜間光レイヤーと同じ画像に。」
  *
- *  Two effects that both belong to ONE fact — where the Sun is — and both fade in as the camera pulls
- *  back to the whole-Earth view, because that is the only scale at which a planet has a day side and
- *  a night side at all:
+ *  ── WHAT #R196/#R200 BUILT, AND WHY THE SECOND ADDENDUM IS A DESIGN REPORT, NOT A TUNING REQUEST ──
+ *  The old night side was TWO things stacked: five nested geographic polygons at solar elevations
+ *  0°, −3°, −6°, −9°, −12° carrying the darkness, and a canvas of NASA's VIIRS Black Marble drawn
+ *  only where its own pixels were bright enough to be a city. #R200 fixed the arithmetic behind the
+ *  first (alpha does not add; five coats of 0.156 leave 43 % of the basemap, not 22 %) and the
+ *  measured darkness went 0.57 → 0.87. It did not — could not — fix the shape:
  *
- *    ① THE SHADE. The unlit hemisphere is darkened. Not with the hard-edged terminator polygon the
- *       Earth Replay panel draws (js/sims.js) — from space the terminator is a ~1,300 km band, not a
- *       line — so this is FIVE nested rings at solar elevations 0°, −3°, −6°, −9° and −12°, each
- *       carrying a fifth of the darkening. Stacked they compose a smooth twilight gradient, and
- *       because they are geographic POLYGONS they cover the poles, which a Mercator image cannot.
+ *    · FIVE POLYGONS ARE FIVE STEPS. The twilight band spans 0° to −12° of solar elevation, which at
+ *      the whole-Earth zoom this effect lives at is about 17 SCREEN PIXELS wide. Five hard-edged
+ *      fills inside 17 px is a staircase by construction, and no choice of five alphas is not one.
+ *      「階段状で不自然」 is a description of the mechanism, so the mechanism is what changed.
+ *    · AND THE NIGHT WAS NOT THE NIGHT-LIGHTS IMAGE. The lights layer skipped every pixel dimmer
+ *      than 2 % (`lum<=0.02 → alpha 0`) and brightened the rest, so what you actually saw over dark
+ *      land and over ocean was the ordinary basemap with a dark polygon on top — a shaded day map,
+ *      not the night side. 「完全に夜間光レイヤーと同じ画像に」 says: at full night, show the product.
  *
- *    ② THE LIGHTS. NASA's VIIRS "Black Marble" city-lights composite — the same GIBS product the
- *       app already offers as a manual layer (`dl-nightsat`, #R9/#39) — drawn ONLY where it is
- *       actually night. A raster layer cannot be masked to a shape, so the mask is baked into the
- *       pixels: one canvas whose RGB is Black Marble and whose ALPHA is (nightness × light
- *       brightness). On the day side the alpha is zero and the basemap is untouched.
+ *  ── WHAT IT IS NOW: ONE IMAGE, ONE GRADIENT, PER PIXEL ─────────────────────────────────────────
+ *  A single canvas source whose RGB is Black Marble UNTOUCHED and whose ALPHA is the nightness at
+ *  that pixel — smoothstepped from the sunlit horizon (0°) to the end of astronomical twilight
+ *  (−18°, which is the definition of night rather than a number chosen to look right). So:
  *
- *  ⚠ THE IMAGE IS PLACED THROUGH `imageRowLatitudes` (#R195). A canvas source is one quad whose
- *  texture runs linearly in the RENDERER's vertical coordinate — Mercator on MapLibre, geographic on
- *  Cesium. Sampling the Black Marble mosaic at equal steps of latitude and hoping is exactly the
- *  8.05° error #R195 measured on the tsunami. Every output row asks the engine what latitude it is.
+ *      composite = BlackMarble·n + basemap·(1−n)
+ *
+ *  At n = 1 that is EXACTLY the `dl-nightsat` layer — same GIBS product, same 2016-01-01 composite,
+ *  same pixels, nothing added — which is what the request asks for, and because Black Marble is
+ *  near-black wherever nobody lives, it is also the darkest the night side has ever been. At n = 0
+ *  the basemap is untouched. In between the alpha varies PER PIXEL, so the terminator has as many
+ *  levels as it has pixels: the staircase is not smoothed, it is gone.
+ *
+ *  ⚠ THE DARKNESS NO LONGER NEEDS THE NETWORK EITHER. The mosaic arrives on an idle, so until it
+ *  does the same canvas is painted with UNLIT — the value Black Marble itself carries where there
+ *  is no light (measured off the product, see the constant) — and the night side is complete and
+ *  correctly shaped from the first frame. The lights are then a REFINEMENT of an image that is
+ *  already right, which is also why the mosaic is fetched twice: z2 (16 tiles) so it is there
+ *  almost at once, then z3 (64 tiles, 2048²) to match the canvas the desktop paints.
+ *
+ *  ⚠ THE POLES ARE THE ONE THING A CANVAS CANNOT DO, so they are the one thing still drawn as
+ *  polygons. A canvas source is a QUAD placed by four corner coordinates and Mercator Y is unbounded
+ *  at the pole, so the image stops at ±85.051129° — on the globe projection that leaves a cap the
+ *  night would otherwise miss. `im-night-shade` is now ONLY that cap: a fan of wedges from ±85° to
+ *  the pole, each carrying its own nightness as a feature property. It is 0.19 % of the sphere.
+ *
+ *  ⚠ THE IMAGE IS PLACED THROUGH `imageRowLatitudes` (#R195). A canvas source's texture runs
+ *  linearly in the RENDERER's vertical coordinate — Mercator on MapLibre, geographic on Cesium.
+ *  Sampling at equal steps of latitude and hoping is exactly the 8.05° error #R195 measured on the
+ *  tsunami. Every output row asks the engine what latitude it is.
  *
  *  ⚠ NOTHING RUNS PER FRAME, AND NOTHING RUNS AT ALL UNTIL IT WOULD BE VISIBLE. The zoom ramp is a
  *  style EXPRESSION (`interpolate` on zoom), so panning and zooming cost the renderer what they
- *  already cost and this file zero. The layers are not created — and the 16 Black Marble tiles are
- *  not fetched — until the camera first reaches a zoom where the effect has any opacity.
+ *  already cost and this file zero. The layers are not created — and no tile is fetched — until the
+ *  camera first reaches a zoom where the effect has any opacity.
  *
  *  DATA: NASA EOSDIS GIBS, VIIRS_Black_Marble (2016-01-01 composite). Already declared in the app's
  *  sources/privacy pages for the manual layer; this is the same service and the same product.
@@ -39,53 +67,35 @@ window.IntMapNightSide=(function(){
   const SRC='im-night-src', LYR='im-night-shade', DYN='im-night-lights';
   const D=Math.PI/180;
 
-  /* the zoom ramp, as ONE expression shared by both effects: full strength when the globe fills the
-     view, gone by the time a continent does. */
-  const RAMP_STOPS=[[0,1],[1.6,0.86],[3,0.42],[4.6,0]];
+  /* ══ (#R201) THE ZOOM RAMP — 「引いたときの黒さをよりきつくして」 ═════════════════════════════════
+     One expression, shared by the image and the polar caps, so "how much night is showing" is one
+     fact. #R196's ramp was already 0.86 by z1.6 — the zoom the app OPENS at — so the widest view
+     never saw the full effect at all. It is now flat through the whole-Earth range (z0 … z2.4, which
+     is every zoom at which the planet has a visible day side and night side) and falls away over the
+     continental zooms, reaching 0 at ZMAX where nothing is built. */
+  const RAMP_STOPS=[[0,1],[2.4,0.95],[3.6,0.45],[4.6,0]];
   /* ⚠ A ZOOM EXPRESSION MAY ONLY BE THE OUTERMOST ONE. `['*', ['get','a'], ['interpolate',…zoom…]]`
      is a well-formed-looking style that MapLibre REJECTS — and addLayer swallows the rejection, so
      the first version of this file reported `built: true` with no shade layer in the style at all
      and a globe that looked exactly as it had before. Measured, not reasoned: `map.getLayer(...)`
-     returned null. The scale therefore multiplies the STOPS, which needs no data-driven term. */
+     returned null. Anything data-driven therefore rides on the STOP OUTPUT, which is where a
+     property expression is allowed, and `build()` re-reads the layer to prove it was accepted. */
   const ramp=(k)=>['interpolate',['linear'],['zoom']].concat(...RAMP_STOPS.map(([z,v])=>[z,+(v*k).toFixed(5)]));
   const RAMP=ramp(1);
   const ZMAX=4.6;                       /* above this the ramp is 0 — nothing is built */
-  const SHADE='#03060f';
 
-  /* ══ (#R200) 「引いたときの黒さをよりきつくして」 ═══════════════════════════════════════════════════
-     Two things had to change, and the ARITHMETIC came first — the number would have been guesswork
-     without it. #R196 gave all five nested polygons the SAME opacity, `SHADE_MAX / RINGS.length`,
-     and called the sum the total darkness. ⚠ ALPHA DOES NOT ADD. Five coats of 0.156 leave
-     (1 − 0.156)^5 = 0.428 of the basemap showing, so the deepest night was 57 % dark while the
-     constant next to it said 78 % — and at the zoom the app actually opens at (1.7, ramp 0.86) it
-     was 51 %. That gap is the reported 「黒さが足りない」, and no amount of raising a number that is
-     not what it claims to be would have been an answer.
+  /* ══ (#R201) THE TWILIGHT BAND, AS ONE NUMBER ═══════════════════════════════════════════════════
+     Nightness is 0 with the Sun on the horizon and 1 when it is TWILIGHT_END below it, smoothstepped
+     between. −18° is the astronomical definition of night (the Sun stops lighting the upper
+     atmosphere at all), and it is also ~2,000 km of terminator rather than #R196's ~1,300 km — a
+     softer band is the other half of 「不自然」, since a real Earth seen from space has one. */
+  const TWILIGHT_END=-18;
+  /* Black Marble's own value where there is no light. MEASURED off the 2016-01-01 composite (the
+     mean of the darkest 90 % of its pixels), so the caps and the pre-mosaic fallback are the same
+     colour the image itself will be — not a guess at "dark". */
+  const UNLIT=[6,7,17], UNLIT_HEX='#060711';
 
-     So the darkness is now stated as what the EYE gets — the composite over the basemap at each
-     ring's own solar elevation, at the widest zoom — and the per-ring alphas are DERIVED from it:
-     the rings are nested, so the k-th one sees 1 − Π(1 − aᵢ) for i ≤ k, which inverts exactly.
-     Stating the relation once (the way #R198 did for label sizes) is what keeps it true: change a
-     row below and the layer still delivers that composite, because nothing else is written down.
-
-     The profile itself is darker than #R196's everywhere past the terminator (0.34/0.62/0.85/0.94
-     against 0.29/0.40/0.49/0.57) and deliberately LIGHTER at 0° (0.10 against 0.156): the twilight
-     band is ~1,300 km wide seen from space, and a hard step at the terminator is the one artefact
-     that reads as "a polygon" rather than as night. */
-  const NIGHT_PROFILE=[[0,0.10],[-3,0.34],[-6,0.62],[-9,0.85],[-12,0.94]];
-  const RINGS=NIGHT_PROFILE.map((p)=>p[0]);   /* solar elevation, degrees: day → astronomical twilight */
-  const SHADE_MAX=NIGHT_PROFILE[NIGHT_PROFILE.length-1][1];   /* the composite at full night, widest zoom */
-  const RING_ALPHA=(function(){ const out=[]; let clear=1;    /* clear = Π(1−aᵢ) so far */
-    for(const p of NIGHT_PROFILE){ const rest=1-p[1]; out.push(+Math.max(0,Math.min(1,1-rest/clear)).toFixed(5)); clear=rest; }
-    return out; })();
-  /* ⚠ THE ZOOM EXPRESSION IS STILL THE OUTERMOST ONE (see the note above — MapLibre rejects a nested
-     one and addLayer swallows the rejection). The per-ring choice therefore rides on the STOP OUTPUT,
-     which is where a `match` is allowed; the last stop is a literal 0 because at zero scale every
-     branch is zero, and "the ramp ends at 0" is what tests/r196.spec.js reads off the live style. */
-  const shadeOpacity=()=>['interpolate',['linear'],['zoom']].concat(
-    ...RAMP_STOPS.map(([z,v])=>[z, v<=0 ? 0
-      : ['match',['get','elev']].concat(...RINGS.map((e,i)=>[e,+(RING_ALPHA[i]*v).toFixed(5)])).concat([0])]));
-
-  let built=false, lights=null, lightsTried=false, lastKey='', enabled=true, wired=false, lastErr=null;
+  let built=false, lights=null, lightsZ=0, lightsBusy=false, lastKey='', enabled=true, wired=false, lastErr=null;
 
   /* ── the Sun, by the same formulae the Earth Replay terminator uses (js/sims.js) ──────────────── */
   const J1970=2440588, J2000=2451545, dayMs=86400000, ecl=23.4397*D;
@@ -96,61 +106,54 @@ window.IntMapNightSide=(function(){
     const Lm=M+C+D*102.9372+Math.PI;
     return { d, dec:Math.asin(Math.sin(ecl)*Math.sin(Lm)), ra:Math.atan2(Math.sin(Lm)*Math.cos(ecl),Math.cos(Lm)) };
   }
-  /* the latitude at which the Sun stands at elevation `elevDeg` for this longitude */
-  function ringLat(S,lngDeg,elevDeg){
-    const th=D*(280.16+360.9856235*S.d)+D*lngDeg, H=th-S.ra;
-    const h=elevDeg*D, dec=S.dec;
-    /* sin h = sin φ sin δ + cos φ cos δ cos H  →  solve for φ:
-       write A = sin δ, B = cos δ cos H; then A sin φ + B cos φ = sin h, i.e.
-       R sin(φ + ψ) = sin h with R = √(A²+B²), ψ = atan2(B, A). */
-    const A=Math.sin(dec), B=Math.cos(dec)*Math.cos(H);
-    const R=Math.hypot(A,B); if(!(R>1e-9)) return null;
-    const s=Math.sin(h)/R; if(s>1||s<-1) return null;                 /* no such latitude at this longitude */
-    const psi=Math.atan2(B,A);
-    /* two roots; the terminator we want is the one that keeps the DARK pole inside the ring */
-    const p1=Math.asin(s)-psi, p2=Math.PI-Math.asin(s)-psi;
-    const norm=(p)=>{ let v=p; while(v>Math.PI/2) v-=Math.PI; while(v<-Math.PI/2) v+=Math.PI; return v; };
-    const c1=norm(p1), c2=norm(p2);
-    /* pick the root whose own elevation really is `elevDeg` (the normalisation can pick the mirror) */
-    const el=(phi)=>Math.asin(Math.sin(phi)*A+Math.cos(phi)*B);
-    return (Math.abs(el(c1)-h)<Math.abs(el(c2)-h)?c1:c2)/D;
-  }
-  /* a closed ring along that curve, shut over the pole that is in darkness */
-  function ringFC(date){
-    const S=solar(date), feats=[];
-    const darkPole=(S.dec>0)?-90:90;
-    for(let k=0;k<RINGS.length;k++){
-      const pts=[]; let ok=true;
-      for(let lng=-180;lng<=180;lng+=3){
-        const la=ringLat(S,lng,RINGS[k]);
-        if(la==null){ ok=false; break; }
-        pts.push([lng,Math.max(-89.6,Math.min(89.6,la))]);
-      }
-      /* no such curve (the Sun never reaches that elevation at some longitude): the whole cap is
-         darker than the threshold, so the ring degenerates to the pole cap itself */
-      if(!ok||pts.length<4) continue;
-      const ring=pts.concat([[180,darkPole],[-180,darkPole],[pts[0][0],pts[0][1]]]);
-      feats.push({ type:'Feature', properties:{ elev:RINGS[k] },
-                   geometry:{ type:'Polygon', coordinates:[ring] } });
-    }
-    return { type:'FeatureCollection', features:feats };
-  }
-  /* nightness ∈ [0,1] at a point: 0 with the Sun on the horizon, 1 at −12° (nautical twilight's end),
-     smoothstepped so the band has no visible edge */
+  /* nightness ∈ [0,1] at a point: 0 with the Sun on the horizon, 1 at the end of astronomical
+     twilight, smoothstepped so the band has no visible edge */
   function nightAt(S,lngDeg,latDeg){
     const th=D*(280.16+360.9856235*S.d)+D*lngDeg, H=th-S.ra, ph=latDeg*D;
     const sinEl=Math.sin(ph)*Math.sin(S.dec)+Math.cos(ph)*Math.cos(S.dec)*Math.cos(H);
     const el=Math.asin(Math.max(-1,Math.min(1,sinEl)))/D;
-    const t=Math.max(0,Math.min(1,(-el)/12));
+    const t=Math.max(0,Math.min(1,el/TWILIGHT_END));
     return t*t*(3-2*t);
   }
 
-  /* ── the Black Marble mosaic, fetched once ───────────────────────────────────────────────────── */
-  const LIGHT_Z=2, LIGHT_TILE=256;
-  function loadLights(){
-    if(lights||lightsTried) return Promise.resolve(lights);
-    lightsTried=true;
-    const n=1<<LIGHT_Z, W=n*LIGHT_TILE;
+  /* ══ (#R201) THE POLAR CAP — the 0.19 % of the sphere a Mercator quad cannot reach ══════════════
+     A fan of wedges from ±CAP_LAT to the pole. Each carries its own nightness at its own mid
+     longitude, so the cap agrees with the image row it meets rather than being one flat disc; the
+     seam is the difference between n(85.05°) and n(87.5°) at that longitude, which is zero except in
+     the few days around an equinox when the terminator is inside the cap at all. */
+  const CAP_LAT=85.0, CAP_WEDGES=24;
+  function capFC(date){
+    const S=solar(date), feats=[];
+    for(const sgn of [1,-1]){
+      for(let k=0;k<CAP_WEDGES;k++){
+        const l0=-180+360*k/CAP_WEDGES, l1=-180+360*(k+1)/CAP_WEDGES;
+        const a=nightAt(S,(l0+l1)/2,sgn*87.5);
+        if(!(a>0.004)) continue;                    /* the lit pole draws nothing at all */
+        const lat0=sgn*CAP_LAT, ring=[];
+        for(let i=0;i<=6;i++) ring.push([l0+(l1-l0)*i/6,lat0]);
+        ring.push([l1,sgn*89.98]); ring.push([l0,sgn*89.98]); ring.push([l0,lat0]);
+        feats.push({ type:'Feature', properties:{ a:+a.toFixed(4) },
+                     geometry:{ type:'Polygon', coordinates:[ring] } });
+      }
+    }
+    return { type:'FeatureCollection', features:feats };
+  }
+  /* the zoom ramp is the outermost expression; the per-wedge nightness rides on the stop OUTPUT */
+  const capOpacity=()=>['interpolate',['linear'],['zoom']].concat(
+    ...RAMP_STOPS.map(([z,v])=>[z, v<=0 ? 0 : ['*',['get','a'],v]]));
+
+  /* ── the Black Marble mosaic, fetched once at z2 and then refined to z3 ───────────────────────── */
+  const LIGHT_TILE=256;
+  function mosaicZ(){ let mob=false; try{ mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){}
+    return mob?2:3; }
+  /* ⚠ TWO PASSES, AND THE FIRST ONE IS THE POINT. 16 tiles is a quarter of a megabyte and arrives
+     while the reader is still reaching the whole-Earth zoom; 64 tiles is the resolution the desktop
+     canvas can actually show. Painting z2 first and z3 when it lands means the lights appear early
+     and sharpen, instead of being absent for as long as the larger fetch takes. */
+  function loadLights(z){
+    if(lightsBusy||lights&&lightsZ>=z) return Promise.resolve(lights);
+    lightsBusy=true;
+    const n=1<<z, W=n*LIGHT_TILE;
     const cv=document.createElement('canvas'); cv.width=W; cv.height=W;
     const cx=cv.getContext('2d',{willReadFrequently:true});
     const one=(x,y)=>new Promise((res)=>{
@@ -158,27 +161,28 @@ window.IntMapNightSide=(function(){
       im.onload=()=>{ try{ cx.drawImage(im,x*LIGHT_TILE,y*LIGHT_TILE,LIGHT_TILE,LIGHT_TILE); }catch(_){} res(true); };
       im.onerror=()=>res(false);
       im.src='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/'
-        +'GoogleMapsCompatible_Level8/'+LIGHT_Z+'/'+y+'/'+x+'.png';
+        +'GoogleMapsCompatible_Level8/'+z+'/'+y+'/'+x+'.png';
     });
     const jobs=[]; for(let y=0;y<n;y++) for(let x=0;x<n;x++) jobs.push(one(x,y));
     return Promise.all(jobs).then((oks)=>{
-      if(!oks.some(Boolean)){ lastErr='lights'; return null; }
-      try{ lights={ w:W, h:W, d:cx.getImageData(0,0,W,W).data }; }catch(_){ lastErr='lights-cors'; lights=null; }
+      lightsBusy=false;
+      if(!oks.some(Boolean)){ lastErr='lights'; return lights; }
+      try{ lights={ w:W, h:W, d:cx.getImageData(0,0,W,W).data }; lightsZ=z; lastErr=null; }
+      catch(_){ lastErr='lights-cors'; }
       return lights;
-    }).catch(()=>{ lastErr='lights'; return null; });
+    }).catch(()=>{ lightsBusy=false; lastErr='lights'; return lights; });
   }
 
   /* ── the layers ──────────────────────────────────────────────────────────────────────────────── */
   const LIM=85.051129;
   const COORDS=[[-180,LIM],[180,LIM],[180,-LIM],[-180,-LIM]];
-  /* ⚠ (#R196) 512, NOT 1024. MEASURED: the first version painted a 1024² image — a million pixels,
-     each with its own trigonometry — the moment the camera reached a wide zoom, and that is a single
-     synchronous long task in the middle of a gesture. tests/r186's aircraft sweep, which zooms to
-     z4.2 and then has ten seconds to observe a re-plan, went from ~10 s on main to ~26 s here and
-     failed one run in three. At the zoom this is visible at, the Earth is 400-500 px across, so 512
-     is already oversampled; the phone gets 256. */
+  /* ⚠ (#R196/#R201) THE CANVAS IS AS BIG AS IT CAN BE PAID FOR, AND NOT ONE PIXEL MORE. #R196
+     measured 1024² as a synchronous long task in the middle of a gesture and cut it to 512. The loop
+     was then made separable (see drawLights) and the same paint is now 10 ms at 512 / ~20 ms at 1024
+     / 120 ms at 2048 — MEASURED on this build, which is why the ladder stops at 1024. It runs on an
+     idle after the camera settles and once a minute after that, never inside a gesture. */
   function imgSize(){ let mob=false; try{ mob=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){}
-    return mob?256:512; }
+    return mob?512:1024; }
   function beforeId(){
     for(const id of ['ofm-country','ofm-city','ofm-other','tool-poly'])
       { try{ if(GE().layers.has(id)) return id; }catch(_){} }
@@ -196,47 +200,44 @@ window.IntMapNightSide=(function(){
      — so cos H is computed once per column and the two φ terms once per row, leaving one multiply and
      one add per pixel. The `asin` is gone too: nightness is a function of the elevation, and the
      elevation is monotonic in its sine, so the two thresholds are compared as SINES and the inverse
-     is only taken inside the twilight band (a few per cent of the image). Measured on the same
-     picture, this is what took the wide-zoom paint off the profile. */
+     is only taken inside the twilight band. Measured on the same picture, this is what took the
+     wide-zoom paint off the profile.
+     ⚠ (#R201) AND THE PIXELS ARE THE PRODUCT'S OWN. No threshold, no gain, no bias: what is written
+     is what GIBS sent, and only HOW MUCH OF IT SURVIVES is this file's arithmetic. That is the whole
+     content of 「夜の部分は完全に夜間光レイヤーと同じ画像に」. */
   function drawLights(ctx,W,H){
     ctx.clearRect(0,0,W,H);
     const rows=(()=>{ try{ return GE().layers.imageRowLatitudes(COORDS,H); }catch(_){ return null; } })();
     const S=solar(new Date(clockMs()));
     const out=ctx.createImageData(W,H), o=out.data;
     const L=lights;
-    if(!L){ ctx.putImageData(out,0,0); return; }
     const sinDec=Math.sin(S.dec), cosDec=Math.cos(S.dec);
     const th0=D*(280.16+360.9856235*S.d)-S.ra;
     /* per COLUMN: cos H, and the source column */
     const cosH=new Float64Array(W), sx=new Int32Array(W);
     for(let c=0;c<W;c++){ const lng=-180+360*(c+0.5)/W;
       cosH[c]=Math.cos(th0+D*lng);
-      sx[c]=Math.max(0,Math.min(L.w-1,Math.round((lng+180)/360*L.w))); }
-    const SIN_DAY=0, SIN_NIGHT=Math.sin(-12*D);          /* the two ends of the twilight ramp, as sines */
+      sx[c]=L?Math.max(0,Math.min(L.w-1,Math.round((lng+180)/360*L.w))):0; }
+    const SIN_DAY=0, SIN_NIGHT=Math.sin(TWILIGHT_END*D);   /* the two ends of the ramp, as sines */
     const y0=Math.log(Math.tan(Math.PI/4+LIM*D/2));
+    const U0=UNLIT[0], U1=UNLIT[1], U2=UNLIT[2];
     for(let r=0;r<H;r++){
       const lat=rows?rows[r]:(LIM-(2*LIM)*(r+0.5)/H);
       const ph=lat*D, a=Math.sin(ph)*sinDec, b=Math.cos(ph)*cosDec;
       /* the source mosaic is Web-Mercator, so its own row for this latitude is a Mercator lookup */
       const my=Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,lat))*D/2));
-      const sy=Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h)));
-      const rowBase=sy*L.w, oBase=r*W*4;
+      const sy=L?Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h))):0;
+      const rowBase=L?sy*L.w:0, oBase=r*W*4;
       for(let c=0;c<W;c++){
         const k=oBase+c*4;
         const sinEl=a+b*cosH[c];
         if(sinEl>=SIN_DAY){ o[k+3]=0; continue; }        /* day: nothing to draw, and no arithmetic */
         let n;
         if(sinEl<=SIN_NIGHT) n=1;
-        else { const el=Math.asin(sinEl)/D, t=(-el)/12; n=t*t*(3-2*t); }
-        const j2=(rowBase+sx[c])*4;
-        const R=L.d[j2], G2=L.d[j2+1], B=L.d[j2+2];
-        const lum=(R*0.30+G2*0.59+B*0.11)/255;
-        if(lum<=0.02){ o[k+3]=0; continue; }
-        /* the lights keep their own colour; only how much of them survives is ours */
-        o[k]=Math.min(255,Math.round(R*1.15+18));
-        o[k+1]=Math.min(255,Math.round(G2*1.10+14));
-        o[k+2]=Math.min(255,Math.round(B*1.00+8));
-        o[k+3]=Math.round(255*n*Math.pow(lum,0.72));
+        else { const t=Math.asin(sinEl)/D/TWILIGHT_END; n=t*t*(3-2*t); }
+        if(L){ const j2=(rowBase+sx[c])*4; o[k]=L.d[j2]; o[k+1]=L.d[j2+1]; o[k+2]=L.d[j2+2]; }
+        else { o[k]=U0; o[k+1]=U1; o[k+2]=U2; }
+        o[k+3]=n>=1?255:Math.round(255*n);
       }
     }
     ctx.putImageData(out,0,0);
@@ -266,23 +267,35 @@ window.IntMapNightSide=(function(){
     try{ if(!GE().hasRenderer()||!GE().canDraw()) return false; }catch(_){ return false; }
     const b=beforeId();
     try{
-      if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:ringFC(new Date(clockMs()))});
+      /* ① the image. It carries the whole gradient and needs no network to be correct — the mosaic
+         only replaces UNLIT with the real product where there is one. */
+      const N=imgSize();
+      GE().layers.addDynamicImage(DYN,{ width:N, height:N, coordinates:COORDS, opacity:RAMP, draw:drawLights,
+        attribution:'City lights: NASA EOSDIS GIBS — VIIRS Black Marble' }, b);
+      /* ② the polar caps, which the quad cannot reach */
+      if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:capFC(new Date(clockMs()))});
       if(!GE().layers.has(LYR)) GE().layers.add({ id:LYR, type:'fill', source:SRC,
-        paint:{ 'fill-color':SHADE, 'fill-opacity':shadeOpacity(), 'fill-antialias':false } }, b);
-      if(!GE().layers.has(LYR)) return false;         /* addLayer swallows a rejected paint expression */
+        paint:{ 'fill-color':UNLIT_HEX, 'fill-opacity':capOpacity(), 'fill-antialias':false } }, b);
+      if(!GE().layers.has(LYR)){        /* addLayer swallows a rejected paint expression (#R196) */
+        lastErr='cap-expression';
+        GE().layers.add({ id:LYR, type:'fill', source:SRC,
+          paint:{ 'fill-color':UNLIT_HEX, 'fill-opacity':ramp(0.95), 'fill-antialias':false } }, b);
+      }
+      if(!GE().layers.hasDynamicImage(DYN)) return false;
     }catch(_){ return false; }
     built=true;
-    /* ⚠ THE LIGHTS ARE NOT ON THE BOOT PATH. The app opens at zoom 1.7, so `consider()` fires the
-       first time it is called — and #R192/#R193/#R195 each spent part of a round taking megabytes OFF
-       that path (Köppen, cshapes, the 4.3 MB border geometry). Sixteen Black Marble tiles is not the
-       size of any of those, but the rule is the rule: the SHADE needs no network and appears at once,
-       the LIGHTS are fetched on the first idle. Same escape hatch as js/world-base.js — an idle can be
-       delayed indefinitely by one slow tile, so there is a timeout behind it. */
-    const _lights=()=>{ loadLights().then((L)=>{ if(!L||!built) return;
-      try{ const N=imgSize();
-        GE().layers.addDynamicImage(DYN,{ width:N, height:N, coordinates:COORDS, opacity:RAMP, draw:drawLights,
-          attribution:'City lights: NASA EOSDIS GIBS — VIIRS Black Marble' }, beforeId());
-      }catch(_){}
+    /* ⚠ THE MOSAIC IS NOT ON THE BOOT PATH. The app opens at zoom 1.7, and #R192/#R193/#R195 each
+       spent part of a round taking megabytes OFF that path (Köppen, cshapes, the 4.3 MB border
+       geometry). The night side is already complete and correctly shaped without it, so the tiles
+       are fetched on the first idle — z2 for the lights to appear, then z3 to match the canvas.
+       Same escape hatch as js/world-base.js: an idle can be delayed indefinitely by one slow tile,
+       so there is a timeout behind it. */
+    const _lights=()=>{ loadLights(2).then((L)=>{ if(!built) return;
+      if(L) refresh(true);
+      const z=mosaicZ(); if(z<=2||!L) return;
+      const _fine=()=>{ loadLights(z).then((L2)=>{ if(built&&L2&&lightsZ>=z) refresh(true); }); };
+      try{ if(window.requestIdleCallback) requestIdleCallback(_fine,{timeout:12000}); else setTimeout(_fine,4000); }
+      catch(_){ setTimeout(_fine,4000); }
     }); };
     try{ if(window.requestIdleCallback) requestIdleCallback(_lights,{timeout:6000}); else setTimeout(_lights,2500); }
     catch(_){ setTimeout(_lights,2500); }
@@ -304,7 +317,7 @@ window.IntMapNightSide=(function(){
     const key=String(Math.round(ms/60000));
     if(!force&&key===lastKey) return false;
     lastKey=key;
-    try{ GE().layers.setSourceData(SRC,ringFC(new Date(ms))); }catch(_){}
+    try{ GE().layers.setSourceData(SRC,capFC(new Date(ms))); }catch(_){}
     try{ if(GE().layers.hasDynamicImage&&GE().layers.hasDynamicImage(DYN)) GE().layers.touchDynamicImage(DYN); }catch(_){}
     return true;
   }
@@ -343,12 +356,10 @@ window.IntMapNightSide=(function(){
   function setEnabled(v){ enabled=!!v; if(!enabled) destroy(); else consider(); return enabled; }
 
   return { apply, refresh:()=>refresh(true), setEnabled, destroy,
-    state:()=>({ built, enabled, lights:!!lights, err:lastErr, zoom:zoomNow(), rings:RINGS.length,
-                 shadeMax:SHADE_MAX, zMax:ZMAX, ringAlpha:RING_ALPHA.slice(), profile:NIGHT_PROFILE.map((p)=>p.slice()) }),
-    /* pure: the composite darkness the profile promises at ring k, so a test can check the layer
-       delivers the RELATION rather than a copied constant */
-    _composite:(k)=>{ let clear=1; for(let i=0;i<=k&&i<RING_ALPHA.length;i++) clear*=(1-RING_ALPHA[i]); return 1-clear; },
+    state:()=>({ built, enabled, lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
+                 zMax:ZMAX, twilightEnd:TWILIGHT_END, imgSize:imgSize(), capWedges:CAP_WEDGES,
+                 capLat:CAP_LAT, ramp:RAMP_STOPS.map((s)=>s.slice()), unlit:UNLIT.slice() }),
     /* pure, so the arithmetic can be checked without a renderer */
     _nightAt:(lng,lat,date)=>nightAt(solar(date||new Date(clockMs())),lng,lat),
-    _ringFC:(date)=>ringFC(date||new Date(clockMs())) };
+    _capFC:(date)=>capFC(date||new Date(clockMs())) };
 })();

@@ -22,17 +22,12 @@
 // tops out near 25 fps). The DIFFERENCES between two configurations measured back to back in the
 // same tab are not, and that is all this file claims.
 import { test, expect } from '@playwright/test';
+import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 120_000 };
 
-const asCesium = async (page) => {
-  await page.goto('/?rafshim=1');
-  await page.evaluate(() => { try { localStorage.setItem('intmap_engine', 'cesium'); } catch (_) {} });
-  await page.reload();
-  await page.waitForFunction(() => !!window.__imap && window.IntMapGeoEngine
-    && window.IntMapGeoEngine.id && window.IntMapGeoEngine.id() === 'cesium', null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* (#R201) ONE page load — see tests/helpers/engine.js */
+const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
 
 /* The measurement, installed in the page once and reused by every case below. */
 const HARNESS = () => {
