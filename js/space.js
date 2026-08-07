@@ -1046,12 +1046,12 @@ window.IntMapModules.space=function(HOST){
         const jd=jdNow(), pos=positions(jd);
         const centre=(mode==='system'&&focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
         const p=(mode==='system')?scenePos(pos,'earth',centre):[0,0,0];
-        const d=Math.max(1e-9,Math.hypot(p[0]-0,p[1]-0,p[2]-0)+0)||0;
-        /* the camera orbits the origin at `dist`; the Earth sits at p */
+        /* the camera orbits the origin at `dist`; the Earth sits at p (which is the origin whenever
+           it is the focus, and somewhere else when the focus is another body) */
         const ce=Math.cos(el), se=Math.sin(el);
         const eye=[dist*ce*Math.cos(az), dist*ce*Math.sin(az), dist*se];
-        const dd=Math.max(1e-9,Math.hypot(eye[0]-p[0],eye[1]-p[1],eye[2]-p[2]));
-        return R/dd*FOVK()+0*d;
+        const d=Math.max(1e-9,Math.hypot(eye[0]-p[0],eye[1]-p[1],eye[2]-p[2]));
+        return R/d*FOVK();
       }catch(_){ return 0; }
     }
     /* the map globe's on-screen radius in CSS px, asked of the renderer rather than derived */
