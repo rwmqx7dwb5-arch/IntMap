@@ -148,12 +148,20 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
     window.IntMapNightSide.setEnabled(false);
     await settle();
     const off = sample();
+    /* ⚠ WAIT FOR THE REBUILD, DO NOT TIME IT. `setEnabled(true)` schedules `consider()`, which builds
+       on the next IDLE (up to a 2.5 s fallback) and only then paints — so a fixed 1,500 ms is a test
+       of how fast the runner is, and on a loaded one it sampled a half-built effect: CI measured
+       0.567 three times while this machine and production both give > 0.9. Wait for the state the
+       assertion is about, then force the repaint. */
     window.IntMapNightSide.setEnabled(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    for (let i = 0; i < 120 && !window.IntMapNightSide.state().built; i++) await new Promise((r) => setTimeout(r, 250));
+    window.IntMapNightSide.refresh();
+    await new Promise((r) => setTimeout(r, 600));
     await settle();
     const on = sample();
-    return { anti: +anti.toFixed(1), on, off };
+    return { anti: +anti.toFixed(1), on, off, built: window.IntMapNightSide.state().built };
   });
+  expect(px.built, 'the night side rebuilt after being switched back on').toBe(true);
   expect(px.off, 'the unshaded basemap has to be bright enough to measure against').toBeGreaterThan(60);
   expect(1 - px.on / px.off, `night side at ${px.anti}°: ${px.off} → ${px.on}`).toBeGreaterThan(0.9);
 
