@@ -196,3 +196,15 @@ test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice
   assert.match(th, /'sky-color':sc/, 'and sky-color comes from it');
   assert.doesNotMatch(th, /'sky-color':_SKY_SPACE/, 'the constant deep-space sky is gone');
 });
+
+test('R202 ③j the build stamps name THIS round', () => {
+  /* #R174: both stamps sat at R171 through two rounds, so a reload could not be told apart from a
+     stale cache. The exact pin lives in the CURRENT round's file and becomes the negative form in
+     the next one (tests/r201-checks ⑥ is now that negative form).
+     ⚠ AND THIS IS WHY THE WHOLE NODE SUITE RUNS AFTER EVERY CHANGE, NOT ONCE. This round bumped the
+     stamp late, re-ran only the two check files it thought were involved, and shipped a red CI: the
+     assertion that broke was the PREVIOUS round's pin, in a file nobody had reason to look at. */
+  const idx = rd('index.html');
+  assert.match(idx, /window\.__imBuild='R202';/);
+  assert.match(idx, /window\.INTMAP_BUILD='2026-08-08-R202';/);
+});
