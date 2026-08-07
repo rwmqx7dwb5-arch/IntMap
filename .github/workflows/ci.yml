@@ -123,6 +123,24 @@ jobs:
       # (#R195) the file list comes from the measured plan, not from --shard. The planner FAILS on an
       # empty group rather than returning nothing, because `playwright test` with no paths runs the
       # whole suite — a silent 40-minute job that looks like a pass.
+      # (#R202) …and the times it packs by come from the LAST MAIN RUN, not from whatever a human
+      # last pasted in. The `timings` job below writes them; this reads them. A miss is harmless: the
+      # committed table is still there, and `--merge` unions rather than replaces, so a cache that
+      # predates a new spec leaves that spec charged p75 exactly as it was before.
+      - name: Restore main's measured spec times
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: _timecache
+          key: intmap-timings-${{ github.run_id }}
+          restore-keys: |
+            intmap-timings-
+      - name: Merge them into the committed tables
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -f _timecache/durations.json ]; then node scripts/shard-plan.mjs --merge _timecache/durations.json; fi
+          if [ -f _timecache/baseline.json  ]; then node scripts/baseline.mjs  --merge _timecache/baseline.json;  fi
       - name: Plan this machine's share (measured time, not test count)
         id: plan
         run: |
@@ -195,11 +213,9 @@ jobs:
     needs: browser
     if: ${{ github.ref == 'refs/heads/main' && always() }}
     permissions:
-      contents: write        # the ONE job in this workflow that writes, and it writes two JSON files
+      contents: read
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -207,24 +223,29 @@ jobs:
         with:
           pattern: baseline-*
           path: _timings
-      - name: Union the twelve fragments into the committed tables
+      - name: Union the twelve fragments
         run: |
           set -euo pipefail
-          D=$(find _timings -name durations.json | tr '\n' ' ')
-          B=$(find _timings -name baseline.json  | tr '\n' ' ')
+          D=$(find _timings -name durations.json)
+          B=$(find _timings -name baseline.json)
           echo "durations fragments: $D"
           echo "baseline fragments:  $B"
           if [ -n "$D" ]; then node scripts/shard-plan.mjs --merge $D; fi
           if [ -n "$B" ]; then node scripts/baseline.mjs  --merge $B; fi
-      - name: Commit them if they moved
-        run: |
-          set -euo pipefail
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/durations.json tests/baseline.json
-          if git diff --cached --quiet; then echo "timings unchanged"; exit 0; fi
-          git commit -m "CI: refresh the measured spec times and main's baseline [skip ci]"
-          git push origin HEAD:main
+          mkdir -p _timecache
+          cp tests/durations.json tests/baseline.json _timecache/
+      # ⚠ (#R202, SECOND ATTEMPT) THE FIRST VERSION COMMITTED THIS TO main, AND main DOES NOT TAKE
+      # COMMITS. The «Protect main» ruleset requires a pull request and status checks and lists no
+      # bypass actors, so the push came back GH013 and this job went red on its first real run. That
+      # rule is right, and it is the wrong thing to weaken for a DERIVED measurement: durations.json
+      # and baseline.json are not source, they are the previous run's own output. A cache is where a
+      # derived artefact belongs — and a cache written on the default branch is readable from
+      # pull-request runs, which is exactly the direction the shard planner needs to read it.
+      - name: Publish them for the next run to plan by
+        uses: actions/cache/save@v4
+        with:
+          path: _timecache
+          key: intmap-timings-${{ github.run_id }}
 
   # One check, whatever the shard count is — so the PR still reports a single browser result and any
   # required-check configuration keeps matching. It carries the name the single job used to have.
