@@ -40,38 +40,34 @@ const settled = async (page) => {
   await page.waitForTimeout(500);
 };
 
-test('R204 ① the launch screen thins onto a drawn map; the menu is grouped; the tiles arrive decoded', async ({ page }) => {
+test('R204 ① the map itself is not black; the menu is grouped; the tiles arrive decoded', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
-  /* the cover is its own element, so the logo can stay while the backdrop goes */
-  await page.waitForFunction(() => {
-    const b = document.getElementById('boot-splash');
-    return !b || b.classList.contains('boot-live') || b.classList.contains('boot-gone');
-  }, null, { timeout: 40000 });
-  const m = await page.evaluate(() => (window.__imBoot ? window.__imBoot.marks() : null));
-  if (m) {
-    expect(m.live, 'the cover was told the map had a frame').toBeGreaterThan(0);
-    /* ⚠ AND IT DID NOT END THE BOOT EARLY — #R186 asked for a screen that lasts until ready and #R190
-       for one that does not lift mid-load. `live` is a thinning, so it must come at or before the
-       ending rather than instead of it. */
-    for (const end of ['idle', 'timeout', 'no-renderer']) if (m[end] != null) expect(m.live).toBeLessThanOrEqual(m[end] + 1);
-  }
-  /* and the map beneath is a lit globe, not a black rectangle — read INSIDE a render tick (#R197:
-     without preserveDrawingBuffer the canvas is only readable during a draw) */
+  await page.waitForFunction(() => { try { return !window.__imBoot || window.__imBoot.isDone(); } catch (_) { return true; } },
+    null, { timeout: 60000 }).catch(() => {});
+  /* ⚠ THE MAP, MEASURED ON THE GLOBE ITSELF. #R204's first attempt averaged the whole canvas, where
+     roughly half is the black space around the disc at z1.7 — a number that cannot tell "the map is
+     black" from "the map is small". These nine points are all on the globe. Read INSIDE a render
+     tick (#R197: without preserveDrawingBuffer the canvas is only readable during a draw). */
   const px = await page.evaluate(() => new Promise((res) => {
     const map = window.__imap;
     const done = () => {
-      const cv = map.getCanvas(), c = document.createElement('canvas');
-      c.width = 120; c.height = 90;
-      const g = c.getContext('2d'); g.drawImage(cv, 0, 0, c.width, c.height);
-      const d = g.getImageData(0, 0, c.width, c.height).data;
-      let s = 0, n = 0;
-      for (let i = 0; i < d.length; i += 4) { s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; n++; }
-      res(Math.round(s / n));
+      const cv = map.getCanvas(), rect = cv.getBoundingClientRect();
+      const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
+      const g = c.getContext('2d'); g.drawImage(cv, 0, 0);
+      const sx = cv.width / rect.width, sy = cv.height / rect.height;
+      const cx = rect.width / 2, cy = rect.height / 2, R = Math.min(rect.width, rect.height) * 0.16;
+      const pts = [[0, 0]];
+      for (let i = 0; i < 8; i++) pts.push([R * Math.cos(i * Math.PI / 4), R * Math.sin(i * Math.PI / 4)]);
+      const lum = pts.map(([dx, dy]) => {
+        const d = g.getImageData(Math.round((cx + dx) * sx), Math.round((cy + dy) * sy), 1, 1).data;
+        return 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2];
+      }).sort((a, b) => a - b);
+      res(Math.round(lum[4]));
     };
-    map.once('render', done); map.triggerRepaint(); setTimeout(() => res(-1), 5000);
+    map.once('render', done); map.triggerRepaint(); setTimeout(() => res(-1), 6000);
   }));
-  expect(px, 'the map itself is not black').toBeGreaterThan(12);
+  expect(px, 'the globe under the cursor is drawn, not black').toBeGreaterThan(20);
 });
 
 test('R204 ② the plate layer draws, names its plates legibly and answers a click', async ({ page }) => {

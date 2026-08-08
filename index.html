@@ -215,21 +215,13 @@ window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that 
      does it fade. The 20-second failsafe below exists because a launch screen that cannot be
      dismissed is worse than no launch screen at all — if a milestone never arrives it says so in the
      console and reveals the app anyway. -->
-<!-- ⚠ (#R204) THE BACKDROP IS ITS OWN ELEMENT SO IT CAN THIN OUT WITHOUT TAKING THE LOGO WITH IT.
-     「起動したときに地図が真っ暗になっている場合がある。どうにかしろ。」 — reported again after #R203,
-     and #R203 measured the wrong surface: it read the MAP's pixels, found them correctly lit, and
-     concluded the app was looking at the night side. It is not the map. Re-measured here with the
-     tile hosts held to 1.8 s a request (which is what 「場合がある」 looks like — a cold or slow
-     network), the map canvas is already lit at 1.0 s — [81,98,110] — and THIS ELEMENT is opaque
-     `var(--bg-color)`, i.e. near-black in the dark theme, on top of it for up to 14 s (js/app-body.js
-     waits 28 × 500 ms for the default layers) and 20 s in the worst case.
-     ⚠ THE SPLASH IS NOT REMOVED EARLIER. #R186 asked for 「完全に準備完了なるまで読み込み画面に」 and
-     #R190 for 「ローディング画面終了後も読み込みが終わっていない」 to stop happening; lifting it sooner
-     would undo both. What changes is only that it stops being OPAQUE once the map underneath has a
-     real frame: the backdrop thins to a scrim, the logo and the progress bar stay, and the ending
-     milestones are exactly the ones #R190 made a contract. -->
+<!-- ⚠ (#R204b) #R204 SPLIT THIS ELEMENT'S BACKDROP OUT AND THINNED IT TO A SCRIM, ON A DIAGNOSIS THAT
+     WAS WRONG, AND IT IS REVERTED HERE. The report was 「起動したときに地図が真っ暗になっている場合が
+     ある」; #R204 found the launch screen sitting opaque over a drawn map on a slow network and
+     concluded that was it. The user's answer: the engine is MapLibre and 「地図の領域が全面まっ黒（何も
+     見えない）」 — the MAP is black, not the cover over it. So the launch screen goes back to exactly
+     what #R186 asked for and #R190 fixed, and the black map is chased where it actually lives. -->
 <div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
-  <div class="boot-back" id="boot-back"></div>
   <div class="boot-inner">
     <div class="boot-icon"><img src="IntMap.Icon.png" alt="IntMap" width="124" height="124" decoding="async" fetchpriority="high"></div>
     <div class="boot-bar"><i id="boot-bar-fill"></i></div>
@@ -263,16 +255,7 @@ window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that 
     el.classList.add('boot-gone');
     setTimeout(function(){ try{ el.parentNode&&el.parentNode.removeChild(el); }catch(e){} document.body.classList.remove('booting'); },460);
   }
-  /* (#R204) "the map underneath is now a picture" — the app calls this from its first real frame.
-     It thins the cover; it does NOT end the boot, and it is a no-op once the boot has ended. */
-  function live(){
-    if(done||!el||el.classList.contains('boot-live')) return false;
-    marks.live=Math.round(performance.now());
-    el.classList.add('boot-live');
-    return true;
-  }
-  window.__imBoot={ set:set, done:finish, live:live, isLive:function(){ return !!(el&&el.classList.contains('boot-live')); },
-                    progress:function(){ return pct; },
+  window.__imBoot={ set:set, done:finish, progress:function(){ return pct; },
                     isDone:function(){ return done; }, marks:function(){ return marks; } };
   document.body.classList.add('booting');
   set(6,'html');
