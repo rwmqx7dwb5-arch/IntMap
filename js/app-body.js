@@ -737,6 +737,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      reads the `window.__imSatProto` flag this sets — see the file header. `_hiDPITiles` is the one
      value it needs from this scope and is handed over explicitly (scripts/check-split-scope.mjs). */
   try{ window.IntMapModules.satProto(IM_HOST); }catch(_){}
+  /* (#R203) …and the centre is COMPUTED ONCE AND PUBLISHED. A test cannot re-derive it — it moves
+     0.25° a minute, so "boot, then compute what the centre should be" is off by however long the
+     boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
+     being a literal. What a test can do is read what the app decided, which is a fact rather than a
+     re-derivation (the rule #R202 wrote down after r185's altitude floor). */
+  const _openingCentre=OpeningView.openingCentre(OpeningView.openingClockMs(),[10,20]);
+  try{ window.__imOpeningCentre=_openingCentre.slice(); }catch(_){}
   try{
     /* (#R178) even the primary view is built through the contract. It could not be while the engine
        was created inside this map's own 'load' handler; js/geo-engine.js is imported before anything
@@ -813,7 +820,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          product at full alpha. js/opening-view.js keeps this centre whenever the Sun is at least 12°
          above it and rotates to the sub-solar longitude when it is not. Same latitude, same zoom, and
          a hash, a search or one drag overrides it immediately. */
-      center:OpeningView.openingCentre(OpeningView.openingClockMs(),[10,20]), zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
+      center:_openingCentre, zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         /* ══ (#R191) A TILE SHOULD ARRIVE, NOT APPEAR ═══════════════════════════════════════════════
