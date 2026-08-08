@@ -186,7 +186,15 @@ test('R166 #6 WRITE-THROUGH: the Playground sets HOST.mode / HOST.satPanelDismis
   expect(await page.evaluate(() => !!document.getElementById('btn-news')?.classList.contains('active')),
     'the News tab is active before the Playground takes over').toBe(true);
 
-  // satellite basemap + open the controller, so satPanelDismissed is genuinely false to start with
+  // satellite basemap + open the controller, so satPanelDismissed is genuinely false to start with.
+  // ⚠ (#R207) THE SETUP MUST NOT ASSUME WHICH BASEMAP THE APP STARTS ON. This used to click
+  // #btn-view-sat twice — once to switch to satellite, once to toggle the provider panel open (#R101:
+  // a click on the ALREADY-ACTIVE Satellite button toggles that panel). Satellite is the default now
+  // (「初回時にはmapではなくsatelliteに」), so the first click was already the toggle and the second
+  // closed it again. Start from Map explicitly and the two clicks mean what they meant before,
+  // whatever the default becomes next.
+  await page.evaluate(() => document.getElementById('btn-view-map')?.click());
+  await page.waitForTimeout(600);
   await page.evaluate(() => document.getElementById('btn-view-sat')?.click());
   await page.waitForTimeout(900);
   await page.evaluate(() => document.getElementById('btn-view-sat')?.click());

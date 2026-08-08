@@ -43,6 +43,13 @@ test.afterAll(async () => { try { await page.context().close(); } catch { /* ign
 /* ── ① 「夜と昼の部分の変遷が階段状で不自然」「夜の部分は完全に夜間光レイヤーと同じ画像に」 ───── */
 test('R201 ① the terminator is a per-pixel gradient, and full night is the night-lights image', async () => {
   test.setTimeout(240_000);
+  /* ⚠ (#R207) THE MEASUREMENT NEEDS A BRIGHT UNSHADED BASEMAP, AND IT NO LONGER GETS ONE BY DEFAULT.
+     This reads the ratio between a lit pixel and the same pixel under the night shading, and its own
+     premise below is `px.off > 60` — comfortably true of the light Carto base this was written
+     against, and false over open ocean now that 「初回時にはmapではなくsatelliteに」. The subject is
+     the terminator, not the basemap, so the basemap is chosen rather than inherited. */
+  await page.evaluate(() => document.getElementById('btn-view-map')?.click());
+  await page.waitForTimeout(1200);
   await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [0, 10], zoom: 1.2, pitch: 0, bearing: 0 }));
   await page.waitForFunction(() => window.IntMapNightSide.state().built, null, { timeout: 60_000 });
 
