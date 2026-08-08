@@ -247,7 +247,13 @@ test('R204 ⑦ pressing an offset highlights every band on it', () => {
     'the label feature carries the offset it names');
   assert.match(lp, /id:'tzl-hl',type:'fill'/, 'there is a highlight fill');
   assert.match(lp, /filter:\['==',\['get','zone'\],-1e9\]/, 'selecting nothing by default');
-  assert.match(lp, /\['tzl-time','tzl-fill'\]\.forEach/, 'and both the text and the polygon answer a click');
+  assert.match(lp, /\[\['tzl-time',true\],\['tzl-fill',false\]\]\.forEach/, 'and both the text and the polygon answer a click');
+  /* ⚠ …with the LABEL winning. One press lands on both — the label is anchored over its zone's
+     largest polygon, which at low zoom is often drawn across a neighbour — and the fill's handler
+     ran last. Measured: pressing 「UTC+8」 highlighted zone 7. */
+  assert.match(lp, /if\(e && e\.__tzTaken\) return;/, 'the fill stands down when the label took the click');
+  assert.match(lp, /if\(fromLabel && e\) e\.__tzTaken=true;/);
+  assert.ok(lp.indexOf("['tzl-time',true]") < lp.indexOf("['tzl-fill',false]"), 'the label is wired first');
   assert.match(lp, /setHighlight\(\(hlZone!=null&&\+z===hlZone\)\?null:z\)/, 'a second press clears it');
   assert.match(lp, /window\.IntMapTimeZones=\{ highlight:/, 'published so Atlas and the tests can ask');
 });

@@ -162,6 +162,20 @@ test('R204 ③ pressing a time-zone offset highlights every band on it', async (
     T.highlight(null);
     await new Promise((s) => setTimeout(s, 300));
     const off = { z: T.highlighted(), vis: map.getLayoutProperty('tzl-hl', 'visibility') };
+    /* ⚠ AND A PRESS ON THE TEXT ITSELF SELECTS THE OFFSET THE TEXT NAMES. The polygon answers the
+       same click, and until #R204 wired the label first and let it claim the event, the fill's
+       handler won — measured, pressing 「UTC+8」 highlighted zone 7. */
+    let byLabel = null;
+    map.jumpTo({ center: [7, 0], zoom: 2.5, pitch: 0, bearing: 0 });
+    await new Promise((s) => setTimeout(s, 1500));
+    const lab = map.queryRenderedFeatures({ layers: ['tzl-time'] })[0];
+    if (lab) {
+      const pt = map.project(lab.geometry.coordinates), rc = map.getCanvas().getBoundingClientRect();
+      map.getCanvas().dispatchEvent(new MouseEvent('click', { clientX: rc.x + pt.x, clientY: rc.y + pt.y, bubbles: true }));
+      await new Promise((s) => setTimeout(s, 600));
+      byLabel = { asked: lab.properties.zone, got: T.highlighted() };
+      T.highlight(null);
+    }
     /* the labels carry the offset the highlight filters on — that is what makes the TEXT clickable */
     const feats = map.querySourceFeatures('tzl-lbl-src');
     /* …and ONE offset is more than one polygon, which is why a filter rather than a selected feature */
@@ -170,7 +184,7 @@ test('R204 ③ pressing a time-zone offset highlights every band on it', async (
     const d = map.getSource('tzl-src')._data;
     const fc = (d && d.features) ? d : (d && d.geojson) || {};
     const bands = (fc.features || []).filter((f) => f.properties.zone === 9).length;
-    return { before, on, off, bands, labelHasZone: feats.length ? (feats[0].properties.zone !== undefined) : null };
+    return { before, on, off, bands, byLabel, labelHasZone: feats.length ? (feats[0].properties.zone !== undefined) : null };
   });
   expect(r.before.z, 'nothing is highlighted to begin with').toBe(null);
   expect(r.before.vis).toBe('none');
@@ -180,6 +194,7 @@ test('R204 ③ pressing a time-zone offset highlights every band on it', async (
   expect(r.off.z, 'pressing again clears it').toBe(null);
   expect(r.off.vis).toBe('none');
   expect(r.bands, 'the offset really covers more than one band').toBeGreaterThan(1);
+  if (r.byLabel) expect(r.byLabel.got, 'pressing the text selects the offset the text names').toBe(r.byLabel.asked);
   if (r.labelHasZone !== null) expect(r.labelHasZone, 'the label feature carries its offset').toBe(true);
 
   /* ── ④ and ⑤ share this page: a boot is eight seconds and neither of them changes the map ── */

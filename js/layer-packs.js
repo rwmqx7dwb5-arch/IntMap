@@ -747,10 +747,23 @@ window.IntMapModules.timeZones=function(HOST){
     }
     let wired=false;
     function wireHighlight(){ if(wired) return; wired=true;
-      const hit=(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const z=f.properties&&f.properties.zone;
-        if(z==null) return; setHighlight((hlZone!=null&&+z===hlZone)?null:z); };
-      ['tzl-time','tzl-fill'].forEach(id=>{ try{
-        GE().events.onLayer('click',id,hit);
+      /* ⚠ THE LABEL WINS, AND IT HAS TO BE SAID EXPLICITLY. Both the text and the polygon answer a
+         click, and one press lands on BOTH — the label is anchored at the centre of its zone's
+         largest polygon, which on a globe at low zoom is often drawn over a NEIGHBOURING band. The
+         two handlers then ran in registration order and the fill's won: measured, pressing 「UTC+8」
+         highlighted zone 7. The renderer hands the same event object to every delegated layer
+         handler for one click, so the label marks it and the fill stands down. */
+      const hit=(e,fromLabel)=>{
+        if(e && e.__tzTaken) return;
+        const f=e.features&&e.features[0]; if(!f) return;
+        const z=f.properties&&f.properties.zone; if(z==null) return;
+        if(fromLabel && e) e.__tzTaken=true;
+        setHighlight((hlZone!=null&&+z===hlZone)?null:z);
+      };
+      /* ⚠ …and the label is wired FIRST, because "the same event object" only helps if the handler
+         that claims it runs first. */
+      [['tzl-time',true],['tzl-fill',false]].forEach(([id,isLabel])=>{ try{
+        GE().events.onLayer('click',id,(e)=>hit(e,isLabel));
         GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
         GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
       }catch(_){} });

@@ -768,7 +768,13 @@ window.IntMapModules.tsunami=function(HOST){
           +L('Sea-floor uplift','海底の隆起','Hebung','Поднятие дна','Levantamiento')+' +'+sim.eta0Up.toFixed(2)+' m / '+sim.eta0Down.toFixed(2)+' m<br>'
           +L('Rupture','震源断層','Bruchfläche','Разрыв','Ruptura')+' '+Math.round(gm.L/1000)+' × '+Math.round(gm.W/1000)+' km · '
           +L('mean slip','平均滑り','Versatz','смещение','deslizamiento')+' '+gm.slip.toFixed(1)+' m<br>'
-          +L('Grid','格子','Gitter','Сетка','Malla')+' '+sim.nx+'×'+sim.ny+' ('+L('global','全球','global','глобально','global')+', 0.25°) · '
+          /* ⚠ (#R204) THE DOMAIN IS NOT ALWAYS THE PLANET ANY MORE, so this line may not say it is. It
+             read 「4320×240（全球, 0.25°）」 on the first near-source run — the grid numbers were the
+             band's and the description was the global one's, which is the worst of both. */
+          +L('Grid','格子','Gitter','Сетка','Malla')+' '+sim.nx+'×'+sim.ny+' ('
+          +(sim.scope==='near'
+              ? L('near source','震源近傍','nahe Quelle','вблизи очага','cerca del origen')+', '+(360/sim.nx).toFixed(3).replace(/0+$/,'')+'°'
+              : L('global','全球','global','глобально','global')+', 0.25°')+') · '
           +sim.cellKm+' km · Δt '+(sim.dt||0).toFixed(1)+' s · '+(sim.steps||0)+' '+L('steps','ステップ','Schritte','шагов','pasos')
           +' · '+((sim.solveMs||0)/1000).toFixed(1)+' s<br>'
           +L('Peak coastal height (Green’s law)','沿岸最大波高（グリーンの法則）','Küstenhöhe (Green)','Высота у берега (Грин)','Altura costera (Green)')
