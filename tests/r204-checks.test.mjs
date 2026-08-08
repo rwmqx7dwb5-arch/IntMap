@@ -67,24 +67,22 @@ test('R204 ①c the tier split is derived, not written down twice', () => {
   assert.ok(coreNames().includes(currentRoundSpec()));
 });
 
-/* ── ② THE LAUNCH SCREEN STOPS BEING OPAQUE ───────────────────────────────────────────────────
-   「起動したときに地図が真っ暗になっている場合がある。」 The map was already lit; this element was on
-   top of it. The three parts have to agree, and none of them may lift the screen EARLIER (#R186's
-   「完全に準備完了なるまで」 and #R190's 「終了後も読み込みが終わっていない」 are both still in force). */
-test('R204 ② the boot cover is its own layer, thins on a frame, and still ends only on a milestone', () => {
+/* ── ② THE LAUNCH SCREEN IS EXACTLY WHAT #R186 ASKED FOR ─────────────────────────────────────
+   ⚠ #R204 rebuilt this element on a WRONG DIAGNOSIS of 「起動したときに地図が真っ暗になっている場合が
+   ある」: it found the launch screen sitting opaque over a drawn map on a slow network and split its
+   backdrop out into a scrim. The user's environment is MapLibre and the report is 「地図の領域が全面
+   まっ黒（何も見えない）」 — the MAP is black, not the cover. The change was reverted; what this test
+   guards now is that it STAYED reverted, because #R186 asked for an opaque screen until ready and
+   #R190 fixed it lifting early, and neither of those is this round's to trade away. */
+test('R204 ② the launch screen is opaque until a milestone ends it, and nothing thins it early', () => {
   const html = rd('index.html'), css = rd('css/intmap.css'), body = rd('js/app-body.js');
-  assert.match(html, /<div class="boot-back" id="boot-back"><\/div>/, 'the backdrop is its own element');
-  assert.match(html, /function live\(\)/, 'and there is a live() that only thins it');
-  assert.match(html, /window\.__imBoot=\{[^}]*live:live/, 'published on __imBoot');
-  assert.match(css, /\.boot-back\{[^}]*background:var\(--bg-color\)/, 'the opaque colour moved to it');
-  assert.match(css, /\.boot-splash\.boot-live \.boot-back\{ opacity:0\.5; \}/, 'and boot-live is a scrim');
-  assert.match(css, /\.boot-splash\{[^}]*background:transparent/, 'the splash itself no longer paints');
-  /* ⚠ live() must NOT be able to end the boot: `done` stays the milestone contract #R190 wrote */
-  const liveFn = /function live\(\)\{([\s\S]*?)\n  \}/.exec(html);
-  assert.ok(liveFn, 'live() is readable');
-  assert.doesNotMatch(liveFn[1], /done\s*=\s*true/, 'live() may not finish the boot');
-  assert.doesNotMatch(liveFn[1], /boot-gone/, 'and may not remove the screen');
-  assert.match(body, /window\.__imBoot\.live&&window\.__imBoot\.live\(\)/, 'the app calls it from its first frame');
+  assert.match(css, /\.boot-splash\{[^}]*background:var\(--bg-color\)/, 'the cover paints, as #R186 asked');
+  assert.doesNotMatch(css, /\.boot-back\b/, 'no separate scrim layer');
+  assert.doesNotMatch(html, /boot-live|boot-back/, 'and no scrim state on the element');
+  assert.doesNotMatch(body, /__imBoot\.live/, 'the app does not thin the cover');
+  /* the endings #R190 made a contract are untouched */
+  assert.match(body, /const go=\(why\)=>\{ if\(ended\) return; ended=true; try\{ window\.__imBoot\.done\(why\|\|'idle'\)/);
+  assert.match(html, /no ready signal after 20 s/, 'and the failsafe is still there');
 });
 
 /* ── ③ THE SATELLITE JPEG IS DECODED OFF THE MAIN THREAD ──────────────────────────────────────── */
