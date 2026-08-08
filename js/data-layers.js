@@ -4093,9 +4093,23 @@ window.IntMapModules.dataLayers=function(HOST){
        window._registerLayerOpacity(id,[en,jp],layerIds,cbId) on toggle-ON: it gets a floating generic
        legend whose auto opacity row drives all its layers; _hideGenericLegend(id) on toggle-OFF. */
     window._opacityTargets=window._opacityTargets||{};
+    /* ══ (#R205) A NAME IS NOT PART OF THE WASH ═════════════════════════════════════════════════════
+       「プレート境界レイヤーのプレート名は透過するな」 — MEASURED: `getPaintProperty('eco-plates-lbl',
+       'text-opacity')` came back **0.3**. Nothing in js/layer-packs.js sets it; the value is #R20's
+       「プレートは30%から」 default (line below) travelling through this function, which dims a symbol
+       layer's TEXT along with everything else the checkbox owns.
+
+       That default is about the plate POLYGONS — a filled overlay at full strength hides the map under
+       it, which is what 30 % was asked for. A label is not a wash over the map, it is the map's answer
+       to "which plate is this", and at 0.3 over a light basemap it is barely there. So a layer can
+       declare that its TEXT stays opaque while its fills and lines keep following the slider. The
+       registry is a plain id→true map so the declaration lives next to the layer that needs it
+       (js/layer-packs.js) rather than as a special case in here. */
+    window._opacityOpaqueText=window._opacityOpaqueText||{};
     const _OP_PROP={fill:'fill-opacity',line:'line-opacity',raster:'raster-opacity',circle:'circle-opacity',heatmap:'heatmap-opacity','fill-extrusion':'fill-extrusion-opacity',hillshade:'hillshade-exaggeration','color-relief':'color-relief-opacity'};
     function _applyGenericOpacity(ids,v){ (ids||[]).forEach(lid=>{ try{ const L=GE().layers.get(lid); if(!L) return;
-      if(L.type==='symbol'){ try{ GE().layers.setPaint(lid,'icon-opacity',v); }catch(_){} try{ GE().layers.setPaint(lid,'text-opacity',v); }catch(_){} return; }
+      if(L.type==='symbol'){ const keep=!!window._opacityOpaqueText[lid];
+        try{ GE().layers.setPaint(lid,'icon-opacity',keep?1:v); }catch(_){} try{ GE().layers.setPaint(lid,'text-opacity',keep?1:v); }catch(_){} return; }
       const p=_OP_PROP[L.type]; if(!p) return;
       GE().layers.setPaint(lid,p,(p==='hillshade-exaggeration')?Math.max(0.05,v):v); }catch(_){} }); }
     window._applyGenericOpacity=_applyGenericOpacity;

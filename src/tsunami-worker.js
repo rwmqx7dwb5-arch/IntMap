@@ -191,39 +191,92 @@ function subFaults(g, dipDeg, topDepth) {
    depth of its ocean part. Deciding it from an average that includes a 2,000 m mountain would make
    every steep coast a wall two cells out to sea, and Green's law would then shoal the wave on a shelf
    that is not there. */
-function seaFloor(bathy, nx, ny, lat0, lat1) {
+/* ══ (#R205) …AND A MEASURED FLOOR AROUND THE SOURCE, WHERE THE WAVE IS MADE ══════════════════════
+   「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
+
+   #R204 refined the GRID near the source (9.3 km) and wrote down, correctly, that it had not refined
+   the FLOOR: every cell in that band still read the same bundled 0.25° image, so nine model cells
+   shared one depth and the coastline stayed a 27.8 km staircase. A finer grid over a coarser floor
+   buys numerics, not accuracy — and accuracy is what was asked for.
+
+   `fine` is an optional local patch in the SAME cell-average form the bundled image is in, built on
+   the main thread from the terrarium DEM around the epicentre (js/tsunami.js fineFloor):
+
+       d[]  depth in metres, 0 = at or above sea level      k[] 1 = the DEM answered for this sample
+
+   A model cell that is COVERED by the patch takes its wet/dry fraction and its mean depth from it;
+   everything else is byte-for-byte the old path. The two are the same quantity measured at different
+   scales, so no cell can disagree with itself, and a patch that failed to load is simply absent.
+   ⚠ `k` is separate rather than folded into the depth: a sample the DEM did not answer for and a
+   sample that is exactly at sea level are different facts, and averaging the first as "0 m of water"
+   would drown a coastline in the direction of land. */
+function seaFloor(bathy, nx, ny, lat0, lat1, fine) {
   const bw = bathy.w, bh = bathy.h, px = bathy.rgb;
   const h = new Float32Array(nx * ny), land = new Uint8Array(nx * ny), depth = new Int16Array(nx * ny);
-  let seaCells = 0;
+  let seaCells = 0, fineCells = 0;
   const stepX = bw / nx, stepY = (bh * (lat1 - lat0) / 180) / ny;
   const row0 = bh * (90 - lat1) / 180;
+  const dLat = (lat1 - lat0) / ny, dLng = 360 / nx;
+  const F = (fine && fine.w > 1 && fine.h > 1) ? fine : null;
+  const fdLat = F ? (F.lat1 - F.lat0) / F.h : 0, fdLng = F ? (F.lng1 - F.lng0) / F.w : 0;
   for (let j = 0; j < ny; j++) {
     /* model row j is at latitude lat0 + (j+0.5)·dφ, counting NORTH; the image counts SOUTH from 90 */
     const jy0 = row0 + (ny - 1 - j) * stepY, jy1 = jy0 + stepY;
     const b0 = Math.max(0, Math.floor(jy0)), b1 = Math.min(bh - 1, Math.max(b0, Math.ceil(jy1) - 1));
+    const cLat0 = lat0 + j * dLat, cLat1 = cLat0 + dLat;
     for (let i = 0; i < nx; i++) {
-      const ix0 = i * stepX, ix1 = ix0 + stepX;
-      const a0 = Math.max(0, Math.floor(ix0)), a1 = Math.min(bw - 1, Math.max(a0, Math.ceil(ix1) - 1));
-      let sd = 0, sf = 0, n = 0;
-      for (let by = b0; by <= b1; by++) {
-        const base = by * bw;
-        for (let bx = a0; bx <= a1; bx++) {
-          const o = (base + bx) * 3;
-          sd += px[o] * 256 + px[o + 1];
-          sf += px[o + 2];
-          n++;
+      const k = j * nx + i;
+      let frac = null, d = null;
+      /* ── the patch first, when this cell is inside it ─────────────────────────────────────── */
+      if (F && cLat0 >= F.lat0 && cLat1 <= F.lat1) {
+        const cLng0 = -180 + i * dLng;
+        /* the patch may straddle ±180 — its lng0/lng1 are NOT normalised, so try the cell at each
+           of the three equivalent longitudes rather than normalising the patch */
+        let base = null;
+        for (const sh of [0, 360, -360]) { const a = cLng0 + sh; if (a >= F.lng0 && a + dLng <= F.lng1) { base = a; break; } }
+        if (base != null) {
+          const fx0 = Math.max(0, Math.floor((base - F.lng0) / fdLng));
+          const fx1 = Math.min(F.w - 1, Math.max(fx0, Math.ceil((base + dLng - F.lng0) / fdLng) - 1));
+          /* the patch counts rows SOUTH from lat1, like the bundled image */
+          const fy0 = Math.max(0, Math.floor((F.lat1 - cLat1) / fdLat));
+          const fy1 = Math.min(F.h - 1, Math.max(fy0, Math.ceil((F.lat1 - cLat0) / fdLat) - 1));
+          let sd = 0, nSea = 0, nKnown = 0;
+          for (let fy = fy0; fy <= fy1; fy++) {
+            const fb = fy * F.w;
+            for (let fx = fx0; fx <= fx1; fx++) {
+              if (!F.k[fb + fx]) continue;
+              nKnown++; const dv = F.d[fb + fx];
+              if (dv > 0) { sd += dv; nSea++; }
+            }
+          }
+          /* one sample is not a cell average — require enough of the cell to have answered */
+          if (nKnown >= 4) { frac = nSea / nKnown; d = nSea ? sd / nSea : 0; fineCells++; }
         }
       }
-      const k = j * nx + i;
-      const frac = n ? (sf / n) / 255 : 0;
-      const d = n ? sd / n : 0;
+      /* ── otherwise the bundled 0.25° floor, exactly as before ─────────────────────────────── */
+      if (frac == null) {
+        const ix0 = i * stepX, ix1 = ix0 + stepX;
+        const a0 = Math.max(0, Math.floor(ix0)), a1 = Math.min(bw - 1, Math.max(a0, Math.ceil(ix1) - 1));
+        let sd = 0, sf = 0, n = 0;
+        for (let by = b0; by <= b1; by++) {
+          const base = by * bw;
+          for (let bx = a0; bx <= a1; bx++) {
+            const o = (base + bx) * 3;
+            sd += px[o] * 256 + px[o + 1];
+            sf += px[o + 2];
+            n++;
+          }
+        }
+        frac = n ? (sf / n) / 255 : 0;
+        d = n ? sd / n : 0;
+      }
       /* wet if the majority of the cell is sea AND that sea is deeper than the grid can carry as
          water — under 10 m over a 28 km cell is a beach, and it is a wall for this model */
       if (frac >= 0.5 && d > 10) { h[k] = d; depth[k] = Math.min(32000, Math.round(d)); seaCells++; }
       else { h[k] = 0; land[k] = 1; depth[k] = 0; }
     }
   }
-  return { h, land, depth, seaCells };
+  return { h, land, depth, seaCells, fineCells };
 }
 
 /* Companding — see the header. A is the run's peak |η|. */
@@ -252,7 +305,7 @@ function run(m) {
   const filtLat = (m.filtLat != null ? m.filtLat : 60);
 
   /* ── 1. the sea floor ─────────────────────────────────────────────────────────────────────── */
-  const sf = seaFloor(m.bathy, nx, ny, lat0, lat1);
+  const sf = seaFloor(m.bathy, nx, ny, lat0, lat1, m.fine);
   const h = sf.h, land = sf.land, depth = sf.depth;
   if (!(sf.seaCells > 0)) return { err: 'nosea' };
   post({ id, type: 'progress', pct: 8, phase: 'floor' });
@@ -433,7 +486,7 @@ function run(m) {
   post({
     id, type: 'model', nx, ny, fx, fy, dec, lat0, lat1, dt, steps, total, nFrames, cellKm,
     strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0,
-    eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
+    eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, fineCells: sf.fineCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
     land, depth, landD
   }, [land.buffer, depth.buffer, landD.buffer]);
   if (abort === id) return null;
@@ -667,6 +720,9 @@ const onMsg = (ev) => {
   if (m.type !== 'run') return;
   try {
     if (m.bathy && m.bathy.rgb && !(m.bathy.rgb instanceof Uint8Array)) m.bathy.rgb = new Uint8Array(m.bathy.rgb);
+    /* (#R205) the local high-resolution floor arrives as transferred buffers — see seaFloor */
+    if (m.fine && m.fine.d && !(m.fine.d instanceof Uint16Array)) m.fine.d = new Uint16Array(m.fine.d);
+    if (m.fine && m.fine.k && !(m.fine.k instanceof Uint8Array)) m.fine.k = new Uint8Array(m.fine.k);
     const out = run(m);
     if (!out) { post({ id: m.id, type: 'aborted' }); return; }
     if (out.err) { post({ id: m.id, type: 'error', err: out.err }); return; }

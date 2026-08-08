@@ -503,6 +503,11 @@ window.IntMapModules.seismic=function(HOST){
 
     /* ---- state ---------------------------------------------------------------------------------- */
     let epi=null, depthKm=10, mw=7.0, tSec=0, playing=0, panel=null, opened=false, stations=[], picking=false;
+    /* (#R205) what a plain click on the map means while this panel is open — 'epi' (re-place the
+       epicentre, the default and the report) or 'station' (add a row to the table). Declared HERE with
+       the rest of the panel state rather than next to onClick: #R200 lost a whole boot to a `let` that
+       render() could reach before its declaration had been evaluated. */
+    let clickMode='epi';
     const MAXT=2400;
     /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
        TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
@@ -914,8 +919,29 @@ window.IntMapModules.seismic=function(HOST){
            does grow is the three Float32Arrays and the texture: 1,280² is 19.7 MB of field and 6.6 MB
            of RGBA, which is the reason for a ceiling rather than an open formula. Phones keep #R20's
            much lower ceiling for the same reason they always have (the tab, not the wait). */
+        /* ══ (#R205) …AND THE CEILING, WHICH IS WHAT THE CELL ACTUALLY HIT ═════════════════════════
+           「震度分布のメッシュをより高画質に。」— the fourth round in a row, so this one starts with a
+           measurement of the SHIPPED build rather than with a constant. An M8.5 at 140 E / 36 N:
+
+               span 2,771 km · N 1,280 (the ceiling) · cell **2.17 km** · DEM spacing 495 m
+               1,638,400 cells, 144,404 painted, 1,309,165 sea · whole build 13.3 s
+
+           So #R204's CELL_KM = 1.5 never got to decide anything here — N_MAX did, at 1.4× the target,
+           and the DEM feeding the site term is four times finer than the cell it lands in. The ceiling
+           is memory (#R204), so the ceiling moves once the memory per cell comes down: `vs` holds a
+           Vs30 in metres per second, 150…1500 with two sentinels, which is an Int16 and was a Float32.
+           12 → 10 bytes a cell retained, and the ceiling goes to 1,792: the same M8.5 gets a
+           **1.55 km** cell, which is #R204's stated target met rather than described.
+
+               retained  1,280² × 12 B = 19.7 MB  →  1,792² × 10 B = 32.1 MB
+               transient RGBA 6.6 MB → 12.8 MB (freed with the canvas)
+
+           ⚠ THE PHONE MOVES BY LESS AND FOR A DIFFERENT REASON. #R20's ceiling there is the tab, not
+           patience; 640² × 10 B is 4.1 MB, which is nothing, and 640 is where it stops.
+           ⚠ AND THE BUILD IS STILL DEM-BOUND — #R202 measured 2.4× the cells at the same wall clock,
+           and this round re-measured it at the new ceiling rather than assuming it (see DEV-NOTES). */
         const spanKm0=2*halfKm, _mob=(typeof isMobile==='function'&&isMobile());
-        const CELL_KM=1.5, N_MIN=(_mob?288:640), N_MAX=(_mob?512:1280);
+        const CELL_KM=1.5, N_MIN=(_mob?288:640), N_MAX=(_mob?640:1792);
         const N=Math.max(N_MIN,Math.min(N_MAX,Math.round(spanKm0/CELL_KM)));
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
@@ -940,7 +966,10 @@ window.IntMapModules.seismic=function(HOST){
         /* (#R192) …and the JMA level beside the PGV. #R190 stored PGV rather than an intensity so the
            readout could change scale without a rebuild; that argument now needs BOTH quantities,
            because the two scales no longer read the same band of the same motion. */
-        const vs=new Float32Array(N*N), pgvArr=new Float32Array(N*N), a0Arr=new Float32Array(N*N);
+        /* (#R205) `vs` is a Vs30 in m/s (150…1500) with the sentinels 0 (unknown) and −1 (sea):
+           an Int16 holds every one of those exactly, and it is 2 bytes a cell off the retained
+           field — which is what pays for the higher ceiling above. pgv and a₀ stay Float32. */
+        const vs=new Int16Array(N*N), pgvArr=new Float32Array(N*N), a0Arr=new Float32Array(N*N);
         let painted=0, sea=0, noDem=0, coarse=0, beyondCalib=0;
         /* ══ (#R190) A SLOPE MEASURED FINER THAN THE DATA IS NOT A SLOPE ═══════════════════════════
            Wald & Allen's Vs30 proxy is regressed on slope at ~30 arc-seconds (≈900 m), and #R189 asked
@@ -1161,6 +1190,8 @@ window.IntMapModules.seismic=function(HOST){
     const NUM='width:84px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;box-sizing:border-box;';
     const ROW='font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;';
     const BTN='padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;';
+    /* (#R205) the two halves of the map-click switch — the selected one wears the accent */
+    const SEG=(on)=>BTN+'flex:1;'+(on?'background:var(--primary-color);color:#fff;border-color:transparent;font-weight:700;':'');
     /* (#R189) every control that changes the PHYSICS goes through this — redraw, re-report, and
        rebuild the painted field (debounced; the wavefront tick never comes through here).
        (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
@@ -1184,6 +1215,16 @@ window.IntMapModules.seismic=function(HOST){
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         +'<button class="sq-pick" style="'+BTN+'width:100%;background:var(--primary-color);color:#fff;border:none;font-weight:700;">◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')+'</button>'
+        /* (#R205) …and what a PLAIN click on the map does, stated and switchable — see onClick. The
+           ◎ button above stays because it is the one that works on a phone, where this panel covers
+           the map (#R196); this row is for the gesture a hand makes without pressing anything. */
+        +'<div style="display:flex;gap:5px;">'
+          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Move the epicentre','震源地を移動','Epizentrum bewegen','Двигать эпицентр','Mover el epicentro')+'</button>'
+          +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">◇ '+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
+        +'</div>'
+        +'<div style="font-size:10px;color:var(--text-muted);margin-top:-5px;line-height:1.45;">'+(clickMode==='epi'
+          ?L('Clicking the map moves the epicentre.','地図をクリックすると震源地が移動します。','Ein Klick auf die Karte verschiebt das Epizentrum.','Клик по карте перемещает эпицентр.','Al hacer clic en el mapa se mueve el epicentro.')
+          :L('Clicking the map adds a place to the table below.','地図をクリックすると下の表に地点を追加します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu.','Клик по карте добавляет место в таблицу ниже.','Al hacer clic en el mapa se añade un lugar a la tabla.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
           +'<button class="sq-fdraw" style="'+BTN+'flex:1;">'+(_fDrawing
@@ -1254,6 +1295,8 @@ window.IntMapModules.seismic=function(HOST){
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
       panel.querySelector('.sq-pick').onclick=()=>startPick();
+      { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
+        if(a) a.onclick=()=>setClickMode('epi'); if(b) b.onclick=()=>setClickMode('station'); }
       panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
       panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
@@ -1455,7 +1498,11 @@ window.IntMapModules.seismic=function(HOST){
         +'<th style="text-align:right;font-weight:600;">'+L('shaking','継続','Dauer','длит.','durac.')+'</th>'
         +'<th style="text-align:right;font-weight:600;">PGV</th>'
         +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th></tr></thead><tbody>'+rows+'</tbody></table>'
-        +'<div style="margin-top:5px;opacity:0.75;">'+L('Click the map to add a place to this table.','地図をクリックすると地点を追加できます。','Karte klicken, um einen Ort hinzuzufügen.','Кликните по карте, чтобы добавить место.','Haga clic en el mapa para añadir un lugar.')+'</div>';
+        /* (#R205) …and this line no longer claims the click unconditionally: it says so only while the
+           switch at the top of the panel is on 観測地点, and names the switch when it is not. */
+        +'<div style="margin-top:5px;opacity:0.75;">'+(clickMode==='station'
+          ?L('Click the map to add a place to this table.','地図をクリックすると地点を追加できます。','Karte klicken, um einen Ort hinzuzufügen.','Кликните по карте, чтобы добавить место.','Haga clic en el mapa para añadir un lugar.')
+          :L('Switch the map click to “Add a place” to add rows here.','地図クリックを「観測地点を追加」に切り替えると、ここに行を追加できます。','Kartenklick auf „Ort hinzufügen“ stellen, um hier Zeilen zu ergänzen.','Переключите клик по карте на «Добавить место», чтобы добавлять строки.','Cambie el clic del mapa a «Añadir un lugar» para añadir filas aquí.'))+'</div>';
     }
     /* the table: whatever the user clicked, plus the nearest well-known places already in the app */
     function nearby(){
@@ -1490,9 +1537,25 @@ window.IntMapModules.seismic=function(HOST){
       /* no pick module in this build — the original behaviour, unchanged */
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; _epiElev=null; endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
-    function onClick(e){ if(!opened||picking||!epi) return;
-      stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
-      if(stations.length>6) stations.shift(); draw(); }
+    /* ══ (#R205) CLICKING THE MAP MOVES THE EPICENTRE ══════════════════════════════════════════════
+       「地震シミュレータは、別の震源地を選びなおせない。地図に白い丸が出るだけ。」
+
+       REPRODUCED, desktop 1440 × 900: open the simulator at 140 E / 35 N, click the map anywhere
+       outside the panel → `state().epi` unchanged, `state().stations` 0 → 1. The white circle IS the
+       station marker (`seis-sta`, circle-color #ffffff). #R196 fixed the ◎ button — and the button
+       still works, measured in the same run — but the gesture a user actually makes to re-place a
+       point is to click where they want it, and this panel spent that gesture on the OTHER thing it
+       can do with a click. Its own footer even said so: 「地図をクリックすると地点を追加できます」.
+
+       So the click has a stated owner, shown as one segmented row at the top of the panel, and the
+       DEFAULT is the epicentre. The observation-point table is not removed — it is the other half of
+       the same switch, one tap away, and everything that reads `stations` is unchanged. */
+    function setClickMode(v){ clickMode=(v==='station')?'station':'epi'; if(opened) render(); return clickMode; }
+    function onClick(e){ if(!opened||picking) return;
+      if(clickMode==='station'){ if(!epi) return;
+        stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
+        if(stations.length>6) stations.shift(); draw(); report(); return; }
+      epi=[e.lngLat.lng,e.lngLat.lat]; _epiElev=null; refresh(); }
     GE().events.on('click',onClick);
 
     /* A real event, from the USGS feed the app already uses (and already declares in the privacy page). */
@@ -1554,6 +1617,8 @@ window.IntMapModules.seismic=function(HOST){
         const ok=faultSet(ring,faultSlip); if(ok){ if(opened) render(); refresh(); } return ok; },
       clearFault(){ faultClear(); if(opened) render(); refresh(); return true; },
       rebuildField:()=>buildField(),
+      /* (#R205) the map-click owner, callable (the Atlas rule) and readable by the regression test */
+      setClickMode,
       /* (#R190) the field's own value at one point, with the class colour — read by the always-on
          corner readout (js/map-readout.js). Returns null when the simulator is closed, the field has
          not been computed, or the point is outside it: a readout that guesses is worse than none. */
@@ -1573,7 +1638,7 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R190) 「津波…も使えるように」 — the screening result and the hand-off, both callable */
       tsunami:()=>tsunamiCase(),
       openTsunami,
-      state:()=>({ open:opened, epi:epi?epi.slice():null, depthKm, mw, tSec, speed, scale, stressDropMPa, siteId, siteAmp:siteAmp(),
+      state:()=>({ open:opened, epi:epi?epi.slice():null, clickMode, depthKm, mw, tSec, speed, scale, stressDropMPa, siteId, siteAmp:siteAmp(),
         Q0:QS0, Qeta:QETA, opacity:fldOpacity, fieldStale:fldStale, fieldPct:fldPct,   /* (#R190) */
         tsunami:(()=>{ const t=tsunamiCase(); return t?{waveM:t.waveM,mw:+t.M.toFixed(2)}:null; })(),
         fault:fault?{ areaKm2:Math.round(fault.areaKm2), slipM:fault.slipM, mw:+fault.mw.toFixed(2), points:fault.ring.length }:null,

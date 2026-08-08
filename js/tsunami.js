@@ -80,8 +80,17 @@ window.IntMapModules.tsunami=function(HOST){
   /* ⚠ (#R197) TWO FEWER THINGS BORROWED FROM THE SHELL. `warmDEMTiles` and `demSnapshot` were this
      module's link to the DEM tile pyramid, and the global model does not use tiles at all — the sea
      floor is data/bathymetry.png (js/bathymetry.js). What is left from HOST is the drag helper and
-     the mobile test, neither of which is about the Earth. */
+     the mobile test, neither of which is about the Earth.
+     ⚠ (#R205) …AND THEY ARE BACK, BECAUSE THE SOURCE REGION IS EXACTLY WHERE TILES ARE WORTH IT.
+     `fineFloor()` reads a local patch of the terrarium DEM around the epicentre — a few dozen tiles
+     over ±6°, not the ninety a whole ocean would need, which is the measurement #R197 was reacting
+     to. They are taken from HOST rather than referenced freely: the first version of this used the
+     bare names and `typeof warmDEMTiles!=='function'` was TRUE on every run, so the patch was
+     silently never built (measured: `fineCells: 0` on a Japan Trench M8.6). That is #R194's own
+     finding — an inherited free reference fails closed and says nothing — and the reason
+     scripts/check-split-scope.mjs exists. */
   const isMobile=HOST.isMobile;
+  const warmDEMTiles=HOST.warmDEMTiles, demSnapshot=HOST.demSnapshot;
 
   window.IntMapTsunami=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
@@ -186,6 +195,74 @@ window.IntMapModules.tsunami=function(HOST){
        byte budget buys far more detail: dec 3 gives 1440 × 80, which is 4 px a degree in both
        directions (twice the global picture) at 115 KB a frame against the global run's 230 KB. */
     function nearDec(){ return (typeof isMobile==='function'&&isMobile())?4:3; }
+    /* ══ (#R205) THE SEA FLOOR AROUND THE SOURCE, MEASURED RATHER THAN AVERAGED ═══════════════════
+       「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
+
+       #R204 answered this with a finer GRID and said in the same note that the floor under it was
+       still the bundled 0.25° image — so nine of its 9.3 km cells shared one 27.8 km depth, and the
+       coast the wave shoals on was a 27.8 km staircase. This is the other half: a local patch of the
+       terrarium DEM (the same source data/bathymetry.png was built from, four zoom levels deeper)
+       around the epicentre, at 1/48° ≈ 2.3 km — twelve times the linear resolution of the bundled
+       floor and finer than the model grid in BOTH scopes, so the wet/dry fraction and the mean depth
+       of a model cell become averages over ~16 (near) or ~144 (global) real samples instead of a
+       single shared number.
+
+       ⚠ IT COSTS ~25 TILES, ONCE. z7 terrarium is 1.2 km a sample at the equator; a ±6° box is about
+       5 × 5 of them and they are the same tiles the earthquake panel has already warmed around the
+       same epicentre (js/seismic.js warmEpi). Everything outside the box keeps the bundled floor, so
+       there is nothing to fall back FROM if the network is unavailable — the patch is simply absent
+       and the run is #R204's run exactly.
+       ⚠ IT IS THE SOURCE REGION, NOT THE COASTLINE OF THE FAR FIELD. What this fixes is where the
+       wave is MADE and its first hour of shoaling. A Chilean source's Japanese landfall is still on
+       the 0.25° floor; that needs a finer bundled image, and it stays written down as the next step. */
+    /* ⚠ MEASURED, AND THE FIRST CHOICE WAS TOO GREEDY. z7 over ±6° is ~25 terrarium tiles, and the
+       run that needs them starts while the EARTHQUAKE panel is still pulling its own field's DEM at
+       z8 — six connections to one host, hundreds queued. Measured on a Japan Trench M8.6:
+       `demSnapshot` came back **1 of 64** tiles after 9 s, so the patch answered for 14,445 of
+       331,776 samples and was discarded whole. z6 is a quarter of the tiles at 2.45 km a sample —
+       still eleven times the bundled floor's 27.8 km, and it matches the 1/48° patch cell. */
+    const FINE_BOX_DEG=6, FINE_CPD=48, FINE_Z=6, FINE_WARM_MS=12000, FINE_MIN_FRAC=0.15;
+    let fineCache=null;                        /* keyed on the epicentre — a re-run at the same source is free */
+    /* ⚠ WHY IT IS ABSENT, WHEN IT IS. #R194's rule: an inherited capability that is quietly missing
+       looks exactly like a capability that decided not to act. This says which. */
+    let fineWhy=null;
+    async function fineFloor(my){
+      fineWhy=null;
+      if(!epi){ fineWhy='noepi'; return null; }
+      if(typeof warmDEMTiles!=='function'||typeof demSnapshot!=='function'){ fineWhy='nodem-api'; return null; }
+      const key=epi[0].toFixed(3)+'/'+epi[1].toFixed(3);
+      if(fineCache&&fineCache.key===key) return fineCache.patch;
+      const la=Math.max(-80,Math.min(80,epi[1]));
+      const lat0=Math.max(-80,la-FINE_BOX_DEG), lat1=Math.min(80,la+FINE_BOX_DEG);
+      const lng0=epi[0]-FINE_BOX_DEG, lng1=epi[0]+FINE_BOX_DEG;
+      if(!(lat1>lat0)){ fineWhy='band'; return null; }
+      const pts=[]; for(let j=0;j<=8;j++) for(let i=0;i<=8;i++) pts.push([wrapLng(lng0+(lng1-lng0)*i/8), lat0+(lat1-lat0)*j/8]);
+      try{ await warmDEMTiles(pts,FINE_Z,FINE_WARM_MS,null); }catch(e){ fineWhy='warm:'+String(e&&e.message||e).slice(0,40); return null; }
+      if(my!==seq){ fineWhy='superseded'; return null; }
+      let snap=null; try{ snap=demSnapshot(wrapLng(lng0),lat0,wrapLng(lng1),lat1,FINE_Z); }catch(e){ fineWhy='snap:'+String(e&&e.message||e).slice(0,40); return null; }
+      if(!snap||!snap.have){ fineWhy='snap-empty:'+(snap?(snap.have+'/'+snap.want):'null'); return null; }
+      const w=Math.max(2,Math.round((lng1-lng0)*FINE_CPD)), h=Math.max(2,Math.round((lat1-lat0)*FINE_CPD));
+      const d=new Uint16Array(w*h), k=new Uint8Array(w*h);
+      let known=0, sea=0;
+      for(let j=0;j<h;j++){
+        const lat=lat1-(j+0.5)*(lat1-lat0)/h;    /* rows count SOUTH from lat1, like the bundled image */
+        for(let i=0;i<w;i++){
+          const lng=wrapLng(lng0+(i+0.5)*(lng1-lng0)/w);
+          let e=null; try{ e=snap.at(lng,lat); }catch(_){ e=null; }
+          if(e==null) continue;
+          const o=j*w+i; k[o]=1; known++;
+          if(e<0){ d[o]=Math.min(65535,Math.round(-e)); sea++; }
+        }
+      }
+      /* a patch that answered for almost nothing is not a patch — do not let it decide any cell */
+      /* ⚠ PARTIAL IS FINE, EMPTY IS NOT. The worker decides per CELL (it needs four answered samples
+         inside one), so a patch that covers part of the box refines that part and leaves the rest
+         on the bundled floor. What is worth refusing is a patch so sparse that it is noise. */
+      if(known < w*h*FINE_MIN_FRAC){ fineWhy='sparse:'+known+'/'+(w*h)+' (dem '+snap.have+'/'+snap.want+')'; fineCache={ key, patch:null }; return null; }
+      const patch={ w, h, lat0, lat1, lng0, lng1, d, k, known, sea, z:FINE_Z, cpd:FINE_CPD };
+      fineCache={ key, patch };
+      return patch;
+    }
     /* the run lengths this scope offers, and the one that is actually in force — the near band's
        walls are its horizon, so a 24 h selection made in the global scope is clamped rather than
        silently solved past the point where the sponge is eating the answer. */
@@ -243,6 +320,7 @@ window.IntMapModules.tsunami=function(HOST){
           sim.land=new Uint8Array(m.land); sim.landD=new Uint8Array(m.landD); sim.depth=new Int16Array(m.depth);
           sim.dt=m.dt; sim.steps=m.steps; sim.total=m.total; sim.nFrames=m.nFrames; sim.cellKm=m.cellKm;
           sim.strike=m.strike; sim.dipDeg=m.dipDeg; sim.seaCells=m.seaCells; sim.hMax=m.hMax; sim.cMax=m.cMax;
+          sim.fineCells=m.fineCells|0;   /* (#R205) how many cells took the measured floor */
           sim.fault={ L:m.faultL, W:m.faultW, slip:m.slip, M0:m.M0, mw };
           sim.eta0Up=m.eta0Up; sim.eta0Down=m.eta0Down;
           installPaint();
@@ -257,8 +335,15 @@ window.IntMapModules.tsunami=function(HOST){
         };
         const onProg=(p)=>{ if(my!==seq) return; pct=Math.max(pct,Math.round(p)); if(opened) render(); };
 
+        /* (#R205) the measured floor around the source, when the DEM can be had — see fineFloor */
+        let fine=null;
+        try{ fine=await fineFloor(my); }catch(_){ fine=null; }
+        if(my!==seq) return;
+        pct=Math.max(pct,10); render();
         const job=W.run({ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec,
                           bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm },
+                          fine:fine?{ w:fine.w, h:fine.h, lat0:fine.lat0, lat1:fine.lat1, lng0:fine.lng0, lng1:fine.lng1,
+                                      d:fine.d.slice(), k:fine.k.slice() }:null,
                           hours:H, frames:wantFrames(), filtLat:60 }, onFrames, onProg, onModel);
         if(!job){ lastErr='noworker'; busy=false; sim=null; render(); return; }
         jobId=job.id;
@@ -779,6 +864,11 @@ window.IntMapModules.tsunami=function(HOST){
           +' · '+((sim.solveMs||0)/1000).toFixed(1)+' s<br>'
           +L('Peak coastal height (Green’s law)','沿岸最大波高（グリーンの法則）','Küstenhöhe (Green)','Высота у берега (Грин)','Altura costera (Green)')
           +' ~'+(sim.coastMax||0).toFixed(1)+' m'
+          /* (#R205) the source region's floor: how many cells took the measured DEM instead of the
+             bundled 0.25° image, and at what sample spacing — see fineFloor. Absent means absent. */
+          +(sim.fineCells?('<br>'+L('Sea floor near the source','震源付近の海底地形','Meeresboden nahe der Quelle','Дно вблизи очага','Fondo cerca del origen')
+              +' '+sim.fineCells.toLocaleString()+' '+L('cells at','セルを','Zellen bei','ячеек','celdas a')+' '
+              +(111.32/FINE_CPD).toFixed(1)+' km ('+L('measured DEM','実測DEM','gemessenes DEM','измеренный DEM','DEM medido')+')'):'')
           +'</div>';
       }
       body+='<div style="font-size:10px;color:var(--text-muted);line-height:1.45;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
@@ -923,6 +1013,7 @@ window.IntMapModules.tsunami=function(HOST){
           strike:Math.round(sim.strike||0), dipDeg:sim.dipDeg, slipM:sim.fault?+sim.fault.slip.toFixed(1):null,
           faultKm:sim.fault?[Math.round(sim.fault.L/1000),Math.round(sim.fault.W/1000)]:null,
           coastMaxM:+(sim.coastMax||0).toFixed(2), coastAt:sim.coastAt, seaCells:sim.seaCells,
+          fineCells:sim.fineCells||0, fineCellKm:+(111.32/FINE_CPD).toFixed(2), fineWhy,   /* (#R205) */
           ampM:sim.amp, autoAmpM:sim.autoAmp||null, solveMs:sim.solveMs||null, ms:sim.ms }:null }) };
   })();
 };

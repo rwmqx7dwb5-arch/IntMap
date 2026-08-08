@@ -59,5 +59,6 @@
  "solo": [
   "-cesium.*.spec.js$"
  ],
- "tests/r204.spec.js": 49
+ "tests/r204.spec.js": 49,
+ "tests/r205.spec.js": 12
 }

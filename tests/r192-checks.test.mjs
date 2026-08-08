@@ -146,7 +146,16 @@ test('R192 tsunami: linear long waves over the real sea floor, from an Okada sou
      longitude is periodic, so there is no seam to work around — the assertion that replaced the old
      one is that the wrap exists at all. */
   assert.match(w, /const ip = \(i \+ 1 === nx\) \? 0 : i \+ 1;/, 'the last column\'s eastern neighbour is the first');
-  assert.doesNotMatch(s, /demSnapshot\(/, 'and no DEM snapshot is taken at all any more');
+  /* ⚠ (#R205) "no demSnapshot at all" was a PROXY for "no seam to work around", and #R205 takes a
+     snapshot again — for a local high-resolution floor around the epicentre, which is a refinement of
+     a floor that is already complete. The seam invariant is the wrap asserted on the line above; what
+     this line now asserts is that any snapshot taken here is WRAPPED rather than clamped, which is the
+     thing #R192's two-snapshot workaround existed for. */
+  if (/demSnapshot\(/.test(s)) {
+    assert.match(s, /demSnapshot\(wrapLng\(lng0\),lat0,wrapLng\(lng1\),lat1,FINE_Z\)/,
+      'a snapshot taken here reads wrapped longitudes, not clamped ones');
+    assert.match(s, /const lng=wrapLng\(lng0\+\(i\+0\.5\)\*\(lng1-lng0\)\/w\);/, 'and so does every sample it takes');
+  }
   /* Green's law only where the linear solution it shoals is still valid — same rule; #R193 keeps the
      depth on this thread as Int16 metres because h itself is transferred to the worker */
   assert.match(s, /const d=sim\.depth\[k\];/, 'the coastal estimate reads the depth it kept');

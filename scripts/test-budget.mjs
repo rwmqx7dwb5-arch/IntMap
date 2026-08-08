@@ -68,7 +68,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ The gate cannot be emptied to pass BUDGET_S either: scripts/tiers.mjs keeps the four always-on
    suites and the current round's own spec in core by construction, whatever they cost.
    5,250 is exactly #R203's two ceilings added together — this round created no headroom at all. */
-const BUDGET_S = 180;                   /* core: 3.0 min — measured 173 s over 17 files */
+const BUDGET_S = 96;                    /* core: 1.6 min — measured 87 s over 11 files (#R205) */
 const TOTAL_BUDGET_S = 5250;            /* whole suite: 87.5 min — measured 5,183 (unchanged by this round) */
 const HISTORY = [
   ['#R197', 5200, 'the viewpoint sweep merged out of r172/r173/r176/r177/r178 into r179 (−21.4 min), and nine specs that were CHARGED p75 were measured instead (−11.7 min of pure fiction)'],
@@ -89,6 +89,7 @@ const HISTORY = [
      been measured HERE is not a number to write into a table CI schedules from. */
   ['#R201', 5150, 'eight specs stopped booting the app twice to choose a renderer (−56 s, measured per boot), and the space-button test went with the button (−34 s), which paid for tests/r201.spec.js (+45 s)'],
   ['#R203', 500, 'the ceiling stopped governing "the suite" and started governing THE TIER THAT RUNS EVERY TIME: 5,123 s of measured serial time split into a 424 s gate (29 files) and a 4,699 s nightly (27 files) — see scripts/tiers.mjs. Nothing was deleted; what changed is what stands between an edit and a push'],
+  ['#R205', 96, "the price came down (scripts/tiers.mjs: CORE_MAX_S 10 → 6 s), which took six legacy per-round specs out of the gate, and #R204's own 49 s spec demoted itself when this round's arrived. Gate 17 files/173 s → 11 files/87 s. Separately, `npm test` now runs its source half and its browser half AT THE SAME TIME (scripts/test-parallel.mjs) — that is wall clock, not serial time, so it does not appear in this table"],
   ['#R204', 180, 'membership of the gate became a PRICE rather than a list (scripts/tiers.mjs: CORE_MAX_S = 10 s), because #R203 left CORE as the DEFAULT and 281 s of its 484 s sat in nine per-round regression files nobody had looked at. The gate is 17 files; the second ceiling is now the TOTAL, which this round did not move'],
 ];
 

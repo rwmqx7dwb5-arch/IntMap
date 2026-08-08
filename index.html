@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R205';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-09-R204';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-10-R205';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -194,7 +194,21 @@ window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that 
 
   <meta property="og:type" content="website">
 
-  <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
+  <!-- ══ (#R205) THE SAVED THEME DECIDES THE FIRST FRAME, NOT ONLY THE OS ═══════════════════════════
+       「ライトモード時に表示する読み込み画面でのロゴはIntMap.Icon_BW-inverted.pngに。」
+
+       The launch screen is painted before any module runs (see the note above #boot-splash), so which
+       logo it shows has to be decided by CSS, and the only thing CSS can branch on this early is this
+       attribute. It was set from `prefers-color-scheme` ALONE — so a user who had chosen Light in the
+       app on a dark-mode OS booted into `data-theme="dark"` and got the dark launch screen until
+       js/theme-sky.js re-applied the real theme some seconds later. Reading the same saved setting
+       applyTheme reads (intmap_settings.theme, with #R33's retired skin names coerced to auto) makes
+       the first frame the right one; the module that runs later now agrees with it instead of
+       correcting it. -->
+  <script>(function(){var t='auto';
+    try{ var s=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(s&&s.theme) t=s.theme; }catch(e){}
+    if(t!=='light'&&t!=='dark') t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    document.documentElement.setAttribute('data-theme',t);})();</script>
   <!-- (#R162) The stylesheet moved out of this file into css/intmap.css (verbatim, same order and
        cascade). Nothing in the app reads document.styleSheets/cssRules, so this is behaviourally
        identical — and it keeps ~230 KB of CSS out of index.html (standing rule 13). -->
@@ -223,7 +237,9 @@ window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that 
      what #R186 asked for and #R190 fixed, and the black map is chased where it actually lives. -->
 <div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
   <div class="boot-inner">
-    <div class="boot-icon"><img src="IntMap.Icon.png" alt="IntMap" width="124" height="124" decoding="async" fetchpriority="high"></div>
+    <!-- (#R205) the mark is a BACKGROUND, not an <img>, so that only the one the theme actually uses is
+         fetched: two <img> tags would pull 331 KB at boot to show 118 KB of it (see css/intmap.css). -->
+    <div class="boot-icon" role="img" aria-label="IntMap"></div>
     <div class="boot-bar"><i id="boot-bar-fill"></i></div>
     <div class="boot-note" id="boot-note"></div>
   </div>

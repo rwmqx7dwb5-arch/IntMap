@@ -450,12 +450,23 @@ window.IntMapModules.toolPanel=function(HOST){
 
      The heading style (`.ctx-head`) is the one the coordinate line has always used, so this needed
      no CSS. `--sheet-cover` clamping and the scroll cap below already handle a menu taller than the
-     visible map, which four extra heading rows make slightly more likely on a phone. */
+     visible map, which four extra heading rows make slightly more likely on a phone.
+
+     ══ (#R205) …AND THAT WAS NOT 整理, IT WAS SORTING ══════════════════════════════════════════════
+     Reported again, word for word, with the verdict on the round above: 「いや分類しただけで整理とか
+     あほか」. Fair — #R204 made twenty rows out of fifteen. The four headings are now BUTTONS: each
+     one owns the entries beneath it, every section starts closed, and opening one closes the others.
+     The open menu is the coordinate plus four rows. Nothing is removed, nothing is renamed, and the
+     `items` array below is byte-for-byte the same list it was — only how it is rendered changed.
+     ⚠ the coordinate is its own row (`coord`) rather than being welded to the first heading: it is a
+     FACT about the click, not a group you can open, and it has to stay visible when everything is
+     collapsed. */
   function showContextMenu(point,lngLat){
     const m=document.getElementById('ctx-menu'); const mc=document.getElementById('map-container').getBoundingClientRect();
     const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
     const items=[
-      {h:`${HOST.t('ctxThisPoint')}: ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
+      {coord:`${HOST.t('ctxThisPoint')}: ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`},
+      {h:HOST.t('ctxThisPoint'),head:true},
       {label:`${L('Ask Atlas about here','ここをAtlasに聞く','Atlas zu diesem Ort fragen','Спросить Atlas об этом месте','Preguntar a Atlas sobre aquí')}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
       {label:`🧍 ${L('Street View here','ここのストリートビュー','Street View hier','Просмотр улиц здесь','Street View aquí')}`, action:()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
       {label:`📍 ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
@@ -484,23 +495,47 @@ window.IntMapModules.toolPanel=function(HOST){
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
     ];
-    /* ⚠ the button's index is its position in `items`, taken from the map's own index — `indexOf`
+    /* ══ (#R205) THE HEADINGS BECAME THE MENU ═══════════════════════════════════════════════════════
+       Each `head` opens a section that holds the entries after it; every section starts CLOSED and
+       only one is open at a time, so the popup is the coordinate + four rows (+ the pin row when
+       there are pins) instead of twenty. `items` and its indices are untouched — the button's
+       `data-act` is still its position in that array, for the reason in the ⚠ below — so nothing
+       about what the menu DOES changed.
+       ⚠ the button's index is its position in `items`, taken from the map's own index — `indexOf`
        returns the FIRST equal element, which two identically-labelled entries would collide on. */
-    m.innerHTML=items.map((it,i)=>{
-      if(it.divider) return `<div class="ctx-divider"></div>`;
-      if(it.head) return `<div class="ctx-head">${it.h}</div>`;
-      return `<button data-act="${i}">${it.label}</button>`;
-    }).join('');
+    let html='', open=false, gi=0;
+    items.forEach((it,i)=>{
+      if(it.coord){ html+=`<div class="ctx-coord">${IntMapSafe.html(it.coord)}</div>`; return; }
+      if(it.head){ if(open) html+='</div>'; gi++; open=true;
+        html+=`<button class="ctx-grp" data-grp="${gi}" aria-expanded="false"><span>${IntMapSafe.html(it.h)}</span><span class="ctx-chev">▶</span></button>`
+             +`<div class="ctx-sec" data-sec="${gi}" hidden>`; return; }
+      if(it.divider){ if(open){ html+='</div>'; open=false; } html+=`<div class="ctx-divider"></div>`; return; }
+      html+=`<button data-act="${i}">${it.label}</button>`;
+    });
+    if(open) html+='</div>';
+    m.innerHTML=html;
     m.querySelectorAll('button[data-act]').forEach(b=>{ b.onclick=()=>{ const i=+b.getAttribute('data-act'); items[i].action(); m.style.display='none'; }; });
+    m.querySelectorAll('.ctx-grp').forEach(b=>{ b.onclick=()=>{
+      const g=b.getAttribute('data-grp'), sec=m.querySelector(`.ctx-sec[data-sec="${g}"]`), was=b.getAttribute('aria-expanded')==='true';
+      m.querySelectorAll('.ctx-grp').forEach(o=>o.setAttribute('aria-expanded','false'));
+      m.querySelectorAll('.ctx-sec').forEach(o=>{ o.hidden=true; });
+      if(!was){ b.setAttribute('aria-expanded','true'); if(sec) sec.hidden=false; }
+      /* re-clamp: the menu just changed height and may now hang off the bottom */
+      try{ place(); }catch(_){}
+    }; });
     m.style.display='block';
+    place();
     /* (#R17) On mobile the bottom sheet covers the lower map; clamp the menu into the VISIBLE area above it
-       (and cap its height so a long menu scrolls) — it was overflowing behind the sheet / off-screen. */
-    let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; const isM=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; if(isM&&cover>0){ availBottom=mc.height-cover-8; m.style.maxHeight=Math.max(160,availBottom-56)+'px'; m.style.overflowY='auto'; } else { m.style.maxHeight=''; m.style.overflowY=''; } }catch(_){}
-    const rect=m.getBoundingClientRect();
-    let x=point.x, y=point.y;
-    if(x+rect.width>mc.width) x=mc.width-rect.width-8;
-    if(y+rect.height>availBottom) y=availBottom-rect.height-8;
-    m.style.left=Math.max(8,x)+'px'; m.style.top=Math.max(8,y)+'px';
+       (and cap its height so a long menu scrolls) — it was overflowing behind the sheet / off-screen.
+       (#R205) …and it is a function now, because expanding a section changes the height after the fact. */
+    function place(){
+      let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; const isM=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; if(isM&&cover>0){ availBottom=mc.height-cover-8; m.style.maxHeight=Math.max(160,availBottom-56)+'px'; m.style.overflowY='auto'; } else { m.style.maxHeight=''; m.style.overflowY=''; } }catch(_){}
+      const rect=m.getBoundingClientRect();
+      let x=point.x, y=point.y;
+      if(x+rect.width>mc.width) x=mc.width-rect.width-8;
+      if(y+rect.height>availBottom) y=availBottom-rect.height-8;
+      m.style.left=Math.max(8,x)+'px'; m.style.top=Math.max(8,y)+'px';
+    }
   }
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */

@@ -178,11 +178,24 @@ test('R197 ②c the global model: one grid, every device, and a sea floor with n
   const tsu = rd('js/tsunami.js');
   assert.match(tsu, /const NX=1440, NY=640, LAT0=-80, LAT1=80;/, 'the domain is fixed and global');
   assert.doesNotMatch(tsu, /halfLng|reachKm/, 'nothing sizes a box from the run length any more');
-  /* the two HOST bindings that were this module's link to the DEM tile pyramid are gone — the check
-     is on the BINDING, not on the word, because the comment that records the removal names them */
-  assert.doesNotMatch(tsu, /HOST\.warmDEMTiles|HOST\.demSnapshot/, 'no DEM tiles are fetched for it');
-  assert.doesNotMatch(tsu, /await warmDEMTiles|=\s*demSnapshot\(/, 'and nothing calls them');
+  /* ⚠ (#R205) THIS PIN SAID "NO DEM TILES", AND THE INVARIANT IS NARROWER THAN THAT. What #R197
+     established, and what still has to hold, is that THE MODEL'S FLOOR CANNOT HAVE HOLES: it does not
+     depend on ninety DEM tiles arriving, because the bundled 0.25° image answers for every cell.
+     #R205 adds a LOCAL patch of measured DEM around the epicentre, which refines cells the bundled
+     image already answered for and is simply absent when the tiles do not arrive — so the property
+     #R197 cared about is unchanged, and the property this test asserted (the word does not appear)
+     was a proxy for it. The proxy is replaced by the thing itself. */
   assert.match(tsu, /const B=window\.IntMapBathymetry;/, 'the sea floor is the bundled one');
+  assert.match(tsu, /if\(!B\)\{ lastErr='nobathy'/, 'and without it the run refuses rather than guessing');
+  assert.match(tsu, /bathy:B\.slice\(\)/, 'every run is handed the bundled floor');
+  /* any DEM use must be a REFINEMENT that fails soft: caught, nullable, and never a precondition */
+  if (/warmDEMTiles/.test(tsu)) {
+    assert.match(tsu, /try\{ fine=await fineFloor\(my\); \}catch\(_\)\{ fine=null; \}/,
+      'a DEM patch that fails must leave the run exactly as it was');
+    assert.match(tsu, /fine:fine\?\{/, 'and it is passed as an optional extra, not as the floor');
+    const worker = rd('src/tsunami-worker.js');
+    assert.match(worker, /if \(frac == null\) \{/, 'the worker falls back to the bundled floor per cell');
+  }
   /* the manifest the loader and the builder both agree on */
   const man = JSON.parse(rd('data/bathymetry.json'));
   assert.equal(man.width, 1440); assert.equal(man.height, 720);
