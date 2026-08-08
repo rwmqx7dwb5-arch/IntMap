@@ -187,7 +187,23 @@ window.IntMapModules.landCover=function(HOST){
            was silently wrong under the other renderer: js/cesium-layers.js `fontOf()` takes spec[0] of
            an array, which was the string 'literal', so this layer asked Cesium for a font family
            called "literal". Every other symbol layer in the app writes the plain form. */
-        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':window.IntMapLabelScale.sub(1),'text-font':['Noto Sans Bold'],'text-letter-spacing':0.06,'text-padding':3},paint:{'text-color':'#ffe2d8','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':2}});
+        /* ══ (#R205) THE NAME IS NOT TRANSPARENT ════════════════════════════════════════════════════
+           「プレート境界レイヤーのプレート名は透過するな」 — two separate transparencies, both measured
+           on the running app:
+
+             text-opacity  0.3   ← NOT set here. #R20's 「プレートは30%から」 slider default reaches this
+                                   layer through window._applyGenericOpacity, which dims a symbol
+                                   layer's text along with the fill it was meant for. The layer now
+                                   declares itself in `_opacityOpaqueText` (see js/data-layers.js), so
+                                   the slider still governs the polygon and the line and the NAME
+                                   stays at 1 — including when the user drags the slider afterwards.
+             halo          0.85   ← the outline the glyph stands on let the map through by 15 %, so the
+                                   coastline under a name showed inside its own outline.
+
+           `text-opacity` is stated here as well, so the layer is opaque from the first frame rather
+           than only after the opacity registry has run. */
+        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':window.IntMapLabelScale.sub(1),'text-font':['Noto Sans Bold'],'text-letter-spacing':0.06,'text-padding':3},paint:{'text-color':'#ffe2d8','text-halo-color':'rgba(0,0,0,1)','text-halo-width':2,'text-opacity':1}});
+        try{ (window._opacityOpaqueText=window._opacityOpaqueText||{})['eco-plates-lbl']=true; }catch(_){}
         /* ⚠ …AND IT IS CLICKABLE, WHICH THE LABEL ALONE IS NOT ENOUGH FOR. 「また、クリック可能に。」
            A symbol layer answers a click only where a glyph actually is; the plate is the whole
            polygon, so both layers are wired and the popup is the same one either way. */

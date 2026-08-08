@@ -252,9 +252,67 @@ window.IntMapModules.satProto=function(HOST){
       if(!_satWorker()) return null;
       return window.IntMapSatWorker.tile(z,y,x,hi,signal);
     }
+    /* ══ (#R205) THE LEVELS A ZOOM PASSES THROUGH ARE NOT LEVELS ANYONE LOOKS AT ═══════════════════
+       「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
+       「地図のホバー、ズームのfpsを劇的に高くしろ」
+
+       #R202 and #R203 both ended at the same wall and both wrote down the same next move: the profile
+       is native (decode + texture upload), our own arithmetic is under 8 % of it, and 「残る手は画像
+       パイプライン側 — 中間ズームレベルを要求しない／移動中は親タイルの切り抜き」. Neither round did it.
+       This is it.
+
+       A wheel sweep from z8 to z14 is not one screenful of imagery, it is SIX. MapLibre asks for the
+       covering tiles at every integer zoom it crosses, and on a HiDPI screen each of those tiles is
+       four Esri fetches plus a 512² composite (see _sat2x). Every one of those levels is on screen
+       for a few tens of milliseconds and then replaced — which is both the cost AND the 点滅: a
+       checkerboard of levels arriving out of order over a moving picture.
+
+       So while the ZOOM is changing, a tile request waits instead of fetching. MapLibre's own tile
+       bookkeeping then does the selecting for us: when the camera leaves a level, it aborts the
+       requests for it (`abortTile` → `signal.aborted`, and the tile goes to 'unloaded', not
+       'errored'), and what is left waiting when the gesture stops is exactly the level the user
+       stopped on. Nothing is dropped that would have been kept; the parent stays on screen through
+       `raster-fade-duration` the whole time, which is the ancestor crop the notes asked for, at zero
+       cost, because MapLibre already draws it.
+
+       ⚠ ZOOM, NOT MOVEMENT. During a pan every requested tile is at the final zoom and will be
+       wanted, so holding those would be a pure delay — 「爆速」 is the other half of this instruction.
+       ⚠ AND THE WAIT HAS A CEILING. A continuous pinch that never settles must still show imagery, so
+       the hold gives up after MAX_HOLD and fetches anyway.
+       ⚠ LOW ZOOMS ARE NEVER HELD: z≤6 is a handful of tiles, they are shared by every view, and they
+       are what the picture falls back to. */
+    const _SAT_SETTLE=140, _SAT_MAX_HOLD=1100, _SAT_HOLD_MINZ=7;
+    let _satZooming=false, _satZoomT=0, _satZoomWired=false, _satGateOn=true;
+    /* ⚠ counted, because the thing this change removes is WORK, and work is not visible in a frame
+       rate: the fetches happen inside src/sat-worker.js, so the page's own PerformanceResourceTiming
+       shows nothing at all (measured: 0 entries for arcgisonline during a full sweep). */
+    const _satStat={ req:0, held:0, dropped:0, resolved:0 };
+    function _satWireZoom(){
+      if(_satZoomWired) return; _satZoomWired=true;
+      try{ const E=GE().events;
+        E.on('zoomstart',()=>{ _satZooming=true; clearTimeout(_satZoomT); });
+        E.on('zoomend',()=>{ clearTimeout(_satZoomT); _satZoomT=setTimeout(()=>{ _satZooming=false; },_SAT_SETTLE); });
+      }catch(_){ _satZoomWired=false; }
+    }
+    function _satZoomHold(z,signal){
+      if(!_satGateOn||!_satZooming||z<_SAT_HOLD_MINZ) return null;
+      _satStat.held++;
+      return new Promise((resolve,reject)=>{
+        const t0=Date.now();
+        const tick=()=>{
+          if(signal&&signal.aborted){ _satStat.dropped++; const e=new Error('aborted'); e.name='AbortError'; reject(e); return; }
+          if(!_satZooming||Date.now()-t0>=_SAT_MAX_HOLD){ resolve(); return; }
+          setTimeout(tick,60);
+        };
+        tick();
+      });
+    }
     GE().scene.addProtocol('imapsat', async (params, abortController)=>{
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
+      _satWireZoom(); _satStat.req++;
+      const hold=_satZoomHold(z,signal); if(hold) await hold;
+      _satStat.resolved++;
       const via=_satViaWorker(z,y,x,_satHiDPI,signal);
       if(via){ try{ const r=await via; if(r&&r.data) return {data:r.data}; }catch(_){ /* fall through to the thread */ } }
       try{ const hi=await _sat2x(z,y,x,signal); if(hi) return {data:hi}; }catch(_){}
@@ -284,6 +342,15 @@ window.IntMapModules.satProto=function(HOST){
       wouldStitch:(z,x,y)=>{ if(!_satHiDPI||(z|0)>=19) return false;
         const st=_satKnownStop(z|0,x|0,y|0); return !(st!=null&&(z|0)+1>st); },
       depthEntries:()=>_satDepth.size,
+      /* (#R205) the zoom gate, so a test can prove that a held request is released by the settle and
+         cancelled by MapLibre's own abort rather than inferring it from a network count */
+      zoomGate:()=>({ on:_satGateOn, zooming:_satZooming, wired:_satZoomWired, settleMs:_SAT_SETTLE, maxHoldMs:_SAT_MAX_HOLD, minZoom:_SAT_HOLD_MINZ,
+        req:_satStat.req, held:_satStat.held, dropped:_satStat.dropped, resolved:_satStat.resolved }),
+      resetZoomStats:()=>{ _satStat.req=0; _satStat.held=0; _satStat.dropped=0; _satStat.resolved=0; return true; },
+      /* ⚠ the OFF switch exists so the A/B can be run inside ONE build — #R203 recorded two levers
+         that measured WORSE than the shipped setting, and the only reason that is known is that both
+         were measured against the same binary rather than against a memory of a number. */
+      setZoomGate:(v)=>{ _satGateOn=!!v; return _satGateOn; },
       /* (#R192) whether the pipeline is running off the main thread, and the same 2× tile asked for
          through whichever path is live — a test that wants the stitched pixels should not have to
          know which thread produced them. */

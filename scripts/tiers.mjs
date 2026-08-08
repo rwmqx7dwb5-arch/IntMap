@@ -79,8 +79,29 @@ export function allSpecs() {
    files #R203 left in core split cleanly at that figure — 17 of them cost 1–9 s and together come to
    124 s, while the other 13 cost 12–60 s and come to 360 s. The gate keeps the broad, cheap coverage
    and gives up the expensive per-round regression files, which lose nothing but their position in
-   front of a push. Lower it when a round can; raising it is how the gate grows back. */
-export const CORE_MAX_S = 10;
+   front of a push. Lower it when a round can; raising it is how the gate grows back.
+
+   ══ (#R205) LOWERED TO SIX ═══════════════════════════════════════════════════════════════════
+   Reported again. Measured before touching anything: the gate is 173 s over 17 files, and where it
+   sits says what to do — **49 s of it is `r204.spec.js` alone**, and six legacy per-round specs
+   (r143 / r150 / r160 at 9 s, r168 at 8, r164 / r165 at 7) account for another 49.
+
+     · CORE_MAX_S 10 → 6 takes those six out: 173 → 124 s.
+     · r204.spec.js leaves by itself, because the round exception below is the CURRENT round's spec
+       and this round is not that one. What replaces it is this round's spec at 21 s.
+
+   Gate: **17 files / 173 s → 11 files / 96 s.**
+
+   ⚠ THE CURRENT-ROUND EXCEPTION STAYS, AND IT WAS RE-EXAMINED RATHER THAN ASSUMED. It is the one
+   spec most likely to catch what this round broke, and it is bounded: exactly one round's spec is
+   ever in the gate, because `currentRoundSpec()` demotes the previous one the moment a higher number
+   appears. Holding it to the price instead was tried and measured — a spec that boots the app cannot
+   come in under six seconds (this round's is 14.1 s locally ≈ 21 s of CI time, of which the boot is
+   most), so pricing it would mean NO round ever verifies itself before its own push.
+
+   Nothing is deleted: everything that leaves the gate runs nightly and after every merge, ~15
+   minutes behind the push rather than in front of it (#R203). */
+export const CORE_MAX_S = 6;
 
 /* The suites that are the gate itself rather than one round's regression file. Whatever they cost. */
 export const CORE_ALWAYS = ['smoke', 'security', 'internal-qa', 'monitors'];

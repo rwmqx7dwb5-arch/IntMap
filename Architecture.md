@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-28 (R175)
+> Last reviewed: 2026-08-08 (R205)
 >
 > ### この文書の読み方 (#R169 で整理)
 >
@@ -2449,6 +2449,54 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R205 補足（クリックの持ち主／不透明な名前／明るい面の大気／ズーム掃引のタイル／震源の実測海底）
+
+**地図クリックの持ち主は地震パネルが宣言する。** `js/seismic.js` に `clickMode`（`'epi'` 既定 ／ `'station'`）。
+パネル最上部の1行セグメントで切り替え、`window.IntMapSeismic.setClickMode()` と `state().clickMode` で読み書きできる。
+既定では**地図クリックが震源を移動**し、観測点の表（`seis-sta` の白い丸）は切替のもう半分。#R196 の ◎ ボタン
+（`window.IntMapPick`：パネルを隠して地図を空ける）は**携帯で必要なので残っている**。
+
+**レイヤーの不透明度スライダは、宣言された層のテキストを下げない。** `window._opacityOpaqueText`（`js/data-layers.js`）
+は「このレイヤーIDの `text-opacity`/`icon-opacity` は常に 1」の登録簿。`_applyGenericOpacity` が参照する。
+現在の登録は `eco-plates-lbl` のみ（`js/layer-packs.js` がレイヤー生成の直後に登録）。塗り・線は今までどおり
+スライダに従う（#R20 のプレート既定 30% は生きている）。
+
+**`atmosphere-blend` は3本のランプを持つ**（`js/theme-sky.js`）。衛星 0.55（#R187）／**ライト基図 0.15**（#R205）／
+暗い基図 0.80（#R196/#R202）。どれを使うかは `sat` と `_mapIsLight()`（`window.imMapColor` が `light`/`dark`、
+`auto` は UI テーマに従う——`applyTheme` の `mapLight` と同じ規則を1か所に書いたもの）。理由は明るい面ほど
+飽和が早いこと：ライト基図（CartoDB Positron）は生タイルの平均輝度 243 で、衛星画像より明るい。
+
+**右クリックメニューはアコーディオン**（`js/tool-panel.js` `showContextMenu`）。座標行（`.ctx-coord`）＋
+4つの見出しボタン（`.ctx-grp`）＋各セクション（`.ctx-sec`、既定 `hidden`）。開くのは常に1つで、開閉のたびに
+`place()` が位置とスクロール上限を計算し直す。`items` 配列は #R204 のままで、`data-act` は**その配列の添字**。
+
+**起動画面のテーマは1フレーム目から正しい。** `index.html` の `<head>` 末尾のスクリプトが
+`intmap_settings.theme`（廃止テーマは auto に丸める）＋ `prefers-color-scheme` から `data-theme` を決める。
+ロゴは `.boot-icon` の **background-image**：既定 `IntMap.Icon.png`、`:root[data-theme="light"]` で
+`IntMap.Icon_BW-inverted.png`。**カスケードで勝った1ファイルしか取得されない。**
+
+**衛星タイルはズーム中に待つ**（`js/sat-proto.js`）。`zoomstart`〜`zoomend`＋140ms の間に来た z≥7 の要求は
+最大 1.1 秒待ち、その間に MapLibre がその段を捨てれば `AbortError` で降りる（タイルは `unloaded`）。
+`window.IntMapSatProto.zoomGate()` が `{on,zooming,req,held,dropped,resolved}` を返し、`setZoomGate(false)` で
+A/B 測定用に無効化できる。⚠ **衛星タイルの取得はワーカー内**（#R204）なので、ページの
+`performance.getEntriesByType('resource')` には1件も現れない。
+
+**津波の震源付近の海底は実測 DEM。** `js/tsunami.js` の `fineFloor()` が震源 ±6° を terrarium z6 から
+1/48°（2.3 km）で標本化し、`{w,h,lat0,lat1,lng0,lng1,d,k}`（d=水深m・0は陸／k=DEMが答えたか）を
+`src/tsunami-worker.js` の `seaFloor()` へ転送する。ワーカーは**モデルセルが覆われていれば**（答えた標本が4つ以上）
+そこから沈水率と平均水深を取り、それ以外は同梱 `data/bathymetry.png`（0.25°）のまま。
+陸海判定・方程式・スポンジは**不変**。結果は `state().sim.fineCells` / `fineCellKm`、作られなかった理由は `fineWhy`。
+
+**震度メッシュの天井は 1792（携帯 640）。** `js/seismic.js` の `CELL_KM=1.5` を天井が邪魔しなくなった
+（M8.5 の 2,771 km 場で 2.17 → 1.55 km）。`vs` は Int16Array（Vs30 は m/s 単位の整数で足りる）で、
+保持は 10 バイト／セル。遠方場は 1792。
+
+**テストの層分けと `npm test` の形。** `scripts/tiers.mjs` の `CORE_MAX_S = 6`（#R204 は 10）。例外は
+`CORE_ALWAYS`（smoke/security/internal-qa/monitors）と**最新の `rNNN.spec.js` 1本だけ**。門は 11ファイル 87 秒。
+`npm test` は `scripts/test-parallel.mjs` で**ソース側（静的検査＋engine ゲート＋予算＋node検査）とブラウザ側を
+同時に**走らせる（実測 60 秒／直列なら 95 秒）。どちらも必ず完走し、片方でも失敗すれば非ゼロ終了。
+旧来の直列順は `npm run test:seq`。
 
 ### #R204 補足（門の資格は「値段」／JPEGの復号はワーカーへ／入れ子は緯度帯でよかった／⚠真っ暗は誤診で未解決）
 
