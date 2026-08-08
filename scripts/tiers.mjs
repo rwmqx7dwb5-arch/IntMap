@@ -100,7 +100,15 @@ export function allSpecs() {
    most), so pricing it would mean NO round ever verifies itself before its own push.
 
    Nothing is deleted: everything that leaves the gate runs nightly and after every merge, ~15
-   minutes behind the push rather than in front of it (#R203). */
+   minutes behind the push rather than in front of it (#R203).
+
+   ⚠ AND THAT IS A BILL, NOT A SAVING — #R205 PAID IT IN ITS OWN ROUND. The PR gate was green first
+   time and the post-merge deep run went red on two specs, both of them previous rounds' browser
+   tests guarding surfaces this round had touched (`r186.spec.js` reads the launch screen's mark;
+   `r204.spec.js` counts the context menu's headings). A cheap gate does not remove that work, it
+   MOVES it to the author. So: **before pushing a change to a surface the gate no longer covers, run
+   `npm run test:deep`** — and find which specs those are the way #R186 says, by grepping tests/ for
+   the file names, layer ids and API names the change touched. */
 export const CORE_MAX_S = 6;
 
 /* The suites that are the gate itself rather than one round's regression file. Whatever they cost. */
