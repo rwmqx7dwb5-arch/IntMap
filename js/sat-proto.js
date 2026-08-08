@@ -342,6 +342,22 @@ window.IntMapModules.satProto=function(HOST){
       wouldStitch:(z,x,y)=>{ if(!_satHiDPI||(z|0)>=19) return false;
         const st=_satKnownStop(z|0,x|0,y|0); return !(st!=null&&(z|0)+1>st); },
       depthEntries:()=>_satDepth.size,
+      /* ══ (#R206) THE URL THE RENDER PATH WILL ACTUALLY ASK FOR ═══════════════════════════════════
+         「モバイル版が、特に衛星画像含め圧倒的に重い」「衛星画像の読み込み時の動作を、極限までシーム
+         レスに」 — js/tile-warm.js exists to have the bytes already in the HTTP cache when the render
+         path asks, and it was building its own URL from `SAT_PROVIDERS.tiles()[0]`, i.e. ALWAYS
+         `server.arcgisonline.com`. This path (and src/sat-worker.js, byte for byte) picks the host by
+         `(x+y)&1` — MEASURED: in one settled move both Esri requests followed that rule. So half of
+         everything the prefetch warmed was a different origin, a different cache entry, and a wasted
+         request on the connection pool the visible tiles are queueing in.
+         One owner for the URL, exported so the warmer cannot drift from it again. */
+      tileUrl:(z,y,x)=>_satUrl(z|0,y|0,x|0),
+      /* …and the LEVEL. The satellite source is declared `tileSize:256`, so MapLibre asks for
+         `round(zoom + log2(512/256))` = zoom+1 (measured: map zoom 12.00 → z13 requests), and when
+         the @2x stitch is on this path then fetches the four CHILDREN of that tile — one deeper
+         again. The warmer had `mapZoom + (hiDPI?1:0)`, which is short by exactly one in both cases:
+         on a phone it warmed a level nothing ever requests. */
+      netLevelBias:()=>1+(_satHiDPI?1:0),
       /* (#R205) the zoom gate, so a test can prove that a held request is released by the settle and
          cancelled by MapLibre's own abort rather than inferring it from a network count */
       zoomGate:()=>({ on:_satGateOn, zooming:_satZooming, wired:_satZoomWired, settleMs:_SAT_SETTLE, maxHoldMs:_SAT_MAX_HOLD, minZoom:_SAT_HOLD_MINZ,

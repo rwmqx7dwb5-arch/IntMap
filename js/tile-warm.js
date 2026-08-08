@@ -61,7 +61,21 @@ window.IntMapModules.tileWarm=function(HOST){
        other providers (Sentinel-2, GIBS, the BYOK ones) are plain XYZ sources whose displayed level
        is unchanged, so biasing their prefetch would warm a level nothing fetches — the exact defect
        this is fixing, pointed the other way. */
-    const _satZBias=(function(){ try{ return (p.id==='esri'&&window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.hiDPI())?1:0; }catch(_){ return 0; } })();
+    /* ⚠ (#R206) THE BASE WAS ALREADY ONE LEVEL TOO SHALLOW, SO THE BIAS COULD NOT SAVE IT.
+       Every satellite source in this app is declared `tileSize:256` (see satApply and the style), and
+       MapLibre picks its tiles at `round(zoom + log2(512/256))` = zoom + 1 — MEASURED on the phone
+       profile: map zoom 12.00, and the only two Esri requests in that window were BOTH z13, while
+       this function reported `{z:12, bias:0}`. So on a phone (hiDPI off ⇒ bias 0) the viewport ring
+       and the travel lead were warming a level the render path never asks for: a prefetch that could
+       not hit, on exactly the device the instruction is about.
+       The +1 is the source's, and it is not optional; the @2x stitch's extra level is the protocol's
+       and it OWNS that number now (IntMapSatProto.netLevelBias) rather than this file re-deriving it.
+       Non-Esri providers are plain XYZ at the same tileSize, so they take the +1 and nothing else. */
+    const _satZBias=(function(){ try{ if(p.id==='esri'&&window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.netLevelBias)
+        return window.IntMapSatProto.netLevelBias(); }catch(_){}
+      return 1; })();
+    /* the same URL the render path will ask for — host included (see IntMapSatProto.tileUrl) */
+    const _esriDirect=(function(){ try{ return (p.id==='esri'&&window.__imSatProto&&window.IntMapSatProto&&window.IntMapSatProto.tileUrl)||null; }catch(_){ return null; } })();
     const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(GE().camera.getZoom())+_satZBias)), n=Math.pow(2,z);
     const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
@@ -72,7 +86,9 @@ window.IntMapModules.tileWarm=function(HOST){
        ahead of the aircraft ("3D衛星画像の生成が飛行に追い付いていない"). When called aggressively (flight loop), warm a
        DEEPER ring in the direction of travel AND, if the map is tilted (3D/oblique), one zoom level SHALLOWER too so the
        far horizon tiles the oblique view pulls in are resident before they scroll into frame. */
-    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
+    /* one URL builder for every ring below — the protocol's when it has one, the template otherwise */
+    const U=(zz,xx,yy)=>_esriDirect?_esriDirect(zz,yy,xx):_tileUrl(tpl,zz,xx,yy);
+    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(U(z,x,y)); };
     const urls=[];
     const _side=(k)=>{ if(dx>0) for(let y=y0-1;y<=y1+1;y++) push(x1+k,y); else if(dx<0) for(let y=y0-1;y<=y1+1;y++) push(x0-k,y);
       if(dy>0) for(let x=x0-1;x<=x1+1;x++) push(x,y1+k); else if(dy<0) for(let x=x0-1;x<=x1+1;x++) push(x,y0-k); };
@@ -80,9 +96,9 @@ window.IntMapModules.tileWarm=function(HOST){
     if(aggressive && dx&&dy){ for(let k=1;k<=RING;k++){ push((dx>0?x1:x0)+dx*k,(dy>0?y1:y0)+ (dy>0?1:-1)*k); } }   /* diagonal corner ahead for a banking turn */
     /* (#R8) Anticipate a zoom-IN: warm the center tiles one AND two levels deeper so the next pinch is
        already resident (the user asked for "Unthinkable Speed" satellite). */
-    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
+    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(U(z2,x,y)); } }
     /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
-    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
+    if(aggressive){ try{ if((GE().camera.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(U(zc,x,y)); } } }catch(_){} }
     /* (#R178) what level this call chose, for observation. Inferring it from network traffic does not
        work once the protocol is stitching @2x tiles: the RENDER path then fetches the children one
        level below the displayed zoom, and those outnumber the prefetch ring (measured at map z11 on a
@@ -121,7 +137,16 @@ window.IntMapModules.tileWarm=function(HOST){
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
   registerTileSW();
-  if(GE().hasRenderer()) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  /* ⚠ (#R206) …AND NOT WHILE THE ZOOM IS STILL MOVING. A wheel sweep is a run of moveend events a few
+     tens of milliseconds apart, so a 90 ms debounce fired a whole ring PER NOTCH — at every level the
+     camera was passing through. That was harmless only for as long as the level was wrong (above):
+     the moment this warms the level the render path uses, it would be issuing hundreds of fetches for
+     levels nobody is going to look at, into the same connection pool as the visible tiles — i.e. it
+     would undo #R205's zoom gate, which exists to stop exactly that. 260 ms is longer than the gap
+     between two wheel notches, so a sweep collapses to ONE ring at the level the gesture ended on,
+     and a pan (whose moveend already means "arrived") is warmed 170 ms later than before, which no
+     prefetch can be hurt by. */
+  if(GE().hasRenderer()) GE().events.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,260); });
   /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
      tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
      the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
