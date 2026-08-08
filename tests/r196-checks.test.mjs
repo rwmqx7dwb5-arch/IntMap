@@ -237,7 +237,15 @@ test('R196 ⑧ the build stamps have moved on from this round', () => {
 /* ── ⑦ THE LOCAL RUN IS PLANNED ────────────────────────────────────────────────────────────── */
 test('R196 ⑦ npm test runs the browser suite through the measured plan', () => {
   const pkg = JSON.parse(rd('package.json'));
-  assert.match(pkg.scripts.test, /node scripts\/run-tests\.mjs$/, 'the browser half goes through the runner');
+  /* ⚠ (#R205) THE PIN WAS "`npm test` ENDS WITH run-tests.mjs", WHICH IS A SHAPE, NOT THE PROPERTY.
+     `npm test` now delegates to scripts/test-parallel.mjs so the source half and the browser half run
+     at the same time. What #R196 established is that the BROWSER HALF GOES THROUGH THE PLANNER rather
+     than being handed the whole directory in readdir order — so that is what is asserted, wherever
+     `npm test` happens to reach it from. */
+  const entry = pkg.scripts.test;
+  const reachesRunner = /run-tests\.mjs/.test(entry)
+    || (/test-parallel\.mjs/.test(entry) && /run-tests\.mjs/.test(rd('scripts/test-parallel.mjs')));
+  assert.ok(reachesRunner, 'the browser half goes through the runner');
   const r = rd('scripts/run-tests.mjs');
   assert.match(r, /poolFiles\('rest'\)/);
   assert.match(r, /run\(solo, 1,/, 'the solo pool gets one worker, as CI gives it one machine');

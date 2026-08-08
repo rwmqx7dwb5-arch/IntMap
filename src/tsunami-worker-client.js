@@ -52,6 +52,10 @@ window.IntMapTsunamiWorker=(function(){
       const p=new Promise((res,rej)=>{ jobs.set(id,{res,rej,onFrames,onProgress,onModel}); });
       const msg=Object.assign({type:'run',id},o);
       const xfer=[]; try{ if(o.bathy&&o.bathy.rgb&&o.bathy.rgb.buffer) xfer.push(o.bathy.rgb.buffer); }catch(_){}
+      /* (#R205) …and the local high-resolution floor the same way, for the same reason: the caller
+         hands over copies (js/tsunami.js slices them off its cache), so transferring costs nothing. */
+      try{ if(o.fine&&o.fine.d&&o.fine.d.buffer) xfer.push(o.fine.d.buffer); }catch(_){}
+      try{ if(o.fine&&o.fine.k&&o.fine.k.buffer) xfer.push(o.fine.k.buffer); }catch(_){}
       try{ it.postMessage(msg,xfer); }
       catch(_){ jobs.delete(id); return null; }
       return { id, promise:p };

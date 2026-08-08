@@ -116,10 +116,17 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
      SATELLITE imagery, where the channels clip. #R196 gave the map basemap a sky too, and over a
      dark vector basemap nothing clips, so that one is blended harder (swept and screenshotted at
      0.55 / 0.80 / 1.00). The satellite number is still the one this test guards. */
-  const all = [...src.matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),4,/g)].map((x) => +x[1]);
+  /* ⚠ (#R205) THE SATELLITE RAMP IS THE FIRST ONE, NOT THE SMALLEST ONE. This test picked it with
+     `Math.min`, which was true while there were exactly two ramps and became false the moment #R205
+     added a third for the LIGHT map basemap at 0.15 — brighter surfaces clip sooner, which is this
+     test's own argument applied one basemap further. The ramps are read in source order instead:
+     `'atmosphere-blend':(sat ? <satellite> : (<light map> or <dark map>))`. */
+  const blend = /'atmosphere-blend':\(sat[\s\S]{0,800}?\)\}\);/.exec(src);
+  assert.ok(blend, 'the atmosphere-blend expression must still be there');
+  const all = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),4,/g)].map((x) => +x[1]);
   assert.ok(all.length >= 2, 'both atmosphere ramps must still be there');
   assert.match(src, /'atmosphere-blend':\(sat/, 'the strength is chosen by basemap');
-  const sat = Math.min(...all), map = Math.max(...all);
+  const sat = all[0], map = Math.max(...all.slice(1));
   /* 1.0 clipped the channels — an optically correct scattering term multiplied until it saturates
      is what read as a cheap white collar, and as an over-bright sunlit limb. */
   assert.ok(sat < 0.8, `the satellite atmosphere-blend at z0 is ${sat} — that is back in the clipping range`);

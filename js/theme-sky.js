@@ -263,6 +263,15 @@ export function makeThemeSky(HOST, CTX) {
       return '#'+[0,1,2].map(i=>Math.max(c[i],f[i]).toString(16).padStart(2,'0')).join('');
     }catch(_){ return _SKY_SPACE; }
   }
+  /* (#R205) is the MAP basemap the light one? Same rule applyTheme uses for `mapLight` — the map
+     colour setting wins, and 'auto' follows the UI theme. Written once, read from both callers
+     (applyTheme and _skyFollowCamera), because a second copy of this rule is how the two disagree. */
+  function _mapIsLight(){
+    try{ const mc=(window.imMapColor||'auto');
+      if(mc==='light') return true; if(mc==='dark') return false;
+      return (HOST.userTheme==='light')||(HOST.userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);
+    }catch(_){ return false; }
+  }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     _followClock();
@@ -296,9 +305,32 @@ export function makeThemeSky(HOST, CTX) {
            finding is about the imagery, and it stands. Over the dark vector basemap nothing clips and
            0.55 reads as a hairline next to Cesium's halo, so the map basemap gets 0.80 (swept at
            0.55 / 0.80 / 1.00 and screenshotted; past 0.80 the picture stops changing). */
+        /* ══ (#R205) …AND A THIRD STRENGTH, FOR THE ONE SURFACE BRIGHTER THAN THE IMAGERY ═══════════
+           「ライトモードかつMapを選択した場合、昼の箇所がまぶしすぎて何も見えない。」
+
+           #R187's finding is the whole explanation and it was only ever applied to satellite: a
+           full-strength limb over a BRIGHT surface clips to white, and once a channel clips there is
+           no picture left in it. The light map basemap (CartoDB Positron) is brighter than satellite
+           imagery — the raw z3 tile measures mean luminance **243, with 81 % of its pixels above 235**
+           — and it was being blended at the DARK basemap's 0.80. Measured on the day side at z3,
+           1440 × 900, sampling only the globe's own pixels:
+
+             blend  0.80 (shipped)  mean [252,253,254]   97.4 % of the disc above L235  ← the report
+             blend  0.25            mean [237,245,249]   95.4 %
+             blend  0.20            mean [235,242,246]   69.3 %
+             blend  0.15            mean [233,239,243]   44.6 %
+             blend  0               mean [225,228,228]   40.9 %   (the basemap by itself)
+
+           So the picture survives up to 0.15 and falls off a cliff after it. The light ramp is the
+           map ramp scaled by 0.15/0.80 — same shape, same zoom taper, one third of a stop of limb
+           left where the eye can still see coastlines under it.
+           ⚠ The DARK basemap keeps 0.80 and satellite keeps #R187's 0.55: nothing measured about
+           either of them has changed, and this round does not undo a previous round's answer. */
         'atmosphere-blend':(sat
           ?['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]
-          :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0])});
+          :(_mapIsLight()
+            ?['interpolate',['linear'],['zoom'],0,0.15,4,0.13,7,0.086,10,0.038,13,0.009,15,0]
+            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0]))});
       _aimSun();
     }catch(_){}
   }

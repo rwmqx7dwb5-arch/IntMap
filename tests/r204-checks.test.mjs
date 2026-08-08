@@ -257,10 +257,16 @@ test('R204 ⑦ pressing an offset highlights every band on it', () => {
 });
 
 /* ── ⑦b THE BUILD STAMP — the EXACT pin lives in the current round's file (#R202) ─────────────── */
-test('R204 ⑦b both build stamps name this round', () => {
+test('R204 ⑦b both build stamps name the SAME round, and it is not an older one', () => {
+  /* (#R205) THIS PIN NAMED 'R204' AND SO IT FAILED THE ROUND AFTER — the third time a stamp has done
+     that (#R174 left it at R171, #R203 pinned its own spec's file name). The invariant is that the two
+     stamps agree and that neither goes backwards; the round NUMBER belongs to whoever is bumping it. */
   const idx = rd('index.html');
-  assert.match(idx, /window\.__imBuild='R204';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-09-R204';/);
+  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
+  const b = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/.exec(idx);
+  assert.ok(a && b, 'both build stamps must exist');
+  assert.equal(a[1], b[2], 'the two stamps must name the same round');
+  assert.ok(+a[1] >= 204, `the build stamp says R${a[1]}, which is older than the round that wrote this test`);
 });
 
 /* ── ⑧ THE RIGHT-CLICK MENU ───────────────────────────────────────────────────────────────────── */
@@ -274,8 +280,12 @@ test('R204 ⑧ the context menu is grouped, in five languages, and nothing was d
     '_radiusFromPoint', 'IntMapWeather', 'RunwaySearch', 'IntMapLOS', 'IntMapIsochrone',
     'IntMapTerrainWater', 'IntMapSeismic', 'IntMapSun', 'clearAllPins', 'askHere'])
     assert.ok(tp.includes(m), `the context menu lost ${m}`);
-  /* ⚠ the button index is its position, not indexOf — two identical labels would collide */
-  assert.match(tp, /items\.map\(\(it,i\)=>\{/);
-  assert.match(tp, /return `<button data-act="\$\{i\}">/);
+  /* ⚠ the button index is its position, not indexOf — two identical labels would collide.
+     (#R205) THIS PIN NAMED THE RENDERING LOOP AND BROKE THE FIRST TIME THE RENDERING CHANGED
+     (`items.map((it,i)=>{` → a forEach that emits sections). The invariant was never the loop; it is
+     that the index handed to a button is the entry's OWN position in `items`, which is what
+     `indexOf` gets wrong. So: the index comes from the iteration, and `indexOf` appears nowhere. */
+  assert.match(tp, /items\.(map|forEach)\(\((it|_),\s*i\)\s*=>/);
+  assert.match(tp, /<button data-act="\$\{i\}">/);
   assert.doesNotMatch(tp, /data-act="\$\{items\.indexOf\(it\)\}"/);
 });
