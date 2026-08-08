@@ -104,14 +104,24 @@ for (const dsf of [1, 2]) {
         return { hi: window.IntMapSatProto.hiDPI(), dpr: window.IntMapSatProto.dpr(),
                  chose: window._imPredictivePrefetch.lastLevel };
       });
+      /* ⚠ (#R206) THIS ASSERTED THE OFF-BY-ONE IT WAS WRITTEN TO PREVENT.
+         The numbers here were `hi ? 1 : 0`, i.e. the stitch's extra level and nothing else — but the
+         satellite source is declared `tileSize:256`, so MapLibre asks for `round(zoom + log2(512/256))`
+         = zoom+1 before the stitch is even considered. MEASURED on the phone profile: map zoom 12.00,
+         and every Esri request in that window was z13 while the warmer reported {z:12, bias:0}. A 1×
+         screen therefore warmed a level nothing ever requests, and this test held that in place by
+         pinning the same wrong number. What it means to be right is unchanged, so that is what is
+         asserted now: the warmed level IS the level the protocol will fetch. */
       expect(r.hi, `dpr ${r.dpr} decides @2x as ${dsf >= 1.5}`).toBe(dsf >= 1.5);
       expect(r.chose, 'the prefetch ran').toBeTruthy();
       expect(r.chose.n, 'and asked for tiles').toBeGreaterThan(0);
-      expect(r.chose.bias, `the level bias must be ${r.hi ? 1 : 0} on this display`).toBe(r.hi ? 1 : 0);
+      expect(r.chose.bias, 'the 256-px source is +1, and the @2x stitch is +1 again')
+        .toBe(1 + (r.hi ? 1 : 0));
       expect(r.chose.z, 'so it warms exactly the level the protocol will fetch')
-        .toBe(r.chose.mapZoom + (r.hi ? 1 : 0));
-      /* …and ONLY for the provider that stitches. Switching to a plain XYZ provider must drop the bias,
-         or its prefetch would warm a level nothing fetches — this same defect, pointed the other way. */
+        .toBe(r.chose.mapZoom + 1 + (r.hi ? 1 : 0));
+      /* …and the STITCH's level belongs only to the provider that stitches. A plain XYZ provider is
+         served at MapLibre's covering level and no deeper, so it keeps the source's +1 and loses the
+         other one — warming anything else would be this same defect pointed the other way. */
       const other = await page.evaluate(async () => {
         const wait = (ms) => new Promise((res) => setTimeout(res, ms));
         const S = window.__sat;
@@ -126,7 +136,7 @@ for (const dsf of [1, 2]) {
       });
       expect(other.skipped, 'there is a second free provider to switch to').toBeUndefined();
       expect(other.chose, `the prefetch ran for ${other.provider}`).toBeTruthy();
-      expect(other.chose.bias, `a plain XYZ provider (${other.provider}) must not be biased`).toBe(0);
+      expect(other.chose.bias, `a plain XYZ provider (${other.provider}) carries the source's +1 and no stitch level`).toBe(1);
     });
   });
 }

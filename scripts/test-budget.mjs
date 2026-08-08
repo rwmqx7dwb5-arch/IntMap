@@ -68,9 +68,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ The gate cannot be emptied to pass BUDGET_S either: scripts/tiers.mjs keeps the four always-on
    suites and the current round's own spec in core by construction, whatever they cost.
    5,250 is exactly #R203's two ceilings added together — this round created no headroom at all. */
-const BUDGET_S = 96;                    /* core: 1.6 min — measured 87 s over 11 files (#R205) */
-const TOTAL_BUDGET_S = 5250;            /* whole suite: 87.5 min — measured 5,183 (unchanged by this round) */
+const BUDGET_S = 90;                    /* core: 1.5 min — measured 82 s over 11 files (#R206) */
+const TOTAL_BUDGET_S = 5220;            /* whole suite: 87.0 min — measured 5,219 (#R206) */
 const HISTORY = [
+  /* ⚠ (#R206) THE NEW SPEC WAS PAID FOR OUT OF A BOOT, WHICH IS WHERE THIS SUITE'S TIME LIVES.
+     tests/r206.spec.js is new (+7 s, measured locally) and tests/r192.spec.js paid for it: its four
+     tests each took a fresh `page` fixture and booted the whole app into it, so three of the four
+     boots existed only because the fixture is per-test by default. Every CORE spec in this suite
+     already shares one page across its describe (smoke, internal-qa, monitors, security, r163,
+     r197) — this is that pattern, not a new one, and it is the same payment #R201 made.
+     MEASURED on this machine, same build, same worker count, both directions:
+       before (4 boots) 83.6 s → after (1 boot) 56.2 s, 4 passed both times.
+     The table's 98 s is a CI figure, so it is scaled by the ratio this machine measured
+     (98 × 56.2/83.6 = 66) rather than replaced with a local number; CI's `shard-plan --update`
+     re-measures it on the merge and the entry becomes a CI figure again.
+     ⚠ Separately, and NOT visible in this table because it is not browser time: the every-push gate
+     lost 26 s in scripts/static-checks.mjs (25.4 s → 4.3 s; 90 % of it was 501 sequential
+     `node --check` spawns) and `npm test` went 77 s → 45 s of wall clock. */
+  ['#R206', 5220, 'tests/r192.spec.js stopped booting the app four times to ask four questions (−27.4 s measured locally, −32 s of the CI figure), which paid for tests/r206.spec.js (+7 s)'],
   ['#R197', 5200, 'the viewpoint sweep merged out of r172/r173/r176/r177/r178 into r179 (−21.4 min), and nine specs that were CHARGED p75 were measured instead (−11.7 min of pure fiction)'],
   /* ⚠ (#R201) AND THIS ROUND ADDED A SPEC AND STILL WENT DOWN, WHICH IS THE MECHANISM WORKING.
      tests/r201.spec.js is new (+45 s) and had to be paid for:

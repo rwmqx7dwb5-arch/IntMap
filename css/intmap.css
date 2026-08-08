@@ -48,9 +48,25 @@
        ⚠ background-image, not two <img> tags: a browser fetches only the declaration that WINS the
        cascade, so exactly one of these two files is ever requested. `data-theme` is set by the inline
        script in index.html's <head> before the first paint. */
+    /* ══ (#R206) …AND THE MARK'S OWN FIELD IS THE SCREEN'S ══════════════════════════════════════
+       「背景と、アイコンの背景が微妙に違う色だからアイコンの背景を背景に合わせて。」 Measured: the
+       supplied file is a mark on PURE WHITE (its corners read 255,255,255 and 90 % of its pixels are
+       that value) and the light launch screen is --bg-color #f5f5f7 — so the tile read as a white
+       rounded square sitting in an off-white field, which is the only reason the tile was visible at
+       all. Both halves are made to agree here:
+         · the FILE was re-composited onto #f5f5f7 rather than white — per pixel,
+           out = src − (min(r,g,b)/255)·(255 − bg), i.e. the white it was flattened onto is replaced
+           by the screen's colour and nothing else moves. The brand blue (0,122,255) and the black
+           word-mark come out byte-identical; only the parts that WERE the white background change,
+           and the anti-aliased edges blend to the new colour instead of leaving a light halo. The
+           globe's continents are white cut-outs of the same field, so they follow it too — which is
+           what "the icon's background" means for this mark.
+         · the CSS colour underneath it is the same variable the screen uses, so the tile is already
+           the right colour in the frame before the PNG has decoded (that frame is the whole point of
+           a launch screen) and stays right if --bg-color is ever retuned. */
     .boot-icon{ width:124px; height:124px; border-radius:27.8px; overflow:hidden;   /* 27.8 / 124 = Apple's 22.4 % corner ratio */
       background:#0a0a0c url("../IntMap.Icon.png") center/cover no-repeat; }
-    :root[data-theme="light"] .boot-icon{ background-color:#ffffff; background-image:url("../IntMap.Icon_BW-inverted.png"); }
+    :root[data-theme="light"] .boot-icon{ background-color:var(--bg-color); background-image:url("../IntMap.Icon_BW-inverted.png"); }
     .boot-icon img{ width:100%; height:100%; display:block; object-fit:cover; }
     .boot-bar{ width:184px; height:4px; border-radius:2px; overflow:hidden; background:rgba(128,128,128,0.22); }
     .boot-bar > i{ display:block; height:100%; width:0%; border-radius:2px; background:var(--text-main); opacity:0.72;

@@ -2457,6 +2457,15 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 既定では**地図クリックが震源を移動**し、観測点の表（`seis-sta` の白い丸）は切替のもう半分。#R196 の ◎ ボタン
 （`window.IntMapPick`：パネルを隠して地図を空ける）は**携帯で必要なので残っている**。
 
+**(#R206) このパネルではアクセントの塗りつぶし＝「今それが入っている」。** ◎ 震源地を設置は `BTN` に
+`background:var(--primary-color);color:#fff;font-weight:700` を**無条件で**足していた——`SEG(on)` が
+「選択中」を表すのに使う指定と**同じ**で、しかも #R205 がそのセグメント行を**すぐ下**に置いた。つまりパネルは
+◎/◇ 3つのうち2つを選択中の見た目で開き、片方は**決して消えない**（それはモードではなくアクション＝
+pick を armed にする操作で、off の状態を持たない）。→ `PICKBTN(on)`：待機時は**アクセントの文字と枠だけ**
+（塗りなし）、`picking` が真のときだけ塗る。`setPicking()` が状態を動かす**唯一の経路**で、変わったら
+`render()` する（IntMapPick はパネルを隠すので、隠す前の見た目のまま戻すと同じ「固まったボタン」になる）。
+通常経路ではパネルが隠れているため塗られた姿は出ず、pick モジュールが無い fallback では armed が見える。
+
 **レイヤーの不透明度スライダは、宣言された層のテキストを下げない。** `window._opacityOpaqueText`（`js/data-layers.js`）
 は「このレイヤーIDの `text-opacity`/`icon-opacity` は常に 1」の登録簿。`_applyGenericOpacity` が参照する。
 現在の登録は `eco-plates-lbl` のみ（`js/layer-packs.js` がレイヤー生成の直後に登録）。塗り・線は今までどおり
@@ -2475,12 +2484,33 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 `intmap_settings.theme`（廃止テーマは auto に丸める）＋ `prefers-color-scheme` から `data-theme` を決める。
 ロゴは `.boot-icon` の **background-image**：既定 `IntMap.Icon.png`、`:root[data-theme="light"]` で
 `IntMap.Icon_BW-inverted.png`。**カスケードで勝った1ファイルしか取得されない。**
+（#R206）**ライトのマークの地はもう白ではなく、起動画面そのものの色**。供給された PNG は**純白の上に**
+composite されており（四隅 255,255,255・画素の 89.9%）、起動画面は `--bg-color` の `#f5f5f7` なので、
+角丸のタイルが白い四角として見えていた。ファイル側を**画素ごとに** `out = src − (min(r,g,b)/255)·(255 − bg)`
+で貼り直してある——「白だった分」だけが背景色に置き換わり、ブランドの青 (0,122,255) と黒のワードマークは
+**バイト単位で不変**、アンチエイリアスの縁も新しい色へ溶ける。地球の白抜きの大陸は同じ地の一部なので一緒に動く。
+CSS 側は `background-color:var(--bg-color)`（PNG のデコード前の1フレーム目から正しく、変数を変えても追随する）。
+実測：タイル内側の画素 = ページ背景 = (245,245,247)。
 
 **衛星タイルはズーム中に待つ**（`js/sat-proto.js`）。`zoomstart`〜`zoomend`＋140ms の間に来た z≥7 の要求は
 最大 1.1 秒待ち、その間に MapLibre がその段を捨てれば `AbortError` で降りる（タイルは `unloaded`）。
 `window.IntMapSatProto.zoomGate()` が `{on,zooming,req,held,dropped,resolved}` を返し、`setZoomGate(false)` で
 A/B 測定用に無効化できる。⚠ **衛星タイルの取得はワーカー内**（#R204）なので、ページの
 `performance.getEntriesByType('resource')` には1件も現れない。
+
+**(#R206) 先読みが要求する URL は、描画が要求する URL と同じ owner を持つ。** `js/tile-warm.js` の
+`predictivePrefetch` は「そのバイトはもう手元にあるはず」を作る仕組みなのに、**別のズーム段**と**別のホスト**を
+温めていた。衛星ソースは `tileSize:256` なので MapLibre の被覆段は `round(zoom + log2(512/256))` = **zoom+1**
+（実測：地図 zoom 12.00 のとき Esri への要求は**全て z13**、その時 `lastLevel` は `{z:12,bias:0}`）。
+ホストは `_satUrl` が `(x+y)&1` で選ぶのに、先読みは常に `tiles[0]`（= `server.arcgisonline.com`）だった。
+→ 段と URL は**プロトコルが持つ**：`IntMapSatProto.netLevelBias()`（= `1 + (@2x なら 1)`）と
+`IntMapSatProto.tileUrl(z,y,x)`。`js/tile-warm.js` は両方をそこから受け取り、リング／進行方向／ズーム先読み／
+傾斜時の浅い段の**すべて**が同じ builder を通る。⚠ **debounce は 90 → 260 ms**：正しい段を温めるようになった
+以上、ホイールのノッチごとに発火すると**通過するだけの段を大量に取りに行く**＝#R205 のズームゲートを自分で
+打ち消す。260 ms はノッチ間隔より長いので、掃引は**終わった段のリング1回**に畳まれる。
+⚠ **この修正で fps も初期表示時間も動かなかった**（実測・8都市／12都市を交互に：cold 初回ズーム
+23.4 対 23.3 ms、衛星が塗り終わるまで 155 対 164 ms）。この計測機では Service Worker が温まっていて
+バイトがどのみち手元にあるため——直っているのは**正しさ**であって、効くのは冷えた回線の上。
 
 **津波の震源付近の海底は実測 DEM。** `js/tsunami.js` の `fineFloor()` が震源 ±6° を terrarium z6 から
 1/48°（2.3 km）で標本化し、`{w,h,lat0,lat1,lng0,lng1,d,k}`（d=水深m・0は陸／k=DEMが答えたか）を
@@ -2493,10 +2523,16 @@ A/B 測定用に無効化できる。⚠ **衛星タイルの取得はワーカ�
 保持は 10 バイト／セル。遠方場は 1792。
 
 **テストの層分けと `npm test` の形。** `scripts/tiers.mjs` の `CORE_MAX_S = 6`（#R204 は 10）。例外は
-`CORE_ALWAYS`（smoke/security/internal-qa/monitors）と**最新の `rNNN.spec.js` 1本だけ**。門は 11ファイル 87 秒。
+`CORE_ALWAYS`（smoke/security/internal-qa/monitors）と**最新の `rNNN.spec.js` 1本だけ**。門は 11ファイル 82 秒。
 `npm test` は `scripts/test-parallel.mjs` で**ソース側（静的検査＋engine ゲート＋予算＋node検査）とブラウザ側を
-同時に**走らせる（実測 60 秒／直列なら 95 秒）。どちらも必ず完走し、片方でも失敗すれば非ゼロ終了。
-旧来の直列順は `npm run test:seq`。
+同時に**走らせる。どちらも必ず完走し、片方でも失敗すれば非ゼロ終了。旧来の直列順は `npm run test:seq`。
+（#R206）**実測 77 秒 → 40 秒。** 長かったのは**ソース側**で、その 90.1% は `scripts/static-checks.mjs` の
+`spawnSync`——**1ファイル1プロセスの `node --check` を 501 回、直列に**起動していた（CPUプロファイル：25.4 秒中
+22.9 秒）。同じ `node --check` を CPU 数だけ並行に走らせ、さらに**別の git ワークツリーへは降りない**
+（`abs !== ROOT && existsSync(abs/.git)`；標準指示8の並行セッションのチェックアウトが、歩いた 708 ファイル中
+310・読んだ 130 MB 中 60 MB を占めていた）。静的検査 **30.1 秒 → 4.3 秒**、検査項目は不変。
+⚠ `node --test --test-isolation=none` は**遅かった**（42.4 秒 対 既定 17.3 秒）ので採らない——既定はファイルを
+プロセスに分けて並行に走らせるため。
 
 ### #R204 補足（門の資格は「値段」／JPEGの復号はワーカーへ／入れ子は緯度帯でよかった／⚠真っ暗は誤診で未解決）
 

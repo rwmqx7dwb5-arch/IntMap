@@ -8,7 +8,8 @@
 //   node scripts/static-checks.mjs --list     # just print the files it would scan
 //
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,13 +36,23 @@ const warnings = [];
 const err = (check, msg) => errors.push({ check, msg });
 const warn = (check, msg) => warnings.push({ check, msg });
 
+/* ⚠ (#R206) AND NEVER INTO ANOTHER GIT WORKTREE. Standing rule 8 has concurrent sessions each work
+   in their own worktree, and Claude Code puts them under `.claude/worktrees/<name>/` — a COMPLETE
+   second checkout of this repository, on somebody else's branch. This walk was descending into it:
+   MEASURED, 310 of the 708 files it visited and 60 of the 130 MB it read were that copy, so every
+   check below ran twice and half of the second run was judging a branch this run has nothing to do
+   with. A directory that has its own `.git` is a different checkout by definition, which is the
+   general rule rather than a hard-coded path (a `git worktree add` anywhere else is caught too).
+   ⚠ ROOT itself has a `.git`, so the test is only applied to SUBdirectories. */
+const isOtherWorktree = (abs) => abs !== ROOT && existsSync(join(abs, '.git'));
+
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name)) continue;
     const abs = join(dir, name);
     let s;
     try { s = statSync(abs); } catch { continue; }
-    if (s.isDirectory()) walk(abs, out);
+    if (s.isDirectory()) { if (!isOtherWorktree(abs)) walk(abs, out); }
     else out.push({ abs, rel: rel(abs), ext: extname(name).toLowerCase(), size: s.size });
   }
   return out;
@@ -149,14 +160,34 @@ for (const f of ALL.filter((f) => f.ext === '.json')) {
   catch (e) { err('json', `${f.rel}: invalid JSON — ${e.message}`); }
 }
 
-// ── 4. JS / TS syntax (node --check; Node ≥22 strips TS types) ────────────────
+/* ══ 4. JS / TS syntax (node --check; Node ≥22 strips TS types) ══════════════════════════════════
+   ⚠ (#R206) ONE PROCESS PER FILE, IN A ROW, WAS 90 % OF THIS SCRIPT. 「毎回毎回、テストに時間が
+   かかりすぎ。…すべてが長すぎる。」 A CPU profile of the shipped script: 25.4 s total, of which
+   22.9 s (90.1 %) is `spawnSync` — 501 sequential `node --check` launches, one per file, at ~45 ms
+   of process start-up each. The CHECK is nothing; the launching is everything. (Half of the 501 were
+   the other worktree the walk above no longer enters.)
+
+   Same binary, same flag, same verdict per file — just not one at a time. `node --check` is a pure
+   function of the file, so the only thing serialising them bought was the wall clock. Concurrency is
+   the CPU count (bounded), which is what saturates a launcher-bound workload without thrashing it. */
 const codeFiles = ALL.filter((f) => ['.js', '.mjs', '.cjs', '.ts'].includes(f.ext));
-for (const f of codeFiles) {
-  const r = spawnSync(process.execPath, ['--check', f.abs], { encoding: 'utf8' });
-  if (r.status !== 0) {
-    const detail = (r.stderr || r.stdout || '').split('\n').filter(Boolean).slice(0, 3).join(' | ');
-    err('syntax', `${f.rel}: ${detail || 'node --check failed'}`);
-  }
+{
+  const LANES = Math.max(4, Math.min(16, (cpus() || []).length || 8));
+  const check = (f) => new Promise((res) => {
+    execFile(process.execPath, ['--check', f.abs], { encoding: 'utf8' }, (e, stdout, stderr) => {
+      if (e) {
+        const detail = (stderr || stdout || '').split('\n').filter(Boolean).slice(0, 3).join(' | ');
+        err('syntax', `${f.rel}: ${detail || 'node --check failed'}`);
+      }
+      res();
+    });
+  });
+  let next = 0;
+  const lane = async () => { while (next < codeFiles.length) await check(codeFiles[next++]); };
+  await Promise.all(Array.from({ length: LANES }, lane));
+  /* ⚠ the errors are pushed from callbacks, so the ORDER of `errors` is now completion order rather
+     than directory order. Nothing reads it as an order — the report below prints the list — and a
+     stable order is restored by sorting there if it is ever needed. */
 }
 
 // ── 5. YAML validity (workflows + any .yml/.yaml) ────────────────────────────

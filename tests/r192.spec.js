@@ -8,15 +8,27 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 
-async function boot(page) {
+/* ⚠ (#R206) ONE BOOT FOR THE FILE, NOT ONE PER TEST — the same payment #R201 made for its own new
+   spec. These four tests each took a fresh `page` fixture and booted the whole app into it, and the
+   app boot is what this file's 98 s were: four subsystems asked four questions, and three of the
+   boots existed only because the fixture is per-test by default. Every CORE spec in this suite
+   (smoke, internal-qa, monitors, security, r163, r197) already shares one page across its describe;
+   this is that pattern, not a new idea.
+   ⚠ SERIAL, and each test leaves the camera where the next one sets it — none of the four reads a
+   default the previous one could have moved, and each jumps the camera itself before measuring. */
+test.describe.configure({ mode: 'serial' });
+
+let page;
+test.beforeAll(async ({ browser }) => {
+  page = await browser.newPage();
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapCanDraw && window.IntMapCanDraw(), null, { timeout: 60000 });
-}
+});
+test.afterAll(async () => { if (page) await page.close(); });
 
 /* ── ① the mark is the same number of pixels in both renderings ──────────────────────────────── */
-test('R192 aircraft: the lifted mark draws the glyph’s own half-length at every zoom', async ({ page }) => {
+test('R192 aircraft: the lifted mark draws the glyph’s own half-length at every zoom', async () => {
   test.setTimeout(180000);
-  await boot(page);
   await page.evaluate(() => {
     const cb = document.getElementById('dl-planes');
     if (cb && !cb.checked) { const row = cb.closest('label') || cb.parentElement;
@@ -50,9 +62,8 @@ test('R192 aircraft: the lifted mark draws the glyph’s own half-length at ever
 });
 
 /* ── ② + ③ the intensity field ───────────────────────────────────────────────────────────────── */
-test('R192 seismic: the field is bounded by what can be felt, and never covers the sea', async ({ page }) => {
+test('R192 seismic: the field is bounded by what can be felt, and never covers the sea', async () => {
   test.setTimeout(240000);
-  await boot(page);
   const r = await page.evaluate(async () => {
     const S = window.IntMapSeismic;
     if (!S || !S.open) return { has: false };
@@ -90,9 +101,8 @@ test('R192 seismic: the field is bounded by what can be felt, and never covers t
 });
 
 /* ── ④ the tsunami ───────────────────────────────────────────────────────────────────────────── */
-test('R192 tsunami: the wave crosses a real ocean, from a physical sea-floor displacement', async ({ page }) => {
+test('R192 tsunami: the wave crosses a real ocean, from a physical sea-floor displacement', async () => {
   test.setTimeout(300000);
-  await boot(page);
   const r = await page.evaluate(async () => {
     const T = window.IntMapTsunami;
     if (!T || !T.open) return { has: false };
@@ -127,9 +137,8 @@ test('R192 tsunami: the wave crosses a real ocean, from a physical sea-floor dis
 });
 
 /* ── ⑤ the satellite pipeline ────────────────────────────────────────────────────────────────── */
-test('R192 imagery: the tile pipeline runs in a worker, and still returns the stitched tile', async ({ page }) => {
+test('R192 imagery: the tile pipeline runs in a worker, and still returns the stitched tile', async () => {
   test.setTimeout(180000);
-  await boot(page);
   await page.waitForFunction(() => !!window.IntMapSatProto, null, { timeout: 60000 });
   const r = await page.evaluate(async () => {
     const P = window.IntMapSatProto;

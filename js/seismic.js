@@ -1192,6 +1192,24 @@ window.IntMapModules.seismic=function(HOST){
     const BTN='padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;';
     /* (#R205) the two halves of the map-click switch — the selected one wears the accent */
     const SEG=(on)=>BTN+'flex:1;'+(on?'background:var(--primary-color);color:#fff;border-color:transparent;font-weight:700;':'');
+    /* ══ (#R206) THE ACCENT FILL MEANS "ON", SO A BUTTON THAT IS NEVER ON MUST NOT WEAR IT ═════════
+       「地震シミュレータで震源地を設置ボタンがずっと選択中になっているというUIがくそ。」
+
+       ◎ 震源地を設置 was declared with `background:var(--primary-color);color:#fff;font-weight:700`
+       UNCONDITIONALLY — byte for byte the style SEG() above uses to mean "this mode is selected" —
+       and #R205 put the segmented row directly underneath it. So the panel opened with TWO of its
+       three ◎/◇ controls painted as selected, one of which could never turn off: it is an action
+       (arm a pick), not a mode, and it has no off state to show. That is the report.
+
+       An action keeps its prominence without borrowing the language of state: accent TEXT on an
+       accent OUTLINE. And the fill now has the one meaning it has everywhere else in this panel —
+       `picking` is genuinely on while a pick is armed, so that is when it is filled. In the normal
+       path window.IntMapPick hides the panel for the duration (#R196), so what a user sees is a
+       button that is never stuck on; in the fallback path (no pick module, panel stays up) the fill
+       is the armed state, which is exactly what it should have meant all along. */
+    const PICKBTN=(on)=>BTN+'width:100%;font-weight:700;'+(on
+      ? 'background:var(--primary-color);color:#fff;border-color:transparent;'
+      : 'background:transparent;color:var(--primary-color);border-color:var(--primary-color);');
     /* (#R189) every control that changes the PHYSICS goes through this — redraw, re-report, and
        rebuild the painted field (debounced; the wavefront tick never comes through here).
        (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
@@ -1214,7 +1232,9 @@ window.IntMapModules.seismic=function(HOST){
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
-        +'<button class="sq-pick" style="'+BTN+'width:100%;background:var(--primary-color);color:#fff;border:none;font-weight:700;">◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')+'</button>'
+        +'<button class="sq-pick" style="'+PICKBTN(picking)+'">'+(picking
+          ?('◎ '+L('Tap the map…','地図をタップ…','Auf die Karte tippen…','Нажмите на карту…','Toca el mapa…'))
+          :('◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')))+'</button>'
         /* (#R205) …and what a PLAIN click on the map does, stated and switchable — see onClick. The
            ◎ button above stays because it is the one that works on a phone, where this panel covers
            the map (#R196); this row is for the gesture a hand makes without pressing anything. */
@@ -1515,7 +1535,11 @@ window.IntMapModules.seismic=function(HOST){
       return out.slice(0,12);
     }
     let pickH=null;
-    function endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+    /* (#R206) ⚠ setPicking, not `picking=false` — the fallback path (no IntMapPick) leaves the panel
+       ON SCREEN while a pick is armed, so it is the one path where the button's state is visible and
+       therefore the one that must put it back. `function` declarations hoist, so calling it from here
+       is safe (#R200: the same care a `const` would have needed). */
+    function endPick(){ setPicking(false); try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
       try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
       try{ GE().render.canvas().style.cursor=''; }catch(_){} }
     /* ══ (#R196) THE EPICENTRE CAN BE MOVED AGAIN ══════════════════════════════════════════════════
@@ -1525,13 +1549,17 @@ window.IntMapModules.seismic=function(HOST){
        sidebar — `document.elementsFromPoint` at the tap point returned `DIV.sidebar collapsed`, never
        the canvas. window.IntMapPick (js/map-pick.js) hides the panel for the duration of the click
        and brings it straight back, so the map is reachable on every screen. */
-    function startPick(){ endPick(); picking=true;
+    /* (#R206) …and the button says which of the two it is. `picking` is drawn by PICKBTN, so every
+       path that changes it re-renders — otherwise IntMapPick's teardown puts the panel back showing
+       the state it had when it was hidden, which is the stuck-looking button all over again. */
+    function setPicking(v){ const n=!!v; if(picking===n) return n; picking=n; if(opened&&panel) render(); return n; }
+    function startPick(){ endPick(); setPicking(true);
       const P=window.IntMapPick;
       if(P&&P.start){
         const ok=P.start({ panel, hidePanel:true,
           hint:L('Tap the map to place the epicentre.','地図をタップして震源地を置いてください。','Zum Setzen des Epizentrums auf die Karte tippen.','Нажмите на карту, чтобы указать эпицентр.','Toca el mapa para colocar el epicentro.'),
-          onPick:(ll)=>{ picking=false; epi=[ll.lng,ll.lat]; _epiElev=null; refresh(); },
-          onCancel:()=>{ picking=false; } });
+          onPick:(ll)=>{ setPicking(false); epi=[ll.lng,ll.lat]; _epiElev=null; refresh(); },
+          onCancel:()=>{ setPicking(false); } });
         if(ok) return;
       }
       /* no pick module in this build — the original behaviour, unchanged */
