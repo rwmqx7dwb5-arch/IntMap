@@ -191,7 +191,16 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
   /* the four callers, each still keeping its old path as a fallback */
   const seismic = rd('js/seismic.js');
   assert.match(seismic, /const P=window\.IntMapPick;\s*\n\s*if\(P&&P\.start\)\{/, 'the seismic epicentre uses it');
-  assert.match(seismic, /picking=false; epi=\[ll\.lng,ll\.lat\]/, 'and sets the epicentre from the pick');
+  /* ⚠ (#R206) THIS ASSERTED A LITERAL AND SO IT BROKE ON A CHANGE THAT KEPT ITS MEANING.
+     It read `picking=false; epi=[ll.lng,ll.lat]` byte for byte; #R206 routes the flag through
+     setPicking() so the ◎ button can stop looking permanently selected, and the pin went red while
+     the behaviour it names — "a pick leaves pick mode and sets the epicentre to what was picked" —
+     was untouched. That behaviour is what is asserted now (the same lesson #R205 wrote down after
+     five pins broke the same way). */
+  const onPick = /onPick:\(ll\)=>\{([^}]*)\}/.exec(seismic);
+  assert.ok(onPick, 'the pick has an onPick handler');
+  assert.match(onPick[1], /picking\s*=\s*false|setPicking\(\s*false\s*\)/, 'a completed pick leaves pick mode');
+  assert.match(onPick[1], /epi\s*=\s*\[\s*ll\.lng\s*,\s*ll\.lat\s*\]/, 'and sets the epicentre from the pick');
   const sims = rd('js/sims.js');
   assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 6, 'the three pickers in js/sims.js use it');
 });
