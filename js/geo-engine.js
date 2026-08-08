@@ -848,7 +848,33 @@ function _m(){ return window.__imap||null; }
          Measured: five moves took the far plane from 23,722 to 31,604,404, a ratio of 1,332 against
          the ×8.7 the geometry asked for, which is a depth buffer thrown away. So the override is
          cleared in one pass and applied in the NEXT one, and only when the transform says it is
-         calculating automatically again. */
+         calculating automatically again.
+
+         ══ ⚠ (#R203) …AND THAT TWO-PASS DANCE IS THE FLICKER ══════════════════════════════════════
+         「MapLibreでななめに地表を見た際にズームすると、地平線付近が点滅するのを辞めろ。」
+
+         MEASURED, frame by frame, on a pitch-78 wheel zoom over Fuji (transform.farZ logged on every
+         `render`): 186 frames, 43 distinct far planes, and **93 jumps of more than 50 % between
+         CONSECUTIVE frames** — 8,080 · 133,622 · 8,080 · 148,611 · 8,080 …  Every frame on which the
+         altitude had moved 5 % cleared the override, so that frame drew with MapLibre's own ten-times-h
+         plane and everything past it — which at pitch 78 is the whole band under the horizon —
+         DISAPPEARED, and the scheduled re-apply brought it back on the next one. The effect is
+         strictly the clearing: at a standstill it never happens, which is why five rounds of looking
+         at a still picture never saw it.
+
+         The clear existed only to read a pristine number. So the pristine number is REMEMBERED
+         instead, and measured this round it is a well-behaved thing to remember:
+             · Mercator (z ≥ 12): CONSTANT — 8,080 at every zoom of the sweep above. It is a distance
+               in screen pixels at the current zoom, and that unit rescales with the zoom itself.
+             · Sphere (z < 12): proportional to 2^zoom. 670,686 → 718,090 over Δz = 0.099 is ×1.0707
+               against 2^0.099 = 1.0707; → 761,236 over the next Δz = 0.084 is ×1.060 against 1.060.
+         Both are one statement — the pristine plane is a fixed number of WORLD units — so it is cached
+         with the zoom it was read at and rescaled by `2^Δzoom` while the renderer is drawing a sphere.
+         Nothing is cleared while the camera moves; the cache is re-read only when the thing it does
+         NOT model changes (pitch, viewport, sphere↔plane), and those are not what a zoom does. */
+      let pris=0, prisZoom=0, prisPitch=-1, prisH=0, prisW=0, prisSph=null;
+      const shapeChanged=(tr,sph)=>(prisPitch<0||Math.abs((tr.pitch||0)-prisPitch)>0.5
+        ||tr.height!==prisH||tr.width!==prisW||sph!==prisSph);
       const apply=(force)=>{
         try{
           const mm=_m(); if(!mm||!mm.transform) return;
@@ -866,18 +892,22 @@ function _m(){ return window.__imap||null; }
              renderer's own number stands — which is what the note at the top of this method always
              said this did. */
           const tilted=((tr.pitch||0)>=45);
-          if(!tilted){ if(tr.autoCalculateNearFarZ===false){ try{ tr.clearNearFarZOverride(); }catch(_){} lastAlt=-1; pending=false; } return; }
+          if(!tilted){ if(tr.autoCalculateNearFarZ===false){ try{ tr.clearNearFarZOverride(); }catch(_){} lastAlt=-1; prisPitch=-1; pending=false; } return; }
           const auto=(tr.autoCalculateNearFarZ!==false);
+          const sph=gSpherical(tr);
           /* the altitude moves continuously in a flight; recomputing the plane every frame would
              re-run the matrices twice a frame for a number that has barely changed */
           const moved=(lastAlt<=0)||Math.abs(alt-lastAlt)/lastAlt>=0.05;
-          if(!auto){
-            if(!(force||moved)) return;
+          if(auto){
+            /* the only moment the transform will tell the truth about its own plane — take it */
+            if(tr.farZ>0){ pris=tr.farZ; prisZoom=tr.zoom; prisPitch=(tr.pitch||0); prisH=tr.height; prisW=tr.width; prisSph=sph; }
+          } else if(shapeChanged(tr,sph)){
+            /* ⚠ THE ONLY REMAINING CLEAR, AND IT IS NOT ON THE ZOOM PATH. Pitch, a resize and the
+               sphere↔plane handover are the three things the cache does not model; each is a gesture
+               that ends, and re-reading costs the one frame the note above measures. A zoom changes
+               none of them. */
             try{ tr.clearNearFarZOverride(); }catch(_){}
             pending=true;
-            /* …and the next pass is scheduled rather than waited for: without this the extension
-               only lands on the move AFTER the one that needed it, so a jumpTo that settles leaves
-               the view with the renderer's own short plane until something else moves. */
             setTimeout(()=>{ try{ apply(true); }catch(_){} },0);
             return;
           }
@@ -885,10 +915,14 @@ function _m(){ return window.__imap||null; }
           lastAlt=alt; pending=false;
           const reach=Math.sqrt(2*R*alt+alt*alt)+Math.sqrt(2*R*PEAK);
           const mult=reach/(10*alt);                 /* against MapLibre's own ten-times-h cap */
-          if(!(mult>1.05)) return;                   /* looking down: the far plane is not what binds */
-          const near=tr.nearZ, base=tr.farZ;
+          /* looking down the far plane is not what binds — and if one is already in force it has to
+             come off, or a stale stretch outlives the view that wanted it */
+          if(!(mult>1.05)){ if(!auto){ try{ tr.clearNearFarZOverride(); }catch(_){} prisPitch=-1; } return; }
+          /* the pristine plane in TODAY's units: a fixed number of world units, and the world is
+             2^zoom pixels across only while the renderer is drawing a sphere (measured above). */
+          const base=pris>0 ? (sph ? pris*Math.pow(2,(tr.zoom||0)-prisZoom) : pris) : tr.farZ;
           if(!(base>0)) return;
-          tr.overrideNearFarZ(near, base*Math.min(60,mult));
+          tr.overrideNearFarZ(tr.nearZ, base*Math.min(60,mult));
         }catch(_){}
       };
       const onMove=()=>apply(false);

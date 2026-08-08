@@ -166,7 +166,13 @@ test('R197 space ⑦ the Moon keeps its near side towards the Earth', () => {
 
 test('R197 space ⑧ the bundled worlds: textures, names and the list of what is modelled', () => {
   const man = JSON.parse(rd('data/planets.json'));
-  assert.ok(man.textures && Object.keys(man.textures).length >= 10, 'ten surface textures ship');
+  /* ⚠ (#R203) NINE, NOT TEN, AND THE MISSING ONE IS THE POINT. 「宇宙を探索専用に別の地球を作るな」—
+     the Earth was a tenth 463 KB texture that existed for the space explorer alone, while the app
+     already ships data/world-basemap.jpg and draws the map's own globe with it. There is one Earth
+     picture now and this set is the OTHER worlds. */
+  assert.ok(man.textures && Object.keys(man.textures).length >= 9, 'the other worlds still ship a surface each');
+  assert.ok(!man.textures.earth, 'and the Earth is not among them — it is the app’s own basemap');
+  assert.match(String(man.earthNote || ''), /world-basemap\.jpg/, 'the manifest says where the Earth comes from');
   for (const [id, t] of Object.entries(man.textures)) {
     assert.equal(t.width, 2048, id + ' is 2048 wide');
     assert.equal(t.height, 1024, id + ' is 1024 tall');

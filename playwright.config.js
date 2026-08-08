@@ -8,7 +8,12 @@ import { defineConfig, devices } from '@playwright/test';
    spec that opens its OWN context (r197, r201 — sharing one page across a describe is how they stay
    cheap) cannot silently boot without the seed this config was the only holder of. */
 import { PORT, BASE, seededStorageState } from './tests/helpers/session-seed.js';
+/* (#R203) …and WHICH TIER this run is. See scripts/tiers.mjs: the suite is split into the 29 files
+   that run every time and the 27 that run nightly, and the split is data in tests/durations.json so
+   this config, the shard planner, the local runner and the budget gate cannot disagree about it. */
+import { wantedTier, tierIgnoreRegExps } from './scripts/tiers.mjs';
 const isCI = !!process.env.CI;
+const TIER = wantedTier(process.env);
 
 export default defineConfig({
   testDir: 'tests',
@@ -55,11 +60,19 @@ export default defineConfig({
      planner. It is unset everywhere else, so `npm test` locally is unchanged and still runs the lot. */
   testMatch: process.env.IM_SUITE === 'cesium' ? /-cesium.*\.spec\.js$/
     : (process.env.IM_PROFILE === '1' ? /r184-imagery-profile\.spec\.js$/ : undefined),
+  /* ⚠ (#R203) THE TIER IS APPLIED HERE AS WELL AS IN THE PLANNER, ON PURPOSE. CI hands the planner's
+     file list to `playwright test`, so the tier is already decided there — but `npx playwright test`
+     with no arguments (what a developer types, and what run-tests.mjs falls back to) would otherwise
+     run all 85 minutes without saying so. One rule, both entry points. IM_TIER=deep runs the other
+     half; IM_TIER=all runs everything, which is what the nightly workflow asks for. */
   testIgnore: process.env.IM_PROFILE === '1'
-    ? /prod-smoke\.spec\.js/
-    : (process.env.IM_SUITE === 'rest'
-      ? /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js|-cesium.*\.spec\.js$/
-      : /prod-smoke\.spec\.js|r184-imagery-profile\.spec\.js/),
+    ? [/prod-smoke\.spec\.js/]
+    : [
+      /prod-smoke\.spec\.js/, /r184-imagery-profile\.spec\.js/,
+      ...(process.env.IM_SUITE === 'rest' ? [/-cesium.*\.spec\.js$/] : []),
+      /* core → hide the deep files; deep → hide everything that is not one of them */
+      ...tierIgnoreRegExps(TIER),
+    ],
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast

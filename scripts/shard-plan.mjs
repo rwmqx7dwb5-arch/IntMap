@@ -40,12 +40,11 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* (#R203) the core/deep split, read from the same table as the times (see scripts/tiers.mjs). */
+import { inTier, NEVER } from './tiers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DUR = join(ROOT, 'tests', 'durations.json');
-
-/* Specs that never take part in a sharded browser run (see playwright.config.js for each one). */
-const NEVER = [/^prod-smoke\.spec\.js$/, /^r184-imagery-profile\.spec\.js$/];
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const has = (k) => process.argv.includes(k);
@@ -62,11 +61,15 @@ function load() {
   return { times, solo, perTest };
 }
 
-/* every spec that exists, so a file added without a measurement still gets scheduled */
+/* every spec that exists IN THE REQUESTED TIER, so a file added without a measurement still gets
+   scheduled. `--tier` defaults to core: the plan a PR is gated on. */
+const TIER = (() => { const v = String(arg('--tier', 'core')).toLowerCase();
+  return (v === 'deep' || v === 'all') ? v : 'core'; })();
 function specs() {
   return readdirSync(join(ROOT, 'tests'))
     .filter((f) => f.endsWith('.spec.js') && !NEVER.some((r) => r.test(f)))
-    .map((f) => 'tests/' + f);
+    .map((f) => 'tests/' + f)
+    .filter((f) => inTier(f, TIER));
 }
 
 function isSolo(file, solo) { return solo.some((p) => new RegExp(p).test(file)); }
@@ -194,7 +197,7 @@ if (has('--merge')) {
      absent spec is charged p75 by plan(), which would silently re-open the packing defect above. */
   const kept = {};
   for (const [k, v] of Object.entries(raw)) if (k !== 'solo' && typeof v === 'number' && !(k in acc)) kept[k] = v;
-  const out = { ...acc, ...kept, solo: raw.solo || [] };
+  const out = { ...acc, ...kept, solo: raw.solo || [], deep: raw.deep || [] };
   writeFileSync(DUR, JSON.stringify(out, null, 1) + '\n');
   console.log(`shard-plan: merged ${read} fragment(s) → ${Object.keys(acc).length} measured, ${Object.keys(kept).length} carried over`);
   process.exit(0);
@@ -219,7 +222,7 @@ if (has('--update')) {
     }
   }
   if (!Object.keys(acc).length) { console.error('shard-plan --update: no testcase timings found'); process.exit(1); }
-  const out = { ...acc, solo: raw.solo || [] };
+  const out = { ...acc, solo: raw.solo || [], deep: raw.deep || [] };
   writeFileSync(DUR, JSON.stringify(out, null, 1) + '\n');
   console.log(`shard-plan: refreshed ${Object.keys(acc).length} file timings in tests/durations.json`);
   process.exit(0);

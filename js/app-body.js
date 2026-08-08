@@ -32,6 +32,8 @@
 /* (#R199) A real ES import, not window.IntMapModules: the theme/sky subsystem is a named binding the
    bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
 import { makeThemeSky } from './theme-sky.js';
+/* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
+import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
@@ -804,7 +806,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* (#R19) Desktop maxZoom 18→19: Esri World Imagery serves real z19 tiles over most urban areas,
          so 3D/satellite close-ups gain a full extra level of native detail (no upscaling). Phones stay
          at 18 — the extra tile set is pure GPU/RAM cost there ("ブラウザが落ちることがないように"). */
-      center:[10,20], zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
+      /* ⚠ (#R203) THE DEFAULT CENTRE IS A LONGITUDE, AND THE LONGITUDE DECIDES WHETHER THE APP
+         OPENS ON A BLACK PLANET. 「起動したときに地図が真っ暗になっている場合がある」— measured at
+         [29,30,36] over the whole canvas with 52 % of pixels under luminance 15, because at 22:49 UTC
+         10°E is half past midnight and #R201's night side is (as it was asked to be) the Black Marble
+         product at full alpha. js/opening-view.js keeps this centre whenever the Sun is at least 12°
+         above it and rotates to the sub-solar longitude when it is not. Same latitude, same zoom, and
+         a hash, a search or one drag overrides it immediately. */
+      center:OpeningView.openingCentre(OpeningView.openingClockMs(),[10,20]), zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         /* ══ (#R191) A TILE SHOULD ARRIVE, NOT APPEAR ═══════════════════════════════════════════════
@@ -823,7 +832,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
            sharpening. Every OTHER raster overlay keeps 0: they are data layers, not photographs, and
            a half-faded thermal-anomaly value is a wrong value. */
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':180}},
-          {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':0}},
+          {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':180}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
           /* (#R34) DARK-MAP CONTRAST — done by genuinely INCREASING the base raster's contrast (the only

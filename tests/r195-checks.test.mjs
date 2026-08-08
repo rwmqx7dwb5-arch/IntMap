@@ -142,17 +142,27 @@ test('R195 ⑦: the measured shard plan runs every spec exactly once, and is bal
   const ci = rd('.github/workflows/ci.yml');
   /* the group counts CI actually asks for — read them rather than assuming, so this test tracks
      the workflow instead of a copy of it */
-  const of = {};
-  for (const m of ci.matchAll(/\{ suite: (\w+), shard: \d+, of: (\d+) \}/g)) of[m[1]] = +m[2];
-  assert.ok(of.rest && of.cesium, 'both pools appear in the matrix');
+  /* ⚠ (#R203) TWO TIERS NOW, AND THE PROPERTY IS ABOUT BOTH OF THEM TOGETHER. The gate runs the core
+     tier and the nightly/post-merge job runs the deep one, so neither plan covers the suite on its
+     own — but their UNION still must, exactly once, or a spec has quietly stopped running anywhere.
+     The tiers and their group counts are read out of the workflow, so this tracks it rather than
+     copying it: each `browser*` job states its tier once, in the `with:` line of the composite action. */
+  const jobs = [];
+  for (const m of ci.matchAll(/\{ suite: (\w+), shard: \d+, of: (\d+) \}/g)) {
+    /* which job block is this matrix entry in? the nearest `tier: <x>` BELOW it in the file */
+    const tier = (/with: \{ tier: (\w+),/.exec(ci.slice(m.index)) || [, 'core'])[1];
+    if (!jobs.some((j) => j.tier === tier && j.pool === m[1])) jobs.push({ tier, pool: m[1], of: +m[2] });
+  }
+  assert.ok(jobs.some((j) => j.tier === 'core'), 'the core tier appears in the matrix');
+  assert.ok(jobs.some((j) => j.tier === 'deep' && j.pool === 'cesium'), 'and the deep tier carries the solo pool');
 
   const run = (a) => execFileSync(process.execPath, [join(ROOT, 'scripts/shard-plan.mjs'), ...a],
     { cwd: ROOT, encoding: 'utf8' });
   const seen = [];
-  for (const pool of ['rest', 'cesium']) {
-    for (let g = 1; g <= of[pool]; g++) {
-      const files = run(['--pool', pool, '--group', String(g), '--of', String(of[pool])]).trim().split(/\s+/);
-      assert.ok(files.length && files[0], `${pool} group ${g} is not empty — an empty list makes ` +
+  for (const j of jobs) {
+    for (let g = 1; g <= j.of; g++) {
+      const files = run(['--tier', j.tier, '--pool', j.pool, '--group', String(g), '--of', String(j.of)]).trim().split(/\s+/);
+      assert.ok(files.length && files[0], `${j.tier}/${j.pool} group ${g} is not empty — an empty list makes ` +
         'playwright run the WHOLE suite, which reads as a very slow pass');
       seen.push(...files);
     }
@@ -212,10 +222,11 @@ test('R195 ⑧: a failure is classified against main without re-running main', (
   assert.match(src, /b\.status === 'passed' \? 'MINE' : 'ALSO ON MAIN'/, 'the verdict rule');
   assert.match(src, /!b \? 'UNKNOWN'/, 'a test main never recorded is UNKNOWN, never someone else\'s problem');
   /* ⚠ only main may write it: a branch recording its own results would define its own "normal" */
-  const ci = rd('.github/workflows/ci.yml');
-  assert.match(ci, /if: \$\{\{ github\.ref == 'refs\/heads\/main' && !cancelled\(\) \}\}[\s\S]{0,200}?baseline\.mjs --update/,
+  /* (#R203) the shard's own steps live in the composite action both browser jobs call */
+  const act = rd('.github/actions/browser-tier/action.yml');
+  assert.match(act, /if: \$\{\{ github\.ref == 'refs\/heads\/main' && !cancelled\(\) \}\}[\s\S]{0,200}?baseline\.mjs --update/,
     'the baseline is written only on main');
-  assert.match(ci, /if: \$\{\{ failure\(\) \}\}[\s\S]{0,200}?baseline\.mjs --classify/,
+  assert.match(act, /if: \$\{\{ failure\(\) \}\}[\s\S]{0,200}?baseline\.mjs --classify/,
     'and a red PR job says which failures main does not have');
 });
 
