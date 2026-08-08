@@ -58,8 +58,27 @@ window.IntMapPick=(function(){
     return bar;
   }
 
-  function _hide(el){ if(!el) return null; const prev=el.style.display; el.style.display='none'; return prev; }
-  function _show(el,prev){ if(!el) return; el.style.display=(prev==null||prev==='none')?'flex':prev; }
+  /* ══ (#R207) THE PANEL STOPS BLOCKING THE MAP WITHOUT LEAVING THE SCREEN ═══════════════════════
+     「震源地を設置ボタンを押すとポップアップが消えるのは不要。」
+
+     #R196 (the block above) is right about the defect and its fix went one step too far: the problem
+     it measured is that the panel STANDS ON the canvas, and the remedy it chose was to take the panel
+     away. Those are not the same thing. `pointer-events:none` removes the panel from hit-testing
+     entirely — `document.elementsFromPoint` at any point over it then returns the canvas — so the tap
+     reaches the map through the panel, and the panel is still there to read while it does.
+
+     That keeps BOTH halves: the phone case #R196 measured (82 % of the map covered) still works,
+     because coverage stops mattering once the cover is transparent to input, and the panel no longer
+     vanishes on a desktop where it never needed to.
+
+     Slightly faded, because a panel that cannot be touched must not look like one that can. The
+     restore puts back exactly what was there, including an inline value the caller had set. */
+  function _ghost(el){ if(!el) return null;
+    const prev={ pe:el.style.pointerEvents, op:el.style.opacity };
+    el.style.pointerEvents='none'; el.style.opacity='0.55';
+    return prev; }
+  function _unghost(el,prev){ if(!el||!prev) return;
+    el.style.pointerEvents=prev.pe||''; el.style.opacity=prev.op||''; }
 
   function _teardown(){
     if(!live) return;
@@ -68,8 +87,8 @@ window.IntMapPick=(function(){
     try{ GE().render.canvas().style.cursor=''; }catch(_){}
     try{ document.removeEventListener('keydown',s.esc,true); }catch(_){}
     if(bar) bar.style.display='none';
-    /* the panel comes back exactly as it was — display, not a guess at 'flex' vs 'block' */
-    if(s.panel&&s.hid) _show(s.panel,s.prevDisplay);
+    /* (#R207) the panel comes back exactly as it was — the two inline properties that were changed */
+    if(s.panel&&s.hid) _unghost(s.panel,s.prevStyle);
     return s;
   }
 
@@ -78,8 +97,10 @@ window.IntMapPick=(function(){
     o=o||{};
     cancel();                                  /* only one gesture at a time — a second ◎ replaces the first */
     const panel=o.panel||null;
-    const s={ panel, hid:false, prevDisplay:null, h:null, esc:null, onPick:o.onPick, onCancel:o.onCancel };
-    if(panel&&o.hidePanel!==false){ s.prevDisplay=_hide(panel); s.hid=true; }
+    const s={ panel, hid:false, prevStyle:null, h:null, esc:null, onPick:o.onPick, onCancel:o.onCancel };
+    /* (#R207) `hidePanel` keeps its name and its callers — what it does is now "get the panel out of
+       the way of the pointer", which is the thing every caller actually wanted. */
+    if(panel&&o.hidePanel!==false){ s.prevStyle=_ghost(panel); s.hid=true; }
     const b=ensureBar();
     b.querySelector('.im-pick-msg').textContent=o.hint
       ||L('Tap the map to place it.','地図をタップして配置してください。','Zum Platzieren auf die Karte tippen.',

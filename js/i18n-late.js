@@ -90,6 +90,24 @@ export function makeI18nLate(HOST, CTX) {
   try{ Object.assign(i18n.de,{ lblKbd:"Tastaturkürzel", viewKbd:"⌨ Tastaturkürzel anzeigen (oder ? drücken)" }); }catch(_){}
   try{ Object.assign(i18n.ru,{ lblKbd:"Горячие клавиши", viewKbd:"⌨ Показать горячие клавиши (или нажмите ?)" }); }catch(_){}
   try{ Object.assign(i18n.es,{ lblKbd:"Atajos de teclado", viewKbd:"⌨ Ver atajos de teclado (o pulsa ?)" }); }catch(_){}
+  /* (#R207) the news COUNTRY mode select (now shaped like the language one) and the new OUTLET
+     picker — 5 languages, added here for the same reason the ticker's keys are: this file runs before
+     anything reads i18n, and these strings belong to controls built at settings-open time. */
+  Object.assign(i18n.en,{ newsCountryOff:"Default feeds only", newsCountryMultiSel:"Choose countries…",
+    lblNewsSources:"News outlets", newsSourceAll:"All outlets", newsSourceMultiSel:"Choose outlets…",
+    newsSourcesHint:"Only headlines from the outlets you tick are shown. The list is built from the outlets your current feed actually carries." });
+  Object.assign(i18n.jp,{ newsCountryOff:"標準のニュースのみ", newsCountryMultiSel:"国を選択…",
+    lblNewsSources:"ニュースの提供元", newsSourceAll:"すべての提供元", newsSourceMultiSel:"提供元を選択…",
+    newsSourcesHint:"チェックした提供元の見出しだけを表示します。一覧は、いま取得できている見出しの提供元から作られます。" });
+  try{ Object.assign(i18n.de,{ newsCountryOff:"Nur Standard-Feeds", newsCountryMultiSel:"Länder auswählen…",
+    lblNewsSources:"Nachrichtenquellen", newsSourceAll:"Alle Quellen", newsSourceMultiSel:"Quellen auswählen…",
+    newsSourcesHint:"Es werden nur Schlagzeilen der angehakten Quellen gezeigt. Die Liste stammt aus den Quellen, die Ihr aktueller Feed tatsächlich liefert." }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ newsCountryOff:"Только стандартные ленты", newsCountryMultiSel:"Выбрать страны…",
+    lblNewsSources:"Источники новостей", newsSourceAll:"Все источники", newsSourceMultiSel:"Выбрать источники…",
+    newsSourcesHint:"Показываются только заголовки отмеченных источников. Список составлен из источников, которые действительно есть в вашей ленте." }); }catch(_){}
+  try{ Object.assign(i18n.es,{ newsCountryOff:"Solo fuentes predeterminadas", newsCountryMultiSel:"Elegir países…",
+    lblNewsSources:"Medios de noticias", newsSourceAll:"Todas las fuentes", newsSourceMultiSel:"Elegir medios…",
+    newsSourcesHint:"Solo se muestran titulares de los medios marcados. La lista se construye con los medios que realmente trae tu fuente actual." }); }catch(_){}
   /* (#R63) bottom news/markets ticker setting — 5 languages */
   Object.assign(i18n.en,{ lblTicker:"Bottom ticker (news & markets)", tickerOff:"Off (default)", tickerOn:"On — thin strip below the map", tkItems:"Shown items", tkNews:"News headlines", tkgFx:"Forex", tkgIdx:"Indices", tkgCom:"Commodities", tkgCrypto:"Crypto" });
   Object.assign(i18n.jp,{ lblTicker:"下部ティッカー（ニュース・マーケット）", tickerOff:"オフ（デフォルト）", tickerOn:"オン — 地図の下に細い帯を表示", tkItems:"表示する項目", tkNews:"ニュース見出し", tkgFx:"為替", tkgIdx:"株価指数", tkgCom:"商品", tkgCrypto:"暗号資産" });
@@ -104,7 +122,19 @@ export function makeI18nLate(HOST, CTX) {
   try{ Object.assign(i18n.es,{ sortLife:"Esperanza de vida", sortTfr:"Fecundidad", sortAsc:"Ascendente", sortDesc:"Descendente", sortDir:"Cambiar orden" }); }catch(_){}
   /* (#R102) ticker symbol/item picker in Settings — builds checkboxes from IntMapTicker's symbol registry + a News toggle,
      grouped by category; each change is applied & persisted immediately via IntMapTicker.setConfig. */
+  /* ══ (#R207) THE ITEM PICKER IS PART OF "ON", NOT PART OF THE SETTING ═══════════════════════════
+     「設定欄の下部ティッカー（ニュース・マーケット）の表示する項目選択欄は、オフ時は表示せず、オン時にだけ
+      表示されるように。」 The picker was built unconditionally, so with the ticker off (which is the
+     DEFAULT since #R170) every session opened Settings to a list of checkboxes choosing the contents
+     of a strip that is not on screen.
+     ⚠ READ FROM THE SELECT, NOT FROM `window.imTicker`. The select is what the user has just chosen;
+     `imTicker` is what was last APPLIED, and between the two is exactly the moment this has to react
+     in. Falls back to the applied value when the select is absent (Atlas can call this too). */
   window._populateTickerSyms=function(){ try{ const host=document.getElementById('ticker-syms'); const TK=window.IntMapTicker; if(!host||!TK||!TK.getConfig) return;
+    const sel=document.getElementById('setting-ticker');
+    const on=String((sel&&sel.value)||window.imTicker||'off')!=='off';
+    host.style.display=on?'':'none';
+    if(!on){ host.innerHTML=''; return; }
     const cf=TK.getConfig(); const L=(k)=>{ try{ return (i18n[HOST.lang]&&i18n[HOST.lang][k])||i18n.en[k]||k; }catch(_){ return k; } };
     const groups=[['fx',L('tkgFx')],['idx',L('tkgIdx')],['com',L('tkgCom')],['crypto',L('tkgCrypto')]];
     let html='<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">'+L('tkItems')+'</div>';

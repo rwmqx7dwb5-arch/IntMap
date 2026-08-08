@@ -32,6 +32,30 @@ const OUT_DIR = path.join(process.cwd(), 'data', 'tle');
 const CELESTRAK = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle';
 const SATNOGS = 'https://db.satnogs.org/api/tle/?format=json';
 const TIMEOUT_MS = Number(process.env.TLE_TIMEOUT_MS || 90000);
+/* ══ (#R207) …AND WHICH OBJECTS ARE IN WHICH CATALOGUE ══════════════════════════════════════════
+   「人工衛星レイヤーで、カテゴリ選択が機能していない。」
+
+   REPRODUCED against the live app: `fetch('https://celestrak.org/…')` → "Failed to fetch", while
+   Esri and USGS both answer 200 from the same page. So CelesTrak is the one host that is out — the
+   condition #R185 built this snapshot for — and #R185's fallback covers exactly ONE group:
+
+       if (want === 'active' && !sats.length) { … the bundled catalogue … }
+
+   Everything else runs the whole ladder, fails, and returns false: catalogue 0, drawn 0, an empty
+   map. MEASURED: switching the picker from "All active" to "Space stations" took 16,099 objects to
+   0. The picker is not broken — it is the only control in the app whose every setting but the
+   default has no offline path, so it LOOKS broken exactly when the snapshot is doing its job.
+
+   A TLE says nothing about which CelesTrak group it belongs to, and inferring one from the object's
+   NAME would be fabrication (standing instruction 4) — "visual" in particular is a curated
+   brightness list that no element set implies. So the membership is FETCHED, from the same
+   authority, at the same time as the elements, and shipped beside them: `groups.json` is
+   {group: [NORAD ids…]}, ints only, which is a few tens of KB for the whole set.
+
+   ⚠ A GROUP THAT DOES NOT ANSWER IS OMITTED, NOT EMPTIED. An empty array would mean "this catalogue
+   contains nothing", which is a claim; a missing key means "not known here", which is the truth, and
+   the app treats the two differently (see js/satellites-live.js `bundledGroup`). */
+const GROUPS = ['visual', 'stations', 'weather', 'geo', 'gps-ops', 'galileo', 'science', 'starlink'];
 
 const get = async (url, kind) => {
   const ac = new AbortController();
@@ -110,6 +134,36 @@ const medianAgeH = (() => {
   const ages = kept.map(o => (now - o.epoch) / 3600000).sort((a, b) => a - b);
   return +ages[ages.length >> 1].toFixed(1);
 })();
+/* (#R207) the membership lists — see the note by GROUPS. Sequential rather than parallel: this is a
+   free service and #R185's own notes record it rate-limiting a burst of requests for one group. */
+const groupIds = {};
+const groupErr = [];
+const have = new Set(kept.map(o => o.l1.slice(2, 7).trim().replace(/^0+/, '')));
+for (const g of GROUPS) {
+  try {
+    const txt = await get('https://celestrak.org/NORAD/elements/gp.php?GROUP=' + encodeURIComponent(g) + '&FORMAT=tle', 'text');
+    const ids = [];
+    const lines = String(txt).split(/\r?\n/);
+    for (let i = 0; i + 2 < lines.length + 1; i += 3) {
+      const l1 = lines[i + 1], l2 = lines[i + 2];
+      if (!usable(l1, l2)) continue;
+      const id = l1.slice(2, 7).trim().replace(/^0+/, '');
+      /* only ids the shipped catalogue can actually serve — a member it does not hold would make the
+         count in the legend disagree with what is drawn */
+      if (have.has(id)) ids.push(+id);
+    }
+    if (ids.length) groupIds[g] = ids.sort((a, b) => a - b);
+    else groupErr.push(g + ': parsed nothing');
+  } catch (e) { groupErr.push(g + ': ' + (e && e.message || e)); }
+}
+fs.writeFileSync(path.join(OUT_DIR, 'groups.json'), JSON.stringify({
+  source: 'CelesTrak GP group listings',
+  builtAt: new Date().toISOString(),
+  note: 'NORAD catalogue numbers per CelesTrak group, restricted to objects present in catalogue.tle. Lets the bundled snapshot answer a category request when the live feed is unreachable. A group that could not be fetched is ABSENT, not empty.',
+  groups: groupIds,
+  errors: groupErr,
+}) + '\n', 'utf8');
+
 fs.writeFileSync(path.join(OUT_DIR, 'catalogue.json'), JSON.stringify({
   source, objects: kept.length, newestEpoch: newestIso, medianElementAgeHours: medianAgeH,
   builtAt: new Date().toISOString(),
@@ -117,4 +171,6 @@ fs.writeFileSync(path.join(OUT_DIR, 'catalogue.json'), JSON.stringify({
   errors: err,
 }, null, 1) + '\n', 'utf8');
 console.log('catalogue:', kept.length, 'objects from', source, '· newest epoch', newestIso, '·', Math.round(text.length / 1024) + ' KB');
+console.log('groups:', Object.keys(groupIds).map(g => g + '=' + groupIds[g].length).join(' ') || '(none)');
+if (groupErr.length) console.log('  (group listings unavailable:', groupErr.join('; ') + ')');
 if (err.length) console.log('  (fell back:', err.join('; ') + ')');

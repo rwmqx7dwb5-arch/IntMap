@@ -355,8 +355,11 @@ window.__imBuild='R205';   /* (#R121) build marker — bump when verifying that 
     </div>
     <div class="map-controls-top">
       <div class="map-view-group">
-        <button class="view-btn active" id="btn-view-map" data-i18n="viewMap">Map</button>
-        <button class="view-btn" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
+        <!-- (#R207) Satellite is the default basemap now (js/app-body.js `currentMapType`), so the
+             pressed state starts here — otherwise the segmented control reads "Map" over a satellite
+             picture for as long as the style takes to load. -->
+        <button class="view-btn" id="btn-view-map" data-i18n="viewMap">Map</button>
+        <button class="view-btn active" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
       </div>
       <div class="map-view-group">
         <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
@@ -593,12 +596,26 @@ window.__imBuild='R205';   /* (#R121) build marker — bump when verifying that 
       </div>
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
-    <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label>
-      <div class="sat-keys-hint" data-i18n="newsCountriesHint">Also pull headlines from the national outlets of the countries you pick (multiple allowed).</div>
-      <div id="newscountry-dd" class="nc-dd">
+    <!-- (#R207) 「国別メディアのニュースの選択欄は、ニュースの言語の選択欄と同じUIに。今は微妙に違って、
+         統一感がなく気持ち悪い。」 This block now has byte-for-byte the same shape as the languages block
+         above it: a <select> that chooses the MODE, the nc-dd multi-select shown only when that mode is
+         "choose…", and the explanatory hint BELOW the control rather than above it. -->
+    <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label><select id="setting-newscountry"><option value="off" data-i18n="newsCountryOff">Default feeds only</option><option value="multi" data-i18n="newsCountryMultiSel">Choose countries…</option></select>
+      <div id="newscountry-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newscountry-dd-btn" class="nc-dd-btn"><span id="newscountry-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
         <div id="newscountry-multi" class="nc-dd-panel"></div>
       </div>
+      <div id="newscountry-hint" class="sat-keys-hint" data-i18n="newsCountriesHint" style="display:none; margin-top:6px;">Also pull headlines from the national outlets of the countries you pick (multiple allowed).</div>
+    </div>
+    <!-- (#R207) 「ニュースは、ニュースの元を選択できるように。例えば、ロイターとか、なんとか新聞とか、
+         そういう。複数選択可能。」 Same UI again; the list is built from the outlets the feed has actually
+         delivered (see _populateNewsSources), so it never claims an outlet that is not there. -->
+    <div class="setting-group"><label data-i18n="lblNewsSources">News outlets</label><select id="setting-newssource"><option value="off" data-i18n="newsSourceAll">All outlets</option><option value="multi" data-i18n="newsSourceMultiSel">Choose outlets…</option></select>
+      <div id="newssource-dd" class="nc-dd" style="display:none; margin-top:10px;">
+        <button type="button" id="newssource-dd-btn" class="nc-dd-btn"><span id="newssource-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
+        <div id="newssource-multi" class="nc-dd-panel"></div>
+      </div>
+      <div id="newssource-hint" class="sat-keys-hint" data-i18n="newsSourcesHint" style="display:none; margin-top:6px;">Only headlines from the outlets you tick are shown. The list is built from the outlets your current feed actually carries.</div>
     </div>
     </div>
     <div class="settings-sech" data-i18n="setSecAI">AI</div>
