@@ -95,6 +95,9 @@ window.IntMapModules.tsunami=function(HOST){
     let busy=false, pct=0, seq=0, jobId=0;
     let tSim=0, playing=0, rafId=0, speed=180;    /* speed = simulated seconds per real second */
     let hours=6, opacity=0.9, showMax=false, showIso=true;
+    /* (#R204) which domain the next run uses: 'global' (the planet at 0.25°, #R197) or 'near' (the
+       source region at 1/12°). The default is the one #R197 was asked for; this is the extra one. */
+    let scope='global';
     let dispAmp=null;                   /* metres at which the ramp saturates; null = automatic */
     let lastErr=null, probe=null;
 
@@ -130,6 +133,67 @@ window.IntMapModules.tsunami=function(HOST){
     function decNow(){ return (typeof isMobile==='function'&&isMobile())?3:2; }
     function wantFrames(){ return (typeof isMobile==='function'&&isMobile())?90:140; }
 
+    /* ══ (#R204) A SECOND DOMAIN: THE SOURCE REGION, AT FOUR TIMES THE RESOLUTION ═══════════════════
+       「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
+       Asked for in #R202 and again in #R203, and deferred twice with a reason: #R203 measured the
+       whole-planet grid at 0.25° = 31.2 s for six hours, 1/6° = 63.4 s and 0.125° = 165 s, and
+       concluded a nested grid would mean making src/tsunami-worker.js NON-PERIODIC in longitude —
+       every flux loop, the light-cone column window and the polar filter wrap `i` — i.e. rewriting
+       the inside of the physics that #R192/#R193/#R197 verified. That reasoning was right about a
+       longitude BOX and wrong about what a nested domain has to be.
+
+       A LATITUDE BAND AT THE FULL CIRCLE needs none of it. `nx`, `ny`, `lat0` and `lat1` have been
+       message parameters since #R197; longitude stays periodic, so not one line of the solver
+       changes, and the two latitude walls already have the sponge that #R197 put there. So the fine
+       domain is the whole circle at 1/12° over ±BAND° of the source:
+
+           global   1440 × 640 over ±80°     27.8 km at the equator   (unchanged, still the default)
+           near     4320 × 240 over src±10°   9.3 km                  desktop
+                    2880 × 192 over src±8°   13.9 km                  phone
+
+       ⚠ WHAT IT COSTS IS BOUNDED BY THE LIGHT CONE, NOT BY nx. #R197's cone integrates only the
+       columns the wave has reached, so a 4,320-wide grid whose wave has travelled 1,000 km touches
+       ~230 columns, and the run is a few seconds. What DOES scale with nx is memory — six Float32
+       fields over nx·ny — which is why the band is thin and why the phone gets a coarser one.
+       ⚠ AND THE FRAMES STAY THE SIZE THEY WERE. `dec` is raised with the grid (3 → 9 / 6), so a
+       near-source frame is the same 480 × 27-ish Int8 the global run streams — the ANIMATION gains
+       the band's much finer degrees-per-pixel without the run holding four times the picture.
+       The maximum crest, the minimum trough and the first-arrival field come back at FULL grid
+       resolution in both scopes (see the worker), so those three are simply 4× finer here.
+       ⚠ THE HOURS ARE CAPPED, because the band's own walls are the horizon: ±10° is ~1,110 km, which
+       a deep-ocean long wave crosses in about 1.5 h, and past that the sponge is eating the answer.
+       The panel says so rather than letting a 24 h near-source run look like a global one.
+       ⚠ AND THE SEA FLOOR IS STILL THE BUNDLED 0.25° ONE. data/bathymetry.png is built from AWS
+       terrarium z5 (~4.9 km a sample, so a 0.25° cell averages ~30 measured samples); a 1/12° cell
+       reads the same image and therefore shares its neighbours' depth. What this scope refines is the
+       SOURCE, the numerics and the arrival field — not the bathymetry, and not the coastline, which
+       stays a 0.25° staircase. Refining that means a finer bundled floor; it is written down in
+       DEV-NOTES as the next step rather than implied by a finer grid. */
+    const NEAR_BAND=()=>((typeof isMobile==='function'&&isMobile())?8:10);
+    const NEAR_CPD=()=>((typeof isMobile==='function'&&isMobile())?8:12);   /* cells per degree */
+    const NEAR_MAX_H=3;
+    function nearDomain(lat){
+      const cpd=NEAR_CPD(), band=NEAR_BAND();
+      let a=Math.max(-80,Math.min(80-2*band,lat-band));
+      let b=Math.min(80,a+2*band);
+      a=Math.max(-80,b-2*band);
+      return { nx:Math.round(360*cpd), ny:Math.round((b-a)*cpd), lat0:a, lat1:b, cpd };
+    }
+    /* ⚠ MEASURED, AND THE FIRST GUESS WAS BACKWARDS. `dec` was set to 9/6 to keep a near-source frame
+       the same BYTE SIZE as a global one, and the first run showed why that is the wrong quantity:
+       4320 × 240 at dec 9 is 480 × 26, i.e. 1.3 rows a degree against the global run's 2 — the finer
+       model was drawn into a COARSER picture. The band is a fortieth of the globe's area, so the same
+       byte budget buys far more detail: dec 3 gives 1440 × 80, which is 4 px a degree in both
+       directions (twice the global picture) at 115 KB a frame against the global run's 230 KB. */
+    function nearDec(){ return (typeof isMobile==='function'&&isMobile())?4:3; }
+    /* the run lengths this scope offers, and the one that is actually in force — the near band's
+       walls are its horizon, so a 24 h selection made in the global scope is clamped rather than
+       silently solved past the point where the sponge is eating the answer. */
+    function hourChoices(){ return scope==='near'?[1,2,3]:[3,6,9,12,18,24,30]; }
+    function effHours(){ const c=hourChoices(); let best=c[0];
+      for(const h of c) if(Math.abs(h-hours)<Math.abs(best-hours)) best=h;
+      return (c.indexOf(hours)>=0)?hours:best; }
+
     const wrapLng=(v)=>((v+540)%360)-180;
     const latOfIdx=(j)=>LAT0+(j+0.5)*(LAT1-LAT0)/NY;
     const lngOfIdx=(i)=>-180+(i+0.5)*360/NX;
@@ -140,7 +204,7 @@ window.IntMapModules.tsunami=function(HOST){
       clearPaint(); render();
       const t0=performance.now();
       try{
-        const H=Math.max(1,Math.min(30,hours));
+        const H=Math.max(1,Math.min(scope==='near'?NEAR_MAX_H:30,effHours()));
         /* ── the sea floor: one bundled image, not ninety tiles ─────────────────────────────────
            #R192 measured 34 of 160 DEM tiles missing the timeout on an ocean-wide box, and 19 % of
            the cells then ran on a constant depth. A global domain cannot ask the network at all:
@@ -162,10 +226,15 @@ window.IntMapModules.tsunami=function(HOST){
         const W=window.IntMapTsunamiWorker;
         if(!W||!W.available()){ lastErr='noworker'; busy=false; render(); return; }
 
-        const dec=decNow();
-        sim={ nx:NX, ny:NY, lat0:LAT0, lat1:LAT1, dec, fx:0, fy:0,
+        /* (#R204) the domain this run uses — the planet, or the source region at 4× (see nearDomain) */
+        const near=(scope==='near');
+        const D=near?nearDomain(epi[1]):{ nx:NX, ny:NY, lat0:LAT0, lat1:LAT1 };
+        const dec=near?nearDec():decNow();
+        const latOfD=(j)=>D.lat0+(j+0.5)*(D.lat1-D.lat0)/D.ny;
+        const lngOfD=(i)=>-180+(i+0.5)*360/D.nx;
+        sim={ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec, fx:0, fy:0, scope,
               land:null, landD:null, depth:null, frames:[], nFrames:0, total:H*3600, amp:1,
-              latOf:latOfIdx, lngOf:lngOfIdx, running:true, emax:null, emin:null, tarr:null,
+              latOf:latOfD, lngOf:lngOfD, running:true, emax:null, emin:null, tarr:null,
               coastMax:0, coastAt:null, hours:H };
 
         const onModel=(m)=>{
@@ -188,7 +257,7 @@ window.IntMapModules.tsunami=function(HOST){
         };
         const onProg=(p)=>{ if(my!==seq) return; pct=Math.max(pct,Math.round(p)); if(opened) render(); };
 
-        const job=W.run({ nx:NX, ny:NY, lat0:LAT0, lat1:LAT1, dec,
+        const job=W.run({ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec,
                           bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm },
                           hours:H, frames:wantFrames(), filtLat:60 }, onFrames, onProg, onModel);
         if(!job){ lastErr='noworker'; busy=false; sim=null; render(); return; }
@@ -233,7 +302,10 @@ window.IntMapModules.tsunami=function(HOST){
         if(d<200) continue;
         if(!nearLand(i,j)) continue;
         const v=emax[k]*Math.pow(d/10,0.25);
-        if(v>best){ best=v; at=[lngOfIdx(i),latOfIdx(j)]; }
+        /* ⚠ (#R204) THE RUN'S OWN GRID, NOT THE MODULE CONSTANTS. These two helpers are built from
+           NX/NY/LAT0/LAT1 and the near-source scope solves on 4320 × 240 over a 20° band, so reading
+           them here reported a coast at longitude 786° — measured, on the first near run. */
+        if(v>best){ best=v; at=[sim.lngOf(i),sim.latOf(j)]; }
       }
       sim.coastMax=best; sim.coastAt=at;
     }
@@ -444,7 +516,7 @@ window.IntMapModules.tsunami=function(HOST){
          INSIDE a single sweep and the arrays are read directly. */
       const HRS=Math.min(30,Math.ceil(sim.total/3600));
       const segsBy=[]; for(let hh=0;hh<=HRS;hh++) segsBy.push([]);
-      const lngOf=lngOfIdx, latOf=latOfIdx;
+      const lngOf=sim.lngOf, latOf=sim.latOf;   /* (#R204) the run's grid — see coastal() */
       /* ⚠ (#R197) THE LAST COLUMN'S EASTERN NEIGHBOUR IS THE FIRST. The cell walk stops one short of
          nx in the loop bound and the wrap is handled by `ip`, so the contour closes across ±180
          instead of leaving a seam there — which on a global grid is the middle of the Pacific and
@@ -599,11 +671,30 @@ window.IntMapModules.tsunami=function(HOST){
         +L('The earthquake changed — recomputing the propagation.','地震の条件が変わりました — 伝播を再計算します。',
            'Das Beben hat sich geändert — Ausbreitung wird neu berechnet.','Землетрясение изменилось — пересчёт распространения.',
            'El terremoto cambió — recalculando la propagación.')+'</div>';
+      /* (#R204) which domain to solve on — see nearDomain(). The near scope states its own cell size
+         and its own horizon, because both are the reason to pick it. */
+      { const nd=nearDomain(epi[1]), km=Math.round(111.32/NEAR_CPD());
+        body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+          +L('Domain','計算領域','Gebiet','Область','Dominio')
+          +'<select class="tsu-scope" style="flex:1;'+BTN+'">'
+          +'<option value="global"'+(scope==='global'?' selected':'')+'>'
+            +L('Whole planet · 28 km','全球 · 28 km','Ganzer Planet · 28 km','Вся планета · 28 км','Todo el planeta · 28 km')+'</option>'
+          +'<option value="near"'+(scope==='near'?' selected':'')+'>'
+            +L('Near source · '+km+' km','震源近傍 · '+km+' km','Nahe der Quelle · '+km+' km','Вблизи очага · '+km+' км','Cerca del origen · '+km+' km')+'</option>'
+          +'</select></label>';
+        if(scope==='near') body+='<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;">'
+          +L('Latitude '+nd.lat0.toFixed(0)+'° to '+nd.lat1.toFixed(0)+'°, all longitudes, at four times the resolution. Capped at '+NEAR_MAX_H+' h — past that the wave reaches the band edge.',
+             '緯度 '+nd.lat0.toFixed(0)+'°〜'+nd.lat1.toFixed(0)+'°・全経度を4倍の解像度で。'+NEAR_MAX_H+'時間で打ち切り（それ以降は波が帯の端に達します）。',
+             'Breite '+nd.lat0.toFixed(0)+'° bis '+nd.lat1.toFixed(0)+'°, alle Längen, vierfache Auflösung. Auf '+NEAR_MAX_H+' h begrenzt — danach erreicht die Welle den Bandrand.',
+             'Широты '+nd.lat0.toFixed(0)+'°…'+nd.lat1.toFixed(0)+'°, все долготы, вчетверо детальнее. Не более '+NEAR_MAX_H+' ч — далее волна доходит до края полосы.',
+             'Latitud '+nd.lat0.toFixed(0)+'° a '+nd.lat1.toFixed(0)+'°, todas las longitudes, con cuádruple resolución. Máximo '+NEAR_MAX_H+' h — después la ola alcanza el borde.')
+          +'</div>'; }
       body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
         +L('Simulate','計算時間','Simulieren','Смоделировать','Simular')
         +'<select class="tsu-hours" style="flex:1;'+BTN+'">'
-        /* (#R197) up to 30 h — the far side of the planet and back. Chile→Japan is about 22 h. */
-        +[3,6,9,12,18,24,30].map(h=>'<option value="'+h+'"'+(h===hours?' selected':'')+'>'+h+' h</option>').join('')
+        /* (#R197) up to 30 h — the far side of the planet and back. Chile→Japan is about 22 h.
+           (#R204) the near-source band is bounded by its own walls, so its list stops at NEAR_MAX_H. */
+        +hourChoices().map(h=>'<option value="'+h+'"'+(h===effHours()?' selected':'')+'>'+h+' h</option>').join('')
         +'</select></label>';
       if(busy){
         body+='<div style="font-size:11.5px;color:var(--text-main);">'+L('Computing','計算中','Berechne','Расчёт','Calculando')+'… '+pct+'%'
@@ -697,6 +788,9 @@ window.IntMapModules.tsunami=function(HOST){
       const c=q('.tsu-close'); if(c) c.onclick=()=>close();
       const r=q('.tsu-run'); if(r) r.onclick=()=>{ build(); };
       const hs=q('.tsu-hours'); if(hs) hs.onchange=()=>{ hours=+hs.value||6; render(); };
+      /* (#R204) changing the domain re-renders (the hour list and the note both depend on it) but does
+         NOT recompute: a solve is minutes of somebody's phone, and the button is right there. */
+      const sc=q('.tsu-scope'); if(sc) sc.onchange=()=>{ scope=(sc.value==='near')?'near':'global'; hours=effHours(); render(); };
       const pl=q('.tsu-play'); if(pl) pl.onclick=()=>{ playing?pause():play(); };
       /* ⚠ pause WITHOUT re-rendering: render() replaces the panel's innerHTML, which would destroy the
          very <input> the pointer is dragging and drop the gesture on the first move. The button glyph
@@ -783,6 +877,7 @@ window.IntMapModules.tsunami=function(HOST){
       if(o.lng!=null&&o.lat!=null) epi=[+o.lng,+o.lat];
       if(o.mw!=null) mw=Math.max(6,Math.min(9.6,+o.mw));
       if(o.depth!=null) depthKm=Math.max(0,Math.min(200,+o.depth));
+      if(o.scope!=null) scope=(String(o.scope)==='near')?'near':'global';   /* (#R204) */
       if(o.hours!=null) hours=Math.max(1,Math.min(30,+o.hours));   /* (#R197) 30 h = the far side of the planet */
       opened=true; panel.style.display='flex'; render(); wireClick();
       clearTimeout(followT); srcPending=false; ranKey=srcKey();
@@ -796,6 +891,8 @@ window.IntMapModules.tsunami=function(HOST){
 
     return { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
       setHours(h){ hours=Math.max(1,Math.min(30,+h||6)); if(opened) render(); return true; },
+      /* (#R204) the domain, so Atlas can ask for the high-resolution near-source solve by name */
+      setScope(s){ scope=(String(s)==='near')?'near':'global'; hours=effHours(); if(opened) render(); return scope; },
       setSpeed(s){ speed=Math.max(1,Math.min(3600,+s||180)); if(opened) render(); return true; },
       setOpacity(v){ opacity=Math.max(0.1,Math.min(1,+v>1?(+v/100):+v));
         try{ GE().layers.setDynamicImageOpacity(DYN,opacity); }catch(_){} return opacity; },
@@ -803,14 +900,17 @@ window.IntMapModules.tsunami=function(HOST){
       showMaximum(v){ showMax=!!v; paint(); if(opened) render(); return showMax; },
       showContours(v){ showIso=!!v; applyIso(); if(opened) render(); return showIso; },
       run:()=>build(),
-      state:()=>({ open:opened, epi:epi?epi.slice():null, mw, depthKm, hours, speed, opacity, showMax,
+      state:()=>({ open:opened, epi:epi?epi.slice():null, mw, depthKm, hours, scope, speed, opacity, showMax,
         showIso, ampM:sim?+ampNow().toFixed(3):null, busy, pct, err:lastErr, playing:!!playing,
         following:!!srcPending,                                   /* (#R196) a queued re-run from the seismic panel */
         tSim:Math.round(tSim), worker:!!(window.IntMapTsunamiWorker&&window.IntMapTsunamiWorker.available()),
         /* (#R197) the grid is two numbers now and it is the same two on every run and every device;
            `demTiles`/`demMissing`/`noData` are gone because there is no longer anything that can be
            missing — the sea floor ships with the app and covers every cell. */
-        sim:sim?{ nx:sim.nx, ny:sim.ny, fx:sim.fx, fy:sim.fy, dec:sim.dec, global:true,
+        /* (#R204) `global` is now a fact about the run rather than a constant: the near-source scope
+           is the same solver on a latitude band at four times the resolution (see nearDomain). */
+        sim:sim?{ nx:sim.nx, ny:sim.ny, fx:sim.fx, fy:sim.fy, dec:sim.dec, global:(sim.scope!=='near'),
+          scope:sim.scope||'global',
           lat0:sim.lat0, lat1:sim.lat1, cellKm:sim.cellKm, dt:+(sim.dt||0).toFixed(2), steps:sim.steps||0,
           frames:sim.frames.length, nFrames:sim.nFrames, running:!!sim.running,
           totalS:sim.total, upliftM:+(sim.eta0Up||0).toFixed(2), subsidenceM:+(sim.eta0Down||0).toFixed(2),

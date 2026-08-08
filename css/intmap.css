@@ -33,7 +33,14 @@
        An iOS launch screen does not capture input either; letting an early tap reach the app under it
        is the better behaviour as well as the compatible one. */
     .boot-splash{ position:fixed; inset:0; z-index:200000; pointer-events:none; display:flex; align-items:center; justify-content:center;
-      background:var(--bg-color); opacity:1; transition:opacity 0.42s cubic-bezier(0.4,0,0.2,1); }
+      background:transparent; opacity:1; transition:opacity 0.42s cubic-bezier(0.4,0,0.2,1); }
+    /* (#R204) the opaque cover, as its OWN layer — see the ⚠ in index.html. Full strength until the
+       map underneath has drawn a frame, then a scrim, so a slow tile host can no longer hold a
+       near-black rectangle over a finished map for 14 seconds. The logo, the bar and the note keep
+       their own opacity throughout, which is what still says 「読み込み中」. */
+    .boot-back{ position:absolute; inset:0; background:var(--bg-color); opacity:1;
+      transition:opacity 0.55s cubic-bezier(0.4,0,0.2,1); }
+    .boot-splash.boot-live .boot-back{ opacity:0.5; }
     .boot-splash.boot-gone{ opacity:0; pointer-events:none; }
     .boot-inner{ display:flex; flex-direction:column; align-items:center; gap:26px;
       transform:translateY(-3vh); animation:bootRise 0.7s cubic-bezier(0.2,0.7,0.2,1) both; }

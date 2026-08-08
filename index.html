@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R203';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R204';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R203';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-09-R203';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-09-R204';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -215,7 +215,21 @@ window.__imBuild='R203';   /* (#R121) build marker — bump when verifying that 
      does it fade. The 20-second failsafe below exists because a launch screen that cannot be
      dismissed is worse than no launch screen at all — if a milestone never arrives it says so in the
      console and reveals the app anyway. -->
+<!-- ⚠ (#R204) THE BACKDROP IS ITS OWN ELEMENT SO IT CAN THIN OUT WITHOUT TAKING THE LOGO WITH IT.
+     「起動したときに地図が真っ暗になっている場合がある。どうにかしろ。」 — reported again after #R203,
+     and #R203 measured the wrong surface: it read the MAP's pixels, found them correctly lit, and
+     concluded the app was looking at the night side. It is not the map. Re-measured here with the
+     tile hosts held to 1.8 s a request (which is what 「場合がある」 looks like — a cold or slow
+     network), the map canvas is already lit at 1.0 s — [81,98,110] — and THIS ELEMENT is opaque
+     `var(--bg-color)`, i.e. near-black in the dark theme, on top of it for up to 14 s (js/app-body.js
+     waits 28 × 500 ms for the default layers) and 20 s in the worst case.
+     ⚠ THE SPLASH IS NOT REMOVED EARLIER. #R186 asked for 「完全に準備完了なるまで読み込み画面に」 and
+     #R190 for 「ローディング画面終了後も読み込みが終わっていない」 to stop happening; lifting it sooner
+     would undo both. What changes is only that it stops being OPAQUE once the map underneath has a
+     real frame: the backdrop thins to a scrim, the logo and the progress bar stay, and the ending
+     milestones are exactly the ones #R190 made a contract. -->
 <div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
+  <div class="boot-back" id="boot-back"></div>
   <div class="boot-inner">
     <div class="boot-icon"><img src="IntMap.Icon.png" alt="IntMap" width="124" height="124" decoding="async" fetchpriority="high"></div>
     <div class="boot-bar"><i id="boot-bar-fill"></i></div>
@@ -249,7 +263,16 @@ window.__imBuild='R203';   /* (#R121) build marker — bump when verifying that 
     el.classList.add('boot-gone');
     setTimeout(function(){ try{ el.parentNode&&el.parentNode.removeChild(el); }catch(e){} document.body.classList.remove('booting'); },460);
   }
-  window.__imBoot={ set:set, done:finish, progress:function(){ return pct; },
+  /* (#R204) "the map underneath is now a picture" — the app calls this from its first real frame.
+     It thins the cover; it does NOT end the boot, and it is a no-op once the boot has ended. */
+  function live(){
+    if(done||!el||el.classList.contains('boot-live')) return false;
+    marks.live=Math.round(performance.now());
+    el.classList.add('boot-live');
+    return true;
+  }
+  window.__imBoot={ set:set, done:finish, live:live, isLive:function(){ return !!(el&&el.classList.contains('boot-live')); },
+                    progress:function(){ return pct; },
                     isDone:function(){ return done; }, marks:function(){ return marks; } };
   document.body.classList.add('booting');
   set(6,'html');

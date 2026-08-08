@@ -12,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OpeningView } from '../js/opening-view.js';
 const { subsolarPoint, solarElevation, openingCentre, MIN_ELEV_DEG } = OpeningView;
-import { allSpecs, deepNames, isDeep, tierSpecs } from '../scripts/tiers.mjs';
+import { allSpecs, coreNames, currentRoundSpec, CORE_ALWAYS, isDeep, tierSpecs } from '../scripts/tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -70,17 +70,21 @@ test('R203 ①c the map is created at that centre, and js/opening-view.js is its
 });
 
 /* ── ② THE TIERS ───────────────────────────────────────────────────────────────────────────── */
-test('R203 ② every spec belongs to exactly one tier, and the deep list names real files', () => {
+test('R203 ② every spec belongs to exactly one tier, and the core list names real files', () => {
   const all = allSpecs();
   assert.ok(all.length > 40, 'the suite still has its specs');
   const core = tierSpecs('core'), deep = tierSpecs('deep');
   assert.equal(core.length + deep.length, all.length, 'core ∪ deep = every spec');
   assert.equal(core.filter((f) => deep.includes(f)).length, 0, 'and the two do not overlap');
-  for (const n of deepNames()) {
-    assert.ok(fs.existsSync(path.join(ROOT, 'tests', n + '.spec.js')), `deep names ${n}, which does not exist`);
+  for (const n of coreNames()) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'tests', n + '.spec.js')), `core names ${n}, which does not exist`);
   }
-  /* the gate must contain the things a gate is for */
-  for (const must of ['tests/smoke.spec.js', 'tests/internal-qa.spec.js', 'tests/security.spec.js', 'tests/r203.spec.js']) {
+  /* ⚠ (#R204) THE GATE'S CONTENTS ARE PINNED AS A RELATION, NOT AS FILE NAMES. This test used to
+     name `tests/r203.spec.js`, which is exactly the mistake #R203's own notes were written about:
+     the round after pushes that file out of the gate on price, and the test asserting the OLD
+     round's membership goes red for doing the right thing. What a gate must contain is the four
+     always-on suites and WHICHEVER round is current — both of which scripts/tiers.mjs derives. */
+  for (const must of [...CORE_ALWAYS, currentRoundSpec()].filter(Boolean).map((n) => 'tests/' + n + '.spec.js')) {
     assert.ok(core.includes(must), `${must} must be in the tier that runs every time`);
     assert.ok(!isDeep(must), `${must} must not be deep`);
   }
@@ -174,18 +178,30 @@ test('R203 ⑤ the satellite labels fade with the imagery they are drawn on', ()
 /* ── ⑥ THE MESH ────────────────────────────────────────────────────────────────────────────── */
 test('R203 ⑥ the shaking mesh is finer than the round before, on both classes of device', () => {
   const s = rd('js/seismic.js');
-  const fine = /const N=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(s);
+  /* ⚠ (#R204) the fine grid is no longer one number: it is a cell size with a floor and a ceiling
+     (see js/seismic.js). "Finer than the round before" is a claim about the FLOOR — the coarsest
+     grid the code can pick — which is what #R203's single number was. */
+  const fine = /const CELL_KM=[\d.]+, N_MIN=\(_mob\?(\d+):(\d+)\), N_MAX=\(_mob\?(\d+):(\d+)\);/.exec(s);
   const far = /const NF=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(s);
   assert.ok(fine && far, 'both grids are still declared where they were');
-  assert.ok(Number(fine[2]) >= 640, `desktop fine mesh is ${fine[2]}, #R202 shipped 448`);
-  assert.ok(Number(fine[1]) >= 288, `mobile fine mesh is ${fine[1]}, #R202 shipped 192`);
+  assert.ok(Number(fine[2]) >= 640, `desktop fine mesh floor is ${fine[2]}, #R203 shipped 640`);
+  assert.ok(Number(fine[1]) >= 288, `mobile fine mesh floor is ${fine[1]}, #R203 shipped 288`);
+  assert.ok(Number(fine[4]) >= Number(fine[2]), 'the desktop ceiling is at least the floor');
+  assert.ok(Number(fine[3]) >= Number(fine[1]), 'the mobile ceiling is at least the floor');
   assert.ok(Number(far[2]) >= 1024, `desktop far mesh is ${far[2]}, #R202 shipped 768`);
   assert.ok(Number(far[1]) >= 512, `mobile far mesh is ${far[1]}, #R202 shipped 384`);
 });
 
-/* ── ⑦ THE BUILD STAMP (the exact pin lives in the CURRENT round's file — #R202) ─────────────── */
-test('R203 ⑦ both build stamps name this round', () => {
+/* ── ⑦ THE BUILD STAMP ─────────────────────────────────────────────────────────────────────────
+   ⚠ (#R204) The exact pin lives in the CURRENT round's file — that was #R202's rule and this test
+   broke it by naming R203, so the very next round had to edit it. What an OLD round's file can
+   honestly assert is the INVARIANT: there are two stamps, they name the same round, and it is not
+   older than the round that wrote this. */
+test('R203 ⑦ both build stamps name the same round, and it is not older than R203', () => {
   const idx = rd('index.html');
-  assert.match(idx, /window\.__imBuild='R203';/);
-  assert.match(idx, /window\.INTMAP_BUILD='2026-08-09-R203';/);
+  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
+  const b = /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)';/.exec(idx);
+  assert.ok(a && b, 'both stamps are present');
+  assert.equal(a[1], b[1], `the two stamps disagree: R${a[1]} vs R${b[1]}`);
+  assert.ok(Number(a[1]) >= 203, `the build stamp is R${a[1]}`);
 });

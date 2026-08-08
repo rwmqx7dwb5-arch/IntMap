@@ -90,20 +90,34 @@ const flatOcean = (d, w, h) => {
 const RUN = { id: 1, nx: 1440, ny: 640, lat0: -80, lat1: 80, dec: 8, hours: 0.25, frames: 24 };
 const amp = (src, mw) => loadWorker(src).run({ ...RUN, bathy: flatOcean(4000, 720, 320), src: { lng: 143, lat: 38, mw, depthKm: 24 } }).amp;
 
+/* ⚠ (#R204) THE QUADRATURE IS READ OUT OF THE FILE, NOT WRITTEN INTO THE TEST. Both of these pinned
+   the literal `SUB_N = 3`, so #R204 — asked for MORE accuracy at the source, which is the direction
+   this pair is about — broke the two tests whose subject is that accuracy. The same mistake #R203
+   made with the 448 mesh and with `tests/r203.spec.js`. What is asserted now is the relation. */
+const SUBLINE = /const SUB_N = (\d+), subR = 1\.5 \* g\.L;/;
+
 test('R202 ②a the source is INTEGRATED over the cell, and it changes the answer', () => {
   const now = rd('src/tsunami-worker.js');
-  assert.match(now, /const SUB_N = 3, subR = 1\.5 \* g\.L;/, 'the quadrature is stated in one place');
-  const centre = now.replace('const SUB_N = 3, subR = 1.5 * g.L;', 'const SUB_N = 1, subR = -1;');
+  const m = SUBLINE.exec(now);
+  assert.ok(m, 'the quadrature is stated in one place');
+  assert.ok(Number(m[1]) >= 3, `SUB_N is ${m[1]}; #R202 established 3 as the floor`);
+  const centre = now.replace(m[0], 'const SUB_N = 1, subR = -1;');
   /* the smaller the rupture against a ~28 km cell, the more a centre sample aliases it */
   const a75 = amp(centre, 7.5), b75 = amp(now, 7.5);
   assert.ok(Math.abs(a75 - b75) / a75 > 0.1, `Mw 7.5: centre ${a75} vs averaged ${b75} — the point sample was not aliasing?`);
 });
 
-test('R202 ②b …and 3×3 is where it converges, which is why it is 3', () => {
+test('R202 ②b …and the quadrature that ships is converged', () => {
   const now = rd('src/tsunami-worker.js');
-  const at = (n) => amp(now.replace('const SUB_N = 3, subR = 1.5 * g.L;', `const SUB_N = ${n}, subR = 1.5 * g.L;`), 7.5);
-  const three = amp(now, 7.5), seven = at(7);
-  assert.ok(Math.abs(three - seven) / seven < 0.03, `3×3 ${three} against 7×7 ${seven} — not converged`);
+  const m = SUBLINE.exec(now);
+  const at = (n) => amp(now.replace(m[0], `const SUB_N = ${n}, subR = 1.5 * g.L;`), 7.5);
+  const shipped = amp(now, 7.5), seven = at(7);
+  assert.ok(Math.abs(shipped - seven) / seven < 0.03, `${m[1]}×${m[1]} ${shipped} against 7×7 ${seven} — not converged`);
+  /* …and no coarser than the one before it: #R202 shipped 3, and its own table puts 3 at 1.5 % of
+     the converged value while 5 is at 0.3 %, which is why #R204 raised it. */
+  const three = at(3);
+  assert.ok(Math.abs(shipped - seven) <= Math.abs(three - seven) + 1e-9,
+    `${m[1]}×${m[1]} is further from converged than 3×3 was`);
 });
 
 /* ── ③ THE SEAMS ──────────────────────────────────────────────────────────────────────────── */
@@ -202,10 +216,14 @@ test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice
   /* ⚠ (#R203) A RELATION, NOT A VALUE. This pinned 448 exactly, so the very next round that made the
      mesh finer — the direction the instruction always points — broke a test whose own subject is
      "it got finer". What #R202 established is the FLOOR; #R203 raised the mesh to 640/288. */
-  const seisN = /const N=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(rd('js/seismic.js'));
-  assert.ok(seisN, 'the intensity field still declares its grid where #R202 left it');
-  assert.ok(Number(seisN[2]) >= 448, `the desktop intensity field is ${seisN[2]}, coarser than #R202's 448`);
-  assert.ok(Number(seisN[1]) >= 192, `the mobile intensity field is ${seisN[1]}, coarser than #R202's 192`);
+  /* ⚠ (#R204) …AND A RELATION ABOUT THE GRID, NOT ABOUT THE LINE THAT DECLARES IT. #R203 fixed the
+     VALUE and left the regex pinning one exact source line, so #R204 — which replaced the fixed grid
+     with a cell size and a floor/ceiling — broke it again for the same reason. What both rounds mean
+     by "finer" is the FLOOR: the coarsest grid this code can ever choose. */
+  const seisN = /const CELL_KM=[\d.]+, N_MIN=\(_mob\?(\d+):(\d+)\), N_MAX=\(_mob\?(\d+):(\d+)\);/.exec(rd('js/seismic.js'));
+  assert.ok(seisN, 'the intensity field still declares its grid floor and ceiling');
+  assert.ok(Number(seisN[2]) >= 448, `the desktop intensity field floor is ${seisN[2]}, coarser than #R202's 448`);
+  assert.ok(Number(seisN[1]) >= 192, `the mobile intensity field floor is ${seisN[1]}, coarser than #R202's 192`);
   const th = rd('js/theme-sky.js');
   assert.match(th, /import \{ skyColour \} from '\.\/sky-model\.js'/, 'theme-sky imports the model by name');
   assert.match(th, /'sky-color':sc/, 'and sky-color comes from it');

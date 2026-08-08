@@ -59,33 +59,5 @@
  "solo": [
   "-cesium.*.spec.js$"
  ],
- "deep": [
-  "r167",
-  "r170",
-  "r171",
-  "r172",
-  "r173",
-  "r174",
-  "r175",
-  "r176",
-  "r177",
-  "r179",
-  "r179-engine",
-  "r179-imagery",
-  "r180-cesium",
-  "r181-cesium",
-  "r182-cesium",
-  "r184-cesium-fs",
-  "r184-drone",
-  "r184-imagery",
-  "r184-routing",
-  "r184-satellites",
-  "r185",
-  "r186",
-  "r191",
-  "r192",
-  "r193",
-  "r195",
-  "r196"
- ]
+ "tests/r204.spec.js": 49
 }

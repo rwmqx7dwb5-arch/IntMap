@@ -133,7 +133,10 @@ test('R190 flight sim: the view\'s tilt becomes the aeroplane\'s flight path', (
 /* ── 6 · the launch screen ───────────────────────────────────────────────────────────────────── */
 test('R190 boot: the default layers are fired at style-ready, and the screen waits for them', () => {
   const body = read('js/app-body.js');
-  const m = /window\.__imBoot\.set\(80,'style'\);([\s\S]{0,3600}?)setTimeout\(settle,4000\);/.exec(body);
+  /* (#R204) the window was 3,600 characters; the block grew by the `live()` hand-off that stops the
+     cover being opaque over a drawn map. The number is a "still one readable sequence" bound, not a
+     fact about the app, so it moves with the block — what this test is about is the ORDER below. */
+  const m = /window\.__imBoot\.set\(80,'style'\);([\s\S]{0,5200}?)setTimeout\(settle,4000\);/.exec(body);
   assert.ok(m, 'the launch-screen block must still be one readable sequence');
   assert.ok(m[1].indexOf('__imFireDefaultLayers') < m[1].indexOf('GE().events.once(\'idle\',settle)'),
     'the layers are asked for BEFORE the first idle, so the downloads overlap');
