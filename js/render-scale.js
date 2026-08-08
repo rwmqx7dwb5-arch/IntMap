@@ -40,10 +40,39 @@ window.IntMapModules.renderScale=function(HOST){
     if(base!=null) return;
     try{ base=GE().render.getRenderScale(); }catch(_){ base=null; }
     if(!(base>0)) base=Math.min(2,window.devicePixelRatio||1);
-    low=Math.max(1,Math.round(base*0.7*100)/100);
+    low=Math.max(1,Math.round(base*LOW_RATIO*100)/100);
     at=base;
   }
   function flying(){ try{ const F=window.IntMapFlightSim; return !!(F&&F.active&&F.active()); }catch(_){ return false; } }
+  /* ══ (#R203) HOW FAR THE RATIO DROPS, AND THE TWO THINGS THAT DO NOT WORK ═══════════════════════
+     「モバイル版で、特に衛星画像含め圧倒的に重い」「地図のホバー、ズームのfpsを劇的に高くしろ」
+
+     Re-measured on the shipped build (390×844, DPR 3, CPU ×4, satellite over Tokyo, three sweeps):
+     38.7 / 40.1 / 30.7 fps, and one 747 ms frame inside the third. A CDP profile of that sweep says
+     51.4 % of self time is `(program)` — native — the largest single gap is 1,856 ms with nothing but
+     `(program)` on the stack, and this app's own JavaScript is under 8 % of the whole. That is image
+     decode and texture upload, exactly where #R202 left it.
+
+     ⚠ TWO THINGS WERE TRIED AGAINST IT AND ONE IS RECORDED HERE BECAUSE IT FAILED. Throttling
+     MapLibre's parallel-image cap from 48 to 4 while the camera moves — on the theory that a
+     fourteen-notch sweep crosses eleven zoom levels and asks for every one of them — measured
+     9.5 / 10.9 / 20.9 and 13.9 / 28.2 / 22.4 fps against a 31–40 baseline, i.e. materially WORSE in
+     both runs, because a tile that arrives late is a tile that repaints late and the queue simply
+     moves the work into the gesture's tail. The queue was not the problem, so it is not throttled.
+
+     ⚠ AND SO IS THE SECOND ONE. This file's own lever was turned FURTHER down — 0.70 → 0.55 of the
+     base ratio while the camera moves — and measured 20.9 / 23.5 / 20.0 and 14.8 / 18.9 / 28.0, worse
+     than 0.70 in all six comparisons while panning was unchanged at 59.5 / 60.1. Fewer fragments is
+     not the binding cost either; past a point the drawing-buffer reallocation the change itself
+     causes costs more than the shading it saves. #R202's 0.70 is the measured best of the three
+     settings tried and it is what ships — written down here so the next round does not sweep it again.
+
+     WHAT IS ACTUALLY LEFT IS NATIVE, and this round says so with a stack rather than a guess: on a
+     phone-class CPU the sweep spends its time decoding JPEG tiles and uploading them, and this app's
+     own arithmetic is under 8 % of a profile in which it would have had to be most of it to matter.
+     The remaining levers belong to the imagery pipeline (fewer intermediate levels; ancestor crops
+     while the camera moves), not to this file. */
+  const LOW_RATIO=0.70;
   function set(r){
     if(at===r) return false;
     let ok=false; try{ ok=GE().render.setRenderScale(r); }catch(_){ ok=false; }
@@ -78,6 +107,6 @@ window.IntMapModules.renderScale=function(HOST){
     }catch(_){ on=false; return false; }
     return true;
   }
-  window.IntMapRenderScale={ start, active:()=>on, state:()=>({ base, low, at, on, armed }) };
+  window.IntMapRenderScale={ start, active:()=>on, state:()=>({ base, low, at, on, armed, lowRatio:LOW_RATIO }) };
   return window.IntMapRenderScale;
 };

@@ -1,0 +1,127 @@
+# ════════════════════════════════════════════════════════════════════════════════════════════════
+#  IntMap · ONE MACHINE'S SHARE OF ONE TIER OF THE BROWSER SUITE  (#R203)
+# ------------------------------------------------------------------------------------------------
+#  The recipe below used to live inline in ci.yml's `browser` job. #R203 split the suite into the
+#  CORE tier (the gate on every PR) and the DEEP tier (nightly + after every merge), which needs the
+#  identical ten steps with a different tier, pool and shard count — and the whole reason this
+#  repository packs by measured time rather than by regex is that the moment a rule has two owners,
+#  the two disagree (#R195, #R178 lesson ⑥). So it is a composite action with the tier as an input,
+#  and there is still exactly one copy of it.
+# ════════════════════════════════════════════════════════════════════════════════════════════════
+name: Browser tier shard
+description: Run this machine's share of one tier of the IntMap browser suite, planned by measured time.
+
+inputs:
+  tier:
+    description: core | deep | all — which half of the suite (scripts/tiers.mjs)
+    required: true
+  suite:
+    description: rest | cesium — the pool. `cesium` is the specs that need the machine to themselves.
+    required: true
+  shard:
+    description: this machine's group number within the pool
+    required: true
+  of:
+    description: how many groups the pool is packed into
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # ⚠ NO CHECKOUT HERE. A local `uses: ./…` action is read off the workspace, so the job has to
+    # have checked the repository out BEFORE it can call this file at all — doing it again inside
+    # would be a second copy of the same tree.
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+    - run: npm ci
+      shell: bash
+    # Cache the Playwright browser binaries between runs (keyed on the lockfile).
+    - name: Cache Playwright browsers
+      id: pw-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+    - name: Install Playwright Chromium (+ OS deps)
+      run: npx playwright install --with-deps chromium
+      shell: bash
+    # (#R195) the file list comes from the measured plan, not from --shard. The planner FAILS on an
+    # empty group rather than returning nothing, because `playwright test` with no paths runs the
+    # whole suite — a silent 40-minute job that looks like a pass.
+    # (#R202) …and the times it packs by come from the LAST MAIN RUN, not from whatever a human
+    # last pasted in. The `timings` job writes them; this reads them. A miss is harmless: the
+    # committed table is still there, and `--merge` unions rather than replaces, so a cache that
+    # predates a new spec leaves that spec charged p75 exactly as it was before.
+    - name: Restore main's measured spec times
+      continue-on-error: true
+      uses: actions/cache/restore@v4
+      with:
+        path: _timecache
+        key: intmap-timings-${{ github.run_id }}
+        restore-keys: |
+          intmap-timings-
+    - name: Merge them into the committed tables
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -f _timecache/durations.json ]; then node scripts/shard-plan.mjs --merge _timecache/durations.json; fi
+        if [ -f _timecache/baseline.json  ]; then node scripts/baseline.mjs  --merge _timecache/baseline.json;  fi
+    - name: Plan this machine's share (measured time, not test count)
+      id: plan
+      shell: bash
+      run: |
+        set -euo pipefail
+        FILES=$(node scripts/shard-plan.mjs --tier ${{ inputs.tier }} --pool ${{ inputs.suite }} --group ${{ inputs.shard }} --of ${{ inputs.of }})
+        echo "files=$FILES" >> "$GITHUB_OUTPUT"
+        echo "this machine runs:" && printf '%s\n' $FILES
+    - name: Run Playwright tests (smoke + internal QA)
+      shell: bash
+      env:
+        IM_SUITE: ${{ inputs.suite }}
+        IM_TIER: ${{ inputs.tier }}
+      run: npx playwright test ${{ steps.plan.outputs.files }}
+    # (#R195) …and say, right here, which of the failures main does NOT have. The rule is to prove
+    # a failure is yours before touching it, and the way that was carried out was to re-run main by
+    # hand at ~10 minutes a go — while CI had already run every test on main and discarded the
+    # answer. tests/baseline.json is main's own last result; this reads it. It never fails the job:
+    # the verdict is information for whoever reads the log, and the tests themselves decide red.
+    - name: Which of these does main not have?
+      if: ${{ failure() }}
+      continue-on-error: true
+      shell: bash
+      run: node scripts/baseline.mjs --classify test-results/junit.xml
+    # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
+    - name: Upload Playwright report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report-${{ inputs.tier }}-${{ inputs.suite }}-${{ inputs.shard }}
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 14
+        if-no-files-found: ignore
+    # (#R195) …and on MAIN, the run's own result BECOMES the baseline, together with the timings the
+    # shard planner packs by. The `timings` job carries them to the next run through the Actions
+    # cache — ⚠ (#R202) not through a commit: main takes no pushes, see that job.
+    # ⚠ Only main writes: a branch that recorded its own results would define its own "normal".
+    - name: Keep this result as main's baseline
+      if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+      continue-on-error: true
+      shell: bash
+      run: |
+        node scripts/baseline.mjs --update test-results/junit.xml
+        node scripts/shard-plan.mjs --update test-results/junit.xml
+    - name: Upload the baseline fragment
+      if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: baseline-${{ inputs.tier }}-${{ inputs.suite }}-${{ inputs.shard }}
+        path: |
+          tests/baseline.json
+          tests/durations.json
+        retention-days: 7
+        if-no-files-found: ignore
