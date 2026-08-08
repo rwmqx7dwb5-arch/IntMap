@@ -8,6 +8,7 @@
  *  leaves the camera where it found it.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { OpeningView } from '../js/opening-view.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -58,16 +59,18 @@ async function canvasStats(p) {
    asserts the consequence rather than the mechanism: whenever the suite runs, the Sun is up over
    the centre and the planet is not black. */
 test('R203 ① the app does not open on a black planet, at whatever hour the suite runs', async () => {
-  const c = await page.evaluate(() => {
-    const cc = window.IntMapGeoEngine.camera.getCenter();
-    return { lng: cc.lng, lat: cc.lat };
-  });
-  const elev = await page.evaluate(async ({ lat, lng }) => {
-    const m = await import('/js/opening-view.js').catch(() => null);
-    if (m) return m.solarElevation(Date.now(), lat, lng);
-    return null;
-  }, c).catch(() => null);
-  if (elev != null) expect(elev, 'the Sun stands over the opening centre').toBeGreaterThan(6);
+  /* ⚠ THE MODULE IS BUNDLED, SO A TEST CANNOT `import('/js/opening-view.js')` FROM THE PAGE — the
+     first version of this check did, caught the rejection, and SKIPPED ITSELF, which is the silent
+     pass this repository keeps warning about. The app publishes what it decided instead. */
+  const chosen = await page.evaluate(() => window.__imOpeningCentre);
+  expect(Array.isArray(chosen), 'the app published the centre it opened at').toBe(true);
+  expect(chosen[1], 'at the latitude it always has').toBeCloseTo(20, 4);
+  /* the property, evaluated HERE rather than in the page: the Sun is up over what the app chose.
+     ⚠ NOT compared against `camera.getCenter()` — on a desktop the sidebar sets camera PADDING, so
+     the reported centre is the centre of the padded view and is tens of degrees away from the one
+     the view was created at. Measured while writing this: published 176.748, reported 89.107. */
+  expect(OpeningView.solarElevation(Date.now(), chosen[1], chosen[0]),
+    'the Sun stands over the opening centre').toBeGreaterThan(OpeningView.MIN_ELEV_DEG - 1);
 
   const s = await canvasStats(page);
   expect(s.err, 'the canvas could be read').toBeUndefined();

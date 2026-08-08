@@ -58,8 +58,12 @@ test('R203 ①b the sub-solar point agrees with the almanac at the solstices and
 
 test('R203 ①c the map is created at that centre, and js/opening-view.js is its only owner', () => {
   const body = rd('js/app-body.js');
-  assert.match(body, /center:OpeningView\.openingCentre\(OpeningView\.openingClockMs\(\),\[10,20\]\)/,
-    'the view is created at the computed opening centre');
+  assert.match(body, /const _openingCentre=OpeningView\.openingCentre\(OpeningView\.openingClockMs\(\),\[10,20\]\)/,
+    'the opening centre is computed once');
+  assert.match(body, /center:_openingCentre,/, 'and the view is created at it');
+  /* ⚠ published, so a test READS what the app decided instead of re-deriving a number that moves
+     0.25° a minute — which is what took tests/r180-cesium red on the first post-merge run. */
+  assert.match(body, /window\.__imOpeningCentre=_openingCentre/, 'and published for the tests');
   assert.match(body, /import \{ OpeningView \} from '\.\/opening-view\.js'/);
   /* nothing else may re-derive the Sun's position for this purpose */
   assert.doesNotMatch(body, /280\.460 \+ 0\.9856474/, 'the solar series lives in js/opening-view.js only');

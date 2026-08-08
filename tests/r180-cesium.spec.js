@@ -120,8 +120,18 @@ test('R180 ③: the startup view puts the eye where MapLibre puts it, and the ro
     return { z: E.camera.getZoom(), c: E.camera.getCenter(), eye: E.camera.eye() };
   });
   expect(boot.z, 'the app boots at zoom 1.7').toBeCloseTo(1.7, 3);
-  expect(boot.c.lng).toBeCloseTo(10, 4);
-  expect(boot.c.lat).toBeCloseTo(20, 4);
+  /* ⚠ (#R203) THE LONGITUDE IS NOT A LITERAL ANY MORE, AND PINNING IT AS ONE IS WHAT BROKE THIS.
+     js/opening-view.js opens on the daylit hemisphere — the sub-solar longitude whenever the Sun is
+     under 12° over 10°E — so the boot centre now depends on the clock, and it moves 0.25° a MINUTE.
+     A test cannot re-derive it after the fact (the boot itself takes seconds). What this test is
+     about is that CESIUM PUTS THE EYE WHERE MapLibre PUTS IT, so it reads the centre the app
+     decided and checks Cesium honoured it — the same rule as #R202's altitude floor: read the
+     number from the app, never write it down a second time. */
+  const want = await page.evaluate(() => window.__imOpeningCentre);
+  expect(Array.isArray(want), 'the app publishes the centre it opened at').toBe(true);
+  expect(boot.c.lng, 'Cesium boots at the centre the app chose').toBeCloseTo(want[0], 4);
+  expect(boot.c.lat).toBeCloseTo(want[1], 4);
+  expect(want[1], 'and the opening latitude is still 20').toBeCloseTo(20, 4);
   /* #R178 measured MapLibre's eye at globe z1.7 as 24,422 km. Cesium is asked for the same
      view through the same contract; if the mapping were wrong this would be out by megametres,
      which is exactly the failure mode #R176/#R177 spent two rounds on. 1 % is a generous band
