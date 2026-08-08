@@ -176,6 +176,38 @@ async function resolve(z, y, x, signal) {
 function flushDepth() { if (!dirty.size) return null;
   const out = []; for (const [k, v] of dirty) out.push([k, v.have, v.stop]); dirty.clear(); return out; }
 
+/* ══ (#R204) THE JPEG IS DECODED HERE, NOT ON THE THREAD THAT DRAWS THE MAP ═══════════════════════
+   「モバイル版が、特に衛星画像含め圧倒的に重い」「衛星画像の読み込み時の動作を、極限までシームレスに」
+   「地図のホバー、ズームのfpsを劇的に高くしろ」
+
+   #R202 and #R203 both profiled the phone sweep and both ended at the same sentence: 51.4 % of self
+   time is `(program)`, the largest gap is 1,856 ms with nothing but `(program)` on the stack, and
+   this app's own JavaScript is under 8 % of the whole — i.e. JPEG DECODE AND TEXTURE UPLOAD. #R203
+   then wrote down that the remaining levers "belong to the imagery pipeline, not to render-scale".
+   This is that lever, and it was hiding in plain sight in this file.
+
+   #R192 moved the fetch, the placeholder test, the ancestor walk, the crop and the 2× stitch into
+   this worker — but only the CROPPED and STITCHED paths came back as an ImageBitmap. The `native`
+   path, which is every tile over a city and most tiles anywhere, came back as an ArrayBuffer, and
+   MapLibre's image request decodes those with `createImageBitmap` ON THE MAIN THREAD (see
+   src/util/image_request.ts). So the common case — a real Esri tile — was still paying a full JPEG
+   decode on the thread with the frame budget, in a round whose whole subject was moving it off.
+
+   Decoding it here costs the same milliseconds on a thread that owes nobody a frame, and the result
+   is TRANSFERABLE, so the hand-back is a pointer move rather than a copy. What is left on the main
+   thread is the texture upload, which is the part only the GL context can do.
+
+   ⚠ THE BYTES ARE STILL THE FALLBACK. `createImageBitmap` is not obliged to accept every JPEG Esri
+   serves, and a worker that answers "no image" would be a blank tile where there used to be a
+   picture. Anything that throws returns the ArrayBuffer exactly as before, so this can only ever
+   move work off the main thread, never remove a tile.
+   ⚠ AND NO COLOUR-MANAGEMENT SHORTCUT. Skipping the ICC transform measurably speeds the decode up
+   and would let these tiles disagree with the whole-Earth floor underneath them, which #R190 spent a
+   round matching pixel for pixel (RMSE 29 → 12). Speed that changes the picture is not free. */
+async function decode(buf) {
+  try { return await createImageBitmap(new Blob([buf])); } catch (_) { return null; }
+}
+
 self.onmessage = async (ev) => {
   const m = ev.data || {};
   if (m.type === 'config') { if (m.rawMax) RAW_MAX = m.rawMax; if (m.depthMax) DEPTH_MAX = m.depthMax; return; }
@@ -188,7 +220,12 @@ self.onmessage = async (ev) => {
     let bitmap = null, mode = null, buf = null;
     if (m.hi) { const hi = await stitch2x(m.z, m.y, m.x, signal); if (hi) { bitmap = hi; mode = 'stitched'; } }
     if (!bitmap) { const r = await resolve(m.z, m.y, m.x, signal); mode = r.mode;
-      if (r.bitmap) bitmap = r.bitmap; else buf = r.buf.slice(0); }
+      if (r.bitmap) bitmap = r.bitmap;
+      else {
+        /* (#R204) decode HERE — see the note above `decode`. The bytes remain the fallback. */
+        bitmap = await decode(r.buf);
+        if (!bitmap) buf = r.buf.slice(0);
+      } }
     const msg = { id: m.id, ok: true, mode, depth: flushDepth() };
     if (bitmap) { msg.bitmap = bitmap; self.postMessage(msg, [bitmap]); }
     else { msg.buf = buf; self.postMessage(msg, [buf]); }

@@ -434,41 +434,62 @@ window.IntMapModules.toolPanel=function(HOST){
     HOST._aiAreaSummarize(uniq,'aiSumTitle');
   }
 
-  /* Context menu */
+  /* ══ (#R204) THE RIGHT-CLICK MENU IS GROUPED, NOT LISTED ═══════════════════════════════════════
+     「地図を右クリックしたときのポップアップが煩雑になっているから整理して」
+
+     It had grown to fifteen buttons in one flat run with a single divider in the middle, added one
+     round at a time (#R8c, #R9, #R15c, #R40, #R42, #R176 …) — so "Street View here" sat next to
+     "Terrain & water flow" and nothing said which of them was an action on the point and which
+     opened a simulator. Nothing is removed and nothing is renamed: the same fifteen entries are
+     put under four headings that say what the group is FOR, in the order a hand reaches for them.
+
+       この地点        — the coordinate itself: ask, look, pin, copy, share, post
+       計測            — the two tools that START from the clicked point
+       ここの情報      — live lookups about the point: weather, runways
+       解析・シミュレーション — the five things that open a model of it
+
+     The heading style (`.ctx-head`) is the one the coordinate line has always used, so this needed
+     no CSS. `--sheet-cover` clamping and the scroll cap below already handle a menu taller than the
+     visible map, which four extra heading rows make slightly more likely on a phone. */
   function showContextMenu(point,lngLat){
     const m=document.getElementById('ctx-menu'); const mc=document.getElementById('map-container').getBoundingClientRect();
+    const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
     const items=[
       {h:`${HOST.t('ctxThisPoint')}: ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
-      {label:`${HOST.lang==='jp'?'ここをAtlasに聞く':HOST.lang==='de'?'Atlas zu diesem Ort fragen':HOST.lang==='ru'?'Спросить Atlas об этом месте':HOST.lang==='es'?'Preguntar a Atlas sobre aquí':'Ask Atlas about here'}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
-      {label:`🧍 ${HOST.lang==='jp'?'ここのストリートビュー':HOST.lang==='de'?'Street View hier':HOST.lang==='ru'?'Просмотр улиц здесь':HOST.lang==='es'?'Street View aquí':'Street View here'}`, action:()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
+      {label:`${L('Ask Atlas about here','ここをAtlasに聞く','Atlas zu diesem Ort fragen','Спросить Atlas об этом месте','Preguntar a Atlas sobre aquí')}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
+      {label:`🧍 ${L('Street View here','ここのストリートビュー','Street View hier','Просмотр улиц здесь','Street View aquí')}`, action:()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
       {label:`📍 ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
-      {label:`📏 ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
-      {label:`⭕ ${HOST.lang==='jp'?'ここからの半径':HOST.lang==='de'?'Radius von hier':HOST.lang==='ru'?'Радиус отсюда':'Radius from here'}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
-      {label:`💬 ${HOST.t('ctxPostHere')}`, action:()=>{ if(!HOST.requireLogin()) return; HOST.pendingPostLoc=[lngLat.lng,lngLat.lat]; HOST.communityAddArmed=false; HOST.openComposeModal(); }},
-      {divider:true},
       /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to
          this view" removed per request — the live-permalink hash still restores a reload. */
       {label:`📋 ${HOST.t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       /* (#R40/#R42) Share the EXACT current state (position, zoom, projection, base map, layers, time-travel,
          compare) as a link — opens the surfaced IntMapShare panel (link shown + copy + native share). */
-      {label:`🔗 ${HOST.lang==='jp'?'この表示を共有':HOST.lang==='de'?'Diese Ansicht teilen':HOST.lang==='ru'?'Поделиться этим видом':HOST.lang==='es'?'Compartir esta vista':'Share this view'}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
-      {label:`🌤 ${HOST.lang==='jp'?'ここの天気（最新）':HOST.lang==='de'?'Wetter hier (aktuell)':HOST.lang==='ru'?'Погода здесь (сейчас)':HOST.lang==='es'?'El tiempo aquí (ahora)':'Weather here (live)'}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
-      {label:`🛬 ${HOST.lang==='jp'?'滑走路検索（ここから）':HOST.lang==='de'?'Start-/Landebahn-Suche (von hier)':HOST.lang==='ru'?'Поиск ВПП (отсюда)':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
-      {label:`📡 ${HOST.lang==='jp'?'見通し線解析（レーダー死角）':HOST.lang==='de'?'Sichtlinie (Radarschatten)':HOST.lang==='ru'?'Линия видимости (радиотень)':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
-      {label:`🎯 ${HOST.lang==='jp'?'到達圏（車/徒歩/自転車）':HOST.lang==='de'?'Erreichbarkeit (Auto/Fuß/Rad)':HOST.lang==='ru'?'Зона доступности (авто/пешком/вело)':HOST.lang==='es'?'Área alcanzable (coche/pie/bici)':'Reachable area (drive/walk/cycle)'}`, action:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.open(lngLat); }catch(_){} }},
+      {label:`🔗 ${L('Share this view','この表示を共有','Diese Ansicht teilen','Поделиться этим видом','Compartir esta vista')}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
+      {label:`💬 ${HOST.t('ctxPostHere')}`, action:()=>{ if(!HOST.requireLogin()) return; HOST.pendingPostLoc=[lngLat.lng,lngLat.lat]; HOST.communityAddArmed=false; HOST.openComposeModal(); }},
+      {h:L('Measure','計測','Messen','Измерение','Medir'),head:true},
+      {label:`📏 ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
+      {label:`⭕ ${L('Radius from here','ここからの半径','Radius von hier','Радиус отсюда','Radio desde aquí')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
+      {h:L('About this point','ここの情報','Zu diesem Punkt','Об этой точке','Sobre este punto'),head:true},
+      {label:`🌤 ${L('Weather here (live)','ここの天気（最新）','Wetter hier (aktuell)','Погода здесь (сейчас)','El tiempo aquí (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
+      {label:`🛬 ${L('Runway search (from here)','滑走路検索（ここから）','Start-/Landebahn-Suche (von hier)','Поиск ВПП (отсюда)','Búsqueda de pistas (desde aquí)')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
+      {h:L('Analysis & simulation','解析・シミュレーション','Analyse & Simulation','Анализ и моделирование','Análisis y simulación'),head:true},
+      {label:`📡 ${L('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)')}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
+      {label:`🎯 ${L('Reachable area (drive/walk/cycle)','到達圏（車/徒歩/自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)')}`, action:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.open(lngLat); }catch(_){} }},
       /* (#R176) The three simulators this round added. They live HERE and in Atlas — not in the Measure
          menu, which is where the drone planner was and which the user rejected outright. */
-      {label:`⛰💧 ${HOST.lang==='jp'?'地形編集・水流シミュレーター':HOST.lang==='de'?'Gelände & Wasser bearbeiten':HOST.lang==='ru'?'Рельеф и водоток':HOST.lang==='es'?'Terreno y flujo de agua':'Terrain & water flow'}`, action:()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
-      {label:`🌐 ${HOST.lang==='jp'?'ここを震源に地震波シミュレーション':HOST.lang==='de'?'Seismische Wellen von hier':HOST.lang==='ru'?'Сейсмические волны отсюда':HOST.lang==='es'?'Ondas sísmicas desde aquí':'Seismic waves from here'}`, action:()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
-      {label:`🌇 ${HOST.lang==='jp'?'ここの日照時間・影を解析':HOST.lang==='de'?'Sonnenstunden & Schatten hier':HOST.lang==='ru'?'Часы солнца и тени здесь':HOST.lang==='es'?'Horas de sol y sombra aquí':'Sunlight hours & shade here'}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
+      {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
+      {label:`🌐 ${L('Seismic waves from here','ここを震源に地震波シミュレーション','Seismische Wellen von hier','Сейсмические волны отсюда','Ondas sísmicas desde aquí')}`, action:()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
+      {label:`🌇 ${L('Sunlight hours & shade here','ここの日照時間・影を解析','Sonnenstunden & Schatten hier','Часы солнца и тени здесь','Horas de sol y sombra aquí')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
-      ...(HOST.userPins.length?[{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
+      ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
     ];
-    m.innerHTML=items.map(it=>{
+    /* ⚠ the button's index is its position in `items`, taken from the map's own index — `indexOf`
+       returns the FIRST equal element, which two identically-labelled entries would collide on. */
+    m.innerHTML=items.map((it,i)=>{
       if(it.divider) return `<div class="ctx-divider"></div>`;
       if(it.head) return `<div class="ctx-head">${it.h}</div>`;
-      return `<button data-act="${items.indexOf(it)}">${it.label}</button>`;
+      return `<button data-act="${i}">${it.label}</button>`;
     }).join('');
     m.querySelectorAll('button[data-act]').forEach(b=>{ b.onclick=()=>{ const i=+b.getAttribute('data-act'); items[i].action(); m.style.display='none'; }; });
     m.style.display='block';

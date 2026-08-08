@@ -54,8 +54,22 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ceiling here and both may only go down; a round that wants to add gate time still has to take it
    out somewhere, and a round that "fixes" the gate by pushing a file into `deep` still pays for it
    against DEEP_BUDGET_S. Moving everything to nightly is therefore not a way to pass this gate. */
-const BUDGET_S = 500;                   /* core: 8.3 min — measured 484 incl. tests/r203.spec.js (60 s) */
-const DEEP_BUDGET_S = 4750;             /* deep: 79.2 min — measured 4,699 */
+/* ⚠ (#R204) AND THE SECOND CEILING IS NOW THE **TOTAL**, NOT THE DEEP TIER.
+   #R203 capped core and deep separately so that "fix the gate by moving files into deep" could not
+   pass. The cost of that shape is that it also blocks the legitimate version of the same move: this
+   round's instruction — 「明らかにテストが過剰。大幅に過剰。簡易でいい。」 — is answered by taking
+   360 s of per-round regression files OUT of the gate, and a deep ceiling set at deep's own measured
+   figure refuses that even though nothing has been added anywhere.
+   What must never grow is how much test time this project owns, so THAT is what is capped. The gate
+   keeps its own, much lower ceiling, and the two together say the thing worth saying:
+     · TOTAL_BUDGET_S — the whole suite. A round that adds a spec pays for it out of somewhere.
+     · BUDGET_S — what stands between an edit and a push. Moving a file to deep relieves this one and
+       does NOT relieve the total, so the only way to buy total headroom is to make something faster.
+   ⚠ The gate cannot be emptied to pass BUDGET_S either: scripts/tiers.mjs keeps the four always-on
+   suites and the current round's own spec in core by construction, whatever they cost.
+   5,250 is exactly #R203's two ceilings added together — this round created no headroom at all. */
+const BUDGET_S = 180;                   /* core: 3.0 min — measured 173 s over 17 files */
+const TOTAL_BUDGET_S = 5250;            /* whole suite: 87.5 min — measured 5,183 (unchanged by this round) */
 const HISTORY = [
   ['#R197', 5200, 'the viewpoint sweep merged out of r172/r173/r176/r177/r178 into r179 (−21.4 min), and nine specs that were CHARGED p75 were measured instead (−11.7 min of pure fiction)'],
   /* ⚠ (#R201) AND THIS ROUND ADDED A SPEC AND STILL WENT DOWN, WHICH IS THE MECHANISM WORKING.
@@ -75,6 +89,7 @@ const HISTORY = [
      been measured HERE is not a number to write into a table CI schedules from. */
   ['#R201', 5150, 'eight specs stopped booting the app twice to choose a renderer (−56 s, measured per boot), and the space-button test went with the button (−34 s), which paid for tests/r201.spec.js (+45 s)'],
   ['#R203', 500, 'the ceiling stopped governing "the suite" and started governing THE TIER THAT RUNS EVERY TIME: 5,123 s of measured serial time split into a 424 s gate (29 files) and a 4,699 s nightly (27 files) — see scripts/tiers.mjs. Nothing was deleted; what changed is what stands between an edit and a push'],
+  ['#R204', 180, 'membership of the gate became a PRICE rather than a list (scripts/tiers.mjs: CORE_MAX_S = 10 s), because #R203 left CORE as the DEFAULT and 281 s of its 484 s sat in nine per-round regression files nobody had looked at. The gate is 17 files; the second ceiling is now the TOTAL, which this round did not move'],
 ];
 
 const dur = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'durations.json'), 'utf8'));
@@ -110,14 +125,15 @@ if (process.argv.includes('--report')) {
   }
   process.stdout.write('\ncore  ' + (total / 60).toFixed(1) + ' min over ' + core.length + ' specs; ceiling '
     + (BUDGET_S / 60).toFixed(1) + ' min\ndeep  ' + (deepTotal / 60).toFixed(1) + ' min over ' + deep.length
-    + ' specs; ceiling ' + (DEEP_BUDGET_S / 60).toFixed(1) + ' min\n');
+    + ' specs\ntotal ' + ((total + deepTotal) / 60).toFixed(1) + ' min; ceiling '
+    + (TOTAL_BUDGET_S / 60).toFixed(1) + ' min\n');
   process.exit(0);
 }
 
 process.stdout.write('test budget: core ' + (total / 60).toFixed(1) + ' min over ' + core.length + ' specs'
   + (unmeasured.length ? (' (' + unmeasured.length + ' unmeasured, charged p75 = ' + p75 + 's each)') : '')
-  + ' — ceiling ' + (BUDGET_S / 60).toFixed(1) + ' min; deep ' + (deepTotal / 60).toFixed(1) + ' min over '
-  + deep.length + ' specs — ceiling ' + (DEEP_BUDGET_S / 60).toFixed(1) + ' min\n');
+  + ' — ceiling ' + (BUDGET_S / 60).toFixed(1) + ' min; whole suite ' + ((total + deepTotal) / 60).toFixed(1)
+  + ' min over ' + rows.length + ' specs — ceiling ' + (TOTAL_BUDGET_S / 60).toFixed(1) + ' min\n');
 
 function over(what, got, cap, hint) {
   process.stderr.write('\n✗ THE ' + what.toUpperCase() + ' TIER IS OVER ITS CEILING by ' + ((got - cap) / 60).toFixed(1) + ' min.\n'
@@ -128,12 +144,14 @@ function over(what, got, cap, hint) {
   process.exit(1);
 }
 if (total > BUDGET_S) over('core', total, BUDGET_S,
-  'Moving a file into `deep` is not a way out: it lands against the deep ceiling, which is also full.');
-if (deepTotal > DEEP_BUDGET_S) over('deep', deepTotal, DEEP_BUDGET_S);
+  'A file over CORE_MAX_S already leaves the gate by itself (scripts/tiers.mjs); if this is over, the'
+  + '\n  always-on suites or this round\'s own spec have grown — make them faster, do not re-tier them.');
+if (total + deepTotal > TOTAL_BUDGET_S) over('whole suite', total + deepTotal, TOTAL_BUDGET_S,
+  'Moving a file into `deep` is not a way out of THIS one: it is the same total either way.');
 /* ⚠ a ceiling that is not tracking the floor has stopped asserting anything (#R194) — but the slack
    is scaled to the tier, or the 300 s that is right for an 80-minute suite would be 60% of an
    8-minute one and the gate could double without complaint. */
-for (const [what, got, cap] of [['core', total, BUDGET_S], ['deep', deepTotal, DEEP_BUDGET_S]]) {
+for (const [what, got, cap] of [['core', total, BUDGET_S], ['whole suite', total + deepTotal, TOTAL_BUDGET_S]]) {
   const slack = Math.max(60, Math.round(cap * 0.12));
   if (got < cap - slack) {
     process.stderr.write('\n✗ THE ' + what.toUpperCase() + ' CEILING IS STALE: that tier is '

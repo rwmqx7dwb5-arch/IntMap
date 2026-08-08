@@ -197,7 +197,7 @@ if (has('--merge')) {
      absent spec is charged p75 by plan(), which would silently re-open the packing defect above. */
   const kept = {};
   for (const [k, v] of Object.entries(raw)) if (k !== 'solo' && typeof v === 'number' && !(k in acc)) kept[k] = v;
-  const out = { ...acc, ...kept, solo: raw.solo || [], deep: raw.deep || [] };
+  const out = { ...acc, ...kept, solo: raw.solo || [] };
   writeFileSync(DUR, JSON.stringify(out, null, 1) + '\n');
   console.log(`shard-plan: merged ${read} fragment(s) → ${Object.keys(acc).length} measured, ${Object.keys(kept).length} carried over`);
   process.exit(0);
@@ -222,7 +222,7 @@ if (has('--update')) {
     }
   }
   if (!Object.keys(acc).length) { console.error('shard-plan --update: no testcase timings found'); process.exit(1); }
-  const out = { ...acc, solo: raw.solo || [], deep: raw.deep || [] };
+  const out = { ...acc, solo: raw.solo || [] };
   writeFileSync(DUR, JSON.stringify(out, null, 1) + '\n');
   console.log(`shard-plan: refreshed ${Object.keys(acc).length} file timings in tests/durations.json`);
   process.exit(0);
