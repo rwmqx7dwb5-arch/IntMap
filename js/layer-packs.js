@@ -19,7 +19,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -139,7 +139,7 @@ window.IntMapModules.earthSky=function(HOST){
 };
 
 window.IntMapModules.landCover=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -166,20 +166,102 @@ window.IntMapModules.landCover=function(HOST){
            blurring class edges (画質); maxzoom 12→13 sharpens deep zoom. */
         GE().layers.add({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}}); return true; }catch(_){ return false; } }   /* (#R40) Land cover default opacity 100% (was 0.85) per request */
     /* ---- Tectonic plates (geojson) ---- */
-    let platesLoaded=false, platesLoading=false;
+    let platesLoaded=false, platesLoading=false, platePop=null;
+    /* the plate a feature belongs to, by whichever of the source's own fields is present */
+    const plateName=(p)=>String((p&&(p.PlateName||p.Name||p.plate||p.Code))||'').trim();
     function ensurePlateLayers(){ if(GE().layers.hasSource('eco-plates')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('eco-plates',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); GE().layers.addSource('eco-plates-b',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         GE().layers.add({id:'eco-plates-fill',type:'fill',source:'eco-plates',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','_color'],'#e8590c'],'fill-opacity':0.18}});
         GE().layers.add({id:'eco-plates-line',type:'line',source:'eco-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.5,'line-opacity':0.92}});
-        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffd3c7','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}}); return true; }catch(_){ return false; } }
-    function loadPlates(cb){ if(platesLoaded){ cb(true); return; } if(platesLoading){ cb(false); return; } platesLoading=true;
+        /* ══ (#R204) A PLATE NAME IS THE BIGGEST NON-PLACE LABEL THE LADDER ALLOWS ══════════════════
+           「プレート境界レイヤーのプレート名のテキストサイズが小さすぎる。」
+           It was asking for `sub(0.9)`, i.e. 90 % of the non-place tier — 7.4 px at z1 and 10.2 px from
+           z4 — for a label that names a continent-sized object. `sub(1)` is the top of that tier
+           (8.3 → 11.4 px), and it is the ceiling rather than a preference: #R198's instruction
+           「地名ラベル以外のテキストは地名ラベルよりも小さめに」 is what js/label-scale.js exists to keep
+           true, and tests/r198-checks re-derives it, so anything above this would be undoing that
+           round to satisfy this one. What is NOT capped is weight and contrast, and that is where the
+           rest of the legibility comes from: Bold (the openfreemap glyph server serves the stack —
+           checked, 200) with a wider, darker halo reads considerably larger at the same px.
+           ⚠ AND THE STACK IS A PLAIN ARRAY. `['literal',['Noto Sans Regular']]` is valid MapLibre and
+           was silently wrong under the other renderer: js/cesium-layers.js `fontOf()` takes spec[0] of
+           an array, which was the string 'literal', so this layer asked Cesium for a font family
+           called "literal". Every other symbol layer in the app writes the plain form. */
+        GE().layers.add({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':window.IntMapLabelScale.sub(1),'text-font':['Noto Sans Bold'],'text-letter-spacing':0.06,'text-padding':3},paint:{'text-color':'#ffe2d8','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':2}});
+        /* ⚠ …AND IT IS CLICKABLE, WHICH THE LABEL ALONE IS NOT ENOUGH FOR. 「また、クリック可能に。」
+           A symbol layer answers a click only where a glyph actually is; the plate is the whole
+           polygon, so both layers are wired and the popup is the same one either way. */
+        ['eco-plates-lbl','eco-plates-fill'].forEach(id=>{
+          try{
+            GE().events.onLayer('click',id,(e)=>{ const f=e.features&&e.features[0]; if(!f) return; platePopup(e.lngLat,f.properties||{}); });
+            GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
+            GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
+          }catch(_){}
+        });
+        /* (#R204) …and whatever has already been fetched goes in NOW — see the ⚠ in loadPlates */
+        installPlates();
+        return true; }catch(_){ return false; } }
+    /* What the click says. Only what the source actually carries — the PB2002 plate name and its
+       code — plus the boundary types that touch it, counted from the boundary file that is already
+       loaded. No invented tectonics (標準指示 4). */
+    function platePopup(lngLat,p){
+      const nm=plateName(p)||(jp()?'（名称なし）':'(unnamed)');
+      const code=String(p.Code||p.code||'').trim();
+      /* ⚠ `IntMapSafe.html` — the project's ONE sanitizer (#R138). The first draft of this line called
+         an `escapeHtml` that does not exist on it: it threw, the catch returned '', and the popup
+         opened with an empty name and an empty code under a heading that was still there. Measured on
+         the first click. There is no `escapeHtml` anywhere in js/ except that mistake. */
+      const esc=(s)=>{ try{ return window.IntMapSafe?window.IntMapSafe.html(String(s)):String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        catch(_){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } };
+      const L=(en,ja,de,ru,es)=>({en,jp:ja,de,ru,es})[HOST.lang]||en;
+      let html='<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
+      if(code) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+L('Plate code','プレートコード','Plattencode','Код плиты','Código de placa')+': <b style="color:var(--text-main);">'+esc(code)+'</b></div>';
+      html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Bird (2002) plate model','Bird (2002) プレートモデル','Plattenmodell nach Bird (2002)','Модель плит Bird (2002)','Modelo de placas de Bird (2002)')+'</div>';
+      try{ if(platePop) platePop.remove(); }catch(_){}
+      try{ platePop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'250px'}).setLngLat(lngLat).setHTML(html)); }catch(_){}
+    }
+    /* ══ (#R204) THE PLATES ARRIVED AND WERE THROWN AWAY, ONE RUN IN THREE ═════════════════════════
+       Measured while wiring the click below: three identical loads of the built site, toggling the
+       layer the same way, both fetches answering 200 every time — and one of the three ended with
+       `querySourceFeatures('eco-plates') === 0` and the layer invisible. The map showed no plates and
+       nothing anywhere said why.
+
+       The cause is in these eight lines. `setSourceData` was guarded on `hasSource(…)`, and if the
+       promise resolved before `ensurePlateLayers()` had created the source — which is a race between
+       one network fetch and one `styledata` event — the guard was false, the parsed GeoJSON was
+       DROPPED, and `platesLoaded = true` was set anyway. Every later call then short-circuited on
+       that flag and returned "already loaded" for data that had never been installed. The state was
+       permanent for the session: the only way back was a reload.
+
+       So the fetched collections are KEPT (`plateGJ`), installing them is its own idempotent step,
+       and `platesLoaded` means "the bytes are here" rather than "the map has them". `ensurePlateLayers`
+       installs whatever is already in hand the moment it builds the source, which also closes the
+       other half of the same race — the style being rebuilt under a layer that was already on. */
+    let plateGJ=null, plateBD=null;
+    function installPlates(){
+      let ok=false;
+      try{ if(plateGJ && GE().layers.hasSource('eco-plates')){ GE().layers.setSourceData('eco-plates',plateGJ); ok=true; } }catch(_){}
+      try{ if(plateBD && GE().layers.hasSource('eco-plates-b')) GE().layers.setSourceData('eco-plates-b',plateBD); }catch(_){}
+      return ok;
+    }
+    function loadPlates(cb){
+      if(platesLoaded){ installPlates(); cb(true); return; }
+      if(platesLoading){ cb(false); return; }
+      platesLoading=true;
       Promise.all([
         fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
         fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
       ]).then(([pl,bd])=>{ try{ (pl.features||[]).forEach((f,i)=>{ f.properties=f.properties||{}; f.properties._color=PAL[i%PAL.length]; }); }catch(_){}
-        try{ if(GE().layers.hasSource('eco-plates')) GE().layers.setSourceData('eco-plates',pl); }catch(_){}
-        try{ if(bd && GE().layers.hasSource('eco-plates-b')) GE().layers.setSourceData('eco-plates-b',bd); }catch(_){}
-        platesLoaded=true; platesLoading=false; cb(true);
+        plateGJ=pl; plateBD=bd||null;
+        platesLoaded=true; platesLoading=false;
+        installPlates();
+        /* ⚠ AND THE VISIBILITY IS ASSERTED FROM `state`, NOT LEFT TO THE CALLBACK. `loadPlates` has
+           several callers (the toggle, the styledata re-assert) and only one of them passes a
+           callback that shows the layer; whichever call happens to be the one that owns the fetch is
+           then the one that decides whether anything is drawn. Reading the state the user set is the
+           same fact from the one place that always knows it. */
+        try{ if(state.plates) setVis(SETS.plates,true); }catch(_){}
+        cb(true);
       }).catch(()=>{ platesLoading=false; try{ imToast(jp()?'プレートデータを取得できませんでした':'Could not load plate data'); }catch(_){} cb(false); }); }
     /* ---- Ecoregions (PMTiles vector) ---- */
     let pmReady=false, pmLoading=false; const pmQ=[];
@@ -249,9 +331,21 @@ window.IntMapModules.landCover=function(HOST){
         try{ window._wireLegendDrag&&window._wireLegendDrag(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
       } else if(lg){ lg.style.display='none'; }
     }
+    /* ══ (#R204) `once('idle')` IS NOT A RETRY — IT IS A COIN TOSS ═════════════════════════════════
+       MEASURED: four identical loads of the built site, each ticking the Tectonic-plates box the same
+       way at the same moment; two came up with the layer drawn and two with NOTHING — no plates, no
+       labels, no error, `querySourceFeatures` zero — and the failure was permanent for the session.
+       Both of these branches said "if the renderer will not take a layer yet, wait for the next
+       `idle`". A map that has already settled does not necessarily emit another one, so on the runs
+       where the box was ticked into a quiet map the retry never happened at all. It is #R170's own
+       finding one level up (`isStyleLoaded()` is not "may I add layers") and #R41's remedy is the one
+       used everywhere else in this file — POLL, with a bounded number of tries, and keep the idle as
+       the last resort rather than the only one. js/layer-packs.js's own time-zone module has done
+       exactly this since #R79c; these two were the copies that never got it. */
+    function retry(fn){ let n=0; const a=()=>{ if(fn()) return; if(n++<60) setTimeout(a,150); else { try{ GE().events.once('idle',a); }catch(_){} } }; a(); }
     function toggle(which,on){ state[which]=on;
-      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ GE().events.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
-      else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ GE().events.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
+      if(which==='worldcover'){ retry(()=>{ if(!ensureRaster()) return false; setVis(SETS.worldcover,on); return true; }); wcLegend(on); }
+      else if(which==='plates'){ retry(()=>{ if(!ensurePlateLayers()) return false; if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); return true; }); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else { setVis(SETS.ecoregions,false);
         /* (#R20) phones: toggling OFF releases the ~10 MB parsed GeoJSON + the source copy (OOM
            pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache. */
@@ -282,7 +376,7 @@ window.IntMapModules.landCover=function(HOST){
 };
 
 window.IntMapModules.betaPack2=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -498,7 +592,7 @@ window.IntMapModules.betaPack2=function(HOST){
 };
 
 window.IntMapModules.religionLang=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -600,7 +694,7 @@ window.IntMapModules.religionLang=function(HOST){
 };
 
 window.IntMapModules.timeZones=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -618,7 +712,12 @@ window.IntMapModules.timeZones=function(HOST){
     function bboxOf(f){ if(f.bbox) return f.bbox; let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=r=>r.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; }); const g=f.geometry; if(!g) return null; const polys=g.type==='Polygon'?g.coordinates:g.type==='MultiPolygon'?[].concat.apply([],g.coordinates):[]; polys.forEach(eat); return [mnx,mny,mxx,mxy]; }
     function labelFC(){ if(!geo) return {type:'FeatureCollection',features:[]}; const best={};
       geo.features.forEach(f=>{ const z=f.properties&&f.properties.zone; if(z==null) return; const bb=bboxOf(f); if(!bb) return; const area=(bb[2]-bb[0])*(bb[3]-bb[1]); if(!best[z]||area>best[z].area) best[z]={area,cx:(bb[0]+bb[2])/2,cy:(bb[1]+bb[3])/2,z}; });
-      return {type:'FeatureCollection',features:Object.keys(best).map(k=>{ const b=best[k]; return {type:'Feature',geometry:{type:'Point',coordinates:[b.cx,Math.max(-58,Math.min(72,b.cy))]},properties:{label:offLabel(b.z)+'\n'+zoneTime(b.z)}}; })}; }
+      /* ⚠ (#R204) THE OFFSET TRAVELS WITH THE LABEL. 「Time zonesでその時間帯のテキスト（UTC+9など）を
+         押したら、同じ時間の部分をハイライトするように。」 — the click arrives on the SYMBOL feature, and
+         a symbol feature that carries only its rendered string cannot say which zone it names
+         (「UTC+9」 would have to be parsed back out of the text). `zone` is the number the polygons
+         are keyed on, so the highlight filter is an equality on the same field the fill uses. */
+      return {type:'FeatureCollection',features:Object.keys(best).map(k=>{ const b=best[k]; return {type:'Feature',geometry:{type:'Point',coordinates:[b.cx,Math.max(-58,Math.min(72,b.cy))]},properties:{label:offLabel(b.z)+'\n'+zoneTime(b.z),zone:b.z}}; })}; }
     function refreshTimes(){ try{ GE().layers.setSourceData('tzl-lbl-src',labelFC()); }catch(_){} }
     function addLayers(){ if(!geo) return;
       if(!GE().layers.hasSource('tzl-src')) GE().layers.addSource('tzl-src',{type:'geojson',data:geo});
@@ -627,8 +726,37 @@ window.IntMapModules.timeZones=function(HOST){
       const PAL=['match',['get','map_color8'],1,'#8dd3c7',2,'#ffffb3',3,'#bebada',4,'#fb8072',5,'#80b1d3',6,'#fdb462',7,'#b3de69',8,'#fccde5','#cfd8e3'];
       if(!GE().layers.has('tzl-fill')) GE().layers.add({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.5}},before);   /* (#R79c) initial opacity 50% (matches the registered default) */
       if(!GE().layers.has('tzl-line')) GE().layers.add({id:'tzl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},paint:{'line-color':'rgba(120,140,170,0.95)','line-width':['interpolate',['linear'],['zoom'],1,0.6,5,1.4],'line-dasharray':[2,1.6]}},before);
-      if(!GE().layers.has('tzl-time')) GE().layers.add({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':window.IntMapLabelScale.sub(1),'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}}); }
-    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} }); }
+      /* the highlight sits BETWEEN the fill and the outline so it reads as the same band lit up
+         rather than as a new shape on top; `-1e9` is a zone no feature has, i.e. "nothing selected". */
+      if(!GE().layers.has('tzl-hl')) GE().layers.add({id:'tzl-hl',type:'fill',source:'tzl-src',layout:{visibility:'none'},filter:['==',['get','zone'],-1e9],paint:{'fill-color':'#ffd43b','fill-opacity':0.55}},before);
+      if(!GE().layers.has('tzl-hl-line')) GE().layers.add({id:'tzl-hl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},filter:['==',['get','zone'],-1e9],paint:{'line-color':'#ffd43b','line-width':['interpolate',['linear'],['zoom'],1,1.6,5,3],'line-opacity':0.95}},before);
+      if(!GE().layers.has('tzl-time')) GE().layers.add({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':window.IntMapLabelScale.sub(1),'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}});
+      wireHighlight(); }
+    /* ══ (#R204) PRESSING 「UTC+9」 LIGHTS UP EVERY BAND ON THAT OFFSET ═════════════════════════════
+       One offset is not one polygon: UTC+9 is Japan, Korea, eastern Indonesia, Palau and a slice of
+       Russia, and that is exactly what the request is about — 「同じ時間の部分をハイライト」. The
+       filter is an equality on `zone`, so every polygon sharing the offset lights at once, however
+       many and wherever they are. Pressing the same label again clears it (a highlight with no way
+       off is a mode); pressing another switches. The polygons answer the click too, so the same
+       question can be asked of a country as of its label. */
+    let hlZone=null;
+    function setHighlight(z){
+      hlZone=(z==null?null:+z);
+      const f=['==',['get','zone'],(hlZone==null?-1e9:hlZone)];
+      ['tzl-hl','tzl-hl-line'].forEach(id=>{ try{ if(GE().layers.has(id)){ GE().layers.setFilter(id,f); GE().layers.setLayout(id,'visibility',(on&&hlZone!=null)?'visible':'none'); } }catch(_){} });
+    }
+    let wired=false;
+    function wireHighlight(){ if(wired) return; wired=true;
+      const hit=(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const z=f.properties&&f.properties.zone;
+        if(z==null) return; setHighlight((hlZone!=null&&+z===hlZone)?null:z); };
+      ['tzl-time','tzl-fill'].forEach(id=>{ try{
+        GE().events.onLayer('click',id,hit);
+        GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
+        GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
+      }catch(_){} });
+    }
+    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} });
+      ['tzl-hl','tzl-hl-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(v&&hlZone!=null)?'visible':'none'); }catch(_){} }); }
     function toggle(v){ on=v;
       if(v){
         const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else GE().events.once('idle',apply); return; } addLayers(); setVis(true);
@@ -651,12 +779,15 @@ window.IntMapModules.timeZones=function(HOST){
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.textContent='🕒 '+lbl(); });
+    /* (#R204) the highlight as a fact the app publishes — Atlas and the E2E tests both ask it here
+       rather than reading a filter expression back off the renderer. */
+    window.IntMapTimeZones={ highlight:(z)=>setHighlight(z), highlighted:()=>hlZone, clear:()=>setHighlight(null) };
     if(document.readyState!=='loading') setTimeout(buildUI,1000); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,1000));
   })();
 };
 
 window.IntMapModules.gibsScience=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */

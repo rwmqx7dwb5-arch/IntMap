@@ -1570,6 +1570,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         /* concurrently, not after: this is the whole speed-up */
         try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
         window.__imBoot.set(88,'layers-fired');
+        /* ══ (#R204) THE COVER THINS AS SOON AS THERE IS SOMETHING UNDER IT ═════════════════════════
+           「起動したときに地図が真っ暗になっている場合がある。どうにかしろ。」
+           The style is ready here, so the next frame the renderer draws is a real globe — measured at
+           [81,98,110] one second in, with the tile hosts held to 1.8 s a request. Everything below
+           this line then waits for the DEFAULT LAYERS, which is a wait on somebody else's network and
+           can run to 14 s; for all of it the launch screen was an opaque `var(--bg-color)` rectangle,
+           which in the dark theme is the reported black screen. `live()` only makes the backdrop a
+           scrim — the logo, the bar and the note stay, and `done()` is still driven by exactly the
+           milestones #R190 turned into a contract. The timer is the same failure-path reasoning as
+           everywhere else here: if no frame is ever reported, thin it anyway rather than sit black. */
+        try{ let _lit=false;
+          const _live=()=>{ if(_lit) return; _lit=true; try{ window.__imBoot.live&&window.__imBoot.live(); }catch(_){} };
+          GE().events.once('render',()=>setTimeout(_live,250));
+          setTimeout(_live,1500);
+        }catch(_){ try{ window.__imBoot.live&&window.__imBoot.live(); }catch(__){} }
         /* ⚠ (#R190) THE ENDING NAMES ARE A CONTRACT, NOT A LABEL. tests/r186 asserts that exactly ONE
            of `idle` / `timeout` / `no-renderer` is recorded — "a launch screen that lifts without
            saying why is the failure mode", in its own words. The first draft here invented

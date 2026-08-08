@@ -321,8 +321,14 @@ function run(m) {
      Two things follow. The centre sample is off by 23% at Mw 7.5 and by 4% at Mw 9 — bigger where
      the rupture is small against a 28 km cell, which is the signature of quantisation — and it errs
      in BOTH directions, so it was never a bias that could be corrected with a factor. And 3×3 lands
-     within 1.5% of 7×7 everywhere, at a ninth of the arithmetic. */
-  const SUB_N = 3, subR = 1.5 * g.L;
+     within 1.5% of 7×7 everywhere, at a ninth of the arithmetic.
+     ⚠ (#R204) 3 → 5, AND THE TABLE ABOVE IS THE ARGUMENT. 「津波シミュレータのシミュレーションの精度を
+     もっと高く。特に震源付近は高解像度シミュレーションに。」 — the residual of 3×3 against the converged
+     7×7 is +1.5 % / +0.9 % / −0.4 % at the three magnitudes; 5×5 leaves +0.3 % / +0.2 % / −0.05 %,
+     i.e. it removes about four fifths of what is left, for 2.8× of an arithmetic that only runs
+     inside a disc of 1.5 rupture lengths. It is the cheapest accuracy in this file and it is spent
+     exactly where the instruction points — at the source. */
+  const SUB_N = 5, subR = 1.5 * g.L;
   const cellLatM = ((lat1 - lat0) / ny) * mPerLat;
   let upMax = 0, downMax = 0;
   /* only the rows and columns the window can reach — on a global grid the source is a small patch */

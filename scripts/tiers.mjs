@@ -19,21 +19,40 @@
  *  and nowhere else — the same shape #R186 used for `solo` and for the same reason: the moment a
  *  rule like this is written as a regex in two configs, the two disagree.
  *
- *    · CORE — 29 files, 424 s measured. Runs on `npm test`, on every PR and on every push. This is
- *      the gate: the smoke tests, the security and monitor suites, the imagery/resolution contracts,
- *      the boot-and-render invariants and the current round's own spec.
- *    · DEEP — 27 files, 4,699 s measured. The 3-D families whose individual tests are minutes long
- *      by nature: Cesium camera comparisons, terrain reads, the flight simulator, the drone planner,
- *      the satellite catalogue, the seismic/tsunami fields. Runs NIGHTLY, on every push to main, and
- *      on demand (`npm run test:deep`, or the workflow's dispatch button).
- *
- *  ⚠ A NEW SPEC IS CORE UNTIL SOMEBODY SAYS OTHERWISE. `deep` is the explicit list, so a file added
- *  by a later round runs in the gate by default and shows up against the ceiling — which is the
- *  direction that self-corrects. The opposite default would let the gate quietly empty out.
+ *    · CORE — the gate. Runs on `npm test`, on every PR and on every push.
+ *    · DEEP — everything else. Runs NIGHTLY, on every push to main, and on demand
+ *      (`npm run test:deep`, or the workflow's dispatch button).
  *
  *  ⚠ AND NOTHING IS DELETED BY BEING DEEP. Every assertion still runs, every night and after every
  *  merge; what changes is that it no longer stands between an edit and a push. A regression in a
  *  deep spec is caught by the run that follows the merge, ~15 minutes later, not the next morning.
+ *
+ *  ══ (#R204) WHICH FILES ARE CORE IS NOW A PRICE, NOT A LIST ═══════════════════════════════════
+ *  「毎回毎回、テストに時間がかかりすぎ。いい加減にしろ。すべてが長すぎる。明らかにテストが過剰。
+ *    ずっと言っているがテスト時間が壊滅的に長いまま変わっていない。大幅に過剰。簡易でいい。」
+ *
+ *  Reported AGAIN after #R203 split the suite, and the measurement says why: #R203 wrote `deep` as
+ *  an explicit list of 27 files, which made CORE the default — so the 30 files nobody had thought
+ *  about stayed in the gate, and 281 s of the gate's 484 s sat in nine of them (r203 60 s, r201 45 s,
+ *  r178-imagery 41 s, r178 33 s, r180-imagery 32 s…). A default of "core" means the gate grows by
+ *  one file per round for ever, which is the same accumulation #R197 built a ceiling against.
+ *
+ *  So the rule is inverted and made a PRICE that each file pays out of its own measured time:
+ *
+ *      a spec may stand in the gate only if it costs at most CORE_MAX_S seconds to run.
+ *
+ *  ⚠ Plus two exceptions, and neither is a list of favourites:
+ *    · CORE_ALWAYS — the four suites that ARE the gate rather than a round's regression file:
+ *      smoke, security, internal-qa, monitors. They run whatever they cost.
+ *    · THE CURRENT ROUND'S OWN SPEC — derived, not written down: the highest-numbered `rNNN.spec.js`
+ *      on disk. #R203's "a new spec is core until somebody says otherwise" is exactly right for the
+ *      round being worked on and exactly wrong a round later, and deriving it from the file names
+ *      means the demotion happens by itself when the next round lands. A spec that is cheap enough
+ *      stays core on merit afterwards; an expensive one steps aside without anyone remembering to.
+ *
+ *  ⚠ AN UNMEASURED SPEC IS CORE. A file with no entry in tests/durations.json has not been shown to
+ *  be expensive, and the direction that self-corrects is "gate it until it is measured" — the
+ *  opposite default would let a spec dodge the gate by never being timed.
  * ==========================================================================*/
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
@@ -55,21 +74,52 @@ export function allSpecs() {
     .sort();
 }
 
-/** the `deep` list exactly as tests/durations.json states it (basenames, no path, no extension) */
-export function deepNames() {
-  if (!existsSync(DUR)) return [];
-  try {
-    const raw = JSON.parse(readFileSync(DUR, 'utf8'));
-    return Array.isArray(raw.deep) ? raw.deep.slice() : [];
-  } catch (_) { return []; }
-}
+/* ── THE PRICE OF STANDING IN THE GATE ─────────────────────────────────────────────────────────
+   Ten seconds of measured serial time. Chosen from the distribution rather than from taste: the 30
+   files #R203 left in core split cleanly at that figure — 17 of them cost 1–9 s and together come to
+   124 s, while the other 13 cost 12–60 s and come to 360 s. The gate keeps the broad, cheap coverage
+   and gives up the expensive per-round regression files, which lose nothing but their position in
+   front of a push. Lower it when a round can; raising it is how the gate grows back. */
+export const CORE_MAX_S = 10;
+
+/* The suites that are the gate itself rather than one round's regression file. Whatever they cost. */
+export const CORE_ALWAYS = ['smoke', 'security', 'internal-qa', 'monitors'];
 
 const bare = (f) => basename(String(f).split(':')[0]).replace(/\.spec\.js$/, '');
 
+/** measured serial seconds per spec basename, from tests/durations.json */
+function durations() {
+  if (!existsSync(DUR)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(DUR, 'utf8'));
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === 'number' && isFinite(v)) out[bare(k)] = v;
+    }
+    return out;
+  } catch (_) { return {}; }
+}
+
+/** the current round's own spec — the highest-numbered `rNNN.spec.js` on disk, or null */
+export function currentRoundSpec() {
+  let best = null, bestN = -1;
+  for (const f of allSpecs()) {
+    const m = /^r(\d+)$/.exec(bare(f));
+    if (m && +m[1] > bestN) { bestN = +m[1]; best = bare(f); }
+  }
+  return best;
+}
+
+/** the core tier as basenames — the gate, derived rather than listed (see the header) */
+export function coreNames() {
+  const d = durations(), cur = currentRoundSpec();
+  return allSpecs().map(bare).filter((n) =>
+    CORE_ALWAYS.includes(n) || n === cur || !(d[n] > CORE_MAX_S));
+}
+
 /** is this spec (path, basename, or `path:line`) in the deep tier? */
 export function isDeep(file) {
-  const n = bare(file);
-  return deepNames().some((d) => bare(d) === n);
+  return !coreNames().includes(bare(file));
 }
 
 /** the tier this run is for: IM_TIER=core|deep|all, defaulting to core */
