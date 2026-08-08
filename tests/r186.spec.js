@@ -14,8 +14,19 @@ test('R186 launch screen: covers the app from the first frame and lifts on real 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   /* It is static markup in the body, so it is there before any module has run. */
   await expect(page.locator('#boot-splash')).toBeVisible();
-  /* Vite content-hashes the img src at build time, which is what makes the icon cacheable */
-  expect(await page.locator('#boot-splash img').getAttribute('src')).toMatch(/IntMap\.Icon[-.]/);
+  /* Vite content-hashes the mark's URL at build time, which is what makes the icon cacheable.
+     ⚠ (#R205) THIS ASSERTED AN <img> AND SO IT FAILED THE ROUND AFTER. The mark is a CSS background
+     now, because the light and dark launch screens use different files and only the declaration that
+     WINS the cascade is ever fetched — two <img> tags would pull 331 KB to show 118 KB of it. What
+     has to hold is what this line was for: the launch screen shows a content-hashed IntMap mark from
+     the first frame. Where the URL is written down is not the property. */
+  const mark = await page.locator('#boot-splash .boot-icon')
+    .evaluate((el) => getComputedStyle(el).backgroundImage);
+  /* either mark — a light context gets IntMap.Icon_BW-inverted, a dark one gets IntMap.Icon — and
+     `[-.]` after the name is the content hash (built) or the plain extension (unbuilt) */
+  expect(mark, 'the launch screen shows an IntMap mark').toMatch(/IntMap\.Icon(_BW-inverted)?[-.]/);
+  /* and EXACTLY ONE of them is fetched: the other declaration lost the cascade and is never requested */
+  expect(mark.match(/IntMap\.Icon/g).length, 'only the winning declaration is fetched').toBe(1);
   await booted(page);
   /* The splash dissolves over 420 ms and is then removed. Wait for the RESULT — a fixed sleep is a
      test of the runner's load, and on a busy CI runner 700 ms was not enough (it passed on retry,

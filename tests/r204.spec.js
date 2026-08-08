@@ -199,8 +199,12 @@ test('R204 ③ pressing a time-zone offset highlights every band on it', async (
     map.fire('contextmenu', { point: { x: 400, y: 400 }, lngLat: map.unproject([400, 400]), preventDefault() {} });
     await new Promise((s) => setTimeout(s, 300));
     const el = document.getElementById('ctx-menu');
+    /* ⚠ (#R205) THIS COUNTED `.ctx-head` AND SO IT FAILED THE ROUND AFTER. The headings became
+       BUTTONS (`.ctx-grp`) that open their section, because grouping fifteen entries under four
+       headings made the menu twenty rows and the report came back unchanged. #R204's property is
+       that the menu is GROUPED and that no entry was lost — not which element carries a heading. */
     return { display: el.style.display,
-      heads: [...el.querySelectorAll('.ctx-head')].map((h) => h.textContent),
+      heads: [...el.querySelectorAll('.ctx-head, .ctx-grp, .ctx-coord')].map((h) => h.textContent),
       buttons: [...el.querySelectorAll('button[data-act]')].map((b) => b.getAttribute('data-act')) };
   });
   expect(menu.display).toBe('block');
