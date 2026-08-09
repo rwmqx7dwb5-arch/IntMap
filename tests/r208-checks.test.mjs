@@ -525,12 +525,30 @@ test('R208 ⑨: the space camera interpolates its up-vector instead of snapping 
   /* ⚠ AND IT MUST STILL REACH THE ECLIPTIC. Holding the Earth's axis up for ever would put every
      planet's orbit on a permanent 23° slant, so the blend has to fall to zero as the Earth shrinks —
      it is driven by the Earth's own apparent size, which is the same gesture that crosses the seam. */
-  assert.ok(/earthRadiusPx\(\)\s*\/\s*Math\.max\(1,\s*H\s*\/\s*2\)/.test(src),
+  assert.ok(/r\s*=\s*earthRadiusPx\(\)/.test(src),
     'the blend is driven by the apparent size of the Earth');
-  const knee = /const t = \(f - 0\.06\) \/ \(([\d.]+) - 0\.06\);/.exec(src);
-  assert.ok(knee, 'the two knees are stated');
-  /* MEASURED: `enterFromZoom` lands with the Earth at 0.32 of the viewport half-height, so a knee
-     above that leaves a jump. 0.55 was tried first and left ~11° at the seam. */
-  assert.ok(Number(knee[1]) <= 0.32,
-    `the upper knee is ${knee[1]}, above the 0.32 the handover measures at — the seam would still jump`);
+
+  /* ⚠⚠ THE UPPER KNEE IS A RELATION AND MUST NOT BE WRITTEN AS A NUMBER (#R198, #R203). Two earlier
+     attempts made it a fraction of the VIEWPORT HALF-HEIGHT — 0.55, then 0.28 "measured at the
+     handover" — and both left the seam jumping, because the map's globe at minimum zoom is a
+     constant ~89 CSS px and therefore a DIFFERENT fraction of every window: measured 0.247 / 0.212 /
+     0.177 of the half-height at 1280×720 / 390×844 / 768×1024, so the blend arrived at 0.85 / 0.69 /
+     0.53 and left 3.5° / 7.2° / 11.0° of roll. The ratio has to be taken against the size the
+     crossing is DEFINED at, which is the same `handoverRadiusPx()` that `atNearLimit()` tests. */
+  assert.ok(/handoverRadiusPx\(\)/.test(/function axisRefPx\(\)[\s\S]{0,400}/.exec(src)?.[0] || ''),
+    'the reference size is the handover radius, so the ratio is 1 at the seam on every viewport');
+  assert.ok(!/\/\s*Math\.max\(1,\s*H\s*\/\s*2\)/.test(src),
+    'nothing measures the blend against the viewport height any more — that is what was wrong twice');
+  const knee = /const t = \(r \/ ref - AXIS_LOW\) \/ \(1 - AXIS_LOW\);/.test(src);
+  assert.ok(knee, 'the upper knee is literally 1 — the handover size itself — and only the floor is a constant');
+  const low = /const AXIS_LOW = ([\d.]+);/.exec(src);
+  assert.ok(low && Number(low[1]) > 0 && Number(low[1]) < 1,
+    'the lower knee is a fraction of the handover size, not of the window');
+
+  /* the seam has to match a ROTATED map too: the map draws north at −bearing from screen up */
+  assert.ok(/mapRollDeg\s*=\s*-b\.bearing/.test(src),
+    "the map's bearing is carried across the crossing, so a rotated map hands over its own roll");
+  assert.ok(/function northRollDeg\(\)/.test(src) && /northRollDeg:/.test(src),
+    'and what the eye sees — the screen angle of north — is reportable, so a browser test can compare '
+    + 'the two sides of the seam as one number');
 });

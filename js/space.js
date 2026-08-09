@@ -401,32 +401,96 @@ window.IntMapModules.space=function(HOST){
        still fills the view (which is where the map left off), the ecliptic once the system is what is
        on screen — and the blend is driven by the Earth's own APPARENT SIZE, so it is the same gesture
        that carries it. Nothing snaps; the tilt arrives as you pull away, which is what it looks like
-       from a departing spacecraft. */
+       from a departing spacecraft.
+
+       ⚠⚠ AND THE UPPER KNEE IS A RELATION, NOT A NUMBER (#R198's lesson, learned again here). The
+       first two attempts wrote the knee as a fraction of the VIEWPORT HALF-HEIGHT — 0.55, then 0.28
+       "measured at the handover". Both are wrong for the same reason, and measuring four viewports
+       is what showed it: the map's globe at its minimum zoom is ~89 CSS px WHATEVER the window is
+       (it is 2^minZoom worlds wide, and a world is a constant), so the same 89 px is 0.247 of a
+       720-tall window, 0.212 of a phone and 0.177 of a tablet. One literal cannot be the handover on
+       all three, and it was not — the blend arrived at 0.85 / 0.69 / 0.53, leaving 3.5° / 7.2° /
+       11.0° of roll at the seam on the three shapes of screen:
+
+           viewport      map globe r   r/(H/2)   blend at the handover   residual roll
+           1280 × 720      88.9 px      0.247          0.850                3.5°
+            390 × 844      89.7 px      0.212          0.693                7.2°
+            768 × 1024     90.4 px      0.177          0.530               11.0°
+
+       So the ratio is taken against `handoverRadiusPx()` — the size the crossing itself is defined
+       at, and the same quantity `atNearLimit()` already tests. At the handover the ratio is 1 BY
+       CONSTRUCTION on every screen, and no measurement can drift away from it. */
+    const AXIS_LOW = 0.2;      /* …and the ecliptic has taken over once the Earth is a fifth of that */
+    /* the handover size is a property of the CROSSING, not of the frame: the map cannot change its
+       minimum zoom while this view is up, so it is read when the view opens and held. Re-reading it
+       per frame would also mean a transient 0 (a renderer between styles) snapping the camera. */
+    let handoverPx = 0;
+    function axisRefPx(){
+      if(!(handoverPx > 0)){ try{ handoverPx = handoverRadiusPx() || 0; }catch(_){ handoverPx = 0; } }
+      return handoverPx;
+    }
     function axisBlend(){
-      /* 1 = the map's frame (the Earth's axis up), 0 = the ecliptic. Measured on the Earth's apparent
-         radius as a fraction of the viewport half-height: it fills the view at the handover and is a
-         speck by the time the inner planets are in frame. */
-      let f = 0;
-      try{ f = earthRadiusPx() / Math.max(1, H / 2); }catch(_){ return 0; }
-      if(!isFinite(f)) return 0;
-      /* ⚠ THE UPPER KNEE IS WHERE THE CROSSING ACTUALLY LANDS, MEASURED — not a round number. The
-         first version used 0.55 and the seam still jumped ~11°, because `enterFromZoom` hands over at
-         the size the map's globe was: measured, the Earth arrives at 0.32 of the viewport half-height,
-         where a 0.55 knee gives a blend of only 0.52. At 0.28 anything from the handover inwards is
-         fully in the map's frame and the seam is continuous; the lower knee is unchanged, so the
-         ecliptic has taken over by the time the Earth is a speck. */
-      const t = (f - 0.06) / (0.28 - 0.06);
+      /* 1 = the map's frame (the Earth's axis up), 0 = the ecliptic. ⚠ only while the EARTH is the
+         subject — focus Mars and the map's frame is not what the picture is of (#R207's rule). */
+      if(!earthIsSubject()) return 0;
+      const ref = axisRefPx(); if(!(ref > 0)) return 0;
+      let r = 0;
+      try{ r = earthRadiusPx(); }catch(_){ return 0; }
+      if(!isFinite(r) || r <= 0) return 0;
+      const t = (r / ref - AXIS_LOW) / (1 - AXIS_LOW);
       return Math.max(0, Math.min(1, t));
+    }
+    /* ── the map's own roll, so the seam matches a ROTATED map too ──────────────────────────────
+       Everything above assumes the map draws north straight up, which is only true at bearing 0.
+       MEASURED (tests/r203.spec.js ③ asserts it): the map's globe puts north at exactly −bearing from
+       screen up, so a map at bearing 40 wants the Earth's pole 40° anticlockwise of vertical here as
+       well. Measured seam error with this in: 0.000° at bearing 0, 40 and −70, on four viewports.
+       Captured at the crossing for the same reason as `handoverPx`. */
+    let mapRollDeg = 0;
+    function captureMapFrame(){
+      handoverPx = 0; mapRollDeg = 0;
+      try{ handoverPx = handoverRadiusPx() || 0; }catch(_){}
+      try{ const b = GE().camera.get(); if(b && isFinite(b.bearing)) mapRollDeg = -b.bearing; }catch(_){}
+    }
+    /* the pole, rolled in the screen plane by `mapRollDeg`. Derivation: with P the pole and z the
+       view axis (both unit, P made ⊥ z), R0 = P × z is screen-right when P is up, and
+       up = P·cos a − R0·sin a lands the pole at exactly +a from screen up. */
+    function mapFrameUp(z){
+      let p = null;
+      try{ p = EPH().poleVector('earth', jdNow()); }catch(_){}
+      if(!p) return null;
+      const d = p[0]*z[0] + p[1]*z[1] + p[2]*z[2];
+      const P = [p[0]-d*z[0], p[1]-d*z[1], p[2]-d*z[2]];
+      const m = Math.hypot(P[0],P[1],P[2]); if(!(m > 1e-9)) return null;
+      P[0]/=m; P[1]/=m; P[2]/=m;
+      const a = mapRollDeg*D2R, ca = Math.cos(a), sa = Math.sin(a);
+      const R0 = [P[1]*z[2]-P[2]*z[1], P[2]*z[0]-P[0]*z[2], P[0]*z[1]-P[1]*z[0]];
+      return [P[0]*ca-R0[0]*sa, P[1]*ca-R0[1]*sa, P[2]*ca-R0[2]*sa];
     }
     function upVector(){
       const t = axisBlend();
       if(t <= 0) return [0,0,1];
-      let p = null;
-      try{ p = EPH().poleVector('earth', jdNow()); }catch(_){}
-      if(!p) return [0,0,1];
-      const u = [ p[0]*t, p[1]*t, p[2]*t + (1-t) ];
+      const ce=Math.cos(el), se=Math.sin(el);
+      const z = norm([dist*ce*Math.cos(az), dist*ce*Math.sin(az), dist*se]);   /* eye − origin */
+      const f = mapFrameUp(z);
+      if(!f) return [0,0,1];
+      const u = [ f[0]*t, f[1]*t, f[2]*t + (1-t) ];
       const n = Math.hypot(u[0],u[1],u[2]) || 1;
       return [u[0]/n, u[1]/n, u[2]/n];
+    }
+    /* what the picture actually shows: the screen angle of the Earth's north, clockwise from straight
+       up, in degrees. The map's equivalent is −bearing, so a test can put ONE number either side of
+       the seam instead of asserting the mechanism (#R187: the subjective report is measurable). */
+    function northRollDeg(){
+      let p = null;
+      try{ p = EPH().poleVector('earth', jdNow()); }catch(_){ return null; }
+      if(!p) return null;
+      const ce=Math.cos(el), se=Math.sin(el);
+      const z = norm([dist*ce*Math.cos(az), dist*ce*Math.sin(az), dist*se]);
+      const u = upVector();
+      const R = norm(cross(u,z)), Y = cross(z,R);
+      const d = dot(p,z), P = norm([p[0]-d*z[0], p[1]-d*z[1], p[2]-d*z[2]]);
+      return Math.atan2(dot(P,R), dot(P,Y))/D2R;
     }
 
     function camera(){
@@ -1181,6 +1245,9 @@ window.IntMapModules.space=function(HOST){
       if(!EPH()){ lastErr='ephemeris missing'; return false; }
       if(!ensure()) return false;
       open=true; root.style.display='block';
+      /* (#R208) read the map's frame — the size it hands the Earth over at and the roll it is drawing
+         north with — once, here, while the map is still the picture. See axisBlend(). */
+      captureMapFrame();
       if(o.body) focus=o.body;
       if(o.mode) mode=(o.mode==='body')?'body':'system';
       if(o.scale) scale=(o.scale==='real')?'real':'model';
@@ -1541,10 +1608,14 @@ window.IntMapModules.space=function(HOST){
            starField()). A test can then assert the mechanism instead of counting bright pixels. */
         distCeil:+distCeil().toFixed(3), starDepth:!!(starPc&&starDir&&starFarBuf),
         starFarEdge:+starFarEdgeNow().toFixed(1), starsWithoutParallax:starFarUnknown,
-        /* (#R208) the map-to-space axis handover, reportable: 1 = the Earth's own axis is up (what
-           the map shows), 0 = ecliptic north (what the solar system wants), and the up-vector the
-           camera is actually using right now. */
+        /* (#R208) the map-to-space axis handover, reportable: 1 = the map's frame is up (the Earth's
+           own axis, rolled by the map's bearing), 0 = ecliptic north (what the solar system wants),
+           the up-vector the camera is using right now, and — the number the eye actually sees — the
+           screen angle of the Earth's north, clockwise from vertical. The map's own value for that
+           last one is −bearing, so the two sides of the seam are directly comparable. */
         axisBlend:+axisBlend().toFixed(4), up:upVector().map(v=>+v.toFixed(4)),
+        northRollDeg:(()=>{ const v=northRollDeg(); return v==null?null:+v.toFixed(3); })(),
+        handoverPx:+axisRefPx().toFixed(2), mapRollDeg:+mapRollDeg.toFixed(3),
         /* (#R208) the satellites of whatever is in focus, with the frame and epoch their elements
            came with — so a test can check a position against an ephemeris instead of a picture */
         moons:(()=>{ const l=moonList(); return { loaded:!!moons, error:moonsErr, shown:l.length,
