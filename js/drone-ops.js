@@ -829,6 +829,13 @@ window.IntMapModules.droneOps=function(HOST){
     /* one cheap compute to get the densified samples the fetches need to be scoped to */
     const res=D.result()||await D.compute(); if(!res) return null;
     const S=res.samples;
+    /* (#R209) the radio-link budget is NOT re-implemented here — it is window.IntMapLOS._phys, the
+       same dropAt / fresnel1 / knifeEdgeDb the viewshed uses (see the header). js/viewshed.js is
+       fetched on demand now, and linkSource() is a SYNCHRONOUS hazard callback that cannot await, so
+       it is asked for here, at the one async step that always precedes a plan. Without this the link
+       analysis would quietly fall back to free-space loss with no terrain — a silent downgrade of the
+       kind #R205 is about, not an error. */
+    if(enabled.link){ try{ await window.IntMapLazy.need('los'); }catch(_){} }
     if(enabled.wind) await warmWind(S);
     if(enabled.nofly) await warmZones(S);
     if(enabled.sites) await findLandingSites(S,r.spec);

@@ -11,6 +11,7 @@
 //   4. live aircraft: lifted to their reported altitude — driven by a STUBBED ADS-B feed so the
 //      numbers are exact and the test does not depend on who happens to be flying (#R170b).
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 /* ⚠ (#R186) THESE TESTS GESTURE ON THE MAP, SO THE MAP HAS TO BE UNDER THE POINTER.
    #R186 made Köppen and the submarine cables on by default, which also opens their legends — and the
@@ -68,6 +69,11 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
      minutes on what a GPU does in seconds. The assertions below are unchanged. */
   test.setTimeout(420000);
   await boot(page);
+  /* (#R209) js/flight-sim.js is fetched on demand now, so `window.IntMapFlightSim` is absent at boot.
+     The app's own right-click item awaits `IntMapLazy.need('flightSim')` before it starts the sim;
+     this test drives the same feature, so it asks the same way rather than sleeping for a global
+     that will never appear on its own. */
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.30, alt: 3500, hdg: 90 }));
   await page.waitForTimeout(9000);
   /* (#R173) PAUSE before the heavy reads. What is asserted is a property of the frame on screen, and a

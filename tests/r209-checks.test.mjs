@@ -103,6 +103,11 @@ test('R209 ④: every entry point to a lazy feature awaits the loader first', ()
     ['js/tool-panel.js', 'seismic'], ['js/tool-panel.js', 'nightSky'],
     ['js/app-body.js', 'playground'], ['js/playground.js', 'flightSim'],
     ['js/session-tabs.js', 'flightSim'], ['js/aircraft-detail.js', 'flightSim'],
+    /* two that are NOT buttons, and both would have degraded silently rather than failed:
+       js/analysis-panels.js's Learn card opens the playground; js/drone-ops.js's radio-link budget
+       IS window.IntMapLOS._phys, read from a SYNCHRONOUS hazard callback, so it is asked for in
+       prepare() — the one async step that always precedes a plan. */
+    ['js/analysis-panels.js', 'playground'], ['js/drone-ops.js', 'los'],
     ['js/atlas-console.js', 'los'], ['js/atlas-console.js', 'streetView'], ['js/atlas-console.js', 'flightSim'],
     ['js/atlas-console.js', 'terrainWater'], ['js/atlas-console.js', 'seismic'],
     ['js/atlas-console.js', 'nightSky'], ['js/atlas-console.js', 'tsunami'], ['js/atlas-console.js', 'playground'],

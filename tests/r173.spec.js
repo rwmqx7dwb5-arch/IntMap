@@ -9,6 +9,7 @@
 //   4. an aircraft can be picked WHERE IT IS DRAWN and its click draws the observed track — driven by
 //      a stubbed ADS-B feed (#R170b) so the numbers are exact.
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 /* ⚠ (#R186) See the same note in tests/r172.spec.js. Köppen is on by default now, its legend covers
    the part of the map these drags start on, and a gesture that lands on a legend never reaches the
@@ -53,6 +54,11 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
      software it pushes a fixed-wall-clock test past three minutes. On a GPU the same test takes ~1 min. */
   test.setTimeout(420000);
   await boot(page);
+  /* (#R209) the simulator is no longer in the boot bundle — `window.IntMapFlightSim` exists only once
+     `IntMapLazy.need('flightSim')` has resolved, which is what the app's own entry point awaits
+     before it calls start(). The keyboard the `pause` helper drives is registered by that same
+     module, so it has to arrive before the sim is started, not after. */
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.05, alt: 6000, hdg: 0 }));
   await page.waitForTimeout(9000);
   /* PAUSE before measuring. Everything asserted below is a property of the camera and the frame on

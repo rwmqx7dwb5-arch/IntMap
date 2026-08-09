@@ -11,6 +11,7 @@
  *  push (scripts/tiers.mjs) and its cost is paid on every one of them.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -45,7 +46,13 @@ test('R206 ① the light launch screen’s mark carries the screen’s own colou
    test compares the panel with itself rather than with a colour written down here. */
 test('R206 ② the ◎ epicentre action is not painted like a selected mode', async () => {
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 90000 });
-  await page.waitForFunction(() => !!window.IntMapSeismic, null, { timeout: 60000 });
+  /* ⚠ (#R209) THE BOOT SIGNAL CANNOT BE THE SEISMIC MODULE ANY MORE. js/lazy-modules.js took it out
+     of the boot bundle, so `window.IntMapSeismic` never appears on its own and this wait would sit
+     out its full minute. `IntMapLayers` is still built at boot (tests/smoke.spec.js CRITICAL_GLOBALS),
+     so it says the same thing this line always said — the app is up — and the panel is then ASKED for
+     the way the app asks for it, rather than waited on. */
+  await page.waitForFunction(() => !!window.IntMapLayers, null, { timeout: 60000 });
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapSeismic.open({ lng: 139.767, lat: 35.681, mw: 7.0, depth: 20 }));
   await page.waitForSelector('#sq-panel .sq-pick', { state: 'visible' });
   const s = await page.evaluate(() => {

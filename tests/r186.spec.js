@@ -4,6 +4,7 @@
 // measurement rather than as the code — so it keeps holding if the implementation moves.
 import { test, expect } from '@playwright/test';
 import { bootEngine } from './helpers/engine.js';
+import { loadLazyModules } from './helpers/app.js';
 
 const BOOT = { timeout: 120_000 };
 const ready = (page) => page.waitForFunction(() => !!window.IntMapGeoEngine && window.IntMapGeoEngine.canDraw(), null, BOOT);
@@ -280,6 +281,11 @@ test('R186 water: a source outside the working rectangle is not silently dropped
   test.setTimeout(240_000);
   await page.goto('/');
   await booted(page);
+  /* (#R209) `IntMapTerrainWater` is no longer in the boot bundle: js/lazy-modules.js fetches
+     js/terrain-water.js when the right-click item is used, and that item awaits
+     `IntMapLazy.need('terrainWater')` before it touches the global. `booted()` still says the app is
+     up — this line is the click's other half. */
+  await loadLazyModules(page);
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
     const TW = window.IntMapTerrainWater;
@@ -308,6 +314,7 @@ test('R186 water: the trace tells the sea from a closed basin below sea level', 
   test.setTimeout(240_000);
   await page.goto('/');
   await booted(page);
+  await loadLazyModules(page);   /* (#R209) as above — the terrain-water module is fetched on demand */
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
     const TW = window.IntMapTerrainWater;

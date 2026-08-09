@@ -13,6 +13,7 @@
  *  ⑤ The satellite prefetch does not ask for a tile it has already asked for.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const BOOT = { timeout: 90_000 };
 const ready = async (page) => {
@@ -28,6 +29,11 @@ test.describe('R196 ① the epicentre, on a phone', () => {
   test('the panel steps aside so the map can be tapped, twice', async ({ page }) => {
     test.setTimeout(180_000);
     await ready(page);
+    /* ⚠ (#R209) ASK FOR THE PANEL BEFORE DRIVING IT. js/lazy-modules.js took the seismic module out of
+       the boot bundle, so `window.IntMapSeismic` does not exist until something requests it — the
+       right-click item that opens this panel awaits `IntMapLazy.need('seismic')` first, and a spec
+       that drives the panel does the same thing rather than waiting for a global nobody asked for. */
+    await loadLazyModules(page);
     await page.evaluate(() => window.IntMapSeismic.open({ lng: 142.0, lat: 38.0, mw: 7.5, depth: 20 }));
     await page.waitForTimeout(1200);
 
@@ -85,6 +91,10 @@ test.describe('R196 ① the epicentre, on a phone', () => {
 test('R196 ② the tsunami model follows the earthquake it came from', async ({ page }) => {
   test.setTimeout(400_000);
   await ready(page);
+  /* ⚠ (#R209) …and the same for BOTH panels this test plays off against each other: seismic and
+     tsunami are on-demand now (js/lazy-modules.js), so the wait below can only be satisfied by
+     asking. The wait itself is kept — it is this test's own statement that the two modules arrived. */
+  await loadLazyModules(page);
   await page.waitForFunction(() => !!window.IntMapTsunami && !!window.IntMapSeismic, null, { timeout: 30_000 });
 
   const r = await page.evaluate(async () => {
