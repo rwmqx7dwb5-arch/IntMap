@@ -67,7 +67,16 @@ window.IntMapModules.newsContext=function(HOST){
     /* Merge the always-present built-in gazetteer (#11) with the Supabase geo_pins so news placement
        is strong even before/without server data. */
     const merged={};
-    [HOST.BUILTIN_GAZETTEER, HOST.geoRaw].forEach(src=>{ for(const type in src){ (merged[type]=merged[type]||[]).push(...src[type]); } });
+    /* ⚠ (#R208) NOT `push(...src[type])`. Spreading an array into a call passes one ARGUMENT per
+       element, and the engine's argument limit is a stack limit: at 15,048 world rows this was
+       fine, and at 148,083 it throws `RangeError: Maximum call stack size exceeded` — from inside
+       a `forEach`, asynchronously, with a minified frame and no mention of the gazetteer anywhere
+       in the message. It surfaced two commits later as 「applyTheme re-entered itself」 in a Cesium
+       spec that has nothing to do with either, because that is the test that watches for uncaught
+       errors. A loop has no such limit and is what a growing table needs. */
+    [HOST.BUILTIN_GAZETTEER, HOST.geoRaw].forEach(src=>{ for(const type in src){
+      const dst=(merged[type]=merged[type]||[]), from=src[type]||[];
+      for(let i=0;i<from.length;i++) dst.push(from[i]); } });
     /* (#R25/#28) MASSIVE coverage boost for the non-AI locator: auto-add EVERY country (+ its capital name)
        from the already-bundled countryStats — ~200 countries with real EN/JP names and a representative
        point. Curated cities/flashpoints still outrank these (higher TYPE_SCORE + lead-position bonus), so

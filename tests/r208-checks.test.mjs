@@ -411,3 +411,33 @@ test('R208 ⑥b: the client propagates them and rotates the Laplace plane, and s
   assert.ok(/#R208[\s\S]{0,400}data\/moons\.json/.test(read('js/ephemeris.js')),
     "js/ephemeris.js still says the moons are deliberately absent without noting where they came from");
 });
+
+/* ═══ ⑦ WHAT TEN TIMES THE ROWS BROKE, WHICH ONLY THE DEEP TIER SAW ═══════════════════════════ */
+
+test('R208 ⑦a: nothing spreads the gazetteer into a function call', () => {
+  /* ⚠ MEASURED THE HARD WAY. `push(...src[type])` passes one ARGUMENT PER ELEMENT, and the argument
+     limit is the stack limit: fine at 15,048 rows, `RangeError: Maximum call stack size exceeded`
+     at 148,083. It surfaced two commits later, in a CESIUM spec, as 「applyTheme re-entered itself
+     until the stack gave out」 — because that is the test that watches for uncaught errors — and it
+     took a stack capture off the minified bundle to find. The local gate never saw it; the deep
+     dispatch did, which is the argument for running deep before a push (#R205/#R207). */
+  const nc = read('js/news-context.js');
+  assert.ok(!/\.push\(\.\.\.src\[type\]\)/.test(nc), 'the merge is a loop, not a spread');
+  assert.ok(/for\s*\(let i=0;i<from\.length;i\+\+\)\s*dst\.push\(from\[i\]\)/.test(nc),
+    'and it is written as one, so it does not depend on how many rows there are');
+});
+
+test('R208 ⑦b: the legacy regex index is capped; the growth goes to the locator that can index it', () => {
+  const gz = read('js/gazetteer.js');
+  assert.ok(/INDEX_WORLD_CAP\s*=\s*15000/.test(gz),
+    'the matcher-shaped index takes the head of the world list');
+  assert.ok(/feed\(_worldRows,\s*INDEX_WORLD_CAP\)/.test(gz), 'and the cap is applied');
+  /* ⚠ the reason is not tidiness: js/news-context.js compiles a RegExp per term from this index and
+     SCANS it per news item, and js/search-geocode.js walks it with a Levenshtein per query. At
+     148,083 rows the boot stopped finishing — measured, the page hung building the RegExps.
+     The deterministic locator gets all of them instead, through `world()`. */
+  assert.ok(/world:\(\)=>_worldRows/.test(gz), 'the full list is still published for the locator');
+  const nc = read('js/news-context.js');
+  assert.ok(/registerSlices\(w\)/.test(nc),
+    'and the locator is fed the FULL row array, not the capped index');
+});

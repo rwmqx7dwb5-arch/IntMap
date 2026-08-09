@@ -474,12 +474,27 @@ window.IntMapGazetteer=(function(){
      js/app-body.js, which could only ever see the two synchronous ones; it is here now because THIS
      file is what knows when a third arrives. Memoised, invalidated exactly once (when the world rows
      land), so `HOST.BUILTIN_GAZETTEER` stays the free property read every caller treats it as. */
+  /* ⚠ (#R208) THE MATCHER-SHAPED INDEX TAKES THE HEAD OF THE WORLD LIST, NOT ALL OF IT.
+     This index is the LEGACY, pre-#R161 path: js/news-context.js compiles a RegExp per term from it
+     into `geoDB` and then SCANS that per news item, and js/search-geocode.js walks it (with a
+     Levenshtein per word) per query. At #R198's 15,048 rows that was affordable. At 148,083 it is
+     not: MEASURED, the boot stopped finishing at all — building a few hundred thousand RegExp
+     objects on the main thread hangs the page, and it surfaced as `RangeError: Maximum call stack
+     size exceeded` from a `push(...src[type])` two files away before it even got that far.
+
+     The growth belongs to the DETERMINISTIC locator, which indexes it properly (hashed n-grams, a
+     CJK scanner, ambiguity resolution) and gets the whole list through `world()`. Handing the same
+     148,083 rows to a bag-of-words matcher would not only cost that — it would make it WORSE, since
+     a thousand-person village name is exactly the false positive #R161 replaced it to avoid.
+     The rows are sorted by population, so the cap keeps the places a publisher string might name. */
+  const INDEX_WORLD_CAP=15000;
   let _index=null;
   function index(){
     if(_index) return _index;
     const acc={};
-    const feed=(rows)=>{ for(const [type,terms,lng,lat,en,jp] of rows){ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
-    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows);
+    const feed=(rows,cap)=>{ const n=cap==null?rows.length:Math.min(cap,rows.length);
+      for(let i=0;i<n;i++){ const [type,terms,lng,lat,en,jp]=rows[i]; (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
+    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows,INDEX_WORLD_CAP);
     _index=acc; return acc;
   }
   try{ window.addEventListener('intmap-gazetteer-world',()=>{ _index=null; }); }catch(_){}
