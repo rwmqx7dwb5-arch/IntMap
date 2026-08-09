@@ -209,7 +209,9 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
   const onPick = /onPick:\(ll\)=>\{([^}]*)\}/.exec(seismic);
   assert.ok(onPick, 'the pick has an onPick handler');
   assert.match(onPick[1], /picking\s*=\s*false|setPicking\(\s*false\s*\)/, 'a completed pick leaves pick mode');
-  assert.match(onPick[1], /epi\s*=\s*\[\s*ll\.lng\s*,\s*ll\.lat\s*\]/, 'and sets the epicentre from the pick');
+  /* WARN (#R210) the same lesson one more time: setEpi() now owns the assignment, because moving
+     the epicentre must also clear the observation points. The BEHAVIOUR asserted is unchanged. */
+  assert.match(onPick[1], /(?:epi\s*=|setEpi\(\s*)\[\s*ll\.lng\s*,\s*ll\.lat\s*\]/, 'and sets the epicenter from the pick');
   const sims = rd('js/sims.js');
   assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 6, 'the three pickers in js/sims.js use it');
 });

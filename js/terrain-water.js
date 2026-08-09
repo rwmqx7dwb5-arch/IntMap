@@ -1403,6 +1403,7 @@ window.IntMapModules.terrainWater=function(HOST){
       sources.push({lng:p[0],lat:p[1],m3:srcM3}); solve(); traceDownstream(p[0],p[1]);
     }
     function onClick(e){ if(!opened) return;
+      try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) the brush owns the tap while this tool is open */
       const lng=e.lngLat.lng, lat=e.lngLat.lat;
       if(!G){ if(mode==='source') onClickNoGrid(lng,lat);
         /* (#R189) a levee click before the grid exists was the last silent drop — build and say so */

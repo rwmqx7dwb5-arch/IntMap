@@ -115,7 +115,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
 
   function bodyHTML(){
     const A=SATS(); if(!A) return '';
-    const f=A.get(curId); if(!f) return '<div class="tp-hint">'+S(L('This satellite is no longer in the current catalogue.','この衛星は現在のカタログにありません。','Dieser Satellit ist nicht mehr im aktuellen Katalog.','Этого спутника нет в текущем каталоге.','Este satélite ya no está en el catálogo actual.'))+'</div>';
+    const f=A.get(curId); if(!f) return '<div class="tp-hint">'+S(L('This satellite is no longer in the current catalog.','この衛星は現在のカタログにありません。','Dieser Satellit ist nicht mehr im aktuellen Katalog.','Этого спутника нет в текущем каталоге.','Este satélite ya no está en el catálogo actual.'))+'</div>';
     const obs=A.observer(), la=A.lookFrom(obs,f), ap=apsides(f), ageH=A.elementAgeH(f);
     const up=!!(la&&la.elDeg>0);
 
@@ -145,7 +145,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
     return '<div class="acp-badges">'+badge+sun+'</div>'
       +sec(L('Object','対象','Objekt','Объект','Objeto'))
       +row(L('Name','名称','Name','Название','Nombre'), f.name||'')
-      +row(L('NORAD catalogue number','NORADカタログ番号','NORAD-Katalognummer','Номер NORAD','Número NORAD'), f.id==null?'':String(f.id))
+      +row(L('NORAD catalog number','NORADカタログ番号','NORAD-Katalognummer','Номер NORAD','Número NORAD'), f.id==null?'':String(f.id))
       +row(L('International designator','国際標識番号','Internationale Bezeichnung','Международное обозначение','Designador internacional'), f.intl||'')
       +row(L('Orbit class','軌道の種類','Bahnklasse','Класс орбиты','Clase de órbita'), orbitClass(f))
       +sec(L('Where it is now','現在位置','Aktuelle Position','Где сейчас','Dónde está ahora'))
@@ -161,7 +161,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
       +row(L('Apogee / perigee','遠地点 / 近地点','Apogäum / Perigäum','Апогей / перигей','Apogeo / perigeo'), ap?(KM(ap.apoKm)+' / '+KM(ap.periKm)):'')
       +row(L('Revolution at epoch','元期での周回数','Umlauf bei Epoche','Виток на эпоху','Revolución en la época'), f.revNum==null?'':n0(f.revNum))
       +row(L('Drag term (B*)','大気抵抗係数 (B*)','Widerstandsterm (B*)','Баллистический коэффициент (B*)','Término de arrastre (B*)'), (f.bstar==null||!isFinite(f.bstar))?'':f.bstar.toExponential(4))
-      +sec(L('From the map centre','地図中心から見て','Von der Kartenmitte','От центра карты','Desde el centro del mapa'))
+      +sec(L('From the map center','地図中心から見て','Von der Kartenmitte','От центра карты','Desde el centro del mapa'))
       +row(L('Elevation','仰角','Elevation','Угол места','Elevación'), la?(la.elDeg.toFixed(2)+'°'):'')
       +row(L('Azimuth','方位角','Azimut','Азимут','Acimut'), la?(la.azDeg.toFixed(1)+'°'):'')
       +row(L('Slant range','斜距離','Schrägentfernung','Наклонная дальность','Distancia oblicua'), la?KM(la.rangeKm):'')

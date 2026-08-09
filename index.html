@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R210';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-12-R209';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-09-R210';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -548,7 +548,7 @@ window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that 
       <div id="ticker-syms" style="margin-top:10px;"></div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     </div>
-    <div class="settings-sech" data-i18n="setSecMap">Map behaviour</div>
+    <div class="settings-sech" data-i18n="setSecMap">Map behavior</div>
     <div class="settings-sec">
     <!-- (#R180) THE RENDERING ENGINE. MapLibre stays the default; Cesium is a real second
          engine behind the same IntMapGeoEngine contract (js/cesium-engine.js), downloaded
@@ -566,6 +566,8 @@ window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that 
       <div class="sat-keys-hint" data-i18n="tiltHint">Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.</div></div>
     <!-- (#R171) Viewpoint altitude in the always-on readout (bottom-left corner of the map). -->
     <div class="setting-group"><label data-i18n="lblEyeAlt">Viewpoint altitude in the readout</label><select id="setting-eye-alt"><option value="off" data-i18n="eyeAltOff">Off (default)</option><option value="on" data-i18n="eyeAltOn">On — show the camera's altitude</option></select></div>
+    <!-- (#R210) Day/night shading + VIIRS city lights (js/night-side.js). On by default; the answer persists. -->
+    <div class="setting-group"><label data-i18n="lblNightSide">Day &amp; night shading</label><select id="setting-night-side"><option value="on" data-i18n="nightSideOn">On (default) — darken the night side &amp; show city lights</option><option value="off" data-i18n="nightSideOff">Off — one evenly lit globe</option></select></div>
     <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
     
     <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
@@ -719,7 +721,11 @@ window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that 
 
 <!-- Data sources & attribution -->
 <div class="modal-overlay" id="sources-modal">
-  <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
+  <!-- (#R210) The size lives in css/intmap.css (#sources-modal .modal-content). It used to be an
+       inline `max-width:560px` on top of the class's `width:340px`, and max-width cannot make a box
+       WIDER than its width — so the modal was 340 px no matter what this said. That is the report
+       「データ出典のポップアップが小さすぎる」: a list of ~90 sources in a 340 px column. -->
+  <div class="modal-content" style="position:relative;overflow-y:auto;">
     <button id="sources-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 6px 0; font-size:18px;" id="sources-title">Data sources</h3>
     <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>

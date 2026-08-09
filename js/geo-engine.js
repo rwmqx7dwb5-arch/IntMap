@@ -41,6 +41,22 @@ function _m(){ return window.__imap||null; }
      `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
      style reload or an engine swap does not change which layers the app makes clickable. */
   const _clickLayers=new Set();
+  /* ══ (#R210) …AND THE REGISTRY WAS ONLY HALF THE ANSWER ════════════════════════════════════════
+     「地図上の他のものをクリックした際は、その下にある地名ラベルを同時にクリックした判定になること
+      がある」was reported AGAIN after #R207. Re-read, #R207's `clickLayers()` only knows about
+     owners that registered through `onLayer('click', id, …)`. The things that were still stealing a
+     tap do not: live aircraft, satellites, the seismic station picker, the tsunami read-out, the
+     terrain-water brush and the Street-View coverage probe all listen with a MAP-LEVEL
+     `events.on('click')` and do their own hit test (js/data-layers.js `pickPlane` is not a layer
+     query at all). No registry of layer ids can see those.
+     So an owner may also say so directly: `claimClick(e)` records the DOM event it consumed, and
+     `clickClaimed(e)` answers for that same DOM event. Identity, not a timer — every listener for
+     one click gets the same `originalEvent`, and a stale claim can therefore never match a later
+     click. The label side defers its popup by one microtask so it asks after the whole synchronous
+     dispatch has run; see `_deferLabel` in js/map-ui.js. */
+  let _claimedOE=null;
+  function _claimClick(e){ try{ _claimedOE=(e&&e.originalEvent)||e||null; }catch(_){ _claimedOE=null; } }
+  function _clickClaimed(e){ try{ const oe=(e&&e.originalEvent)||e||null; return !!(oe&&_claimedOE===oe); }catch(_){ return false; } }
   const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
     /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
@@ -1922,7 +1938,9 @@ function _m(){ return window.__imap||null; }
       onLayer:(e,l,c)=>{ if(e==='click'&&typeof l==='string') _clickLayers.add(l); return A().onLayer(e,l,c); },
       offLayer:(e,l,c)=>A().offLayer(e,l,c),
       onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null,
-      clickLayers:()=>Array.from(_clickLayers) },
+      clickLayers:()=>Array.from(_clickLayers),
+      /* (#R210) "I consumed this click" / "did anyone?" — see the note beside _clickLayers. */
+      claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e) },
     raw(){ return A().raw(); }
    };
   }

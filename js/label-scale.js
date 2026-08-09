@@ -42,7 +42,13 @@ window.IntMapLabelScale=(function(){
      a place name, and it keeps the half-step-smaller relation to the present-day label it replaces
      that #R103 gave it (it was 9.5→13 against the modern 10→15). */
   const PLACE={
-    country:[[1,9],[4,13]],
+    /* ⚠ (#R210) country is the ONE class that went back UP, and it is a later instruction rather
+       than a drift: 「国名ラベルと地名ラベルで大きさの差が少ないから、国名ラベルを大きくして差を出して
+       視認性を高めて」. At z4 a country now reads 17 px against a city's 10.2 (was 13 vs 10.2), and
+       at z7 — where `ofm-country` stops drawing — 17 against 11.6 (was 13 vs 11.6). Every other
+       class still honours #R198's 「全体的に…下げた」, and tests/r198-checks ①c states the exemption
+       by name so the next round cannot mistake it for a regression. */
+    country:[[1,12],[4,17]],
     admin1 :[[4,9.5],[7,11.5]],
     city   :[[3,9.5],[10,13]],
     other  :[[7,9],[13,11]],
@@ -61,10 +67,18 @@ window.IntMapLabelScale=(function(){
      purpose: a hamlet's name can be smaller than the name of the sea it sits beside, which is what
      a paper atlas does too. The inversion the request is actually about — an OCEAN at 19.3 px
      against a CITY at 15 — is gone: no non-place label exceeds 11.4 px at any zoom. */
-  const REF=[[1,9.5],[4,13],[22,13]];
+  const REF=[[1,12],[4,17],[22,17]];
+  /* ⚠ (#R210) SUB IS NO LONGER DERIVED FROM REF, AND THAT IS THE POINT. REF answers "how big can a
+     place name get" and had to follow the country class up. SUB answers "how big may a NON-place
+     label be", and nothing asked the sea names to grow — deriving one from the other would have made
+     enlarging the country labels silently enlarge every overlay, tool and grid label on the map by
+     31 %. SUB_REF is REF as it stood before this round (the pointwise max of the non-country place
+     classes), so every non-place size is byte-identical to #R198's and the guarantee
+     `sub(w) ≤ SUB < SUB_REF ≤ REF` is STRICTER than before, not weaker. */
+  const SUB_REF=[[1,9.5],[4,13],[22,13]];
   const SUB_RATIO=0.88;
   const _fl=(v)=>Math.floor(v*10)/10;
-  const SUB=REF.map(([z,s])=>[z,_fl(s*SUB_RATIO)]);
+  const SUB=SUB_REF.map(([z,s])=>[z,_fl(s*SUB_RATIO)]);
 
   /* piecewise-linear read of a stop table, clamped outside its ends — the same thing
      `['interpolate',['linear'],['zoom'],…]` does, so a test can predict the renderer. */
@@ -97,5 +111,5 @@ window.IntMapLabelScale=(function(){
     return _expr(SUB.map(([z,s])=>[z,['case',cond,_fl(s*a),_fl(s*b)]]));
   }
 
-  return { place, placeAt, refAt, sub, subAt, subCase, PLACE, REF, SUB, SUB_RATIO };
+  return { place, placeAt, refAt, sub, subAt, subCase, PLACE, REF, SUB_REF, SUB, SUB_RATIO };
 })();

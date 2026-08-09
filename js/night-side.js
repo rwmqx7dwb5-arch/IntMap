@@ -353,9 +353,21 @@ window.IntMapNightSide=(function(){
   }
 
   function apply(){ wire(); consider(); return built; }
-  function setEnabled(v){ enabled=!!v; if(!enabled) destroy(); else consider(); return enabled; }
+  /* ══ (#R210) THE USER MAY TURN THE DAY/NIGHT SIDE OFF, AND IT STAYS OFF ═══════════════════════
+     「設定から、昼夜を表示するのをオフにできるように。（…これまで通りデフォルトではオンです。）」
+     Atlas could already flip `enabled` (case 'nightSide'), but nothing remembered the answer, so a
+     reload brought the night back. The key is written ONLY when the user says off — an absent key
+     means on, so the default survives both a fresh profile and a cleared storage. */
+  const PREF_KEY='intmap_night_side';
+  function prefOn(){ try{ return localStorage.getItem(PREF_KEY)!=='0'; }catch(_){ return true; } }
+  function setEnabled(v){ enabled=!!v;
+    try{ if(enabled) localStorage.removeItem(PREF_KEY); else localStorage.setItem(PREF_KEY,'0'); }catch(_){}
+    if(!enabled) destroy(); else consider(); return enabled; }
+  /* Read the saved answer before anything draws. `enabled` starts true above, so this only ever
+     turns it off — a stored '0' is the one thing that can. */
+  try{ if(!prefOn()) enabled=false; }catch(_){}
 
-  return { apply, refresh:()=>refresh(true), setEnabled, destroy,
+  return { apply, refresh:()=>refresh(true), setEnabled, destroy, isOn:()=>enabled,
     state:()=>({ built, enabled, lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
                  zMax:ZMAX, twilightEnd:TWILIGHT_END, imgSize:imgSize(), capWedges:CAP_WEDGES,
                  capLat:CAP_LAT, ramp:RAMP_STOPS.map((s)=>s.slice()), unlit:UNLIT.slice() }),

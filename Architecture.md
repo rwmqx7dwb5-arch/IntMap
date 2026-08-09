@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-08-08 (R205)
+> Last reviewed: 2026-08-09 (R210)
 >
 > ### この文書の読み方 (#R169 で整理)
 >
@@ -2535,6 +2535,42 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R210 補足（グラティキュールは白／国境は白・太い／クリックの「claim」／★保存の実体／設定の昼夜）
+
+**グラティキュールの見た目は `js/grid-style.js` が唯一の出所。** `gridLayerSpecs()` が8レイヤー
+（`grid-lines-casing` / `grid-lines` / `grid-equator` / `grid-prime` / `grid-tropic` / `grid-tropic-label` /
+`grid-labels` / `grid-labels-cross`）を返し、`js/app-body.js` のスタイルリテラルが `...gridLayerSpecs()` で
+展開する。⚠ **`IM_READOUT` 経由にはできない** — `const IM_READOUT=…` はスタイルリテラルより約300行下にあり、
+参照すれば TDZ で起動が全損する（#R200 §1）。ES import は本体実行前に初期化されるので安全。
+線は**白**、その下に暗い `grid-lines-casing`（明るい基図の上で白を読ませるのはこの casing）。
+`kind` は `major|minor|equator|prime|tropic|cross` で **`js/map-readout.js` の `buildGridFeatures()` との契約**。
+南北回帰線は緯度 **±23.4362°**（この元期の平均黄道傾斜角）で、色は山吹色 `#f4b740`。
+⚠ `buildGridFeatures()` は **turf を1行も使わない**ので `hasTurf()` ゲートは無い（それがグリッドの表示遅延だった）。
+
+**国境は白で太い。** `borders-only-line`（`#ffffff`・z1で1.1px→z12で3.4px）＋その下に `borders-only-casing`
+（黒・低不透明度）。**2枚は常に一緒に切り替わる**（`window._applyBorders` / `cb-borders` / `js/theme-sky.js`）。
+地方区分 `ref-admin1` は**紫のまま**太くしただけ — 2本とも白にすると国と州の区別が消える。
+
+**クリックの所有権は「登録」と「申告」の2段。** #R207 の `events.clickLayers()` は
+`onLayer('click',…)` で登録したレイヤーしか知らない。航空機・衛星・地震/津波/地形水流のパネルは
+**地図レベルの `events.on('click')` ＋自前ヒットテスト**なので、そこに現れない。
+→ `js/geo-engine.js` に **`events.claimClick(e)` / `events.clickClaimed(e)`**（DOMイベントの同一性で判定）。
+所有者は消費した時点で claim し、`js/map-ui.js` の地名ラベルは **microtask 1つ遅らせてから**尋ねる
+（1クリックの全リスナーは同期で走るので、microtask は「全員のあと」を意味する）。
+
+**★保存された記事は、フィードより長生きする。** 正本は従来どおり `HOST.bookmarks`（ログイン時は
+`favorites` テーブル、ゲストは `intmap_bookmarks`）。加えて `window.IntMapNewsSaved` が
+**`intmap_saved_articles`（link→{title,publisher,pubDate,image,analysis,savedAt}、上限800件）** にスナップショットを
+書き、`computeFilteredNews()` の saved モードが `merge(globalData,bookmarks)` でフィードに無い分を戻す。
+⚠ これは**キャッシュであって記録ではない**。★の有無はスナップショットからは決して導かない。
+
+**昼夜は設定で切れる。** `Settings ▸ 昼夜の表示`（`#setting-night-side`）→ `IntMapNightSide.setEnabled()`。
+永続キーは **`intmap_night_side`（`'0'`＝オフのみ書く。キーが無い＝オン）**。`isOn()` が現在値を返す。
+
+**ラベルの大きさ：`REF` と `SUB_REF` は別物になった。** `js/label-scale.js` の `REF` は「地名ラベルの最大」
+（国名を上げたので追随）、`SUB` は **`SUB_REF`（#R198 当時の REF）から**導出する。
+国名だけを大きくして、海・POI・グリッド等の非地名ラベルを1pxも動かさないための分離。
 
 ### #R207 補足（既定は衛星／極冠の床／クリックの順位／同梱カタログのグループ／門の値段）
 

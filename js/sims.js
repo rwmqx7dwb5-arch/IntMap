@@ -482,9 +482,22 @@ window.IntMapModules.sun=function(HOST){
       if(cosH>1) return {polar:'night'}; if(cosH<-1) return {polar:'day'};
       const w0=Math.acos(cosH), a=J0+(w0+lw)/(2*Math.PI)+n, Jset=solarTransitJ(a), Jrise=Jnoon-(Jset-Jnoon);
       return { rise:toDate(Jrise), set:toDate(Jset), noon:toDate(Jnoon) }; }
+    /* ══ (#R210) HOW DARK THE SHADOW IS, IS THE USER'S CHOICE ═════════════════════════════════════
+       「影の透明度を選択可能に」. 0.30 was a literal in two places — this fill and the terrain-shade
+       raster in js/insolation.js — so "the shadow" had two different opacities that no control
+       reached. One number here now drives both: this layer directly, and the raster through
+       IntMapInsolation.setShadowOpacity(). Persisted, because it is a preference and not a mode. */
+    const SHADOW_OP_KEY='intmap_shadow_opacity';
+    let shadowOp=(function(){ try{ const v=parseFloat(localStorage.getItem(SHADOW_OP_KEY)); return (isFinite(v)&&v>0&&v<=1)?v:0.30; }catch(_){ return 0.30; } })();
+    function setShadowOpacity(v){
+      v=Math.max(0.05,Math.min(0.95,+v||0.30)); shadowOp=v;
+      try{ localStorage.setItem(SHADOW_OP_KEY,String(v)); }catch(_){}
+      try{ if(GE().layers.has('imsun-shadow')) GE().layers.setPaint('imsun-shadow','fill-opacity',v); }catch(_){}
+      try{ const I=window.IntMapInsolation; if(I&&I.setShadowOpacity) I.setShadowOpacity(v); }catch(_){}
+      return v; }
     function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      GE().layers.add({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':0.30}});
+      GE().layers.add({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':shadowOp}});
       return true; }catch(_){ return false; } }
     /* OSM buildings in view → cast-shadow polygons (only when zoomed in enough to be useful) */
     async function fetchBld(){ let b; try{ b=GE().camera.getBounds(); }catch(_){ return []; } if(GE().camera.getZoom()<14.5) return [];
@@ -525,6 +538,22 @@ window.IntMapModules.sun=function(HOST){
         +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
         +'<div class="sun-read" style="font-size:12px;color:var(--text-main);"></div>'
+        /* (#R210) 「影の透明度を選択可能に」 — one control for BOTH shadow layers (the buildings'
+           cast polygons and the terrain shade raster), because to a user there is one shadow. */
+        +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11.5px;color:var(--text-muted);white-space:nowrap;">'
+          +SN('Shadow opacity','影の濃さ','Schattenstärke','Плотность тени','Opacidad de la sombra')
+          +'</span><input type="range" class="sun-op" min="5" max="95" step="5" value="30" style="flex:1;accent-color:var(--primary-color);">'
+          +'<span class="sun-op-v" style="font-size:11.5px;font-weight:700;color:var(--text-main);min-width:34px;text-align:right;">30%</span></div>'
+        /* (#R210) 「操作方法が分かりにくい」 — the panel had three buttons and a paragraph of physics,
+           and nothing that said what to DO. Three sentences, in the order a first-time user needs
+           them, above the buttons they describe. */
+        +'<div style="font-size:11px;color:var(--text-muted);line-height:1.55;background:var(--input-bg);border-radius:8px;padding:7px 9px;">'
+          +SN('Drag the slider to move the time of day, or press ▶ to run it. ⛰ adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.',
+              'スライダーで時刻を動かし、▶ で再生します。⛰ を押すと地形自身が落とす影が加わります。◎ を押してから地図をクリックすると、その地点の年間日照時間が出ます。',
+              'Mit dem Regler die Tageszeit bewegen, ▶ spielt sie ab. ⛰ ergänzt den Schatten des Geländes. ◎ und dann ein Klick auf die Karte liefert die Sonnenstunden dieses Punktes über ein ganzes Jahr.',
+              'Ползунком двигайте время суток, ▶ — воспроизведение. ⛰ добавляет тень самого рельефа. ◎, затем клик по карте — часы солнца в этой точке за год.',
+              'Arrastra el control para mover la hora del día, ▶ lo reproduce. ⛰ añade la sombra del propio terreno. ◎ y luego un clic en el mapa da las horas de sol de ese punto durante un año.')
+        +'</div>'
         /* (#R176) 「影・日照時間エンジン」 — the terrain's own shadow, the whole-day shadow union and the
            annual sunlight budget at a point. The heavy work is js/insolation.js; this panel owns the
            controls so there is ONE sun tool, not two (the user's choice for this round). */
@@ -541,6 +570,8 @@ window.IntMapModules.sun=function(HOST){
       panel.querySelector('.sun-solst').onclick=()=>solsticeShade();
       panel.querySelector('.sun-point').onclick=()=>pickPoint();
       panel.querySelector('.sun-now').onclick=()=>setTime(new Date());
+      { const op=panel.querySelector('.sun-op'); if(op){ op.value=String(Math.round(shadowOp*100)); const lab=panel.querySelector('.sun-op-v'); if(lab) lab.textContent=Math.round(shadowOp*100)+'%';
+        op.oninput=e=>{ setShadowOpacity((+e.target.value||30)/100); const l2=panel.querySelector('.sun-op-v'); if(l2) l2.textContent=Math.round(shadowOp*100)+'%'; }; } }   /* (#R210) */
       panel.querySelector('.sun-date').onchange=e=>{ const p=e.target.value.split('-'); const nd=new Date(when); nd.setFullYear(+p[0],+p[1]-1,+p[2]); setTime(nd); };
       panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },120); };
       const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); },700); } };
@@ -867,7 +898,7 @@ window.IntMapModules.earthReplay=function(HOST){
     function apply(){ drawTerminator(); updateReadout(); }
     function updateReadout(){ if(!panel) return; const r=panel.querySelector('.er-read'); if(!r) return; const now=new Date(), yrsBack=(now-when)/(365.25*dayMs);
       const S=solar(when); const dpole=S.dec>0?ER('S pole in polar night','南極は極夜','Südpol Polarnacht','Ю. полюс — полярная ночь','Polo sur noche polar'):ER('N pole in polar night','北極は極夜','Nordpol Polarnacht','С. полюс — полярная ночь','Polo norte noche polar');
-      let scope; if(when>now) scope=ER('future — terminator only','未来 — 昼夜のみ','Zukunft','будущее','futuro'); else if(yrsBack<=10) scope=ER('news · imagery · quakes time-travelled to this date','ニュース・衛星画像・地震をこの日付へ','News/Bilder/Beben zeitversetzt','новости/снимки/толчки','noticias/imágenes/sismos');
+      let scope; if(when>now) scope=ER('future — terminator only','未来 — 昼夜のみ','Zukunft','будущее','futuro'); else if(yrsBack<=10) scope=ER('news · imagery · quakes time-traveled to this date','ニュース・衛星画像・地震をこの日付へ','News/Bilder/Beben zeitversetzt','новости/снимки/толчки','noticias/imágenes/sismos');
         else scope=ER('pre-archive date — day/night terminator + any historical layers','アーカイブ以前 — 昼夜境界＋歴史レイヤー','vor Archiv','до архива','antes del archivo');
       r.innerHTML='<b>🌍 '+ymd(when)+' '+String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+' UTC</b><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">☀️ '+ER('sub-solar lat','太陽直下点緯度','subsolar','подсолнечная','subsolar')+' '+(S.dec/rad).toFixed(1)+'° · '+dpole+'</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+scope+'</div>'; }
     /* setWhen now WRITES the shared kernel (allowFuture: the terminator is valid for any date, incl. the

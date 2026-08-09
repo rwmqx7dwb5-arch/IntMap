@@ -212,7 +212,7 @@ window.IntMapModules.authUi=function(HOST){
       $am('am-passkey').disabled=true; msg.textContent=_authL('Waiting for your passkey…','パスキーを待機中…','Warte auf deinen Passkey…','Ожидание паскея…','Esperando tu passkey…');
       try{ const {data,error}=await HOST.DB.auth.signInWithPasskey(); if(error) throw error;
         m.style.display='none'; try{ HOST.recordLogin(data&&data.user&&data.user.id); }catch(_){}
-      }catch(e){ msg.textContent=_authL('Passkey sign-in failed or was cancelled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'); }
+      }catch(e){ msg.textContent=_authL('Passkey sign-in failed or was canceled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'); }
       finally{ $am('am-passkey').disabled=false; }
     };
     /* (#R155) Forgot password → email a reset link. Enumeration-safe: identical message regardless. */
@@ -330,7 +330,7 @@ window.IntMapModules.authUi=function(HOST){
         if(!_passkeysAvailable()||typeof HOST.DB.auth.registerPasskey!=='function'){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
         msg.textContent=_authL('Follow your device prompt to create a passkey…','端末の指示に従ってパスキーを作成してください…','Folge der Geräteaufforderung, um einen Passkey zu erstellen…','Следуйте подсказке устройства, чтобы создать паскей…','Sigue la indicación de tu dispositivo para crear un passkey…');
         try{ const {error}=await HOST.DB.auth.registerPasskey(); if(error) throw error; msg.textContent=_authL('Passkey added.','パスキーを追加しました。','Passkey hinzugefügt.','Паскей добавлен.','Passkey añadido.'); _renderPasskeys(); }
-        catch(e){ msg.textContent=_authL('Could not add a passkey (or it was cancelled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
+        catch(e){ msg.textContent=_authL('Could not add a passkey (or it was canceled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
       };
       document.getElementById('acct-change-email').onclick=async()=>{ const msg=document.getElementById('acct-msg');
         const ne=window.prompt(_authL('New email address:','新しいメールアドレス：','Neue E-Mail-Adresse:','Новый e-mail:','Nuevo correo:')); if(ne==null) return;
@@ -424,7 +424,7 @@ window.IntMapModules.authUi=function(HOST){
   /* ---------- FAVORITES (★ saved articles) ---------- */
   async function loadFavorites(){
     if(!HOST.user||!HOST.DB) return;
-    const {data,error}=await HOST.DB.from('favorites').select('article_link');
+    const {data,error}=await HOST.DB.from('favorites').select('article_link,article_title');   /* (#R210) the title too — see IntMapNewsSaved.seed */
     if(error){ console.warn('[IntMap] favorites load:', error.message); return; }
     let cloud=(data||[]).map(r=>r.article_link);
     /* one-time merge of any favorites saved as a guest before logging in */
@@ -433,6 +433,10 @@ window.IntMapModules.authUi=function(HOST){
     if(toAdd.length){ try{ await HOST.DB.from('favorites').insert(toAdd.map(l=>({user_id:HOST.user.id,article_link:l}))); cloud=cloud.concat(toAdd); }catch(_){}
       try{ localStorage.removeItem('intmap_bookmarks'); }catch(_){} }
     HOST.bookmarks=cloud;
+    /* (#R210) a browser that has never drawn these articles still needs something to draw. The
+       account carries the title; the rest of the card (outlet, date, image) is filled in the next
+       time the article appears in a live feed. */
+    try{ window.IntMapNewsSaved&&window.IntMapNewsSaved.seed(data||[]); }catch(_){}
   }
 
   /* ---------- REALTIME (live auto-reflect) ---------- */

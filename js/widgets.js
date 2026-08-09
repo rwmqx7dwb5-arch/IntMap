@@ -73,9 +73,17 @@ window.IntMapModules.widgets=function(HOST){
       countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true },
       /* (#R21) Board expansion — sun, moon, air quality, ISS, world clocks, year progress,
          Wikipedia featured article, live world-population estimate. */
-      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map center' },
+      /* (#R210) `noHead` — the card carries no title row. The two words that the title
+         used to spend live next to the two times instead (refreshSun below), which is
+         what the label was for in the first place. The name is still needed by the
+         picker and by the add/remove lists, so it stays on the def. */
+      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', noHead:true, desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map center' },
       moon:     { nm:()=>jp()?'月相':'Moon phase', ic:'🌖', desc:()=>jp()?'今夜の月の満ち欠け':'Tonight’s phase & illumination' },
-      aqi:      { nm:()=>jp()?'大気質（AQI）':'Air quality (AQI)', ic:'😮‍💨', desc:()=>jp()?'US AQIとPM2.5':'US AQI & PM2.5' },
+      /* (#R210) No icon: the requested glyph was dropped and no substitute was invented
+         (STANDING R108 — do not add emoji that were not asked for). renderCard() and the
+         picker row both omit the icon span entirely when `ic` is empty, so the header
+         collapses to the name instead of leaving a hole. */
+      aqi:      { nm:()=>jp()?'大気質（AQI）':'Air quality (AQI)', ic:'', desc:()=>jp()?'US AQIとPM2.5':'US AQI & PM2.5' },
       iss:      { nm:()=>jp()?'国際宇宙ステーション':'ISS tracker', ic:'🛰', desc:()=>jp()?'ISSの現在位置。タップで地図へ':'Live ISS position — tap to fly there' },
       worldclock:{ nm:()=>jp()?'世界時計':'World clock', ic:'🌐', desc:()=>jp()?'好きな都市の現在時刻':'Pick a city / timezone', multi:true },
       yearprog: { nm:()=>jp()?'今年の進捗':'Year progress', ic:'📆', desc:()=>jp()?'今年が何%過ぎたか':'How far through the year we are' },
@@ -152,6 +160,8 @@ window.IntMapModules.widgets=function(HOST){
       '.wgt-card{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",sans-serif;}'+
       '.wgt-card .wgt-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.1px;text-transform:none;}'+
       '.wgt-card .wgt-h b,.wgt-card .wgt-h .wgt-nm{font-weight:500;}'+
+      /* (#R210) inline label for a card that dropped its title row (sun). */
+      '.wgt-card .wgt-sl{font-size:12.5px;font-weight:500;color:var(--text-muted);letter-spacing:0;}'+
       '.wgt-card .wgt-v{font-size:25px;font-weight:400;color:var(--text-main);line-height:1.16;letter-spacing:-0.4px;font-variant-numeric:tabular-nums;margin-top:8px;word-break:break-word;}'+
       '.wgt-card .wgt-v b{font-weight:500;}'+
       '.wgt-card .wgt-s{font-size:10.5px;font-weight:400;color:var(--text-muted);margin-top:5px;line-height:1.5;letter-spacing:0.05px;}'+
@@ -223,7 +233,7 @@ window.IntMapModules.widgets=function(HOST){
         topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>';
       }
       return '<div class="wgt-card'+(editing?' editing':'')+'" data-u="'+e.u+'" data-w="'+e.t+'">'+topright+
-        '<div class="wgt-h"><span>'+d.ic+'</span><span class="wgt-nm">'+d.nm()+'</span></div><div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
+        (d.noHead?'':'<div class="wgt-h">'+(d.ic?'<span>'+d.ic+'</span>':'')+'<span class="wgt-nm">'+d.nm()+'</span></div>')+'<div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
     function moveWidget(u,dir){ const i=active.findIndex(e=>e.u===u); if(i<0) return; const j=i+dir; if(j<0||j>=active.length) return;
       const tmp=active[i]; active[i]=active[j]; active[j]=tmp; save(); render(); }
     function doAdd(k){ if(!k||!DEFS[k]) return; if(!DEFS[k].multi&&hasType(k)) return;
@@ -576,7 +586,11 @@ window.IntMapModules.widgets=function(HOST){
            of daylight. Carrying the rounded minute into the hour is the only way that cannot happen. */
         const dl=s.daylightSec;
         const dlMin=Math.round(dl/60), dlTxt=Math.floor(dlMin/60)+'h '+(dlMin%60)+'m';
-        setV(e.u,'<span style="font-size:17px;">🌅 '+hm(s.sunrise)+' · 🌇 '+hm(s.sunset)+'</span>',
+        /* (#R210) The card has no title row, so the two times carry their own words.
+           `wgt-sl` is the same muted weight the title used, so the times stay the
+           loudest thing on the card. */
+        setV(e.u,'<span style="font-size:17px;"><span class="wgt-sl">'+_WL('Sunrise','日の出','Aufgang','Восход','Amanecer')+'</span> '+hm(s.sunrise)
+          +' · <span class="wgt-sl">'+_WL('Sunset','日の入り','Untergang','Закат','Ocaso')+'</span> '+hm(s.sunset)+'</span>',
           (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt+' · '):'')+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;

@@ -3,12 +3,24 @@
    same cascade. Nothing reads it from JS (no document.styleSheets / cssRules use
    anywhere in the app), so an external stylesheet is behaviourally identical. */
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
-    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px;
+    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7;
+      /* (#R210) 440 → 400. "デフォルトの左サイドバーの幅をもう少し短く". Everything that
+         positions against the sidebar reads this token (.sidebar, .btn-toggle-sidebar,
+         the coord readout, the legends, the country card), so this is the only number.
+         ⚠ tests/r162-checks asserts the token EXISTS in both sources — not its value. */
+      --sidebar-w:400px;
       /* (#R132) Atlas accent gradient — ONE token shared by the Atlas tab (both states) and the Atlas user speech bubble.
          The accent (var(--primary-color)) LEADS a blue→indigo→purple sweep, so it always tracks the accent AND is never a
          flat solid fill: with the DEFAULT accent (#0a84ff≈first stop) it reproduces the rich 3-stop gradient, and with any
          custom accent it starts on that accent and sweeps through indigo/violet. Fixes "デフォルトアクセントでべた塗". */
-      --atlas-grad:linear-gradient(135deg,var(--primary-color),#5e5ce6 56%,#bf5af2); }
+      --atlas-grad:linear-gradient(135deg,var(--primary-color),#5e5ce6 56%,#bf5af2);
+      /* (#R210) Progress bars are the ACCENT, full stop ("進捗系のバーの色はアクセントカラーに").
+         Unlike --atlas-grad this does NOT sweep to indigo/violet: a custom accent must stay
+         that accent all the way across, otherwise a green accent still reads as a blue bar.
+         --prog-sweep is the same single hue, moving — it is the indeterminate animation, not
+         a second colour. (transparent interpolates premultiplied, so there is no grey fringe.) */
+      --prog-grad:var(--primary-color);
+      --prog-sweep:linear-gradient(90deg,transparent 0%,var(--primary-color) 42%,var(--primary-color) 58%,transparent 100%); }
     /* (#R101) --text-muted brightened toward white for legibility on dark ("灰色文字は見えにくい") — was #a6a6ad */
     [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
     /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
@@ -64,14 +76,17 @@
          · the CSS colour underneath it is the same variable the screen uses, so the tile is already
            the right colour in the frame before the PNG has decoded (that frame is the whole point of
            a launch screen) and stays right if --bg-color is ever retuned. */
-    .boot-icon{ width:124px; height:124px; border-radius:27.8px; overflow:hidden;   /* 27.8 / 124 = Apple's 22.4 % corner ratio */
+    /* (#R210) "開始時のローディング画面はもう少し大きく" — the mark, the bar and the note all
+       scale together (124→156, 184→232, 12.5→13.5px) so the proportions of the launch screen are
+       unchanged; only its size is. The corner radius keeps Apple's 22.4 % ratio: 34.9 / 156. */
+    .boot-icon{ width:156px; height:156px; border-radius:34.9px; overflow:hidden;
       background:#0a0a0c url("../IntMap.Icon.png") center/cover no-repeat; }
     :root[data-theme="light"] .boot-icon{ background-color:var(--bg-color); background-image:url("../IntMap.Icon_BW-inverted.png"); }
     .boot-icon img{ width:100%; height:100%; display:block; object-fit:cover; }
-    .boot-bar{ width:184px; height:4px; border-radius:2px; overflow:hidden; background:rgba(128,128,128,0.22); }
+    .boot-bar{ width:232px; height:5px; border-radius:2.5px; overflow:hidden; background:rgba(128,128,128,0.22); }
     .boot-bar > i{ display:block; height:100%; width:0%; border-radius:2px; background:var(--text-main); opacity:0.72;
       transition:width 0.45s cubic-bezier(0.25,1,0.5,1); }
-    .boot-note{ font-size:12.5px; letter-spacing:0.2px; color:var(--text-muted); min-height:1em; }
+    .boot-note{ font-size:13.5px; letter-spacing:0.2px; color:var(--text-muted); min-height:1em; }
     body.booting{ overflow:hidden; }
     @media (prefers-reduced-motion:reduce){ .boot-inner{ animation:none; } .boot-splash,.boot-bar > i{ transition:none; } }
 
@@ -272,7 +287,7 @@
     .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded","SF Pro Display",system-ui,-apple-system,"Segoe UI",sans-serif; font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
     /* (#R139) honest population-progress bar: INDETERMINATE animated sweep (no fake %) whenever WorldPop reports no
        real fraction (a single-request sum). Determinate mode just uses the inline fill width set by _imProgCtl.set. */
-    .tp-prog.indet .tp-prog-fill{ width:100% !important; background:linear-gradient(90deg, rgba(10,132,255,0) 0%, #0a84ff 42%, #5e5ce6 58%, rgba(94,92,230,0) 100%) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
+    .tp-prog.indet .tp-prog-fill{ width:100% !important; background:var(--prog-sweep) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
     @keyframes imProgSweep{ 0%{ background-position:-45% 0; } 100%{ background-position:145% 0; } }
     /* (#R139) Companies tab — logo (where the country flag sat in Countries), sector/HQ subline, detail overlay. */
     .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; }   /* (#R150) exact-match the Countries flag slot (30×30) so the icon column is pixel-identical between the two tabs */
@@ -534,14 +549,14 @@
     .ai-needs-key{ opacity:0.6; }
     /* (#R9/#12) Place-label "copy" popup: self-themed so its text is readable in DARK mode (the default
        MapLibre popup is white with dark text → invisible name on the app's dark popup surface). */
-    .plc-popup .maplibregl-popup-content{ background:#fff !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:10px 12px; }   /* (#R122) OPAQUE — place-label popup must not be see-through ("透過するな") */
+    .plc-popup .maplibregl-popup-content{ background:#fff !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:8px 10px; }   /* (#R210) 一段小さく */   /* (#R122) OPAQUE — place-label popup must not be see-through ("透過するな") */
     :root[data-theme="dark"] .plc-popup .maplibregl-popup-content{ background:#1c1c1e !important; }
     .plc-popup .maplibregl-popup-tip{ display:none; }
     /* (#R27) Align the × with the RIGHT EDGE of the action buttons beneath it. The buttons fill the
        content width, so their right edge sits at the content's 12px inner padding → place the × there
        (right:12px) with a tidy square hit-box. The old corner placement + the mobile padding-right:44px
        left a visible gap / dead space ("×は各ボタンの右端に合わせるべき。余分な空白がある"). */
-    .plc-popup .maplibregl-popup-close-button{ top:8px; right:12px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; padding:0; color:var(--text-muted); border-radius:7px; }
+    .plc-popup .maplibregl-popup-close-button{ top:6px; right:9px; width:21px; height:21px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; padding:0; color:var(--text-muted); border-radius:7px; }
     .plc-popup .maplibregl-popup-close-button:hover{ background:var(--input-bg); color:var(--text-main); }
     /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
     .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
@@ -777,6 +792,20 @@
     /* (#R34/#R39) Settings = a flex column: a SCROLLING body (.settings-scroll) + a non-scrolling Apply
        FOOTER. The body holds the scrollbar, so its gutter no longer sits BESIDE the footer's rounded corner
        — that was the "Apply UIの右下が角丸で隙間がある" gap. The footer now spans the full card width flush. */
+    /* ══ (#R210) THE SPACE APPROACH PILL GLOWS IN THE DARK ════════════════════════════════════════
+       「視認性が悪いので、ダークモードのピルは周りが白で光っている感じにして。（ライトモードでのピル
+        周りの影と同じ感じで）」 In light mode the pill sits on a white basemap and a dark drop shadow
+       separates it. In dark mode that shadow is black-on-black — the pill had no edge at all against
+       the night sky. The dark rule is the same idea inverted: a white rim plus a soft white bloom,
+       so the separation comes from light instead of from shade. Declared here and NOT inline in
+       js/space.js, because an inline box-shadow would win over both rules. */
+    #space-approach{ box-shadow:0 8px 26px rgba(0,0,0,0.28); }
+    :root[data-theme="dark"] #space-approach{ box-shadow:0 0 0 1px rgba(255,255,255,0.45), 0 0 20px 3px rgba(255,255,255,0.28), 0 8px 26px rgba(0,0,0,0.5); }
+
+    /* (#R210) Data sources & attribution — the longest list in the app gets room to be one.
+       `width` (not max-width) is what actually sizes .modal-content; see the note in index.html. */
+    #sources-modal .modal-content{ width:min(820px,94vw); max-width:none; max-height:90vh; padding:28px 30px; }
+    @media(max-width:768px){ #sources-modal .modal-content{ width:96vw; max-height:92vh; padding:22px 18px; } }
     #settings-modal .modal-content{ display:flex; flex-direction:column; overflow:hidden; padding:0 !important; }
     /* ══ (#R207) THE SETTINGS PANEL WAS THE GENERIC MODAL WIDTH ═══════════════════════════════════
        「デスクトップ版の設定画面の横幅が狭すぎる。」 `.modal-content` is 340 px — a figure chosen for the

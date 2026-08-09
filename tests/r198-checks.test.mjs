@@ -64,7 +64,12 @@ test('R198 ①c: every place class is SMALLER than it was before this round', ()
     for (let i = 1; i < s.length; i++) { const [a, b] = s[i - 1], [c, d] = s[i]; if (z <= c) return b + (d - b) * ((z - a) / (c - a)); }
     return s[s.length - 1][1];
   };
+  /* ⚠ (#R210) `country` is EXEMPT, by a later instruction that reverses this one for that class
+     alone: 「国名ラベルを大きくして差を出して視認性を高めて」. It is listed here rather than deleted
+     from BEFORE so the exemption is visible — every other class still has to be below #R198. */
+  const EXEMPT = new Set(['country']);
   for (const kind of Object.keys(BEFORE)) {
+    if (EXEMPT.has(kind)) continue;
     for (let z = 0; z <= 22; z += 0.1) {
       const zz = Math.round(z * 10) / 10;
       assert.ok(LS.placeAt(kind, zz) <= at(BEFORE[kind], zz) + 1e-9,
@@ -74,6 +79,14 @@ test('R198 ①c: every place class is SMALLER than it was before this round', ()
   }
   /* …and the loudest one: an ocean name was 19.3 px where a city was 15. */
   assert.ok(LS.subAt(9, 1) < 12, `the largest non-place label is ${LS.subAt(9, 1)} px at z9, was 19.3`);
+  /* (#R210) the exemption must not leak: raising the country class must leave every NON-place label
+     exactly where #R198 left it. SUB is derived from SUB_REF, not from REF, and this is that claim. */
+  for (let z = 0; z <= 22; z += 0.5) {
+    assert.ok(LS.subAt(z, 1) <= 11.4 + 1e-9,
+      `a non-place label reached ${LS.subAt(z, 1)} px at z${z} — enlarging the country class must not drag SUB up`);
+  }
+  assert.ok(LS.placeAt('country', 4) > LS.placeAt('city', 4) + 3,
+    'the country/city gap the round was asked to open actually opened');
 });
 
 test('R198 ①d: the expressions keep zoom OUTERMOST (#R73 — MapLibre drops the layer silently)', () => {

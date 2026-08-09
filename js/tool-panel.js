@@ -126,7 +126,7 @@ window.IntMapModules.toolPanel=function(HOST){
                     ['rect',_L('Rectangle','長方形','Rechteck','Прямоугольник','Rectángulo')]];
       const HINTS={ polygon:_L('Click 3 or more points on the map to trace the footprint.','地図を3点以上クリックして底面を描いてください。','Klicke 3 oder mehr Punkte, um die Grundfläche zu zeichnen.','Отметьте 3 и более точек, чтобы задать основание.','Haz clic en 3 o más puntos para trazar la base.'),
         freehand:_L('Press and drag on the map to trace any outline.','地図を押したままなぞると、自由な形の底面を描けます。','Auf der Karte gedrückt ziehen, um eine beliebige Form zu zeichnen.','Проведите по карте, удерживая кнопку, чтобы обвести любой контур.','Mantén pulsado y arrastra en el mapa para trazar un contorno libre.'),
-        circle:_L('Drag from the centre outwards to size the circle.','中心から外へドラッグすると円の大きさが決まります。','Vom Mittelpunkt nach außen ziehen, um den Kreis aufzuziehen.','Потяните от центра наружу, чтобы задать радиус.','Arrastra desde el centro hacia fuera para fijar el radio.'),
+        circle:_L('Drag from the center outwards to size the circle.','中心から外へドラッグすると円の大きさが決まります。','Vom Mittelpunkt nach außen ziehen, um den Kreis aufzuziehen.','Потяните от центра наружу, чтобы задать радиус.','Arrastra desde el centro hacia fuera para fijar el radio.'),
         rect:_L('Drag from one corner to the opposite one.','一方の角から対角へドラッグしてください。','Von einer Ecke zur gegenüberliegenden ziehen.','Потяните от одного угла к противоположному.','Arrastra de una esquina a la contraria.') };
       const shapeRow=`<div class="v3d-shapes" id="v3d-shapes">`+SHAPES.map(s=>`<button type="button" class="v3d-shape${st.shape===s[0]?' on':''}" data-shape="${s[0]}">${s[1]}</button>`).join('')+`</div>`;
       body=shapeRow
@@ -206,7 +206,7 @@ window.IntMapModules.toolPanel=function(HOST){
          and multiple radius circles advance per finished circle (each circle's own tiling fills its band). */
       const _progLbl=()=>HOST.lang==='jp'?'WorldPop人口グリッドを集計中…':HOST.lang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':HOST.lang==='ru'?'Суммирование сетки населения WorldPop…':HOST.lang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
       const _mkProg=()=>{ let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
-          box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);transition:width .2s;"></div></div>';
+          box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
           if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
         box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.classList.remove('indet'); box.style.display='block'; return box; };
       if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); const P=window._imProgCtl(box); P.busy();
@@ -462,7 +462,7 @@ window.IntMapModules.toolPanel=function(HOST){
      FACT about the click, not a group you can open, and it has to stay visible when everything is
      collapsed. */
   function showContextMenu(point,lngLat){
-    const m=document.getElementById('ctx-menu'); const mc=document.getElementById('map-container').getBoundingClientRect();
+    const m=document.getElementById('ctx-menu'); let mc=document.getElementById('map-container').getBoundingClientRect();   /* (#R210) `let`: place() re-reads it */
     const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
     const items=[
       {coord:`${HOST.t('ctxThisPoint')}: ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`},
@@ -532,12 +532,37 @@ window.IntMapModules.toolPanel=function(HOST){
        (and cap its height so a long menu scrolls) — it was overflowing behind the sheet / off-screen.
        (#R205) …and it is a function now, because expanding a section changes the height after the fact. */
     function place(){
+      /* (#R210) re-read: this now runs on every map move AND on window resize, so a rect captured
+         at open time would clamp against a container size that no longer exists. */
+      try{ const r=document.getElementById('map-container').getBoundingClientRect(); if(r&&r.width) mc=r; }catch(_){}
       let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; const isM=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; if(isM&&cover>0){ availBottom=mc.height-cover-8; m.style.maxHeight=Math.max(160,availBottom-56)+'px'; m.style.overflowY='auto'; } else { m.style.maxHeight=''; m.style.overflowY=''; } }catch(_){}
       const rect=m.getBoundingClientRect();
-      let x=point.x, y=point.y;
+      /* ══ (#R210) THE MENU BELONGS TO THE POINT, NOT TO THE SCREEN ═════════════════════════════
+         「右クリック時のポップアップは、画面に固定ではなく地点に固定するように。」 It was placed once at
+         the pixel the pointer was over and then stayed there while the map moved underneath, so
+         the coordinate at the top of it stopped describing what it was sitting on. Re-project the
+         lngLat each time instead; `point` is only the fallback for a frame where the renderer
+         cannot answer (engine swap, style reload). The clamping below is unchanged — a menu
+         anchored near the edge still has to stay on screen. */
+      let anchor=point;
+      try{ const pj=window.IntMapGeoEngine&&window.IntMapGeoEngine.coords.project([lngLat.lng,lngLat.lat]);
+        if(pj&&isFinite(pj.x)&&isFinite(pj.y)) anchor=pj; }catch(_){}
+      let x=anchor.x, y=anchor.y;
       if(x+rect.width>mc.width) x=mc.width-rect.width-8;
       if(y+rect.height>availBottom) y=availBottom-rect.height-8;
       m.style.left=Math.max(8,x)+'px'; m.style.top=Math.max(8,y)+'px';
+    }
+    /* (#R210) …and it keeps following. Registered ONCE on the element (the menu is a singleton and
+       every closer in the app just sets display:none), so the handler is inert whenever it is
+       hidden and there is nothing to unsubscribe. `_ctxPlace` is re-pointed by each open, so the
+       listener always drives the CURRENT menu's placement rather than the first one's. */
+    m._ctxPlace=place;
+    if(!m._ctxFollow){
+      m._ctxFollow=()=>{ try{ if(m.style.display==='block'&&m._ctxPlace) m._ctxPlace(); }catch(_){} };
+      try{ const E=window.IntMapGeoEngine;
+        ['move','zoom','rotate','pitch','resize'].forEach(ev=>{ try{ E.events.on(ev,m._ctxFollow); }catch(_){} });
+      }catch(_){}
+      try{ window.addEventListener('resize',m._ctxFollow); }catch(_){}
     }
   }
 
