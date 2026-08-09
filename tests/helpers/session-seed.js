@@ -16,7 +16,14 @@
  *  heals them once — which puts every default layer back on. See #R189.
  * ==========================================================================*/
 export const SESSION_KEY = 'intmap_session2';
-export const SESSION_VALUE = '{"v":2,"defv":190,"layers":[]}';
+/* WARN (#R210) `right:false` IS NOT COSMETIC. js/map-ui.js opens the right layer panel when the
+ *  saved session has NO ANSWER for it — the first-visit behaviour asked for this round. Every
+ *  context here carries a saved session WITHOUT that key, so leaving it out would silently make
+ *  ~350 tests measure a canvas 300 px narrower than the one they were written against: exactly
+ *  the shape #R207 warned about when one default moved and four deep specs fell over.
+ *  The suite is not ABOUT first-visit behaviour, so it states the answer it wants; the
+ *  unanswered case is covered on purpose by tests/r210.spec.js. */
+export const SESSION_VALUE = '{"v":2,"defv":190,"layers":[],"lsrOpen":false}';
 export const PORT = Number(process.env.PORT || 4173);
 export const BASE = `http://127.0.0.1:${PORT}`;
 
