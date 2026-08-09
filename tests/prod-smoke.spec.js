@@ -358,8 +358,25 @@ test('(#R179) prod base map serves the pixels the display asks for', async ({ br
          asserted separately), so it selects it rather than inheriting it. Caught by running this file
          against LIVE production BEFORE merging the change: 16/16 green, and this is the one that
          would have gone red fifteen minutes after the deploy. */
+      /* ⚠ WAIT FOR THE CONDITION, NOT FOR A DURATION. The first version of this slept 3.5 s after the
+         click and went red on the post-deploy run while passing everywhere else: `applyTheme()` only
+         switches the basemap once the style is ready, and on a loaded runner against a cold CDN that
+         had not happened yet. What the assertions below need is a VISIBLE Carto layer, so that is
+         what is waited for — which is also faster on a warm run than any sleep long enough to be safe
+         on a cold one. */
       await p2.evaluate(() => document.getElementById('btn-view-map')?.click());
-      await p2.waitForTimeout(3500);
+      await p2.waitForFunction(() => {
+        try {
+          const m = window.__imap, st = m.getStyle();
+          return ['layer-light-nl', 'layer-dark-nl', 'layer-light', 'layer-dark'].some((id) => {
+            const lyr = (st.layers || []).find((l) => l.id === id);
+            if (!lyr) return false;
+            if ((m.getLayoutProperty(id, 'visibility') || 'visible') === 'none') return false;
+            return /cartocdn\.com/.test((((st.sources[lyr.source] || {}).tiles || [])[0]) || '');
+          });
+        } catch (_) { return false; }
+      }, null, { timeout: 45_000 }).catch(() => {});
+      await p2.waitForTimeout(2500);   /* let the visible layer actually request its tiles */
       const decision = await p2.evaluate(() => window.__imHiDPITiles);
       expect(decision, `the one HiDPI decision at dpr ${dsf}`).toBe(dsf >= 1.5);
       /* WHICH Carto requests are the map's is asked of the live style. The layer panel's preview
