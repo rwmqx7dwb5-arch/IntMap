@@ -12,20 +12,27 @@
 // 519 m and Nuremberg at ~300 m, so a route between them nets about −220 m; Munich→Milan crosses at
 // least the Germany/Austria and the Switzerland/Italy borders; and Bedford→Cambridge had a railway
 // until 1967 and has none now, which is the difference the historical mode exists to show.
-import { test, expect } from '@playwright/test';
+import { test, expect, bootPage } from './helpers/app.js';
 
 const BOOT = { timeout: 90_000 };
-const boot = async (page) => {
-  await page.goto('/?rafshim=1');
-  await page.waitForFunction(() => !!window.__imap && !!window.IntMapRouting && !!window.IntMapRoutingOps, null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
+   used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
+   development machine and 9.2 s on a CI runner with no GPU (#R186), and across the 30 files doing
+   this it came to about 185 boots for 185 questions — 91 % of the suite's measured time sat in
+   them. tests/helpers/app.js carries the measurements, says what sharing a page costs, and names
+   the specs that must NOT do it (the ones whose subject is start-up itself).
+   `app.reset()` runs before every test and restores the app's named start-up view; a test that
+   needs a genuinely untouched application asks for `app.freshPage()` and pays for its own boot.
+   ⚠ `boot` is kept below for any test in this file that still takes its own page — it is the same
+   wait, so a test that has not been converted behaves exactly as it did rather than failing on a
+   name that no longer exists. */
+const boot = async page => { await bootPage(page); };
 const MUC = { lng: 11.575, lat: 48.137 }, NUE = { lng: 11.077, lat: 49.452 }, ING = { lng: 11.425, lat: 48.766 };
 
 /* ── ① VIA POINTS, AND THE PER-LEG DURATIONS THEY PRODUCE ─────────────────────────────────── */
-test('R184 route ①: a via point is honoured and the route comes back split into legs', async ({ page }) => {
+test('R184 route ①: a via point is honoured and the route comes back split into legs', async ({ app }) => {
   test.setTimeout(120_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async ([a, b, v]) => {
     const R = window.IntMapRouting;
     const plain = await R.route(a, b, { mode: 'driving' });
@@ -45,9 +52,9 @@ test('R184 route ①: a via point is honoured and the route comes back split int
 });
 
 /* ── ② A DRAWN AREA REALLY REROUTES ───────────────────────────────────────────────────────── */
-test('R184 route ②: a keep-out area lengthens the route, and works on foot too', async ({ page }) => {
+test('R184 route ②: a keep-out area lengthens the route, and works on foot too', async ({ app }) => {
   test.setTimeout(120_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const R = window.IntMapRouting;
     const A = { lng: 11.575, lat: 48.137 }, B = { lng: 11.610, lat: 48.150 };
@@ -74,9 +81,9 @@ test('R184 route ②: a keep-out area lengthens the route, and works on foot too
 });
 
 /* ── ③ ELEVATION IS MEASURED FROM THE DEM ─────────────────────────────────────────────────── */
-test('R184 route ③: ascent, descent and the net change match the real terrain', async ({ page }) => {
+test('R184 route ③: ascent, descent and the net change match the real terrain', async ({ app }) => {
   test.setTimeout(150_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async ([a, b]) => {
     const R = window.IntMapRouting, O = window.IntMapRoutingOps;
     const rt = await R.route(a, b, { mode: 'driving' });
@@ -102,9 +109,9 @@ test('R184 route ③: ascent, descent and the net change match the real terrain'
 });
 
 /* ── ④ BORDER CROSSINGS ARE NAMED, NOT JUST COUNTED ───────────────────────────────────────── */
-test('R184 route ④: Munich → Milan is reported crossing real borders in order', async ({ page }) => {
+test('R184 route ④: Munich → Milan is reported crossing real borders in order', async ({ app }) => {
   test.setTimeout(150_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const R = window.IntMapRouting, O = window.IntMapRoutingOps;
     /* the country outlines are loaded by the Countries tab; the analysis says so rather than
@@ -134,9 +141,9 @@ test('R184 route ④: Munich → Milan is reported crossing real borders in orde
 });
 
 /* ── ⑤ CONDITIONS ALONG THE WAY, AT THE TIME THE TRAVELLER IS THERE ───────────────────────── */
-test('R184 route ⑤: weather is probed along the route and stamped with the arrival time', async ({ page }) => {
+test('R184 route ⑤: weather is probed along the route and stamped with the arrival time', async ({ app }) => {
   test.setTimeout(150_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async ([a, b]) => {
     const R = window.IntMapRouting, O = window.IntMapRoutingOps;
     const rt = await R.route(a, b, { mode: 'driving' });
@@ -164,8 +171,8 @@ test('R184 route ⑤: weather is probed along the route and stamped with the arr
 });
 
 /* ── ⑥ ARRIVAL TIMES, FORWARDS AND BACKWARDS ──────────────────────────────────────────────── */
-test('R184 route ⑥: arrive-by runs the clock backwards from the deadline', async ({ page }) => {
-  await boot(page);
+test('R184 route ⑥: arrive-by runs the clock backwards from the deadline', async ({ app }) => {
+  const page = app.page;
   const r = await page.evaluate(() => {
     const O = window.IntMapRoutingOps;
     const t = Date.parse('2026-08-01T09:00:00Z');
@@ -185,8 +192,8 @@ test('R184 route ⑥: arrive-by runs the clock backwards from the deadline', asy
 });
 
 /* ── ⑦ WHERE ALTERNATIVES DIFFER ──────────────────────────────────────────────────────────── */
-test('R184 route ⑦: the shared part of two routes is excluded and only the difference is drawn', async ({ page }) => {
-  await boot(page);
+test('R184 route ⑦: the shared part of two routes is excluded and only the difference is drawn', async ({ app }) => {
+  const page = app.page;
   const r = await page.evaluate(() => {
     const O = window.IntMapRoutingOps, M = O._math;
     /* an identical line has nothing unique */
@@ -213,8 +220,8 @@ test('R184 route ⑦: the shared part of two routes is excluded and only the dif
 });
 
 /* ── ⑧ OSM's DATE RECORD, READ CORRECTLY ──────────────────────────────────────────────────── */
-test('R184 route ⑧: OSM date tags are parsed, and "no date" is not treated as a yes or a no', async ({ page }) => {
-  await boot(page);
+test('R184 route ⑧: OSM date tags are parsed, and "no date" is not treated as a yes or a no', async ({ app }) => {
+  const page = app.page;
   const r = await page.evaluate(() => {
     const M = window.IntMapRoutingOps._math;
     return {
@@ -239,9 +246,9 @@ test('R184 route ⑧: OSM date tags are parsed, and "no date" is not treated as 
 });
 
 /* ── ⑨ ROUTING ON THE NETWORK AS IT WAS ───────────────────────────────────────────────────── */
-test('R184 route ⑨: Bedford → Cambridge connects by rail in 1950 and does not today', async ({ page }) => {
+test('R184 route ⑨: Bedford → Cambridge connects by rail in 1950 and does not today', async ({ app }) => {
   test.setTimeout(240_000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const O = window.IntMapRoutingOps;
     const A = { lng: -0.4667, lat: 52.1360 }, B = { lng: 0.1218, lat: 52.2053 };

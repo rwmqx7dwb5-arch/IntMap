@@ -120,7 +120,11 @@ test('R203 ③ the space crossing hands the Earth over at the same size and face
   const before = await page.evaluate(() => {
     const G = window.IntMapGeoEngine, c = G.camera.getCenter();
     const a = G.coords.project([c.lng, c.lat]), b = G.coords.project([c.lng + 90, c.lat]);
-    return { zoom: G.camera.get().zoom, px: Math.hypot(b.x - a.x, b.y - a.y), lng: c.lng, lat: c.lat };
+    /* (#R208) …and the ROLL: the screen angle of north, clockwise from straight up. This is the
+       fourth thing the crossing has to carry, beside the size, the face and the instant. */
+    const n = G.coords.project([c.lng, c.lat + 0.5]);
+    return { zoom: G.camera.get().zoom, px: Math.hypot(b.x - a.x, b.y - a.y), lng: c.lng, lat: c.lat,
+      northDeg: Math.atan2(n.x - a.x, -(n.y - a.y)) * 180 / Math.PI };
   });
   expect(before.px, 'the map is showing a globe with a measurable radius').toBeGreaterThan(20);
 
@@ -135,6 +139,20 @@ test('R203 ③ the space crossing hands the Earth over at the same size and face
   expect(entered.mode).toBe('system');
   expect(entered.focus).toBe('earth');
   expect(entered.atNearLimit, 'the Earth is at least map-sized, so one zoom-in gesture hands it back').toBe(true);
+
+  /* ══ (#R208) 「地軸の傾きが微妙に違って、非連続的」 ══════════════════════════════════════════════
+     The up-vector used to be the literal ecliptic north while the map draws the Earth with its own
+     axis vertical, so the planet rolled by the obliquity in the frame the crossing handed over.
+     ⚠ ASSERTED AS ONE NUMBER EITHER SIDE OF THE SEAM rather than as the mechanism: the screen angle
+     of north. The map's is `before.northDeg`; the scene's is `state().northRollDeg`.
+     ⚠ AND THE BLEND MUST BE EXACTLY 1 HERE ON EVERY WINDOW. Two earlier versions expressed the knee
+     as a fraction of the viewport half-height and arrived at 0.85 / 0.69 / 0.53 on a laptop, a phone
+     and a tablet, because the map's globe at minimum zoom is a constant ~89 px and so a different
+     fraction of every window. Taking the ratio against the handover size makes it 1 by construction. */
+  expect(entered.axisBlend, 'at the seam the scene is in the map’s frame, not the ecliptic').toBe(1);
+  expect(Math.abs(entered.northRollDeg - before.northDeg),
+    `north is at ${entered.northRollDeg}° in space against ${before.northDeg.toFixed(2)}° on the map`)
+    .toBeLessThan(0.5);
 
   await page.waitForTimeout(1200);
   await page.evaluate(() => window.IntMapSpace.leaveToMap());
@@ -152,6 +170,31 @@ test('R203 ③ the space crossing hands the Earth over at the same size and face
   const dLng = Math.abs(((after.lng - before.lng + 540) % 360) - 180);
   expect(dLng, 'the centre longitude survived the round trip').toBeLessThan(3);
   expect(Math.abs(after.lat - before.lat)).toBeLessThan(3);
+
+  /* (#R208) …and a ROTATED map hands over its own roll. Same page, same boot — the crossing is the
+     only thing repeated. This is what pins the sign: the map draws north at −bearing from screen up,
+     so at bearing 40 the Earth's pole must be 40° anticlockwise of vertical in space as well. */
+  const rot = await page.evaluate(async () => {
+    const G = window.IntMapGeoEngine, S = window.IntMapSpace;
+    G.camera.jumpTo({ center: [139.7, 35.7], zoom: 0.9, pitch: 0, bearing: 40 });
+    await new Promise((r) => setTimeout(r, 1200));
+    const c = G.camera.getCenter();
+    const a = G.coords.project([c.lng, c.lat]), n = G.coords.project([c.lng, c.lat + 0.5]);
+    const mapNorth = Math.atan2(n.x - a.x, -(n.y - a.y)) * 180 / Math.PI;
+    S.enterFromZoom();
+    await new Promise((r) => setTimeout(r, 900));
+    const st = S.state();
+    S.leaveToMap();
+    await new Promise((r) => setTimeout(r, 900));
+    G.camera.jumpTo({ bearing: 0 });
+    return { mapNorth, spaceNorth: st.northRollDeg, blend: st.axisBlend, mapRollDeg: st.mapRollDeg };
+  });
+  expect(rot.mapNorth, 'the map puts north at −bearing from screen up').toBeCloseTo(-40, 1);
+  expect(rot.blend, 'the rotated crossing is still fully in the map’s frame').toBe(1);
+  expect(Math.abs(rot.spaceNorth - rot.mapNorth),
+    `north is at ${rot.spaceNorth}° in space against ${rot.mapNorth.toFixed(2)}° on the rotated map`)
+    .toBeLessThan(0.5);
+  await page.waitForTimeout(600);
 });
 
 /* ── ④ the Earth in space is the app's own Earth, and the Moon is beside it rather than inside ── */

@@ -871,7 +871,8 @@ data/
   ecoregions_2017.geojson/.js   エコリージョン（自前ホスト。PMTiles が dead だったため geojson 化）
   railways_gauge.json           世界の鉄道（軌間別）
   volcanoes_gvp.json            火山（Smithsonian GVP 完新世）
-  gazetteer-world.json          (#R198) 世界の地名の長い尾（15,048件・240か国・1.06 MB・人口下限 37,493人）。出典＝GeoNames
+  gazetteer-world.json.gz       (#R208) 世界の地名の長い尾（147,924件・242か国・3.92 MB gzip／JSON 9.0 MB）。cities1000 由来、
+                                    名前は alternateNamesV2 の18言語。ブラウザ側で DecompressionStream 展開。出典＝GeoNames
                                 `cities15000`（CC BY 4.0、場所と人口）＋ Wikidata（CC0、ja/de/ru/es のラベルを
                                 GeoNames id = P1566 で引く）。`scripts/build-gazetteer.mjs` が生成し、
                                 `js/gazetteer.js` の `warm()` が**必要になった時に**取得する（同梱しない）。
@@ -884,11 +885,18 @@ js/
   i18n.js                           (#R162) EN/JP/DE/RU/ES のUI文字列表（純データ・実行時に不変）。`window.IntMapI18N`。
                                     index.html 側は `const i18n=window.IntMapI18N;` で従来どおり束縛し直すだけ。
   gazetteer.js                      (#R162) 非AI locator の組込み地名表（`_BUILTIN_GZ`＋`_EXTRA_GZ`）。`window.IntMapGazetteer`。
-                                    (#R198) **長い尾**が加わった：`warm()` が `data/gazetteer-world.json`（15,048行・
-                                    240か国・1.06 MB。人口の下限 37,493人。⚠ 携帯は上位6,000行だけ登録する
-                                    ——登録は実測 6.0 ms/1,000行）を**最初に必要になった時に取得**し、`index()` が curated 2表と
-                                    合わせて matcher 形の索引を返す（world 到着で1度だけ無効化）。同梱しないのは
-                                    #R195 の起動転送 189 KB を戻さないため。ビルドは `scripts/build-gazetteer.mjs`。
+                                    (#R198) **長い尾**が加わった：`warm()` が `data/gazetteer-world.json` を
+                                    **最初に必要になった時に取得**し、`index()` が curated 2表と合わせて matcher 形の
+                                    索引を返す（world 到着で1度だけ無効化）。同梱しないのは #R195 の起動転送 189 KB を
+                                    戻さないため。ビルドは `scripts/build-gazetteer.mjs`。
+                                    (#R208) **15,048行 → 147,924行**（cities1000 相当、242か国）。JSON 9.0 MB は配れないので
+                                    artefact は `data/gazetteer-world.json.gz`（3.92 MB）で、ブラウザが `DecompressionStream`
+                                    で展開する。⚠ **展開の要否はファイル名でなく gzip マジックで判定**する——`.gz` に
+                                    `Content-Encoding: gzip` を付けるホストではブラウザが先に展開してしまうため。
+                                    名前は alternateNamesV2 由来の18言語（**js/newsgeo.js が字種として読める言語だけ**：
+                                    ラテン/ギリシャ/キリル＋漢字かな。ハングル・アラビア・ヘブライ・タイは対象外）。
+                                    ⚠ 登録は `js/news-context.js` の `registerSlices()` が**4,000行ずつ譲りながら**行う
+                                    （一括は実測 3.7 ms/1,000行＝約550 msの長いタスク）。携帯の上限は 6,000 → 25,000行。
   reference-data.js                 (#R162) ダッシュボードカード（`DEFAULT_DASH_CARDS`＋`_dc`）とデータ出典表
                                     （`DATA_SOURCES`）。`window.IntMapRefData`。
   layer-previews.js                 (#R162) `IntMapLayerPreviews`。ファクトリ引数＝(countryStats, geoLayersDB, loadCountryData)
@@ -1214,6 +1222,15 @@ js/
                                     電話では 390×844 に対し地震パネルが 362×669＝地図の大半を覆っており、
                                     「地図をタップしてください」と言いながらその地図の上に立っていた。
                                     地震（震源）・災害（発生地点）・RF（アンテナ）・日照（解析地点）の4か所が使う。
+  night-sky.js                      (#R208) **ある地点からの星空 `IntMapNightSky`**（右クリック／Atlas `nightSky`）。
+                                    天頂が中心・地平線が縁の全天図（⚠ **東は左**——見上げると方位が反転する）。
+                                    天文は全部借り物：星表・歳差・恒星時＝`IntMapSky`、太陽/月/惑星＝
+                                    `IntMapEphemeris.equatorial()`、地形＝`IntMapTerrain.sampler()`、時計＝`IntMapTime.when()`。
+                                    ⚠ **地平線は実測**：方位180本×40 kmの光線から、地球の曲率と光学屈折(k=1.13)を
+                                    引いた仰角の最大値。DEMが答えなければ **null のまま**＝「未計測」と表示する
+                                    （平らな地平線を描くと計測に見える）。⚠ Terrarium は水深も返すので
+                                    **目の高さは0 mでクランプ**（さもないと外洋で海底に立つ）。
+                                    「山の陰で隠れた星」と「昼光で飛んだ星」は**別々に数える**。
   night-side.js                     (#R196 → #R201 で作り直し) **地球の夜側 `IntMapNightSide`**。
                                     ⚠ **#R201: 5枚の入れ子ポリゴンは廃止**。「夜と昼の部分の変遷が階段状で
                                     不自然」は**機構そのものの記述**（薄明の帯は最広ズームで約17画素幅で、
@@ -2337,6 +2354,19 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 ### 15.1 ファイル
 - `package.json`（private・type:module）: devDeps＝`@playwright/test`＋`js-yaml` のみ。scripts＝`test`（=`check:static` + Playwright）/`check:static`/`test:smoke`/`test:qa`/`serve`/`report`。`.nvmrc=24`。
 - `scripts/serve.mjs` — 依存ゼロ静的サーバ（リポジトリルートを `/` で配信＝GitHub Pages と同一）。
+  ⚠ **(#R208) 「Pages と同一」には圧縮も含まれる**——#R133 以来そう名乗りながら**一度も圧縮していなかった**。
+  実測：`assets/main-*.js` はローカル 3,603 kB／Pages **1,331 kB** ＝ **携帯回線を模した読み込み計測が
+  2.7倍重く出ていた**（fast-4G 起動 7.4→**3.9秒**・slow-4G 33.1→**13.6秒**）。`Accept-Encoding` に応答する。
+  ⚠ **brotli ではなく gzip**（`br` を提示しても Pages は gzip を返す＝brotli を選ぶと計測が16%楽観側に狂う）。
+  ⚠ **`.gz` は対象外**（`data/*.json.gz` は「gzip 形式の**本体**」であって gzip 符号化された応答ではない。
+  `Content-Encoding` を付けるとブラウザが先に展開して素の JSON を渡してしまう）。
+  ⚠ 圧縮結果は path+mtime+size でキャッシュ（3.6 MB の gzip は約200 ms・`no-store`・スイートは約185回起動＝
+  素だとテストに約40秒足す。実測 初回73 ms／以降4 ms）。
+  ⚠ **(#R208) 経路の組み立ては「先に join して後で検査」ではなく「素の区間に分解して ROOT から組み直す」**
+  ——前者は正しく効くが CodeQL の tainted-path クエリからは**サニタイザに見えない**（読み出しが2つになった
+  瞬間に `Uncontrolled data used in path expression` で PR が赤くなった）。`r208-checks ⑩` が
+  **tests/ を root にした2台目**を立てて実際に外へ出られないことを検査する（⚠ `fetch` は `/../x` を
+  クライアント側で正規化するので、**percent-encode しないとサーバまで届かない**）。
 - `scripts/static-checks.mjs` — 構文（`node --check` 全 js/mjs/cjs/**ts**＝Node24型ストリップ）／JSON parse／YAML(js-yaml)／マージ衝突マーカー／秘密検出（publishable anon はallowlist）／HTML参照ローカルアセット存在。
 - `playwright.config.js` — hermeticスモーク＋内部QA用（webServer=serve.mjs・UTC/en-US・SWブロック・prod-smokeは除外）。`playwright.prod.config.js` — 実URL用（webServer無し・retry3）。
 - `tests/helpers/network.js` — hermeticルーティング（同一オリジン＋boot CDN2つ〔unpkg/jsdelivr〕のみ許可、他外部は全 `abort`）＋console分類（外部/ネット系はbenign、自コードのみ失敗）。
@@ -2801,6 +2831,19 @@ Mw 9 で 4% ずれ、**符号は両方向**（＝係数で直せる偏りでは�
 積分中は**押せない**ゲージ（`#space-approach`・5言語）が進捗を出す。渡るときは**フェード**（420 ms）。
 帰りは同じ積分の鏡像——宇宙側のカメラが使い切ったズームインを積分して 1.6 で地図へ戻る（320 ms フェード）。
 Esc と × は従来どおり。押されるまで WebGL コンテキストもテクスチャも星表も**確保しない**。
+- ⚠ **(#R208) 継ぎ目で渡すものは4つ目がある：大きさ・面・時刻に加えて「上がどっちか」。**
+  宇宙側カメラの上ベクトルは `[0,0,1]`＝**黄道北**のリテラルで、地図は地球の**自転軸を画面の垂直**に描く
+  ——**赤道傾斜角ぶん（23.44°）**ずれるので、渡った瞬間に地球が1フレームで転がっていた。
+  地球の軸をそのまま使うのも駄目（太陽系の絵は**黄道の絵**なので全惑星の軌道が永久に23°傾く）ので、
+  **2つを補間**し、配合を**地球の見かけの大きさ**で駆動する＝またぐジェスチャがそのまま座標系を運ぶ。
+  ⚠⚠ **上側の折れ点は「値」でなく「関係」**：`handoverRadiusPx()`（＝**引き渡しが定義されている大きさ**。
+  `atNearLimit()` が既に使う量）に対する比を取り、**継ぎ目では比が構造上1**になる。
+  ビューポート半高に対する割合で書くと**画面ごとに別の閾値**になる——地図の globe は最小ズームで
+  窓に依らず約89 CSS px なので、同じ89pxが 0.247／0.212／0.177 になり、配合 0.850／0.693／0.530、
+  残る傾き **3.5°／7.2°／11.0°**（0.55 と 0.28 の2版が実際にそう外した）。
+  ⚠ 方位も渡す——地図は北を**画面上から −bearing** に描くので、回転した地図はその回転ごと渡す。
+  `state().northRollDeg`＝**画面上の北の角度**（目に見える量）を出すので、テストは機構でなく
+  **継ぎ目の両側の1つの数**を比べられる（`tests/r203.spec.js ③`）。実測**誤差 0.000°**（4ビューポート×方位3通り）。
 - **天体**: 太陽・8惑星・冥王星・月。位置は **JPL 近似軌道要素（紀元前3000年〜紀元3000年、Jupiter〜Pluto は追加項つき）**、
   月は **ELP-2000/82 の短縮級数（Meeus 47章）**。姿勢は **IAU/WGCCRE の極（α₀, δ₀）と本初子午線角 W**。
 - ⚠ **月以外の衛星は入れていない**。公表要素だけでは元期の平均経度が無く、正しい半径・正しい周期の円軌道は
@@ -3223,7 +3266,14 @@ tests/r184-cesium-fs が3回中3回失敗（main は緑）。メルカトルの�
 
 **同梱データの形式。** `stars.bin` は 12 バイトのヘッダ（`IMSTAR1\0` + uint32 の件数）＋1星6バイト
 （uint16 赤経＝度×65536/360、int16 赤緯＝度×32767/90、uint8 V等級＝(V+2)×20、int8 B−V＝×50）＝
-9,096 星で 55 KB。量子化は**カタログではなく描画器に対して**選んである：赤経0.0055°／赤緯0.0027°に対し
+9,096 星で 55 KB。
+⚠ **(#R208) `IMSTAR2` になった**：末尾に **uint16 の視差（mas×10）**が付き1星8バイト、98,887星で 791 KB。
+**0 は「距離不明」であって距離0ではない**（非正か2σ未満の視差＝Hipparcos が測り切れなかったもの。
+78,963星に使える視差がある）。⚠ **読み手はストライドをマジックから導く**（`js/space-sky.js`／`js/space.js`）
+——直書きの `12+i*6` のままカタログを作り直すと全フィールドが2バイトずれて空が雑音になる。
+これがあるおかげで `js/space.js` は星を**殻でなく実距離**に置ける＝太陽系の外へ出られる。
+`data/moons.json`（#R208・36 KB）は JPL の衛星平均要素177件（a/e/ω/**M**/i/node/P と**元期**、
+そして**基準面**＝黄道か局所ラプラス面＋その極）。`scripts/build-moons.mjs` が生成。量子化は**カタログではなく描画器に対して**選んである：赤経0.0055°／赤緯0.0027°に対し
 カメラの視野では1°が約21画素、つまり**0.1画素未満**。`world-basemap.jpg` は 2048×1024 の正距円筒
 （−180…180 / −90…90）。**赤道方向2,048 pxは512pxタイルで z2 が等倍**なので、プロトコルの maxzoom は 4。
 

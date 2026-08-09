@@ -188,7 +188,12 @@ import '../js/night-side.js';
    js/space.js is the view: its own WebGL sphere renderer, the body list, the clock and the two
    scales. It registers a factory and allocates NOTHING — no context, no texture, no star catalogue —
    until the button at the far end of the zoom is pressed. */
+/* (#R208) the sky from a POINT ON THE GROUND — the same catalogue as js/space-sky.js seen from a
+   person's horizon instead of from the map's camera, with the skyline measured off the DEM. Loads
+   after js/ephemeris.js because it asks it for the Sun, Moon and planets, and allocates nothing
+   until the right-click item is used. */
 import '../js/ephemeris.js';
+import '../js/night-sky.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only

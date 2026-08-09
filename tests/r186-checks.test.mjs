@@ -17,9 +17,15 @@ const bytes = (p) => fs.readFileSync(path.join(ROOT, p));
 
 test('R186 stars: the bundled catalogue is a real all-sky bright-star list', () => {
   const b = bytes('data/stars.bin');
-  assert.equal(b.slice(0, 7).toString('latin1'), 'IMSTAR1', 'header');
+  /* ⚠ (#R208) THE FORMAT IS A VERSION, NOT A CONSTANT. IMSTAR2 added the measured parallax as two
+     more bytes per star (scripts/build-star-catalogue.mjs), so pinning 'IMSTAR1' and a 6-byte stride
+     pinned the SHAPE where the claim is 'this is a real all-sky catalogue whose length agrees with
+     its own count'. The stride is derived here exactly as both readers derive it. */
+  const magic = b.slice(0, 7).toString('latin1');
+  assert.match(magic, /^IMSTAR[12]$/, 'header');
+  const STRIDE = magic === 'IMSTAR2' ? 8 : 6;
   const n = b.readUInt32LE(8);
-  assert.equal(b.length, 12 + n * 6, 'the record count and the file length must agree');
+  assert.equal(b.length, 12 + n * STRIDE, 'the record count and the file length must agree');
   /* The Bright Star Catalogue holds ~9,100 stars to V≈6.5 — the naked-eye sky. Far fewer than that
      would be a truncated download rather than a sky.
      (#R187) The shipped catalogue is HIPPARCOS now (~98,900 to V 9.5): the naked-eye sky measured
@@ -38,11 +44,12 @@ test('R186 stars: named stars are where the catalogue says they are', () => {
      sky and not a plausible-looking scatter. */
   const b = bytes('data/stars.bin');
   const n = b.readUInt32LE(8);
+  const STRIDE = b.slice(0, 7).toString('latin1') === 'IMSTAR2' ? 8 : 6;
   const at = (i) => ({
-    ra: b.readUInt16LE(12 + i * 6) * 360 / 65536,
-    dec: b.readInt16LE(14 + i * 6) * 90 / 32767,
-    v: b.readUInt8(16 + i * 6) / 20 - 2,
-    bv: b.readInt8(17 + i * 6) / 50,
+    ra: b.readUInt16LE(12 + i * STRIDE) * 360 / 65536,
+    dec: b.readInt16LE(14 + i * STRIDE) * 90 / 32767,
+    v: b.readUInt8(16 + i * STRIDE) / 20 - 2,
+    bv: b.readInt8(17 + i * STRIDE) / 50,
   });
   /* ⚠ (#R187) B−V IS A MEASUREMENT, AND TWO CATALOGUES CAN MEASURE IT DIFFERENTLY. Betelgeuse is a
      semiregular variable: the Bright Star Catalogue lists B−V 1.85, Hipparcos measured 1.50, and

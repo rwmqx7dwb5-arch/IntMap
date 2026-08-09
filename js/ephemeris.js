@@ -40,6 +40,13 @@
  *  inventing. 「フェイク実装をするな」 — so the bodies modelled are the Sun, the eight planets, Pluto
  *  and the Moon, every one of them from published elements, and js/space.js says that is the list.
  *
+ *  ⚠ (#R208) …AND THAT OBJECTION HAS NOW BEEN ANSWERED FROM OUTSIDE THIS FILE, WHICH IS WHY THE
+ *  PARAGRAPH ABOVE STAYS. The missing thing was never the arithmetic; it was the mean anomaly at a
+ *  stated epoch. JPL publishes exactly that for 177 satellites (Planetary Satellite Mean Orbital
+ *  Parameters), so scripts/build-moons.mjs downloads it into data/moons.json and js/space.js
+ *  propagates it with THIS file's own `kepler`. Nothing here changed and nothing here guesses: the
+ *  moons arrive as data, with their epoch and their reference plane attached, or they do not arrive.
+ *
  *  ── HOW IT IS CHECKED (tests/r197-space.test.mjs) ───────────────────────────────────────────────
  *  Not by comparing the code to itself:
  *    · the Sun's geocentric right ascension and declination derived from THIS file's Earth are

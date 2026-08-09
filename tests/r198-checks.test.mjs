@@ -12,6 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -137,17 +138,24 @@ test('R198 ②b: it is wired into every list a place-label layer belongs to', ()
 
 /* ═══ ③ THE WORLD GAZETTEER ═══════════════════════════════════════════════════════════════════ */
 
-const WORLD = join(ROOT, 'data', 'gazetteer-world.json');
+/* ⚠ (#R208) THE FILE MOVED AND THIS PIN CAME WITH IT. The artefact is `…json.gz` now (9.0 MB of
+   JSON at 148,083 rows is not a thing to ship uncompressed), and the names no longer come from
+   Wikidata — 150,000 ids will not go through a rate-limited SPARQL endpoint, so they come from
+   GeoNames' own language-tagged `alternateNamesV2`. Both assertions below were pinning the
+   MECHANISM; what #R198 meant is "the built table is many times the curated one and every row is
+   usable", and that is what they say now. */
+const WORLD = join(ROOT, 'data', 'gazetteer-world.json.gz');
+const worldDoc = () => JSON.parse(gunzipSync(readFileSync(WORLD)).toString('utf8'));
 
 test('R198 ③a: the built table is ten times the curated one, and every row is usable', () => {
-  assert.ok(existsSync(WORLD), 'data/gazetteer-world.json is built (scripts/build-gazetteer.mjs)');
-  const doc = JSON.parse(readFileSync(WORLD, 'utf8'));
+  assert.ok(existsSync(WORLD), 'data/gazetteer-world.json.gz is built (scripts/build-gazetteer.mjs)');
+  const doc = worldDoc();
   const gz = read('js/gazetteer.js');
   const curated = (gz.match(/^\s{4}\['(?:city|country|flashpoint|town)'/gm) || []).length;
   assert.ok(curated > 300, `sanity: found ${curated} curated rows`);
   assert.ok(doc.rows.length + curated >= curated * 10,
     `${doc.rows.length} + ${curated} curated is not 10× ${curated} — 「Gazetteerを今の10倍の網羅性に」`);
-  assert.ok(/GeoNames/.test(doc.attribution) && /Wikidata/.test(doc.attribution),
+  assert.ok(/GeoNames/.test(doc.attribution),
     'the sources are named in the file itself (standing instruction 4)');
   const seen = new Set();
   for (const r of doc.rows) {
@@ -168,7 +176,7 @@ test('R198 ③b: the client turns those rows into the shape the locator already 
   const win = { addEventListener() {}, IM_HOST: null };
   new Function('window', 'document', read('js/gazetteer.js'))(win, { baseURI: 'https://example.test/' });
   const GZ = win.IntMapGazetteer;
-  const doc = JSON.parse(readFileSync(WORLD, 'utf8'));
+  const doc = worldDoc();
   const rows = GZ._rowsFrom(doc);
   assert.equal(rows.length, doc.rows.length);
   for (const [type, terms, lng, lat, en, jp] of rows.slice(0, 200)) {
@@ -192,7 +200,7 @@ test('R198 ③c: the world rows cost the deterministic locator NOTHING', async (
 
   const win = { addEventListener() {} };
   new Function('window', 'document', read('js/gazetteer.js'))(win, { baseURI: 'https://example.test/' });
-  const rows = win.IntMapGazetteer._rowsFrom(JSON.parse(readFileSync(WORLD, 'utf8')));
+  const rows = win.IntMapGazetteer._rowsFrom(worldDoc());
   const added = NG.register(rows.map(([type, terms, lng, lat, en, jp]) =>
     ({ terms, lng, lat, type, name_en: en, name_jp: jp })));
   assert.ok(added > 10_000, `only ${added} rows registered`);

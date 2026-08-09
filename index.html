@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R207';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R208';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R207';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-11-R207';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-11-R208';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -132,9 +132,24 @@ window.__imBuild='R207';   /* (#R121) build marker — bump when verifying that 
     r.textContent='STAGING / TEST BUILD — not production';
     (document.body||document.documentElement).appendChild(r);
   }catch(e){} });
+  /* ⚠ (#R208) THE COMPARISON IS BY ROUND NUMBER, NOT BY STRING. This guard used `seen > BUILD` on
+     the whole stamp, so its ordering was the ordering of `'2026-08-11-R207'` as TEXT — and the date
+     comes first. A round stamped with an earlier calendar date than the one before it (which is what
+     happens whenever a build is dated by the day the work was done rather than the day the previous
+     build shipped) therefore sorts as OLDER, and every device that had already seen the newer string
+     would purge its caches and hard-reload once, then raise the "you are running a stale build"
+     banner — against the build that had just shipped. Both directions wrong, exactly the way #R207
+     described for the stamp itself.
+     The round number is the part that is guaranteed to increase: `tests/r207-checks ⑬` ties it to the
+     newest `## R<n>` in DEV-NOTES, and a round cannot document itself twice. So that is what is
+     compared, and the string compare is kept only for a stored value that has no round in it. */
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
-    if(seen && seen>window.INTMAP_BUILD){
+    var roundOf=function(s){ var m=/-R(\d+)$/.exec(String(s||'')); return m?+m[1]:NaN; };
+    var rSeen=roundOf(seen), rNow=roundOf(window.INTMAP_BUILD);
+    var older=(isFinite(rSeen)&&isFinite(rNow)) ? (rSeen>rNow) : (!!seen&&seen>window.INTMAP_BUILD);
+    var newer=(isFinite(rSeen)&&isFinite(rNow)) ? (rNow>rSeen) : (window.INTMAP_BUILD>seen);
+    if(seen && older){
       if(!sessionStorage.getItem('intmap_stale_bust')){
         sessionStorage.setItem('intmap_stale_bust','1');
         try{ if('caches' in window){ caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }).then(function(){ location.reload(true); }); return; } }catch(e){}
@@ -142,7 +157,7 @@ window.__imBuild='R207';   /* (#R121) build marker — bump when verifying that 
       }
       window.__INTMAP_STALE=seen;   /* bust didn't help (e.g. the on-disk file itself is old) → banner below */
     } else {
-      if(window.INTMAP_BUILD>seen) localStorage.setItem(KEY,window.INTMAP_BUILD);
+      if(newer||!seen) localStorage.setItem(KEY,window.INTMAP_BUILD);
       sessionStorage.removeItem('intmap_stale_bust');
     }
   }catch(e){} })();

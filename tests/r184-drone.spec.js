@@ -14,14 +14,21 @@
 // The route used is over the Bernese Alps, deliberately: 2,000 m of terrain between a launch point
 // and a destination 14 km away is a case where the right answers are known in advance — the radio
 // cannot get through a mountain, and a 77 Wh battery cannot fly there and back.
-import { test, expect } from '@playwright/test';
+import { test, expect, bootPage } from './helpers/app.js';
 
 const BOOT = { timeout: 90_000 };
-const boot = async (page) => {
-  await page.goto('/?rafshim=1');
-  await page.waitForFunction(() => !!window.__imap && !!window.IntMapDrone && !!window.IntMapDroneOps, null, BOOT);
-  await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
-};
+/* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
+   used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
+   development machine and 9.2 s on a CI runner with no GPU (#R186), and across the 30 files doing
+   this it came to about 185 boots for 185 questions — 91 % of the suite's measured time sat in
+   them. tests/helpers/app.js carries the measurements, says what sharing a page costs, and names
+   the specs that must NOT do it (the ones whose subject is start-up itself).
+   `app.reset()` runs before every test and restores the app's named start-up view; a test that
+   needs a genuinely untouched application asks for `app.freshPage()` and pays for its own boot.
+   ⚠ `boot` is kept below for any test in this file that still takes its own page — it is the same
+   wait, so a test that has not been converted behaves exactly as it did rather than failing on a
+   name that no longer exists. */
+const boot = async page => { await bootPage(page); };
 /* Interlaken → the Jungfrau massif. Real places, real terrain. */
 const ALPINE = async (page) => page.evaluate(async () => {
   const D = window.IntMapDrone;
@@ -32,16 +39,16 @@ const ALPINE = async (page) => page.evaluate(async () => {
 });
 
 /* ── ① THE SEAMS ARE FILLED ───────────────────────────────────────────────────────────────── */
-test('R184 drone ①: the wind field and all four hazard sources are registered into the planner', async ({ page }) => {
-  await boot(page);
+test('R184 drone ①: the wind field and all four hazard sources are registered into the planner', async ({ app }) => {
+  const page = app.page;
   const s = await page.evaluate(() => window.IntMapDrone.state());
   expect(s.windField, '#R174 declared registerWindField and left it empty').toBe(true);
   expect(s.hazardSources.slice().sort()).toEqual(['link', 'nofly', 'return', 'wind']);
 });
 
 /* ── ② THE PHYSICS IS ARITHMETIC, NOT A FUDGE FACTOR ──────────────────────────────────────── */
-test('R184 drone ②: free-space path loss and the wind vector convention are the real formulas', async ({ page }) => {
-  await boot(page);
+test('R184 drone ②: free-space path loss and the wind vector convention are the real formulas', async ({ app }) => {
+  const page = app.page;
   const r = await page.evaluate(() => {
     const M = window.IntMapDroneOps._math;
     return {
@@ -62,9 +69,9 @@ test('R184 drone ②: free-space path loss and the wind vector convention are th
 });
 
 /* ── ③ WIND CHANGES THE ANSWER ────────────────────────────────────────────────────────────── */
-test('R184 drone ③: real forecast wind is fetched, is applied, and says which height it is for', async ({ page }) => {
+test('R184 drone ③: real forecast wind is fetched, is applied, and says which height it is for', async ({ app }) => {
   test.setTimeout(120_000);
-  await boot(page);
+  const page = app.page;
   await ALPINE(page);
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
@@ -102,8 +109,8 @@ test('R184 drone ③: real forecast wind is fetched, is applied, and says which 
 });
 
 /* ── ④ THE RADIO LINK: RANGE AND LINE OF SIGHT, ONE WALK ──────────────────────────────────── */
-test('R184 drone ④: 2.4 GHz does not reach through the Alps, and the check says where it stops', async ({ page }) => {
-  await boot(page);
+test('R184 drone ④: 2.4 GHz does not reach through the Alps, and the check says where it stops', async ({ app }) => {
+  const page = app.page;
   await ALPINE(page);
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
@@ -137,9 +144,9 @@ test('R184 drone ④: 2.4 GHz does not reach through the Alps, and the check say
 });
 
 /* ── ⑤ RESTRICTED AREAS HAVE EXTENT, NOT JUST A CENTROID ──────────────────────────────────── */
-test('R184 drone ⑤: OSM restricted areas come back with their real size and are checked against it', async ({ page }) => {
+test('R184 drone ⑤: OSM restricted areas come back with their real size and are checked against it', async ({ app }) => {
   test.setTimeout(150_000);   /* Overpass + a cold DEM cache */
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
     /* straight across Zurich airport — an aerodrome with a 5 km advisory buffer around a 3 km field */
@@ -171,9 +178,9 @@ test('R184 drone ⑤: OSM restricted areas come back with their real size and ar
 });
 
 /* ── ⑥ THE RETURN LEG IS COUNTED, AND CAN BE FLOWN ────────────────────────────────────────── */
-test('R184 drone ⑥: the battery check includes coming home, and return-to-home closes the route', async ({ page }) => {
+test('R184 drone ⑥: the battery check includes coming home, and return-to-home closes the route', async ({ app }) => {
   test.setTimeout(120_000);
-  await boot(page);
+  const page = app.page;
   await ALPINE(page);
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
@@ -204,9 +211,9 @@ test('R184 drone ⑥: the battery check includes coming home, and return-to-home
 });
 
 /* ── ⑦ THREE PLANS, COMPARED, AND THE ORIGINAL PUT BACK ───────────────────────────────────── */
-test('R184 drone ⑦: shortest / least-power / safest are three real computations', async ({ page }) => {
+test('R184 drone ⑦: shortest / least-power / safest are three real computations', async ({ app }) => {
   test.setTimeout(120_000);   /* three full plans plus the restore */
-  await boot(page);
+  const page = app.page;
   await ALPINE(page);
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
@@ -232,9 +239,9 @@ test('R184 drone ⑦: shortest / least-power / safest are three real computation
 });
 
 /* ── ⑧ EMERGENCY LANDING SITES ARE A SLOPE MEASUREMENT ────────────────────────────────────── */
-test('R184 drone ⑧: landing sites are open ground under 8° that the aircraft can reach', async ({ page }) => {
+test('R184 drone ⑧: landing sites are open ground under 8° that the aircraft can reach', async ({ app }) => {
   test.setTimeout(180_000);   /* Overpass + DEM slope sampling at 60 candidate sites */
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
     D.newRoute(); D.usePreset('prosumer');
@@ -259,9 +266,9 @@ test('R184 drone ⑧: landing sites are open ground under 8° that the aircraft 
 });
 
 /* ── ⑨ CONFLICTS ARE A 4-D QUESTION ───────────────────────────────────────────────────────── */
-test('R184 drone ⑨: two routes that cross are only in conflict at the same time AND altitude', async ({ page }) => {
+test('R184 drone ⑨: two routes that cross are only in conflict at the same time AND altitude', async ({ app }) => {
   test.setTimeout(150_000);   /* six route computations, each warming DEM tiles */
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;
     /* AMSL, not AGL, and that distinction is the point: two plans "both at 500 m AGL" over Alpine
@@ -296,8 +303,8 @@ test('R184 drone ⑨: two routes that cross are only in conflict at the same tim
 });
 
 /* ── ⑩ THE PANEL SHOWS ALL OF IT, IN THE OPERATOR'S LANGUAGE ──────────────────────────────── */
-test('R184 drone ⑩: the Operations block renders, and no finding prints a raw slug', async ({ page }) => {
-  await boot(page);
+test('R184 drone ⑩: the Operations block renders, and no finding prints a raw slug', async ({ app }) => {
+  const page = app.page;
   await ALPINE(page);
   const r = await page.evaluate(async () => {
     const O = window.IntMapDroneOps, D = window.IntMapDrone;

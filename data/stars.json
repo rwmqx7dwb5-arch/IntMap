@@ -1,19 +1,27 @@
 {
-  "format": "IMSTAR1",
+  "format": "IMSTAR2",
   "count": 98887,
-  "bytes": 593334,
+  "bytes": 791108,
   "source": "Hipparcos Catalogue (ESA 1997, CDS I/239)",
   "url": "https://cdsarc.cds.unistra.fr/ftp/I/239/hip_main.dat",
-  "built": "2026-08-01T16:29:32.921Z",
+  "built": "2026-08-09T01:46:25.975Z",
   "magnitude": {
     "min": -1.44,
     "max": 9.5
+  },
+  "parallax": {
+    "withDistance": 78963,
+    "unknown": 19924,
+    "note": "plx = 0 means no usable parallax (non-positive, or below 2σ) — the renderer puts these on the far shell rather than at an invented distance",
+    "nearest_pc": 1.35,
+    "median_pc": 177
   },
   "epoch": "J2000.0",
   "fields": [
     "ra_deg",
     "dec_deg",
     "vmag",
-    "b_v"
+    "b_v",
+    "parallax_mas"
   ]
 }

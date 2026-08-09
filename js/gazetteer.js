@@ -382,8 +382,19 @@ window.IntMapGazetteer=(function(){
      coordinates, hand-written Japanese, and a type (`flashpoint` outranks `city` outranks `country`)
      that the scorer depends on. Ten times that many rows cannot be written by hand and should not
      be — so the rest of the world arrives from the published sources instead, built by
-     scripts/build-gazetteer.mjs (GeoNames CC BY 4.0 for the places, Wikidata CC0 for the names in
-     ja/de/ru/es) and read here.
+     scripts/build-gazetteer.mjs (GeoNames CC BY 4.0, cities1000 for the places and
+     alternateNamesV2 for the names) and read here.
+
+     ══ (#R208) 15,048 → 148,083 ROWS, AND THE FILE IS NOW GZIPPED ═══════════════════════════════
+     「cities1000相当15万件、圧縮して数MB、クライアント同梱」. Ten times the rows is 9.0 MB of JSON,
+     which is not a thing to put on a phone's network — gzipped it is 3.93 MB, and the browser
+     un-gzips it with DecompressionStream. ⚠ Serving it with Content-Encoding would NOT be the same
+     thing: the artefact has to be a few MB in the repository as well, and a static host that
+     declines to encode a response would silently ship all 9 MB.
+     ⚠ A browser without DecompressionStream gets the curated 334 rows and no long tail, which is
+     the same degraded-but-correct state as an offline session (see the catch in `warm`). It is not
+     a case worth a second uncompressed copy of the file: every engine this app already requires
+     (WebGL2 + MapLibre) shipped DecompressionStream years earlier.
 
      ⚠ IT IS FETCHED, NOT BUNDLED, AND THAT IS THE WHOLE DESIGN. #R195 got the startup transfer to
      189 KB; putting a 1 MB table in the module graph would undo that for a feature nobody has
@@ -395,8 +406,9 @@ window.IntMapGazetteer=(function(){
      at BUILD time, so nothing here can move a place the curated table already knows. The rows enter
      the deterministic engine through IntMapNewsGeo.register(), which files them at rank 3 — below
      everything curated — for the same reason. */
-  const WORLD_URL=(function(){ try{ return new URL('data/gazetteer-world.json',
-    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return 'data/gazetteer-world.json'; } })();
+  const WORLD_FILE='data/gazetteer-world.json.gz';
+  const WORLD_URL=(function(){ try{ return new URL(WORLD_FILE,
+    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return WORLD_FILE; } })();
   let _worldRows=null, _worldPromise=null, _worldMeta=null;
   /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
      of twenty thousand are not the same claim about a headline, and the scorer already knows how to
@@ -407,7 +419,18 @@ window.IntMapGazetteer=(function(){
      told is struggling. The file is sorted by population, so the first 6,000 rows are the 6,000 most
      populous places on Earth: the cap costs the smallest towns and nothing else. Same reasoning as
      the #R193 mobile caps on the satellite tile caches. */
-  const MOBILE_CAP=6000;
+  /* ⚠ (#R208) 6,000 → 25,000 → 12,000, AND THE THIRD FIGURE IS THE MEASURED ONE.
+     #R198's 6,000 was about a LONG TASK: one synchronous register() of the whole list. `registerSlices`
+     (js/news-context.js) removed that — the rows go over in slices, on idle time — so the first move
+     this round was to raise the cap on the grounds that jank was no longer the constraint.
+     ⚠ THAT WAS REASONING, NOT MEASURING, AND THE ROUND'S OWN INSTRUCTION IS 「モバイルが重い」.
+     Measured on an iPhone 13 profile: the boot still spends 1,017 ms in seven long tasks, and
+     registration is a real share of it — slicing bounds how long ONE task is, not how much work
+     there is. Doubling the phone's share of that while being told the phone is struggling is the
+     wrong direction, so the cap comes back down to twice #R198's figure rather than four times it:
+     12,000 rows is every place above ~50,000 people, which is what a phone's news pass is about.
+     The desktop is unchanged and still gets all 147,924. */
+  const MOBILE_CAP=12000;
   function _isMobile(){ try{ return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){ return false; } }
   function _rowsFrom(doc){
     const out=[], cap=_isMobile()?MOBILE_CAP:Infinity;
@@ -429,8 +452,21 @@ window.IntMapGazetteer=(function(){
       try{
         const r=await fetch(WORLD_URL,{cache:'force-cache'});
         if(!r.ok) throw new Error('HTTP '+r.status);
-        const doc=await r.json();
-        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length};
+        /* (#R208) un-gzip in the browser — but DECIDE FROM THE BYTES, not from the file name.
+           ⚠ Whether the body still needs decompressing here depends on the host: a static server
+           that labels `.gz` with `Content-Encoding: gzip` (rather than as a gzip-typed body) makes
+           the browser decompress it transparently, and this code would then be handed plain JSON
+           and fail on it. GitHub Pages does the latter, but "which one does my CDN do" is not a
+           thing to encode as an assumption when the gzip magic number answers it directly. */
+        const bytes=new Uint8Array(await r.arrayBuffer());
+        let text;
+        if(bytes[0]===0x1f&&bytes[1]===0x8b){
+          if(typeof DecompressionStream!=='function') throw new Error('DecompressionStream unavailable');
+          text=await new Response(new Blob([bytes]).stream()
+            .pipeThrough(new DecompressionStream('gzip'))).text();
+        } else { text=new TextDecoder().decode(bytes); }
+        const doc=JSON.parse(text);
+        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length,langs:doc.langs||[]};
         _worldRows=_rowsFrom(doc);
       }catch(e){ _worldRows=[]; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
       try{ window.dispatchEvent(new Event('intmap-gazetteer-world')); }catch(_){}
@@ -442,12 +478,27 @@ window.IntMapGazetteer=(function(){
      js/app-body.js, which could only ever see the two synchronous ones; it is here now because THIS
      file is what knows when a third arrives. Memoised, invalidated exactly once (when the world rows
      land), so `HOST.BUILTIN_GAZETTEER` stays the free property read every caller treats it as. */
+  /* ⚠ (#R208) THE MATCHER-SHAPED INDEX TAKES THE HEAD OF THE WORLD LIST, NOT ALL OF IT.
+     This index is the LEGACY, pre-#R161 path: js/news-context.js compiles a RegExp per term from it
+     into `geoDB` and then SCANS that per news item, and js/search-geocode.js walks it (with a
+     Levenshtein per word) per query. At #R198's 15,048 rows that was affordable. At 148,083 it is
+     not: MEASURED, the boot stopped finishing at all — building a few hundred thousand RegExp
+     objects on the main thread hangs the page, and it surfaced as `RangeError: Maximum call stack
+     size exceeded` from a `push(...src[type])` two files away before it even got that far.
+
+     The growth belongs to the DETERMINISTIC locator, which indexes it properly (hashed n-grams, a
+     CJK scanner, ambiguity resolution) and gets the whole list through `world()`. Handing the same
+     148,083 rows to a bag-of-words matcher would not only cost that — it would make it WORSE, since
+     a thousand-person village name is exactly the false positive #R161 replaced it to avoid.
+     The rows are sorted by population, so the cap keeps the places a publisher string might name. */
+  const INDEX_WORLD_CAP=15000;
   let _index=null;
   function index(){
     if(_index) return _index;
     const acc={};
-    const feed=(rows)=>{ for(const [type,terms,lng,lat,en,jp] of rows){ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
-    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows);
+    const feed=(rows,cap)=>{ const n=cap==null?rows.length:Math.min(cap,rows.length);
+      for(let i=0;i<n;i++){ const [type,terms,lng,lat,en,jp]=rows[i]; (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
+    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows,INDEX_WORLD_CAP);
     _index=acc; return acc;
   }
   try{ window.addEventListener('intmap-gazetteer-world',()=>{ _index=null; }); }catch(_){}

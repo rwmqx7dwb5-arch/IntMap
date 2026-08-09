@@ -52,6 +52,7 @@ Layers cover areas including:
 * International organizations and regional groupings
 * Military expenditure, nuclear sites, front lines, and strategic infrastructure
 * Live aircraft and optional live ship traffic — click an aircraft for a photograph of that airframe, its full ADS-B readout, and a one-click flight from its own position, altitude, heading and airspeed
+* Ocean surface currents, named and drawn as arrows sized by measured speed, with warm and cold currents separated by their poleward flow rather than by assumption
 * Satellite and Earth-observation data
 
 Layers can be combined rather than viewed in isolation. For example, you can place population density over terrain, compare railway networks with economic indicators, or examine a current event alongside the geography and infrastructure surrounding it.
@@ -146,7 +147,7 @@ IntMap also includes less serious, experimental ways to explore the world.
 
 Fly an aircraft directly over the same globe, terrain, and geographic environment used by IntMap.
 
-You can also start a flight from a real aeroplane: click any aircraft in the live traffic layer and take off from exactly where it is, at its reported altitude, on its heading, at its airspeed.
+You can also start a flight from a real airplane: click any aircraft in the live traffic layer and take off from exactly where it is, at its reported altitude, on its heading, at its airspeed.
 
 The simulator is under active development and is not intended to match a dedicated professional flight simulator. Desktop use is recommended.
 
@@ -159,6 +160,17 @@ A satellite-based geography challenge that places you somewhere on land and asks
 Test geographic knowledge directly through the map.
 
 Other experimental features may appear, change substantially, or be removed as development continues.
+
+## Beyond the map
+
+Keep zooming out and the map does not stop at the edge of the world. There is no button: the same
+gesture carries the Earth you were looking at into the solar system, at the same size, showing the
+same face, at the same instant — and back again the same way.
+
+* The Sun, the eight planets, Pluto and the Moon, positioned from published orbital elements rather than drawn to look right
+* 177 satellites of the other planets, each propagated in the reference plane its own published elements declare
+* Stars placed at their measured distances from Hipparcos parallaxes, so pulling far enough away actually changes the constellations. Where a parallax is not usable — about four percent are negative, which is measurement noise, not a nearby star — the star is placed at the furthest distance that *was* measured and reported as a lower bound rather than invented
+* The sky from a point on the ground: right-click anywhere for the view from there at any date and time, with the real horizon computed from terrain, so mountains hide the stars they actually hide
 
 ## Interface
 
