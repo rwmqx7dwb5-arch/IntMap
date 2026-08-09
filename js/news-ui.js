@@ -59,7 +59,12 @@ window.IntMapModules.newsUi=function(HOST){
       savedAt:Date.now(), fromSnapshot:true };
     snapWrite(o); }
   function snapForget(link){ const o=snapAll(); if(link in o){ delete o[link]; snapWrite(o); } }
-  window.IntMapNewsSaved={
+  /* WARN (#R210) PUBLISHED FROM A FUNCTION, NOT FROM THE FACTORY BODY. tests/r168-checks #4
+     requires that a factory body only DECLARES — an assignment here would run the moment the
+     factory is instantiated, which is the #R167 dead-zone trap this project has paid for twice.
+     renderUI() and appendNewsBatch() both call it and both are idempotent, so the global exists
+     before anything asks for it (computeFilteredNews guards with && either way). */
+  function publishSaved(){ if(window.IntMapNewsSaved) return; window.IntMapNewsSaved={
     put:snapPut, forget:snapForget, all:snapAll,
     /* Fill in a title for links the account knows about but this browser has never drawn. */
     seed(rows){ try{ const o=snapAll(); let n=0;
@@ -75,7 +80,7 @@ window.IntMapModules.newsUi=function(HOST){
         return extra.length?(feed||[]).concat(extra):(feed||[]);
       }catch(_){ return feed||[]; }
     }
-  };
+  }; }
 
   const tzOpt=()=>(HOST.userTZ==='auto'?undefined:HOST.userTZ);
 
@@ -385,7 +390,7 @@ window.IntMapModules.newsUi=function(HOST){
     });
     return feats; }catch(_){ return feats; } }
 
-  function renderUI(){
+  function renderUI(){ publishSaved();
     const feed=document.getElementById('live-news-feed'),
           cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
@@ -514,7 +519,7 @@ window.IntMapModules.newsUi=function(HOST){
     if(!failed) HOST.aiToast(hit? HOST.t('aiGeoDone').replace('{n}',hit) : HOST.t('aiGeoNone'));
   }
 
-  function appendNewsBatch(){
+  function appendNewsBatch(){ publishSaved();
     const feed=document.getElementById('live-news-feed');
     const next=HOST.newsFiltered.slice(HOST.renderedCount, HOST.renderedCount+HOST.NEWS_BATCH);
     next.forEach(item=>{
