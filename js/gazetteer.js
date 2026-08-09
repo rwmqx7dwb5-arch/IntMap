@@ -382,8 +382,19 @@ window.IntMapGazetteer=(function(){
      coordinates, hand-written Japanese, and a type (`flashpoint` outranks `city` outranks `country`)
      that the scorer depends on. Ten times that many rows cannot be written by hand and should not
      be — so the rest of the world arrives from the published sources instead, built by
-     scripts/build-gazetteer.mjs (GeoNames CC BY 4.0 for the places, Wikidata CC0 for the names in
-     ja/de/ru/es) and read here.
+     scripts/build-gazetteer.mjs (GeoNames CC BY 4.0, cities1000 for the places and
+     alternateNamesV2 for the names) and read here.
+
+     ══ (#R208) 15,048 → 148,083 ROWS, AND THE FILE IS NOW GZIPPED ═══════════════════════════════
+     「cities1000相当15万件、圧縮して数MB、クライアント同梱」. Ten times the rows is 9.0 MB of JSON,
+     which is not a thing to put on a phone's network — gzipped it is 3.93 MB, and the browser
+     un-gzips it with DecompressionStream. ⚠ Serving it with Content-Encoding would NOT be the same
+     thing: the artefact has to be a few MB in the repository as well, and a static host that
+     declines to encode a response would silently ship all 9 MB.
+     ⚠ A browser without DecompressionStream gets the curated 334 rows and no long tail, which is
+     the same degraded-but-correct state as an offline session (see the catch in `warm`). It is not
+     a case worth a second uncompressed copy of the file: every engine this app already requires
+     (WebGL2 + MapLibre) shipped DecompressionStream years earlier.
 
      ⚠ IT IS FETCHED, NOT BUNDLED, AND THAT IS THE WHOLE DESIGN. #R195 got the startup transfer to
      189 KB; putting a 1 MB table in the module graph would undo that for a feature nobody has
@@ -395,8 +406,9 @@ window.IntMapGazetteer=(function(){
      at BUILD time, so nothing here can move a place the curated table already knows. The rows enter
      the deterministic engine through IntMapNewsGeo.register(), which files them at rank 3 — below
      everything curated — for the same reason. */
-  const WORLD_URL=(function(){ try{ return new URL('data/gazetteer-world.json',
-    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return 'data/gazetteer-world.json'; } })();
+  const WORLD_FILE='data/gazetteer-world.json.gz';
+  const WORLD_URL=(function(){ try{ return new URL(WORLD_FILE,
+    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return WORLD_FILE; } })();
   let _worldRows=null, _worldPromise=null, _worldMeta=null;
   /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
      of twenty thousand are not the same claim about a headline, and the scorer already knows how to
@@ -407,7 +419,14 @@ window.IntMapGazetteer=(function(){
      told is struggling. The file is sorted by population, so the first 6,000 rows are the 6,000 most
      populous places on Earth: the cap costs the smallest towns and nothing else. Same reasoning as
      the #R193 mobile caps on the satellite tile caches. */
-  const MOBILE_CAP=6000;
+  /* ⚠ (#R208) 6,000 → 25,000, AND THE REASON THE CAP EXISTS MOVED. #R198's figure above was about a
+     LONG TASK: one synchronous register() of the whole list. That is no longer how the rows enter
+     the locator — `registerSlices` below hands them over in slices with a yield between, so the
+     main thread is never held for more than a slice however many rows there are, and the cap stops
+     being about jank. What it is about now is MEMORY and index size on a phone: 148,083 rows build
+     ~222,000 Latin index keys, and this app has been told repeatedly that the phone is struggling.
+     25,000 is the head of a list sorted by population, i.e. every place above ~20,000 people. */
+  const MOBILE_CAP=25000;
   function _isMobile(){ try{ return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){ return false; } }
   function _rowsFrom(doc){
     const out=[], cap=_isMobile()?MOBILE_CAP:Infinity;
@@ -429,8 +448,21 @@ window.IntMapGazetteer=(function(){
       try{
         const r=await fetch(WORLD_URL,{cache:'force-cache'});
         if(!r.ok) throw new Error('HTTP '+r.status);
-        const doc=await r.json();
-        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length};
+        /* (#R208) un-gzip in the browser — but DECIDE FROM THE BYTES, not from the file name.
+           ⚠ Whether the body still needs decompressing here depends on the host: a static server
+           that labels `.gz` with `Content-Encoding: gzip` (rather than as a gzip-typed body) makes
+           the browser decompress it transparently, and this code would then be handed plain JSON
+           and fail on it. GitHub Pages does the latter, but "which one does my CDN do" is not a
+           thing to encode as an assumption when the gzip magic number answers it directly. */
+        const bytes=new Uint8Array(await r.arrayBuffer());
+        let text;
+        if(bytes[0]===0x1f&&bytes[1]===0x8b){
+          if(typeof DecompressionStream!=='function') throw new Error('DecompressionStream unavailable');
+          text=await new Response(new Blob([bytes]).stream()
+            .pipeThrough(new DecompressionStream('gzip'))).text();
+        } else { text=new TextDecoder().decode(bytes); }
+        const doc=JSON.parse(text);
+        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length,langs:doc.langs||[]};
         _worldRows=_rowsFrom(doc);
       }catch(e){ _worldRows=[]; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
       try{ window.dispatchEvent(new Event('intmap-gazetteer-world')); }catch(_){}

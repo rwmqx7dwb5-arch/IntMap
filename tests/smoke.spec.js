@@ -242,3 +242,63 @@ test('R207 ⑥ switching the space scale keeps the framing; only the Earth hands
   expect(seen.moonFocus).toBe('moon');
   expect(seen.moonNear, 'with the Moon as the subject, zooming in must not hand the map back').toBe(false);
 });
+
+/* ══ #R208 ═══════════════════════════════════════════════════════════════════════════════════════
+   Appended here rather than given a spec file of their own, for the reason #R207 MEASURED: adding
+   six assertions to this file moved it 29.6 s → 29.2 s, because the assertions are free and the
+   BOOT is the whole price. Everything answerable without a browser is in tests/r208-checks.test.mjs
+   (~1 s, starts nothing); what is left here is what genuinely needs the running application. */
+
+/* ⑦ 「Gazetteer拡張（cities1000相当15万件、圧縮して数MB、クライアント同梱）」 — end to end: the
+   compressed artefact is fetched over HTTP, un-gzipped by the browser, and reaches the locator.
+   ⚠ Driven through the module's own `warm()` so this tests the shipped path, not a re-implementation
+   of it; a host that served the file with Content-Encoding would be caught here and nowhere else. */
+test('R208 ⑦ the gzipped world gazetteer loads in the browser and reaches the locator', async () => {
+  const r = await page.evaluate(async () => {
+    const G = window.IntMapGazetteer;
+    if (!G || !G.warm) return { skip: true };
+    const rows = await G.warm();
+    const meta = G.worldMeta && G.worldMeta();
+    return { skip: false, rows: (rows || []).length, url: G.worldUrl,
+      count: meta && meta.count, attribution: meta && meta.attribution, langs: (meta && meta.langs) || [] };
+  });
+  test.skip(!!r.skip, 'no gazetteer module in this build');
+  expect(r.url, 'the client asks for the compressed artefact').toMatch(/gazetteer-world\.json\.gz$/);
+  expect(r.count, 'all 148k rows arrived — DecompressionStream really ran').toBeGreaterThan(120000);
+  expect(r.rows, 'and were converted for the locator').toBeGreaterThan(0);
+  expect(r.attribution, 'the source travels with the data (standing instruction 4)').toMatch(/GeoNames/);
+  expect(r.langs.length, 'the languages it carries are declared').toBeGreaterThanOrEqual(10);
+});
+
+/* ⑧ 「太陽系外のはるか遠くまでズームアウト」. The stars are no longer painted on a shell that
+   follows the camera; they sit at the distances the Hipparcos parallaxes measure, so flying out
+   actually goes somewhere. Asked through the module's state rather than by counting pixels — the
+   claim is about the mechanism, and #R203 spent a round learning that a pixel count answers a
+   different question. */
+test('R208 ⑧ the space camera can leave the solar system, and the stars have real depth', async () => {
+  const s = await page.evaluate(async () => {
+    const S = window.IntMapSpace;
+    if (!S || !S.state || !S.open) return { skip: true };
+    await S.open();
+    const t0 = Date.now();
+    /* the catalogue is fetched on first draw; wait for the field rather than sleeping for it */
+    while (Date.now() - t0 < 20000 && !S.state().starDepth) await new Promise((r) => setTimeout(r, 200));
+    S.setScale && S.setScale('real');
+    const real = S.state();
+    S.setScale && S.setScale('model');
+    const model = S.state();
+    S.close && S.close();
+    return { skip: false, real, model };
+  });
+  test.skip(!!s.skip, 'the space explorer exposes no state surface in this build');
+  expect(s.real.starDepth, 'the stars are placed from their measured parallaxes').toBe(true);
+  /* 1 pc = 206,264.8 AU and the nearest star is 1.34 pc, so a true-scale ceiling below ~276,000
+     cannot reach ANY star — 10,000 AU (the old literal) is inside the Oort cloud. */
+  expect(s.real.distCeil, 'true scale must reach past the nearest star').toBeGreaterThan(276000 * 2);
+  expect(s.real.starFarEdge, 'and the star field extends at least that far').toBeGreaterThan(276000);
+  /* model scale compresses distance by the same power law it applies to the planets — if the stars
+     used raw AU there, the whole solar system would collapse into one pixel */
+  expect(s.model.distCeil, 'the model-scale ceiling is the compressed one').toBeLessThan(s.real.distCeil);
+  expect(s.model.starFarEdge).toBeLessThan(s.real.starFarEdge);
+  expect(s.model.starFarEdge, 'and is still the outermost thing in the scene').toBeGreaterThan(0);
+});

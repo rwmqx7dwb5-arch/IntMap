@@ -32,6 +32,35 @@ window.IntMapModules.newsContext=function(HOST){
   function isCJKTerm(term){ return /[　-鿿]/.test(term); }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=window.IntMapTables;
+  /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
+     ⚠ A `function` DECLARATION, not a `const` arrow: rebuildGeoIndex() is defined above this point
+     and calls it, and #R200 lost a whole boot to exactly that shape (a const initialised later is
+     in its temporal dead zone for every earlier reader, and the failure is silent).
+     Runs at most once — a second call while one is in flight is a no-op, because the only caller is
+     re-entered by its own completion event. */
+  let _sliceRunning=false, _sliceDone=false;
+  function registerSlices(rows){
+    if(_sliceRunning||_sliceDone) return;
+    _sliceRunning=true;
+    const NG=window.IntMapNewsGeo, SLICE=4000;
+    /* a yield the browser can schedule around: `scheduler.yield()` where it exists (it keeps the
+       task queue's priority), otherwise a macrotask — NOT `await Promise.resolve()`, which is a
+       microtask and would run the whole list inside one task exactly as before. */
+    const yieldToBrowser=()=>{
+      try{ if(window.scheduler&&typeof window.scheduler.yield==='function') return window.scheduler.yield(); }catch(_){}
+      return new Promise(res=>setTimeout(res,0));
+    };
+    (async()=>{
+      for(let i=0;i<rows.length;i+=SLICE){
+        try{ NG.register(rows.slice(i,i+SLICE).map(([type,terms,lng,lat,en,jp])=>
+          ({ terms, lng, lat, type, name_en:en, name_jp:jp }))); }catch(_){}
+        if(i+SLICE<rows.length) await yieldToBrowser();
+      }
+      _sliceRunning=false; _sliceDone=true;
+      try{ window.dispatchEvent(new CustomEvent('intmap-newsgeo-world-ready',{detail:{rows:rows.length}})); }catch(_){}
+    })();
+  }
+
   /* Rebuild the flat geoDB + per-term matchers from geoRaw. Called after the
      Supabase geo_pins load (and on realtime updates). */
   function rebuildGeoIndex(){
@@ -88,7 +117,15 @@ window.IntMapModules.newsContext=function(HOST){
             try{ window.addEventListener('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} },{once:true}); }catch(_){} }
           GZ.warm(); }
         else if(w&&w.length&&window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
-          window.IntMapNewsGeo.register(w.map(([type,terms,lng,lat,en,jp])=>({ terms, lng, lat, type, name_en:en, name_jp:jp })));
+          /* ⚠ (#R208) IN SLICES, BECAUSE THERE ARE NOW 148,083 OF THEM. MEASURED at 3.7 ms per
+             1,000 rows, one call is ~550 ms of unbroken main thread on a desktop and several times
+             that on a phone — a long task in the middle of a news pass. The rows are handed over
+             a slice at a time with a yield between, so no single task is long; `register()` is
+             idempotent by construction (its REGISTERED signature set), so a slice that runs twice
+             adds nothing, and a locate() that lands mid-way sees fewer places rather than wrong
+             ones. `intmap-newsgeo-world-ready` fires when the last slice lands, for anything that
+             wants to ask again with the whole tail present. */
+          registerSlices(w);
         }
       } }catch(_){}
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */

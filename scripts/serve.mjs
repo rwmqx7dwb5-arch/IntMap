@@ -32,6 +32,10 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8',
   '.map': 'application/json; charset=utf-8', '.wasm': 'application/wasm',
   '.pbf': 'application/x-protobuf',
+  /* (#R208) data/gazetteer-world.json.gz is a gzip-typed BODY, not a gzip-ENCODED response — the
+     client un-gzips it itself (js/gazetteer.js). Serving it with `Content-Encoding: gzip` instead
+     would make the browser decompress it first and hand the client plain JSON. */
+  '.gz': 'application/gzip',
 };
 
 const server = createServer(async (req, res) => {

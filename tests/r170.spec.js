@@ -12,17 +12,24 @@
 //      to survive all the way to fill-extrusion-base, and with 3-D terrain on it must be REDUCED by
 //      the ground elevation, or the box would float above the mountain instead of above the sea.
 //   3. The requested defaults, observed on a fresh profile: no ticker, no workspace, Countries open.
-import { test, expect } from '@playwright/test';
+import { test, expect, bootPage } from './helpers/app.js';
 
-const boot = async page => {
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
-  await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-};
+/* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
+   used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
+   development machine and 9.2 s on a CI runner with no GPU (#R186), and across the 30 files doing
+   this it came to about 185 boots for 185 questions — 91 % of the suite's measured time sat in
+   them. tests/helpers/app.js carries the measurements, says what sharing a page costs, and names
+   the specs that must NOT do it (the ones whose subject is start-up itself).
+   `app.reset()` runs before every test and restores the app's named start-up view; a test that
+   needs a genuinely untouched application asks for `app.freshPage()` and pays for its own boot.
+   ⚠ `boot` is kept below for any test in this file that still takes its own page — it is the same
+   wait, so a test that has not been converted behaves exactly as it did rather than failing on a
+   name that no longer exists. */
+const boot = async page => { await bootPage(page); };
 
-test('a freshly ticked layer paints promptly even while the map is busy', async ({ page }) => {
+test('a freshly ticked layer paints promptly even while the map is busy', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
 
   const busy = await page.evaluate(async () => {
     // the state the old gate could not handle: tiles in flight, so isStyleLoaded() is false
@@ -60,8 +67,8 @@ test('a freshly ticked layer paints promptly even while the map is busy', async 
   }
 });
 
-test('the layer-state reconciler runs while the map is busy', async ({ page }) => {
-  await boot(page);
+test('the layer-state reconciler runs while the map is busy', async ({ app }) => {
+  const page = app.page;
   // audit() used to early-return on isStyleLoaded(), so the self-heal was asleep exactly when needed
   const ok = await page.evaluate(async () => {
     const m = window.__imap;
@@ -74,8 +81,12 @@ test('the layer-state reconciler runs while the map is busy', async ({ page }) =
   expect(ok.engine).toBe(true);
 });
 
-test('fresh desktop profile: normal mode, Countries open, no ticker', async ({ page }) => {
-  await boot(page);
+test('fresh desktop profile: normal mode, Countries open, no ticker', async ({ app }) => {
+  /* ⚠ (#R208) THE ONE TEST IN THIS FILE THAT MUST NOT SHARE THE PAGE. Its subject is the state a
+     FRESH profile starts in — the words are in its own title — and a page that other tests have
+     already driven cannot answer that whatever the reset puts back. So it asks for its own boot and
+     pays for it; the other eight in this file no longer do. */
+  const page = await app.freshPage();
   await page.waitForTimeout(2500);
   const st = await page.evaluate(() => ({
     ws: document.body.classList.contains('ws-mode'),
@@ -90,8 +101,8 @@ test('fresh desktop profile: normal mode, Countries open, no ticker', async ({ p
   expect(st.countriesActive, 'the Countries tab must be selected on a fresh boot').toBe(true);
 });
 
-test('the place-search pill sits level with the top-right controls', async ({ page }) => {
-  await boot(page);
+test('the place-search pill sits level with the top-right controls', async ({ app }) => {
+  const page = app.page;
   const box = await page.evaluate(() => {
     const s = document.getElementById('map-search').getBoundingClientRect();
     const c = document.querySelector('.map-controls-top').getBoundingClientRect();
@@ -100,9 +111,9 @@ test('the place-search pill sits level with the top-right controls', async ({ pa
   expect(Math.abs(box.search - box.controls), 'search pill and the view controls should share a row').toBeLessThanOrEqual(6);
 });
 
-test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitudes', async ({ page }) => {
+test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitudes', async ({ app }) => {
   test.setTimeout(150000);
-  await boot(page);
+  const page = app.page;
   await page.evaluate(async () => {
     window.__imap.setProjection({ type: 'mercator' });
     window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 10, pitch: 70, bearing: 0 });
@@ -171,9 +182,9 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
   expect(gone).toBe(false);
 });
 
-test('Atlas can draw a 3-D volume over a named place', async ({ page }) => {
+test('Atlas can draw a 3-D volume over a named place', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
   const res = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'volume3d', place: 'Paris', km: 8, base: 1500, top: 4000 }));
   expect(res.ok).toBe(true);
   expect(res.html).toContain('1,500');
@@ -184,9 +195,9 @@ test('Atlas can draw a 3-D volume over a named place', async ({ page }) => {
   expect(st.areaM2).toBeGreaterThan(5e7);   // an 8 km square is ~64 km²
 });
 
-test('every Companies figure is printed with the date it is from', async ({ page }) => {
+test('every Companies figure is printed with the date it is from', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
   await page.evaluate(() => window.IntMapOS.exec('tab.info', { source: 'test' }));
   await page.waitForSelector('.co-row', { timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -269,9 +280,9 @@ test('a live price is stamped with the quote\'s OWN time, not the fetch time', a
     .toBe(r.expectLocal);
 });
 
-test('the flight simulator pre-flight screen defaults to an airborne start', async ({ page }) => {
+test('the flight simulator pre-flight screen defaults to an airborne start', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
   await page.evaluate(() => window.IntMapFlightSim.setup({}));
   await page.waitForSelector('#fs-setup', { timeout: 20000 });
   const sel = await page.evaluate(() => {

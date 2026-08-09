@@ -71,6 +71,11 @@ window.IntMapModules.space=function(HOST){
     let live=true, timeMs=Date.now(), rate=0, playing=false, lastTick=0;
     let az=0.6, el=0.45, dist=70;           /* orbit camera, scene units */
     let raf=0, prog=null, progLine=null, progPts=null, sphere=null, ring=null, starBuf=null, starN=0;
+    /* (#R208) the same stars as real POINTS rather than as a direction on a shell: `starDir` is the
+       unit vector per star and `starPc` its measured distance in parsecs (0 = the catalogue has no
+       usable parallax). Kept on the CPU because the far view rebuilds a GPU buffer from them only
+       when the camera leaves the solar system, which is rare and not per-frame. */
+    let starPc=null, starDir=null;
     const tex={}, texLoading={};
     let names=null, namesLoading=null;
     let dpr=1, W=0, H=0, lastErr=null, frames=0, lastFpsAt=0, fps=0, sampleReq=null;
@@ -280,10 +285,15 @@ window.IntMapModules.space=function(HOST){
       let url; try{ url=new URL('data/stars.bin',document.baseURI).toString(); }catch(_){ url='data/stars.bin'; }
       fetch(url).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); }).then(buf=>{
         const dv=new DataView(buf); let magic=''; for(let i=0;i<7;i++) magic+=String.fromCharCode(dv.getUint8(i));
-        if(magic!=='IMSTAR1') throw new Error('bad catalogue header');
+        /* (#R208) the stride comes from the magic — see js/space-sky.js. IMSTAR2 also carries the
+           measured parallax, which is what lets this view leave the solar system: `starPc` below is
+           the real distance in parsecs, and 0 means the catalogue has no usable parallax for that
+           star (⚠ NOT "at the origin"). */
+        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalogue header');
+        const STRIDE=(magic==='IMSTAR2')?8:6;
         const n=dv.getUint32(8,true);
-        const pos=new Float32Array(n*3), col=new Float32Array(n*4); let k=0;
-        for(let i=0;i<n;i++){ const o=12+i*6;
+        const pos=new Float32Array(n*3), col=new Float32Array(n*4), pc=new Float32Array(n); let k=0;
+        for(let i=0;i<n;i++){ const o=12+i*STRIDE;
           const ra=dv.getUint16(o,true)*360/65536*D2R, dec=dv.getInt16(o+2,true)*90/32767*D2R;
           const mag=dv.getUint8(o+4)/20-2;
           if(mag>6.5) continue;                      /* the naked-eye sky — 9,000 of the 99,000 */
@@ -294,13 +304,56 @@ window.IntMapModules.space=function(HOST){
           col[k*4]=Math.min(1,1.05-0.18*t); col[k*4+1]=Math.min(1,0.98-0.05*Math.abs(t-0.3));
           col[k*4+2]=Math.min(1,0.85+0.28*(0.4-t));
           col[k*4+3]=Math.max(0.12,Math.min(1,(6.6-mag)/6.2));
+          /* parallax (mas × 10) → parsecs. 0 stays 0 and MEANS "not measured well enough". */
+          const plx=(STRIDE===8)?dv.getUint16(o+6,true)/10:0;
+          pc[k]=plx>0?(1000/plx):0;
           k++;
         }
         const P=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,P); gl.bufferData(gl.ARRAY_BUFFER,pos.subarray(0,k*3),gl.STATIC_DRAW);
         const C=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,C); gl.bufferData(gl.ARRAY_BUFFER,col.subarray(0,k*4),gl.STATIC_DRAW);
-        starBuf={P,C}; starN=k;
+        starBuf={P,C}; starN=k; starPc=pc.subarray(0,k); starDir=pos.subarray(0,k*3);
       }).catch(e=>{ lastErr='stars: '+((e&&e.message)||e); });
     }
+    /* ══ (#R208) THE STARS AS REAL POINTS, IN THE SCENE'S OWN DISTANCE MAPPING ═══════════════════
+       One parsec is 206,264.806 AU (the definition: the distance at which 1 AU subtends 1 arcsec).
+       The position goes through `posScale` — the SAME mapping the planets use — so true scale puts
+       α Centauri at 276,000 units and model scale compresses it by the same power law that
+       compresses Neptune's orbit. Using real AU here while the planets were compressed would put
+       the whole solar system inside one pixel the moment model scale was selected.
+
+       ⚠ THE STARS WITH NO USABLE PARALLAX GO AT THE FAR EDGE, AND THAT IS A LOWER BOUND RATHER
+       THAN A GUESS. A parallax that Hipparcos could not measure to 2σ is the measurement "further
+       away than this instrument resolves", so placing those stars at the distance of the furthest
+       star that WAS measured states exactly that and no more (standing instruction 4). They are
+       counted in the debug readout rather than blended in silently.
+
+       Rebuilt when the scale changes, because the scale is what the positions are expressed in. */
+    const AU_PER_PC=206264.806;
+    let starFarBuf=null, starFarScale=null, starMaxPc=0, starFarUnknown=0;
+    /* ⚠ (#R208) THE EDGE IS DERIVED FROM THE DATA AND THE CURRENT SCALE, NOT CACHED WITH THE BUFFER.
+       Caching it alongside the positions looks equivalent and is not: `starField()` only rebuilds on
+       the next DRAW, so between a `setScale()` and that frame the edge still described the other
+       scale — and the edge is what the star pass's FAR CLIP PLANE is computed from. Caught by
+       tests/smoke.spec.js ⑧, which read 80,729 (a model-scale figure) where true scale had to be
+       past 276,000. `starMaxPc` is the measurement; the mapping is applied when asked. */
+    function starFarEdgeNow(){ return starMaxPc>0?posScale(starMaxPc*AU_PER_PC):1e5; }
+    function starField(){
+      if(!starPc||!starDir||!starN) return null;
+      if(!starMaxPc){ for(let i=0;i<starN;i++) if(starPc[i]>starMaxPc) starMaxPc=starPc[i]; }
+      if(!(starMaxPc>0)) return null;
+      if(starFarBuf&&starFarScale===scale) return starFarBuf;
+      const p=new Float32Array(starN*3); let unknown=0;
+      for(let i=0;i<starN;i++){
+        const pc=starPc[i]>0?starPc[i]:(unknown++,starMaxPc);
+        const u=posScale(pc*AU_PER_PC);
+        p[i*3]=starDir[i*3]*u; p[i*3+1]=starDir[i*3+1]*u; p[i*3+2]=starDir[i*3+2]*u;
+      }
+      if(starFarBuf&&starFarBuf.P) try{ gl.deleteBuffer(starFarBuf.P); }catch(_){}
+      const P=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,P); gl.bufferData(gl.ARRAY_BUFFER,p,gl.STATIC_DRAW);
+      starFarBuf={P,C:starBuf.C}; starFarScale=scale; starFarUnknown=unknown;
+      return starFarBuf;
+    }
+
     function loadNames(){
       if(names||namesLoading) return;
       namesLoading=true;
@@ -432,16 +485,31 @@ window.IntMapModules.space=function(HOST){
       octx.setTransform(1,0,0,1,0,0); octx.clearRect(0,0,W,H);
       const labels=[];
 
-      /* stars, at infinity: drawn with the rotation only, so they do not move when the camera does */
+      /* ══ (#R208) THE STARS ARE WHERE THEY ARE, NOT ON A SHELL ═══════════════════════════════════
+         「太陽系外のはるか遠くまでズームアウト」. #R186 put the stars on a sphere of radius
+         `max(dist*400, 1e5)` and rotated it — the standard trick for a sky, and it is exactly what
+         makes leaving the solar system impossible: every star stays the same angular distance from
+         every other one however far the camera travels, so flying outwards shows nothing new.
+
+         With IMSTAR2 the catalogue carries the measured parallax, so each star can go at its real
+         distance and the perspective divide does the rest. ⚠ AND NOTHING IS LOST CLOSE IN: α
+         Centauri is 276,000 AU away, so at a camera distance of 70 AU its parallax is 0.015° — a
+         fifth of a pixel. The shell was never doing anything the real geometry does not do; it was
+         working around the FAR CLIP PLANE, which `camera()` sets at `dist*2000` for the planets.
+         So the stars get their own projection with a far plane that reaches them, drawn first with
+         depth writes off exactly as before. */
       if(starBuf&&starN){
         gl.depthMask(false);
         const far=Math.max(dist*400,1e5);
-        const M=mMul(cam.VP,mScale(far));
+        const fb=starField();
+        const M=fb ? mMul(mMul(mPersp(45*D2R, W/Math.max(1,H), Math.max(1e-7,dist*1e-4),
+                                      Math.max(dist*2000, starFarEdgeNow()*1.2)), cam.V), mIdent())
+                   : mMul(cam.VP,mScale(far));
         gl.useProgram(progPts);
         gl.uniformMatrix4fv(gl.getUniformLocation(progPts,'uMVP'),false,M);
         gl.uniform1f(gl.getUniformLocation(progPts,'uSz'),2.2*dpr);
         const aP=gl.getAttribLocation(progPts,'aP'), aC=gl.getAttribLocation(progPts,'aC');
-        gl.bindBuffer(gl.ARRAY_BUFFER,starBuf.P); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP,3,gl.FLOAT,false,0,0);
+        gl.bindBuffer(gl.ARRAY_BUFFER,(starField()||starBuf).P); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP,3,gl.FLOAT,false,0,0);
         gl.bindBuffer(gl.ARRAY_BUFFER,starBuf.C); gl.enableVertexAttribArray(aC); gl.vertexAttribPointer(aC,4,gl.FLOAT,false,0,0);
         gl.drawArrays(gl.POINTS,0,starN);
         gl.depthMask(true);
@@ -874,7 +942,7 @@ window.IntMapModules.space=function(HOST){
         const after=systemDist();
         const k=(isFinite(before)&&before>0&&isFinite(after)&&after>0)?(after/before):1;
         const d=dist*k;
-        dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(1e4,d)):after;
+        dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(distCeil(),d)):after;
       }
       refreshHUD();
       return true;
@@ -904,11 +972,11 @@ window.IntMapModules.space=function(HOST){
         /* (#R201) the same integral as the map's, mirrored: a zoom-IN the camera has nowhere left to
            spend is how you come back down, so the way out and the way in are the one gesture. */
         if(e.deltaY<0) pushIn(Math.min(0.5,-e.deltaY/300));
-        dist=Math.max(mode==='body'?1.02:(scale==='real'?1e-5:0.02), Math.min(mode==='body'?60:1e4, dist*Math.exp(e.deltaY*0.0012))); },{passive:false});
+        dist=Math.max(mode==='body'?1.02:(scale==='real'?1e-5:0.02), Math.min(distCeil(), dist*Math.exp(e.deltaY*0.0012))); },{passive:false});
       ov.addEventListener('touchmove',(e)=>{ if(e.touches.length===2){ e.preventDefault();
         const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
         if(pinch){ if(d>pinch) pushIn(Math.log2(d/pinch));
-          dist=Math.max(mode==='body'?1.02:0.02,Math.min(mode==='body'?60:1e4,dist*pinch/d)); }
+          dist=Math.max(mode==='body'?1.02:0.02,Math.min(distCeil(),dist*pinch/d)); }
         pinch=d; } },{passive:false});
       ov.addEventListener('touchend',()=>{ pinch=0; });
       /* clicking a body focuses it — the same list the sidebar shows */
@@ -998,7 +1066,7 @@ window.IntMapModules.space=function(HOST){
         try{
           const R=radScale(EPH().body('earth').rKm);
           const d=R*FOVK()/o.match.r;
-          if(isFinite(d)&&d>0) dist=Math.max(distFloor(),Math.min(1e4,d));
+          if(isFinite(d)&&d>0) dist=Math.max(distFloor(),Math.min(distCeil(),d));
         }catch(_){}
       }
       lastFpsAt=performance.now(); frames=0; lastTick=0;
@@ -1140,6 +1208,18 @@ window.IntMapModules.space=function(HOST){
       backTmr=setTimeout(()=>{ backIn=0; },OVER_DECAY);
     }
     function distFloor(){ return mode==='body'?1.02:(scale==='real'?1e-5:0.02); }
+    /* ══ (#R208) HOW FAR OUT THE CAMERA MAY GO — ONE FUNCTION, NOT FOUR LITERALS ══════════════════
+       「太陽系外のはるか遠くまでズームアウト」. The ceiling was `1e4` written out in four places
+       (the wheel, the pinch, and two restore paths), and in true scale that is 10,000 AU — still
+       inside the Oort cloud, a twenty-eighth of the way to the nearest star. So "zoom out past the
+       solar system" was not a rendering problem first, it was a clamp.
+       REACH_AU is 10 million AU ≈ 48 parsecs: far enough that the Sun is one star among the local
+       neighbourhood, and bounded rather than infinite because past the catalogue's own reach there
+       would be nothing left to draw and the view would be a lie. It goes through `posScale` for the
+       same reason the stars do — model scale expresses distance differently, and a raw AU ceiling
+       would mean something different in each. */
+    const REACH_AU=1e7;
+    function distCeil(){ return mode==='body'?60:posScale(REACH_AU); }
 
     /* ══ (#R203) THE CROSSING IS A SIZE, AND BOTH SIDES CAN STATE IT ═════════════════════════════════
        「宇宙を探索での地球をはるかにズームインして普通の地球に戻るのではなく、同じサイズで戻るようにしろ。
@@ -1319,6 +1399,12 @@ window.IntMapModules.space=function(HOST){
       _sample:(w,h)=>new Promise((res)=>{ if(!open||!gl){ res(null); return; } sampleReq={w:w||240,h:h||160,res}; }),
       state:()=>({ open, mode, focus, scale, live, when:new Date(nowMs()).toISOString(), rate, playing,
         dist:+dist.toFixed(5), fps, stars:starN, names:names?Object.keys(names).length:0,
+        /* (#R208) the interstellar view, reportable rather than only visible: how far the camera may
+           go in the current scale, whether the stars are being drawn at their measured distances,
+           and how many of them the catalogue could not place (those sit at the far edge — see
+           starField()). A test can then assert the mechanism instead of counting bright pixels. */
+        distCeil:+distCeil().toFixed(3), starDepth:!!(starPc&&starDir&&starFarBuf),
+        starFarEdge:+starFarEdgeNow().toFixed(1), starsWithoutParallax:starFarUnknown,
         textures:Object.keys(tex).length, overzoom:+over.toFixed(3), overTrigger:OVER_TRIGGER,
         gaugeVisible:!!(gauge&&gauge.style.opacity==='1'), atNearLimit:atNearLimit(),
         atFloor:atFloor(), err:lastErr })

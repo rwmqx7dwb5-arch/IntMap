@@ -127,22 +127,52 @@ function parseHIP(text) {
     if (!Number.isFinite(ra) || !Number.isFinite(dec) || !Number.isFinite(v)) continue;
     if (v > MAG_LIMIT) continue;
     const bv = parseFloat(f[37]);
+    /* ══ (#R208) HOW FAR AWAY, WHICH THIS CATALOGUE KNEW ALL ALONG ══════════════════════════════
+       「背景の宇宙空間をより忠実に。太陽系外へ出す絵にするなら Hipparcos の視差からカタログを
+         作り直すところから」. #R186 and #R187 kept RA/Dec/V/B−V and dropped the rest, which is
+       everything a sky PAINTED ON A SPHERE needs — but a camera that leaves the solar system needs
+       to know which dots are near and which are far, and no rearrangement of a 2-D sky can invent
+       that. It does not need a different catalogue: I/239 field 11 IS the measured parallax and 16
+       its standard error, in milliarcseconds.
+       ⚠ AND A PARALLAX IS NOT ALWAYS A DISTANCE. Hipparcos parallaxes have σ ≈ 1 mas, so a good
+       fraction of the faint end is at or below the noise, and about 4 % are NEGATIVE — which is a
+       real measurement of a star further away than the errors can resolve, not an error to
+       discard silently and not a licence to put the star somewhere plausible. Anything with a
+       non-positive parallax, or one under 2σ, is marked UNKNOWN (plx = 0) and the renderer places
+       it on the far shell rather than at a fabricated distance (standing instruction 4). */
+    const plx = parseFloat(f[11]), ePlx = parseFloat(f[16]);
+    const usable = Number.isFinite(plx) && plx > 0
+      && (!Number.isFinite(ePlx) || ePlx <= 0 || plx / ePlx >= 2);
     out.push({ ra: ((ra % 360) + 360) % 360, dec: Math.max(-90, Math.min(90, dec)), v,
-               bv: Number.isFinite(bv) ? bv : 0.6 });
+               bv: Number.isFinite(bv) ? bv : 0.6, plx: usable ? plx : 0 });
   }
   return out;
 }
 
+/* ══ (#R208) IMSTAR2 — the same six bytes, plus the parallax ═══════════════════════════════════
+     offset  type      meaning
+     0       char[8]   "IMSTAR2\0"
+     8       uint32LE  star count N
+     12+8i   uint16LE  RA        · degrees × 65536/360
+     14+8i   int16LE   Dec       · degrees × 32767/90
+     16+8i   uint8     V mag     · (V + 2) × 20, clamped
+     17+8i   int8      B−V       · (B−V) × 50, clamped
+     18+8i   uint16LE  parallax  · milliarcseconds × 10 · ⚠ ZERO MEANS UNKNOWN, NOT ZERO DISTANCE
+   The stride is derived from the magic, so a reader can serve both versions and an old file keeps
+   working (js/space-sky.js, js/space.js). 0.1 mas of resolution is a tenth of the catalogue's own
+   σ ≈ 1 mas, so the quantisation is well inside the measurement it stores; the ceiling of 6,553 mas
+   is nine times the largest parallax in the sky (Proxima, 768 mas). */
 function encode(stars) {
-  const buf = Buffer.alloc(12 + stars.length * 6);
-  buf.write('IMSTAR1\0', 0, 'latin1');
+  const buf = Buffer.alloc(12 + stars.length * 8);
+  buf.write('IMSTAR2\0', 0, 'latin1');
   buf.writeUInt32LE(stars.length, 8);
   stars.forEach((s, i) => {
-    const o = 12 + i * 6;
+    const o = 12 + i * 8;
     buf.writeUInt16LE(Math.min(65535, Math.round(s.ra * 65536 / 360)) & 0xffff, o);
     buf.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(s.dec * 32767 / 90))), o + 2);
     buf.writeUInt8(Math.max(0, Math.min(255, Math.round((s.v + 2) * 20))), o + 4);
     buf.writeInt8(Math.max(-128, Math.min(127, Math.round(s.bv * 50))), o + 5);
+    buf.writeUInt16LE(Math.max(0, Math.min(65535, Math.round((s.plx || 0) * 10))), o + 6);
   });
   return buf;
 }
@@ -163,15 +193,29 @@ const main = async () => {
   const bin = encode(stars);
   fs.mkdirSync(OUT_DIR, { recursive: true });
   fs.writeFileSync(path.join(OUT_DIR, 'stars.bin'), bin);
+  const withPlx = stars.filter((s) => s.plx > 0);
+  const dists = withPlx.map((s) => 1000 / s.plx).sort((a, b) => a - b);
   const manifest = {
-    format: 'IMSTAR1', count: stars.length, bytes: bin.length,
+    format: 'IMSTAR2', count: stars.length, bytes: bin.length,
     source: used.name,
     url: used.url, built: new Date().toISOString(),
     magnitude: { min: +stars[0].v.toFixed(2), max: +stars[stars.length - 1].v.toFixed(2) },
-    epoch: 'J2000.0', fields: ['ra_deg', 'dec_deg', 'vmag', 'b_v'],
+    /* (#R208) how much of the catalogue can actually be placed in depth, stated rather than implied */
+    parallax: {
+      withDistance: withPlx.length,
+      unknown: stars.length - withPlx.length,
+      note: 'plx = 0 means no usable parallax (non-positive, or below 2σ) — the renderer puts these '
+          + 'on the far shell rather than at an invented distance',
+      nearest_pc: dists.length ? +dists[0].toFixed(2) : null,
+      median_pc: dists.length ? +dists[Math.floor(dists.length / 2)].toFixed(1) : null,
+    },
+    epoch: 'J2000.0', fields: ['ra_deg', 'dec_deg', 'vmag', 'b_v', 'parallax_mas'],
   };
   fs.writeFileSync(path.join(OUT_DIR, 'stars.json'), JSON.stringify(manifest, null, 2) + '\n');
   console.log('[stars] ' + stars.length + ' stars, ' + bin.length + ' bytes, V ' + manifest.magnitude.min + '…' + manifest.magnitude.max + ' from ' + used.url);
+  console.log('[stars] ' + withPlx.length.toLocaleString() + ' with a usable parallax, '
+    + (stars.length - withPlx.length).toLocaleString() + ' unknown; nearest '
+    + manifest.parallax.nearest_pc + ' pc, median ' + manifest.parallax.median_pc + ' pc');
 };
 
 main().catch((e) => { console.error('[stars] ' + (e && e.stack || e)); process.exit(1); });

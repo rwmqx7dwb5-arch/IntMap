@@ -61,7 +61,29 @@
   var CYR_RE = /[Ѐ-ԯ]/;
   var DIA_RE = /[̀-ͯ]/g;
 
+  /* ══ (#R208) KATAKANA IS WRITTEN AS AN UNBROKEN RUN, AND THAT IS A WORD BOUNDARY ═══════════════
+     The CJK scanner below matches any indexed surface of two or more characters at any position,
+     because Japanese has no spaces. For kanji that is right — 東京 inside 東京都 is the same place.
+     For KATAKANA it is not: a katakana run is one borrowed word, so a place name that begins in the
+     MIDDLE of one is a coincidence of syllables and never a mention. MEASURED against the bundled
+     15,048-row world gazetteer, five of nineteen ordinary Japanese headlines pinned a real city:
+
+         ハンディファン → ディファ (Diffa, Niger)      ワクチン接種 → クチン (Kuching)
+         マイナンバーカード → バー (Barh)              ドライブレコーダー → コーダ (Khordha)
+         プラスチックごみ → ラス (Rath)
+
+     ⚠ U+30FB (・) IS IN THE KATAKANA BLOCK AND IS NOT PART OF A WORD — it is the separator in
+     「ロシア・モスクワ」, so counting it as katakana would reject the very form Japanese uses to
+     write "Moscow, Russia". U+30FC (ー) IS part of one (ニューヨーク), so it must count.
+     ⚠ AND THE GUARD IS LEFT-ONLY. A match that ends early inside a run is sometimes right
+     (パリオリンピック = the Paris Olympics) and sometimes wrong (ニューヨークタイムズ); which of the
+     two it is, is what the TRAP table decides, and it decides it for the Latin spelling already. A
+     match that STARTS inside a run is wrong every time, which is why this side can be a rule
+     rather than a list. */
+  var KATA_RE = /[ァ-ヺー-ヿㇰ-ㇿ]/;   /* deliberately excludes ・ U+30FB */
+
   function hasCJK(s) { return CJK_RE.test(s); }
+  function isKata(ch) { return !!ch && KATA_RE.test(ch); }
   function hasCyr(s) { return CYR_RE.test(s); }
   function stripDia(s) { try { return s.normalize('NFD').replace(DIA_RE, ''); } catch (_) { return s; } }
 
@@ -188,6 +210,17 @@
     return e;
   }
 
+  /* (#R208) is any of these candidate entities a CURATED place rather than a long-tail gazetteer
+     row? ⚠ RANK COUNTS UPWARDS HERE — it is a prominence prior (`score` adds `e.rank * 2` and the
+     tie-break sorts it descending), so the bulk import register() files at 3 is the FLOOR and the
+     hand-written tables sit at 4–7 above it. Getting this backwards is silent: `rank < 3` is true
+     for nothing, so the caller's guard would apply to every place including Paris. */
+  var BULK_RANK = 3;
+  function anyCurated(ids) {
+    for (var q = 0; q < ids.length; q++) { var e = ENTS[ids[q]]; if (e && e.rank > BULK_RANK) return true; }
+    return false;
+  }
+
   function indexSurface(surf, id) {
     if (!surf) return;
     if (hasCJK(surf)) {
@@ -252,11 +285,35 @@
     if (hasCJK(text)) {
       for (i = 0; i < text.length;) {
         if (!CJK_RE.test(text.charAt(i))) { i++; continue; }
+        /* (#R208) …but never START inside a katakana run — see KATA_RE above. Checked before the
+           lookups rather than after a hit, because at such a position EVERY length is invalid: the
+           left boundary depends only on where the match begins, so a shorter surface here would be
+           rejected for the same reason. Skipping the position outright is the same answer, cheaper,
+           and it lets the scan resume at the character after it (a run's own first character is a
+           legitimate start, and that position was already visited). */
+        if (isKata(text.charAt(i)) && isKata(text.charAt(i - 1))) { i++; continue; }
         var chit = null, clen = 0, ckey = '';
         for (len = Math.min(MAXCJK, text.length - i); len >= 2; len--) {
           ckey = text.substr(i, len);
           ids = CIDX.get(ckey);
-          if (ids) { chit = ids; clen = len; break; }
+          if (!ids) continue;
+          /* ══ (#R208) …AND THE RIGHT EDGE, FOR THE LONG TAIL ONLY ═══════════════════════════════
+             The left guard above cannot see 「ドライブレコーダー」 → ドラ (Dorra, Djibouti): the
+             match is at the START of the run, so its left boundary is legitimate. What is wrong is
+             the RIGHT one, and that side cannot be a flat rule, because ending early inside a run is
+             sometimes exactly right (パリオリンピック).
+             What separates the two is not the shape — it is WHICH PLACE. パリ is one of the 334
+             curated rows, i.e. a place world news is about; ドラ is one of 148,083 long-tail rows
+             from the gazetteer build, where a two-character coincidence with the head of a loanword
+             is far likelier than a mention. So the rule is scoped by rank: a LONG-TAIL entity
+             (rank 3, the floor — see anyCurated) must match a COMPLETE katakana run, while a
+             curated one may end inside it and is judged by the TRAP table as before
+             (ニューヨークタイムズ, whose Japanese spelling this round added to that table).
+             ⚠ MEASURED: this is the only false pin left out of 24 ordinary Japanese headlines after
+             the catalogue went 15,048 → 148,083, and it is the class that GROWS with the catalogue,
+             which is why it is worth a rule rather than another trap row. */
+          if (isKata(text.charAt(i)) && isKata(text.charAt(i + len)) && !anyCurated(ids)) continue;
+          chit = ids; clen = len; break;
         }
         if (chit) {
           out.push({ ids: chit, field: field, at: i, end: i + clen, caps: true,
@@ -929,6 +986,15 @@
     'Edinburgh|エディンバラ|GB|SCT|-3.19|55.95|city|6|Эдинбург',
     'Belfast|ベルファスト|GB|NIR|-5.93|54.6|city|6|Белфаст',
     'Cardiff|カーディフ|GB|WLS|-3.18|51.48|city|4|Кардифф',
+    /* ⚠ (#R208) ENGLAND WAS THE ONE OF THE FOUR THAT WAS NOT HERE. Scotland, Wales and Northern
+       Ireland have been curated since #R161 and England never was, so the app could not locate the
+       most-named of them at all — and once the gazetteer went to cities1000 the only thing in the
+       index answering to the name was England, ARKANSAS (population 2,791), which then out-scored
+       Cambridge in 「Cambridge scientists in England publish fusion result」 on the labelled corpus.
+       As an admin1 with the ENG code every English city already carries, the hierarchy rule
+       absorbs it into the city instead of competing with it, which is the behaviour the other
+       three have always had. */
+    'England|イングランド|GB|ENG|-1.5|52.8|admin1|7|Inglaterra;Англи;イングランド地方',
     'Scotland|スコットランド|GB|SCT|-4.2|56.8|admin1|7|Schottland;Escocia;Шотланди;スコットランド地方',
     'Northern Ireland|北アイルランド|GB|NIR|-6.7|54.6|admin1|6|Nordirland;Северная Ирландия',
     'Wales|ウェールズ|GB|WLS|-3.8|52.3|admin1|5|Gales;Уэльс',
@@ -1402,28 +1468,45 @@
                  explicit place is named
              s = seat / bureau → a precise place, not docked            */
   TR.push(
-    /* --- publications & brands that swallow a place name --- */
-    'New York Times;NY Times;NYT;New York Post;New Yorker|x||', 'Washington Post;Washington Examiner;Washington Times|x||',
-    'Los Angeles Times;LA Times|x||', 'Chicago Tribune;Chicago Sun-Times|x||', 'Boston Globe|x||',
-    'Financial Times|x||', 'Wall Street Journal|x||', 'Hollywood Reporter|x||', 'Moscow Times|x||',
-    'Times of India;Times of Israel;Times of Malta|x||', 'South China Morning Post|x||', 'Japan Times|x||',
-    'Jerusalem Post|x||', 'Kyiv Independent;Kyiv Post|x||', 'Korea Herald;Korea Times|x||',
-    'Bangkok Post;Jakarta Post|x||', 'Global Times|x||', 'China Daily|x||', 'Irish Times|x||',
+    /* --- publications & brands that swallow a place name ---
+       ⚠ (#R208) AND IN JAPANESE, WHICH IS THE HALF THAT WAS MISSING. Every row below already knew
+       the Latin spelling; MEASURED against the bundled gazetteer, sixteen of eighteen ordinary
+       Japanese forms of these same names still pinned the city inside them — 「ニューヨークタイムズ
+       が報じた」 → New York, 「パリ協定からの離脱」 → Paris, 「京都議定書」 → Kyoto. The katakana
+       run-start guard in §0 cannot reach these: the place is at the START of the run, so the
+       boundary is legitimate and only a name can say the whole span is not a place. The surfaces go
+       on the EXISTING rows rather than into new ones — a second `o` row for the same seat would
+       make two entities for one city and let them compete with each other. */
+    'New York Times;NY Times;NYT;New York Post;New Yorker;ニューヨークタイムズ;ニューヨーク・タイムズ;NYタイムズ;ニューヨークポスト;ニューヨーク・ポスト;ニューヨーカー|x||',
+    'Washington Post;Washington Examiner;Washington Times;ワシントンポスト;ワシントン・ポスト|x||',
+    'Los Angeles Times;LA Times;ロサンゼルスタイムズ;ロサンゼルス・タイムズ;LAタイムズ|x||',
+    'Chicago Tribune;Chicago Sun-Times;シカゴ・トリビューン|x||', 'Boston Globe;ボストン・グローブ|x||',
+    'Financial Times;フィナンシャルタイムズ;フィナンシャル・タイムズ|x||',
+    'Wall Street Journal;ウォールストリートジャーナル;ウォールストリート・ジャーナル|x||',
+    'Hollywood Reporter|x||', 'Moscow Times;モスクワタイムズ;モスクワ・タイムズ|x||',
+    'Times of India;Times of Israel;Times of Malta|x||',
+    'South China Morning Post;サウスチャイナ・モーニング・ポスト|x||', 'Japan Times;ジャパンタイムズ|x||',
+    'Jerusalem Post;エルサレム・ポスト|x||', 'Kyiv Independent;Kyiv Post|x||', 'Korea Herald;Korea Times|x||',
+    'Bangkok Post;Jakarta Post;バンコクポスト;バンコク・ポスト;ジャカルタポスト|x||',
+    'Global Times|x||', 'China Daily|x||', 'Irish Times|x||',
     'Sydney Morning Herald|x||', 'Toronto Star|x||', 'Buenos Aires Times|x||', 'Brussels Times|x||',
-    'Berlin Wall|x||', 'Great Wall of China|x||', 'Chinese Wall|x||',
+    'Berlin Wall;ベルリンの壁|x||', 'Great Wall of China;万里の長城|x||', 'Chinese Wall|x||',
     'Bank of America;Bank of England;Bank of Japan;Bank of Canada;Bank of Korea|x||',
-    'Boston Consulting Group;Boston Dynamics|x||', 'Manhattan Project|x||',
-    'Paris Agreement;Paris Accord;Paris climate agreement|x||', 'Geneva Convention;Geneva Conventions|x||',
-    'Vienna Convention|x||', 'Kyoto Protocol|x||', 'Chicago Convention|x||', 'Budapest Memorandum|x||',
-    'Minsk agreements;Minsk accords|x||', 'Abraham Accords|x||', 'Good Friday Agreement|x||',
+    'Boston Consulting Group;Boston Dynamics;ボストン・ダイナミクス;ボストンダイナミクス|x||',
+    'Manhattan Project;マンハッタン計画|x||',
+    'Paris Agreement;Paris Accord;Paris climate agreement;パリ協定|x||',
+    'Geneva Convention;Geneva Conventions;ジュネーブ条約;ジュネーヴ条約|x||',
+    'Vienna Convention;ウィーン条約|x||', 'Kyoto Protocol;京都議定書|x||', 'Chicago Convention|x||',
+    'Budapest Memorandum;ブダペスト覚書|x||',
+    'Minsk agreements;Minsk accords;ミンスク合意|x||', 'Abraham Accords;アブラハム合意|x||', 'Good Friday Agreement|x||',
     'Brussels sprouts;Turkey Day;China Sea shipping|x||', 'India Pale Ale|x||',
     'Paris Hilton;Paris Jackson|x||', 'Michael Jordan;Jordan Peterson;Jordan Bardella;Jordan Spieth|x||',
     'Sydney Sweeney|x||', 'Florence Pugh|x||', 'Milan Kundera|x||', 'Denzel Washington|x||',
     'Charlotte Tilbury|x||', 'Austin Butler|x||', 'Madison Square Garden|x||', 'Victoria Beckham|x||',
     'Georgia Meloni;Giorgia Meloni|x||', 'Chad Michael|x||', 'India Today;India Inc|x||',
     'Alexandria Ocasio-Cortez|x||', 'Georgia Tech;Georgia Institute of Technology|x||',
-    'Austin Powers|x||', 'Florence Nightingale|x||', 'Cambridge Analytica|x||', 'Oxford University Press|x||',
-    'Havana syndrome|x||', 'Stockholm syndrome|x||', 'Dutch disease|x||', 'Spanish flu|x||',
+    'Austin Powers|x||', 'Florence Nightingale|x||', 'Cambridge Analytica;ケンブリッジ・アナリティカ|x||', 'Oxford University Press|x||',
+    'Havana syndrome;ハバナ症候群|x||', 'Stockholm syndrome;ストックホルム症候群|x||', 'Dutch disease|x||', 'Spanish flu;スペイン風邪|x||',
     'Mexican standoff|x||', 'Roman Empire|x||', 'Turkey shoot|x||', 'Nice guy|x||',
     /* --- international organisations → their seat --- */
     'United Nations;U.N.;UN Security Council;Security Council;General Assembly;国連;国際連合;Vereinte Nationen;Naciones Unidas;ООН|o|New York|United Nations|国連',
@@ -1515,11 +1598,11 @@
     'ASML|o|Amsterdam|ASML|ASML', 'Ericsson|o|Stockholm|Ericsson|エリクソン',
     'Nokia|o|Helsinki|Nokia|ノキア', 'LVMH|o|Paris|LVMH|LVMH',
     /* --- sports clubs → their home city --- */
-    'Manchester United;Manchester City;Man United;Man City|o|Manchester|Manchester|マンチェスター',
-    'Real Madrid;Atletico Madrid;Atlético Madrid|o|Madrid|Madrid|マドリード',
-    'FC Barcelona;Barça;Barca|o|Barcelona|Barcelona|バルセロナ',
-    'Bayern Munich;FC Bayern|o|Munich|Munich|ミュンヘン',
-    'Paris Saint-Germain;PSG|o|Paris|Paris|パリ',
+    'Manchester United;Manchester City;Man United;Man City;マンチェスター・ユナイテッド;マンチェスターユナイテッド;マンチェスター・シティ;マンチェスターシティ|o|Manchester|Manchester|マンチェスター',
+    'Real Madrid;Atletico Madrid;Atlético Madrid;レアル・マドリード;レアルマドリード;アトレティコ・マドリード|o|Madrid|Madrid|マドリード',
+    'FC Barcelona;Barça;Barca;FCバルセロナ|o|Barcelona|Barcelona|バルセロナ',
+    'Bayern Munich;FC Bayern;バイエルン・ミュンヘン;バイエルンミュンヘン|o|Munich|Munich|ミュンヘン',
+    'Paris Saint-Germain;PSG;パリ・サンジェルマン;パリサンジェルマン|o|Paris|Paris|パリ',
     'Liverpool FC|o|Liverpool|Liverpool|リヴァプール', 'Chelsea FC;Arsenal FC;Tottenham Hotspur|o|London|London|ロンドン',
     'Inter Milan;AC Milan|o|Milan|Milan|ミラノ', 'Juventus|o|Turin|Turin|トリノ',
     'Yankees;New York Knicks;Brooklyn Nets|o|New York|New York|ニューヨーク',
