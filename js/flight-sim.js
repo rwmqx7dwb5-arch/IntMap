@@ -732,12 +732,14 @@ window.IntMapModules.flightSim=function(HOST){
         try{
           const eye=(GE().camera.eye?GE().camera.eye():null); if(!eye||!isFinite(eye.alt)) return;
           const a2=AIRCRAFT[state.ac]||AIRCRAFT[acKey], ceil=(a2&&a2.ceil)||12000;
-          const use=Math.max(150,Math.min(eye.alt,ceil)), capped=eye.alt>ceil;
+          const use=Math.max(150,eye.alt), capped=eye.alt>ceil;   /* (#R210) `capped` now means "above the ceiling", not "was clamped" */
           const p2=(GE().camera.getPitch?GE().camera.getPitch():null);
           const km=(v)=>v>=1000?((v/1000).toFixed(v>=10000?0:1)+' km'):(Math.round(v)+' m');
           const bits=[LL('Start altitude','開始高度','Starthöhe','Высота старта','Altitud inicial')+' '+km(use)
-            +(capped?(' <span style="color:#ffd23f;">('+LL('view is at','視点は','Blick bei','вид на','vista a')+' '+km(eye.alt)+' — '
-              +LL('limited by this aircraft’s ceiling','機体の実用上昇限度で制限','Dienstgipfelhöhe','ограничено потолком','techo de servicio')+')</span>'):'')];
+            /* (#R210) the warning stayed, its claim changed: nothing is limited any more, so it
+               says what will actually happen instead — above the ceiling the aircraft sinks. */
+            +(capped?(' <span style="color:#ffd23f;">('+LL('above this aircraft’s service ceiling','機体の実用上昇限度より上','über der Dienstgipfelhöhe','выше практического потолка','por encima del techo de servicio')
+              +' '+km(ceil)+' — '+LL('it will descend until it has air','空気のある高度まで降下します','sinkt bis in dichtere Luft','будет снижаться до плотного воздуха','descenderá hasta tener aire')+')</span>'):'')];
           if(p2!=null&&isFinite(p2)) bits.push(LL('flight path','飛行経路角','Bahnwinkel','угол наклона','trayectoria')+' '+Math.round(p2-90)+'°');
           _note.innerHTML=bits.join(' · ');
         }catch(_){}
@@ -778,9 +780,17 @@ window.IntMapModules.flightSim=function(HOST){
           try{
             const eye=(GE().camera.eye?GE().camera.eye():null);
             if(eye&&isFinite(eye.alt)&&isFinite(eye.lng)&&isFinite(eye.lat)){
-              const acx=(AIRCRAFT[state.ac]||AC()), ceil=(acx&&acx.ceil)||12000;
+              /* ⚠ (#R210) THE VIEW'S ALTITUDE IS NO LONGER PULLED DOWN TO THE SERVICE CEILING.
+                 「現在視点からフライトシミュレーターを開始する際、一定高度以上は強制的に高度を下げさせ
+                  られるのを辞めて。」 #R190 clamped to `ceil` so the airframe would begin somewhere it
+                 can fly. But a service ceiling is not a wall — it is the altitude above which the
+                 machine cannot SUSTAIN level flight, and the model already knows that: thrust fades
+                 out with density in stepFixed, so an aircraft started above its ceiling simply sinks
+                 until it has air again. Starting where the user is looking and letting the physics
+                 answer is both what was asked for and the more honest of the two behaviours. The
+                 150 m floor stays — that one is not a preference, it is "above the ground". */
               o.lng=eye.lng; o.lat=eye.lat;
-              o.alt=Math.max(150,Math.min(eye.alt,ceil));
+              o.alt=Math.max(150,eye.alt);
               o.keepAlt=true;
             }
             /* ══ (#R188) 「画角も合わせてください。」 ════════════════════════════════════════════════

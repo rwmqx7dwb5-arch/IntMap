@@ -641,7 +641,44 @@ window.IntMapModules.labelPopup=function(HOST){
         GE().layers.add({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
         return true; }catch(_){ return false; }
     }
-    function clearHL(){ try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; }
+    /* ══ (#R210) A RIVER NAME HIGHLIGHTS THE RIVER ═════════════════════════════════════════════════
+       「河川名のラベルをクリックしたら、その河川が線でハイライトされるように。」 A river label is placed
+       ALONG the line it names (#R41 moved it onto the `waterway` layer for exactly that reason), so
+       the geometry is already in the tiles — what was missing is that a click drew nothing, because
+       water/terrain labels pass `noOutline` (they have no polygon, and IntMapOutline draws polygons).
+       A river is a LINE, so it gets a line highlight of its own.
+       ⚠ `querySourceFeatures`, not `queryRenderedFeatures`: the point is to light up the WHOLE river
+       that is loaded, not the one segment under the pointer. Tiles cut a river into many features,
+       so every segment carrying the same name is taken. That is also its limit, stated rather than
+       hidden — a river outside the currently loaded tiles is not in the highlight, and a name shared
+       by two unrelated streams in view would light both. */
+    function ensureRiverHL(){ if(GE().layers.hasSource('river-hl-src')) return true; if(!_imCanDraw()) return false;
+      try{ GE().layers.addSource('river-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        const before=firstSym();
+        GE().layers.add({id:'river-hl-glow',type:'line',source:'river-hl-src',layout:{'line-join':'round','line-cap':'round'},
+          paint:{'line-color':'#00e5ff','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],5,7,12,18]}},before);
+        GE().layers.add({id:'river-hl-line',type:'line',source:'river-hl-src',layout:{'line-join':'round','line-cap':'round'},
+          paint:{'line-color':'#00e5ff','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],5,2.2,12,5]}},before);
+        return true; }catch(_){ return false; } }
+    function clearRiverHL(){ try{ if(GE().layers.hasSource('river-hl-src')) GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    function highlightRiver(name){
+      try{
+        if(!name||!ensureRiverHL()) return;
+        const raw=GE().coords.querySourceFeatures('ofm',{sourceLayer:'waterway'})||[];
+        const want=String(name);
+        const feats=[];
+        for(const f of raw){
+          const p=f&&f.properties||{};
+          const n=p.name||p['name:en']||p.name_en||'';
+          if(n!==want) continue;
+          const g=f.geometry; if(!g||(g.type!=='LineString'&&g.type!=='MultiLineString')) continue;
+          feats.push({type:'Feature',geometry:g,properties:{}});
+          if(feats.length>=4000) break;   /* a long river in loaded tiles is thousands of segments; stop before it costs a frame */
+        }
+        GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:feats});
+      }catch(_){}
+    }
+    function clearHL(){ try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
       /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
          the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
       try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
@@ -789,7 +826,8 @@ window.IntMapModules.labelPopup=function(HOST){
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true})); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
+      _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true});
+        if(f.layer&&f.layer.id==='ofm-river') highlightRiver(name); }); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
     /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
        「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」 #R198 added `ofm-admin1` (prefectures,
        states, provinces) as NAMES only and wrote down that leaving it out of these lists was deliberate.
@@ -826,7 +864,9 @@ window.IntMapModules.labelPopup=function(HOST){
           if(near.length){ const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true}:undefined); return; } }
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true}:undefined);
+              if(lid==='ofm-river') highlightRiver(nm);   /* (#R210) the padded tap is the same click */
+              return; } }
         }
         clearHL();
       }catch(_){} }); });
