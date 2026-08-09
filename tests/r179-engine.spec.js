@@ -11,21 +11,27 @@
 // so all three callers drove it raw — 106 calls in js/compare.js, 8 in js/playground.js, 5 in
 // js/flight-sim.js — and a second engine could not have been given a second view at all. That is now
 // `ui.createSubView`, which returns the SAME contract scoped to the new view.
-import { test, expect } from '@playwright/test';
+import { test, expect, bootPage } from './helpers/app.js';
 
-const boot = async page => {
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
-  await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(1200);
-};
+/* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
+   used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
+   development machine and 9.2 s on a CI runner with no GPU (#R186), and across the 30 files doing
+   this it came to about 185 boots for 185 questions — 91 % of the suite's measured time sat in
+   them. tests/helpers/app.js carries the measurements, says what sharing a page costs, and names
+   the specs that must NOT do it (the ones whose subject is start-up itself).
+   `app.reset()` runs before every test and restores the app's named start-up view; a test that
+   needs a genuinely untouched application asks for `app.freshPage()` and pays for its own boot.
+   ⚠ `boot` is kept below for any test in this file that still takes its own page — it is the same
+   wait, so a test that has not been converted behaves exactly as it did rather than failing on a
+   name that no longer exists. */
+const boot = async page => { await bootPage(page); };
 
 /* ── ① a sub-view IS the contract, scoped ─────────────────────────────────────────────────────
    Not "has some methods": the same sections, so a caller written against the engine works against a
    second view unchanged — and so a Cesium adapter has one shape to implement rather than two. */
-test('ui.createSubView returns the whole contract, scoped to its own view (#R179)', async ({ page }) => {
+test('ui.createSubView returns the whole contract, scoped to its own view (#R179)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const GE = window.IntMapGeoEngine;
     const host = document.createElement('div');
@@ -84,9 +90,9 @@ test('ui.createSubView returns the whole contract, scoped to its own view (#R179
    size is exactly where a silent no-op hides — #R162's lesson is that a `typeof` guard plus a
    try/catch can delete a feature without raising anything — so this asserts the pane's map is
    actually built, actually styled, and actually carrying its base layer. */
-test('the compare pane drives its own view entirely through the contract (#R179)', async ({ page }) => {
+test('the compare pane drives its own view entirely through the contract (#R179)', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const wait = ms => new Promise(res => setTimeout(res, ms));
     if (!(window.IntMapCompare && window.IntMapCompare.open)) return { opened: false };
@@ -127,9 +133,9 @@ test('the compare pane drives its own view entirely through the contract (#R179)
    (`demSource.setupMaplibre(maplibregl)`), and that single call was the last bare `maplibregl`
    identifier outside the adapter. It is `scene.demContourSource` now; this proves the URL it hands
    back is a real protocol URL and that the layers built on it actually appear. */
-test('contour tiles come from the engine, not from the library by name (#R179)', async ({ page }) => {
+test('contour tiles come from the engine, not from the library by name (#R179)', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const GE = window.IntMapGeoEngine, wait = ms => new Promise(res => setTimeout(res, ms));
     const url = GE.scene.demContourSource({
@@ -167,9 +173,9 @@ test('contour tiles come from the engine, not from the library by name (#R179)',
 /* ── ④ renderer-owned UI is attached to a VIEW, not to a handle ───────────────────────────────
    `ui.marker(o)` handed back the renderer's object and every caller finished with `.addTo(map)` —
    the raw handle as a value, which is the class of reference the gate cannot see. */
-test('markers and popups attach to the view they were asked of (#R179)', async ({ page }) => {
+test('markers and popups attach to the view they were asked of (#R179)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;
   const r = await page.evaluate(async () => {
     const GE = window.IntMapGeoEngine;
     const el = document.createElement('div'); el.style.cssText = 'width:8px;height:8px;background:red;';

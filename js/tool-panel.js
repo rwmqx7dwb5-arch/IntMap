@@ -491,6 +491,9 @@ window.IntMapModules.toolPanel=function(HOST){
       {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
       {label:`🌐 ${L('Seismic waves from here','ここを震源に地震波シミュレーション','Seismische Wellen von hier','Сейсмические волны отсюда','Ondas sísmicas desde aquí')}`, action:()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
       {label:`🌇 ${L('Sunlight hours & shade here','ここの日照時間・影を解析','Sonnenstunden & Schatten hier','Часы солнца и тени здесь','Horas de sol y sombra aquí')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
+      /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
+         measured off the DEM so the ground really does hide the part of the sky it hides. */
+      {label:`✨ ${L('Night sky from here','ここからの星空','Sternhimmel von hier','Звёздное небо отсюда','El cielo desde aquí')}`, action:()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])

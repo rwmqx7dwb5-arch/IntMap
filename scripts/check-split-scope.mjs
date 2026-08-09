@@ -39,6 +39,7 @@ closest HTMLElement Element Node NodeList Text OffscreenCanvas ImageData CanvasR
 AudioContext SpeechSynthesisUtterance speechSynthesis isSecureContext devicePixelRatio innerWidth innerHeight scrollX scrollY
 CSS Audio Option DOMRect Range getSelection AbortSignal WeakRef SVGElement ClipboardItem escape unescape scrollTo print
 ImageBitmap createImageBitmap WebGL2RenderingContext ReadableStream
+DecompressionStream CompressionStream scheduler
 maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pmtiles`.split(/\s+/).filter(Boolean));
 /* (#R180) `ImageBitmap`/`createImageBitmap` were already used in js/app-body.js's satellite
    protocol (#R178) but only ever inside a `typeof` guard, which this walker does not treat as a

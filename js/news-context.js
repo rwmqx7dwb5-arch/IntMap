@@ -32,13 +32,67 @@ window.IntMapModules.newsContext=function(HOST){
   function isCJKTerm(term){ return /[　-鿿]/.test(term); }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=window.IntMapTables;
+  /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
+     ⚠ A `function` DECLARATION, not a `const` arrow: rebuildGeoIndex() is defined above this point
+     and calls it, and #R200 lost a whole boot to exactly that shape (a const initialised later is
+     in its temporal dead zone for every earlier reader, and the failure is silent).
+     Runs at most once — a second call while one is in flight is a no-op, because the only caller is
+     re-entered by its own completion event. */
+  let _sliceRunning=false, _sliceDone=false;
+  function registerSlices(rows){
+    if(_sliceRunning||_sliceDone) return;
+    _sliceRunning=true;
+    const NG=window.IntMapNewsGeo, SLICE=4000;
+    /* ⚠ (#R208) THE YIELD IS `requestIdleCallback`, NOT A BARE MACROTASK. The first version used
+       `scheduler.yield()` / `setTimeout(0)`, which hands the thread back at the SAME priority — so
+       37 slices of registration interleaved with the app's own start-up timers and won some of the
+       races. MEASURED: tests/r168.spec.js ②, which clicks Countries 1.2 s after boot and reads the
+       feed, got the live list where its stub should have been. Idle time is what this work deserves:
+       it is a background index for a feature nobody has asked for yet, and nothing waits on it.
+       The 2 s timeout keeps it from starving on a busy page; a browser without rIC gets a
+       macrotask, which is still not a microtask (that would run all 148,083 in one task). */
+    const yieldToBrowser=()=>new Promise(res=>{
+      try{ if(typeof requestIdleCallback==='function'){ requestIdleCallback(()=>res(),{timeout:2000}); return; } }catch(_){}
+      setTimeout(res,0);
+    });
+    (async()=>{
+      /* ⚠ (#R208) AND IT DOES NOT START DURING THE BOOT. Measured on an iPhone 13 profile, the boot
+         spends 1,017 ms in seven long tasks; this is a background index for a pass that has not been
+         asked for yet, so it waits for the first idle period AFTER the app can draw rather than
+         competing for the one where the first frame is. `requestIdleCallback` alone was not enough —
+         it fires during a boot too, because a boot has gaps. */
+      await new Promise(res=>{
+        const go=()=>yieldToBrowser().then(res);
+        try{ if(window.IntMapGeoEngine&&window.IntMapGeoEngine.canDraw&&window.IntMapGeoEngine.canDraw()) return go(); }catch(_){}
+        try{ window.IntMapGeoEngine.events.once('idle',go); }catch(_){ go(); return; }
+        setTimeout(go,6000);                                  /* …and never wait for ever */
+      });
+      for(let i=0;i<rows.length;i+=SLICE){
+        try{ NG.register(rows.slice(i,i+SLICE).map(([type,terms,lng,lat,en,jp])=>
+          ({ terms, lng, lat, type, name_en:en, name_jp:jp }))); }catch(_){}
+        if(i+SLICE<rows.length) await yieldToBrowser();
+      }
+      _sliceRunning=false; _sliceDone=true;
+      try{ window.dispatchEvent(new CustomEvent('intmap-newsgeo-world-ready',{detail:{rows:rows.length}})); }catch(_){}
+    })();
+  }
+
   /* Rebuild the flat geoDB + per-term matchers from geoRaw. Called after the
      Supabase geo_pins load (and on realtime updates). */
   function rebuildGeoIndex(){
     /* Merge the always-present built-in gazetteer (#11) with the Supabase geo_pins so news placement
        is strong even before/without server data. */
     const merged={};
-    [HOST.BUILTIN_GAZETTEER, HOST.geoRaw].forEach(src=>{ for(const type in src){ (merged[type]=merged[type]||[]).push(...src[type]); } });
+    /* ⚠ (#R208) NOT `push(...src[type])`. Spreading an array into a call passes one ARGUMENT per
+       element, and the engine's argument limit is a stack limit: at 15,048 world rows this was
+       fine, and at 148,083 it throws `RangeError: Maximum call stack size exceeded` — from inside
+       a `forEach`, asynchronously, with a minified frame and no mention of the gazetteer anywhere
+       in the message. It surfaced two commits later as 「applyTheme re-entered itself」 in a Cesium
+       spec that has nothing to do with either, because that is the test that watches for uncaught
+       errors. A loop has no such limit and is what a growing table needs. */
+    [HOST.BUILTIN_GAZETTEER, HOST.geoRaw].forEach(src=>{ for(const type in src){
+      const dst=(merged[type]=merged[type]||[]), from=src[type]||[];
+      for(let i=0;i<from.length;i++) dst.push(from[i]); } });
     /* (#R25/#28) MASSIVE coverage boost for the non-AI locator: auto-add EVERY country (+ its capital name)
        from the already-bundled countryStats — ~200 countries with real EN/JP names and a representative
        point. Curated cities/flashpoints still outrank these (higher TYPE_SCORE + lead-position bonus), so
@@ -88,7 +142,15 @@ window.IntMapModules.newsContext=function(HOST){
             try{ window.addEventListener('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} },{once:true}); }catch(_){} }
           GZ.warm(); }
         else if(w&&w.length&&window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
-          window.IntMapNewsGeo.register(w.map(([type,terms,lng,lat,en,jp])=>({ terms, lng, lat, type, name_en:en, name_jp:jp })));
+          /* ⚠ (#R208) IN SLICES, BECAUSE THERE ARE NOW 148,083 OF THEM. MEASURED at 3.7 ms per
+             1,000 rows, one call is ~550 ms of unbroken main thread on a desktop and several times
+             that on a phone — a long task in the middle of a news pass. The rows are handed over
+             a slice at a time with a yield between, so no single task is long; `register()` is
+             idempotent by construction (its REGISTERED signature set), so a slice that runs twice
+             adds nothing, and a locate() that lands mid-way sees fewer places rather than wrong
+             ones. `intmap-newsgeo-world-ready` fires when the last slice lands, for anything that
+             wants to ask again with the whole tail present. */
+          registerSlices(w);
         }
       } }catch(_){}
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
