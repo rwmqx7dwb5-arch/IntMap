@@ -252,3 +252,162 @@ test('R208 ④c: the stale-build guard compares round numbers, not the stamp as 
   assert.ok('2026-08-09-R208' < '2026-08-11-R207',
     'sanity: this is exactly the string comparison that used to decide it');
 });
+
+/* ═══ ⑤ THE SKY FROM A POINT ON THE GROUND ════════════════════════════════════════════════════ */
+
+/* js/night-sky.js touches the DOM only inside ensureDOM(), so the astronomy can be exercised here
+   with a stub — no browser, no canvas, ~1 ms. */
+function nightSky() {
+  const win = { addEventListener() { }, devicePixelRatio: 1 };
+  new Function('window', 'document', read('js/night-sky.js'))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
+  return win.IntMapNightSky;
+}
+
+test('R208 ⑤a: alt/az is checked against identities, not against itself', () => {
+  const NS = nightSky();
+  /* ⚠ THESE ARE EXACT RELATIONS, not "expected values" copied out of another program. Each one is
+     true for every time and every catalogue, so it tests the transform rather than pinning a run. */
+  for (const lat of [-70, -23.4, 0, 35.68, 51.5, 78]) {
+    /* 1. THE POLE STAR SITS AT YOUR LATITUDE. A star at the celestial pole has altitude = latitude
+          for every observer at every instant — the oldest navigation fact there is. */
+    for (const lst of [0, 47, 123, 271, 359]) {
+      const p = NS.altAz(0, 90, lst, lat);
+      assert.ok(Math.abs(p.alt - lat) < 1e-6,
+        `a star at the north celestial pole is at altitude ${p.alt} from latitude ${lat}`);
+    }
+    /* 2. ON THE MERIDIAN, altitude = 90 − |latitude − declination|. */
+    for (const dec of [-40, 0, 20, 60]) {
+      const p = NS.altAz(100, dec, 100, lat);          /* LST = RA → hour angle 0 → on the meridian */
+      assert.ok(Math.abs(p.alt - (90 - Math.abs(lat - dec))) < 1e-6,
+        `on the meridian at lat ${lat}, dec ${dec}: got ${p.alt}`);
+      /* …and it is due south from the north, due north from the south */
+      if (Math.abs(lat - dec) > 1e-9) assert.equal(Math.round(p.az), lat > dec ? 180 : 0);
+    }
+    /* 3. A STAR ON THE CELESTIAL EQUATOR RISES DUE EAST. Six hours (90°) before it transits, its
+          azimuth is 90° exactly, at every latitude away from the poles. */
+    if (Math.abs(lat) < 89) {
+      const p = NS.altAz(0, 0, -90, lat);
+      assert.ok(Math.abs(p.az - 90) < 1e-6, `an equatorial star rises due east, got az ${p.az} at lat ${lat}`);
+      assert.ok(Math.abs(p.alt) < 1e-6, `…and at altitude 0, got ${p.alt}`);
+    }
+  }
+});
+
+test('R208 ⑤b: the projection puts the zenith at the centre and EAST ON THE LEFT', () => {
+  const NS = nightSky();
+  const R = 100;
+  /* ⚠ not deepEqual against [0,0]: −cos(0)·0 is NEGATIVE ZERO, and strict deep equality separates
+     −0 from 0. The claim is "at the centre", so it is a distance. */
+  const z = NS.project(90, 0, R);
+  assert.ok(Math.hypot(z[0], z[1]) < 1e-9, `the zenith is the centre, got ${z}`);
+  const n = NS.project(0, 0, R), e = NS.project(0, 90, R), s = NS.project(0, 180, R), w = NS.project(0, 270, R);
+  assert.ok(Math.abs(Math.hypot(n[0], n[1]) - R) < 1e-9, 'the horizon is the rim');
+  assert.ok(n[1] < -R * 0.99, 'north is up');
+  assert.ok(s[1] > R * 0.99, 'south is down');
+  /* ⚠ looking UP mirrors the compass: a chart with east on the right is the sky seen from OUTSIDE,
+     which is js/space-sky.js's view, not this one. */
+  assert.ok(e[0] > R * 0.99, 'east is on the LEFT of the sky, which is +x in canvas coordinates '
+    + 'only because the canvas y axis points down — see project()');
+  assert.ok(w[0] < -R * 0.99, 'and west opposite it');
+});
+
+test('R208 ⑤c: the horizon angle takes the Earth curving away, and the sea is a surface', () => {
+  const NS = nightSky();
+  /* a 1,000 m peak 20 km away, seen from sea level. Flat-earth would be atan(1000/20000) = 2.862°;
+     the curvature drop at 20 km with k = 1.13 is 20000²/(2·1.13·6371008.8) = 27.8 m, so the real
+     angle is atan((1000−27.8)/20000) = 2.783°. The DIFFERENCE is the whole point of the term. */
+  const flat = Math.atan2(1000, 20000) * 180 / Math.PI;
+  const real = NS.elevAngleDeg(1000, 0, 20000);
+  assert.ok(real < flat, 'the curvature term lowers a distant peak');
+  assert.ok(Math.abs(real - 2.7834) < 0.002, `expected 2.783°, got ${real.toFixed(4)}`);
+  /* and it grows with the square of the distance: at 40 km the drop is four times as much */
+  const d20 = flat - real;
+  const d40 = Math.atan2(1000, 40000) * 180 / Math.PI - NS.elevAngleDeg(1000, 0, 40000);
+  assert.ok(d40 / d20 > 1.9 && d40 / d20 < 2.1,
+    `the drop is d²/2kR, so twice the distance is twice the ANGLE deficit here: ratio ${(d40 / d20).toFixed(2)}`);
+  const src = read('js/night-sky.js');
+  /* ⚠ the observer stands on the SURFACE. The Terrarium DEM is bathymetric, so mid-Pacific answers
+     −5,367 m; measured before this clamp, an open-ocean point reported a skyline where there is
+     none and hid 3,823 of 4,404 stars behind it. */
+  assert.ok(/Math\.max\(0,\s*h0raw\)/.test(src), 'the eye is clamped to sea level over water');
+  assert.ok(/elevAngleDeg\(Math\.max\(0,\s*h\)/.test(src), 'and so is the ground along each ray');
+});
+
+test('R208 ⑤d: it borrows the catalogue, the ephemeris, the DEM and the clock', () => {
+  const src = read('js/night-sky.js');
+  assert.ok(/window\.IntMapSky/.test(src), 'the star catalogue and precession come from js/space-sky.js');
+  assert.ok(/window\.IntMapEphemeris/.test(src), 'the Sun, Moon and planets from js/ephemeris.js');
+  assert.ok(/window\.IntMapTerrain/.test(src), 'the terrain from js/map-extras.js');
+  /* ⚠ the clock is asked with when(). #R200 recorded that the other spelling does not exist and
+     reaching for it is a silent undefined rather than an error.
+     ⚠ Comments stripped first — this file NAMES the wrong spelling in order to warn about it, and a
+     bare source scan would fail on its own documentation. That is the second time this round. */
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  assert.ok(/IntMapTime[\s\S]{0,80}when\(\)/.test(code), 'the master clock is asked with when()');
+  assert.ok(!/IntMapTime\.now\b/.test(code), '…and never with the spelling that does not exist');
+  /* and the two reasons a star is not drawn are counted APART — "behind a mountain" and "washed out
+     by daylight" are different answers, and a single number cannot say which */
+  assert.ok(/starsHiddenByTerrain/.test(src) && /starsLostToDaylight/.test(src),
+    'terrain occlusion and daylight are reported separately');
+  /* reachable from Atlas as well as from the right-click item (STANDING #R112) */
+  assert.ok(/window\.IntMapNightSky&&window\.IntMapNightSky\.open/.test(read('js/tool-panel.js')),
+    'the right-click menu opens it');
+  const atlas = read('js/atlas-console.js');
+  assert.ok(/case 'nightSky':/.test(atlas), 'Atlas can open it');
+  assert.ok(/NIGHT SKY FROM A POINT/.test(atlas),
+    '…and it is in the SYS catalogue — an action the catalogue does not list does not exist to the '
+    + 'planner (#R115)');
+});
+
+/* ═══ ⑥ THE OTHER PLANETS' MOONS ══════════════════════════════════════════════════════════════ */
+
+test('R208 ⑥a: every satellite carries a real epoch, a stated frame, and a mean anomaly', () => {
+  const p = join(ROOT, 'data', 'moons.json');
+  assert.ok(existsSync(p), 'data/moons.json is built (scripts/build-moons.mjs)');
+  const doc = JSON.parse(readFileSync(p, 'utf8'));
+  assert.ok(/JPL|Jet Propulsion/i.test(doc.attribution), 'the source is named in the file');
+  const all = Object.values(doc.planets).flat();
+  assert.ok(all.length > 100, `only ${all.length} satellites`);
+  for (const m of all) {
+    /* ⚠ THE MEAN ANOMALY AT EPOCH IS THE WHOLE POINT. #R197 refused to place these because without
+       it a moon is at a chosen angle; a row that lost it must not be shipped as if it had one. */
+    assert.ok(Number.isFinite(m.mDeg), `${m.name} has no mean anomaly at epoch`);
+    assert.ok(Number.isFinite(m.wDeg) && Number.isFinite(m.nodeDeg) && Number.isFinite(m.iDeg),
+      `${m.name} is missing an orientation angle`);
+    assert.ok(m.aKm > 0 && m.periodDays > 0, `${m.name} has no orbit`);
+    assert.ok(m.epoch, `${m.name} has no stated epoch`);
+    /* ⚠ and the FRAME its i/node are measured in — the ecliptic and a planet's local Laplace plane
+       differ by tens of degrees for a close giant-planet satellite */
+    assert.ok(m.frame === 'ecliptic' || m.frame === 'laplace', `${m.name}: frame "${m.frame}"`);
+    if (m.frame === 'laplace') {
+      assert.ok(Number.isFinite(m.poleRaDeg) && Number.isFinite(m.poleDecDeg),
+        `${m.name} is on a Laplace plane with no pole — it cannot be placed and must not be kept`);
+    }
+  }
+  /* the four Galileans are there, with their published semi-major axes (km) */
+  const jup = Object.fromEntries((doc.planets.jupiter || []).map((m) => [m.name, m]));
+  for (const [n, a, P] of [['Io', 421800, 1.762732], ['Europa', 671100, 3.525463],
+    ['Ganymede', 1070400, 7.155588], ['Callisto', 1882700, 16.690440]]) {
+    assert.ok(jup[n], `${n} is missing`);
+    assert.equal(jup[n].aKm, a, `${n} semi-major axis`);
+    assert.ok(Math.abs(jup[n].periodDays - P) < 1e-6, `${n} period`);
+    assert.equal(jup[n].frame, 'laplace', `${n} is referred to Jupiter's Laplace plane`);
+  }
+});
+
+test('R208 ⑥b: the client propagates them and rotates the Laplace plane, and says so', () => {
+  const src = read('js/space.js');
+  assert.ok(/E\.kepler\(M,\s*m\.e\)/.test(src),
+    "the eccentric anomaly comes from js/ephemeris.js's own solver, not a second copy");
+  assert.ok(/m\.mDeg\s*\+\s*n\s*\*\s*\(jd\s*-\s*2451545\.0\)/.test(src),
+    'the mean anomaly is propagated from the epoch, which is what makes the phase real');
+  assert.ok(/m\.frame==='laplace'/.test(src), 'the Laplace rotation is applied only where the row says to');
+  assert.ok(/OBLIQ/.test(src), 'and equatorial → ecliptic afterwards, because the scene is ecliptic');
+  /* a moon with no published radius is drawn at a FLOOR, not at an invented size */
+  assert.ok(/m\.radiusKm\?Math\.max\(0\.004,\s*m\.radiusKm\/b\.rKm\):0\.006/.test(src),
+    'an unmeasured radius falls back to a floor rather than a guess');
+  /* ⚠ and js/ephemeris.js's "deliberately not here" note must acknowledge this, or the file and the
+     app now disagree about whether the moons exist */
+  assert.ok(/#R208[\s\S]{0,400}data\/moons\.json/.test(read('js/ephemeris.js')),
+    "js/ephemeris.js still says the moons are deliberately absent without noting where they came from");
+});

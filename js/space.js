@@ -618,6 +618,61 @@ window.IntMapModules.space=function(HOST){
     }
 
     /* ══ a body, as a globe ═══════════════════════════════════════════════════════════════════════ */
+    /* ══ (#R208) THE OTHER PLANETS' MOONS — FROM REAL ELEMENTS AT A REAL EPOCH ═══════════════════
+       「他の惑星にも衛星（各惑星選択時にその衛星たち）」. #R197 declined to place them and wrote down
+       why: without the mean longitude at an epoch, a moon at a plausible distance and a chosen angle
+       is a drawing. data/moons.json is JPL's own mean-element table (scripts/build-moons.mjs) — a,
+       e, ω, M, i, node and P for 177 satellites at 2000-01-01.5 TDB — so each one is propagated to
+       the clock and its position is an answer rather than an arrangement.
+
+       ⚠ AND THE ELEMENTS ARE NOT ALL IN THE SAME PLANE. Each row states its own frame: the ecliptic
+       for the distant irregulars, and for a close giant-planet satellite that planet's LOCAL LAPLACE
+       PLANE, whose pole the table gives as R.A./Dec. Reading a Laplace i/node as ecliptic would tilt
+       Io's orbit by tens of degrees. The build carries the frame through and it is applied here. */
+    const OBLIQ=23.4392911*D2R;
+    let moons=null, moonsLoading=false, moonsErr=null;
+    function loadMoons(){
+      if(moons||moonsLoading) return;
+      moonsLoading=true;
+      let url; try{ url=new URL('data/moons.json',document.baseURI).toString(); }catch(_){ url='data/moons.json'; }
+      fetch(url).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(d=>{ moons=d; moonsLoading=false; })
+        .catch(e=>{ moons={planets:{}}; moonsLoading=false; moonsErr=(e&&e.message)||String(e); });
+    }
+    /** a satellite's position at `jd`, in PLANET RADII, in the J2000 ecliptic frame the scene uses */
+    function moonPos(m,jd,planetRadiusKm){
+      const E=EPH();
+      const n=360/m.periodDays;                                  /* the table's own period, not a derived one */
+      const M=m.mDeg+n*(jd-2451545.0);                           /* epoch is J2000 for every row */
+      const ecc=E.kepler(M,m.e);
+      const cE=Math.cos(ecc*D2R), sE=Math.sin(ecc*D2R);
+      const a=m.aKm/planetRadiusKm;
+      /* in the orbital plane, periapsis on +x */
+      const xv=a*(cE-m.e), yv=a*Math.sqrt(Math.max(0,1-m.e*m.e))*sE;
+      /* → the reference plane: Rz(node) · Rx(i) · Rz(ω) */
+      const w=m.wDeg*D2R, i=m.iDeg*D2R, O=m.nodeDeg*D2R;
+      const cw=Math.cos(w), sw=Math.sin(w), ci=Math.cos(i), si=Math.sin(i), cO=Math.cos(O), sO=Math.sin(O);
+      const x1=xv*cw-yv*sw, y1=xv*sw+yv*cw;
+      let X=x1*cO-y1*ci*sO, Y=x1*sO+y1*ci*cO, Z=y1*si;
+      if(m.frame==='laplace'&&m.poleRaDeg!=null){
+        /* the Laplace plane, expressed in J2000 EQUATORIAL: its ascending node on the equator is at
+           R.A.+90° and its inclination to the equator is 90°−Dec. */
+        const Op=(m.poleRaDeg+90)*D2R, ip=(90-m.poleDecDeg)*D2R;
+        const cp=Math.cos(ip), sp=Math.sin(ip), co=Math.cos(Op), so=Math.sin(Op);
+        const ex=X*co-Y*cp*so+Z*sp*so, ey=X*so+Y*cp*co-Z*sp*co, ez=Y*sp+Z*cp;
+        /* …and equatorial → ecliptic, which is the frame js/ephemeris.js hands the scene */
+        X=ex; Y=ey*Math.cos(OBLIQ)+ez*Math.sin(OBLIQ); Z=-ey*Math.sin(OBLIQ)+ez*Math.cos(OBLIQ);
+      }
+      return [X,Y,Z];
+    }
+    function moonList(){
+      if(!moons||!moons.planets) return [];
+      const all=moons.planets[focus]||[];
+      /* the ones with a MEASURED radius first (they are the ones anybody means by "the moons of
+         Jupiter"), then by distance; capped so a crowded system stays readable */
+      return all.slice().sort((a,b)=>(b.rKm||0)-(a.radiusKm||0)).slice(0,12);
+    }
+
     function drawBody(jd,pos,cam){
       const E=EPH(), b=E.body(focus); if(!b) return;
       /* the Sun's direction as seen from this body, in the J2000 ecliptic frame the basis is in — so
@@ -629,6 +684,42 @@ window.IntMapModules.space=function(HOST){
       drawSphere(mMul(VP,model),model,focus,focus==='sun'?[0,0,1]:sun,focus==='sun'?1:0,null);
       if(focus==='saturn') drawRings(VP,[0,0,0],b,1,jd);
       drawFeatureLabels(model,VP,cam);
+      /* (#R208) …and the satellites of whichever planet this is */
+      loadMoons();
+      const list=moonList();
+      if(list.length&&b.rKm){
+        for(const m of list){
+          const P0=moonPos(m,jd,b.rKm);
+          /* the orbit, one revolution either side of now — drawn from the SAME propagation as the
+             body, so the dot is always on its own line (#R207's lesson about the Moon's track) */
+          const pts=[];
+          for(let k=0;k<=96;k++) pts.push(moonPos(m,jd+m.periodDays*(k/96-0.5),b.rKm));
+          const buf=gl.createBuffer(); const fa=new Float32Array(pts.length*3);
+          pts.forEach((p,k)=>{ fa[k*3]=p[0]; fa[k*3+1]=p[1]; fa[k*3+2]=p[2]; });
+          gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
+          drawLines(VP,buf,pts.length,[0.55,0.68,0.92,0.30]);
+          try{ gl.deleteBuffer(buf); }catch(_){}
+          /* the body itself, at its own measured radius where the table has one. ⚠ A moon with no
+             published radius is drawn at a FLOOR size, not at a guessed one — the table says which
+             is which and the panel can too. */
+          const rr=m.radiusKm?Math.max(0.004,m.radiusKm/b.rKm):0.006;
+          drawSphere(mMul(VP,mMul(mTrans(P0[0],P0[1],P0[2]),mScale(rr))),mIdent(),'moonlet',sun,0,[0.78,0.78,0.74]);
+          if(showNames){
+            const c=mApply(VP,P0);
+            if(c[3]>0){
+              const x=(c[0]/c[3]*0.5+0.5)*W, y=(1-(c[1]/c[3]*0.5+0.5))*H;
+              if(x>=0&&y>=0&&x<=W&&y<=H){
+                octx.font=Math.round(11*dpr)+'px system-ui, sans-serif';
+                octx.textBaseline='middle'; octx.textAlign='left';
+                octx.lineWidth=2.4*dpr; octx.strokeStyle='rgba(0,0,0,0.72)';
+                octx.strokeText(m.name,x+6*dpr,y);
+                octx.fillStyle='rgba(226,236,255,0.95)';
+                octx.fillText(m.name,x+6*dpr,y);
+              }
+            }
+          }
+        }
+      }
     }
 
     function drawFeatureLabels(model,VP,cam){
@@ -906,6 +997,10 @@ window.IntMapModules.space=function(HOST){
     function setFocus(id){
       if(!EPH().body(id)) return false;
       focus=id;
+      /* (#R208) start the satellite table as soon as a body is CHOSEN rather than when it is first
+         drawn in body mode — it is 36 kB and the two events are usually a zoom apart, so by the
+         time the moons are needed they are there. */
+      loadMoons();
       if(mode==='body'){ dist=bodyDist(); faceSun(); loadNames(); texture(id); maxNames(); }
       else if(scale==='real') dist=Math.max(0.02,posScale(1)*0.6);
       refreshHUD();
@@ -1405,6 +1500,14 @@ window.IntMapModules.space=function(HOST){
            starField()). A test can then assert the mechanism instead of counting bright pixels. */
         distCeil:+distCeil().toFixed(3), starDepth:!!(starPc&&starDir&&starFarBuf),
         starFarEdge:+starFarEdgeNow().toFixed(1), starsWithoutParallax:starFarUnknown,
+        /* (#R208) the satellites of whatever is in focus, with the frame and epoch their elements
+           came with — so a test can check a position against an ephemeris instead of a picture */
+        moons:(()=>{ const l=moonList(); return { loaded:!!moons, error:moonsErr, shown:l.length,
+          available:(moons&&moons.planets&&moons.planets[focus]||[]).length,
+          names:l.map(m=>m.name), epoch:(moons&&moons.epoch)||null }; })(),
+        moonAt:(name)=>{ const b=EPH().body(focus); const m=moonList().find(x=>x.name===name);
+          return (m&&b&&b.rKm)?{ name, frame:m.frame, aKm:m.aKm, periodDays:m.periodDays,
+            radiusKm:m.radiusKm||null, pos:moonPos(m,jdNow(),b.rKm) }:null; },
         textures:Object.keys(tex).length, overzoom:+over.toFixed(3), overTrigger:OVER_TRIGGER,
         gaugeVisible:!!(gauge&&gauge.style.opacity==='1'), atNearLimit:atNearLimit(),
         atFloor:atFloor(), err:lastErr })
