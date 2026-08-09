@@ -43,13 +43,18 @@ window.IntMapModules.newsContext=function(HOST){
     if(_sliceRunning||_sliceDone) return;
     _sliceRunning=true;
     const NG=window.IntMapNewsGeo, SLICE=4000;
-    /* a yield the browser can schedule around: `scheduler.yield()` where it exists (it keeps the
-       task queue's priority), otherwise a macrotask — NOT `await Promise.resolve()`, which is a
-       microtask and would run the whole list inside one task exactly as before. */
-    const yieldToBrowser=()=>{
-      try{ if(window.scheduler&&typeof window.scheduler.yield==='function') return window.scheduler.yield(); }catch(_){}
-      return new Promise(res=>setTimeout(res,0));
-    };
+    /* ⚠ (#R208) THE YIELD IS `requestIdleCallback`, NOT A BARE MACROTASK. The first version used
+       `scheduler.yield()` / `setTimeout(0)`, which hands the thread back at the SAME priority — so
+       37 slices of registration interleaved with the app's own start-up timers and won some of the
+       races. MEASURED: tests/r168.spec.js ②, which clicks Countries 1.2 s after boot and reads the
+       feed, got the live list where its stub should have been. Idle time is what this work deserves:
+       it is a background index for a feature nobody has asked for yet, and nothing waits on it.
+       The 2 s timeout keeps it from starving on a busy page; a browser without rIC gets a
+       macrotask, which is still not a microtask (that would run all 148,083 in one task). */
+    const yieldToBrowser=()=>new Promise(res=>{
+      try{ if(typeof requestIdleCallback==='function'){ requestIdleCallback(()=>res(),{timeout:2000}); return; } }catch(_){}
+      setTimeout(res,0);
+    });
     (async()=>{
       for(let i=0;i<rows.length;i+=SLICE){
         try{ NG.register(rows.slice(i,i+SLICE).map(([type,terms,lng,lat,en,jp])=>
