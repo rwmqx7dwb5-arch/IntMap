@@ -424,7 +424,7 @@ window.IntMapModules.authUi=function(HOST){
   /* ---------- FAVORITES (★ saved articles) ---------- */
   async function loadFavorites(){
     if(!HOST.user||!HOST.DB) return;
-    const {data,error}=await HOST.DB.from('favorites').select('article_link');
+    const {data,error}=await HOST.DB.from('favorites').select('article_link,article_title');   /* (#R210) the title too — see IntMapNewsSaved.seed */
     if(error){ console.warn('[IntMap] favorites load:', error.message); return; }
     let cloud=(data||[]).map(r=>r.article_link);
     /* one-time merge of any favorites saved as a guest before logging in */
@@ -433,6 +433,10 @@ window.IntMapModules.authUi=function(HOST){
     if(toAdd.length){ try{ await HOST.DB.from('favorites').insert(toAdd.map(l=>({user_id:HOST.user.id,article_link:l}))); cloud=cloud.concat(toAdd); }catch(_){}
       try{ localStorage.removeItem('intmap_bookmarks'); }catch(_){} }
     HOST.bookmarks=cloud;
+    /* (#R210) a browser that has never drawn these articles still needs something to draw. The
+       account carries the title; the rest of the card (outlet, date, image) is filled in the next
+       time the article appears in a live feed. */
+    try{ window.IntMapNewsSaved&&window.IntMapNewsSaved.seed(data||[]); }catch(_){}
   }
 
   /* ---------- REALTIME (live auto-reflect) ---------- */

@@ -1880,8 +1880,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!GE().layers.has('ref-admin1')) GE().layers.add({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
         layout:{visibility:'none','line-join':'round'},
-        /* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white, and two white lines would erase country-vs-province. */
-        paint:{'line-color':'#b07fd6','line-opacity':0.8,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.9,7,1.9,11,3.0]}}, before);
+        paint:/* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white; two white lines would erase country-vs-province. */{'line-color':'#b07fd6','line-opacity':0.8,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.9,7,1.9,11,3.0]}}, before);
       if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
@@ -2197,7 +2196,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
     const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
-    return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false;
+    const base=(currentMode==='saved'&&window.IntMapNewsSaved)?window.IntMapNewsSaved.merge(globalData,bookmarks):globalData;   /* (#R210) ★ Saved is no longer only what the LIVE feed still carries — see js/news-ui.js */
+    return base.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false;
       if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
       /* (#R207) …except in Saved: the user kept that item deliberately (as with the age cut). */
       if(currentMode!=='saved'&&!newsSourceAllows(it.publisher)) return false;
