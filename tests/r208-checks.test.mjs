@@ -507,3 +507,30 @@ test('R208 ⑧b: the layer draws warm red, cold blue, and zonal neither', () => 
   assert.ok(/lyrOceanCur:/.test(dl), 'the row is labelled');
   assert.equal((dl.match(/lyrOceanCur:/g) || []).length, 5, 'in all five languages');
 });
+
+/* ═══ ⑨ THE AXIS DOES NOT JUMP AT THE MAP↔SPACE SEAM ══════════════════════════════════════════ */
+
+test('R208 ⑨: the space camera interpolates its up-vector instead of snapping to the ecliptic', () => {
+  const src = read('js/space.js');
+  /* ⚠ the up-vector was the literal [0,0,1] — the ECLIPTIC north — while the map draws the Earth
+     with its own axis vertical. Those differ by the obliquity, so the crossing rolled the Earth by
+     up to 23.44° in one frame. #R203 matched the face, the size and the instant across that seam;
+     this was the one thing left that did not match. */
+  assert.ok(/function upVector\(\)/.test(src) && /function axisBlend\(\)/.test(src),
+    'the up-vector is computed, not a constant');
+  assert.ok(/mLook\(eye,\[0,0,0\],upVector\(\)\)/.test(src), 'and the camera uses it');
+  assert.ok(!/mLook\(eye,\[0,0,0\],\[0,0,1\]\)/.test(src), 'the hard-wired ecliptic up is gone');
+  assert.ok(/poleVector\('earth'/.test(src),
+    "the Earth's axis comes from js/ephemeris.js rather than being re-derived from the obliquity");
+  /* ⚠ AND IT MUST STILL REACH THE ECLIPTIC. Holding the Earth's axis up for ever would put every
+     planet's orbit on a permanent 23° slant, so the blend has to fall to zero as the Earth shrinks —
+     it is driven by the Earth's own apparent size, which is the same gesture that crosses the seam. */
+  assert.ok(/earthRadiusPx\(\)\s*\/\s*Math\.max\(1,\s*H\s*\/\s*2\)/.test(src),
+    'the blend is driven by the apparent size of the Earth');
+  const knee = /const t = \(f - 0\.06\) \/ \(([\d.]+) - 0\.06\);/.exec(src);
+  assert.ok(knee, 'the two knees are stated');
+  /* MEASURED: `enterFromZoom` lands with the Earth at 0.32 of the viewport half-height, so a knee
+     above that leaves a jump. 0.55 was tried first and left ~11° at the seam. */
+  assert.ok(Number(knee[1]) <= 0.32,
+    `the upper knee is ${knee[1]}, above the 0.32 the handover measures at — the seam would still jump`);
+});

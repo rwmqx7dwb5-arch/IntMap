@@ -419,14 +419,18 @@ window.IntMapGazetteer=(function(){
      told is struggling. The file is sorted by population, so the first 6,000 rows are the 6,000 most
      populous places on Earth: the cap costs the smallest towns and nothing else. Same reasoning as
      the #R193 mobile caps on the satellite tile caches. */
-  /* ⚠ (#R208) 6,000 → 25,000, AND THE REASON THE CAP EXISTS MOVED. #R198's figure above was about a
-     LONG TASK: one synchronous register() of the whole list. That is no longer how the rows enter
-     the locator — `registerSlices` below hands them over in slices with a yield between, so the
-     main thread is never held for more than a slice however many rows there are, and the cap stops
-     being about jank. What it is about now is MEMORY and index size on a phone: 148,083 rows build
-     ~222,000 Latin index keys, and this app has been told repeatedly that the phone is struggling.
-     25,000 is the head of a list sorted by population, i.e. every place above ~20,000 people. */
-  const MOBILE_CAP=25000;
+  /* ⚠ (#R208) 6,000 → 25,000 → 12,000, AND THE THIRD FIGURE IS THE MEASURED ONE.
+     #R198's 6,000 was about a LONG TASK: one synchronous register() of the whole list. `registerSlices`
+     (js/news-context.js) removed that — the rows go over in slices, on idle time — so the first move
+     this round was to raise the cap on the grounds that jank was no longer the constraint.
+     ⚠ THAT WAS REASONING, NOT MEASURING, AND THE ROUND'S OWN INSTRUCTION IS 「モバイルが重い」.
+     Measured on an iPhone 13 profile: the boot still spends 1,017 ms in seven long tasks, and
+     registration is a real share of it — slicing bounds how long ONE task is, not how much work
+     there is. Doubling the phone's share of that while being told the phone is struggling is the
+     wrong direction, so the cap comes back down to twice #R198's figure rather than four times it:
+     12,000 rows is every place above ~50,000 people, which is what a phone's news pass is about.
+     The desktop is unchanged and still gets all 147,924. */
+  const MOBILE_CAP=12000;
   function _isMobile(){ try{ return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent||''); }catch(_){ return false; } }
   function _rowsFrom(doc){
     const out=[], cap=_isMobile()?MOBILE_CAP:Infinity;

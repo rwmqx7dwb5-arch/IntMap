@@ -56,6 +56,17 @@ window.IntMapModules.newsContext=function(HOST){
       setTimeout(res,0);
     });
     (async()=>{
+      /* ⚠ (#R208) AND IT DOES NOT START DURING THE BOOT. Measured on an iPhone 13 profile, the boot
+         spends 1,017 ms in seven long tasks; this is a background index for a pass that has not been
+         asked for yet, so it waits for the first idle period AFTER the app can draw rather than
+         competing for the one where the first frame is. `requestIdleCallback` alone was not enough —
+         it fires during a boot too, because a boot has gaps. */
+      await new Promise(res=>{
+        const go=()=>yieldToBrowser().then(res);
+        try{ if(window.IntMapGeoEngine&&window.IntMapGeoEngine.canDraw&&window.IntMapGeoEngine.canDraw()) return go(); }catch(_){}
+        try{ window.IntMapGeoEngine.events.once('idle',go); }catch(_){ go(); return; }
+        setTimeout(go,6000);                                  /* …and never wait for ever */
+      });
       for(let i=0;i<rows.length;i+=SLICE){
         try{ NG.register(rows.slice(i,i+SLICE).map(([type,terms,lng,lat,en,jp])=>
           ({ terms, lng, lat, type, name_en:en, name_jp:jp }))); }catch(_){}

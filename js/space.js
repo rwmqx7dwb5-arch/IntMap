@@ -388,11 +388,52 @@ window.IntMapModules.space=function(HOST){
       cv.style.width=ov.style.width=w+'px'; cv.style.height=ov.style.height=h+'px';
     }
 
+    /* ══ (#R208) THE AXIS DOES NOT JUMP AT THE HANDOVER ═══════════════════════════════════════════
+       「地球↔宇宙の地軸の傾きの連続性」. The map draws the Earth with NORTH UP — MapLibre's globe puts
+       the spin axis vertical on screen at bearing 0 — and this view had its up-vector hard-wired to
+       [0,0,1], the ECLIPTIC north. Those differ by the obliquity, 23.44°, so the instant the crossing
+       handed over, the Earth rolled by up to that much in one frame. #R203 matched the face, the size
+       and the instant across that seam and this was the one thing left that did not match.
+
+       ⚠ AND IT CANNOT SIMPLY USE THE EARTH'S AXIS EITHER, because the solar system is a picture OF
+       THE ECLIPTIC: with the Earth's pole up, every planet's orbit would sit at a permanent 23°
+       slant. So the up-vector is INTERPOLATED between the two — the Earth's own axis while the Earth
+       still fills the view (which is where the map left off), the ecliptic once the system is what is
+       on screen — and the blend is driven by the Earth's own APPARENT SIZE, so it is the same gesture
+       that carries it. Nothing snaps; the tilt arrives as you pull away, which is what it looks like
+       from a departing spacecraft. */
+    function axisBlend(){
+      /* 1 = the map's frame (the Earth's axis up), 0 = the ecliptic. Measured on the Earth's apparent
+         radius as a fraction of the viewport half-height: it fills the view at the handover and is a
+         speck by the time the inner planets are in frame. */
+      let f = 0;
+      try{ f = earthRadiusPx() / Math.max(1, H / 2); }catch(_){ return 0; }
+      if(!isFinite(f)) return 0;
+      /* ⚠ THE UPPER KNEE IS WHERE THE CROSSING ACTUALLY LANDS, MEASURED — not a round number. The
+         first version used 0.55 and the seam still jumped ~11°, because `enterFromZoom` hands over at
+         the size the map's globe was: measured, the Earth arrives at 0.32 of the viewport half-height,
+         where a 0.55 knee gives a blend of only 0.52. At 0.28 anything from the handover inwards is
+         fully in the map's frame and the seam is continuous; the lower knee is unchanged, so the
+         ecliptic has taken over by the time the Earth is a speck. */
+      const t = (f - 0.06) / (0.28 - 0.06);
+      return Math.max(0, Math.min(1, t));
+    }
+    function upVector(){
+      const t = axisBlend();
+      if(t <= 0) return [0,0,1];
+      let p = null;
+      try{ p = EPH().poleVector('earth', jdNow()); }catch(_){}
+      if(!p) return [0,0,1];
+      const u = [ p[0]*t, p[1]*t, p[2]*t + (1-t) ];
+      const n = Math.hypot(u[0],u[1],u[2]) || 1;
+      return [u[0]/n, u[1]/n, u[2]/n];
+    }
+
     function camera(){
       const ce=Math.cos(el), se=Math.sin(el);
       const eye=[dist*ce*Math.cos(az), dist*ce*Math.sin(az), dist*se];
       const P=mPersp(45*D2R, W/Math.max(1,H), Math.max(1e-7,dist*1e-4), Math.max(10,dist*2000));
-      const V=mLook(eye,[0,0,0],[0,0,1]);
+      const V=mLook(eye,[0,0,0],upVector());
       return { P, V, VP:mMul(P,V), eye };
     }
 
@@ -1500,6 +1541,10 @@ window.IntMapModules.space=function(HOST){
            starField()). A test can then assert the mechanism instead of counting bright pixels. */
         distCeil:+distCeil().toFixed(3), starDepth:!!(starPc&&starDir&&starFarBuf),
         starFarEdge:+starFarEdgeNow().toFixed(1), starsWithoutParallax:starFarUnknown,
+        /* (#R208) the map-to-space axis handover, reportable: 1 = the Earth's own axis is up (what
+           the map shows), 0 = ecliptic north (what the solar system wants), and the up-vector the
+           camera is actually using right now. */
+        axisBlend:+axisBlend().toFixed(4), up:upVector().map(v=>+v.toFixed(4)),
         /* (#R208) the satellites of whatever is in focus, with the frame and epoch their elements
            came with — so a test can check a position against an ephemeris instead of a picture */
         moons:(()=>{ const l=moonList(); return { loaded:!!moons, error:moonsErr, shown:l.length,
