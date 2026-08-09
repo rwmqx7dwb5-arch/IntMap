@@ -18,7 +18,7 @@
 // module allowed to write, for mode + satPanelDismissed).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appShell } from './app-source.mjs';
+import { appShell, lazyFiles } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
@@ -53,6 +53,10 @@ function code(src) {
 }
 
 /* file -> the factories it defines */
+/* (#R209) the js/ files that are no longer in the entry's list because they are fetched on demand —
+   derived from js/lazy-modules.js's own literal specifiers. */
+const LAZY = lazyFiles(new URL('../', import.meta.url));
+
 const MOVED = {
   'js/map-ui.js': ['layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup', 'geojsonUpload', 'viewHash', 'share'],
   'js/playground.js': ['playground'],
@@ -67,6 +71,8 @@ const MOVED = {
   'js/sims.js': ['radiation', 'popArea', 'slope', 'rf', 'sun', 'transitReach', 'disaster', 'earthReplay'],
 };
 const ALL_FACS = Object.values(MOVED).flat();
+/* (#R209) …of which these are fetched on demand: the factories whose file the loader import()s. */
+const LAZY_FACS = new Set(Object.entries(MOVED).filter(([f]) => LAZY.includes(f)).flatMap(([, v]) => v));
 
 /* The order the 41 blocks occupied in the closure — i.e. the order their factory calls must appear
    in index.html. Interleaved with the earlier rounds' calls, which are not listed here. */
@@ -95,7 +101,8 @@ const LIVE = {
 test('R166 #1 all seven files are loaded and every factory they define is instantiated', () => {
   for (const [file, facs] of Object.entries(MOVED)) {
     const src = rd(file);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
+    assert.ok(html.includes(`import '../${file}';`) || LAZY.includes(file),
+      `src/main.js imports ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     // Comment-blanked: every header says "this file adds no <style>" in prose.
@@ -116,12 +123,31 @@ test('R166 #2 ORDER: the 41 calls appear exactly where their blocks used to run'
   // Grouping many blocks into one file makes "call them all together" look harmless. It is not:
   // these blocks append layer rows and panel buttons to shared containers, so their relative order
   // is user-visible. Pin it.
+  /* ⚠ (#R209) …AND A LAZY MODULE IS OUTSIDE THAT CLAIM, WHICH IS WHY IT IS EXCLUDED RATHER THAN
+     RE-ORDERED. The property being pinned is "these blocks build shared UI in this sequence". A
+     module fetched when the user clicks a menu item is instantiated long after every eager block has
+     finished, so it HAS no position in that sequence — writing one down would pin a fiction. What
+     keeps the exclusion honest is the precondition asserted below: a lazy factory may leave this
+     list only if it builds no shared UI at instantiation time, i.e. it appends nothing to the layer
+     dropdown and registers no layer. Break that and this test fails, rather than the app quietly
+     losing a row for anyone who never opens the feature. */
+  const lazyFacs = ALL_FACS.filter((f) => LAZY_FACS.has(f));
+  for (const f of lazyFacs) {
+    const file = Object.keys(MOVED).find((k) => MOVED[k].includes(f));
+    const src = code(rd(file));
+    assert.ok(!/IntMapLayers\s*\.\s*register|getElementById\(['"]layer-dropdown['"]\)/.test(src),
+      `${file} carries the lazy factory ${f}, so it must build no shared layer UI when instantiated`);
+  }
+  const order = ORDER.filter((f) => !LAZY_FACS.has(f));
   const seen = ALL_FACS
+    .filter((f) => !LAZY_FACS.has(f))
     .map((f) => ({ f, at: html.indexOf(`window.IntMapModules.${f}(IM_HOST);`) }))
     .filter((x) => x.at >= 0)
     .sort((a, b) => a.at - b.at)
     .map((x) => x.f);
-  assert.deepEqual(seen, ORDER, 'factory call order in index.html must match the original block order');
+  assert.deepEqual(seen, order, 'factory call order in index.html must match the original block order');
+  /* …and each excluded one is still instantiated exactly once — by the loader. #1 counts them. */
+  for (const f of lazyFacs) assert.ok(html.includes(`window.IntMapModules.${f}(IM_HOST);`), `${f} is still instantiated`);
 });
 
 test('R166 #3 INVARIANT: every reassigned closure value these blocks read is a LIVE getter', () => {

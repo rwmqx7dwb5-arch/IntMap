@@ -15,6 +15,7 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { BASE } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -23,6 +24,11 @@ test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   await page.goto(BASE + '/?rafshim=1');
   await page.waitForFunction(() => window.__imBoot && window.__imBoot.isDone(), null, { timeout: 60000 });
+  /* ⚠ (#R209) THE BOOT BEING DONE NO LONGER MEANS THE SEISMIC PANEL IS HERE. js/lazy-modules.js
+     fetches it on demand, so `window.IntMapSeismic` — which ① opens and then clicks at — arrives when
+     something asks for it. This is the same call the right-click item makes
+     (`await IntMapLazy.need('seismic')`), paid once for the file's one shared page. */
+  await loadLazyModules(page);
 });
 test.afterAll(async () => { await page.close(); });
 

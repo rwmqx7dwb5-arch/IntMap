@@ -7,8 +7,13 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
-const CRITICAL = ['IntMapConsole', 'IntMapAtlasDebug', 'IntMapStreetView'];
+// (#R209) IntMapStreetView is no longer a boot signal — js/street-view.js left the entry bundle and
+// is fetched on demand, so it is undefined at boot and this barrier would never resolve. IntMapLayers
+// takes its place as the "the app is up" marker (one of smoke.spec.js's CRITICAL_GLOBALS); #8's
+// Street View surface is requested right after, exactly as the app's own entry points request it.
+const CRITICAL = ['IntMapConsole', 'IntMapAtlasDebug', 'IntMapLayers'];
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
@@ -19,6 +24,7 @@ test.beforeAll(async ({ browser }) => {
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction((g) => g.every((k) => typeof window[k] !== 'undefined'), CRITICAL, { timeout: 45_000 });
+  await loadLazyModules(page);   // (#R209) ask for the on-demand modules, incl. streetView
   await page.waitForTimeout(600);
 });
 test.afterAll(async () => { await page?.context()?.close(); });

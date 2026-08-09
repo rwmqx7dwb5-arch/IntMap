@@ -13,6 +13,7 @@
  *     not, move fires only over the layer, and off() really detaches.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const ready = async (page) => {
   await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
@@ -23,7 +24,12 @@ const ready = async (page) => {
 test('R195 tsunami: the painted wave sits on the epicentre it came from', async ({ page }) => {
   test.setTimeout(300000);
   await ready(page);
-  await page.waitForFunction(() => !!window.IntMapTsunami, null, { timeout: 30000 });
+  /* ⚠ (#R209) THE MODULE IS FETCHED ON DEMAND NOW, so waiting for `window.IntMapTsunami` to appear
+     by itself waits for something nobody asked for. js/lazy-modules.js took the tsunami simulator
+     out of the boot bundle; the app's own entry point awaits `IntMapLazy.need('tsunami')` first, and
+     so does this. It throws by name if the module fails, so nothing here is made quieter — only the
+     ready() barrier above stays a BOOT barrier, and it names eager globals. */
+  await loadLazyModules(page);
 
   const r = await page.evaluate(async () => {
     window.IntMapTsunami.open({ lng: 142.37, lat: 38.32, mw: 9.1, depth: 24, hours: 3 });

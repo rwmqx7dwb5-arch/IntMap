@@ -7,6 +7,7 @@
 //      position / altitude / heading / airspeed
 //   4. the Vite bundle boots the same app: every module present, every vendor global republished
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -114,6 +115,12 @@ test('clicking an aircraft opens its card, and the card flies from its own condi
     status: 200, contentType: 'application/json', body: JSON.stringify({ photos: [] }),
   }));
   await boot(page);
+  /* (#R209) the card's Fly button hands over to `window.IntMapFlightSim`, and js/flight-sim.js is no
+     longer in the boot bundle — it arrives when a door asks for it. js/aircraft-detail.js awaits
+     `IntMapLazy.need('flightSim')` on the click; this test reads `FS._st()` straight afterwards, so
+     it asks for the module the way the app does rather than waiting longer for a global that would
+     never appear on its own. What the flight is asserted to start FROM is untouched. */
+  await loadLazyModules(page);
 
   await page.evaluate(async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
