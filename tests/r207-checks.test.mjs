@@ -175,6 +175,32 @@ test('R207 ⑪ the space-approach caption is centred on the visible map and has 
     'it is a pill on the app surface, so it reads in light mode as well as dark');
 });
 
+/* ── ⑬ the build stamp names THIS round, not merely the same round twice ────────────────────────
+   MEASURED on the live site right after the R207 deploy: `[prod-smoke] live build = 2026-08-10-R205`.
+   R206 shipped with an R205 stamp and nothing noticed, because the only rule anyone had written was
+   "the two stamps agree with each other" (tests/r169-checks ⑧) — which two equally stale stamps
+   satisfy perfectly. #R174 had already lost three rounds to exactly this and answered it with a
+   comment saying it MUST be bumped; a comment is not a gate.
+
+   The stamp's job is to let the anti-stale guard (index.html ~line 50) and an incident responder tell
+   which build is live. A stamp that names an older round makes a CURRENT build look stale to the
+   guard and a stale one look plausible to a human — both directions wrong.
+
+   So it is derived from something that cannot be forgotten: DEV-NOTES.md's newest `## R<n>` heading
+   is written by the round itself (standing instruction 9 — prepend). If a round documents itself, it
+   cannot ship someone else's stamp. */
+test('R207 ⑬ the build stamp names the newest round in DEV-NOTES', () => {
+  const html = read('index.html');
+  const notes = read('DEV-NOTES.md');
+  const newest = Math.max(...[...notes.matchAll(/^## R(\d+) —/gm)].map((m) => +m[1]));
+  assert.ok(isFinite(newest) && newest > 0, 'DEV-NOTES.md has round headings to derive from');
+  const ib = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/.exec(html);
+  const mb = /window\.__imBuild='R(\d+)';/.exec(html);
+  assert.ok(ib && mb, 'both stamps are present and well-formed');
+  assert.equal(+ib[2], newest, `INTMAP_BUILD says R${ib[2]} but the newest documented round is R${newest}`);
+  assert.equal(+mb[1], newest, `__imBuild says R${mb[1]} but the newest documented round is R${newest}`);
+});
+
 /* ── ⑫ the test bill itself ────────────────────────────────────────────────────────────────────── */
 test('R207 ⑫ the deep tier no longer stands between a merge and the next one', () => {
   const y = read('.github/workflows/ci.yml');
