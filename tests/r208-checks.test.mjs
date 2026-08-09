@@ -604,6 +604,38 @@ test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', a
     assert.equal(g.type, 'application/gzip');
     const head = new Uint8Array(g.body.slice(0, 2));
     assert.ok(head[0] === 0x1f && head[1] === 0x8b, 'and it still arrives as gzip bytes');
+
+    /* ⚠ AND IT STILL DOES NOT SERVE ANYTHING ABOVE ITS ROOT. The traversal guard was rewritten this
+       round — the request is reduced to plain segments and the path is REBUILT from ROOT, rather
+       than joined first and checked afterwards — because the check-afterwards form is invisible to
+       CodeQL's tainted-path query, which flagged this handler as soon as a second read of the path
+       was added. The BEHAVIOUR is the contract; the shape was only the means, so this asserts the
+       behaviour.
+       ⚠⚠ AND IT IS ASSERTED FROM A SUBDIRECTORY ROOT, which is the only way to ask the question.
+       Two earlier forms of this test passed for the wrong reason: `fetch` NORMALISES `/../x` in the
+       client before the request is sent (so the server never sees it), and with the root at the
+       repo root a `..` that survives resolves back onto a file that is legitimately inside it — 200
+       either way, proving nothing. Rooted at tests/, package.json is genuinely outside, and the
+       escape attempt has to be percent-encoded to survive the client. */
+    const SUB = 4189;
+    const sub = spawn(process.execPath, [join(ROOT, 'scripts', 'serve.mjs'), '--port', String(SUB), '--root', join(ROOT, 'tests')],
+      { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    try {
+      await new Promise((ok, no) => {
+        const t = setTimeout(() => no(new Error('the subdirectory server did not come up')), 15000);
+        sub.stdout.on('data', (d) => { if (/static server on/.test(String(d))) { clearTimeout(t); ok(); } });
+        sub.on('error', no);
+      });
+      const inside = await fetch(`http://127.0.0.1:${SUB}/r208-checks.test.mjs`);
+      assert.equal(inside.status, 200, 'a file inside the served root is still served');
+      for (const evil of ['/%2e%2e/package.json', '/%2e%2e%2f%2e%2e%2fpackage.json',
+        '/data/%2e%2e/%2e%2e/package.json', '/..%5cpackage.json']) {
+        const r = await fetch(`http://127.0.0.1:${SUB}${evil}`, { redirect: 'manual' });
+        const body = r.status === 200 ? await r.text() : '';
+        assert.ok(!/"name":\s*"intmap-ops"/.test(body),
+          `${evil} returned ${r.status} and the repo's package.json — nothing may escape the served root`);
+      }
+    } finally { sub.kill(); }
   } finally {
     srv.kill();
   }

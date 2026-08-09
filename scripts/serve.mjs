@@ -8,7 +8,7 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { join, normalize, extname, resolve, sep } from 'node:path';
+import { join, extname, resolve, sep } from 'node:path';
 import { gzip } from 'node:zlib';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -90,8 +90,17 @@ const server = createServer(async (req, res) => {
   try {
     let pathname = decodeURIComponent((req.url || '/').split('?')[0].split('#')[0]);
     if (pathname.endsWith('/')) pathname += 'index.html';
-    // Resolve inside ROOT only — reject path traversal.
-    const filePath = normalize(join(ROOT, pathname));
+    /* ══ RESOLVE INSIDE ROOT ONLY — REJECT PATH TRAVERSAL ══════════════════════════════════════════
+       ⚠ (#R208) The guard used to be `startsWith(ROOT + sep)` applied to the JOINED path. That is
+       correct, but it is a check on a value that has ALREADY been built out of the request, and
+       CodeQL's tainted-path query cannot see it as a sanitiser — it flagged this handler the moment
+       this round added a second read of `filePath`. Rewritten so the request never reaches `join()`
+       until it has been reduced to a list of plain segments: `..` and empty/`.` parts are dropped
+       outright, and the path is REBUILT from ROOT. There is now no expression in which unfiltered
+       request text is a path component, which is both easier to check by eye and a form the scanner
+       recognises. `resolve()` at the end is belt-and-braces for symlinked roots. */
+    const segments = pathname.split(/[/\\]+/).filter((p) => p && p !== '.' && p !== '..');
+    const filePath = resolve(ROOT, ...segments);
     if (filePath !== ROOT && !filePath.startsWith(ROOT + sep)) {
       res.writeHead(403).end('Forbidden');
       return;
