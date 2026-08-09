@@ -136,7 +136,18 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
     return { before, after, wet, leveeLayer: !!m.getLayer('tw-levee-line') };
   });
   expect(r.leveeLayer).toBe(true);
-  expect(r.before.basin, 'flat ground has no basin').toBeNull();
+  /* WARN (#R210) THIS USED TO BE `expect(r.before.basin).toBeNull()`, AND THAT WAS A PROPERTY OF
+     THE VIEWPORT, NOT OF THE GROUND. `open({refit:true})` fits the solver grid to the CURRENT view,
+     so the cells move whenever the map canvas changes width. #R210 took the left sidebar from 440 to
+     400 px; measured, the canvas went 840 -> 880 px, the fitted bounds widened, and a real 1.5 m
+     dip that the DEM has always contained near this point landed inside the sampled cells:
+     before.basin = {cells: 4, spillM 5.479 vs groundM 4.014}. The tool was not wrong — the
+     assertion was pinned to one screen width.
+     What this test is about is in its own title: the LEVEE makes a basin. So the precondition
+     states the same thing as a RELATION — before the line there is no rim worth speaking of
+     (< 2 m), after it there is one taller than the 4 m asserted below. */
+  const beforeRim = r.before.basin ? (r.before.basin.spillM - r.before.groundM) : 0;
+  expect(beforeRim, 'flat ground has no rim worth speaking of').toBeLessThan(2);
   expect(r.after.basin, 'drawing the line made one').not.toBeNull();
   // the rim is the ground plus the crest the user asked for
   expect(r.after.basin.spillM - r.after.groundM).toBeGreaterThan(4);

@@ -59,8 +59,10 @@ test('R195 ①: both sidebars are recorded, and every route out of them records 
      and that only the no-saved-answer case opens. Pinning the old expression would have made that
      instruction unimplementable, so the assertion is on the two behaviours, not on the source line. */
   assert.match(mapUi, /typeof ui\.right!=='boolean'/, 'boot distinguishes "no saved answer" from a saved one');
-  assert.match(mapUi, /if\(!isMob\(\)&&\(unanswered\|\|ui\.right===true\)\) open\(\);/,
+  assert.match(mapUi, /if\(!isMob\(\)&&\(unanswered\|\|ui\.right===true\)\)\{/,
     'a saved right:false still boots closed; only an unanswered first visit opens');
+  /* (#R210 follow-up) the unanswered case waits for idle so the tile build does not race boot */
+  assert.match(mapUi, /if\(unanswered&&'requestIdleCallback' in window\)/, 'and it opens on idle');
 });
 
 /* ── ② the dynamic image is parameterised by the engine, not by latitude ──────────────────────── */
