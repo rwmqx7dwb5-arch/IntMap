@@ -185,7 +185,16 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
 /* ── ⑤ THE PICK GESTURE ────────────────────────────────────────────────────────────────────── */
 test('R196 ⑤ every "place this on the map" button steps its panel aside', () => {
   const p = rd('js/map-pick.js');
-  assert.match(p, /_hide\(panel\)/, 'the requesting panel is hidden for the duration');
+  /* ⚠ (#R207) THE INVARIANT IS "THE PANEL STOPS COVERING THE MAP", NOT "THE PANEL IS HIDDEN".
+     #R196 measured the real defect — the seismic panel covers 82 % of a 390 × 844 map, so the app
+     asked for a tap on a surface it was standing on — and removed the panel to fix it. 「震源地を
+     設置ボタンを押すとポップアップが消えるのは不要」: #R207 keeps the panel on screen and takes it
+     out of HIT-TESTING instead (`pointer-events:none`), which satisfies the same measurement —
+     coverage stops mattering once the cover is transparent to input — without the disappearance.
+     So this asserts that the panel is stepped aside SOMEHOW, and that the step is undone afterwards. */
+  assert.match(p, /pointerEvents='none'|_hide\(panel\)/, 'the requesting panel stops covering the map for the duration');
+  assert.match(p, /_unghost\(s\.panel,s\.prevStyle\)|_show\(s\.panel,s\.prevDisplay\)/,
+    '…and teardown puts it back exactly as it was');
   assert.match(p, /GE\(\)\.events\.once\('click',s\.h\)/, 'the delivery mechanism is unchanged');
   assert.match(p, /e\.key==='Escape'/, 'Esc cancels');
   /* the four callers, each still keeping its old path as a fallback */

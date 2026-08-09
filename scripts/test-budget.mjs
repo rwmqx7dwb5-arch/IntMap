@@ -68,7 +68,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ The gate cannot be emptied to pass BUDGET_S either: scripts/tiers.mjs keeps the four always-on
    suites and the current round's own spec in core by construction, whatever they cost.
    5,250 is exactly #R203's two ceilings added together — this round created no headroom at all. */
-const BUDGET_S = 90;                    /* core: 1.5 min — measured 82 s over 11 files (#R206) */
+/* (#R207) 90 → 66. The gate is 6 files / 60 s: the four always-on suites plus the current round's
+   spec, which is now ZERO extra files because this round's browser assertions were appended to
+   tests/smoke.spec.js instead of getting a boot of their own (measured: 29.6 s without them, 29.2 s
+   with them — the assertions are free, the boot was the whole price). CORE_MAX_S also went 6 → 1,
+   which took the six legacy per-round specs out of the gate. Ceiling follows the measurement down. */
+const BUDGET_S = 66;                    /* core: 1.1 min — measured 60 s over 6 files (#R207) */
 const TOTAL_BUDGET_S = 5220;            /* whole suite: 87.0 min — measured 5,219 (#R206) */
 const HISTORY = [
   /* ⚠ (#R206) THE NEW SPEC WAS PAID FOR OUT OF A BOOT, WHICH IS WHERE THIS SUITE'S TIME LIVES.

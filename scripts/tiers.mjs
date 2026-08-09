@@ -109,7 +109,24 @@ export function allSpecs() {
    MOVES it to the author. So: **before pushing a change to a surface the gate no longer covers, run
    `npm run test:deep`** — and find which specs those are the way #R186 says, by grepping tests/ for
    the file names, layer ids and API names the change touched. */
-export const CORE_MAX_S = 6;
+/* ══ (#R207) LOWERED TO ONE — THE GATE IS NOW THE ALWAYS-ON SUITES AND THIS ROUND ═══════════════
+   「毎回毎回、テストに時間がかかりすぎ。…実装部分以外の、テスト時間全体が長い。どこを削ってほしいなど
+    のこだわりはない。テスト時間が短くなりさえすればなんでもいい。」
+
+   Measured before changing anything: the gate is 11 files / 82 s, and six of them are per-round
+   regression specs from #R149–#R197 costing 1–6 s each (22 s together). Each was cheap enough to
+   pass #R205's price of six seconds, which is exactly how a gate grows back one file at a time —
+   the price stops the expensive ones and lets the accumulation through underneath it.
+
+   At one second nothing that boots the app can pay, so what stands in front of a push is the four
+   suites that ARE the gate plus the spec of the round being worked on, and nothing else can drift
+   in. That is the smallest honest gate this project can have: the broad smoke/QA/security/monitors
+   coverage, and the round's own regressions.
+
+   ⚠ NOTHING IS DELETED. Every one of those six still runs nightly and on demand, and the TOTAL
+   ceiling in scripts/test-budget.mjs is unchanged — moving a file out of the gate buys no headroom
+   there, so this cannot become a way of hiding work. */
+export const CORE_MAX_S = 1;
 
 /* The suites that are the gate itself rather than one round's regression file. Whatever they cost. */
 export const CORE_ALWAYS = ['smoke', 'security', 'internal-qa', 'monitors'];

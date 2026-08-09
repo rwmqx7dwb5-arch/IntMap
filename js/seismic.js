@@ -1247,8 +1247,10 @@ window.IntMapModules.seismic=function(HOST){
           :L('Clicking the map adds a place to the table below.','地図をクリックすると下の表に地点を追加します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu.','Клик по карте добавляет место в таблицу ниже.','Al hacer clic en el mapa se añade un lugar a la tabla.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
+          /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
+             the stroke closes (see toggleFaultDraw / DrawTool's onFinish). */
           +'<button class="sq-fdraw" style="'+BTN+'flex:1;">'+(_fDrawing
-              ?('✔ '+L('Use the drawn area','描いた範囲を取り込む','Gezeichnete Fläche übernehmen','Взять нарисованную область','Usar el área dibujada'))
+              ?('✔ '+L('Finish drawing','描画を終了','Zeichnen beenden','Закончить рисование','Terminar el dibujo'))
               :('✏ '+L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura')))+'</button>'
           +(fault?('<button class="sq-fclear" style="'+BTN+'">✕</button>'):'')
         +'</div>'
@@ -1447,22 +1449,43 @@ window.IntMapModules.seismic=function(HOST){
        its loop becomes the rupture (area → M₀ → Mw). The tool is the SAME free-draw every other
        feature uses (#R141's currentGeometry), not a private reimplementation. */
     let _fDrawing=false;
+    /* the outer ring of whatever DrawTool.currentGeometry() shape came back, or null */
+    function _ringOf(g){
+      try{
+        if(g&&g.type==='Polygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0].length>=4) return g.coordinates[0].slice(0,-1);
+        if(g&&g.type==='MultiPolygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0][0]&&g.coordinates[0][0].length>=4) return g.coordinates[0][0].slice(0,-1);
+      }catch(_){}
+      return null;
+    }
+    /* ══ (#R207) THE LOOP BECOMES THE RUPTURE THE MOMENT IT CLOSES ═════════════════════════════════
+       「描いた範囲を取り込むボタンを押さなくてもいいようにしろ。」 #R189's flow was press → draw →
+       press again, and the second press did nothing the tool could not report by itself: DrawTool now
+       calls back when a stroke ends (js/map-tools.js `finish`), so the area, the moment M₀ and the Mw
+       land as soon as the finger lifts.
+       The button stays, and stops being a step: while drawing it says "finish drawing", which is what
+       it now does — a way OUT of the mode, not the way to get the answer. */
+    function _fCapture(g,{keepDrawing}={}){
+      const ring=_ringOf(g);
+      if(ring&&faultSet(ring,faultSlip)){ if(!keepDrawing) render(); else render(); refresh(); return true; }
+      return false;
+    }
     function toggleFaultDraw(){
       const DT=window.DrawTool;
       if(!DT||!DT.start||!DT.currentGeometry){ return; }
       /* (#R190) 「フリー描画中にdrawポップアップは表示しないように。」 — the tool's own measurement
          panel is not part of drawing a rupture; it covered this one. See DrawTool.start's `silent`. */
-      if(!_fDrawing){ _fDrawing=true; try{ DT.start(null,{silent:true}); }catch(_){ try{ DT.start(); }catch(__){} } render(); return; }
+      if(!_fDrawing){ _fDrawing=true;
+        const opt={ silent:true, onFinish:(g)=>{ _fCapture(g,{keepDrawing:true}); } };
+        try{ DT.start(null,opt); }catch(_){ try{ DT.start(); }catch(__){} } render(); return; }
       _fDrawing=false;
-      let ring=null;
-      try{ const g=DT.currentGeometry();
-        if(g&&g.type==='Polygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0].length>=4) ring=g.coordinates[0].slice(0,-1);
-        else if(g&&g.type==='MultiPolygon'&&g.coordinates&&g.coordinates[0]&&g.coordinates[0][0]&&g.coordinates[0][0].length>=4) ring=g.coordinates[0][0].slice(0,-1);
-      }catch(_){}
+      /* the manual path is still here for a stroke the tool has not seen end (and for Atlas) */
+      let g=null; try{ g=DT.currentGeometry(); }catch(_){}
+      const had=!!fault;
+      const ok=_fCapture(g);
       try{ DT.exit&&DT.exit(); }catch(_){}
-      if(ring&&faultSet(ring,faultSlip)){ render(); refresh(); }
+      if(ok||had){ render(); refresh(); }
       else { render(); const o=panel&&panel.querySelector('.sq-out');
-        if(o) o.insertAdjacentHTML('afterbegin','<div style="color:#ff9f0a;margin-bottom:4px;">'+L('No closed area was drawn — draw a loop, then press the button again.','閉じた範囲が描かれていません。ループを描いてからもう一度押してください。','Keine geschlossene Fläche — Schleife zeichnen, dann erneut drücken.','Замкнутая область не нарисована — нарисуйте контур и нажмите снова.','No se dibujó un área cerrada — dibuje un lazo y pulse de nuevo.')+'</div>'); }
+        if(o) o.insertAdjacentHTML('afterbegin','<div style="color:#ff9f0a;margin-bottom:4px;">'+L('No closed area was drawn — draw a loop on the map.','閉じた範囲が描かれていません。地図上にループを描いてください。','Keine geschlossene Fläche — zeichnen Sie eine Schleife auf der Karte.','Замкнутая область не нарисована — нарисуйте контур на карте.','No se dibujó un área cerrada — dibuje un lazo en el mapa.')+'</div>'); }
     }
     function report(){ const o=panel&&panel.querySelector('.sq-out'); if(!o) return;
       _setProg();
@@ -1579,7 +1602,12 @@ window.IntMapModules.seismic=function(HOST){
        DEFAULT is the epicentre. The observation-point table is not removed — it is the other half of
        the same switch, one tap away, and everything that reads `stations` is unchanged. */
     function setClickMode(v){ clickMode=(v==='station')?'station':'epi'; if(opened) render(); return clickMode; }
-    function onClick(e){ if(!opened||picking) return;
+    /* ⚠ (#R207) …AND NOT WHILE A RUPTURE IS BEING DRAWN ═══════════════════════════════════════════
+       「フリーで描く際に、それが震源地を配置した判定になるのを辞めろ。」 #R205 gave a plain map click to
+       the epicentre, and DrawTool's stroke is made of plain map clicks: every loop drawn since then
+       also dragged the epicentre to wherever the finger came down, silently redefining the event the
+       drawn area was about to describe. Drawing owns the pointer for the duration. */
+    function onClick(e){ if(!opened||picking||_fDrawing) return;
       if(clickMode==='station'){ if(!epi) return;
         stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
         if(stations.length>6) stations.shift(); draw(); report(); return; }

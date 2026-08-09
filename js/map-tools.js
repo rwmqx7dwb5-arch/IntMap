@@ -243,6 +243,9 @@ window.IntMapModules.drawTool=function(HOST){
        for the borrowed session only; everything else about the tool is unchanged, and exit() clears
        the flag so the next ordinary Draw behaves exactly as before. */
     let silent=false;
+    /* (#R207) the driving feature's "a loop was closed" subscriber — see finish() and start(). One,
+       not a list: this tool is single-instance and is driven by at most one feature at a time. */
+    let _onFinish=null;
     function renderPanel(){ const p=ensurePanel(); if(silent){ p.style.display='none'; return; } p.style.display='block';
       /* (#R139) touch devices trace by PRESS-DRAG-RELEASE (not tap) — the hint must say so, or a user taps and
          nothing draws. Detect coarse pointers and give the right instruction; 5 languages. */
@@ -295,7 +298,14 @@ window.IntMapModules.drawTool=function(HOST){
          untouched by the smoothing slider (both use the open RAW path). */
       closeAux=null;
       if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
-      setData(); state='done'; try{ GE().input.set('dragPan',true); }catch(_){} renderPanel(); }
+      setData(); state='done'; try{ GE().input.set('dragPan',true); }catch(_){} renderPanel();
+      /* ══ (#R207) THE STROKE ENDING IS AN EVENT, AND IT HAD NO SUBSCRIBERS ═══════════════════════
+         「描いた範囲を取り込むボタンを押さなくてもいいようにしろ。」 A feature that DRIVES this tool
+         (`start(null,{silent:true})`) could only find out that a loop had been closed by asking —
+         which is why the seismic panel needed a second button press to ask. The tool knows the moment
+         it happens; it just never said so. Fired after `state='done'` so a subscriber calling
+         `currentGeometry()` from inside gets the finished rings rather than re-entering `finish()`. */
+      if(_onFinish){ try{ _onFinish(api.currentGeometry()); }catch(_){} } }
 
     /* (#R123) POPULATION inside the drawn loop(s) — reuses IntMapPopArea (real WorldPop 100m grid, never a guess).
        Multiple enclosed loops are summed as a MultiPolygon. Same live progress bar as the measure/radius panels so
@@ -363,11 +373,12 @@ window.IntMapModules.drawTool=function(HOST){
          existing call site changes. */
       start(pt,opt){ try{ if(typeof exitTool==='function') exitTool(); }catch(_){}
         silent=!!(opt&&opt.silent)||!!(pt&&pt.silent);
+        _onFinish=(opt&&typeof opt.onFinish==='function')?opt.onFinish:null;   /* (#R207) */
         ensureLayers(); wire(); GE().render.canvas().style.cursor='crosshair'; setBtn(true);
         if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; silent=false; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; silent=false; _onFinish=null; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon for the area-monitor feature.
          Finishes the stroke first if it is still being drawn, so "monitor this drawn area" works mid-gesture. */

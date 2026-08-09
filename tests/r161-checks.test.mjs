@@ -242,8 +242,16 @@ test('#16 the engine contract grew and the news overlay runs through it', () => 
      minimap, the guess map — has to be handed the SAME object, and it cannot be if that object
      closes over the engine's own adapter. The bindings asserted are #R161's, unchanged. */
   for (const m of ['ready:()=>A().styleReady()', 'container:()=>A().getContainer()', 'size:()=>A().getSize()',
-    'setCursor:c=>A().setCursor(c)', 'onLayer:(e,l,c)=>A().onLayer(e,l,c)', 'getPaint:(id,p)=>A().getPaint(id,p)'])
+    'setCursor:c=>A().setCursor(c)', 'getPaint:(id,p)=>A().getPaint(id,p)'])
     assert.ok(html.includes(m), 'facade binding missing: ' + m);
+  /* ⚠ (#R207) `onLayer` WAS PINNED AS A LITERAL PASS-THROUGH AND SO IT BROKE ON A CHANGE THAT KEPT
+     ITS MEANING — the same failure mode #R206 wrote up two assertions below this one, and #R205
+     wrote up after five pins broke at once. #R207 gave the binding a body (it records which layer
+     ids are click-wired, so a place label can yield to whatever else is clickable at the point), and
+     the byte-for-byte pin went red while the contract it names was untouched.
+     What matters is that the facade FORWARDS to the adapter, not that it does so in one expression. */
+  const onLayer = /onLayer:\(e,l,c\)=>\{?([\s\S]{0,220}?)A\(\)\.onLayer\(e,l,c\)/.exec(html);
+  assert.ok(onLayer, 'facade binding missing: onLayer → A().onLayer');
   /* news overlay: creation, data, declutter, theming and pointer events via GE */
   assert.ok(html.includes("GE.layers.addSource('news-points'"), 'news source not created through the engine');
   assert.ok(html.includes("GE.layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');

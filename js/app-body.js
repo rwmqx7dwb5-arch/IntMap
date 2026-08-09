@@ -51,7 +51,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      i.e. long after this line runs (#R170 learned that the hard way). */
   const GE=()=>window.IntMapGeoEngine;
   /* ===== State ===== */
-  let userTheme='auto', userTZ='auto', currentMapType='map', currentProj='globe', currentLang='en';
+  /* (#R207) 「初回時にはmapではなくsatelliteに。3Dはオフ。」 The base type has never been persisted —
+     nothing writes it to `intmap_settings` and nothing reads it back — so this literal IS the state
+     every load starts in, and it said 'map'. ⚠ Deliberately NO new persistence: recording a pressed
+     button as "the user's choice" is the mistake #R188 made. 3-D is already off (`terrain3D=false`,
+     and nothing turns it on at boot) — verified, then left alone. */
+  let userTheme='auto', userTZ='auto', currentMapType='sat', currentProj='globe', currentLang='en';
   /* (#R7-i18n) Read the SAVED language up-front, before any legend / option / popup is built. Many
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
@@ -838,7 +843,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
            the same colour, which is what makes a cross-fade between them read as one picture
            sharpening. Every OTHER raster overlay keeps 0: they are data layers, not photographs, and
            a half-faded thermal-anomaly value is a wrong value. */
-        layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':180}},
+        layers:[
+          /* (#R207) 「南極付近が衛星画像零の暗黒領域」 — the ±85.05°…±90° caps, which no Mercator source
+             can address. Declared FIRST because a background layer must be at the very bottom, and a
+             declaration is the only place that is guaranteed rather than arranged. Owned by
+             js/world-base.js (`applyCap`/`polarColour`); the long note is there. */
+          {id:'layer-polar-cap',type:'background',layout:{visibility:'none'},paint:{'background-color':'#e9edf2'}},
+          {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':180}},
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':180}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
@@ -1508,6 +1519,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          object expresses it. __imap is published at construction now (see there), not here. */
       try{ if(!/[?&]flat\b/.test(location.search)) GE().camera.setProjection('globe'); }catch(e){}
       ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
+      /* (#R207) the satellite default goes through the SAME kernel command the button does, so the
+         provider controller and `_reassertBase` are set up identically. `IntMapOS.has` is real (it is
+         defined beside `exec`), and the registration exists by the time this event fires. */
+      try{ if(currentMapType==='sat') IntMapOS.exec('view.base.sat',{source:'default'}); }catch(_){}
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
       GE().events.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
       /* (#R26) "デフォルト選択なのに地名ラベル/国境が出ない、再チェックで初めて出る": both default ON but
@@ -2171,10 +2186,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items
      and explicit time-travel (newsDate) are exempt so the user never loses what they deliberately kept. */
   const NEWS_MAX_AGE_MS=72*3600e3;
+  /* (#R207) the outlet filter lives in js/news-sources.js; this asks, and FAILS OPEN. */
+  function newsSourceAllows(pub){
+    try{ const N=window.IntMapNewsSources; return N?N.allows(pub):true; }catch(_){ return true; }
+  }
   function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
     const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
     return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false;
       if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
+      /* (#R207) …except in Saved: the user kept that item deliberately (as with the age cut). */
+      if(currentMode!=='saved'&&!newsSourceAllows(it.publisher)) return false;
       if(q&&!it.title.toLowerCase().includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
@@ -3334,6 +3355,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
   window.imTicker='off';
   window.imNewsCountries=[]; window.imLayerFavs=[];
+  /* (#R207) the chosen news OUTLETS — empty = every one. Persisted beside the country list. */
+  window.imNewsSources=[];
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {NEWS_COUNTRY_FEEDS}=window.IntMapTables;
   window.NEWS_COUNTRY_FEEDS=NEWS_COUNTRY_FEEDS;
@@ -3387,6 +3410,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.showRank==='on'||s.showRank==='off') window.imShowRank=s.showRank;   /* (#R137) Countries rank numbers (default off) */
     if(s.ticker==='on'||s.ticker==='off') window.imTicker=s.ticker;   /* (#R63) */
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
+    if(Array.isArray(s.newsSources)) window.imNewsSources=s.newsSources;   /* (#R207) */
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
     if(s.navZoom) window.imNavZoomSens=+s.navZoom||1;   /* (#R20) nav sensitivity */
     if(s.navPan)  window.imNavPanSens=+s.navPan||1;
@@ -3398,7 +3422,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
-      newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
+      newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
     try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
@@ -3443,29 +3467,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
     const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }
 
-  /* ---------- News-by-country checkboxes (#29) ---------- */
-  function newsCountryLabel(){
-    const sel=(window.imNewsCountries||[]);
-    if(!sel.length) return currentLang==='jp'?'未選択（標準のニュースのみ）':currentLang==='de'?'Keine (nur Standard-Feeds)':currentLang==='ru'?'Не выбрано (только стандартные ленты)':currentLang==='es'?'Ninguno (solo fuentes predeterminadas)':'None (default feeds only)';
-    return sel.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+(f.name[currentLang]||f.name.en)):c; }).join(', ');
-  }
-  function updateNewsCountryLabel(){ const lbl=document.getElementById('newscountry-dd-label'); if(lbl) lbl.textContent=newsCountryLabel(); }
-  function renderNewsCountryChecks(){
-    const wrap=document.getElementById('newscountry-multi'); if(!wrap) return;
-    if(!wrap.dataset.built){
-      wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>`<label><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>${NEWS_COUNTRY_FEEDS[code].flag} <span class="ncx" data-code="${code}"></span></span></label>`).join('');
-      wrap.dataset.built='1';
-      /* update the button summary live as boxes are ticked (committed on Apply) */
-      wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value); const lbl=document.getElementById('newscountry-dd-label'); if(lbl) lbl.textContent=(tmp.length?tmp.map(c=>{const f=NEWS_COUNTRY_FEEDS[c];return f?f.flag+' '+(f.name[currentLang]||f.name.en):c;}).join(', '):(currentLang==='jp'?'未選択（標準のニュースのみ）':currentLang==='de'?'Keine (nur Standard-Feeds)':currentLang==='ru'?'Не выбрано (только стандартные ленты)':currentLang==='es'?'Ninguno (solo fuentes predeterminadas)':'None (default feeds only)')); });
-    }
-    wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=window.imNewsCountries.includes(cb.value); });
-    wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=NEWS_COUNTRY_FEEDS[c].name[currentLang]||NEWS_COUNTRY_FEEDS[c].name.en; });
-    updateNewsCountryLabel();
-  }
-  (function wireNewsCountryDD(){ const dd=document.getElementById('newscountry-dd'), btn=document.getElementById('newscountry-dd-btn'); if(!dd||!btn) return;
-    btn.addEventListener('click',(e)=>{ e.stopPropagation(); dd.classList.toggle('open'); });
-    document.addEventListener('click',(e)=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open'); });
-  })();
+  /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
+     feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
+  window.IntMapModules.newsSources(IM_HOST,{ NEWS_COUNTRY_FEEDS });
+  const NS=()=>window.IntMapNewsSources;
+  const renderNewsCountryChecks=()=>{ try{ NS().renderCountries(); }catch(_){} };
+  const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
+  const renderNewsSourceChecks=()=>{ try{ NS().render(); }catch(_){} };
+  const updateNewsSourceLabel=()=>{ try{ NS().syncLabel(); }catch(_){} };
+  window._populateNewsSources=renderNewsSourceChecks;
 
   /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
   { const open=document.getElementById('btn-open-settings');
@@ -3479,8 +3489,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
+      /* (#R207) the ticker's item picker follows the SELECT, not the saved value, so On/Off shows and
+         hides it without waiting for Apply (`_populateTickerSyms` reads the select — js/i18n-late.js). */
+      try{ const ts=v('setting-ticker'); if(ts&&!ts.__imTickVis){ ts.__imTickVis=true;
+        ts.addEventListener('change',()=>{ try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){} }); } }catch(_){}
       try{ window._syncAccentPicker&&window._syncAccentPicker(); }catch(_){}   /* (#R114) reflect the committed accent */
       renderNewsCountryChecks();
+      try{ renderNewsSourceChecks(); }catch(_){}   /* (#R207) rebuilt on every open — the feed it lists changes */
     });
   }
   { const apply=document.getElementById('btn-close-settings');
@@ -3499,10 +3514,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         if(_oldLP!==window.imLayerPanel){ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} } }
       if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
       if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
-      const ncWrap=document.getElementById('newscountry-multi');
-      let newsCountriesChanged=false;
-      if(ncWrap){ const before=(window.imNewsCountries||[]).slice().sort().join(','); window.imNewsCountries=Array.from(ncWrap.querySelectorAll('input:checked')).map(c=>c.value); newsCountriesChanged=(before!==window.imNewsCountries.slice().sort().join(',')); }
-      const dd=document.getElementById('newscountry-dd'); if(dd) dd.classList.remove('open');
+      /* (#R207) both news pickers commit in js/news-sources.js. The COUNTRY one changes which feeds
+         are fetched; the OUTLET one is a view filter, so it re-renders rather than re-fetching. */
+      let newsCountriesChanged=false, newsSourcesChanged=false;
+      try{ newsCountriesChanged=!!NS().commitCountries(); }catch(_){}
+      try{ newsSourcesChanged=!!NS().commit(); }catch(_){}
       applySidebarStyle();
       try{ applyFlatPanSetting(); }catch(_){}
       try{ applyLabelLang(); }catch(_){}
@@ -3517,6 +3533,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* (#R15) Changing the national-media selection now actually refreshes the feed — refetch the news
          so the chosen countries' outlets appear (previously the setting saved but nothing changed). */
       if(newsCountriesChanged){ try{ updateNewsCountryLabel(); }catch(_){} try{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } }catch(_){} }
+      /* (#R207) the outlet filter needs no network — recompute the filtered list and repaint. */
+      if(newsSourcesChanged){ try{ updateNewsSourceLabel(); }catch(_){}
+        try{ newsFiltered=computeFilteredNews(); renderedCount=0; renderUI(); }catch(_){}
+        try{ window._refreshNewsPins&&window._refreshNewsPins(); }catch(_){} }
     });
   }
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */

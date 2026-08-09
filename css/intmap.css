@@ -778,6 +778,15 @@
        FOOTER. The body holds the scrollbar, so its gutter no longer sits BESIDE the footer's rounded corner
        — that was the "Apply UIの右下が角丸で隙間がある" gap. The footer now spans the full card width flush. */
     #settings-modal .modal-content{ display:flex; flex-direction:column; overflow:hidden; padding:0 !important; }
+    /* ══ (#R207) THE SETTINGS PANEL WAS THE GENERIC MODAL WIDTH ═══════════════════════════════════
+       「デスクトップ版の設定画面の横幅が狭すぎる。」 `.modal-content` is 340 px — a figure chosen for the
+       small confirm/about dialogs that share the class, and Settings has been borrowing it. It is the
+       one modal that holds a long two-column-worthy list of labelled controls, and at 340 px every
+       label wraps and every <select> truncates its own option text.
+       Widened HERE rather than on `.modal-content`, so the small dialogs keep the width they were
+       designed at. The mobile path is untouched: `max-width:90vw` from the base rule still wins on a
+       phone, and the ws-mode rule below still pins its own 440 px. */
+    @media(min-width:769px){ #settings-modal .modal-content{ width:560px; max-width:min(92vw,560px); } }
     /* (#R118) SETTINGS REDESIGN — iOS-style grouped sections instead of the flat "無秩序に列挙" list.
        A muted section label + a rounded card per topic; rows inside are separated by hairlines. Works
        identically in normal / mobile / workspace mode (they all share this one modal). */

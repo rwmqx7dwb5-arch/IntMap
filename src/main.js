@@ -163,6 +163,9 @@ import '../js/window-manager.js';
 import '../js/search-geocode.js';
 import '../js/news-context.js';
 import '../js/news-feed.js';
+/* (#R207) the news OUTLET filter — the picker in Settings and the predicate the feed is filtered by.
+   Registers a factory only; js/app-body.js calls it where the other settings pickers are wired. */
+import '../js/news-sources.js';
 import '../js/article-reader.js';
 import '../js/community-board.js';
 import '../js/map-readout.js';
@@ -222,7 +225,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'renderScale',
+  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources',
 ];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale'].filter((k) => !window[k]);

@@ -37,6 +37,10 @@ window.IntMapGeoEngine=(function(){
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */
 function _m(){ return window.__imap||null; }
+  /* (#R207) every layer id that has ever been given a `click` handler through the contract — see
+     `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
+     style reload or an engine swap does not change which layers the app makes clickable. */
+  const _clickLayers=new Set();
   const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
     /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
@@ -1902,8 +1906,23 @@ function _m(){ return window.__imap||null; }
       setZoomRate:(r,wheel)=>A().setZoomRate(r,wheel) },
     events:{ on:(e,c)=>A().on(e,c), off:(e,c)=>A().off(e,c), once:(e,c)=>A().once(e,c),
       /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
-      onLayer:(e,l,c)=>A().onLayer(e,l,c), offLayer:(e,l,c)=>A().offLayer(e,l,c),
-      onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null },
+      /* ══ (#R207) WHICH LAYERS ARE CLICKABLE IS NOW KNOWN, NOT GUESSED ═══════════════════════════
+         「地図上の他のものをクリックした際は、その下にある地名ラベルを同時にクリックした判定になることが
+          あるから、そうならないように。」
+
+         A per-layer click handler fires whenever its own feature is under the pointer, and MapLibre
+         does not rank them: a volcano, a quake, a pin and the CITY NAME beneath them all receive the
+         same click, so a tap on a marker also opened the place-name popup behind it. The rank that
+         resolves it is "a place label is the lowest-priority click target" — but a label handler can
+         only apply that rule if it can ask what ELSE is clickable at the point, and nothing recorded
+         that. Writing the list by hand is the version that rots: every round adds a layer.
+         So the registration IS the record. Every `onLayer('click', id, …)` in the app passes through
+         here, whichever adapter is installed, and `clickLayers()` answers with the ids that are
+         currently both registered and present. See `_ownedByOther` in js/map-ui.js. */
+      onLayer:(e,l,c)=>{ if(e==='click'&&typeof l==='string') _clickLayers.add(l); return A().onLayer(e,l,c); },
+      offLayer:(e,l,c)=>A().offLayer(e,l,c),
+      onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null,
+      clickLayers:()=>Array.from(_clickLayers) },
     raw(){ return A().raw(); }
    };
   }
