@@ -99,7 +99,7 @@ window.IntMapModules.tsunami=function(HOST){
     const DYN='tsu-field', SRC_V='tsu-vec', LYR_EPI='tsu-epi', SRC_ISO='tsu-iso', LYR_ISO='tsu-iso-ln', LYR_ISOL='tsu-iso-lb';
 
     /* ---- state ---------------------------------------------------------------------------------- */
-    let panel=null, opened=false, epi=null, mw=8.5, depthKm=20;
+    let panel=null, opened=false, epi=null, mw=8.5, depthKm=20, minimised=false;   /* (#R210) minimised = body hidden, header kept */
     let sim=null;                       /* the built model */
     let busy=false, pct=0, seq=0, jobId=0;
     let tSim=0, playing=0, rafId=0, speed=180;    /* speed = simulated seconds per real second */
@@ -746,8 +746,12 @@ window.IntMapModules.tsunami=function(HOST){
       const head='<div class="tsu-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'
         +L('Tsunami propagation','津波伝播シミュレーション','Tsunami-Ausbreitung','Распространение цунами','Propagación de tsunami')
-        +'</span><button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>';
-      let body='<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
+        +'</span>'
+        /* (#R210) same third state as the seismic panel — a solve in flight is not something to
+           close just to see the wave it is drawing. See js/seismic.js for the reasoning. */
+        +'<button class="tsu-min" title="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
+        +'<button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>';
+      let body='<div class="tsu-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
       if(epi) body+='<div style="font-size:11.5px;color:var(--text-main);">M '+mw.toFixed(1)+' · '
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';
@@ -882,6 +886,7 @@ window.IntMapModules.tsunami=function(HOST){
       try{ makeDraggable&&makeDraggable(panel,panel.querySelector('.tsu-head')); }catch(_){}
       const q=(s)=>panel.querySelector(s);
       const c=q('.tsu-close'); if(c) c.onclick=()=>close();
+      { const mb=q('.tsu-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
       const r=q('.tsu-run'); if(r) r.onclick=()=>{ build(); };
       const hs=q('.tsu-hours'); if(hs) hs.onchange=()=>{ hours=+hs.value||6; render(); };
       /* (#R204) changing the domain re-renders (the hour list and the note both depend on it) but does

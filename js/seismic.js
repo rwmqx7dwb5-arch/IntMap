@@ -502,7 +502,7 @@ window.IntMapModules.seismic=function(HOST){
     }
 
     /* ---- state ---------------------------------------------------------------------------------- */
-    let epi=null, depthKm=10, mw=7.0, tSec=0, playing=0, panel=null, opened=false, stations=[], picking=false;
+    let epi=null, depthKm=10, mw=7.0, tSec=0, playing=0, panel=null, opened=false, stations=[], picking=false, minimised=false;   /* (#R210) minimised = body hidden, header kept */
     /* (#R205) what a plain click on the map means while this panel is open — 'epi' (re-place the
        epicentre, the default and the report) or 'station' (add a row to the table). Declared HERE with
        the rest of the panel state rather than next to onClick: #R200 lost a whole boot to a `let` that
@@ -1079,8 +1079,15 @@ window.IntMapModules.seismic=function(HOST){
         paint:{'line-color':'#ff3b30','line-width':1.8,'line-dasharray':[2,1.5],'line-opacity':0.9}});
       if(!GE().layers.has('seis-ring')) GE().layers.add({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
         paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.92}});
+      /* (#R210) 「観測地点の点には番号を振るように。そうじゃないとどれがどの観測地点と対応しているのか
+         わからない（現在は座標のみ）」— the dot grew to fit a numeral, and the numeral is the same
+         index the table row shows in its own ① column, so a glance matches them without reading
+         coordinates. Dark text on the white dot: the dot is drawn over intensity paint of any colour. */
       if(!GE().layers.has('seis-sta')) GE().layers.add({id:'seis-sta',type:'circle',source:SRC,filter:['==',['get','kind'],'station'],
-        paint:{'circle-radius':5,'circle-color':'#ffffff','circle-stroke-color':'#222','circle-stroke-width':1.6}});
+        paint:{'circle-radius':9,'circle-color':'#ffffff','circle-stroke-color':'#222','circle-stroke-width':1.8}});
+      if(!GE().layers.has('seis-sta-n')) GE().layers.add({id:'seis-sta-n',type:'symbol',source:SRC,filter:['==',['get','kind'],'station'],
+        layout:{'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':true,'text-ignore-placement':true},
+        paint:{'text-color':'#111111'}});
       if(!GE().layers.has('seis-epi')) GE().layers.add({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
         paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.4}});
       return true; }catch(_){ return false; } }
@@ -1150,7 +1157,7 @@ window.IntMapModules.seismic=function(HOST){
         const rad=(delay)=>{ const d=(vkm*Math.max(0,tSec-delay))/(RE*D); return (d>0.02&&d<179)?d:null; };
         const lines=fault?faultFrontLines(rad):((rad(0)!=null)?ringLines(epi,rad(0)):null);
         if(lines) emit(lines,{kind:'ring',col,w:1.8}); });
-      stations.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station'}}));
+      stations.forEach((s,i)=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station',n:String(i+1)}}));   /* (#R210) the marker carries its row number */
       setData(feats);
     }
     function draw(){ drawFronts(); report(); }
@@ -1230,8 +1237,13 @@ window.IntMapModules.seismic=function(HOST){
     function render(){ if(!panel) return;
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
+        /* (#R210) 「地震・津波シミュレータウィンドウは最小化可能に。」 A long solve is worth watching the
+           map during; closing the panel throws the run away, so the third state is "keep everything,
+           give the map back its pixels". The header stays (it is also the drag handle), the body is
+           the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
+        +'<button class="sq-min" title="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
+        +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         +'<button class="sq-pick" style="'+PICKBTN(picking)+'">'+(picking
           ?('◎ '+L('Tap the map…','地図をタップ…','Auf die Karte tippen…','Нажмите на карту…','Toca el mapa…'))
           :('◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')))+'</button>'
@@ -1316,6 +1328,7 @@ window.IntMapModules.seismic=function(HOST){
            'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: método estocástico (fuente de Brune; atenuación geométrica Y duración de trayecto según Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; factor de pico de Cartwright & Longuet-Higgins 1956). Una fuente puntual lleva la profundidad equivalente log₁₀ h = −0,405 + 0,235·M (Yenier & Atkinson 2014); con ruptura dibujada la distancia es a la ruptura (M₀=μAD̄) y los frentes llevan la propagación. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV según Worden et al. 2012 (la relación de ShakeMap), con PGV en la banda que entrega un registro de movimiento fuerte (paso alto 0,1 Hz); NO es la escala JMA. El shindo JMA sigue aquí su propia definición (気象庁): filtros de periodo, corte alto de 10 Hz y corte bajo de 0,5 Hz, y el nivel superado durante 0,3 s en total, I = 2·log₁₀ a₀ + 0,94. El campo se pinta hasta el final de la clase más baja: hasta 1.500 km sigue el terreno, más allá sólo la distancia. Más allá de 1.000 km la ley regional está extrapolada. Modelo educativo.')
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
+      { const mb=panel.querySelector('.sq-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
       panel.querySelector('.sq-pick').onclick=()=>startPick();
       { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
         if(a) a.onclick=()=>setClickMode('epi'); if(b) b.onclick=()=>setClickMode('station'); }
@@ -1497,7 +1510,11 @@ window.IntMapModules.seismic=function(HOST){
         if(jp){ const c=jmaClass(a.jma); return c?jmaLabel(c.id):'<span style="opacity:0.6;font-weight:400;">'+notFelt+'</span>'; }
         return ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
-        return '<tr><td style="padding:1px 6px 1px 0;white-space:nowrap;">'+c.name+'</td>'
+        /* (#R210) a user-placed point carries the same numeral its marker does; the nearest
+           well-known cities the table adds for context are not numbered because they are not
+           placed and there is nothing on the map to match them to. */
+        const badge=c.n?('<span style="display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--text-main);color:var(--bg-color);font-size:9.5px;font-weight:700;margin-right:5px;">'+c.n+'</span>'):'';
+        return '<tr><td style="padding:1px 6px 1px 0;white-space:nowrap;">'+badge+c.name+'</td>'
           +'<td style="padding:1px 6px;text-align:right;">'+Math.round(a.km).toLocaleString()+' km</td>'
           +'<td style="padding:1px 6px;text-align:right;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
           +'<td style="padding:1px 6px;text-align:right;color:#ffb020;">'+fmtT(a.tS)+'</td>'
@@ -1549,7 +1566,7 @@ window.IntMapModules.seismic=function(HOST){
     }
     /* the table: whatever the user clicked, plus the nearest well-known places already in the app */
     function nearby(){
-      const out=stations.map(s=>({name:s.name,lng:s.lng,lat:s.lat}));
+      const out=stations.map((s,i)=>({name:s.name,lng:s.lng,lat:s.lat,n:i+1}));   /* (#R210) 1-based, same as the marker */
       try{ const gz=window.IntMapGazetteer&&window.IntMapGazetteer.builtin;
         if(gz&&epi){ const cities=gz.filter(r=>r[0]==='city'||r[0]==='capital')
             .map(r=>({name:HOST.lang==='jp'?(r[5]||r[4]):r[4], lng:r[2], lat:r[3], d:gcDelta(epi,[r[2],r[3]])}))
@@ -1581,13 +1598,13 @@ window.IntMapModules.seismic=function(HOST){
       if(P&&P.start){
         const ok=P.start({ panel, hidePanel:true,
           hint:L('Tap the map to place the epicentre.','地図をタップして震源地を置いてください。','Zum Setzen des Epizentrums auf die Karte tippen.','Нажмите на карту, чтобы указать эпицентр.','Toca el mapa para colocar el epicentro.'),
-          onPick:(ll)=>{ setPicking(false); epi=[ll.lng,ll.lat]; _epiElev=null; refresh(); },
+          onPick:(ll)=>{ setPicking(false); setEpi([ll.lng,ll.lat]); refresh(); },
           onCancel:()=>{ setPicking(false); } });
         if(ok) return;
       }
       /* no pick module in this build — the original behaviour, unchanged */
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
-      pickH=e=>{ epi=[e.lngLat.lng,e.lngLat.lat]; _epiElev=null; endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
+      pickH=e=>{ setEpi([e.lngLat.lng,e.lngLat.lat]); endPick(); refresh(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     /* ══ (#R205) CLICKING THE MAP MOVES THE EPICENTRE ══════════════════════════════════════════════
        「地震シミュレータは、別の震源地を選びなおせない。地図に白い丸が出るだけ。」
 
@@ -1614,7 +1631,21 @@ window.IntMapModules.seismic=function(HOST){
       if(clickMode==='station'){ if(!epi) return;
         stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
         if(stations.length>6) stations.shift(); draw(); report(); return; }
-      epi=[e.lngLat.lng,e.lngLat.lat]; _epiElev=null; refresh(); }
+      setEpi([e.lngLat.lng,e.lngLat.lat]); refresh(); }
+    /* ══ (#R210) A NEW EARTHQUAKE STARTS WITH AN EMPTY TABLE ══════════════════════════════════════
+       「地震が変われば観測地点はリセットされるように。」 The table used to accumulate across events, so
+       rows placed around a Tokyo epicentre were still listed — with freshly computed arrival times —
+       after the epicentre was dropped off Chile, and nothing said they belonged to a different run.
+       ⚠ WHAT COUNTS AS "a different earthquake" HERE IS THE LOCATION, and that is a reading worth
+       stating: magnitude and depth spinners tune the SAME event (the rows stay valid and simply
+       recompute, and clearing on every spinner step would be hostile), whereas moving the epicentre
+       or loading a real USGS event makes the placed points describe an event that no longer exists.
+       The threshold is 1 m, i.e. "the same point re-picked" does not clear. */
+    function setEpi(next){
+      const moved=!epi||!next||Math.abs(epi[0]-next[0])>1e-5||Math.abs(epi[1]-next[1])>1e-5;
+      epi=next; _epiElev=null;
+      if(moved&&stations.length){ stations.length=0; }
+      return moved; }
     GE().events.on('click',onClick);
 
     /* A real event, from the USGS feed the app already uses (and already declares in the privacy page). */
@@ -1625,7 +1656,7 @@ window.IntMapModules.seismic=function(HOST){
         const j=await r.json();
         const f=(j.features||[]).filter(x=>x.properties&&x.properties.mag>=5.5&&x.geometry).sort((a,b)=>b.properties.mag-a.properties.mag)[0];
         if(!f) throw 0;
-        epi=[f.geometry.coordinates[0],f.geometry.coordinates[1]];
+        setEpi([f.geometry.coordinates[0],f.geometry.coordinates[1]]);   /* (#R210) a real USGS event is a different earthquake — the placed points go */
         depthKm=Math.max(0,Math.round(f.geometry.coordinates[2]||10));
         faultClear();   /* (#R189) a real point event replaces any drawn rupture */
         mw=Math.round(f.properties.mag*10)/10;
@@ -1644,7 +1675,7 @@ window.IntMapModules.seismic=function(HOST){
         panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
-      if(o&&o.lng!=null){ epi=[o.lng,o.lat]; if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
+      if(o&&o.lng!=null){ setEpi([o.lng,o.lat]); if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
       else refresh();
       return true; }
     function close(){ opened=false; endPick(); if(playing){ clearInterval(playing); playing=0; }
@@ -1658,7 +1689,7 @@ window.IntMapModules.seismic=function(HOST){
       if(opened) render(); });
 
     return { open, close, draw, at, arrival, curve, source, motion, mmiRings,
-      setEpicentre(lng,lat){ epi=[lng,lat]; refresh(); return true; },
+      setEpicentre(lng,lat){ setEpi([lng,lat]); refresh(); return true; },
       setParams(o){ o=o||{}; if(o.depth!=null) depthKm=Math.max(0,Math.min(700,+o.depth));
         if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); if(o.t!=null) tSec=Math.max(0,Math.min(MAXT,+o.t));
         if(o.stressDrop!=null) stressDropMPa=Math.max(0.3,Math.min(30,+o.stressDrop));
