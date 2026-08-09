@@ -251,7 +251,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
       +row(L('QNH','QNH','QNH','QNH','QNH'), p.navQnh==null?'':(Math.round(p.navQnh)+' hPa'))
       +sec(L('Position','位置','Position','Позиция','Posición'))
       +row(L('Coordinates','座標','Koordinaten','Координаты','Coordenadas'), (p.lat!=null&&p.lng!=null)?(p.lat.toFixed(4)+', '+p.lng.toFixed(4)):'')
-      +row(L('From the map centre','地図中心からの距離','Von der Kartenmitte','От центра карты','Desde el centro del mapa'), dist)
+      +row(L('From the map center','地図中心からの距離','Von der Kartenmitte','От центра карты','Desde el centro del mapa'), dist)
       +tr
       +sec(L('Reception','受信','Empfang','Приём','Recepción'))
       +row(L('Last seen','最終受信','Zuletzt gesehen','Последний приём','Última recepción'), p.lastContact?agoStr(p.lastContact):'')

@@ -794,7 +794,7 @@ window.IntMapModules.tsunami=function(HOST){
           +(sim?L('Recompute','再計算','Neu berechnen','Пересчитать','Recalcular'):L('Compute propagation','伝播を計算','Ausbreitung berechnen','Рассчитать','Calcular propagación'))+'</button>';
       }
       if(lastErr==='nosea') body+='<div style="font-size:11.5px;color:#ff9f0a;">'
-        +L('This epicentre is inland — there is no sea to displace here.','この震源は内陸で、動かす海がありません。',
+        +L('This epicenter is inland — there is no sea to displace here.','この震源は内陸で、動かす海がありません。',
            'Das Epizentrum liegt im Landesinneren.','Эпицентр на суше — моря здесь нет.','El epicentro está tierra adentro.')+'</div>';
       /* (#R197) the bundled sea floor is the model's one hard requirement, and it says so */
       else if(lastErr==='nobathy') body+='<div style="font-size:11.5px;color:#ff453a;">'

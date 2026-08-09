@@ -54,7 +54,10 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   const oc = /function onClick\(e\)\{[\s\S]*?GE\(\)\.events\.on\('click',onClick\);/.exec(s);
   assert.ok(oc, 'onClick was not found');
   assert.match(oc[0], /clickMode==='station'/);
-  assert.match(oc[0], /epi=\[e\.lngLat\.lng,e\.lngLat\.lat\]/, 'the default branch must move the epicentre');
+  /* ⚠ (#R210) the CLAIM is "the default branch moves the epicentre", not the assignment's spelling.
+     It goes through setEpi() now, because moving the epicentre also has to clear the observation
+     points («地震が変われば観測地点はリセットされるように»). Both forms are accepted. */
+  assert.match(oc[0], /(?:epi=|setEpi\(\s*)\[e\.lngLat\.lng,e\.lngLat\.lat\]/, 'the default branch must move the epicentre');
   /* the station table is NOT removed — the white circle layer and the push are both still there */
   assert.match(oc[0], /stations\.push/);
   assert.match(s, /id:'seis-sta'/);

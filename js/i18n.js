@@ -13,7 +13,7 @@ window.IntMapI18N={
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
-      setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behaviour", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
+      setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behavior", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
       lblTheme:"Theme", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", vol3dTool:"3-D volume", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",

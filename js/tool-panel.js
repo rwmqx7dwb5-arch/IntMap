@@ -126,7 +126,7 @@ window.IntMapModules.toolPanel=function(HOST){
                     ['rect',_L('Rectangle','長方形','Rechteck','Прямоугольник','Rectángulo')]];
       const HINTS={ polygon:_L('Click 3 or more points on the map to trace the footprint.','地図を3点以上クリックして底面を描いてください。','Klicke 3 oder mehr Punkte, um die Grundfläche zu zeichnen.','Отметьте 3 и более точек, чтобы задать основание.','Haz clic en 3 o más puntos para trazar la base.'),
         freehand:_L('Press and drag on the map to trace any outline.','地図を押したままなぞると、自由な形の底面を描けます。','Auf der Karte gedrückt ziehen, um eine beliebige Form zu zeichnen.','Проведите по карте, удерживая кнопку, чтобы обвести любой контур.','Mantén pulsado y arrastra en el mapa para trazar un contorno libre.'),
-        circle:_L('Drag from the centre outwards to size the circle.','中心から外へドラッグすると円の大きさが決まります。','Vom Mittelpunkt nach außen ziehen, um den Kreis aufzuziehen.','Потяните от центра наружу, чтобы задать радиус.','Arrastra desde el centro hacia fuera para fijar el radio.'),
+        circle:_L('Drag from the center outwards to size the circle.','中心から外へドラッグすると円の大きさが決まります。','Vom Mittelpunkt nach außen ziehen, um den Kreis aufzuziehen.','Потяните от центра наружу, чтобы задать радиус.','Arrastra desde el centro hacia fuera para fijar el radio.'),
         rect:_L('Drag from one corner to the opposite one.','一方の角から対角へドラッグしてください。','Von einer Ecke zur gegenüberliegenden ziehen.','Потяните от одного угла к противоположному.','Arrastra de una esquina a la contraria.') };
       const shapeRow=`<div class="v3d-shapes" id="v3d-shapes">`+SHAPES.map(s=>`<button type="button" class="v3d-shape${st.shape===s[0]?' on':''}" data-shape="${s[0]}">${s[1]}</button>`).join('')+`</div>`;
       body=shapeRow

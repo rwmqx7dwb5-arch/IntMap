@@ -162,7 +162,7 @@ window.IntMapSky=(function(){
            FROM THE MAGIC, so this reader serves either version — the alternative is that rebuilding
            the catalogue silently shifts every field by two bytes and the sky turns to noise. This
            view draws a sky on a sphere and does not use the distance; it only has to read past it. */
-        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalogue header');
+        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalog header');
         const STRIDE=(magic==='IMSTAR2')?8:6;
         const n=dv.getUint32(8,true);
         const ra=new Float32Array(n), dec=new Float32Array(n), mag=new Float32Array(n);

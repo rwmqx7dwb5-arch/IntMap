@@ -297,7 +297,7 @@ window.IntMapModules.space=function(HOST){
            measured parallax, which is what lets this view leave the solar system: `starPc` below is
            the real distance in parsecs, and 0 means the catalogue has no usable parallax for that
            star (⚠ NOT "at the origin"). */
-        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalogue header');
+        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalog header');
         const STRIDE=(magic==='IMSTAR2')?8:6;
         const n=dv.getUint32(8,true);
         const pos=new Float32Array(n*3), col=new Float32Array(n*4), pc=new Float32Array(n); let k=0;
@@ -1071,7 +1071,7 @@ window.IntMapModules.space=function(HOST){
         'Positionen: JPL-Näherungselemente; Mond: ELP-2000/82. Oberflächen: Solar System Scope (CC BY 4.0); die Erde ist die eigene Weltkarte der App (NASA Blue Marble). Namen: USGS/IAU. Sterne: Hipparcos.',
         'Положения: приближённые элементы JPL; Луна: ELP-2000/82. Поверхности: Solar System Scope (CC BY 4.0); Земля — собственное изображение приложения (NASA Blue Marble). Названия: USGS/IAU. Звёзды: Hipparcos.',
         'Posiciones: elementos aproximados de JPL; Luna: ELP-2000/82. Superficies: Solar System Scope (CC BY 4.0); la Tierra es el mapa base propio de la app (NASA Blue Marble). Nombres: USGS/IAU. Estrellas: Hipparcos.');
-      const s3=(focus==='pluto')?('<br>'+L('Pluto is drawn in its measured colour: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labelled fictional by their author. Its position and its IAU names are real.',
+      const s3=(focus==='pluto')?('<br>'+L('Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.',
         '冥王星は実測の色で描いています（全球表面図を同梱していないため。他所で配布されている準惑星の表面図は作者自身が「架空」と明記しています）。位置とIAU地名は実データです。',
         'Pluto wird in seiner gemessenen Farbe gezeichnet — es liegt keine globale Oberflächenkarte bei.',
         'Плутон показан своим измеренным цветом: глобальной карты поверхности в комплекте нет.',

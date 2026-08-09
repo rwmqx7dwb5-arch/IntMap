@@ -1246,16 +1246,16 @@ window.IntMapModules.seismic=function(HOST){
         +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         +'<button class="sq-pick" style="'+PICKBTN(picking)+'">'+(picking
           ?('◎ '+L('Tap the map…','地図をタップ…','Auf die Karte tippen…','Нажмите на карту…','Toca el mapa…'))
-          :('◎ '+L('Place the epicentre','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')))+'</button>'
+          :('◎ '+L('Place the epicenter','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')))+'</button>'
         /* (#R205) …and what a PLAIN click on the map does, stated and switchable — see onClick. The
            ◎ button above stays because it is the one that works on a phone, where this panel covers
            the map (#R196); this row is for the gesture a hand makes without pressing anything. */
         +'<div style="display:flex;gap:5px;">'
-          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Move the epicentre','震源地を移動','Epizentrum bewegen','Двигать эпицентр','Mover el epicentro')+'</button>'
+          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Move the epicenter','震源地を移動','Epizentrum bewegen','Двигать эпицентр','Mover el epicentro')+'</button>'
           +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">◇ '+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
         +'</div>'
         +'<div style="font-size:10px;color:var(--text-muted);margin-top:-5px;line-height:1.45;">'+(clickMode==='epi'
-          ?L('Clicking the map moves the epicentre.','地図をクリックすると震源地が移動します。','Ein Klick auf die Karte verschiebt das Epizentrum.','Клик по карте перемещает эпицентр.','Al hacer clic en el mapa se mueve el epicentro.')
+          ?L('Clicking the map moves the epicenter.','地図をクリックすると震源地が移動します。','Ein Klick auf die Karte verschiebt das Epizentrum.','Клик по карте перемещает эпицентр.','Al hacer clic en el mapa se mueve el epicentro.')
           :L('Clicking the map adds a place to the table below.','地図をクリックすると下の表に地点を追加します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu.','Клик по карте добавляет место в таблицу ниже.','Al hacer clic en el mapa se añade un lugar a la tabla.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
@@ -1502,7 +1502,7 @@ window.IntMapModules.seismic=function(HOST){
     }
     function report(){ const o=panel&&panel.querySelector('.sq-out'); if(!o) return;
       _setProg();
-      if(!epi){ o.innerHTML=L('Place an epicentre to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
+      if(!epi){ o.innerHTML=L('Place an epicenter to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
       const s=source(mw);
       const notFelt=L('not felt','無感','—','—','—');
       const jp=scale==='jma';
@@ -1597,7 +1597,7 @@ window.IntMapModules.seismic=function(HOST){
       const P=window.IntMapPick;
       if(P&&P.start){
         const ok=P.start({ panel, hidePanel:true,
-          hint:L('Tap the map to place the epicentre.','地図をタップして震源地を置いてください。','Zum Setzen des Epizentrums auf die Karte tippen.','Нажмите на карту, чтобы указать эпицентр.','Toca el mapa para colocar el epicentro.'),
+          hint:L('Tap the map to place the epicenter.','地図をタップして震源地を置いてください。','Zum Setzen des Epizentrums auf die Karte tippen.','Нажмите на карту, чтобы указать эпицентр.','Toca el mapa para colocar el epicentro.'),
           onPick:(ll)=>{ setPicking(false); setEpi([ll.lng,ll.lat]); refresh(); },
           onCancel:()=>{ setPicking(false); } });
         if(ok) return;
