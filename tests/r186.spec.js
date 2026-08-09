@@ -210,7 +210,16 @@ test('R186 POI: shop and facility names are their own layer and their own toggle
              sourceLayer: src && src['source-layer'], minzoom: src && src.minzoom,
              dot: G.layers.has('ofm-poi-dot') };
   });
-  expect(r).toMatchObject({ on: 'visible', off: 'none', sourceLayer: 'poi', minzoom: 14, dot: true });
+  /* ⚠ (#R211) THE CLAIM IS THE TOGGLE AND THE LAYER, NOT THE NUMBER 14. #R186 pinned `minzoom: 14`
+     as a literal beside the things this test is actually about, and #R211 lowered it to 12 on
+     instruction — 「あるズームで問答無用に全表示・全非表示になるのをやめる」, plus landmarks that a
+     person navigates by were not drawn at the zoom where they are looked for. The literal made a
+     deep shard red for a change the test has no opinion on. Written as the RELATION it was always
+     guarding: the layer exists, it is zoom-gated rather than always on, and it starts no LATER than
+     it used to. (The tier ladder that decides what appears when is asserted in tests/r211-checks.) */
+  expect(r).toMatchObject({ on: 'visible', off: 'none', sourceLayer: 'poi', dot: true });
+  expect(typeof r.minzoom, 'the POI labels are zoom-gated, not drawn at every zoom').toBe('number');
+  expect(r.minzoom, 'and they start no later than #R186 put them').toBeLessThanOrEqual(14);
 });
 
 test('R186 sea level: the number applies as it is typed, and 100 % is opaque', async ({ page }) => {
