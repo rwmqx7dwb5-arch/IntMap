@@ -28,8 +28,13 @@ test('R211 water: the dashed rectangle and the pond pins are gone, the ending la
   assert.ok(!/label:'➤ '\+fmtM3/.test(src), 'without a volume in red beside it');
 });
 
-/* ── 2 · the wide look-ahead is a LADDER, and its gate does not get looser as it widens ───────── */
-test('R211 water: the lake look-ahead widens, and the test it applies does not weaken', () => {
+/* ── 2 · the flat-crossing machinery ─────────────────────────────────────────────────────────── */
+/* ⚠ THE REPORTED DEFECT (northern Shiga → Seta → Yodo) IS NOT FIXED. Four hypotheses were measured
+   and all four missed — DEV-NOTES #R211 §1 has the four traces and what each one showed. What IS
+   asserted here is the machinery that WAS measured to be an improvement on wandering 600 km and
+   calling it "still flowing" from the middle of a lake. A test claiming the defect fixed would be
+   the most expensive kind of green there is. */
+test('R211 water: a flat is left by its spill, and a stall nobody can escape ends', () => {
   const src = read('js/terrain-water.js');
   /* ⚠ ANCHOR ON THE ESCALATION, NOT ON THE FIRST `mult` IN THE FILE. `pitEscape()` has a ladder of
      its own ([1,3]) and is dead code kept for the note it carries — matching it made this test pass
@@ -54,6 +59,23 @@ test('R211 water: the lake look-ahead widens, and the test it applies does not w
   /* and the DEM level follows the window, or a 400 km look-ahead would be tens of thousands of tiles */
   assert.match(src, /const wantPx=spacing\*mult\/1\.5;/, 'the sampling asked for follows the window');
   assert.match(src, /const zc=Math\.max\(5,Math\.min\(z,Math\.round\(Math\.log2\(/, '…and the zoom is derived from it');
+
+  /* ⚠ A FLAT IS LEFT BY ITS SPILL, NOT BY ITS DRAINAGE TREE. With no slope the flood's `parent`
+     chain leads to whichever border the heap reached first — a direction only by accident, and
+     measured, it sent the walk back and forth across Lake Biwa until the 600 km cap. */
+  assert.match(src, /function flatOutlet\(W,k0,tolM\)\{/, 'the spill of a flat is its own question');
+  assert.match(src, /else if\(e<bestE\)\{ bestE=e; best=nk; \}/, 'and it is the lowest cell TOUCHING the flat');
+  /* the two 'no answer' cases stay apart: widen only when nothing lower was found either */
+  assert.match(src, /if\(!usable&&fo&&fo\.touchedEdge\)\{ escalMult=mult; continue; \}/,
+    'a flat wider than the window widens instead of letting the talweg guess a direction');
+  /* the fall a wide jump must show is bigger than the data's own noise */
+  assert.match(src, /const FLAT_DROP_M=/, 'a real fall is named');
+  assert.match(src, /eExit<eHere-FLAT_DROP_M/, 'and the talweg gate uses it, not a sign test');
+  assert.ok(!/eExit<=eHere\+0\.5/.test(src), "#R189's +0.5 m gate is gone — on a lake every direction passed it");
+  /* and a stall nobody can escape ENDS, rather than spending the budget looking like flow */
+  assert.match(src, /if\(stallRun>=4\)\{/, 'four windows with no fall is an ending');
+  assert.match(src, /end='lake'; break;/, 'and it is named as the lake it is');
+  assert.match(src, /_dbgTrace:\(\)=>\{/, 'the diagnostic that settled all four hypotheses is kept');
 });
 
 /* ── 3 · one water, one palette, one primitive ────────────────────────────────────────────────── */

@@ -524,6 +524,8 @@ window.IntMapModules.terrainWater=function(HOST){
        as always, is REPORTED when it bites. */
     const TRACE_Z=11, TRACE_Z_NEAR=[[10,13],[50,12]], TRACE_MAX_KM=600, TRACE_TILE_ROUNDS=64;
     const LAKE_STOP_M=25;          /* fill depth above which a basin is a lake, not a pit */
+    const FLAT_DROP_M=1.0;         /* (#R211) the smallest fall a wide look-ahead may call progress */
+    const FLAT_TOL_M=10;           /* (#R211) how rough one 'flat' surface may be — the DEM over a lake, measured */
     const SEA_RUN_M=1500;          /* continuous distance at or below 0 m that counts as the sea */
     let trace=null, tracing=false, traceSeq=0;
 
@@ -621,6 +623,51 @@ window.IntMapModules.terrainWater=function(HOST){
         chain.push(best); k=best;
       }
       return chain;
+    }
+    /* ══ (#R211) THE WAY OUT OF A LAKE IS ITS SPILL, NOT ITS DRAINAGE TREE ════════════════════════
+       MEASURED, after the ladder alone did not fix the report: from northern Shiga the trace still
+       burned the whole 600 km budget and ended at 136.003°E 35.249°N — the middle of Lake Biwa. The
+       ladder WAS firing; it was jumping in an arbitrary direction, because `channelChain()` on a
+       flat has no descending neighbour anywhere and falls back to the priority flood's `parent`
+       tree, which on a featureless surface leads to whichever border the heap happened to reach
+       first. Widening the window makes that arbitrary jump LONGER, not righter.
+
+       A lake does not leave by its drainage tree; it leaves by its SPILL — the lowest ground that
+       touches it. So: flood-fill the connected surface at the entry's own level (a lake is flat to
+       within a metre at any sampling), collect every cell ADJACENT to that region but not in it,
+       and take the lowest. For Biwa that is the Seta, which is the only place the ground continues
+       downward, and it is found regardless of which shore the entry is on.
+
+       ⚠ Returns `null` when the flat fills the whole window — then there is nothing outside it to
+       compare, and the caller must widen instead of guessing. That is what the ladder is for. */
+    function flatOutlet(W,k0,tolM){
+      const n=W.n, N=W.N, surf=W.surf, lv=surf[k0], tol=(tolM==null?1.0:tolM);
+      if(!isFinite(lv)) return null;
+      const inR=new Uint8Array(N), st=new Int32Array(N); let sp=0, cells=0;
+      const NB=[-1,1,-n,n,-n-1,-n+1,n-1,n+1];
+      let best=-1, bestE=Infinity, touchedEdge=false;
+      st[sp++]=k0; inR[k0]=1;
+      while(sp){ const k=st[--sp]; cells++;
+        const ki=k%n, kj=(k/n)|0;
+        if(ki===0||kj===0||ki===n-1||kj===n-1) touchedEdge=true;
+        for(let d=0;d<8;d++){ const nk=k+NB[d]; if(nk<0||nk>=N) continue;
+          const ni=nk%n, nj=(nk/n)|0; if(Math.abs(ni-ki)>1||Math.abs(nj-kj)>1) continue;
+          if(inR[nk]) continue;
+          const e=surf[nk]; if(!isFinite(e)) continue;
+          if(Math.abs(e-lv)<=tol){ inR[nk]=1; st[sp++]=nk; }
+          else if(e<bestE){ bestE=e; best=nk; } } }
+      /* ⚠ `touchedEdge` IS REPORTED, NOT ACTED ON HERE. The caller decides, because the two cases
+         it separates are decided by whether a usable spill was ALSO found:
+           · flat runs off the window AND nothing lower was seen → this window cannot answer, widen;
+           · flat runs off the window but something well below it WAS seen → that IS the spill. A
+             lake's outlet is a local property; you do not need the whole lake in view to find it,
+             and demanding that is why the walk first stopped dead at the southern tip of Biwa with
+             the Seta — 100 m wide, invisible at every coarse rung — right in front of it.
+         Measured before this distinction existed: five escalations, every one at the 3× rung,
+         because the talweg branch 'succeeded' on the lake every time and the wider rungs that would
+         have contained it were never reached. */
+      return { touchedEdge, cells, outlet:best, outElev:bestE, level:lv,
+               areaKm2:cells*W.cellAreaM2/1e6, at:(best>=0?W.ll(best):null) };
     }
     /* ⚠ (#R186) ONE PIT, ANSWERED — AND WHY IT CANNOT ASK "AM I IN A PIT?".
        The first version of this did ask, and it stopped every trace after one step. The walk samples a
@@ -746,7 +793,7 @@ window.IntMapModules.terrainWater=function(HOST){
          traced at, because the ladder above means it is no longer one number. */
       const elev=[], wet=[], spac=[]; let wetCap=false;
       const WET_MAX=140000, WET_MIN_D=0.3;
-      let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0, escalMult=0;
+      let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0, escalMult=0, stallRun=0;
       /* (#R190) how often the "is this really the sea?" flood may be paid for, and whether the course
          has run below sea level on land at any point (the panel says so — it is the interesting fact
          that used to be an ending). */
@@ -965,6 +1012,15 @@ window.IntMapModules.terrainWater=function(HOST){
                (Death Valley, the Caspian) still shows a rim far above 75 m at every rung and the
                trace still stops there, honestly. */
             let escaped=false;
+            /* ⚠⚠ THE LADDER DOES NOT START AT 1×, AND THE MEASUREMENT IS WHY. Adding a fine rung
+               looked obviously right — only the trace's own resolution can see a 100 m outlet
+               channel like the Seta. It made the answer WORSE: the terrarium DEM over Lake Biwa is
+               not flat, it reads 74–81 m across the surface, so a 1 m 'flat' at fine sampling is not
+               the lake but a patch of it, and the walk hopped between patches and then took a 250 km
+               jump off the widest rung. Measured waypoints, all at 81 m: 136.09/35.31 → 136.13/35.31
+               → 136.10/35.36 → 136.14/35.36 — back and forth inside the lake. The coarse rungs, where
+               one sample already averages the surface, are the ones where a tolerance means
+               something. Carrying the water on down the Seta is still open — see DEV-NOTES §11. */
             for(const mult of [3,9,27]){
               if(escaped||escal>=6) break;
               /* the DEM level whose sampling matches this window — at ~1.5 px a sample the whole
@@ -979,12 +1035,44 @@ window.IntMapModules.terrainWater=function(HOST){
               if(seq!==traceSeq){ end='superseded'; break; }
               const V3=floodWindow(lng,lat,N_WIN,spacing*mult,zc), vk3=V3?V3.at(lng,lat):-1;
               if(!(V3&&vk3>=0&&(V3.filled[vk3]-V3.surf[vk3])<=LAKE_STOP_M*3)) continue;
+              /* ① THE SPILL, FIRST. On a flat this is the only construction that has a direction —
+                 see flatOutlet(). It answers null when the flat runs off the window, which is the
+                 signal to take the next rung rather than to guess. */
+              /* ⚠⚠ THE TOLERANCE IS THE DEM'S ROUGHNESS OVER WATER, NOT ZERO. Measured across Lake
+                 Biwa the terrarium surface reads 74–81 m — a real lake is flat, the DATA is not — so
+                 a 1 m flat is a patch of the lake rather than the lake, and the walk hops between
+                 patches. FLAT_TOL_M spans that roughness while staying well under LAKE_STOP_M, so a
+                 basin deep enough to actually stop the water still stops it. */
+              const fo=flatOutlet(V3,vk3,FLAT_TOL_M);
+              const minMove=(mult===1)?(spacing*3):(halfM*0.5);
+              const usable=!!(fo&&fo.outlet>=0&&fo.outElev<fo.level-FLAT_DROP_M&&gcM([lng,lat],fo.at)>minMove);
+              /* the flat runs off this window and nothing lower was in it — widen, and do NOT let
+                 the talweg guess a direction on a surface that has none */
+              if(!usable&&fo&&fo.touchedEdge){ escalMult=mult; continue; }
+              if(usable){
+                escal++; escaped=true; escalMult=mult;
+                const p=fo.at; distM+=gcM([lng,lat],p);
+                path.push(p); elev.push(fo.outElev); spac.push(V3.spacingM); pts++;
+                lakes.push({ at:[lng,lat], depthM:0, areaKm2:fo.areaKm2 });   /* the lake it crossed, and how big */
+                { const dx=(p[0]-lng)*Math.cos(p[1]*D), dy=p[1]-lat, m=Math.hypot(dx,dy);
+                  if(m>1e-9){ headX=dx/m; headY=dy/m; } }
+                lng=p[0]; lat=p[1];
+                continue;
+              }
+              /* ② otherwise the #R189 construction: the coarse window's own talweg. Right wherever
+                 the wide view actually has a slope, which is the case this rung was built for. */
               const ch3=channelChain(V3,vk3);
               if(ch3.length<=2) continue;
               const exit=ch3[ch3.length-1], pExit=V3.ll(exit);
               const eHere=V3.surf[vk3], eExit=V3.surf[exit];
               const moved=gcM([lng,lat],pExit);
-              if(!(moved>halfM*1.2&&eExit<=eHere+0.5)) continue;
+              /* ⚠⚠ AND IT MUST ACTUALLY GO DOWN, BY MORE THAN THE DATA'S OWN NOISE. #R189's gate
+                 allowed +0.5 m, which on a lake every direction satisfies — including back the way
+                 we came, which is how the trace spent 600 km crossing Biwa. Even a strict `< 0`
+                 is not enough: the terrarium DEM is quantised, and a few centimetres of it is
+                 always available somewhere on a lake surface. FLAT_DROP_M is the smallest fall
+                 that means the ground, not the encoding. */
+              if(!(moved>halfM*1.2&&eExit<eHere-FLAT_DROP_M)) continue;
               escal++; escaped=true; escalMult=mult;
               let pv=[lng,lat];
               for(let a2=1;a2<ch3.length;a2++){ const p=V3.ll(ch3[a2]);
@@ -994,6 +1082,17 @@ window.IntMapModules.terrainWater=function(HOST){
               lng=pv[0]; lat=pv[1];
               { const dx=(lng-entryLng)*Math.cos(lat*D), dy=lat-entryLat, m=Math.hypot(dx,dy);
                 if(m>1e-9){ headX=dx/m; headY=dy/m; } }
+            }
+            /* ⚠ AND A STALL THAT CANNOT BE ESCAPED MUST END, NOT WANDER. Measured on Biwa: with no
+               bound, the walk crossed the lake back and forth until the 600 km cap and reported
+               「still flowing」 from the middle of a lake — the least honest ending available. Four
+               windows in a row that fall nowhere, with no rung finding a spill, IS the ending. */
+            if(!escaped&&stalled){ stallRun++; } else stallRun=0;
+            if(stallRun>=4){
+              let flat=0; { const V=floodWindow(lng,lat,N_WIN,spacing,z), vk=V?V.at(lng,lat):-1;
+                if(V&&vk>=0){ const e=V.surf[vk]; for(let i=0;i<V.N;i++) if(Math.abs(V.surf[i]-e)<0.6) flat++;
+                  endInfo={ areaKm2:flat*V.cellAreaM2/1e6, elevM:e }; } }
+              end='lake'; break;
             }
             if(end==='superseded') break;
             if(!escaped&&looped){
@@ -1782,9 +1881,25 @@ window.IntMapModules.terrainWater=function(HOST){
          known ocean point and at a known below-sea-level closed basin instead of trusting the label */
       _seaCheck:(lng,lat)=>seaCheck(lng,lat),
       traceState:()=>(trace?{ end:trace.end, km:trace.km, steps:trace.steps, points:trace.path.length,
+        escal:trace.escal, escalMult:trace.escalMult,   /* (#R211) how many wide look-aheads fired, and the widest rung */
         lakes:trace.lakes.length, z:trace.z, from:trace.from, to:trace.to, info:trace.endInfo,
         belowSea:!!trace.belowSea,        /* (#R190) ran under 0 m on land and kept going */
         tracing }:{ end:null, tracing }),
+      /* ══ (#R211) THE PROFILE THE WALK ACTUALLY FOLLOWED ═══════════════════════════════════════
+         Not temporary. Four hypotheses about the Lake Biwa stall were tested this round and the
+         only ones that settled anything were readings off this: the elevation quantiles, how many
+         steps FELL versus stayed level, and which rung the escalation actually reached. `wp` gives
+         eleven waypoints along the course, which is what showed the walk going back and forth
+         inside the lake at a constant 81 m. Whoever picks the Seta crossing up next needs this. */
+      _dbgTrace:()=>{ if(!trace||!trace.elev) return null; const e=trace.elev;
+        const n=e.length, q=(f)=>e[Math.min(n-1,Math.round(f*(n-1)))];
+        let drops=0, flats=0; for(let i=1;i<n;i++){ const d=e[i-1]-e[i]; if(d>0.25) drops++; else if(Math.abs(d)<=0.25) flats++; }
+        const P=trace.path;
+        const wp=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1].map(f=>{ const i=Math.min(P.length-1,Math.round(f*(P.length-1)));
+          return [+P[i][0].toFixed(3),+P[i][1].toFixed(3),Math.round(e[i])]; });
+        return { n, wp, first:e[0], last:e[n-1], min:Math.min.apply(null,e), max:Math.max.apply(null,e),
+                 q:[q(0),q(0.25),q(0.5),q(0.75),q(1)], drops, flats,
+                 escal:trace.escal, escalMult:trace.escalMult, windows:trace.windows }; },
       clearTrace,
       addLevee(pts,crest,width){ if(!Array.isArray(pts)||pts.length<2) return false; pushUndo();
         levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)}); solve(); return true; },
