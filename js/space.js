@@ -114,7 +114,15 @@ window.IntMapModules.space=function(HOST){
 
     /* ══ scales ═══════════════════════════════════════════════════════════════════════════════════ */
     /* true: 1 unit = 1 AU, radii in AU. model: r^0.42 compressed orbits, cube-root bodies. */
-    const POS_P=0.42, POS_K=26, RAD_K=0.055;
+    /* ⚠ (#R210) RAD_K 0.055 → 0.12. 「宇宙を探索で、モデル大がモデル大の割には小さすぎる。」 Model
+       scale exists to make the system LOOK like a system, and at 0.055 the Earth was 0.2 % of its own
+       orbit radius — visually still a dot, which is the true-scale complaint the mode is supposed to
+       answer. Doubling-and-a-bit is bounded by #R203's constraint, not by taste: the Moon must clear
+       the Earth at PERIGEE, i.e. moonSep(356,500) > (rEarth + rMoon)·1.5, and MOON_K moves with it
+       (0.30 → 0.42) so the margin is kept rather than spent. tests/r203-checks ③ re-derives that
+       inequality from these constants, so a future nudge that breaks it fails the build.
+       Body ORDER and within-family ratios are untouched — this is one multiplier on every radius. */
+    const POS_P=0.42, POS_K=26, RAD_K=0.12;
     function posScale(au){ return scale==='real'?au:(POS_K*Math.pow(au,POS_P)); }
     function radScale(km){ return scale==='real'?(km/AU):(RAD_K*Math.pow(km/6378.137,1/3)); }
     /* ══ ⚠ (#R203) THE MOON IS ITS OWN FAMILY, OR IT IS INSIDE THE EARTH ═════════════════════════════
@@ -130,7 +138,7 @@ window.IntMapModules.space=function(HOST){
        perigee it clears both radii: 0.30·(356,500/384,400)^0.42 = 0.291 against 0.055 + 0.036 = 0.091.
        Its own perigee-to-apogee ratio survives, which is what the ratio promise means here. True scale
        is untouched — there the real geometry already separates them. */
-    const MOON_K=0.30, MOON_REF_KM=384400;
+    const MOON_K=0.42, MOON_REF_KM=384400;   /* (#R210) moved with RAD_K — see the note there */
     function moonSep(km){ return scale==='real'?(km/AU):(MOON_K*Math.pow(km/MOON_REF_KM,POS_P)); }
 
     /* ══ a very small matrix library ══════════════════════════════════════════════════════════════ */
@@ -1363,9 +1371,10 @@ window.IntMapModules.space=function(HOST){
         +'padding:9px 16px 11px;border-radius:999px;'
         +'color:var(--text-main,#dce6ff);background:var(--card-bg,rgba(18,22,32,0.9));'
         +'border:1px solid var(--glass-border,rgba(128,128,128,0.28));'
-        +'box-shadow:0 8px 26px rgba(0,0,0,0.28);'
+        /* (#R210) NO inline box-shadow: css/intmap.css gives #space-approach a white RIM GLOW in
+           dark mode and the drop shadow in light. An inline value would beat both. */
         +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);';
-      const cap=document.createElement('div');
+      const cap=document.createElement('div'); cap.className='space-approach-cap';
       cap.textContent=L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio');
       const bar=document.createElement('div');
       bar.style.cssText='width:132px;height:4px;border-radius:99px;background:rgba(128,150,190,0.28);overflow:hidden;';
@@ -1375,25 +1384,34 @@ window.IntMapModules.space=function(HOST){
       document.body.appendChild(gauge);
       return gauge;
     }
-    function paintGauge(){
-      if(!over){ if(gauge) gauge.style.opacity='0'; return; }
+    /* ══ (#R210) THE WAY BACK GETS THE SAME UI AS THE WAY OUT ═════════════════════════════════════
+       「宇宙から地球に戻る時にも、同じUIを表示し、いきなり戻ったという雰囲気にしないように。」 `pushIn`
+       (below) has run the same integral as `pushOut` since #R208 — a zoom-in the space camera cannot
+       spend returns the map — but it drew nothing, so from the user's side the map simply reappeared
+       with no gesture having visibly been in progress. Same pill, same bar, opposite caption.
+       `paintGauge` therefore takes WHAT to show rather than reading `over` itself. */
+    function paintGauge(v,inbound){
+      if(!v){ if(gauge) gauge.style.opacity='0'; return; }
       const g=ensureGauge();
       g.style.left=Math.round(mapMidX())+'px';   /* (#R207) */
       g.style.opacity='1';
-      gaugeFill.style.width=Math.round(100*Math.min(1,over/OVER_TRIGGER))+'%';
+      try{ const cap=g.querySelector('.space-approach-cap'); if(cap) cap.textContent=inbound
+        ? L('Keep zooming in to return to the map','さらにズームインで地図へ戻る','Weiter hineinzoomen zurück zur Karte','Продолжайте приближать — назад к карте','Sigue acercando para volver al mapa')
+        : L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio'); }catch(_){}
+      gaugeFill.style.width=Math.round(100*Math.min(1,v/OVER_TRIGGER))+'%';
     }
     /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
     function pushOut(dz){
       if(open||!(dz>0)) return;
-      if(!atFloor()){ if(over){ over=0; paintGauge(); } return; }
+      if(!atFloor()){ if(over){ over=0; paintGauge(0); } return; }
       const t=(typeof performance!=='undefined'?performance.now():Date.now());
       if(overAt&&t-overAt>OVER_DECAY) over=0;
       overAt=t;
       over=Math.min(OVER_TRIGGER*1.5, over+Math.min(0.5,dz));
-      if(over>=OVER_TRIGGER){ over=0; paintGauge(); enterFromZoom(); return; }
-      paintGauge();
+      if(over>=OVER_TRIGGER){ over=0; paintGauge(0); enterFromZoom(); return; }
+      paintGauge(over,false);
       if(overTmr) clearTimeout(overTmr);
-      overTmr=setTimeout(()=>{ over=0; paintGauge(); },OVER_DECAY);
+      overTmr=setTimeout(()=>{ over=0; paintGauge(0); },OVER_DECAY);
     }
     let overTmr=0;
     /* the same integral on the way back: a zoom-IN the space camera has nowhere to spend returns the
@@ -1401,14 +1419,15 @@ window.IntMapModules.space=function(HOST){
     let backIn=0, backAt=0, backTmr=0;
     function pushIn(dz){
       if(!open||!(dz>0)) return;
-      if(!atNearLimit()){ backIn=0; return; }
+      if(!atNearLimit()){ if(backIn){ backIn=0; paintGauge(0); } return; }
       const t=(typeof performance!=='undefined'?performance.now():Date.now());
       if(backAt&&t-backAt>OVER_DECAY) backIn=0;
       backAt=t;
       backIn=Math.min(OVER_TRIGGER*1.5, backIn+Math.min(0.5,dz));
-      if(backIn>=OVER_TRIGGER){ backIn=0; leaveToMap(); return; }
+      if(backIn>=OVER_TRIGGER){ backIn=0; paintGauge(0); leaveToMap(); return; }
+      paintGauge(backIn,true);   /* (#R210) */
       if(backTmr) clearTimeout(backTmr);
-      backTmr=setTimeout(()=>{ backIn=0; },OVER_DECAY);
+      backTmr=setTimeout(()=>{ backIn=0; paintGauge(0); },OVER_DECAY);
     }
     function distFloor(){ return mode==='body'?1.02:(scale==='real'?1e-5:0.02); }
     /* ══ (#R208) HOW FAR OUT THE CAMERA MAY GO — ONE FUNCTION, NOT FOUR LITERALS ══════════════════
@@ -1586,7 +1605,7 @@ window.IntMapModules.space=function(HOST){
       cont.addEventListener('touchend',endPinch,{passive:true});
       cont.addEventListener('touchcancel',endPinch,{passive:true});
       /* the map moved somewhere that is not the floor → the gesture is no longer about leaving */
-      try{ GE().events.on('moveend',()=>{ if(!open&&over&&!atFloor()){ over=0; paintGauge(); } }); }catch(_){}
+      try{ GE().events.on('moveend',()=>{ if(!open&&over&&!atFloor()){ over=0; paintGauge(0); } }); }catch(_){}
     }
 
     return {

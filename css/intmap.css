@@ -792,6 +792,16 @@
     /* (#R34/#R39) Settings = a flex column: a SCROLLING body (.settings-scroll) + a non-scrolling Apply
        FOOTER. The body holds the scrollbar, so its gutter no longer sits BESIDE the footer's rounded corner
        — that was the "Apply UIの右下が角丸で隙間がある" gap. The footer now spans the full card width flush. */
+    /* ══ (#R210) THE SPACE APPROACH PILL GLOWS IN THE DARK ════════════════════════════════════════
+       「視認性が悪いので、ダークモードのピルは周りが白で光っている感じにして。（ライトモードでのピル
+        周りの影と同じ感じで）」 In light mode the pill sits on a white basemap and a dark drop shadow
+       separates it. In dark mode that shadow is black-on-black — the pill had no edge at all against
+       the night sky. The dark rule is the same idea inverted: a white rim plus a soft white bloom,
+       so the separation comes from light instead of from shade. Declared here and NOT inline in
+       js/space.js, because an inline box-shadow would win over both rules. */
+    #space-approach{ box-shadow:0 8px 26px rgba(0,0,0,0.28); }
+    :root[data-theme="dark"] #space-approach{ box-shadow:0 0 0 1px rgba(255,255,255,0.45), 0 0 20px 3px rgba(255,255,255,0.28), 0 8px 26px rgba(0,0,0,0.5); }
+
     /* (#R210) Data sources & attribution — the longest list in the app gets room to be one.
        `width` (not max-width) is what actually sizes .modal-content; see the note in index.html. */
     #sources-modal .modal-content{ width:min(820px,94vw); max-width:none; max-height:90vh; padding:28px 30px; }
