@@ -453,7 +453,19 @@ window.IntMapModules.layerSidebar=function(HOST){
          `right:false`, and that still wins — the new case is the one where there is no saved answer
          at all. Mobile is unchanged (the panel is an overlay there, opened by the layer button). */
       { const ui=window._imSessionUI; const unanswered=!ui||typeof ui.right!=='boolean';
-        if(!isMob()&&(unanswered||ui.right===true)) open(); }
+        if(!isMob()&&(unanswered||ui.right===true)){
+          /* WARN (#R210) A FIRST VISIT OPENS IT WHEN THE APP IS IDLE, NOT WHILE IT IS STILL
+             BOOTING. open() runs reorganizeLayerPanel()+buildTiles() synchronously when the grid
+             has not been built yet, and on a first visit it never has — so opening here put a
+             full tile build in front of whatever boot was still doing. That is #R208's own
+             finding («譲り方が同優先度だと背景処理がアプリ起動と競走して勝つ»), and it showed up
+             as tests/r170's fresh-profile test failing on a GPU-less CI runner while passing
+             three times out of three locally. A RESTORED session is different: the grid was
+             pre-built by the idle callback above, so open() is cheap and immediate is right.
+             The 3 s timeout means the panel always appears, idle or not. */
+          if(unanswered&&'requestIdleCallback' in window) requestIdleCallback(()=>{ try{ open(); }catch(_){} },{timeout:3000});
+          else open();
+        } }
     } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was
