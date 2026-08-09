@@ -37,22 +37,22 @@
     "//check:testbudget": "(#R197) the suite has a CEILING and it only ever goes down — see scripts/test-budget.mjs. A round that adds test time must take at least as much out somewhere else; that is what stops the per-round spec files accumulating into 「何重にも」."
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "acorn": "^8.17.0",
+    "@playwright/test": "^1.62.1",
+    "acorn": "^8.18.0",
     "acorn-walk": "^8.3.5",
-    "js-yaml": "^4.1.0",
-    "vite": "6.3.5"
+    "js-yaml": "^5.2.3",
+    "vite": "8.2.0"
   },
   "dependencies": {
-    "@mapbox/vector-tile": "^2.0.3",
-    "@supabase/supabase-js": "2.58.0",
-    "@turf/turf": "6.5.0",
-    "cesium": "^1.143.0",
+    "@mapbox/vector-tile": "^3.0.0",
+    "@supabase/supabase-js": "2.112.1",
+    "@turf/turf": "7.4.0",
+    "cesium": "^1.144.0",
     "html2canvas": "1.4.1",
-    "katex": "0.16.11",
+    "katex": "0.18.1",
     "maplibre-contour": "0.1.0",
-    "maplibre-gl": "5.24.0",
-    "pbf": "^4.0.1",
+    "maplibre-gl": "6.1.0",
+    "pbf": "^5.1.2",
     "satellite.js": "^7.1.0",
     "topojson-client": "3.1.0"
   },
