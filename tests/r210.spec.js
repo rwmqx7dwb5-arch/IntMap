@@ -50,15 +50,19 @@ test('R210 ①: the graticule is white, cased, and draws both tropics', async ()
      Atlas" rule) and then ask the renderer whether the lines are actually there. The SOURCE-level
      claim — that the builder needs no turf at all — is in tests/r210-checks.test.mjs, where it
      costs nothing to state. */
-  const drawn = await page.evaluate(async () => {
-    try { await window.IntMapConsole.dispatch({ type: 'grid', on: true }); } catch (_) {}
-    await new Promise((r) => setTimeout(r, 900));
-    const E = window.IntMapGeoEngine;
-    const q = (id) => { try { return (E.coords.queryRenderedFeatures({ layers: [id] }) || []).length; } catch (_) { return -1; } };
-    return { lines: q('grid-lines'), casing: q('grid-lines-casing') };
-  });
-  expect(drawn.lines, 'the graticule is on screen after the toggle, without a camera move').toBeGreaterThan(0);
-  expect(drawn.casing, 'and so is its casing').toBeGreaterThan(0);
+  await page.evaluate(async () => { try { await window.IntMapConsole.dispatch({ type: 'grid', on: true }); } catch (_) {} });
+  /* ⚠ POLL, do not sleep. The first draft waited a flat 900 ms and passed on the development
+     machine and failed on CI, where there is no GPU: the rebuild is debounced 90 ms and the
+     features still have to reach a painted frame. What the assertion is about is that the lines
+     arrive WITHOUT the camera being touched — not that they arrive inside any particular
+     millisecond — so it waits for the condition instead of guessing at a duration. */
+  await page.waitForFunction(() => {
+    try {
+      const E = window.IntMapGeoEngine;
+      return (E.coords.queryRenderedFeatures({ layers: ['grid-lines'] }) || []).length > 0
+          && (E.coords.queryRenderedFeatures({ layers: ['grid-lines-casing'] }) || []).length > 0;
+    } catch (_) { return false; }
+  }, null, { timeout: 20_000 });
 
   const kinds = await page.evaluate(() => {
     try {
