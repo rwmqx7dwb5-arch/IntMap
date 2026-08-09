@@ -13,7 +13,7 @@
 // a real browser; this file fixes the structure that makes it true.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appShell } from './app-source.mjs';
+import { appShell, lazyFiles } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
@@ -60,6 +60,8 @@ const MOVED = [
 
 /* Closure values that are REASSIGNED at runtime → must be reached through a host getter, and must
    therefore never appear as a bare identifier inside a js/ module. */
+const LAZY = lazyFiles(new URL('../', import.meta.url));
+
 const LIVE = {
   currentLang: 'lang', currentProj: 'proj', currentMapType: 'mapType',
   terrain3D: 'terrain3D', countryGeo: 'countryGeo',
@@ -70,13 +72,17 @@ test('R163 #1 each module was moved out, loaded, and instantiated at its origina
     const src = rd(file);
     assert.ok(!html.includes(`window.${global}=(function(){`),
       `index.html must not still define ${global} — a leftover in-page copy would win over ${file}`);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
+    /* (#R209) …or js/lazy-modules.js import()s it. The question is unchanged — "is this file
+       REACHED, does the feature still exist" — and both loaders are now legitimate answers. The
+       lazy list is derived from that loader's own literals, so it cannot drift. */
+    assert.ok(html.includes(`import '../${file}';`) || LAZY.includes(file),
+      `src/main.js imports ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
     assert.ok(src.includes(`window.IntMapModules.${key}=function(HOST){`),
       `${file} declares the ${key} factory taking (HOST)`);
     assert.ok(html.includes(`window.${global}=window.IntMapModules.${key}(IM_HOST);`),
-      `index.html instantiates ${key} with the shared host at ${global}'s original position`);
+      `the app instantiates ${key} with the shared host — from the boot closure, or, for a lazy module, from js/lazy-modules.js the moment it lands`);
   }
 });
 

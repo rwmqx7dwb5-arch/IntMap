@@ -10,6 +10,7 @@
 //   6. terrain shade and the annual sunlight budget answer with real terrain
 import { test, expect } from '@playwright/test';
 import { installCameraRuler } from './helpers/camera-ruler.js';
+import { loadLazyModules } from './helpers/app.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -33,6 +34,14 @@ const boot = async page => {
 test('the viewshed resolves per raster cell, and re-runs at the same site', async ({ page }) => {
   test.setTimeout(240000);
   await boot(page);
+  /* (#R209) THREE OF THIS FILE'S SUBJECTS LEFT THE BOOT BUNDLE — js/viewshed.js (IntMapLOS, here),
+     js/terrain-water.js (IntMapTerrainWater, ④/⑤) and js/seismic.js (IntMapSeismic, ⑥, which brings
+     js/tsunami.js with it). They are fetched the first time a door reaches for the feature, so after
+     the barrier above the globals genuinely do not exist yet. Every one of the app's own doors awaits
+     `IntMapLazy.need(…)` first, and these tests drive those same features, so they make the same
+     call. ⚠ The boot barrier is left alone deliberately: it names an EAGER global, which is what a
+     boot barrier is for, and re-listing a deferred one there would only ever hang. */
+  await loadLazyModules(page);
   const r = await page.evaluate(async () => {
     const m = window.__imap;
     m.jumpTo({ center: [138.7274, 35.3606], zoom: 12 });           // Mt Fuji's summit
@@ -72,6 +81,7 @@ test('there is no drone button anywhere, and the planner still opens', async ({ 
 test('a dug basin holds exactly what it can, and spills exactly the rest', async ({ page }) => {
   test.setTimeout(240000);
   await boot(page);
+  await loadLazyModules(page);   // (#R209) js/terrain-water.js is fetched on demand — see ② above
   const r = await page.evaluate(async () => {
     const TW = window.IntMapTerrainWater, m = window.__imap;
     m.jumpTo({ center: [139.85, 35.90], zoom: 11.5 });               // flat Kanto plain
@@ -109,6 +119,7 @@ test('a dug basin holds exactly what it can, and spills exactly the rest', async
 test('a levee drawn on flat ground creates a basin that holds water', async ({ page }) => {
   test.setTimeout(240000);
   await boot(page);
+  await loadLazyModules(page);   // (#R209) js/terrain-water.js is fetched on demand — see ② above
   const r = await page.evaluate(async () => {
     const TW = window.IntMapTerrainWater, m = window.__imap;
     m.jumpTo({ center: [139.85, 35.90], zoom: 11.5 });
@@ -136,6 +147,7 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
 test('P and S arrivals reproduce the 2011 Tohoku record and published IASP91 times', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
+  await loadLazyModules(page);   // (#R209) js/seismic.js (and js/tsunami.js with it) arrives on demand — see ② above
   const r = await page.evaluate(() => {
     const S = window.IntMapSeismic;
     S.setSite('rock');

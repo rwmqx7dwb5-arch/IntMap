@@ -18,6 +18,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import * as acorn from 'acorn';
+import { lazyFiles } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
@@ -30,6 +31,17 @@ const index = R('index.html');
    still that program; it just spans both files. */
 const body = [R('js/app-body.js'), R('js/geo-engine.js')].join('\n');
 const entry = R('src/main.js');
+/* (#R209) …or fetched on demand. Every assertion below that reads the entry is asking one thing:
+   "is this file REACHED — does the feature it carries exist at all?" Eight modules left the entry's
+   list this round and are `import()`-ed by js/lazy-modules.js instead, so the same question is now
+   asked of both loaders. The lazy list is DERIVED from that loader's own literal specifiers, which
+   is the only place they can live (static-checks sees no other form), so this cannot drift. */
+const LAZY = lazyFiles(root);
+const reached = (rel) => entry.includes(`import '../${rel}';`) || LAZY.includes(rel);
+/* …and the same for "is its factory instantiated": the call itself is unchanged (same name, same
+   IM_HOST); it is made from the loader now instead of from the boot closure. */
+const instantiated = () => body + '\n' + R('js/lazy-modules.js');
+
 const los = R('js/viewshed.js');
 const water = R('js/terrain-water.js');
 const quake = R('js/seismic.js');
@@ -88,8 +100,8 @@ test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with 
    straight-line-interpolated across 419 m at 60 km. */
 test('R176 ②: the viewshed answers per raster cell, not per bearing', () => {
   assert.ok(existsSync(join(ROOT, 'js/viewshed.js')), 'the engine has its own file');
-  assert.match(entry, /import '\.\.\/js\/viewshed\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.los\((IM_HOST)\);/, 'and instantiated under the same factory name');
+  assert.ok(reached('js/viewshed.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
+  assert.match(instantiated(), /window\.IntMapModules\.los\((IM_HOST)\);/, 'and instantiated under the same factory name');
   assert.doesNotMatch(R('js/map-tools.js'), /window\.IntMapModules\.los=function/, 'and no longer defined in map-tools.js');
   /* a ray is never truncated: every sample is classified, so a valley beyond a ridge can come back */
   assert.match(los, /if\(angTgt>=hznAng-1e-12\)\{ c=VIS; \}/, 'each sample is tested against the running horizon');
@@ -126,8 +138,8 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
    read at "the first cell whose drainage parent is outside it" and a basin can have several. */
 test('R176 ④: water is priority-flood + volume routing, and the inflow is exact', () => {
   assert.ok(existsSync(join(ROOT, 'js/terrain-water.js')), 'the simulator has its own file');
-  assert.match(entry, /import '\.\.\/js\/terrain-water\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.terrainWater\((IM_HOST)\);/, 'and instantiated');
+  assert.ok(reached('js/terrain-water.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
+  assert.match(instantiated(), /window\.IntMapModules\.terrainWater\((IM_HOST)\);/, 'and instantiated');
   assert.match(water, /function Heap\(cap\)\{/, 'a real min-heap, so the flood is O(n log n)');
   assert.match(water, /filled\[nk\]=Math\.max\(surf\[nk\],filled\[k\]\);/, 'priority-flood fills to the spill level');
   assert.match(water, /parent\[nk\]=k;/, 'and the pop order doubles as the drainage tree');
@@ -154,8 +166,8 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
    about three minutes of shaking — and against published IASP91 P times at 30°/60°/90°. */
 test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion names its chain', () => {
   assert.ok(existsSync(join(ROOT, 'js/seismic.js')), 'the simulator has its own file');
-  assert.match(entry, /import '\.\.\/js\/seismic\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.seismic\((IM_HOST)\);/, 'and instantiated');
+  assert.ok(reached('js/seismic.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
+  assert.match(instantiated(), /window\.IntMapModules\.seismic\((IM_HOST)\);/, 'and instantiated');
   assert.match(quake, /const IASP91=\[/, 'the velocity model is the data in the file');
   assert.match(quake, /\{ d0:2889, d1:5153\.9,p:\[10\.03904,3\.75665,-13\.67046\], *s:\[0\] \}/, 'including an outer core with no S');
   assert.match(quake, /function trace\(p,srcDepth,phase,dir\)\{/, 'and the travel times are TRACED, not tabulated');
@@ -253,6 +265,6 @@ test('R176: the new files are modules, with no top-level declarations', () => {
     assert.equal(decls.length, 0,
       `${f} must declare nothing at top level (module scope is private; ${decls.map((d) => d.type).join(',')})`);
     /* …and it must be reachable from the single entry point, or it simply does not run */
-    assert.ok(entry.includes(`import '../${f}';`), `${f} is imported by src/main.js`);
+    assert.ok(reached(f), `${f} is imported by src/main.js, or import()-ed by js/lazy-modules.js`);
   }
 });

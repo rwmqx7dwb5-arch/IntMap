@@ -167,3 +167,28 @@ export const test = base.extend({
 });
 
 export const expect = baseExpect;
+
+/* ============================================================================
+ *  (#R209) ASK FOR THE ON-DEMAND MODULES
+ * ----------------------------------------------------------------------------
+ *  Eight feature modules are no longer in the boot bundle (js/lazy-modules.js). A spec written
+ *  before that — and there are twenty-two of them — reaches for `window.IntMapFlightSim` or
+ *  `window.IntMapSeismic` straight after boot and finds nothing.
+ *
+ *  ⚠ THE FIX IS TO ASK, NOT TO WAIT. The app's own entry points await `IntMapLazy.need(…)` before
+ *  they touch these globals; a spec that drives the same feature is doing what a click does, so it
+ *  makes the same call. Adding a sleep, or re-listing the global as a boot signal, would only make
+ *  the test pass while measuring a different application.
+ *
+ *  Call it once after the spec's own boot barrier. `names()` is read out of the loader, so a module
+ *  added to or removed from the split needs no edit here.
+ *  @param {import('@playwright/test').Page} page
+ */
+export async function loadLazyModules(page) {
+  await page.evaluate(async () => {
+    if (!window.IntMapLazy) throw new Error('window.IntMapLazy is missing — js/lazy-modules.js did not run');
+    await Promise.all(window.IntMapLazy.names().map((n) => window.IntMapLazy.need(n)));
+    const failed = (window.__imLazyCheck || {}).failed || [];
+    if (failed.length) throw new Error('on-demand module(s) failed to load: ' + failed.join('; '));
+  });
+}

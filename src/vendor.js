@@ -27,13 +27,68 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import mlcontour from 'maplibre-contour';
-import * as turf from '@turf/turf';
+/* ══ (#R209) TURF IS IMPORTED BY NAME, NOT AS A NAMESPACE ══════════════════════════════════════
+   `import * as turf` asks the bundler for EVERY function in the umbrella package, and
+   `window.turf = turf` then makes all of them reachable by a computed name, so nothing can be
+   dropped. Measured on this branch: that put 644 kB (166 kB gzipped) of @turf/turf into the boot
+   path — more than any single first-party file, and more than the eight modules this round moved
+   out of it — for the twenty-one functions the app actually calls.
+
+   ⚠ AND NAMING THEM FROM THE UMBRELLA WAS NOT ENOUGH — MEASURED. `import { point, … } from
+   '@turf/turf'` still shipped every one of the ~100 modules the index re-exports (turf-jsts, whose
+   only caller is `buffer`, and concaveman, whose only caller is `convex`, were both still in the
+   chunk with neither function imported), because the package declares no `sideEffects: false` and
+   Rollup must assume a re-exported module might do something. Importing each function from its OWN
+   sub-package is what actually removes them; the sub-packages are the same 6.5.0 release the
+   umbrella pins, and they are declared in package.json rather than reached transitively.
+   The published object has the same shape and every call site is unchanged.
+
+   ⚠ AND THE LIST IS CHECKED, NOT TRUSTED. `turf.somethingElse(…)` would now be `undefined is not a
+   function` at runtime instead of working — precisely the silent-hole shape this project keeps
+   paying for — so tests/r209-checks.test.mjs sweeps js/ and src/ for every `turf.<name>` the source
+   contains and fails if one of them is missing from this object. Add a call, add it here. */
+import along from '@turf/along';
+import area from '@turf/area';
+import bbox from '@turf/bbox';
+import bboxClip from '@turf/bbox-clip';
+import bearing from '@turf/bearing';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import center from '@turf/center';
+import centroid from '@turf/centroid';
+import circle from '@turf/circle';
+import distance from '@turf/distance';
+import greatCircle from '@turf/great-circle';
+import kinks from '@turf/kinks';
+import length from '@turf/length';
+import pointOnFeature from '@turf/point-on-feature';
+import union from '@turf/union';
+import { featureCollection, lineString, point, polygon } from '@turf/helpers';
 import * as topojson from 'topojson-client';
 import { createClient } from '@supabase/supabase-js';
 
 window.maplibregl = maplibregl;
 window.mlcontour = mlcontour;
-window.turf = turf;
+window.turf = {
+  along, area, bbox, bboxClip, bearing, booleanPointInPolygon, center, centroid, circle,
+  distance, featureCollection, greatCircle, kinks, length, lineString, point,
+  pointOnFeature, polygon, union,
+  /* ⚠ (#R209) …AND TWO THAT ARE NOT HERE YET. `convex` + `buffer` reach turf-jsts, which is 332 kB
+     — 81% of everything left in this chunk after the umbrella import was named — and the app calls
+     them from ONE place: the reachable-area hull in js/sims.js. So they arrive on their own chunk,
+     and the one caller awaits this before drawing. It is a promise rather than a silent absence
+     precisely so the hull is never quietly drawn unbuffered (the #R205 shape). */
+  ensureHeavy() {
+    if (!window.turf._heavyP) {
+      /* ⚠ THE TWO SUB-PACKAGES, NOT THE UMBRELLA. Measured: `import('@turf/turf')` here re-merges
+         the whole index back into the eager chunk (644.9 kB — exactly what it was before), because
+         it is the same module id the static import above already reaches. */
+      window.turf._heavyP = Promise.all([import('@turf/convex'), import('@turf/buffer')]).then((m) => {
+        window.turf.convex = m[0].default || m[0]; window.turf.buffer = m[1].default || m[1]; return true;
+      }).catch(() => false);
+    }
+    return window.turf._heavyP;
+  },
+};
 window.topojson = topojson;
 
 /* ── Supabase. Moved here verbatim from the inline <script> that used to sit between the SDK tag and

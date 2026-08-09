@@ -7,6 +7,7 @@
 //   4. the 3-D volume is still a closed body after the globe hands over to the flat map (z12+)
 //   5. the drone planner: real terrain, AMSL/AGL kept apart, specific reasons, edit/recompute/save/delete
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -18,6 +19,13 @@ const boot = async page => {
 test('the flight simulator looks up, and the sky is the renderer’s', async ({ page }) => {
   test.setTimeout(300000);
   await boot(page);
+  /* (#R209) js/flight-sim.js left the boot bundle: `window.IntMapFlightSim` no longer exists when the
+     map can draw, it is fetched the first time a door reaches for it. The app's own doors (the
+     right-click item, the aircraft card's Fly button, Atlas) await `IntMapLazy.need('flightSim')`
+     before they touch the global, and this test drives that same feature — so it asks the same way.
+     ⚠ NOT a longer wait and NOT a new boot signal: the barrier above names an EAGER global on
+     purpose, and everything measured below is unchanged. */
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.05, alt: 4000, hdg: 0 }));
   await page.waitForTimeout(8000);
   const snap = () => page.evaluate(() => { const m = window.__imap, S = window.IntMapFlightSim._st();

@@ -4,7 +4,11 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
+// (#R209) These four are still in the boot bundle, so they remain the boot signal. Street View —
+// asserted by #1 below — is NOT: js/street-view.js left the entry and is fetched on demand, so this
+// file asks for it the way the app's own entry points do (IntMapLazy.need) once the app is up.
 const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapConsole', 'IntMapTime', 'IntMapCompanies'];
 
 test.describe.configure({ mode: 'serial' });
@@ -21,6 +25,7 @@ test.beforeAll(async ({ browser }) => {
     (g) => g.every((k) => typeof window[k] !== 'undefined') && !!document.getElementById('map'),
     CRITICAL_GLOBALS, { timeout: 45_000 },
   );
+  await loadLazyModules(page);   // (#R209) the on-demand half of the split, asked for not waited for
   await page.waitForTimeout(2000);
 });
 

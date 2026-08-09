@@ -36,6 +36,7 @@ import { makeThemeSky } from './theme-sky.js';
 import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
+import { makeLazyModules } from './lazy-modules.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -742,6 +743,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      reads the `window.__imSatProto` flag this sets — see the file header. `_hiDPITiles` is the one
      value it needs from this scope and is handed over explicitly (scripts/check-split-scope.mjs). */
   try{ window.IntMapModules.satProto(IM_HOST); }catch(_){}
+  /* (#R209) …and the loader for the modules that are NOT downloaded at boot. Built here, this early,
+     because every entry point below reaches it through window.IntMapLazy rather than through a
+     parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
+  makeLazyModules(IM_HOST);
   /* (#R203) …and the centre is COMPUTED ONCE AND PUBLISHED. A test cannot re-derive it — it moves
      0.25° a minute, so "boot, then compute what the centre should be" is off by however long the
      boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
@@ -2981,7 +2986,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R29.1) Settings → Feedback & bug report entry points. */
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
-    { const pg=document.getElementById('btn-playground'); if(pg) pg.onclick=()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }; }
+    { const pg=document.getElementById('btn-playground'); if(pg) pg.onclick=()=>{ window.IntMapLazy.need('playground').then(()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
@@ -2999,8 +3004,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        2) Pandemic Simulator — Plague-Inc-style world spread on real countries
        3) Nation Sim — lead a real country (1900–2026), dictator or democracy
      All built with createElement + inline styles (no CSS-in-template-literal). ===========*/
-  /* (#R166) moved to js/playground.js — see Architecture.md §3.1. */
-  window.IntMapModules.playground(IM_HOST);
+  /* (#R166) moved to js/playground.js; (#R209) fetched when Settings ▸ Playground is pressed. */
 
   /* (#R167) moved to js/legal.js — see Architecture.md §3.1. */
   window.IntMapModules.legal(IM_HOST);
@@ -3813,17 +3817,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
      and the terrain DEM is cast in 96 rays (earth-curvature-corrected) → terrain-blocked dead zones are
      filled red, the visible coverage outlined green. Uses the same cached terrarium DEM as the readout. ===== */
-  /* (#R166) moved to js/map-tools.js, then (#R176) to js/viewshed.js — see Architecture.md §3.1. */
-  window.IntMapModules.los(IM_HOST);
-
-  /* ===== (#R176) The three simulators the round was asked for. Each is self-contained in its own file
-     and reached from the map's right-click menu and from Atlas (never from the Measure menu). ===== */
-  window.IntMapModules.terrainWater(IM_HOST);   /* sculpt the ground, drop water, watch it route */
-  window.IntMapModules.seismic(IM_HOST);        /* P/S/surface wavefronts, arrivals, intensity */
-  /* (#R192) 「波の伝播のわかるアニメーション津波シミュレーター」 — linear long waves over the real
-     sea floor, offered by the seismic panel when the event screens as tsunamigenic. After seismic,
-     because that is what hands it an event. */
-  window.IntMapModules.tsunami(IM_HOST);
+  /* (#R166) moved to js/map-tools.js, then (#R176) to js/viewshed.js — see Architecture.md §3.1.
+     ===== (#R176) The three simulators the round was asked for. Each is self-contained in its own file
+     and reached from the map's right-click menu and from Atlas (never from the Measure menu).
+     (#R192) 「波の伝播のわかるアニメーション津波シミュレーター」 — linear long waves over the real sea
+     floor, offered by the seismic panel when the event screens as tsunamigenic; it is fetched WITH
+     seismic (js/lazy-modules.js ALSO) because that is what hands it an event.
+     ⚠ (#R209) los / terrainWater / seismic / tsunami are no longer instantiated here — 162 kB of
+     minified source that a session which never right-clicks the map never downloads. The four are
+     fetched by js/lazy-modules.js from the context-menu items and from Atlas. */
   window.IntMapModules.insolation(IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
 
   /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
@@ -4187,8 +4189,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== (#R83) STREET VIEW ("ストリートビューを使えるように") — an embedded, KEYLESS Google Street View panel
      (the classic maps.google.com output=svembed endpoint, no API key/billing) plus an "open in Google Maps" jump.
      Draggable floating window; used from the map context menu and from Atlas. ===== */
-  /* (#R163) moved to js/street-view.js — see Architecture.md §3.1. */
-  window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST);
+  /* (#R163) moved to js/street-view.js; (#R209) fetched on the context menu's Street View item. */
   /* ===== (#R83) RADIATION DISPERSION — a real Lagrangian particle model ("流体力学にのっとった粒子飛散モデルで、
      風向きや気温、降水も考慮"). Particles are released from a source and advected by a LIVE, space+time-varying
      wind field (Open-Meteo 6×6 grid, hourly, 3-day forecast), spread by turbulent diffusion scaled by atmospheric
@@ -4207,8 +4208,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      model over the actual world map: coordinated-turn banking, pitch/throttle, stall, gravity and ground/terrain
      collision, with the MapLibre camera as the cockpit view and a live HUD (airspeed, altitude, heading, VSI,
      throttle, artificial horizon). Keyboard: W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc exit. ===== */
-  /* (#R163) moved to js/flight-sim.js — see Architecture.md §3.1. */
-  window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST);
+  /* (#R163) moved to js/flight-sim.js; (#R209) 102 kB fetched when a flight is actually started. */
   window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);   /* (#R165) the Atlas kernel (~6,200 lines) moved to js/atlas-console.js — see Architecture.md §3.1 */
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */

@@ -179,7 +179,7 @@ export function makeSessionTabs(HOST, CTX) {
     ['atlas.close',()=>{ window.IntMapConsole&&window.IntMapConsole.close(); }, 'Atlas · close','atlas'],
     ['compare.open',(p)=>{ if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
     ['compare.clear',()=>{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }, 'Country comparison · clear map paint','compare'],
-    ['flightsim.setup',(p)=>{ window.IntMapFlightSim&&window.IntMapFlightSim.setup(p||{}); }, 'Flight simulator · pre-flight screen','sim'],
+    ['flightsim.setup',(p)=>{ window.IntMapLazy.need('flightSim').then(()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.setup(p||{}); }); }, 'Flight simulator · pre-flight screen','sim'],
     ['flightsim.stop', ()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.stop(); }, 'Flight simulator · stop','sim'],
     ['workspace.enter',()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.open&&window.IntMapWorkspace.open(); }, 'Workspace mode · enter','ws'],
     ['workspace.exit', ()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.close&&window.IntMapWorkspace.close(); }, 'Workspace mode · exit','ws'],

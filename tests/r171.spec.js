@@ -12,6 +12,7 @@
 //      handler, so the field being typed into was destroyed after one keystroke ("2500" → "2", focus
 //      back on BODY). Only a real keyboard through a real DOM shows that.
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -47,6 +48,11 @@ test('MapLibre\'s plain globe really does go flat at flight-sim zoom (the reason
 test('the flight simulator flies the app Globe, and gives the view back on exit', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
+  /* (#R209) js/flight-sim.js left the boot bundle, so `window.IntMapFlightSim` does not exist until
+     it is ASKED for — the right-click item that starts the sim awaits `IntMapLazy.need('flightSim')`
+     before it calls start(), and a test that drives the same feature makes the same call. Waiting
+     for the global instead would be waiting for something that is never coming. */
+  await loadLazyModules(page);
   // take off from the FLAT view — the case #R170 set out to cover
   await page.evaluate(() => window.IntMapOS.exec('view.proj.flat', { source: 'test' }));
   await page.waitForTimeout(500);
@@ -82,6 +88,8 @@ test('the flight simulator flies the app Globe, and gives the view back on exit'
 test('the flight simulator is silent by default and the SOUND key says so', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  // (#R209) IntMapFlightSim is fetched on demand now — ask for it the way the menu item does.
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.7, lat: 35.3, alt: 3000 }));
   await page.waitForTimeout(1500);
   const deck = await page.evaluate(() => {

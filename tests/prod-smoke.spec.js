@@ -4,9 +4,14 @@
 // it lets real network through and only fails on IntMap's own breakage.
 import { test, expect } from '@playwright/test';
 import { collectPageDiagnostics } from './helpers/network.js';
+import { loadLazyModules } from './helpers/app.js';
 
 const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
 
+/* The boot signal. ⚠ (#R209) EVERY NAME HERE HAS TO BE IN THE BOOT BUNDLE. Eight feature globals are
+   now fetched on demand (js/lazy-modules.js), and one of those in this list would silently redefine
+   "the app has booted" as "the app has booted AND somebody clicked the right thing" — i.e. a wait
+   that never ends on a perfectly healthy deployment. All four below are eager and stay eager. */
 const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapLayers', 'IntMapConsole', 'IntMapTime'];
 
 // (#R163) Globals that only exist if their js/ file was really deployed AND its factory ran.
@@ -15,7 +20,14 @@ const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapLayers', 'IntMapConsole', 'IntMapTi
 // feature silently gone — the same failure shape the split has to defend against, one layer up.
 // index.html's boot guard records the outcome in window.__imModuleCheck; assert both.
 const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare', 'IntMapRouting',
-  'IntMapStreetView', 'IntMapFlightSim', 'IntMapTimeBorders', 'IntMapMonitors',
+  /* ⚠ (#R209) 'IntMapStreetView' AND 'IntMapFlightSim' USED TO BE THE NEXT TWO NAMES ON THIS LINE.
+     js/street-view.js and js/flight-sim.js left the boot bundle this round — js/lazy-modules.js
+     fetches them the first time the user reaches for the feature — so at boot neither global exists
+     and keeping them here would report a perfectly healthy deployment as broken.
+     THE CHECK IS NOT DROPPED, IT MOVED: the (#R209) test below asks the loader for every on-demand
+     module and then requires each one to have arrived, which covers all EIGHT split files rather
+     than the two this list happened to name. */
+  'IntMapTimeBorders', 'IntMapMonitors',
   'IntMapLayerPreviews', 'IntMapMaddison', 'IntMapHistStates', 'IntMapHistId',
   'IntMapNewsGeo', 'IntMapI18N', 'IntMapGazetteer', 'IntMapRefData',
   // (#R164) the third split: data-layers / workspace / widgets / wb-layers / beta-overlays.
@@ -49,12 +61,16 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test
-// below asserts their nodes. All four are also named in index.html's boot guard, which this file
-// asserts is clean (`missingFactories` empty) — that is the real backstop for a missing file.
+// below asserts their nodes. Those four are also named in the boot guard, which this file asserts
+// is clean (`missingFactories` empty) — that is the real backstop for a missing file.
+// ⚠ (#R209) js/playground.js IS NO LONGER ONE OF THEM. It is fetched on demand, so src/main.js
+// moved it out of MODULE_FACTORIES into LAZY_FACTORIES and the boot guard cannot see it at all —
+// `missingFactories` is silent about it by design. Its backstop is now the loader's own record,
+// window.__imLazyCheck.failed, asserted in the (#R209) test below.
 
 test.describe.configure({ mode: 'serial' });
 
-let page, diag, response;
+let page, diag, response, lazyError;
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
@@ -67,6 +83,16 @@ test.beforeAll(async ({ browser }) => {
     { timeout: 60_000 },
   );
   await page.waitForTimeout(2000);
+  /* (#R209) …AND THEN ASK FOR THE ON-DEMAND MODULES, THE WAY THE APP ITSELF ASKS. The eight split
+     files are downloaded by js/lazy-modules.js when a menu item is clicked, so nothing at boot
+     touches them and nothing above could notice a chunk that never reached the CDN. Asking here
+     also puts the page back in the state the rest of this file was written against, when all eight
+     were mounted at boot.
+     ⚠ CAPTURED, NOT THROWN. A throw in beforeAll fails every test in the file, including the two
+     the uptime workflow reads first ("responds 200", "no uncaught exceptions") — so a single
+     missing chunk would blank out the diagnosis instead of naming it. Same shape as `response`
+     above: gathered here, asserted in the one test that is about it. */
+  lazyError = await loadLazyModules(page).then(() => null, (e) => e);
 });
 
 test.afterAll(async () => {
@@ -103,6 +129,57 @@ test('(#R163) prod deployed every js/ module file — no factory silently missin
   expect(got.check.missingFactories, 'no module factory missing').toEqual([]);
 });
 
+/* ══ (#R209) THE CHUNKS NOBODY DOWNLOADS AT BOOT ═══════════════════════════════════════════════
+   Eight feature modules left the boot bundle this round. That reproduces the exact failure this
+   file exists to catch, one layer deeper: a chunk missing from the CDN leaves the page booting,
+   every assertion above green, and the feature gone until somebody clicks it — and because nothing
+   at boot touches those files, nothing at boot can notice. The old MODULE_GLOBALS entries could not
+   have caught it either; they were boot-time presence checks.
+   So beforeAll asks the loader for all of them (what a click does) and this is where the answer is
+   read. Three readings, because the failures they catch are different:
+     · the loader's OWN record — written by the load path, not by this test: it checks that the
+       factory registered AND that the global the module owns actually appeared;
+     · those globals, read from outside the loader, so a loader that lies is not self-certifying;
+     · the deployed entry's LAZY_FACTORIES against the deployed loader's list, so a half-propagated
+       deployment (new src/main.js with an old js/lazy-modules.js, or the reverse) is not silently
+       fine — GitHub Pages serving a mixed build is exactly the shape of outage this file is for. */
+test('(#R209) prod serves every on-demand chunk — the deferred modules arrive when asked', async () => {
+  expect(lazyError, `on-demand module(s) did not arrive on the live site: ${lazyError && lazyError.message}`).toBeNull();
+  const s = await page.evaluate(() => {
+    const L = window.IntMapLazy;
+    return {
+      names: L ? L.names() : null,
+      /* the loader's own "is it here": the module was asked for AND its global is on window */
+      notReady: L ? L.names().filter((n) => !L.ready(n)) : null,
+      rec: window.__imLazyCheck || null,
+      lazyFactories: (window.__imModuleCheck || {}).lazy || null,
+      /* read straight off window — including the two names MODULE_GLOBALS used to carry, and the
+         pair of bare functions js/playground.js installs instead of a namespace */
+      globals: {
+        IntMapFlightSim: typeof window.IntMapFlightSim, IntMapStreetView: typeof window.IntMapStreetView,
+        IntMapSeismic: typeof window.IntMapSeismic, IntMapTsunami: typeof window.IntMapTsunami,
+        IntMapTerrainWater: typeof window.IntMapTerrainWater, IntMapLOS: typeof window.IntMapLOS,
+        IntMapNightSky: typeof window.IntMapNightSky,
+        _openPlayground: typeof window._openPlayground, _pgWorldExplorer: typeof window._pgWorldExplorer,
+      },
+    };
+  });
+  expect(s.names, 'js/lazy-modules.js deployed and published the loader').toBeTruthy();
+  expect(s.names.length, 'and it still knows every deferred module').toBeGreaterThanOrEqual(8);
+  expect(s.rec, 'the loader keeps the record its failures go into').toBeTruthy();
+  expect(s.rec.failed, 'no chunk failed to download, register a factory or publish its global').toEqual([]);
+  expect(s.rec.loaded.slice().sort(), 'and every one of them is recorded as arrived').toEqual(s.names.slice().sort());
+  expect(s.notReady, `deferred module(s) asked for but not present: ${(s.notReady || []).join(', ')}`).toEqual([]);
+  for (const [k, t] of Object.entries(s.globals)) {
+    expect(t, `window.${k} arrived with its chunk — the js/ file it lives in deployed`).not.toBe('undefined');
+  }
+  /* one list still knows every factory the program has (src/main.js §LAZY_FACTORIES) */
+  expect(Array.isArray(s.lazyFactories) && s.lazyFactories.length > 0, 'the deployed entry names its deferred factories').toBe(true);
+  const drift = s.lazyFactories.filter((k) => !s.names.includes(k));
+  expect(drift, `the deployed entry names deferred factories the deployed loader cannot fetch: ${drift.join(', ')}`).toEqual([]);
+  console.log(`[prod-smoke] on-demand chunks ${s.rec.loaded.length}/${s.names.length} · ${s.names.join(' ')}`);
+});
+
 test('(#R164) prod cameras module built its layer row (it publishes no global)', async () => {
   // js/cameras.js is the one #R164 module with no window.* surface: it wires itself into the layer
   // panel as the #dl-webcams row (~900 ms after boot; beforeAll already waited past that).
@@ -112,6 +189,12 @@ test('(#R164) prod cameras module built its layer row (it publishes no global)',
 test('(#R166) prod playground module loaded (it publishes no window global either)', async () => {
   // js/playground.js only installs window._openPlayground / _pgWorldExplorer from inside its
   // factory, so a global-name check cannot see it. Assert the entry point is a real function.
+  // ⚠ (#R209) …and that factory now runs only when the module is ASKED FOR — beforeAll asks, which
+  // is the same call `#btn-playground` makes. So this still measures "the file deployed and its
+  // factory ran"; what it no longer measures is "it was in the boot bundle", which this round made
+  // deliberately false. Kept rather than folded into the (#R209) test because `_pgWorldExplorer` is
+  // a SECOND entry point (js/atlas-console.js reaches for it by name) that the loader's own
+  // published-global check does not know about.
   const ok = await page.evaluate(() => typeof window._openPlayground === 'function' && typeof window._pgWorldExplorer === 'function');
   expect(ok, 'js/playground.js deployed and its factory ran').toBe(true);
 });

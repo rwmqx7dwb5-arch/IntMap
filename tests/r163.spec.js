@@ -11,6 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -24,6 +25,14 @@ test.beforeAll(async ({ browser }) => {
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction(() => !!window.__imap && !!document.getElementById('map'), null, { timeout: 45_000 });
+  /* ⚠ (#R209) TWO OF THE SEVEN MODULES THIS FILE EXERCISES ARE NO LONGER IN THE BOOT BUNDLE.
+     js/flight-sim.js and js/street-view.js moved behind js/lazy-modules.js, so nothing publishes
+     window.IntMapFlightSim (#3) or window.IntMapStreetView (#2) until something asks for them. The
+     app's own entry points await `IntMapLazy.need(…)` before they touch either one, so a spec that
+     drives the same feature makes the same call — this is not a wait for something that arrives on
+     its own, and softening #2's key-set assertions instead would have deleted exactly the check
+     this file exists to make. */
+  await loadLazyModules(page);
   await page.waitForTimeout(2500);
 });
 

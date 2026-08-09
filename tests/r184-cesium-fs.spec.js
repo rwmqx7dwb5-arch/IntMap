@@ -9,15 +9,22 @@
 // is that the CAMERA ACTUALLY WENT WHERE THE AEROPLANE IS.
 import { test, expect } from '@playwright/test';
 import { bootEngine } from './helpers/engine.js';
+import { loadLazyModules } from './helpers/app.js';
 
 const BOOT = { timeout: 120_000 };
 /* (#R201) ONE page load — see tests/helpers/engine.js */
 const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
+// (#R209) THE SIMULATOR IS NOT IN THE BOOT BUNDLE ANY MORE. js/lazy-modules.js fetches
+// js/flight-sim.js — and with it `window.IntMapFlightSim` — the first time something asks for it,
+// which is what the right-click item that starts a flight now does (`IntMapLazy.need('flightSim')`).
+// So each test here asks the same way, immediately after its own boot barrier. Waiting for the
+// global instead would be waiting for something that is never coming on its own.
 
 /* ── ① THE CAPABILITIES THE SIMULATOR NEEDS ARE REALLY THERE ──────────────────────────────── */
 test('R184 Cesium FS ①: every camera capability the simulator drives is implemented, not stubbed', async ({ page }) => {
   test.setTimeout(180_000);
   await asCesium(page);
+  await loadLazyModules(page);   // (#R209) ask for the on-demand modules the way the app asks
   const r = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
     const gest = E.input.names();
@@ -57,6 +64,7 @@ test('R184 Cesium FS ①: every camera capability the simulator drives is implem
 test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft', async ({ page }) => {
   test.setTimeout(180_000);
   await asCesium(page);
+  await loadLazyModules(page);   // (#R209) ask for the on-demand modules the way the app asks
   const r = await page.evaluate(async () => {
     const FS = window.IntMapFlightSim, E = window.IntMapGeoEngine;
     const start = { lng: 8.0, lat: 46.5, alt: 3000, hdg: 90, speed: 120, aircraft: 'f35', keepAlt: true };
@@ -117,8 +125,13 @@ test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft',
 test('R184 Cesium FS ③: the simulator on MapLibre is untouched', async ({ page }) => {
   test.setTimeout(150_000);
   await page.goto('/?rafshim=1');
-  await page.waitForFunction(() => !!window.__imap && !!window.IntMapFlightSim, null, BOOT);
+  // (#R209) `IntMapFlightSim` stood in for "the app is up" here, and it cannot any more: it is
+  // published on demand, so a boot that is entirely healthy never defines it. The signal is an eager
+  // global instead — IntMapLayers, one of tests/smoke.spec.js's critical set — and the simulator is
+  // asked for below, which is the same order the right-click item does it in.
+  await page.waitForFunction(() => !!window.__imap && !!window.IntMapLayers, null, BOOT);
   await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
+  await loadLazyModules(page);
   const r = await page.evaluate(async () => {
     const FS = window.IntMapFlightSim, E = window.IntMapGeoEngine;
     FS.start({ lng: 8.0, lat: 46.5, alt: 3000, hdg: 90, speed: 120, aircraft: 'f35', keepAlt: true });

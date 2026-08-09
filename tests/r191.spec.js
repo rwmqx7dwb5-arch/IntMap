@@ -6,11 +6,20 @@
  *   ④ the layer sidebar is genuinely opaque in the Solid appearance
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 async function boot(page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapCanDraw && window.IntMapCanDraw(), null, { timeout: 60000 });
 }
+
+/* (#R209) `window.IntMapSeismic` is not in the boot bundle any more — js/lazy-modules.js fetches
+   js/seismic.js (and js/tsunami.js with it) when the right-click item is used, which awaits
+   `IntMapLazy.need('seismic')` first. ⚠ THAT MATTERS PARTICULARLY HERE, because ② and ③ both open
+   with `test.skip(!S, 'the seismic simulator is not installed here')` — after the split that guard
+   would have been true on a perfectly healthy app and the two tests would have gone quietly green
+   without measuring anything. The boot barrier above is unchanged; the tests that drive the
+   simulator ask for it the way a click does. */
 
 /* ── ① the mark ──────────────────────────────────────────────────────────────────────────────── */
 test('R191 aircraft: the lifted mark is the glyph — same silhouette, same stroke, same colour', async ({ page }) => {
@@ -59,6 +68,7 @@ test('R191 aircraft: the lifted mark is the glyph — same silhouette, same stro
 test('R191 seismic: the field reaches the end of the lowest class, and only over land', async ({ page }) => {
   test.setTimeout(240000);
   await boot(page);
+  await loadLazyModules(page);
   const r = await page.evaluate(async () => {
     const S = window.IntMapSeismic;
     if (!S || !S.open) return { has: false };
@@ -112,6 +122,7 @@ test('R191 seismic: a Japanese session opens on the JMA scale', async ({ page })
     try { localStorage.setItem('intmap_settings', JSON.stringify({ lang: 'jp' })); } catch (_) { }
   });
   await boot(page);
+  await loadLazyModules(page);
   const r = await page.evaluate(() => {
     const S = window.IntMapSeismic;
     return S ? { lang: (window.IntMapI18N && window.IntMapI18N.lang) || document.documentElement.lang || null,

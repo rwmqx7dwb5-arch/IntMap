@@ -69,8 +69,6 @@ import '../js/routing.js';
    capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
    built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
 import '../js/routing-ops.js';
-import '../js/street-view.js';
-import '../js/flight-sim.js';
 import '../js/time-borders.js';
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
@@ -86,10 +84,7 @@ import '../js/beta-overlays.js';
 import '../js/cameras.js';
 import '../js/atlas-console.js';
 import '../js/map-ui.js';
-import '../js/playground.js';
 import '../js/map-tools.js';
-import '../js/viewshed.js';                 /* (#R176) IntMapModules.los, moved out of map-tools.js */
-import '../js/terrain-water.js';            /* (#R176) sculpt the terrain, route the water */
 /* (#R192) "where is the land" — the bundled 1-bit world mask (data/land-mask.png). Ahead of the
    seismic simulator because that is its first caller, but it is a fact about the Earth and not
    about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
@@ -112,11 +107,9 @@ import '../js/geodesy.js';
    because it attaches `moveend`/`move` handlers whose order relative to the shell's is observable. */
 import '../js/tile-warm.js';
 
-import '../js/seismic.js';                  /* (#R176) P/S/surface waves through IASP91 */
 /* (#R192) the tsunami propagation model — linear long waves over the real sea floor, initialised
    from the same event the seismic panel is already describing. After seismic.js because that is
    what hands it an event; it registers itself and computes nothing until asked. */
-import '../js/tsunami.js';
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 import '../js/weather.js';
 import '../js/layer-packs.js';
@@ -193,7 +186,6 @@ import '../js/night-side.js';
    after js/ephemeris.js because it asks it for the Sun, Moon and planets, and allocates nothing
    until the right-click item is used. */
 import '../js/ephemeris.js';
-import '../js/night-sky.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
@@ -214,11 +206,11 @@ import '../js/app-body.js';
       earlier file created it) while the feature it carries is gone. ── */
 const MODULE_FACTORIES = [
   'maddison', 'histStates', 'histId', 'layerPreviews', 'monitors', 'companies',
-  'statsCompare', 'compare', 'routing', 'streetView', 'flightSim', 'timeBorders',
+  'statsCompare', 'compare', 'routing', 'timeBorders',
   'dataLayers', 'workspace', 'widgets', 'wbLayers', 'betaOverlays', 'cameras',
   'atlasConsole', 'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
-  'geojsonUpload', 'viewHash', 'share', 'playground', 'projView', 'drawTool',
-  'isolate', 'seaRoute', 'los', 'outline', 'moveShape', 'isochrone',
+  'geojsonUpload', 'viewHash', 'share', 'projView', 'drawTool',
+  'isolate', 'seaRoute', 'outline', 'moveShape', 'isochrone',
   'arc3d', 'objectList', 'wind', 'weatherEC', 'weatherPanel', 'earthSky',
   'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience', 'timeSeries',
   'aiResearch', 'correlate', 'worldEvents', 'edu', 'radiation', 'popArea',
@@ -232,11 +224,22 @@ const MODULE_FACTORIES = [
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources',
 ];
+/* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
+   These eight files are not in the import list above: they are fetched by js/lazy-modules.js the
+   first time the user reaches for the feature. The guard below therefore CANNOT check them at boot
+   — `typeof M[k] !== 'function'` is the correct answer for a module nobody has asked for, and
+   reporting it would make every clean boot look broken.
+   ⚠ THE CHECK IS NOT DROPPED, IT IS MOVED. js/lazy-modules.js verifies, at the moment each one
+   lands, that the factory registered AND that the global it owns was published, and records any
+   failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
+   for all eight. Naming them here keeps ONE list of every factory the program has, so a file that
+   is deleted or renamed still has somewhere to be missing from. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView'];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');
   if (missFac.length) console.error('[IntMap] module factories missing: ' + missFac.join(', ') + ' — the matching js/ file did not load');
-  window.__imModuleCheck = { missing: miss, missingFactories: missFac };
+  window.__imModuleCheck = { missing: miss, missingFactories: missFac, lazy: LAZY_FACTORIES.slice() };
 })();

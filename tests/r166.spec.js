@@ -17,6 +17,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -28,6 +29,10 @@ const MOVED_GLOBALS = [
   // js/map-ui.js
   'IntMapLayers', 'IntMapLayerSidebar', 'IntMapTicker', 'IntMapShare', '_imPlacePopup',
   // js/map-tools.js
+  // ⚠ (#R209) IntMapLOS stays in this list, but it is no longer here at boot: the line-of-sight
+  // block became js/viewshed.js behind js/lazy-modules.js, published only when something asks. The
+  // list still means "every global the moved blocks publish", so beforeAll asks for the on-demand
+  // ones first (see below) rather than the name being dropped and the check with it.
   'ProjView', 'DrawTool', 'IntMapIsolate', 'IntMapRoute', 'IntMapLOS', 'IntMapOutline',
   'IntMapMoveShape', 'IntMapIsochrone', 'IntMapArc3D', 'IntMapObjects',
   // js/weather.js
@@ -49,6 +54,13 @@ test.beforeAll(async ({ browser }) => {
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction(() => !!window.__imap && !!document.getElementById('map'), null, { timeout: 45_000 });
+  /* ⚠ (#R209) ASK FOR THE ON-DEMAND MODULES BEFORE ANY TEST LOOKS FOR THEM. Two of the things this
+     file checks left the boot bundle for js/lazy-modules.js: window.IntMapLOS (#1's global list and
+     #2's key-set check) and js/playground.js, which is what defines window._pgWorldExplorer for the
+     write-through test (#6). The app awaits `IntMapLazy.need(…)` at every entry point that reaches
+     them, so this is the same call a click makes — the alternative, striking IntMapLOS off the list
+     or guarding #6, would leave the file green while it stopped checking those two. */
+  await loadLazyModules(page);
   await page.waitForTimeout(2500);
 });
 

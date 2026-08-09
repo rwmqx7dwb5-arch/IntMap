@@ -10,6 +10,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { loadLazyModules } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -23,6 +24,11 @@ test.beforeAll(async ({ browser }) => {
   await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForFunction(() => !!window.__imap && !!document.getElementById('map'), null, { timeout: 60_000 });
   await page.waitForFunction(() => !!window.IntMapSpace && !!window.IntMapEphemeris, null, { timeout: 60_000 });
+  /* ⚠ (#R209) THE TSUNAMI MODEL ⑦ ASKS ABOUT IS NO LONGER IN THE BOOT BUNDLE. js/lazy-modules.js
+     fetches it when something requests it, exactly as the panel that opens it does
+     (`await IntMapLazy.need('tsunami')`), so this shared page asks once here — the boot barrier above
+     is unchanged, because the explorer and the ephemeris ARE still boot-time modules. */
+  await loadLazyModules(page);
 });
 
 test.afterAll(async () => { try { await page.context().close(); } catch { /* ignore */ } });

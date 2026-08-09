@@ -7,6 +7,7 @@
  *   ⑤ the satellite tile pipeline runs in a worker
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 /* ⚠ (#R206) ONE BOOT FOR THE FILE, NOT ONE PER TEST — the same payment #R201 made for its own new
    spec. These four tests each took a fresh `page` fixture and booted the whole app into it, and the
@@ -23,6 +24,14 @@ test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapCanDraw && window.IntMapCanDraw(), null, { timeout: 60000 });
+  /* ⚠ (#R209) …AND THEN ASK FOR THE ON-DEMAND MODULES, THE WAY A CLICK DOES. `IntMapSeismic` (②③)
+     and `IntMapTsunami` (④) left the boot bundle for js/lazy-modules.js, so they no longer exist
+     when `IntMapCanDraw()` is true — the app's own menu items await `IntMapLazy.need(…)` first and
+     this file drives the same features. ⚠ THIS ONE MATTERS MORE THAN IT LOOKS: both tests answer a
+     missing global with `{ has: false }` and then `test.skip(…)`, so without this the two subsystems
+     would report GREEN-and-skipped rather than red. The boot barrier above is untouched — it names
+     an EAGER global, which is what a boot barrier is for. */
+  await loadLazyModules(page);
 });
 test.afterAll(async () => { if (page) await page.close(); });
 

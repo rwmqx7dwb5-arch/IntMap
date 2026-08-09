@@ -2,6 +2,7 @@
  *  R193 — the parts only a real renderer, a real network and a real model can answer.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { loadLazyModules } from './helpers/app.js';
 
 const ready = async (page) => {
   await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
@@ -12,7 +13,14 @@ const ready = async (page) => {
 test('R193 tsunami: the solve is off the page, streams, and animates without an encoder', async ({ page }) => {
   test.setTimeout(300000);
   await ready(page);
-  await page.waitForFunction(() => !!window.IntMapTsunami, null, { timeout: 30000 });
+  /* ⚠ (#R209) ASK FOR IT — WAITING FOR IT NEVER ARRIVES. `window.IntMapTsunami` is fetched on demand
+     now (js/lazy-modules.js), so the old `waitForFunction(() => !!window.IntMapTsunami)` would sit
+     out its timeout on a perfectly healthy app. The panel that opens this simulator awaits
+     `IntMapLazy.need('tsunami')` before it touches the global, and this is the same call — it still
+     fails, loudly and by name, if the module does not arrive.
+     ⚠ `IntMapTsunamiWorker` below is NOT lazy (src/main.js still imports the client eagerly), which
+     is exactly why the assertion on it is left where it is. */
+  await loadLazyModules(page);
   expect(await page.evaluate(() => !!(window.IntMapTsunamiWorker && window.IntMapTsunamiWorker.available()))).toBe(true);
 
   /* ① the run reaches a playable state and finishes, and the first frames arrive BEFORE it does */

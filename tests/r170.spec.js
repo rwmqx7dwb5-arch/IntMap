@@ -12,7 +12,7 @@
 //      to survive all the way to fill-extrusion-base, and with 3-D terrain on it must be REDUCED by
 //      the ground elevation, or the box would float above the mountain instead of above the sea.
 //   3. The requested defaults, observed on a fresh profile: no ticker, no workspace, Countries open.
-import { test, expect, bootPage } from './helpers/app.js';
+import { test, expect, bootPage, loadLazyModules } from './helpers/app.js';
 
 /* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
    used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
@@ -283,6 +283,12 @@ test('a live price is stamped with the quote\'s OWN time, not the fetch time', a
 test('the flight simulator pre-flight screen defaults to an airborne start', async ({ app }) => {
   test.setTimeout(120000);
   const page = app.page;
+  /* ⚠ (#R209) THE ONLY TEST IN THIS FILE THAT REACHES FOR AN ON-DEMAND MODULE. js/flight-sim.js is
+     the largest thing that left the boot bundle, so window.IntMapFlightSim does not exist until it
+     is asked for; the app's own right-click item awaits `IntMapLazy.need('flightSim')` before it
+     calls setup(), and so does this. The shared worker page is booted once, so the ask belongs here
+     rather than in the fixture — the other eight tests have no reason to pay for it. */
+  await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.setup({}));
   await page.waitForSelector('#fs-setup', { timeout: 20000 });
   const sel = await page.evaluate(() => {

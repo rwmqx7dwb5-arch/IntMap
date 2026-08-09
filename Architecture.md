@@ -1702,6 +1702,56 @@ Playwright の monitors テストが拾わなければ本番に出ていた。
 5. 読み込みは**素の `<script src>`（classic script）**。`type="module"` は使わない——
    DOMContentLoaded より前に同期実行される必要があり、**ビルド工程を持たない**方針も維持する。
 
+### (#R209) 第2の軸 — **「どのファイルに置くか」ではなく「いつ取りに行くか」**
+
+#R162〜#R208 の分割は**保守のための分割**（1ファイル1主題）で、112本になった今も
+**src/main.js が起動時に全部 import する**ので、ブラウザは全部ダウンロードして解析して実行していた。
+#R209 が足したのはもう一本の軸——**利用者がその機能に触れるまで取りに行かない**。
+
+**機構**: `js/lazy-modules.js` が `export function makeLazyModules(HOST)` を出し、js/app-body.js が
+名前で import して boot 早期に1回呼ぶ。publish されるのは `window.IntMapLazy`：
+
+```js
+window.IntMapLazy.need('seismic')   // → Promise。ファイルを取り、ファクトリを呼び、検査して解決する
+window.IntMapLazy.ready('seismic')  // → 既に来ているか（状態を読むだけの呼び出し元用）
+window.IntMapLazy.hint('seismic')   // → 先に取り始める。誰も待たない
+window.IntMapLazy.names()           // → 遅延モジュールの一覧
+```
+
+**遅延にしてよいファイルの条件（#R166 #2 が門として表明している）**
+- ファクトリを呼んだ瞬間に**共有 UI を作らない**こと。具体的にはレイヤー行（`#layer-dropdown` の
+  チェックボックス）を作らず、`IntMapLayers` にレイヤーを登録しないこと。
+  ⚠ **js/data-layers.js と js/layer-packs.js はこの条件を満たさない**——起動の進捗ゲートと
+  セッション復元が、そのレイヤー行が起動時に存在することに依存している。
+- 入口が数えられること。右クリックメニュー・タブ・設定のボタン・Atlas の dispatch ケースのように、
+  **利用者の操作から始まる**経路だけであること。
+
+**書き方（門が全部決めている。詳細は js/lazy-modules.js のヘッダ）**
+1. 動的 import は**リテラル・シングルクォート・`./` 相対・平らなファイル名**。他の形は
+   `scripts/static-checks.mjs` から見えず「誰も import していない」で落ちる。
+   ⚠ **走査はコメントも読む**ので、ヘッダに見本を書いてはいけない。
+2. `window.IntMapModules.X(` という**文字列**が index.html / js/app-body.js / js/geo-engine.js /
+   **app-body が `from` で import している兄弟**のどこかに要る → ローダは app-body の兄弟。
+3. `src/main.js` の import 一覧から**外す**（両方にあると結局起動時に落ちてくる）。
+4. ファクトリ鍵を `MODULE_FACTORIES` から `LAZY_FACTORIES` へ移す。**起動時ガードは捨てず、移す**
+   ——着地の瞬間に js/lazy-modules.js が「ファクトリが登録されたか」「global が publish されたか」を
+   検査し、失敗を `window.__imLazyCheck.failed` に記録して console.error に出す。
+5. **スタブを作らない。** 入口を `await window.IntMapLazy.need(...)` にする。受動的な読み手
+   （`window.IntMapFlightSim && FS.active()` のような `&&` ガード）はそのままでよい。
+
+**ベンダーも同じ軸で見る（#R209）**: `import * as turf` は**パッケージ全体**を要求し、
+`window.turf = turf` が計算名で全部到達可能にするので何も落ちない。名前つき import に変えても
+**`@turf/turf` が `sideEffects: false` を宣言していない**ので落ちない。**各関数をそのサブパッケージから
+import して初めて落ちる**。`convex` / `buffer` は turf-jsts（332 kB）を引くので
+`window.turf.ensureHeavy()` の後ろに置き、**唯一の呼び出し元（js/sims.js の到達圏ハル）が await する**。
+
+**現在の起動経路（実測・gzip）**: main 1,192 kB ＋ maplibre-gl 277 ＋ supabase 35 ＋ geo 16 = **1,521 kB**。
+遅延側は 9 chunk・134 kB gz（8 モジュール＋ turf-jsts）。Cesium 4.8 MB は #R180 以来、
+MapLibre セッションでは一度も要求されない。
+
+**計測器**: `node scripts/frame-profile.mjs --boot`（起動）／`--sweep`（フレーム時間）。
+外部リクエストは全部ディスクの再生キャッシュから答えるので A/B が成立する。詳細はファイルのヘッダ。
+
 ### (#R163) `IM_HOST` — ホスト・インターフェースの全体規約への昇格
 
 #R162 は monitors 専用のホストオブジェクトを呼び出し側にインラインで書いていた。#R163 でこれを

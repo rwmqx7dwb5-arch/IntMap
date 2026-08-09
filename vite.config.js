@@ -141,6 +141,16 @@ export default defineConfig({
              js/engine-select.js, which runs when the Settings choice is 'cesium'. */
           if (id.includes('node_modules/cesium') || id.includes('node_modules/@mapbox/vector-tile') ||
               id.includes('node_modules/pbf')) return 'cesium';
+          /* ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
+             + `@turf/buffer` reach turf-jsts, which measured 332 kB — 81% of everything the geo
+             chunk contained after the umbrella `import * as turf` was replaced by named imports —
+             and the app calls them from ONE place (the reachable-area hull in js/sims.js, which
+             now awaits window.turf.ensureHeavy()). Naming them here would drag them back in with
+             the rest of turf and undo the split; leaving them unnamed lets Rollup put them in the
+             dynamic chunk their only import() creates. */
+          if (id.includes('node_modules/turf-jsts') || id.includes('node_modules/polygon-clipping') ||
+              id.includes('node_modules/@turf/buffer') || id.includes('node_modules/@turf/convex') ||
+              id.includes('node_modules/splaytree') || id.includes('node_modules/concaveman')) return;
           if (id.includes('node_modules/@turf') || id.includes('node_modules/topojson-client')) return 'geo';
           if (id.includes('node_modules/@supabase')) return 'supabase';
         },

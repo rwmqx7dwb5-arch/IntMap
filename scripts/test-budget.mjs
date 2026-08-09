@@ -73,9 +73,21 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    tests/smoke.spec.js instead of getting a boot of their own (measured: 29.6 s without them, 29.2 s
    with them — the assertions are free, the boot was the whole price). CORE_MAX_S also went 6 → 1,
    which took the six legacy per-round specs out of the gate. Ceiling follows the measurement down. */
-const BUDGET_S = 66;                    /* core: 1.1 min — measured 60 s over 6 files (#R207) */
-const TOTAL_BUDGET_S = 5220;            /* whole suite: 87.0 min — measured 5,219 (#R206) */
+/* (#R209) 66 → 64 and 5,220 → 5,201. The new spec was paid for TWICE, and neither payment is an
+   estimate dressed as a measurement:
+     · tests/r209.spec.js is 10 s (measured on this machine, serial, two runs: 9.1 / 10.4 s) —
+       one boot for five tests, on #R208's worker-scoped page. Its first draft cost 14 s because
+       one test took `app.freshPage()` for a precondition that ordering gives for nothing.
+     · tests/r179-engine.spec.js was carrying 68 s, a figure measured BEFORE #R208 converted it
+       from four boots to one and never re-measured (the same is still true of r170, r184-drone
+       and r184-routing — 421 s of stale-high entries this round did not touch). Corrected to 40
+       by the only method that does not mix machines: count the boots it no longer pays for and
+       price them at CI's measured 9.2 s (#R186). 68 − 3×9.2 ≈ 40. It runs in 10.8 s locally, so
+       40 is deliberately the conservative end; CI's `shard-plan --update` replaces it on merge. */
+const BUDGET_S = 64;                    /* core: 1.1 min — measured 64 s over 6 files (#R209) */
+const TOTAL_BUDGET_S = 5201;            /* whole suite: 86.7 min — measured 5,201 (#R209) */
 const HISTORY = [
+  ['#R209', 5201, 'tests/r209.spec.js (+10 s, one boot for five tests) was paid for by re-measuring tests/r179-engine.spec.js, which had carried a pre-#R208 figure of 68 s for a file that now boots once (−28 s)'],
   /* ⚠ (#R206) THE NEW SPEC WAS PAID FOR OUT OF A BOOT, WHICH IS WHERE THIS SUITE'S TIME LIVES.
      tests/r206.spec.js is new (+7 s, measured locally) and tests/r192.spec.js paid for it: its four
      tests each took a fresh `page` fixture and booted the whole app into it, so three of the four
