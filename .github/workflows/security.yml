@@ -36,14 +36,14 @@ jobs:
       actions: read            # CodeQL reads the workflow/run context
       packages: read           # resolve any CodeQL packs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           # Covers index.html/admin.html inline scripts, supabase/functions/**/*.ts (Deno),
           # and scripts/*.mjs. node_modules is auto-excluded.
           languages: javascript-typescript
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript-typescript"

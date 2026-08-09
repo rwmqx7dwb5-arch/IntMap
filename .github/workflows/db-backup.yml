@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # DORMANT GATE — succeed-and-skip unless both secrets are present. Secrets
       # can't be read in `if:` conditions, so gate via a step output.
@@ -69,7 +69,7 @@ jobs:
 
       - name: Upload encrypted backup (short retention)
         if: steps.gate.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.run_id }}
           path: |
@@ -82,7 +82,7 @@ jobs:
       # On failure of an ACTIVE (non-dormant) backup, open one deduplicated issue.
       - name: Open / close backup incident issue
         if: ${{ always() && steps.gate.outputs.present == 'true' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           JOB_OK: ${{ job.status }}
         with:
