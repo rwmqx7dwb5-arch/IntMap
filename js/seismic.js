@@ -1289,7 +1289,7 @@ window.IntMapModules.seismic=function(HOST){
         +'<div class="sq-prog" style="display:none;">'
           +'<div class="sq-progl" style="margin-bottom:4px;font-size:11px;color:var(--text-muted);"></div>'
           +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
-          +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></i></div></div>'
+          +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>'
         /* (#R189) real-time playback with a visible rate */
         +'<div style="display:flex;align-items:center;gap:8px;"><button class="sq-play" style="'+BTN+'width:36px;">▶</button>'
           +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="1" value="'+Math.round(tSec)+'" style="flex:1;">'

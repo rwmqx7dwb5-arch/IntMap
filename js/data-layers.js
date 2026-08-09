@@ -4255,7 +4255,7 @@ window.IntMapModules.dataLayers=function(HOST){
         'cb-names':['ofm-country','ofm-admin1','ofm-city','ofm-other'],   /* (#R198) admin-1 names are place names — same switch, same audit */
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
-        'cb-borders':['borders-only-line'],'cb-countries':['country-fill'],
+        'cb-borders':['borders-only-line','borders-only-casing'],'cb-countries':['country-fill'],
         'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];

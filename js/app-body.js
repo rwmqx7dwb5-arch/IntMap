@@ -37,6 +37,7 @@ import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLazyModules } from './lazy-modules.js';
+import { gridLayerSpecs } from './grid-style.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -485,7 +486,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
-    if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
+    ['borders-only-line','borders-only-casing'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(bon&&!traveling)?'visible':'none'); });   /* (#R210) casing follows the border */
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
     ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
@@ -625,7 +626,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!va||!vb) return {err:t('aiVisPickDates')};
     const save={ day:satState.day, year:satState.year, opacity:satState.opacity };
     /* hide map overlays so the captured frame is imagery, not pins/grid */
-    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+    const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-lines-casing','grid-tropic','grid-tropic-label','grid-major'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     const vis=overlays.map(id=>{ try{ return GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){ return 'visible'; } });
     overlays.forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','none'); }catch(_){} });
     satState.opacity=1;
@@ -869,11 +870,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
           {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.5,'raster-brightness-min':0.33,'raster-saturation':0.1}},
           {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
           {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
-          {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
-          {id:'grid-equator',type:'line',source:'grid-source',filter:['==','kind','equator'],paint:{'line-color':'#ff3b30','line-opacity':0.95,'line-width':2.0}},
-          {id:'grid-prime',type:'line',source:'grid-source',filter:['==','kind','prime'],paint:{'line-color':'#ff9500','line-opacity':0.85,'line-width':1.6}},
-          {id:'grid-labels',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['!=','kind','cross']],layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-ignore-placement':false,'symbol-placement':'point'},paint:{'text-color':'#1d4ed8','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0}},
-          {id:'grid-labels-cross',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['==','kind','cross']],layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(0.78),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-offset':[0.6,-0.6]},paint:{'text-color':'#475569','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.5}},
+          ...gridLayerSpecs(),   /* (#R210) js/grid-style.js — white graticule + 山吹色 tropics; see the note there on why this is an import and not IM_READOUT */
           {id:'tool-poly',type:'fill',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true]],paint:{'fill-color':['coalesce',['get','color'],'#007aff'],'fill-opacity':['coalesce',['get','opacity'],0.18]}},
           {id:'tool-poly-line',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true],['!=','noStroke',true]],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.8}},
           {id:'tool-ring-line',type:'line',source:'tool-source',filter:['==','ringline',true],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.85}},
@@ -1868,7 +1865,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
         layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
-        paint:{'line-color':'rgba(150,150,150,0.85)','line-opacity':0.9,'line-width':['interpolate',['linear'],['zoom'],1,0.5,4,0.9,8,1.5,12,2.2]}}, before);
+        /* (#R210) WHITE and ~2x thicker (国境線は白・太く). `borders-only-casing` goes UNDER it so white still reads over a pale basemap; both are driven together by _applyBorders/cb-borders. */
+        paint:{'line-color':'#ffffff','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,1.1,4,1.8,8,2.6,12,3.4]}}, before);
+      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{visibility:bordersOn?'visible':'none','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.3,4,3.2,8,4.4,12,5.6]}}, 'borders-only-line');
     }
     return true; }catch(e){ return false; } }
   window.ensureBordersLayer=ensureBordersLayer;
@@ -1881,7 +1880,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!GE().layers.has('ref-admin1')) GE().layers.add({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
         layout:{visibility:'none','line-join':'round'},
-        paint:{'line-color':'#b07fd6','line-opacity':0.65,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.4,7,1.1,11,1.8]}}, before);
+        /* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white, and two white lines would erase country-vs-province. */
+        paint:{'line-color':'#b07fd6','line-opacity':0.8,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.9,7,1.9,11,3.0]}}, before);
       if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
