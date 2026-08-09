@@ -87,6 +87,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BUDGET_S = 64;                    /* core: 1.1 min — measured 64 s over 6 files (#R209) */
 const TOTAL_BUDGET_S = 5201;            /* whole suite: 86.7 min — measured 5,201 (#R209) */
 const HISTORY = [
+  ['#R210', 5201, 'tests/r210.spec.js (+10 s, one boot for four tests — the first-visit branch was left OUT of it because a second boot cost 15.2 s of a 66 s ceiling for one expression, and is a source check instead) was paid for by re-measuring tests/r184-routing.spec.js: 104 s was a pre-#R208 figure for a file that now boots ONCE for nine tests, so 104 − 8×9.2 ≈ 30, corrected to 40 on the conservative side exactly as #R209 did for r179-engine'],
   ['#R209', 5201, 'tests/r209.spec.js (+10 s, one boot for five tests) was paid for by re-measuring tests/r179-engine.spec.js, which had carried a pre-#R208 figure of 68 s for a file that now boots once (−28 s)'],
   /* ⚠ (#R206) THE NEW SPEC WAS PAID FOR OUT OF A BOOT, WHICH IS WHERE THIS SUITE'S TIME LIVES.
      tests/r206.spec.js is new (+7 s, measured locally) and tests/r192.spec.js paid for it: its four
