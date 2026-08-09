@@ -552,3 +552,59 @@ test('R208 ⑨: the space camera interpolates its up-vector instead of snapping 
     'and what the eye sees — the screen angle of north — is reportable, so a browser test can compare '
     + 'the two sides of the seam as one number');
 });
+
+/* ═══ ⑩ THE LOCAL SERVER STANDS IN FOR GITHUB PAGES, INCLUDING THE COMPRESSION ═════════════════ */
+
+test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', async () => {
+  /* ⚠ THE INSTRUMENT WAS LYING, AND IN THE DIRECTION THAT MAKES THE WORK LOOK URGENT (#R202 again).
+     The file has claimed since #R133 to serve "exactly as GitHub Pages would" and did not compress
+     at all. MEASURED against the live site: assets/main-*.js is 3,603 kB raw and 1,331 kB from
+     Pages. Every load measurement over an emulated phone network was therefore 2.7x pessimistic on
+     the download term — a boot measured at 7.4 s on fast-4G is 3.9 s once the bytes are the ones
+     the user actually receives. This test starts the real server and asks it. */
+  const { spawn } = await import('node:child_process');
+  const PORT = 4188;
+  const srv = spawn(process.execPath, [join(ROOT, 'scripts', 'serve.mjs'), '--port', String(PORT)],
+    { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    await new Promise((ok, no) => {
+      const t = setTimeout(() => no(new Error('serve.mjs did not come up')), 15000);
+      srv.stdout.on('data', (d) => { if (/static server on/.test(String(d))) { clearTimeout(t); ok(); } });
+      srv.on('error', no);
+    });
+    const get = async (p, accept) => {
+      const r = await fetch(`http://127.0.0.1:${PORT}${p}`, {
+        headers: accept ? { 'accept-encoding': accept } : {},
+        /* undici would transparently decode and drop the header, so read it off the raw response */
+      });
+      return { enc: r.headers.get('content-encoding'), len: Number(r.headers.get('content-length') || 0),
+        type: r.headers.get('content-type'), vary: r.headers.get('vary'), body: await r.arrayBuffer() };
+    };
+
+    /* a text asset is compressed when it is asked for compressed, and not when it is not.
+       ⚠ `identity` rather than an empty header: undici supplies its own Accept-Encoding when the
+       request does not carry one, so "no header" does not mean "no compression" here. */
+    const plain = await get('/index.html', 'identity');
+    const gz = await get('/index.html', 'gzip, deflate, br, zstd');
+    assert.equal(plain.enc, null, 'a client that does not ask for compression gets the bytes raw');
+    assert.equal(gz.enc, 'gzip', 'a client that asks gets gzip');
+    assert.ok(/Accept-Encoding/i.test(gz.vary || ''), 'and the response varies on the request header');
+    /* ⚠ GZIP EVEN THOUGH br WAS OFFERED. Measured against the live site with the same header, Pages
+       answers gzip; preferring brotli here would make every local load measurement optimistic by
+       ~16 % — bytes the user never saves. */
+    assert.ok(gz.len > 0 && gz.len < plain.len,
+      `compressed ${gz.len} against raw ${plain.len} — it has to actually be smaller`);
+
+    /* ⚠⚠ AND data/*.json.gz IS A GZIP-TYPED BODY, NOT A GZIP-ENCODED RESPONSE. js/gazetteer.js
+       un-gzips it itself. Adding Content-Encoding here would make the browser decompress it first
+       and hand the client plain JSON, which is the hazard the MIME note in serve.mjs was written
+       for — so the compression must step around it. */
+    const g = await get('/data/gazetteer-world.json.gz', 'gzip, br');
+    assert.equal(g.enc, null, 'the gazetteer is served as a gzip BODY, never as a gzip-ENCODED response');
+    assert.equal(g.type, 'application/gzip');
+    const head = new Uint8Array(g.body.slice(0, 2));
+    assert.ok(head[0] === 0x1f && head[1] === 0x8b, 'and it still arrives as gzip bytes');
+  } finally {
+    srv.kill();
+  }
+});
