@@ -95,4 +95,9 @@ test('R210 ⑥: the test seat opts out of the first-visit panel on purpose', () 
   assert.match(seed, /"lsrOpen":false/, 'the seeded session answers the layer-panel question');
   const ui = rd('js/map-ui.js');
   assert.match(ui, /typeof ui\.right!=='boolean'/, 'and the app is what distinguishes "no answer" from an answer');
+  /* WARN (#R210 follow-up) …and the first-visit open must not race the boot: open() builds the
+     whole tile grid synchronously the first time, so on an unanswered session it waits for idle.
+     A RESTORED session still opens immediately (its grid was pre-built by the idle callback). */
+  assert.match(ui, /if\(unanswered&&'requestIdleCallback' in window\) requestIdleCallback/,
+    'a first visit opens the panel on idle, with a timeout so it always appears');
 });
