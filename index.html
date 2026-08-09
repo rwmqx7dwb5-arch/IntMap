@@ -719,7 +719,11 @@ window.__imBuild='R209';   /* (#R121) build marker — bump when verifying that 
 
 <!-- Data sources & attribution -->
 <div class="modal-overlay" id="sources-modal">
-  <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
+  <!-- (#R210) The size lives in css/intmap.css (#sources-modal .modal-content). It used to be an
+       inline `max-width:560px` on top of the class's `width:340px`, and max-width cannot make a box
+       WIDER than its width — so the modal was 340 px no matter what this said. That is the report
+       「データ出典のポップアップが小さすぎる」: a list of ~90 sources in a 340 px column. -->
+  <div class="modal-content" style="position:relative;overflow-y:auto;">
     <button id="sources-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 6px 0; font-size:18px;" id="sources-title">Data sources</h3>
     <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>

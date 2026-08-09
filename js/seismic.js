@@ -1608,6 +1608,9 @@ window.IntMapModules.seismic=function(HOST){
        also dragged the epicentre to wherever the finger came down, silently redefining the event the
        drawn area was about to describe. Drawing owns the pointer for the duration. */
     function onClick(e){ if(!opened||picking||_fDrawing) return;
+      /* (#R210) whichever branch runs below, this panel consumed the tap — a place label under it
+         must not open its popup as well. See js/geo-engine.js `claimClick`. */
+      try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}
       if(clickMode==='station'){ if(!epi) return;
         stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
         if(stations.length>6) stations.shift(); draw(); report(); return; }

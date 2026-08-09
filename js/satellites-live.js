@@ -856,6 +856,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       if(!on||!e||!e.point) return;
       const id=pickAt(e.point,20);
       if(id==null){ if(selected!=null) select(null); return; }
+      try{ E.events.claimClick&&E.events.claimClick(e); }catch(_){}   /* (#R210) the satellite owns this tap */
       select(id);
       try{ const P=window.IntMapSatPanel; if(P) P.open(id); }catch(_){}
     }; try{ E.events.on('click',_click); }catch(_){} }

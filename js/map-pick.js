@@ -71,11 +71,18 @@ window.IntMapPick=(function(){
      because coverage stops mattering once the cover is transparent to input, and the panel no longer
      vanishes on a desktop where it never needed to.
 
-     Slightly faded, because a panel that cannot be touched must not look like one that can. The
-     restore puts back exactly what was there, including an inline value the caller had set. */
+     ⚠ (#R210) THE FADE IS GONE. #R207 also set `opacity:0.55` so that "a panel that cannot be
+     touched must not look like one that can" — and the reply to that was 「震源地を設置ボタンを押すと
+     ポップアップが透過されるのをやめろ。クソ挙動。」 The fade was solving a problem the panel already
+     solves in text: the ◎ button flips to 「地図をタップ…」 with the accent fill, and the hint bar
+     appears at the top of the screen. Those say "armed" without making the numbers underneath hard
+     to read at the exact moment the user is reading them to decide where to tap.
+
+     `pointerEvents` is the half that does the work and it stays. `op` stays in the saved record
+     (and is restored) so a caller that had set its own inline opacity still gets it back untouched. */
   function _ghost(el){ if(!el) return null;
     const prev={ pe:el.style.pointerEvents, op:el.style.opacity };
-    el.style.pointerEvents='none'; el.style.opacity='0.55';
+    el.style.pointerEvents='none';
     return prev; }
   function _unghost(el,prev){ if(!el||!prev) return;
     el.style.pointerEvents=prev.pe||''; el.style.opacity=prev.op||''; }

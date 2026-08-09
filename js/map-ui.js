@@ -639,7 +639,11 @@ window.IntMapModules.labelPopup=function(HOST){
     function showPopup(lngLat,name,isCountry,opts){ opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
-      const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
+      /* (#R210) 「地名ラベルクリック時のポップアップをすこし小さくして」— one step down across the
+         board (button 12→11px / 7-10→6-9 padding, title 14→13px, min-width 172→148, max 300→268).
+         Deliberately a step, not a redesign: the row still holds Copy/Wikipedia/AI/Isolate/Move
+         without wrapping on desktop, which is what #R22 built this layout to do. */
+      const btnBase='border:none;color:var(--text-main);border-radius:7px;padding:6px 9px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;';
       /* (#R33) Isolate now lives in this SAME action row as Copy/Wikipedia/AI brief (for countries) — no more
          separate floating button ("既存のcopy, wikipedia, AI briefと同じ並びに、同じUIで"). */
       const de=HOST.lang==='de';   /* (#R33) 3-language labels */
@@ -658,8 +662,8 @@ window.IntMapModules.labelPopup=function(HOST){
          popup shows it too — previously the flag only appeared in the full country card, never here ("国旗…まだ詰め
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
       const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;display:flex;align-items:center;gap:8px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
-      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
+      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
+      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
@@ -755,14 +759,28 @@ window.IntMapModules.labelPopup=function(HOST){
         return !!(hit&&hit.length);
       }catch(_){ return false; }
     }
+    /* ══ (#R210) A LABEL DECIDES LAST, NOT FIRST ═══════════════════════════════════════════════════
+       #R207's `_ownedByOther` only sees owners that registered a per-LAYER click handler. The ones
+       that were still stealing the tap (aircraft, satellites, the seismic pickers, tsunami, the
+       terrain brush, Street-View coverage) listen at MAP level and hit-test themselves, so no list
+       of layer ids can contain them — see the note in js/geo-engine.js beside `_clickLayers`.
+       Every listener for one click runs synchronously, so a microtask is exactly "after all of
+       them": by the time this resolves, anyone who consumed the click has said so. There is no
+       perceptible delay — it is the same frame — and the popup is skipped, not closed, so nothing
+       flashes open first. */
+    function _deferLabel(e,fn){
+      const claimed=()=>{ try{ return !!(GE().events.clickClaimed&&GE().events.clickClaimed(e)); }catch(_){ return false; } };
+      Promise.resolve().then(()=>{ if(claimed()) return; try{ fn(); }catch(_){} });
+    }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
-      showPopup(labelAnchor(e.features[0],e),name,isCountry); }; }
+      const f=e.features[0];
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry)); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
-      showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true}); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true})); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
     /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
        「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」 #R198 added `ofm-admin1` (prefectures,
        states, provinces) as NAMES only and wrote down that leaving it out of these lists was deliberate.
@@ -779,7 +797,11 @@ window.IntMapModules.labelPopup=function(HOST){
       ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
-      GE().events.on('click',(e)=>{ try{
+      /* (#R210) …and the padded fallback runs in the SAME microtask defer as the per-layer path.
+         Checking `clickClaimed` synchronously here would be a coin-flip on listener registration
+         order: js/data-layers.js registers the aircraft click handler when the layer is switched
+         on, which is usually AFTER this one. Deferring makes the order irrelevant. */
+      GE().events.on('click',(e)=>{ _deferLabel(e,()=>{ try{
         const ls=ALL_LBL.filter(id=>GE().layers.get(id)); if(!ls.length) return;
         /* (#R207) the padded fallback below is a SECOND way into the same popup, so it needs the same
            rule — a tap that landed on a marker must not open the nearest place name instead. */
@@ -798,7 +820,7 @@ window.IntMapModules.labelPopup=function(HOST){
             if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true}:undefined); return; } }
         }
         clearHL();
-      }catch(_){} });
+      }catch(_){} }); });
     }
     function tryWire(n){ if(GE().layers.has('ofm-country')){ wire(); return; } if((n||0)<300) setTimeout(()=>tryWire((n||0)+1),200); }
     if(_imCanDraw()) tryWire(0); else GE().events.on('load',()=>tryWire(0));

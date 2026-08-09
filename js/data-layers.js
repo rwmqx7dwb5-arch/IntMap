@@ -3429,6 +3429,7 @@ window.IntMapModules.dataLayers=function(HOST){
               const f=ls.length?GE().coords.queryRenderedFeatures(e.point,{layers:ls}):[];
               if(f&&f.length){ props=f[0].properties||{}; d=planesData.find(x=>x.icao24===(props.icao24||''))||null; } }catch(_){} }
           if(d&&d.icao24){
+            try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) this tap belongs to the aircraft, not to the city name under it */
             if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
             selectPlane(d.icao24===selectedPlane?null:d.icao24);
             /* (#R175) a click now opens the DETAIL CARD — the airframe's own photograph, every ADS-B field

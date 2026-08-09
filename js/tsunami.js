@@ -932,6 +932,7 @@ window.IntMapModules.tsunami=function(HOST){
       try{ GE().events.on('click',(e)=>{
         if(!opened||!sim) return;
         const ll=e&&e.lngLat; if(!ll) return;
+        try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) the read-out owns this tap */
         const p=at(ll.lng!=null?ll.lng:ll[0], ll.lat!=null?ll.lat:ll[1]);
         probe=p; render();
       }); }catch(_){}

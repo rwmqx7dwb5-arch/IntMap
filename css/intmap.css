@@ -549,14 +549,14 @@
     .ai-needs-key{ opacity:0.6; }
     /* (#R9/#12) Place-label "copy" popup: self-themed so its text is readable in DARK mode (the default
        MapLibre popup is white with dark text → invisible name on the app's dark popup surface). */
-    .plc-popup .maplibregl-popup-content{ background:#fff !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:10px 12px; }   /* (#R122) OPAQUE — place-label popup must not be see-through ("透過するな") */
+    .plc-popup .maplibregl-popup-content{ background:#fff !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:8px 10px; }   /* (#R210) 一段小さく */   /* (#R122) OPAQUE — place-label popup must not be see-through ("透過するな") */
     :root[data-theme="dark"] .plc-popup .maplibregl-popup-content{ background:#1c1c1e !important; }
     .plc-popup .maplibregl-popup-tip{ display:none; }
     /* (#R27) Align the × with the RIGHT EDGE of the action buttons beneath it. The buttons fill the
        content width, so their right edge sits at the content's 12px inner padding → place the × there
        (right:12px) with a tidy square hit-box. The old corner placement + the mobile padding-right:44px
        left a visible gap / dead space ("×は各ボタンの右端に合わせるべき。余分な空白がある"). */
-    .plc-popup .maplibregl-popup-close-button{ top:8px; right:12px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; padding:0; color:var(--text-muted); border-radius:7px; }
+    .plc-popup .maplibregl-popup-close-button{ top:6px; right:9px; width:21px; height:21px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; padding:0; color:var(--text-muted); border-radius:7px; }
     .plc-popup .maplibregl-popup-close-button:hover{ background:var(--input-bg); color:var(--text-main); }
     /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
     .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
@@ -792,6 +792,10 @@
     /* (#R34/#R39) Settings = a flex column: a SCROLLING body (.settings-scroll) + a non-scrolling Apply
        FOOTER. The body holds the scrollbar, so its gutter no longer sits BESIDE the footer's rounded corner
        — that was the "Apply UIの右下が角丸で隙間がある" gap. The footer now spans the full card width flush. */
+    /* (#R210) Data sources & attribution — the longest list in the app gets room to be one.
+       `width` (not max-width) is what actually sizes .modal-content; see the note in index.html. */
+    #sources-modal .modal-content{ width:min(820px,94vw); max-width:none; max-height:90vh; padding:28px 30px; }
+    @media(max-width:768px){ #sources-modal .modal-content{ width:96vw; max-height:92vh; padding:22px 18px; } }
     #settings-modal .modal-content{ display:flex; flex-direction:column; overflow:hidden; padding:0 !important; }
     /* ══ (#R207) THE SETTINGS PANEL WAS THE GENERIC MODAL WIDTH ═══════════════════════════════════
        「デスクトップ版の設定画面の横幅が狭すぎる。」 `.modal-content` is 340 px — a figure chosen for the
