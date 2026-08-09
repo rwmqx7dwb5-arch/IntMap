@@ -50,8 +50,8 @@ window.IntMapModules.placeLabels=function(HOST){
       if(!GE().layers.hasSource('ofm')) GE().layers.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
-      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
+      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
            の州、中国の省など。）」
@@ -102,8 +102,8 @@ window.IntMapModules.placeLabels=function(HOST){
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
           'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,
           'symbol-sort-key':['coalesce',['get','rank'],6]},
-        paint:{'text-color':'#c6d3ea','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.2}});
-      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
+        paint:{'text-color':'#e9eefb','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.5}});   /* (#R210) 発色を濃く — still the quietest place tier, but no longer washed out */
+      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7},paint:{'text-color':'#f4f6fa','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.4}});   /* (#R210) 発色を濃く */
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
@@ -355,8 +355,13 @@ window.IntMapModules.placeLabels=function(HOST){
       /* dark map / satellite → light text; light map → dark text. The admin-1 tier is deliberately
          quieter than the settlement it contains — it names the ground, it is not the destination. */
       const lightText = sat || isDark;
-      GE().layers.setPaint(id,'text-color', lightText?(id==='ofm-country'?'#eaf0ff':id==='ofm-admin1'?'#c6d3ea':'#ffffff'):(id==='ofm-admin1'?'#54607a':'#1b1b1f'));
-      GE().layers.setPaint(id,'text-halo-color', lightText?'rgba(0,0,0,0.8)':'rgba(255,255,255,0.9)');
+      /* (#R210) 「全地名ラベルの白と黒の発色を濃く」— the whites go to pure white and the blacks to pure
+         black; only the admin-1 tier keeps a step of separation (it names the ground, it is not the
+         destination), and even that step is now inside the strong end of the range rather than a wash.
+         The halo goes fully opaque with it: contrast here is the halo's job as much as the fill's. */
+      GE().layers.setPaint(id,'text-color', lightText?(id==='ofm-admin1'?'#e9eefb':'#ffffff'):(id==='ofm-admin1'?'#2b3348':'#000000'));
+      GE().layers.setPaint(id,'text-halo-color', lightText?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
+      GE().layers.setPaint(id,'text-halo-width', id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45);
     });
   }
   function geoLabel(s){ return (HOST.lang==='jp' && HOST.GEO_LABEL_JP[s]) ? HOST.GEO_LABEL_JP[s] : s; }

@@ -13,7 +13,7 @@ window.IntMapI18N={
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
-      setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behaviour", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
+      setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behavior", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
       lblTheme:"Theme", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", vol3dTool:"3-D volume", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
@@ -99,7 +99,7 @@ window.IntMapI18N={
       /* (#R171) Neigungsgrenze + Kamerahöhe */
       lblTiltLimit:"Neigungsgrenze der Karte", tiltStandard:"Standard — bis 78° (Vorgabe)", tiltUnlimited:"Unbegrenzt — der volle Bereich 0–180°",
       tiltHint:"Unbegrenzt lässt die Karte über den Horizont hinaus kippen, bis die Kamera senkrecht nach oben blickt. Jenseits von 180° wiederholt sich die Ansicht mit umgekehrter Blickrichtung — per Rechtsklick auf den Kompass lässt sich jeder Winkel von 0 bis 360 eingeben.",
-      lblEyeAlt:"Kamerahöhe in der Anzeige", eyeAltOff:"Aus (Vorgabe)", eyeAltOn:"An — Höhe des Blickpunkts zeigen",
+      lblEyeAlt:"Kamerahöhe in der Anzeige", eyeAltOff:"Aus (Vorgabe)", eyeAltOn:"An — Höhe des Blickpunkts zeigen", lblNightSide:"Tag-/Nachtschattierung", nightSideOn:"An (Vorgabe) — Nachtseite abdunkeln & Stadtlichter zeigen", nightSideOff:"Aus — gleichmäßig beleuchteter Globus",
       lblNavSens:"Navigationsempfindlichkeit", lblNavZoom:"Zoom", lblNavPan:"Schwenken",
       satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
@@ -155,7 +155,7 @@ window.IntMapI18N={
       /* (#R171) предел наклона + высота камеры */
       lblTiltLimit:"Предел наклона карты", tiltStandard:"Стандартный — до 78° (по умолчанию)", tiltUnlimited:"Без предела — весь диапазон 0–180°",
       tiltHint:"Без предела карту можно наклонять за горизонт, пока камера не посмотрит строго вверх. За 180° вид повторяется с развёрнутым азимутом, поэтому правый клик по компасу позволяет задать любой угол от 0 до 360.",
-      lblEyeAlt:"Высота камеры в строке состояния", eyeAltOff:"Выкл. (по умолчанию)", eyeAltOn:"Вкл. — показывать высоту точки обзора",
+      lblEyeAlt:"Высота камеры в строке состояния", eyeAltOff:"Выкл. (по умолчанию)", eyeAltOn:"Вкл. — показывать высоту точки обзора", lblNightSide:"Затенение дня и ночи", nightSideOn:"Вкл. (по умолчанию) — затемнять ночную сторону и показывать огни городов", nightSideOff:"Выкл. — равномерно освещённый глобус",
       lblNavSens:"Чувствительность навигации", lblNavZoom:"Зум", lblNavPan:"Перемещение",
       satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
@@ -212,7 +212,7 @@ window.IntMapI18N={
       /* (#R171) límite de inclinación + altitud de la cámara */
       lblTiltLimit:"Límite de inclinación del mapa", tiltStandard:"Estándar — hasta 78° (predeterminado)", tiltUnlimited:"Sin límite — todo el rango 0–180°",
       tiltHint:"Sin límite puedes inclinar más allá del horizonte hasta que la cámara mire en vertical. Pasados los 180° la vista se repite con el rumbo invertido, así que con clic derecho en la brújula puedes escribir cualquier ángulo de 0 a 360.",
-      lblEyeAlt:"Altitud del punto de vista en la barra", eyeAltOff:"Desactivado (predeterminado)", eyeAltOn:"Activado — mostrar la altitud de la cámara",
+      lblEyeAlt:"Altitud del punto de vista en la barra", eyeAltOff:"Desactivado (predeterminado)", eyeAltOn:"Activado — mostrar la altitud de la cámara", lblNightSide:"Sombreado de día y noche", nightSideOn:"Activado (predeterminado) — oscurecer el lado nocturno y mostrar las luces urbanas", nightSideOff:"Desactivado — un globo iluminado de forma uniforme",
       lblNavSens:"Sensibilidad de navegación", lblNavZoom:"Zoom", lblNavPan:"Desplazamiento",
       satKeysTitle:"Imágenes de satélite (BYOK)", satKeyHint:"Introduce una clave API para desbloquear estos proveedores en el panel de satélite. Las claves se guardan solo en este navegador.",
       aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",

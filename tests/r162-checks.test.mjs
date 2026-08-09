@@ -195,13 +195,19 @@ test('R162 #8 index.html actually shrank and the CSS really moved', () => {
   assert.ok(lines < 33500, `index.html is ${lines} lines — the split must not be undone`);
   const css = rd('css/intmap.css');
   assert.ok(css.length > 200000, 'css/intmap.css holds the real stylesheet');
-  assert.ok(css.includes('--sidebar-w:440px'), 'the design tokens moved with it');
+  // ⚠ (#R210) This used to pin the LITERAL `--sidebar-w:440px`. The claim is "the design
+  // tokens live in the extracted stylesheet", not "the sidebar is 440 px wide" — pinning
+  // the value made a legitimate width change fail a split-integrity test (#R203's trap).
+  assert.match(css, /--sidebar-w:\s*\d+(px|vw)/, 'the design tokens moved with it');
   assert.ok(css.includes('.mon-'), 'monitor styles stayed in CSS (no CSS-in-JS template literal — #R152)');
 });
 
 test('R162 #9 source-level suites read the whole app, not just index.html', () => {
   // Otherwise moving a line between files silently flips a `gone()` assertion green.
   assert.ok(app.length > html.length, 'appSource() is broader than index.html alone');
-  assert.ok(app.includes('--sidebar-w:440px'), 'app source includes the extracted CSS');
+  // (#R210) derived from the stylesheet, so the two can never drift apart silently.
+  const decl = (rd('css/intmap.css').match(/--sidebar-w:\s*\d+(?:px|vw)/) || [])[0];
+  assert.ok(decl, 'css/intmap.css declares --sidebar-w');
+  assert.ok(app.includes(decl), 'app source includes the extracted CSS');
   assert.ok(app.includes('window.IntMapI18N={'), 'app source includes the extracted JS');
 });

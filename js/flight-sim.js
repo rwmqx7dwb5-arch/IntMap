@@ -641,7 +641,7 @@ window.IntMapModules.flightSim=function(HOST){
             +(st._td.vs<0.6?LL('Butter — ','超スムーズ着陸 — ','Butterweich — ','Мягчайшая — ','Suavísimo — '):st._td.vs<2?LL('Smooth — ','スムーズ — ','Sanft — ','Мягкая — ','Suave — '):st._td.vs<3.5?LL('Firm — ','やや強め — ','Fest — ','Жёсткая — ','Firme — '):LL('Hard — ','ハード — ','Hart — ','Грубая — ','Duro — '))
             +LL('touchdown '+st._td.vs.toFixed(1)+' m/s · bank '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','接地 '+st._td.vs.toFixed(1)+' m/s · バンク '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','Aufsetzen '+st._td.vs.toFixed(1)+' m/s · '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','касание '+st._td.vs.toFixed(1)+' м/с · крен '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' км/ч','contacto '+st._td.vs.toFixed(1)+' m/s · '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h')+'</div>'):'')
         +'<canvas class="fsr-cv" width="440" height="230" style="width:100%;height:auto;background:rgba(0,0,0,0.4);border-radius:12px;border:1px solid rgba(120,190,255,0.2);display:block;"></canvas>'
-        +'<div style="font-size:10px;color:#8fb8e0;margin:6px 0 13px;">'+LL('Flight path — colour = altitude (blue low → red high)','飛行経路 — 色は高度（青=低 → 赤=高）','Flugweg — Farbe = Höhe','Маршрут — цвет = высота','Ruta — color = altitud')+'</div>'
+        +'<div style="font-size:10px;color:#8fb8e0;margin:6px 0 13px;">'+LL('Flight path — color = altitude (blue low → red high)','飛行経路 — 色は高度（青=低 → 赤=高）','Flugweg — Farbe = Höhe','Маршрут — цвет = высота','Ruta — color = altitud')+'</div>'
         +'<div style="display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap;">'+stat(LL('DISTANCE','飛行距離','DISTANZ','ДИСТ.','DIST.'),distKm.toFixed(1)+' km')+stat(LL('MAX ALT','最高高度','MAX HÖHE','МАКС ВЫС','ALT MÁX'),maxAltM.toLocaleString()+' m')+stat(LL('TOP SPEED','最高速度','SPITZE','МАКС СК','VEL MÁX'),maxVk.toLocaleString()+' km/h')+stat(LL('TIME','飛行時間','ZEIT','ВРЕМЯ','TIEMPO'),Math.floor(durS/60)+'m '+(durS%60)+'s')+'</div>'
         +'<div style="display:flex;gap:10px;"><button class="fsr-again" style="flex:1;font-size:15px;font-weight:800;color:#fff;background:linear-gradient(135deg,#0a84ff,#34c759);border:none;border-radius:11px;padding:13px;cursor:pointer;">'+LL('↻ Fly again','↻ もう一度飛ぶ','↻ Nochmal','↻ Ещё раз','↻ Otra vez')+'</button>'
           +'<button class="fsr-exit" style="flex:0 0 auto;font-size:14px;font-weight:600;color:#bcd6f0;background:transparent;border:1px solid rgba(120,190,255,0.3);border-radius:11px;padding:13px 20px;cursor:pointer;">'+LL('Exit','終了','Ende','Выход','Salir')+'</button></div></div>';
@@ -732,12 +732,14 @@ window.IntMapModules.flightSim=function(HOST){
         try{
           const eye=(GE().camera.eye?GE().camera.eye():null); if(!eye||!isFinite(eye.alt)) return;
           const a2=AIRCRAFT[state.ac]||AIRCRAFT[acKey], ceil=(a2&&a2.ceil)||12000;
-          const use=Math.max(150,Math.min(eye.alt,ceil)), capped=eye.alt>ceil;
+          const use=Math.max(150,eye.alt), capped=eye.alt>ceil;   /* (#R210) `capped` now means "above the ceiling", not "was clamped" */
           const p2=(GE().camera.getPitch?GE().camera.getPitch():null);
           const km=(v)=>v>=1000?((v/1000).toFixed(v>=10000?0:1)+' km'):(Math.round(v)+' m');
           const bits=[LL('Start altitude','開始高度','Starthöhe','Высота старта','Altitud inicial')+' '+km(use)
-            +(capped?(' <span style="color:#ffd23f;">('+LL('view is at','視点は','Blick bei','вид на','vista a')+' '+km(eye.alt)+' — '
-              +LL('limited by this aircraft’s ceiling','機体の実用上昇限度で制限','Dienstgipfelhöhe','ограничено потолком','techo de servicio')+')</span>'):'')];
+            /* (#R210) the warning stayed, its claim changed: nothing is limited any more, so it
+               says what will actually happen instead — above the ceiling the aircraft sinks. */
+            +(capped?(' <span style="color:#ffd23f;">('+LL('above this aircraft’s service ceiling','機体の実用上昇限度より上','über der Dienstgipfelhöhe','выше практического потолка','por encima del techo de servicio')
+              +' '+km(ceil)+' — '+LL('it will descend until it has air','空気のある高度まで降下します','sinkt bis in dichtere Luft','будет снижаться до плотного воздуха','descenderá hasta tener aire')+')</span>'):'')];
           if(p2!=null&&isFinite(p2)) bits.push(LL('flight path','飛行経路角','Bahnwinkel','угол наклона','trayectoria')+' '+Math.round(p2-90)+'°');
           _note.innerHTML=bits.join(' · ');
         }catch(_){}
@@ -778,9 +780,17 @@ window.IntMapModules.flightSim=function(HOST){
           try{
             const eye=(GE().camera.eye?GE().camera.eye():null);
             if(eye&&isFinite(eye.alt)&&isFinite(eye.lng)&&isFinite(eye.lat)){
-              const acx=(AIRCRAFT[state.ac]||AC()), ceil=(acx&&acx.ceil)||12000;
+              /* ⚠ (#R210) THE VIEW'S ALTITUDE IS NO LONGER PULLED DOWN TO THE SERVICE CEILING.
+                 「現在視点からフライトシミュレーターを開始する際、一定高度以上は強制的に高度を下げさせ
+                  られるのを辞めて。」 #R190 clamped to `ceil` so the airframe would begin somewhere it
+                 can fly. But a service ceiling is not a wall — it is the altitude above which the
+                 machine cannot SUSTAIN level flight, and the model already knows that: thrust fades
+                 out with density in stepFixed, so an aircraft started above its ceiling simply sinks
+                 until it has air again. Starting where the user is looking and letting the physics
+                 answer is both what was asked for and the more honest of the two behaviours. The
+                 150 m floor stays — that one is not a preference, it is "above the ground". */
               o.lng=eye.lng; o.lat=eye.lat;
-              o.alt=Math.max(150,Math.min(eye.alt,ceil));
+              o.alt=Math.max(150,eye.alt);
               o.keepAlt=true;
             }
             /* ══ (#R188) 「画角も合わせてください。」 ════════════════════════════════════════════════

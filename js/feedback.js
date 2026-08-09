@@ -40,7 +40,9 @@ window.IntMapModules.feedback=function(HOST){
         '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'評価':'Rating')+'</div>'+
         '<div id="fb-stars" style="display:flex;justify-content:center;margin-bottom:12px;">'+[1,2,3,4,5].map(star).join('')+'</div>'+
         '<textarea id="fb-text" maxlength="3000" placeholder="'+(jp()?'ご意見・ご要望（任意）':'Comments (optional)')+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
-        (loggedOut?'<input id="fb-email" type="email" placeholder="'+(jp()?'メール（任意・返信用）':'Email (optional, for a reply)')+'" style="width:100%;box-sizing:border-box;margin-top:9px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">':'')+
+        (loggedOut?'<input id="fb-email" type="email" placeholder="'+/* (#R210) "for a reply" / 「返信用」promised something this form does not
+           guarantee. The field stays optional; the label no longer implies an answer. */
+          (jp()?'メール（任意）':'Email (optional)')+'" style="width:100%;box-sizing:border-box;margin-top:9px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">':'')+
         '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit')+'</button>'+
         '<p id="fb-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
       c.querySelector('#fb-x').onclick=closeM;

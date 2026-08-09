@@ -19,6 +19,69 @@ window.IntMapModules.newsUi=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const saveBookmarks=()=>localStorage.setItem('intmap_bookmarks',JSON.stringify(HOST.bookmarks));
 
+  /* ══ (#R210) ★ SAVED ARTICLES SURVIVE THE FEED THEY CAME FROM ═════════════════════════════════
+     「ニュースの★保存機能あるけど、★付けても保持されず、次開いたときには消えてしまっている。」
+
+     REPRODUCED IN THE SOURCE, and the star was never the thing that was lost. Both stores are
+     correct — a guest's links go to `intmap_bookmarks`, an account's go to the `favorites` table
+     and js/auth-ui.js reads them back on login. What was wrong is what ★ Saved is MADE of:
+     `computeFilteredNews` (js/app-body.js) built it by FILTERING `globalData`, the live feed. RSS
+     feeds carry roughly a day of headlines, so the morning after, the article the user deliberately
+     kept is no longer in `globalData` and the filter has nothing to keep — the row vanishes while
+     the favourite itself is still sitting in the database. Saving the link was never enough: a
+     saved article has to carry its own copy of what it takes to draw a card.
+
+     So a snapshot is written beside the link (title, outlet, date, image, resolved location) and
+     `merge()` hands the missing ones back to the feed filter. The cap is a real cap: 800 most
+     recently saved, oldest evicted, because this is localStorage and it is shared with everything
+     else the app keeps there. Records are keyed by link — the same identity the star already uses.
+
+     ⚠ THIS IS A CACHE, NOT THE RECORD. The authoritative list is still `HOST.bookmarks` (DB or
+     localStorage). If the snapshot is missing — cleared storage, another device — `seed()` fills
+     what it can from the account's own `favorites.article_title`, and a card with a title and a
+     link is still a usable card. The star is never inferred FROM the snapshot. */
+  const SNAP_KEY='intmap_saved_articles', SNAP_MAX=800;
+  function snapAll(){ try{ const o=JSON.parse(localStorage.getItem(SNAP_KEY)||'{}'); return (o&&typeof o==='object')?o:{}; }catch(_){ return {}; } }
+  function snapWrite(o){
+    try{
+      const keys=Object.keys(o);
+      if(keys.length>SNAP_MAX){
+        keys.sort((a,b)=>(o[b].savedAt||0)-(o[a].savedAt||0));
+        const trimmed={}; keys.slice(0,SNAP_MAX).forEach(k=>{ trimmed[k]=o[k]; }); o=trimmed;
+      }
+      localStorage.setItem(SNAP_KEY,JSON.stringify(o));
+    }catch(_){}   /* a full quota must not make the star itself fail */
+  }
+  function snapPut(item){ if(!item||!item.link) return;
+    const o=snapAll();
+    o[item.link]={ link:item.link, title:item.title||'', publisher:item.publisher||'', pubDate:item.pubDate||'',
+      image:item.image||'', analysis:(item.analysis&&item.analysis.loc)?{ loc:item.analysis.loc.slice(0,2), place:item.analysis.place||'' }:null,
+      savedAt:Date.now(), fromSnapshot:true };
+    snapWrite(o); }
+  function snapForget(link){ const o=snapAll(); if(link in o){ delete o[link]; snapWrite(o); } }
+  /* WARN (#R210) PUBLISHED FROM A FUNCTION, NOT FROM THE FACTORY BODY. tests/r168-checks #4
+     requires that a factory body only DECLARES — an assignment here would run the moment the
+     factory is instantiated, which is the #R167 dead-zone trap this project has paid for twice.
+     renderUI() and appendNewsBatch() both call it and both are idempotent, so the global exists
+     before anything asks for it (computeFilteredNews guards with && either way). */
+  function publishSaved(){ if(window.IntMapNewsSaved) return; window.IntMapNewsSaved={
+    put:snapPut, forget:snapForget, all:snapAll,
+    /* Fill in a title for links the account knows about but this browser has never drawn. */
+    seed(rows){ try{ const o=snapAll(); let n=0;
+      (rows||[]).forEach(r=>{ const l=r&&(r.article_link||r.link); if(!l||o[l]) return;
+        o[l]={ link:l, title:(r.article_title||r.title||l), publisher:'', pubDate:'', image:'', analysis:null, savedAt:Date.now(), fromSnapshot:true }; n++; });
+      if(n) snapWrite(o); return n; }catch(_){ return 0; } },
+    /* The feed, plus a synthetic item for every bookmarked link the feed no longer carries. */
+    merge(feed,links){
+      try{
+        const have=new Set((feed||[]).map(i=>i&&i.link)); const o=snapAll(); const extra=[];
+        (links||[]).forEach(l=>{ if(have.has(l)) return; const s=o[l]; if(s) extra.push(s); });
+        extra.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+        return extra.length?(feed||[]).concat(extra):(feed||[]);
+      }catch(_){ return feed||[]; }
+    }
+  }; }
+
   const tzOpt=()=>(HOST.userTZ==='auto'?undefined:HOST.userTZ);
 
   const ymd=(d,tz)=>new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
@@ -327,7 +390,7 @@ window.IntMapModules.newsUi=function(HOST){
     });
     return feats; }catch(_){ return feats; } }
 
-  function renderUI(){
+  function renderUI(){ publishSaved();
     const feed=document.getElementById('live-news-feed'),
           cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
@@ -456,7 +519,7 @@ window.IntMapModules.newsUi=function(HOST){
     if(!failed) HOST.aiToast(hit? HOST.t('aiGeoDone').replace('{n}',hit) : HOST.t('aiGeoNone'));
   }
 
-  function appendNewsBatch(){
+  function appendNewsBatch(){ publishSaved();
     const feed=document.getElementById('live-news-feed');
     const next=HOST.newsFiltered.slice(HOST.renderedCount, HOST.renderedCount+HOST.NEWS_BATCH);
     next.forEach(item=>{
@@ -471,8 +534,11 @@ window.IntMapModules.newsUi=function(HOST){
         <div class="news-title">${HOST.newsTitleHTML(item)}</div>
         <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
       card.querySelector('.btn-bookmark').onclick=async(e)=>{ e.stopPropagation();
-        if(HOST.user){ const on=await toggleFavorite(item.link,item.title); if(HOST.mode==='saved')HOST.startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active',on); }
-        else { /* guest: keep a local list until they log in */ if(HOST.bookmarks.includes(item.link))HOST.bookmarks=HOST.bookmarks.filter(b=>b!==item.link); else HOST.bookmarks.push(item.link); saveBookmarks(); if(HOST.mode==='saved')HOST.startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
+        /* (#R210) the snapshot is written from the item that is ON SCREEN — the only moment the app
+           is holding everything a saved card needs. Written before the await so a slow round-trip
+           cannot lose it, and rolled back if the toggle turns out to have been an UN-save. */
+        if(HOST.user){ snapPut(item); const on=await toggleFavorite(item.link,item.title); if(!on) snapForget(item.link); if(HOST.mode==='saved')HOST.startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active',on); }
+        else { /* guest: keep a local list until they log in */ if(HOST.bookmarks.includes(item.link)){ HOST.bookmarks=HOST.bookmarks.filter(b=>b!==item.link); snapForget(item.link); } else { HOST.bookmarks.push(item.link); snapPut(item); } saveBookmarks(); if(HOST.mode==='saved')HOST.startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
       };
       /* (#R11) Read article → open directly in the device's browser (reverted per request). */
       card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(_u) window.open(_u,'_blank','noopener'); };   /* (#R138 SEC) http(s)-only */

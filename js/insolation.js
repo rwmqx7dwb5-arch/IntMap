@@ -147,7 +147,7 @@ window.IntMapModules.insolation=function(HOST){
         if(s) GE().layers.updateImage(IMG,{url:cv.toDataURL('image/png'),coordinates:coords});
         else { GE().layers.addSource(IMG,{type:'image',url:cv.toDataURL('image/png'),coordinates:coords});
           const before=(()=>{ for(const id of ['imsun-shadow']){ try{ if(GE().layers.has(id)) return id; }catch(_){} } return undefined; })();
-          GE().layers.add({id:LYR,type:'raster',source:IMG,paint:{'raster-opacity':1,'raster-fade-duration':0,'raster-resampling':'nearest'}},before); }
+          GE().layers.add({id:LYR,type:'raster',source:IMG,paint:{'raster-opacity':_rasterOp(),'raster-fade-duration':0,'raster-resampling':'nearest'}},before); }
         painted=true;
       }catch(_){}
     }
@@ -293,7 +293,18 @@ window.IntMapModules.insolation=function(HOST){
       return { first, last, hours:mins/60, groundM:h.groundM };
     }
 
-    return { shade, dayShadow, clear, horizon, analyse, dayAt, sunPos, dni,
+    /* ══ (#R210) THE TERRAIN SHADE FOLLOWS THE PANEL'S OPACITY SLIDER ═════════════════════════════
+       js/sims.js owns the control (「影の透明度を選択可能に」) and drives both shadow layers with one
+       number. Here the shade is a raster whose ALPHA IS BAKED INTO THE PNG at the strength the
+       shading algorithm chose, so `raster-opacity` can only scale it DOWN — 0.30 (the old literal,
+       and the slider's default) maps to 1.0 and is the darkest this layer gets. Stated rather than
+       silently clamped: asking for 0.9 here gives the same picture as 0.3, not a darker one. */
+    let _shadowOp=0.30;
+    function _rasterOp(){ return Math.max(0.05,Math.min(1,_shadowOp/0.30)); }
+    function setShadowOpacity(v){ _shadowOp=Math.max(0.05,Math.min(0.95,+v||0.30));
+      try{ if(GE().layers.has(LYR)) GE().layers.setPaint(LYR,'raster-opacity',_rasterOp()); }catch(_){}
+      return _shadowOp; }
+    return { shade, dayShadow, clear, horizon, analyse, dayAt, sunPos, dni, setShadowOpacity,
       isPainted:()=>painted,
       state:()=>({ painted, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z}:null, last:lastShade }) };
   })();

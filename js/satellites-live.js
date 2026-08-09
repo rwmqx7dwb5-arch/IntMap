@@ -330,7 +330,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       const killer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(_){} },ms||FETCH_MS);
       return fetch(url,Object.assign({cache:'no-store'},ac?{signal:ac.signal}:{}))
         .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-        .then(t=>{ if(!t||t.length<140) throw new Error('empty catalogue'); return t; })
+        .then(t=>{ if(!t||t.length<140) throw new Error('empty catalog'); return t; })
         .finally(()=>clearTimeout(killer));
     };
     /* ══ (#R185) FOUR WAYS TO THE SAME ELEMENT SETS, TRIED IN ORDER ═══════════════════════════
@@ -822,14 +822,14 @@ window.IntMapModules.satellitesLive=function(HOST){
       +'<div>'+S(L('Altitude','高度','Höhe','Высота','Altitud'))+': '+n0(f.altKm)+' km'
       +(f.velKmS?(' · '+f.velKmS.toFixed(2)+' km/s'):'')+'</div>'
       +(f.periodMin?('<div>'+S(L('Period','周期','Umlaufzeit','Период','Periodo'))+': '+f.periodMin.toFixed(1)+' min · '+S(L('incl.','傾斜角','Neig.','накл.','incl.'))+' '+(f.inclDeg==null?'—':f.inclDeg.toFixed(1)+'°')+'</div>'):'')
-      +(la?('<div>'+S(L('From the map centre','地図中心から','Von der Kartenmitte','От центра карты','Desde el centro'))+': '
+      +(la?('<div>'+S(L('From the map center','地図中心から','Von der Kartenmitte','От центра карты','Desde el centro'))+': '
           +S(L('elev.','仰角','Elev.','возв.','elev.'))+' '+la.elDeg.toFixed(1)+'° · '+S(L('az.','方位','Az.','азим.','az.'))+' '+la.azDeg.toFixed(0)+'° · '+n0(la.rangeKm)+' km</div>'):'')
       +'<div style="color:'+(up?'#30d158':'var(--text-muted)')+';">'
         +S(up?L('Above the horizon here','ここでは地平線の上','Über dem Horizont','Над горизонтом','Sobre el horizonte')
              :L('Below the horizon here','ここでは地平線の下','Unter dem Horizont','Под горизонтом','Bajo el horizonte'))
       +(f.sunlit==null?'':' · '+S(f.sunlit?L('sunlit','太陽光を受けている','sonnenbeschienen','освещён Солнцем','iluminado'):L('in eclipse','影の中','im Erdschatten','в тени Земли','en eclipse')))+'</div>'
       +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;">'
-      +(bundled?S(L('Bundled catalogue','同梱カタログ','Mitgelieferter Katalog','Встроенный каталог','Catálogo incluido')):'CelesTrak')
+      +(bundled?S(L('Bundled catalog','同梱カタログ','Mitgelieferter Katalog','Встроенный каталог','Catálogo incluido')):'CelesTrak')
       +' · SGP4/SDP4</div>';
   }
 
@@ -856,6 +856,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       if(!on||!e||!e.point) return;
       const id=pickAt(e.point,20);
       if(id==null){ if(selected!=null) select(null); return; }
+      try{ E.events.claimClick&&E.events.claimClick(e); }catch(_){}   /* (#R210) the satellite owns this tap */
       select(id);
       try{ const P=window.IntMapSatPanel; if(P) P.open(id); }catch(_){}
     }; try{ E.events.on('click',_click); }catch(_){} }
@@ -884,7 +885,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       timer=setInterval(tick,period()); };
     /* go as soon as ANY source has answered — see _onPrimed */
     _onPrimed=()=>{ if(on) go(); };
-    if(!sats.length) load(group).then(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalogue.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } });
+    if(!sats.length) load(group).then(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalog.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } });
     else go();
     return true;
   }

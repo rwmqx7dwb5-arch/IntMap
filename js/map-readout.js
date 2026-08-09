@@ -10,7 +10,14 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.mapReadout=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* ===== Grid (zoom-adaptive, red equator) ===== */
+  /* ===== Grid (zoom-adaptive, red equator, 山吹色 tropics) ===== */
+  const TROPIC_LAT=23.4362;   /* (#R210) mean obliquity of the ecliptic, this epoch — not 23.5 */
+  function tropicLabel(side){
+    const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    return side==='n'
+      ? L('Tropic of Cancer','北回帰線','Wendekreis des Krebses','Северный тропик','Trópico de Cáncer')
+      : L('Tropic of Capricorn','南回帰線','Wendekreis des Steinbocks','Южный тропик','Trópico de Capricornio');
+  }
   function gridStepForZoom(z){
     if(z<1.5) return {major:30,minor:10};
     if(z<3)   return {major:15,minor:5};
@@ -21,8 +28,12 @@ window.IntMapModules.mapReadout=function(HOST){
     if(z<13)  return {major:0.5,minor:0.1};
     return    {major:0.1,minor:0.025};
   }
+  /* (#R210) ⚠ This used to open with `if(!HOST.hasTurf()) return [];` and NOTHING below it calls
+     turf — the whole builder is arithmetic on lat/lng. The gate was the reported "グリッド線の表示が
+     遅すぎる": turf lives in its own chunk, so a Grid switched on before that chunk lands built an
+     EMPTY collection, and setGrid() had already reset _gridKey, so nothing redrew until the camera
+     next moved. Removing the gate makes the grid appear on the same frame as the toggle. */
   function buildGridFeatures(){
-    if(!HOST.hasTurf()) return [];
     const z=GE().hasRenderer()?GE().camera.getZoom():2;
     const {major,minor}=gridStepForZoom(z);
     const b=GE().hasRenderer()?GE().camera.getBounds():null;
@@ -73,6 +84,18 @@ window.IntMapModules.mapReadout=function(HOST){
       const pts=[]; const step=Math.max(major/4,1);
       for(let la=minLat; la<=maxLat; la+=step) pts.push([0,la]);
       if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'prime'}});
+    }
+    /* (#R210) Tropics of Cancer and Capricorn. The obliquity is not 23.5° — it is 23.4362° for
+       this epoch (IAU 2006 mean obliquity at J2000 = 23.439279°, drifting ≈ −0.013°/century), and
+       that is the latitude the sun actually stands overhead at solstice. Both are drawn, in the
+       requested 山吹色, from the SAME source as the rest of the grid so they arrive with it. */
+    for(const [lat,side] of [[TROPIC_LAT,'n'],[-TROPIC_LAT,'s']]){
+      if(minLat<=lat && maxLat>=lat){
+        const pts=[]; const step=Math.max(major/4,1);
+        for(let lo=minLng; lo<=maxLng; lo+=step) pts.push([lo,lat]);
+        pts.push([maxLng,lat]);
+        if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'tropic',label:tropicLabel(side)}});
+      }
     }
     /* Edge labels (along axes) */
     const labelStep=major;

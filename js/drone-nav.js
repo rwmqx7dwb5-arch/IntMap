@@ -627,7 +627,7 @@ window.IntMapModules.droneNav=function(HOST){
       <div class="dn-wps">${wpRows||`<div class="tp-hint">${addMode?L('Click the map to drop a waypoint.','地図をクリックしてウェイポイントを追加します。','Auf die Karte klicken, um einen Wegpunkt zu setzen.','Нажмите на карту, чтобы добавить точку.','Haz clic en el mapa para añadir un punto.'):L('Press “Add on map”, then click the map.','「地図に追加」を押してから地図をクリックしてください。','„Auf Karte setzen“ drücken und klicken.','Нажмите «Добавить на карте», затем кликните.','Pulsa «Añadir en el mapa» y haz clic.')}</div>`}</div>
       <div class="dn-btns">
         <button type="button" class="ai-action-btn${addMode?' on':''}" id="dn-add">${addMode?('◉ '+L('Click the map','地図をクリック','Karte anklicken','Кликните по карте','Haz clic en el mapa')):('＋ '+L('Add on map','地図に追加','Auf Karte setzen','Добавить на карте','Añadir en el mapa'))}</button>
-        ${HOST.isMobile()?`<button type="button" class="ai-action-btn" id="dn-addc">◎ ${L('Add at centre','中心に追加','In der Mitte','В центре','En el centro')}</button>`:''}
+        ${HOST.isMobile()?`<button type="button" class="ai-action-btn" id="dn-addc">◎ ${L('Add at center','中心に追加','In der Mitte','В центре','En el centro')}</button>`:''}
         <button type="button" class="ai-action-btn" id="dn-calc">${busy?'…':'⟳ '+L('Compute','計算','Berechnen','Рассчитать','Calcular')}</button>
         <button type="button" class="ai-action-btn" id="dn-follow">⛰ ${L('Follow terrain','地形に沿わせる','Gelände folgen','По рельефу','Seguir el terreno')}</button>
         <button type="button" class="ai-action-btn" id="dn-save">💾 ${L('Save','保存','Speichern','Сохранить','Guardar')}</button>

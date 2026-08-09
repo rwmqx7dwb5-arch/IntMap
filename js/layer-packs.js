@@ -860,7 +860,7 @@ window.IntMapModules.gibsScience=function(HOST){
         note:['MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS band-31 thermal-IR brightness temperature','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)']},
       {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
         label:['カラー段彩・陰影（ASTER）','Color relief (ASTER GDEM)','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)'],
-        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM colour + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']},
+        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM color + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']},
       /* (#R41) +OMPS UV Aerosol Index — endpoint curl-verified (HTTP 200/png). Highlights UV-absorbing aerosols
          (smoke, dust, volcanic ash); distinct from the existing AOD layer. */
       {id:'gxaero', gibs:'OMPS_Aerosol_Index', max:6, ext:'png', sw:'#c97b3c',

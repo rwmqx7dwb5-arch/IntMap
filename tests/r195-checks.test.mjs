@@ -53,9 +53,14 @@ test('R195 ①: both sidebars are recorded, and every route out of them records 
   assert.ok(saves >= 3, `the right layer panel should record open, close and toggle; found ${saves}`);
   assert.match(appBody, /classList\.toggle\('collapsed'\);[\s\S]{0,400}?_imSaveSession/,
     'the left sidebar toggle records itself');
-  /* …and boot restores the right panel only when the last session left it open */
-  assert.match(mapUi, /window\._imSessionUI&&window\._imSessionUI\.right===true&&!isMob\(\)/,
-    'a first visit still boots with the layer panel closed');
+  /* …and boot restores the right panel from the last session's answer.
+     ⚠ (#R210) The claim CHANGED, by a later instruction: 「初回時は、右サイドバーも開かれた状態に」.
+     What must still hold is that a SAVED answer wins — an explicit `right:false` keeps it closed —
+     and that only the no-saved-answer case opens. Pinning the old expression would have made that
+     instruction unimplementable, so the assertion is on the two behaviours, not on the source line. */
+  assert.match(mapUi, /typeof ui\.right!=='boolean'/, 'boot distinguishes "no saved answer" from a saved one');
+  assert.match(mapUi, /if\(!isMob\(\)&&\(unanswered\|\|ui\.right===true\)\) open\(\);/,
+    'a saved right:false still boots closed; only an unanswered first visit opens');
 });
 
 /* ── ② the dynamic image is parameterised by the engine, not by latitude ──────────────────────── */

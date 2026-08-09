@@ -93,10 +93,15 @@ export function makeThemeSky(HOST, CTX) {
     GE().layers.setLayout('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
-    try{ window._applyBorders(); }catch(_){ if(GE().layers.has('borders-only-line')) GE().layers.setLayout('borders-only-line','visibility', HOST.bordersOn?'visible':'none'); }
-    if(GE().layers.has('grid-labels')){ GE().layers.setPaint('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); GE().layers.setPaint('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
-    if(GE().layers.has('grid-labels-cross')){ GE().layers.setPaint('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); GE().layers.setPaint('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
-    if(GE().layers.has('grid-lines')){ GE().layers.setPaint('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
+    try{ window._applyBorders(); }catch(_){ ['borders-only-line','borders-only-casing'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility', HOST.bordersOn?'visible':'none'); }); }   /* (#R210) casing too, or it survives a border switched off */
+    /* (#R210) The graticule is WHITE in BOTH themes now (js/grid-style.js). This block used to
+       re-tint it per basemap and would silently undo that on the first theme apply, so what it
+       varies is the CASING — the dark stroke under the white line, which is what has to carry the
+       contrast over a light basemap. The white itself never moves. */
+    if(GE().layers.has('grid-labels')){ GE().layers.setPaint('grid-labels','text-color','#ffffff'); GE().layers.setPaint('grid-labels','text-halo-color',mapLight?'rgba(0,0,0,0.85)':'rgba(0,0,0,0.75)'); }
+    if(GE().layers.has('grid-labels-cross')){ GE().layers.setPaint('grid-labels-cross','text-color','#ffffff'); GE().layers.setPaint('grid-labels-cross','text-halo-color',mapLight?'rgba(0,0,0,0.8)':'rgba(0,0,0,0.7)'); }
+    if(GE().layers.has('grid-lines')){ GE().layers.setPaint('grid-lines','line-color','#ffffff'); }
+    if(GE().layers.has('grid-lines-casing')){ GE().layers.setPaint('grid-lines-casing','line-opacity',['case',['==',['get','kind'],'major'],mapLight?0.42:0.24,mapLight?0.26:0.14]); }
     /* Satellite imagery engine: panel + cross-fade buffer visibility follow the mode. */
     const satCont=document.getElementById('map-container'), satPanel=document.getElementById('sat-controller');
     /* (#R101) mobile: the panel is docked in the tools sheet → keep it available. desktop: show only when the

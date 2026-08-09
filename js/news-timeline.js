@@ -39,24 +39,39 @@ window.IntMapModules.newsTimeline=function(HOST){
        selectable (no future) — a PAST date is fully scrubbable 0–24h. Time-of-day data (day/night terminator, sun/shadow)
        then syncs to it, exactly like Year/Date already sync. */
     function _timeBase(){ const st=window.IntMapTime.state(); return st.isLive?new Date():new Date(st.when); }
-    function _sameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
-    function _timeMaxMins(base){ base=base||_timeBase(); const n=new Date(); return _sameDay(base,n)?(n.getHours()*60+n.getMinutes()):1439; }
-    function _updTimeMax(){ try{ if(!timePicker) return; if(_sameDay(_timeBase(),new Date())) timePicker.max=_hm(new Date()); else timePicker.removeAttribute('max'); }catch(_){} }
-    function _applyTimeOfDay(mins){ try{ const base=_timeBase(); mins=Math.max(0,Math.min(_timeMaxMins(base),mins|0));
+    /* ⚠ (#R210) THE TIME SLIDER IS NO LONGER CLIPPED AT "now" ══════════════════════════════════════
+       「今日の中で、現在時刻以降を選択できないスライダーの仕様にするのはやめて。」 #R139 capped today at
+       the current minute on the reasoning that the app must not claim to know the future. That is
+       right about DATA and wrong about this control: the Time tab moves the time OF DAY, and what it
+       drives — the sun's position, the day/night line, the shadow analysis — is astronomy, defined
+       for any instant. Earth Replay has always passed `allowFuture:true` for exactly that reason
+       (js/sims.js), so today the same slider answered differently in two places. Anything that
+       genuinely cannot know the future (the news feed) already decides that for itself.
+       `_timeMaxMins` is kept as the one place the range is stated, rather than deleted and inlined. */
+    function _timeMaxMins(){ return 1439; }
+    function _updTimeMax(){ try{ if(timePicker) timePicker.removeAttribute('max'); }catch(_){} }
+    function _applyTimeOfDay(mins){ try{ const base=_timeBase(); mins=Math.max(0,Math.min(_timeMaxMins(),mins|0));
       base.setHours(Math.floor(mins/60),mins%60,0,0);
-      /* allowFuture:false forbids a future instant — for today it caps at "now"; a past date is always < now anyway. */
-      window.IntMapTime.set(base,{allowFuture:false,source:'ui'}); }catch(_){} }
+      window.IntMapTime.set(base,{allowFuture:true,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
     /* (#R180) through the contract. This held window.__imap under the name `m` and drove it raw —
        the same "handle under another name" hole #R179 closed for the additional views. */
-    function _tmTerminator(show){ try{ const E=GE(); if(!(E&&E.hasRenderer())||!_imCanDraw()) return;
-      const has=E.layers.hasSource('imtm-night');
-      if(!show){ if(has){ try{ E.layers.setSourceData('imtm-night',{type:'FeatureCollection',features:[]}); }catch(_){} } return; }
-      if(!has){ try{ E.layers.addSource('imtm-night',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); E.layers.add({id:'imtm-night',type:'fill',source:'imtm-night',paint:{'fill-color':'#04070f','fill-opacity':0.33}}); }catch(_){ return; } }
-      let fc={type:'FeatureCollection',features:[]}; try{ const w=window.IntMapTime.when(); const ER=window.IntMapEarthReplay; const t=(ER&&ER._terminatorFC)?ER._terminatorFC(w):null; if(t) fc={type:'FeatureCollection',features:[t]}; }catch(_){}
-      try{ E.layers.setSourceData('imtm-night',fc); }catch(_){} }catch(_){} }
-    function _tmSyncTerminator(){ try{ _tmTerminator(mode==='time' && !tl.classList.contains('collapsed')); }catch(_){} }
+    /* ⚠ (#R210) THE SECOND NIGHT IS GONE ══════════════════════════════════════════════════════════
+       「タイムマシンで日時を動かしたときだけ、昼夜境界に新たな影ができるのはやめて。すでにあるから、
+        重複して付け足す必要はない。」 #R137 added `imtm-night` — a flat 33 %-black fill of the night
+       hemisphere — as the Time tab's "visible effect", and at the time nothing else drew one. #R201
+       then built the real one: js/night-side.js, a per-pixel twilight ramp with VIIRS city lights,
+       which follows window.IntMapTime and therefore ALREADY moves when the time machine does. Since
+       then opening the Time tab painted a second, cruder terminator over the good one — two edges,
+       slightly apart, both moving.
+       The function stays and always CLEARS, rather than being deleted with its callers: the layer
+       may already exist in a session that opened the tab before this deploy, and a removed function
+       would leave that fill on the map with nothing left that knows how to empty it. */
+    function _tmTerminator(){ try{ const E=GE(); if(!(E&&E.hasRenderer())||!_imCanDraw()) return;
+      if(E.layers.hasSource('imtm-night')){ try{ E.layers.setSourceData('imtm-night',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    }catch(_){} }
+    function _tmSyncTerminator(){ try{ _tmTerminator(); }catch(_){} }   /* (#R210) js/night-side.js is the day/night line — this only clears the old duplicate */
     const curY=new Date().getFullYear();
     const L5=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
     const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
@@ -97,7 +112,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
       if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
-      else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R139) capped at "now" when the selected date is today */
+      else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
       buildScale();
@@ -142,7 +157,7 @@ window.IntMapModules.newsTimeline=function(HOST){
     function refreshUI(e){ _self=true; try{
       if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
-        const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins(base);
+        const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
         if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
         let mins=w.getHours()*60+w.getMinutes(); if(mins>maxM) mins=maxM;
         tl.classList.toggle('active',!e.isLive);
