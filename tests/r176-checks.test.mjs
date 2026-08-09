@@ -156,7 +156,12 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
   assert.doesNotMatch(water, /vin=through\[dp\.outlet\];/, 'and never read off a single outlet cell again');
   /* the products the request names */
   assert.match(water, /dp\.level=dp\.spill; dp\.over=vin-dp\.capacity;/, '決壊: a full basin overtops by exactly the excess');
-  assert.match(water, /properties:\{kind:'breach', rot, label:'➤ '\+fmtM3\(b\.over\)\}/, 'and the spill direction is drawn as an arrow');
+  /* ⚠ (#R211) THE ARROW STAYS, THE NUMBER BESIDE IT DOES NOT — 「体積の赤字表示を消す」. The 決壊方向
+     is what this assertion is for and it is unchanged; what a later instruction removed is the red
+     volume that was rendered next to it. The volumes are still reported (in the panel's details),
+     so nothing was lost except a figure in alarm-red on the map. */
+  assert.match(water, /properties:\{kind:'breach', rot, label:'➤'\}/, 'and the spill direction is drawn as an arrow');
+  assert.ok(!/label:'➤ '\+fmtM3/.test(water), 'without the red volume beside it (#R211)');
   assert.match(water, /function stampLevees\(out\)\{/, '堤防・ダム are stamped into the same height field');
   assert.match(water, /sculpt\[j\*G\.NX\+i\]\+=amp\*0\.5\*\(1\+Math\.cos\(Math\.PI\*d\)\);/, 'the brush is a raised cosine');
 });

@@ -34,6 +34,11 @@ const ROOT = resolve(import.meta.dirname);
 export const STATIC_ASSETS = [
   'sw.js',                              // tile-cache service worker (registered by index.html)
   'admin.html',                         // the ops console — its own page, not part of the app bundle
+  /* (#R211) the transparency page — what every simulation COMPUTES, as opposed to where its data
+     came from (that is the in-app Sources dialog). It is static markup with one inline script and
+     no imports, so it is copied rather than bundled: passing it through Rollup would produce a
+     byte-identical file behind an extra entry point. */
+  'science.html',
   'google0266d9db8efbc48c.html',        // Google Search Console site verification
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)
   'og-image.jpg',                       // social preview

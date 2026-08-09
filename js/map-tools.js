@@ -1018,7 +1018,7 @@ window.IntMapModules.objectList=function(HOST){
           h+='<div class="iol-row" data-i="'+i+'">'
             +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
             +'<span class="iol-name" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
-            +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Colour','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
+            +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Color','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
             +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?'🙈':'👁')+'</button>'):'')
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
             +(o.rename?('<button class="iol-ic" data-act="rename" title="'+esc(OL('Rename','名称変更','Umbenennen','Переименовать','Renombrar'))+'">✎</button>'):'')

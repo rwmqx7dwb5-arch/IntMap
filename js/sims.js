@@ -610,10 +610,10 @@ window.IntMapModules.sun=function(HOST){
       try{ GE().render.canvas().style.cursor=''; }catch(_){} }
     /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
     function pickPoint(){ endPick();
-      engSay(SN('Click the point to analyse.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
+      engSay(SN('Click the point to analyze.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
       const P=window.IntMapPick;
       if(P&&P.start&&P.start({ panel,
-        hint:SN('Tap the point to analyse.','解析する地点をタップしてください。','Auf den zu analysierenden Punkt tippen.','Нажмите на точку для анализа.','Toca el punto a analizar.'),
+        hint:SN('Tap the point to analyze.','解析する地点をタップしてください。','Auf den zu analysierenden Punkt tippen.','Нажмите на точку для анализа.','Toca el punto a analizar.'),
         onPick:(ll)=>{ analysePoint(ll.lng,ll.lat); } })) return;
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickH=async e=>{ endPick(); await analysePoint(e.lngLat.lng,e.lngLat.lat); };
@@ -829,7 +829,7 @@ window.IntMapModules.disaster=function(HOST){
         +'<button class="dz-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+DZ('Place source on map','発生地点を設置','Quelle setzen','Разместить','Colocar origen')+'</button>'
         +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">'+DZ('Time','経過時間','Zeit','Время','Tiempo')+'</span><input type="range" class="dz-t" min="1" max="12" value="3" style="flex:1;"><span class="dz-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:36px;text-align:right;">3 h</span></div>'
         +'<div class="dz-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modelled separately, by the propagation simulator.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。津波は別の伝播シミュレーターで扱います。','Nur Bildungsnäherung. Tsunamis: eigener Ausbreitungssimulator.','Только образовательная модель. Цунами — отдельный симулятор.','Solo aproximación educativa. Los tsunamis tienen su propio simulador.')+'</div></div>';
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modeled separately, by the propagation simulator.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。津波は別の伝播シミュレーターで扱います。','Nur Bildungsnäherung. Tsunamis: eigener Ausbreitungssimulator.','Только образовательная модель. Цунами — отдельный симулятор.','Solo aproximación educativa. Los tsunamis tienen su propio simulador.')+'</div></div>';
       document.body.appendChild(panel);
       panel.querySelector('.dz-close').onclick=()=>close();
       panel.querySelector('.dz-pick').onclick=()=>startPick();

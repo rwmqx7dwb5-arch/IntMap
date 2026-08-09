@@ -91,10 +91,10 @@ window.IntMapModules.dataLayers=function(HOST){
       .lyr-row{ display:flex; flex-direction:column; gap:2px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
       .lyr-op{ width:100%; accent-color:var(--primary-color); display:none; margin:0 0 4px 24px; }
       .lyr-row.on .lyr-op{ display:block; }
-      /* (#R128) NORMAL / desktop category heading. It was 12.5px muted — SMALLER and greyer than its own 13px
+      /* (#R128) NORMAL / desktop category heading. It was 12.5px muted — SMALLER and grayer than its own 13px
          layer rows, so a section title read as a de-emphasised sub-item ("分類名のテキストサイズが小さい・余白に
          合ってない・UIとしておかしい"). Make it a real heading: clearly larger than the rows (15.5px vs 13px),
-         bold, full text colour, with a top margin that gives each group visible breathing room. Mirrors the mobile
+         bold, full text color, with a top margin that gives each group visible breathing room. Mirrors the mobile
          sheet's 18.5px-over-15.5px step (R127). */
       .lyr-head{ font-size:15.5px; font-weight:700; color:var(--text-main); margin:14px 2px 6px; text-transform:none; letter-spacing:-0.01em; }
       /* (#R15 / #26) "Others (beta)" group note */
@@ -106,7 +106,7 @@ window.IntMapModules.dataLayers=function(HOST){
          the ⋮⋮ drag handle and the min/close buttons (all anchored to this non-scrolling box) stay pinned
          at the top while the climate rows scroll under them. */
       /* (#R10) Flex column (shown via inline display:flex): header (h4) pinned top, .kl-scroll flexes +
-         scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimise button
+         scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimize button
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
       /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
          user reported the legend "stretching left-right"; vertical-only resize is the requested behavior. */
@@ -152,7 +152,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R8c) ONE shared declaration for the box, so close & min cannot diverge in top/size — only the
          horizontal offset differs. Verified on a live legend: both buttons share top and height exactly. */
       /* (#R9/#25) Center EVERY icon with transform:translate(-50%,-50%) — size-INDEPENDENT, so close (×),
-         minimise (–) and collapsed (▢) share one pixel-exact center at any box size / DPR. This removes
+         minimize (–) and collapsed (▢) share one pixel-exact center at any box size / DPR. This removes
          the last sub-pixel vertical drift between □ and × (the negative-margin centring rounded the 1.8px
          bar and the 12px square differently). Larger sizes below change ONLY width/height. */
       .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:6px; width:20px; height:20px; padding:0; font-size:0; border-radius:6px; line-height:0; box-sizing:border-box; }
@@ -175,7 +175,7 @@ window.IntMapModules.dataLayers=function(HOST){
          (centerd bars) come from the global rules above, so desktop & mobile are identical & aligned. */
       @media(max-width:768px){
         /* (#R18) ONE size for EVERY mobile ×/–: 32px. The R17 40px boxes made the legend buttons huge
-           while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimised
+           while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimized
            legend. 32px is still a comfortable tap target and identical across legends, popups and panels. */
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
         .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:27px !important; height:27px !important; border-radius:8px; background:rgba(128,128,128,0.16); }
@@ -223,7 +223,7 @@ window.IntMapModules.dataLayers=function(HOST){
         .tp-min-btn::before{ width:15px; height:2.1px; }
         .tool-panel.tp-collapsed .tp-min-btn::before{ width:13px; height:13px; }
         .tp-close::before,.tp-close::after{ width:15px; height:2.1px; }
-        /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
+        /* Minimized legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
         .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ padding:6px 10px !important; min-width:150px; }
         .data-legend.legend-collapsed h4, .koppen-legend.legend-collapsed h4{ min-height:32px !important; display:flex; align-items:center; }
         .data-legend .layer-popup-x:active, .koppen-legend .layer-popup-x:active,
@@ -334,7 +334,7 @@ window.IntMapModules.dataLayers=function(HOST){
     const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${cat.n[HOST.lang]||cat.n.en}</span></div>`).join('');
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'海洋管轄区域':HOST.lang==='de'?'Meereszonen':HOST.lang==='ru'?'Морские зоны':HOST.lang==='es'?'Zonas marítimas':'Maritime zones'}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${HOST.lang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。':HOST.lang==='de'?'AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.':HOST.lang==='ru'?'ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.':HOST.lang==='es'?'ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.':'EEZ = Exclusive Economic Zone (to 200 nm). Line colour = boundary type (bright colours for visibility); overlaps flag disputed claims.'}</div>
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${HOST.lang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。':HOST.lang==='de'?'AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.':HOST.lang==='ru'?'ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.':HOST.lang==='es'?'ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.':'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.'}</div>
       <div class="dl-hint">${HOST.lang==='jp'?'出典: MarineRegions WMS':HOST.lang==='de'?'Quelle: MarineRegions WMS':HOST.lang==='ru'?'Источник: MarineRegions WMS':HOST.lang==='es'?'Fuente: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -2042,7 +2042,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='sats'){
           const A=()=>window.IntMapSatellites;
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _gL=HOST.lang==='jp'?'カタログ':HOST.lang==='de'?'Katalog':HOST.lang==='ru'?'Каталог':HOST.lang==='es'?'Catálogo':'Catalogue';
+          const _gL=HOST.lang==='jp'?'カタログ':HOST.lang==='de'?'Katalog':HOST.lang==='ru'?'Каталог':HOST.lang==='es'?'Catálogo':'Catalog';
           const _vL=HOST.lang==='jp'?'ここから見えるものだけ':HOST.lang==='de'?'Nur von hier sichtbare':HOST.lang==='ru'?'Только видимые отсюда':HOST.lang==='es'?'Solo los visibles desde aquí':'Only visible from here';
           let opts='';
           try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
@@ -2658,7 +2658,7 @@ window.IntMapModules.dataLayers=function(HOST){
       return jp?'その他':'Other'; }
     /* AIS navigational-status code → label */
     function navStatusLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
-      const en=['Under way (engine)','At anchor','Not under command','Restricted manoeuvrability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
+      const en=['Under way (engine)','At anchor','Not under command','Restricted maneuverability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
       const ja=['航行中(機走)','錨泊','操縦不能','操縦制限','喫水制限','係留','座礁','漁労中','航行中(帆走)'];
       return (c>=0&&c<=8)?(jp?ja[c]:en[c]):''; }
     /* Ship glyphs (top-view hull) — colored + rotated by heading/COG, like the plane icons. */
@@ -3499,7 +3499,7 @@ window.IntMapModules.dataLayers=function(HOST){
       let s=null; try{ s=window.IntMapSatellites&&window.IntMapSatellites.state(); }catch(_){}
       if(!s){ box.textContent=''; return; }
       const jp=HOST.lang==='jp';
-      if(s.loading){ box.textContent=jp?'カタログを取得中…':HOST.lang==='de'?'Katalog wird geladen…':HOST.lang==='ru'?'Загрузка каталога…':HOST.lang==='es'?'Cargando el catálogo…':'Loading the catalogue…'; return; }
+      if(s.loading){ box.textContent=jp?'カタログを取得中…':HOST.lang==='de'?'Katalog wird geladen…':HOST.lang==='ru'?'Загрузка каталога…':HOST.lang==='es'?'Cargando el catálogo…':'Loading the catalog…'; return; }
       if(s.err&&!s.catalogue){ box.textContent=(jp?'取得できませんでした: ':'Could not load: ')+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
@@ -3907,7 +3907,7 @@ window.IntMapModules.dataLayers=function(HOST){
           }catch(e){ console.warn('hillshade fail',e); } });
         }
         else if(id==='contours'){
-          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(HOST.lang==='jp'?'等高線を初期化できませんでした':HOST.lang==='de'?'Höhenlinien konnten nicht initialisiert werden':HOST.lang==='ru'?'Не удалось инициализировать изолинии':HOST.lang==='es'?'No se pudieron iniciar las curvas de nivel':'Could not initialise contours'); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(HOST.lang==='jp'?'等高線を初期化できませんでした':HOST.lang==='de'?'Höhenlinien konnten nicht initialisiert werden':HOST.lang==='ru'?'Не удалось инициализировать изолинии':HOST.lang==='es'?'No se pudieron iniciar las curvas de nivel':'Could not initialize contours'); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
         }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */

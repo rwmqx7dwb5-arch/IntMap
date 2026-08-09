@@ -174,8 +174,8 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     function _geoMismatchKm(geo,gv){ try{ if(!geo||!gv||typeof turf==='undefined') return null; let cx,cy;
       try{ const cen=turf.center({type:'Feature',geometry:geo,properties:{}}); cx=cen.geometry.coordinates[0]; cy=cen.geometry.coordinates[1]; }
       catch(_){ const bb=turf.bbox({type:'Feature',geometry:geo,properties:{}}); cx=(bb[0]+bb[2])/2; cy=(bb[1]+bb[3])/2; }
-      if(!isFinite(cx)||!isFinite(cy)) return null; const d=turf.distance([cx,cy],[gv.lng,gv.lat],{units:'kilometres'}); return isFinite(d)?d:null; }catch(_){ return null; } }
-    function _geoTolKm(geo){ try{ const bb=turf.bbox({type:'Feature',geometry:geo,properties:{}}); const diag=turf.distance([bb[0],bb[1]],[bb[2],bb[3]],{units:'kilometres'}); return Math.max(200, 0.65*(isFinite(diag)?diag:0)); }catch(_){ return 500; } }
+      if(!isFinite(cx)||!isFinite(cy)) return null; const d=turf.distance([cx,cy],[gv.lng,gv.lat],{units:'kilometers'}); return isFinite(d)?d:null; }catch(_){ return null; } }
+    function _geoTolKm(geo){ try{ const bb=turf.bbox({type:'Feature',geometry:geo,properties:{}}); const diag=turf.distance([bb[0],bb[1]],[bb[2],bb[3]],{units:'kilometers'}); return Math.max(200, 0.65*(isFinite(diag)?diag:0)); }catch(_){ return 500; } }
     /* verified geometry check: true = geometry sits at the verified place (or we can't/ shouldn't judge → fail-open) */
     function _geoAgrees(geo,gv){ if(!_gvStrong(gv)) return true; const d=_geoMismatchKm(geo,gv); if(d==null) return true; return d<=_geoTolKm(geo); }
     async function _nomExtent(place, anchor){ place=String(place||'').trim(); if(!place) return null;
@@ -200,7 +200,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
         /* (#R130) ANCHOR bonus: when a web-search-verified point is supplied (geoVerify), prefer the candidate NEAREST
            it — so the RIGHT one of the up-to-8 Nominatim candidates wins instead of a higher-importance homonym
            (the 大阪湾→坂湾-in-China class). Reuses the already-fetched candidates, no extra request. */
-        const _anchorBonus=x=>{ try{ if(!anchor||!isFinite(+anchor.lat)||!isFinite(+anchor.lng)||typeof turf==='undefined') return 0; const d=turf.distance([+x.lon,+x.lat],[+anchor.lng,+anchor.lat],{units:'kilometres'}); if(!isFinite(d)) return 0; return d<=120?0.9:d<=400?0.5:d<=1200?0:-0.7; }catch(_){ return 0; } };
+        const _anchorBonus=x=>{ try{ if(!anchor||!isFinite(+anchor.lat)||!isFinite(+anchor.lng)||typeof turf==='undefined') return 0; const d=turf.distance([+x.lon,+x.lat],[+anchor.lng,+anchor.lat],{units:'kilometers'}); if(!isFinite(d)) return 0; return d<=120?0.9:d<=400?0.5:d<=1200?0:-0.7; }catch(_){ return 0; } };
         const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y)+_nameBonus(y)+_anchorBonus(y))-((+x.importance||0)+_classBonus(x)+_nameBonus(x)+_anchorBonus(x)))[0];
         /* (#R136) honest-miss guard (only when NO web-verified anchor vouches for the location): a bare minor SETTLEMENT
            with low importance is almost never what a region/country/place highlight meant — return null so the caller
@@ -266,12 +266,12 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       '• "osm_polygon": OpenStreetMap almost certainly has a single named boundary/relation for it (most named seas/gulfs/straits, many mountain ranges, deserts, well-defined regions). Give osmName = the exact Nominatim search string (with country).',
       '• "derived_anchors": NO official or OSM boundary exists (informal natural/economic/historical regions — plains, plateaus, belts, corridors). Provide boundaryAnchors = 6-16 REAL NAMED places (cities, capes, river mouths, mountain passes, coastal points) that lie ON the region perimeter, listed CLOCKWISE, each with real coords; and give a good mustInclude/mustExclude set. The client builds a simple polygon from these anchors and validates it.',
       '• "none": the name has no meaningful drawable extent (a whole continent, a hemisphere, a vague direction) or you cannot verify it — set found accordingly.',
-      'ALWAYS fill representativePoint (a point clearly INSIDE the feature), expectedBbox [west,south,east,north] in degrees, expectedCountries, and 2-8 mustInclude points (well-known places clearly inside) plus 1-6 mustExclude points (well-known places just OUTSIDE / in a neighbouring region that must NOT be covered). These are used to validate the drawn geometry, so they must be accurate.',
+      'ALWAYS fill representativePoint (a point clearly INSIDE the feature), expectedBbox [west,south,east,north] in degrees, expectedCountries, and 2-8 mustInclude points (well-known places clearly inside) plus 1-6 mustExclude points (well-known places just OUTSIDE / in a neighboring region that must NOT be covered). These are used to validate the drawn geometry, so they must be accurate.',
       'AMBIGUITY: if the name has more than one well-known referent (e.g. "Georgia" = the country vs the US state; "Congo" = two countries and a river; "Kashmir" = a disputed multi-country region), set ambiguous:true and list 2-4 candidates ({name, country, note}); still resolve your single most-likely interpretation for the other fields. If a CONTEXT line is given, use it ONLY to break ties between otherwise-equal candidates.',
       'found:false ONLY when the name is fictional or cannot be matched to any real place. Coordinates: lat -90..90, lng -180..180. Base every coordinate on web-search evidence or firm knowledge — NEVER fabricate coordinates to make a shape look right. Cite the pages you used in sources.'
     ].join('\n'); }
     function _rrCtxLine(ctx){ try{ if(!ctx) return ''; const bits=[];
-      if(ctx.mapCenter&&isFinite(+ctx.mapCenter.lat)) bits.push('map is centred near lat '+(+ctx.mapCenter.lat).toFixed(1)+', lng '+(+ctx.mapCenter.lng).toFixed(1));
+      if(ctx.mapCenter&&isFinite(+ctx.mapCenter.lat)) bits.push('map is centered near lat '+(+ctx.mapCenter.lat).toFixed(1)+', lng '+(+ctx.mapCenter.lng).toFixed(1));
       if(ctx.lastCountry) bits.push('recently discussed country: '+String(ctx.lastCountry).slice(0,40));
       if(ctx.lang) bits.push('user language: '+ctx.lang);
       return bits.length?('CONTEXT (use only to disambiguate equal candidates): '+bits.join('; ')):''; }catch(_){ return ''; } }
@@ -436,8 +436,8 @@ export function makeAtlasGeoResolve(HOST, CTX) {
         ok('validGeo TRUSTS real borders (few-vertex heuristics skipped)', _validGeo({type:'Polygon',coordinates:[[[0,0],[20,0],[10,20],[0,0]]]},{trusted:true}).ok===true);
         ok('validGeo rejects non-polygon', !_validGeo({type:'LineString',coordinates:[[0,0],[1,1]]},{}).ok);
         /* palette + legend — multiple regions get distinct colours + a legend */
-        ok('palette gives 4 distinct colours', new Set([0,1,2,3].map(_hlPaletteColor)).size===4);
-        ok('legend lists each group with a colour swatch', (()=>{ const h=_hlLegendHtml([{name:'A',color:'#111111',nCountries:3},{name:'B',color:'#222222',nCountries:5}]); return h.indexOf('>A<')>=0&&h.indexOf('>B<')>=0&&h.indexOf('#111111')>=0&&h.indexOf('#222222')>=0; })());
+        ok('palette gives 4 distinct colors', new Set([0,1,2,3].map(_hlPaletteColor)).size===4);
+        ok('legend lists each group with a color swatch', (()=>{ const h=_hlLegendHtml([{name:'A',color:'#111111',nCountries:3},{name:'B',color:'#222222',nCountries:5}]); return h.indexOf('>A<')>=0&&h.indexOf('>B<')>=0&&h.indexOf('#111111')>=0&&h.indexOf('#222222')>=0; })());
         /* real-border group geometry (only when countryGeo is loaded in this context) */
         ok('codesGeo empty input → null geo', (()=>{ const r=_codesGeo([]); return r&&r.geo===null; })());
         ok('codesGeo builds a MultiPolygon from real borders (if data loaded)', (()=>{ const g=geo(); if(!g||!g.features) return true; const r=_codesGeo(_WE); return !!r.geo&&r.geo.type==='MultiPolygon'&&r.hit.length>=6&&_validGeo(r.geo,{trusted:true}).ok; })());
