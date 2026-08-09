@@ -24,6 +24,26 @@ const boot = async page => {
   await page.waitForTimeout(1500);
 };
 
+/* ⚠ (#R207) THE TWO BASE-MAP TESTS HAVE TO ASK FOR THE BASE MAP. They read the tile density of the
+   CARTO base, and `baseStyleSegment` finds it by looking for the VISIBLE base layer — which, since
+   「初回時にはmapではなくsatelliteに」, is not on screen at boot. The tests are about @2x on the base
+   map, not about which basemap a session opens with, so they select it explicitly rather than
+   inheriting whatever the default happens to be this round. */
+const useBaseMap = async page => {
+  await page.evaluate(() => document.getElementById('btn-view-map')?.click());
+  /* wait for the thing the assertions read — a VISIBLE raster layer whose source is Carto — rather
+     than for a layer id, which is a name this file has no business knowing */
+  await page.waitForFunction(() => {
+    try {
+      const st = window.__imap.getStyle();
+      return st.layers.some((l) => l.type === 'raster'
+        && window.__imap.getLayoutProperty(l.id, 'visibility') !== 'none'
+        && /cartocdn\.com/.test((((st.sources[l.source] || {}).tiles || [])[0]) || ''));
+    } catch (_) { return false; }
+  }, null, { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+};
+
 /* The Carto style segment the VISIBLE base layer is drawing from — 'light_nolabels' at boot, or its
    dark/labelled sibling. Read off the live style rather than assumed, because it is the only thing
    that says which of the many Carto requests on the wire belong to the map: the layer panel's
@@ -54,6 +74,7 @@ test.describe('on a 2× display', () => {
     const carto = [];
     page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
     await boot(page);
+    await useBaseMap(page);   /* (#R207) satellite is the default now — this test is about the BASE map */
     /* WHICH Carto requests belong to the live base map is asked of the STYLE, not guessed from the
        URL. Guessing cost a CI failure: js/layer-previews.js has always fetched `light_all@2x` and
        `dark_all@2x` thumbnails for the layer panel — independently of any display — so a filter
@@ -125,6 +146,7 @@ test.describe('on a 1× display', () => {
     const carto = [];
     page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
     await boot(page);
+    await useBaseMap(page);
     const seg = await baseStyleSegment(page);
     expect(seg, 'the live base map names its style').toBeTruthy();
     const mine = carto.filter(u => u.includes('/' + seg + '/'));

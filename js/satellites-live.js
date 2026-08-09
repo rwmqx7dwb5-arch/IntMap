@@ -147,6 +147,20 @@ window.IntMapModules.satellitesLive=function(HOST){
   const PROXIES=[ (u)=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
                   (u)=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u) ];
   const BUNDLED='data/tle/catalogue.tle', BUNDLED_META='data/tle/catalogue.json';
+  /* (#R207) which NORAD ids belong to which CelesTrak group, built beside the snapshot — see
+     scripts/build-tle-snapshot.mjs. Fetched once, lazily, and only when a group other than `active`
+     has to fall back to the bundle. */
+  const BUNDLED_GROUPS='data/tle/groups.json';
+  let _grpP=null, _grpTbl=null;
+  function bundledGroupIds(g){
+    if(g==='active') return Promise.resolve(null);          /* the whole file already IS `active` */
+    if(_grpTbl!==null) return Promise.resolve(_grpTbl[g]||null);
+    if(!_grpP) _grpP=fetch(BUNDLED_GROUPS,{cache:'no-store'})
+      .then(r=>r.ok?r.json():null)
+      .then(j=>{ _grpTbl=(j&&j.groups&&typeof j.groups==='object')?j.groups:{}; return _grpTbl; })
+      .catch(()=>{ _grpTbl={}; return _grpTbl; });
+    return _grpP.then(t=>t[g]||null);
+  }
 
   const SRC='src-sats', LYR='lyr-sats', LBL='lyr-sats-lbl', HALO='lyr-sats-halo';
   const TRK_SRC='src-sat-track', TRK='lyr-sat-track', FOOT='lyr-sat-foot', FOOTLN='lyr-sat-foot-line';
@@ -247,7 +261,11 @@ window.IntMapModules.satellitesLive=function(HOST){
     const yy=Math.floor(e/1000), year=yy<57?2000+yy:1900+yy, doy=e%1000;
     try{ return new Date(Date.UTC(year,0,1)+(doy-1)*86400000).toISOString(); }catch(_){ return ''; }
   }
-  function ingestTLE(text,want){
+  /* (#R207) `only` = a Set of NORAD ids to keep, or null for "everything in the text". It exists so
+     the ONE bundled catalogue (which is the `active` set) can answer a request for a SUBSET of it —
+     see bundledGroupIds. Filtering here rather than after means the objects that are not wanted are
+     never turned into satrecs, which is most of the work. */
+  function ingestTLE(text,want,only){
     if(!SAT||typeof text!=='string'||text.length<140) return false;
     const lines=text.split(/\r?\n/);
     const out=[]; const seen=new Set();
@@ -255,6 +273,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       const l1=lines[i+1], l2=lines[i+2];
       if(!l1||!l2||l1[0]!=='1'||l2[0]!=='2'||l1.length<69||l2.length<69) continue;
       if(l1.slice(2,7).trim()!==l2.slice(2,7).trim()) continue;
+      if(only&&!only.has(parseInt(l1.slice(2,7),10))){ i+=2; continue; }   /* (#R207) */
       const name=String(lines[i]||'').replace(/^0\s+/,'').trim();
       let rec=null;
       try{ rec=SAT.twoline2satrec(l1,l2); }catch(_){ continue; }
@@ -327,18 +346,34 @@ window.IntMapModules.satellitesLive=function(HOST){
          in milliseconds, so it goes first, is painted immediately, and the live feed replaces it
          the moment that answers. Only for the full catalogue, because that is what it IS: serving
          it in answer to a request for "GPS" would answer a different question. */
+      /* ══ (#R207) …AND IT IS THE FLOOR FOR EVERY CATEGORY, NOT ONLY FOR `active` ══════════════════
+         「人工衛星レイヤーで、カテゴリ選択が機能していない。」 The condition used to be
+         `want==='active'`, so with CelesTrak out (measured: "Failed to fetch" while Esri and USGS
+         answer 200 from the same page) every OTHER catalogue ran the ladder, failed, and drew
+         nothing — 16,099 objects to 0 on one change of the picker.
+         The bundle IS the `active` set, so a subset request is answered by filtering it to the
+         membership CelesTrak published for that group (data/tle/groups.json, built beside it).
+         ⚠ NO LIST → NO CLAIM. A group the snapshot has no membership for is NOT approximated from
+         object names; the ladder simply carries on to the live attempts, and if those fail too the
+         error says which catalogue could not be reached. Serving "everything" in answer to "GPS"
+         would be a wrong answer, which is worse than a labelled empty one. */
       let primedFromBundle=false;
-      if(want==='active'&&!sats.length){
-        try{ const t=await grab(BUNDLED,15000);
-          if(ingestTLE(t,want)){
-            primedFromBundle=true; bundled=true;
-            let when='';
-            try{ const m=await fetch(BUNDLED_META).then(r=>r.ok?r.json():null);
-              if(m){ bundledMeta=m; if(m.newestEpoch) when=' ('+String(m.newestEpoch).slice(0,10)+')'; } }catch(_){}
-            lastErr='showing the catalogue shipped with the app'+when+' while the live feed loads';
-            try{ if(_onPrimed) _onPrimed(); }catch(_){}
-          }
-        }catch(e){ tried.push('bundled: '+String(e&&e.message||e)); }
+      if(!sats.length){
+        let only=null, haveList=(want==='active');
+        if(!haveList){ try{ const ids=await bundledGroupIds(want);
+          if(ids&&ids.length){ only=new Set(ids); haveList=true; } }catch(_){} }
+        if(haveList){
+          try{ const t=await grab(BUNDLED,15000);
+            if(ingestTLE(t,want,only)){
+              primedFromBundle=true; bundled=true;
+              let when='';
+              try{ const m=await fetch(BUNDLED_META).then(r=>r.ok?r.json():null);
+                if(m){ bundledMeta=m; if(m.newestEpoch) when=' ('+String(m.newestEpoch).slice(0,10)+')'; } }catch(_){}
+              lastErr='showing the catalogue shipped with the app'+when+' while the live feed loads';
+              try{ if(_onPrimed) _onPrimed(); }catch(_){}
+            }
+          }catch(e){ tried.push('bundled: '+String(e&&e.message||e)); }
+        }
       }
       const live=(t)=>{ if(!ingestTLE(t,want)) return false;
         cachePut(want,t); bundled=false; bundledMeta=null; lastErr=null;

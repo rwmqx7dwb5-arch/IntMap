@@ -75,6 +75,12 @@ window.IntMapModules.space=function(HOST){
     let names=null, namesLoading=null;
     let dpr=1, W=0, H=0, lastErr=null, frames=0, lastFpsAt=0, fps=0, sampleReq=null;
     let hoverBody=null;
+    /* (#R207) 「軌道をオンオフしたりできるように。また、各惑星の地名ラベルをオンオフできるように。」
+       Two independent switches, both default ON so nothing a session already saw disappears.
+       `showOrbits` is the system view's orbit lines; `showNames` is the IAU nomenclature drawn on a
+       body in body view (the "地名ラベル"). The body NAMES in the system view are what identifies the
+       dots at all, so they are not part of either switch. */
+    let showOrbits=true, showNames=true;
 
     const BODIES=['sun','mercury','venus','earth','moon','mars','jupiter','saturn','uranus','neptune','pluto'];
     const NAMED={ sun:['Sun','太陽','Sonne','Солнце','Sol'], mercury:['Mercury','水星','Merkur','Меркурий','Mercurio'],
@@ -376,6 +382,25 @@ window.IntMapModules.space=function(HOST){
       for(const k of Object.keys(orbitCache)) if(k.indexOf(id+'|')===0) { gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
       orbitCache[key]={B,n:N+1}; return orbitCache[key];
     }
+    /* (#R207) the Moon's line, in the frame the Moon is actually DRAWN in — geocentric, separated by
+       the same `moonSep()` the body uses, then offset by the Earth's own scene position. Rebuilt each
+       27-day bucket (its period), because unlike a planet's this curve MOVES with the Earth. */
+    function moonOrbitBuf(jd){
+      try{
+        const E=EPH(), P=E.periodDays('moon')||27.32, N=128;
+        const key='moon|'+scale+'|'+Math.round(jd/(P/8));
+        if(orbitCache[key]) return orbitCache[key];
+        const a=new Float32Array((N+1)*3);
+        for(let i=0;i<=N;i++){
+          const t=jd+P*i/N, p=positions(t);
+          const v=scenePos(p,'moon',[0,0,0]);
+          a[i*3]=v[0]; a[i*3+1]=v[1]; a[i*3+2]=v[2];
+        }
+        const B=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,B); gl.bufferData(gl.ARRAY_BUFFER,a,gl.STATIC_DRAW);
+        for(const k of Object.keys(orbitCache)) if(k.indexOf('moon|')===0&&k!==key){ gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
+        orbitCache[key]={B,n:N+1}; return orbitCache[key];
+      }catch(_){ return null; }
+    }
 
     /* the body's own axes, as a rotation matrix from body coordinates into the J2000 ecliptic frame
        the orbits live in — the real pole and the real prime meridian (js/ephemeris.js bodyBasis) */
@@ -426,13 +451,24 @@ window.IntMapModules.space=function(HOST){
         const centre=(focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
         const VP=mMul(cam.P,mMul(cam.V,mIdent()));
         /* orbits first, so a body is never hidden behind its own line */
+        if(showOrbits){                                            /* (#R207) */
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
         for(const id of E.bodies()){
-          const o=orbitBuf(id,jd);
+          /* ══ (#R207) THE MOON'S LINE WAS ITS HELIOCENTRIC PATH ═══════════════════════════════════
+             「天体が描かれた軌道から微妙に外れた挙動だから、グラフィック的に不自然。」
+             #R203 moved the Moon's POSITION to be measured about the Earth (see scenePos / moonSep —
+             compressing its heliocentric distance had put it inside the Earth) and left this loop
+             alone, so its ORBIT stayed the 1-AU heliocentric curve: the body sits beside the Earth
+             while its line is a circle round the Sun. The line is drawn where the body is by using
+             the same placement function that puts the body there — one owner for "where is it",
+             which is the only way the two can agree. */
+          const o=(id==='moon')?moonOrbitBuf(jd):orbitBuf(id,jd);
+          if(!o) continue;
           const M=mMul(VP,mTrans(-centre[0],-centre[1],-centre[2]));
           drawLines(M,o.B,o.n,[0.42,0.55,0.78,id===focus?0.75:0.32]);
         }
         gl.depthMask(true); gl.disable(gl.BLEND);
+        }
         const sunScene=[-centre[0],-centre[1],-centre[2]];
         for(const id of BODIES){
           const b=E.body(id); if(!b) continue;
@@ -528,6 +564,7 @@ window.IntMapModules.space=function(HOST){
     }
 
     function drawFeatureLabels(model,VP,cam){
+      if(!showNames) return;                    /* (#R207) 「各惑星の地名ラベルをオンオフできるように」 */
       if(!names||!names[focus]) return;
       const list=names[focus];
       const MVP=mMul(VP,model);
@@ -631,9 +668,16 @@ window.IntMapModules.space=function(HOST){
            options are on screen and the lit one is the state — and it is the same segmented control
            the phone's Map/Satellite uses, so it is not a new invention (#R148). */
         +'<span class="sp-seg" style="display:inline-flex;gap:2px;padding:2px;border-radius:9px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);">'
-        +'<button class="sp-scale" data-s="real" style="'+SEG+'">📏 '+L('True scale','実寸大','Maßstabsgetreu','Реальный масштаб','Escala real')+'</button>'
-        +'<button class="sp-scale" data-s="model" style="'+SEG+'">🔎 '+L('Model scale','モデル大','Modellmaßstab','Модельный масштаб','Escala modelo')+'</button>'
+        /* (#R207) 「実寸大とモデル大には絵文字を付けるな。」 — the two segments carry their words only.
+           They are the two halves of one state switch; a pictogram on each was decoration that made
+           them look like two separate actions. */
+        +'<button class="sp-scale" data-s="real" style="'+SEG+'">'+L('True scale','実寸大','Maßstabsgetreu','Реальный масштаб','Escala real')+'</button>'
+        +'<button class="sp-scale" data-s="model" style="'+SEG+'">'+L('Model scale','モデル大','Modellmaßstab','Модельный масштаб','Escala modelo')+'</button>'
         +'</span>'
+        /* (#R207) 「軌道をオンオフしたりできるように。また、各惑星の地名ラベルをオンオフできるように。」
+           State switches, lit from the state by refreshChrome — same language as the scale segments. */
+        +'<button class="sp-orbits" style="'+BTN+'">'+L('Orbits','軌道','Bahnen','Орбиты','Órbitas')+'</button>'
+        +'<button class="sp-names" style="'+BTN+'">'+L('Place names','地名','Ortsnamen','Названия','Topónimos')+'</button>'
         +'<span style="flex:1 1 8px;"></span>'
         +'<span class="sp-clock" style="font-size:11.5px;color:#e8e8e8;font-variant-numeric:tabular-nums;"></span>'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
@@ -666,9 +710,20 @@ window.IntMapModules.space=function(HOST){
     function refreshChrome(){
       if(!root) return;
       /* this runs on every clock tick; nothing below is worth a DOM write when nothing moved */
-      const sig=scale+'|'+live+'|'+rate;
+      const sig=scale+'|'+live+'|'+rate+'|'+showOrbits+'|'+showNames+'|'+mode;   /* (#R207) */
       if(sig===refreshChrome._sig) return;
       refreshChrome._sig=sig;
+      /* (#R207) the two new switches. "Place names" belongs to the body view, so in the system view
+         it is shown disabled rather than removed — a control that vanishes reads as a bug. */
+      const litOn=(b,on)=>{ if(!b) return;
+        b.style.background=on?'rgba(255,210,63,0.20)':'rgba(255,255,255,0.06)';
+        b.style.borderColor=on?'rgba(255,210,63,0.65)':'rgba(255,255,255,0.22)';
+        b.style.color=on?'#ffe9a8':'#f2f2f2'; };
+      litOn(root.querySelector('.sp-orbits'),showOrbits);
+      const nb=root.querySelector('.sp-names');
+      litOn(nb,showNames);
+      if(nb){ const usable=(mode==='body'); nb.style.opacity=usable?'1':'0.45'; nb.title=usable?'':
+        S(L('Place names are drawn on a body — open one from the list','地名は天体の表面に描かれます（左の一覧から天体を開いてください）','Ortsnamen werden auf einem Körper gezeichnet','Названия рисуются на теле','Los topónimos se dibujan sobre un cuerpo')); }
       root.querySelectorAll('.sp-scale').forEach(b=>{
         const on=(b.getAttribute('data-s')===scale);
         b.style.background=on?'#fff':'transparent';
@@ -797,13 +852,36 @@ window.IntMapModules.space=function(HOST){
     }
     /* the bodies that carry IAU nomenclature — the panel says so rather than leaving a silent blank */
     function maxNames(){ return names&&names[focus]?names[focus].length:0; }
+    /* ══ (#R207) SWITCHING THE SCALE MUST NOT MOVE THE VIEWPOINT ═══════════════════════════════════
+       「実寸大とモデル大を切り替えると視点位置が変な場所に飛ばされるのを辞めて。」
+
+       The two scales are two different unit systems — `posScale` maps an AU to a scene unit by a
+       power law in one and by identity in the other — and `dist` is a length IN SCENE UNITS. So the
+       switch was doing two things at once: changing the units and then throwing the camera to the
+       default framing of the new ones. What the user is holding is not a number of units, it is a
+       FRAMING: "this much of the solar system fills the screen". That is `dist / systemDist()`, and
+       it is the thing that is carried across.
+       ⚠ Recomputed from `systemDist()` BEFORE and AFTER the switch rather than from a conversion
+       factor, because `systemDist()` is the one place that knows what each scale considers "the whole
+       system" (it reads Neptune in one and Pluto in the other). */
     function setScale(s){
-      scale=(s==='real')?'real':'model';
+      const want=(s==='real')?'real':'model';
+      if(want===scale) return true;
+      const before=systemDist();
+      scale=want;
       for(const k of Object.keys(orbitCache)){ gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
-      if(mode==='system') dist=systemDist();
+      if(mode==='system'){
+        const after=systemDist();
+        const k=(isFinite(before)&&before>0&&isFinite(after)&&after>0)?(after/before):1;
+        const d=dist*k;
+        dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(1e4,d)):after;
+      }
       refreshHUD();
       return true;
     }
+    /* (#R207) the two display switches — public so Atlas can drive them like every other control */
+    function setOrbits(v){ showOrbits=!!v; refreshHUD(); return showOrbits; }
+    function setNames(v){ showNames=!!v; refreshHUD(); return showNames; }
     function setWhen(d){
       const v=(d instanceof Date)?+d:+new Date(d);
       if(!isFinite(v)) return false;
@@ -849,6 +927,9 @@ window.IntMapModules.space=function(HOST){
       root.querySelector('.sp-close').onclick=()=>close();
       root.querySelector('.sp-mode').onclick=()=>setMode(mode==='system'?'body':'system');
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
+      /* (#R207) */
+      { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }
+      { const nb=root.querySelector('.sp-names'); if(nb) nb.onclick=()=>setNames(!showNames); }
       root.querySelector('.sp-live').onclick=()=>setLive();
       root.querySelector('.sp-play').onclick=()=>{ if(live){ live=false; timeMs=Date.now(); }
         playing=!playing; if(playing&&!rate) rate=86400; lastTick=0; refreshHUD(); };
@@ -967,18 +1048,58 @@ window.IntMapModules.space=function(HOST){
     const OVER_DECAY=900;            /* ms of no input after which the gesture has stopped */
     let over=0, overAt=0, gauge=null, gaugeFill=null, wiredMap=false, pinchD=0;
 
+    /* ══ (#R207) THE CENTRE OF THE MAP IS NOT THE CENTRE OF THE WINDOW ═════════════════════════════
+       「さらにズームアウトで宇宙への文字は地図空間の中央下に。現在はサイドバー開時にも絶対的な中央下の
+        位置に配置されている。」
+
+       Since #R160 the sidebars OVERLAY a map that stays full-width, so `left:50%` is the middle of the
+       window and the middle of the map only when nothing is open. With the sidebar out, the caption
+       sits under it or beside it — never in the middle of what the user is actually looking at.
+       So the midpoint is MEASURED: the map's own box minus whatever panels are currently covering its
+       edges. Recomputed each time the gauge is shown, because the sidebar can open while it is up. */
+    function mapMidX(){
+      try{
+        const mc=document.getElementById('map-container');
+        const r=mc?mc.getBoundingClientRect():{left:0,right:(window.innerWidth||0)};
+        let l=r.left, rr=r.right;
+        /* every panel that OVERLAYS the map and is actually on screen eats into it from its own side */
+        ['#sidebar','#layer-sidebar-r','.mobile-sheet.open'].forEach(sel=>{
+          try{ const el=document.querySelector(sel); if(!el) return;
+            const cs=getComputedStyle(el);
+            if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0) return;
+            const b=el.getBoundingClientRect();
+            if(b.width<=1||b.height<=1) return;
+            /* a panel that does not reach into the map's box is not covering it */
+            if(b.right<=l||b.left>=rr) return;
+            const midEl=(b.left+b.right)/2, midMap=(l+rr)/2;
+            if(midEl<midMap) l=Math.max(l,b.right); else rr=Math.min(rr,b.left);
+          }catch(_){}
+        });
+        if(rr-l<120){ l=r.left; rr=r.right; }   /* everything covered → fall back to the whole map */
+        return (l+rr)/2;
+      }catch(_){ return (window.innerWidth||0)/2; }
+    }
     function ensureGauge(){
       if(gauge) return gauge;
       gauge=document.createElement('div'); gauge.id='space-approach';
-      gauge.style.cssText='position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:1250;'
+      /* ⚠ (#R207) …AND IT IS A PILL, IN BOTH THEMES. 「ライトモードの時に視認性が悪いので、ダーク/
+         ライトモードともにピルで包んで。」 The caption was pale blue text with a shadow — legible over a
+         night sky, invisible over a white basemap, which is exactly the view a light-mode user zooms
+         out of. Wrapped in the app's own card surface so it carries its own contrast either way. */
+      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:1250;'
         +'pointer-events:none;opacity:0;transition:opacity 180ms ease;display:flex;flex-direction:column;'
-        +'align-items:center;gap:6px;font-size:12px;font-weight:700;color:#dce6ff;text-shadow:0 1px 6px rgba(0,0,0,0.8);';
+        +'align-items:center;gap:6px;font-size:12px;font-weight:700;'
+        +'padding:9px 16px 11px;border-radius:999px;'
+        +'color:var(--text-main,#dce6ff);background:var(--card-bg,rgba(18,22,32,0.9));'
+        +'border:1px solid var(--glass-border,rgba(128,128,128,0.28));'
+        +'box-shadow:0 8px 26px rgba(0,0,0,0.28);'
+        +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);';
       const cap=document.createElement('div');
       cap.textContent=L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio');
       const bar=document.createElement('div');
-      bar.style.cssText='width:132px;height:4px;border-radius:99px;background:rgba(140,180,255,0.25);overflow:hidden;';
+      bar.style.cssText='width:132px;height:4px;border-radius:99px;background:rgba(128,150,190,0.28);overflow:hidden;';
       gaugeFill=document.createElement('div');
-      gaugeFill.style.cssText='height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#6ea8ff,#cfe0ff);';
+      gaugeFill.style.cssText='height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--primary-color,#6ea8ff),#cfe0ff);';
       bar.appendChild(gaugeFill); gauge.appendChild(cap); gauge.appendChild(bar);
       document.body.appendChild(gauge);
       return gauge;
@@ -986,6 +1107,7 @@ window.IntMapModules.space=function(HOST){
     function paintGauge(){
       if(!over){ if(gauge) gauge.style.opacity='0'; return; }
       const g=ensureGauge();
+      g.style.left=Math.round(mapMidX())+'px';   /* (#R207) */
       g.style.opacity='1';
       gaugeFill.style.width=Math.round(100*Math.min(1,over/OVER_TRIGGER))+'%';
     }
@@ -1091,7 +1213,23 @@ window.IntMapModules.space=function(HOST){
        at least as big as the map's own globe would be at its minimum zoom — which is the size the map
        will come back at. Below that there is genuinely nowhere further in to go, so the old floor
        remains as the second way of satisfying it. */
+    /* ══ (#R207) THE WAY BACK IS THE EARTH'S, AND ONLY THE EARTH'S ═════════════════════════════════
+       「月を拡大したら地球に戻ってしまうのはおかしい。」
+
+       Every test in here is about the EARTH — `earthRadiusPx()` against the radius the map would be
+       handed back at — but nothing checked what the camera was actually looking at. Focus the Moon
+       (or Mars, or Saturn) and zoom in: the Earth is a few scene units away, so its on-screen radius
+       grows with exactly the same gesture, crosses the handover size, and the app leaves space and
+       drops the user on the map. The other half is worse: `dist<=distFloor()*1.02` returns true at
+       the floor for ANY focus, so a deep zoom on any body ended on the world map.
+
+       Handing the map back is a statement that the sphere filling the screen IS the map's globe. That
+       is true when the Earth is the body being approached and false otherwise, so that is the test.
+       A body that is not the Earth simply zooms up to the floor and stays there, which is what
+       「拡大」 asked for. ✕ and Escape are unchanged and still leave from anywhere. */
+    function earthIsSubject(){ return focus==='earth'; }
     function atNearLimit(){
+      if(!earthIsSubject()) return false;
       if(dist<=distFloor()*1.02) return true;
       const r=earthRadiusPx(), m=handoverRadiusPx();
       return !!(r>0&&m>0&&r>=m);
@@ -1171,6 +1309,7 @@ window.IntMapModules.space=function(HOST){
     return {
       open:openView, close, mount,
       setBody:setFocus, setMode, setScale, setWhen, setLive, setRate,
+      setOrbits, setNames, orbits:()=>showOrbits, names:()=>showNames,   /* (#R207) */
       isOpen:()=>open, atFloor,
       bodies:()=>BODIES.slice(),
       /* the two gesture integrals, exposed so a test can drive them without synthesising wheel events

@@ -43,22 +43,35 @@ test.describe('R196 ① the epicentre, on a phone', () => {
     for (const [x, y] of [[195, 480], [120, 620]]) {
       await page.click('#sq-panel .sq-pick');
       await page.waitForTimeout(350);
+      /* ⚠ (#R207) THIS ASSERTED THE MECHANISM, NOT THE MEASUREMENT. What #R196 measured is that the
+         tap point is the CANVAS — that the panel is not standing between the user and the map — and
+         the way it achieved that was to set `display:none`. 「震源地を設置ボタンを押すとポップアップ
+         が消えるのは不要」: #R207 keeps the panel on screen and takes it out of HIT-TESTING instead,
+         so `elementsFromPoint` at the tap point still returns the canvas while the panel is still
+         readable. The premise above (the panel covers >50 % of a phone map) is unchanged, and so is
+         the assertion below it; what changes is that "out of the way" now means untouchable rather
+         than invisible. */
       const mid = await page.evaluate(([px, py]) => {
+        const p = document.getElementById('sq-panel');
         const e = document.elementsFromPoint(px, py)[0];
         return {
-          panelHidden: document.getElementById('sq-panel').style.display === 'none',
+          panelStepsAside: getComputedStyle(p).pointerEvents === 'none' || p.style.display === 'none',
+          panelVisible: p.style.display !== 'none',
           barShown: !!document.getElementById('im-pick-bar') && getComputedStyle(document.getElementById('im-pick-bar')).display !== 'none',
           top: e ? e.tagName + '.' + String(e.className).slice(0, 24) : 'none',
         };
       }, [x, y]);
-      expect(mid.panelHidden, 'the panel is out of the way while the pick is live').toBe(true);
+      expect(mid.panelStepsAside, 'the panel is out of the way of the pointer while the pick is live').toBe(true);
+      expect(mid.panelVisible, '…without disappearing (#R207)').toBe(true);
       expect(mid.barShown, 'and a banner says what is being placed').toBe(true);
       expect(mid.top, 'so the tap point really is the map').toContain('CANVAS');
 
       await page.mouse.click(x, y);
       await page.waitForTimeout(900);
-      const st = await page.evaluate(() => ({ epi: window.IntMapSeismic.state().epi, panel: document.getElementById('sq-panel').style.display }));
-      expect(st.panel, 'and the panel comes straight back').toBe('flex');
+      const st = await page.evaluate(() => { const p = document.getElementById('sq-panel');
+        return { epi: window.IntMapSeismic.state().epi, pe: getComputedStyle(p).pointerEvents, disp: p.style.display }; });
+      expect(st.pe, 'and the panel is touchable again straight away').not.toBe('none');
+      expect(st.disp, 'and it never left').not.toBe('none');
       seen.push(st.epi.map((v) => +v.toFixed(3)));
     }
     /* ⚠ THE ASSERTION. Two different taps must give two different epicentres — before this round the

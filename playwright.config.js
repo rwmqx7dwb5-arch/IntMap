@@ -75,7 +75,14 @@ export default defineConfig({
     ],
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,          // soften transient CDN/network blips in CI; local runs fail fast
+  // ══ (#R207) TWO RETRIES IS THREE RUNS OF EVERY TEST THAT IS GOING TO FAIL ═════════════════════
+  // 「毎回毎回、テストに時間がかかりすぎ…実装部分以外の、テスト時間全体が長い。」
+  // A retry budget is paid ONLY by failures, and the wall clock of a CI job is set by its slowest
+  // shard — which, when something is flaking, is the shard running that test three times. The
+  // measured flake in this suite is a transient CDN/network blip (#R186), and a blip is cleared by
+  // ONE retry: the second attempt either passes (blip) or fails again (regression). The third
+  // attempt has never been the one that changed the answer; it has only ever changed the duration.
+  retries: isCI ? 1 : 0,          // local runs fail fast
   // one browser per machine for the Cesium half — contention is exactly what it fails on
   // ⚠ (#R195) …AND THE LOCAL DEFAULT IS 2, WRITTEN DOWN RATHER THAN REMEMBERED. `undefined` gave
   // Playwright's default of half the CPU cores, and at that width this machine produces failures that

@@ -150,6 +150,46 @@ window.IntMapWorldBase=(function(){
     });
   }
 
+  /* ══ (#R207) THE MERCATOR CAPS ARE NOT A TILE THAT FAILED — THERE IS NO SUCH TILE ═══════════════
+     「MapLibreで南極付近が衛星画像零の暗黒領域になっている。」
+
+     Web Mercator stops at ±85.0511°; MapLibre's globe draws the Earth to ±90°. Everything in this
+     app's style is Mercator — Esri's imagery, the Carto base map, and this floor, which is a Mercator
+     RASTER SOURCE even though the picture behind it is equirectangular. So the two caps are covered by
+     no layer at all, and the app's style has NO `background` layer (verified: nothing in js/ declares
+     one), which leaves the renderer's clear colour. That is the black.
+
+     Cesium already gets the whole-globe answer — js/cesium-engine.js hands it THIS picture as a single
+     equirectangular imagery layer, which does reach ±90°. MapLibre cannot take that shape, so the cap
+     gets the one thing a Mercator style can put under everything: a background layer, coloured with
+     the colour that is ACTUALLY THERE, measured from the top and bottom rows of the shipped picture
+     rather than picked by eye. Both caps are ice, so one colour is honest for both; it is sampled
+     from the tone-matched canvas, so it also matches the Esri tiles the floor was matched to (#R190).
+
+     ⚠ IT IS ONLY EVER VISIBLE AT THE CAPS. The floor above covers every Mercator tile from the first
+     frame (#R186), so this cannot re-introduce a coloured flash anywhere else. */
+  let capRGB=null;
+  function polarColour(){
+    if(capRGB) return Promise.resolve(capRGB);
+    return source().then(im=>{
+      try{
+        const w=im.naturalWidth||im.width, h=im.naturalHeight||im.height;
+        const cv=document.createElement('canvas'); cv.width=Math.min(64,w); cv.height=2;
+        const g=cv.getContext('2d',{willReadFrequently:true});
+        /* the top row of the picture is 90°N and the bottom row 90°S — one output row each */
+        g.drawImage(im,0,0,w,Math.max(1,Math.round(h*0.012)),0,0,cv.width,1);
+        g.drawImage(im,0,h-Math.max(1,Math.round(h*0.012)),w,Math.max(1,Math.round(h*0.012)),0,1,cv.width,1);
+        const d=g.getImageData(0,0,cv.width,2).data;
+        let r=0,gg=0,b=0,n=0;
+        for(let i=0;i<d.length;i+=4){ r+=d[i]; gg+=d[i+1]; b+=d[i+2]; n++; }
+        if(!n) throw new Error('no pixels');
+        const hex=(v)=>('0'+Math.max(0,Math.min(255,Math.round(v/n))).toString(16)).slice(-2);
+        capRGB='#'+hex(r)+hex(gg)+hex(b);
+      }catch(_){ capRGB='#e9edf2'; }   /* polar ice, if the canvas cannot be read (tainted/blocked) */
+      return capRGB;
+    }).catch(()=>{ capRGB='#e9edf2'; return capRGB; });
+  }
+
   let protoOn=false;
   function registerProtocol(){
     if(protoOn) return true;
@@ -210,14 +250,32 @@ window.IntMapWorldBase=(function(){
          renderer without one simply returns false and nothing here depends on it. */
       try{ if(GE().scene.setWorldBase) GE().scene.setWorldBase(!!satOn); }catch(_){}
       if(satOn&&!GE().layers.has(LYR)) install();
+      try{ applyCap(!!satOn); }catch(_){}                      /* (#R207) the ±85°–90° caps */
       if(!GE().layers.has(LYR)) return false;
       GE().layers.setLayout(LYR,'visibility',satOn?'visible':'none');
       return true;
     }catch(_){ return false; }
   }
 
+  /* (#R207) show / recolour the cap background. The LAYER ITSELF is declared as the first entry of
+     the style in js/app-body.js — a background layer must be at the very bottom, and declaring it
+     there is the only way that is guaranteed rather than arranged at runtime (the engine contract has
+     no "list the layers in order", and a guard on a method that does not exist is a silent no-op for
+     ever — #R200). This module owns only its visibility and its colour. */
+  const CAP='layer-polar-cap';
+  function applyCap(satOn){
+    if(!GE().hasRenderer()||!GE().canDraw()) return false;
+    if(!GE().layers.has(CAP)) return false;
+    try{ GE().layers.setLayout(CAP,'visibility',satOn?'visible':'none'); }catch(_){ return false; }
+    if(!satOn) return false;
+    /* the measured colour arrives with the picture; until then the layer stands in ice-white, which
+       is already the right order of magnitude and never black */
+    polarColour().then(c=>{ try{ if(GE().layers.has(CAP)) GE().layers.setPaint(CAP,'background-color',c); }catch(_){} }).catch(()=>{});
+    return true;
+  }
+
   return {
-    url, bitmapUrl, install, apply, registerProtocol,
+    url, bitmapUrl, install, apply, registerProtocol, polarColour, applyCap,
     /* pre-decode the picture so the first tile request is a canvas copy and not a download */
     warm:()=>source().catch(()=>null),
     state:()=>({ ready:!!img, failed, tilesMade:made, protocol:protoOn, toned:!!(img&&img.getContext),

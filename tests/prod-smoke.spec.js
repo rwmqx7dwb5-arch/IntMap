@@ -137,6 +137,28 @@ test('prod layer UI initialised and screen not blank', async () => {
   expect(text.length).toBeGreaterThan(20);
 });
 
+/* (#R207) 「初回時にはmapではなくsatelliteに。3Dはオフ。」 — asserted against the DEPLOYED site, because
+   this is a default and a default is exactly the kind of thing that survives a local test and gets
+   lost in a build. Asked of the renderer (which layer is painting) and of the control, not of a
+   module-private variable. */
+test('(#R207) prod opens on the satellite basemap, with 3-D off', async () => {
+  await page.waitForFunction(() => {
+    try { return window.__imap.getLayoutProperty('layer-sat', 'visibility') === 'visible'; } catch { return false; }
+  }, null, { timeout: 30_000 });
+  const seen = await page.evaluate(() => ({
+    satVisible: window.__imap.getLayoutProperty('layer-sat', 'visibility'),
+    satActive: !!document.getElementById('btn-view-sat')?.classList.contains('active'),
+    terrain: !!window.__imap.getTerrain(),
+    capFirst: (window.__imap.getStyle().layers[0] || {}).id,
+  }));
+  expect(seen.satVisible, 'the satellite layer is the one painting').toBe('visible');
+  expect(seen.satActive, 'and the Satellite segment is lit').toBe(true);
+  expect(seen.terrain, '3-D terrain is not attached').toBe(false);
+  /* and the polar-cap floor shipped with it — 「南極付近が衛星画像零の暗黒領域」 */
+  expect(seen.capFirst, 'the polar-cap background is beneath everything').toBe('layer-polar-cap');
+  console.log(`[prod-smoke] basemap=satellite · terrain=off · bottom layer=${seen.capFirst}`);
+});
+
 test('prod exposes a build identifier', async () => {
   // Version identification (§7.3): the live page must report which build is serving.
   const build = await page.evaluate(() => window.INTMAP_BUILD || null);
@@ -330,6 +352,14 @@ test('(#R179) prod base map serves the pixels the display asks for', async ({ br
       await p2.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       await p2.waitForFunction(() => !!window.__imap, null, { timeout: 60_000 });
       await p2.waitForTimeout(4000);
+      /* ⚠ (#R207) ASK FOR THE BASE MAP — 「初回時にはmapではなくsatelliteに」 means it is no longer
+         what a fresh session opens on, and everything below reads the VISIBLE Carto layer. This test
+         is about the base map's tile density, not about which basemap production defaults to (that is
+         asserted separately), so it selects it rather than inheriting it. Caught by running this file
+         against LIVE production BEFORE merging the change: 16/16 green, and this is the one that
+         would have gone red fifteen minutes after the deploy. */
+      await p2.evaluate(() => document.getElementById('btn-view-map')?.click());
+      await p2.waitForTimeout(3500);
       const decision = await p2.evaluate(() => window.__imHiDPITiles);
       expect(decision, `the one HiDPI decision at dpr ${dsf}`).toBe(dsf >= 1.5);
       /* WHICH Carto requests are the map's is asked of the live style. The layer panel's preview

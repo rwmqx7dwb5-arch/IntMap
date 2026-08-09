@@ -1395,6 +1395,12 @@ js/
                                     レガシー辞書フォールバック・`rebuildGeoIndex`・媒体マッチャ）。16KB
   news-feed.js                      (#R169) ニュース取得（版・RSS取り込み・キャッシュ・Supabase高速経路・
                                     タイトル翻訳）。18KB
+  news-sources.js                   (#R207) 「どのニュースを取るか」の2つのピッカー＝**国別メディア**（#29）と
+                                    **提供元（媒体）**。提供元の一覧は表ではなく**いま届いている見出しの
+                                    `publisher` から**組み立てる（空＝全部）。`window.IntMapNewsSources`
+                                    ＝ `counts/allows/label/render/commit/syncLabel` ＋
+                                    `renderCountries/commitCountries/countryLabel/syncCountryLabel`。
+                                    ⚠ `NEWS_COUNTRY_FEEDS` は**引数で受け取る**（自由参照は無言のno-op）。7KB
   article-reader.js                 (#R169) サイドバー内リーダー。**#R11 以降どこからも呼ばれていない**
                                     （ファイル冒頭に所見を明記。再配線するか削除するかは製品判断）。8KB
   community-board.js                (#R169) コミュニティ板の中身（カード/スレッド/コメントのHTML・投稿モーダル・
@@ -2449,6 +2455,31 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R207 補足（既定は衛星／極冠の床／クリックの順位／同梱カタログのグループ／門の値段）
+
+**既定の基図は衛星、3Dはオフ。** `js/app-body.js` の `currentMapType` は `'sat'`。この値は **どこにも永続化
+されていない**（`intmap_settings` に書きも読みもしない）ので、リテラルがそのまま毎回の初期状態。⚠ 永続化は
+**足していない** — 押しただけの操作を「利用者の選択」として記録するのは #R188 の穴。`terrain3D` は既定 `false`。
+
+**極冠の床＝`layer-polar-cap`（`background`）。** Web Mercator は ±85.0511° で終わり globe は ±90° まで描くので、
+極冠はどのラスタ源も届かない。スタイル配列の**先頭**に宣言（background は最下段でないと地図を覆う）。
+所有者は `js/world-base.js`：`applyCap(satOn)` が可視性を、`polarColour()` が**同梱 Blue Marble の極の行から
+測った色**を与える。Cesium 側は #R187 で全球1枚を敷いて解決済み（同じ問いに同じ絵）。
+
+**クリックの順位＝「地名ラベルは最下位」。** MapLibre はレイヤーごとの `click` を順位なしで全部に配る。
+`js/geo-engine.js` の契約が `onLayer('click',…)` の登録を全部記録し（`events.clickLayers()`）、
+`js/map-ui.js` の `_ownedByOther(pt)` が「自分以外の押せるレイヤーがこの点にあるか」を答える。
+⚠ ラベル同士は除外（でないとどのラベルも押せない）。3経路すべて（レイヤー別・地形/水域・パディング付き代替）に適用。
+
+**同梱衛星カタログはどのカテゴリにも答える。** `scripts/build-tle-snapshot.mjs` が `data/tle/groups.json`
+（CelesTrak グループ→NORAD番号）も書き、`js/satellites-live.js` は `ingestTLE(text,want,only)` で同梱
+`active` を絞る。⚠ **一覧が無いグループは「空」ではなく省略** — 空配列は「何も無い」という主張になる。
+
+**門（毎回走るテスト）の値段は1秒。** `scripts/tiers.mjs` の `CORE_MAX_S` = 1。アプリを起動する spec は
+誰も払えないので、門は**常設4本（smoke/security/internal-qa/monitors）＋そのラウンド自身**だけ。
+そして #R207 は **spec ファイルを足していない** — browser 側の表明は `tests/smoke.spec.js` の末尾に置いた
+（実測：R207 の6件を足して 29.6秒 → 29.2秒。**表明はタダで起動が全額**）。CI の deep 層は push では走らない。
 
 ### #R205 補足（クリックの持ち主／不透明な名前／明るい面の大気／ズーム掃引のタイル／震源の実測海底）
 

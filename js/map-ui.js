@@ -729,11 +729,37 @@ window.IntMapModules.labelPopup=function(HOST){
        have no single point, so those keep the click position. */
     function labelAnchor(f,e){ try{ const g=f&&f.geometry; if(g&&g.type==='Point'&&Array.isArray(g.coordinates)){ let lng=+g.coordinates[0]; const lat=+g.coordinates[1];
       if(isFinite(lng)&&isFinite(lat)){ try{ const c=e&&e.lngLat?e.lngLat.lng:lng; while(lng-c>180) lng-=360; while(lng-c<-180) lng+=360; }catch(_){} return {lng,lat}; } } }catch(_){} return e.lngLat; }
-    function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
+    /* ══ (#R207) A PLACE LABEL IS THE LOWEST-PRIORITY CLICK TARGET ═════════════════════════════════
+       「地図上の他のものをクリックした際は、その下にある地名ラベルを同時にクリックした判定になることがある
+        から、そうならないように。」
+
+       MapLibre delivers a click to EVERY per-layer handler whose feature is under the pointer, in no
+       particular order and with no notion of "on top". So a tap on a volcano, a quake, a live plane,
+       a user pin, a news dot or a community marker also reached the city name drawn beneath it, and
+       two things opened at once. #R122 fixed the same collision in the other direction (a label tap
+       was also toggling the Köppen zone) by asking whether a label was under the point; this is that
+       question turned around, and it is answered from the engine's own registry of click-wired layers
+       (`events.clickLayers`) rather than from a hand-written list that every later round would have to
+       remember to extend.
+
+       ⚠ ONLY LAYERS THAT ARE NOT LABELS COUNT. The label layers are click-wired too, and a label
+       yielding to another label would mean no label is ever clickable. */
+    function _ownedByOther(pt){
+      try{
+        if(!pt||!GE().hasRenderer()) return false;
+        const all=(GE().events.clickLayers?GE().events.clickLayers():[])
+          .filter(id=>ALL_LBL.indexOf(id)<0)
+          .filter(id=>{ try{ return !!GE().layers.get(id)&&GE().layers.getLayout(id,'visibility')!=='none'; }catch(_){ return false; } });
+        if(!all.length) return false;
+        const hit=GE().coords.queryRenderedFeatures(pt,{layers:all});
+        return !!(hit&&hit.length);
+      }catch(_){ return false; }
+    }
+    function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       showPopup(labelAnchor(e.features[0],e),name,isCountry); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
-    function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; const f=e.features[0]; const p=f.properties||{};
+    function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
       showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true}); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
@@ -755,6 +781,9 @@ window.IntMapModules.labelPopup=function(HOST){
       /* clicking the map away from any label clears the highlight */
       GE().events.on('click',(e)=>{ try{
         const ls=ALL_LBL.filter(id=>GE().layers.get(id)); if(!ls.length) return;
+        /* (#R207) the padded fallback below is a SECOND way into the same popup, so it needs the same
+           rule — a tap that landed on a marker must not open the nearest place name instead. */
+        if(_ownedByOther(e.point)){ clearHL(); return; }
         const hit=GE().coords.queryRenderedFeatures(e.point,{layers:ls});
         if(hit.length) return;   /* exact glyph hit → the per-layer onLabel handler already opened the popup */
         /* (#R23) PADDED hit-box: a finger tap almost never lands on the exact label glyph, so the popup

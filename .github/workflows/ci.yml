@@ -137,10 +137,24 @@ jobs:
   # Eight machines: the same measured packing as before, over a pool that is now the heavy half. The
   # `cesium` pool still gets one worker per machine — #R186 measured that contention is what those
   # specs fail on, and tests/durations.json still says so as data (`solo`).
+  # ══ (#R207) …AND NOT ON EVERY PUSH ═════════════════════════════════════════════════════════════
+  # 「毎回毎回、テストに時間がかかりすぎ。…実装部分以外の、テスト時間全体が長い。どこを削ってほしいなど
+  #   のこだわりはない。テスト時間が短くなりさえすればなんでもいい。」
+  #
+  # MEASURED: the CI run for the #R206 merge took 14m04, and the core gate inside it took ~4. The
+  # other ten minutes are this job — 4,699 s of measured serial time over eight machines — which
+  # #R203 attached to `push` as well as to the nightly so that a regression surfaced "~15 minutes
+  # after the merge rather than the next morning". That is a real benefit and it is bought at the
+  # price of making EVERY merge a fourteen-minute wait, which is the wait being complained about.
+  #
+  # So it runs on the schedule and on demand, and no longer on push. Nothing is deleted: every
+  # assertion still runs every night, `npm run test:deep` still runs it locally, and the dispatch
+  # button still runs it on a branch — which is what #R205's note already tells a round touching
+  # 3-D, Cesium or the simulators to do BEFORE opening its PR.
   browser-deep:
     name: Deep ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
