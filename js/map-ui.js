@@ -361,8 +361,11 @@ window.IntMapModules.layerSidebar=function(HOST){
       rows.forEach(r=>{ const secName=r.sec||basics;
         if(secName!==curSec){ curSec=secName;
           /* (#R101) default the beta section CLOSED, detected by the header's data-i18n (robust across languages) */
-          /* (#R108) "Base map & labels" also defaults CLOSED per request (kept openable + remembered per session). */
-          if(!(secName in _secClosed)) _secClosed[secName]=(!!r.secBeta || _isBeta(secName) || secName===basics);
+          /* (#R108) "Base map & labels" also defaults CLOSED per request (kept openable + remembered per session).
+             ⚠ (#R210) REVERSED, by a later instruction: 「レイヤー欄の基本表示は、デフォルトでは今まで
+             折りたたまれていましたが、今後はデフォルトでは開いた状態に。」 Only `basics` changes — the
+             beta group still starts closed (#R72/#R101), and both are still remembered per session. */
+          if(!(secName in _secClosed)) _secClosed[secName]=(!!r.secBeta || _isBeta(secName));
           const closed=!!_secClosed[secName];
           const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
           const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
@@ -444,7 +447,13 @@ window.IntMapModules.layerSidebar=function(HOST){
          closed, so a user who had it open lost it on every reload. It re-opens only when the last
          session actually ended with it open — a first visit still boots closed, which is the
          behaviour the line below was written for and the one nobody asked to change. */
-      if(window._imSessionUI&&window._imSessionUI.right===true&&!isMob()) open();
+      /* ⚠ (#R210) …AND A FIRST VISIT NOW BOOTS IT OPEN. The note above says a first visit stays
+         closed and that nobody asked to change it; 「初回時は、右サイドバーも開かれた状態にして。」 is
+         that ask. Only the FIRST visit changes: a returning user who closed the panel saved
+         `right:false`, and that still wins — the new case is the one where there is no saved answer
+         at all. Mobile is unchanged (the panel is an overlay there, opened by the layer button). */
+      { const ui=window._imSessionUI; const unanswered=!ui||typeof ui.right!=='boolean';
+        if(!isMob()&&(unanswered||ui.right===true)) open(); }
     } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was

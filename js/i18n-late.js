@@ -32,7 +32,7 @@ export function makeI18nLate(HOST, CTX) {
     /* (#R171) tilt ceiling + viewpoint altitude */
     lblTiltLimit:"Map tilt limit", tiltStandard:"Standard — up to 78° (default)", tiltUnlimited:"Unlimited — the full 0–180° range",
     tiltHint:"Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.",
-    lblEyeAlt:"Viewpoint altitude in the readout", eyeAltOff:"Off (default)", eyeAltOn:"On — show the camera's altitude",
+    lblEyeAlt:"Viewpoint altitude in the readout", eyeAltOff:"Off (default)", eyeAltOn:"On — show the camera's altitude", lblNightSide:"Day & night shading", nightSideOn:"On (default) — darken the night side & show city lights", nightSideOff:"Off — one evenly lit globe",
     lblNewsCountries:"News by country media", newsCountriesHint:"Pull headlines from the media of the countries you pick (multiple allowed).",
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
@@ -52,7 +52,7 @@ export function makeI18nLate(HOST, CTX) {
     /* (#R171) 傾きの上限・視点高度 */
     lblTiltLimit:"地図の傾きの制限", tiltStandard:"標準 — 78°まで（既定）", tiltUnlimited:"無制限 — 0〜180°の全範囲",
     tiltHint:"無制限にすると、地平線を越えて真上を向くところまで倒せます。180°を超えた角度は方位を反転した同じ視線になるため、方位磁針を右クリックすれば0〜360°の任意の角度を数値で指定できます。",
-    lblEyeAlt:"常時表示欄に視点の高度", eyeAltOff:"オフ（既定）", eyeAltOn:"オン — 視点位置の高度を表示",
+    lblEyeAlt:"常時表示欄に視点の高度", eyeAltOff:"オフ（既定）", eyeAltOn:"オン — 視点位置の高度を表示", lblNightSide:"昼夜の表示", nightSideOn:"オン（既定） — 夜側を暗くし夜間光を表示", nightSideOff:"オフ — 全体を一様に明るく",
     lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国のメディアの見出しを取得します（複数選択可）。",
     lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
     screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",

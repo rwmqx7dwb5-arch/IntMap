@@ -2896,7 +2896,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){}
     /* (#R171) tilt ceiling + viewpoint-altitude readout reflect the SAVED state (each subsystem owns it) */
     try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) tl.value=window.IntMapTilt.isUnlimited()?'unlimited':'standard';
-      const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; }catch(_){}
+      const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; const ns=document.getElementById('setting-night-side'); if(ns&&window.IntMapNightSide&&window.IntMapNightSide.isOn) ns.value=window.IntMapNightSide.isOn()?'on':'off'; }catch(_){}   /* (#R210) 昼夜表示 */
     /* (#R180) the ENGINE, and — separately — the engine actually running. Those are two
        facts and conflating them is exactly how a silent fallback hides (#R162): Cesium can
        fail to load (no WebGL2, a blocked chunk, an offline first visit) and the session then
@@ -2944,7 +2944,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){}
     /* (#R171) tilt ceiling + viewpoint altitude — both take effect immediately and persist themselves */
     try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) window.IntMapTilt.set(tl.value==='unlimited'); }catch(_){}
-    try{ const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) window.IntMapEyeAlt.set(ea.value==='on'); }catch(_){}
+    try{ const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) window.IntMapEyeAlt.set(ea.value==='on'); const ns=document.getElementById('setting-night-side'); if(ns&&window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){}   /* (#R210) 昼夜表示 */
     /* (#R180) …and the ENGINE, which is the one setting that cannot take effect immediately:
        a scene cannot be moved from one renderer to another once its sources, layers, markers
        and camera hooks exist. So it is stored and the page reloads — announced, never silent,
