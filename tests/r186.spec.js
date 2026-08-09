@@ -302,7 +302,12 @@ test('R186 water: a source outside the working rectangle is not silently dropped
   });
   /* 384 cells over the view, not 256 — the grid was resampling 17 DEM samples into one cell */
   expect(r.nx).toBe(384);
-  expect(r.hasAreaLayer).toBe(true);
+  /* ⚠ (#R211) REVERSED BY A LATER INSTRUCTION — 「水を配置すると謎の点線長方形が出る」. #R186 drew the
+     working rectangle so a click outside it would not look like a broken feature; the OTHER half of
+     that fix (a click outside rebuilds the grid there) is what actually removed the failure, and it
+     is still asserted below and in tests/r176. The box itself is gone, and asserting its ABSENCE is
+     what stops it drifting back. */
+  expect(r.hasAreaLayer).toBe(false);
   /* (#R187) 「一本の補助線はいらない」 — the traced course is drawn as WATER (an image overlay,
      tw-flowimg) and the cyan polyline layer is gone. Asserted as an absence so the line cannot come
      back by accident. */

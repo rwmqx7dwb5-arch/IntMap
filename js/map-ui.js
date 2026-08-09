@@ -971,10 +971,58 @@ window.IntMapModules.viewHash=function(HOST){
        own tab stays clean (the R33 "落ちても通常の初期時に" intent) — WITHOUT the old self=1 marker, so the
        address bar is now itself a complete, copy-and-share link. */
     let firstLoad; try{ firstLoad = (sessionStorage.getItem('intmap_session')!=='1'); sessionStorage.setItem('intmap_session','1'); }catch(_){ firstLoad=null; }
+    /* ══ (#R211) A RELOAD NOW COMES BACK TO WHERE YOU WERE — WITH ONE WAY OUT ══════════════════════
+       「あわせてリロード時にできる限り元の状態へ復帰。」
+
+       ⚠ THIS REVERSES #R33 ON PURPOSE, AND THE REASON #R33 EXISTED IS STILL REAL. #R33 made a reload
+       return to a clean map so that a layer which brings the app down cannot be restored into the
+       same crash on every reload — 「落ちても通常の初期時に」. Simply restoring everything would put
+       that trap back. So the full restore is attempted, and the attempt is RECORDED before it runs:
+       `intmap_restore_try` holds the hash being restored and is cleared once the session has stayed
+       up for six seconds. If a load starts and finds that marker still set for the SAME hash, the
+       previous attempt did not survive, and this one falls back to the view alone.
+       Net effect: a reload reproduces the session; a reload after a crash reproduces the map only. */
+    let crashed=false;
+    try{ const prev=sessionStorage.getItem('intmap_restore_try');
+      crashed=!!(prev&&prev===location.hash&&location.hash); }catch(_){}
+    function markAttempt(h){ try{ sessionStorage.setItem('intmap_restore_try',h||location.hash);
+      setTimeout(()=>{ try{ sessionStorage.removeItem('intmap_restore_try'); }catch(_){} },6000); }catch(_){} }
+
+    /* ══ (#R211) THE SIMULATORS' OWN NUMBERS TRAVEL TOO ═══════════════════════════════════════════
+       「シミュレーションに入力された数値まで共有して同じ状態で開ける。」
+       A registry rather than a list, because the alternative is this file knowing the field names of
+       every simulator — which is the coupling #R178 spent a round removing. A module registers a
+       `get()` that returns a small JSON-able object (or null when it has nothing to say) and a
+       `set(v)` that applies one. Everything registered is packed into ONE `s=` parameter. */
+    const SIMS=Object.create(null); let PENDING=null;
+    window.IntMapShareState={
+      /* ⚠ THE KEY IS THE LAZY-MODULE NAME where the simulator has one. Most of these panels are
+         fetched on demand (#R209), so at restore time the module that owns the state does not exist
+         yet — and a state that silently does not arrive is this project's most expensive recurring
+         defect. So `apply` (a) asks IntMapLazy for the module by that name, and (b) KEEPS the value:
+         whatever registers later gets its own entry handed to it on registration. */
+      register(key,io){ if(!(key&&io&&typeof io.get==='function'&&typeof io.set==='function')) return this;
+        SIMS[key]=io;
+        if(PENDING&&PENDING[key]!==undefined){ try{ io.set(PENDING[key]); }catch(_){} }
+        return this; },
+      collect(){ const o={}; Object.keys(SIMS).forEach(k=>{ try{ const v=SIMS[k].get(); if(v!=null) o[k]=v; }catch(_){} });
+        return Object.keys(o).length?o:null; },
+      apply(o){ if(!o) return; PENDING=Object.assign(PENDING||{},o);
+        Object.keys(o).forEach(k=>{
+          if(SIMS[k]){ try{ SIMS[k].set(o[k]); }catch(_){} return; }
+          try{ const p=window.IntMapLazy&&window.IntMapLazy.need(k); if(p&&p.catch) p.catch(()=>{}); }catch(_){} }); },
+      pending(){ return PENDING; },
+      keys(){ return Object.keys(SIMS); } };
+    /* base64url of the JSON — short enough for an address bar, and opaque so nobody hand-edits it */
+    function packSims(){ try{ const o=window.IntMapShareState.collect(); if(!o) return '';
+      const b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+      return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }catch(_){ return ''; } }
+    function unpackSims(s){ try{ const b=s.replace(/-/g,'+').replace(/_/g,'/');
+      return JSON.parse(decodeURIComponent(escape(atob(b)))); }catch(_){ return null; } }
     function activeLayers(){ const ids=new Set(); try{
       /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
-      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
+      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
     }catch(_){} return Array.from(ids); }
     function encode(){ try{ const c=GE().camera.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),GE().camera.getZoom().toFixed(2),Math.round(GE().camera.getBearing()),Math.round(GE().camera.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
@@ -984,6 +1032,11 @@ window.IntMapModules.viewHash=function(HOST){
       try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none') h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1'); }catch(_){}
       /* (#R42) satellite base view too, so "今の状態をそのまま" share/restore reproduces Map-vs-Satellite. */
       try{ if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat') h+='&sat=1'; }catch(_){}
+      /* (#R211) 「視点の高度と角度」 — bearing and pitch were already in `v`; 3-D terrain was not, and
+         without it the same zoom/pitch produces a flat scene where the shared one had relief. */
+      try{ if(HOST.terrain3D) h+='&t3=1'; }catch(_){}
+      /* (#R211) …and every simulator's own inputs, in one opaque parameter (see IntMapShareState). */
+      try{ const s=packSims(); if(s) h+='&s='+s; }catch(_){}
       return h; }catch(_){ return ''; } }
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
@@ -1000,7 +1053,10 @@ window.IntMapModules.viewHash=function(HOST){
        tab (firstLoad: a new tab / another device / a copied link). A plain RELOAD of the same tab restores the
        view only (R33). Legacy self=1 links still fully restore (firstLoad handles them). */
     function restore(opts){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
-      const full = !!(opts&&opts.shared===true) || (firstLoad!==false);   /* firstLoad null (no sessionStorage) → favour restore */
+      /* (#R211) a plain reload restores everything too — unless the previous attempt at this very
+         hash did not survive, in which case only the view comes back (see `crashed` above). */
+      const full = (!!(opts&&opts.shared===true) || firstLoad!==false || !crashed);
+      if(full) markAttempt(location.hash);
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&HOST.proj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
         else if(proj==='g'&&HOST.proj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
@@ -1014,7 +1070,7 @@ window.IntMapModules.viewHash=function(HOST){
       if(full){
         const lm=/[#&]l=([^&]+)/.exec(location.hash);
         const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
-        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
+        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
           want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
           /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
@@ -1028,6 +1084,15 @@ window.IntMapModules.viewHash=function(HOST){
         if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&window.IntMapTime) window.IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
         else { const tm=/[#&]ts=(\d+)/.exec(location.hash);
           if(tm){ setTimeout(()=>{ try{ if(window.IntMapTime) window.IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); } }
+        /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
+           of them are lazy modules that are only fetched when their layer or panel is asked for, so
+           applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
+           no-op safely when its module is absent (they all guard). */
+        try{ if(/[#&]t3=1/.test(location.hash)){ const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d');
+          if(tb) setTimeout(()=>{ try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} },1200); } }catch(_){}
+        const sm=/[#&]s=([^&]+)/.exec(location.hash);
+        if(sm){ const obj=unpackSims(sm[1]);
+          if(obj) [1500,4000].forEach(ms=>setTimeout(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
         const cm2=/[#&]cmp=([^&]+)/.exec(location.hash);
         if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }

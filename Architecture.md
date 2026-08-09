@@ -2536,6 +2536,66 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
 
+### #R211 補足（世界データ5層／地形・水流の作り直し／共有状態の登録簿／根拠ページ）
+
+**`js/world-packs.js` は6つのレイヤー行を持つ6番目のパック。** `window.IntMapModules.worldPacks(HOST)`
+（`js/app-body.js` から1回だけ生成、`src/main.js` が **eager import**）。⚠ **遅延化してはいけない** ——
+起動時にレイヤー行を作り、進捗ゲートとセッション復元がその存在に依存する（`js/layer-packs.js` と同じ理由）。
+公開名は `window.IntMapWorld`（`state()` / `tradeLoad()` / `tradeToggle()` / `energyShow()` /
+`cropSet()` / `tideProbe()` / `alertsLegend()`）。チェックボックスは `wp-dl-{trade|elec|prim|alerts|tides|crops}`。
+
+* **貿易** — OEC / BACI（CEPII）。`trade_i_baci_a_{92,02,07,12,17,22}` を年で選ぶ（1995–2024）。
+  ⚠ **線幅は `1.2 + 11.8·√(v/vmax)` px**。線形でも対数でもないのは仕様（DEV-NOTES §3）。
+  ホバーは**短縮形と正確な金額の両方**。国は `Exporter/Importer Country Official`＝**小文字 ISO3**。
+* **エネルギー** — OWID `share-elec-by-source` / `primary-energy-source-bar`。地図は既存 `countries`
+  ソース＋`setFeatureState('wpElec'|'wpPrim')`、構成は積み上げ棒。指定年に行が無ければ
+  **それ以前で最新の年**を使い、使った年を表示する。
+* **警報** — `FEEDS = { JPN:'jma', USA:'nws' }`。**ここに無い国は「フィードが無い」と言葉で言う**。
+  日本は `bosai/warning/data/warning/map.json`（`areaTypes[0]`＝府県／`[1]`＝市町村）＋
+  `bosai/common/const/area.json`（名称）＋ geoBoundaries JPN ADM1（`shapeISO` `JP-nn` ＝ 府県コード上2桁）。
+  段は **特別警報3/警報2/注意報1**（コード帯 32–38 / それ以外 / 19–27）。5分ごとに更新。
+* **潮汐** — Open-Meteo Marine `sea_level_height_msl`。満干潮は局所極値＋放物線内挿。
+  浸水は現在潮位を海面高とした**静水面塗り**（同じ標高サンプラ）。
+* **作物** — OWID `key-crop-yields`（11作物・収量 t/ha）。**圃場の広がりは ESA WorldCover の耕地クラス**
+  を別レイヤーとして案内する（混ぜない）。
+
+⚠ **`countryGeo` を2つ目の geojson ソースにしない**（#R166 の MapLibre worker スタック溢れ）。
+⚠ **`addSource` は日常的に拒否される** → `whenDrawable()` で再試行し、`styledata` で貼り直す。
+⚠ **地図レベルのクリック所有者**なので `events.clickClaimed(e)` を先に聞き、消費したら `claimClick(e)`（#R210）。
+
+**地形・水流（`js/terrain-water.js`）の現状。** ⚠ **琵琶湖から瀬田川へ抜ける問題は未解決**（#R211 §1 に
+四回の実測）。今あるのは「平坦面で立ち往生したときに何を問うか」の枠組みで、湖より広い平坦を越える
+先読みは **3× → 9× → 27× の梯子**、各段は `wantPx = spacing*mult/1.5` から導いた**粗い DEM 段**を聞く
+（400 km の窓でも 5×5 タイル）。平坦面の脱出は排水木ではなく**溢流口**（`flatOutlet()`＝平坦に接する
+最低のセル）を問い、**平坦が窓をはみ出し、かつ使える溢流口も無い**ときだけ次の段へ広げる。
+下り判定は `FLAT_DROP_M`（データのノイズより大きい実質的な下降）。4窓連続で下らなければ `lake` として
+**正直に終わる**——湖の真ん中から「まだ流下中」と言わないことがこのラウンドで確実に良くなった点。
+診断は `_dbgTrace()`（標高四分位・下った歩数・到達した段・経由点11点）。
+⚠ **受け入れしきい値 `LAKE_STOP_M*3` は段に依存しない**（粗い標本は充填量を過大評価するので、
+固定＝窓が広いほど厳しい＝安全側）。引き金は「ループ検出」に加えて**「窓を通っても一度も下らなかった」**。
+描画は**近傍・遠方でひとつ**：ランプは `waterRGBA()`、原始形はセル（1標本、ただし1画素より細かくしない）。
+`tw-area`（点線長方形）と `tw-lake`（水色ピン）は**無い**。決壊は矢印のみで**体積は載せない**。
+`undo` は**1操作＝編集状態まるごと**（`snapState()`）。注水は `once`／`cont`＋時間倍率で、
+**準静的な充填列**（定常解を体積を増やしながら繰り返す）。パネルは見出し＝答え、数字は `<details>`。
+
+**共有状態は登録簿。** `window.IntMapShareState.register(key, {get,set})`。⚠ **鍵は lazy モジュール名**
+（`terrainWater` / `seismic` …）——復元時にそのモジュールはまだ取得されていないので、`apply()` は
+`IntMapLazy.need(key)` で取りに行き、**値を保持して後から登録した者に渡す**。全部が1つの `s=`
+（base64url の JSON）に入る。`t3=1` が 3D 地形。レイヤー一覧は `wp-dl-*` も含む。
+⚠ **リロードは全状態を復元する（#R33 の反転）**。ただし復元前に `intmap_restore_try` にハッシュを記録し、
+6秒生き延びたら消す。次の起動で**同じハッシュが残っていたら前回は落ちている**ので視点だけ戻す。
+
+**`science.html` は「方法」を説明する静的ページ。** 出典一覧（アプリ内モーダル）は「どこから来たか」、
+このページは「どう計算しているか」。`vite.config.js` の **STATIC_ASSETS**（バンドル入口ではない）。
+設定 ▸ About からリンク（`lblScience` / `viewScience`、5言語）。
+
+**店舗・施設名（`ofm-poi`）は既定オン。** `poiOn=true`（`js/app-body.js`、永続化なし＝リテラルが既定）。
+`minzoom` は **12**。ゲートは **`step` ではなく `interpolate`** ＋ `rank` から作る決定論的オフセット
+（同じ段が約1ズームに散る）。色は**段ごとの `match`**（`POI_COL_DARK` / `POI_COL_LIGHT`）で、
+⚠ **どちらもファクトリ直下の `const`** ——`ensurePlaceLabels()` の中に置くと、`applyLabelLang()` が
+レイヤー生成より先に走ったときに平坦な1色へ落ちる。
+⚠ **`sports_centre` / `community_centre` は OpenMapTiles の `class` 値**＝データ契約であって綴りではない。
+
 ### #R210 補足（追記：deep は PR で走らない）
 
 **既定を1つでも動かしたラウンドは、マージ後に `gh workflow run "CI" --ref main` で deep を回す。**

@@ -369,7 +369,7 @@ window.IntMapModules.satellitesLive=function(HOST){
               let when='';
               try{ const m=await fetch(BUNDLED_META).then(r=>r.ok?r.json():null);
                 if(m){ bundledMeta=m; if(m.newestEpoch) when=' ('+String(m.newestEpoch).slice(0,10)+')'; } }catch(_){}
-              lastErr='showing the catalogue shipped with the app'+when+' while the live feed loads';
+              lastErr='showing the catalog shipped with the app'+when+' while the live feed loads';
               try{ if(_onPrimed) _onPrimed(); }catch(_){}
             }
           }catch(e){ tried.push('bundled: '+String(e&&e.message||e)); }
@@ -387,7 +387,7 @@ window.IntMapModules.satellitesLive=function(HOST){
         }catch(e){ tried.push('proxy'+i+': '+String(e&&e.message||e)); }
       }
       if(primedFromBundle){
-        lastErr='live feed unreachable — showing the catalogue shipped with the app'
+        lastErr='live feed unreachable — showing the catalog shipped with the app'
           +(bundledMeta&&bundledMeta.newestEpoch?(' ('+String(bundledMeta.newestEpoch).slice(0,10)+')'):'');
         return true;
       }
@@ -399,7 +399,7 @@ window.IntMapModules.satellitesLive=function(HOST){
           lastErr='live feed unreachable — using cached elements';
           try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; }
       }catch(_){}
-      lastErr=tried.join('; ')||'no catalogue source answered';
+      lastErr=tried.join('; ')||'no catalog source answered';
       return false;
     })()
       .then(ok=>{ if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });

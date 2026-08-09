@@ -107,7 +107,7 @@ window.IntMapWorldBase=(function(){
       im.onload=()=>{ img=toneMap(im); loading=null; res(img); };
       im.onerror=()=>{ failed='image failed to load'; loading=null; rej(new Error(failed)); };
       im.src=url();
-    }).catch(e=>{ console.warn('[world-base] '+(e&&e.message||e)+' — the satellite view keeps its old blank-tile behaviour'); throw e; });
+    }).catch(e=>{ console.warn('[world-base] '+(e&&e.message||e)+' — the satellite view keeps its old blank-tile behavior'); throw e; });
     return loading;
   }
   /* The colour-matched picture as a URL, for consumers that can only take one (Cesium's

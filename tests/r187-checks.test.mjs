@@ -176,10 +176,17 @@ test('R187 water: the traced course is a raster of water, not a polyline', () =>
      sampling (stepM) plus a per-point array (spac) */
   assert.match(src, /stepM:minSpacingM/, 'the trace must record the sampling it used');
   assert.match(src, /elev, wet, spac, wetCapped:wetCap/, '…and the per-point sampling of the ladder');
-  /* the rectangle and the end markers stay — they are not the line that was objected to */
-  assert.match(src, /id:'tw-area'/, 'the working rectangle stays');
+  /* ⚠ (#R211) TWO OF THESE THREE WERE REVERSED BY A LATER INSTRUCTION, AND THAT IS RECORDED HERE
+     RATHER THAN DELETED. #R187 kept the working rectangle and the per-pond markers because they
+     were not the guide line that round was told to remove. #R211 was told to remove them by name:
+       「水を配置すると謎の点線長方形が出る」   → the dashed rectangle (tw-area)
+       「流れの途中の水色ピンを大量に置くのをやめる」 → the light-blue pond pins (kind:'lake')
+     Both are now asserted as ABSENCES, which is the stronger claim: they cannot come back by
+     accident, and the reason they went is in the file. The end label — the one thing the picture
+     cannot carry — still stays. */
+  assert.ok(!/id:'tw-area'/.test(src), 'the working rectangle is gone (#R211)');
+  assert.ok(!/kind:'lake'\}/.test(src), 'and so are the per-pond pins (#R211) — the ponds are drawn as water');
   assert.match(src, /kind:'end'/, 'the end label stays');
-  assert.match(src, /kind:'lake'/, 'the standing-water markers stay');
   /* and the overlay is cleaned up with the others */
   assert.match(src, /\[LYR_FLOW,IMG_FLOW\]/, 'wipe() must clear the course overlay too');
 });

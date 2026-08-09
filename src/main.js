@@ -113,6 +113,11 @@ import '../js/tile-warm.js';
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 import '../js/weather.js';
 import '../js/layer-packs.js';
+/* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js
+   (a factory on window.IntMapModules, instantiated once from js/app-body.js) and, like it, it must
+   be loaded EAGERLY rather than on demand: it creates layer rows at boot, and the progress gate and
+   the session restore both key off those rows existing. */
+import '../js/world-packs.js';
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';

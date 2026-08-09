@@ -454,7 +454,7 @@ window.IntMapModules.compare=function(HOST){
         '</span>'+
         /* (#R31) Minimise = single clean line; Close = centred ×; both SQUARE like the other controls
            ("ふちをまるではなく…四角に", "×は中心からずれている"). */
-        '<button class="cmp-btn cmp-icon" id="cmp-min" title="'+(jp()?'最小化':'Minimise')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
+        '<button class="cmp-btn cmp-icon" id="cmp-min" title="'+(jp()?'最小化':'Minimize')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
         '<button class="cmp-btn cmp-icon" id="cmp-close" title="'+t('close')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>'+
         /* (#R31) Layer picker sits in its own row directly UNDER the Map/Sat + Sync/Free/X-ray controls
            ("Select a layerは…欄の下に配置しろ"). */
@@ -529,7 +529,7 @@ window.IntMapModules.compare=function(HOST){
           mb.innerHTML=minimized
             ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
             : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-          mb.title=minimized?(jp()?'元に戻す':'Restore'):(jp()?'最小化':'Minimise');
+          mb.title=minimized?(jp()?'元に戻す':'Restore'):(jp()?'最小化':'Minimize');
         }catch(_){}
       };
       win.querySelector('#cmp-close').onclick=close;

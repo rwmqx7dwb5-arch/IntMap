@@ -25,6 +25,10 @@ IntMap is primarily designed for people interested in geography and internationa
 ## What you can do
 
 * Combine more than a hundred geographic and statistical layers
+* Follow a country's goods trade partner by partner, by commodity and by year
+* Read a country's electricity and primary-energy mix as a composition, not a single colour
+* See the weather and disaster warnings an agency has actually issued, at the unit it issued them for
+* Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain
 * Explore climate, terrain, ecology, population, economics, infrastructure, and strategic geography
 * Move between historical periods using the Time Machine
 * Compare countries through rankings, charts, tables, and correlation analysis
@@ -54,6 +58,7 @@ Layers cover areas including:
 * Live aircraft and optional live ship traffic — click an aircraft for a photograph of that airframe, its full ADS-B readout, and a one-click flight from its own position, altitude, heading and airspeed
 * Ocean surface currents, named and drawn as arrows sized by measured speed, with warm and cold currents separated by their poleward flow rather than by assumption
 * Satellite and Earth-observation data
+* Bilateral goods trade, electricity and primary-energy mix, crop yields, tides, and live weather and disaster warnings
 
 Layers can be combined rather than viewed in isolation. For example, you can place population density over terrain, compare railway networks with economic indicators, or examine a current event alongside the geography and infrastructure surrounding it.
 
@@ -71,6 +76,7 @@ Depending on the selected year and available data, it can update:
 * Country rankings and comparisons
 * NATO and European Union membership
 * Climate-period layers
+* Bilateral trade (1995-2024), energy mix, and crop yields
 
 Historical coverage is not equally detailed for every year or region. Borders and historical data may be simplified, approximate, or based on the closest available dataset.
 
@@ -187,7 +193,11 @@ IntMap supports:
 * Localized or English place labels
 * Favorite layers
 * Layer search and visual previews
-* Screenshots and shareable map views
+* Screenshots and shareable map views - the link carries the layers, the camera (including its
+  angle and 3-D terrain), the point in time, and the numbers typed into a simulation, so a shared
+  view reopens on the same answer. A reload restores the same session, and falls back to the map
+  alone if the previous attempt did not survive
+* An explanation of the method behind every simulation - Settings > Science & logic
 * Desktop keyboard shortcuts
 
 Desktop users can also enable **Window Workspace**, which turns the map, Information, News, Countries, Layers, and Atlas into movable and resizable windows. Workspace layouts are saved locally.
