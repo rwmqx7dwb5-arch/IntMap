@@ -1241,7 +1241,7 @@ window.IntMapModules.seismic=function(HOST){
            map during; closing the panel throws the run away, so the third state is "keep everything,
            give the map back its pixels". The header stays (it is also the drag handle), the body is
            the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
-        +'<button class="sq-min" title="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimise','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
+        +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         +'<button class="sq-pick" style="'+PICKBTN(picking)+'">'+(picking
@@ -1687,6 +1687,28 @@ window.IntMapModules.seismic=function(HOST){
     window.addEventListener('intmap-lang',()=>{ if(!scaleSet){ const want=scaleForLang();
         if(want!==scale){ scale=want; if(fld) fldStale=true; try{ legend(); }catch(_){} } }
       if(opened) render(); });
+
+    /* (#R211) 「シミュレーションに入力された数値まで共有」 — the epicentre, the magnitude, the depth
+       and the intensity scale ARE the question this panel was asked, so a share link that reproduced
+       the panel without them would reopen on a different earthquake. The key is the lazy-module name
+       ('seismic'), which is how js/map-ui.js fetches this module back before handing the value over. */
+    try{ window.IntMapShareState&&window.IntMapShareState.register('seismic',{
+      get(){ if(!opened||!epi) return null;
+        return { e:[+epi[0].toFixed(5),+epi[1].toFixed(5)], d:depthKm, m:+mw.toFixed(2), t:tSec,
+                 sc:scale, sp:speed, st:stressDropMPa, si:siteId, op:fldOpacity }; },
+      set(v){ if(!v||!Array.isArray(v.e)) return;
+        Promise.resolve(open()).then(()=>{
+          try{ setEpi([+v.e[0],+v.e[1]]); }catch(_){}
+          if(v.si) try{ if(SITES.some(s=>s.id===v.si)) siteId=v.si; }catch(_){}
+          if(v.op!=null) try{ setFieldOpacity(+v.op); }catch(_){}
+          try{ if(v.d!=null) depthKm=Math.max(0,Math.min(700,+v.d));
+            if(v.m!=null&&!fault) mw=Math.max(3,Math.min(9.6,+v.m));
+            if(v.t!=null) tSec=Math.max(0,Math.min(MAXT,+v.t));
+            if(v.st!=null) stressDropMPa=Math.max(0.3,Math.min(30,+v.st));
+            if(v.sc==='mmi'||v.sc==='jma') pickScale(v.sc);
+            if(v.sp!=null&&isFinite(+v.sp)&&+v.sp>0) speed=Math.max(0.1,Math.min(1000,+v.sp)); }catch(_){}
+          if(opened) render(); refresh();
+        }).catch(()=>{}); } }); }catch(_){}
 
     return { open, close, draw, at, arrival, curve, source, motion, mmiRings,
       setEpicentre(lng,lat){ setEpi([lng,lat]); refresh(); return true; },

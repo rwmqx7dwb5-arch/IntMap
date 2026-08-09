@@ -190,7 +190,7 @@ window.IntMapSky=(function(){
         }
         starsLoading=null; schedule(); return stars;
       }).catch(e=>{ starErr=String(e&&e.message||e); starsLoading=null;
-        console.warn('[sky] star catalogue unavailable — the sky falls back to the plain background:',starErr);
+        console.warn('[sky] star catalog unavailable — the sky falls back to the plain background:',starErr);
         return null; });
     return starsLoading;
   }

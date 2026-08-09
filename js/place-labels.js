@@ -37,6 +37,77 @@ window.IntMapModules.placeLabels=function(HOST){
     });
   }
   let _placeLabelsAdded=false;
+  /* ══ (#R211) THE TIER AND ITS COLOURS ARE FACTORY-SCOPE CONSTANTS, NOT LOCALS ═══════════════
+     They were declared inside ensurePlaceLabels() and copied out to two `let`s for the light/dark
+     repaint below to reach — an ORDERING HAZARD of exactly the kind this project keeps paying for.
+     applyLabelLang() runs on styledata, on a language change and on the cb-poi toggle, and any of
+     those can fire before the layers are built; at that moment the copies were still null and the
+     repaint fell back to ONE FLAT COLOUR — the defect this round was told to fix, reintroduced by
+     its own fix. They are pure data (no DOM, no renderer), so they live out here where both
+     readers can always see them. Declarations only, so tests/r169-checks #4 still holds.
+     ⚠ Caught by tests/r211.spec ③, which asserts the paint is an EXPRESSION and not a string.
+   */
+  const POI_TIER=['match',['get','class'],
+    /* 1 — the things a person navigates by */
+    ['hospital','university','college','school','railway','aerodrome','airport','bus_station','ferry_terminal','harbor',
+     'museum','attraction','monument','castle','memorial','place_of_worship','town_hall','police','fire_station',
+     /* ⚠ (#R211) `sports_centre` / `community_centre` ARE THE TILE SCHEMA'S OWN SPELLING, not prose.
+        They are OpenMapTiles `class` values (from the OSM tag), so the British spelling is part of a
+        data contract exactly like `["get","colour"]` in data/ocean-currents.json. The round's
+        British→US sweep changed both and they were reverted; do not "fix" them. */
+     'library','theatre','stadium','sports_centre','park','zoo','cemetery','embassy','prison'],1,
+    /* 2 — everyday destinations
+       ⚠ (#R211) 「工場・企業名が出ない」 — and the reason was that they were never NAMED here. An
+       unlisted class falls through to tier 4, which the gate below did not admit until z17, so a
+       factory or a company's premises simply was not there at any zoom a person actually browses
+       at. The OpenMapTiles `poi` layer carries them under `industrial`, `commercial`, `factory`,
+       `works`, `office`, `warehouse`, `construction` and `craft`, so they are listed — at tier 2,
+       because a works or a headquarters is a landmark in the way a vending machine is not. */
+    ['bank','post','pharmacy','doctors','dentist','lodging','cinema','art_gallery','garden','playground','marketplace',
+     'grocery','supermarket','fuel','golf','swimming_pool','picnic_site','veterinary','childcare','community_centre',
+     'bicycle_rental','car_rental','information','recycling','shelter',
+     'industrial','commercial','factory','works','warehouse','office','company','construction','craft','mine','quarry','power','substation'],2,
+    /* 3 — shops, food and drink, offices */
+    ['shop','clothing_store','bakery','butcher','alcohol_shop','music','bicycle','car','hairdresser','laundry',
+     /* ⚠ (#R211) 'office' MOVED UP to tier 2 (a company's premises is what 「企業名が出ない」 is about).
+        It must appear in exactly ONE branch: a `match` with a repeated label fails MapLibre's style
+        validation with «Branch labels must be unique», addLayer THROWS, and the whole label stack
+        stops existing. tests/smoke caught it; tests/r211-checks now re-derives uniqueness. */
+     'ice_cream','restaurant','cafe','fast_food','bar','beer','atm','parking','toilets','pitch',
+     'basketball','running','yoga'],3,
+    /* 4 — street furniture: real, useful up close, and never worth a landmark's place */
+    4];
+  /* ══ (#R211) NO MORE ALL-ON / ALL-OFF AT ONE ZOOM ═══════════════════════════════════════════
+     「あるズームで問答無用に全表示・全非表示になるのをやめる」
+
+     The old gate was a `step`: at z15 every tier-2 POI in view appeared at once, at z16 every
+     tier-3, at z17 everything. Four zoom levels where the map changes wholesale — which is what
+     the report describes, and it is a property of `step`, not of the data.
+
+     Two changes make it gradual:
+       · each feature carries a deterministic offset in [0, 0.9) derived from the tile's own
+         `rank`, so the members of one tier no longer share a single threshold;
+       · the ladder advances by about 0.6 per zoom instead of 1, so each step admits only a
+         FRACTION of a tier and a tier takes roughly two zoom levels to finish arriving.
+     Same features, same order (the sort key is untouched) — they simply come in gradually, and
+     deterministically, so panning back does not reshuffle them.
+
+     ⚠⚠ AND THE RIGHT-HAND SIDE MUST BE A `step`, NOT AN `interpolate`. MapLibre allows `zoom`
+     inside a FILTER only in a `step`: a filter is evaluated once per integer zoom bucket, and an
+     `interpolate` there fails style validation, which makes addLayer THROW — so the whole label
+     stack failed to add. The first version of this used one, and tests/smoke's "no critical
+     console.error from the app itself" caught it. Fractional stops would be pointless here for
+     the same reason (the note above says so): the ladder is integer, and the smoothing comes from
+     the per-feature offset instead. */
+  const POI_JITTER=['*',0.9,['/',['%',['coalesce',['get','rank'],1],10],10]];
+  const POI_GATE=['<=',['+',POI_TIER,POI_JITTER],['step',['zoom'],1.0,13,1.6,14,2.2,15,2.8,16,3.6,17,5]];
+  const POI_FILTER=['all',['has','name'],POI_GATE];
+  /* (#R211) 「全部同じ色をやめる」 — the tier is what the sort key, the gate and now the colour all
+     read, so a landmark, an errand, a shop and a piece of street furniture are told apart at a
+     glance instead of being one undifferentiated amber. */
+  const POI_COL_DARK=['match',POI_TIER,1,'#ffd9a0',2,'#a9dcff',3,'#ffc0d8','#cfd4dc'];
+  const POI_COL_LIGHT=['match',POI_TIER,1,'#8a5300',2,'#0b4f86',3,'#8e1f52','#4b5058'];
+
   /* (#R27) IDEMPOTENT now. The old `_placeLabelsAdded` early-return made this a one-shot: if the very
      first call added the layers a hair before the OFM source/style was truly ready, they were never
      re-added — which is exactly why labels were missing on first load but appeared after toggling
@@ -200,28 +271,16 @@ window.IntMapModules.placeLabels=function(HOST){
          The same expression is the `symbol-sort-key`, so the collision test resolves a crowded corner
          the same way: the hospital keeps its label and the vending machine loses it. `rank` stays as
          the tie-break WITHIN a tier, which is the one job the flat sequence is fit for. */
-      const POI_TIER=['match',['get','class'],
-        /* 1 — the things a person navigates by */
-        ['hospital','university','college','school','railway','aerodrome','airport','bus_station','ferry_terminal','harbor',
-         'museum','attraction','monument','castle','memorial','place_of_worship','town_hall','police','fire_station',
-         'library','theatre','stadium','sports_centre','park','zoo','cemetery','embassy','prison'],1,
-        /* 2 — everyday destinations */
-        ['bank','post','pharmacy','doctors','dentist','lodging','cinema','art_gallery','garden','playground','marketplace',
-         'grocery','supermarket','fuel','golf','swimming_pool','picnic_site','veterinary','childcare','community_centre',
-         'bicycle_rental','car_rental','information','recycling','shelter'],2,
-        /* 3 — shops, food and drink, offices */
-        ['shop','clothing_store','bakery','butcher','alcohol_shop','music','bicycle','car','hairdresser','laundry',
-         'ice_cream','restaurant','cafe','fast_food','bar','beer','office','atm','parking','toilets','pitch',
-         'basketball','running','yoga'],3,
-        /* 4 — street furniture: real, useful up close, and never worth a landmark's place */
-        4];
-      const POI_GATE=['<=',POI_TIER,['step',['zoom'],1,15,2,16,3,17,4]];
-      const POI_FILTER=['all',['has','name'],POI_GATE];
-      if(!GE().layers.has('ofm-poi-dot')) GE().layers.add({id:'ofm-poi-dot',type:'circle',source:'ofm','source-layer':'poi',minzoom:14,
+      /* (#R211) minzoom 14 → 12: tier 1 is what a person navigates by (a hospital, a station, an
+         airport), and it was not drawn at the zoom where you are looking for one. The gate above
+         still admits only tier 1 down there, so this adds landmarks, not clutter. */
+      if(!GE().layers.has('ofm-poi-dot')) GE().layers.add({id:'ofm-poi-dot',type:'circle',source:'ofm','source-layer':'poi',minzoom:12,
         filter:POI_FILTER,
         layout:{visibility:'none'},
-        paint:{'circle-radius':['interpolate',['linear'],['zoom'],14,2.1,18,3.4],'circle-color':'#ffb454','circle-stroke-color':'rgba(0,0,0,0.55)','circle-stroke-width':0.9,'circle-opacity':0.95}});
-      if(!GE().layers.has('ofm-poi')) GE().layers.add({id:'ofm-poi',type:'symbol',source:'ofm','source-layer':'poi',minzoom:14,
+        paint:{'circle-radius':['interpolate',['linear'],['zoom'],12,1.7,18,3.4],'circle-color':POI_COL_DARK,'circle-stroke-color':'rgba(0,0,0,0.55)','circle-stroke-width':0.9,
+          /* and it fades in at its own minzoom instead of appearing all at once */
+          'circle-opacity':['interpolate',['linear'],['zoom'],12,0,12.7,0.95]}});
+      if(!GE().layers.has('ofm-poi')) GE().layers.add({id:'ofm-poi',type:'symbol',source:'ofm','source-layer':'poi',minzoom:12,
         filter:POI_FILTER,
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,
           'text-size':LS.sub(0.86),
@@ -229,7 +288,8 @@ window.IntMapModules.placeLabels=function(HOST){
           /* tier first, the tile's own sequence as the tie-break inside it */
           'symbol-sort-key':['+',['*',POI_TIER,1000],['coalesce',['get','rank'],1]],
           'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.55,'text-justify':'auto'},
-        paint:{'text-color':'#ffd9a0','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.25}});
+        paint:{'text-color':POI_COL_DARK,'text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.25,
+          'text-opacity':['interpolate',['linear'],['zoom'],12,0,12.7,1]}});
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
@@ -334,7 +394,9 @@ window.IntMapModules.placeLabels=function(HOST){
       if(GE().layers.has('ofm-poi')){ GE().layers.setLayout('ofm-poi','visibility',showPoi?'visible':'none');
         GE().layers.setLayout('ofm-poi','text-field',nameExpr);
         const lightPoi = sat || isDark;
-        GE().layers.setPaint('ofm-poi','text-color', lightPoi?'#ffd9a0':'#8a5300');
+        /* (#R211) per-tier, both ways round — the flat colour was the 「全部同じ色」 */
+        GE().layers.setPaint('ofm-poi','text-color', lightPoi?POI_COL_DARK:POI_COL_LIGHT);
+        if(GE().layers.has('ofm-poi-dot')) GE().layers.setPaint('ofm-poi-dot','circle-color', lightPoi?POI_COL_DARK:POI_COL_LIGHT);
         GE().layers.setPaint('ofm-poi','text-halo-color', lightPoi?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.92)');
       }
     }catch(_){}

@@ -177,7 +177,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
       +row(L('Propagator branch','伝播モデル','Propagator-Zweig','Ветвь пропагатора','Rama del propagador'), f.deep?'SDP4 ('+L('deep space','深宇宙','Deep Space','дальний космос','espacio profundo')+')':'SGP4 ('+L('near Earth','近地球','erdnah','околоземный','cercano a la Tierra')+')')
       +(ageH!=null&&ageH>72?('<div class="acp-note">'+S(L('These elements are more than three days old — an SGP4 position drifts from them, so treat this as approximate.','この軌道要素は3日以上前のものです。SGP4の位置は元期から離れるほど誤差が増えるため、概算として扱ってください。','Diese Elemente sind über drei Tage alt — die SGP4-Position driftet, also nur als Näherung lesen.','Этим элементам более трёх суток — положение SGP4 дрейфует, считайте оценкой.','Estos elementos tienen más de tres días — la posición SGP4 se desvía, tómala como aproximada.'))+'</div>'):'')
       +'<button type="button" class="acp-fly" data-satp="goto">'
-        +'<span class="acp-fly-h">'+S(L('Centre the map on it','この衛星を地図の中心へ','Karte darauf zentrieren','Центрировать карту на нём','Centrar el mapa en él'))+'</span>'
+        +'<span class="acp-fly-h">'+S(L('Center the map on it','この衛星を地図の中心へ','Karte darauf zentrieren','Центрировать карту на нём','Centrar el mapa en él'))+'</span>'
         +'<span class="acp-fly-s">'+S(f.lat.toFixed(3)+', '+f.lng.toFixed(3)+' · '+KM(f.altKm))+'</span>'
       +'</button>'
       +'<div class="acp-src">'+S('CelesTrak GP/OMM · SGP4/SDP4 (satellite.js)')+'</div>';

@@ -378,6 +378,28 @@ window.IntMapModules.mapReadout=function(HOST){
 const _wxCache=new Map();
   function activeWxLayer(){ const on=id=>{ const cb=document.getElementById('dl-'+id); return cb&&cb.checked; }; return on('sst')?'sst':on('temp')?'temp':on('climate')?'climate':null; }
   function updateLayerReadout(lng,lat){
+    /* ══ (#R211) THE TSUNAMI ANSWER BELONGS ON THE LINE THAT IS ALWAYS THERE ═════════════════════
+       「津波シミュレータ — ホバー地点の到達時間と最大波高を座標標高の常時表示欄に」
+       The propagation solve already answers both for any cell (`IntMapTsunami.at`), and the panel
+       already showed them for the point you CLICKED. What was missing is the cheap continuous
+       reading: hover anywhere and the same two numbers appear beside the coordinates and the
+       elevation. No new computation and no fetch — this reads arrays the run has already filled,
+       so it costs one array index per mouse frame.
+       ⚠ It takes priority over the weather/choropleth value while a run is loaded, because while a
+       tsunami is on screen that IS the layer the cursor is asking about. When no run is loaded
+       `at()` returns null and the old behaviour is untouched. */
+    try{ const T=window.IntMapTsunami;
+      if(T&&T.at){ const p=T.at(lng,lat);
+        if(p&&(p.arrivalS!=null||p.maxM!=null)){
+          const t=(p.arrivalS==null)?null:(p.arrivalS<3600
+            ? Math.round(p.arrivalS/60)+' min'
+            : Math.floor(p.arrivalS/3600)+' h '+Math.round((p.arrivalS%3600)/60)+' min');
+          const h=(p.maxM==null)?null:(Math.abs(p.maxM)>=0.1?p.maxM.toFixed(2):p.maxM.toFixed(3))+' m';
+          const L5=(en,jp)=>HOST.lang==='jp'?jp:en;
+          HOST.lastLayerVal='🌊 '+(t?(L5('arrives','到達')+' '+t):L5('no arrival','未到達'))
+            +(h?(' · '+L5('max','最大波高')+' '+h):'')
+            +((p.coastalM!=null)?(' · '+L5('coast','沿岸')+' '+p.coastalM.toFixed(1)+' m'):'');
+          return; } } }catch(_){}
     const lyr=activeWxLayer();
     if(!lyr){ /* no weather layer → show the active numeric choropleth's value at the cursor (#R13c) */
       let cv=null; try{ cv=window.choroValueAt&&window.choroValueAt(lng,lat); }catch(_){}

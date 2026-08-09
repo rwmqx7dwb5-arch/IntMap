@@ -188,7 +188,7 @@ window.IntMapModules.toolPanel=function(HOST){
       /* (#R119) the area summary now runs INSIDE the Atlas thread (analyze scope:"drawn-area" = news in the area +
          displayed-layer values + WorldPop population, one conversation surface). The legacy popup stays as fallback. */
       sb.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.runDirect){
-          const q5=HOST.lang==='jp'?'描画した範囲内の状況を要約・分析して':HOST.lang==='de'?'Fasse die Lage im gezeichneten Gebiet zusammen':HOST.lang==='ru'?'Сводка по нарисованной области':HOST.lang==='es'?'Resume la situación del área dibujada':'Summarize and analyse the situation inside the drawn area';
+          const q5=HOST.lang==='jp'?'描画した範囲内の状況を要約・分析して':HOST.lang==='de'?'Fasse die Lage im gezeichneten Gebiet zusammen':HOST.lang==='ru'?'Сводка по нарисованной области':HOST.lang==='es'?'Resume la situación del área dibujada':'Summarize and analyze the situation inside the drawn area';
           window.IntMapConsole.runDirect(q5,[{type:'analyze',question:q5,scope:'drawn-area'}]); return; } }catch(_){}
         aiSummarizeArea(); }; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }

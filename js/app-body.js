@@ -81,7 +81,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!ok){ if(!apply()) document.addEventListener('DOMContentLoaded',apply); }
   }catch(_){} })();
   let isGridOn=false, toolMode=null, measurePoints=[];
-  let namesOn=true, countryInfoOn=false, geoLabelsOn=true, poiOn=false;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */   /* (#R186) …and the shop/facility names are a third, independent set (cb-poi) */
+  let namesOn=true, countryInfoOn=false, geoLabelsOn=true, poiOn=true;   /* (#R211) 「既定でオン」 — shop/facility/company names are on from the start. Not persisted anywhere, so this literal IS the default (like currentMapType, #R207). It costs nothing below z12: the gate admits only tier 1 there. */  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */   /* (#R186) …and the shop/facility names are a third, independent set (cb-poi) */
   let map=null, markersArray=[], forceHoverLayers=new Set();
   /* ===== (#R170) canDraw() — the ONE predicate the whole app uses before touching the style =====
      "Is it safe to addSource / addLayer RIGHT NOW?" This is NOT the same question as
@@ -4336,8 +4336,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      jsDelivr, CORS-OK) PLUS the CURRENT local time labelled on every zone, refreshed each minute
      ("タイムゾーンの境界…現在の時間もそれぞれのタイムゾーン上に表示"). Key-free; only fetched when toggled. Layer
      ids are `tzl-*` so they don't collide with the generic dl- orphan sweep (id `tz`). ===== */
-  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.timeZones(IM_HOST);
+  window.IntMapModules.timeZones(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
 
   /* (#R38) "レイヤーを大幅増強して" — EIGHT additional REAL NASA GIBS science rasters. Every tile endpoint was
      curl-verified (HTTP 200 / image/*) before wiring (wrong GIBS layer ids serve blank tiles). Self-contained +
@@ -4345,8 +4344,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      full EN/JP/DE/RU from the start, each registers the shared opacity legend + a one-line source note. Daily
      layers request the freshest reliably-processed GIBS day (−2 d); Blue Marble is a static composite. Built via
      DOM APIs (no innerHTML/template literals → no CSS-back-tick risk). */
-  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.gibsScience(IM_HOST);
+  window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
+  window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

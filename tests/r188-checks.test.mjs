@@ -142,9 +142,16 @@ test('R188 water: the drawn body comes from DEM cross-sections, not from one wid
   assert.match(src, /const A=C\/Math\.sqrt\(slope\[m\]\);/, 'section area follows 1/√slope');
   assert.match(src, /const areaAt=\(h\)=>\{ let acc=0;/, 'the level is solved against the real section');
   assert.match(src, /for\(let it=0;it<26;it\+\+\)\{ const hm=\(h0\+h1\)\/2;/, 'by bisection on the wetted area');
-  /* the banks are what gets drawn — a quad per pair of sections */
-  assert.match(src, /const aL=\[a\.lng\+a\.nx\*-a\.wl\/\(111320\*cosA\), a\.lat\+a\.ny\*-a\.wl\/110574\];/,
-    'the polygon must be built from the measured banks');
+  /* ⚠ (#R211) THE MEASURED BANKS ARE STILL WHAT GETS DRAWN — THE PRIMITIVE CHANGED, NOT THE DATA.
+     #R188's claim is that the drawn body comes from `wl`/`wr`, the two banks the transect solve
+     measured, rather than from one width. That claim is intact. What a later instruction changed is
+     HOW the strip between them is filled: 「上流と下流でモデルと表示方法を変えず配置地点付近のもの
+     で統一」 — the near field rasterises depth-shaded CELLS and the far field filled smooth quads,
+     two textures for one body of water. It is cells on both sides now, so the assertion follows the
+     stamp instead of the quad corner. `wl`/`wr` still decide where the water ends. */
+  assert.match(src, /const stamp=\(lng,lat,nx,ny,wl,wr,dep,cellM\)=>\{/, 'the strip is stamped in cells');
+  assert.match(src, /const om=-wl\+\(wl\+wr\)\*q\/steps;/, 'and it spans exactly the measured banks');
+  assert.ok(!/g\.lineTo\(PX\(bR\[0\]\),PY\(bR\[1\]\)\)/.test(src), 'the smooth quad is gone (#R211)');
   /* …and the real ponds, not discs of equivalent area */
   assert.match(src, /g\.fillStyle=shade\(w\[2\]\); g\.fillRect\(X-cell\/2,Y-cell\/2,cell,cell\);/,
     'every pooled cell is drawn where it is, at its own depth');
