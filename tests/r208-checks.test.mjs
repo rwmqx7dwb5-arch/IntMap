@@ -441,3 +441,69 @@ test('R208 ⑦b: the legacy regex index is capped; the growth goes to the locato
   assert.ok(/registerSlices\(w\)/.test(nc),
     'and the locator is fed the FULL row array, not the capped index');
 });
+
+/* ═══ ⑧ OCEAN CURRENTS ════════════════════════════════════════════════════════════════════════ */
+
+test('R208 ⑧a: the paths are traced through a measured field, and warm/cold is derived', () => {
+  const p = join(ROOT, 'data', 'ocean-currents.json');
+  assert.ok(existsSync(p), 'data/ocean-currents.json is built (scripts/build-ocean-currents.mjs)');
+  const doc = JSON.parse(readFileSync(p, 'utf8'));
+  /* ⚠ NOT the dataset that was approved. #R207 stopped on the Maps.com licence; the Data Basin copy
+     IS CC BY 3.0 and its API then answered `allow_anonymous_download: false`, which needs an account
+     this build may not create. What is here is built from a public-domain field instead, and the
+     attribution has to say so rather than implying the approved source. */
+  assert.ok(/OSCAR/.test(doc.source) && /public domain/i.test(doc.attribution),
+    'the source is named and its licence stated');
+  assert.ok(/traced/i.test(doc.attribution) && /seed/i.test(doc.attribution),
+    'and it says which part is measured and which part is editorial');
+  assert.ok(doc.named.length >= 20, `${doc.named.length} named currents`);
+  assert.ok(doc.arrows.length > 3000, `${doc.arrows.length} arrows`);
+
+  for (const c of doc.named) {
+    assert.ok(c.en && c.ja, `${c.en}: both names`);
+    assert.ok(['warm', 'cold', 'zonal'].includes(c.kind), `${c.en}: kind "${c.kind}"`);
+    assert.ok(c.path.length >= 6, `${c.en}: ${c.path.length} vertices is not a path`);
+    /* every vertex is a real coordinate, and no path jumps the antimeridian mid-line */
+    let prev = null;
+    for (const [lng, lat] of c.path) {
+      assert.ok(lng >= -180 && lng <= 180 && lat >= -85 && lat <= 85, `${c.en}: ${lng},${lat}`);
+      if (prev) assert.ok(Math.abs(lng - prev) < 180, `${c.en} crosses the seam inside one line`);
+      prev = lng;
+    }
+    /* ⚠ the classification must AGREE with the number it was derived from — if these can disagree,
+       one of them is decoration. The first version compared the trace's endpoints and got the
+       Kuroshio zonal and the North Atlantic Drift cold; this is the poleward component instead. */
+    const k = c.polewardMs > 0.012 ? 'warm' : (c.polewardMs < -0.012 ? 'cold' : 'zonal');
+    assert.equal(c.kind, k, `${c.en}: kind ${c.kind} but poleward ${c.polewardMs}`);
+  }
+
+  /* the four best-known western boundary currents carry warm water poleward — that is what a
+     western boundary current IS, and if the trace says otherwise the field is being read wrong */
+  const by = Object.fromEntries(doc.named.map((c) => [c.en, c]));
+  for (const n of ['Gulf Stream', 'Kuroshio', 'East Australian Current', 'Agulhas Current']) {
+    assert.ok(by[n], `${n} is missing`);
+    assert.equal(by[n].kind, 'warm', `${n} is a warm western boundary current`);
+  }
+  /* …and these carry cold water equatorward */
+  for (const n of ['Labrador Current', 'Oyashio', 'California Current', 'Benguela Current']) {
+    assert.ok(by[n], `${n} is missing`);
+    assert.equal(by[n].kind, 'cold', `${n} is a cold eastern boundary / subpolar current`);
+  }
+  /* the Gulf Stream is the fastest thing in the set, and OSCAR's 1/3° mean resolves it near 1 m/s */
+  assert.ok(by['Gulf Stream'].maxSpeed > 0.6, `Gulf Stream max ${by['Gulf Stream'].maxSpeed} m/s`);
+});
+
+test('R208 ⑧b: the layer draws warm red, cold blue, and zonal neither', () => {
+  const dl = read('js/data-layers.js');
+  assert.ok(/OC_WARM="#e8503a", OC_COLD="#3a7fe8", OC_ZONAL="#9aa7b4"/.test(dl),
+    'the three colours are named once');
+  assert.ok(/c\.kind==="warm"\?OC_WARM:c\.kind==="cold"\?OC_COLD:OC_ZONAL/.test(dl),
+    'and chosen from the DERIVED kind, so a current that is genuinely zonal is not forced into one');
+  assert.ok(/lyr-oceancur-arrows/.test(dl) && /"text-rotate":\["get","bearing"\]/.test(dl),
+    'the arrows are rotated to the measured flow');
+  assert.ok(/"text-size":\["interpolate",\["linear"\],\["get","speed"\]/.test(dl),
+    'and sized by the measured speed');
+  assert.ok(/"symbol-placement":"line","text-field":\["get","name"\]/.test(dl), 'the currents are named on the map');
+  assert.ok(/lyrOceanCur:/.test(dl), 'the row is labelled');
+  assert.equal((dl.match(/lyrOceanCur:/g) || []).length, 5, 'in all five languages');
+});
