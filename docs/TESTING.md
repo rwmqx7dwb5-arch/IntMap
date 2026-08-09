@@ -85,6 +85,54 @@ npm run preview          # serve an existing dist/ without rebuilding it
 Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
 `file://` is still unsupported, and now doubly so: the entry is an ES module.
 
+### Measuring, not gating: `scripts/frame-profile.mjs` (#R209)
+
+Frame time and start-up are MEASUREMENTS, so they are a standalone runner rather than a spec file —
+a spec would join the tier lists, the shard plan and the 5,201 s budget, and a budget is the wrong
+thing to put on a stopwatch.
+
+```bash
+npm run preview &                                              # serve an existing dist/
+node scripts/frame-profile.mjs --boot --record                 # once, to fill the replay cache
+node scripts/frame-profile.mjs --boot --net fast4g             # start-up, iPhone-13 profile, CPU/4
+node scripts/frame-profile.mjs --sweep --sat                   # frame time over a zoom + hover sweep
+node scripts/frame-profile.mjs --boot --desktop --cpu 1        # …or the desktop profile
+```
+
+Every external request is answered from `.frame-cache/` (gitignored), so two runs replay identical
+bytes and the only thing on the clock is the app. Three rules the file enforces because three rounds
+were misled without them:
+
+* **the first two reps are discarded** — a cold cache costs a whole vsync quantum, and a rebuild
+  whose chunk hashes changed IS a cold cache (this round nearly recorded an 8.0 s start-up that was
+  4.7 s once the new hashes were in it);
+* **mean and p95, not the median** — a frame either makes the vsync deadline or waits for the next
+  one, so the median can only take the values 16.7 / 33.3 / 50.0;
+* **a mobile User-Agent, not just a 390×844 viewport** — the gazetteer's 12,000-row cap, the
+  satellite tile caches and the image-concurrency cap are all gated on the UA, so a viewport-only
+  profile silently measures the desktop code path.
+
+A/B comparisons must alternate (ABAB…) and report the median of the PAIRED differences, with an
+A-vs-A null run to establish the noise floor: #R206 watched a control leave at 24.4 ms and come back
+at 20.8, which is larger than most of the effects being looked for.
+
+### On-demand modules (#R209)
+
+Eight feature modules are no longer in the boot bundle; `js/lazy-modules.js` fetches them when the
+user reaches for the feature. Two suites guard that, and they guard different things:
+
+* `tests/r209-checks.test.mjs` — source level: none of the eight is still in `src/main.js`, every
+  dynamic specifier is a literal (nothing else is visible to `scripts/static-checks.mjs`), every
+  entry point awaits the loader, and every `turf.<name>` the source calls is on the object
+  `src/vendor.js` publishes.
+* `tests/r209.spec.js` — browser level, and the one that matters: the eight are absent before they
+  are asked for, ALL of them arrive when asked, and `window.__imLazyCheck.failed` is empty. The last
+  is the loader's own verdict — it checks that the factory registered and that the module's global
+  appeared — not the test's.
+
+If you add a module to the loader, add it to `LAZY_FACTORIES` in `src/main.js` (not to
+`MODULE_FACTORIES`, where the boot guard would report it missing on every clean load).
+
 ### Non-AI news locator (`js/newsgeo.js`)
 
 The deterministic news-geolocation engine is measured, not eyeballed. `tests/newsgeo-corpus.mjs` is the

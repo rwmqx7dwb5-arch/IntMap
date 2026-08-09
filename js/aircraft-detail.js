@@ -301,6 +301,12 @@ window.IntMapModules.aircraftDetail=function(HOST){
     const e=ensureEl(); e.style.display='block';
     const my=++seq;
     render(null,true); place();
+    /* (#R209) the card shows the flight the button WOULD start (aircraft type, spawn altitude and
+       speed, each clamped to that airframe's envelope), and those numbers come from the simulator's
+       own spec table — which is no longer in the boot bundle. Fetch it now, on the panel that is the
+       only door to it, and redraw when it lands: without this the card renders its fallback figures
+       and nothing says why, which is the silent hole this round is trying not to dig (#R205). */
+    window.IntMapLazy.need('flightSim').then(()=>{ if(my===seq&&cur) render(null,true); });
     try{ HOST.bringToFront(e); }catch(_){}
     photoFor(plane.icao24).then(ph=>{ if(my!==seq||!cur) return; render(ph,false); });
     /* pull the DEM tile under the aircraft into the cache so the flight's ground clearance is measured
