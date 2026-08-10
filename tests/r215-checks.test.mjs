@@ -194,8 +194,14 @@ test('R215 ⑧: switching tides on opens its window and awaits the mask it sampl
   assert.match(scan, /LM\.warm\(\)\s*:\s*null/, 'the land mask is AWAITED — firing warm() and reading ready() is the bug');
   assert.match(scan, /\.then\(\(\)=>scanNow/, '…and the sampling happens after it resolves');
   assert.match(scan, /rearm/, 'a scan that answered nothing does not latch the view against a retry');
-  const toggle = wp.slice(wp.indexOf('function toggle(v){ on=v;\n        if(!on){ panel.hide(); clearFlood()'), wp.indexOf('onRestyle(()=>{ if(on) whenDrawable(()=>{ ensureLayers(); drawStations(); }); });'));
-  assert.match(toggle, /overview\(\)/, 'the window opens with the layer rather than on a tap');
+  /* ⚠ matched with a regex rather than by slicing between two literal strings: this working copy is
+     checked out with CRLF on Windows and committed with LF, so a search key containing "\n" finds
+     nothing after a branch switch and the slice silently becomes the whole file. Same class of trap
+     as #R203's pinned literals — the assertion has to survive things that are not the subject. */
+  const toggle = /function toggle\(v\)\{ on=v;[\s\S]{0,600}?clearFlood\(\);[\s\S]{0,600}?whenDrawable\(/.exec(wp);
+  assert.ok(toggle, 'the tide toggle is where this test expects it');
+  assert.match(toggle[0], /overview\(\)/, 'the window opens with the layer rather than on a tap');
+  assert.match(toggle[0], /scanning=true/, '…and says it is scanning until the mask has answered');
 });
 
 /* ═══ ⑨ THE TRADE LAYER PAINTS THE COUNTRIES ═════════════════════════════════════════════════

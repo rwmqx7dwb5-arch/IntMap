@@ -297,6 +297,14 @@ N・E・S・W・天頂ボタン。⚠ **カメラは絶対にロールしない*
   worker 共有ページへ移行済み）。⚠ ただし Cesium 系4本は `test.use()` と engine seed を使うので
   **その仕組みには載せられない**（helpers/app.js のヘッダが理由を書いている）。
   固定 sleep は全体で 297 秒しか無く、**そこは本丸ではない**。専用の回でやる仕事。
+* **⚠ deep 層に main 由来の赤が2件ある（R215 のものではない。両ツリーで実測して帰属した）** —
+  `tests/r191.spec.js:68`「the field reaches the end of the lowest class, and only over land」は
+  **`origin/main` でも同じ理由で落ちる**（`the fine field was built` が null＝この環境で微細場が
+  組み上がらない）。`tests/r173.spec.js:156`「a lifted aircraft can be hovered and clicked…」は
+  **main で3回中2回落ちる**フレーク。どちらも #R215 の変更前から赤で、CI の core 層には載っていない
+  （deep は nightly / dispatch）。⚠ 記憶の鉄則どおり「ローカルの失敗をフレークと呼んでよいのは main で
+  同じく落ちたときだけ」を守って帰属した。**次のラウンドで r191 の真因（微細場が null になる条件）を
+  取ること**——今回 `js/seismic.js` を触っているので、放置すると次は R215 のせいにされる。
 * **⚠⚠ 琵琶湖 → 瀬田川 → 淀川** — #R211 §1 のまま**直っていない**。
 * **モバイルの重さ／Atlas の分割／バンドルの実行時分割** — #R209 §5 のまま未着手。
 * `js/terrain-water.js` の `pitEscape()`／`wp-head` の見出し／MapLibre 南極 — 変化なし。
