@@ -1006,7 +1006,7 @@ window.IntMapModules.tsunami=function(HOST){
       try{ if(jobId&&window.IntMapTsunamiWorker) window.IntMapTsunamiWorker.abort(jobId); }catch(_){}
       busy=false; if(panel) panel.style.display='none'; clearPaint(); return true; }
 
-    return { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
+    const API = { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
       setHours(h){ hours=Math.max(1,Math.min(30,+h||6)); if(opened) render(); return true; },
       /* (#R204) the domain, so Atlas can ask for the high-resolution near-source solve by name */
       setScope(s){ scope=(String(s)==='near')?'near':'global'; hours=effHours(); if(opened) render(); return scope; },
@@ -1036,5 +1036,32 @@ window.IntMapModules.tsunami=function(HOST){
           coastMaxM:+(sim.coastMax||0).toFixed(2), coastAt:sim.coastAt, seaCells:sim.seaCells,
           fineCells:sim.fineCells||0, fineCellKm:+(111.32/FINE_CPD).toFixed(2), fineWhy,   /* (#R205) */
           ampM:sim.amp, autoAmpM:sim.autoAmp||null, solveMs:sim.solveMs||null, ms:sim.ms }:null }) };
+
+    /* ══ (#R214) …AND THE TSUNAMI TRAVELS WITH THE LINK TOO ═══════════════════════════════════════
+       「再読み込みした際に、できる限りその状態に戻ってくるようにして。」 #R211 built the registry and
+       registered three modules; the simulators were left for later and later is now. The key is the
+       LAZY-MODULE NAME, because at restore time js/map-ui.js has to fetch this module back before it
+       has anything to hand the value to. ⚠ The free-drawn rupture ring goes in it: without the ring
+       the same magnitude at the same epicentre is a DIFFERENT earthquake (see srcKey), so a link that
+       dropped it would reopen on a run the sender never made. Rounded to 4 decimals — ~11 m, far
+       below the grid — because the ring is the long part of the URL. */
+    try{ window.IntMapShareState&&window.IntMapShareState.register('tsunami',{
+      get(){ if(!opened||!epi) return null;
+        const o={ e:[+epi[0].toFixed(5),+epi[1].toFixed(5)], m:+mw.toFixed(2), d:depthKm, h:hours, sc:scope,
+                  sp:speed, op:+opacity.toFixed(2), mx:showMax?1:0, iso:showIso?1:0, t:Math.round(tSim) };
+        try{ if(rupture&&rupture.ring&&rupture.ring.length>=3)
+          o.r=rupture.ring.map(p=>[+(+p[0]).toFixed(4),+(+p[1]).toFixed(4)]); }catch(_){}
+        return o; },
+      set(v){ if(!v||!Array.isArray(v.e)) return;
+        const rup=(Array.isArray(v.r)&&v.r.length>=3)?{ring:v.r}:undefined;
+        Promise.resolve(API.open({ lng:+v.e[0], lat:+v.e[1], mw:v.m, depth:v.d, hours:v.h, scope:v.sc, rupture:rup })).then(()=>{
+          try{ if(v.sp!=null) API.setSpeed(v.sp); }catch(_){}
+          try{ if(v.op!=null) API.setOpacity(v.op); }catch(_){}
+          try{ if(v.mx!=null) API.showMaximum(!!v.mx); if(v.iso!=null) API.showContours(!!v.iso); }catch(_){}
+          /* the frame is restored only once a solve exists to have frames — see setTimeS */
+          try{ if(v.t!=null) setTimeout(()=>{ try{ setTimeS(+v.t); }catch(_){} },2500); }catch(_){}
+        }).catch(()=>{}); } }); }catch(_){}
+
+    return API;
   })();
 };

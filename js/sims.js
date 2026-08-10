@@ -150,7 +150,9 @@ window.IntMapModules.radiation=function(HOST){
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
         if(tau>=1) return; requestAnimationFrame(frame); };
       requestAnimationFrame(frame); }
+    let _lastRun=null;   /* (#R214) what the last plume was ASKED, so a link can reproduce it */
     async function run(src,opts){ opts=opts||{}; clear(); const myGen=++_gen;
+      try{ _lastRun={ s:{lng:+src.lng,lat:+src.lat,name:src.name||''}, o:Object.assign({},opts) }; }catch(_){}
       const iso=ISOTOPES[String(opts.isotope||'cs137').toLowerCase()]||ISOTOPES.cs137;
       const bq=(opts.bq!=null&&isFinite(+opts.bq)&&+opts.bq>0)?+opts.bq:(SOURCES[String(opts.source||'').toLowerCase()]||SOURCES.fukushima).bq;
       const hours=Math.max(6,Math.min(80,+opts.hours||48)), emitHours=Math.max(0.25,Math.min(hours,+opts.emitHours||8));
@@ -175,8 +177,20 @@ window.IntMapModules.radiation=function(HOST){
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
-    return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite };
+    return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite,
+      /* ⚠ (#R214) THE ONLY WAY TO RESTORE A PLUME IS TO RUN IT AGAIN. There is no stored field to
+         reopen: the answer is a Lagrangian solve over a LIVE wind field, so the state of this
+         module is the QUESTION, not the picture. `set` therefore re-runs — which is the honest
+         reading of 「その状態に戻ってくる」 — and only ever when a link actually carried one, so a
+         plain reload of a session that never ran a plume costs nothing. */
+      _share:{ get(){ return _lastRun?{ s:[+_lastRun.s.lng.toFixed(5),+_lastRun.s.lat.toFixed(5),_lastRun.s.name], o:_lastRun.o }:null; },
+        set(v){ if(!v||!Array.isArray(v.s)) return;
+          try{ setTimeout(()=>{ try{ run({lng:+v.s[0],lat:+v.s[1],name:v.s[2]||''}, v.o||{}); }catch(_){} },1200); }catch(_){} } } };
   })();
+  /* (#R214) …and handed to the share registry (see the note on the sunlight simulator above). */
+  try{ if(window.IntMapRadiation._share){ const _io=window.IntMapRadiation._share;
+    if(window.IntMapShareState) window.IntMapShareState.register('radiation',_io);
+    else (window._imShareEarly||(window._imShareEarly=[])).push(['radiation',_io]); } }catch(_){}
 };
 
 window.IntMapModules.popArea=function(HOST){
@@ -662,7 +676,22 @@ window.IntMapModules.sun=function(HOST){
       /* (#R176) the new half, so Atlas and the tests can drive it */
       terrainShadow:(on)=>{ const want=(on==null)?!terrainOn:!!on; if(want!==terrainOn) toggleTerrain(); return terrainOn; },
       solsticeShade, analysePoint,
+      /* (#R214) the instant being studied and whether the terrain shadow is on — a shared sunlight
+         link that reopened at 'now' would be answering a different question than the one sent. */
+      _share:{ get(){ if(!(panel&&panel.style.display!=='none')) return null;
+          return { w:when.toISOString(), tr:terrainOn?1:0 }; },
+        set(v){ if(!v) return; try{ open(); }catch(_){}
+          try{ if(v.w){ const d=new Date(v.w); if(!isNaN(d.getTime())) setTime(d); } }catch(_){}
+          try{ if(v.tr!=null&&!!v.tr!==terrainOn) toggleTerrain(); }catch(_){} } },
       state:()=>({ open:!!(panel&&panel.style.display!=='none'), when:when.toISOString(), terrainOn }) }; })();
+  /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるようにして。」 — the simulators
+     #R211 left unregistered. `_share` is the module's own {get,set}; this is the one line that
+     hands it to the registry js/map-ui.js packs into the link's `s=` parameter. ⚠ The KEY is the
+     lazy-module name where there is one, because `apply()` fetches by that name at restore. */
+  try{ if(window.IntMapSun._share){ const _io=window.IntMapSun._share;
+    if(window.IntMapShareState) window.IntMapShareState.register('sun',_io);
+    else (window._imShareEarly||(window._imShareEarly=[])).push(['sun',_io]); } }catch(_){}
+
 };
 
 window.IntMapModules.transitReach=function(HOST){
@@ -867,7 +896,22 @@ window.IntMapModules.disaster=function(HOST){
       setHazard:(h)=>{ if(!HAZ().some(k=>k[0]===h)) return false; hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); return true; },
       hazards:()=>HAZ().map(h=>h[0]),
       state:()=>({ hazard, floodM, origin:origin?{lng:origin.lng,lat:origin.lat}:null }),   /* (#R190) */
-      _inund:async(o,hz,ts,fm)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; return await inund(); } }; })();
+      _inund:async(o,hz,ts,fm)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; return await inund(); },
+      /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるように」 — the hazard, the water
+         depth and WHERE it is coming from are the whole question this panel was asked. Registered
+         under the lazy-module name so js/map-ui.js can fetch the module back before applying. */
+      _share:{ get(){ if(!panel||panel.style.display==='none') return null;
+          const o={ hz:hazard, f:floodM }; if(origin&&origin.lng!=null){ o.o=[+(+origin.lng).toFixed(5),+(+origin.lat).toFixed(5)]; } return o; },
+        set(v){ if(!v) return; const ll=(Array.isArray(v.o)&&v.o.length===2)?{lng:+v.o[0],lat:+v.o[1]}:{};
+          try{ open(Object.assign({hazard:v.hz, floodM:v.f}, ll)); }catch(_){} } } }; })();
+  /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるようにして。」 — the simulators
+     #R211 left unregistered. `_share` is the module's own {get,set}; this is the one line that
+     hands it to the registry js/map-ui.js packs into the link's `s=` parameter. ⚠ The KEY is the
+     lazy-module name where there is one, because `apply()` fetches by that name at restore. */
+  try{ if(window.IntMapDisaster._share){ const _io=window.IntMapDisaster._share;
+    if(window.IntMapShareState) window.IntMapShareState.register('disaster',_io);
+    else (window._imShareEarly||(window._imShareEarly=[])).push(['disaster',_io]); } }catch(_){}
+
 };
 
 window.IntMapModules.earthReplay=function(HOST){

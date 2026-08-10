@@ -651,7 +651,32 @@ window.IntMapModules.los=function(HOST){
         if(panel&&panel.style.display!=='none') render(); return true; },
       state:()=>({ site:site?site.slice():null, obsH:losH, tgtH:losT, rangeKm:losR, k:losK, mhz:losF,
         open:!!(panel&&panel.style.display!=='none'), last:last?Object.assign({},last):null }),
+      /* (#R214) 「再読み込みした際に…その状態に戻ってくるように」 — the site AND the five parameters,
+         because a viewshed from the same point with a different antenna height is a different
+         answer. Registered under the lazy-module name ('los'), which is how js/map-ui.js gets the
+         module back before it has anything to hand the value to. */
+      _share:{ get(){ if(!(panel&&panel.style.display!=='none')||!site) return null;
+          return { s:[+site[0].toFixed(5),+site[1].toFixed(5)], h:losH, t:losT, r:losR, k:losK, f:losF }; },
+        set(v){ if(!v||!Array.isArray(v.s)) return;
+          /* ⚠ open() takes {lng,lat}, and setParams is a METHOD on the object being built here —
+             not a name in scope. The five values it would clamp are closure variables, so they are
+             clamped the same way and assigned directly. */
+          try{ open({lng:+v.s[0], lat:+v.s[1]}); }catch(_){}
+          try{ if(v.h!=null) losH=Math.max(0,+v.h||0);
+               if(v.r!=null) losR=Math.min(400,Math.max(1,+v.r||60));
+               if(v.t!=null) losT=Math.max(0,+v.t||0);
+               if(v.k!=null) losK=Math.max(0.5,Math.min(5,+v.k||1.3333));
+               if(v.f!=null) losF=Math.max(0,+v.f||0); }catch(_){}
+          try{ setTimeout(()=>{ try{ run(); }catch(_){} },600); }catch(_){} } },
       /* the physics, exposed so it can be tested without a map */
       _phys:{ dropAt, fresnel1, knifeEdgeDb, horizonM } };
   })();
+  /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるようにして。」 — the simulators
+     #R211 left unregistered. `_share` is the module's own {get,set}; this is the one line that
+     hands it to the registry js/map-ui.js packs into the link's `s=` parameter. ⚠ The KEY is the
+     lazy-module name where there is one, because `apply()` fetches by that name at restore. */
+  try{ if(window.IntMapLOS._share){ const _io=window.IntMapLOS._share;
+    if(window.IntMapShareState) window.IntMapShareState.register('los',_io);
+    else (window._imShareEarly||(window._imShareEarly=[])).push(['los',_io]); } }catch(_){}
+
 };

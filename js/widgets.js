@@ -165,6 +165,9 @@ window.IntMapModules.widgets=function(HOST){
       '.wgt-card .wgt-v{font-size:25px;font-weight:400;color:var(--text-main);line-height:1.16;letter-spacing:-0.4px;font-variant-numeric:tabular-nums;margin-top:8px;word-break:break-word;}'+
       '.wgt-card .wgt-v b{font-weight:500;}'+
       '.wgt-card .wgt-s{font-size:10.5px;font-weight:400;color:var(--text-muted);margin-top:5px;line-height:1.5;letter-spacing:0.05px;}'+
+      /* (#R214) the WHERE, on its own line under the facts — see _locLine(). Kept from wrapping
+         itself, because a two-line "my / location" would be the same defect one level down. */
+      '.wgt-card .wgt-loc{display:inline-block;margin-top:1px;white-space:nowrap;opacity:.9;}'+
       /* (#R154) AQI / UV rebuilt iOS-style — the WHOLE card takes the category colour as its background ("現在の数字の
          色を背景にして。iOS風に。"). _wgtColor() sets the gradient inline!important (beats the glass override) and adds
          .wgt-colored (+ .wgt-on-light for pale colours → dark text, else white) so contrast holds on every tier. */
@@ -307,6 +310,16 @@ window.IntMapModules.widgets=function(HOST){
     }
     function entry(u){ return active.find(e=>e.u===u); }
     function setV(u,v,s){ const ev=document.getElementById('wgtv-'+u); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+u); if(es) es.innerHTML=s||''; }
+    /* ══ (#R214) 「ウィジェットは、my locationってかくときは、改行して書いて。」 ═══════════════════
+       Every location widget's sub-line was one run of interpunct-separated facts with WHERE they are
+       about stuck on the end — `H 31° · L 24°  ·  my location`. In a sidebar card that width the
+       label is what wraps, and it wraps mid-phrase, so the one word that says whose weather this is
+       ends up as an orphan on the second line anyway. Putting it on its own line ON PURPOSE is both
+       what was asked and what the layout was going to do badly by itself.
+       ⚠ innerHTML — so the label is escaped even though today it is only ever one of two literals. */
+    const _locLine=(lbl)=>{ if(!lbl) return '';
+      let s; try{ s=window.IntMapSafe.html(String(lbl)); }catch(_){ s=String(lbl).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+      return '<br><span class="wgt-loc">'+s+'</span>'; };
     /* (#R154) iOS-style colour-fill helpers for AQI / UV. _wgtColor paints the whole card the category colour (gradient,
        inline!important so it beats the sidebar-glass override) and picks dark/light text by luminance so every tier reads. */
     const _WL=(en,ja,de,ru,es)=>HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
@@ -540,7 +553,7 @@ window.IntMapModules.widgets=function(HOST){
         const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+c.lbl+_wxSrc(j));
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°'):'')+_locLine(c.lbl)+_wxSrc(j));
       }catch(_){ setV(e.u,'—', una()); } }
     /* (#R41) Weather at the MAP CENTER — distinct from the geolocation 'weather' widget; needs no permission
        and follows wherever the user pans (refreshed on the data tick). */
@@ -578,9 +591,9 @@ window.IntMapModules.widgets=function(HOST){
         let tz; try{ if(HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; }catch(_){}
         const hm=d=>{ try{ return d.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ return '—'; } };
         if(s.polar==='day'){ setV(e.u,'<span style="font-size:17px;">☀️ '+_WL('Midnight sun','白夜','Mitternachtssonne','Полярный день','Sol de medianoche')+'</span>',
-            _WL('the sun does not set today','今日は日没がありません','die Sonne geht heute nicht unter','сегодня солнце не заходит','hoy el sol no se pone')+' · '+c.lbl); return; }
+            _WL('the sun does not set today','今日は日没がありません','die Sonne geht heute nicht unter','сегодня солнце не заходит','hoy el sol no se pone')+_locLine(c.lbl)); return; }
         if(s.polar==='night'){ setV(e.u,'<span style="font-size:17px;">🌑 '+_WL('Polar night','極夜','Polarnacht','Полярная ночь','Noche polar')+'</span>',
-            _WL('the sun does not rise today','今日は日の出がありません','die Sonne geht heute nicht auf','сегодня солнце не восходит','hoy el sol no sale')+' · '+c.lbl); return; }
+            _WL('the sun does not rise today','今日は日の出がありません','die Sonne geht heute nicht auf','сегодня солнце не восходит','hoy el sol no sale')+_locLine(c.lbl)); return; }
         /* Round to MINUTES FIRST, then split. `floor(s/3600)+'h '+round(s%3600/60)+'m'` prints "13h 60m"
            whenever the leftover seconds round up to a full minute — seen in this very card at 13:59:50
            of daylight. Carrying the rounded minute into the hour is the only way that cannot happen. */
@@ -595,7 +608,7 @@ window.IntMapModules.widgets=function(HOST){
         setV(e.u,'<div style="display:flex;flex-direction:column;gap:2px;font-size:17px;line-height:1.25;">'
           +'<div>🌅 <span class="wgt-sl">'+_WL('Sunrise','日の出','Aufgang','Восход','Amanecer')+'</span> '+hm(s.sunrise)+'</div>'
           +'<div>🌇 <span class="wgt-sl">'+_WL('Sunset','日の入り','Untergang','Закат','Ocaso')+'</span> '+hm(s.sunset)+'</div></div>',
-          (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt+' · '):'')+c.lbl);
+          (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt):'')+_locLine(c.lbl));
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
         let age=(Date.now()/864e5-ref)%syn; if(age<0)age+=syn; const ph=age/syn;
@@ -611,7 +624,7 @@ window.IntMapModules.widgets=function(HOST){
         const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi; const cat=_aqiCat(v);   /* (#R154) 6-tier scale + colour-fill */
         _wgtColor(e.u, cat.col);
         setV(e.u, _wgtBig(v!=null?Math.round(v):'—','US AQI', cat.label),
-          (cu.pm2_5!=null?('PM2.5 '+(+cu.pm2_5).toFixed(1)+' µg/m³ · '):'')+c.lbl);
+          (cu.pm2_5!=null?('PM2.5 '+(+cu.pm2_5).toFixed(1)+' µg/m³'):'')+_locLine(c.lbl));
       }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshIss(e){ try{ const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const j=await r.json();
         setV(e.u,'🛰 '+(+j.latitude).toFixed(1)+'°, '+(+j.longitude).toFixed(1)+'°',
@@ -749,7 +762,7 @@ window.IntMapModules.widgets=function(HOST){
         const mxLbl=dy._partialFirstDay?_WL('peak ahead ','この先の最大 ','Spitze voraus ','пик впереди ','pico próximo ')
                                        :_WL('max ','本日最大 ','max ','макс. ','máx ');
         setV(e.u, _wgtBig(uv!=null?(+uv).toFixed(1):'—','UV', cat.label),
-          clearNote+((mx!=null?(mxLbl+(+mx).toFixed(1)+' · '):''))+(cu.time?asOf(cu.time)+' · ':'')+c.lbl+_wxSrc(j));   /* (#R146) reading date/time via asOf() */
+          clearNote+((mx!=null?(mxLbl+(+mx).toFixed(1)+' · '):''))+(cu.time?asOf(cu.time):'')+_locLine(c.lbl)+_wxSrc(j));   /* (#R146) reading date/time via asOf() */
       }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old

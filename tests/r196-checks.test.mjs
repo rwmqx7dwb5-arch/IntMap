@@ -243,7 +243,12 @@ test('R196 ⑥ the propagation model follows the seismic panel, debounced', () =
   assert.match(t, /if\(!opened\|\|o\.lng==null/, 'it does nothing unless the panel is open');
   assert.match(t, /setTimeout\(\(\)=>\{ srcPending=false; if\(!opened\) return; ranKey=srcKey\(\); build\(\); \},900\)/,
     'it debounces — a magnitude spinner must not start a solve per keystroke');
-  assert.match(t, /return \{ open, close, play, pause, setFrame, setTime:setTimeS, at, follow,/, 'it is on the public API');
+  /* ⚠ (#R214) THE CLAIM IS «follow IS EXPORTED», NOT «the export literal starts with these bytes».
+     This pinned the whole `return { … }` line, so #R214 naming that object `API` (to register its
+     share state after it exists) failed a test about the seismic panel's debounce. That is exactly
+     #R203's trap. The claim is now derived from the object however it is spelled. */
+  const api = /(?:return|const\s+API\s*=)\s*\{\s*open, close, play, pause, setFrame, setTime:setTimeS, at, follow,/.exec(t);
+  assert.ok(api, 'follow is on the public API object, whatever that object is called');
   const s = rd('js/seismic.js');
   assert.match(s, /function syncTsunamiSource\(\)\{/);
   assert.match(s, /function refresh\(\)\{ draw\(\); warmEpi\(\); schedField\(\); syncTsunamiSource\(\); \}/);

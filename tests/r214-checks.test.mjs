@@ -177,6 +177,77 @@ test('R214 ④b: turning your head does not re-precess the catalogue', () => {
   assert.ok(!/\.precess\(/.test(stand), 'drawStand must not precess anything itself — it reads the cache');
 });
 
+/* ═══ ⑥ WHAT A RELOAD BRINGS BACK ═════════════════════════════════════════════════════════════ */
+
+test('R214 ⑥: every simulator #R211 left out now registers with the share registry', () => {
+  /* #R211 built IntMapShareState and registered three modules; the rest were listed as "later" in
+     three consecutive rounds. Each pair below is (the file that owns the state, the key it must
+     register under) — and the KEY MATTERS: js/map-ui.js `apply()` calls IntMapLazy.need(key) for a
+     module that has not registered yet, so a lazily-fetched simulator whose key is not its lazy
+     name is never fetched and its state silently does not arrive. */
+  const want = [
+    ['js/tsunami.js', 'tsunami', true],      /* lazy → the key must be the lazy-module name */
+    ['js/viewshed.js', 'los', true],         /* lazy, and its lazy name is 'los', not 'viewshed' */
+    ['js/sims.js', 'sun', false],
+    ['js/sims.js', 'disaster', false],
+    ['js/sims.js', 'radiation', false],
+    ['js/drone-nav.js', 'drone', false],
+  ];
+  const lazy = read('js/lazy-modules.js');
+  for (const [file, key, isLazy] of want) {
+    const src = read(file);
+    const re = new RegExp("IntMapShareState[\\s\\S]{0,80}register\\('" + key + "'");
+    assert.ok(re.test(src), `${file} does not register '${key}' with IntMapShareState`);
+    if (isLazy) assert.ok(new RegExp("case '" + key + "':").test(lazy),
+      `'${key}' is registered as if it were a lazy module, but js/lazy-modules.js cannot fetch it`);
+  }
+  /* ⚠⚠ AND LOAD ORDER MUST NOT DECIDE WHETHER A SIMULATOR IS SHAREABLE. Every call site is guarded
+     with `window.IntMapShareState && …`, which is a silent no-op for a module evaluated BEFORE
+     js/map-ui.js builds the registry. Measured: js/drone-nav.js is one, and its registration
+     vanished without a trace. The eager modules therefore queue instead, and map-ui drains. */
+  assert.ok(/_imShareEarly/.test(read('js/map-ui.js')), 'js/map-ui.js must drain the early queue');
+  for (const f of ['js/sims.js', 'js/drone-nav.js', 'js/viewshed.js']) {
+    assert.ok(/_imShareEarly/.test(read(f)), `${f} registers eagerly and must queue when the registry is not up yet`);
+  }
+  /* …and the registry's own contract: both halves, or `register` refuses it and says nothing. */
+  for (const [file] of want) {
+    const src = read(file);
+    const i = src.indexOf('_share');
+    if (i < 0) continue;
+    const blk = src.slice(i, i + 1400);
+    assert.ok(/get\(\)/.test(blk) && /set\(v\)/.test(blk), `${file}'s _share must have BOTH get and set`);
+  }
+  /* the tsunami's free-drawn rupture has to travel: the same magnitude at the same epicentre with a
+     different ring is a different earthquake (#R212), so a link without it reopens on another run */
+  const ts = read('js/tsunami.js');
+  const blk = ts.slice(ts.indexOf("register('tsunami'"), ts.indexOf("register('tsunami'") + 1400);
+  assert.ok(/rupture/.test(blk) && /ring/.test(blk), 'the tsunami share state must carry the drawn rupture ring');
+});
+
+/* ═══ ⑤ THE DAY/NIGHT SWITCH REACHES THE THING THAT IS ACTUALLY DRAWING ═══════════════════════ */
+
+test('R214 ⑤: turning the day/night side off reaches the renderer that owns it', () => {
+  const ns = read('js/night-side.js'), ts = read('js/theme-sky.js'), ab = read('js/app-body.js');
+  /* ⚠ #R162's trap: a `window.X` nobody assigns makes the feature vanish silently inside a
+     try/catch. Both ends of this hand-off are asserted, because only one of them is visible from
+     either file. */
+  assert.ok(/window\.IntMapThemeSky\s*=/.test(ts), 'js/theme-sky.js must publish the hook itself');
+  /* ⚠ and NOT from js/app-body.js — tests/r200 ⑤ ratchets that file and eight lines broke it. */
+  assert.ok(!/window\.IntMapThemeSky\s*=/.test(ab), 'the hook must not be published from the core file');
+  assert.ok(/window\.IntMapThemeSky/.test(ns), 'js/night-side.js must use it when the switch flips');
+  /* the light is only unaimed where the RENDERER draws the night side — MapLibre's night side is a
+     layer this module removes, and its light is the fill-extrusion lighting, which is not the
+     subject. So the guard has to be on the engine, not unconditional. */
+  const aim = ts.slice(ts.indexOf('function _nightSideOff'), ts.indexOf('function _aimSun') + 700);
+  assert.ok(/_rendererLightsTheGlobe/.test(aim) && /!==\s*'maplibre'/.test(aim),
+    'the un-aiming must be conditional on the engine that lights its own globe');
+  assert.ok(/setSunDirection\(null\)/.test(aim), 'and it restores the default light rather than inventing one');
+  /* …and it has to survive the periodic re-aim, which is what made the old behaviour look like the
+     switch "not working": the setting was read nowhere, so the next tick lit the globe again. */
+  assert.ok(aim.indexOf('_nightSideOff()') < aim.indexOf('_sunOverheadPoint()'),
+    'the setting is consulted BEFORE the sun is aimed, so the 60-second re-aim cannot undo it');
+});
+
 test('R214 ④c: the standing view is reachable by hand and by Atlas, and the planner knows the parameters', () => {
   assert.ok(/mode:'stand'/.test(read('js/tool-panel.js')), 'the right-click menu opens it directly');
   const atlas = read('js/atlas-console.js');

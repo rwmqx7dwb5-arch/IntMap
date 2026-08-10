@@ -2586,20 +2586,13 @@ window.IntMapModules.atlasConsole=function(HOST){
           } }catch(_){}
           return R(ok, ok?note('🌇 '+L('Sunlight hours & terrain shade','日照時間・地形の影','Sonnenstunden & Geländeschatten','Часы солнца и тень рельефа','Horas de sol y sombra')+txt):warn('⚠')); }
         /* (#R208) 「ある地点からの星空」— reachable from Atlas as well as the right-click item (#R112) */
-        /* (#R214) …and 「立った」モード — the same call with mode:'stand' and an optional direction */
-        case 'nightSky': case 'starsFromHere': case 'skyFromHere': case 'stargazing': case 'standHere': case 'skyStanding': {
+        case 'nightSky': case 'starsFromHere': case 'skyFromHere': case 'stargazing': case 'standHere': case 'skyStanding': {   /* (#R214) +「立った」モード */
           await window.IntMapLazy.need('nightSky'); const NS=window.IntMapNightSky; if(!NS||!NS.open) return R(false, warn('⚠'));
           let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
           if(!ll) return R(false, warn('⚠'));
-          /* (#R214) the view is a parameter now: 'stand' is the first-person one, and az/alt/fov aim it */
-          const nsMode=(a.type==='standHere'||a.type==='skyStanding'||a.stand===true||a.mode==='stand'||a.view==='stand'||a.view==='first-person')?'stand'
-            :((a.mode==='dome'||a.view==='dome'||a.view==='all-sky'||a.stand===false)?'dome':undefined);
-          await NS.open({lng:ll.lng, lat:ll.lat, when:(a.when||a.time||a.date||null), mode:nsMode,
-            az:(a.az!=null?+a.az:(a.bearing!=null?+a.bearing:undefined)), alt:(a.alt!=null?+a.alt:undefined), fov:(a.fov!=null?+a.fov:undefined)});
+          await NS.open({lng:ll.lng, lat:ll.lat, when:(a.when||a.time||a.date||null), az:a.az, alt:a.alt, fov:a.fov, bearing:a.bearing, mode:(a.type==='standHere'||a.type==='skyStanding')?'stand':a.mode, view:a.view, stand:a.stand});   /* (#R214) the view is a parameter — js/night-sky.js resolves the spellings */
           if(a.rate!=null&&NS.setRate) NS.setRate(+a.rate); if(a.play&&NS.play) NS.play(true);   /* (#R208) */
-          const st=NS.state();
-          const facing=(st.mode==='stand'&&st.look)?(' · '+L('facing','向き','Blick','взгляд','mirando')+' '+Math.round(st.look.az)+'°'):'';
-          return R(true, note((st.mode==='stand'?'🧍 ':'✨ ')+L('Sky from','星空：','Himmel von','Небо от','Cielo desde')+' '+ll.lat.toFixed(3)+'°, '+ll.lng.toFixed(3)+facing+(st.last?' — '+st.last.starsDrawn.toLocaleString()+' '+L('stars above the measured skyline','個が実測した稜線の上に','Sterne über der Skyline','звёзд над горизонтом','estrellas sobre el horizonte'):''))); }
+          const st=NS.state(), facing=(st.mode==='stand'&&st.look)?(' · '+L('facing','向き','Blick','взгляд','mirando')+' '+Math.round(st.look.az)+'°'):''; return R(true, note((st.mode==='stand'?'🧍 ':'✨ ')+L('Sky from','星空：','Himmel von','Небо от','Cielo desde')+' '+ll.lat.toFixed(3)+'°, '+ll.lng.toFixed(3)+facing+(st.last?' — '+st.last.starsDrawn.toLocaleString()+' '+L('stars above the measured skyline','個が実測した稜線の上に','Sterne über der Skyline','звёзд над горизонтом','estrellas sobre el horizonte'):''))); }
         /* (#R197) the space explorer — the same surface the button at the zoom floor opens */
         case 'space': case 'solarSystem': case 'planet': case 'planets': case 'explore Space': {
           const S=window.IntMapSpace;
@@ -5224,9 +5217,9 @@ window.IntMapModules.atlasConsole=function(HOST){
         p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
         setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },60); return;
       }
-      /* Normal / mobile — show the Atlas sidebar tab. Route through the real tab button so the shared tab behaviour
-         (mobile sheet-lift, active state) fires exactly as it does for News/Info/Countries. Never toggles OFF here. */
-      try{
+      /* Normal / mobile — the Atlas sidebar tab, through the real tab button so the shared behaviour (sheet-lift, active state) fires
+         as for News/Info/Countries; never toggles OFF. ⚠ (#R214) a tab selected inside a COLLAPSED sidebar puts the answer off-screen — uncollapse first, only ever that way. */
+      try{ const sb=document.getElementById('sidebar'); if(sb&&sb.classList.contains('collapsed')){ const tb=document.getElementById('btn-toggle-sidebar'); if(tb) tb.click(); else sb.classList.remove('collapsed'); }
         if(typeof HOST.mode!=='undefined' && HOST.mode==='atlas'){ mountTab(); }
         else { const b=document.getElementById('btn-community'); if(b) b.click(); else if(typeof setMode==='function') setMode('atlas','btn-community'); else mountTab(); }
       }catch(_){ mountTab(); }

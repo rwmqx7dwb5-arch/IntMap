@@ -1013,6 +1013,17 @@ window.IntMapModules.viewHash=function(HOST){
           try{ const p=window.IntMapLazy&&window.IntMapLazy.need(k); if(p&&p.catch) p.catch(()=>{}); }catch(_){} }); },
       pending(){ return PENDING; },
       keys(){ return Object.keys(SIMS); } };
+    /* ⚠⚠ (#R214) A MODULE THAT LOADS BEFORE THIS FILE COULD NOT REGISTER, AND SAID NOTHING.
+       Every `register` call site is `try{ window.IntMapShareState&&…register(…) }catch(_){}` — which
+       is correct for a module that may run without a map, and is ALSO a silent no-op for one that
+       simply ran first. MEASURED: with the six simulators registering themselves, `keys()` after boot
+       held sun / disaster / radiation but NOT drone — js/drone-nav.js is evaluated before this file,
+       so its call saw `undefined` and the `&&` swallowed it. That is #R162's trap exactly: the
+       feature does not break, it is never there. So a module may leave its entry HERE instead, and
+       this drains whatever arrived early. Load order stops being something anybody has to know. */
+    try{ const early=window._imShareEarly; if(Array.isArray(early)){
+      early.splice(0).forEach(e=>{ try{ window.IntMapShareState.register(e[0],e[1]); }catch(_){} }); } }catch(_){}
+    try{ window._imShareEarly={ push(e){ try{ window.IntMapShareState.register(e[0],e[1]); }catch(_){} } }; }catch(_){}
     /* base64url of the JSON — short enough for an address bar, and opaque so nobody hand-edits it */
     function packSims(){ try{ const o=window.IntMapShareState.collect(); if(!o) return '';
       const b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));
