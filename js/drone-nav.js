@@ -886,6 +886,14 @@ window.IntMapModules.droneNav=function(HOST){
     /* `open` above is the PANEL. Opening a SAVED route is `load`, deliberately spelled differently —
        two members of the same object cannot both be called open, and the last one silently wins. */
     save:saveRoute, load:openRoute, remove:deleteRoute,
+    /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるように」 — the SAVED routes already
+       survive a reload in localStorage (loadStore), but the route being WORKED ON is the state a
+       shared link is about, and it was not carried. sanitizeRoute is the same gate `load` uses, so
+       a hand-edited link cannot inject anything the app would not have stored itself. */
+    _share:{ get(){ try{ if(!panelOpen()||!route||!route.wp||!route.wp.length) return null;
+          const c=sanitizeRoute(route); return c?{ r:c }:null; }catch(_){ return null; } },
+      set(v){ if(!v||!v.r) return; try{ open(); }catch(_){}
+        try{ const clean=sanitizeRoute(v.r); if(clean){ route=clean; lastResult=null; draw(null); if(panelOpen()) render(); } }catch(_){} } },
     /* extension seams */
     registerHazardSource, unregisterHazardSource, hazardSourceIds, registerWindField,
     /* diagnostics — Atlas + the tests read these instead of poking at the renderer */
@@ -903,5 +911,9 @@ window.IntMapModules.droneNav=function(HOST){
     /* the pure model, exported so it can be tested without a map */
     _math:{ distM, bearingDeg, lerpLL, powerW, climbWh, densify }, eraseMap };
   window.IntMapDrone=API;
+  /* (#R214) …handed to the share registry (see _share above). */
+  try{ if(API._share){ const _io=API._share;
+    if(window.IntMapShareState) window.IntMapShareState.register('drone',_io);
+    else (window._imShareEarly||(window._imShareEarly=[])).push(['drone',_io]); } }catch(_){}
   return API;
 };

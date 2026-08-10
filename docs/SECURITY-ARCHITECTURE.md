@@ -193,8 +193,11 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 **full, user-facing list with exactly what is sent** is in the in-app Privacy Policy
 (`index.html`, "第三者 / Third parties"). Security-relevant notes:
 
-- Some camera-list endpoints are fetched via **public CORS relays** (`corsproxy.io`,
-  `allorigins.win`, `codetabs.com`) — the relay sees the request; no personal data is sent.
+- Some camera-list endpoints and the Google News RSS feeds are fetched via **public CORS relays**
+  (`corsproxy.io`, `allorigins.win`, `proxy.corsfix.com`, `codetabs.com`) — the relay sees the
+  request; no personal data is sent. (#R214) `corsfix` was added because a relay that works is not
+  a relay that works for every target: Google served the `en-US` news edition through `corsproxy.io`
+  and answered the same proxy with its bot-block page for `ja-JP`.
 - **No PII in URL query strings**; error monitoring (Sentry, dormant) strips PII / tokens /
   query strings and only reports IntMap's own exceptions.
 - Analytics: Google Analytics (gtag) + Microsoft Clarity load as third-party scripts

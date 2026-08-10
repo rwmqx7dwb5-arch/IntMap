@@ -21,9 +21,28 @@
  *  helpers live in the closure rather than becoming five names the rule would have to police.
  */
 export const fetchViaProxy = (() => {
+  /* ══ (#R214) WHY THERE IS A FOURTH ONE, AND WHY IT IS THE ODD ONE OUT ═══════════════════════════
+     「日本語版でニュースが表示されない。ずっと読み込み中。」 Measured FROM THE PAGE (#R188), same
+     build, same second, the two WORLD feeds side by side through the three proxies above:
+
+        feed        allorigins      corsproxy.io                      codetabs
+        en-US       timeout 9 s     200 · 171 KB · valid RSS · 5 ms   timeout 9 s
+        ja-JP       timeout 9 s     503 · Google's "Sorry..." page    timeout 9 s
+
+     So it was never the app's Japanese path: GOOGLE serves the en-US edition to that proxy's egress
+     and refuses the ja/JP one — its bot interstitial, byte-identical (2,041 B) for WORLD, BUSINESS,
+     the plain feed and search. With the only reachable proxy blocked for that ONE locale, the race
+     had nothing left to win with, and a Japanese reader waited out the full ~40 s of deadlines to be
+     told it failed. ⚠ A proxy that works is not a proxy that works FOR EVERY TARGET.
+
+     proxy.corsfix.com answers all five editions with real RSS and the right locale in the titles
+     (jp 238 ms / en 537 / de 857 / ru 742 / es 1,277 ms, measured in that order on this build).
+     ⚠ IT TAKES THE URL RAW. Handed an encodeURIComponent'd one it returns 400 with a 247-byte body —
+     which is why this list is a list of FUNCTIONS and not a list of prefixes. */
   const PROXIES = [
     (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://proxy.corsfix.com/?${u}`,
     (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   ];
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */

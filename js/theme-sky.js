@@ -166,7 +166,28 @@ export function makeThemeSky(HOST, CTX) {
     try{ const FS=window.IntMapFlightSim; if(FS&&FS.active&&FS.active()) return true; }catch(_){}
     return false;
   }
-  function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false; const p=_sunOverheadPoint(); if(!p) return false;
+  /* ⚠⚠ (#R214) 「設定から、昼夜を表示するのをオフに…（追記：オフにしてもオフにならない。）」 AND ON
+     CESIUM IT NEVER DID ANYTHING AT ALL. js/night-side.js states the reason in its own header and
+     then does not act on it: MapLibre has no solar term, so that module DRAWS the night side as a
+     layer — and `setEnabled(false)` removes that layer. Cesium does have one, `globe.enableLighting`,
+     and js/cesium-engine.js turns it on from `setSunDirection()` — the call right below. So on Cesium
+     the whole day/night effect is the renderer's, the Settings control removed layers that were never
+     added, and the globe stayed shaded. The switch has to reach the thing that is actually drawing.
+
+     ⚠ ONLY where the renderer owns it. On MapLibre this same light is the fill-extrusion lighting and
+     the atmosphere's sun, and the night side is a separate layer that `setEnabled` already removes
+     correctly — unaiming the sun there would darken buildings nobody asked about. Measured on
+     MapLibre before this: the two layers do disappear and stay gone across a camera move. So MapLibre
+     is left byte-for-byte as it was, and this only stops the sun-anchored light on the engines whose
+     night side IS that light. `setSunDirection(null)` is the documented "restore the default light". */
+  function _nightSideOff(){ try{ const N=window.IntMapNightSide; return !!(N&&N.isOn&&!N.isOn()); }catch(_){ return false; } }
+  function _rendererLightsTheGlobe(){ try{ return GE().id()!=='maplibre'; }catch(_){ return false; } }
+  function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false;
+    if(_nightSideOff()&&_rendererLightsTheGlobe()){
+      try{ GE().scene.setSunDirection(null); }catch(_){}
+      return false;
+    }
+    const p=_sunOverheadPoint(); if(!p) return false;
     try{ return GE().scene.setSunDirection(p); }catch(_){ return false; } }
   /* ══ (#R196) THE SKY IS NOT A PROPERTY OF THE BASEMAP ═════════════════════════════════════════════
      「Cesiumと同じ大気・空のエフェクトをMapLibreでも。完全に同一な見た目にしろ。（現在は空が真っ暗である
@@ -447,5 +468,16 @@ export function makeThemeSky(HOST, CTX) {
     }catch(_){ return false; }
   }
   setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} },60000);
+  /* ⚠ (#R214) PUBLISHED FROM HERE, NOT FROM js/app-body.js. js/night-side.js is a plain window module
+     with no HOST, and it has to be able to ask for the light to be re-decided when the day/night
+     setting is flipped on an engine that lights its own globe — the alternative is setting the light
+     behind the back of the one function that knows the Sun simulator and the flight sim can own it.
+     The first version published it beside the `makeThemeSky` call in js/app-body.js and tests/r200
+     ⑤ caught that immediately: eight lines took that file from 4,398 to 4,406 against a 4,400
+     ceiling. The ratchet is standing instruction 13 with teeth, and the answer it forces is the right
+     one anyway — the object belongs to the file that builds it.
+     ⚠ A `window.X` that nothing assigns is the #R162 trap: every caller is inside a try/catch, so a
+     missing assignment removes the feature in silence. tests/r214-checks ⑤ holds both ends. */
+  window.IntMapThemeSky = { applyTheme, _applySkyAtmosphere, _skyFollowCamera };
   return { applyTheme, _applySkyAtmosphere, _skyFollowCamera };
 }

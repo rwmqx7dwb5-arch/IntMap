@@ -2536,6 +2536,42 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
 
+### #R214 補足（立った星空／日本語ニュースの経路／昼夜オフの所有者／共有状態）
+
+**`js/night-sky.js` は二つの投影を持つ。** `mode` は `'dome'`（従来の全天図＝方位角等距離）と
+`'stand'`（一人称＝心射／gnomonic）の2値で、**天体・実測稜線・時計はまったく同じもの**を読む。
+標準の観測者フレームは ENU（x=東 / y=北 / z=上）。API に `setMode(m)` / `mode()` /
+`look({az,alt,fov})` / `dirOf(alt,az)` / `viewBasis()` / `projectVec(v,B,F)` が増え、`state()` は
+`mode` と `look` を返す。⚠ **カメラはロールしない**——screen-right は `dirOf(0, lookAz+90)`、つまり
+z 成分が恒等的に 0 なので、どの姿勢でも地平線は水平。⚠ **90°で発散する**ので視軸から 88°
+（`DOT_MIN`）以遠は投影しない。⚠ 星の地平座標は**2秒バケットでキャッシュ**（`ensureSkyCache`）——
+見回しは 98,887 件の再歳差ではなく3回の内積になる。キャッシュ鍵に**カタログ件数を含める**
+（カタログは最初のフレームより後に届く）。「立った」の呼び名（`stand` / `standing` / `first-person`
+/ `dome` / `all-sky` …）の解決は**この файл が持つ**——`js/atlas-console.js` は #R199 の行数上限に
+張り付いていて、そこに語彙を置く場所は無い。
+
+**⚠ 公開CORSリレーは「相手先ごと」に使えたり使えなかったりする。** `js/proxy-fetch.js` は4本
+（allorigins / corsproxy / **corsfix** / codetabs）を各8秒の締切つきで競争させる。corsfix だけ
+**URL を生で渡す**（encodeURIComponent すると 400）。#R214 の実測：Google は corsproxy.io 経由の
+en-US 版を 5 ms で返し、**同じプロキシからの ja-JP 版には「Sorry…」の 503** を返した。
+
+**⚠ 昼夜の表示は、エンジンによって所有者が違う。** MapLibre では `js/night-side.js` が**レイヤーを
+描く**ので `setEnabled(false)` がそれを消せばよい。Cesium では**レンダラ自身**（`globe.enableLighting`、
+`js/cesium-engine.js` の `setLight({anchor:'map'})` から）なので、消すべきものはレイヤーではなく
+**光**。`js/theme-sky.js` の `_aimSun()` が `IntMapNightSide.isOn()` を見て、MapLibre 以外では
+`setSunDirection(null)` を投げる。⚠ **60秒間隔・時計購読・テーマ適用のすべてがここを通る**ので、
+設定を見るのは「太陽を狙う前」でなければならない。`window.IntMapThemeSky` は
+**`js/theme-sky.js` 自身が公開する**（`js/app-body.js` は 4,400 行の上限に張り付いている）。
+
+**共有状態（`IntMapShareState`）の登録は8件になった。** `terrainWater` / `seismic` / `world` /
+`industry` に加えて **`tsunami` / `los` / `sun` / `disaster` / `radiation` / `drone`**。
+⚠ **鍵は遅延モジュール名**（`viewshed.js` は `'los'`）——`apply()` が `IntMapLazy.need(key)` で
+取りに行くため。⚠ **起動順に依存させない**：`js/map-ui.js` より先に評価されるモジュール
+（`js/drone-nav.js` がそう）は `window.IntMapShareState` が `undefined` で、`&&` が登録を静かに
+捨てる。先に読み込まれた側は `window._imShareEarly` に積み、map-ui が排出する。
+津波は**フリー描画の震源域リングも運ぶ**（同じ規模・同じ震央でもリングが違えば別の地震）。
+放射性物質拡散だけは「絵」ではなく**問い**を保存し、復元時に**再実行**する。
+
 ### #R213 補足（探査機・小惑星・太陽系の外／業界の相関／大気の帯／出典ボタン）
 
 **宇宙探索の「三つの母集団」は `js/space-bodies.js`（`window.IntMapSpaceBodies`）。** `js/space.js`

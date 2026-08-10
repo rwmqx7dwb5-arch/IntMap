@@ -369,7 +369,16 @@ window.IntMapNightSide=(function(){
   function prefOn(){ try{ return localStorage.getItem(PREF_KEY)!=='0'; }catch(_){ return true; } }
   function setEnabled(v){ enabled=!!v;
     try{ if(enabled) localStorage.removeItem(PREF_KEY); else localStorage.setItem(PREF_KEY,'0'); }catch(_){}
-    if(!enabled) destroy(); else consider(); return enabled; }
+    if(!enabled) destroy(); else consider();
+    /* ⚠⚠ (#R214) …AND ON AN ENGINE THAT DRAWS ITS OWN NIGHT SIDE, REMOVING THESE LAYERS IS NOT THE
+       ANSWER — there were none. The header above already says Cesium gets its night side from
+       `globe.enableLighting`, which js/cesium-engine.js turns on from the scene light; this module
+       only ever removed MapLibre layers, so on Cesium the control was a no-op and the globe stayed
+       shaded («オフにしてもオフにならない»). js/theme-sky.js decides what the light should be — it is
+       the one place that knows about the Sun simulator and the flight sim owning it — so the switch
+       asks it to re-decide rather than setting the light behind its back. */
+    try{ if(!engineIsMapLibre()){ const TS=window.IntMapThemeSky; if(TS&&TS._applySkyAtmosphere) TS._applySkyAtmosphere(); } }catch(_){}
+    return enabled; }
   /* Read the saved answer before anything draws. `enabled` starts true above, so this only ever
      turns it off — a stored '0' is the one thing that can. */
   try{ if(!prefOn()) enabled=false; }catch(_){}
