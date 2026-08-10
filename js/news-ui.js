@@ -50,12 +50,41 @@ window.IntMapModules.newsUi=function(HOST){
         const trimmed={}; keys.slice(0,SNAP_MAX).forEach(k=>{ trimmed[k]=o[k]; }); o=trimmed;
       }
       localStorage.setItem(SNAP_KEY,JSON.stringify(o));
-    }catch(_){}   /* a full quota must not make the star itself fail */
+    }catch(_){
+      /* (#R215) a full quota must not make the star itself fail — AND it must not silently drop the
+         one the user just added. Evict the oldest half and try again; if even that is refused the
+         write is abandoned, which is where this used to give up on the first attempt. */
+      try{ const keys=Object.keys(o).sort((a,b)=>(o[b].savedAt||0)-(o[a].savedAt||0));
+        const half={}; keys.slice(0,Math.max(20,Math.floor(keys.length/2))).forEach(k=>{ half[k]=o[k]; });
+        localStorage.setItem(SNAP_KEY,JSON.stringify(half));
+      }catch(__){}
+    }
   }
+  /* ══ ⚠⚠ (#R215) A SAVED CARD WITH NO `analysis` THREW, AND ONE THROW EMPTIES THE WHOLE LIST ═════
+     「★保存機能あるけど…（追記：いやその時は保存されるけど数日後とかには消えるって話だわボケ）」
+
+     #R210 built the snapshot and it is written correctly — the record really is in localStorage days
+     later, and the link really is in `favorites`. What was wrong is the SHAPE of what merge() hands
+     back. `analysis` was stored as `null` for any article with no resolved location, and `seed()`
+     (the account's own titles, i.e. every saved article on a browser that has never drawn it) stored
+     `null` unconditionally. js/news-ui.js `appendNewsBatch` then reads `item.analysis.mapped` with
+     no guard, inside a `forEach` — so the FIRST such card throws a TypeError and every card after it
+     in that batch is never appended. The star is still there and the list is empty, which is exactly
+     what «数日後に消える» looks like: it works while the live feed still carries the article (a real
+     `analysis` object) and stops the day it does not.
+
+     Two halves, and both are needed. Here: a snapshot always carries an `analysis` OBJECT, and it
+     keeps the place NAME the card prints rather than only the coordinates. Below in appendNewsBatch:
+     the renderer stops assuming — a card must not be able to take the list down with it. */
+  function snapAnalysis(a){
+    const src=a||{};
+    const loc=(src.loc&&src.loc.length>=2&&isFinite(src.loc[0])&&isFinite(src.loc[1]))?[+src.loc[0],+src.loc[1]]:null;
+    return { loc, name:src.name||'', short:src.short||'', place:src.place||'',
+             ptype:src.ptype||'', mapped:loc?(src.mapped===true?true:(src.mapped==='publisher'?'publisher':true)):false }; }
   function snapPut(item){ if(!item||!item.link) return;
     const o=snapAll();
     o[item.link]={ link:item.link, title:item.title||'', publisher:item.publisher||'', pubDate:item.pubDate||'',
-      image:item.image||'', analysis:(item.analysis&&item.analysis.loc)?{ loc:item.analysis.loc.slice(0,2), place:item.analysis.place||'' }:null,
+      image:item.image||'', analysis:snapAnalysis(item.analysis),
       savedAt:Date.now(), fromSnapshot:true };
     snapWrite(o); }
   function snapForget(link){ const o=snapAll(); if(link in o){ delete o[link]; snapWrite(o); } }
@@ -69,13 +98,16 @@ window.IntMapModules.newsUi=function(HOST){
     /* Fill in a title for links the account knows about but this browser has never drawn. */
     seed(rows){ try{ const o=snapAll(); let n=0;
       (rows||[]).forEach(r=>{ const l=r&&(r.article_link||r.link); if(!l||o[l]) return;
-        o[l]={ link:l, title:(r.article_title||r.title||l), publisher:'', pubDate:'', image:'', analysis:null, savedAt:Date.now(), fromSnapshot:true }; n++; });
+        o[l]={ link:l, title:(r.article_title||r.title||l), publisher:'', pubDate:'', image:'', analysis:snapAnalysis(null), savedAt:Date.now(), fromSnapshot:true }; n++; });
       if(n) snapWrite(o); return n; }catch(_){ return 0; } },
     /* The feed, plus a synthetic item for every bookmarked link the feed no longer carries. */
     merge(feed,links){
       try{
         const have=new Set((feed||[]).map(i=>i&&i.link)); const o=snapAll(); const extra=[];
-        (links||[]).forEach(l=>{ if(have.has(l)) return; const s=o[l]; if(s) extra.push(s); });
+        /* ⚠ a record written by an older build has `analysis:null`; normalise on the way OUT so the
+           fix reaches snapshots that are already on disk, not only the ones written from now on */
+        (links||[]).forEach(l=>{ if(have.has(l)) return; const s=o[l];
+          if(s) extra.push(Object.assign({},s,{ analysis:snapAnalysis(s.analysis), title:s.title||l, publisher:s.publisher||'', pubDate:s.pubDate||'' })); });
         extra.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
         return extra.length?(feed||[]).concat(extra):(feed||[]);
       }catch(_){ return feed||[]; }
@@ -524,6 +556,11 @@ window.IntMapModules.newsUi=function(HOST){
     const next=HOST.newsFiltered.slice(HOST.renderedCount, HOST.renderedCount+HOST.NEWS_BATCH);
     next.forEach(item=>{
       const card=document.createElement('div'); card.className='news-item'; const bm=HOST.bookmarks.includes(item.link);
+      /* (#R215) ⚠ NOT `item.analysis.…` — see the snapshot note above snapPut. A restored ★ card can
+         legitimately have no analysis at all, and one TypeError inside this forEach silently ends the
+         whole batch. The object is normalised in place so everything below (and the pin builder) sees
+         the shape it expects. */
+      if(!item.analysis||typeof item.analysis!=='object') item.analysis={ loc:null, name:'', short:'', mapped:false };
       let chipCls='loc-chip';
       if(item.analysis.mapped===true) chipCls='loc-chip';
       else if(item.analysis.mapped==='publisher') chipCls='loc-chip publisher';

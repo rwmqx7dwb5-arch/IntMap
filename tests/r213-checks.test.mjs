@@ -226,7 +226,12 @@ test('R213 ⑦: Settings → Data & attribution is the sources page, and the in-
   const grp = /<div class="setting-group"><label data-i18n="lblDataSources">[\s\S]*?<\/div>/.exec(html);
   assert.ok(grp, 'the Data & attribution group exists');
   assert.match(grp[0], /<a id="link-sources" href="\.\/sources\.html"/, 'the primary control in that group is the page');
-  assert.match(grp[0], /id="btn-data-sources"/, 'and the in-app list is still reachable from it — nothing was removed');
+  /* (#R215) …and the group offers ONE control. 「アプリ内で簡易一覧を見る←ふざけんじゃねえよ」 — a
+     "quick list" beside the real page is a worse copy of the same answer with a choice attached.
+     The dialog itself is not deleted (js/app-body.js publishes `window.imOpenSources`); what is gone
+     is the second entry in Settings. */
+  assert.doesNotMatch(grp[0], /id="btn-data-sources"/, 'the group does not offer a lesser copy beside the page');
+  assert.match(read('js/app-body.js'), /window\.imOpenSources\s*=/, 'the in-app dialog is kept reachable rather than deleted');
   /* the duplicate group #R212 left two rows below is gone, so there is one answer to "data sources" */
   assert.doesNotMatch(html, /data-i18n="lblSourcesPage"/, 'the second, duplicate settings group is gone');
   assert.equal((html.match(/href="\.\/sources\.html"/g) || []).length, 2,
@@ -261,7 +266,10 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   /* the great circle, for the same reason #R212 §6 gave for the 3-D solids */
   assert.match(iw, /function greatCircle\(a, b, n\)/, 'an ownership line follows the great circle, not a screen-space segment');
   /* one window: legend + picker + selection, and closing it unchecks the row */
-  assert.match(iw, /makePanel\('iw-panel'[\s\S]{0,200}'wp-dl-industry'\)/, 'the panel is bound to its layer row');
+  /* (#R215) …and that one window is now the app's own generic legend rather than a box of this
+     module's own — so the binding to the row is still asserted, without pinning the call's shape. */
+  assert.match(iw, /makePanel\('iw-panel'[\s\S]{0,400}'wp-dl-industry'/, 'the panel is bound to its layer row');
+  assert.match(iw, /legendId:\s*'wpindustry'/, 'and it renders into the standard legend, not beside it');
   assert.doesNotMatch(iw, /new maplibregl\.Popup|GE\(\)\.ui\.popup/, 'there is no second, separate popup');
   /* it borrows the layer-family toolkit instead of carrying a second copy */
   assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');

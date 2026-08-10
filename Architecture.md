@@ -1047,6 +1047,14 @@ js/
                                     **true / false / null（未ロード）**の3値——「分からない」を「陸」と答えないための
                                     モジュール。ネットワークに一切依存しない（震度分布が「たまに海もべた塗」に
                                     なっていた原因は、陸海判定が DEM タイルの到着に依存していたこと）。
+  coast-mask.js                     (#R215) **呼び出し側の解像度で答える海岸線 `IntMapCoastMask`**。`land-mask.js`
+                                    が「点」を19.5 kmで答えるのに対し、こちらは**アプリ自身の 10 m 国境ポリゴン
+                                    （`window.countryGeo`＝いつもの国境線）を、呼び出し側が既に作っているグリッドに
+                                    直接ラスタ化**する。`rasterize({west,y0,dx,dy,N})` → `Uint8Array(N*N)`。
+                                    震度分布の微細場は 1.5 km セルなので、19.5 km 多数決で海岸を決めると
+                                    **13倍粗い階段**になる（「大きなタイルでごまかすな」）。ジオメトリは持たず、
+                                    描くだけ。国境が未到着なら `land-mask.js` が従来どおりフォールバック、
+                                    `source()` がどちらが答えたかを返す（`fld.stats.coastSource`）。
   tsunami.js                        (#R192, #R193 で全面再構築) **津波伝播 `IntMapTsunami`**——パネル・震源・描画・
                                     再生。**時間積分そのものは `src/tsunami-worker.js`**（ワーカー）にあり、
                                     フレームは**できた側から流れてくる**のでページは一切止まらない。水深は terrarium
@@ -2535,6 +2543,46 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R215 補足（レイヤーの窓は汎用凡例ひとつ／海岸線は呼び出し側の解像度／大圏の立体／Wikidata の分割）
+
+**世界データ系レイヤーの「窓」は `.data-legend.generic-legend` そのものになった。** `js/world-packs.js`
+の `makePanel(id,title,cbId,{legendId,layers,names})` は自前の浮動 div を作らず、
+`window._registerLayerOpacity(legendId, names, layers(), cbId)` が作る**アプリ標準の凡例**を取得して、
+その `<h4>` の直後に `.wp-body` を挿し込む。したがって1レイヤー＝1窓で、ドラッグ・最小化・
+✕（＝レイヤー行のチェックを外す）・**透明度スライダー**・「このデータは何か」の説明行はすべて凡例側の
+既存機構。⚠ **例外を作らないこと**——`fill-opacity` に `['case', no-data, …]` を書くと共有スライダーが
+その式を上書きして凡例の約束を消すので、**no-data は色（#9aa0a6）で表す**。ラスタ系は画像が届いてから
+レイヤーが生えるので `panel.claim()` で ID を登録し直す。対象は trade / energy / alerts / tides / crops /
+industry の6家族（legendId は `wptrade` `wpenergy` `wpalerts` `wptides` `wpcrop` `wpindustry`）。
+`ensureGenericLegend` は **ES（5言語目）**を読むようになった。
+
+**貿易レイヤーは国を塗る。** `wp-trade-fill` は他の全レイヤーと同じ `countries` ソース上の choropleth で、
+feature-state `wpTrade`（選択国の貿易総額に占める相手国の割合 %）と `wpTradeH`（選択国＝白）で描く。
+金額そのものは6桁の開きがあり色階に載らないので**割合**を塗り、実額は円弧のホバーとパネルに出す。
+
+**3-D 立体の footprint は大圏で密にする。** `js/volume3d.js` の `closedRing()` / `paintSaved()` が
+`densify()` を通す：辺は約 40 km ごと（最大128分割）に球面補間した点を挿入し、経度は**直前の点から
+±180°以内に展開**する。⚠ `ring` に保持されるのは**クリックした頂点のまま**（編集・undo・点数表示は不変）。
+
+**昼夜表示のオフは、どのエンジンでも「光」を止める。** `js/theme-sky.js` の `_aimSun()` は
+`IntMapNightSide.isOn()` が false なら**エンジンを問わず** `setSunDirection(null)`（＝viewport 固定の
+既定光へ戻す）。maplibre-gl 自身の大気パスが `style.light` から `u_sun_pos` を作るため、MapLibre でも
+太陽を狙ったままではターミネータが残る。`_sunElevAtCentre()` も false のとき null を返し、
+`horizon-color`／`sky-color` は昼側の値に落ちる。
+
+**★保存のスナップショットは必ず `analysis` オブジェクトを持つ。** `js/news-ui.js` の `snapAnalysis()` が
+唯一の整形口で、`merge()` は**ディスク上の古いレコードも出口で正規化**する。`appendNewsBatch` は
+`item.analysis` を無条件に読まない（`forEach` 内の1件の TypeError が**バッチ全体**を止めていた）。
+
+**業界の相関の SPARQL は4種類に割れた。** ノード（`sparqlNodes`、所有権 OPTIONAL 無し）→ ids を
+VALUES で束ねた金額3本（P2139/P2226/P1128）と資本関係3本（P749/P127/P355）。⚠ **同時に投げるのは2本
+まで**——公開エンドポイントは同時実行数を制限する。各ジョブは1.5秒後に1度だけ再試行し、失敗は
+`moneyErr` / `edgeErr` として**文章で**表示する（「取れなかった」と「Wikidata に記載が無い」は別の主張）。
+
+**潮汐レイヤーはタップ前から答える。** `scanCoast()` は `IntMapLandMask.warm()` を**await** し（fire して
+`ready()` を読むのが空振りの原因だった）、空振りしたスキャンは `gridKey` を戻して再試行可能にする。
+`toggle(true)` は即座に窓を開き、走査中／N か所の現在潮位と次の転流／モデル圏外、の3状態を言葉で出す。
 
 ### #R214 補足（立った星空／日本語ニュースの経路／昼夜オフの所有者／共有状態）
 
