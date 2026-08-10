@@ -39,6 +39,7 @@ import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLazyModules } from './lazy-modules.js';
 import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
+import { fetchViaProxy } from './proxy-fetch.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -2119,10 +2120,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const title=a._title||'', pub=a._pub||'';
     if(newsPinMode==='publisher'){
       if(a.pubLoc){ a.loc=a.pubLoc; a.name=a.pubName; a.mapped='publisher'; a.ptype='city'; }   /* (#R123) publisher HQ is a city-scale point */
-      /* (#R35) "Publisher locationにすると位置不明のピンが多い" — when the outlet HQ can't be resolved, fall
-         back to the SUBJECT (event) location instead of scattering to a random hash point. A real place is far
-         more useful than a dim "unknown" dot, so the number of unlocated publisher pins drops sharply. */
-      else if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=(pub?pub+' · ':'')+(a.subjectName||''); a.mapped='publisher'; a.ptype=a.subjectType||''; }
+      /* ⚠⚠ (#R212) THE SUBJECT IS NOT THE ORIGIN, AND THIS BRANCH SAID IT WAS.
+         「ニュースの発信地が全然発信地の場所になっていない。ふざけるな。」 — this is that, exactly. #R35
+         answered 「位置不明のピンが多い」 by falling back to the SUBJECT location when the outlet's
+         headquarters could not be resolved, and still reported `mapped='publisher'`: a wildfire story
+         from CBS News was pinned in CANADA and labelled as its origin. It also contradicts the block
+         comment three lines above, which promises the two modes never borrow from each other.
+         An unresolved origin is now shown as unresolved. The reason it was rare enough to be worth
+         faking is fixed where it belongs — js/news-context.js now resolves the outlet by its DOMAIN
+         as well as its display name, which is the form Google News gives for a large part of the feed. */
       else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(currentLang==='jp'?'発信元不明':currentLang==='de'?'Herausgeber unbekannt':currentLang==='ru'?'Издатель неизвестен':currentLang==='es'?'Editor desconocido':'Publisher unknown'); a.mapped=false; a.ptype=''; }
     } else {
       if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
@@ -2481,32 +2487,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let extendedDashDB=[];
 
 
-  /* ===== Fetch news via CORS proxies ===== */
-  const PROXIES=[ u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`, u=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}` ];
-  /* PARALLEL race — fire all proxies at once; first valid response wins.
-     This roughly halves news load time over the old sequential approach. */
-  async function fetchViaProxy(url){
-    const attempts = PROXIES.map(make=>(async()=>{
-      const r=await fetch(make(url));
-      if(!r.ok) throw new Error('bad status '+r.status);
-      const txt=await r.text();
-      if(!txt || !(txt.includes('<rss')||txt.includes('<feed'))) throw new Error('not feed');
-      return txt;
-    })());
-    try{
-      return await Promise.any(attempts);
-    }catch(_){
-      /* Fallback: sequential retry in case Promise.any failed because all rejected */
-      for(const make of PROXIES){
-        try{
-          const r=await fetch(make(url)); if(!r.ok) continue;
-          const txt=await r.text();
-          if(txt&&(txt.includes('<rss')||txt.includes('<feed'))) return txt;
-        }catch(_){}
-      }
-      return null;
-    }
-  }
+  /* (#R212) moved to js/proxy-fetch.js — the deadline, the abort of the losers and the bounded
+     fallback all live there, with the measurements that made them necessary. */
   /* Time-travel state: when newsDate is set (not null), feed URLs gain after:/before: qualifiers */
   let newsDate=null;
   function ymdISO(d){ return d.toISOString().slice(0,10); }
@@ -2879,6 +2861,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
+  /* ══ (#R212) THE DAY/NIGHT SWITCH TAKES EFFECT WHEN IT IS SWITCHED ═══════════════════════════════
+     「設定から、昼夜を表示するのをオフにできるように。（追記：オフにしてもオフにならない。）」 #R210 wired
+     it into the Apply handler, and Apply is `btn-close-settings` — but this dialog has a SECOND way
+     out (`closeSettings`, the ✕ and Escape) which discards everything, and it is the one that looks
+     like «close». A display toggle has no reason to wait for a commit at all: it is instant, it is
+     reversible, and it persists itself (js/night-side.js writes the key). So it applies on `change`
+     as well — the Apply path still runs and is now a no-op for this control. */
+  { const ns=document.getElementById('setting-night-side');
+    if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} }); }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
     const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=(currentLang==='jp')?'チュートリアル（レイヤー紹介ツアー）':'Tutorial — layer showcase'; };

@@ -1289,7 +1289,7 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<div class="wp-c-stat" style="font-size:11.5px;color:var(--text-main);min-height:15px;"></div>'
           +'<button class="wp-c-lc" style="'+BTN+'width:100%;">'+L('Also show 10 m land cover','10m 土地被覆も表示','10-m-Landbedeckung','Покрытие 10 м','Cobertura de 10 m')+'</button>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The colour scale is fixed to this raster’s own measured minimum and maximum, so the same colour means the same number wherever you pan. Tap the map for the value in that cell.',
+          +L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The color scale is fixed to this raster’s own measured minimum and maximum, so the same color means the same number wherever you pan. Tap the map for the value in that cell.',
              '出典: FAO GAEZ v4「面積・収量・生産量」——各作物が実際に栽培されている場所の5分メッシュ格子（基準年 2000 / 2010。時計が近い方を選びます。現在の表示は '+(lastMeta?lastMeta.year:'2010')+' 年）。色階はこのラスタ自身の実測の最小・最大に固定してあるので、同じ色はどこへ動かしても同じ値です。地図をタップするとそのセルの値が出ます。',
              'Quelle: FAO GAEZ v4 («Fläche, Ertrag, Produktion»), 5-Bogenminuten-Raster, Referenzjahre 2000/2010.',
              'Источник: FAO GAEZ v4 («Площадь, урожайность, производство»), сетка 5′, 2000/2010.',

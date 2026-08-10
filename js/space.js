@@ -1134,7 +1134,7 @@ window.IntMapModules.space=function(HOST){
              'Aus der eigenen Ephemeride berechnet; lokale Umstände von Sonnenfinsternissen nicht.',
              'Рассчитано по собственной эфемериде; локальные обстоятельства солнечных затмений не считаются.',
              'Calculado con la efeméride propia; sin circunstancias locales de eclipses solares.'))
-        +(w&&w.mine?'':(' · '+S(L('using the map’s centre as the observer','観測地点は地図の中心','Beobachter = Kartenmitte','наблюдатель — центр карты','observador: centro del mapa'))))+'</div>';
+        +(w&&w.mine?'':(' · '+S(L('using the map’s center as the observer','観測地点は地図の中心','Beobachter = Kartenmitte','наблюдатель — центр карты','observador: centro del mapa'))))+'</div>';
       host.querySelectorAll('.sp-ev').forEach(b=>b.onclick=()=>{
         const x=evList[+b.getAttribute('data-i')]; if(!x) return;
         live=false; timeMs=x.ms-3*3600e3;      /* three hours before, so the approach is visible */

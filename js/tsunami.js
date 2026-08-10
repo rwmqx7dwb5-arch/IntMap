@@ -277,7 +277,7 @@ window.IntMapModules.tsunami=function(HOST){
     const lngOfIdx=(i)=>-180+(i+0.5)*360/NX;
 
     async function build(){
-      if(!epi){ lastErr='no epicentre'; render(); return; }
+      if(!epi){ lastErr='no epicenter'; render(); return; }
       const my=++seq; busy=true; pct=0; lastErr=null; probe=null; sim=null; tSim=0; playing=0;
       clearPaint(); render();
       const t0=performance.now();
@@ -883,7 +883,7 @@ window.IntMapModules.tsunami=function(HOST){
           +'</div>';
       }
       body+='<div style="font-size:10px;color:var(--text-muted);line-height:1.45;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
-        +L('Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbour resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.',
+        +L('Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbor resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.',
            '球面のスタッガード格子上で浅水長波（全水深による圧力項＋マニングの底面摩擦）をバックグラウンドスレッドで解いています。水深はterrarium DEM、初期海底変位はOkada (1985) をテーパー付き小断層群で重ね合わせ、断層寸法はWells & Coppersmith (1994)、走向は局所的な海底勾配から求めています。格子は数十kmなので外洋モデルです：到達時刻と沖合の波高は意味を持ちますが、港湾の共振や遡上は表現できません。沿岸波高はグリーンの法則による推定です。教育目的のモデルであり、実際の災害時は公的機関の指示に従ってください。',
            'Flachwasser-Langwellen auf einem sphärischen Versetzungsgitter, mit Gesamttiefen-Druckterm und Manning-Bodenreibung, in einem Hintergrund-Thread gelöst. Tiefe aus dem terrarium-DEM; Anfangsverschiebung nach Okada (1985) über ein Teilbruch-Gitter summiert, Bruchmaße nach Wells & Coppersmith (1994), Streichen aus dem lokalen Tiefengradienten. Zellen sind zig Kilometer groß — ein Modell für die offene See. Küstenhöhe ist eine Green-Abschätzung. Nur Bildungsmodell.',
            'Длинные волны мелкой воды на сферической сетке, с давлением по полной глубине и донным трением Маннинга, расчёт в фоновом потоке. Глубины из terrarium DEM; начальное смещение дна по Okada (1985), просуммированное по сетке подразрывов, размеры разрыва по Wells & Coppersmith (1994), простирание — из локального градиента глубин. Ячейки в десятки километров: модель открытого океана. Высота у берега — оценка по закону Грина. Учебная модель.',

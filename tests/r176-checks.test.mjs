@@ -160,8 +160,13 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
      is what this assertion is for and it is unchanged; what a later instruction removed is the red
      volume that was rendered next to it. The volumes are still reported (in the panel's details),
      so nothing was lost except a figure in alarm-red on the map. */
-  assert.match(water, /properties:\{kind:'breach', rot, label:'➤'\}/, 'and the spill direction is drawn as an arrow');
-  assert.ok(!/label:'➤ '\+fmtM3/.test(water), 'without the red volume beside it (#R211)');
+  /* ⚠ (#R212) THE ARROW IS GONE TOO. 「また、赤い矢印はいらない。一切不要。」 — #R211 read the earlier
+     「体積の赤字表示を消す」 as "keep the arrow, drop the number"; the follow-up settled it. What this
+     test was really about survives and is asserted instead: the spill is still COMPUTED and still
+     reported, so nothing about the answer was lost — only a second, louder drawing of it. */
+  assert.ok(!/kind:'breach'/.test(water), 'the red spill arrows are not drawn (#R212)');
+  assert.ok(!/label:'➤ '\+fmtM3/.test(water), 'nor the red volume beside them (#R211)');
+  assert.match(water, /result\.breaches\.length/, 'the spill points are still counted and reported in words');
   assert.match(water, /function stampLevees\(out\)\{/, '堤防・ダム are stamped into the same height field');
   assert.match(water, /sculpt\[j\*G\.NX\+i\]\+=amp\*0\.5\*\(1\+Math\.cos\(Math\.PI\*d\)\);/, 'the brush is a raised cosine');
 });
