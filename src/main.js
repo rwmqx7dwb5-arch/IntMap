@@ -118,6 +118,12 @@ import '../js/layer-packs.js';
    be loaded EAGERLY rather than on demand: it creates layer rows at boot, and the progress gate and
    the session restore both key off those rows existing. */
 import '../js/world-packs.js';
+/* (#R213) 「業界を選べば、そのなかでの利害関係や実際の数値が人物相関図的にマッピングされるレイヤー」 —
+   the seventh member of the same family, and its own file because standing instruction 13 says new work
+   leaves the core. It must come AFTER world-packs.js: it reuses that module's panel/row toolkit through
+   `window.IntMapWorld._ui` rather than carrying a second copy of it, and it says so out loud if the
+   toolkit is not there instead of half-building a layer. */
+import '../js/industry-web.js';
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
@@ -195,6 +201,12 @@ import '../js/ephemeris.js';
    ephemeris above (Meeus ch. 54 shadow radii for the eclipses), so this must come after it and before
    the view that lists them. Pure arithmetic like js/ephemeris.js: no DOM, no renderer. */
 import '../js/space-events.js';
+/* (#R213) 「Voyager 1 / 2、New Horizons、Parker Solar Probe…」「小惑星、彗星も」「太陽系のさらに外の宇宙も」
+   — three populations js/ephemeris.js cannot carry, because none of them is a closed-form series:
+   sampled Horizons trajectories (Hermite), SBDB osculating elements (Kepler, elliptic AND hyperbolic)
+   and SIMBAD deep-sky positions with measured distances. Arithmetic only, like the two files above,
+   so it is verified in Node — and it FETCHES NOTHING until one of the three switches is pressed. */
+import '../js/space-bodies.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
@@ -231,7 +243,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources',
+  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources', 'industryWeb',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These eight files are not in the import list above: they are fetched by js/lazy-modules.js the

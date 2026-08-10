@@ -1396,7 +1396,16 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ if(v.t&&STATE.tradeLoad&&v.t.i) STATE.tradeLoad(v.t.i,{dir:v.t.d,section:v.t.s,topN:v.t.n}); }catch(_){}
         try{ if(v.e&&STATE.energyShow&&v.e.i) STATE.energyShow(v.e.i,v.e.k); }catch(_){} } }); }catch(_){}
 
-    return Object.assign({ state:()=>({ trade:STATE.trade&&STATE.trade(), energy:STATE.energy&&STATE.energy(),
+    /* ══ (#R213) THE TOOLKIT, PUBLISHED ONCE ═════════════════════════════════════════════════════
+       js/industry-web.js is a sixth layer of exactly this family — a row under the same heading, a
+       floating panel whose ✕ unchecks that row, the same clock and the same money formatting. It is
+       its own file (standing instruction 13: new work leaves the core), which leaves one question:
+       where do the shared pieces live. Copying them would be the third copy of `makePanel` in the
+       project and the second of `uncheckRow`, and the #R212 report 「ポップアップ消してもレイヤー
+       選択状態」 was caused by exactly that kind of duplication getting out of step. So they are
+       handed over rather than re-declared. Nothing here is new behaviour; it is the same functions. */
+    const _ui={ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, L };
+    return Object.assign({ _ui, state:()=>({ trade:STATE.trade&&STATE.trade(), energy:STATE.energy&&STATE.energy(),
       alerts:STATE.alerts&&STATE.alerts(), tides:STATE.tides&&STATE.tides(), crops:STATE.crops&&STATE.crops(),
       year:nowYear() }) }, STATE);
   })();
