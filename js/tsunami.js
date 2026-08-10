@@ -100,6 +100,7 @@ window.IntMapModules.tsunami=function(HOST){
 
     /* ---- state ---------------------------------------------------------------------------------- */
     let panel=null, opened=false, epi=null, mw=8.5, depthKm=20, minimised=false;   /* (#R210) minimised = body hidden, header kept */
+    let rupture=null;   /* (#R212) the free-drawn rupture area, when the seismic panel has one */
     let sim=null;                       /* the built model */
     let busy=false, pct=0, seq=0, jobId=0;
     let tSim=0, playing=0, rafId=0, speed=180;    /* speed = simulated seconds per real second */
@@ -321,7 +322,7 @@ window.IntMapModules.tsunami=function(HOST){
           sim.dt=m.dt; sim.steps=m.steps; sim.total=m.total; sim.nFrames=m.nFrames; sim.cellKm=m.cellKm;
           sim.strike=m.strike; sim.dipDeg=m.dipDeg; sim.seaCells=m.seaCells; sim.hMax=m.hMax; sim.cMax=m.cMax;
           sim.fineCells=m.fineCells|0;   /* (#R205) how many cells took the measured floor */
-          sim.fault={ L:m.faultL, W:m.faultW, slip:m.slip, M0:m.M0, mw };
+          sim.fault={ L:m.faultL, W:m.faultW, slip:m.slip, M0:m.M0, mw, drawn:!!m.drawnFault };
           sim.eta0Up=m.eta0Up; sim.eta0Down=m.eta0Down;
           installPaint();
           render();
@@ -341,7 +342,8 @@ window.IntMapModules.tsunami=function(HOST){
         if(my!==seq) return;
         pct=Math.max(pct,10); render();
         const job=W.run({ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec,
-                          bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm },
+                          bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm,
+                            rupture:rupture?{ ring:rupture.ring, areaKm2:+rupture.areaKm2||0, slipM:+rupture.slipM||0 }:null },
                           fine:fine?{ w:fine.w, h:fine.h, lat0:fine.lat0, lat1:fine.lat1, lng0:fine.lng0, lng1:fine.lng1,
                                       d:fine.d.slice(), k:fine.k.slice() }:null,
                           hours:H, frames:wantFrames(), filtLat:60 }, onFrames, onProg, onModel);
@@ -755,6 +757,11 @@ window.IntMapModules.tsunami=function(HOST){
       if(epi) body+='<div style="font-size:11.5px;color:var(--text-main);">M '+mw.toFixed(1)+' · '
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';
+      /* (#R212) a drawn rupture is a different source and the panel says so, with what was taken from it */
+      if(rupture) body+='<div style="font-size:11px;color:#7fd4ff;">✏ '
+        +L('Rupture area drawn','震源域を描画','Gezeichnete Bruchfläche','Нарисованный очаг','Ruptura dibujada')+' · '
+        +Math.round(rupture.areaKm2||0).toLocaleString()+' km² · D̄ '+(+rupture.slipM||0)+' m'
+        +(sim&&sim.fault&&sim.fault.drawn?(' · '+L('strike','走向','Streichen','простирание','rumbo')+' '+Math.round(sim.strike||0)+'°'):'')+'</div>';
       /* (#R196) the seismic panel changed the event under us — say so, then recompute (see follow) */
       if(srcPending) body+='<div class="tsu-follow" style="font-size:11px;color:#ffd23f;">'
         +L('The earthquake changed — recomputing the propagation.','地震の条件が変わりました — 伝播を再計算します。',
@@ -956,17 +963,24 @@ window.IntMapModules.tsunami=function(HOST){
        solve is tens of seconds, so the run that starts is the one the user stopped on. `build()`'s
        own `seq` guard retires anything already in flight, and the worker job is aborted with it. */
     let followT=0, srcPending=false;
-    const srcKey=()=>(epi?epi[0].toFixed(4)+'/'+epi[1].toFixed(4):'—')+'/'+mw.toFixed(2)+'/'+depthKm.toFixed(1);
+    /* ⚠ (#R212) THE RUPTURE IS PART OF THE SOURCE'S IDENTITY. Two runs with the same epicentre and
+       the same magnitude but different drawn rupture areas are different earthquakes, so the key that
+       decides «already run» has to see the ring — otherwise redrawing the rupture next door would be
+       silently ignored, which is the same class of fault #R196 fixed for the epicentre itself. */
+    const rupKey=(r)=>r&&r.ring&&r.ring.length?('R'+r.ring.length+':'+Math.round(r.areaKm2||0)+':'+(+r.slipM||0).toFixed(2)
+      +':'+r.ring[0].map(v=>(+v).toFixed(2)).join(',')):'—';
+    const srcKey=()=>(epi?epi[0].toFixed(4)+'/'+epi[1].toFixed(4):'—')+'/'+mw.toFixed(2)+'/'+depthKm.toFixed(1)+'/'+rupKey(rupture);
     let ranKey=null;
     function follow(o){
       o=o||{};
       if(!opened||o.lng==null||o.lat==null||!isFinite(+o.lng)||!isFinite(+o.lat)) return false;
       const nMw=(o.mw!=null&&isFinite(+o.mw))?Math.max(6,Math.min(9.6,+o.mw)):mw;
       const nD=(o.depth!=null&&isFinite(+o.depth))?Math.max(0,Math.min(200,+o.depth)):depthKm;
-      const want=(+o.lng).toFixed(4)+'/'+(+o.lat).toFixed(4)+'/'+nMw.toFixed(2)+'/'+nD.toFixed(1);
+      const nR=(o.rupture&&o.rupture.ring&&o.rupture.ring.length>=3)?o.rupture:null;
+      const want=(+o.lng).toFixed(4)+'/'+(+o.lat).toFixed(4)+'/'+nMw.toFixed(2)+'/'+nD.toFixed(1)+'/'+rupKey(nR);
       if(want===srcKey()&&want===ranKey&&!srcPending) return false;    /* already this event, already run */
       if(want===srcKey()&&srcPending) return true;                     /* same edit, timer already armed */
-      epi=[+o.lng,+o.lat]; mw=nMw; depthKm=nD;
+      epi=[+o.lng,+o.lat]; mw=nMw; depthKm=nD; rupture=nR;
       srcPending=true; render();                    /* the header shows the new source at once */
       clearTimeout(followT);
       followT=setTimeout(()=>{ srcPending=false; if(!opened) return; ranKey=srcKey(); build(); },900);
@@ -979,6 +993,7 @@ window.IntMapModules.tsunami=function(HOST){
       if(o.lng!=null&&o.lat!=null) epi=[+o.lng,+o.lat];
       if(o.mw!=null) mw=Math.max(6,Math.min(9.6,+o.mw));
       if(o.depth!=null) depthKm=Math.max(0,Math.min(200,+o.depth));
+      if(o.rupture!==undefined) rupture=(o.rupture&&o.rupture.ring&&o.rupture.ring.length>=3)?o.rupture:null;   /* (#R212) */
       if(o.scope!=null) scope=(String(o.scope)==='near')?'near':'global';   /* (#R204) */
       if(o.hours!=null) hours=Math.max(1,Math.min(30,+o.hours));   /* (#R197) 30 h = the far side of the planet */
       opened=true; panel.style.display='flex'; render(); wireClick();

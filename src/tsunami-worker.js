@@ -148,6 +148,50 @@ function faultGeom(M) {
   return { L: Lk * 1000, W: Wk * 1000, slip, M0 };
 }
 
+/* ══ (#R212) A HAND-DRAWN RUPTURE AREA, TURNED INTO THE SAME FAULT PLANE ════════════════════════════
+   「津波シミュレータ時は、フリー描画震源域の地震にも対応するようにして。」 The model has always taken its
+   plane from `faultGeom` — a length and a width regressed from the magnitude — and its strike from the
+   sea floor's gradient. Both are stand-ins for something the user may have drawn explicitly.
+   Given the ring, three of the four numbers come from the drawing itself and nothing is invented:
+     · STRIKE  = the bearing of the ring's major principal axis (the eigenvector of its 2-D covariance
+                 in a local metre frame), which is what «along the trench» means for a drawn shape.
+     · L : W   = the extents along that axis and across it, i.e. the oriented bounding box.
+     · L · W   = rescaled to the polygon's own spherical area, because a bounding box is bigger than
+                 the shape inside it and the AREA is the quantity the moment is computed from.
+     · SLIP    = the panel's average slip D̄, so M₀ = μ·A·D̄ — byte for byte the moment js/seismic.js
+                 reports for the same rupture. The dip stays 15°: nothing in a drawn outline says how
+                 steeply the plane goes down, and inventing one would be fabrication. */
+function rupturePlane(rp, refLat) {
+  const ring = rp && rp.ring;
+  if (!Array.isArray(ring) || ring.length < 3) return null;
+  const mLat = 111320, mLng = 111320 * Math.cos(refLat * DEG);
+  let cx = 0, cy = 0;
+  for (const p of ring) { cx += +p[0]; cy += +p[1]; }
+  cx /= ring.length; cy /= ring.length;
+  const P = ring.map((p) => {
+    let dl = +p[0] - cx; while (dl > 180) dl -= 360; while (dl < -180) dl += 360;
+    return [dl * mLng, (+p[1] - cy) * mLat];
+  });
+  let sxx = 0, sxy = 0, syy = 0;
+  for (const p of P) { sxx += p[0] * p[0]; sxy += p[0] * p[1]; syy += p[1] * p[1]; }
+  sxx /= P.length; sxy /= P.length; syy /= P.length;
+  const th = 0.5 * Math.atan2(2 * sxy, sxx - syy);          /* major axis, counter-clockwise from east */
+  const ca = Math.cos(th), sa = Math.sin(th);
+  let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+  for (const p of P) {
+    const a = p[0] * ca + p[1] * sa, b = -p[0] * sa + p[1] * ca;
+    if (a < a0) a0 = a; if (a > a1) a1 = a; if (b < b0) b0 = b; if (b > b1) b1 = b;
+  }
+  let L = Math.max(5000, a1 - a0), W = Math.max(5000, b1 - b0);
+  const A = Math.max(1e7, (+rp.areaKm2 || 0) * 1e6);        /* the polygon's own area, in m² */
+  const s = Math.sqrt(A / (L * W)); L *= s; W *= s;
+  if (W > L) { const t = L; L = W; W = t; }                 /* length is the long one, by definition */
+  const slip = Math.max(0.05, +rp.slipM || 1);
+  const M0 = MU * L * W * slip;
+  const strike = ((90 - th / DEG) % 360 + 360) % 360;       /* bearing, clockwise from north */
+  return { L, W, slip, M0, strike, mw: (Math.log10(M0) - 9.1) / 1.5 };
+}
+
 /* ══ THE SOURCE IS A TAPERED SUB-FAULT GRID, NOT ONE RECTANGLE (#R193) ═════════════════════════════
    A uniform-slip rectangle puts the same displacement everywhere and steps to zero at the edge. Real
    ruptures taper. Splitting the plane into SUB_S × SUB_W sub-faults, weighting each by a raised taper
@@ -328,9 +372,11 @@ function run(m) {
   const dHx = depthAtLL(lng0 + eps, srcLat) - depthAtLL(lng0 - eps, srcLat);
   const dHy = depthAtLL(lng0, srcLat + eps) - depthAtLL(lng0, srcLat - eps);
   let dipAz = Math.atan2(dHx, dHy) / DEG; if (!isFinite(dipAz)) dipAz = 90;
-  const strike = (dipAz + 90 + 360) % 360;
   const dipDeg = 15;                                    /* a subduction interface at tsunami depths */
-  const g = faultGeom(mw);
+  /* (#R212) the drawn rupture wins over the regression when there is one — see rupturePlane */
+  const drawn = rupturePlane(m.src.rupture, srcLat);
+  const strike = drawn ? drawn.strike : ((dipAz + 90 + 360) % 360);
+  const g = drawn ? { L: drawn.L, W: drawn.W, slip: drawn.slip, M0: drawn.M0 } : faultGeom(mw);
   const topDepth = Math.max(2000, depthKm * 1000 - g.W * Math.sin(dipDeg * DEG) / 2);
   const botDepth = topDepth + g.W * Math.sin(dipDeg * DEG);
   const subs = subFaults(g, dipDeg, topDepth);
@@ -485,7 +531,7 @@ function run(m) {
 
   post({
     id, type: 'model', nx, ny, fx, fy, dec, lat0, lat1, dt, steps, total, nFrames, cellKm,
-    strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0,
+    strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0, drawnFault: !!drawn,
     eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, fineCells: sf.fineCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
     land, depth, landD
   }, [land.buffer, depth.buffer, landD.buffer]);

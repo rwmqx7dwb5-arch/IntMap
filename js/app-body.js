@@ -38,6 +38,7 @@ import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLazyModules } from './lazy-modules.js';
 import { gridLayerSpecs } from './grid-style.js';
+import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -1865,9 +1866,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
         layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
-        /* (#R210) WHITE and ~2x thicker (国境線は白・太く). `borders-only-casing` goes UNDER it so white still reads over a pale basemap; both are driven together by _applyBorders/cb-borders. */
-        paint:{'line-color':'#ffffff','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,1.1,4,1.8,8,2.6,12,3.4]}}, before);
-      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{visibility:bordersOn?'visible':'none','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.3,4,3.2,8,4.4,12,5.6]}}, 'borders-only-line');
+        /* (#R210) WHITE and ~2x thicker (国境線は白・太く). `borders-only-casing` goes UNDER it so white still reads over a pale basemap; both are driven together by _applyBorders/cb-borders.
+           (#R212) 「国境線は少しだけ灰色に。…両者とも少しだけ細く。」 — pure white against a pale basemap is
+           the same value as the basemap, so it now sits one step down the grey scale, and both widths
+           come back ~15 %. The same colour and the same ladder are used by the HISTORICAL border layer
+           (js/time-borders.js `imtb-line`), because 「歴史的国境線も同じものに統一」 — one line for
+           «this is a national border», whichever year is on the clock. */
+        paint:{'line-color':BORDER_COLOR,'line-opacity':0.95,'line-width':BORDER_WIDTH}}, before);
+      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{visibility:bordersOn?'visible':'none','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.35,'line-width':BORDER_CASING}}, 'borders-only-line');
     }
     return true; }catch(e){ return false; } }
   window.ensureBordersLayer=ensureBordersLayer;
@@ -1880,7 +1886,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!GE().layers.has('ref-admin1')) GE().layers.add({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
         layout:{visibility:'none','line-join':'round'},
-        paint:/* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white; two white lines would erase country-vs-province. */{'line-color':'#b07fd6','line-opacity':0.8,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.9,7,1.9,11,3.0]}}, before);
+        paint:/* (#R210) thicker too (地方区分). Kept violet on purpose — only the NATIONAL border was asked to go white; two white lines would erase country-vs-province.
+                 (#R212) 「地方区分は少しだけ明るい色に。両者とも少しだけ細く。」 — same violet hue, one step
+                 brighter so it separates from a dark basemap, and the same ~15 % off the widths. */
+              {'line-color':ADMIN1_COLOR,'line-opacity':0.82,'line-dasharray':[3,2],'line-width':ADMIN1_WIDTH}}, before);
       if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},

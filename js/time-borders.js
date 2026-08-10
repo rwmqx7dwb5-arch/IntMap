@@ -257,7 +257,12 @@ window.IntMapModules.timeBorders=function(HOST){
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
       if(!GE().layers.has('imtb-fill')) GE().layers.add({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
-      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
+      /* (#R212) 「歴史的国境線も同じものに統一して。」 — the same colour and the same zoom→width ladder as
+         today's national border (js/border-style.js). Travelling in time must change WHERE a border
+         runs, not what a border looks like. The literals are the fallback for a page where the module
+         has not been evaluated, and they are the same numbers. */
+      const _BS=(window.IntMapBorderStyle||{});
+      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire) → the era
          name, era style. Filtered to _same!=1 (see tagSame). */
       if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.06,'text-size':window.IntMapLabelScale.place('era'),'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});

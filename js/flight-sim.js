@@ -732,14 +732,13 @@ window.IntMapModules.flightSim=function(HOST){
         try{
           const eye=(GE().camera.eye?GE().camera.eye():null); if(!eye||!isFinite(eye.alt)) return;
           const a2=AIRCRAFT[state.ac]||AIRCRAFT[acKey], ceil=(a2&&a2.ceil)||12000;
-          const use=Math.max(150,eye.alt), capped=eye.alt>ceil;   /* (#R210) `capped` now means "above the ceiling", not "was clamped" */
+          const use=Math.max(150,Math.min(ceil,eye.alt)), capped=eye.alt>ceil;   /* (#R212) clamped again — see the note by the start path */
           const p2=(GE().camera.getPitch?GE().camera.getPitch():null);
           const km=(v)=>v>=1000?((v/1000).toFixed(v>=10000?0:1)+' km'):(Math.round(v)+' m');
           const bits=[LL('Start altitude','開始高度','Starthöhe','Высота старта','Altitud inicial')+' '+km(use)
-            /* (#R210) the warning stayed, its claim changed: nothing is limited any more, so it
-               says what will actually happen instead — above the ceiling the aircraft sinks. */
-            +(capped?(' <span style="color:#ffd23f;">('+LL('above this aircraft’s service ceiling','機体の実用上昇限度より上','über der Dienstgipfelhöhe','выше практического потолка','por encima del techo de servicio')
-              +' '+km(ceil)+' — '+LL('it will descend until it has air','空気のある高度まで降下します','sinkt bis in dichtere Luft','будет снижаться до плотного воздуха','descenderá hasta tener aire')+')</span>'):'')];
+            /* (#R212) the clamp is back, so the note says so — the number above is what you will get */
+            +(capped?(' <span style="color:#ffd23f;">('+LL('limited to this aircraft’s service ceiling','機体の実用上昇限度に制限','auf die Dienstgipfelhöhe begrenzt','ограничено практическим потолком','limitado al techo de servicio')
+              +' '+km(ceil)+')</span>'):'')];
           if(p2!=null&&isFinite(p2)) bits.push(LL('flight path','飛行経路角','Bahnwinkel','угол наклона','trayectoria')+' '+Math.round(p2-90)+'°');
           _note.innerHTML=bits.join(' · ');
         }catch(_){}
@@ -780,17 +779,16 @@ window.IntMapModules.flightSim=function(HOST){
           try{
             const eye=(GE().camera.eye?GE().camera.eye():null);
             if(eye&&isFinite(eye.alt)&&isFinite(eye.lng)&&isFinite(eye.lat)){
-              /* ⚠ (#R210) THE VIEW'S ALTITUDE IS NO LONGER PULLED DOWN TO THE SERVICE CEILING.
-                 「現在視点からフライトシミュレーターを開始する際、一定高度以上は強制的に高度を下げさせ
-                  られるのを辞めて。」 #R190 clamped to `ceil` so the airframe would begin somewhere it
-                 can fly. But a service ceiling is not a wall — it is the altitude above which the
-                 machine cannot SUSTAIN level flight, and the model already knows that: thrust fades
-                 out with density in stepFixed, so an aircraft started above its ceiling simply sinks
-                 until it has air again. Starting where the user is looking and letting the physics
-                 answer is both what was asked for and the more honest of the two behaviours. The
-                 150 m floor stays — that one is not a preference, it is "above the ground". */
+              /* ⚠ (#R210 → REVERTED #R212) THE START ALTITUDE IS CLAMPED TO THE SERVICE CEILING AGAIN.
+                 #R190 clamped it; 「一定高度以上は強制的に高度を下げさせられるのを辞めて」 asked for the
+                 clamp to go, so #R210 removed it and let the physics sink the aircraft instead; the
+                 follow-up is 「やっぱ元に戻して。」 — put it back. So this is #R190's behaviour again,
+                 restored on request rather than re-derived: the eye's own position and altitude are
+                 used inside the envelope, and above the airframe's service ceiling the start altitude
+                 becomes that ceiling. The 150 m floor is unchanged — that one is "above the ground". */
+              const _ac=AIRCRAFT[state.ac]||AIRCRAFT[acKey], _ceil=(_ac&&_ac.ceil)||12000;
               o.lng=eye.lng; o.lat=eye.lat;
-              o.alt=Math.max(150,eye.alt);
+              o.alt=Math.max(150,Math.min(_ceil,eye.alt));
               o.keepAlt=true;
             }
             /* ══ (#R188) 「画角も合わせてください。」 ════════════════════════════════════════════════

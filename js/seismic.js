@@ -1017,7 +1017,22 @@ window.IntMapModules.seismic=function(HOST){
             if(e0==null&&landMask&&landMask.isLand(lo,la)===false){ sea++; vs[k]=-1; continue; }
             if(e0==null&&!landMask){ noDem++; vs[k]=0; continue; }
             if(e0==null){ noDem++; vs[k]=0; amp=ampRef; }
-            else if(e0<=0){ sea++; vs[k]=-1; continue; }
+            /* ⚠ (#R212) 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ。」 AND IT WAS EXCLUDED —
+               by a test that read the elevation's SIGN as the land/sea answer. It is not: the Jordan
+               Rift (−430 m at the Dead Sea shore, the lowest exposed land on Earth), a quarter of the
+               Netherlands, the Caspian Depression, Death Valley, Turfan and the Qattara are all dry
+               land below zero, and every one of them was dropped out of the intensity map.
+               The sign still decides where the DEM is all we have, but where the bundled land mask
+               says LAND the cell is land — bounded at −440 m, because below that nothing on Earth is
+               dry and the reading is bathymetry. ⚠ The mask is ~19.5 km and majority-filled, so a
+               shallow strip of water inside a mostly-land cell can now be painted; that is a coastal
+               artefact at the mask's own grain, and the alternative was deleting entire countries. */
+            else if(e0<=0){
+              if(!(landMask&&landMask.isLand(lo,la)===true&&e0>-440)){ sea++; vs[k]=-1; continue; }
+              if(!slopeUsable){ coarse++; vs[k]=0; amp=ampRef; }
+              else { let ex=demAt(lo+dLngS,la); if(ex==null) ex=e0;
+                let ey=demAt(lo,Math.max(-85,Math.min(85,la+dLatS))); if(ey==null) ey=e0;
+                const v=vs30FromSlope(Math.hypot(ex-e0,ey-e0)/dsM); vs[k]=v; amp=ampOf(v); } }
             else if(!slopeUsable){ coarse++; vs[k]=0; amp=ampRef; }   /* (#R190) see the note by dsM */
             else {
               let ex=demAt(lo+dLngS,la); if(ex==null) ex=e0;
@@ -1213,10 +1228,12 @@ window.IntMapModules.seismic=function(HOST){
        `picking` is genuinely on while a pick is armed, so that is when it is filled. In the normal
        path window.IntMapPick hides the panel for the duration (#R196), so what a user sees is a
        button that is never stuck on; in the fallback path (no pick module, panel stays up) the fill
-       is the armed state, which is exactly what it should have meant all along. */
-    const PICKBTN=(on)=>BTN+'width:100%;font-weight:700;'+(on
-      ? 'background:var(--primary-color);color:#fff;border-color:transparent;'
-      : 'background:transparent;color:var(--primary-color);border-color:var(--primary-color);');
+       is the armed state, which is exactly what it should have meant all along.
+
+       ⚠ (#R212) THAT BUTTON NO LONGER EXISTS. 「震源地を設置と震源地を移動と、二つのボタンに分ける意味が
+       全く分からない。」 — and there was none. The armed pick is now what the ◎ segment does, so the
+       fill it wears is SEG()'s, which means "this is what a map click does"; the state #R206 was
+       arguing about cannot get stuck because it is a mode, not an action. PICKBTN is gone with it. */
     /* (#R189) every control that changes the PHYSICS goes through this — redraw, re-report, and
        rebuild the painted field (debounced; the wavefront tick never comes through here).
        (#R190) `refresh` stays the CALLABLE path (Atlas, setParams, a picked epicentre): those are
@@ -1229,7 +1246,14 @@ window.IntMapModules.seismic=function(HOST){
        spinner being dragged does not start a solve per keystroke — see js/tsunami.js. */
     function syncTsunamiSource(){
       try{ const T=window.IntMapTsunami; if(!T||!T.follow||!epi) return;
-        T.follow({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm });
+        /* ⚠ (#R212) 「津波シミュレータ時は、フリー描画震源域の地震にも対応するように。」 — the drawn ring
+           travels with the source. The tsunami model used to derive the fault plane from the magnitude
+           alone (Wells & Coppersmith) and the strike from the sea floor, so a hand-drawn 600 km
+           rupture along a trench produced a rectangle of the model's own choosing, pointing wherever
+           the isobaths did. With the ring in hand it takes the ORIENTATION and the ASPECT from what
+           was drawn and the MOMENT from μ·A·D̄ — the same M₀ this panel reports. */
+        T.follow({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm,
+          rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null });
       }catch(_){}
     }
     function refresh(){ draw(); warmEpi(); schedField(); syncTsunamiSource(); }
@@ -1244,18 +1268,20 @@ window.IntMapModules.seismic=function(HOST){
         +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
-        +'<button class="sq-pick" style="'+PICKBTN(picking)+'">'+(picking
-          ?('◎ '+L('Tap the map…','地図をタップ…','Auf die Karte tippen…','Нажмите на карту…','Toca el mapa…'))
-          :('◎ '+L('Place the epicenter','震源地を設置','Epizentrum setzen','Указать эпицентр','Colocar el epicentro')))+'</button>'
-        /* (#R205) …and what a PLAIN click on the map does, stated and switchable — see onClick. The
-           ◎ button above stays because it is the one that works on a phone, where this panel covers
-           the map (#R196); this row is for the gesture a hand makes without pressing anything. */
+        /* ══ (#R212) ONE CONTROL FOR ONE THING ═══════════════════════════════════════════════════════
+           「震源地を設置と震源地を移動と、二つのボタンに分ける意味が全く分からない。」 There is no
+           difference between the two — an epicentre that exists is moved and one that does not is
+           placed, by the same tap on the same map. #R205 and #R196 had arrived at two buttons for two
+           MECHANISMS (a one-shot armed pick that hides the panel on a phone, and a persistent click
+           mode), which is the app's internals showing through. Now: one segment, which does both —
+           it selects what a plain map click means AND arms the pick, so the panel gets out of the way
+           on the screens where it covers the map. Pressing it again re-arms it. */
         +'<div style="display:flex;gap:5px;">'
-          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Move the epicenter','震源地を移動','Epizentrum bewegen','Двигать эпицентр','Mover el epicentro')+'</button>'
+          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Place / move the epicenter','震源地を設置・移動','Epizentrum setzen / bewegen','Указать / двигать эпицентр','Colocar / mover el epicentro')+'</button>'
           +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">◇ '+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
         +'</div>'
         +'<div style="font-size:10px;color:var(--text-muted);margin-top:-5px;line-height:1.45;">'+(clickMode==='epi'
-          ?L('Clicking the map moves the epicenter.','地図をクリックすると震源地が移動します。','Ein Klick auf die Karte verschiebt das Epizentrum.','Клик по карте перемещает эпицентр.','Al hacer clic en el mapa se mueve el epicentro.')
+          ?L('Tap the map to place the epicenter — or to move it.','地図をタップすると震源地を置きます（すでにある場合は移動します）。','Auf die Karte tippen, um das Epizentrum zu setzen oder zu verschieben.','Нажмите на карту, чтобы поставить или переместить эпицентр.','Toque el mapa para colocar o mover el epicentro.')
           :L('Clicking the map adds a place to the table below.','地図をクリックすると下の表に地点を追加します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu.','Клик по карте добавляет место в таблицу ниже.','Al hacer clic en el mapa se añade un lugar a la tabla.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
@@ -1329,9 +1355,10 @@ window.IntMapModules.seismic=function(HOST){
         +'</div></div>';
       panel.querySelector('.sq-close').onclick=()=>close();
       { const mb=panel.querySelector('.sq-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
-      panel.querySelector('.sq-pick').onclick=()=>startPick();
       { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
-        if(a) a.onclick=()=>setClickMode('epi'); if(b) b.onclick=()=>setClickMode('station'); }
+        /* one press: this is what a map click means AND arm the pick (#R212 — see the note above) */
+        if(a) a.onclick=()=>{ setClickMode('epi'); startPick(); };
+        if(b) b.onclick=()=>setClickMode('station'); }
       panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
       panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
@@ -1451,7 +1478,8 @@ window.IntMapModules.seismic=function(HOST){
        longer exists (js/sims.js), and this no longer looks for a second model to run instead. */
     function openTsunami(){ const t=tsunamiCase(); if(!t||!epi) return false;
       const T=window.IntMapTsunami; if(!T||!T.open) return false;
-      try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm }); }catch(_){ return false; }
+      try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm,
+        rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
     function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;
@@ -1477,9 +1505,17 @@ window.IntMapModules.seismic=function(HOST){
        land as soon as the finger lifts.
        The button stays, and stops being a step: while drawing it says "finish drawing", which is what
        it now does — a way OUT of the mode, not the way to get the answer. */
+    /* ══ (#R212) THE STROKE DEFINES THE RUPTURE; THE ▶ BUTTON RUNS THE SOLVE ═══════════════════════
+       「フリー描画した際は、終わった時点ではそのままで、ボタンを押したら解析開始する形式に。」 #R207 was
+       right that the CAPTURE needs no second press — the area, M₀ and Mw are arithmetic over the ring
+       and appear the moment the finger lifts. What it also did was start the intensity field, which
+       is the minute-long part, while the user was still drawing. So the capture stays immediate and
+       the SOLVE goes back behind the button that already exists for it: `touch()` marks the field
+       stale exactly the way the magnitude and depth spinners do (#R190), and ▶「震度分布を計算」 is
+       the one place a run starts. One button, and it is the same one for every input. */
     function _fCapture(g,{keepDrawing}={}){
       const ring=_ringOf(g);
-      if(ring&&faultSet(ring,faultSlip)){ if(!keepDrawing) render(); else render(); refresh(); return true; }
+      if(ring&&faultSet(ring,faultSlip)){ render(); touch(); return true; }
       return false;
     }
     function toggleFaultDraw(){
@@ -1496,7 +1532,7 @@ window.IntMapModules.seismic=function(HOST){
       const had=!!fault;
       const ok=_fCapture(g);
       try{ DT.exit&&DT.exit(); }catch(_){}
-      if(ok||had){ render(); refresh(); }
+      if(ok||had){ render(); touch(); }   /* (#R212) the ▶ button runs it — see _fCapture */
       else { render(); const o=panel&&panel.querySelector('.sq-out');
         if(o) o.insertAdjacentHTML('afterbegin','<div style="color:#ff9f0a;margin-bottom:4px;">'+L('No closed area was drawn — draw a loop on the map.','閉じた範囲が描かれていません。地図上にループを描いてください。','Keine geschlossene Fläche — zeichnen Sie eine Schleife auf der Karte.','Замкнутая область не нарисована — нарисуйте контур на карте.','No se dibujó un área cerrada — dibuje un lazo en el mapa.')+'</div>'); }
     }
