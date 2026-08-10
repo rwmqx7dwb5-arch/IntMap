@@ -189,9 +189,17 @@ test('R213 ④: deep-sky objects carry published distances, and nulls stay null'
    ceiling may only move because there is now something out there — so it is derived, not typed.    */
 test('R213 ⑤: the zoom-out ceiling is derived from the furthest measured object', () => {
   const space = read('js/space.js');
-  assert.match(space, /function reachAu\(\)\{[\s\S]*?if\(!showDeep\) return REACH_AU;/,
-    'with the deep-sky population off, the reach is exactly what #R208 measured');
-  assert.match(space, /B\?B\.deepFarAu\(\):0/, 'and with it on, the reach comes from the data');
+  /* ⚠ (#R215) THE CLAIM, WIDENED BY A MEASUREMENT. This used to require `if(!showDeep) return
+     REACH_AU;` — i.e. with the deep-sky population off, the ceiling is the #R208 constant. Measured
+     on the built site, that constant put the ceiling at 22,645 scene units while `starFarEdge` was
+     80,729: the STAR catalogue is drawn at its parallax distances in every frame, so the camera was
+     penned three and a half times inside the furthest thing on screen and 「太陽系のさらに外の宇宙も
+     見れるように」 was still not true. The rule #R208 stated — stop at the furthest thing this scene
+     actually draws, never further — is unchanged; what changed is that the stars now count. */
+  const reach = space.slice(space.indexOf('function reachAu()'), space.indexOf('function distCeil()'));
+  assert.match(reach, /let far=REACH_AU;/, 'the #R208 constant is still the floor of the reach');
+  assert.match(reach, /starMaxPc\s*\*\s*AU_PER_PC/, 'and the star catalogue, which is always drawn, raises it');
+  assert.match(reach, /B\?B\.deepFarAu\(\):0/, 'and with the deep-sky population on, the reach comes from that data');
   assert.match(space, /function distCeil\(\)\{ return mode==='body'\?60:posScale\(reachAu\(\)\); \}/,
     'the ceiling goes through posScale like everything else — a raw AU limit means a different thing in each scale');
 

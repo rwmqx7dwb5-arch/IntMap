@@ -996,8 +996,18 @@ window.IntMapModules.space=function(HOST){
       if(!moons||!moons.planets) return [];
       const all=moons.planets[focus]||[];
       /* the ones with a MEASURED radius first (they are the ones anybody means by "the moons of
-         Jupiter"), then by distance; capped so a crowded system stays readable */
-      return all.slice().sort((a,b)=>(b.rKm||0)-(a.radiusKm||0)).slice(0,12);
+         Jupiter"), then by distance; capped so a crowded system stays readable.
+         ⚠⚠ (#R215) THE COMPARATOR READ TWO DIFFERENT PROPERTY NAMES — `b.rKm` against `a.radiusKm`.
+         The table's field is `radiusKm`; `rKm` is the PLANET's radius and does not exist on a
+         satellite row, so the left side was always 0 and the comparator reduced to `−a.radiusKm`,
+         which does not depend on `b` at all and is therefore not an ordering. Measured on the built
+         site: Jupiter listed **Himalia first** (an 85 km irregular) and Saturn listed **Phoebe
+         first**, with Titan fourth — i.e. with 72 and 66 satellites in the table and a cap of 12,
+         which twelve you got was arbitrary. It is the same class of defect as #R213's currency: a
+         name that looks right beside a name that is right. */
+      return all.slice()
+        .sort((a,b)=>((b.radiusKm||0)-(a.radiusKm||0))||((a.aKm||0)-(b.aKm||0)))
+        .slice(0,12);
     }
 
     function drawBody(jd,pos,cam){
@@ -1172,7 +1182,13 @@ window.IntMapModules.space=function(HOST){
         +'<button class="sp-small" style="'+BTN+'" title="'+S(L('Asteroids and comets, from JPL Small-Body Database elements','小惑星・彗星（JPL SBDB の軌道要素）','Asteroiden und Kometen (JPL SBDB)','Астероиды и кометы (JPL SBDB)','Asteroides y cometas (JPL SBDB)'))+'">'+L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas')+'</button>'
         +'<button class="sp-deep" style="'+BTN+'" title="'+S(L('Galaxies, clusters and nebulae at their measured distances (SIMBAD)','銀河・星団・星雲を実測距離で（SIMBAD）','Galaxien und Nebel in gemessener Entfernung (SIMBAD)','Галактики и туманности на измеренных расстояниях (SIMBAD)','Galaxias y nebulosas a su distancia medida (SIMBAD)'))+'">'+L('Beyond the solar system','太陽系の外','Jenseits des Sonnensystems','За пределами системы','Más allá del sistema')+'</button>'
         +'<span style="flex:1 1 8px;"></span>'
-        +'<span class="sp-clock" style="font-size:11.5px;color:#e8e8e8;font-variant-numeric:tabular-nums;"></span>'
+        /* ══ ⚠⚠ (#R215) ONE CLOCK. 「宇宙を探索の年月日時選択欄のUIがくそ。（現在日時表示欄と別とか、
+           あほか）」 — and it was literally two controls for one quantity: a read-only `.sp-clock`
+           («● live · 2026-08-10 08:37 UT») at one end of the bar and an editable `.sp-when` at the
+           other, both showing the same instant, updated from the same tick. Reading one and typing
+           into the other is the 煩雑 of #16 in its clearest form. The readout is gone; the FIELD is
+           the readout, and the live dot moved onto the box that holds it, so there is one place that
+           says when this sky is and one place to change it. */
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
         +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
         +'<button class="sp-play" style="'+BTN+'">▶</button>'
@@ -1189,7 +1205,7 @@ window.IntMapModules.space=function(HOST){
            in which time base, the picker inherits the dark scheme, and the common motions — a day, a
            month, a year, either way — are one press. */
         +'<span class="sp-whenbox" style="display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border-radius:9px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11px;">'
-        +'<span style="opacity:.72;white-space:nowrap;">'+L('Date (UTC)','日時 (UTC)','Datum (UTC)','Дата (UTC)','Fecha (UTC)')+'</span>'
+        +'<span class="sp-clock" style="opacity:.9;white-space:nowrap;font-variant-numeric:tabular-nums;"></span>'
         +'<button class="sp-when-step" data-d="-365" title="'+S(L('a year back','1年前','ein Jahr zurück','на год назад','un año atrás'))+'" style="'+STEPB+'">«</button>'
         +'<button class="sp-when-step" data-d="-30" title="'+S(L('a month back','1か月前','einen Monat zurück','на месяц назад','un mes atrás'))+'" style="'+STEPB+'">‹‹</button>'
         +'<button class="sp-when-step" data-d="-1" title="'+S(L('a day back','1日前','einen Tag zurück','на день назад','un día atrás'))+'" style="'+STEPB+'">‹</button>'
@@ -1206,8 +1222,26 @@ window.IntMapModules.space=function(HOST){
     }
     function refreshClock(){
       if(!root) return;
+      /* (#R215) the label ON the date box, not a second readout somewhere else: it says which time
+         base the field is in, and whether that field is following the app clock. */
       const c=root.querySelector('.sp-clock');
-      if(c) c.textContent=(live?('● '+L('live','ライブ','live','сейчас','en vivo')+' · '):'')+fmtWhen(nowMs());
+      if(c) c.textContent=(live?('● '+L('live','ライブ','live','сейчас','en vivo')+' · '):'')
+        +L('UTC','日時 (UTC)','UTC','UTC','UTC');
+      /* ⚠⚠ …AND THE FIELD HAS TO CARRY THE INSTANT, or removing the readout would remove the answer.
+         `.sp-when` was WRITE-ONLY before this round — its `onchange` was read and its value was never
+         set — so it sat blank until somebody picked a date, which is the other half of why there was
+         a second readout at all. It is now filled from the same tick, in the same time base the label
+         states. ⚠ NEVER while it has focus: writing into an input under the caret is how a value the
+         user is halfway through typing gets eaten (the rule refreshChrome already applies to the
+         speed field). */
+      const w=root.querySelector('.sp-when');
+      if(w&&document.activeElement!==w){
+        const d=new Date(nowMs());
+        const p2=(n)=>String(n).padStart(2,'0');
+        const v=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())
+              +'T'+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());
+        if(w.value!==v) w.value=v;
+      }
       const p=root.querySelector('.sp-play'); if(p) p.textContent=playing&&!live?'⏸':'▶';
       refreshChrome();
     }
@@ -1949,10 +1983,23 @@ window.IntMapModules.space=function(HOST){
        bounded by the catalogue rather than infinite, for exactly the reason #R208 gave: past the
        furthest thing anybody has measured, a view that keeps zooming is showing an empty claim.
        When the population is off, the reach is what it was. */
+    /* ⚠⚠ (#R215) …AND IT HAS TO REACH PAST WHAT IS ALREADY ON SCREEN. 「太陽系外のはるか遠くまで
+       ズームアウトできるように。（太陽系のさらに外の宇宙も見れるように）」 — measured on the built
+       site with the deep-sky population OFF (its default): `distCeil` 22,645 scene units against a
+       `starFarEdge` of 80,729. The star catalogue is drawn at its parallax distances every frame and
+       the camera could never get out to it — you are always inside the star sphere, looking at a
+       ceiling three and a half times nearer than the furthest thing being rendered. REACH_AU (48 pc)
+       was chosen in #R208 as "the furthest measured thing", and the stars ARE measured things that
+       are always drawn, so the ceiling follows the catalogue rather than a constant.
+       The rule is unchanged and is the one #R208 stated: the camera stops at the furthest thing this
+       scene actually draws, never further — past that, a view that keeps zooming shows an empty
+       claim. */
     function reachAu(){
-      if(!showDeep) return REACH_AU;
-      let far=0; try{ const B=SB(); far=B?B.deepFarAu():0; }catch(_){}
-      return far>REACH_AU?far*1.25:REACH_AU;
+      let far=REACH_AU;
+      try{ if(starMaxPc>0) far=Math.max(far,starMaxPc*AU_PER_PC); }catch(_){}
+      if(showDeep){ let d=0; try{ const B=SB(); d=B?B.deepFarAu():0; }catch(_){}
+        if(d>far) far=d*1.25; }
+      return far;
     }
     function distCeil(){ return mode==='body'?60:posScale(reachAu()); }
 

@@ -216,3 +216,42 @@ test('R215 ⑨: trade shades the countries on the app’s own country source', (
   assert.match(blk, /wpTradeH/, 'and the selected country reads as itself, not as its own partner');
   assert.match(wp, /hiResCountries\(\)/, 'and it asks for the 10 m outline rather than drawing the 110 m boot copy');
 });
+
+/* ═══ ⑩ THE SPACE EXPLORER ═══════════════════════════════════════════════════════════════════
+   「太陽系外のはるか遠くまでズームアウトできるように」／「月にも軌道／各惑星を選択時にその衛星たちも」／
+   「年月日時選択欄のUIがくそ。（現在日時表示欄と別とか、あほか）」 */
+test('R215 ⑩a: the camera ceiling reaches past everything the scene draws', () => {
+  const sp = read('js/space.js');
+  const reach = sp.slice(sp.indexOf('function reachAu()'), sp.indexOf('function distCeil()'));
+  assert.match(reach, /starMaxPc\s*\*\s*AU_PER_PC/,
+    'the star catalogue is drawn every frame, so the ceiling has to include it (#R208’s own rule)');
+  assert.match(reach, /showDeep/, 'and the deep-sky population still pushes it further when it is on');
+  /* the rule that must NOT change: bounded by measured data, never open-ended */
+  assert.match(sp, /const REACH_AU=1e7;/, 'the floor of the reach is still a stated distance, not infinity');
+});
+
+test('R215 ⑩b: the satellite list is ordered by a real comparator', () => {
+  const sp = read('js/space.js');
+  const fn = sp.slice(sp.indexOf('function moonList()'), sp.indexOf('function moonList()') + 1600)
+    .replace(/\/\*[\s\S]*?\*\//g, '');   /* the prose deliberately NAMES the old shape */
+  assert.equal(/b\.rKm/.test(fn), false,
+    '`rKm` is the PLANET’s radius — comparing it with a satellite’s `radiusKm` is not an ordering');
+  assert.match(fn, /\(b\.radiusKm\|\|0\)-\(a\.radiusKm\|\|0\)/, 'biggest first, on one field');
+  /* a comparator must depend on BOTH arguments, which is the property the old one lacked */
+  const cmp = /sort\(\(a,b\)=>([^)]*\)[^;]*)\)/.exec(fn);
+  assert.ok(cmp && /\ba\./.test(cmp[1]) && /\bb\./.test(cmp[1]), 'the comparator reads both arguments');
+});
+
+test('R215 ⑩c: there is ONE clock — the date field is the readout', () => {
+  const sp = read('js/space.js');
+  /* exactly one .sp-clock, and it lives inside the box that holds the field */
+  const box = sp.slice(sp.indexOf("class=\"sp-whenbox\""), sp.indexOf("class=\"sp-whenbox\"") + 2200);
+  assert.match(box, /class="sp-clock"/, 'the live/time-base label is on the date box');
+  assert.match(box, /class="sp-when"/, '…and so is the field it labels');
+  assert.equal((sp.match(/class="sp-clock"/g) || []).length, 1, 'there is no second readout elsewhere in the bar');
+  /* and the field is FILLED from the tick — it used to be write-only, which is why a second
+     readout existed at all */
+  const rc = sp.slice(sp.indexOf('function refreshClock()'), sp.indexOf('function refreshClock()') + 1600);
+  assert.match(rc, /\.sp-when/, 'refreshClock writes the instant into the field');
+  assert.match(rc, /document\.activeElement!==w/, '…but never while the caret is in it');
+});
