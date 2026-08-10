@@ -39,6 +39,14 @@ export const STATIC_ASSETS = [
      no imports, so it is copied rather than bundled: passing it through Rollup would produce a
      byte-identical file behind an extra entry point. */
   'science.html',
+  /* (#R212) the data-source page — the other half of the same question, in the same skeleton
+     («where the numbers come from», against science.html's «what is done with them»). It renders
+     the registry at load time from the file below rather than carrying a second copy of it. */
+  'sources.html',
+  /* …which is why this one file is served raw as well as bundled: sources.html is not part of the
+     app bundle, and window.IntMapRefData.dataSources is the ONE list both it and the in-app Sources
+     dialog read. Copying it is how the page avoids becoming a duplicate that goes stale. */
+  'js/reference-data.js',
   'google0266d9db8efbc48c.html',        // Google Search Console site verification
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)
   'og-image.jpg',                       // social preview

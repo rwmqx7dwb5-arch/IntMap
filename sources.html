@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IntMap — データ出典 / Data sources</title>
+<meta name="description" content="IntMap が使っているすべてのデータ提供元・その利用箇所・取得方法・ライセンス・プライバシー上の意味。">
+<link rel="icon" href="./IntMap.Icon.png">
+<!-- (#R212) 「データ出典のページも、ロジック解説ページと同じ形式(デザイン)にしろ。これを機に詳細にしろ。」
+     Same skeleton and the same stylesheet as science.html on purpose: the two pages answer the two
+     halves of one question — this one is WHERE THE NUMBERS COME FROM, science.html is WHAT IS DONE
+     WITH THEM — and a reader moving between them should not have to re-learn the page.
+     ⚠ THE LIST IS NOT COPIED. It is rendered at load time from js/reference-data.js, which is the
+     registry the in-app Sources dialog also reads. There is one list; a source added to the app
+     appears here without anybody remembering to. -->
+<style>
+  :root{
+    --bg:#0e0f12; --card:#16181d; --line:rgba(140,145,160,.22);
+    --tx:#e8eaf0; --mut:#9aa1b0; --acc:#4da3ff; --warn:#ffcc00; --ok:#34c759;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f6f7f9; --card:#ffffff; --line:rgba(20,25,40,.13); --tx:#12141a; --mut:#5b6272; --acc:#0a63c9; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Roboto,sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 90px}
+  header{position:sticky;top:0;background:linear-gradient(var(--bg) 72%,transparent);padding:14px 0 10px;z-index:5}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:.01em}
+  .sub{color:var(--mut);font-size:13px;margin:0}
+  .langbar{display:flex;gap:6px;margin:12px 0 0;flex-wrap:wrap}
+  .langbar button{font:inherit;font-size:12px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);cursor:pointer}
+  .langbar button[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:transparent}
+  nav{margin:18px 0 26px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  nav ol{margin:0;padding-left:20px;columns:2;column-gap:26px}
+  @media (max-width:620px){ nav ol{columns:1} }
+  nav a{color:var(--acc);text-decoration:none}
+  nav a:hover{text-decoration:underline}
+  section{margin:0 0 28px;padding:18px 18px 8px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+  h2{font-size:17px;margin:0 0 2px;scroll-margin-top:96px}
+  .tagline{color:var(--mut);font-size:12.5px;margin:0 0 12px}
+  h3{font-size:14px;margin:16px 0 4px;color:var(--acc)}
+  p{margin:6px 0}
+  ul{margin:6px 0;padding-left:20px}
+  li{margin:3px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:rgba(128,140,170,.14);padding:1px 5px;border-radius:5px}
+  .src{font-size:12.5px;color:var(--mut);border-left:3px solid var(--line);padding:2px 0 2px 11px;margin:10px 0 2px}
+  .lim{font-size:12.5px;border-left:3px solid var(--warn);padding:6px 0 6px 11px;margin:10px 0 2px;background:rgba(255,204,0,.06)}
+  .lim b{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;display:block;overflow-x:auto}
+  th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+  th{color:var(--mut);font-weight:600;white-space:nowrap}
+  footer{color:var(--mut);font-size:12.5px;text-align:center;margin:30px 0 0}
+  a.back{display:inline-block;margin-bottom:6px;color:var(--acc);text-decoration:none;font-size:13px}
+  [data-l]{display:none}
+  html[data-lang="ja"] [data-l="ja"]{display:revert}
+  html[data-lang="en"] [data-l="en"]{display:revert}
+  /* the rendered registry */
+  .srcitem{border-bottom:1px solid var(--line);padding:9px 0}
+  .srcitem:last-child{border-bottom:none}
+  .srcitem b{font-size:14px}
+  .srcitem .u{display:block;font-size:12px;word-break:break-all}
+  .srcitem .use{font-size:13px;color:var(--tx);margin:2px 0 3px}
+  .count{float:right;color:var(--mut);font-size:12px;font-weight:400}
+  .filter{width:100%;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;font-size:13px;margin:4px 0 10px}
+  .empty{color:var(--mut);font-size:13px;padding:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="back" href="./index.html">&#8592; <span data-l="ja">地図に戻る</span><span data-l="en">Back to the map</span></a>
+  <h1><span data-l="ja">データ出典</span><span data-l="en">Data sources</span></h1>
+  <p class="sub"><span data-l="ja">IntMap が表示する数字・線・画像が<b>どこから来たか</b>の全一覧です。何をどう計算しているかは <a href="./science.html">科学的根拠とロジック</a> のページにあります。</span><span data-l="en">Every number, line and image IntMap shows, and <b>where it came from</b>. What is computed from them is on the <a href="./science.html">Science &amp; logic</a> page.</span></p>
+  <div class="langbar">
+    <button id="b-ja" aria-pressed="true" onclick="setLang('ja')">日本語</button>
+    <button id="b-en" aria-pressed="false" onclick="setLang('en')">English</button>
+    <a class="langbar" style="display:inline-flex" href="./science.html"><button type="button"><span data-l="ja">ロジック解説へ →</span><span data-l="en">Science &amp; logic →</span></button></a>
+  </div>
+</header>
+
+<nav>
+  <ol>
+    <li><a href="#how"><span data-l="ja">この一覧の読み方</span><span data-l="en">How to read this list</span></a></li>
+    <li><a href="#live"><span data-l="ja">ライブ取得と同梱データ</span><span data-l="en">Live requests vs bundled data</span></a></li>
+    <li><a href="#privacy"><span data-l="ja">出典とプライバシー</span><span data-l="en">Sources and privacy</span></a></li>
+    <li><a href="#licence"><span data-l="ja">ライセンスと帰属表示</span><span data-l="en">Licences and attribution</span></a></li>
+    <li><a href="#limits"><span data-l="ja">出典が答えないこと</span><span data-l="en">What a source does not answer</span></a></li>
+    <li><a href="#list"><span data-l="ja">全出典一覧</span><span data-l="en">The full registry</span></a></li>
+  </ol>
+</nav>
+
+<section id="how">
+  <h2><span data-l="ja">1. この一覧の読み方</span><span data-l="en">1. How to read this list</span></h2>
+  <p class="tagline"><span data-l="ja">1件 = 1提供元。名前・URL・「IntMap のどこで使っているか」の3つが必ず揃っています。</span><span data-l="en">One entry = one provider: its name, its URL, and exactly where in IntMap it is used.</span></p>
+  <p><span data-l="ja">下の <a href="#list">全出典一覧</a> は、アプリ内の「出典」ダイアログと<b>同じ登録簿</b>（<code>js/reference-data.js</code>）から、このページを開いた時点で生成しています。一覧を二重に持たないので、アプリに出典が増えれば、誰も更新を忘れられません。</span>
+     <span data-l="en">The registry below is rendered, when you open this page, from the <b>same table</b> the in-app Sources dialog reads (<code>js/reference-data.js</code>). There is no second copy to forget to update.</span></p>
+  <h3><span data-l="ja">「どこで使っているか」は具体的です</span><span data-l="en">“Where it is used” is specific</span></h3>
+  <p><span data-l="ja">各エントリの説明は「地図データ」のような一般名ではなく、どのレイヤー・どのパネル・どの計算に入っているかを書いています。ある数字がどこから来たか知りたい場合は、そのレイヤー名で下の絞り込み欄を検索するのが最短です。</span>
+     <span data-l="en">Each entry says which layer, which panel or which calculation it feeds — not just “map data”. To find where a number came from, type the layer's name into the filter box below.</span></p>
+</section>
+
+<section id="live">
+  <h2><span data-l="ja">2. ライブ取得と同梱データ</span><span data-l="en">2. Live requests vs bundled data</span></h2>
+  <p class="tagline"><span data-l="ja">出典には2種類あり、鮮度も、オフラインでの挙動も、失敗の仕方も違います。</span><span data-l="en">There are two kinds, and they differ in freshness, in offline behaviour and in how they fail.</span></p>
+  <table>
+    <tr><th><span data-l="ja">種類</span><span data-l="en">Kind</span></th><th><span data-l="ja">いつ取得するか</span><span data-l="en">When it is fetched</span></th><th><span data-l="ja">例</span><span data-l="en">Examples</span></th></tr>
+    <tr><td><span data-l="ja">ライブ取得</span><span data-l="en">Live</span></td>
+        <td><span data-l="ja">そのレイヤー／パネルを開いた時に、ブラウザから提供元へ直接</span><span data-l="en">When you open that layer or panel — from your browser, straight to the provider</span></td>
+        <td>OpenStreetMap / OpenFreeMap, Esri, NASA GIBS, Open-Meteo, USGS, JMA bosai, NWS, GDACS, OEC, Our World in Data, FAO GAEZ, Overpass, OSRM, Wikipedia</td></tr>
+    <tr><td><span data-l="ja">同梱</span><span data-l="en">Bundled</span></td>
+        <td><span data-l="ja">ビルド時に取り込み済み。ネットワークなしでも同じ答えを返す</span><span data-l="en">Baked in at build time; the same answer with no network at all</span></td>
+        <td>Natural Earth, Köppen 1901–2020, land/sea mask, bathymetry, Hipparcos star catalogue, planetary textures, satellite TLE snapshot, ocean currents (OSCAR)</td></tr>
+  </table>
+  <p class="lim"><b data-l="ja">注意</b><b data-l="en">Note</b>
+     <span data-l="ja">同梱データは「その時点の観測」です。作成日は各データファイルの先頭に入っており、地図上の表示にも「いつのデータか」を出しています。古くなったものを新しいふりをして見せることはしません。</span>
+     <span data-l="en">Bundled data is an observation from a moment in time. The build date is in the head of each data file and is shown in the app beside the layer; nothing old is presented as if it were current.</span></p>
+</section>
+
+<section id="privacy">
+  <h2><span data-l="ja">3. 出典とプライバシー</span><span data-l="en">3. Sources and privacy</span></h2>
+  <p class="tagline"><span data-l="ja">ライブ取得は「あなたのブラウザが、その提供元にリクエストを出す」という意味です。</span><span data-l="en">A live source means your browser makes a request to that provider.</span></p>
+  <p><span data-l="ja">IntMap にはデータを中継するサーバーがほとんどありません。地図タイル、気象、地震、警報、貿易、作物などはブラウザから提供元へ直接届きます。したがって、そのレイヤーを開くと、提供元のログには <b>IPアドレスと、要求したタイル（＝おおよその表示範囲）</b> が残ります。これはどの地図アプリでも同じですが、明示しておきます。</span>
+     <span data-l="en">IntMap proxies almost nothing: map tiles, weather, earthquakes, warnings, trade, crops and the rest go from your browser to the provider. That provider's logs will therefore contain <b>your IP address and which tiles you asked for</b> — i.e. roughly what you were looking at. This is true of every map application; it is stated here rather than left implicit.</span></p>
+  <p><span data-l="ja">アプリ自身が持つサーバー機能（アカウント、AI、モニター）は Supabase 上にあり、扱っている内容は <a href="./index.html">アプリ内の「プライバシー」</a> に書いてあります。位置情報は端末から出ません（現在地の表示は端末内で完結し、座標を提供元へ送るのはユーザーが明示的に要求した検索・経路・気象などに限られます）。</span>
+     <span data-l="en">The app's own server features (accounts, AI, monitors) run on Supabase and are described in the in-app Privacy dialog. Your location does not leave the device on its own: it is sent only where you explicitly ask for something about a place — a search, a route, a forecast.</span></p>
+</section>
+
+<section id="licence">
+  <h2><span data-l="ja">4. ライセンスと帰属表示</span><span data-l="en">4. Licences and attribution</span></h2>
+  <p class="tagline"><span data-l="ja">帰属表示は義務であり、同時に「この数字は誰の仕事か」を読者に返すためのものです。</span><span data-l="en">Attribution is an obligation — and also how a reader gets to know whose work a number is.</span></p>
+  <ul>
+    <li><span data-l="ja"><b>OpenStreetMap</b> — ODbL 1.0。基図・境界線・POI・道路・鉄道・経路探索の基礎。地図上に常時表示しています。</span>
+        <span data-l="en"><b>OpenStreetMap</b> — ODbL 1.0. Basemap, borders, POIs, roads, rail and routing. Credited on the map at all times.</span></li>
+    <li><span data-l="ja"><b>米国政府の著作物</b>（NASA・NOAA・USGS・NWS ほか） — 原則パブリックドメイン。ただし NASA のロゴ・識別標は別扱いです。</span>
+        <span data-l="en"><b>US Government works</b> (NASA, NOAA, USGS, NWS …) — public domain as a rule; NASA's logos and insignia are not.</span></li>
+    <li><span data-l="ja"><b>Natural Earth</b> — パブリックドメイン。</span><span data-l="en"><b>Natural Earth</b> — public domain.</span></li>
+    <li><span data-l="ja"><b>Our World in Data</b> — CC BY 4.0（元データの提供元＝Ember、Energy Institute、FAO も併記）。</span>
+        <span data-l="en"><b>Our World in Data</b> — CC BY 4.0, with the upstream provider (Ember, the Energy Institute, FAO) named alongside.</span></li>
+    <li><span data-l="ja"><b>気象庁</b>・<b>FAO</b>・<b>世界銀行</b>・<b>Wikipedia/Wikidata</b> — 各提供元の利用条件に従い、それぞれのページで名前と出典先を表示しています。</span>
+        <span data-l="en"><b>JMA</b>, <b>FAO</b>, <b>the World Bank</b>, <b>Wikipedia/Wikidata</b> — under each provider's own terms, named in the panel that uses them.</span></li>
+  </ul>
+  <p class="src"><span data-l="ja">各エントリの URL は提供元の公式ページです。ライセンスの正文はそこにあります。ここに書いたのは要約であり、正文に優先しません。</span>
+     <span data-l="en">Each entry links to the provider's own page, which is where the licence text lives. The summaries here are summaries and do not override it.</span></p>
+</section>
+
+<section id="limits">
+  <h2><span data-l="ja">5. 出典が答えないこと</span><span data-l="en">5. What a source does not answer</span></h2>
+  <p class="tagline"><span data-l="ja">出典があることは、正しいことでも、最新であることでも、あなたの場所に当てはまることでもありません。</span><span data-l="en">Having a source is not the same as being right, being current, or applying to where you are.</span></p>
+  <ul>
+    <li><span data-l="ja"><b>更新の周期は提供元のもの</b>です。地震は数分、警報は約5分ごとの再取得、貿易統計は年次、作物は基準年（2000年・2010年）。画面には常に「いつの数字か」を出しています。</span>
+        <span data-l="en"><b>The update cadence is the provider's.</b> Earthquakes in minutes, warnings re-read about every five minutes, trade statistics annual, crops at reference years (2000, 2010). The app always shows which moment a figure belongs to.</span></li>
+    <li><span data-l="ja"><b>フィードが無い国は「無い」と書きます。</b> 空の地図は「警報が出ていない」という意味ではありません（警報レイヤーの説明はタップした国ごとに出ます）。</span>
+        <span data-l="en"><b>Where there is no feed, the app says so in words.</b> An empty map is not a statement that nothing is in force.</span></li>
+    <li><span data-l="ja"><b>シミュレーションは出典ではありません。</b> 地震・津波・浸水・日照・電波・ドローンなどの結果は、この一覧のデータを入力とした<b>計算結果</b>です。式と仮定と限界は <a href="./science.html">ロジック解説</a> にあります。</span>
+        <span data-l="en"><b>A simulation is not a source.</b> The earthquake, tsunami, flood, sunlight, radio and drone answers are computed from the data listed here; the equations, assumptions and limits are on the <a href="./science.html">Science &amp; logic</a> page.</span></li>
+    <li><span data-l="ja"><b>緊急時は公的機関の発表に従ってください。</b> このアプリの表示は参考です。</span>
+        <span data-l="en"><b>In an emergency, follow the official authorities.</b> This application is for reference.</span></li>
+  </ul>
+</section>
+
+<section id="list">
+  <h2><span data-l="ja">6. 全出典一覧</span><span data-l="en">6. The full registry</span><span class="count" id="src-count"></span></h2>
+  <p class="tagline"><span data-l="ja">アプリ内「出典」ダイアログと同じ登録簿から生成。分野は説明文から自動分類しており、当てはまらないものは「その他」に入ります。</span>
+     <span data-l="en">Rendered from the same registry as the in-app dialog. The groupings are derived from each entry's own description; anything that matches none of them lands in “Other”.</span></p>
+  <input class="filter" id="src-filter" type="search" placeholder="filter — 例: 地震 / satellite / weather">
+  <div id="src-groups"><p class="empty" data-l="ja">登録簿を読み込んでいます…</p><p class="empty" data-l="en">Loading the registry…</p></div>
+</section>
+
+<footer>
+  <p><span data-l="ja">このページは<b>出典</b>の一覧です。計算方法は <a href="./science.html">科学的根拠とロジック</a> にあります。<br>誤りを見つけた場合は、アプリ内のフィードバックからお知らせください。</span>
+     <span data-l="en">This page lists <b>sources</b>. The methods are on the <a href="./science.html">Science &amp; logic</a> page.<br>If you find an error here, please use the in-app feedback.</span></p>
+  <p><a class="back" href="./index.html">&#8592; <span data-l="ja">地図に戻る</span><span data-l="en">Back to the map</span></a></p>
+</footer>
+</div>
+<script src="./js/reference-data.js"></script>
+<script>
+  function setLang(l){
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.lang = (l === 'ja') ? 'ja' : 'en';
+    var a = document.getElementById('b-ja'), b = document.getElementById('b-en');
+    if (a) a.setAttribute('aria-pressed', String(l === 'ja'));
+    if (b) b.setAttribute('aria-pressed', String(l === 'en'));
+    try { localStorage.setItem('intmap_science_lang', l); } catch (e) {}
+    render();
+  }
+  /* the groups, and the words that put an entry in one. Derived from the entry's own text so the
+     registry stays the single source of truth — see section 6. */
+  var GROUPS = [
+    ['base',   {ja:'基図・地形・標高', en:'Basemap, terrain, elevation'},        /(basemap|tile|terrain|elevation|dem|contour|bathym|地形|標高|基図|等高線|水深)/i],
+    ['imagery',{ja:'衛星画像・リモートセンシング', en:'Imagery & remote sensing'}, /(imagery|satellite image|gibs|sentinel|landsat|worldcover|night ?light|衛星画像|夜間光|土地被覆)/i],
+    ['weather',{ja:'気象・海洋・気候', en:'Weather, ocean, climate'},            /(weather|forecast|wind|climate|köppen|koppen|marine|tide|current|air quality|気象|風|気候|潮|海流|大気)/i],
+    ['hazard', {ja:'地震・災害・警報', en:'Earthquakes, hazards, warnings'},      /(earthquake|seismic|tsunami|volcan|warning|alert|hazard|gdacs|地震|津波|火山|警報|災害)/i],
+    ['space',  {ja:'宇宙・天文', en:'Space & astronomy'},                        /(satellite|tle|orbit|star|planet|ephemer|space|宇宙|衛星|恒星|惑星|天文)/i],
+    ['econ',   {ja:'経済・統計・エネルギー', en:'Economy, statistics, energy'},   /(world bank|gdp|population|energy|electric|trade|crop|統計|経済|人口|エネルギー|貿易|作物|収量)/i],
+    ['geo',    {ja:'国・境界・地名', en:'Countries, boundaries, place names'},    /(natural earth|boundar|border|country|gazetteer|geonames|nominatim|place name|国境|境界|地名|国名)/i],
+    ['transit',{ja:'交通・経路・航空・船舶', en:'Transport, routing, aircraft, ships'}, /(routing|osrm|valhalla|transit|motis|flight|aircraft|adsb|ais|vessel|railway|airport|経路|鉄道|航空|船)/i],
+    ['news',   {ja:'ニュース・参照情報', en:'News & reference'},                  /(news|rss|wikipedia|wikidata|feed|ニュース|報道|百科)/i]
+  ];
+  function classify(s){
+    var t = ((s.n || '') + ' ' + ((s.use && (s.use.en || '')) || '') + ' ' + ((s.use && (s.use.jp || '')) || ''));
+    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].test(t)) return GROUPS[i][0];
+    return 'other';
+  }
+  function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function render(){
+    var host = document.getElementById('src-groups'); if (!host) return;
+    var ja = document.documentElement.getAttribute('data-lang') === 'ja';
+    var list = [];
+    try { list = (window.IntMapRefData && window.IntMapRefData.dataSources) || []; } catch (e) {}
+    var cnt = document.getElementById('src-count');
+    if (cnt) cnt.textContent = list.length ? (list.length + (ja ? ' 件' : ' entries')) : '';
+    if (!list.length) { host.innerHTML = '<p class="empty">' + (ja ? '登録簿を読み込めませんでした。' : 'The registry could not be loaded.') + '</p>'; return; }
+    var q = (document.getElementById('src-filter') || {}).value || '';
+    q = q.trim().toLowerCase();
+    var bins = {};
+    list.forEach(function (s) {
+      var text = ((s.n || '') + ' ' + (s.u || '') + ' ' + ((s.use && s.use.en) || '') + ' ' + ((s.use && s.use.jp) || '')).toLowerCase();
+      if (q && text.indexOf(q) < 0) return;
+      var k = classify(s); (bins[k] = bins[k] || []).push(s);
+    });
+    var order = GROUPS.map(function (g) { return g[0]; }).concat(['other']);
+    var titles = {}; GROUPS.forEach(function (g) { titles[g[0]] = g[1]; });
+    titles.other = { ja: 'その他', en: 'Other' };
+    var out = '';
+    order.forEach(function (k) {
+      var rows = bins[k]; if (!rows || !rows.length) return;
+      out += '<h3>' + esc(ja ? titles[k].ja : titles[k].en) + ' <span class="count">' + rows.length + '</span></h3>';
+      rows.sort(function (a, b) { return String(a.n).localeCompare(String(b.n)); });
+      rows.forEach(function (s) {
+        var use = (s.use && (ja ? (s.use.jp || s.use.en) : (s.use.en || s.use.jp))) || '';
+        out += '<div class="srcitem"><b>' + esc(s.n) + '</b>'
+             + '<div class="use">' + esc(use) + '</div>'
+             + '<a class="u" href="' + esc(s.u) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
+      });
+    });
+    host.innerHTML = out || ('<p class="empty">' + (ja ? '該当する出典はありません。' : 'No source matches that filter.') + '</p>');
+  }
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('intmap_science_lang'); } catch (e) {}
+    if (!saved) {
+      try { var s = JSON.parse(localStorage.getItem('intmap_settings') || '{}'); if (s && s.lang) saved = (s.lang === 'jp') ? 'ja' : 'en'; } catch (e) {}
+    }
+    if (!saved) saved = (String(navigator.language || '').toLowerCase().indexOf('ja') === 0) ? 'ja' : 'en';
+    setLang(saved);
+    var f = document.getElementById('src-filter'); if (f) f.addEventListener('input', render);
+  })();
+</script>
+</body>
+</html>

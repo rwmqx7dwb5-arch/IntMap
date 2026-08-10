@@ -65,7 +65,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
       const seen=new Set(rows.map(r=>r[0]));
       (window.imNewsSources||[]).forEach(s=>{ if(!seen.has(s)) rows.push([s,0]); });
       wrap.innerHTML=rows.length
-        ? rows.map(([name,n])=>'<label><input type="checkbox" value="'+esc(name)+'" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>'+esc(name)+(n?(' <span style="opacity:.55;">('+n+')</span>'):'')+'</span></label>').join('')
+        ? rows.map(([name,n])=>'<label><input type="checkbox" value="'+esc(name)+'"> <span>'+esc(name)+(n?(' <span style="opacity:.55;">('+n+')</span>'):'')+'</span></label>').join('')
         : '<div style="padding:8px 10px;font-size:12px;color:var(--text-muted);">'+esc(L('No headlines have loaded yet.','まだ見出しが読み込まれていません。','Noch keine Schlagzeilen geladen.','Заголовки ещё не загружены.','Aún no se han cargado titulares.'))+'</div>';
       wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=(window.imNewsSources||[]).includes(cb.value); });
       if(!wrap.dataset.built){ wrap.dataset.built='1';
@@ -103,6 +103,12 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
        (#R207) 「国別メディアのニュースの選択欄は、ニュースの言語の選択欄と同じUIに。今は微妙に違って、
        統一感がなく気持ち悪い。」 The markup gained a mode <select> and moved its hint below the control
        (index.html); what is new HERE is only the block that shows/hides the picker with that select.
+       ⚠ (#R212) 「チェックボックスのUIが違う。」 — AND IT STILL WAS, because of an inline style. Both
+       pickers here wrote `accent-color:…;width:16px;height:16px` onto the input. css/intmap.css draws
+       these boxes itself (`appearance:none`, 22 px, a drawn tick at left:7px/top:3px), so
+       `accent-color` did nothing at all and the 16 px override left a smaller box with the tick
+       hanging off it. The language picker never had those styles, which is exactly why it looked
+       right. They are gone; all three pickers are now the one CSS rule.
        ⚠ The mode is DERIVED from the selection rather than stored separately — one fewer thing that
        can disagree with the list it describes. */
     function countryLabel(){
@@ -114,7 +120,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
     function renderCountries(){
       const wrap=document.getElementById('newscountry-multi'); if(!wrap) return false;
       if(!wrap.dataset.built){
-        wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>'<label><input type="checkbox" value="'+esc(code)+'" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>'+NEWS_COUNTRY_FEEDS[code].flag+' <span class="ncx" data-code="'+esc(code)+'"></span></span></label>').join('');
+        wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>'<label><input type="checkbox" value="'+esc(code)+'"> <span>'+NEWS_COUNTRY_FEEDS[code].flag+' <span class="ncx" data-code="'+esc(code)+'"></span></span></label>').join('');
         wrap.dataset.built='1';
         /* the button summary follows the ticks live; the selection itself commits on Apply */
         wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
