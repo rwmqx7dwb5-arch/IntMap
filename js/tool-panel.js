@@ -493,7 +493,11 @@ window.IntMapModules.toolPanel=function(HOST){
       {label:`🌇 ${L('Sunlight hours & shade here','ここの日照時間・影を解析','Sonnenstunden & Schatten hier','Часы солнца и тени здесь','Horas de sol y sombra aquí')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */
-      {label:`✨ ${L('Night sky from here','ここからの星空','Sternhimmel von hier','Звёздное небо отсюда','El cielo desde aquí')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {label:`✨ ${L('Night sky from here','ここからの星空','Sternhimmel von hier','Звёздное небо отсюда','El cielo desde aquí')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'dome'}); }catch(_){} }); }},
+      /* (#R214) 「実際にその地点に立ったように見れるモードも追加して。」 — the same sky and the same
+         measured skyline, through a lens instead of onto a chart. A separate entry because the whole
+         point of it is the first-person view, and a mode hidden inside a panel is not that. */
+      {label:`🧍 ${L('Stand here and look at the sky','ここに立って空を見る','Hier stehen und zum Himmel sehen','Встать здесь и смотреть на небо','Ponerse aquí y mirar al cielo')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'stand'}); }catch(_){} }); }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
