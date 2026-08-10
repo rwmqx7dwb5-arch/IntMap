@@ -700,10 +700,32 @@ window.IntMapModules.worldPacks=function(HOST){
         return true; }
 
       let _jpGeo=null;
+      /* ⚠⚠ (#R212) THE PREFECTURE GEOMETRY NEVER ARRIVED IN A BROWSER, AND THAT IS THE WHOLE OF
+         「日本の場合は何も発令されてないと出てくる」. Measured from the running page:
+           · JMA map.json      → 200 in 19 ms   (the warnings themselves were always fine)
+           · JMA area.json     → 200 in 15 ms
+           · the geoBoundaries API → 200 in 3 ms, and it hands back a `github.com/…/raw/…` URL
+           · THAT url          → «Failed to fetch»
+         Two things are wrong with it at once: `github.com/raw` REDIRECTS, and the redirect target
+         does not carry the CORS header, so the browser refuses it; and the file is stored in Git LFS,
+         so `raw.githubusercontent.com` returns the 130-byte POINTER («version https://git-lfs…»)
+         rather than the geometry. `media.githubusercontent.com/media/…` is GitHub's own LFS content
+         host, it sends `Access-Control-Allow-Origin: *`, and it returns the real 2.2 MB collection
+         with the same `shapeISO` `JP-nn` keys — measured, 47 features in 511 ms.
+         ⚠ Node does not enforce CORS, which is why #R211 verified this endpoint and still shipped a
+         layer that could not draw Japan. A feed check has to be run from the PAGE (#R188). */
+      function _lfsUrl(u){
+        const m=/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/raw\/(.+)$/.exec(String(u||''));
+        return m?('https://media.githubusercontent.com/media/'+m[1]+'/'+m[2]+'/'+m[3]):u; }
       async function jpPrefGeo(){ if(_jpGeo) return _jpGeo;
         const m=await (await fetch('https://www.geoboundaries.org/api/current/gbOpen/JPN/ADM1/')).json();
         const meta=Array.isArray(m)?m[0]:m;
-        const g=await (await fetch(meta.simplifiedGeometryGeoJSON)).json();
+        const src=meta.simplifiedGeometryGeoJSON||meta.gjDownloadURL;
+        let g=null;
+        for(const u of [_lfsUrl(src),src]){ if(!u) continue;
+          try{ const r=await fetch(u); if(!r.ok) continue;
+            const j=await r.json(); if(j&&j.features&&j.features.length){ g=j; break; } }catch(_){} }
+        if(!g) throw new Error('jp prefecture geometry unreachable');
         const by=Object.create(null);
         (g.features||[]).forEach(f=>{ const iso=(f.properties&&f.properties.shapeISO)||''; const n=parseInt(String(iso).replace('JP-',''),10);
           if(isFinite(n)) by[n]=f; });

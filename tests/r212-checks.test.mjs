@@ -58,6 +58,13 @@ test('R212 ④: "nothing in force" is only said when that feed actually answered
   assert.match(s, /loadGDACS/, 'the rest of the world has a feed at all');
   assert.match(s, /getgeometry[\s\S]{0,240}Access-Control-Allow-Origin/,
     'the note recording that GDACS polygons are NOT reachable stays with the code that works around it');
+  /* ⚠ and the reason Japan was never painted: geoBoundaries hands back a github.com/…/raw/… URL,
+     which redirects without CORS, and whose LFS pointer is what raw.githubusercontent returns.
+     media.githubusercontent.com/media/… is the content host and does send the header. */
+  assert.match(s, /media\.githubusercontent\.com\/media\//, 'the prefecture geometry comes from the LFS content host');
+  assert.match(s, /function _lfsUrl\(u\)/, 'and the rewrite is a function, not a pasted URL');
+  assert.match(s, /throw new Error\('jp prefecture geometry unreachable'\)/,
+    'a geometry that cannot be had is an error, not an empty map');
 });
 
 /* ── 5. crops are a crop raster, not a country choropleth ──────────────────────────────────────── */
