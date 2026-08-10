@@ -233,10 +233,79 @@ export function makeThemeSky(HOST, CTX) {
     const cos=Math.sin(a)*Math.sin(b)+Math.cos(a)*Math.cos(b)*Math.cos(dl);
     return 90-Math.acos(Math.max(-1,Math.min(1,cos)))/R;
   }
+  /* ══ (#R213) THE BAND WAS THE ONE PART OF THE SKY STILL PICKED BY HAND ═══════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで美しく。」
+
+     #R202 replaced `sky-color` — the FAR end of the gradient — with the Rayleigh + Mie integral in
+     js/sky-model.js. It left `horizon-color` as a smoothstep between two hexes, and `horizon-color`
+     is the band: the bright arc at the limb and the strip just above the ground, i.e. the part of
+     the atmosphere anybody actually looks at.
+
+     ⚠ AND THE TWO HEXES HAVE NO WARM PHASE AT ALL. #0a1526 (night blue) → #c2ccd1 (grey-white) is a
+     straight line through desaturated blue-grey, so at the exact moment a real horizon is orange
+     this drew grey. That is not a taste disagreement, it is a missing physical effect: near sunset
+     the sight-line through the atmosphere is ~38× longer than at the zenith, Rayleigh scattering has
+     removed most of the short wavelengths from it, and what survives is red. The model already
+     computes that — it takes the VIEW ELEVATION as an argument and has since #R202 — and nothing was
+     passing it.
+
+     So the band is sampled at 0.6° above the horizon, from the same integral, at the same Sun
+     elevation, eye height and relative azimuth the far end uses. One model, two samples, one
+     gradient. The old two-hex ramp stays as the fallback for when the Sun's position is unknown or
+     the model throws — it is a worse answer, not a wrong one.
+
+     ⚠⚠ THE MODEL'S HUE IS USED AND ITS BRIGHTNESS IS NOT, AND THAT IS NOT A FUDGE — IT IS WHAT THE
+     MODEL DOES AND DOES NOT CONTAIN. js/sky-model.js integrates SINGLE scattering. Along a grazing
+     sight-line the air mass is about 38× the zenith value, so multiple scattering — the light that
+     has bounced more than once — is most of what reaches the eye, and that is exactly the term the
+     model omits. Measured, at a 0.6° view elevation the model returns [111,112,83] at local noon
+     where #R196's Cesium capture of the same band reads [194,204,209]: too dark, and olive. Its
+     RATIO between channels near the terminator is right (the long path really has had its blue
+     scattered out), its MAGNITUDE at any sun elevation is not.
+
+     So: the luminance stays on #R196's measurement and only the hue comes from the model, and it is
+     mixed in as the Sun comes DOWN — zero weight above +6°, full weight below −6°. Above +6° this
+     returns byte-for-byte what #R196 measured, so no earlier finding is walked back; the change is
+     entirely in the twilight window, which is the window that was grey and should not have been.
+
+     ⚠ FLOORED AT THE NIGHT HEX FOR THE REASON #R202 GAVE: the model carries no starlight and no
+     airglow, so deep night integrates to black, and a black horizon band is darker than the sky has
+     ever been. Nothing above that floor is touched. */
+  const _HZ_VIEW_ELEV=0.6;
+  const _lum=(c)=>0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
   function _horizonColour(){
     const e=_sunElevAtCentre(); if(e==null) return _SKY_H_DAY;
     const t=Math.max(0,Math.min(1,(e+6)/12));
-    return _mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
+    const rampHex=_mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
+    const ramp=[parseInt(rampHex.slice(1,3),16),parseInt(rampHex.slice(3,5),16),parseInt(rampHex.slice(5,7),16)];
+    const w=Math.max(0,Math.min(1,(6-e)/12));
+    if(w<=0) return rampHex;
+    try{
+      const m=skyColour(e,_eyeAltM(),_relAzimuth(),_HZ_VIEW_ELEV).rgb;
+      const lm=_lum(m); if(!(lm>1)) return rampHex;          /* nothing to take a hue from */
+      const k=_lum(ramp)/lm;                                  /* the model's colour at the measured brightness */
+      const night=[parseInt(_SKY_H_NIGHT.slice(1,3),16),parseInt(_SKY_H_NIGHT.slice(3,5),16),parseInt(_SKY_H_NIGHT.slice(5,7),16)];
+      return '#'+[0,1,2].map(i=>{
+        const v=ramp[i]+(Math.min(255,m[i]*k)-ramp[i])*w;
+        return Math.max(night[i],Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+      }).join('');
+    }catch(_){ return rampHex; }
+  }
+  /* ⚠ (#R213) HOW THICK THE BAND IS, FROM THE GEOMETRY RATHER THAN FROM A CONSTANT.
+     `sky-horizon-blend` is where the horizon colour has faded into the sky colour, as a fraction of
+     the drawn band. #R196 fixed it at 0.55 from a Cesium capture taken at ONE camera height, and it
+     has been that number at every height since — so the limb seen from orbit (where the atmosphere
+     subtends about 1.5° and should be a hairline) is drawn as thick as the sky seen from a street
+     (where it fills the view). The apparent half-angle of the shell from height h is
+     acos(R/(R+h)) − 0 … i.e. how much of the sphere's edge the air occupies, which falls off as the
+     camera climbs. Mapped onto the same 0.55 at ground level so nothing measured before moves, and
+     down to a thin band at globe height. */
+  function _horizonBlend(){
+    const h=Math.max(0,_eyeAltM());
+    if(!(h>0)) return 0.55;
+    const R=6371000, top=100000;                       /* the shell js/sky-model.js integrates */
+    const frac=Math.max(0,Math.min(1,1-Math.log10(1+h/top)/Math.log10(1+40000000/top)));
+    return Math.max(0.14,Math.min(0.55,0.14+0.41*frac));
   }
   /* the eye's own height above sea level — the model's other input, and the reason the sky goes to
      space as you climb rather than only as the Sun sets */
@@ -302,7 +371,7 @@ export function makeThemeSky(HOST, CTX) {
       const hz=_horizonColour(), sc=_skyColour();
       _applySkyAtmosphere._hz=hz; _applySkyAtmosphere._sc=sc;
       GE().scene.setSky({
-        'sky-color':sc, 'sky-horizon-blend':0.55,
+        'sky-color':sc, 'sky-horizon-blend':_horizonBlend(),   /* (#R213) */
         'horizon-color':hz, 'horizon-fog-blend':0,
         'fog-color':hz, 'fog-ground-blend':1,
         /* ⚠ TWO STRENGTHS, EACH SETTLED BY ITS OWN MEASUREMENT. #R187 halved this to 0.55 because a
