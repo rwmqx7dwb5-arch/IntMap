@@ -86,6 +86,18 @@ window.IntMapModules.space=function(HOST){
        body in body view (the "地名ラベル"). The body NAMES in the system view are what identifies the
        dots at all, so they are not part of either switch. */
     let showOrbits=true, showNames=true;
+    /* ══ (#R213) THREE POPULATIONS THAT ARE NOT THE PLANETS ═══════════════════════════════════════
+       「Voyager 1 / 2、New Horizons、Parker Solar Probe、各種惑星探査機…の位置を見れるように。」
+       「宇宙を探索に小惑星、彗星も追加して。」
+       「太陽系外のはるか遠くまでズームアウトできるように。」
+
+       All three default OFF, and that is not timidity: each one costs a fetch of a few hundred
+       kilobytes (js/space-bodies.js) and opening a solar-system view is not the same request as
+       asking to see 1,100 asteroids. Switching one on loads it; switching it off keeps it loaded.
+       `craftSel` / `smallSel` are what the info panel is describing, not a filter. */
+    let showCraft=false, showSmall=false, showDeep=false;
+    let craftSel=null, smallSel=null, smallKinds=null;
+    const SB=()=>window.IntMapSpaceBodies;
 
     const BODIES=['sun','mercury','venus','earth','moon','mars','jupiter','saturn','uranus','neptune','pluto'];
     const NAMED={ sun:['Sun','太陽','Sonne','Солнце','Sol'], mercury:['Mercury','水星','Merkur','Меркурий','Mercurio'],
@@ -383,6 +395,169 @@ window.IntMapModules.space=function(HOST){
       return starFarBuf;
     }
 
+    /* ══ (#R213) SPACECRAFT, SMALL BODIES AND THE DEEP SKY ═══════════════════════════════════════
+       The arithmetic lives in js/space-bodies.js — Hermite interpolation of the Horizons samples,
+       Kepler propagation of the SBDB elements, and the equatorial→ecliptic rotation of the SIMBAD
+       positions. What is here is only the DRAWING, in the units this scene already speaks.
+
+       ⚠ ONE MAPPING FOR EVERYTHING. Every one of these goes through `posScale`, the same function
+       the planets and the stars go through, because model scale is a compression of DISTANCE and a
+       population drawn in raw AU beside a compressed solar system would be somewhere else entirely.
+       That is also why the buffers are rebuilt every frame instead of cached: the date moves, the
+       scale can change, and a stale buffer here means a comet drawn at last week's place. 1,100
+       Kepler solves is about a fifth of a millisecond — far cheaper than the bookkeeping to avoid
+       them, and the #R197 lesson is that one measurement beats one assumption. */
+    let dynBuf=null;
+    function drawPoints(M,pos,col,n,size){
+      if(!n) return;
+      if(!dynBuf) dynBuf={P:gl.createBuffer(),C:gl.createBuffer()};
+      gl.useProgram(progPts);
+      gl.uniformMatrix4fv(gl.getUniformLocation(progPts,'uMVP'),false,M);
+      gl.uniform1f(gl.getUniformLocation(progPts,'uSz'),size*dpr);
+      const aP=gl.getAttribLocation(progPts,'aP'), aC=gl.getAttribLocation(progPts,'aC');
+      gl.bindBuffer(gl.ARRAY_BUFFER,dynBuf.P); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP,3,gl.FLOAT,false,0,0);
+      gl.bindBuffer(gl.ARRAY_BUFFER,dynBuf.C); gl.bufferData(gl.ARRAY_BUFFER,col,gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(aC); gl.vertexAttribPointer(aC,4,gl.FLOAT,false,0,0);
+      gl.drawArrays(gl.POINTS,0,n);
+    }
+    /* a heliocentric AU vector, in scene units */
+    function auToScene(p){ const r=Math.hypot(p[0],p[1],p[2]); if(!(r>0)) return [0,0,0];
+      const s=posScale(r)/r; return [p[0]*s,p[1]*s,p[2]*s]; }
+
+    /* Colour is CLASS, not decoration: a viewer has to be able to tell a comet from an asteroid and
+       a galaxy from a globular cluster without reading a label, because most of these never get one. */
+    const SMALL_COL={ asteroid:[0.78,0.72,0.60,0.85], comet:[0.62,0.92,1.00,0.95], tno:[0.68,0.76,1.00,0.85],
+      trojan:[0.72,0.94,0.72,0.85], centaur:[0.86,0.70,1.00,0.85], hyperbolic:[1.00,0.55,0.85,1.00] };
+    const DEEP_COL={ galaxy:[1.00,0.94,0.82,0.92], 'cluster-of-galaxies':[0.82,0.80,1.00,0.85],
+      globular:[1.00,0.92,0.68,0.95], open:[0.74,0.88,1.00,0.90], nebula:[1.00,0.68,0.78,0.92],
+      planetary:[0.60,1.00,0.86,0.92], snr:[1.00,0.76,0.56,0.92], gcentre:[1.00,0.86,0.36,1.00],
+      star:[1,1,1,0.9], other:[0.9,0.9,0.9,0.8] };
+
+    /* ⚠ THE DEEP SKY IS DRAWN IN THE STAR PASS, NOT THE PLANET PASS. Its far clip plane is the one
+       that reaches past the catalogue; the planet pass clips at `dist*2000` and would simply discard
+       every one of these. That is the same reason #R208 gave the stars their own projection. */
+    function drawDeepSky(M,cam,out){
+      const B=SB(); if(!B||!B.ready('deep')) return;
+      const list=B.deepSky(); if(!list.length) return;
+      const n=list.length, pos=new Float32Array(n*3), col=new Float32Array(n*4);
+      const far=deepFarScene();
+      let k=0;
+      for(const o of list){
+        /* no measured distance → on the sphere at the population's own far edge, which states
+           "we know the direction and not the depth" rather than inventing a depth (#R208) */
+        const u=(o.au>0)?posScale(o.au):far;
+        pos[k*3]=o.dir[0]*u; pos[k*3+1]=o.dir[1]*u; pos[k*3+2]=o.dir[2]*u;
+        const c=DEEP_COL[o.cls]||DEEP_COL.other;
+        col[k*4]=c[0]; col[k*4+1]=c[1]; col[k*4+2]=c[2]; col[k*4+3]=c[3]*(o.au>0?1:0.5);
+        if(out){ const s=project(cam,[pos[k*3],pos[k*3+1],pos[k*3+2]]);
+          if(s) out.push({ kind:'deep', x:s.x, y:s.y, name:o.label, cls:o.cls, obj:o, w:s.w }); }
+        k++;
+      }
+      gl.depthMask(false);
+      drawPoints(M,pos,col,k,3.4);
+      gl.depthMask(true);
+    }
+    /* the furthest MEASURED deep-sky object, in scene units — the population's own edge */
+    function deepFarScene(){ try{ const a=SB()?SB().deepFarAu():0; return a>0?posScale(a):1e6; }catch(_){ return 1e6; } }
+
+    /* screen position of a scene point, or null when it is behind the camera */
+    function project(cam,p){
+      const c=mApply(mMul(cam.P,cam.V),p);
+      if(!(c[3]>0)) return null;
+      return { x:(c[0]/c[3]*0.5+0.5)*W, y:(1-(c[1]/c[3]*0.5+0.5))*H, w:c[3] };
+    }
+
+    function drawCraft(jd,VP,centre,cam,out){
+      const B=SB(); if(!B||!B.ready('craft')) return;
+      const list=B.craftAt(jd); if(!list.length) return;
+      const n=list.length, pos=new Float32Array(n*3), col=new Float32Array(n*4);
+      for(let i=0;i<n;i++){
+        const c=list[i], v=auToScene(c.pos);
+        pos[i*3]=v[0]-centre[0]; pos[i*3+1]=v[1]-centre[1]; pos[i*3+2]=v[2]-centre[2];
+        /* ⚠ A TRAJECTORY OUTSIDE ITS KERNEL IS NOT A POSITION, and neither is a spacecraft nobody is
+           talking to. Both are drawn dim, and the info panel says which it is. */
+        const live=(c.contact==='active')&&!c.outside;
+        const sel=(craftSel===c.key);
+        col[i*4]=live?0.45:0.62; col[i*4+1]=live?0.95:0.62; col[i*4+2]=live?1.00:0.66;
+        col[i*4+3]=c.outside?0.35:(sel?1:0.9);
+        if(out){ const s=project(cam,[pos[i*3],pos[i*3+1],pos[i*3+2]]);
+          if(s) out.push({ kind:'craft', x:s.x, y:s.y, name:(HOST.lang==='jp'?c.ja:c.en), obj:c, w:s.w }); }
+      }
+      /* the flown path of whichever one is selected — the samples themselves, not a re-derivation */
+      if(craftSel){
+        const t=B.craftTrail(craftSel,jd-3650,jd);
+        if(t&&t.length>1){
+          const a=new Float32Array(t.length*3);
+          for(let i=0;i<t.length;i++){ const v=auToScene(t[i]);
+            a[i*3]=v[0]-centre[0]; a[i*3+1]=v[1]-centre[1]; a[i*3+2]=v[2]-centre[2]; }
+          const Bf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,Bf); gl.bufferData(gl.ARRAY_BUFFER,a,gl.STREAM_DRAW);
+          gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+          drawLines(VP,Bf,t.length,[0.45,0.9,1.0,0.55]);
+          gl.depthMask(true); gl.disable(gl.BLEND);
+          gl.deleteBuffer(Bf);
+        }
+      }
+      gl.depthMask(false);
+      drawPoints(VP,pos,col,n,5.2);
+      gl.depthMask(true);
+    }
+
+    function drawSmall(jd,VP,centre,cam,out){
+      const B=SB(); if(!B||!B.ready('small')) return;
+      const list=B.smallAt(jd,{ kinds:smallKinds||undefined });
+      if(!list.length) return;
+      const n=list.length, pos=new Float32Array(n*3), col=new Float32Array(n*4);
+      for(let i=0;i<n;i++){
+        const b=list[i], v=auToScene(b.pos);
+        pos[i*3]=v[0]-centre[0]; pos[i*3+1]=v[1]-centre[1]; pos[i*3+2]=v[2]-centre[2];
+        const c=SMALL_COL[b.kind]||SMALL_COL.asteroid;
+        const sel=(smallSel===b.id);
+        col[i*4]=c[0]; col[i*4+1]=c[1]; col[i*4+2]=c[2]; col[i*4+3]=sel?1:(b.pick?c[3]:c[3]*0.62);
+        /* only the editorial picks are ever labelled — 1,100 labels is a white screen */
+        if(out&&(b.pick||sel)){ const s=project(cam,[pos[i*3],pos[i*3+1],pos[i*3+2]]);
+          if(s) out.push({ kind:'small', x:s.x, y:s.y, name:(b.name||b.full), obj:b, w:s.w }); }
+      }
+      if(smallSel){
+        const b=B.smallFind(smallSel), o=b?B.smallOrbit(b,jd,220):null;
+        if(o&&o.pts.length>1){
+          const a=new Float32Array(o.pts.length*3);
+          for(let i=0;i<o.pts.length;i++){ const v=auToScene(o.pts[i]);
+            a[i*3]=v[0]-centre[0]; a[i*3+1]=v[1]-centre[1]; a[i*3+2]=v[2]-centre[2]; }
+          const Bf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,Bf); gl.bufferData(gl.ARRAY_BUFFER,a,gl.STREAM_DRAW);
+          gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+          drawLines(VP,Bf,o.pts.length,[1.0,0.82,0.45,0.7]);
+          gl.depthMask(true); gl.disable(gl.BLEND);
+          gl.deleteBuffer(Bf);
+        }
+      }
+      gl.depthMask(false);
+      drawPoints(VP,pos,col,n,2.6);
+      gl.depthMask(true);
+    }
+
+    /* the extra labels, kept apart from drawSystemLabels because these are a different weight and a
+       different priority: a planet always wins a collision against a numbered asteroid */
+    function drawExtraLabels(list,taken){
+      if(!list.length) return;
+      octx.font=Math.round(10.5*dpr)+'px system-ui, sans-serif';
+      octx.textBaseline='middle';
+      const placed=taken||[];
+      list.sort((a,b)=>a.w-b.w);
+      let n=0;
+      for(const l of list){
+        if(n>=42) break;
+        if(l.x<0||l.x>W||l.y<0||l.y>H) continue;
+        const w=octx.measureText(l.name).width, h=13*dpr, x=l.x+7*dpr, y=l.y;
+        let hit=false;
+        for(const p of placed) if(x<p.x+p.w+4*dpr&&x+w>p.x-4*dpr&&y<p.y+p.h&&y+h>p.y){ hit=true; break; }
+        if(hit) continue;
+        placed.push({x,y:y-h/2,w,h}); n++;
+        octx.fillStyle=(l.kind==='craft')?'rgba(150,235,255,0.95)':(l.kind==='deep'?'rgba(255,238,200,0.9)':'rgba(255,225,170,0.9)');
+        octx.fillText(l.name,x,y);
+      }
+    }
+
     function loadNames(){
       if(names||namesLoading) return;
       namesLoading=true;
@@ -632,13 +807,16 @@ window.IntMapModules.space=function(HOST){
          working around the FAR CLIP PLANE, which `camera()` sets at `dist*2000` for the planets.
          So the stars get their own projection with a far plane that reaches them, drawn first with
          depth writes off exactly as before. */
+      /* (#R213) the far plane has to clear the FURTHEST population that is switched on, or the deep
+         sky is clipped away by a plane that was sized for the star catalogue. */
+      const skyFar=Math.max(dist*2000, starFarEdgeNow()*1.2, showDeep?deepFarScene()*1.25:0);
+      const skyM=mMul(mMul(mPersp(45*D2R, W/Math.max(1,H), Math.max(1e-7,dist*1e-4), skyFar), cam.V), mIdent());
+      const extraLabels=[];
       if(starBuf&&starN){
         gl.depthMask(false);
         const far=Math.max(dist*400,1e5);
         const fb=starField();
-        const M=fb ? mMul(mMul(mPersp(45*D2R, W/Math.max(1,H), Math.max(1e-7,dist*1e-4),
-                                      Math.max(dist*2000, starFarEdgeNow()*1.2)), cam.V), mIdent())
-                   : mMul(cam.VP,mScale(far));
+        const M=fb ? skyM : mMul(cam.VP,mScale(far));
         gl.useProgram(progPts);
         gl.uniformMatrix4fv(gl.getUniformLocation(progPts,'uMVP'),false,M);
         gl.uniform1f(gl.getUniformLocation(progPts,'uSz'),2.2*dpr);
@@ -648,6 +826,10 @@ window.IntMapModules.space=function(HOST){
         gl.drawArrays(gl.POINTS,0,starN);
         gl.depthMask(true);
       }
+      /* (#R213) …and the deep sky rides the same projection, for the same reason */
+      if(showDeep){ gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        drawDeepSky(skyM,{P:mPersp(45*D2R,W/Math.max(1,H),Math.max(1e-7,dist*1e-4),skyFar),V:cam.V},extraLabels);
+        gl.disable(gl.BLEND); }
 
       if(mode==='system'){
         const centre=(focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
@@ -686,9 +868,17 @@ window.IntMapModules.space=function(HOST){
             const px=R/ (dist) * H / (2*Math.tan(45*D2R/2));
             labels.push({ id, x:sx, y:sy, px, name:bodyName(id) }); }
         }
-        drawSystemLabels(labels);
+        /* (#R213) the three optional populations, after the planets so a planet is never hidden by a
+           dot, and before the labels so the label pass can see every collision at once */
+        gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        if(showSmall) drawSmall(jd,VP,centre,cam,extraLabels);
+        if(showCraft) drawCraft(jd,VP,centre,cam,extraLabels);
+        gl.disable(gl.BLEND);
+        const taken=drawSystemLabels(labels);
+        drawExtraLabels(extraLabels,taken);
       } else {
         drawBody(jd,pos,cam);
+        if(showDeep) drawExtraLabels(extraLabels,[]);
       }
 
       /* ⚠ THE PIXEL READBACK HAPPENS HERE, INSIDE THE FRAME. The context is created without
@@ -749,6 +939,9 @@ window.IntMapModules.space=function(HOST){
         octx.fillStyle=(l.id===focus)?'#ffd23f':'rgba(255,255,255,0.86)';
         octx.fillText(l.name,x,y);
       }
+      /* (#R213) the boxes this pass claimed, so the optional populations' labels can avoid them
+         instead of writing over a planet's name */
+      return placed;
     }
 
     /* ══ a body, as a globe ═══════════════════════════════════════════════════════════════════════ */
@@ -973,6 +1166,11 @@ window.IntMapModules.space=function(HOST){
            State switches, lit from the state by refreshChrome — same language as the scale segments. */
         +'<button class="sp-orbits" style="'+BTN+'">'+L('Orbits','軌道','Bahnen','Орбиты','Órbitas')+'</button>'
         +'<button class="sp-names" style="'+BTN+'">'+L('Place names','地名','Ortsnamen','Названия','Topónimos')+'</button>'
+        /* (#R213) the three optional populations. Each one is a fetch, so the label says what it is
+           and the button reports its own loading/failed state rather than staying dark in silence. */
+        +'<button class="sp-craft" style="'+BTN+'" title="'+S(L('Interplanetary spacecraft, from JPL Horizons trajectories','惑星間探査機（JPL Horizons の軌道）','Interplanetare Raumsonden (JPL Horizons)','Межпланетные аппараты (JPL Horizons)','Naves interplanetarias (JPL Horizons)'))+'">'+L('Spacecraft','探査機','Raumsonden','Аппараты','Naves')+'</button>'
+        +'<button class="sp-small" style="'+BTN+'" title="'+S(L('Asteroids and comets, from JPL Small-Body Database elements','小惑星・彗星（JPL SBDB の軌道要素）','Asteroiden und Kometen (JPL SBDB)','Астероиды и кометы (JPL SBDB)','Asteroides y cometas (JPL SBDB)'))+'">'+L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas')+'</button>'
+        +'<button class="sp-deep" style="'+BTN+'" title="'+S(L('Galaxies, clusters and nebulae at their measured distances (SIMBAD)','銀河・星団・星雲を実測距離で（SIMBAD）','Galaxien und Nebel in gemessener Entfernung (SIMBAD)','Галактики и туманности на измеренных расстояниях (SIMBAD)','Galaxias y nebulosas a su distancia medida (SIMBAD)'))+'">'+L('Beyond the solar system','太陽系の外','Jenseits des Sonnensystems','За пределами системы','Más allá del sistema')+'</button>'
         +'<span style="flex:1 1 8px;"></span>'
         +'<span class="sp-clock" style="font-size:11.5px;color:#e8e8e8;font-variant-numeric:tabular-nums;"></span>'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
@@ -1021,7 +1219,8 @@ window.IntMapModules.space=function(HOST){
     function refreshChrome(){
       if(!root) return;
       /* this runs on every clock tick; nothing below is worth a DOM write when nothing moved */
-      const sig=scale+'|'+live+'|'+rate+'|'+showOrbits+'|'+showNames+'|'+mode;   /* (#R207) */
+      const sig=scale+'|'+live+'|'+rate+'|'+showOrbits+'|'+showNames+'|'+mode   /* (#R207) */
+        +'|'+showCraft+showSmall+showDeep+'|'+popState('craft')+popState('small')+popState('deep');   /* (#R213) */
       if(sig===refreshChrome._sig) return;
       refreshChrome._sig=sig;
       /* (#R207) the two new switches. "Place names" belongs to the body view, so in the system view
@@ -1031,6 +1230,18 @@ window.IntMapModules.space=function(HOST){
         b.style.borderColor=on?'rgba(255,210,63,0.65)':'rgba(255,255,255,0.22)';
         b.style.color=on?'#ffe9a8':'#f2f2f2'; };
       litOn(root.querySelector('.sp-orbits'),showOrbits);
+      /* ⚠ (#R213) A SWITCH THAT IS ON BUT STILL FETCHING MUST NOT LOOK LIKE A SWITCH THAT IS ON AND
+         SHOWING NOTHING — that is #R212's "取得中を無いと答えるな" as a piece of chrome. The button
+         carries the population's own load state, and a failed fetch says so instead of staying lit
+         over an empty sky. */
+      [['craft',showCraft],['small',showSmall],['deep',showDeep]].forEach(([k,on])=>{
+        const b=root.querySelector('.sp-'+k); if(!b) return;
+        const st=popState(k);
+        litOn(b,on&&st==='ok');
+        if(on&&st==='loading'){ b.style.opacity='0.7'; b.style.borderColor='rgba(255,255,255,0.45)'; }
+        else if(on&&st==='error'){ b.style.background='rgba(255,90,90,0.22)'; b.style.borderColor='rgba(255,90,90,0.7)'; b.style.color='#ffd6d6'; b.style.opacity='1'; }
+        else b.style.opacity='1';
+      });
       const nb=root.querySelector('.sp-names');
       litOn(nb,showNames);
       if(nb){ const usable=(mode==='body'); nb.style.opacity=usable?'1':'0.45'; nb.title=usable?'':
@@ -1060,7 +1271,25 @@ window.IntMapModules.space=function(HOST){
             +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+S(EPH().body(id).colour)+';margin-right:6px;"></span>'
             +S(bodyName(id))+'</button>';
         }).join('');
+        /* ══ (#R213) THE OPTIONAL POPULATIONS GET LIST ENTRIES, NOT JUST DOTS ═══════════════════════
+           A dot in a starfield is unfindable. The spacecraft are 17 named things, so all of them are
+           listed; the small bodies are 1,142, so the list is the editorial picks and the rest stay
+           as dots you can still see. ⚠ THE LIST ALSO REPORTS THE FETCH STATE — an empty section
+           under a lit switch would read as "there are none". */
+        if(showCraft) side.innerHTML+=popSection('craft',
+          L('Spacecraft','探査機','Raumsonden','Аппараты','Naves'),
+          ()=>{ const B=SB(); return B.craftList().map(c=>({ id:c.key, label:(HOST.lang==='jp'?c.ja:c.en),
+            dot:(c.contact==='active')?'#7fe6ff':'#9aa0aa', on:craftSel===c.key })); });
+        if(showSmall) side.innerHTML+=popSection('small',
+          L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas'),
+          ()=>{ const B=SB(); return B.smallAt(jdNow(),{pickOnly:true}).map(b=>({ id:b.id, label:(b.name||b.full),
+            dot:'rgb('+SMALL_COL[b.kind].slice(0,3).map(v=>Math.round(v*255)).join(',')+')', on:smallSel===b.id })); });
         side.querySelectorAll('.sp-b').forEach(b=>b.onclick=()=>{ setFocus(b.getAttribute('data-b')); });
+        side.querySelectorAll('.sp-pop-row').forEach(b=>b.onclick=()=>{
+          const k=b.getAttribute('data-pop'), id=b.getAttribute('data-id');
+          if(k==='craft') craftSel=(craftSel===id)?null:id; else smallSel=(smallSel===id)?null:id;
+          refreshHUD();
+        });
       }
       const info=root.querySelector('.sp-info'); if(info) info.innerHTML=infoHtml();
       const note=root.querySelector('.sp-note'); if(note) note.innerHTML=noteHtml();
@@ -1145,8 +1374,77 @@ window.IntMapModules.space=function(HOST){
         refreshHUD();
       });
     }
+    /* ══ (#R213) WHAT THE SELECTED SPACECRAFT / SMALL BODY IS ════════════════════════════════════
+       ⚠ Every number here is one the source actually publishes, and the two things a viewer would
+       otherwise assume are stated outright: a spacecraft nobody is talking to any more, and a date
+       outside the trajectory file's own coverage. Neither is inferable from a dot on a screen. */
+    function selectionHtml(){
+      const B=SB(); if(!B) return '';
+      const pr=(k,v)=>'<div style="display:flex;justify-content:space-between;gap:8px;"><span style="opacity:.72;">'+S(k)+'</span><b>'+S(v)+'</b></div>';
+      if(craftSel&&B.ready('craft')){
+        const c=B.craftAt(jdNow()).find(x=>x.key===craftSel);
+        if(c){
+          let s='<div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+S(HOST.lang==='jp'?c.ja:c.en)+'</div>';
+          s+='<div style="opacity:.8;font-size:10.5px;line-height:1.5;margin-bottom:5px;">'+S(HOST.lang==='jp'?c.ja_note:c.en_note)+'</div>';
+          s+=pr(L('Operator','運用','Betreiber','Оператор','Operador'),c.agency);
+          s+=pr(L('Launched','打ち上げ','Start','Запуск','Lanzamiento'),c.launched);
+          s+=pr(L('From the Sun','太陽から','Von der Sonne','От Солнца','Del Sol'),c.au.toFixed(c.au<10?4:2)+' AU');
+          s+=pr(L('Light travel time','光の到達時間','Lichtlaufzeit','Время сигнала','Tiempo luz'),fmtLight(c.au));
+          if(c.contact!=='active') s+='<div style="margin-top:5px;color:#ffd7a0;font-size:10.5px;line-height:1.45;">'+S(c.contact==='lost'
+            ? L('Contact with this spacecraft was lost. What is drawn is where its trajectory says it is, not a tracked position.','この探査機とは交信が途絶しています。描いているのは軌道計算上の位置であり、追跡された位置ではありません。','Der Kontakt ist abgebrochen — gezeichnet wird die berechnete Bahn, keine verfolgte Position.','Связь потеряна — показана расчётная траектория, а не отслеженная позиция.','Se perdió el contacto: se dibuja la trayectoria calculada, no una posición seguida.')
+            : L('This mission has ended. The trajectory is still published; the spacecraft is no longer operating.','この計画は終了しています。軌道は公表されていますが、探査機は運用されていません。','Die Mission ist beendet.','Миссия завершена.','La misión ha terminado.'))+'</div>';
+          if(c.outside) s+='<div style="margin-top:5px;color:#ffb0b0;font-size:10.5px;line-height:1.45;">'+S(L(
+            'The bundled trajectory covers '+c.spanFrom+' to '+c.spanTo+'. Outside that range this file does not say where it is, so the last point in it is shown.',
+            '同梱の軌道データは '+c.spanFrom+'〜'+c.spanTo+' を収録しています。その外側については何も言えないため、端の点を表示しています。',
+            'Die Bahn deckt '+c.spanFrom+'–'+c.spanTo+' ab; außerhalb sagt diese Datei nichts.',
+            'Траектория покрывает '+c.spanFrom+'–'+c.spanTo+'; вне этого файл ничего не говорит.',
+            'La trayectoria cubre '+c.spanFrom+'–'+c.spanTo+'; fuera de ese rango este archivo no dice nada.'))+'</div>';
+          return s+'<div style="height:8px;"></div>';
+        }
+      }
+      if(smallSel&&B.ready('small')){
+        const b=B.smallFind(smallSel);
+        if(b){
+          const p=B.smallAt(jdNow(),{}).find(x=>x.id===smallSel);
+          let s='<div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+S(b.full)+'</div>';
+          const KN={ asteroid:L('Asteroid','小惑星','Asteroid','Астероид','Asteroide'), comet:L('Comet','彗星','Komet','Комета','Cometa'),
+            tno:L('Trans-Neptunian object','太陽系外縁天体','Transneptunisches Objekt','Транснептуновый объект','Objeto transneptuniano'),
+            trojan:L('Jupiter Trojan','木星トロヤ群','Jupiter-Trojaner','Троянец Юпитера','Troyano de Júpiter'),
+            centaur:L('Centaur','ケンタウルス族','Zentaur','Кентавр','Centauro'),
+            hyperbolic:L('Unbound orbit','双曲線軌道（非周期）','Ungebundene Bahn','Незамкнутая орбита','Órbita no ligada') };
+          s+=pr(L('Kind','種別','Art','Тип','Tipo'),KN[b.kind]||b.kind);
+          if(p) s+=pr(L('From the Sun','太陽から','Von der Sonne','От Солнца','Del Sol'),p.au.toFixed(4)+' AU');
+          s+=pr(L('Eccentricity','離心率','Exzentrizität','Эксцентриситет','Excentricidad'),String(b.e));
+          if(b.a>0) s+=pr(L('Semi-major axis','軌道長半径','Große Halbachse','Большая полуось','Semieje mayor'),b.a+' AU');
+          if(b.q>0) s+=pr(L('Perihelion','近日点距離','Perihel','Перигелий','Perihelio'),b.q+' AU');
+          s+=pr(L('Inclination','軌道傾斜角','Bahnneigung','Наклонение','Inclinación'),b.i+'°');
+          if(b.per>0) s+=pr(L('Period','公転周期','Umlaufzeit','Период','Período'),(b.per/365.25).toFixed(b.per>36525?0:2)+' '+L('years','年','a','лет','años'));
+          if(b.d>0) s+=pr(L('Diameter','直径','Durchmesser','Диаметр','Diámetro'),b.d.toLocaleString()+' km');
+          if(b.H!=null) s+=pr(L('Absolute magnitude','絶対等級','Absolute Helligkeit','Абс. звёздная величина','Magnitud absoluta'),'H '+b.H);
+          if(b.e>=1) s+='<div style="margin-top:5px;color:#ffd7a0;font-size:10.5px;line-height:1.45;">'+S(L(
+            'This orbit is not closed — the object passes the Sun once and leaves. There is no period and no repeat.',
+            'この軌道は閉じていません。太陽の近くを一度通り過ぎて去っていく軌道で、周期はありません。',
+            'Diese Bahn ist nicht geschlossen — kein Umlauf, keine Wiederkehr.',
+            'Орбита незамкнута — объект проходит мимо Солнца один раз.',
+            'Esta órbita no es cerrada: el objeto pasa una vez y se va.'))+'</div>';
+          return s+'<div style="height:8px;"></div>';
+        }
+      }
+      return '';
+    }
+    function fmtLight(au){
+      const min=au*499.004784/60;                       /* 1 AU = 499.0048 light-seconds (IAU) */
+      if(min<90) return min.toFixed(1)+' '+L('min','分','min','мин','min');
+      const h=min/60; if(h<48) return h.toFixed(1)+' '+L('h','時間','h','ч','h');
+      return (h/24).toFixed(2)+' '+L('days','日','d','сут','días');
+    }
     function infoHtml(){
-      const E=EPH(), jd=jdNow(), id=focus, b=E.body(id); if(!b) return '';
+      const sel=selectionHtml();
+      const E=EPH(), jd=jdNow(), id=focus, b=E.body(id); if(!b) return sel;
+      if(sel) return sel+infoBody(E,jd,id,b);
+      return infoBody(E,jd,id,b);
+    }
+    function infoBody(E,jd,id,b){
       let s='<div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+S(bodyName(id))+'</div>';
       const pr=(k,v)=>'<div style="display:flex;justify-content:space-between;gap:8px;"><span style="opacity:.72;">'+S(k)+'</span><b>'+S(v)+'</b></div>';
       s+=pr(L('Radius','半径','Radius','Радиус','Radio'),Math.round(b.rKm).toLocaleString()+' km');
@@ -1190,6 +1488,28 @@ window.IntMapModules.space=function(HOST){
         'Positionen: JPL-Näherungselemente; Mond: ELP-2000/82. Oberflächen: Solar System Scope (CC BY 4.0); die Erde ist die eigene Weltkarte der App (NASA Blue Marble). Namen: USGS/IAU. Sterne: Hipparcos.',
         'Положения: приближённые элементы JPL; Луна: ELP-2000/82. Поверхности: Solar System Scope (CC BY 4.0); Земля — собственное изображение приложения (NASA Blue Marble). Названия: USGS/IAU. Звёзды: Hipparcos.',
         'Posiciones: elementos aproximados de JPL; Luna: ELP-2000/82. Superficies: Solar System Scope (CC BY 4.0); la Tierra es el mapa base propio de la app (NASA Blue Marble). Nombres: USGS/IAU. Estrellas: Hipparcos.');
+      /* ⚠ (#R213) EACH POPULATION NAMES ITS OWN SOURCE AND ITS OWN LIMIT, and only when it is on —
+         an attribution for data that is not on screen is noise, and standing instruction 4 requires
+         that changing a data source changes the attribution beside it. */
+      let s2b='';
+      if(showCraft&&popState('craft')==='ok') s2b+=' '+L(
+        'Spacecraft: NASA/JPL Horizons trajectories, sampled and interpolated. A trajectory is not telemetry — a mission that has ended or lost contact is still propagated, and is labelled as such.',
+        '探査機：NASA/JPL Horizons の軌道を標本化して補間したもの。軌道は「テレメトリ」ではありません。交信途絶・運用終了の機体も軌道計算だけは続くため、その旨を明記しています。',
+        'Raumsonden: NASA/JPL Horizons. Eine Bahn ist keine Telemetrie.',
+        'Аппараты: NASA/JPL Horizons. Траектория — не телеметрия.',
+        'Naves: NASA/JPL Horizons. Una trayectoria no es telemetría.');
+      if(showSmall&&popState('small')==='ok') s2b+=' '+L(
+        'Asteroids and comets: JPL Small-Body Database osculating elements, propagated two-body. Planetary perturbations move the real body off this ellipse over years — enough to see where something is, not enough to point a telescope.',
+        '小惑星・彗星：JPL SBDB の接触軌道要素を二体問題で伝播。惑星の摂動により実際の天体は年単位でこの楕円からずれます。「どのあたりにいるか」には十分ですが、望遠鏡を向ける精度はありません。',
+        'Asteroiden/Kometen: JPL SBDB, Zweikörper-Propagation — nicht teleskoptauglich.',
+        'Астероиды и кометы: элементы JPL SBDB, двухтельная модель — не для наведения телескопа.',
+        'Asteroides y cometas: elementos del JPL SBDB, propagación de dos cuerpos.');
+      if(showDeep&&popState('deep')==='ok') s2b+=' '+L(
+        'Beyond the solar system: SIMBAD (CDS Strasbourg) positions, placed at the MEDIAN of every published distance measurement — methods disagree, sometimes by tens of per cent. Objects with no published distance are drawn on the sphere, without depth.',
+        '太陽系の外：SIMBAD（CDS ストラスブール）の位置。距離は公表された全測定値の中央値で、測定手法どうしは数十％食い違うことがあります。距離の公表が無い天体は奥行きを与えず天球上に描いています。',
+        'Jenseits des Sonnensystems: SIMBAD (CDS), Median aller veröffentlichten Entfernungen.',
+        'За пределами системы: SIMBAD (CDS), медиана всех опубликованных расстояний.',
+        'Más allá del sistema: SIMBAD (CDS), mediana de todas las distancias publicadas.');
       const s3=(focus==='pluto')?('<br>'+L('Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.',
         '冥王星は実測の色で描いています（全球表面図を同梱していないため。他所で配布されている準惑星の表面図は作者自身が「架空」と明記しています）。位置とIAU地名は実データです。',
         'Pluto wird in seiner gemessenen Farbe gezeichnet — es liegt keine globale Oberflächenkarte bei.',
@@ -1199,7 +1519,7 @@ window.IntMapModules.space=function(HOST){
          fetch, a rejected texture or a WebGL context error said — i.e. text from outside — and it was
          the one CodeQL was still pointing at after the obvious two were fixed. Through the sanitiser
          like everything else that reaches innerHTML (#R138). */
-      return s1+'<br>'+s2+s3+(lastErr?('<br><span style="color:#ff9f0a;">'+S(String(lastErr).slice(0,120))+'</span>'):'');
+      return s1+'<br>'+s2+s2b+s3+(lastErr?('<br><span style="color:#ff9f0a;">'+S(String(lastErr).slice(0,120))+'</span>'):'');
     }
 
     /* ⚠ OPEN ON THE DAY SIDE. Measured on the first working build:選んだ天体が真っ黒 — Mars came up
@@ -1277,6 +1597,40 @@ window.IntMapModules.space=function(HOST){
     /* (#R207) the two display switches — public so Atlas can drive them like every other control */
     function setOrbits(v){ showOrbits=!!v; refreshHUD(); return showOrbits; }
     function setNames(v){ showNames=!!v; refreshHUD(); return showNames; }
+    /* ══ (#R213) THE THREE OPTIONAL POPULATIONS ══════════════════════════════════════════════════
+       `popState` is the fetch state of the DATA, which is a different question from whether the
+       switch is on, and both are shown. Turning one on starts the fetch and re-lights the chrome the
+       moment the answer arrives — success or failure. ⚠ A rejected load is caught here rather than
+       left to the console: an unhandled rejection would leave the button lit forever over an empty
+       sky, which is precisely the "無い as loading" failure #R212 named. */
+    function popState(k){ try{ const B=SB(); return B?B.state(k):'idle'; }catch(_){ return 'idle'; } }
+    /* one section of the side list: a heading, then either the rows or the reason there are none.
+       ⚠ 'loading' and 'error' are printed as themselves. #R212 §2.1: a layer with no fetch state
+       prints "there is nothing" about data it has not got, and here that would read as "no
+       spacecraft exist". */
+    function popSection(k,title,rows){
+      const st=popState(k);
+      let body='';
+      if(st==='ok'){
+        let list=[]; try{ list=rows()||[]; }catch(_){}
+        body=list.map(r=>'<button class="sp-pop-row" data-pop="'+S(k)+'" data-id="'+S(r.id)+'" style="'+BTN
+          +'text-align:left;font-size:10.5px;padding:4px 7px;'+(r.on?'background:rgba(255,210,63,0.18);border-color:rgba(255,210,63,0.6);':'')+'">'
+          +'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+S(r.dot)+';margin-right:5px;"></span>'
+          +S(r.label)+'</button>').join('');
+      } else if(st==='loading'){
+        body='<div style="font-size:10px;opacity:.7;padding:2px 4px;">'+L('loading…','読み込み中…','lädt…','загрузка…','cargando…')+'</div>';
+      } else if(st==='error'){
+        body='<div style="font-size:10px;color:#ffb0b0;padding:2px 4px;">'+L('could not be fetched','取得できませんでした','nicht abrufbar','не удалось загрузить','no se pudo obtener')+'</div>';
+      }
+      return '<div style="margin-top:8px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;padding:0 4px;">'+S(title)+'</div>'+body;
+    }
+    function setPopulation(k,on){
+      const v=!!on;
+      if(k==='craft') showCraft=v; else if(k==='small') showSmall=v; else if(k==='deep') showDeep=v; else return null;
+      if(v){ try{ const B=SB(); if(B) B.load(k).then(()=>refreshHUD()).catch(()=>refreshHUD()); }catch(_){} }
+      refreshHUD();
+      return v;
+    }
     function setWhen(d){
       const v=(d instanceof Date)?+d:+new Date(d);
       if(!isFinite(v)) return false;
@@ -1324,6 +1678,9 @@ window.IntMapModules.space=function(HOST){
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
       /* (#R207) */
       { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }
+      /* (#R213) */
+      [['craft',()=>showCraft,(v)=>{showCraft=v;}],['small',()=>showSmall,(v)=>{showSmall=v;}],['deep',()=>showDeep,(v)=>{showDeep=v;}]]
+        .forEach(([k,get,set])=>{ const b=root.querySelector('.sp-'+k); if(b) b.onclick=()=>setPopulation(k,!get()); });
       { const nb=root.querySelector('.sp-names'); if(nb) nb.onclick=()=>setNames(!showNames); }
       root.querySelector('.sp-live').onclick=()=>setLive();
       root.querySelector('.sp-play').onclick=()=>{ if(live){ live=false; timeMs=Date.now(); }
@@ -1585,7 +1942,19 @@ window.IntMapModules.space=function(HOST){
        same reason the stars do — model scale expresses distance differently, and a raw AU ceiling
        would mean something different in each. */
     const REACH_AU=1e7;
-    function distCeil(){ return mode==='body'?60:posScale(REACH_AU); }
+    /* ⚠ (#R213) …AND THE CEILING NOW MOVES WITH THE DATA. 「太陽系のさらに外の宇宙も見れるように。」
+       #R212 recorded the honest reason it stopped at 48 pc: there was nothing further out to draw.
+       With data/deep-sky.json switched on there is — SIMBAD's measured distances reach the Virgo and
+       Coma clusters — so the ceiling becomes the furthest MEASURED object plus a margin. It is still
+       bounded by the catalogue rather than infinite, for exactly the reason #R208 gave: past the
+       furthest thing anybody has measured, a view that keeps zooming is showing an empty claim.
+       When the population is off, the reach is what it was. */
+    function reachAu(){
+      if(!showDeep) return REACH_AU;
+      let far=0; try{ const B=SB(); far=B?B.deepFarAu():0; }catch(_){}
+      return far>REACH_AU?far*1.25:REACH_AU;
+    }
+    function distCeil(){ return mode==='body'?60:posScale(reachAu()); }
 
     /* ══ (#R203) THE CROSSING IS A SIZE, AND BOTH SIDES CAN STATE IT ═════════════════════════════════
        「宇宙を探索での地球をはるかにズームインして普通の地球に戻るのではなく、同じサイズで戻るようにしろ。
@@ -1756,6 +2125,11 @@ window.IntMapModules.space=function(HOST){
       open:openView, close, mount,
       setBody:setFocus, setMode, setScale, setWhen, setLive, setRate,
       setOrbits, setNames, orbits:()=>showOrbits, names:()=>showNames,   /* (#R207) */
+      /* (#R213) the optional populations, so Atlas and the tests drive the same switch the button does */
+      setPopulation, population:(k)=>k==='craft'?showCraft:k==='small'?showSmall:k==='deep'?showDeep:false,
+      populationState:popState, reachAu,
+      selectCraft:(k)=>{ craftSel=k||null; refreshHUD(); return craftSel; },
+      selectSmall:(id)=>{ smallSel=id||null; refreshHUD(); return smallSel; },
       isOpen:()=>open, atFloor, nearFloor,
       bodies:()=>BODIES.slice(),
       /* (#R212) the upcoming-events list and the jump — callable so Atlas and the tests can use them */

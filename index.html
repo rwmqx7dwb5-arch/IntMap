@@ -658,20 +658,21 @@ window.__imBuild='R212';   /* (#R121) build marker — bump when verifying that 
     </div>
     <div class="settings-sech" data-i18n="setSecAbout">About &amp; support</div>
     <div class="settings-sec">
+    <!-- ⚠ (#R213) THE SOURCES BUTTON GOES TO THE SOURCES PAGE. 「設定の出典ボタンを押しても、直接
+         新たに作った出典ページに行かなかった。」 #R212 built sources.html and then left this button
+         opening the old in-app list, with the page hidden behind a SECOND entry two groups below —
+         so the obvious control did the less useful thing and the useful one looked like a duplicate.
+         One group now: the button is the page. The in-app list is still there (nothing is removed)
+         as the secondary line, which is what it is — a quick look without leaving the map. -->
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
-      <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
+      <a id="link-sources" href="./sources.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Where every number comes from ↗</a>
+      <button type="button" id="btn-data-sources" style="width:100%;margin-top:6px;background:none;border:none;color:var(--text-muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px 0;" data-i18n="viewDataSources">View all data sources ↗</button>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
          A plain link to a static page, so it costs the app nothing at boot. -->
     <div class="setting-group"><label data-i18n="lblScience">Science &amp; logic</label>
       <a id="link-science" href="./science.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewScience">How every simulation works ↗</a>
-    </div>
-    <!-- (#R212) 「データ出典のページも、ロジック解説ページと同じ形式(デザイン)にしろ。」 — sources.html is
-         the same skeleton as science.html and renders the SAME registry the in-app dialog uses, with
-         the licence, live-vs-bundled and privacy sections the dialog has no room for. -->
-    <div class="setting-group"><label data-i18n="lblSourcesPage">Data sources</label>
-      <a id="link-sources" href="./sources.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Where every number comes from ↗</a>
     </div>
     <!-- (#R72) keyboard-shortcut help was undiscoverable ("ショートカットキーの説明がどこにもない") — the ?-key
          cheat-sheet now has a visible entry point here. -->

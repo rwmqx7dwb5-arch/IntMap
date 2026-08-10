@@ -123,7 +123,16 @@ test('R196 ③b the sky is set for EVERY basemap, and set3D no longer fights it'
   const sky = rd('js/theme-sky.js');
   assert.doesNotMatch(shell, /if\(currentProj!=='globe'\)\{ try\{ GE\(\)\.scene\.setSky/,
     'set3D must not install a second sky — one owner (#R196)');
-  assert.match(sky, /'sky-horizon-blend':0\.55/, 'the atmosphere band is declared');
+  /* ⚠ (#R213) THE PIN MOVED FROM THE LITERAL TO THE CLAIM. This asserted the string `0.55`, which is
+     the value #R196 measured AT GROUND LEVEL — but the claim it was standing in for is "the
+     atmosphere band is declared, and it is as thick as the Cesium capture showed". #R213 made the
+     thickness fall off with the camera's height (the shell subtends less of the view from orbit), so
+     the literal is gone while the measurement it encoded is not: `_horizonBlend()` still returns
+     0.55 at h = 0. Pinning the literal here would have failed a change that preserves the finding —
+     the #R203 trap of writing the previous round's value instead of its meaning. */
+  assert.match(sky, /'sky-horizon-blend':_horizonBlend\(\)/, 'the atmosphere band is declared');
+  assert.match(sky, /function _horizonBlend\(\)\{\s*const h=Math\.max\(0,_eyeAltM\(\)\);\s*if\(!\(h>0\)\) return 0\.55;/,
+    'and at ground level it is still the 0.55 #R196 measured');
   assert.match(sky, /'fog-ground-blend':1/, 'no ground fog on the map either');
   /* the horizon colour follows the Sun, so it cannot be a constant */
   assert.match(sky, /function _horizonColour\(\)/);
