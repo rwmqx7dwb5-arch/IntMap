@@ -414,7 +414,7 @@ window.IntMapModules.railSeaOverlays=function(HOST){
         /* (#R41) OpenSeaMap seamarks are a SPARSE transparent overlay — empty over open ocean / at world zoom, so
            it looked "broken" ("OpenSeaMapが動作しない"). It DOES load (tiles verified 200/png); tell the user the
            marks only appear when zoomed into a coast or harbour. */
-        if(L.id==='oxsea'){ try{ if(GE().camera.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbour.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[HOST.lang]||h.en); } }catch(_){} } }
+        if(L.id==='oxsea'){ try{ if(GE().camera.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbor.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[HOST.lang]||h.en); } }catch(_){} } }
       else { try{ window._hideGenericLegend&&window._hideGenericLegend('ox-'+L.id); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
     GE().events.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ GE().layers.setLayout('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });

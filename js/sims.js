@@ -424,7 +424,7 @@ window.IntMapModules.rf=function(HOST){
         onCancel:()=>{ picking=false; } })) return;
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rf-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       const inC='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
       panel.innerHTML='<div class="rf-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">📡 '+RF('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura')+'</span><button class="rf-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
@@ -486,11 +486,18 @@ window.IntMapModules.sun=function(HOST){
        「影の透明度を選択可能に」. 0.30 was a literal in two places — this fill and the terrain-shade
        raster in js/insolation.js — so "the shadow" had two different opacities that no control
        reached. One number here now drives both: this layer directly, and the raster through
-       IntMapInsolation.setShadowOpacity(). Persisted, because it is a preference and not a mode. */
+       IntMapInsolation.setShadowOpacity(). Persisted, because it is a preference and not a mode.
+       ⚠ (#R212) 「ポップアップを透過するな。」 — every floating panel in this file was drawn on
+       `--popup-bg`, which is rgba(…,0.74), and unlike the CSS classes that use it these have no
+       `backdrop-filter`: the map showed straight through the numbers. They now sit on `--card-bg`,
+       which is opaque in both themes, the same surface js/world-packs.js's panels use. */
     const SHADOW_OP_KEY='intmap_shadow_opacity';
     let shadowOp=(function(){ try{ const v=parseFloat(localStorage.getItem(SHADOW_OP_KEY)); return (isFinite(v)&&v>0&&v<=1)?v:0.30; }catch(_){ return 0.30; } })();
     function setShadowOpacity(v){
-      v=Math.max(0.05,Math.min(0.95,+v||0.30)); shadowOp=v;
+      /* (#R212) 「透明度100%は全然100%ではない。」 — the ceiling was 0.95 here and, worse, the terrain
+         raster could only reach 30 % of black however far the slider went. Both ends are honest now:
+         1.0 is opaque here, and js/insolation.js re-bakes its PNG's alpha instead of dimming it. */
+      v=Math.max(0.05,Math.min(1,+v||0.30)); shadowOp=v;
       try{ localStorage.setItem(SHADOW_OP_KEY,String(v)); }catch(_){}
       try{ if(GE().layers.has('imsun-shadow')) GE().layers.setPaint('imsun-shadow','fill-opacity',v); }catch(_){}
       try{ const I=window.IntMapInsolation; if(I&&I.setShadowOpacity) I.setShadowOpacity(v); }catch(_){}
@@ -532,7 +539,7 @@ window.IntMapModules.sun=function(HOST){
     function syncInputs(){ if(!panel) return; const di=panel.querySelector('.sun-date'), ti=panel.querySelector('.sun-time'), tl=panel.querySelector('.sun-slider');
       try{ if(di) di.value=when.toISOString().slice(0,10); }catch(_){} const mins=when.getHours()*60+when.getMinutes(); if(tl) tl.value=mins; if(ti) ti.textContent=fmtT(when); }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='sun-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
         +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
@@ -542,7 +549,7 @@ window.IntMapModules.sun=function(HOST){
            cast polygons and the terrain shade raster), because to a user there is one shadow. */
         +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11.5px;color:var(--text-muted);white-space:nowrap;">'
           +SN('Shadow opacity','影の濃さ','Schattenstärke','Плотность тени','Opacidad de la sombra')
-          +'</span><input type="range" class="sun-op" min="5" max="95" step="5" value="30" style="flex:1;accent-color:var(--primary-color);">'
+          +'</span><input type="range" class="sun-op" min="5" max="100" step="5" value="30" style="flex:1;accent-color:var(--primary-color);">'
           +'<span class="sun-op-v" style="font-size:11.5px;font-weight:700;color:var(--text-main);min-width:34px;text-align:right;">30%</span></div>'
         /* (#R210) 「操作方法が分かりにくい」 — the panel had three buttons and a paragraph of physics,
            and nothing that said what to DO. Three sentences, in the order a first-time user needs
@@ -821,7 +828,7 @@ window.IntMapModules.disaster=function(HOST){
        from here, nor is one launched behind the user's back by anything that lands in this panel. */
     const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       panel.innerHTML='<div class="dz-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+DZ('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+'</span><button class="dz-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
         +'<div class="dz-haz" style="display:flex;flex-wrap:wrap;gap:5px;">'+HAZ().map(h=>'<button class="dz-hz" data-h="'+h[0]+'" style="flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;">'+h[1]+'</button>').join('')+'</div>'
@@ -909,7 +916,7 @@ window.IntMapModules.earthReplay=function(HOST){
     function syncInputs(){ if(!panel) return; const di=panel.querySelector('.er-date'), yl=panel.querySelector('.er-year'), tl=panel.querySelector('.er-time'), tv=panel.querySelector('.er-tv');
       try{ if(di) di.value=ymd(when); }catch(_){} if(yl) yl.value=when.getUTCFullYear(); const mins=when.getUTCHours()*60+when.getUTCMinutes(); if(tl) tl.value=mins; if(tv) tv.textContent=String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+'Z'; }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='er-panel';
-      panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:96px;width:min(440px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.5);';
+      panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:96px;width:min(440px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.5);';
       panel.innerHTML='<div class="er-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⏳ '+ER('Earth Replay','アース・リプレイ（世界を巻き戻す）','Earth Replay','Реплей Земли','Earth Replay')+'</span><button class="er-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
         +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'

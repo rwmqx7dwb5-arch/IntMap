@@ -9,8 +9,39 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.newsContext=function(HOST){
-  function matchPublisher(publisher){ if(!publisher) return null;
+  /* ══ (#R212) THE OUTLET IS OFTEN NAMED BY ITS DOMAIN, AND THE TABLE IS KEYED BY ITS NAME ═════════
+     「ニュースの発信地が全然発信地の場所になっていない。」 Part of the mechanism, measured on a real feed:
+     Google News hands the publisher as a DISPLAY NAME for some items and as a HOST for others
+     («cbsnews.com»), and `sourceDict` is keyed by display names only — so half the feed resolved to
+     no headquarters at all and fell through. Normalising both sides to letters-only makes the two
+     forms the same key: «cbsnews.com» → cbsnews, «CBS News» → cbsnews. The index is built once from
+     the SAME dictionary (no second table to disagree with it) and the article's own link is used when
+     the publisher string is a name rather than a host. */
+  let _pubDomIdx=null;
+  const _normPub=(s)=>String(s||'').toLowerCase().replace(/^the\s+/,'').replace(/[^a-z0-9]/g,'');
+  function _pubDomainIndex(){
+    if(_pubDomIdx) return _pubDomIdx;
+    _pubDomIdx=Object.create(null);
+    try{ for(const m of HOST._pubMatchers){ if(m.cjk) continue;
+      const k=_normPub(m.label); if(k.length>=3&&!_pubDomIdx[k]) _pubDomIdx[k]=m; } }catch(_){}
+    return _pubDomIdx; }
+  function _hostKey(s){
+    let h=String(s||'').trim();
+    try{ if(/^https?:\/\//i.test(h)) h=new URL(h).hostname; }catch(_){}
+    h=h.toLowerCase().replace(/^www\./,'');
+    if(h.indexOf('.')<0) return '';
+    /* drop the public suffix: co.uk / com.au / co.jp are two labels, everything else is one */
+    const parts=h.split('.');
+    const two=/^(co|com|org|net|gov|ac|or|ne)$/.test(parts[parts.length-2]||'');
+    const cut=two?2:1;
+    return _normPub(parts.slice(0,Math.max(1,parts.length-cut)).join('')); }
+  function matchPublisher(publisher,link){ if(!publisher) return null;
     for(const m of HOST._pubMatchers){ if(m.cjk?publisher.includes(m.label):m.re.test(publisher)) return m; }
+    /* (#R212) the domain form of the same outlet — from the publisher string if it IS a host, else
+       from the article's own URL */
+    try{ const idx=_pubDomainIndex();
+      for(const cand of [_hostKey(publisher), _hostKey(link)]){
+        if(cand&&cand.length>=3&&idx[cand]) return { loc:idx[cand].loc, label:idx[cand].label, cjk:false }; } }catch(_){}
     /* (#R32) Non-AI publisher-location BOOST ("AIを用いない発信地解析を強化 / 位置不明のピンが多い"): a huge
        share of Google-News sources are LOCAL outlets whose name embeds their city/region/country
        ("Manila Bulletin", "Kashmir Observer", "Texas Tribune", "Nairobi News"…). When the curated dict
@@ -22,7 +53,11 @@ window.IntMapModules.newsContext=function(HOST){
           const hit = t.jp ? publisher.includes(term) : (t.matchRe&&t.matchRe.test(publisher));
           if(hit){ const loc=(typeof TYPE_LOCAL!=='undefined'?(TYPE_LOCAL[g.type]||0):0);
             if(term.length>bestLen || (term.length===bestLen && loc>bestLocal)){ best=g; bestLen=term.length; bestLocal=loc; } } } }
-      if(best) return { loc:best.loc, label:(best.name&&(best.name[HOST.lang]||best.name.en))||'', cjk:false }; } }catch(_){}
+      /* ⚠ (#R212) THE LABEL IS THE OUTLET, NOT THE PLACE ITS NAME CONTAINS. This branch found the
+         New York Post by the words «New York» and then labelled the pin 「Source: New York」 — which
+         reads as though a city were the publisher. The place decides WHERE; the publisher string is
+         WHO, and it is the one the reader asked about. */
+      if(best) return { loc:best.loc, label:publisher, place:(best.name&&(best.name[HOST.lang]||best.name.en))||'', cjk:false }; } }catch(_){}
     return null; }
   /* Precompile per-term matchers once (runs ≈290 entries × N news items on every refresh):
        jp      — CJK terms match by substring; Latin terms match on word boundaries
@@ -262,7 +297,7 @@ window.IntMapModules.newsContext=function(HOST){
     /* (#R107) no gazetteer hit → try the country actually named (real location beats a random scatter). */
     if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; subjectType='country'; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
-    const pm=matchPublisher(publisher);
+    const pm=matchPublisher(publisher,seed);   /* `seed` IS the article link (#R212) */
     const pubLoc=pm?pm.loc:null, pubName=pm?((HOST.lang==='jp'?'発信: ':HOST.lang==='de'?'Quelle: ':HOST.lang==='ru'?'Источник: ':HOST.lang==='es'?'Fuente: ':'Source: ')+pm.label):null;
     /* Remember title/publisher so the toggle/AI passes can re-seed fallbacks later */
     const res={ subjectLoc, subjectName, subjectType, subjectConf, pubLoc, pubName, short, _title:title, _pub:publisher };

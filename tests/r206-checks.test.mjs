@@ -58,24 +58,24 @@ test('R206 ① the light launch mark carries the launch screen’s own colour, i
 
 /* ── ② 「震源地を設置ボタンがずっと選択中になっている」 ────────────────────────────
    The invariant is a RULE about the panel rather than a colour: the accent FILL means "this is on",
-   so the only controls allowed to wear it unconditionally are the ones that have an on state. The ◎
-   action must therefore derive its style from `picking`. */
-test('R206 ② the ◎ epicentre button’s fill is a state, not a decoration', () => {
+   so no control may wear it unless it has an on state to show.
+   ⚠ (#R212) THE BUTTON THIS WAS ABOUT NO LONGER EXISTS. 「震源地を設置と震源地を移動と、二つのボタンに
+   分ける意味が全く分からない。」 — the ◎ ACTION and the ◎ MODE were merged into one segment, so the
+   argument #R206 was having (an action wearing a state's fill) cannot recur: every ◎ in this panel is
+   now a mode, and a mode's fill IS its state. The claim is therefore re-stated as the thing that
+   still has to be true, rather than pinned to a button that was removed. */
+test('R206 ② every accent-filled control in the seismic panel has an on state', () => {
   const s = rd('js/seismic.js');
-  const pick = /<button class="sq-pick" style="'\+([A-Za-z0-9_]+)\(([^)]*)\)/.exec(s);
-  assert.ok(pick, 'the ◎ button builds its style from a helper');
-  const [, helper, arg] = pick;
-  assert.equal(arg.trim(), 'picking', 'and the helper is given the pick state');
-  const decl = new RegExp('const ' + helper + '=\\(on\\)=>([\\s\\S]{0,500}?)\'\\);').exec(s);
-  assert.ok(decl, 'the helper is declared');
-  /* the ternary's two branches: ON wears the accent fill, OFF must not */
-  const t = decl[1].split('?');
-  assert.equal(t.length, 2, 'the style is a straight on/off choice');
-  const [onSide, offSide] = [t[1].split(/:\s*'/)[0], t[1].split(/:\s*'/).slice(1).join(":'")];
-  assert.match(onSide, /background:\s*var\(--primary-color\)/, 'ON is the accent fill');
-  assert.ok(!/background:\s*var\(--primary-color\)/.test(offSide),
-    'OFF must NOT be the same fill the segmented control uses for "selected" — that is the report');
-  /* and every path that moves the flag redraws, or the panel comes back showing the old state */
+  assert.ok(!/class="sq-pick"/.test(s), 'the separate ◎ action button is gone (#R212)');
+  /* the only helper that paints the accent fill is the segmented one, and it is driven by a state */
+  assert.match(s, /const SEG=\(on\)=>BTN\+'flex:1;'\+\(on\?'background:var\(--primary-color\)/,
+    'SEG paints the accent only when it is given true');
+  /* the empty ones are the prose in the comments above the helper ("SEG()"), not calls */
+  const segUses = [...s.matchAll(/SEG\(([^)]*)\)/g)].map((m) => m[1].trim()).filter(Boolean);
+  assert.ok(segUses.length >= 2, 'the panel still has a segmented control');
+  for (const u of segUses)
+    assert.match(u, /^clickMode===/, 'a segment’s fill must come from the mode, not from a literal: ' + u);
+  /* and every path that moves the pick flag redraws, or the panel comes back showing the old state */
   assert.match(s, /function setPicking\(v\)\{[^}]*if\(opened&&panel\) render\(\)/,
     'changing the pick state re-renders the panel');
   assert.ok(!/function endPick\(\)\{ picking=false;/.test(s),

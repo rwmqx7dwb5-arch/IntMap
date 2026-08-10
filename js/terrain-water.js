@@ -97,9 +97,9 @@ window.IntMapModules.terrainWater=function(HOST){
         paint:{'line-color':'#8d6e3a','line-width':4,'line-opacity':0.95}});
       if(!GE().layers.has('tw-draft-line')) GE().layers.add({id:'tw-draft-line',type:'line',source:VEC,filter:['==',['get','kind'],'draft'],
         paint:{'line-color':'#ffd23f','line-width':3,'line-dasharray':[2,1.5],'line-opacity':0.95}});
-      if(!GE().layers.has('tw-breach')) GE().layers.add({id:'tw-breach',type:'symbol',source:VEC,filter:['==',['get','kind'],'breach'],
-        layout:{'text-field':['get','label'],'text-size':window.IntMapLabelScale.sub(1),'text-allow-overlap':true,'text-rotate':['get','rot'],'text-rotation-alignment':'map'},
-        paint:{'text-color':'#ff3b30','text-halo-color':'#fff','text-halo-width':1.6}});
+      /* (#R212) `tw-breach` — the red spill arrows — is not created at all. 「赤い矢印はいらない。一切
+         不要。」 The layer is removed rather than emptied so a session that had it drawn loses it too. */
+      try{ if(GE().layers.has('tw-breach')) GE().layers.remove('tw-breach'); }catch(_){}
       if(!GE().layers.has('tw-src')) GE().layers.add({id:'tw-src',type:'circle',source:VEC,filter:['==',['get','kind'],'source'],
         paint:{'circle-radius':6,'circle-color':'#29b6f6','circle-stroke-color':'#04283a','circle-stroke-width':2}});
       /* ══ (#R211) THE DASHED RECTANGLE IS GONE ════════════════════════════════════════════════════
@@ -478,16 +478,30 @@ window.IntMapModules.terrainWater=function(HOST){
        `trace.from` is the origin the user actually chose, so the answer is recomputed for the same
        question, never for a new one. */
     let _reT=null, _lastTraceAt=0, _reWhy='never';
+    /* ⚠ (#R212) A PURE DEBOUNCE NEVER FIRES UNDER A CONTINUOUS SOURCE, WHICH IS WHY THE WATER STOPPED
+       FLOWING. 「継続のやつは、地形に応じて流れ続けるように。」 — `pourStart` re-solves every 220 ms and
+       every solve calls this, which cleared the 320 ms timer before it could ever elapse: the pond grew
+       and the WATERCOURSE below it never moved again. The debounce is what makes a burst of brush
+       strokes cost one trace, so it stays — with a ceiling. If the first pending request is older than
+       MAXWAIT the trace runs now, so a tap left running re-traces about three times a second's worth of
+       simulated filling instead of never. */
+    const _RE_MAXWAIT=900;
+    let _reFirst=0;
     function _retrace(){
       if(!trace||!trace.from){ _reWhy='no-trace'; return; }
       if(tracing){ _reWhy='tracing'; return; }
       const from=trace.from.slice();
-      clearTimeout(_reT); _reWhy='scheduled';
-      _reT=setTimeout(()=>{ _reT=null;
+      const now=Date.now();
+      if(!_reT) _reFirst=now;
+      const waited=now-_reFirst;
+      const delay=(waited>=_RE_MAXWAIT)?0:320;      /* the ceiling: never postpone past MAXWAIT */
+      _reWhy=(delay===0)?'maxwait':'scheduled';
+      clearTimeout(_reT);
+      _reT=setTimeout(()=>{ _reT=null; _reFirst=0;
         if(!opened){ _reWhy='closed'; return; }
         if(tracing){ _reWhy='busy'; return; }
         if(Date.now()-_lastTraceAt<600){ _reWhy='just-traced'; return; }   /* an explicit trace is already the answer */
-        _reWhy='fired'; traceDownstream(from[0],from[1]); },320);
+        _reWhy='fired'; traceDownstream(from[0],from[1]); },delay);
     }
 
     /* ══ (#R186) WHERE THE WATER ACTUALLY GOES ═══════════════════════════════════════════════════════
@@ -1396,14 +1410,11 @@ window.IntMapModules.terrainWater=function(HOST){
       levees.forEach(lv2=>feats.push({type:'Feature',geometry:{type:'LineString',coordinates:lv2.pts},properties:{kind:'levee'}}));
       if(drafting&&drafting.pts.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:drafting.pts},properties:{kind:'draft'}});
       sources.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'source'}}));
-      result.breaches.forEach(b=>{ const k=b.outlet, i=k%NX, j=(k/NX)|0;
-        const p=b.outDir, pi=p%NX, pj=(p/NX)|0;
-        const rot=(Math.atan2(pi-i,-(pj-j))/D+360)%360;
-        /* (#R211) 「体積の赤字表示を消す」 — the ARROW is the 決壊方向 and stays; the red volume beside
-           it is gone. The volumes are not lost: the panel still names how many spill points there are
-           and how much goes over the largest. A number in red on the map read as an alarm. */
-        feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lngOf(G.xW+(i+0.5)*G.dx), latOf(G.yN+(j+0.5)*G.dy)]},
-          properties:{kind:'breach', rot, label:'➤'}}); });
+      /* ⚠ (#R212) NO RED ARROWS AT ALL. 「また、赤い矢印はいらない。一切不要。」 — #R211 read 「体積の赤字
+         表示を消す」 as "keep the arrow, drop the number beside it"; the follow-up settles it. The spill
+         points are still COMPUTED and still reported in words (how many, and how much goes over the
+         largest), and the water itself already shows where it leaves — the arrow was a second, louder
+         drawing of a thing the picture says. `tw-breach` therefore never receives a feature. */
       setVec(feats);
       report();
     }
@@ -1568,7 +1579,7 @@ window.IntMapModules.terrainWater=function(HOST){
         /* (#R211) the progress bar — hidden until something is actually computing */
         +'<div class="tw-prog" style="display:none;">'
           +'<div style="height:4px;border-radius:3px;background:var(--input-bg);overflow:hidden;">'
-            +'<div class="tw-prog-bar" style="height:100%;width:0%;background:var(--primary-color);transition:width .18s linear;"></div></div>'
+            +'<div class="tw-prog-bar" style="height:100%;width:0%;background:var(--prog-grad);transition:width .18s linear;"></div></div>'   /* (#R212) the accent, like every other bar */
           +'<div class="tw-prog-txt" style="font-size:10px;color:var(--text-muted);margin-top:3px;"></div>'
         +'</div>'
         +'<div class="tw-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;line-height:1.55;"></div>'

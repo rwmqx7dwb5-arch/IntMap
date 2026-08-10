@@ -66,7 +66,8 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   assert.match(s, /\n      setClickMode,/);
   /* five languages for both new labels and the hint under them */
   /* (#R210) American English: epicentre -> epicenter across every user-facing string. */
-  for (const en of ['Move the epicenter', 'Add a place']) {
+  /* (#R212) the two ◎ controls were merged, so the segment's label is now the merged one */
+  for (const en of ['Place / move the epicenter', 'Add a place']) {
     const i = s.indexOf(en);
     assert.ok(i > 0, `${en} is missing`);
     const call = s.slice(i - 3, i + 400);

@@ -2536,6 +2536,83 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
 
+### #R212 補足（世界データ層の現状／天文現象／発信地／出典ページ／曲面3D）
+
+**`js/world-packs.js` の行は5つになった。** チェックボックスは
+`wp-dl-{trade|energy|alerts|tides|crops}` ——⚠ **`wp-dl-elec` / `wp-dl-prim` は無い**（電力構成と
+一次エネルギーは1行に統合し、切替はパネル内の `.wp-k` セグメント。`STATE.energyKind()` でも切替可）。
+公開名は `window.IntMapWorld`（`state()` / `tradeLoad()` / `tradeToggle()` / `energyShow()` /
+`energyKind()` / `cropSet(crop,variable,supply)` / `tideProbe()` / `alertsLegend()`）。
+
+* **パネルとレイヤーは1つのスイッチ**：`makePanel(id,title,cbId)` の ✕ が `cbId` のチェックを外し、
+  行の `change` がレイヤーを切る。新しいパネルを足すときは **必ず `cbId` を渡す**
+  （`tests/r212-checks.test.mjs ②` がそれを強制する）。パネルは最小化もできる（`.wp-min`）。
+* **貿易は矢印**：`wp-trade-arrow`（symbol / `symbol-placement:'line'` / `icon-image:['get','ai']`）。
+  ⚠ **向きは円弧の座標順**——輸出は `greatCircle(home,partner)`、輸入は `greatCircle(partner,home)`。
+  アイコンは `GE().layers.addImage()` で登録した2枚のキャンバス（SDF ではない：`icon-color` は
+  SDF 専用で、ハードエッジの三角形を SDF にすると滲む）。線幅は #R211 のまま `1.2+11.8·√(v/vmax)`。
+* **エネルギーの凡例は paint と同じ配列から**：`ENERGY_RAMP`（ファクトリ直下の `const`）から
+  `interpolate` 式と `rampLegend()` の両方を作る。⚠ **二つ目のコピーを作らないこと**。
+* **choropleth は 10 m の国境を要求する**：`hiResCountries()` が `window._imFlushCountryGeo()` を
+  点火直後と数回呼ぶ。⚠ 既定の `countries` ソースは **Natural Earth 110 m**（#R195 が意図的にそうした）。
+* **警報**：`FEED_STATE = {jma|nws|gdacs: idle|loading|ok|error}`。⚠ **「現在、発表中のものはありません」
+  は state が `ok` のときだけ**言う。日本＝気象庁（発令単位）、米国＝NWS、**それ以外＝GDACS**
+  （`geteventlist/MAP`、ACAO `*`）。GDACS は `affectedcountries` で `countries` ソースを
+  `setFeatureState('wpAlert', tier)` で塗る（タップ不要）。⚠ **GDACS の被災域ポリゴン
+  （`getgeometry`）は ACAO を返さない**ので描けない——事象点と国の塗りだけ、と凡例に書いてある。
+* **潮汐**：`coastPoints()` が `window.IntMapLandMask` で「海で、隣が陸」のセルを視界から最大28点拾い、
+  Open-Meteo Marine に**まとめて1リクエスト**（複数座標）で問う。円の色はその地点自身の日内最小〜最大に
+  対する現在位置、ラベルは `1.2 m ▲2h10`。タップした点だけ従来どおり浸水を塗る。
+* **作物**：FAO **GAEZ v4 / res06**（`gaez-services.fao.org/server/rest/services/res06/ImageServer`）。
+  カタログを1回 `query` して `(crop, year, variable, water_supply) → OBJECTID` を作り、
+  `computeStatisticsHistograms` で**そのラスタ自身の min/max**を取り、`exportImage` を
+  `Stretch(StretchType:5, Statistics:[[min,max,mean,1]], DRA:false)` で灰色として受け取り、
+  `CROP_RAMP` で塗り直す。⚠ **DRA を使わないこと**——同じ色が視野ごとに違う値を意味してしまう。
+  タップは `identify`。⚠ 座標は **EPSG:3857 の bbox を送り、返った画像を4隅の経緯度で置く**
+  （MapLibre の image source はメルカトル線形なので一致する）。
+
+**天文現象 `js/space-events.js`（`window.IntMapSpaceEvents`）。** DOM も描画も持たない純計算で、
+`js/ephemeris.js` の**後**・`js/space.js` の**前**に import する。API は `upcoming({fromMs,lat,lng})` /
+`eclipses(fromMs,days,solar)` / `classifyLunar(jd)` / `classifySolar(jd)` / `nextPhase` /
+`nextOpposition` / `nextGreatestElongation` / `altitudeDeg(id,jd,lat,lng)`。
+⚠ **本影・半影半径の係数は `0.998340`**（Meeus 54章）。1.29 と書くと**すべての月食が皆既になる**。
+⚠ **日食の各地の状況は計算していない**（ベッセル要素）。`localCircumstances:false` を返す。
+`js/space.js` 側は `.sp-events` に一覧を描き、行のクリックで**食の3時間前・1秒＝1時間**に送る。
+
+**発信地（`js/news-context.js` / `js/app-body.js applyPinMode`）。**
+⚠⚠ **Publisher モードは subject の位置を絶対に借りない**（#R35 の分岐は #R212 で削除）。
+引けないときは暗いピン＋「発信元不明」。引くための経路は3つ：①`sourceDict` の表示名一致、
+②**ドメイン一致**（発信元文字列または記事 URL のホストを英数字だけに正規化して同じ辞書と突き合わせる）、
+③地名ガゼッティア走査——⚠ ③のラベルは**発信元名**であって地名ではない。
+
+**プロキシ経由の取得は `js/proxy-fetch.js`。** `fetchViaProxy(url)` は3つを競わせ、**各8秒**、
+勝った時点で**負けを abort**、失敗時のやり直しは**1周だけ（各6秒）**。⚠ 制限時間が無いと、速い
+プロキシが落ちた日に**分単位**で「読み込み中」になる（#R212 §7 に実測）。風の格子（`js/weather.js`）も
+同じ形：各要求 6 秒＋**粗い場を同時に投げて先に描く**。
+
+**国境線は `js/border-style.js` が唯一の定義。** `BORDER_COLOR` / `ADMIN1_COLOR` / `BORDER_WIDTH` /
+`BORDER_CASING` / `ADMIN1_WIDTH` を `js/app-body.js` が ES import し、`js/time-borders.js` は
+`window.IntMapBorderStyle`（同じ定数から作る）を読む。⚠ 3つのレイヤー（`borders-only-line` /
+`ref-admin1` / `imtb-line`）が別々の値を持たないこと。
+
+**3D立体（`js/solid3d.js`）は曲面に沿う。** 輪郭を **100 km** 以下に分割し、天板・底板は
+**メッシュ全体で1つの分割数**（`capN`、最大14）でバリセントリックに刻む。⚠ 三角形ごとに分割数を
+変えると共有辺に別の点が乗り、T字接合＝細い割れ目になる。
+
+**出典ページ `sources.html`。** science.html と同じ骨格。⚠ **登録簿を複製しない**——
+`<script src="./js/reference-data.js">` を読み込んで `window.IntMapRefData.dataSources` から描く。
+そのため `vite.config.js` の `STATIC_ASSETS` に **`sources.html` と `js/reference-data.js` の両方**が要る。
+
+**震度分布と陸/海。** ⚠ **標高の符号は陸/海の答えではない**。`e0<=0` のセルは
+`landMask.isLand()===true && e0>-440` なら**陸として塗る**（ヨルダン地溝・オランダ・カスピ海低地・
+デスヴァレー）。マスクは 19.5 km なので、海岸では狭い浅瀬が塗られうる——その粒度の副作用。
+
+**津波は描いた震源域を受け取る。** `IntMapTsunami.open/follow({...,rupture:{ring,areaKm2,slipM}})`。
+ワーカー（`src/tsunami-worker.js` `rupturePlane()`）が**リングの主軸＝走向**、**その軸に沿った外接箱＝
+L:W**、**ポリゴンの実面積に合わせて L·W を再スケール**、**すべり＝D̄** とする。傾斜角は 15° のまま
+（描いた形からは決まらないので作らない）。`srcKey()` にリングのハッシュが入るので、描き直しは
+別の地震として扱われる。
+
 ### #R211 補足（deep の帰属は**三回**取る）
 
 ⚠ **1回の観測で「先在」とも「回帰」とも言ってはいけない。** #R211 は deep を **R211 / R211 前 / 修正後の R211** の
@@ -2549,7 +2626,7 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 （`js/app-body.js` から1回だけ生成、`src/main.js` が **eager import**）。⚠ **遅延化してはいけない** ——
 起動時にレイヤー行を作り、進捗ゲートとセッション復元がその存在に依存する（`js/layer-packs.js` と同じ理由）。
 公開名は `window.IntMapWorld`（`state()` / `tradeLoad()` / `tradeToggle()` / `energyShow()` /
-`cropSet()` / `tideProbe()` / `alertsLegend()`）。チェックボックスは `wp-dl-{trade|elec|prim|alerts|tides|crops}`。
+`cropSet()` / `tideProbe()` / `alertsLegend()`）。⚠ **チェックボックスは #R212 で5つになった**（`wp-dl-{trade|energy|alerts|tides|crops}`）——このラウンドの記述は当時のもの。
 
 * **貿易** — OEC / BACI（CEPII）。`trade_i_baci_a_{92,02,07,12,17,22}` を年で選ぶ（1995–2024）。
   ⚠ **線幅は `1.2 + 11.8·√(v/vmax)` px**。線形でも対数でもないのは仕様（DEV-NOTES §3）。

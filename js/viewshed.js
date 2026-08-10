@@ -284,7 +284,10 @@ window.IntMapModules.los=function(HOST){
     function setProgress(frac,label){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;
       const pct=Math.round(Math.max(0,Math.min(1,frac))*100);
       body.innerHTML='<div style="margin-bottom:5px;">'+label+' <b>'+pct+'%</b></div>'+
-        '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></div></div>'; }
+        /* (#R212) 「LOCの進捗バーの色もアクセントカラーに。」 — this was the last progress bar still
+           painting its own gradient; #R210 moved every other one onto --prog-grad, which follows the
+           accent the user picked (js/app-body.js window.imAccent). */
+        '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--prog-grad);transition:width 0.15s;"></div></div>'; }
 
     /* ---- the analysis ------------------------------------------------------------------------ */
     async function analyze(opt){

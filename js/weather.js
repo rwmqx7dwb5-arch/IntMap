@@ -51,6 +51,15 @@ window.IntMapModules.wind=function(HOST){
     /* Real GFS field at a finer 5° grid (≈2.2k pts). One URL would be 414 Request-URI-Too-Large, so it's
        fetched as parallel ≤500-pt CHUNKS and reassembled — refreshed every 10 min. "from" direction →
        (east-u, north-v) motion vector. Falls back to a single coarse 8° request; only then gives up. */
+    /* ⚠ (#R212) EVERY REQUEST HERE CARRIES A DEADLINE. 「Wind(animated)が表示されるまでが非常に遅い。」
+       The fine field is five parallel chunk requests, each of which walked a proxy ladder with no
+       timeout, and `Promise.all` meant the slowest one gated the whole picture. Open-Meteo answers
+       directly (CORS) and quickly, but it rate-limits (#R72 measured a 429), and a 429 sent every
+       chunk down the ladder into api.allorigins.win — measured elsewhere in this round at 19.5 s. */
+    const WIND_TIMEOUT_MS=6000;
+    function _wfetch(u){
+      const c=new AbortController(); const t=setTimeout(()=>{ try{ c.abort(); }catch(_){} },WIND_TIMEOUT_MS);
+      return fetch(u,{signal:c.signal}).finally(()=>clearTimeout(t)); }
     async function fetchGrid(){
       if(fetching) return; if(grid && Date.now()-fetchT<10*60000) return;
       fetching=true;
@@ -61,17 +70,25 @@ window.IntMapModules.wind=function(HOST){
       const CHUNK=500, jobs=[]; for(let s=0;s<N;s+=CHUNK) jobs.push([s,Math.min(N,s+CHUNK)]);
       async function getChunk(s,e){
         const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.slice(s,e).join(',')+'&longitude='+lons.slice(s,e).join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
-        for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null); if(arr&&arr.length===(e-s)) return arr; }catch(_){} }
+        for(const mk of proxies){ try{ const r=await _wfetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null); if(arr&&arr.length===(e-s)) return arr; }catch(_){} }
         return null;
       }
+      /* ⚠ COARSE FIRST, THEN REFINE. The 8° field is ONE request; the 5° field is five. Asking for
+         both at once and drawing whichever arrives first is the difference between «a picture in a
+         second» and «nothing until the last chunk lands». The coarse grid is only installed if the
+         fine one has not already won, so a fast fine load is never downgraded. */
+      const coarseP=grid?null:fetchCoarse().catch(()=>false);
+      let fineDone=false;
+      if(coarseP) coarseP.then((ok)=>{ if(ok&&!fineDone){ try{ if(on) renderFieldImage&&renderFieldImage(); }catch(_){} } });
       let results=null; try{ results=await Promise.all(jobs.map(j=>getChunk(j[0],j[1]))); }catch(_){ results=null; }
+      fineDone=true;
       if(results && results.every(Boolean)){
         const u=new Float32Array(N), v=new Float32Array(N);
         results.forEach((arr,ji)=>{ const s=jobs[ji][0]; for(let k=0;k<arr.length;k++){ const cu=arr[k].current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[s+k]=-sp*Math.sin(dir); v[s+k]=-sp*Math.cos(dir); } });
         grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false;
         try{ gridTime=results[0][0].current.time; updateTimePill(); }catch(_){}
       } else if(!grid){
-        const ok=await fetchCoarse();
+        const ok=coarseP?await coarseP:await fetchCoarse();     /* (#R212) already in flight — do not ask twice */
         if(!ok){ try{ satToast(HOST.lang==='jp'?'風データを取得できませんでした':HOST.lang==='de'?'Winddaten nicht verfügbar':HOST.lang==='ru'?'Данные о ветре недоступны':HOST.lang==='es'?'Datos de viento no disponibles':'Wind data unavailable'); }catch(_){}
           const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } stop(); }
       }
@@ -82,7 +99,7 @@ window.IntMapModules.wind=function(HOST){
       for(let la=lat0; la>=-lat0; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
       const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}` ];
-      for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null);
+      for(const mk of proxies){ try{ const r=await _wfetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null);
         if(arr&&arr.length){ const cols=Math.round(360/STEP), rows=Math.round(2*lat0/STEP)+1, u=new Float32Array(arr.length), v=new Float32Array(arr.length);
           arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });
           grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false; try{ gridTime=arr[0].current.time; updateTimePill(); }catch(_){} return true; } }catch(_){} }

@@ -307,10 +307,11 @@ test('R187 flight sim: an airborne "current map view" start uses the real eye', 
   assert.match(src, /if\(state\.loc==='__here'&&state\.mode!=='ground'\)/, 'scoped to the current-view airborne start');
   assert.match(src, /GE\(\)\.camera\.eye\?GE\(\)\.camera\.eye\(\):null/, 'the viewpoint comes from the engine contract');
   assert.match(src, /o\.keepAlt=true/, 'and start() must not overrule it with the +1,500 m clearance');
-  /* ⚠ (#R210) NOT clamped any more. This used to require `Math.min(eye.alt,ceil)`; the reply was
-     「一定高度以上は強制的に高度を下げさせられるのを辞めて」. The claim that survives is the one this test
-     was really about — the start altitude is the EYE's, not a round number — plus the floor, which
-     is a fact about the ground rather than a preference. */
-  assert.match(src, /o\.alt=Math\.max\(150,eye\.alt\)/, "the start altitude is the eye's own, above the ground floor");
-  assert.doesNotMatch(src, /o\.alt=Math\.max\(150,Math\.min\(eye\.alt,ceil\)\)/, 'and it is not pulled down to the service ceiling');
+  /* ⚠ (#R210 → #R212) THE CLAMP CAME BACK ON REQUEST. #R190 clamped to the service ceiling;
+     「一定高度以上は強制的に高度を下げさせられるのを辞めて」 removed it in #R210; 「やっぱ元に戻して」
+     put it back in #R212. The claim this test is really about is untouched by all three: the start
+     altitude comes from the EYE, not from a round number — plus the floor, which is a fact about the
+     ground rather than a preference. The ceiling is the airframe's own, not a literal. */
+  assert.match(src, /o\.alt=Math\.max\(150,Math\.min\(_ceil,eye\.alt\)\)/, "the start altitude is the eye's own, floored and capped");
+  assert.match(src, /const _ac=AIRCRAFT\[state\.ac\][\s\S]{0,90}_ceil=\(_ac&&_ac\.ceil\)/, 'and the cap is that aircraft’s service ceiling');
 });

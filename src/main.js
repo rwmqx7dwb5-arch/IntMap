@@ -191,6 +191,10 @@ import '../js/night-side.js';
    after js/ephemeris.js because it asks it for the Sun, Moon and planets, and allocates nothing
    until the right-click item is used. */
 import '../js/ephemeris.js';
+/* (#R212) 「次の皆既月食まであと何日、みたいな表示…ほかの現象も」 — the events are SEARCHED in the
+   ephemeris above (Meeus ch. 54 shadow radii for the eclipses), so this must come after it and before
+   the view that lists them. Pure arithmetic like js/ephemeris.js: no DOM, no renderer. */
+import '../js/space-events.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
