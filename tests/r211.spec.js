@@ -36,21 +36,21 @@ test.beforeAll(async ({ browser }) => {
 });
 test.afterAll(async () => { await page?.close(); });
 
-test('R211 ①: the six world-data rows are there at boot, and the pack published its state', async () => {
+test('R211 ①: the world-data rows are there at boot, and the pack published its state', async () => {
   const r = await page.evaluate(() => ({
-    rows: ['trade', 'elec', 'prim', 'alerts', 'tides', 'crops']
+    rows: ['trade', 'energy', 'alerts', 'tides', 'crops']
       .filter((k) => !!document.getElementById('wp-dl-' + k)),
     world: typeof window.IntMapWorld,
     /* every row must be a real checkbox with a change listener, not a decorative label */
-    wired: ['trade', 'elec', 'prim', 'alerts', 'tides', 'crops']
+    wired: ['trade', 'energy', 'alerts', 'tides', 'crops']
       .filter((k) => { const cb = document.getElementById('wp-dl-' + k); return !!(cb && cb.type === 'checkbox' && cb.__wpWired); }),
     /* the pack answers for all five families even before any of them is switched on */
     state: (() => { try { return Object.keys(window.IntMapWorld.state()); } catch (_) { return []; } })(),
     /* ⚠ and nothing failed to load: a lazy module that did not arrive is recorded, never silent */
     lazy: window.__imLazyCheck || null,
   }));
-  expect(r.rows).toHaveLength(6);
-  expect(r.wired).toHaveLength(6);
+  expect(r.rows).toHaveLength(5);   /* (#R212) electricity + primary energy merged into one row */
+  expect(r.wired).toHaveLength(5);
   expect(r.world).toBe('object');
   expect(r.state).toEqual(expect.arrayContaining(['trade', 'energy', 'alerts', 'tides', 'crops', 'year']));
   expect(r.lazy && r.lazy.failed ? r.lazy.failed : []).toEqual([]);

@@ -588,9 +588,13 @@ window.IntMapModules.widgets=function(HOST){
         const dlMin=Math.round(dl/60), dlTxt=Math.floor(dlMin/60)+'h '+(dlMin%60)+'m';
         /* (#R210) The card has no title row, so the two times carry their own words.
            `wgt-sl` is the same muted weight the title used, so the times stay the
-           loudest thing on the card. */
-        setV(e.u,'<span style="font-size:17px;"><span class="wgt-sl">'+_WL('Sunrise','日の出','Aufgang','Восход','Amanecer')+'</span> '+hm(s.sunrise)
-          +' · <span class="wgt-sl">'+_WL('Sunset','日の入り','Untergang','Закат','Ocaso')+'</span> '+hm(s.sunset)+'</span>',
+           loudest thing on the card.
+           (#R212) 「日の出、日の入りを二行に。そして、絵文字を二つ使って。」 — one line each, and the two
+           events get the two emoji that name them (🌅 rise, 🌇 set). ⚠ These are asked for explicitly;
+           the standing rule against unrequested emoji still holds everywhere else. */
+        setV(e.u,'<div style="display:flex;flex-direction:column;gap:2px;font-size:17px;line-height:1.25;">'
+          +'<div>🌅 <span class="wgt-sl">'+_WL('Sunrise','日の出','Aufgang','Восход','Amanecer')+'</span> '+hm(s.sunrise)+'</div>'
+          +'<div>🌇 <span class="wgt-sl">'+_WL('Sunset','日の入り','Untergang','Закат','Ocaso')+'</span> '+hm(s.sunset)+'</div></div>',
           (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt+' · '):'')+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;

@@ -117,7 +117,7 @@ window.IntMapRefData=(function(){
     _dc('d2-busan','maritime','maritime',129.07,35.08,'Port of Busan','釜山港','South Korea’s largest port and a major transshipment hub.','韓国最大の港・主要中継拠点。','Port_of_Busan','Port'),
     _dc('d2-lalong','maritime','maritime',-118.21,33.74,'LA / Long Beach','ロサンゼルス・ロングビーチ港','Largest container port complex in the Americas.','南北アメリカ最大のコンテナ港群。','Port_of_Los_Angeles','Port'),
     _dc('d2-antwerp','maritime','maritime',4.4,51.27,'Antwerp-Bruges','アントワープ・ブルッヘ港','Europe’s second-largest seaport & top chemical cluster.','欧州第2の港・最大の化学産業集積地。','Port_of_Antwerp-Bruges','Port'),
-    _dc('d2-jebelali','maritime','maritime',55.06,25.01,'Jebel Ali Port','ジェベル・アリ港','Largest man-made harbour & Middle East transshipment hub.','世界最大の人工港・中東の中継拠点。','Jebel_Ali_Port','Port'),
+    _dc('d2-jebelali','maritime','maritime',55.06,25.01,'Jebel Ali Port','ジェベル・アリ港','Largest man-made harbor & Middle East transshipment hub.','世界最大の人工港・中東の中継拠点。','Jebel_Ali_Port','Port'),
     _dc('d2-groton','mil','maritime',-72.09,41.4,'Sub Base New London','ニューロンドン潜水艦基地','Primary US East-coast attack-submarine base (Groton).','米東海岸の主要攻撃型潜水艦基地。','Naval_Submarine_Base_New_London','USN'),
     _dc('d2-mayport','mil','maritime',-81.4,30.39,'Naval Station Mayport','メイポート海軍基地','Atlantic surface-fleet & carrier-capable base in Florida.','大西洋水上艦隊の基地（フロリダ）。','Naval_Station_Mayport','USN'),
     _dc('d2-offutt','mil','mil',-95.91,41.12,'Offutt AFB','オファット空軍基地','Headquarters of US Strategic Command (STRATCOM).','米戦略軍（STRATCOM）の司令部。','Offutt_Air_Force_Base','STRATCOM'),

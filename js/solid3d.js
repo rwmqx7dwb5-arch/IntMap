@@ -143,8 +143,37 @@ void main(){
       dirty=false; nIdx=0;
       const r=S.ring; if(!(r&&r.length>=3)||!gl) return;
       /* de-duplicate a closed ring's repeated last point */
-      const pts=r.slice(); if(pts.length>3){ const a=pts[0], b=pts[pts.length-1];
+      let pts=r.slice(); if(pts.length>3){ const a=pts[0], b=pts[pts.length-1];
         if(Math.abs(a[0]-b[0])<1e-12&&Math.abs(a[1]-b[1])<1e-12) pts.pop(); }
+      if(pts.length<3) return;
+      /* ══ (#R212) THE FACES FOLLOW THE PLANET ══════════════════════════════════════════════════════
+         「3D立体は、地球の曲がりを考慮していないため、広域を選択すると、おかしい点が出てきてしまう。
+           単なる多角形ではなく、地球の曲がりに沿ったものにして。」 — and it was a straight polygon in
+         the most literal sense: the mesh had exactly the vertices the footprint was drawn with, and
+         MapLibre projects each ONE correctly but interpolates everything between them along a straight
+         line in clip space. Over a 1,000 km face that chord passes 19.6 km BELOW the surface it is
+         supposed to lie on — R·(1−cos(θ/2)) with θ = d/R — so a wide body sinks into the ground in the
+         middle of every face while its corners sit exactly right. That is the reported artefact.
+         The cure is more vertices, in both directions:
+           · the OUTLINE is densified so no edge spans more than SEG_KM (the walls then curve),
+           · the CAPS are subdivided barycentrically with ONE subdivision count for the whole mesh,
+             so two triangles sharing an edge place identical points along it and no T-junction (i.e.
+             no hairline crack) is created.
+         SEG_KM = 100 km keeps the worst-case sag under 200 m, which is below the DEM's own noise. */
+      const SEG_KM=100, MAX_N=14;
+      const KM=(a,b)=>{ const la=(a[1]+b[1])/2*D2R;
+        return Math.hypot((b[0]-a[0])*111.32*Math.cos(la),(b[1]-a[1])*110.57); };
+      (function densify(){
+        const out=[];
+        for(let i=0;i<pts.length;i++){ const a=pts[i], b=pts[(i+1)%pts.length];
+          out.push(a);
+          const k=Math.min(64,Math.floor(KM(a,b)/SEG_KM));
+          for(let s=1;s<=k;s++){ const f=s/(k+1);
+            /* linear in geographic coordinates: at ≤100 km steps this is the great circle to within
+               metres, and it is the same interpolation the caps use, so edges and caps agree */
+            out.push([a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f]); } }
+        if(out.length>=3&&out.length<=4096) pts=out;
+      })();
       const n=pts.length; if(n<3) return;
       let cLng=0,cLat=0; for(const p of pts){ cLng+=p[0]; cLat+=p[1]; } cLng/=n; cLat/=n;
       const mLat=R*D2R, mLng=R*D2R*Math.cos(cLat*D2R);
@@ -153,12 +182,45 @@ void main(){
       const tri=triangulate(mp);
       const pos=[], alt=[], loc=[], nrm=[], idx=[];
       const push=(i,z,zl,nx,ny,nz)=>{ pos.push(mp[i][0],mp[i][1]); alt.push(z); loc.push(lp[i][0],lp[i][1],zl); nrm.push(nx,ny,nz); return (pos.length/2)-1; };
-      /* caps — the BOTTOM one is the face MapLibre cannot make */
-      const capTop=[], capBot=[];
-      for(let i=0;i<n;i++){ capTop.push(push(i,S.top,S.top,0,0,1)); capBot.push(push(i,S.base,S.base,0,0,-1)); }
+      /* a vertex at an arbitrary lng/lat (the cap subdivision needs points that are not ring points) */
+      const pushLL=(lng,lat,z,nx,ny,nz)=>{ const m=merc(lng,lat);
+        pos.push(m[0],m[1]); alt.push(z); loc.push((lng-cLng)*mLng,(lat-cLat)*mLat,z); nrm.push(nx,ny,nz);
+        return (pos.length/2)-1; };
+      /* how finely the caps are cut — one count for the WHOLE mesh, so shared edges match exactly */
+      let capN=1;
       for(let t=0;t<tri.length;t+=3){
-        idx.push(capTop[tri[t]],capTop[tri[t+1]],capTop[tri[t+2]]);          /* lid, outward = up */
-        idx.push(capBot[tri[t+2]],capBot[tri[t+1]],capBot[tri[t]]);          /* floor, outward = down */
+        const a=pts[tri[t]], b=pts[tri[t+1]], c=pts[tri[t+2]];
+        const d=Math.max(KM(a,b),KM(b,c),KM(c,a));
+        capN=Math.max(capN,Math.min(MAX_N,Math.ceil(d/SEG_KM)));
+      }
+      if(tri.length/3*capN*capN>24000) capN=Math.max(1,Math.floor(Math.sqrt(24000/Math.max(1,tri.length/3))));
+      /* caps — the BOTTOM one is the face MapLibre cannot make */
+      if(capN<=1){
+        const capTop=[], capBot=[];
+        for(let i=0;i<n;i++){ capTop.push(push(i,S.top,S.top,0,0,1)); capBot.push(push(i,S.base,S.base,0,0,-1)); }
+        for(let t=0;t<tri.length;t+=3){
+          idx.push(capTop[tri[t]],capTop[tri[t+1]],capTop[tri[t+2]]);        /* lid, outward = up */
+          idx.push(capBot[tri[t+2]],capBot[tri[t+1]],capBot[tri[t]]);        /* floor, outward = down */
+        }
+      } else {
+        for(let t=0;t<tri.length;t+=3){
+          const A=pts[tri[t]], B=pts[tri[t+1]], C=pts[tri[t+2]];
+          /* barycentric lattice: row i has i+1 points; the same linear interpolation the ring uses */
+          const gT=[], gB=[];
+          for(let i=0;i<=capN;i++){ const rowT=[], rowB=[];
+            for(let j=0;j<=i;j++){
+              const u=(capN-i)/capN, v=(i-j)/capN, w=j/capN;
+              const lng=A[0]*u+B[0]*v+C[0]*w, lat=A[1]*u+B[1]*v+C[1]*w;
+              rowT.push(pushLL(lng,lat,S.top,0,0,1)); rowB.push(pushLL(lng,lat,S.base,0,0,-1));
+            }
+            gT.push(rowT); gB.push(rowB); }
+          for(let i=0;i<capN;i++) for(let j=0;j<=i;j++){
+            idx.push(gT[i][j],gT[i+1][j],gT[i+1][j+1]);
+            idx.push(gB[i][j],gB[i+1][j+1],gB[i+1][j]);
+            if(j<i){ idx.push(gT[i][j],gT[i+1][j+1],gT[i][j+1]);
+                     idx.push(gB[i][j],gB[i][j+1],gB[i+1][j+1]); }
+          }
+        }
       }
       /* walls — their own vertices so each face keeps a flat outward normal */
       const ccw=ringArea(mp)>=0;

@@ -301,12 +301,19 @@ window.IntMapNightSide=(function(){
     catch(_){ setTimeout(_lights,2500); }
     return true;
   }
+  /* ⚠ (#R212) NO EARLY RETURN ON `built`. 「（追記：オフにしてもオフにならない。）」 was not reproducible
+     in this environment — a headless preview never finishes the style, so the night side never builds
+     and there is nothing to turn off — so nothing here is a guess at the mechanism. What IS certain is
+     that `built` is this module's own bookkeeping and the LAYERS are the truth: a style reload, a
+     basemap swap or a second module re-adding them all leave the image on screen with `built` false,
+     and the old guard made «off» a no-op in exactly that state. Removing is idempotent, so it now
+     always runs. (The other half of the report is answered in js/app-body.js: the Settings control
+     applies the moment it changes, instead of only on Apply.) */
   function destroy(){
-    if(!built) return false;
     try{ GE().layers.removeDynamicImage(DYN); }catch(_){}
     try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
     try{ if(GE().layers.hasSource(SRC)) GE().layers.removeSource(SRC); }catch(_){}
-    built=false; lastKey=''; return true;
+    const was=built; built=false; lastKey=''; return was;
   }
 
   /* repaint when the SUN has moved enough to matter (a quarter degree ≈ one minute of rotation) */

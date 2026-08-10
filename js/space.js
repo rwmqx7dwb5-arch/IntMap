@@ -252,6 +252,15 @@ window.IntMapModules.space=function(HOST){
       catch(_){ return 'data/planets/'+id+'.jpg'; } }
     /* Textures load ON DEMAND and one at a time per body: the whole set is 5.7 MB and a view of the
        whole system does not need any of them at more than a few pixels a body. */
+    /* ⚠ (#R212) A TEXTURE THAT FAILED ONCE USED TO STAY FAILED FOR THE SESSION. 「宇宙を探索の天体が
+       全部のっぺりした見た目になることがたまにある。地表画像のはずなのに。また見たら直ってた。」 — the
+       two mechanisms behind that are both here. First, `im.onerror` cleared `texLoading` and recorded
+       the reason, but nothing ever asked again: one dropped request and that body was its flat
+       fallback colour until the page was reloaded (which is exactly 「また見たら直ってた」). Second, a
+       LOST WEBGL CONTEXT invalidates every texture object at once while `tex[]` still holds the dead
+       handles — which is the 「全部」 case, all bodies flat together. So: bounded retries with backoff,
+       and a context-loss listener that empties the caches so the next frame rebuilds them. */
+    const texTries={};
     function texture(id){
       if(tex[id]) return tex[id];
       if(NO_TEXTURE[id]||texLoading[id]) return null;
@@ -268,9 +277,21 @@ window.IntMapModules.space=function(HOST){
         gl.generateMipmap(gl.TEXTURE_2D);
         tex[id]=t;
       }catch(e){ lastErr='texture '+id+': '+((e&&e.message)||e); } texLoading[id]=false; };
-      im.onerror=()=>{ texLoading[id]=false; lastErr='texture '+id+' failed to load'; };
+      im.onerror=()=>{ texLoading[id]=false; lastErr='texture '+id+' failed to load';
+        const n=(texTries[id]=(texTries[id]||0)+1);
+        if(n<=3) setTimeout(()=>{ if(!tex[id]&&open) texture(id); }, 900*n); };
       im.src=texUrl(id);
       return null;
+    }
+    /* every GPU object this file holds, dropped — the next frame recreates them from scratch */
+    function dropGL(){
+      for(const k of Object.keys(tex)) delete tex[k];
+      for(const k of Object.keys(flat)) delete flat[k];
+      for(const k of Object.keys(texLoading)) delete texLoading[k];
+      for(const k of Object.keys(texTries)) delete texTries[k];
+      for(const k of Object.keys(orbitCache)) delete orbitCache[k];
+      prog=null; progLine=null; progPts=null; sphere=null; ring=null;
+      starBuf=null; starN=0; starFarBuf=null; starFarScale=null;
     }
     /* a 1×1 stand-in in the body's own measured colour, so a body is never a hole while its texture
        is on the wire */
@@ -884,6 +905,8 @@ window.IntMapModules.space=function(HOST){
     const BTN='padding:5px 9px;border-radius:8px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11.5px;cursor:pointer;';
     /* (#R202) one segment of a two-option switch; `.on` is added by refreshChrome() below. */
     const SEG='padding:5px 9px;border-radius:7px;border:none;background:transparent;color:rgba(255,255,255,0.62);font-size:11.5px;font-weight:600;cursor:pointer;';
+    /* (#R212) the date field's step buttons — small, square, and not competing with the HUD's actions */
+    const STEPB='padding:1px 5px;border-radius:6px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.05);color:#e8e8e8;font-size:11px;line-height:1.3;cursor:pointer;';
     function fmtWhen(ms){
       const d=new Date(ms);
       if(!isFinite(+d)) return '—';
@@ -961,10 +984,26 @@ window.IntMapModules.space=function(HOST){
         +'<span style="opacity:.72;">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
         +'<span>×</span><input class="sp-rate" type="text" inputmode="decimal" spellcheck="false" style="width:74px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.3);color:#fff;font-size:11.5px;font-variant-numeric:tabular-nums;padding:0 1px;">'
         +'<span class="sp-ratev" style="opacity:.72;white-space:nowrap;"></span></label>'
-        +'<input class="sp-when" type="datetime-local" style="'+BTN+'font-size:11px;">'
+        /* ══ (#R212) THE DATE FIELD IS A DATE FIELD, NOT A BUTTON WITH A CALENDAR IN IT ═════════════
+           「宇宙を探索の年月日時選択欄のUIがくそ。」 It was a bare <input type="datetime-local"> wearing
+           the BUTTON style: no label, no unit, light-on-light native picker over a black sky, and the
+           only way to move a day was to open the picker and edit a field. Now it says what it is and
+           in which time base, the picker inherits the dark scheme, and the common motions — a day, a
+           month, a year, either way — are one press. */
+        +'<span class="sp-whenbox" style="display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border-radius:9px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11px;">'
+        +'<span style="opacity:.72;white-space:nowrap;">'+L('Date (UTC)','日時 (UTC)','Datum (UTC)','Дата (UTC)','Fecha (UTC)')+'</span>'
+        +'<button class="sp-when-step" data-d="-365" title="'+S(L('a year back','1年前','ein Jahr zurück','на год назад','un año atrás'))+'" style="'+STEPB+'">«</button>'
+        +'<button class="sp-when-step" data-d="-30" title="'+S(L('a month back','1か月前','einen Monat zurück','на месяц назад','un mes atrás'))+'" style="'+STEPB+'">‹‹</button>'
+        +'<button class="sp-when-step" data-d="-1" title="'+S(L('a day back','1日前','einen Tag zurück','на день назад','un día atrás'))+'" style="'+STEPB+'">‹</button>'
+        +'<input class="sp-when" type="datetime-local" style="color-scheme:dark;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.18);border-radius:6px;color:#fff;font-size:11px;padding:2px 4px;font-variant-numeric:tabular-nums;">'
+        +'<button class="sp-when-step" data-d="1" title="'+S(L('a day on','1日後','einen Tag weiter','на день вперёд','un día adelante'))+'" style="'+STEPB+'">›</button>'
+        +'<button class="sp-when-step" data-d="30" title="'+S(L('a month on','1か月後','einen Monat weiter','на месяц вперёд','un mes adelante'))+'" style="'+STEPB+'">››</button>'
+        +'<button class="sp-when-step" data-d="365" title="'+S(L('a year on','1年後','ein Jahr weiter','на год вперёд','un año adelante'))+'" style="'+STEPB+'">»</button>'
+        +'</span>'
         +'</div>'
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
         +'<div class="sp-info" style="position:absolute;right:10px;top:52px;width:min(280px,44vw);padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11.5px;line-height:1.55;pointer-events:auto;"></div>'
+        +'<div class="sp-events" style="position:absolute;right:10px;top:calc(52px + 232px);width:min(280px,44vw);max-height:calc(100% - 320px);overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11px;line-height:1.5;pointer-events:auto;"></div>'
         +'<div class="sp-note" style="position:absolute;left:10px;bottom:8px;right:10px;font-size:9.5px;color:rgba(255,255,255,0.55);line-height:1.45;pointer-events:none;"></div>';
     }
     function refreshClock(){
@@ -1025,6 +1064,86 @@ window.IntMapModules.space=function(HOST){
       }
       const info=root.querySelector('.sp-info'); if(info) info.innerHTML=infoHtml();
       const note=root.querySelector('.sp-note'); if(note) note.innerHTML=noteHtml();
+      paintEvents();
+    }
+
+    /* ══ (#R212) WHAT IS ABOUT TO HAPPEN, AND HOW TO GO AND WATCH IT ══════════════════════════════
+       「現在地の次の皆既月食まであと何日、みたいな表示をし、それをクリックしたら、皆既月食の現在地から
+        みたシミュレーションを時間単位でできるように。ほかの現象も載せておいて。」
+       The dates come from js/space-events.js, which SEARCHES the app's own ephemeris rather than
+       reading a table (see that file's header). Clicking a row does two things: it sets the explorer's
+       clock to greatest eclipse and slows the rate to an hour a second, so the shadow can be watched
+       crossing the disc; and for an eclipse it focuses the Moon, which is the thing to look at. */
+    let evList=null, evBusy=false, evPos=null;
+    function evWhere(){
+      if(evPos) return evPos;
+      try{ const g=window.IntMapLocate&&window.IntMapLocate.last&&window.IntMapLocate.last();
+        if(g&&isFinite(g.lat)&&isFinite(g.lng)) return (evPos={lat:g.lat,lng:g.lng,mine:true}); }catch(_){}
+      try{ const c=GE().camera.getCenter(); if(c&&isFinite(c.lat)) return (evPos={lat:c.lat,lng:c.lng,mine:false}); }catch(_){}
+      return null;
+    }
+    function loadEvents(){
+      if(evList||evBusy) return;
+      const SE=window.IntMapSpaceEvents; if(!SE) return;
+      evBusy=true;
+      /* the scan is a few thousand ephemeris evaluations — off the frame that opened the view */
+      setTimeout(()=>{ try{ const w=evWhere();
+          evList=SE.upcoming({ fromMs:Date.now(), lat:w?w.lat:null, lng:w?w.lng:null }).slice(0,8);
+        }catch(e){ evList=[]; lastErr=(e&&e.message)||String(e); }
+        evBusy=false; paintEvents(); },60);
+    }
+    function evLabel(x){
+      const B=(id)=>bodyName(id);
+      const kindL=(k)=>k==='total'?L('total','皆既','total','полное','total')
+        :k==='partial'?L('partial','部分','partiell','частное','parcial')
+        :k==='annular'?L('annular','金環','ringförmig','кольцеобразное','anular')
+        :L('penumbral','半影','Halbschatten','полутеневое','penumbral');
+      switch(x.type){
+        case 'lunar-eclipse': case 'lunar-eclipse-total':
+          return kindL(x.kind)+L(' lunar eclipse',' 月食',' Mondfinsternis',' лунное затмение',' eclipse lunar')
+            +(x.umbraMag>0?(' · '+L('mag ','食分 ','Größe ','фаза ','magnitud ')+x.umbraMag.toFixed(2)):'');
+        case 'solar-eclipse': case 'solar-eclipse-total':
+          return kindL(x.kind)+L(' solar eclipse',' 日食',' Sonnenfinsternis',' солнечное затмение',' eclipse solar');
+        case 'full-moon': return L('Full moon','満月','Vollmond','Полнолуние','Luna llena');
+        case 'new-moon': return L('New moon','新月','Neumond','Luna nueva','Luna nueva');
+        case 'opposition': return B(x.body)+' '+L('at opposition','衝','in Opposition','в противостоянии','en oposición');
+        case 'greatest-elongation': return B(x.body)+' '+L('at greatest elongation','最大離角','größte Elongation','наибольшая элонгация','máxima elongación')
+          +' '+Math.round(x.elongDeg)+'°'+(x.east?' E':' W');
+        default: return x.type;
+      }
+    }
+    function paintEvents(){
+      const host=root&&root.querySelector('.sp-events'); if(!host) return;
+      if(evBusy&&!evList){ host.innerHTML='<div style="opacity:.7;">'+S(L('Computing upcoming events…','今後の天文現象を計算中…','Ereignisse werden berechnet…','Расчёт явлений…','Calculando fenómenos…'))+'</div>'; return; }
+      if(!evList||!evList.length){ host.innerHTML=''; return; }
+      const now=Date.now();
+      const w=evWhere();
+      const days=(ms)=>Math.max(0,Math.round((ms-now)/86400000));
+      host.innerHTML='<div style="font-weight:700;margin-bottom:4px;">'+S(L('Coming up','これからの天文現象','Demnächst','Ближайшие явления','Próximos fenómenos'))+'</div>'
+        +evList.map((x,i)=>'<button class="sp-ev" data-i="'+i+'" style="display:block;width:100%;text-align:left;margin:0 0 3px;padding:4px 6px;border-radius:7px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:#eee;font-size:11px;cursor:pointer;">'
+          +'<b>'+S(evLabel(x))+'</b>'
+          +'<span style="float:right;opacity:.75;">'+S(L('in ','あと ','in ','через ','en ')+days(x.ms)+L(' d',' 日',' T',' д',' d'))+'</span>'
+          +'<div style="opacity:.68;">'+S(fmtWhen(x.ms))
+          +(x.visibleHere!=null?(' · '+S(x.visibleHere
+              ? L('the Moon is up here','ここでは月が出ています','Mond steht hier über dem Horizont','Луна над горизонтом здесь','la Luna está sobre el horizonte aquí')
+              : L('below the horizon here','ここでは地平線の下','hier unter dem Horizont','здесь под горизонтом','bajo el horizonte aquí'))):'')
+          +'</div></button>').join('')
+        +'<div style="opacity:.55;font-size:9.5px;line-height:1.4;">'
+        +S(L('Computed from this app’s own ephemeris. Solar-eclipse local circumstances (where on Earth it is total) are not computed.',
+             'このアプリ自身の暦計算による値です。日食がどこで皆既になるか（各地の状況）は計算していません。',
+             'Aus der eigenen Ephemeride berechnet; lokale Umstände von Sonnenfinsternissen nicht.',
+             'Рассчитано по собственной эфемериде; локальные обстоятельства солнечных затмений не считаются.',
+             'Calculado con la efeméride propia; sin circunstancias locales de eclipses solares.'))
+        +(w&&w.mine?'':(' · '+S(L('using the map’s center as the observer','観測地点は地図の中心','Beobachter = Kartenmitte','наблюдатель — центр карты','observador: centro del mapa'))))+'</div>';
+      host.querySelectorAll('.sp-ev').forEach(b=>b.onclick=()=>{
+        const x=evList[+b.getAttribute('data-i')]; if(!x) return;
+        live=false; timeMs=x.ms-3*3600e3;      /* three hours before, so the approach is visible */
+        rate=3600; playing=true; lastTick=0;   /* an hour a second — 「時間単位で」 */
+        if(x.type.indexOf('lunar')===0) setFocus('moon');
+        else if(x.type.indexOf('solar')===0) setFocus('earth');
+        else if(x.body) setFocus(x.body);
+        refreshHUD();
+      });
     }
     function infoHtml(){
       const E=EPH(), jd=jdNow(), id=focus, b=E.body(id); if(!b) return '';
@@ -1220,6 +1339,11 @@ window.IntMapModules.space=function(HOST){
       rIn.onchange=applyRate; rIn.onblur=applyRate;
       const w=root.querySelector('.sp-when');
       w.onchange=()=>{ if(w.value) setWhen(new Date(w.value+'Z')); };
+      w.onkeydown=(e)=>{ if(e.key!=='Escape') e.stopPropagation(); };   /* typing must not reach the view's shortcuts */
+      /* (#R212) one press per day / month / year, in either direction — see the HUD note */
+      root.querySelectorAll('.sp-when-step').forEach(b=>b.onclick=()=>{
+        const d=+b.getAttribute('data-d')||0;
+        setWhen(new Date(nowMs()+d*86400000)); });
       window.addEventListener('keydown',esc);
     }
     function esc(e){ if(open&&e.key==='Escape'){ e.preventDefault(); close(); } }
@@ -1243,6 +1367,12 @@ window.IntMapModules.space=function(HOST){
         octx=ov.getContext('2d');
         prog=program(VS_SPH,FS_SPH); progLine=program(VS_LINE,FS_LINE); progPts=program(VS_PT,FS_PT);
         sphere=buildSphere(96,48); ring=buildRing();
+        /* (#R212) a lost context is every texture at once — see dropGL / the note by texture() */
+        cv.addEventListener('webglcontextlost',(e)=>{ e.preventDefault(); dropGL(); lastErr='context lost'; });
+        cv.addEventListener('webglcontextrestored',()=>{ try{
+          prog=program(VS_SPH,FS_SPH); progLine=program(VS_LINE,FS_LINE); progPts=program(VS_PT,FS_PT);
+          sphere=buildSphere(96,48); ring=buildRing(); loadStars(); if(mode==='body') texture(focus);
+          lastErr=null; }catch(err){ lastErr='restore: '+((err&&err.message)||err); } });
       }catch(e){ lastErr=String((e&&e.message)||e); gl=null; return false; }
       wire();
       return true;
@@ -1260,7 +1390,7 @@ window.IntMapModules.space=function(HOST){
       if(o.mode) mode=(o.mode==='body')?'body':'system';
       if(o.scale) scale=(o.scale==='real')?'real':'model';
       if(o.when) setWhen(o.when); else if(o.live!==false) live=true;
-      loadStars(); if(mode==='body'){ loadNames(); texture(focus); }
+      loadStars(); loadEvents(); if(mode==='body'){ loadNames(); texture(focus); }
       dist=(mode==='body')?bodyDist():systemDist();
       if(mode==='body') faceSun();
       /* ⚠ (#R203) ARRIVING FROM THE MAP IS NOT ARRIVING AT THE SOLAR SYSTEM. `systemDist()` is far
@@ -1400,10 +1530,24 @@ window.IntMapModules.space=function(HOST){
         : L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio'); }catch(_){}
       gaugeFill.style.width=Math.round(100*Math.min(1,v/OVER_TRIGGER))+'%';
     }
+    /* ⚠ (#R212) THE PROMPT STARTS BEFORE THE FLOOR. 「さらにズームアウトで宇宙への開始ズームレベルを
+       もう少し前から始まるように。」 The gauge only existed once the map had NOTHING left to give: the
+       first sign that space was an option arrived at the exact moment zooming out stopped working,
+       which reads as the map having broken. It now appears as a primed hint while the last three
+       quarters of a zoom level are being spent — the map is still zooming, nothing is being counted
+       towards the trigger, and the caption says what continuing will do. The integral itself still
+       only accumulates on refused zoom-out, so a normal zoom-out can never fall into space. */
+    const NEAR_FLOOR=0.75;
+    function nearFloor(){ return zoomNow()<=minZoom()+NEAR_FLOOR; }
     /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
     function pushOut(dz){
       if(open||!(dz>0)) return;
-      if(!atFloor()){ if(over){ over=0; paintGauge(0); } return; }
+      if(!atFloor()){
+        if(over){ over=0; }
+        if(nearFloor()){ paintGauge(OVER_TRIGGER*0.12,false); if(overTmr) clearTimeout(overTmr);
+          overTmr=setTimeout(()=>{ over=0; paintGauge(0); },OVER_DECAY); }
+        else paintGauge(0);
+        return; }
       const t=(typeof performance!=='undefined'?performance.now():Date.now());
       if(overAt&&t-overAt>OVER_DECAY) over=0;
       overAt=t;
@@ -1612,8 +1756,11 @@ window.IntMapModules.space=function(HOST){
       open:openView, close, mount,
       setBody:setFocus, setMode, setScale, setWhen, setLive, setRate,
       setOrbits, setNames, orbits:()=>showOrbits, names:()=>showNames,   /* (#R207) */
-      isOpen:()=>open, atFloor,
+      isOpen:()=>open, atFloor, nearFloor,
       bodies:()=>BODIES.slice(),
+      /* (#R212) the upcoming-events list and the jump — callable so Atlas and the tests can use them */
+      events:()=>evList?evList.slice():null,
+      goToEvent:(i)=>{ const b=root&&root.querySelector('.sp-ev[data-i="'+(+i||0)+'"]'); if(b){ b.click(); return true; } return false; },
       /* the two gesture integrals, exposed so a test can drive them without synthesising wheel events
          on a renderer that may or may not have delivered them */
       _pushOut:pushOut, _pushIn:pushIn, enterFromZoom, leaveToMap,

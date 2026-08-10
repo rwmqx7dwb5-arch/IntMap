@@ -134,11 +134,12 @@ window.IntMapModules.insolation=function(HOST){
       return out;
     }
 
-    function paint(g,mask,strength){
+    function paint(g,mask){
       const { NX,NY }=g;
+      _last={ g, mask };                                   /* (#R212) so the slider can re-bake it */
       const cv=document.createElement('canvas'); cv.width=NX; cv.height=NY;
       const ctx=cv.getContext('2d'), im=ctx.createImageData(NX,NY), px=im.data;
-      const a=Math.round(255*Math.max(0.05,Math.min(0.95,strength==null?0.42:strength)));
+      const a=Math.round(255*Math.max(0.05,Math.min(1,_shadowOp)));
       for(let k=0;k<NX*NY;k++) if(mask[k]){ const o=k*4; px[o]=8; px[o+1]=14; px[o+2]=34; px[o+3]=a; }
       ctx.putImageData(im,0,0);
       const coords=[[g.bbox[0],g.bbox[1]],[g.bbox[2],g.bbox[1]],[g.bbox[2],g.bbox[3]],[g.bbox[0],g.bbox[3]]];
@@ -151,7 +152,7 @@ window.IntMapModules.insolation=function(HOST){
         painted=true;
       }catch(_){}
     }
-    function clear(){ painted=false;
+    function clear(){ painted=false; _last=null;
       try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
       try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} }
 
@@ -164,7 +165,7 @@ window.IntMapModules.insolation=function(HOST){
         const c=GE().camera.getCenter(); const sp=sunPos(when instanceof Date?when:new Date(when),c.lat,c.lng);
         const mask=shadowMask(g,sp.azCompass,sp.altDeg);
         let shaded=0; for(let k=0;k<mask.length;k++) if(mask[k]) shaded++;
-        paint(g,mask,o&&o.strength);
+        paint(g,mask);
         lastShade={ shadedFrac:shaded/mask.length, altDeg:sp.altDeg, azDeg:sp.azCompass, cellM:g.cellM, z:g.z, nx:g.NX, ny:g.NY };
         return lastShade;
       } finally { busy=false; }
@@ -192,7 +193,7 @@ window.IntMapModules.insolation=function(HOST){
         }
         if(!anySun) acc.fill(1);
         let never=0; for(let k=0;k<acc.length;k++) if(acc[k]) never++;
-        paint(g,acc,o&&o.strength!=null?o.strength:0.55);
+        paint(g,acc);
         lastShade={ neverSunFrac:never/acc.length, steps, cellM:g.cellM, z:g.z, day:d0.toISOString().slice(0,10) };
         return lastShade;
       } finally { busy=false; }
@@ -293,17 +294,22 @@ window.IntMapModules.insolation=function(HOST){
       return { first, last, hours:mins/60, groundM:h.groundM };
     }
 
-    /* ══ (#R210) THE TERRAIN SHADE FOLLOWS THE PANEL'S OPACITY SLIDER ═════════════════════════════
+    /* ══ (#R210 → #R212) THE TERRAIN SHADE FOLLOWS THE PANEL'S OPACITY SLIDER ══════════════════════
        js/sims.js owns the control (「影の透明度を選択可能に」) and drives both shadow layers with one
-       number. Here the shade is a raster whose ALPHA IS BAKED INTO THE PNG at the strength the
-       shading algorithm chose, so `raster-opacity` can only scale it DOWN — 0.30 (the old literal,
-       and the slider's default) maps to 1.0 and is the darkest this layer gets. Stated rather than
-       silently clamped: asking for 0.9 here gives the same picture as 0.3, not a darker one. */
-    let _shadowOp=0.30;
-    function _rasterOp(){ return Math.max(0.05,Math.min(1,_shadowOp/0.30)); }
-    function setShadowOpacity(v){ _shadowOp=Math.max(0.05,Math.min(0.95,+v||0.30));
+       number. #R210 could only scale the raster DOWN, because the alpha is baked into the PNG at the
+       strength the shading algorithm chose: 0.30 mapped to raster-opacity 1.0 and was the darkest
+       this layer could get. The report was 「透明度100%は全然100%ではない」 — and it was not; a slider
+       whose top end is 30 % black is a slider that lies.
+       ⚠ THE ALPHA IS NOW THE SLIDER, RE-BAKED. The last mask is kept (one byte a cell, the grid is
+       already in memory), so moving the slider redraws the PNG at the new alpha instead of dimming a
+       fixed one — 100 % really is opaque, and no shadow analysis is recomputed to get there. */
+    let _shadowOp=0.30, _last=null;
+    function _rasterOp(){ return 1; }
+    function setShadowOpacity(v){ _shadowOp=Math.max(0.05,Math.min(1,+v||0.30));
+      if(_last){ try{ paint(_last.g,_last.mask); return _shadowOp; }catch(_){} }
       try{ if(GE().layers.has(LYR)) GE().layers.setPaint(LYR,'raster-opacity',_rasterOp()); }catch(_){}
       return _shadowOp; }
+    function shadowOpacity(){ return _shadowOp; }
     return { shade, dayShadow, clear, horizon, analyse, dayAt, sunPos, dni, setShadowOpacity,
       isPainted:()=>painted,
       state:()=>({ painted, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z}:null, last:lastShade }) };

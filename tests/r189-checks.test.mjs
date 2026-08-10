@@ -181,7 +181,13 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
   assert.match(src, /VS30_BINS=\[\[1e-4,180\],\[2\.2e-3,240\],\[6\.3e-3,300\],\[0\.018,360\],\[0\.05,490\],\[0\.10,620\],\[0\.138,760\]\];/,
     'Wald & Allen 2007 active-tectonic slope table');
   assert.match(src, /const pgv=prof\.at\(rM\)\*g, a0=prof\.a0At\(rM\)\*g;/, 'one RVT profile, one multiply per cell');
-  assert.match(src, /else if\(e0<=0\)\{ sea\+\+; vs\[k\]=-1; continue; \}/, 'sea cells are not painted');
+  /* ⚠ (#R212) SEA cells are still not painted — but a cell below zero is no longer assumed to be
+     sea. 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ」: the Jordan Rift, a quarter of the
+     Netherlands, the Caspian Depression and Death Valley are dry land below zero and were dropped
+     out of the map entirely. The land mask decides, bounded at −440 m (below which nothing on Earth
+     is dry), and the sign of the elevation only decides where the mask has nothing to say. */
+  assert.match(src, /if\(!\(landMask&&landMask\.isLand\(lo,la\)===true&&e0>-440\)\)\{ sea\+\+; vs\[k\]=-1; continue; \}/,
+    'a sub-zero cell is sea unless the land mask says it is land');
   assert.match(src, /LYR_IMG='seis-mmi-fill'/, 'rendered as a raster fill');
   assert.ok(!/id:'seis-mmi',/.test(src), 'the dashed contour layer is gone');
   assert.ok(!/'seis-mmi-lbl'/.test(src), 'and its labels with it');

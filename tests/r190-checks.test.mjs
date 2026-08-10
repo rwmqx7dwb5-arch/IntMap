@@ -126,10 +126,10 @@ test('R190 flight sim: the view\'s tilt becomes the aeroplane\'s flight path', (
   assert.ok(src.indexOf('const tr0=_terrRead(st.lng,st.lat)') < src.indexOf('_flyViewGamma(st._wantGamma)'),
     'the height under the aeroplane has to be known first');
   /* the pre-flight card stops being silent about the altitude it will use.
-     ⚠ (#R210) the ceiling no longer DECIDES it (see tests/r187-checks), so the card no longer says
-     "limited by" — it says what happens instead. The claim kept is that the card still warns. */
+     ⚠ (#R210 → #R212) the ceiling DECIDES it again («やっぱ元に戻して»), so the card is back to saying
+     it is limited. The claim kept across all three revisions is that the card still warns. */
   assert.match(src, /class="fss-note"/, 'the card previews what an airborne start will use');
-  assert.match(src, /above this aircraft’s service ceiling/, '…and still warns when the view is above the ceiling');
+  assert.match(src, /limited to this aircraft’s service ceiling/, '…and still warns when the view is above the ceiling');
 });
 
 /* ── 6 · the launch screen ───────────────────────────────────────────────────────────────────── */

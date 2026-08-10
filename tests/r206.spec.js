@@ -54,17 +54,20 @@ test('R206 ② the ◎ epicentre action is not painted like a selected mode', as
   await page.waitForFunction(() => !!window.IntMapLayers, null, { timeout: 60000 });
   await loadLazyModules(page);
   await page.evaluate(() => window.IntMapSeismic.open({ lng: 139.767, lat: 35.681, mw: 7.0, depth: 20 }));
-  await page.waitForSelector('#sq-panel .sq-pick', { state: 'visible' });
+  await page.waitForSelector('#sq-panel .sq-cm-epi', { state: 'visible' });
   const s = await page.evaluate(() => {
     const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
-    return { pick: bg('.sq-pick'), on: bg('.sq-cm-epi'), off: bg('.sq-cm-sta'),
+    return { on: bg('.sq-cm-epi'), off: bg('.sq-cm-sta'),
       mode: window.IntMapSeismic.state().clickMode,
-      pickCount: document.querySelectorAll('#sq-panel .sq-pick').length };
+      /* (#R212) the separate ◎ action button was merged into the ◎ segment — there is now exactly
+         ONE control that places or moves the epicentre, which is what the round was asked for. */
+      pickCount: document.querySelectorAll('#sq-panel .sq-pick').length,
+      epiCount: document.querySelectorAll('#sq-panel .sq-cm-epi').length };
   });
   expect(s.mode, 'the default click owner is still the epicentre (#R205)').toBe('epi');
   expect(s.on, 'the selected segment wears the accent fill').not.toBe(s.off);
-  expect(s.pick, 'the ◎ action must NOT wear the selected-segment fill').not.toBe(s.on);
-  expect(s.pickCount, 'and the button itself is still there — it is the one that works on a phone (#R196)').toBe(1);
+  expect(s.pickCount, 'the separate ◎ action button is gone (#R212 merged it into the segment)').toBe(0);
+  expect(s.epiCount, 'and exactly one control places or moves the epicentre').toBe(1);
   await page.evaluate(() => window.IntMapSeismic.close());
 });
 

@@ -47,7 +47,7 @@ test.describe('R196 ① the epicentre, on a phone', () => {
 
     const seen = [];
     for (const [x, y] of [[195, 480], [120, 620]]) {
-      await page.click('#sq-panel .sq-pick');
+      await page.click('#sq-panel .sq-cm-epi');   /* (#R212) the two controls were merged into this one */
       await page.waitForTimeout(350);
       /* ⚠ (#R207) THIS ASSERTED THE MECHANISM, NOT THE MEASUREMENT. What #R196 measured is that the
          tap point is the CANVAS — that the panel is not standing between the user and the map — and
