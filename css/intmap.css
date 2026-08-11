@@ -2378,6 +2378,8 @@
        38 % of the screen. ⚠ `-webkit-overflow-scrolling` and `overscroll-behavior` matter here:
        without them a swipe that reaches the end of the strip drags the page behind the view. */
     #space-view .sp-showmenu{ max-height:min(60vh,420px); overflow:auto; overscroll-behavior:contain; }
+    /* (#R220) the phone's detail-sheet handle does not exist on a pointer machine */
+    #space-view .sp-sheet-t{ display:none; }
     @media (max-width:768px){
       #space-view .sp-bar{ flex-wrap:nowrap !important; overflow-x:auto; overflow-y:hidden;
         gap:5px !important; padding:6px 8px !important; overscroll-behavior-x:contain;
@@ -2400,6 +2402,25 @@
       #space-view .sp-col{ left:8px !important; right:8px !important; top:auto !important;
         bottom:52px; width:auto !important; max-height:38vh !important; }
       #space-view .sp-info{ max-height:22vh !important; }
+      /* ══ ⚠ (#R220) THE DETAIL SHEET STARTS CLOSED — 「機能は削るな」, SO IT IS A HANDLE ═══════════
+         Measured at 390 × 844 after #R218: `.sp-col` owns the bottom 38 % of the screen from the
+         moment the view opens, and it opens describing the Earth whether or not anybody asked. The
+         handle is 26 px; everything that was in the sheet is still in the sheet. */
+      #space-view .sp-sheet-t{ display:block; width:100%; height:26px; padding:0; margin:0;
+        border:none; background:transparent; cursor:pointer; pointer-events:auto; flex:0 0 auto; }
+      #space-view .sp-sheet-t i{ display:block; width:44px; height:5px; margin:10px auto 0;
+        border-radius:3px; background:rgba(255,255,255,0.55); }
+      #space-view .sp-col.sp-min{ max-height:26px !important; background:transparent; }
+      #space-view .sp-col.sp-min .sp-info,
+      #space-view .sp-col.sp-min .sp-events{ display:none !important; }
+      /* the bar has to FIT at 390 px. ⚠ `!important`: every one of these controls carries an INLINE
+         style from js/space.js's shared BTN/SEG constants, and an inline declaration beats a
+         stylesheet rule — measured, the first version of this block changed nothing at all. */
+      #space-view .sp-bar .sp-scale{ font-size:10.5px !important; padding:5px 7px !important; }
+      #space-view .sp-show{ font-size:10.5px !important; padding:5px 7px !important; }
+      #space-view .sp-timeb{ max-width:118px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        font-size:10.5px !important; padding:5px 7px !important; }
+      #space-view .sp-side .sp-b{ font-size:11px !important; padding:5px 8px !important; }
       #space-view .sp-notewrap{ bottom:6px !important; }
       #space-view .sp-note{ max-height:30vh; }
       /* ══ ⚠ (#R218) THE PHONE'S BAR IS FIVE THINGS, NOT FIFTEEN ════════════════════════════════════

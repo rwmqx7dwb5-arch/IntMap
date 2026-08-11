@@ -216,7 +216,10 @@ test('⑪ the ocean-current layer draws the bundled, measured dataset (#R219)', 
      prose is not a scan of the program. */
   const c = code('js/ocean-currents.js');
   assert.equal(/layers\.addImage/.test(c), false, 'addImage is on scene, not layers');
-  assert.match(c, /GE\(\)\.scene\.addImage\('oc-arrow-img'/);
+  /* (#R220) two glyphs now — the head that repeats along a named current and the dart of the field —
+     registered through one helper, so the contract to check is the OBJECT and the names. */
+  assert.match(c, /GE\(\)\.scene\.addImage\(name,/, 'the registration is on scene');
+  assert.match(c, /_mkIcon\('oc-arrow-img',/); assert.match(c, /_mkIcon\('oc-dart-img',/);
 });
 test('⑪ …and its arrow image is registered on the object that actually has addImage', () => {
   const s = code('js/ocean-currents.js');
@@ -226,11 +229,11 @@ test('⑪ …and its arrow image is registered on the object that actually has a
      named an image nobody had registered. MEASURED: layer `visible`, 37 features,
      `queryRenderedFeatures` = 0, and only the speed labels on the map. */
   assert.equal(/layers\.addImage/.test(s), false, 'addImage is on scene, not layers');
-  assert.match(s, /GE\(\)\.scene\.addImage\('oc-arrow-img'/, 'the arrow image is never registered');
+  assert.match(s, /GE\(\)\.scene\.addImage\(name,/, 'the arrow image is never registered');
   /* ⚠ …and getImageData is NOT transformed: reading at (−S/2, −S/2) after a translate returns a
      fully transparent block, which registers happily and then draws nothing at all. */
   assert.match(s, /getImageData\(0,0,S,S\)/, 'the icon is read from outside the canvas again');
-  assert.match(s, /iconDone=GE\(\)\.scene\.hasImage\('oc-arrow-img'\)/, 'a failed registration is not detected');
+  assert.match(s, /return GE\(\)\.scene\.hasImage\(name\);/, 'a failed registration is not detected');
 });
 test('⑪ …and both of its sources are in the registry', () => {
   const r = read('js/reference-data.js');

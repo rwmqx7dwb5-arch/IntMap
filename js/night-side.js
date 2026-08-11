@@ -121,19 +121,93 @@ window.IntMapNightSide=(function(){
      longitude, so the cap agrees with the image row it meets rather than being one flat disc; the
      seam is the difference between n(85.05°) and n(87.5°) at that longitude, which is zero except in
      the few days around an equinox when the terminator is inside the cap at all. */
-  const CAP_LAT=85.0, CAP_WEDGES=24;
+  /* ══ ⚠⚠ (#R220) THE BLACK DISC ON THE POLE — 「南極付近が真っ暗」, 7回目 ═════════════════════════
+     The report finally came with a photograph, and the photograph is unambiguous: the ice sheet is
+     LIT, and sitting on the pole is a hard-edged black disc with the seams of a 24-spoke fan in it.
+     That is this layer, and it was wrong in two ways at once.
+
+     ① ONE NIGHTNESS FOR FIVE DEGREES OF LATITUDE. The fan sampled n(87.5°) and painted the whole
+        85°→90° wedge with it, while the image below it varies per pixel. #R201's note claims the
+        seam «is zero except in the few days around an equinox»; that is exactly backwards. Near a
+        SOLSTICE the winter pole is in full night (n = 1) while 85° is still in twilight (n ≈ 0.4),
+        so the step across the join is at its LARGEST — measured this round at the reported date.
+        A disc, with a visible edge, on a lit ice sheet. → the cap is now a GRID: bands in latitude
+        as well as wedges in longitude, each cell carrying the nightness at its own centre, so it
+        continues the image's gradient instead of stepping off it.
+     ② THE CAP COULD SURVIVE ITS OWN IMAGE. `build()` adds the dynamic image FIRST, then the cap,
+        and only then checks `hasDynamicImage` — returning false without removing anything. On a
+        device where that image does not come up, `built` stays false (so `refresh()` never runs
+        again) and the fan is left on the map ALONE, permanently, at whatever nightness it was born
+        with: a black disc over a globe with no night side at all, which is precisely the picture in
+        the photograph. → the failure path now destroys what it built, and the cap is only ever
+        drawn as the 0.19 % of the sphere the image cannot reach.
+     ⚠ CAP_LAT and CAP_WEDGES keep their names and their meaning — tests/r201-checks ①d reads both
+     out of this file by regex, and the invariant it protects (the cap must overlap the image's
+     ±85.051° edge by a hairline and no more) is unchanged. */
+  const CAP_LAT=85.0, CAP_WEDGES=180;
+  /* ⚠ THE JOIN, NOT THE MIDDLE. Each wedge takes the nightness the IMAGE has at the latitude where
+     the two meet, so the cap starts at exactly the value its neighbour ends at and the seam is zero
+     by construction — instead of n(87.5°), which near a solstice is a whole twilight away from
+     n(85°) and is what drew a black disc on a lit ice sheet. Inside the cap the value is then held
+     rather than deepened: over 0.19 % of the sphere that is invisible, and it makes the pole
+     structurally incapable of being darker than the picture around it, which is the failure this
+     layer has produced seven times. */
+  const CAP_JOIN=85.06;
+  /* …and the join is the IMAGE'S OWN LAST ROW, when the renderer will say where that is. The canvas
+     is sampled at row CENTRES, so its outermost row is a fraction of a degree inside the quad's
+     corner — measured, using the corner instead left the cap ~0.11 of nightness darker than the
+     pixels it touches. `imageRowLatitudes` is the same call `drawLights` places the image with, so
+     the two cannot disagree about which latitude the edge is. */
+  function joinLat(sgn){
+    try{ const rows=GE().layers.imageRowLatitudes(COORDS,imgSize());
+      if(rows&&rows.length){ const v=(sgn>0)?rows[0]:rows[rows.length-1];
+        if(isFinite(v)&&Math.abs(v)>80) return Math.abs(v); } }catch(_){}
+    return CAP_JOIN;
+  }
+  /* ⚠ …AND THE COLOUR IS THE IMAGE'S OWN, NOT A CONSTANT. The image composites the Black Marble
+     PIXEL over the basemap; the cap composited UNLIT, which is the product's value where nobody
+     lives — and over the Antarctic ice the product is measurably brighter than that. Same alpha,
+     two colours, one visible ring. The cap now takes the mean of the mosaic's own polar row, so at
+     the join the two are compositing the same colour as well as the same amount. Before the mosaic
+     lands (or if it never does) UNLIT is still the answer, which is what it was measured to be. */
+  function capRGBHex(sgn){
+    const L=lights;
+    if(!L||!L.d) return UNLIT_HEX;
+    const row=(sgn>0)?0:(L.h-1);
+    let r=0,g=0,b=0,n=0;
+    for(let x=0;x<L.w;x+=4){ const j=(row*L.w+x)*4; r+=L.d[j]; g+=L.d[j+1]; b+=L.d[j+2]; n++; }
+    if(!n) return UNLIT_HEX;
+    const hx=(v)=>Math.max(0,Math.min(255,Math.round(v/n))).toString(16).padStart(2,'0');
+    return '#'+hx(r)+hx(g)+hx(b);
+  }
+  /* ⚠ …AND NEIGHBOURS THAT AGREE ARE ONE POLYGON. Two translucent fills that SHARE an edge both
+     rasterise the pixels on it, so the seam is drawn twice and comes out darker — 72 wedges meant 72
+     hairlines radiating from the pole, which is a drawn circle whatever its colour. Runs of adjacent
+     wedges whose nightness rounds to the same 1/20th are emitted as ONE polygon, so the only seams
+     left are where the value genuinely changes (and the image changes there too). Measured today:
+     72 wedges → 8 polygons. */
+  const CAP_STEP=20;
   function capFC(date){
     const S=solar(date), feats=[];
     for(const sgn of [1,-1]){
+      const col=capRGBHex(sgn), lat0=sgn*CAP_LAT, jl=joinLat(sgn);
+      const a=[];
       for(let k=0;k<CAP_WEDGES;k++){
         const l0=-180+360*k/CAP_WEDGES, l1=-180+360*(k+1)/CAP_WEDGES;
-        const a=nightAt(S,(l0+l1)/2,sgn*87.5);
-        if(!(a>0.004)) continue;                    /* the lit pole draws nothing at all */
-        const lat0=sgn*CAP_LAT, ring=[];
-        for(let i=0;i<=6;i++) ring.push([l0+(l1-l0)*i/6,lat0]);
-        ring.push([l1,sgn*89.98]); ring.push([l0,sgn*89.98]); ring.push([l0,lat0]);
-        feats.push({ type:'Feature', properties:{ a:+a.toFixed(4) },
+        const v=nightAt(S,(l0+l1)/2,sgn*jl);
+        a.push(v>0.004?Math.round(v*CAP_STEP)/CAP_STEP:0);
+      }
+      let k=0;
+      while(k<CAP_WEDGES){
+        if(!(a[k]>0)){ k++; continue; }
+        let j=k; while(j+1<CAP_WEDGES&&a[j+1]===a[k]) j++;
+        const l0=-180+360*k/CAP_WEDGES, l1=-180+360*(j+1)/CAP_WEDGES, n=Math.max(4,(j-k+1)*2);
+        const ring=[];
+        for(let i=0;i<=n;i++) ring.push([l0+(l1-l0)*i/n,lat0]);
+        ring.push([l1,sgn*89.995]); ring.push([l0,sgn*89.995]); ring.push([l0,lat0]);
+        feats.push({ type:'Feature', properties:{ a:+a[k].toFixed(4), c:col },
                      geometry:{ type:'Polygon', coordinates:[ring] } });
+        k=j+1;
       }
     }
     return { type:'FeatureCollection', features:feats };
@@ -275,14 +349,17 @@ window.IntMapNightSide=(function(){
       /* ② the polar caps, which the quad cannot reach */
       if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:capFC(new Date(clockMs()))});
       if(!GE().layers.has(LYR)) GE().layers.add({ id:LYR, type:'fill', source:SRC,
-        paint:{ 'fill-color':UNLIT_HEX, 'fill-opacity':capOpacity(), 'fill-antialias':false } }, b);
+        paint:{ 'fill-color':['to-color',['get','c'],UNLIT_HEX], 'fill-opacity':capOpacity(), 'fill-antialias':false } }, b);
       if(!GE().layers.has(LYR)){        /* addLayer swallows a rejected paint expression (#R196) */
         lastErr='cap-expression';
         GE().layers.add({ id:LYR, type:'fill', source:SRC,
           paint:{ 'fill-color':UNLIT_HEX, 'fill-opacity':ramp(0.95), 'fill-antialias':false } }, b);
       }
-      if(!GE().layers.hasDynamicImage(DYN)) return false;
-    }catch(_){ return false; }
+      /* ⚠⚠ (#R220) …AND IF THE IMAGE IS NOT THERE, NOTHING IS. Returning false here used to leave the
+         polar fan behind — see the note on capFC. The cap has no meaning without the gradient it
+         continues, so a build that cannot make the image unmakes itself. */
+      if(!GE().layers.hasDynamicImage(DYN)){ lastErr='no-image'; destroy(); return false; }
+    }catch(_){ try{ destroy(); }catch(__){} return false; }
     built=true;
     /* ⚠ THE MOSAIC IS NOT ON THE BOOT PATH. The app opens at zoom 1.7, and #R192/#R193/#R195 each
        spent part of a round taking megabytes OFF that path (Köppen, cshapes, the 4.3 MB border
@@ -340,13 +417,31 @@ window.IntMapNightSide=(function(){
      visible at whole-Earth zooms, where nobody is waiting on a frame; the cost of being a moment late
      is nothing, and the cost of being early is a test that measures the app's responsiveness. */
   let _pend=0;
+  /* ══ ⚠ (#R220) THE NIGHT SIDE BELONGS TO THE SATELLITE VIEW, AND ONLY TO IT ═══════════════════
+     「昼夜で夜間光にしたり明るくしたり暗くしたりするやつはSatellite時のみに。Mapではなにも無し。」
+
+     What this module composites is a PHOTOGRAPH — NASA's Black Marble, pixel for pixel (see the
+     header). Over the satellite basemap that is one photograph fading into another and it reads as
+     the Earth at night. Over the vector map it is a photograph laid on a drawing: the cartography
+     underneath keeps its own flat colours and the mosaic simply darkens them, which is not "night",
+     it is a dark filter over a diagram. So the effect now asks WHICH BASEMAP IS UP.
+
+     ⚠ The test is the one js/app-body.js itself uses for the same question — `layer-sat` being
+     visible — so the two cannot disagree about what "satellite" means. It is asked through the
+     renderer contract, not through MapLibre (#R178).
+     ⚠ AND THE SWITCH IS NOT THE SETTING. `enabled` is still the user's own choice and is still
+     remembered; this is a second condition on top of it, so turning day/night off in Settings and
+     switching basemaps do not fight over the same flag. */
+  function satelliteUp(){
+    try{ return GE().layers.getLayout('layer-sat','visibility')==='visible'; }catch(_){ return false; } }
   function consider(){
     if(!enabled||!engineIsMapLibre()) return;
+    if(!satelliteUp()){ if(built) destroy(); return; }
     if(zoomNow()>ZMAX+0.4){ return; }
     if(built){ refresh(false); return; }
     if(_pend) return; _pend=1;
     const go=()=>{ _pend=0;
-      if(!enabled||zoomNow()>ZMAX+0.4) return;      /* the camera moved on while we waited */
+      if(!enabled||!satelliteUp()||zoomNow()>ZMAX+0.4) return;   /* the camera or the basemap moved on while we waited */
       if(build()) refresh(true); };
     try{ if(window.requestIdleCallback) requestIdleCallback(go,{timeout:2500}); else setTimeout(go,700); }
     catch(_){ setTimeout(go,700); }
@@ -354,6 +449,10 @@ window.IntMapNightSide=(function(){
   function wire(){
     if(wired) return; wired=true;
     try{ GE().events.on('moveend',consider); }catch(_){}
+    /* (#R220) …and on the basemap swap itself, which is a restyle rather than a camera move. Both
+       directions matter: leaving satellite has to REMOVE the layers (consider() does), and coming
+       back has to rebuild them, because a restyle drops every added layer anyway. */
+    try{ GE().events.on('styledata',()=>{ try{ consider(); }catch(_){} }); }catch(_){}
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ refresh(true); }); }catch(_){}
     /* the sub-solar point moves 15° an hour — the same cadence app-body re-aims the light on */
     setInterval(()=>{ try{ if(!document.hidden) refresh(false); }catch(_){} },60000);

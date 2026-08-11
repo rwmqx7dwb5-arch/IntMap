@@ -1475,13 +1475,16 @@ window.IntMapModules.seismic=function(HOST){
           ?L('Tap the map to place the epicenter — or to move it. Press the button again to turn this off.','地図をタップすると震源地を置きます（すでにある場合は移動します）。もう一度ボタンを押すと解除します。','Auf die Karte tippen, um das Epizentrum zu setzen oder zu verschieben. Nochmals drücken schaltet es aus.','Нажмите на карту, чтобы поставить или переместить эпицентр. Повторное нажатие выключает режим.','Toque el mapa para colocar o mover el epicentro. Pulse otra vez para desactivarlo.')
           :clickMode==='station'
           ?L('Clicking the map adds a place to the table below. Press the button again to turn this off.','地図をクリックすると下の表に地点を追加します。もう一度ボタンを押すと解除します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu. Nochmals drücken schaltet es aus.','Клик по карте добавляет место в таблицу ниже. Повторное нажатие выключает режим.','Al hacer clic en el mapa se añade un lugar a la tabla. Pulse otra vez para desactivarlo.')
-          /* ⚠ (#R219) 「←この文言は不適切」. The old line was 「どちらも選択されていません（地図をクリック
-             しても何も起きません）」 — which reads as a fault report about the map, and is also untrue:
-             with neither segment lit the map is not disabled, it is FREE. Clicks pan it, open place
-             labels and reach every other layer, exactly as they do when this panel is closed. The
-             line now says what the state IS and what each button is for, and claims nothing about
-             the map being broken. */
-          :L('Map clicks work normally — nothing here is armed. Press ◎ to place or move the epicenter, ◇ to add a place.','地図のクリックは通常どおりです（このパネルは待機中）。震源地を置く・動かすときは ◎、地点を追加するときは ◇ を押してください。','Karte reagiert normal — hier ist nichts scharf. ◎ zum Setzen/Bewegen des Epizentrums, ◇ zum Hinzufügen eines Orts.','Карта работает как обычно — здесь ничего не активировано. ◎ — поставить или переместить эпицентр, ◇ — добавить место.','El mapa funciona con normalidad: aquí no hay nada activado. ◎ para colocar o mover el epicentro, ◇ para añadir un lugar.'))+'</div>'
+          /* ⚠⚠ (#R220) 「←この文言は不適切」— 「日本語として、Webページに載せるべき文言ではない」.
+             This line has now been wrong twice for the same reason, and the reason is not the facts.
+             #R218 wrote 「どちらも選択されていません（地図をクリックしても何も起きません）」 (a fault
+             report); #R219 replaced it with 「地図のクリックは通常どおりです（このパネルは待機中）。
+             震源地を置く・動かすときは ◎、地点を追加するときは ◇ を押してください。」 — accurate,
+             and still not copy: it explains the software's internal state (「待機中」), narrates what
+             the map is not doing, and asks the reader in two clauses to press a button.
+             A hint under two buttons has one job: say what each button does. It is now that and
+             nothing else, in every language — no state report, no apology for the map. */
+          :L('◎ places the epicenter · ◇ adds a place.','◎ で震源を配置、◇ で地点を追加します。','◎ setzt das Epizentrum · ◇ fügt einen Ort hinzu.','◎ — эпицентр, ◇ — место наблюдения.','◎ coloca el epicentro · ◇ añade un lugar.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
           /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when

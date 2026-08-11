@@ -335,7 +335,16 @@ window.IntMapWorldBase=(function(){
      map the cap stays the measured Carto land tone. */
   const CAPSRC = 'world-cap-src', CAPLYR = 'layer-world-cap';
   const LIMLAT = 85.0511287798066;
-  const CAP_SECT = 36, CAP_BANDS = 5;
+  /* ══ ⚠⚠ (#R220) 36 SECTORS IS A PINWHEEL, AND A PINWHEEL IS A DRAWN FIGURE ON THE POLE ═════════
+     Measured this round with the night side removed from the picture: the cap mosaic is what draws
+     the fan visible at the South Pole. 36 sectors × 10° each converge on ONE point, so every colour
+     difference between neighbours becomes a spoke radiating from the pole — and the innermost band
+     is where they all meet, so that is where the figure is strongest. Two changes, both about the
+     geometry rather than the colours: twice the sectors (5° each, so the step between neighbours is
+     halved and lands below what the eye picks out), and the innermost band is painted with ONE
+     colour — the average of its own row — because the pole is a POINT and the picture has exactly
+     one colour there, not thirty-six. */
+  const CAP_SECT = 72, CAP_BANDS = 6;
   let capBusy = false, capFC = null;
   function _capMosaic(im) {
     const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
@@ -357,9 +366,14 @@ window.IntMapWorldBase=(function(){
         const la0 = north ? (90 - (90 - LIMLAT) * f0) : (-LIMLAT - (90 - LIMLAT) * f0);
         const la1 = north ? (90 - (90 - LIMLAT) * f1) : (-LIMLAT - (90 - LIMLAT) * f1);
         const row = north ? b : (CAP_BANDS + (CAP_BANDS - 1 - b));
+        /* the innermost band is one colour: its sectors all meet at the pole */
+        let avg = null;
+        if (b === 0) { let r = 0, g2 = 0, b2 = 0;
+          for (let k = 0; k < CAP_SECT; k++) { const o = (row * CAP_SECT + k) * 4; r += d[o]; g2 += d[o + 1]; b2 += d[o + 2]; }
+          avg = '#' + hex(Math.round(r / CAP_SECT)) + hex(Math.round(g2 / CAP_SECT)) + hex(Math.round(b2 / CAP_SECT)); }
         for (let k = 0; k < CAP_SECT; k++) {
           const o = (row * CAP_SECT + k) * 4;
-          const col = '#' + hex(d[o]) + hex(d[o + 1]) + hex(d[o + 2]);
+          const col = avg || ('#' + hex(d[o]) + hex(d[o + 1]) + hex(d[o + 2]));
           const l0 = -180 + 360 * k / CAP_SECT, l1 = -180 + 360 * (k + 1) / CAP_SECT;
           const ring = [];
           for (let i = 0; i <= 4; i++) ring.push([l0 + (l1 - l0) * i / 4, la0]);

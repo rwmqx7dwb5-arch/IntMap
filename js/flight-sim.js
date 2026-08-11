@@ -418,6 +418,74 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-minimap{left:auto;right:calc(160px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:11px;}'
           +'#fs-hud .fs-warn{top:56px;font-size:15px;padding:2px 10px;}'
         +'}'
+        /* ══ ⚠⚠ (#R220) THE DECK WAS SITTING ON THE READOUT — 「UIが潰れている」, WITH A PHOTOGRAPH ═══
+           The report came with a screenshot of an iPhone in landscape (844 × 390 CSS px) and it shows
+           exactly where the previous layout breaks:
+             · `.fs-deck` is pinned at `top:58px`, but `.fs-tl` on a fighter carries FOUR lines
+               (airspeed, V/S, G, AoA) and reaches ~76 px — so eight buttons were drawn ON TOP of the
+               speed readout, with 「荷重 0.7g」「迎角 0°」 legible through the gaps between them.
+             · `.fs-acbadge` is `white-space:nowrap` and centred, and with a Japanese aircraft name
+               plus TAS, Mach, wind and fuel it is WIDER THAN THE PHONE — it ran under the compass
+               tape at one end and under the 終了 button at the other.
+             · `.fs-x` at `top:58px` landed on the altitude panel's own box.
+           Three fixes, and the first one is the layout decision the others follow from:
+
+           ① THE ACTION DECK IS BEHIND ONE BUTTON. Eight 44-px buttons cannot share a 390-px-tall
+              screen with a readout, a throttle, a rudder, a pad, an ADI and a moving map — there is
+              no arrangement of them that fits, which is why every round has moved them somewhere
+              else. `⋯` opens them as a sheet over the view and closes on the next tap. ⚠ NOTHING IS
+              REMOVED: the same eight buttons, the same actions, the same keyboard shortcuts.
+           ② THE BADGE IS CLAMPED and moved down beside the ADI, where there is width to spare.
+           ③ THE READOUTS AND THE EXIT GET THEIR OWN ROW at the top and never leave it. */
+        /* the ⋯ key itself: a thumb-sized chip on the left, above the throttle, on phones only.
+           ⚠ DECLARED BEFORE the media block that switches it on — two rules of equal specificity are
+           decided by order, and with this one last the button measured 0 × 0 on the phone build
+           (verified: `.fs-deck-t` bounding box [0,0,0,0]) which took the whole action deck off the
+           screen rather than putting it behind a key. */
+        +'#fs-hud .fs-deck-t{position:absolute;display:none;align-items:center;justify-content:center;'
+          +'left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(152px + env(safe-area-inset-bottom,0px));'
+          +'width:36px;height:34px;border-radius:10px;border:1px solid rgba(120,190,255,0.42);'
+          +'background:rgba(6,14,24,0.62);color:#dcefff;font-size:15px;font-weight:700;pointer-events:auto;z-index:12;cursor:pointer;}'
+        +'#fs-hud[data-deck="1"] .fs-deck-t{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
+        +'@media(hover:none){'
+          +'#fs-hud .fs-deck-t{display:flex;}'
+          +'#fs-hud:not([data-deck="1"]) .fs-deck{display:none;}'
+          +'#fs-hud[data-deck="1"] .fs-deck{top:auto;bottom:calc(58px + env(safe-area-inset-bottom,0px));'
+            +'left:calc(52px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'grid-template-columns:repeat(4,52px);gap:5px;background:rgba(4,10,18,0.72);padding:7px;border-radius:12px;'
+            +'border:1px solid rgba(120,190,255,0.3);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:11;}'
+          +'#fs-hud[data-deck="1"] .fs-act{min-width:52px;height:44px;}'
+          /* the exit and the readouts share the top row and cannot reach each other */
+          +'#fs-hud .fs-x{top:calc(6px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));'
+            +'padding:5px 9px;font-size:10.5px;border-radius:9px;z-index:12;}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(64px + env(safe-area-inset-right,0px));}'
+          /* the badge: clamped, and out of the compass tape's row */
+          +'#fs-hud .fs-acbadge{top:auto;bottom:calc(112px + env(safe-area-inset-bottom,0px));max-width:62vw;'
+            +'overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:2px 9px;}'
+          +'#fs-hud .fs-config{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-cfg{font-size:9px;padding:1px 6px;}'
+        +'}'
+        /* the landscape deck: a phone on its side has width and no height, so the readouts shrink and
+           the moving map moves up under the altitude panel, clear of the whole bottom band. */
+        +'@media(hover:none) and (orientation:landscape){'
+          +'#fs-hud .fs-panel.fs-tl,#fs-hud .fs-panel.fs-tr{top:calc(5px + env(safe-area-inset-top,0px));padding:3px 8px;}'
+          +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:14px;} #fs-hud .fs-tl .fs-k,#fs-hud .fs-tr .fs-k{font-size:8px;}'
+          +'#fs-hud .fs-htape{top:calc(5px + env(safe-area-inset-top,0px));width:min(210px,28vw);height:20px;}'
+          +'#fs-hud .fs-htick{font-size:9.5px;top:3px;} #fs-hud .fs-hdg-box{top:calc(23px + env(safe-area-inset-top,0px));font-size:11px;padding:0 6px;}'
+          /* ⚠ BELOW the altitude panel, not beside it: measured, the two boxes overlapped by 32 × 23 px
+             and the AGL figure was under the map. 74 px is `.fs-tr`'s own measured bottom. */
+          +'#fs-hud .fs-minimap{top:calc(74px + env(safe-area-inset-top,0px));bottom:auto;right:calc(8px + env(safe-area-inset-right,0px));left:auto;width:84px;height:84px;border-radius:10px;}'
+          +'#fs-hud .fs-deck-t{bottom:calc(130px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-adi{width:80px;height:80px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-thr{height:110px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-thrlbl{bottom:calc(122px + env(safe-area-inset-bottom,0px));font-size:9px;}'
+          +'#fs-hud .fs-dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:44px;gap:4px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-btns{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:6px;}'
+          +'#fs-hud .fs-btns button{min-width:46px;height:36px;font-size:10px;padding:0 8px;}'
+          +'#fs-hud .fs-warn{top:calc(46px + env(safe-area-inset-top,0px));font-size:14px;}'
+          +'#fs-hud .fs-papi,#fs-hud .fs-ils{display:none;}'
+          +'#fs-hud[data-deck="1"] .fs-deck{grid-template-columns:repeat(8,50px);bottom:calc(52px + env(safe-area-inset-bottom,0px));}'
+        +'}'
         /* a phone held UPRIGHT has no room for a row of thumb targets beside a 92-px ADI, so the two
            stack: instruments above, controls below, and the minimap goes with the readouts. */
         +'@media(hover:none) and (orientation:portrait){'
@@ -471,6 +539,9 @@ window.IntMapModules.flightSim=function(HOST){
       +'<div class="fs-ils" title="ILS"><div class="fs-ils-scale"><i class="fs-ils-loc"></i><i class="fs-ils-gs"></i></div><span class="fs-ils-lbl">ILS</span></div>'
       +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
       +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
+      /* (#R220) the phone's key to the deck — see the CSS. On a pointer device the deck is always
+         open and this is `display:none`, so the desktop layout is byte-identical to what it was. */
+      +'<button class="fs-deck-t" aria-label="'+LL('Controls','操作パネル','Bedienfeld','Панель','Controles')+'" title="'+LL('Controls','操作パネル','Bedienfeld','Панель','Controles')+'">⋯</button>'
       +'<div class="fs-deck">'
         +'<button class="fs-act" data-act="g">⚙<small>'+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
         +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
@@ -549,7 +620,13 @@ window.IntMapModules.flightSim=function(HOST){
       hud.querySelectorAll('.fs-btns button').forEach(b=>{ const k=b.getAttribute('data-k');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
-      hud.querySelectorAll('.fs-deck [data-act]').forEach(b=>b.addEventListener('click',()=>{ fsAction(b.getAttribute('data-act')); }));
+      /* (#R220) the deck's key. `data-deck` is the ONE piece of state; the CSS decides what it means
+         on each device, so a pointer machine never sees a closed deck. Acting on a button closes it —
+         a sheet over the view must not stay over the view after it has been used. */
+      const _dt=hud.querySelector('.fs-deck-t');
+      if(_dt) _dt.addEventListener('click',(e)=>{ e.preventDefault();
+        hud.dataset.deck=(hud.dataset.deck==='1')?'0':'1'; });
+      hud.querySelectorAll('.fs-deck [data-act]').forEach(b=>b.addEventListener('click',()=>{ fsAction(b.getAttribute('data-act')); hud.dataset.deck='0'; }));
       hud.querySelectorAll('.fs-deck [data-hold]').forEach(b=>{ const k=b.getAttribute('data-hold');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });

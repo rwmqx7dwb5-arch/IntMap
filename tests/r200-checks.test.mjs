@@ -250,7 +250,7 @@ test('R200 ⑥: the sky subscribes to the master clock at a moment when the cloc
   /* the same shape in js/night-side.js was already correct — its wire() is called from apply(), which
      app-body calls from map-load — and this is what says so, so a future move cannot break it quietly. */
   const ns = read('js/night-side.js');
-  assert.match(ns, /function wire\(\)\{[\s\S]{0,400}?window\.IntMapTime&&window\.IntMapTime\.on/,
+  assert.match(ns, /function wire\(\)\{[\s\S]{0,900}?window\.IntMapTime&&window\.IntMapTime\.on/,
     'the night side subscribes from wire(), not from module scope');
   assert.match(CORE, /window\.IntMapNightSide&&window\.IntMapNightSide\.apply\(\)/, 'and app-body calls apply() from map-load');
 });

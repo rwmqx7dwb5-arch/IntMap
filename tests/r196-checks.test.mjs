@@ -188,7 +188,9 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
      swallows a rejected paint expression, so the layer is READ BACK. */
   assert.match(n, /if\(!GE\(\)\.layers\.has\(LYR\)\)\{[\s\S]{0,120}?lastErr='cap-expression';/,
     'a rejected paint expression is detected, and answered with a form that cannot be rejected');
-  assert.match(n, /if\(!GE\(\)\.layers\.hasDynamicImage\(DYN\)\) return false;/,
+  /* (#R220) …and a failed read-back now UNMAKES what it built: the polar fan on its own is a black
+     disc on the pole, which is what seven rounds of that report turned out to be. */
+  assert.match(n, /if\(!GE\(\)\.layers\.hasDynamicImage\(DYN\)\)\{[^}]*destroy\(\); return false; \}/,
     'and the image — which now carries the whole effect — is read back too');
   assert.match(n, /imageRowLatitudes/, 'the lights image is placed through the engine’s row→latitude map (#R195)');
   assert.match(n, /if\(zoomNow\(\)>ZMAX\+0\.4\)\{ return; \}/, 'nothing is built until the camera is wide enough');
