@@ -661,9 +661,23 @@ window.IntMapModules.labelPopup=function(HOST){
        A river is a LINE, so it gets a line highlight of its own.
        ⚠ `querySourceFeatures`, not `queryRenderedFeatures`: the point is to light up the WHOLE river
        that is loaded, not the one segment under the pointer. Tiles cut a river into many features,
-       so every segment carrying the same name is taken. That is also its limit, stated rather than
-       hidden — a river outside the currently loaded tiles is not in the highlight, and a name shared
-       by two unrelated streams in view would light both. */
+       so every segment carrying the same name is taken.
+
+       ══ (#R217) …AND BOTH OF THE LIMITS #R210 WROTE DOWN WERE THE REPORTED BUG ═══════════════════
+       「河川名ラベルクリック時に、クリック地点によっては全区間がハイライトされない問題を解決して。」
+
+       #R210 stated two limits honestly: a river outside the loaded tiles is not in the highlight,
+       and one name is one river. The second one was doing more damage than it sounded, because a
+       river IS renamed at every border — Donau / Duna / Dunav / Dunărea are one river, linked in the
+       data through `name:en=Danube` that the single-field comparison never looked at. So which
+       segments lit up depended on which segment you clicked. js/river-course.js owns that comparison
+       now: a SET of names per feature, merged transitively, so the same click lights the same river
+       wherever it lands. The `class` filter there also stops a ditch that shares a name from joining.
+
+       The first limit is answered by asking OpenStreetMap for the river's real course (same two
+       sources, same order Atlas has used since #R65) and drawing it BESIDE the tile segments. It
+       arrives late and it may not arrive at all; the tile highlight is drawn first and is never
+       taken away, so the worst case is exactly what #R210 shipped. */
     function ensureRiverHL(){ if(GE().layers.hasSource('river-hl-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('river-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         const before=firstSym();
@@ -672,22 +686,47 @@ window.IntMapModules.labelPopup=function(HOST){
         GE().layers.add({id:'river-hl-line',type:'line',source:'river-hl-src',layout:{'line-join':'round','line-cap':'round'},
           paint:{'line-color':'#00e5ff','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],5,2.2,12,5]}},before);
         return true; }catch(_){ return false; } }
-    function clearRiverHL(){ try{ if(GE().layers.hasSource('river-hl-src')) GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
-    function highlightRiver(name){
+    /* (#R217) one sequence for the whole river highlight: a later click (or any clear) must be able
+       to overrule a fetch that is still in the air, or a slow answer would repaint a river the user
+       has already moved away from. */
+    let _riverSeq=0;
+    function clearRiverHL(){ _riverSeq++; try{ if(GE().layers.hasSource('river-hl-src')) GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    function _riverBbox(feats){
+      let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
+      const eat=(ln)=>{ for(const pt of ln){ const x=+pt[0],y=+pt[1]; if(!isFinite(x)||!isFinite(y)) continue; if(x<a)a=x; if(y<b)b=y; if(x>c)c=x; if(y>d)d=y; } };
+      for(const f of feats){ for(const ln of (window.IntMapRiverCourse?window.IntMapRiverCourse.linesOf(f.geometry):[])) eat(ln); }
+      return [a,b,c,d];
+    }
+    function highlightRiver(props,lngLat){
       try{
-        if(!name||!ensureRiverHL()) return;
+        const RC=window.IntMapRiverCourse;
+        if(!props||!RC||!ensureRiverHL()) return;
+        const seq=++_riverSeq;
         const raw=GE().coords.querySourceFeatures('ofm',{sourceLayer:'waterway'})||[];
-        const want=String(name);
-        const feats=[];
-        for(const f of raw){
-          const p=f&&f.properties||{};
-          const n=p.name||p['name:en']||p.name_en||'';
-          if(n!==want) continue;
-          const g=f.geometry; if(!g||(g.type!=='LineString'&&g.type!=='MultiLineString')) continue;
-          feats.push({type:'Feature',geometry:g,properties:{}});
-          if(feats.length>=4000) break;   /* a long river in loaded tiles is thousands of segments; stop before it costs a frame */
+        /* a long river in loaded tiles is thousands of segments; the cap is the frame budget (#R210) */
+        const picked=RC.sameRiver(props,raw,{limit:4000});
+        const tile=[];
+        for(const f of picked){
+          const g=f&&f.geometry; if(!g||(g.type!=='LineString'&&g.type!=='MultiLineString')) continue;
+          tile.push({type:'Feature',geometry:g,properties:{}});
         }
-        GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:feats});
+        GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:tile});
+        if(!lngLat||!isFinite(lngLat.lng)) return;
+        /* …then the part of the river that is not on screen. Nothing waits for this. */
+        RC.course(props,lngLat).then(hit=>{
+          if(!hit||!hit.geo||seq!==_riverSeq) return;
+          const full=RC.linesOf(hit.geo).filter(ln=>ln&&ln.length>1)
+            .map(ln=>({type:'Feature',geometry:{type:'LineString',coordinates:ln},properties:{}}));
+          if(!full.length) return;
+          /* ⚠ THE FETCHED COURSE REPLACES THE TILE SEGMENTS ONLY WHEN IT COVERS THEM. Nominatim
+             answers for ONE named OSM object, so a query for "Donau" can come back with less of the
+             river than the tiles are already showing; replacing blindly would SHRINK the highlight
+             the user just got. Compare the two extents and union whenever the answer is not a
+             superset — a doubled line looks slightly brighter, a vanished one looks broken. */
+          const tb=_riverBbox(tile), cb=_riverBbox(full), e=0.02;
+          const covers=isFinite(tb[0])&&cb[0]<=tb[0]+e&&cb[1]<=tb[1]+e&&cb[2]>=tb[2]-e&&cb[3]>=tb[3]-e;
+          GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:covers?full:full.concat(tile)});
+        }).catch(()=>{});
       }catch(_){}
     }
     function clearHL(){ try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
@@ -839,7 +878,8 @@ window.IntMapModules.labelPopup=function(HOST){
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
       _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true});
-        if(f.layer&&f.layer.id==='ofm-river') highlightRiver(name); }); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
+        /* (#R217) the whole property bag, not the one name the popup shows — see js/river-course.js */
+        if(f.layer&&f.layer.id==='ofm-river') highlightRiver(p,e.lngLat); }); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
     /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
        「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」 #R198 added `ofm-admin1` (prefectures,
        states, provinces) as NAMES only and wrote down that leaving it out of these lists was deliberate.
@@ -877,7 +917,7 @@ window.IntMapModules.labelPopup=function(HOST){
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
             if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true}:undefined);
-              if(lid==='ofm-river') highlightRiver(nm);   /* (#R210) the padded tap is the same click */
+              if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }
         clearHL();
