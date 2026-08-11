@@ -53,6 +53,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync, gzipSync } from 'node:zlib';
+import { buildPhoneGazetteer } from './build-gazetteer-phone.mjs';   /* (#R217) the phone's slice, derived from what this writes */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* (#R208) the shipped artefact is GZIPPED. 150,000 rows is ~9 MB of JSON and ~2.5 MB compressed,
@@ -344,6 +345,12 @@ async function main() {
   console.log(`  ${withJa.toLocaleString()} with a Japanese name, ${withAlt.toLocaleString()} with at least one other`);
   console.log('  names per language: ' + Object.entries(perLang).sort((a, b) => b[1] - a[1])
     .map(([k, v]) => k + ' ' + v.toLocaleString()).join(', '));
+
+  /* (#R217) …and the phone's slice of the same file, so the two artefacts can never drift apart:
+     a rebuild that produced a new world list and left an old phone list would ship a phone a
+     gazetteer from a different build. It is derived, not re-derived — see the script's header. */
+  const p = buildPhoneGazetteer();
+  console.log(`\nwrote data/gazetteer-phone.json.gz — ${p.rows.toLocaleString()} rows → ${(p.gz / 1024).toFixed(0)} kB gzipped`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

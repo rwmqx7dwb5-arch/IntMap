@@ -406,9 +406,23 @@ window.IntMapGazetteer=(function(){
      at BUILD time, so nothing here can move a place the curated table already knows. The rows enter
      the deterministic engine through IntMapNewsGeo.register(), which files them at rank 3 — below
      everything curated — for the same reason. */
+  /* ══ (#R217) THE PHONE ASKS FOR THE PHONE'S FILE ══════════════════════════════════════════════
+     「モバイル版が、非常に重くなっている…iPhoneのメモリを占有して」 — MEASURED, iPhone-13 profile, only
+     this app's own bytes on the clock: with this file the boot transfers 8,308 kB and settles at a
+     66 MB JS heap; with it blocked, 4,842 kB and 27 MB. The phone was paying 3.5 MB of radio and
+     39 MB of memory for a list it is not allowed to use — MOBILE_CAP below has thrown away
+     everything past row 12,000 since #R198, AFTER the whole 4 MB had been fetched, un-gzipped into
+     ~15 MB of text and JSON.parsed into 148,000 rows.
+     data/gazetteer-phone.json.gz (scripts/build-gazetteer-phone.mjs) is the HEAD OF THE SAME FILE,
+     already sorted by population: the same rows, names, coordinates and licence, cut at MOBILE_CAP.
+     A phone therefore knows exactly the same places it knew before — 452 kB instead of 4,019 kB.
+     ⚠ MOBILE_CAP stays and still applies in _rowsFrom: it is the contract the build asserts against,
+     and it is what keeps this correct if a phone somehow receives the full file (a warmed cache from
+     a desktop-width session on the same device, a hand-edited URL). */
   const WORLD_FILE='data/gazetteer-world.json.gz';
-  const WORLD_URL=(function(){ try{ return new URL(WORLD_FILE,
-    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return WORLD_FILE; } })();
+  const PHONE_FILE='data/gazetteer-phone.json.gz';
+  const WORLD_URL=(function(){ const f=_isMobile()?PHONE_FILE:WORLD_FILE; try{ return new URL(f,
+    (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return f; } })();
   let _worldRows=null, _worldPromise=null, _worldMeta=null;
   /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
      of twenty thousand are not the same claim about a headline, and the scorer already knows how to
