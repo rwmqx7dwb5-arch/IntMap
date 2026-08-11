@@ -71,13 +71,21 @@ window.IntMapPageI18N = (function () {
 
   /* ── loading. One <script> per language, once, and never for a language we do not list. ──── */
   function load(code) {
-    if (!has(code)) return Promise.resolve(null);
+    /* ⚠ THE URL IS BUILT FROM OUR OWN TABLE, NOT FROM THE ARGUMENT. `code` can originate in a
+       `?lang=` query parameter, and although `has()` already restricts it to the five literals above,
+       "a URL assembled from a parameter" is a shape worth not having at all — CodeQL flags it and it
+       is right to: one future edit that moves the guard makes it a real injection. Taking the row and
+       using ITS `code` means the string in the `src` provably comes from LANGS. */
+    var row = null;
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === code) { row = LANGS[i]; break; }
+    if (!row) return Promise.resolve(null);
+    code = row.code;
     if (docs[code]) return Promise.resolve(docs[code]);
     if (pending[code]) return new Promise(function (r) { pending[code].push(r); });
     pending[code] = [];
     return new Promise(function (res) {
       var s = document.createElement('script');
-      s.src = './js/locales/pages.' + code + '.js';
+      s.src = './js/locales/pages.' + row.code + '.js';
       s.async = true;
       s.onload = function () { done(); };
       /* ⚠ A MISSING TRANSLATION FILE IS NOT A BROKEN PAGE. It resolves to null and the caller
@@ -261,8 +269,24 @@ window.IntMapPageI18N = (function () {
       sib.querySelector('.pg-sibling-t').textContent = pick('common', other === 'science' ? 'toScience' : 'toSources');
       sib.setAttribute('aria-label', pick('common', other === 'science' ? 'toScience' : 'toSources'));
     }
+    /* ⚠ NO REGEX "SANITISER" HERE. This used to be `.replace(/<[^>]*>/g,'')`, which is the classic
+       incomplete multi-character sanitisation — `<scr<script>ipt>` survives one pass of it — and it
+       was not needed in the first place: `document.title` is a TEXT sink and never interprets markup.
+       The titles carry HTML ENTITIES (they are also rendered with innerHTML in the hero), so the only
+       thing to do here is turn those back into characters, from a fixed table. Nothing is stripped,
+       because nothing has to be. */
+    var ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', mdash: '—', ndash: '–' };
+    var plain = function (v) {
+      return String(v == null ? '' : v).replace(/&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/g, function (m, g) {
+        if (g.charAt(0) === '#') {
+          var n = (g.charAt(1) === 'x' || g.charAt(1) === 'X') ? parseInt(g.slice(2), 16) : parseInt(g.slice(1), 10);
+          return isFinite(n) ? String.fromCharCode(n) : m;
+        }
+        return Object.prototype.hasOwnProperty.call(ENT, g) ? ENT[g] : m;
+      });
+    };
     var t = pick(page, 'title');
-    if (t) document.title = 'IntMap — ' + String(t).replace(/<[^>]*>/g, '');
+    if (t) document.title = 'IntMap — ' + plain(t);
     var md = document.querySelector('meta[name="description"]');
     if (md && pick(page, 'meta')) md.setAttribute('content', pick(page, 'meta'));
     var sel = document.getElementById('pg-lang-select');
