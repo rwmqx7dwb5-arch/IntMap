@@ -88,6 +88,11 @@ import '../js/atlas-console.js';
    click is its first caller; it publishes window.IntMapRiverCourse at import and fetches nothing
    until a label is actually clicked. */
 import '../js/river-course.js';
+/* (#R218) the streamline integrator — bilinear sampling of a lon/lat vector field, RK4 on the unit
+   direction, and the evenly-spaced-seed rule. Pure arithmetic in its own file for the same reason as
+   the line above: js/ocean-currents.js is its only caller today, and a numerical method that decides
+   what the map draws must be runnable in a test without a renderer (tests/r218-checks). */
+import '../js/streamline.js';
 import '../js/map-ui.js';
 import '../js/map-tools.js';
 /* (#R192) "where is the land" — the bundled 1-bit world mask (data/land-mask.png). Ahead of the

@@ -94,11 +94,17 @@ window.IntMapModules.space=function(HOST){
        「宇宙を探索に小惑星、彗星も追加して。」
        「太陽系外のはるか遠くまでズームアウトできるように。」
 
-       All three default OFF, and that is not timidity: each one costs a fetch of a few hundred
-       kilobytes (js/space-bodies.js) and opening a solar-system view is not the same request as
-       asking to see 1,100 asteroids. Switching one on loads it; switching it off keeps it loaded.
+       ⚠⚠ (#R218) ALL SIX DEFAULT ON. 「宇宙を探索の表示6つは全部デフォルトでは選択状態に。」
+       #R213 defaulted these three OFF and wrote down why — each is a fetch of a few hundred kilobytes
+       (js/space-bodies.js), and opening a solar-system view is not the same request as asking to see
+       1,100 asteroids. That reasoning was about COST, and the instruction settles the trade the other
+       way: what the explorer is FOR is that these things are out there. So they are on, and the cost
+       is paid the way every other cost in this file is paid — visibly. `openView()` kicks the three
+       loads off in parallel the moment the view opens, the 「表示」 button reports N/6, and each switch
+       still carries its own loading / failed state (see refreshChrome), so a lit switch over an empty
+       sky is impossible. Switching one off keeps it loaded; it is only a draw flag.
        `craftSel` / `smallSel` are what the info panel is describing, not a filter. */
-    let showCraft=false, showSmall=false, showDeep=false;
+    let showCraft=true, showSmall=true, showDeep=true;
     let craftSel=null, smallSel=null, smallKinds=null;
     const SB=()=>window.IntMapSpaceBodies;
 
@@ -840,7 +846,16 @@ window.IntMapModules.space=function(HOST){
         /* orbits first, so a body is never hidden behind its own line */
         if(showOrbits){                                            /* (#R207) */
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
-        for(const id of E.bodies()){
+        /* ══ ⚠⚠ (#R218) …AND THE MOON WAS NOT IN THE LOOP AT ALL ═══════════════════════════════════
+           「宇宙を探索は、月にも軌道を付けるように。」 #R207 (below) wrote the special case for the
+           Moon's line and it has never once run: `E.bodies()` is js/ephemeris.js's ORDER, which is the
+           nine PLANETS — the Moon is not one of them, so `id==='moon'` was unreachable and
+           `moonOrbitBuf()` was dead code. The bodies themselves are drawn from `BODIES` (the list that
+           does include the Moon, three lines down), so the orbit pass now walks the SAME list: one
+           source of "which bodies exist" for both the dot and its line, which is the only arrangement
+           in which the two cannot disagree. The Sun has no orbit and is skipped by name. */
+        for(const id of BODIES){
+          if(id==='sun') continue;
           /* ══ (#R207) THE MOON'S LINE WAS ITS HELIOCENTRIC PATH ═══════════════════════════════════
              「天体が描かれた軌道から微妙に外れた挙動だから、グラフィック的に不自然。」
              #R203 moved the Moon's POSITION to be measured about the Earth (see scenePos / moonSep —
@@ -1039,8 +1054,24 @@ window.IntMapModules.space=function(HOST){
       const b=EPH().body(focus); if(!b||!b.rKm) return;
       const P=scenePos(pos,focus,centre);
       const sunScene=[-centre[0],-centre[1],-centre[2]];
+      /* ══ ⚠⚠ (#R218) A MOON INSIDE ITS OWN PLANET ═════════════════════════════════════════════════
+         「地球以外の惑星の衛星の挙動がバグっている。」 At MODEL scale a separation is compressed by
+         `moonSep` (∝ km^0.42, calibrated so the Moon clears the Earth) and a radius by `radScale`
+         (∝ km^⅓). Two different powers, and for a giant planet they cross: Jupiter's drawn radius is
+         radScale(71,492) = 0.269 scene units, while Metis at 128,000 km comes out at
+         moonSep = 0.42·(128,000/384,400)^0.42 = 0.267 — INSIDE the planet it orbits. Measured across
+         the table, several of the inner satellites of Jupiter, Saturn, Uranus and Neptune land under
+         their primary's surface, which is what "buggy" looks like: a moon that is simply not there,
+         or that flickers through the disc as it goes round.
+         The fix is a SHIFT, not a clamp: every satellite of this planet moves out by the planet's own
+         drawn radius plus a margin. A clamp (`max(d, floor)`) would pile the inner moons on top of one
+         another at the same distance; adding a constant is strictly monotone, so the ORDER of the
+         family — which is the thing a reader can check against a book — survives exactly.
+         ⚠ At TRUE scale nothing is shifted: there is no compression to undo, and the geometry is the
+         real geometry (`moonSep` returns km/AU there). */
+      const clearKm=(scale==='real')?0:radScale(b.rKm)*1.18;
       const place=(m,t)=>{ const q=moonPos(m,t,b.rKm);
-        const rr=Math.hypot(q[0],q[1],q[2])||1, d=moonSep(rr*b.rKm);
+        const rr=Math.hypot(q[0],q[1],q[2])||1, d=clearKm+moonSep(rr*b.rKm);
         return [P[0]+q[0]/rr*d, P[1]+q[1]/rr*d, P[2]+q[2]/rr*d]; };
       for(const m of list){
         if(focus==='earth'&&(m.code===301||m.name==='Moon')) continue;
@@ -1087,21 +1118,27 @@ window.IntMapModules.space=function(HOST){
       drawSphere(mMul(VP,model),model,focus,focus==='sun'?[0,0,1]:sun,focus==='sun'?1:0,null);
       if(focus==='saturn') drawRings(VP,[0,0,0],b,1,jd);
       drawFeatureLabels(model,VP,cam);
-      /* (#R208) …and the satellites of whichever planet this is */
+      /* (#R208) …and the satellites of whichever planet this is.
+         ⚠ (#R218) …and they obey the SAME two switches the system view's satellites obey. They did
+         not: 「衛星」 turned the moons off in the solar-system view and left them on here, and 「軌道」
+         never reached this loop at all, so the same button meant two different things depending on
+         which view you were in. One state, both views. */
       loadMoons();
-      const list=moonList();
+      const list=showMoons?moonList():[];
       if(list.length&&b.rKm){
         for(const m of list){
           const P0=moonPos(m,jd,b.rKm);
           /* the orbit, one revolution either side of now — drawn from the SAME propagation as the
              body, so the dot is always on its own line (#R207's lesson about the Moon's track) */
-          const pts=[];
-          for(let k=0;k<=96;k++) pts.push(moonPos(m,jd+m.periodDays*(k/96-0.5),b.rKm));
-          const buf=gl.createBuffer(); const fa=new Float32Array(pts.length*3);
-          pts.forEach((p,k)=>{ fa[k*3]=p[0]; fa[k*3+1]=p[1]; fa[k*3+2]=p[2]; });
-          gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
-          drawLines(VP,buf,pts.length,[0.55,0.68,0.92,0.30]);
-          try{ gl.deleteBuffer(buf); }catch(_){}
+          if(showOrbits){
+            const pts=[];
+            for(let k=0;k<=96;k++) pts.push(moonPos(m,jd+m.periodDays*(k/96-0.5),b.rKm));
+            const buf=gl.createBuffer(); const fa=new Float32Array(pts.length*3);
+            pts.forEach((p,k)=>{ fa[k*3]=p[0]; fa[k*3+1]=p[1]; fa[k*3+2]=p[2]; });
+            gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
+            drawLines(VP,buf,pts.length,[0.55,0.68,0.92,0.30]);
+            try{ gl.deleteBuffer(buf); }catch(_){}
+          }
           /* the body itself, at its own measured radius where the table has one. ⚠ A moon with no
              published radius is drawn at a FLOOR size, not at a guessed one — the table says which
              is which and the panel can too. */
@@ -1271,7 +1308,21 @@ window.IntMapModules.space=function(HOST){
            the readout, and the live dot moved onto the box that holds it, so there is one place that
            says when this sky is and one place to change it. */
         /* (#R216) the five time controls travel together — they are one subject, and letting them
-           wrap individually is how the bar became five ragged rows on a phone */
+           wrap individually is how the bar became five ragged rows on a phone.
+           ══ ⚠ (#R218) …AND ON A PHONE THEY TRAVEL BEHIND ONE BUTTON ═════════════════════════════════
+           「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。」 #R216 made
+           the bar a horizontal SCROLLER so the five rows became one; that stopped it covering the sky,
+           but it left the controls somewhere off-screen to the right, which is not the same as usable.
+           Measured on a 390 px viewport: the bar's scroll width was 1,046 px, i.e. two thirds of every
+           control was out of view, and the two widest things in it are this group (a datetime field, a
+           typed multiplier and six step buttons ≈ 560 px). So on a phone the group collapses into ONE
+           button — the same pattern 「表示」 already uses, and the same DOM for both sizes: the button
+           is hidden on a desktop by css/intmap.css and the group is inline, exactly as it was.
+           ⚠ The button is not just a handle: it CARRIES the instant (refreshClock writes into it), so
+           collapsing the group does not hide the answer — which is the mistake #R215 removed when it
+           deleted the second read-only clock. */
+        +'<span class="sp-timewrap" style="position:relative;display:inline-flex;align-items:center;">'
+        +'<button class="sp-timeb" style="'+BTN+'display:none;white-space:nowrap;"><span class="sp-timeb-t">—</span></button>'
         +'<span class="sp-timebox" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;">'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
         +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
@@ -1299,6 +1350,7 @@ window.IntMapModules.space=function(HOST){
         +'<button class="sp-when-step" data-d="365" title="'+S(L('a year on','1年後','ein Jahr weiter','на год вперёд','un año adelante'))+'" style="'+STEPB+'">»</button>'
         +'</span>'
         +'</span>'
+        +'</span>'
         +'</div>'
         /* ══ (#R216) THE THREE PANELS ARE ONE LAYOUT, NOT THREE ABSOLUTE BOXES ═══════════════════════
            `.sp-events` used to be positioned at `top: calc(52px + 232px)` — a literal guess at how
@@ -1313,10 +1365,24 @@ window.IntMapModules.space=function(HOST){
         +'<div class="sp-events" style="flex:1 1 auto;min-height:0;overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11px;line-height:1.5;"></div>'
         +'</div>'
         /* the sources line: a long paragraph nobody reads twice, so it collapses to one ⓘ row that
-           opens on demand rather than sitting across the bottom of the sky for ever */
-        +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;pointer-events:auto;">'
-        +'<button class="sp-noteb" style="'+BTN+'font-size:10px;padding:3px 8px;">ⓘ '+L('Sources','出典','Quellen','Источники','Fuentes')+'</button>'
-        +'<div class="sp-note" style="display:none;margin-top:5px;max-height:26vh;overflow:auto;font-size:9.5px;color:rgba(255,255,255,0.62);line-height:1.45;"></div>'
+           opens on demand rather than sitting across the bottom of the sky for ever.
+           ══ ⚠ (#R218) THE BUTTON MUST NOT MOVE WHEN THE PANEL OPENS ══════════════════════════════
+           「『出典』を押すと、閉じるときに周りと被って押しにくい。悪いUI。」 — and it was: the wrapper is
+           anchored at `bottom`, so a block that grows INSIDE it pushes its own first child UP. The ⓘ
+           button therefore rose by the height of the text it had just revealed and came to rest on top
+           of the body list / info column, where the thing under the pointer was no longer the button.
+           `column-reverse` fixes it at the source: the button is still the first child in the DOM (so
+           the tab order and the code read the same), but it LAYS OUT last — pinned to the bottom edge
+           — and the panel grows upward above it. Pressing ⓘ to close now means pressing exactly where
+           you pressed to open. The panel also gets its own surface and a ✕ of its own, because a
+           scrolling wall of grey text over a starfield was not readable either. */
+        +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;z-index:6;'
+          +'display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px;pointer-events:none;">'
+        +'<button class="sp-noteb" style="'+BTN+'font-size:10px;padding:3px 8px;flex:0 0 auto;pointer-events:auto;">ⓘ '+L('Sources','出典','Quellen','Источники','Fuentes')+'</button>'
+        +'<div class="sp-note" style="display:none;width:min(560px,100%);max-height:34vh;overflow:auto;pointer-events:auto;'
+          +'padding:10px 12px 8px;border-radius:12px;background:rgba(10,10,14,0.94);border:1px solid rgba(255,255,255,0.16);'
+          +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);'
+          +'font-size:9.5px;color:rgba(255,255,255,0.72);line-height:1.5;"></div>'
         +'</div>';
     }
     function refreshClock(){
@@ -1341,6 +1407,12 @@ window.IntMapModules.space=function(HOST){
               +'T'+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());
         if(w.value!==v) w.value=v;
       }
+      /* (#R218) the phone's collapsed handle carries the instant, so the group can hide without the
+         answer hiding with it. Same tick, same time base, no second source of truth. */
+      const tb=root.querySelector('.sp-timeb-t');
+      if(tb){ const d=new Date(nowMs()), p2=(n)=>String(n).padStart(2,'0');
+        tb.textContent=(live?'● ':'')+d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())
+          +' '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+' UT'; }
       const p=root.querySelector('.sp-play'); if(p) p.textContent=playing&&!live?'⏸':'▶';
       refreshChrome();
     }
@@ -1826,8 +1898,20 @@ window.IntMapModules.space=function(HOST){
           sm.addEventListener('click',(e)=>e.stopPropagation());
           root.addEventListener('click',()=>{ sm.style.display='none'; }); } }
       { const mb=root.querySelector('.sp-moons'); if(mb) mb.onclick=()=>{ showMoons=!showMoons; refreshChrome(); }; }
+      /* (#R218) the phone's time handle — same open/close language as 「表示」, and it closes on a tap
+         on the sky. On a desktop the button is `display:none` and this never runs. */
+      { const tb=root.querySelector('.sp-timeb'), tx=root.querySelector('.sp-timebox');
+        if(tb&&tx){ tb.onclick=(e)=>{ e.stopPropagation(); tx.classList.toggle('open'); };
+          tx.addEventListener('click',(e)=>e.stopPropagation());
+          root.addEventListener('click',()=>tx.classList.remove('open')); } }
       { const nb=root.querySelector('.sp-noteb'), nd=root.querySelector('.sp-note');
-        if(nb&&nd) nb.onclick=(e)=>{ e.stopPropagation(); nd.style.display=(nd.style.display==='none')?'block':'none'; }; }
+        /* (#R218) the button says which state it is in, so ⓘ / ✕ is never a guess; and a click on the
+           sky closes it, which is the other way out of a panel that covers a third of the screen. */
+        if(nb&&nd){ const lbl=L('Sources','出典','Quellen','Источники','Fuentes');
+          const set=(on)=>{ nd.style.display=on?'block':'none'; nb.textContent=(on?'✕ ':'ⓘ ')+lbl; };
+          nb.onclick=(e)=>{ e.stopPropagation(); set(nd.style.display==='none'); };
+          nd.addEventListener('click',(e)=>e.stopPropagation());
+          root.addEventListener('click',()=>set(false)); } }
       /* (#R213) */
       [['craft',()=>showCraft,(v)=>{showCraft=v;}],['small',()=>showSmall,(v)=>{showSmall=v;}],['deep',()=>showDeep,(v)=>{showDeep=v;}]]
         .forEach(([k,get,set])=>{ const b=root.querySelector('.sp-'+k); if(b) b.onclick=()=>setPopulation(k,!get()); });
@@ -1898,6 +1982,13 @@ window.IntMapModules.space=function(HOST){
       if(o.scale) scale=(o.scale==='real')?'real':'model';
       if(o.when) setWhen(o.when); else if(o.live!==false) live=true;
       loadStars(); loadEvents(); if(mode==='body'){ loadNames(); texture(focus); }
+      /* (#R218) the three optional populations default ON now, so their data has to be ASKED FOR here
+         — a lit switch whose file nobody requested is exactly the 「取得中を無いと答えるな」 failure the
+         switch's own loading state was built to prevent. Fired in parallel; each redraws when it lands
+         and reports its own failure on its own button. */
+      loadMoons();
+      [['craft',showCraft],['small',showSmall],['deep',showDeep]].forEach(([k,on])=>{ if(!on) return;
+        try{ const B=SB(); if(B) B.load(k).then(()=>refreshHUD()).catch(()=>refreshHUD()); }catch(_){} });
       dist=(mode==='body')?bodyDist():systemDist();
       if(mode==='body') faceSun();
       /* ⚠ (#R203) ARRIVING FROM THE MAP IS NOT ARRIVING AT THE SOLAR SYSTEM. `systemDist()` is far
@@ -2002,7 +2093,17 @@ window.IntMapModules.space=function(HOST){
          ライトモードともにピルで包んで。」 The caption was pale blue text with a shadow — legible over a
          night sky, invisible over a white basemap, which is exactly the view a light-mode user zooms
          out of. Wrapped in the app's own card surface so it carries its own contrast either way. */
-      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:1250;'
+      /* ══ ⚠⚠ (#R218) THE RETURN GAUGE WAS BEHIND THE SPACE VIEW ═══════════════════════════════════
+         「宇宙から地球に戻る時にも、同じUIを表示し、いきなり戻ったという雰囲気にしないように。」 — sent
+         again, and the reason is one number. #R210 made `paintGauge(v, inbound)` take WHICH caption to
+         show and wired `pushIn` to call it, and that half is correct — but the gauge is a child of
+         <body> at z-index 1250, and `#space-view` is a full-screen opaque `#000` at z-index **4200**
+         (see openView). Outbound the gauge is over the map and visible; inbound it is painted, with
+         the right caption and the right fill, UNDERNEATH the black sky it is describing. From the
+         reader's side nothing at all happened until the map simply reappeared — which is exactly the
+         report. It now sits above both, and above nothing else: 4300 is over the space view and still
+         under the modals (#R148's dialog layer). */
+      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:4300;'
         +'pointer-events:none;opacity:0;transition:opacity 180ms ease;display:flex;flex-direction:column;'
         +'align-items:center;gap:6px;font-size:12px;font-weight:700;'
         +'padding:9px 16px 11px;border-radius:999px;'

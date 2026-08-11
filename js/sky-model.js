@@ -54,6 +54,22 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
   const BM = 21e-6;
   const HR = 8000, HM = 1200;
   const G = 0.76;
+  /* ══ ⚠ (#R218) OZONE — THE ABSORBER THAT MAKES TWILIGHT BLUE ═════════════════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 What was missing was not a tuning knob,
+     it was a CONSTITUENT. This model integrated Rayleigh and Mie and nothing else, and a
+     Rayleigh-only twilight is a known-wrong picture: with the Sun below the horizon the sight-line
+     passes through 10–40 km, where Rayleigh scattering has almost nothing left to remove, so the
+     model returned a washed grey-brown where a real sky at −4° is deep blue. The thing that removes
+     the residual yellow-red from that path is OZONE, absorbing in the Chappuis band around 600 nm —
+     it is why the blue hour is blue, and it is the one term every modern sky model adds for exactly
+     this reason (Bruneton & Neyret 2008; Hillaire 2020).
+     ⚠ THE NUMBERS ARE PUBLISHED, NOT PICKED. β_O3 = (0.650, 1.881, 0.085)e−6 m⁻¹ is the reference
+     extinction at the three primaries used by both papers, and the profile is their tent: a peak at
+     25 km falling linearly to zero at 10 km and 40 km. ⚠ Ozone ABSORBS and does not scatter, so it
+     enters the optical depth on both the view ray and the sun ray and appears in no phase function —
+     which is what makes it darken the long path without adding any light of its own. */
+  const BO = [0.650e-6, 1.881e-6, 0.085e-6];
+  const ozone = (h) => Math.max(0, 1 - Math.abs(h - 25000) / 15000);
   const D2R = Math.PI / 180;
   /* Sun radiance in the arbitrary unit EXPOSURE is calibrated in; the pair has one degree of
      freedom, and it is fixed by the Cesium capture rather than by taste — see SKY_ELEV below. */
@@ -115,28 +131,28 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
       if (t1 > 1e-6) tMax = Math.min(tMax, t1);
     }
     const dt = tMax / N;
-    let odR = 0, odM = 0, sumM = 0;
+    let odR = 0, odM = 0, odO = 0, sumM = 0;
     const sum = [0, 0, 0];
     for (let i = 0; i < N; i++) {
       const t = (i + 0.5) * dt;
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
       const h = Math.max(0, Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) - RG);
-      const hr = Math.exp(-h / HR) * dt, hm = Math.exp(-h / HM) * dt;
-      odR += hr; odM += hm;
+      const hr = Math.exp(-h / HR) * dt, hm = Math.exp(-h / HM) * dt, ho = ozone(h) * dt;
+      odR += hr; odM += hm; odO += ho;
       if (blocked(p, s)) continue;
       const ts = toShell(p, s, RT);
       if (!(ts > 0)) continue;
       const dts = ts / M;
-      let odRs = 0, odMs = 0;
+      let odRs = 0, odMs = 0, odOs = 0;
       for (let j = 0; j < M; j++) {
         const u = (j + 0.5) * dts;
         const q0 = p[0] + s[0] * u, q1 = p[1] + s[1] * u, q2 = p[2] + s[2] * u;
         const hs = Math.max(0, Math.sqrt(q0 * q0 + q1 * q1 + q2 * q2) - RG);
-        odRs += Math.exp(-hs / HR) * dts; odMs += Math.exp(-hs / HM) * dts;
+        odRs += Math.exp(-hs / HR) * dts; odMs += Math.exp(-hs / HM) * dts; odOs += ozone(hs) * dts;
       }
       let att1 = 1;
       for (let k = 0; k < 3; k++) {
-        const tau = BR[k] * (odR + odRs) + BM * 1.1 * (odM + odMs);
+        const tau = BR[k] * (odR + odRs) + BM * 1.1 * (odM + odMs) + BO[k] * (odO + odOs);
         const a = Math.exp(-tau);
         sum[k] += hr * a;
         if (k === 1) att1 = a;

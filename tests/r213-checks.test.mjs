@@ -222,7 +222,11 @@ test('R213 ⑥: the space populations are opt-in and carry loading/ok/error', ()
   assert.equal(B.deepFarAu(), 0);
 
   const space = read('js/space.js');
-  assert.match(space, /let showCraft=false, showSmall=false, showDeep=false;/, 'all three default off');
+  /* ⚠ (#R218) INTENDED REPLACEMENT: 「宇宙を探索の表示6つは全部デフォルトでは選択状態に。」 #R213
+     defaulted these three OFF on cost grounds and said so; the instruction settles the trade the
+     other way. The rest of this test — the per-switch loading/ok/error state — is what makes that
+     safe, and it is unchanged. tests/r218-checks ⑥ also checks the loads are actually started. */
+  assert.match(space, /let showCraft=true, showSmall=true, showDeep=true;/, 'all three default on');
   assert.match(space, /function popState\(k\)\{/, 'the button can report the fetch state');
   assert.match(space, /litOn\(b,on&&st==='ok'\)/, 'a switch that is on but still fetching does not look like a switch that is on and empty');
 });

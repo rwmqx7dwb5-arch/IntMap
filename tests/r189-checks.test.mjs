@@ -180,7 +180,12 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
   assert.match(src, /async function buildField\(\)\{/, 'the field is built from the DEM');
   assert.match(src, /VS30_BINS=\[\[1e-4,180\],\[2\.2e-3,240\],\[6\.3e-3,300\],\[0\.018,360\],\[0\.05,490\],\[0\.10,620\],\[0\.138,760\]\];/,
     'Wald & Allen 2007 active-tectonic slope table');
-  assert.match(src, /const pgv=prof\.at\(rM\)\*g, a0=prof\.a0At\(rM\)\*g;/, 'one RVT profile, one multiply per cell');
+  /* ⚠ (#R218) the two quantities now come out of ONE index lookup (prof.both) instead of two. The
+     profile, the interpolation and the per-cell multiply are unchanged; only the binary SEARCH for
+     the node was replaced by the closed form the geometric table already implies.
+     tests/r218-checks ③ runs the old and the new interpolation against each other. */
+  assert.match(src, /const b2=prof\.both\(rM\);/, 'one RVT profile, one index for both quantities');
+  assert.match(src, /const pgv=b2\[0\]\*g, a0=b2\[1\]\*g;/, 'one multiply per cell');
   /* ⚠ (#R212) SEA cells are still not painted — but a cell below zero is no longer assumed to be
      sea. 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ」: the Jordan Rift, a quarter of the
      Netherlands, the Caspian Depression and Death Valley are dry land below zero and were dropped

@@ -483,8 +483,19 @@ window.IntMapModules.worldPacks=function(HOST){
           x.style.background=a?'var(--primary-color)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)'; });
         mark('.wp-x',()=>dir==='X'); mark('.wp-m',()=>dir==='M');
         mark('.wp-n',(x)=>+x.getAttribute('data-n')===topN);
-        b.querySelector('.wp-x').onclick=()=>{ dir='X'; load(iso,true); };
-        b.querySelector('.wp-m').onclick=()=>{ dir='M'; load(iso,true); };
+        /* ══ ⚠ (#R218) THE SEGMENT THAT NEVER RE-LIT ═══════════════════════════════════════════════
+           「貿易フローのポップアップで、輸出入を切り替えても、色が変わらず、選択中かわからない。」
+           `mark()` above paints the selected segment — but it only ever runs from `render()`, and
+           these two handlers called `load()`, which draws the map and rewrites the figures without
+           rebuilding the panel. So `dir` changed, the arcs flipped, the totals changed, and the two
+           buttons stayed exactly as they were. (The `.wp-n` handlers three lines down already call
+           `render()`, which is why THAT segment has always lit correctly — the same control written
+           twice, one of them missing a line.)
+           ⚠ `render()` comes FIRST, and not only for tidiness: with no country selected `load(null)`
+           returns on its first line, so a re-mark that waited for the load would never happen at all
+           and pressing 輸出 / 輸入 before tapping a country would do nothing visible. */
+        b.querySelector('.wp-x').onclick=()=>{ dir='X'; render(); load(iso,true); };
+        b.querySelector('.wp-m').onclick=()=>{ dir='M'; render(); load(iso,true); };
         b.querySelector('.wp-sec').onchange=(e)=>{ section=e.target.value; load(iso,true); };
         b.querySelectorAll('.wp-n').forEach(x=>x.onclick=()=>{ topN=+x.getAttribute('data-n'); draw(); render(); });
         stat(); }
@@ -1167,7 +1178,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const st=restat({ lng:o.lng, lat:o.lat, pts:o.pts },t0);
             return st; }).filter(Boolean);
           if(!stations.length) rearm();
-          drawStations(); overview();
+          drawStations(); paintFloodFromStations(); overview();   /* (#R218) shade before any tap */
         }).catch(()=>{ stations=[]; rearm(); drawStations(); overview(true); })
           .then(()=>{ gridBusy=false; }); }
       /* the level, the phase and the next turn AT `t0`, from a series this station already has */
@@ -1194,7 +1205,9 @@ window.IntMapModules.worldPacks=function(HOST){
           const lv=levelAt(series,t0);
           if(lv!=null&&(++floodTick%3===0||!playTmr)) paintFlood(at[0],at[1],lv);
           probeHtml(t0,lv);
-        } else overview(); }
+        } else { /* (#R218) the un-tapped shading follows the clock too, at the same 1-in-3 cadence */
+          if(++floodTick%3===0||!playTmr) paintFloodFromStations();
+          overview(); } }
       /* what the layer says WITHOUT a tap: the coasts in view, the level now and when each next turns.
          A tapped point replaces this with its own table (probe) and it returns on the next scan. */
       const SRCNOTE=()=>'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
@@ -1258,7 +1271,22 @@ window.IntMapModules.worldPacks=function(HOST){
         return null; }
 
       /* the same bathtub the sea-level layer draws, at the tide's own level */
+      /* ══ ⚠ (#R218) THE SEA IS MAPPED BEFORE ANYTHING IS TAPPED ═══════════════════════════════════
+         「潮汐レイヤーは地点を選択する前から海面をマッピングしておけ。」 Confirmed this round: the same
+         shading as before, only without having to guess where to click first. #R215 made the layer
+         SCAN the coast on switch-on — the dots and the times have been there since — but the SHADING
+         (ground at or below the water) was still painted only from `probe()`, i.e. only after a tap.
+         So the layer's most visual answer waited for a gesture that nothing on screen asked for.
+         `paintFlood` never used the coordinates it was handed anyway: it paints the whole viewport at
+         one level. It now takes a LEVEL FUNCTION instead of a number, so the same routine draws the
+         tapped point's level everywhere (as before) or, with no tap, the level of the NEAREST SCANNED
+         COAST for each cell.
+         ⚠ Nearest, not interpolated, and that is a claim about what is known: each station's level is
+         a model value for THAT point, and the honest thing to paint a cell with is the measurement
+         nearest to it — not a smooth surface through them, which would invent a tide between two
+         coasts that the model was never asked about. The panel says which it is. */
       function paintFlood(lng,lat,level){
+        const at=(typeof level==='function')?level:()=>level;
         try{ const b=GE().camera.getBounds(); if(!b) return;
           const W=b.getWest(), E=b.getEast(), S=b.getSouth(), N=b.getNorth();
           const NX=220, NY=Math.max(40,Math.round(NX*(N-S)/Math.max(1e-9,E-W)));
@@ -1267,9 +1295,10 @@ window.IntMapModules.worldPacks=function(HOST){
           let wet=0;
           for(let j=0;j<NY;j++){ const la=N-(j+0.5)*(N-S)/NY;
             for(let i=0;i<NX;i++){ const lo=W+(i+0.5)*(E-W)/NX;
+              const level2=at(lo,la); if(level2==null||!isFinite(level2)) continue;
               let e=null; try{ e=HOST.demElevBilinear(lo,la,10); if(e==null) e=HOST.demElevAt(lo,la,null,10); }catch(_){}
               if(e==null||!isFinite(e)) continue;
-              if(e<=level){ const d=Math.max(0,level-e), o=(j*NX+i)*4, s=Math.min(1,d/3);
+              if(e<=level2){ const d=Math.max(0,level2-e), o=(j*NX+i)*4, s=Math.min(1,d/3);
                 px[o]=Math.round(96-40*s); px[o+1]=Math.round(190-70*s); px[o+2]=255; px[o+3]=Math.round(120+90*s); wet++; } } }
           ct.putImageData(im,0,0);
           const coords=[[W,N],[E,N],[E,S],[W,S]];
@@ -1280,6 +1309,25 @@ window.IntMapModules.worldPacks=function(HOST){
           return wet; }catch(_){ return 0; } }
       function clearFlood(){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
         try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} }
+      /* the level of the nearest scanned coast, for a cell nobody tapped (#R218). Cells further than
+         `FAR_DEG` from every station are left alone: past that the nearest measurement is not about
+         this water any more, and painting it would be an extrapolation nothing asked for. */
+      const FAR_DEG=6;
+      function stationLevelFn(){
+        if(!stations.length) return null;
+        const st=stations.filter(s=>s&&isFinite(s.lv));
+        if(!st.length) return null;
+        return (lo,la)=>{ let best=null, bd=Infinity;
+          for(const s of st){ const dx=(lo-s.lng)*Math.cos(la*Math.PI/180), dy=la-s.lat, d=dx*dx+dy*dy;
+            if(d<bd){ bd=d; best=s; } }
+          return (best&&bd<=FAR_DEG*FAR_DEG)?best.lv:null; }; }
+      /* what the layer shades with no tap: the scanned coasts. Called after a scan and after the
+         clock moves inside the cached window (restatAll). A tapped point owns the picture instead. */
+      function paintFloodFromStations(){
+        if(at) return;                                     /* a tapped point is showing its own level */
+        const fn=stationLevelFn();
+        if(!fn){ clearFlood(); return; }
+        try{ paintFlood(null,null,fn); }catch(_){} }
 
       function fmtT(ms){ try{ return new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return new Date(ms).toISOString().slice(0,16).replace('T',' '); } }
       function when(){ try{ const st=window.IntMapTime.state(); return st.isLive?Date.now():+new Date(st.when); }catch(_){ return Date.now(); } }
@@ -1487,6 +1535,35 @@ window.IntMapModules.worldPacks=function(HOST){
         ct.putImageData(d,0,0);
         return { url:cv.toDataURL('image/png'), n }; }
 
+      /* ══ ⚠ (#R218) THE TILE THE VIEW SITS IN, NOT THE VIEW ═══════════════════════════════════════
+         「作物栽培レイヤーで、読み込み時間が長い。いちいち地図の見る場所を変えるたびに、読み込みまで
+          待たないといけないのは不便。」 The request was the VIEWPORT'S EXACT BOX, so every pan — every
+         one, of any size — produced a key nothing had seen before, and the layer went back to FAO for
+         a picture that overlapped the one already on screen by 95 %.
+         The box is now snapped to a quadtree cell whose size is chosen to be about a viewport wide,
+         and the answer is KEPT. Panning inside that cell costs nothing at all; crossing its edge costs
+         one request; and coming back to somewhere already visited is instant, because the cache is
+         keyed by (crop, variable, supply, year, cell) and a cell is a place rather than a moment.
+         ⚠ The picture is not coarser for it: the request's pixel count scales with the box, so one
+         screen pixel still carries what it carried — see PW below. The FAO grid itself is ~9 km, so
+         both are well past what the data can say either way. */
+      const _cache=new Map(); const CACHE_MAX=14;
+      function _cacheGet(k){ const v=_cache.get(k); if(v){ _cache.delete(k); _cache.set(k,v); } return v; }
+      function _cachePut(k,v){ _cache.set(k,v);
+        while(_cache.size>CACHE_MAX){ const first=_cache.keys().next().value; const o=_cache.get(first);
+          _cache.delete(first); try{ if(o&&o.url&&o.url.indexOf('blob:')===0) URL.revokeObjectURL(o.url); }catch(_){} } }
+      /* the quadtree cell covering the view, in Mercator metres, aligned so it is the same cell for
+         every camera inside it */
+      function _cellBox(W,E,S,N){
+        const x0=mercX(W), x1=mercX(E), y0=mercY(S), y1=mercY(N);
+        const world=2*HALF, vw=Math.max(1,x1-x0);
+        const lvl=Math.max(0,Math.min(14,Math.round(Math.log2(world/vw))));
+        const step=world/Math.pow(2,lvl);
+        const q=(v,dir)=>(dir<0?Math.floor(v/step):Math.ceil(v/step))*step;
+        const X0=Math.max(-HALF,q(x0,-1)), X1=Math.min(HALF,q(x1,1));
+        const Y0=Math.max(mercY(-58),q(y0,-1)), Y1=Math.min(mercY(83),q(y1,1));
+        return { X0, X1, Y0, Y1, lvl, vw };
+      }
       async function paint(force){
         if(!on||busy) return;
         let b,z; try{ b=GE().camera.getBounds(); z=GE().camera.getZoom(); }catch(_){ return; }
@@ -1494,8 +1571,21 @@ window.IntMapModules.worldPacks=function(HOST){
         const W=Math.max(-180,b.getWest()), E=Math.min(180,b.getEast()), S=Math.max(-58,b.getSouth()), N=Math.min(83,b.getNorth());
         if(!(E>W&&N>S)) return;
         const yr=gaezYear();
-        const key=[crop,variable,supply,yr,W.toFixed(2),E.toFixed(2),S.toFixed(2),N.toFixed(2)].join('|');
+        const cell=_cellBox(W,E,S,N);
+        if(!(cell.X1>cell.X0&&cell.Y1>cell.Y0)) return;
+        const key=[crop,variable,supply,yr,cell.lvl,Math.round(cell.X0),Math.round(cell.Y0),Math.round(cell.X1),Math.round(cell.Y1)].join('|');
         if(!force&&key===drawKey) return;
+        /* a cell this session has already fetched goes straight to the map — no request, no wait */
+        const hit=_cacheGet(key);
+        if(hit&&!force){ drawKey=key; lastMeta=hit.meta;
+          whenDrawable(()=>{ try{
+            if(GE().layers.hasSource(IMG)) GE().layers.updateImage(IMG,{url:hit.url,coordinates:hit.coords});
+            else { GE().layers.addSource(IMG,{type:'image',url:hit.url,coordinates:hit.coords});
+              GE().layers.add({id:LYR,type:'raster',source:IMG,
+                paint:{'raster-opacity':0.85,'raster-fade-duration':0,'raster-resampling':'nearest'}},
+                GE().layers.has('tool-poly')?'tool-poly':undefined); }
+            panel.claim(); setVis([LYR],on); }catch(_){} });
+          render(); return; }
         drawKey=key; busy=true;
         stat(L('Reading the FAO grid…','FAO のグリッドを取得中…','FAO-Raster wird gelesen…','Загрузка сетки ФАО…','Leyendo la malla de la FAO…'));
         try{
@@ -1503,10 +1593,13 @@ window.IntMapModules.worldPacks=function(HOST){
           const rec=cat[[crop,yr,variable,supply].join('|')];
           if(!rec) throw new Error('no such raster');
           const st=await statsFor(rec.OBJECTID);
-          const x0=mercX(W), x1=mercX(E), y0=mercY(S), y1=mercY(N);
+          const x0=cell.X0, x1=cell.X1, y0=cell.Y0, y1=cell.Y1;
           const aspect=(x1-x0)/Math.max(1,(y1-y0));
-          const PW=Math.max(320,Math.min(1600,Math.round((window.innerWidth||1200)*1.25)));
-          const PH=Math.max(200,Math.min(1600,Math.round(PW/Math.max(0.05,aspect))));
+          /* the same pixels per screen pixel the viewport request had, over a box that is bigger than
+             the viewport — so nothing is softer than it was, and the ceiling is what the service and
+             the canvas will carry */
+          const PW=Math.max(320,Math.min(2048,Math.round((window.innerWidth||1200)*1.25*(x1-x0)/Math.max(1,cell.vw))));
+          const PH=Math.max(200,Math.min(2048,Math.round(PW/Math.max(0.05,aspect))));
           const mr=encodeURIComponent(JSON.stringify({mosaicMethod:'esriMosaicNone',where:'OBJECTID='+rec.OBJECTID}));
           const rr=encodeURIComponent(JSON.stringify({rasterFunction:'Stretch',rasterFunctionArguments:{
             StretchType:5, Statistics:[[st.min,st.max,st.mean,1]], DRA:false, UseGamma:false, Min:0, Max:255 }}));
@@ -1516,7 +1609,13 @@ window.IntMapModules.worldPacks=function(HOST){
             im.onload=()=>res(im); im.onerror=()=>rej(new Error('image')); im.src=u; });
           const out=recolor(img,PW,PH);
           if(!out) throw new Error('canvas');
-          const coords=[[W,invY(y1)],[E,invY(y1)],[E,invY(y0)],[W,invY(y0)]];
+          /* ⚠ the corners come from THE BOX THAT WAS REQUESTED, not from the viewport — that is the
+             whole point of the cell, and reading `W`/`E` here (as the viewport request did) would put
+             a wider picture inside a narrower frame and shift every crop east. */
+          const lngOf=(x)=>x/HALF*180;
+          const coords=[[lngOf(x0),invY(y1)],[lngOf(x1),invY(y1)],[lngOf(x1),invY(y0)],[lngOf(x0),invY(y0)]];
+          const meta={ st, units:rec.units, year:yr, oid:rec.OBJECTID };
+          _cachePut(key,{ url:out.url, coords, meta });
           whenDrawable(()=>{ try{
             if(GE().layers.hasSource(IMG)) GE().layers.updateImage(IMG,{url:out.url,coordinates:coords});
             else { GE().layers.addSource(IMG,{type:'image',url:out.url,coordinates:coords});
@@ -1526,7 +1625,7 @@ window.IntMapModules.worldPacks=function(HOST){
               panel.claim(); }
             panel.claim();
             setVis([LYR],on); }catch(_){} });
-          lastMeta={ st, units:rec.units, year:yr, oid:rec.OBJECTID };
+          lastMeta=meta;
           render();
         }catch(e){ console.warn('crops',e);
           stat('⚠ '+L('This crop and variable could not be fetched from GAEZ.','この作物・指標を GAEZ から取得できませんでした。','Nicht abrufbar.','Не удалось получить.','No se pudo obtener.')); }
