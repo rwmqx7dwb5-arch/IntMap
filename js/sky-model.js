@@ -106,6 +106,115 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
     return (-b - Math.sqrt(disc)) / 2 > 0;
   };
 
+  /* ══ ⚠⚠ (#R220) MULTIPLE SCATTERING — THE TERM THAT WAS MISSING, NOT A TUNING KNOB ═══════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 — asked for the third time, and #R219
+     wrote down why it had not been done: the next honest step is multiple scattering, and that needs
+     a table. It is here now.
+
+     WHAT SINGLE SCATTERING GETS WRONG, physically rather than aesthetically: this march counted a
+     photon exactly once. Real air is optically thick enough in the blue that a large share of what
+     reaches the eye has bounced two, three, many times — and every one of those bounces has an
+     ISOTROPIC history, so the light it delivers has no direction left in it. The consequences are the
+     three things a single-scattering sky is always criticised for, all of which this model had:
+       · the sky away from the Sun is too dark and too saturated (no isotropic floor under it);
+       · the ground-level horizon is too blue-black — the long path scatters out and nothing puts back;
+       · twilight collapses far too fast once the Sun is down, because the only light left in a
+         single-scattering model is what survives one bounce through 40 km of air.
+
+     THE METHOD is Hillaire (2020) §5.4, "infinite scattering": the second-order in-scatter arriving
+     at a point, divided by (1 − f), where f is the fraction of that light which scatters again. The
+     geometric series is what turns two orders into all of them, and both terms are integrals over the
+     WHOLE SPHERE at the point — so they depend only on height and on the Sun's zenith angle, never on
+     where the camera is looking. That is why it is a TABLE (`skyColour._ms`), computed once on first
+     use and reused: 16 heights × 24 Sun elevations, ~100 k inner steps, a few milliseconds, and after
+     that the per-call cost is two interpolations.
+     ⚠ ISOTROPIC PHASE, 1/4π, in both terms — using pR/pM here would be double-counting the direction
+     that the multiple bounces are precisely what destroys.
+     ⚠ It is attached to the exported function rather than declared beside it: tests/r175-checks ③
+     forbids an unexported top-level declaration in js/ (it would have been a global before the bundle). */
+  const MS_H = [0, 500, 1500, 3000, 5000, 8000, 12000, 17000, 23000, 30000, 40000, 50000, 62000, 75000, 88000, 99000];
+  const MS_E = 24, MS_E0 = -25, MS_E1 = 90;      /* sun elevation samples, −25° … 90° */
+  /* 8 directions, Fibonacci-spaced on the sphere — the coarsest set that still integrates a
+     hemisphere-asymmetric field without banding, because the answer is an AVERAGE over the sphere. */
+  const MS_DIRS = (() => {
+    const out = [], K = 8, ga = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < K; i++) {
+      const z = 1 - (2 * i + 1) / K, r = Math.sqrt(Math.max(0, 1 - z * z)), a = ga * i;
+      out.push([r * Math.cos(a), r * Math.sin(a), z]);
+    }
+    return out;
+  })();
+  /** ψ_ms and f at one height and one Sun elevation — the two integrals over the sphere */
+  const msPoint = (h, seDeg) => {
+    const p0 = [0, 0, RG + h], s = [0, Math.cos(seDeg * D2R), Math.sin(seDeg * D2R)];
+    const L2 = [0, 0, 0]; let fms = 0;
+    const N2 = 8, M2 = 4, iso = 1 / (4 * Math.PI);
+    for (const w of MS_DIRS) {
+      let tMax = toShell(p0, w, RT);
+      if (!(tMax > 0)) continue;
+      const bg = 2 * (p0[0] * w[0] + p0[1] * w[1] + p0[2] * w[2]);
+      const cg = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2] - RG * RG;
+      const dg = bg * bg - 4 * cg;
+      if (dg >= 0) { const rt = Math.sqrt(dg), t1 = (-bg - rt) / 2; if (t1 > 1e-6) tMax = Math.min(tMax, t1); }
+      const dt = tMax / N2;
+      let odR = 0, odM = 0, odO = 0;
+      for (let i = 0; i < N2; i++) {
+        const t = (i + 0.5) * dt;
+        const q = [p0[0] + w[0] * t, p0[1] + w[1] * t, p0[2] + w[2] * t];
+        const hq = Math.max(0, Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]) - RG);
+        const hr = Math.exp(-hq / HR) * dt, hm = Math.exp(-hq / HM) * dt, ho = ozone(hq) * dt;
+        odR += hr; odM += hm; odO += ho;
+        /* the transmittance back along ω to the point we are solving for */
+        const tv = [0, 1, 2].map((k) => Math.exp(-(BR[k] * odR + BM * 1.1 * odM + BO[k] * odO)));
+        /* f — how much of the light arriving here is scattered ONWARD. No sun visibility in it:
+           this is the medium's own re-scattering, which is what closes the series. Green channel,
+           because f is a scalar in the approximation and green is where the eye's luminance lives. */
+        fms += iso * tv[1] * (BR[1] * hr + BM * hm);
+        if (blocked(q, s)) continue;
+        const ts = toShell(q, s, RT);
+        if (!(ts > 0)) continue;
+        const dts = ts / M2;
+        let sR = 0, sM = 0, sO = 0;
+        for (let j = 0; j < M2; j++) {
+          const u = (j + 0.5) * dts;
+          const z0 = q[0] + s[0] * u, z1 = q[1] + s[1] * u, z2 = q[2] + s[2] * u;
+          const hs = Math.max(0, Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2) - RG);
+          sR += Math.exp(-hs / HR) * dts; sM += Math.exp(-hs / HM) * dts; sO += ozone(hs) * dts;
+        }
+        for (let k = 0; k < 3; k++) {
+          const tsun = Math.exp(-(BR[k] * sR + BM * 1.1 * sM + BO[k] * sO));
+          L2[k] += tv[k] * tsun * iso * (BR[k] * hr + BM * hm);
+        }
+      }
+    }
+    const K = MS_DIRS.length;
+    const f = Math.min(0.92, fms / K);            /* the series only converges below 1 */
+    return L2.map((v) => (v / K) / (1 - f));
+  };
+  const msTable = () => {
+    if (skyColour._ms) return skyColour._ms;
+    const t = [];
+    for (let a = 0; a < MS_H.length; a++) {
+      const row = [];
+      for (let e = 0; e < MS_E; e++) row.push(msPoint(MS_H[a], MS_E0 + (MS_E1 - MS_E0) * e / (MS_E - 1)));
+      t.push(row);
+    }
+    skyColour._ms = t;
+    return t;
+  };
+  /** ψ_ms at an arbitrary height and Sun elevation, bilinear in the table */
+  const msAt = (h, seDeg) => {
+    const t = msTable();
+    let a = 0; while (a < MS_H.length - 2 && MS_H[a + 1] < h) a++;
+    const fa = Math.max(0, Math.min(1, (h - MS_H[a]) / (MS_H[a + 1] - MS_H[a])));
+    const x = Math.max(0, Math.min(MS_E - 1.001, (seDeg - MS_E0) / (MS_E1 - MS_E0) * (MS_E - 1)));
+    const e = Math.floor(x), fe = x - e;
+    const q = (ai, ei, k) => t[ai][ei][k];
+    return [0, 1, 2].map((k) =>
+      (q(a, e, k) * (1 - fe) + q(a, e + 1, k) * fe) * (1 - fa) +
+      (q(a + 1, e, k) * (1 - fe) + q(a + 1, e + 1, k) * fe) * fa);
+  };
+
   /** linear, unbounded radiance along one ray */
   const radiance = (alt0, ve0, se0, az0) => {
     const N = 16, M = 8;
@@ -133,12 +242,23 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
     const dt = tMax / N;
     let odR = 0, odM = 0, odO = 0, sumM = 0;
     const sum = [0, 0, 0];
+    /* (#R220) the multiple-scattering sum. It rides the SAME march and the same view transmittance;
+       what it does not have is a sun-visibility test — light that has bounced arrives from the whole
+       sky, which is exactly why it survives into twilight and into the Earth's shadow. */
+    const ms = [0, 0, 0];
     for (let i = 0; i < N; i++) {
       const t = (i + 0.5) * dt;
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
       const h = Math.max(0, Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) - RG);
       const hr = Math.exp(-h / HR) * dt, hm = Math.exp(-h / HM) * dt, ho = ozone(h) * dt;
       odR += hr; odM += hm; odO += ho;
+      {
+        const psi = msAt(h, se0);
+        for (let k = 0; k < 3; k++) {
+          const av = Math.exp(-(BR[k] * odR + BM * 1.1 * odM + BO[k] * odO));
+          ms[k] += av * psi[k] * (BR[k] * hr + BM * hm);
+        }
+      }
       if (blocked(p, s)) continue;
       const ts = toShell(p, s, RT);
       if (!(ts > 0)) continue;
@@ -163,7 +283,7 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
     const pR = 3 / (16 * Math.PI) * (1 + mu * mu);
     const pM = 3 / (8 * Math.PI) * ((1 - G * G) * (1 + mu * mu)) /
                ((2 + G * G) * Math.pow(Math.max(1e-6, 1 + G * G - 2 * G * mu), 1.5));
-    return [0, 1, 2].map((k) => SUN_I * (sum[k] * BR[k] * pR + sumM * BM * pM));
+    return [0, 1, 2].map((k) => SUN_I * (sum[k] * BR[k] * pR + sumM * BM * pM + ms[k]));
   };
 
   const tone = (c) => {

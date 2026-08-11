@@ -293,7 +293,7 @@ test('⑦ the currents are the bundled, measured dataset (#R219 replaced the liv
      prose is not a scan of the program. */
   const c = code('js/ocean-currents.js');
   assert.equal(/layers\.addImage/.test(c), false, 'addImage is on scene, not layers');
-  assert.match(c, /GE\(\)\.scene\.addImage\('oc-arrow-img'/);
+  assert.match(c, /GE\(\)\.scene\.addImage\(name,/);   /* (#R220) two glyphs, one helper */
 });
 test('⑦ …and the marine model + Wikidata are still both declared', () => {
   const r = read('js/reference-data.js');
