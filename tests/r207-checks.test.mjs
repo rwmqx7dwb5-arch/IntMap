@@ -154,7 +154,10 @@ test('R207 ⑩ space: the way back is the Earth\'s, the scale switch preserves f
   assert.ok(/function atNearLimit\(\)\{\s*if\(!earthIsSubject\(\)\) return false;/.test(s),
     'the return-to-map gesture is armed only when the Earth is the subject');
   /* the framing, not the number, is what survives a scale change */
-  const sc = s.slice(s.indexOf('function setScale('), s.indexOf('function setScale(') + 900);
+  /* (#R221) the window is longer: setScale now carries BOTH invariants — the AU distance far out and
+     the focused body's apparent size close in — and blends them in log space, because neither one
+     alone is what the reader is holding (DEV-NOTES #R221 §7). */
+  const sc = s.slice(s.indexOf('function setScale('), s.indexOf('function setScale(') + 2200);
   /* ⚠ (#R219) INTENDED REPLACEMENT. #R207's invariant was the FRAMING (`dist / systemDist()`), which
      is right inside the planets and wrong outside them: at the model ceiling it lands the camera three
      orders of magnitude off (measured — DEV-NOTES #R219 §7). The two scales are two unit systems over

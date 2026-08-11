@@ -48,7 +48,7 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.routingOps=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
-  const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+  const L=window.IntMapLang.pick(()=>HOST.lang);
   const D2R=Math.PI/180, R_EARTH=6371008.8;
   function distM(a,b){ const la1=a[1]*D2R, la2=b[1]*D2R, dla=(b[1]-a[1])*D2R, dlo=(b[0]-a[0])*D2R;
     const h=Math.sin(dla/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;

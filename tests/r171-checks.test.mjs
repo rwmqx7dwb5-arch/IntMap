@@ -23,7 +23,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
-const R = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language (see js/lang-registry.js). Asking this
+   reader for js/i18n.js therefore hands back the whole table, which is what these assertions mean. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const R = (f) => (String(f).endsWith('js/i18n.js')
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8')).join('\n')
+  : readFileSync(new URL('../' + f, import.meta.url), 'utf8'));
 /* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js — so INDEX
    is the concatenation. Pointed at the new index.html these assertions would pass vacuously.
    JS_FILES stays the MODULE list: js/app-body.js is the page's own program, not a module. */

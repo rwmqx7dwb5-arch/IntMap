@@ -180,7 +180,31 @@ export function makeThemeSky(HOST, CTX) {
      MapLibre before this: the two layers do disappear and stay gone across a camera move. So MapLibre
      is left byte-for-byte as it was, and this only stops the sun-anchored light on the engines whose
      night side IS that light. `setSunDirection(null)` is the documented "restore the default light". */
-  function _nightSideOff(){ try{ const N=window.IntMapNightSide; return !!(N&&N.isOn&&!N.isOn()); }catch(_){ return false; } }
+  /* ══ ⚠⚠ (#R221) …AND «OFF» NOW ALSO MEANS «THE BASEMAP IS THE MAP» ═══════════════════════════════
+     「昼夜で夜間光にしたり明るくしたり暗くしたりするやつはSatellite時のみに。Mapではなにも無し。」
+     — sent again, because #R220 answered only half of it. #R220 put the `satelliteUp()` condition on
+     js/night-side.js, and measured that on the vector map neither `im-night-shade` nor
+     `im-night-lights-lyr` is in the style any more. That is true and it is not the whole effect:
+     THREE more things in THIS file are aimed by the Sun, and none of them was gated —
+
+       · `style.light`, from which maplibre-gl's own atmosphere pass takes `u_sun_pos`, so the halo
+         is bright on the day side and dark on the night side (#R215 found this once already, for
+         the Settings switch, and fixed it only for that switch);
+       · `horizon-color`, interpolated on the Sun's elevation at the map centre;
+       · `sky-color`, integrated by js/sky-model.js at that same elevation.
+
+     On the vector map at local midnight that is a globe with a dark limb and a black sky — 「暗く
+     したり」 exactly, with the layers correctly absent. The photograph-on-a-drawing argument #R220
+     made for the mosaic applies to all four: a drawn map has no photometry to be consistent with.
+
+     ⚠ ONE PREDICATE, and it is the same question js/night-side.js asks (`layer-sat` visible), so the
+     two can never disagree about which basemap is up. The SETTING still wins where it is off. */
+  function _satelliteUp(){
+    try{ return GE().layers.getLayout('layer-sat','visibility')==='visible'; }catch(_){ return false; } }
+  function _nightSideOff(){
+    try{ const N=window.IntMapNightSide; if(N&&N.isOn&&!N.isOn()) return true; }catch(_){}
+    return !_satelliteUp();
+  }
   /* ══ ⚠⚠ (#R215) …AND MapLibre DRAWS A TERMINATOR OF ITS OWN, WHICH IS WHY IT IS BACK ═══════════
      「設定から、昼夜を表示するのをオフにできるように。（追記：オフにしてもオフにならない。MapLibre。）」
 
@@ -343,12 +367,61 @@ export function makeThemeSky(HOST, CTX) {
      acos(R/(R+h)) − 0 … i.e. how much of the sphere's edge the air occupies, which falls off as the
      camera climbs. Mapped onto the same 0.55 at ground level so nothing measured before moves, and
      down to a thin band at globe height. */
+  /* ══ ⚠ (#R221) …AND THE OTHER HALF OF THE BAND'S THICKNESS IS THE SUN ═══════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 — the fifth round on this line, so it
+     starts from what the previous four left. #R196 gave the style a sky at all, #R202 replaced
+     `sky-color` with the Rayleigh + Mie integral, #R213 replaced `horizon-color` with it and made
+     THIS function depend on the eye's height, #R218 added ozone and #R220 added multiple scattering.
+     Everything about the band's COLOUR is now integrated. Its THICKNESS still was not: `_horizonBlend`
+     answered from the camera's height alone, so a sunset and a noon at the same height were drawn
+     with the same gradient.
+
+     They are not the same gradient, and the reason is in the model already. How fast the sky darkens
+     with view elevation is the whole shape of the band — at noon the sight-line at 3° and at 55°
+     cross air masses of 19 and 1.2, a ratio of a few, so the gradient is long and gentle; at sunset
+     the low ray is 38 air masses of reddened, ozone-absorbed light and the high one is nearly dark,
+     so the bright part is compressed into the first few degrees. That ratio IS the thickness, and it
+     costs two more evaluations of a function that already runs on the same events.
+
+     ⚠ MULTIPLICATIVE WITH #R213's HEIGHT TERM, NOT A REPLACEMENT. Height and Sun are independent
+     reasons for the band to be thin (an orbital limb is a hairline at any hour), and #R213's measured
+     mapping is left exactly where it was: at ground level with a high Sun this returns 0.55, which is
+     the value #R196 measured off the Cesium capture.
+
+     ⚠ AND IT ONLY BECAME A REAL TERM ONCE THE MIE BUG WAS OUT. Measured against the model AS SHIPPED,
+     this ratio moved only between 0.60 and 0.69 across the whole day — a 10 % swing nobody could see,
+     and the honest thing would have been to drop the idea. It was the per-channel Mie transmittance
+     (see js/sky-model.js) that was flattening it: with that fixed the same measurement runs
+
+         noon, looking at the Sun   ratio 1.000 → blend 0.550     (a long, gentle gradient)
+         sunset, looking at it      ratio 0.344 → blend 0.425     (the glow packed into the first few degrees)
+         sunset, looking across it  ratio 0.653 → blend 0.492
+
+     which is the shape a real sunset has. Two measurements of the same idea, three hours apart, and
+     only the second one earned the code. */
+  /* ⚠ THE REFERENCE CONDITION IS THE ONE #R196 MEASURED AT — ground level, high Sun — and the Sun
+     factor is NORMALISED so that it returns exactly 1 there. That is what keeps `_horizonBlend()`
+     equal to 0.55 for the Cesium capture this whole number came from (#R196), while still thinning
+     the band where the model says it is thin. 0.69 is the model's own low/high luminance ratio at
+     that condition, measured rather than chosen; the floor keeps a hard sunset at 45 % of it. */
+  const _HB_REF=0.69;
   function _horizonBlend(){
     const h=Math.max(0,_eyeAltM());
-    if(!(h>0)) return 0.55;
-    const R=6371000, top=100000;                       /* the shell js/sky-model.js integrates */
-    const frac=Math.max(0,Math.min(1,1-Math.log10(1+h/top)/Math.log10(1+40000000/top)));
-    return Math.max(0.14,Math.min(0.55,0.14+0.41*frac));
+    const top=100000;                                  /* the shell js/sky-model.js integrates */
+    const frac=(h>0)?Math.max(0,Math.min(1,1-Math.log10(1+h/top)/Math.log10(1+40000000/top))):1;
+    const byHeight=Math.max(0.14,Math.min(0.55,0.14+0.41*frac));
+    const e=_sunElevAtCentre();
+    if(e==null) return byHeight;                       /* day/night off, or the Sun is unknown */
+    try{
+      const az=_relAzimuth();
+      const lo=_lum(skyColour(e,h,az,3).rgb), hi=_lum(skyColour(e,h,az,55).rgb);
+      if(!(lo>0.5)) return byHeight;                   /* night: there is no band to shape */
+      /* r → 1 when the sky is as bright at 55° as at 3° (a long, gentle gradient: noon);
+         r → 0 when the low sky is far brighter (the glow packed into the first few degrees). */
+      const r=Math.max(0,Math.min(1,hi/lo));
+      const k=Math.max(0.45,Math.min(1,Math.sqrt(r/_HB_REF)));
+      return +Math.max(0.10,Math.min(0.55,byHeight*k)).toFixed(3);
+    }catch(_){ return byHeight; }
   }
   /* ══ (#R216) HOW MUCH AIR IS BETWEEN THE EYE AND THE FAR GROUND ═══════════════════════════════
      `fog-ground-blend` is where along the ground the haze STARTS (1 = only exactly at the horizon,

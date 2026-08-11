@@ -33,10 +33,10 @@ window.IntMapPick=(function(){
   'use strict';
   const GE=()=>window.IntMapGeoEngine;
   function lang(){ try{ const s=JSON.parse(localStorage.getItem('intmap_settings')||'{}');
-      if(s&&['en','jp','de','ru','es'].includes(s.lang)) return s.lang; }catch(_){}
+      if(s&&window.IntMapLang.has(s.lang)) return window.IntMapLang.normalise(s.lang); }catch(_){}
     try{ const l=window.IntMapI18N&&window.IntMapI18N.lang&&window.IntMapI18N.lang(); if(l) return l; }catch(_){}
     return 'en'; }
-  const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[lang()]||en;
+  const L=window.IntMapLang.pick(()=>lang());
 
   let live=null, bar=null;
 

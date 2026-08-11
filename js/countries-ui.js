@@ -307,7 +307,7 @@ window.IntMapModules.countriesUi=function(HOST){
   function renderCountryDetailBody(s){
     if(!s) return `<div class="cm-row"><span>${HOST.t('dataNA')}</span><b>—</b></div>`;
     const _de=HOST.lang==='de', _jp=HOST.lang==='jp', _ru=HOST.lang==='ru', _es=HOST.lang==='es';
-    const TR=(en,jp,de,ru,es)=>_jp?jp:_de?de:_ru?ru:_es?(es||en):en;
+    const TR=window.IntMapLang.pick(()=>HOST.lang);
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
     const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
     const geo=sec('🌍 '+TR('Geography','地理','Geografie','География','Geografía'),[
@@ -472,7 +472,7 @@ window.IntMapModules.countriesUi=function(HOST){
     } };
     /* (#R94/#R101) Time-machine status bar — year + the CURRENTLY-SORTED indicator. (#R103) it used to always say
        "real GDP" no matter which indicator was chosen ("どの指標を選んでもGDPとなっている") — reflect the selection. */
-    const _L5b=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const _L5b=window.IntMapLang.pick(()=>HOST.lang);
     const _bMetric=(key==='pop')?_L5b('population','人口','Bevölkerung','население','población')
       :(key==='area')?_L5b('area','面積','Fläche','площадь','superficie')
       :(key==='hdi')?'HDI'

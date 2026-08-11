@@ -65,7 +65,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru','es'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&window.IntMapLang.has(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
   /* (#R79e) Country flag emoji ("スマホでは国旗が出るがパソコンでは出ない"): Windows ships NO flag glyphs in its
      emoji font — regional-indicator pairs render as letter boxes ("US"), never a flag. Ship the Twemoji Country
      Flags webfont (self-hosted, ~78 KB) scoped by unicode-range to ONLY the flag codepoints, so it touches flag
@@ -277,7 +277,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get areaHTML(){ return areaHTML; },             get ringArea(){ return ringArea; },
     get fmtLL(){ return fmtLL; },                   get hasTurf(){ return hasTurf; },
     get demElevAt(){ return demElevAt; },           get demElevBilinear(){ return demElevBilinear; },
-    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; },
+    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; }, get demTilePoints(){ return demTilePoints; }, get releaseDEMHold(){ return releaseDEMHold; },
     get layerCbInfo(){ return layerCbInfo; },       get renderLayerFavs(){ return renderLayerFavs; },
     get removePin(){ return removePin; },           get setupIntelLayers(){ return setupIntelLayers; },
     /* ── (#R167) members added for the sixth split (legal / feedback / onboarding / mobile-ui /
@@ -1061,7 +1061,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateCompass(){ return IM_READOUT.updateCompass.apply(this,arguments); }
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
-  function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); }
+  function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); } function demTilePoints(){ return IM_READOUT.demTilePoints.apply(this,arguments); } function releaseDEMHold(){ return IM_READOUT.releaseDEMHold.apply(this,arguments); }   /* (#R221) one point per DEM TILE, and the pin the intensity field holds them with */
   function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames */
   const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
@@ -1696,7 +1696,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R152) DESKTOP: right-click the compass → a popup to type an EXACT bearing / pitch (elevation) / zoom, applied to
      the current view ("方位磁針ボタンを右クリックしたら、方角、視点の仰角等を数値で打ち込めるポップアップ"). Left-click still resets north. */
   (function(){ const btn=document.getElementById('btn-compass'); if(!btn) return; let pop=null;
-    const CL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    const CL=window.IntMapLang.pick(()=>currentLang);
     function closePop(){ if(pop){ try{ pop.remove(); }catch(_){} pop=null; document.removeEventListener('mousedown',onDoc,true); document.removeEventListener('keydown',onKey,true); } }
     function onDoc(e){ if(pop && !pop.contains(e.target) && e.target!==btn) closePop(); }
     function onKey(e){ if(e.key==='Escape') closePop(); }
@@ -2323,7 +2323,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      result into the compare set via _toggleCompare (same store the country rows use). */
   (function(){
     let picking=false, bound=null, keyH=null;
-    const _pl=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    const _pl=window.IntMapLang.pick(()=>currentLang);
     const _btns=()=>[document.getElementById('csearch-pick'),document.getElementById('csearch-pick-ws')].filter(Boolean);
     function resolveAt(lngLat){
       try{ const TB=window.IntMapTimeBorders;
@@ -2375,7 +2375,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R122) COUNTRIES NUMERIC FILTER — filter the list by indicator thresholds (≥ / ≤), combinable with the sort.
      e.g. population ≥ 5M then sort by GDP desc. Conditions persist across re-renders. */
   let statsFilters=[], statsFilterOpen=false;
-  const _sfL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+  const _sfL=window.IntMapLang.pick(()=>currentLang);
   function _sfParse(str){ let s=String(str==null?'':str).trim().replace(/[, _]/g,'').replace(/%$/,''); if(!s) return NaN;
     const m=s.match(/^(-?\d*\.?\d+)\s*([kmbtKMBT万億兆])?$/); if(!m) return (isFinite(+s)?+s:NaN);
     let v=+m[1]; const u=(m[2]||'').toLowerCase(); const mul={k:1e3,m:1e6,b:1e9,t:1e12,'万':1e4,'億':1e8,'兆':1e12}[u]||1; return v*mul; }
@@ -2390,7 +2390,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R163) moved to js/companies.js — see Architecture.md §3.1. */
   window.IntMapCompanies=window.IntMapModules.companies(IM_HOST);
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
-  const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+  const _coL=window.IntMapLang.pick(()=>currentLang);
   /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
      detail; a sticky tray shows the selection and opens a side-by-side bar view. Everything reads mcap()/_coVal, which
      follow the time-machine year, so both the ranking and the comparison reflect past statistics. */
@@ -2734,10 +2734,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if(!['en','jp','de','ru','es'].includes(lang) || currentLang===lang) return;   /* (#R37) all four UI languages: EN/JP/DE/RU */
+    if(!window.IntMapLang.codes().includes(lang) || currentLang===lang) return;
     currentLang=lang;
-    try{ ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
-    try{ document.documentElement.setAttribute('lang', lang==='jp'?'ja':lang); }catch(_){}
+    try{ window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
+    try{ document.documentElement.setAttribute('lang', window.IntMapLang.htmlTag(lang)); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
     try{ applyLabelLang(); }catch(_){}   /* (#R40) re-apply map place-label language immediately on pill switch (was only on Settings-Apply → RU/ES labels stayed English until Apply) */
@@ -3400,7 +3400,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(['en','jp','de','ru','es'].includes(s.lang)){ currentLang=s.lang; ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
+    if(window.IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -4387,7 +4387,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      card no longer appears. The builder (`_imWelcome`) is KEPT so nothing is deleted (still reachable if ever
      wired to a menu), it is simply never auto-invoked on load. */
   /* try{ setTimeout(_imWelcome,900); }catch(_){} */
-  try{ ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
+  try{ window.IntMapLang.syncChrome(setLang); window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
 };
   /* (#R180) …and the other half of the barrier. `then(boot, boot)` on purpose: a
      Cesium that fails to load must still give the user the app — on MapLibre,

@@ -280,3 +280,19 @@ code{
 }
 @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto !important} }
 html{scroll-behavior:smooth}
+
+/* ══ (#R221) TYPESET EQUATIONS ══════════════════════════════════════════════════════════════════
+   「数式はそのままのテキストだから、もっとちゃんとした数式用のテキストに。」 A `['tex', …]` block
+   starts life as a `.pg-eq` carrying its own LaTeX source, so a reader whose KaTeX never arrives
+   still sees the formula rather than a gap; `.pg-tex-on` is added the moment KaTeX has replaced the
+   text with real typesetting, and it is what drops the monospace shell around it.
+   ⚠ The overflow rule stays on BOTH states: a long derivation is wider than a phone either way, and
+   it must scroll inside its own box rather than widening the page. */
+.pg-tex{ white-space:normal; }
+.pg-tex.pg-tex-on{
+  font-family:inherit; background:none; border:none; padding:6px 0;
+  overflow-x:auto; overflow-y:hidden;
+}
+.pg-tex.pg-tex-on .katex-display{ margin:0.35em 0; }
+.pg-tex.pg-tex-on .katex{ font-size:1.06em; }
+@media (max-width:640px){ .pg-tex.pg-tex-on .katex{ font-size:0.98em; } }

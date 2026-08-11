@@ -240,8 +240,31 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
       if (t1 > 1e-6) tMax = Math.min(tMax, t1);
     }
     const dt = tMax / N;
-    let odR = 0, odM = 0, odO = 0, sumM = 0;
+    let odR = 0, odM = 0, odO = 0;
     const sum = [0, 0, 0];
+    /* ══ ⚠⚠ (#R221) THE MIE TERM WAS ATTENUATED THROUGH THE GREEN CHANNEL, FOR ALL THREE ═══════════
+       「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 — and this round found a defect in
+       the model rather than a constant to tune. `sumM` was a SCALAR, accumulated with `att1`, which
+       was whichever attenuation the loop happened to leave behind — the GREEN one (`if (k === 1)`).
+
+       Mie SCATTERING is grey (BM is one number for all three channels) and that part was right. What
+       is not grey is the TRANSMITTANCE the scattered light has to travel through afterwards: Rayleigh
+       goes as λ⁻⁴ and ozone absorbs in the Chappuis band, so along a grazing sight-line the three
+       channels differ by an order of magnitude. Attenuating all three by green's value injects a
+       neutral haze that has been reddened-and-then-un-reddened, and it lands exactly where Mie
+       dominates — near the horizon, where the aerosol layer is thickest and the phase function is
+       most forward. Measured on the shipped model, sun 45° at a 3° view elevation:
+
+           #b6c3b6   (182, 195, 182)   — green-dominant, i.e. a GREY-GREEN daytime horizon
+           and at sunset, sun 2°:  #705e3c  — olive, where the sky is orange
+
+       That green is the reason #R213 could not use the model's hue above a +6° Sun and had to keep
+       #R196's measured luminance underneath it. One vector instead of one scalar removes it: the
+       haze now arrives reddened at sunset (red's transmittance is far higher than green's over 38
+       air masses) and blue-white at noon, which is what makes the band read as air rather than as
+       fog. ⚠ NOTHING ELSE ABOUT THE MODEL MOVES — same coefficients, same phase functions, same
+       exposure, same multiple-scattering table. */
+    const sumM = [0, 0, 0];
     /* (#R220) the multiple-scattering sum. It rides the SAME march and the same view transmittance;
        what it does not have is a sun-visibility test — light that has bounced arrives from the whole
        sky, which is exactly why it survives into twilight and into the Earth's shadow. */
@@ -270,20 +293,18 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
         const hs = Math.max(0, Math.sqrt(q0 * q0 + q1 * q1 + q2 * q2) - RG);
         odRs += Math.exp(-hs / HR) * dts; odMs += Math.exp(-hs / HM) * dts; odOs += ozone(hs) * dts;
       }
-      let att1 = 1;
       for (let k = 0; k < 3; k++) {
         const tau = BR[k] * (odR + odRs) + BM * 1.1 * (odM + odMs) + BO[k] * (odO + odOs);
         const a = Math.exp(-tau);
         sum[k] += hr * a;
-        if (k === 1) att1 = a;
+        sumM[k] += hm * a;      /* the SAME optical path, per channel — see the note above */
       }
-      sumM += hm * att1;
     }
     const mu = d[0] * s[0] + d[1] * s[1] + d[2] * s[2];
     const pR = 3 / (16 * Math.PI) * (1 + mu * mu);
     const pM = 3 / (8 * Math.PI) * ((1 - G * G) * (1 + mu * mu)) /
                ((2 + G * G) * Math.pow(Math.max(1e-6, 1 + G * G - 2 * G * mu), 1.5));
-    return [0, 1, 2].map((k) => SUN_I * (sum[k] * BR[k] * pR + sumM * BM * pM + ms[k]));
+    return [0, 1, 2].map((k) => SUN_I * (sum[k] * BR[k] * pR + sumM[k] * BM * pM + ms[k]));
   };
 
   const tone = (c) => {

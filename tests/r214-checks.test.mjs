@@ -19,6 +19,11 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    here with the same stub #R208 used — no browser, no canvas. */
 function nightSky() {
   const win = { addEventListener() { }, devicePixelRatio: 1 };
+  /* ⚠ (#R221) THE LANGUAGE REGISTRY IS A DEPENDENCY OF EVERY MODULE NOW, exactly as the renderer
+     contract is: js/night-sky.js asks window.IntMapLang for its label helper instead of hand-rolling
+     a five-argument one. A sandbox that does not provide it is not the environment the file runs in,
+     and the module throws on the first line that reaches for it. */
+  new Function('window', read('js/lang-registry.js'))(win);
   new Function('window', 'document', read('js/night-sky.js'))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
   return win.IntMapNightSky;
 }

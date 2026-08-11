@@ -17,7 +17,7 @@ window.IntMapModules.workspace=function(HOST){
   const bringToFront=HOST.bringToFront, fetchData=HOST.fetchData, i18n=HOST.i18n, imToast=HOST.imToast, loadCommunity=HOST.loadCommunity, registerWindow=HOST.registerWindow, renderCompanies=HOST.renderCompanies, renderDashboard=HOST.renderDashboard, setMode=HOST.setMode, startNews=HOST.startNews;
   return (function(){
     const KEY='intmap_ws4';   /* (#R84) bumped — default restored to Countries·Map·Layers·Atlas (role-based tiling); old saved layouts not carried over */
-    const T=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const T=window.IntMapLang.pick(()=>HOST.lang);
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     try{ Object.assign(i18n.en,{lblWsMode:'Window workspace (desktop)',wsOff:'Off (default)',wsOn:'On — free floating, resizable windows',wsHint:'News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.'});
       Object.assign(i18n.jp,{lblWsMode:'ウィンドウ・ワークスペース（デスクトップ）',wsOff:'オフ（デフォルト）',wsOn:'オン — 自由に配置・リサイズできるウィンドウ',wsHint:'ニュース・国・地図・レイヤー・Atlasがそれぞれ独立したウィンドウになり、自由に移動・リサイズ・折りたたみ・重ね替えできます。レイアウトは保存されます。'});

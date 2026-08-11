@@ -1,247 +1,49 @@
 /* ============================================================================
- *  IntMap · UI translations (EN / JP / DE / RU / ES)  (#R162)
+ *  IntMap · window.IntMapI18N — the keyed UI table, ASSEMBLED   (#R221, was #R162)
  * ----------------------------------------------------------------------------
- *  The five-language UI string table, moved verbatim out of index.html. It is pure
- *  data: nothing mutates it at runtime (every use is a i18n[lang][key] READ), so it
- *  lives here as one plain object and index.html binds it back with
- *      const i18n=window.IntMapI18N;
- *  Adding a UI string still means adding it to ALL FIVE languages (standing rule 3).
+ *  「今後、対応言語をさらに増やしていく方針です。容易に言語を追加できるように準備しておいて。」
+ *
+ *  This file used to BE the table: one object literal with five branches, 248 lines, edited by
+ *  every language at once. It is now the two lines that assemble it out of js/locales/ui.*.js —
+ *  one file per language — and the place where the per-key fallback to English is installed.
+ *
+ *  ⚠ THE FALLBACK IS A PROTOTYPE, NOT A COPY. `Object.create(en)` means:
+ *      · i18n.de.someKey  →  German if this translation has it, English if it does not, per key.
+ *        (Before, it was `undefined`, and half the call sites in the app print `undefined` for
+ *        that: measured on the Spanish build, which is why #R40 had to fill 184 keys by hand.)
+ *      · a key ADDED TO ENGLISH LATER — js/i18n-late.js does exactly that a dozen times, and every
+ *        round since #R37 has added more — is instantly visible in every language, with no second
+ *        merge and no ordering rule to remember.
+ *    `Object.assign(i18n.de, …)` still works and still writes own properties, so the `try{}` blocks
+ *    in js/i18n-late.js are untouched.
+ *
+ *  ⚠ AND `jp` HAS ALWAYS MEANT `ja`. The app writes Japanese as 'jp'; every page, every <html lang>
+ *  and every ISO consumer writes it as 'ja'. Both now resolve — `IntMapI18N.ja === IntMapI18N.jp` —
+ *  so a reader (or a new locale file) can use either spelling without a special case.
+ *
+ *  Adding a language: see the header of js/lang-registry.js. It is three edits, none of them here.
  * ========================================================================== */
-window.IntMapI18N={
-    en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabCompanies:"Companies", tabStats:"Countries",
-      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", filterCompaniesPh:"Filter companies...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
-      noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
-      emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
-      viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
-      setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behavior", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
-      lblTheme:"Theme", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
-      dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
-      readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", vol3dTool:"3-D volume", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
-      measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
-      placeNames:"Place names", geoLabels:"Water & terrain labels", adminBounds:"State / province borders", roadsLayer:"Roads", railLayer:"Railways", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
-      statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
-      details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
-      spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", vol3dBtn:"🧊 3-D volume", droneBtn:"🛸 Drone", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objects", mScreenshot:"Screenshot", shareMenuBtn:"Share", shareLinkBtn:"Share / copy link", layersBtn:"Layers ▾",
-      ctxDropPin:"Drop a pin", ctxMeasureFrom:"Start measuring", ctxPostHere:"Post to the community", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time machine", tlMachine:"Time machine", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
-      lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
-      lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrSats:"Live satellites", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"Zoom in to load live aircraft", planesAreaHint:"Zoom in — live aircraft cover the central area of this view", poiLabels:"Places, businesses & facilities", shipsZoomHint:"Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
-      filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
-      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap country rows to select and compare.", coCompareEmpty:"Tap company rows to select and compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
-      satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
-      aiSecTitle:"AI features", aiSecHint:"Built-in AI — free for logged-in users (up to 10 uses per day). No API key needed.",
-      aiProvider:"AI provider", aiModel:"Model", aiApiKey:"API key", aiKeyConnected:"Connected", aiKeyNone:"No key", aiGetKey:"Get a key ↗", aiOnDevice:"Runs on-device in Chrome — no API key needed.",
-      aiTest:"Test connection", aiTesting:"Testing…", aiTestOk:"Connection OK ✓",
-      aiNoKey:"Add an AI API key in Settings → AI features first.", aiNoVision:"This model can't read images. Choose GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro.",
-      aiChromeUnavail:"Chrome Built-in AI isn't available here. Use Chrome 127+ with the on-device AI enabled, or choose another provider.",
-      aiThinking:"AI is analyzing…", aiError:"AI request failed", aiCopy:"Copy", aiCopied:"Copied ✓", aiClose:"Close", aiRetry:"Retry",
-      aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate subject", aiGeoBtnPub:"✨ AI-locate publisher", aiTranslateTitles:"Translate titles", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed", aiTransBusy:"Translating…", aiTransDone:"Translated {n} titles", aiTransNone:"Titles already in your language.",
-      lblNewsLang:"News languages", newsLangUi:"Current language only", newsLangMulti:"All languages (auto-translate titles)", lblAiLocate:"AI location analysis", aiLocManual:"Manual (button)", aiLocAuto:"Automatic for all news",
-      aiTranslate:"Translate", aiShowOriginal:"Original", aiTransNoText:"No article text to translate — try Web view.",
-      aiSumBtn:"Summarize this area with AI", popInArea:"Population in this area", popCalcing:"Calculating population…", popFail:"Population lookup failed — try again.", newsInArea:"News in this area", elevProfile:"Elevation profile", finalizeMeas:"Keep on map", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
-      aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
-      aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
-    jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabCompanies:"企業", tabStats:"国別統計",
-      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", filterCompaniesPh:"企業を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
-      noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
-      emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
-      viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
-      setSecAppearance:"外観", setSecLayout:"レイアウトとパネル", setSecMap:"地図の動作", setSecUnits:"単位と時刻", setSecNews:"ニュースとティッカー", setSecAI:"AI", setSecKeys:"連携・キー", setSecAbout:"情報とサポート",
-      lblTheme:"テーマ", lblTz:"基準タイムゾーン", tzSearch:"タイムゾーンを検索…", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
-      dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
-      readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", vol3dTool:"3D立体", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
-      measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
-      placeNames:"地名表示", geoLabels:"水域・地形ラベル", adminBounds:"州・県境", roadsLayer:"道路網", railLayer:"鉄道", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
-      statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
-      details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
-      spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", vol3dBtn:"🧊 3D立体", droneBtn:"🛸 ドローン", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"スクショ", shareMenuBtn:"共有", shareLinkBtn:"共有・リンク", layersBtn:"レイヤー ▾",
-      ctxDropPin:"ピンを刺す", ctxMeasureFrom:"計測を開始", ctxPostHere:"コミュニティに投稿", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"タイムマシン", tlMachine:"タイムマシン", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
-      lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
-      lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrSats:"人工衛星(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"ズームインで航空機を表示", planesAreaHint:"ズームインで全域表示（現在は中央部のみ取得）", poiLabels:"施設・店舗・企業名", shipsZoomHint:"ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
-      filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
-      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして国を選び比較", coCompareEmpty:"行をタップして会社を選び比較", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
-      satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
-      aiSecTitle:"AI機能", aiSecHint:"内蔵AI — ログインすると無料でご利用いただけます（1日10回まで）。APIキーは不要です。",
-      aiProvider:"AIプロバイダ", aiModel:"モデル", aiApiKey:"APIキー", aiKeyConnected:"接続済み", aiKeyNone:"未登録", aiGetKey:"キーを取得 ↗", aiOnDevice:"Chrome内で端末内実行されます（APIキー不要）。",
-      aiTest:"接続テスト", aiTesting:"テスト中…", aiTestOk:"接続に成功しました ✓",
-      aiNoKey:"先に 設定 → AI機能 でAPIキーを登録してください。", aiNoVision:"このモデルは画像を解析できません。GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 Pro を選択してください。",
-      aiChromeUnavail:"このブラウザではChrome内蔵AIを利用できません。Chrome 127以降で端末内AIを有効にするか、別のプロバイダを選択してください。",
-      aiThinking:"AIが解析中…", aiError:"AIリクエストに失敗しました", aiCopy:"コピー", aiCopied:"コピーしました ✓", aiClose:"閉じる", aiRetry:"再試行",
-      aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ 主題地をAI解析", aiGeoBtnPub:"✨ 発信元をAI解析", aiTranslateTitles:"タイトルを翻訳", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました", aiTransBusy:"翻訳中…", aiTransDone:"{n}件のタイトルを翻訳しました", aiTransNone:"すでにこの言語のタイトルです。",
-      lblNewsLang:"ニュースの言語", newsLangUi:"現在の言語のみ", newsLangMulti:"全言語（タイトルを自動翻訳）", lblAiLocate:"AIによる地点解析", aiLocManual:"手動（ボタン）", aiLocAuto:"全ニュースで自動実行",
-      aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
-      aiSumBtn:"この範囲をAIで要約", popInArea:"この範囲の人口", popCalcing:"人口を算出中…", popFail:"人口を取得できませんでした。もう一度お試しください。", newsInArea:"この範囲のニュース", elevProfile:"標高断面", finalizeMeas:"地図に残す", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
-      aiViewSumBtn:"今の表示エリアを要約", aiViewSumTitle:"画面内で起きていること",
-      aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" },
-    /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
-       (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
-    de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabCompanies:"Unternehmen", tabStats:"Länder", tabCommunity:"Community",
-      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", filterCompaniesPh:"Unternehmen filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
-      viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
-      settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
-      setSecAppearance:"Aussehen", setSecLayout:"Layout & Panels", setSecMap:"Kartenverhalten", setSecUnits:"Einheiten & Zeit", setSecNews:"Nachrichten & Ticker", setSecAI:"KI", setSecKeys:"Integrationen & Schlüssel", setSecAbout:"Info & Support",
-      lblTheme:"Darstellung", optAuto:"Systemstandard", optLight:"Hell", optDark:"Dunkel", optClassic:"Klassisch", optCyber:"Cyber",
-      lblMapColor:"Kartenfarbe", mapColorAuto:"Wie Darstellung", mapColorLight:"Hell (weiß)", mapColorDark:"Dunkel (schwarz)",
-      lblUnits:"Maßeinheiten", unitBoth:"Metrisch + Imperial", unitMetric:"Nur metrisch", unitImperial:"Nur imperial",
-      lblTempUnit:"Temperatur", tempBoth:"°C + °F", tempC:"Nur °C", tempF:"Nur °F",
-      lblTz:"Zeitzone", tzSearch:"Zeitzone suchen…", optLocal:"Lokal (Systemstandard)",
-      lblNewsLang:"Nachrichtensprachen", newsLangUi:"Nur aktuelle Sprache", newsLangMultiSel:"Mehrere Sprachen…", newsLangMulti:"Alle Sprachen (Titel automatisch übersetzen)", newsLangHint:"Schlagzeilen aller Sprachen erscheinen gemeinsam; mit einem KI-Schlüssel werden die Titel automatisch übersetzt.",
-      lblAiLocate:"KI-Standortanalyse", aiLocManual:"Manuell (Schaltfläche)", aiLocAuto:"Automatisch für alle Nachrichten",
-      lblSidebarStyle:"Seitenleiste", sidebarOpaque:"Solide (Standard)", sidebarTranslucent:"Mattglas", sidebarGlass2:"Mattglas (transparenter)",
-      lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangEn:"Immer Englisch",
-      lblFlatPan:"Flache Kartenansicht", flatPanFixed:"Fester Ausschnitt (Europa)", flatPanFree:"Frei schwenken (Welt umrunden)",
-      /* (#R180) Render-Engine */
-      lblEngine:"Karten-Engine", engineMapLibre:"MapLibre — 2-D/3-D-Karte (Vorgabe)", engineCesium:"Cesium — echter 3-D-Globus mit realem Gelände",
-      engineHint:"Cesium stellt die Erde in jedem Zoom als echtes Ellipsoid dar, mit denselben Satellitenbildern und denselben Höhendaten. Sie wird nur bei Auswahl heruntergeladen, und der Wechsel lädt die Seite neu. Höhenlinien und das geschlossene 3-D-Körper-Werkzeug bleiben MapLibre vorbehalten.",
-      engineSwitching:"Engine wird gewechselt — neu laden…", engineFellBack:"Cesium konnte nicht starten, diese Sitzung läuft daher mit MapLibre.",
-      engineActive:"Aktiv: ",
-      /* (#R171) Neigungsgrenze + Kamerahöhe */
-      lblTiltLimit:"Neigungsgrenze der Karte", tiltStandard:"Standard — bis 78° (Vorgabe)", tiltUnlimited:"Unbegrenzt — der volle Bereich 0–180°",
-      tiltHint:"Unbegrenzt lässt die Karte über den Horizont hinaus kippen, bis die Kamera senkrecht nach oben blickt. Jenseits von 180° wiederholt sich die Ansicht mit umgekehrter Blickrichtung — per Rechtsklick auf den Kompass lässt sich jeder Winkel von 0 bis 360 eingeben.",
-      lblEyeAlt:"Kamerahöhe in der Anzeige", eyeAltOff:"Aus (Vorgabe)", eyeAltOn:"An — Höhe des Blickpunkts zeigen", lblNightSide:"Tag-/Nachtschattierung", nightSideOn:"An (Vorgabe) — Nachtseite abdunkeln & Stadtlichter zeigen", nightSideOff:"Aus — gleichmäßig beleuchteter Globus",
-      lblNavSens:"Navigationsempfindlichkeit", lblNavZoom:"Zoom", lblNavPan:"Schwenken",
-      satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
-      aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
-      aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 10×/Tag). Kein API-Schlüssel erforderlich.",
-      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
-      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", vol3dBtn:"🧊 3-D-Volumen", droneBtn:"🛸 Drohne", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Screenshot", shareMenuBtn:"Teilen", shareLinkBtn:"Teilen / Link", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
-      lblDataSources:"Datenquellen", viewDataSources:"Kurzliste in der App", lblScience:"Wissenschaft & Logik", viewScience:"Wie jede Simulation rechnet ↗", lblSourcesPage:"Datenquellen", viewSourcesPage:"Datenquellen-Seite öffnen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
-      lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
-      filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
-      tlTitle:"Zeitmaschine", tlMachine:"Zeitmaschine", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
-      lblPinMode:"Nachrichten-Pin-Position", pinModeLoc:"Ort des Themas", pinModePub:"Ort des Herausgebers",
-      aiTranslateTitles:"Titel übersetzen", aiViewSumBtn:"Diese Ansicht zusammenfassen",
-      /* (#R37) full DE coverage — the 184 keys that were falling back to English (measure/stats/community/AI/satellite/context). */
-      loading:"Artikel werden geladen...", noMatch:"Keine Ergebnisse gefunden.", networkError:"Nachrichten konnten nicht geladen werden. Erneuter Versuch…", emptyHint:"Kein Tab ausgewählt — die Karte ist frei.<br>Wählen Sie oben einen Tab, um Inhalte anzuzeigen.",
-      dashCatMil:"Militärbasen", dashCatTech:"Technik / Cyber", dashCatMar:"Maritim / Engpässe", dashCatGeo:"Geo / Klima", readWiki:"Auf Wikipedia lesen ↗",
-      measure:"Messen", areaTool:"Fläche", radius:"Radius", vol3dTool:"3-D-Volumen", points:"Punkte", total:"Gesamt", perimeter:"Umfang", area:"Fläche", clear:"Löschen", undoPt:"Punkt zurück",
-      measureHint:"Klicken zum Hinzufügen von Punkten · Doppelklick zum Abschließen", areaHint:"3+ Punkte zum Umschließen · Doppelklick zum Abschließen", radiusHint:"Klicken Sie auf die Karte, um einen Kreis zu platzieren. Mehrere Kreise möglich.", addCircle:"Kreis platzieren", removeAll:"Alle löschen", color:"Farbe",
-      statPop:"Bevölkerung", statGdp:"BIP (nominal)", statGdpPc:"BIP pro Kopf", statGdpPPP:"BIP (KKP)", statGdpPcPPP:"BIP pro Kopf (KKP)", statArea:"Fläche", statDensity:"Bevölkerungsdichte", statRegion:"Region", statSub:"Subregion", statCapital:"Hauptstadt", statCurrency:"Währung", statLang:"Sprachen", statHDI:"HDI", statDem:"Demokratie-Index", statMil:"Militärausgaben", statLife:"Lebenserwartung", statInet:"Internetnutzer",
-      details:"Details ↗", loadingData:"Länderdaten werden geladen...", dataNA:"k. A.", noData:"Länderdaten nicht verfügbar.",
-      sortGdp:"BIP", sortPop:"Bev.", sortArea:"Fläche", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil.$", elev:"Höhe", bearing:"Peilung", presetNone:"— wählen —", presetLbl:"Bereichsvorgaben", opacity:"Deckkraft", circumference:"Umfang",
-      spRunway:"Start-/Landebahn", spGarrison:"Garnison", spOperator:"Betreiber", spEstd:"Gegründet", spAircraft:"Flugzeuge", spType:"Typ", spCapacity:"Kapazität", spDepth:"Tiefe", spOutput:"Förderung", spReserves:"Reserven",
-      widgetsBtn:"Widgets", measureBtn:"📏 Messen", areaBtn:"📐 Fläche",
-      ctxDropPin:"Pin setzen", ctxMeasureFrom:"Messung beginnen", ctxPostHere:"In der Community posten", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
-      lyrEEZ:"Meeres-AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrSats:"Live-Satelliten", lyrThermal:"Wärmeanomalien (Brände)", planesZoomHint:"Hineinzoomen, um Live-Flugzeuge zu laden", planesAreaHint:"Hineinzoomen — Live-Flugzeuge decken den mittleren Bereich dieser Ansicht ab", poiLabels:"Orte, Betriebe & Einrichtungen", shipsZoomHint:"Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenen-Datum",
-      commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Posten", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte zeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Angesagt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
-      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", coCompareEmpty:"Unternehmenszeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
-      satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ersatz umgeschaltet",
-      aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft lokal in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Test läuft…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die in Chrome integrierte KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Wiederholen",
-      aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Verorten…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Übersetzen…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
-      aiSumBtn:"Dieses Gebiet mit KI zusammenfassen", popInArea:"Bevölkerung in diesem Gebiet", popCalcing:"Berechne Bevölkerung…", popFail:"Bevölkerungsabfrage fehlgeschlagen — erneut versuchen.", newsInArea:"Nachrichten in diesem Gebiet", elevProfile:"Höhenprofil", finalizeMeas:"Auf Karte behalten", aiSumTitle:"Gebiets-Briefing", aiSumSub:"{n} Nachrichten-Pins im ausgewählten Gebiet", aiSumNoArea:"Zeichnen Sie zuerst ein Gebiet oder platzieren Sie einen Kreis.", aiSumNoNews:"Keine Nachrichten-Pins in diesem Gebiet.", aiViewSumTitle:"Was auf dem Bildschirm passiert",
-      aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
-      mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
-    ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
-      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
-      viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
-      settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
-      setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
-      lblTheme:"Оформление", optAuto:"Как в системе", optLight:"Светлая", optDark:"Тёмная", optClassic:"Классика", optCyber:"Кибер",
-      lblMapColor:"Цвет карты", mapColorAuto:"Как оформление", mapColorLight:"Светлый (белый)", mapColorDark:"Тёмный (чёрный)",
-      lblUnits:"Единицы измерения", unitBoth:"Метрические + имперские", unitMetric:"Только метрические", unitImperial:"Только имперские",
-      lblTempUnit:"Температура", tempBoth:"°C + °F", tempC:"Только °C", tempF:"Только °F",
-      lblTz:"Часовой пояс", tzSearch:"Поиск часового пояса…", optLocal:"Локальное (как в системе)",
-      lblNewsLang:"Языки новостей", newsLangUi:"Только текущий язык", newsLangMultiSel:"Несколько языков…", newsLangMulti:"Все языки (автоперевод заголовков)", newsLangHint:"Заголовки на всех языках показываются вместе; с ключом ИИ их названия переводятся автоматически.",
-      lblAiLocate:"ИИ-анализ местоположения", aiLocManual:"Вручную (кнопка)", aiLocAuto:"Автоматически для всех новостей",
-      lblSidebarStyle:"Вид боковой панели", sidebarOpaque:"Непрозрачная (по умолчанию)", sidebarTranslucent:"Матовое стекло", sidebarGlass2:"Матовое стекло (прозрачнее)",
-      lblLabelLang:"Подписи мест", labelLangUi:"Как язык приложения", labelLangLocal:"Местный язык (родной алфавит)", labelLangEn:"Всегда английский",
-      lblFlatPan:"Плоская карта", flatPanFixed:"Фикс. область (Европа)", flatPanFree:"Свободно (вокруг мира)",
-      /* (#R180) движок отрисовки */
-      lblEngine:"Движок карты", engineMapLibre:"MapLibre — 2D/3D-карта (по умолчанию)", engineCesium:"Cesium — настоящий 3D-глобус с реальным рельефом",
-      engineHint:"Cesium рисует Землю настоящим эллипсоидом на любом масштабе, с теми же спутниковыми снимками и теми же данными о высотах. Он загружается только при выборе, а переключение перезагружает страницу. Изолинии и инструмент замкнутого 3D-тела остаются только в MapLibre.",
-      engineSwitching:"Смена движка — перезагрузка…", engineFellBack:"Cesium не запустился, поэтому сеанс работает на MapLibre.",
-      engineActive:"Сейчас работает: ",
-      /* (#R171) предел наклона + высота камеры */
-      lblTiltLimit:"Предел наклона карты", tiltStandard:"Стандартный — до 78° (по умолчанию)", tiltUnlimited:"Без предела — весь диапазон 0–180°",
-      tiltHint:"Без предела карту можно наклонять за горизонт, пока камера не посмотрит строго вверх. За 180° вид повторяется с развёрнутым азимутом, поэтому правый клик по компасу позволяет задать любой угол от 0 до 360.",
-      lblEyeAlt:"Высота камеры в строке состояния", eyeAltOff:"Выкл. (по умолчанию)", eyeAltOn:"Вкл. — показывать высоту точки обзора", lblNightSide:"Затенение дня и ночи", nightSideOn:"Вкл. (по умолчанию) — затемнять ночную сторону и показывать огни городов", nightSideOff:"Выкл. — равномерно освещённый глобус",
-      lblNavSens:"Чувствительность навигации", lblNavZoom:"Зум", lblNavPan:"Перемещение",
-      satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
-      aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
-      aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 10 раз в день). Ключ API не нужен.",
-      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
-      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", vol3dBtn:"🧊 3-D объём", droneBtn:"🛸 Дрон", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
-      lblDataSources:"Источники данных", viewDataSources:"Краткий список в приложении", lblScience:"Наука и логика", viewScience:"Как считает каждая модель ↗", lblSourcesPage:"Источники данных", viewSourcesPage:"Открыть страницу источников данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
-      lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
-      filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
-      tlTitle:"Машина времени", tlMachine:"Машина времени", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
-      lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",
-      aiTranslateTitles:"Перевести заголовки", aiViewSumBtn:"Сводка по этому виду",
-      /* (#R37) full RU coverage — the same 184 keys that were falling back to English. */
-      loading:"Загрузка статей...", noMatch:"Ничего не найдено.", networkError:"Не удалось загрузить новости. Повтор…", emptyHint:"Вкладка не выбрана — карта пуста.<br>Выберите вкладку выше, чтобы показать содержимое.",
-      dashCatMil:"Военные базы", dashCatTech:"Технологии / Кибер", dashCatMar:"Море / Проливы", dashCatGeo:"Гео / Климат", readWiki:"Читать в Википедии ↗",
-      measure:"Измерить", areaTool:"Площадь", radius:"Радиус", vol3dTool:"3-D объём", points:"Точки", total:"Всего", perimeter:"Периметр", area:"Площадь", clear:"Очистить", undoPt:"Отменить точку",
-      measureHint:"Нажимайте, чтобы добавить точки · двойной клик для завершения", areaHint:"Добавьте 3+ точек для замыкания · двойной клик для завершения", radiusHint:"Нажмите на карту, чтобы поставить круг. Можно несколько кругов.", addCircle:"Поставить круг", removeAll:"Очистить всё", color:"Цвет",
-      statPop:"Население", statGdp:"ВВП (номинал)", statGdpPc:"ВВП на душу", statGdpPPP:"ВВП (ППС)", statGdpPcPPP:"ВВП на душу (ППС)", statArea:"Площадь", statDensity:"Плотность населения", statRegion:"Регион", statSub:"Субрегион", statCapital:"Столица", statCurrency:"Валюта", statLang:"Языки", statHDI:"ИЧР", statDem:"Индекс демократии", statMil:"Военные расходы", statLife:"Ожид. продолжительность жизни", statInet:"Интернет-пользователи",
-      details:"Подробнее ↗", loadingData:"Загрузка данных о странах...", dataNA:"н/д", noData:"Данные о стране недоступны.",
-      sortGdp:"ВВП", sortPop:"Нас.", sortArea:"Пл.", sortName:"А–Я", sortHDI:"ИЧР", sortMil:"Воен.$", elev:"Высота", bearing:"Азимут", presetNone:"— выбрать —", presetLbl:"Предустановки диапазона", opacity:"Непрозрачность", circumference:"Длина окружности",
-      spRunway:"ВПП", spGarrison:"Гарнизон", spOperator:"Оператор", spEstd:"Основано", spAircraft:"Самолёты", spType:"Тип", spCapacity:"Мощность", spDepth:"Глубина", spOutput:"Добыча", spReserves:"Запасы",
-      widgetsBtn:"Виджеты", measureBtn:"📏 Измерить", areaBtn:"📐 Площадь",
-      ctxDropPin:"Поставить метку", ctxMeasureFrom:"Начать измерение", ctxPostHere:"Опубликовать в сообществе", ctxDistFrom:"Расстояние от предыдущей метки", ctxCopy:"Скопировать координаты", ctxClearPins:"Удалить все метки", ctxThisPoint:"Эта точка", coords:"Координаты", depth:"Глубина", climate:"Климат",
-      lyrEEZ:"Морская ИЭЗ / 12 миль", lyrShips:"Суда в реальном времени", lyrPlanes:"Самолёты в реальном времени", lyrSats:"Спутники в реальном времени", lyrThermal:"Тепловые аномалии (пожары)", planesZoomHint:"Приблизьте, чтобы загрузить самолёты", planesAreaHint:"Приблизьте — самолёты загружены для центральной части вида", poiLabels:"Объекты, предприятия и учреждения", shipsZoomHint:"Приблизьте, чтобы загрузить суда", aisNoKey:"Для судов нужен бесплатный ключ API AISstream.io — добавьте его в Настройках.", trafficFilter:"Фильтр", lyrTime:"Дата слоя",
-      commAdd:"+ Новый пост", commAddArmed:"Нажмите на карту, чтобы поставить метку", commTitle:"Заголовок", commBody:"Поделитесь наблюдением, вопросом или теорией...", commPost:"Опубликовать", commCancel:"Отмена", commEmpty:"Пока нет постов. Нажмите \"+ Новый пост\", чтобы начать обсуждение.", commComment:"Комментировать", commLocate:"Показать на карте", commDelete:"Удалить", commReply:"Ответить", commWrite:"Написать комментарий...", commPostNew:"Новый пост", commPlacedAt:"Размещено в", commSortHot:"Популярное", commSortNew:"Новое", commSortTop:"Лучшее", commSearchPh:"Поиск постов…", commInView:"В поле зрения", commCat:"Категория", commCatAll:"Все", commEdit:"Изменить", commEdited:"изменено", commEditPost:"Редактировать пост", commSaveEdit:"Сохранить изменения", commNoMatch:"Нет постов по вашим фильтрам.",
-      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить.", coCompareEmpty:"Нажимайте на строки компаний, чтобы выбрать и сравнить.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
-      satCtrlTitle:"Спутниковые снимки", satProvider:"Провайдер", satDate:"Дата съёмки", satLatest:"Самые свежие", satMosaicSuffix:"безоблачная мозаика", satLocked:"добавьте ключ API", satPrevDay:"Предыдущий день", satNextDay:"Следующий день", satKeyConnected:"Подключено", satKeyNone:"Нет ключа", satErrAuth:"{provider}: ошибка аутентификации — проверьте ключ API", satErrTiles:"{provider}: снимки недоступны — переключено на резерв",
-      aiProvider:"Провайдер ИИ", aiModel:"Модель", aiApiKey:"Ключ API", aiKeyConnected:"Подключено", aiKeyNone:"Нет ключа", aiGetKey:"Получить ключ ↗", aiOnDevice:"Работает локально в Chrome — ключ API не нужен.", aiTest:"Проверить подключение", aiTesting:"Проверка…", aiTestOk:"Подключение в порядке ✓", aiNoKey:"Сначала добавьте ключ API ИИ в Настройки → Функции ИИ.", aiNoVision:"Эта модель не читает изображения. Выберите GPT-4o, Claude 3.5 Sonnet или Gemini 1.5 Pro.", aiChromeUnavail:"Встроенный ИИ Chrome здесь недоступен. Используйте Chrome 127+ с включённым ИИ на устройстве или выберите другого провайдера.", aiThinking:"ИИ анализирует…", aiError:"Сбой запроса к ИИ", aiCopy:"Копировать", aiCopied:"Скопировано ✓", aiClose:"Закрыть", aiRetry:"Повторить",
-      aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
-      aiSumBtn:"Сводка по этой области (ИИ)", popInArea:"Население в этой области", popCalcing:"Расчёт населения…", popFail:"Не удалось получить население — попробуйте ещё раз.", newsInArea:"Новости в этой области", elevProfile:"Профиль высот", finalizeMeas:"Оставить на карте", aiSumTitle:"Сводка по области", aiSumSub:"Меток новостей в выбранной области: {n}", aiSumNoArea:"Сначала нарисуйте область или поставьте круг.", aiSumNoNews:"В этой области нет меток новостей.", aiViewSumTitle:"Что происходит на экране",
-      aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
-      mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
-    /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
-    es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabCompanies:"Empresas", tabStats:"Países", tabCommunity:"Comunidad",
-      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", filterCompaniesPh:"Filtrar empresas...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
-      viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
-      settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
-      setSecAppearance:"Apariencia", setSecLayout:"Diseño y paneles", setSecMap:"Comportamiento del mapa", setSecUnits:"Unidades y hora", setSecNews:"Noticias y cinta", setSecAI:"IA", setSecKeys:"Integraciones y claves", setSecAbout:"Información y soporte",
-      lblTheme:"Apariencia", optAuto:"Predeterminado del sistema", optLight:"Claro", optDark:"Oscuro", optClassic:"Clásico", optCyber:"Cíber",
-      lblMapColor:"Color del mapa", mapColorAuto:"Como la apariencia", mapColorLight:"Claro (blanco)", mapColorDark:"Oscuro (negro)",
-      lblUnits:"Unidades de medida", unitBoth:"Métrico + imperial", unitMetric:"Solo métrico", unitImperial:"Solo imperial",
-      lblTempUnit:"Temperatura", tempBoth:"°C + °F", tempC:"Solo °C", tempF:"Solo °F",
-      lblTz:"Zona horaria", tzSearch:"Buscar zona horaria…", optLocal:"Local (predeterminado del sistema)",
-      lblNewsLang:"Idiomas de noticias", newsLangUi:"Solo el idioma actual", newsLangMultiSel:"Varios idiomas…", newsLangMulti:"Todos los idiomas (traducir títulos)", newsLangHint:"Los titulares de todos los idiomas aparecen juntos; con una clave de IA los títulos se traducen automáticamente.",
-      lblAiLocate:"Análisis de ubicación por IA", aiLocManual:"Manual (botón)", aiLocAuto:"Automático para todas las noticias",
-      lblSidebarStyle:"Barra lateral", sidebarOpaque:"Sólida (predeterminada)", sidebarTranslucent:"Vidrio esmerilado", sidebarGlass2:"Vidrio esmerilado (más transparente)",
-      lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangEn:"Siempre en inglés",
-      lblFlatPan:"Vista de mapa plano", flatPanFixed:"Encuadre fijo (Europa)", flatPanFree:"Desplazamiento libre (dar la vuelta al mundo)",
-      /* (#R180) motor de renderizado */
-      lblEngine:"Motor del mapa", engineMapLibre:"MapLibre — mapa 2-D/3-D (predeterminado)", engineCesium:"Cesium — globo 3-D real con relieve real",
-      engineHint:"Cesium dibuja la Tierra como un elipsoide real en cualquier zoom, con las mismas imágenes de satélite y los mismos datos de elevación. Solo se descarga al seleccionarlo, y cambiar recarga la página. Las curvas de nivel y la herramienta de sólido 3-D cerrado siguen siendo exclusivas de MapLibre.",
-      engineSwitching:"Cambiando de motor — recargando…", engineFellBack:"Cesium no pudo iniciarse, así que esta sesión funciona con MapLibre.",
-      engineActive:"En uso: ",
-      /* (#R171) límite de inclinación + altitud de la cámara */
-      lblTiltLimit:"Límite de inclinación del mapa", tiltStandard:"Estándar — hasta 78° (predeterminado)", tiltUnlimited:"Sin límite — todo el rango 0–180°",
-      tiltHint:"Sin límite puedes inclinar más allá del horizonte hasta que la cámara mire en vertical. Pasados los 180° la vista se repite con el rumbo invertido, así que con clic derecho en la brújula puedes escribir cualquier ángulo de 0 a 360.",
-      lblEyeAlt:"Altitud del punto de vista en la barra", eyeAltOff:"Desactivado (predeterminado)", eyeAltOn:"Activado — mostrar la altitud de la cámara", lblNightSide:"Sombreado de día y noche", nightSideOn:"Activado (predeterminado) — oscurecer el lado nocturno y mostrar las luces urbanas", nightSideOff:"Desactivado — un globo iluminado de forma uniforme",
-      lblNavSens:"Sensibilidad de navegación", lblNavZoom:"Zoom", lblNavPan:"Desplazamiento",
-      satKeysTitle:"Imágenes de satélite (BYOK)", satKeyHint:"Introduce una clave API para desbloquear estos proveedores en el panel de satélite. Las claves se guardan solo en este navegador.",
-      aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
-      aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 10 usos al día). No se necesita clave API.",
-      blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
-      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", vol3dBtn:"🧊 Volumen 3-D", droneBtn:"🛸 Dron", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura", shareMenuBtn:"Compartir", shareLinkBtn:"Compartir / enlace", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
-      lblDataSources:"Fuentes de datos", viewDataSources:"Lista rápida dentro de la app", lblScience:"Ciencia y lógica", viewScience:"Cómo calcula cada simulación ↗", lblSourcesPage:"Fuentes de datos", viewSourcesPage:"Abrir la página de fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
-      lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
-      filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
-      tlTitle:"Máquina del tiempo", tlMachine:"Máquina del tiempo", tlToday:"Hoy", tl10y:"−10 a", tl5y:"−5 a", tlNow:"Ahora",
-      lblPinMode:"Posición del marcador de noticias", pinModeLoc:"Lugar del suceso", pinModePub:"Lugar del medio",
-      aiTranslateTitles:"Traducir títulos", aiViewSumBtn:"Resumir esta vista",
-      loading:"Cargando artículos...", noMatch:"No se encontraron resultados.", networkError:"No se pudieron cargar las noticias. Reintentando…", emptyHint:"Ninguna pestaña seleccionada — el mapa está despejado.<br>Elige una pestaña arriba para mostrar contenido.",
-      dashCatMil:"Bases militares", dashCatTech:"Tecnología / Ciber", dashCatMar:"Marítimo / Estrechos", dashCatGeo:"Geo / Clima", readWiki:"Leer en Wikipedia ↗",
-      measure:"Medir", areaTool:"Área", radius:"Radio", vol3dTool:"Volumen 3-D", points:"Puntos", total:"Total", perimeter:"Perímetro", area:"Área", clear:"Borrar", undoPt:"Deshacer punto",
-      measureHint:"Haz clic para añadir puntos · doble clic para terminar", areaHint:"Añade 3+ puntos para encerrar · doble clic para terminar", radiusHint:"Haz clic en el mapa para colocar un círculo. Se permiten varios círculos.", addCircle:"Colocar círculo", removeAll:"Borrar todo", color:"Color",
-      statPop:"Población", statGdp:"PIB (nominal)", statGdpPc:"PIB per cápita", statGdpPPP:"PIB (PPA)", statGdpPcPPP:"PIB per cápita (PPA)", statArea:"Superficie", statDensity:"Densidad de población", statRegion:"Región", statSub:"Subregión", statCapital:"Capital", statCurrency:"Moneda", statLang:"Idiomas", statHDI:"IDH", statDem:"Índice de democracia", statMil:"Gasto militar", statLife:"Esperanza de vida", statInet:"Usuarios de Internet",
-      details:"Detalles ↗", loadingData:"Cargando datos del país...", dataNA:"N/D", noData:"Datos del país no disponibles.",
-      sortGdp:"PIB", sortPop:"Pob.", sortArea:"Sup.", sortName:"A–Z", sortHDI:"IDH", sortMil:"Mil.$", elev:"Altitud", bearing:"Rumbo", presetNone:"— seleccionar —", presetLbl:"Rangos predefinidos", opacity:"Opacidad", circumference:"Circunferencia",
-      spRunway:"Pista", spGarrison:"Guarnición", spOperator:"Operador", spEstd:"Fundado", spAircraft:"Aeronaves", spType:"Tipo", spCapacity:"Capacidad", spDepth:"Profundidad", spOutput:"Producción", spReserves:"Reservas",
-      widgetsBtn:"Widgets", measureBtn:"📏 Medir", areaBtn:"📐 Área",
-      ctxDropPin:"Poner un marcador", ctxMeasureFrom:"Empezar a medir", ctxPostHere:"Publicar en la comunidad", ctxDistFrom:"Distancia desde el marcador anterior", ctxCopy:"Copiar coordenadas", ctxClearPins:"Quitar todos los marcadores", ctxThisPoint:"Este punto", coords:"Coordenadas", depth:"Profundidad", climate:"Clima",
-      lyrEEZ:"ZEE marítima / 12 mn", lyrShips:"Tráfico marítimo en vivo", lyrPlanes:"Tráfico aéreo en vivo", lyrSats:"Satélites en vivo", lyrThermal:"Anomalías térmicas (incendios)", planesZoomHint:"Acerca para cargar aviones en vivo", planesAreaHint:"Acerca — los aviones cubren la zona central de esta vista", poiLabels:"Lugares, empresas e instalaciones", shipsZoomHint:"Acerca para cargar barcos en vivo", aisNoKey:"Los barcos en vivo necesitan una clave API gratuita de AISstream.io — añádela en Ajustes.", trafficFilter:"Filtro", lyrTime:"Fecha de la capa",
-      commAdd:"+ Nueva publicación", commAddArmed:"Haz clic en el mapa para poner un marcador", commTitle:"Título", commBody:"Comparte una observación, pregunta o teoría...", commPost:"Publicar", commCancel:"Cancelar", commEmpty:"Aún no hay publicaciones. Haz clic en \"+ Nueva publicación\" para empezar.", commComment:"Comentar", commLocate:"Mostrar en el mapa", commDelete:"Eliminar", commReply:"Responder", commWrite:"Escribe un comentario...", commPostNew:"Nueva publicación", commPlacedAt:"Colocado en", commSortHot:"Popular", commSortNew:"Nuevo", commSortTop:"Top", commSearchPh:"Buscar publicaciones…", commInView:"En vista", commCat:"Categoría", commCatAll:"Todas", commEdit:"Editar", commEdited:"editado", commEditPost:"Editar publicación", commSaveEdit:"Guardar cambios", commNoMatch:"Ninguna publicación coincide con tus filtros.",
-      compare:"Comparar", compareEmpty:"Toca filas de países para elegir y comparar.", coCompareEmpty:"Toca filas de empresas para elegir y comparar.", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
-      satCtrlTitle:"Imágenes de satélite", satProvider:"Proveedor", satDate:"Fecha de captura", satLatest:"Más reciente disponible", satMosaicSuffix:"mosaico sin nubes", satLocked:"añadir clave API", satPrevDay:"Día anterior", satNextDay:"Día siguiente", satKeyConnected:"Conectado", satKeyNone:"Sin clave", satErrAuth:"{provider}: fallo de autenticación — comprueba la clave API", satErrTiles:"{provider}: imágenes no disponibles — se cambió a reserva",
-      aiProvider:"Proveedor de IA", aiModel:"Modelo", aiApiKey:"Clave API", aiKeyConnected:"Conectado", aiKeyNone:"Sin clave", aiGetKey:"Obtener una clave ↗", aiOnDevice:"Se ejecuta localmente en Chrome — sin clave API.", aiTest:"Probar conexión", aiTesting:"Probando…", aiTestOk:"Conexión correcta ✓", aiNoKey:"Primero añade una clave API de IA en Ajustes → Funciones de IA.", aiNoVision:"Este modelo no puede leer imágenes. Elige GPT-4o, Claude 3.5 Sonnet o Gemini 1.5 Pro.", aiChromeUnavail:"La IA integrada de Chrome no está disponible aquí. Usa Chrome 127+ con la IA en el dispositivo activada, o elige otro proveedor.", aiThinking:"La IA está analizando…", aiError:"Falló la solicitud de IA", aiCopy:"Copiar", aiCopied:"Copiado ✓", aiClose:"Cerrar", aiRetry:"Reintentar",
-      aiGeoBtn:"✨ Localizar todas las noticias (IA)", aiGeoBtnSub:"✨ Localizar el tema (IA)", aiGeoBtnPub:"✨ Localizar el medio (IA)", aiGeoBusy:"Localizando…", aiGeoNone:"Nada que localizar.", aiGeoDone:"{n} noticias localizadas", aiGeoErr:"Falló la geocodificación", aiTransBusy:"Traduciendo…", aiTransDone:"{n} títulos traducidos", aiTransNone:"Los títulos ya están en tu idioma.", aiTranslate:"Traducir", aiShowOriginal:"Original", aiTransNoText:"No hay texto de artículo para traducir — prueba la vista web.",
-      aiSumBtn:"Resumir esta zona con IA", popInArea:"Población en esta zona", popCalcing:"Calculando población…", popFail:"No se pudo obtener la población — inténtalo de nuevo.", newsInArea:"Noticias en esta zona", elevProfile:"Perfil de elevación", finalizeMeas:"Mantener en el mapa", aiSumTitle:"Informe de zona", aiSumSub:"{n} marcadores de noticias en la zona seleccionada", aiSumNoArea:"Primero dibuja una zona o coloca un círculo.", aiSumNoNews:"No hay marcadores de noticias en esta zona.", aiViewSumTitle:"Qué está pasando en pantalla",
-      aiVisHead:"Detección de cambios por IA", aiVisBtn:"Detectar cambios", aiVisTitle:"Informe de cambios por satélite", aiVisSub:"Comparando {a} → {b}", aiVisBefore:"Antes", aiVisAfter:"Después", aiVisCapturing:"Capturando imágenes…", aiVisPickDates:"Elige dos fechas para comparar.", aiVisNeedsDated:"Cambia a un proveedor con fecha (MODIS / VIIRS / Sentinel-2) en el modo satélite.", aiVisCapFail:"No se pudieron capturar las imágenes del mapa.",
-      mTitleMap:"Mapa", mTitleTools:"Herramientas", mDone:"Hecho" }
-};
+(function () {
+  'use strict';
+  var LANG = window.IntMapLang;
+  var out = {};
+  if (!LANG) { window.IntMapI18N = { en: {} }; return; }
+
+  LANG.LANGS.forEach(function (l) {
+    var table = LANG.keyed(l.code);
+    out[l.code] = table;
+    (l.alias || []).forEach(function (a) { out[a] = table; });
+  });
+
+  /* the two things the rest of the app asks this object for, beyond the tables themselves */
+  Object.defineProperty(out, 'lang', { value: function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('intmap_settings') || '{}');
+      if (s && s.lang && LANG.has(s.lang)) return LANG.normalise(s.lang);
+    } catch (e) {}
+    return LANG.FALLBACK;
+  }, enumerable: false });
+  Object.defineProperty(out, 'list', { value: LANG.list, enumerable: false });
+
+  window.IntMapI18N = out;
+})();

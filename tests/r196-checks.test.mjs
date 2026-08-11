@@ -130,9 +130,17 @@ test('R196 ③b the sky is set for EVERY basemap, and set3D no longer fights it'
      the literal is gone while the measurement it encoded is not: `_horizonBlend()` still returns
      0.55 at h = 0. Pinning the literal here would have failed a change that preserves the finding —
      the #R203 trap of writing the previous round's value instead of its meaning. */
+  /* ⚠ (#R221) THE PIN MOVED ONE STEP FURTHER — FROM THE SOURCE LINE TO ITS PARTS. #R213's own note
+     above says the claim is "the band is as thick as the Cesium capture showed", and then pinned the
+     literal early-return line, which #R221 had to change when the thickness gained its other physical
+     term: a sunset packs the glow into the first few degrees, a noon spreads it over the whole band.
+     The finding is preserved and is asserted AS a finding — the height term #R213 measured is still
+     the base, and the Sun term is NORMALISED to the reference condition #R196 measured at, so that
+     condition still returns 0.55. */
   assert.match(sky, /'sky-horizon-blend':_horizonBlend\(\)/, 'the atmosphere band is declared');
-  assert.match(sky, /function _horizonBlend\(\)\{\s*const h=Math\.max\(0,_eyeAltM\(\)\);\s*if\(!\(h>0\)\) return 0\.55;/,
-    'and at ground level it is still the 0.55 #R196 measured');
+  assert.match(sky, /function _horizonBlend\(\)/, 'and it is a function of the camera and the Sun');
+  assert.match(sky, /0\.14\+0\.41\*frac/, 'the height term #R213 measured is still the base');
+  assert.match(sky, /Math\.sqrt\(r\/_HB_REF\)/, 'and at ground level it is still the 0.55 #R196 measured');
   /* ⚠ (#R216) SUPERSEDED, DELIBERATELY. #R196 pinned the fog OFF because it was matching a Cesium
      capture, and Cesium's SkyAtmosphere draws no ground haze. #R216 was asked to make the atmosphere
      「もっとリアルで忠実で」 and put aerial perspective back: it is the same Rayleigh scattering seen

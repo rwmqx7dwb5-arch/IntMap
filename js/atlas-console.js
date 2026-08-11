@@ -37,9 +37,9 @@ window.IntMapModules.atlasConsole=function(HOST){
        しないのはやめろ") — the deterministic reply strings too, not just the AI text. Unsupported detected
        languages (e.g. French) fall back to the UI language. */
     const _mirrorLang=()=>{ try{ const m={Japanese:'jp',German:'de',Russian:'ru',Spanish:'es',English:'en'}[_replyLang()]; return m||HOST.lang; }catch(_){ return HOST.lang; } };
-    const L=(en,j,de,ru,es)=>{ const g=_mirrorLang(); return g==='jp'?j:g==='de'?de:g==='ru'?ru:g==='es'?(es||en):en; };
+    const L=window.IntMapLang.pick(()=>_mirrorLang());
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    const lx=arr=>arr[({en:0,jp:1,de:2,ru:3,es:4})[_mirrorLang()]]||arr[0];
+    const lx=arr=>arr[Math.max(0,window.IntMapLang.index(_mirrorLang()))]||arr[0];   /* (#R221) the ARRAY form — the registry owns the index, so a new language is picked up here too */
     /* metric catalog → countryStats keys */
     const METRICS={
       pop:{label:['Population','人口','Bevölkerung','Население','Población'],get:s=>s.pop},
@@ -2304,7 +2304,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* final deposition dose zones */
           const zLbls=r.zones||[]; const rows=[];
           for(let z=0;z<zLbls.length;z++){ const km2=(r.zoneKm2&&r.zoneKm2[z])||0; if(km2<=0) continue;
-            rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(zLbls[z].n[({en:0,jp:1,de:2,ru:3,es:4})[HOST.lang]]||zLbls[z].n[0])+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
+            rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(zLbls[z].n[Math.max(0,window.IntMapLang.index(HOST.lang))]||zLbls[z].n[0])+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
           h+='<div style="font-weight:600;margin:6px 0 2px;font-size:12px;">'+L('Final ground deposition (Cs-137-equivalent zones)','最終的な地表沈着（Cs-137換算ゾーン）','Endgültige Bodendeposition','Итоговое выпадение','Deposición final')+'</div>';
           h+=rows.length?('<div style="font-size:11.5px;">'+rows.join('')+'</div>'):('<div style="font-size:11.5px;color:var(--text-muted);">'+L('Deposition stays below mapped thresholds in this run (winds carried most activity out of the modeled area).','この条件では地図化しきい値未満（大半が領域外へ運ばれました）。','unter den Schwellen','ниже порогов','por debajo de umbrales')+'</div>');
           if(r.peakKBqM2>0){ const uH=r.peakDoseUSvH, yr=annualMSv(uH);
@@ -4236,7 +4236,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const exWrap=panel.querySelector('.atl-ex'); examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; exWrap.appendChild(b); });
       /* (#R105) re-localize the Atlas panel's static chrome immediately on a language change (was stuck until reload — the ws "すべてがすぐ変わらない" report).
          NOTE: the module's `L` mirrors the last MESSAGE's language, so use a currentLang-based helper for UI chrome. */
-      try{ const _uiL=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+      try{ const _uiL=window.IntMapLang.pick(()=>HOST.lang);
         window.addEventListener('intmap-lang',()=>{ try{
         const sub=panel.querySelector('.atl-sub'); if(sub) sub.textContent=_uiL('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:');
         const nt=panel.querySelector('.atl-ainote'); if(nt) nt.textContent=_uiL('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.');

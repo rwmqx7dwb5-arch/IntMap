@@ -23,8 +23,16 @@ window.IntMapModules.authUi=function(HOST){
   }
 
   /* ---------- AUTH ---------- */
-  /* (#R155) 5-language helper for the auth/account modals (they predate the i18n dict). */
-  function _authL(en,jp,de,ru,es){ return HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en; }
+  /* (#R155) 5-language helper for the auth/account modals (they predate the i18n dict).
+     ⚠ (#R221) A FUNCTION DECLARATION, NOT A `const … = pick(…)`. This is a #R168/#R169 factory body,
+     where every statement must only DECLARE — `const x = f()` calls f while the factory is merely
+     being instantiated, which is the one thing that shape forbids (tests/r168-checks ④). The picker
+     is therefore built on first use and kept. Everywhere else the same helper sits inside a nested
+     IIFE or function, where calling at that point is exactly what is meant. */
+  function _authL(){
+    if(!_authL._p) _authL._p=window.IntMapLang.pick(()=>HOST.lang);
+    return _authL._p.apply(null,arguments);
+  }
 
   /* (#R155) Password strength — mirrors the SERVER floor (supabase/config.toml [auth]:
      minimum_password_length=8, password_requirements="lower_upper_letters_digits"). Returns {ok,msg}. */

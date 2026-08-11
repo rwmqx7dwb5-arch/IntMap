@@ -86,9 +86,38 @@ window.IntMapModules.renderScale=function(HOST){
      CRASH at load on a 390×844 DPR-3 context (the desktop context survived it, which is exactly the
      kind of asymmetry that ships). Deferring the call out of the handler and refusing to arm until
      the first `idle` both go, and the pair is what makes it safe. */
-  function safeSet(r){ if(!armed) return; clearTimeout(setT); setT=setTimeout(()=>{ try{ if(GE().canDraw()) set(r); }catch(_){} },0); }
-  function down(){ ratios(); if(flying()||low>=base) return; clearTimeout(offT); safeSet(low); }
-  function up(){ ratios(); clearTimeout(offT);
+  /* ══ ⚠⚠ (#R221) THIS MODULE WAS DRIVING ITSELF, FOR EVER, ON EVERY PHONE ═══════════════════════
+     「モバイル版がまだ劇的に遅い…マップのスクロール、ズームがかなりラグい。」
+
+     Changing the render scale RESIZES the drawing buffer, and MapLibre emits `movestart` → `resize`
+     → `moveend` when it does. Those are the very events this module arms on. So:
+
+         gesture ends → up() → set(base) → resize → movestart → down() → set(low)
+                      → resize → moveend → up() → set(base) → …
+
+     — a closed cycle with nothing in it that stops. Measured on the built site, phone viewport, with
+     NOBODY TOUCHING THE MAP: `movestart(prog) / resize / moveend(prog)` repeating about every 130 ms
+     for as long as the tab is open, the camera provably still (Δcentre 0, Δzoom 0, Δbearing 0 over
+     four seconds), and `getRenderScale()` sitting at 1.4 — i.e. the phone has been rendering at 70 %
+     of its device ratio PERMANENTLY, and reallocating its drawing buffer and every framebuffer
+     hanging off it several times a second, since #R202 shipped.
+
+     It also explains #R203's puzzling sweep: it measured 0.55 against 0.70 and found 0.55 WORSE in
+     all six comparisons, which is not how fewer fragments behave. It was not measuring a resolution;
+     it was measuring how often this loop reallocated.
+
+     ⚠ THE FIX IS TO IGNORE OUR OWN ECHO, NOT TO DEBOUNCE IT. One resize emits exactly one movestart
+     and one moveend, so two credits are put on the counter before the call and spent by the next two
+     events. A debounce would only change the period of the loop. ⚠ `dragstart`/`zoomstart` and their
+     ends are NOT counted: a resize never emits those, so a real gesture that begins inside the window
+     still arms immediately. */
+  let echo=0;
+  function selfResize(){ echo=2; }
+  function isEcho(){ if(echo>0){ echo--; return true; } return false; }
+  function safeSet(r){ if(!armed) return; clearTimeout(setT); setT=setTimeout(()=>{
+    try{ if(GE().canDraw()&&at!==r){ selfResize(); set(r); } }catch(_){} },0); }
+  function down(ev){ if(ev===1&&isEcho()) return; ratios(); if(flying()||low>=base) return; clearTimeout(offT); safeSet(low); }
+  function up(ev){ if(ev===1&&isEcho()) return; ratios(); clearTimeout(offT);
     /* ⚠ AFTER the gesture, not during its tail. A wheel sweep is a run of movestart/moveend pairs a
        few tens of milliseconds apart; restoring on each of them would resize the drawing buffer
        twenty times in one sweep, which costs more than it saves. 220 ms is past the gap between two
@@ -100,8 +129,12 @@ window.IntMapModules.renderScale=function(HOST){
     on=true;
     try{
       const E=GE().events;
-      ['movestart','zoomstart','rotatestart','pitchstart','dragstart'].forEach(e=>E.on(e,down));
-      ['moveend','zoomend','rotateend','pitchend','dragend'].forEach(e=>E.on(e,up));
+      /* ⚠ ONLY `movestart`/`moveend` CARRY THE ECHO FLAG (the `1`). A resize emits those two and
+         nothing else, so a real drag/zoom/rotate/pitch that begins right after a scale change is
+         still armed on the first frame. */
+      E.on('movestart',()=>down(1)); E.on('moveend',()=>up(1));
+      ['zoomstart','rotatestart','pitchstart','dragstart'].forEach(e=>E.on(e,()=>down(0)));
+      ['zoomend','rotateend','pitchend','dragend'].forEach(e=>E.on(e,()=>up(0)));
       /* armed only once the renderer has finished a frame on its own terms */
       E.once('idle',()=>{ try{ ratios(); armed=true; }catch(_){} });
     }catch(_){ on=false; return false; }

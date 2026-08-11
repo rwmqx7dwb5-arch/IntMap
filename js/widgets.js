@@ -322,7 +322,7 @@ window.IntMapModules.widgets=function(HOST){
       return '<br><span class="wgt-loc">'+s+'</span>'; };
     /* (#R154) iOS-style colour-fill helpers for AQI / UV. _wgtColor paints the whole card the category colour (gradient,
        inline!important so it beats the sidebar-glass override) and picks dark/light text by luminance so every tier reads. */
-    const _WL=(en,ja,de,ru,es)=>HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const _WL=window.IntMapLang.pick(()=>HOST.lang);
     function _lum(hex){ try{ let h=String(hex).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return (0.2126*((n>>16)&255)+0.7152*((n>>8)&255)+0.0722*(n&255))/255; }catch(_){ return 0; } }
     /* ══ (#R187) THE COLOURED CARDS ARE GLASS TOO ══════════════════════════════════════════════════
        「AQI, UVIウィジェットはぼんやりと影を付けなくてよい。そして、全ウィジェットはガラス風の質感に。」

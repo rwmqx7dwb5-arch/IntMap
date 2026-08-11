@@ -2041,7 +2041,7 @@ window.IntMapModules.dataLayers=function(HOST){
         (document.getElementById('map-container')||document.body).appendChild(el);
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
-      const nm=GENERIC_LEG[id][{en:0,jp:1,de:2,ru:3,es:4}[HOST.lang]]||GENERIC_LEG[id][0];
+      const nm=GENERIC_LEG[id][Math.max(0,window.IntMapLang.index(HOST.lang))]||GENERIC_LEG[id][0];
       const _dragT=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите':'Drag to move';
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
@@ -3664,7 +3664,7 @@ window.IntMapModules.dataLayers=function(HOST){
     let _subcableTries=0;
     /* ══ (#R208) OCEAN CURRENTS — traced through a measured velocity field ═══════════════════════
        「海流レイヤー（矢印・寒暖流を青赤・名前つき）」. data/ocean-currents.json is built by
-       scripts/build-ocean-currents.mjs from NASA/JPL OSCAR (public domain) — see that file for why
+       scripts/build-ocean-currents.mjs from three NOAA products (public domain) — see that file for why
        it is not the Data Basin item that was approved (its download needs an account).
        Three layers: the arrow field, the named current lines coloured by WARM/COLD, and the names.
        ⚠ warm/cold is DERIVED in the build (the poleward component along each traced path), so a

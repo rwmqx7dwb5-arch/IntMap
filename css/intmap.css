@@ -2380,7 +2380,45 @@
     #space-view .sp-showmenu{ max-height:min(60vh,420px); overflow:auto; overscroll-behavior:contain; }
     /* (#R220) the phone's detail-sheet handle does not exist on a pointer machine */
     #space-view .sp-sheet-t{ display:none; }
+    /* ══ (#R221) THE BODY LIST'S WRAPPER IS INVISIBLE ON A POINTER MACHINE ═══════════════════════════
+       `display:contents` removes the box from layout entirely, so `.sp-side` keeps the containing
+       block it has always had and the desktop column is unchanged down to the pixel. The chip, the
+       filter row and the sheet geometry all belong to the phone block below. */
+    #space-view .sp-sidebox{ display:contents; }
+    #space-view .sp-sideh, #space-view .sp-bodyb{ display:none; }
     @media (max-width:768px){
+      /* ── the body picker: one chip, one vertical sheet, one filter ─────────────────────────────
+         Measured before this: `.sp-side` was a horizontal strip 8,463 px wide holding 106 rows in a
+         375 px window. See the note in js/space.js. */
+      #space-view .sp-bodyb{ display:inline-flex !important; align-items:center; gap:4px;
+        font-size:10.5px !important; padding:5px 7px !important; max-width:124px;
+        overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #space-view .sp-sidebox{ display:flex; flex-direction:column; position:fixed;
+        left:8px; right:8px; bottom:8px; z-index:9; max-height:60vh;
+        border-radius:14px; background:rgba(10,10,14,0.96);
+        border:1px solid rgba(255,255,255,0.18);
+        -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+        overflow:hidden; pointer-events:auto; }
+      #space-view .sp-sidebox:not(.open){ display:none; }
+      #space-view .sp-sideh{ display:flex; align-items:center; gap:8px; padding:9px 10px 7px;
+        border-bottom:1px solid rgba(255,255,255,0.14); flex:0 0 auto; }
+      #space-view .sp-sidef{ flex:1 1 auto; min-width:0; font-size:14px; padding:7px 9px;
+        border-radius:9px; border:1px solid rgba(255,255,255,0.22);
+        background:rgba(255,255,255,0.08); color:#eee; }
+      #space-view .sp-sidef::placeholder{ color:rgba(255,255,255,0.45); }
+      #space-view .sp-sidex{ flex:0 0 auto; width:32px; height:32px; border-radius:9px;
+        border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.08);
+        color:#eee; font-size:13px; cursor:pointer; }
+      /* ⚠ `!important` throughout: every one of these carries an INLINE style from js/space.js's
+         shared BTN constant, and an inline declaration beats a stylesheet rule (#R220's lesson). */
+      #space-view .sp-sidebox .sp-side{ position:static !important; left:auto !important;
+        top:auto !important; width:auto !important; max-height:none !important;
+        flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+        overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+        flex-direction:column !important; gap:2px !important; padding:8px; }
+      #space-view .sp-sidebox .sp-side .sp-b,
+      #space-view .sp-sidebox .sp-side .sp-pop-row{ width:100%; min-height:38px;
+        font-size:13px !important; text-align:left; white-space:normal; }
       #space-view .sp-bar{ flex-wrap:nowrap !important; overflow-x:auto; overflow-y:hidden;
         gap:5px !important; padding:6px 8px !important; overscroll-behavior-x:contain;
         -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -2391,13 +2429,10 @@
       #space-view .sp-bar > span[style*="flex:1 1 8px"]{ display:none; }
       #space-view .sp-showmenu{ position:fixed !important; left:8px !important; right:8px;
         top:auto !important; bottom:8px; min-width:0 !important; max-height:52vh; }
-      /* the body list: a strip along the top, not a column over the planets */
-      #space-view .sp-side{ left:0 !important; right:0; top:44px !important; width:auto !important;
-        max-height:none !important; flex-direction:row !important; overflow-x:auto; overflow-y:hidden;
-        padding:0 8px; gap:5px !important; overscroll-behavior-x:contain;
-        -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      /* (#R221) the #R218 horizontal strip is GONE — 106 rows in a 375 px window was an
+         8,463 px corridor. The list is the vertical sheet declared above; only the scrollbar
+         suppression it also wants is kept here. */
       #space-view .sp-side::-webkit-scrollbar{ display:none; }
-      #space-view .sp-side > *{ flex:0 0 auto; white-space:nowrap; }
       /* …and the two panels as one bottom sheet, so they can never overlap each other */
       #space-view .sp-col{ left:8px !important; right:8px !important; top:auto !important;
         bottom:52px; width:auto !important; max-height:38vh !important; }
@@ -2418,7 +2453,9 @@
          stylesheet rule — measured, the first version of this block changed nothing at all. */
       #space-view .sp-bar .sp-scale{ font-size:10.5px !important; padding:5px 7px !important; }
       #space-view .sp-show{ font-size:10.5px !important; padding:5px 7px !important; }
-      #space-view .sp-timeb{ max-width:118px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      /* (#R221) 118 px put the chip right edge at x 382 in a 375 px window (measured: the bar's
+         scrollWidth was 390 and the clock was clipped). 92 px fits beside the new body chip. */
+      #space-view .sp-timeb{ max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
         font-size:10.5px !important; padding:5px 7px !important; }
       #space-view .sp-side .sp-b{ font-size:11px !important; padding:5px 8px !important; }
       #space-view .sp-notewrap{ bottom:6px !important; }
@@ -2478,3 +2515,19 @@
 .im-pick-ghost a,
 .im-pick-ghost [role="button"],
 .im-pick-ghost .sq-head{ pointer-events:auto; }
+
+
+/* ══ (#R221) THE GLASS STANDS STILL WHILE THE MAP MOVES ═══════════════════════════════════════════
+   「マップのスクロール、ズームがかなりラグい。品質は落とすな。」 A backdrop-filter cannot be cached
+   while the content behind it changes, so on a phone in map view fifteen of them — 153 % of the
+   viewport, up to blur(30px) — were re-read, re-blurred and re-composited on EVERY frame of every
+   pan. js/glass-motion.js marks them '.im-glass' and puts 'im-moving' on <body> for the duration of
+   a gesture; this is the whole of the effect. The still frame is byte-identical to before.
+   ⚠ MOBILE ONLY (#R202 measured desktop at 60 fps), and ⚠ the rule needs !important because every
+   one of these elements declares its own backdrop-filter, several of them inline. */
+@media (max-width: 768px){
+  body.im-moving .im-glass{
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}

@@ -172,9 +172,64 @@ window.IntMapPageI18N = (function () {
     if (html != null) e.innerHTML = html;
     return e;
   }
+
+  /* ── (#R221) KaTeX, loaded once and only if the document has an equation in it ─────────────────
+     ⚠ THE PAGE IS NOT PART OF THE APP BUNDLE, so it cannot `import 'katex'`; vite.config.js copies
+     katex/dist into dist/katex/ for exactly this. ⚠ AND IT IS NEVER FETCHED FOR A PAGE WITHOUT
+     MATHEMATICS: sources.html has none, and pays nothing for this. */
+  var needTex = false, katexP = null;
+  function ensureKatex() {
+    if (katexP) return katexP;
+    katexP = new Promise(function (res) {
+      try {
+        var css = document.createElement('link');
+        css.rel = 'stylesheet'; css.href = './katex/katex.min.css';
+        document.head.appendChild(css);
+        var s = document.createElement('script');
+        s.src = './katex/katex.min.js';
+        s.async = true;
+        s.onload = function () { res(window.katex || null); };
+        s.onerror = function () { res(null); };     /* the pg-eq fallback stands */
+        document.head.appendChild(s);
+      } catch (e) { res(null); }
+    });
+    return katexP;
+  }
+  function typeset(root) {
+    if (!needTex) return;
+    ensureKatex().then(function (K) {
+      if (!K || !K.render) return;                  /* leave the monospace source in place */
+      var nodes = root.querySelectorAll('.pg-tex[data-tex]');
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i], src = n.getAttribute('data-tex');
+        try {
+          n.textContent = '';
+          K.render(src, n, { displayMode: true, throwOnError: false, output: 'html', strict: false });
+          n.classList.add('pg-tex-on');
+        } catch (e) { n.textContent = src; }        /* one bad formula must not blank the page */
+      }
+    });
+  }
   function renderBlock(b, host, slots) {
     if (!b || !b.length) return;
     var kind = b[0];
+    /* ══ (#R221) ['tex', latex] — A REAL EQUATION ═══════════════════════════════════════════════════
+       「数式はそのままのテキストだから、もっとちゃんとした数式用のテキストに。」 `['eq', …]` is a
+       monospace line carrying HTML entities: `&Delta;(z) = 40 075 017 &middot; cos(&phi;) / (2<sup>z</sup>…)`.
+       That is a transcription of an equation, not an equation — fractions are slashes, integrals are
+       the word, and nothing aligns. This block hands the LaTeX to KaTeX.
+       ⚠ IT DEGRADES TO THE OLD LINE. The typeset node is built only after katex.min.js has actually
+       arrived (see ensureKatex); until then, and for ever if it does not, the block IS a `pg-eq`
+       with the source in it. A reader on a broken CDN-less network sees `\frac{a}{b}` rather than a
+       blank space, which is the same trade every other fallback in this file makes. */
+    if (kind === 'tex') {
+      const p = el('p', 'pg-eq pg-tex');
+      p.textContent = b[1];
+      p.setAttribute('data-tex', b[1]);
+      host.appendChild(p);
+      needTex = true;
+      return;
+    }
     if (kind === 'p') host.appendChild(el('p', null, b[1]));
     else if (kind === 'tagline') host.appendChild(el('p', 'pg-tagline', b[1]));
     else if (kind === 'h3') host.appendChild(el('h3', null, b[1]));
@@ -209,6 +264,7 @@ window.IntMapPageI18N = (function () {
 
   function renderInto(page, root) {
     var slots = [];
+    needTex = false;   /* (#R221) recomputed per render — a language switch re-walks the blocks */
     root.innerHTML = '';
 
     /* hero */
@@ -252,6 +308,7 @@ window.IntMapPageI18N = (function () {
     back.appendChild(a2); foot.appendChild(back);
     root.appendChild(foot);
 
+    typeset(root);   /* (#R221) once, after the whole document is in the DOM */
     return slots;
   }
 
