@@ -192,11 +192,20 @@ test('R219 ⑦ the cap is shown on every base map, and carries the bundled image
   assert.ok(/setLayout\(CAP,'visibility','visible'\)/.test(src),
     'applyCap must show the cap unconditionally — the satellite-only guard is the #R219 defect');
   assert.ok(/CAP_VEC_LIGHT/.test(src) && /CAP_VEC_DARK/.test(src), 'the vector base map needs its own cap tone');
+  /* ⚠ MEASURED: a `background` layer is painted over the TILE COVERAGE, and there is no tile above
+     85.0511° — with the cap background visible at #545454 the south polar pixel was still (11,11,11).
+     Only GEOMETRY reaches a pole, so the fill mosaic is what covers the caps on EVERY base map and
+     only its colour depends on which map is under it. */
+  const ci = src.slice(src.indexOf('function capImages('), src.indexOf('function capImages(') + 1400);
+  assert.ok(/satOn \? \['get', 'c'\] : \(_darkBase\(\)/.test(ci),
+    'the cap mosaic must be shown on both base maps, with the colour choosing between them');
+  assert.ok(!/if \(!satOn\) \{ try \{ if \(GE\(\)\.layers\.has\(CAPLYR\)\) GE\(\)\.layers\.setLayout\(CAPLYR, 'visibility', 'none'\)/.test(ci),
+    'hiding the mosaic on the vector map is the defect this replaced');
   /* ⚠ NOT an `image` source: MapLibre puts every image corner through MercatorCoordinate, and
      latitude 90 has no Mercator y — measured, it throws on load. The caps carry the picture as a
      POLYGON MOSAIC coloured from it. */
   assert.ok(!/type:'image'/.test(src), 'an image source cannot be placed at a pole (see js/world-base.js)');
-  assert.ok(/world-cap-src/.test(src) && /_capMosaic/.test(src) && /'fill-color': \['get', 'c'\]/.test(src),
+  assert.ok(/world-cap-src/.test(src) && /_capMosaic/.test(src) && /'fill-color': col/.test(src),
     'the caps must carry the bundled picture, not only a colour');
   /* the seam is the Mercator limit, exactly */
   assert.ok(/85\.0511287798066/.test(src), 'the band must start at the Web Mercator limit');
