@@ -44,9 +44,12 @@ test('R192 seismic: land/sea is a bundled fact, and a missing mask never paints 
   assert.match(s, /if\(!land\)\{ console\.warn\('\[seismic\] the land mask is unavailable/, 'and fails closed');
   assert.doesNotMatch(s, /if\(sn&&sn\.have>=sn\.want\*0\.5\) land=sn;/, 'the half-loaded-DEM mask is gone');
   /* the fine field: a cell with no elevation is not a cell on land */
-  assert.match(s, /if\(e0==null&&landMask&&landMask\.isLand\(lo,la\)===false\)\{ sea\+\+; vs\[k\]=-1; continue; \}/,
+  /* ⚠ (#R215) the three-valued rule is unchanged; the ANSWER now comes from `landAt()` (the coast
+     rasterised into this field's own grid, js/coast-mask.js) with this mask still behind it. */
+  assert.match(s, /if\(e0==null&&landAt\(k,lo,la\)===false\)\{ sea\+\+; vs\[k\]=-1; continue; \}/,
     'a missing DEM over known sea is sea');
-  assert.match(s, /if\(e0==null&&!landMask\)\{ noDem\+\+; vs\[k\]=0; continue; \}/, 'and with no mask it is left unpainted');
+  assert.match(s, /if\(e0==null&&landAt\(k,lo,la\)==null\)\{ noDem\+\+; vs\[k\]=0; continue; \}/,
+    'and where NOTHING can say, it is left unpainted rather than assumed');
 
   /* the mask itself is real: the manifest says where it came from and how much of it is land */
   const man = JSON.parse(read('data/land-mask.json'));

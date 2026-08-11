@@ -3467,7 +3467,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(s.use[currentLang]||s.use.en)}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join('');
     m.style.display='flex';
   }
-  { const b=document.getElementById('btn-data-sources'); if(b) b.onclick=openSourcesModal;
+  { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
     const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }
 

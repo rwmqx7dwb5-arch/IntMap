@@ -10,9 +10,14 @@
      Same skeleton and the same stylesheet as science.html on purpose: the two pages answer the two
      halves of one question — this one is WHERE THE NUMBERS COME FROM, science.html is WHAT IS DONE
      WITH THEM — and a reader moving between them should not have to re-learn the page.
-     ⚠ THE LIST IS NOT COPIED. It is rendered at load time from js/reference-data.js, which is the
-     registry the in-app Sources dialog also reads. There is one list; a source added to the app
-     appears here without anybody remembering to. -->
+     ⚠⚠ (#R215) AND IT IS WRITTEN FOR A READER, NOT FOR A MAINTAINER.
+     「いや私向けに作ってんじゃねーよ。サイトに開発者向けのページおくわけないやろがくそ。作り直せ。」
+     The first version explained the REGISTRY: it named the source file the list is generated from,
+     said there was no second copy to forget to update, and described how the groupings are derived.
+     Every one of those sentences is about how the app is BUILT, which is the author’s problem and
+     not the reader’s. What a reader wants from this page is: who measured this, how old is it, what
+     happens to my browser when I open it, and what may I do with it. That is what the sections are
+     now. The list itself is still generated rather than transcribed — that part was right. -->
 <style>
   :root{
     --bg:#0e0f12; --card:#16181d; --line:rgba(140,145,160,.22);
@@ -80,94 +85,114 @@
 
 <nav>
   <ol>
-    <li><a href="#how"><span data-l="ja">この一覧の読み方</span><span data-l="en">How to read this list</span></a></li>
-    <li><a href="#live"><span data-l="ja">ライブ取得と同梱データ</span><span data-l="en">Live requests vs bundled data</span></a></li>
-    <li><a href="#privacy"><span data-l="ja">出典とプライバシー</span><span data-l="en">Sources and privacy</span></a></li>
-    <li><a href="#licence"><span data-l="ja">ライセンスと帰属表示</span><span data-l="en">Licences and attribution</span></a></li>
-    <li><a href="#limits"><span data-l="ja">出典が答えないこと</span><span data-l="en">What a source does not answer</span></a></li>
-    <li><a href="#list"><span data-l="ja">全出典一覧</span><span data-l="en">The full registry</span></a></li>
+    <li><a href="#what"><span data-l="ja">このページについて</span><span data-l="en">About this page</span></a></li>
+    <li><a href="#live"><span data-l="ja">いつの数字なのか</span><span data-l="en">How current the numbers are</span></a></li>
+    <li><a href="#privacy"><span data-l="ja">地図を開くと何が起きるか</span><span data-l="en">What happens when you open a layer</span></a></li>
+    <li><a href="#licence"><span data-l="ja">作った人たちと利用条件</span><span data-l="en">Who made this data, and the terms</span></a></li>
+    <li><a href="#limits"><span data-l="ja">出典があっても分からないこと</span><span data-l="en">What a source does not tell you</span></a></li>
+    <li><a href="#list"><span data-l="ja">分野別の一覧</span><span data-l="en">The list, by subject</span></a></li>
   </ol>
 </nav>
 
-<section id="how">
-  <h2><span data-l="ja">1. この一覧の読み方</span><span data-l="en">1. How to read this list</span></h2>
-  <p class="tagline"><span data-l="ja">1件 = 1提供元。名前・URL・「IntMap のどこで使っているか」の3つが必ず揃っています。</span><span data-l="en">One entry = one provider: its name, its URL, and exactly where in IntMap it is used.</span></p>
-  <p><span data-l="ja">下の <a href="#list">全出典一覧</a> は、アプリ内の「出典」ダイアログと<b>同じ登録簿</b>（<code>js/reference-data.js</code>）から、このページを開いた時点で生成しています。一覧を二重に持たないので、アプリに出典が増えれば、誰も更新を忘れられません。</span>
-     <span data-l="en">The registry below is rendered, when you open this page, from the <b>same table</b> the in-app Sources dialog reads (<code>js/reference-data.js</code>). There is no second copy to forget to update.</span></p>
-  <h3><span data-l="ja">「どこで使っているか」は具体的です</span><span data-l="en">“Where it is used” is specific</span></h3>
-  <p><span data-l="ja">各エントリの説明は「地図データ」のような一般名ではなく、どのレイヤー・どのパネル・どの計算に入っているかを書いています。ある数字がどこから来たか知りたい場合は、そのレイヤー名で下の絞り込み欄を検索するのが最短です。</span>
-     <span data-l="en">Each entry says which layer, which panel or which calculation it feeds — not just “map data”. To find where a number came from, type the layer's name into the filter box below.</span></p>
+<section id="what">
+  <h2><span data-l="ja">1. このページについて</span><span data-l="en">1. About this page</span></h2>
+  <p class="tagline"><span data-l="ja">IntMap に出てくる数字・線・画像は、すべてどこかの誰かが測って公開したものです。その「誰か」の一覧です。</span>
+     <span data-l="en">Every number, line and image in IntMap was measured and published by somebody. This page is the list of who.</span></p>
+  <p><span data-l="ja">IntMap 自身はデータを作っていません。気象庁や NASA、国連の機関、大学、OpenStreetMap の有志などが公開しているデータを集めて、地図の上に重ねて見せています。ですから、画面の数字を信じてよいかどうかは、元を公開している組織を見れば判断できます。そのためのページです。</span>
+     <span data-l="en">IntMap does not produce data. It collects what meteorological agencies, NASA, UN bodies, universities and the OpenStreetMap community already publish, and draws it on one map. So whether a number on screen deserves your trust is a question about the organisation that published it &mdash; and this page is how you find out which one that is.</span></p>
+  <p><span data-l="ja">下の一覧は、アプリが実際に使っている提供元そのものです。レイヤーが増えればここも増えます。探しているものがあるときは、レイヤー名（例：「潮汐」「作物」）や機関名で絞り込めます。</span>
+     <span data-l="en">The list below is the providers the app actually uses; it grows when the map does. If you are looking for something in particular, filter it by the layer's name (&ldquo;tides&rdquo;, &ldquo;crops&rdquo;) or by the organisation.</span></p>
 </section>
 
 <section id="live">
-  <h2><span data-l="ja">2. ライブ取得と同梱データ</span><span data-l="en">2. Live requests vs bundled data</span></h2>
-  <p class="tagline"><span data-l="ja">出典には2種類あり、鮮度も、オフラインでの挙動も、失敗の仕方も違います。</span><span data-l="en">There are two kinds, and they differ in freshness, in offline behaviour and in how they fail.</span></p>
+  <h2><span data-l="ja">2. いつの数字なのか</span><span data-l="en">2. How current the numbers are</span></h2>
+  <p class="tagline"><span data-l="ja">「今」と「アプリに入っているもの」は違います。そしてレイヤーごとに違います。</span>
+     <span data-l="en">&ldquo;Now&rdquo; and &ldquo;what is in the app&rdquo; are not the same thing, and the gap differs by layer.</span></p>
   <table>
-    <tr><th><span data-l="ja">種類</span><span data-l="en">Kind</span></th><th><span data-l="ja">いつ取得するか</span><span data-l="en">When it is fetched</span></th><th><span data-l="ja">例</span><span data-l="en">Examples</span></th></tr>
-    <tr><td><span data-l="ja">ライブ取得</span><span data-l="en">Live</span></td>
-        <td><span data-l="ja">そのレイヤー／パネルを開いた時に、ブラウザから提供元へ直接</span><span data-l="en">When you open that layer or panel — from your browser, straight to the provider</span></td>
-        <td>OpenStreetMap / OpenFreeMap, Esri, NASA GIBS, Open-Meteo, USGS, JMA bosai, NWS, GDACS, OEC, Our World in Data, FAO GAEZ, Overpass, OSRM, Wikipedia</td></tr>
-    <tr><td><span data-l="ja">同梱</span><span data-l="en">Bundled</span></td>
-        <td><span data-l="ja">ビルド時に取り込み済み。ネットワークなしでも同じ答えを返す</span><span data-l="en">Baked in at build time; the same answer with no network at all</span></td>
-        <td>Natural Earth, Köppen 1901–2020, land/sea mask, bathymetry, Hipparcos star catalogue, planetary textures, satellite TLE snapshot, ocean currents (OSCAR)</td></tr>
+    <tr><th><span data-l="ja">種類</span><span data-l="en">Kind</span></th>
+        <th><span data-l="ja">いつの数字か</span><span data-l="en">Which moment you are seeing</span></th>
+        <th><span data-l="ja">例</span><span data-l="en">Examples</span></th></tr>
+    <tr><td><span data-l="ja">その場で取得</span><span data-l="en">Fetched as you look</span></td>
+        <td><span data-l="ja">レイヤーを開いた瞬間のもの。地震は数分、警報は約5分ごとに取り直します</span>
+            <span data-l="en">The moment you switched it on. Earthquakes update in minutes; warnings are re-read about every five</span></td>
+        <td><span data-l="ja">地震・警報・天気・航空機・衛星画像</span><span data-l="en">Earthquakes, warnings, weather, aircraft, satellite imagery</span></td></tr>
+    <tr><td><span data-l="ja">年次の統計</span><span data-l="en">Annual statistics</span></td>
+        <td><span data-l="ja">公表済みの最新年。画面には必ずその年を出します</span>
+            <span data-l="en">The most recent published year, and the app always prints which year that is</span></td>
+        <td><span data-l="ja">貿易・電力構成・人口・経済指標</span><span data-l="en">Trade, energy mix, population, economic indicators</span></td></tr>
+    <tr><td><span data-l="ja">基準年の観測</span><span data-l="en">A reference year</span></td>
+        <td><span data-l="ja">決められた年の観測。その後の変化は入っていません</span>
+            <span data-l="en">An observation of a stated year; nothing after it is included</span></td>
+        <td><span data-l="ja">作物の栽培（2000 / 2010）・気候区分（1901–2020）</span><span data-l="en">Crop cultivation (2000, 2010), climate zones (1901&ndash;2020)</span></td></tr>
+    <tr><td><span data-l="ja">アプリに同梱</span><span data-l="en">Shipped with the app</span></td>
+        <td><span data-l="ja">更新時に取り込んだもの。通信がなくても同じ答えが出ます</span>
+            <span data-l="en">Captured when the app was last updated; the same answer with no network at all</span></td>
+        <td><span data-l="ja">国境線・海岸線・海底地形・星のカタログ・惑星の画像・衛星の軌道要素</span>
+            <span data-l="en">Borders, coastlines, sea floor, the star catalogue, planet textures, satellite orbital elements</span></td></tr>
   </table>
-  <p class="lim"><b data-l="ja">注意</b><b data-l="en">Note</b>
-     <span data-l="ja">同梱データは「その時点の観測」です。作成日は各データファイルの先頭に入っており、地図上の表示にも「いつのデータか」を出しています。古くなったものを新しいふりをして見せることはしません。</span>
-     <span data-l="en">Bundled data is an observation from a moment in time. The build date is in the head of each data file and is shown in the app beside the layer; nothing old is presented as if it were current.</span></p>
+  <p class="lim"><b data-l="ja">ここは注意</b><b data-l="en">Worth knowing</b>
+     <span data-l="ja">衛星の軌道要素のように、古くなるほど少しずつずれていくデータがあります。そういうものは「いつのデータか」をパネルに出しています。古いものを新しいふりをして見せることはしません。</span>
+     <span data-l="en">Some data drifts as it ages &mdash; satellite orbits most of all. Where that is true the panel prints the date the data was taken, and nothing old is presented as if it were current.</span></p>
 </section>
 
 <section id="privacy">
-  <h2><span data-l="ja">3. 出典とプライバシー</span><span data-l="en">3. Sources and privacy</span></h2>
-  <p class="tagline"><span data-l="ja">ライブ取得は「あなたのブラウザが、その提供元にリクエストを出す」という意味です。</span><span data-l="en">A live source means your browser makes a request to that provider.</span></p>
-  <p><span data-l="ja">IntMap にはデータを中継するサーバーがほとんどありません。地図タイル、気象、地震、警報、貿易、作物などはブラウザから提供元へ直接届きます。したがって、そのレイヤーを開くと、提供元のログには <b>IPアドレスと、要求したタイル（＝おおよその表示範囲）</b> が残ります。これはどの地図アプリでも同じですが、明示しておきます。</span>
-     <span data-l="en">IntMap proxies almost nothing: map tiles, weather, earthquakes, warnings, trade, crops and the rest go from your browser to the provider. That provider's logs will therefore contain <b>your IP address and which tiles you asked for</b> — i.e. roughly what you were looking at. This is true of every map application; it is stated here rather than left implicit.</span></p>
-  <p><span data-l="ja">アプリ自身が持つサーバー機能（アカウント、AI、モニター）は Supabase 上にあり、扱っている内容は <a href="./index.html">アプリ内の「プライバシー」</a> に書いてあります。位置情報は端末から出ません（現在地の表示は端末内で完結し、座標を提供元へ送るのはユーザーが明示的に要求した検索・経路・気象などに限られます）。</span>
-     <span data-l="en">The app's own server features (accounts, AI, monitors) run on Supabase and are described in the in-app Privacy dialog. Your location does not leave the device on its own: it is sent only where you explicitly ask for something about a place — a search, a route, a forecast.</span></p>
+  <h2><span data-l="ja">3. 地図を開くと何が起きるか</span><span data-l="en">3. What happens when you open a layer</span></h2>
+  <p class="tagline"><span data-l="ja">あなたのブラウザが、提供元へ直接取りにいきます。</span>
+     <span data-l="en">Your browser goes to the provider itself.</span></p>
+  <p><span data-l="ja">IntMap は途中に中継サーバーをほとんど置いていません。地図タイルも、天気も、地震も、あなたの端末から提供元へ直接届きます。そのため提供元の記録には <b>IP アドレスと、要求した地図の区画（つまり、おおよそどこを見ていたか）</b> が残ります。これはどの地図アプリでも同じですが、書いておきます。</span>
+     <span data-l="en">IntMap proxies almost nothing: tiles, weather, earthquakes and the rest travel from your device to the provider. Their logs will therefore contain <b>your IP address and which map squares you asked for</b> &mdash; roughly, where you were looking. This is true of every map application; it is said here rather than left implicit.</span></p>
+  <p><span data-l="ja">現在地は端末の中だけで使います。座標が外に出るのは、検索・経路探索・天気など、あなたがその場所について何かを頼んだときだけです。アカウント・AI・モニターの扱いは、アプリ内の「プライバシー」にあります。</span>
+     <span data-l="en">Your location stays on the device. Coordinates leave it only where you ask something about a place &mdash; a search, a route, a forecast. Accounts, AI and monitors are described in the app's own Privacy dialog.</span></p>
 </section>
 
 <section id="licence">
-  <h2><span data-l="ja">4. ライセンスと帰属表示</span><span data-l="en">4. Licences and attribution</span></h2>
-  <p class="tagline"><span data-l="ja">帰属表示は義務であり、同時に「この数字は誰の仕事か」を読者に返すためのものです。</span><span data-l="en">Attribution is an obligation — and also how a reader gets to know whose work a number is.</span></p>
+  <h2><span data-l="ja">4. 作った人たちと利用条件</span><span data-l="en">4. Who made this data, and the terms</span></h2>
+  <p class="tagline"><span data-l="ja">帰属表示は義務であり、同時に「この数字は誰の仕事か」を読み手に返すためのものです。</span>
+     <span data-l="en">Attribution is an obligation &mdash; and also how you get to know whose work a number is.</span></p>
   <ul>
-    <li><span data-l="ja"><b>OpenStreetMap</b> — ODbL 1.0。基図・境界線・POI・道路・鉄道・経路探索の基礎。地図上に常時表示しています。</span>
-        <span data-l="en"><b>OpenStreetMap</b> — ODbL 1.0. Basemap, borders, POIs, roads, rail and routing. Credited on the map at all times.</span></li>
-    <li><span data-l="ja"><b>米国政府の著作物</b>（NASA・NOAA・USGS・NWS ほか） — 原則パブリックドメイン。ただし NASA のロゴ・識別標は別扱いです。</span>
-        <span data-l="en"><b>US Government works</b> (NASA, NOAA, USGS, NWS …) — public domain as a rule; NASA's logos and insignia are not.</span></li>
-    <li><span data-l="ja"><b>Natural Earth</b> — パブリックドメイン。</span><span data-l="en"><b>Natural Earth</b> — public domain.</span></li>
-    <li><span data-l="ja"><b>Our World in Data</b> — CC BY 4.0（元データの提供元＝Ember、Energy Institute、FAO も併記）。</span>
-        <span data-l="en"><b>Our World in Data</b> — CC BY 4.0, with the upstream provider (Ember, the Energy Institute, FAO) named alongside.</span></li>
-    <li><span data-l="ja"><b>気象庁</b>・<b>FAO</b>・<b>世界銀行</b>・<b>Wikipedia/Wikidata</b> — 各提供元の利用条件に従い、それぞれのページで名前と出典先を表示しています。</span>
-        <span data-l="en"><b>JMA</b>, <b>FAO</b>, <b>the World Bank</b>, <b>Wikipedia/Wikidata</b> — under each provider's own terms, named in the panel that uses them.</span></li>
+    <li><span data-l="ja"><b>OpenStreetMap</b>（ODbL 1.0）&mdash; 世界中のボランティアが描いた地図。道・鉄道・建物・店・行政境界と、経路探索の土台。地図に常時表示しています。</span>
+        <span data-l="en"><b>OpenStreetMap</b> (ODbL 1.0) &mdash; the map volunteers drew: roads, rail, buildings, places, administrative boundaries, and the base for routing. Credited on the map at all times.</span></li>
+    <li><span data-l="ja"><b>米国政府の成果物</b>（NASA・NOAA・USGS・NWS ほか）&mdash; 原則パブリックドメイン。衛星画像、地震、夜間光、惑星の位置など。（NASA のロゴ・識別標は別扱いです。）</span>
+        <span data-l="en"><b>US Government works</b> (NASA, NOAA, USGS, NWS &hellip;) &mdash; public domain as a rule: imagery, earthquakes, city lights, planetary positions. NASA's logos and insignia are not.</span></li>
+    <li><span data-l="ja"><b>気象庁</b>ほか各国の気象機関 &mdash; 警報・注意報は発表した機関のものをそのまま表示し、どの機関の発表かを必ず名前で出します。</span>
+        <span data-l="en"><b>National weather agencies</b> &mdash; warnings are shown as the issuing agency published them, and the agency is always named.</span></li>
+    <li><span data-l="ja"><b>Natural Earth</b> &mdash; パブリックドメインの国境・海岸線。</span>
+        <span data-l="en"><b>Natural Earth</b> &mdash; public-domain borders and coastlines.</span></li>
+    <li><span data-l="ja"><b>Our World in Data</b>（CC BY 4.0）&mdash; 電力・エネルギー・作物などの統計。元データの作成元（Ember、Energy Institute、FAO）も併記します。</span>
+        <span data-l="en"><b>Our World in Data</b> (CC BY 4.0) &mdash; electricity, energy and crop statistics, with the upstream compiler (Ember, the Energy Institute, FAO) named alongside.</span></li>
+    <li><span data-l="ja"><b>世界銀行</b>・<b>FAO</b>・<b>Wikipedia / Wikidata</b> &mdash; 各提供元の条件に従い、使っているパネルで名前とリンクを出しています。</span>
+        <span data-l="en"><b>The World Bank</b>, <b>FAO</b>, <b>Wikipedia / Wikidata</b> &mdash; under each provider's own terms, named in the panel that uses them.</span></li>
   </ul>
-  <p class="src"><span data-l="ja">各エントリの URL は提供元の公式ページです。ライセンスの正文はそこにあります。ここに書いたのは要約であり、正文に優先しません。</span>
+  <p class="src"><span data-l="ja">一覧のリンク先は提供元の公式ページです。ライセンスの正文はそこにあります。ここに書いたのは要約であり、正文に優先しません。</span>
      <span data-l="en">Each entry links to the provider's own page, which is where the licence text lives. The summaries here are summaries and do not override it.</span></p>
 </section>
 
 <section id="limits">
-  <h2><span data-l="ja">5. 出典が答えないこと</span><span data-l="en">5. What a source does not answer</span></h2>
-  <p class="tagline"><span data-l="ja">出典があることは、正しいことでも、最新であることでも、あなたの場所に当てはまることでもありません。</span><span data-l="en">Having a source is not the same as being right, being current, or applying to where you are.</span></p>
+  <h2><span data-l="ja">5. 出典があっても分からないこと</span><span data-l="en">5. What a source does not tell you</span></h2>
+  <p class="tagline"><span data-l="ja">出典があることは、正しいことでも、最新であることでも、あなたの場所に当てはまることでもありません。</span>
+     <span data-l="en">Having a source is not the same as being right, being current, or applying to where you are.</span></p>
   <ul>
-    <li><span data-l="ja"><b>更新の周期は提供元のもの</b>です。地震は数分、警報は約5分ごとの再取得、貿易統計は年次、作物は基準年（2000年・2010年）。画面には常に「いつの数字か」を出しています。</span>
-        <span data-l="en"><b>The update cadence is the provider's.</b> Earthquakes in minutes, warnings re-read about every five minutes, trade statistics annual, crops at reference years (2000, 2010). The app always shows which moment a figure belongs to.</span></li>
-    <li><span data-l="ja"><b>フィードが無い国は「無い」と書きます。</b> 空の地図は「警報が出ていない」という意味ではありません（警報レイヤーの説明はタップした国ごとに出ます）。</span>
-        <span data-l="en"><b>Where there is no feed, the app says so in words.</b> An empty map is not a statement that nothing is in force.</span></li>
-    <li><span data-l="ja"><b>シミュレーションは出典ではありません。</b> 地震・津波・浸水・日照・電波・ドローンなどの結果は、この一覧のデータを入力とした<b>計算結果</b>です。式と仮定と限界は <a href="./science.html">ロジック解説</a> にあります。</span>
-        <span data-l="en"><b>A simulation is not a source.</b> The earthquake, tsunami, flood, sunlight, radio and drone answers are computed from the data listed here; the equations, assumptions and limits are on the <a href="./science.html">Science &amp; logic</a> page.</span></li>
+    <li><span data-l="ja"><b>国の合計と、場所は別の問いです。</b> 国別の統計を国の形に塗っても、その国のどこでそうなのかは分かりません。色は国境で止まりますが、現実はそこで止まりません。</span>
+        <span data-l="en"><b>A national total is not a place.</b> A country-level statistic painted across a country says nothing about where inside it the number comes from &mdash; the colour stops at the border, the phenomenon does not.</span></li>
+    <li><span data-l="ja"><b>フィードのない国は「ない」と言葉で書きます。</b> 何も塗られていない地図は「警報が出ていない」という意味ではありません。</span>
+        <span data-l="en"><b>Where there is no feed, the app says so in words.</b> An empty map is never a statement that nothing is in force.</span></li>
+    <li><span data-l="ja"><b>シミュレーションは出典ではありません。</b> 地震・津波・浸水・日照などの結果は、この一覧のデータを入力にした<b>計算結果</b>です。式と仮定と限界は <a href="./science.html">ロジック解説</a> にあります。</span>
+        <span data-l="en"><b>A simulation is not a source.</b> The earthquake, tsunami, flood and sunlight answers are computed from the data listed here; the equations, assumptions and limits are on the <a href="./science.html">Science &amp; logic</a> page.</span></li>
     <li><span data-l="ja"><b>緊急時は公的機関の発表に従ってください。</b> このアプリの表示は参考です。</span>
         <span data-l="en"><b>In an emergency, follow the official authorities.</b> This application is for reference.</span></li>
   </ul>
 </section>
 
 <section id="list">
-  <h2><span data-l="ja">6. 全出典一覧</span><span data-l="en">6. The full registry</span><span class="count" id="src-count"></span></h2>
-  <p class="tagline"><span data-l="ja">アプリ内「出典」ダイアログと同じ登録簿から生成。分野は説明文から自動分類しており、当てはまらないものは「その他」に入ります。</span>
-     <span data-l="en">Rendered from the same registry as the in-app dialog. The groupings are derived from each entry's own description; anything that matches none of them lands in “Other”.</span></p>
-  <input class="filter" id="src-filter" type="search" placeholder="filter — 例: 地震 / satellite / weather">
-  <div id="src-groups"><p class="empty" data-l="ja">登録簿を読み込んでいます…</p><p class="empty" data-l="en">Loading the registry…</p></div>
+  <h2><span data-l="ja">6. 分野別の一覧</span><span data-l="en">6. The list, by subject</span><span class="count" id="src-count"></span></h2>
+  <p class="tagline"><span data-l="ja">1件 = 1提供元。名前と、IntMap のどこで使っているかと、公式ページへのリンクです。</span>
+     <span data-l="en">One entry = one provider: its name, where in IntMap it is used, and a link to its own page.</span></p>
+  <input class="filter" id="src-filter" type="search" placeholder="&#26908;&#32034; / filter — 地震, tides, NASA…">
+  <div id="src-groups"><p class="empty" data-l="ja">読み込んでいます…</p><p class="empty" data-l="en">Loading…</p></div>
 </section>
 
 <footer>
-  <p><span data-l="ja">このページは<b>出典</b>の一覧です。計算方法は <a href="./science.html">科学的根拠とロジック</a> にあります。<br>誤りを見つけた場合は、アプリ内のフィードバックからお知らせください。</span>
+  <p><span data-l="ja">このページは<b>データの出どころ</b>の一覧です。それを使って何を計算しているかは <a href="./science.html">科学的根拠とロジック</a> にあります。<br>誤りを見つけた場合は、アプリ内のフィードバックからお知らせください。</span>
      <span data-l="en">This page lists <b>sources</b>. The methods are on the <a href="./science.html">Science &amp; logic</a> page.<br>If you find an error here, please use the in-app feedback.</span></p>
   <p><a class="back" href="./index.html">&#8592; <span data-l="ja">地図に戻る</span><span data-l="en">Back to the map</span></a></p>
 </footer>
@@ -210,7 +235,7 @@
     try { list = (window.IntMapRefData && window.IntMapRefData.dataSources) || []; } catch (e) {}
     var cnt = document.getElementById('src-count');
     if (cnt) cnt.textContent = list.length ? (list.length + (ja ? ' 件' : ' entries')) : '';
-    if (!list.length) { host.innerHTML = '<p class="empty">' + (ja ? '登録簿を読み込めませんでした。' : 'The registry could not be loaded.') + '</p>'; return; }
+    if (!list.length) { host.innerHTML = '<p class="empty">' + (ja ? '一覧を読み込めませんでした。ページを再読み込みしてください。' : 'The list could not be loaded — please reload the page.') + '</p>'; return; }
     var q = (document.getElementById('src-filter') || {}).value || '';
     q = q.trim().toLowerCase();
     var bins = {};

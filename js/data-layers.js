@@ -2001,15 +2001,16 @@ window.IntMapModules.dataLayers=function(HOST){
        lines, l9 dams/volcanoes/aurora, plates, the new beta layers… — without touching GENERIC_LEG. */
     function ensureGenericLegend(id, names, cbId){
       /* (#R38) store all four [EN, JP, DE, RU]; callers that pass only [EN, JP] still work (DE/RU fall back to
-         EN — never Japanese). */
-      if(names && !GENERIC_LEG[id]) GENERIC_LEG[id]=[names[0], names[1]||names[0], names[2]||names[0], names[3]||names[0]];
+         EN — never Japanese). (#R215) …and ES, which used to fall off the end of the array and show
+         an English title to a Spanish reader (standing instruction 3). */
+      if(names && !GENERIC_LEG[id]) GENERIC_LEG[id]=[names[0], names[1]||names[0], names[2]||names[0], names[3]||names[0], names[4]||names[0]];
       if(!GENERIC_LEG[id]) return null;
       let el=document.getElementById('data-legend-'+id);
       if(!el){ el=document.createElement('div'); el.className='data-legend generic-legend'; el.id='data-legend-'+id; el.style.bottom='140px';
         (document.getElementById('map-container')||document.body).appendChild(el);
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
-      const nm=GENERIC_LEG[id][{en:0,jp:1,de:2,ru:3}[HOST.lang]]||GENERIC_LEG[id][0];
+      const nm=GENERIC_LEG[id][{en:0,jp:1,de:2,ru:3,es:4}[HOST.lang]]||GENERIC_LEG[id][0];
       const _dragT=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите':'Drag to move';
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
@@ -4177,6 +4178,10 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ setTimeout(()=>{ try{ setLayerOpacity(id,opacities[id]); }catch(_){} },120); }catch(_){}
       return el; }catch(_){ return null; } };
     window._hideGenericLegend=function(id){ const el=document.getElementById('data-legend-'+id); if(el) el.style.display='none'; try{ tileLegends(); }catch(_){} };
+    /* (#R215) a legend that grows after it was registered has to be re-tiled, and the world-data
+       families (js/world-packs.js, js/industry-web.js) render their controls INTO this box rather
+       than into a second window of their own. Same function every legend already goes through. */
+    window._tileLegends=tileLegends;
     /* (#R108/#R109) re-localize every VISIBLE data-layer legend on a language change ("言語設定を変更したとき、すでに
        表示済みのレイヤーの凡例はその言語に切り替わらない"). ROOT CAUSE of the R108 miss: the common legends are
        DEDICATED `.data-legend` built once by makeLegend (NOT `.generic-legend`), so the old selector matched nothing.

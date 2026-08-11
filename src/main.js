@@ -90,6 +90,12 @@ import '../js/map-tools.js';
    about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
    second copy. Nothing loads until someone calls warm(). */
 import '../js/land-mask.js';
+/* (#R215) …and the SAME question asked finely. js/land-mask.js answers a point anywhere with no
+   network at 19.5 km; this rasterises the app's own 10 m country outline into whatever grid the
+   caller is already building, so a coastline is decided at the caller's resolution instead of at a
+   19.5 km majority («大きなタイルでごまかすな»). It holds nothing: the geometry belongs to
+   js/countries-ui.js and this only draws it. */
+import '../js/coast-mask.js';
 /* (#R197) …and "how deep is the sea here" — the bundled 0.25° global sea floor (data/bathymetry.png).
    Same shape as the land mask: a fact about the Earth, one owner, and nothing fetched until the one
    thing that needs a whole ocean at once — the global tsunami solver — calls warm(). */

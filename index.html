@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R214';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R215';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R214';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-10-R214';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-10-R215';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -658,15 +658,13 @@ window.__imBuild='R214';   /* (#R121) build marker — bump when verifying that 
     </div>
     <div class="settings-sech" data-i18n="setSecAbout">About &amp; support</div>
     <div class="settings-sec">
-    <!-- ⚠ (#R213) THE SOURCES BUTTON GOES TO THE SOURCES PAGE. 「設定の出典ボタンを押しても、直接
-         新たに作った出典ページに行かなかった。」 #R212 built sources.html and then left this button
-         opening the old in-app list, with the page hidden behind a SECOND entry two groups below —
-         so the obvious control did the less useful thing and the useful one looked like a duplicate.
-         One group now: the button is the page. The in-app list is still there (nothing is removed)
-         as the secondary line, which is what it is — a quick look without leaving the map. -->
+    <!-- ⚠ (#R215) ONE ENTRY, AND IT IS THE PAGE. 「アプリ内で簡易一覧を見る←ふざけんじゃねえよ」
+         #R213 put the page first and kept the in-app list as a secondary line underneath. Offering a
+         "quick list" beside the real thing is offering the reader a worse version of the same answer
+         and asking them to choose; the data-sources page IS the answer. The dialog markup below is
+         untouched and still opens from Atlas — what is gone is the choice in Settings. -->
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <a id="link-sources" href="./sources.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
-      <button type="button" id="btn-data-sources" style="width:100%;margin-top:6px;background:none;border:none;color:var(--text-muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px 0;" data-i18n="viewDataSources">View all data sources ↗</button>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.

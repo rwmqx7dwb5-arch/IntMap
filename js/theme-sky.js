@@ -181,9 +181,25 @@ export function makeThemeSky(HOST, CTX) {
      is left byte-for-byte as it was, and this only stops the sun-anchored light on the engines whose
      night side IS that light. `setSunDirection(null)` is the documented "restore the default light". */
   function _nightSideOff(){ try{ const N=window.IntMapNightSide; return !!(N&&N.isOn&&!N.isOn()); }catch(_){ return false; } }
-  function _rendererLightsTheGlobe(){ try{ return GE().id()!=='maplibre'; }catch(_){ return false; } }
+  /* ══ ⚠⚠ (#R215) …AND MapLibre DRAWS A TERMINATOR OF ITS OWN, WHICH IS WHY IT IS BACK ═══════════
+     「設定から、昼夜を表示するのをオフにできるように。（追記：オフにしてもオフにならない。MapLibre。）」
+
+     #R214 answered this for Cesium and left MapLibre alone on a stated argument: there the day/night
+     effect is js/night-side.js's two layers, `setEnabled(false)` removes them, and this light is only
+     the fill-extrusion shading. MEASURED again this round, that argument is half right — the layers
+     really do go and stay gone (Settings → off, `im-night-shade` and `im-night-lights-lyr` absent,
+     absent after a camera move, `intmap_night_side='0'`). But it is NOT the only thing that shades
+     the globe by the Sun. maplibre-gl's own atmosphere pass integrates Rayleigh + Mie with
+     `u_sun_pos` taken straight from `style.light` (node_modules/maplibre-gl … `drawAtmosphere` →
+     `getSunPos(light, transform)`), so on the globe the halo itself is bright over the day side and
+     dark over the night side — a terminator that this app aims, every sixty seconds, at the real Sun.
+     Switching the layer off and leaving the light aimed is exactly 「オフにしてもオフにならない」.
+
+     So the switch reaches the LIGHT on every engine, not on every engine except this one. What
+     `setSunDirection(null)` restores is the app's default viewport-anchored light — buildings keep
+     their shading, the atmosphere keeps its halo, and neither follows the Sun any more. */
   function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false;
-    if(_nightSideOff()&&_rendererLightsTheGlobe()){
+    if(_nightSideOff()){
       try{ GE().scene.setSunDirection(null); }catch(_){}
       return false;
     }
@@ -246,7 +262,13 @@ export function makeThemeSky(HOST, CTX) {
     const A=p(a),B=p(b),u=Math.max(0,Math.min(1,t));
     return '#'+[0,1,2].map(i=>Math.round(A[i]+(B[i]-A[i])*u).toString(16).padStart(2,'0')).join(''); }
   /* how high the Sun stands over the point the camera is looking at, in degrees */
+  /* ⚠ (#R215) …and the SKY is the third thing that says which side is night. `horizon-color` is
+     interpolated on this elevation and `sky-color` is integrated at it, so with the day/night display
+     off both would still go dark at local midnight. `null` is already the "the Sun's position is
+     unknown" path in both callers, and it lands on the DAY colours — which is what "do not show me
+     the night" means. */
   function _sunElevAtCentre(){
+    if(_nightSideOff()) return null;
     const s=_sunOverheadPoint(); if(!s) return null;
     let c=null; try{ c=GE().camera.getCenter(); }catch(_){}
     if(!c||!isFinite(c.lat)||!isFinite(c.lng)) return null;

@@ -83,10 +83,13 @@ window.IntMapModules.industryWeb = function (HOST) {
     const SRC_NODE = 'iw-nodes', SRC_EDGE = 'iw-edges';
     const LYR = ['iw-edge-line', 'iw-node-halo', 'iw-node', 'iw-label'];
 
-    let on = false, qid = INDUSTRIES[0].q, status = 'idle', err = null, moneyErr = [];
+    let on = false, qid = INDUSTRIES[0].q, status = 'idle', err = null, moneyErr = [], edgeErr = false;
     let nodes = [], edges = [], sel = null, ctrl = null;
     const cache = {};
-    const panel = makePanel('iw-panel', () => '🕸 ' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry');
+    /* (#R215) one box, and it is the app's own legend — see js/world-packs.js `makePanel`. */
+    const panel = makePanel('iw-panel', () => '🕸 ' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry',
+      { legendId: 'wpindustry', layers: () => LYR.slice(),
+        names: () => ({ en: '🕸 Industry web', jp: '🕸 業界の相関', de: '🕸 Branchennetz', ru: '🕸 Отраслевая сеть', es: '🕸 Red del sector' }) });
 
     /* ── THE QUERIES ──────────────────────────────────────────────────────────────────────────────
        TWO, run together, because they are two different shapes. WHO is one row per company and can
@@ -94,19 +97,43 @@ window.IntMapModules.industryWeb = function (HOST) {
        own currency — and aggregating it is exactly how a value and its year come apart. See the ⚠
        above `sparqlMoney` for what that cost the first version of this file. */
     const langPref = () => HOST.lang === 'jp' ? 'ja,en' : HOST.lang === 'de' ? 'de,en' : HOST.lang === 'ru' ? 'ru,en' : HOST.lang === 'es' ? 'es,en' : 'en';
-    /* WHO is in this industry, where, and who owns whom. No money here — see `sparqlMoney`. */
-    function sparqlWho(q, limit) {
-      return `SELECT ?c ?cLabel ?coord ?ctryLabel (GROUP_CONCAT(DISTINCT ?ownerId; separator="|") AS ?owners)
-WHERE {
+    /* ══ ⚠⚠ (#R215) THE OWNERSHIP JOIN WAS IN THE SAME PLAN AS THE NODES, AND THAT IS WHAT TIMED OUT ══
+       「Wikidata に接続できませんでした：クエリが25秒を超えました。何も描いていません。これは『企業が
+       無い』ではなく『取得に失敗した』状態です。←は？」 — REPRODUCED from the page, automotive
+       (Q190117), same browser, same minute:
+
+           the shipped WHO query (nodes + OPTIONAL ownership + GROUP_CONCAT)   > 30 s on the first
+                                                                               run, 5.8 s on the next
+           the same query with the ownership OPTIONAL removed                   2.95 s
+           nodes without even the label service                                 2.68 s
+
+       So the nodes are cheap and the OPTIONAL is what makes the query's cost a coin toss: WDQS plans
+       `?c (wdt:P749|wdt:P127) ?owner . ?owner wdt:P452 wd:Q…` against the whole property graph before
+       the LIMIT can bound anything, then GROUP_CONCATs the result. This is the SAME lesson the money
+       queries already carry three paragraphs below — **one property per query, bound by a VALUES list
+       of ids that are already known** — and it was applied there and not here.
+
+       Two shapes now: the nodes (fast, and the only query whose failure means "no industry"), then
+       the ownership statements, VALUES-bound by the ids the nodes returned, one property each and
+       run concurrently with the money. P355 (has subsidiary) joins P749/P127 as the header always
+       said it did. An ownership query that fails costs the EDGES, not the layer, and says so. */
+    function sparqlNodes(q, limit) {
+      return `SELECT ?c ?cLabel ?coord ?ctryLabel WHERE {
   ?c wdt:P452 wd:${q} .
   ?c wdt:P159/wdt:P625 ?coord .
   OPTIONAL { ?c wdt:P17 ?ctry }
-  OPTIONAL { ?c (wdt:P749|wdt:P127) ?owner . ?owner wdt:P452 wd:${q} . BIND(STRAFTER(STR(?owner),"/entity/") AS ?ownerId) }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${langPref()}" }
 }
-GROUP BY ?c ?cLabel ?coord ?ctryLabel
 LIMIT ${limit}`;
     }
+    /* `prop` runs owner → owned. P355 states it the other way round, so the caller flips it. */
+    function sparqlOwners(ids, prop) {
+      return `SELECT ?c ?other WHERE {
+  VALUES ?c { ${ids.map(i => 'wd:' + i).join(' ')} }
+  ?c wdt:${prop} ?other .
+}`;
+    }
+    const EDGE_PROPS = [['P749', false], ['P127', false], ['P355', true]];
     /* ══ ⚠⚠ A REVENUE HAS A CURRENCY, AND THE FIRST VERSION OF THIS FILE THREW IT AWAY ═══════════
        Measured on the built site with the automotive industry: the panel ranked «Hyundai Mobis
        $36.02T» above «Toyota $28.40T». Neither number is a dollar figure — Wikidata holds Toyota's
@@ -173,13 +200,17 @@ LIMIT ${limit}`;
     const MAX = 220;
     function fetchIndustry(q) {
       if (cache[q]) { nodes = cache[q].nodes; edges = cache[q].edges; status = 'ok'; return Promise.resolve(); }
-      status = 'loading'; err = null; moneyErr = []; paint();
+      status = 'loading'; err = null; moneyErr = []; edgeErr = false; paint();
       if (ctrl) { try { ctrl.abort(); } catch (_) { } }
       ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       /* ⚠ A COMPETITION WITHOUT A CLOCK IS NOT A COMPETITION (#R212 §7). WDQS has a 60 s server
          limit and a slow query is indistinguishable from a dead one from here, so this one has its
          own deadline and says which of the two happened. */
-      const to = setTimeout(() => { try { ctrl && ctrl.abort(); } catch (_) { } }, 25000);
+      /* (#R215) 45 s, not 25. The 25 was chosen when ONE query carried the whole question and could
+         not finish inside it; the shape above is four small queries whose slowest measured leg is
+         about 3 s, so this is now a genuine "something is wrong" deadline rather than a limit the
+         normal case had to beat. WDQS's own server limit is 60 s. */
+      const to = setTimeout(() => { try { ctrl && ctrl.abort(); } catch (_) { } }, 45000);
       /* ⚠ 429 IS A REAL ANSWER AND IT IS NOT "NO DATA". The public WDQS endpoint throttles by IP, so
          a user who flips between four industries in a minute will meet it — measured here, twice.
          It comes with `Retry-After`, so the request waits that long and tries ONCE more, and if it
@@ -197,26 +228,56 @@ LIMIT ${limit}`;
           return r.json().then(j => (j && j.results && j.results.bindings) || []);
         })
         .then(j => Array.isArray(j) ? j : ((j && j.results && j.results.bindings) || []));
-      /* WHO first, because the money queries are bound by the ids it returns; then the three
-         property queries and the exchange rates all at once. */
-      return ask(sparqlWho(q, MAX)).then(who => {
+      /* WHO first, because everything else is bound by the ids it returns; then the ownership
+         statements, the three money properties and the exchange rates all at once. */
+      return ask(sparqlNodes(q, MAX)).then(who => {
         const ids = who.map(b => String(b.c.value).split('/entity/')[1]).filter(Boolean);
-        if (!ids.length) return [who, []];
-        return Promise.all([
-          Promise.resolve(who),
-          /* ⚠ A PROPERTY QUERY THAT FAILED IS NOT A COMPANY WITH NO FIGURE. If the employees query
-             is refused, every card would print «—» for employees, which is the app SAYING that
-             Wikidata holds no such number — a claim it has no basis for. The failures are collected
-             and named. (Measured while testing this: Volkswagen genuinely has no P1128 statement, so
-             «—» there IS the truth; the two cases must be distinguishable.) */
-          Promise.all(MONEY_PROPS.map(([kind, prop]) =>
-            ask(sparqlProp(ids, prop)).then(rows => rows.map(r => Object.assign({ _kind: kind }, r)))
-              .catch(() => { moneyErr.push(kind); return []; })))
-            .then(a => a.flat()),
-          loadFx(),
+        if (!ids.length) return [who, [], []];
+        /* ══ ⚠⚠ (#R215) SIX QUERIES AT ONCE IS SIX QUERIES AT ONCE, AND WDQS COUNTS ════════════
+           Measured after the split above landed: the nodes came back in 4 s with **201 companies**,
+           and then every single one of the six secondary queries failed — `moneyErr: [rev, cap, emp]`
+           and `edgeErr: true`, i.e. a map of companies with no figures and no lines. Each of those
+           queries was then run BY HAND against the same endpoint from the same browser: the full
+           220-id VALUES list answered **200 in 984 ms**. Nothing is wrong with the queries. What was
+           wrong is that all six were fired in the same tick, and the public endpoint limits concurrent
+           queries per client — so five of them were refused for being the sixth.
+           They are run two at a time. Same requests, same total work, about three rounds of ~1.5 s. */
+        const lane = (jobs, n) => new Promise(res => {
+          const out = new Array(jobs.length); let i = 0, done = 0;
+          if (!jobs.length) return res(out);
+          const next = () => {
+            if (i >= jobs.length) return;
+            const k = i++;
+            jobs[k]().then(v => { out[k] = v; }, () => { out[k] = []; })
+              .then(() => { if (++done === jobs.length) res(out); else next(); });
+          };
+          for (let k = 0; k < Math.min(n, jobs.length); k++) next();
+        });
+        /* ⚠ A PROPERTY QUERY THAT FAILED IS NOT A COMPANY WITH NO FIGURE. If the employees query
+           is refused, every card would print «—» for employees, which is the app SAYING that
+           Wikidata holds no such number — a claim it has no basis for. The failures are collected
+           and named. (Measured: Volkswagen genuinely has no P1128 statement, so «—» there IS the
+           truth; the two cases must be distinguishable.) */
+        /* ⚠ ONE RETRY, AFTER A PAUSE. Measured at two lanes, four of the six came back and two did
+           not — a refusal that is not a 429 (which `ask` already retries) and not a timeout, i.e. the
+           endpoint declining that instant. Re-asking once a second and a half later is the difference
+           between «Wikidata holds no employee count for any of these» and «we asked at a bad moment». */
+        const once = (mk) => mk().catch(() => new Promise(r => setTimeout(r, 1500)).then(mk));
+        const moneyJobs = MONEY_PROPS.map(([kind, prop]) => () =>
+          once(() => ask(sparqlProp(ids, prop))).then(rows => rows.map(r => Object.assign({ _kind: kind }, r)))
+            .catch(() => { moneyErr.push(kind); return []; }));
+        /* the edges. Same shape, same reason, and a refusal here loses the LINES and not the map. */
+        const edgeJobs = EDGE_PROPS.map(([prop, flip]) => () =>
+          once(() => ask(sparqlOwners(ids, prop))).then(rows => rows.map(r => ({ flip, a: r.c, b: r.other })))
+            .catch(() => { edgeErr = true; return []; }));
+        loadFx();          /* a different host, so it does not compete for a WDQS slot */
+        return lane(moneyJobs.concat(edgeJobs), 2).then(all => [
+          who,
+          all.slice(0, moneyJobs.length).flat(),
+          all.slice(moneyJobs.length).flat(),
         ]);
       })
-        .then(([who, money]) => {
+        .then(([who, money, links]) => {
           clearTimeout(to);
           const byId = new Map();
           for (const b of who) {
@@ -230,8 +291,18 @@ LIMIT ${limit}`;
               rev: null, revIso: '', revYear: '', revUsd: null,
               cap: null, capIso: '', capYear: '', capUsd: null,
               emp: null, empYear: '',
-              owners: b.owners && b.owners.value ? b.owners.value.split('|').filter(Boolean) : [],
+              owners: [],
             });
+          }
+          /* an ownership statement becomes an edge only when BOTH ends are companies this query
+             returned — see the note by `outside` below. The direction is always owner → owned. */
+          for (const l of (links || [])) {
+            const A = String(l.a && l.a.value || '').split('/entity/')[1];
+            const B = String(l.b && l.b.value || '').split('/entity/')[1];
+            if (!A || !B) continue;
+            const owner = l.flip ? A : B, owned = l.flip ? B : A;
+            const n = byId.get(owned); if (!n) continue;
+            if (n.owners.indexOf(owner) < 0) n.owners.push(owner);
           }
           /* the LATEST statement of each kind wins, and its year and unit stay attached to it */
           for (const b of money) {
@@ -274,7 +345,7 @@ LIMIT ${limit}`;
           clearTimeout(to);
           status = 'error';
           err = (e && e.name === 'AbortError')
-            ? L('the query took longer than 25 s', 'クエリが25秒を超えました', 'Abfrage über 25 s', 'запрос дольше 25 с', 'la consulta superó 25 s')
+            ? L('the query took longer than 45 s', 'クエリが45秒を超えました', 'Abfrage über 45 s', 'запрос дольше 45 с', 'la consulta superó 45 s')
             : (e && e.throttled)
               ? L('Wikidata’s public endpoint is rate-limiting this browser — wait a moment and switch the layer on again',
                   'Wikidata の公開エンドポイントがこのブラウザに回数制限をかけています。少し待ってからもう一度オンにしてください',
@@ -510,6 +581,14 @@ LIMIT ${limit}`;
           'Nicht abrufbar und daher überall «—»: ' + moneyErr.join(', ') + '.',
           'Не удалось получить: ' + moneyErr.join(', ') + ' — это сбой запроса, а не отсутствие данных.',
           'No se pudieron obtener: ' + moneyErr.join(', ') + '; es un fallo de consulta, no una ausencia.'))) : '')
+        /* (#R215) the edges are their own query now, so their failure is its own sentence — an empty
+           web is not the same claim as "these companies own nobody". */
+        + (edgeErr ? (' ' + esc(L(
+          'The ownership statements could not be fetched this time, so no lines are drawn. That is a failed query, not an absence of ownership.',
+          '今回は資本関係の取得に失敗したため、線を描いていません。これは取得失敗であって「資本関係が無い」という意味ではありません。',
+          'Die Eigentumsangaben konnten nicht abgerufen werden — es werden keine Linien gezeichnet.',
+          'Не удалось получить сведения о владении — линии не нарисованы.',
+          'No se pudieron obtener las participaciones; no se dibujan líneas.'))) : '')
         + (fxState === 'error' ? (' ' + esc(L('Exchange rates could not be fetched, so nothing is converted.', '為替レートを取得できなかったため、換算は行っていません。', 'Wechselkurse nicht abrufbar — keine Umrechnung.', 'Курсы не получены — конвертация не выполнена.', 'No se obtuvieron tipos de cambio; sin conversión.'))) : '')
         + (outside ? (' ' + esc(L(
           outside + ' ownership statements point at a company that is outside this industry or has no headquarters coordinate, so they are counted here rather than drawn.',
@@ -579,7 +658,7 @@ LIMIT ${limit}`;
       toggle, select: (id) => { sel = nodes.find(n => n.id === id) || null; if (on) { ensureLayers(); paint(); } return !!sel; },
       setIndustry: (q) => { if (!INDUSTRIES.some(i => i.q === q)) return false; qid = q; sel = null; if (on) load(); return true; },
       industries: () => INDUSTRIES.map(i => ({ q: i.q, name: indName(i) })),
-      state: () => ({ on, q: qid, status, err, moneyErr: moneyErr.slice(), fx: fxState, nodes: nodes.length, edges: edges.length, sel: sel ? sel.id : null, source: SRC_URL }),
+      state: () => ({ on, q: qid, status, err, moneyErr: moneyErr.slice(), edgeErr, fx: fxState, nodes: nodes.length, edges: edges.length, sel: sel ? sel.id : null, source: SRC_URL }),
     };
   })();
 };

@@ -28,12 +28,20 @@ test('R212 ①: trade arcs carry direction — an icon layer along the line, and
 /* ── 2. a panel closed is a layer off ─────────────────────────────────────────────────────────── */
 test('R212 ②: every world-data panel drives its own layer row when it is closed', () => {
   const s = read('js/world-packs.js');
-  assert.match(s, /function makePanel\(id,title,cbId\)/, 'makePanel takes the row it belongs to');
-  assert.match(s, /wp-close'\)\.onclick=\(\)=>\{[^}]*uncheckRow\(cbId\)/, 'the ✕ unticks the row');
+  assert.match(s, /function makePanel\(id,title,cbId/, 'makePanel takes the row it belongs to');
+  /* ⚠ (#R215) THE ✕ IS THE LEGEND'S OWN NOW. 「いや汎用の凡例の方に統合させろ。余計な例外作んなぼけ」 —
+     the panel is no longer a window of this file's making, it IS `.data-legend.generic-legend`, whose
+     ✕ was already wired to `dataset.cbId` in js/data-layers.js. The CLAIM is unchanged (closing the
+     window turns the layer off); what changed is that there is one implementation of it instead of
+     two, which is what the report asked for. So this asserts the binding, not the old markup. */
+  assert.match(s, /_registerLayerOpacity\(LID,\s*names\(\),\s*layers\(\),\s*cbId\)/, 'the panel hands its row to the legend');
+  assert.match(read('js/data-layers.js'), /el\.dataset\.cbId&&document\.getElementById\(el\.dataset\.cbId\)/,
+    'and that legend’s ✕ unticks exactly that row');
+  assert.match(s, /function uncheckRow\(cbId\)/, 'the row-unticking helper is still published for the families that need it');
   /* …and every panel actually passes one */
-  const panels = [...s.matchAll(/makePanel\('([\w-]+)'\s*,[\s\S]{0,220}?\)\s*;/g)].map((m) => m[0]);
+  const panels = [...s.matchAll(/makePanel\('([\w-]+)'\s*,[\s\S]{0,560}?\}\s*\)\s*;/g)].map((m) => m[0]);
   assert.ok(panels.length >= 5, 'all five families make a panel (found ' + panels.length + ')');
-  for (const p of panels) assert.match(p, /'wp-dl-[a-z]+'\)/, 'this panel was created without a row id: ' + p.slice(0, 80));
+  for (const p of panels) assert.match(p, /'wp-dl-[a-z]+'/, 'this panel was created without a row id: ' + p.slice(0, 80));
 });
 
 /* ── 3. electricity and primary energy are ONE layer with a switch ─────────────────────────────── */
@@ -153,8 +161,9 @@ test('R212 ⑨: one epicenter control, and sub-sea-level LAND is painted', () =>
   assert.match(s, /\.sq-cm-epi'\)[\s\S]{0,400}setClickMode\('epi'\);\s*startPick\(\)/,
     'the one segment both sets the click mode and arms the pick');
   /* the land test is the MASK plus a depth bound, not the sign of the elevation */
-  assert.match(s, /landMask&&landMask\.isLand\(lo,la\)===true&&e0>-440/,
-    'a cell below zero is land when the land mask says so and it is above the lowest dry land on Earth');
+  /* (#R215) same claim, finer answer — see js/coast-mask.js and tests/r215 ②b */
+  assert.match(s, /landAt\(k,lo,la\)===true&&e0>-440/,
+    'a cell below zero is land when the land answer says so and it is above the lowest dry land on Earth');
   /* a drawn rupture defines the source but does not start the solve */
   assert.match(s, /function _fCapture[\s\S]{0,400}render\(\); touch\(\); return true;/,
     'capturing the rupture marks the field stale — the ▶ button runs it');

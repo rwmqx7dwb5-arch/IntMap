@@ -80,10 +80,59 @@ window.IntMapModules.volume3d=function(HOST){
     const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 
     /* ---- geometry -------------------------------------------------------------------------- */
+    /* ══ ⚠⚠ (#R215) AN EDGE BETWEEN TWO CLICKS IS A GREAT CIRCLE, NOT A SEGMENT ═══════════════════
+       「3D立体は、地球の曲がりを考慮していないため、広域を選択するとおかしい点が出てくる。つまり単なる
+       多角形ではなく、地球の曲がりに沿ったものにして。（追記：いやなんで大圏考慮してないねんくそが。）」
+
+       The footprint was handed to the renderer as the clicked vertices and nothing else, so every
+       edge between them was a straight line in whatever space the renderer happened to be drawing —
+       a rhumb-ish line on the flat map, a chord on the globe. Neither is the path between two places.
+       Tokyo → Los Angeles is 8,800 km; the straight edge and the great circle between them differ by
+       more than 1,300 km at the middle, which is a body whose wall visibly misses the route it was
+       drawn along. It only vanishes when the footprint is small, which is why it survived four
+       rounds of 3-D work.
+
+       So the ring is DENSIFIED along the great circle before it leaves this file: each clicked edge
+       is subdivided until no piece spans more than ~40 km (and never more than 128 pieces), with the
+       intermediate points computed by spherical interpolation. Both the solid mesh and the
+       fill-extrusion fallback read the same densified ring, so the two representations of one body
+       still agree, and the CLICKED vertices are untouched — `ring` still holds exactly what the user
+       put down, so editing, undo and the point count are unchanged.
+
+       ⚠ Longitudes are unwrapped as they are emitted (each point brought within 180° of the one
+       before it) — the same rule js/world-packs.js needs for its trade arcs. Without it a body
+       crossing the antimeridian is drawn the long way round the world. */
+    const _D=Math.PI/180;
+    const SEG_KM=40, SEG_MAX=128;
+    function gcPoints(a,b){
+      const φ1=a[1]*_D, λ1=a[0]*_D, φ2=b[1]*_D, λ2=b[0]*_D;
+      const dφ=φ2-φ1, dλ=λ2-λ1;
+      const h=Math.sin(dφ/2)*Math.sin(dφ/2)+Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)*Math.sin(dλ/2);
+      const δ=2*Math.asin(Math.min(1,Math.sqrt(Math.max(0,h))));
+      const km=δ*6371.0088;
+      const n=Math.max(1,Math.min(SEG_MAX,Math.ceil(km/SEG_KM)));
+      if(n<2||!(δ>1e-9)) return [];
+      const out=[];
+      for(let i=1;i<n;i++){ const f=i/n;
+        const A=Math.sin((1-f)*δ)/Math.sin(δ), B=Math.sin(f*δ)/Math.sin(δ);
+        const x=A*Math.cos(φ1)*Math.cos(λ1)+B*Math.cos(φ2)*Math.cos(λ2);
+        const y=A*Math.cos(φ1)*Math.sin(λ1)+B*Math.cos(φ2)*Math.sin(λ2);
+        const z=A*Math.sin(φ1)+B*Math.sin(φ2);
+        out.push([Math.atan2(y,x)/_D, Math.atan2(z,Math.hypot(x,y))/_D]); }
+      return out; }
+    function densify(r){
+      if(!r||r.length<2) return r;
+      const out=[r[0].slice()];
+      for(let i=1;i<r.length;i++){
+        gcPoints(r[i-1],r[i]).forEach(p=>out.push(p));
+        out.push(r[i].slice()); }
+      for(let i=1;i<out.length;i++){ while(out[i][0]-out[i-1][0]>180) out[i][0]-=360;
+        while(out[i][0]-out[i-1][0]<-180) out[i][0]+=360; }
+      return out; }
     function closedRing(){ if(ring.length<3) return null;
       const r=ring.map(p=>[+p[0],+p[1]]); const a=r[0], z=r[r.length-1];
       if(a[0]!==z[0]||a[1]!==z[1]) r.push([a[0],a[1]]);
-      return r; }
+      return densify(r); }
     function centroid(){ if(!ring.length) return null;
       let x=0,y=0; ring.forEach(p=>{ x+=p[0]; y+=p[1]; }); return [x/ring.length, y/ring.length]; }
     /* footprint area in m² — the same turf ring area the Area tool reports, so the two agree */
@@ -234,8 +283,9 @@ window.IntMapModules.volume3d=function(HOST){
     function paintSaved(o){ const E=GE(); if(!E) return false;
       if(!o.ring||o.ring.length<3) return false;
       if(!ensureSaved(o)) return false;
-      const r=o.ring.map(p=>[+p[0],+p[1]]); const a=r[0], z=r[r.length-1];
-      if(a[0]!==z[0]||a[1]!==z[1]) r.push([a[0],a[1]]);
+      const r0=o.ring.map(p=>[+p[0],+p[1]]); const a=r0[0], z=r0[r0.length-1];
+      if(a[0]!==z[0]||a[1]!==z[1]) r0.push([a[0],a[1]]);
+      const r=densify(r0);          /* (#R215) a saved body follows the same great circles as a draft */
       o.ground=objGround(o);
       const off=(has3DTerrain()&&o.ground!=null)?o.ground:0;
       const lo=Math.min(o.base,o.top), hi=Math.max(o.base,o.top);

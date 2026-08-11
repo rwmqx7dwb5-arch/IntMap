@@ -1000,6 +1000,31 @@ window.IntMapModules.seismic=function(HOST){
         /* (#R192) the bundled land/sea sign, for the cells the DEM did not answer for — see below */
         let landMask=null;
         try{ const LM=window.IntMapLandMask; if(LM){ await LM.warm(); if(seq!==fldSeq) return; if(LM.ready()) landMask=LM; } }catch(_){}
+        /* ══ ⚠⚠ (#R215) THE COAST IS DECIDED AT **THIS FIELD'S** CELL SIZE, NOT AT 19.5 km ═══════════
+           「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ。（なんか、海外線の境界部分が雑な処理に
+           なっている。大きなタイルでごまかすな。）」 #R212 answered the first clause and reached for
+           js/land-mask.js to do it — a 2048 × 1024 **majority-filled** raster, 19.5 km a pixel. This
+           field's cell is 1.5 km (#R205), so every below-sea-level cell's land/sea answer was being
+           quantised to thirteen times the grain of the picture it was drawn into: bays narrower than
+           19.5 km painted as land, peninsulas narrower than that dropped into the sea, and a coastline
+           that is a staircase of 19.5 km blocks. That is the 雑 in the report, and it is measurable
+           rather than aesthetic.
+           js/coast-mask.js rasterises the app's own 10 m country outline — 「いつもの国境線」, already
+           loaded — INTO THIS GRID, so the answer's resolution is the field's resolution. The bundled
+           raster stays as the fallback for a session where the outline has not arrived, and `coastSrc`
+           records which one answered so the panel can say so instead of implying it. */
+        let coast=null, coastSrc=null, coastKm=null;
+        try{ const CM=window.IntMapCoastMask;
+          if(CM&&CM.ready()){ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(); }catch(_){}
+            coast=CM.rasterize({west:W,y0,dx,dy,N});
+            if(coast){ coastSrc=CM.source(); coastKm=CM.cellKm({west:W,y0,dx,dy,N}); } } }catch(e){ coast=null; }
+        if(!coast&&landMask) coastSrc='bundled-19km';
+        if(seq!==fldSeq) return;
+        /* land at (i,j): the fine raster when there is one, the 19.5 km majority when there is not,
+           and `null` — not false — when neither can answer (#R192: a missing answer is not "sea"). */
+        const landAt=(k,lo,la)=>{ if(coast) return coast[k]===1;
+          if(landMask){ const v=landMask.isLand(lo,la); return (typeof v==='boolean')?v:null; }
+          return null; };
         for(let j=0;j<N;j++){
           const la=latOfY(y0+(j+0.5)*dy);
           for(let i=0;i<N;i++){
@@ -1014,8 +1039,8 @@ window.IntMapModules.seismic=function(HOST){
                (js/land-mask.js, ~19.5 km) answers where the DEM cannot, and where even that is
                unavailable the cell is left unpainted and counted. The DEM still answers FIRST, so
                nothing about the coastline the field can actually see is coarsened. */
-            if(e0==null&&landMask&&landMask.isLand(lo,la)===false){ sea++; vs[k]=-1; continue; }
-            if(e0==null&&!landMask){ noDem++; vs[k]=0; continue; }
+            if(e0==null&&landAt(k,lo,la)===false){ sea++; vs[k]=-1; continue; }
+            if(e0==null&&landAt(k,lo,la)==null){ noDem++; vs[k]=0; continue; }
             if(e0==null){ noDem++; vs[k]=0; amp=ampRef; }
             /* ⚠ (#R212) 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ。」 AND IT WAS EXCLUDED —
                by a test that read the elevation's SIGN as the land/sea answer. It is not: the Jordan
@@ -1028,7 +1053,7 @@ window.IntMapModules.seismic=function(HOST){
                shallow strip of water inside a mostly-land cell can now be painted; that is a coastal
                artefact at the mask's own grain, and the alternative was deleting entire countries. */
             else if(e0<=0){
-              if(!(landMask&&landMask.isLand(lo,la)===true&&e0>-440)){ sea++; vs[k]=-1; continue; }
+              if(!(landAt(k,lo,la)===true&&e0>-440)){ sea++; vs[k]=-1; continue; }
               if(!slopeUsable){ coarse++; vs[k]=0; amp=ampRef; }
               else { let ex=demAt(lo+dLngS,la); if(ex==null) ex=e0;
                 let ey=demAt(lo,Math.max(-85,Math.min(85,la+dLatS))); if(ey==null) ey=e0;
@@ -1068,6 +1093,8 @@ window.IntMapModules.seismic=function(HOST){
           a0At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
             if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.a0[j*this.N+i]; return v>0?v:null; },
           stats:{ cells:N*N, painted, sea, noDem, coarse, beyondCalib, calibKm:MMI_CALIB_KM, z, demSpacingM:Math.round(demSpacingM),
+                  /* (#R215) WHICH coastline decided the coast, and how fine it was — declared, not implied */
+                  coastSource:coastSrc, coastCellKm:(coastKm!=null?+coastKm.toFixed(2):null),
                   slopeBaselineM:Math.round(dsM), slopeUsable,
                   spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge), rFineKm:Math.round(rFine),
                   demTiles:snap?snap.have:null, demTilesMissing:snap?snap.missing:null,
@@ -1267,7 +1294,13 @@ window.IntMapModules.seismic=function(HOST){
            the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
         +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
-        +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
+        /* ⚠⚠ (#R215) `display` WAS DECLARED TWICE IN THE SAME INLINE STYLE, AND THE SECOND ONE WON.
+           「地震・津波シミュレータウィンドウは最小化可能に」 — #R210 added the button and it has been a no-op ever
+           since: the string began `display:none;` when minimised and then unconditionally continued
+           `…;display:flex;…`, so CSS's last-declaration-wins put the body straight back. MEASURED: the
+           glyph flipped to ▢ and `getComputedStyle(.sq-body).display` stayed `flex`. One property, one
+           declaration. */
+        +'<div class="sq-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         /* ══ (#R212) ONE CONTROL FOR ONE THING ═══════════════════════════════════════════════════════
            「震源地を設置と震源地を移動と、二つのボタンに分ける意味が全く分からない。」 There is no
            difference between the two — an epicentre that exists is moved and one that does not is
