@@ -39,12 +39,45 @@ export const fetchViaProxy = (() => {
      (jp 238 ms / en 537 / de 857 / ru 742 / es 1,277 ms, measured in that order on this build).
      ⚠ IT TAKES THE URL RAW. Handed an encodeURIComponent'd one it returns 400 with a 247-byte body —
      which is why this list is a list of FUNCTIONS and not a list of prefixes. */
-  const PROXIES = [
+  /* ══ ⚠⚠ (#R216) …AND THE FOURTH ONE WAS VERIFIED ON THE WRONG ORIGIN ═══════════════════════════
+     Reported a third time, word for word. #R214's table above was taken on `http://127.0.0.1`.
+     Re-measured from the REAL site (`https://rwmqx7dwb5-arch.github.io`), same build, same second:
+
+        proxy.corsfix.com  → 403  {"corsfix_error":"domain_not_registered"}   255 ms
+        corsproxy.io       → 503  Google's "Sorry…" page (ja-JP only)         8.1 s
+        api.allorigins.win → timeout                                          >20 s
+        api.codetabs.com   → timeout                                          >20 s
+
+     corsfix authorises by CALLING ORIGIN — localhost is allowed by default and a deployed domain
+     has to be registered with them — so the one relay that could read Japanese worked in
+     development and was refused in production. Every Japanese reader of the live site waited out
+     the full ~40 s of deadlines and was told it failed. ⚠ A relay verified from localhost is not a
+     relay verified for the site; the origin is part of the request.
+
+     The first entry is now OUR OWN Edge Function (supabase/functions/news-relay), the same answer
+     #R145 gave for the Street-View tiles and #R190 for the submarine cables: fetch it server-side,
+     where browser CORS does not apply, and hand it back with ACAO. Measured from production —
+     jp 1,111 ms / 70 items, en 1,308 / 45, de 1,145 / 70, ru 1,326 / 70, es 1,290 / 70. The four
+     public relays stay BEHIND it: a cold function or a Supabase outage still falls back to exactly
+     the behaviour this file had before.
+     ⚠ `window.SUPABASE_URL` is read AT CALL TIME, not when this module is evaluated — src/vendor.js
+     may not have run yet, and a base captured as '' would delete the relay for the whole session. */
+  const PUBLIC_PROXIES = [
     (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
     (u) => `https://proxy.corsfix.com/?${u}`,
     (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   ];
+  /* the relay only forwards news.google.com/rss/… (it is an allow-list, not an open proxy), so it
+     is offered only for the URLs it will actually answer */
+  const relayable = (u) => /^https:\/\/news\.google\.com\/rss\//.test(String(u || ''));
+  const proxiesFor = (u) => {
+    let base = '';
+    try { base = String(window.SUPABASE_URL || '').replace(/\/$/, ''); } catch (_) { base = ''; }
+    return (base && relayable(u))
+      ? [(x) => `${base}/functions/v1/news-relay?u=${encodeURIComponent(x)}`, ...PUBLIC_PROXIES]
+      : PUBLIC_PROXIES;
+  };
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */
   const PROXY_FALLBACK_MS = 6000;     /* …and the second, bounded pass */
 
@@ -56,6 +89,7 @@ export const fetchViaProxy = (() => {
   const isFeed = (txt) => !!txt && (txt.includes('<rss') || txt.includes('<feed'));
 
   return async function fetchViaProxy(url) {
+    const PROXIES = proxiesFor(url);
     const ctls = PROXIES.map(() => new AbortController());
     const attempts = PROXIES.map((make, i) => (async () => {
       const r = await fetchDeadline(make(url), PROXY_TIMEOUT_MS, ctls[i]);

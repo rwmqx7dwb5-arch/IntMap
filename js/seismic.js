@@ -948,6 +948,23 @@ window.IntMapModules.seismic=function(HOST){
         let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
         const est=(zz)=>{ const tk=40075*cosC/Math.pow(2,zz); const nn=spanKm/tk+1; return nn*nn*0.85; };
         while(z>4&&est(z)>520) z--;
+        /* ══ ⚠⚠ (#R216) A FIELD THAT THREW THE TERRAIN AWAY IS A FIELD OF CONCENTRIC CIRCLES ═══════
+           「地震分布が、一部は諦めたのか、単位同心円に塗られることがある。あれはやめて。」 — and the
+           mechanism is two lines below this one. `slopeUsable` is `demSpacingM <= 2000`: #R190 added it
+           for a good reason (a slope measured finer than the data is a fictional slope, and it is
+           biased toward the softest Vs30 bin), but the CURE it chose is to fall back to the panel's
+           single site class for every cell. With one amplification everywhere, the intensity is a
+           function of distance alone — which is drawn as perfect rings. The reader is describing the
+           fallback, and 「諦めた」 is the right word for it.
+
+           So the spacing is fixed instead of the term being dropped: `z` is raised until one DEM
+           sample is 2 km or finer, and the tile budget is raised WITH IT rather than the picture being
+           degraded. ⚠ The budget only moves for the fields that need it (a wide one — a narrow field
+           already clears 2 km at its own zoom), and it is still bounded: 1,600 tiles, roughly three
+           times 520, against a fallback that made the whole map a lie about the ground. Where even
+           that cannot reach 2 km the old fallback still applies and `stats.slopeUsable` still says so
+           — this makes the give-up rare, it does not pretend it cannot happen. */
+        while(z<12&&(40075017*Math.max(0.05,cosC)/(Math.pow(2,z)*256))>2000&&est(z+1)<=1600) z++;
         try{
           const warm=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
             warm.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
@@ -995,7 +1012,22 @@ window.IntMapModules.seismic=function(HOST){
            in bands as wide as the yield interval: the reported 縞々. See demSnapshot in map-readout.js.
            The old `demElevAt` fallback is gone with it: it was a REQUEST, so it was also what pushed
            the cache past its budget and evicted the tiles this very field was reading. */
-        const snap=(typeof demSnapshot==='function')?demSnapshot(W,Ss,E,Nn,z):null;
+        let snap=(typeof demSnapshot==='function')?demSnapshot(W,Ss,E,Nn,z):null;
+        /* ⚠ (#R216) …AND THE OTHER WAY TO END UP WITH RINGS IS TO RUN OUT OF PATIENCE. A cell whose
+           DEM never arrived is painted with the panel's single site class (see the `e0==null` branch
+           below), so a build whose tiles mostly missed the 12 s deadline draws the same concentric
+           field this round is removing — over the part of the map the tiles were missing for, which
+           is the 「一部は」 in the report. One more bounded pass costs eight seconds in the case that
+           was going to be wrong anyway, and nothing at all in the normal case. */
+        if(snap&&snap.missing>Math.max(8,snap.have*0.35)){
+          try{ const warm2=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
+              warm2.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
+            await warmDEMTiles(warm2,z,8000,null);
+            if(seq!==fldSeq) return;
+            const s2=demSnapshot(W,Ss,E,Nn,z);
+            if(s2&&s2.have>=snap.have) snap=s2;
+          }catch(_){}
+        }
         const demAt=snap?((lo,la)=>snap.at(lo,la)):((lo,la)=>demElevBilinear(lo,la,z));
         /* (#R192) the bundled land/sea sign, for the cells the DEM did not answer for — see below */
         let landMask=null;
@@ -1279,7 +1311,9 @@ window.IntMapModules.seismic=function(HOST){
            rupture along a trench produced a rectangle of the model's own choosing, pointing wherever
            the isobaths did. With the ring in hand it takes the ORIENTATION and the ASPECT from what
            was drawn and the MOMENT from μ·A·D̄ — the same M₀ this panel reports. */
-        T.follow({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm,
+        /* (#R216) the point is the WET centroid of a drawn rupture — see _rupSeaDepth */
+        const P=srcPoint()||epi;
+        T.follow({ lng:P[0], lat:P[1], mw:(fault?fault.mw:mw), depth:depthKm,
           rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null });
       }catch(_){}
     }
@@ -1483,12 +1517,57 @@ window.IntMapModules.seismic=function(HOST){
        every build — it would throw away focus and scroll position for nothing) */
     function syncTsunami(){ const t=!!tsunamiCase();
       if(t===_tsuShown) return; _tsuShown=t; if(opened) render(); }
+    /* ══ ⚠⚠ (#R216) A DRAWN RUPTURE IS AN AREA, AND THE SCREENING WAS ASKING ONE POINT ═══════════
+       「津波シミュレータ時は、フリー描画震源域の地震にも対応するようにして。（現在は点の震源にしか
+        津波シミュレータは対応していない。）」 — reported again after #R212 wired the ring all the way
+       into the solver and #R215 measured that the SOLVER accepts it. Both were true; the gate in
+       front of them was not. `tsunamiCase()` asked `_epiSeaDepth()`, i.e. the sea floor at ONE point:
+       `epi`. With a drawn rupture that point is whichever spot was clicked first (`faultSet` only
+       fills `epi` when it is empty), so a rupture drawn along a trench next to a coastal click was
+       screened at the CLICK — on land — and the 🌊 button was never offered. From the reader's side
+       that is exactly 「点の震源にしか対応していない」: the drawn source could not reach the simulator
+       at all, no matter what the simulator could do with it.
+
+       A tsunami is made by the sea floor moving over the RUPTURE, so the rupture is what is sampled:
+       a lattice inside the ring plus its own vertices, each asked of the same DEM. The case is
+       offered when a real part of that area is submarine, the depth reported is the mean over the
+       submarine part, and the point handed to the model is the centroid OF THE WET PART — so the
+       solver's domain is centred on water rather than on a click. ⚠ Unknown is still not offered:
+       cells the DEM cannot answer for are counted out, never assumed to be sea. */
+    let _rupSea=null;
+    function _rupSeaDepth(){
+      if(!fault||!fault.ring||fault.ring.length<3) return null;
+      const key=fault.ring.length+'/'+fault.areaKm2.toFixed(0)+'/'+fault.centroid[0].toFixed(3)+'/'+fault.centroid[1].toFixed(3);
+      if(_rupSea&&_rupSea.key===key) return _rupSea.v;
+      let W=Infinity,E=-Infinity,S=Infinity,N=-Infinity;
+      fault.ring.forEach(p=>{ if(p[0]<W)W=p[0]; if(p[0]>E)E=p[0]; if(p[1]<S)S=p[1]; if(p[1]>N)N=p[1]; });
+      const pts=fault.ring.slice();
+      const K=6;
+      for(let j=0;j<K;j++) for(let i=0;i<K;i++){
+        const lo=W+(i+0.5)*(E-W)/K, la=S+(j+0.5)*(N-S)/K;
+        if(faultDistKm(lo,la)===0) pts.push([lo,la]); }
+      const zs=[]; if(fld&&fld.z) zs.push(fld.z); [8,7,6,5].forEach(z=>{ if(zs.indexOf(z)<0) zs.push(z); });
+      let known=0, wet=0, sum=0, cx=0, cy=0;
+      for(const p of pts){
+        let e=null;
+        for(const z of zs){ try{ e=demElevBilinear(p[0],p[1],z); if(e==null) e=demElevAt(p[0],p[1],null,z); }catch(_){}
+          if(e!=null&&isFinite(e)) break; }
+        if(e==null||!isFinite(e)) continue;
+        known++;
+        if(e<0){ wet++; sum+=e; cx+=p[0]; cy+=p[1]; } }
+      if(!known) return null;                       /* not known YET — never cached (see _epiSeaDepth) */
+      const v={ frac:wet/known, depth:wet?sum/wet:null, pt:wet?[cx/wet,cy/wet]:null, known, wet };
+      _rupSea={key,v}; return v; }
+    /* where the model should be centred: the wet part of a drawn rupture, else the epicentre */
+    function srcPoint(){ const r=_rupSeaDepth(); return (r&&r.pt)?r.pt:epi; }
+
     function tsunamiCase(){
       if(!epi) return null;
       const M=fault?fault.mw:mw;
       if(!(M>=6.5)||!(depthKm<=100)) return null;
       /* under the sea? the same DEM the intensity field reads. Unknown → not offered (never guessed). */
-      const e0=_epiSeaDepth();
+      const rs=_rupSeaDepth();
+      const e0=rs?((rs.frac>=0.25&&rs.depth!=null)?rs.depth:1):_epiSeaDepth();
       if(e0==null||e0>0) return null;
       const waveM=Math.max(1,Math.min(40,Math.round(Math.pow(10,0.5*M-3.3)*10)/10));
       return { waveM, M, why:L('Offshore, M'+M.toFixed(1)+', focal depth '+Math.round(depthKm)+' km, sea floor '+Math.round(-e0)+' m — meets the M≥6.5 / ≤100 km screening used for tsunami advisories.',
@@ -1511,7 +1590,8 @@ window.IntMapModules.seismic=function(HOST){
        longer exists (js/sims.js), and this no longer looks for a second model to run instead. */
     function openTsunami(){ const t=tsunamiCase(); if(!t||!epi) return false;
       const T=window.IntMapTsunami; if(!T||!T.open) return false;
-      try{ T.open({ lng:epi[0], lat:epi[1], mw:(fault?fault.mw:mw), depth:depthKm,
+      const P=srcPoint()||epi;   /* (#R216) centre the domain on the submarine part of the rupture */
+      try{ T.open({ lng:P[0], lat:P[1], mw:(fault?fault.mw:mw), depth:depthKm,
         rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
