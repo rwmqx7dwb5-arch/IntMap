@@ -985,6 +985,13 @@ js/
                                     （刻みは時間ではなく**距離 km**）、`spacingIndex()`＝Jobard & Lefer (1997) の
                                     等間隔則をハッシュ格子で O(1) に。`js/ocean-currents.js` が唯一の呼び出し元。
                                     ブラウザ無しで走るので `tests/r218-checks ①` が剛体回転の場で実測する。
+  space-cosmos.js                   (#R219) **太陽系の外の距離ラダー `IntMapCosmos`**。カイパーの崖(50 AU)から
+                                    **粒子的地平面(共動 46.5 Gly)** までの17段。各段は「公表された半径・5言語の名前・
+                                    出典」の3つ組で、`js/space.js` が黄道面のリングとして名前と値つきに描く。
+                                    ⚠ **共動距離**（光の走った時間 13.8 Gyr を半径にすると 3.4 倍近くなる）。
+                                    ⚠ これがあることで #R208 の規則「カメラは**この場面が実際に描く**いちばん遠いもので
+                                    止まる」を**変えずに**、観測可能な宇宙まで引けるようになった（`reachAu()`）。
+                                    純データ＋純関数なので `tests/r219-checks ③` が Node で走らせる。
   river-course.js                   (#R217) 「どのタイル区間が同じ河川か」と「その河川はどこまで流れているか」。
                                     `window.IntMapRiverCourse`。`nameSet(props)` が `name` / `name:xx` / `name_xx` /
                                     `int_name` / `alt_name` を正規化した**名前の集合**にし、`sameRiver(clicked,feats)` が
@@ -1087,9 +1094,16 @@ js/
                                     **13倍粗い階段**になる（「大きなタイルでごまかすな」）。ジオメトリは持たず、
                                     描くだけ。国境が未到着なら `land-mask.js` が従来どおりフォールバック、
                                     `source()` がどちらが答えたかを返す（`fld.stats.coastSource`）。
-  ocean-currents.js                 (#R216) **世界の海流 `IntMapCurrents`**——矢印・寒暖流・名称。`world-packs.js` の
-                                    `_ui` ツールキット（`makePanel` / `row` / `whenDrawable` / `setVis` / `onYear`）を
-                                    借りる6番目の「世界のデータ」レイヤーで、自前の窓は持たない。
+  ocean-currents.js                 (#R219) **世界の海流 `IntMapCurrents`**——**同梱の固定データを常時描画**する
+                                    レイヤー。`world-packs.js` の `_ui` ツールキット（`makePanel` / `row` /
+                                    `whenDrawable` / `setVis`）を借りる6番目の「世界のデータ」レイヤーで、
+                                    自前の窓は持たない。
+                                    ⚠ **通信はゼロ**：すべて `data/ocean-currents.json`（`scripts/build-ocean-currents.mjs`
+                                    が NASA/JPL OSCAR 実測流速場からオフラインで作る）。26本の名前つき海流の**経路**
+                                    （場を積分して辿ったもの・描き写しではない）＋5,484点の全球流向場＋5言語の名称。
+                                    暖流/寒流/東西流は流路に沿った南北成分から**導出**。矢印の濃さは実測流速。
+                                    ⚠ 平均場なので**時計には追随しない**（パネルがそう書く）。
+                                    以下は #R216/#R218 の記録（現在の実装ではない）——
                                     **数値は一切同梱しない**：速度場は Open-Meteo Marine の
                                     `ocean_current_velocity` / `ocean_current_direction`（向きは「水が向かう方位」で、
                                     黒潮 35N/141E→39°、アガラス 35S/20E→250° の実測で確認）。
@@ -2322,11 +2336,23 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   地名以外は必ずその基準の 0.88 倍以下（最大だった海洋名 19.3 → 11.4）。
 - **施設・店舗名 (#R186)**：同じ `ofm` の **`poi`** レイヤから `ofm-poi`（テキスト）＋`ofm-poi-dot`（点）。z14〜、
   `rank` の窓をズームで開き `symbol-sort-key` で衝突順も同じ順序に。`cb-poi`（既定OFF）。
-- **背後の星空と太陽 (#R186)**：`js/space-sky.js`。ダークテーマ＋globe＋自前の空を持たないエンジンのときだけ、
-  `#map` の**下**の `#space-canvas` に実カタログの星（`data/stars.bin`）と実位置の太陽を描く。地球が不透明なので
-  裏側の星は地球自身が隠す。`body.space-sky-on` が `#map` の `--bg-color` を外す（その黒が置き換え対象だった）。
+- **背後の星空・太陽・月 (#R186 / #R219)**：`js/space-sky.js`。ダークテーマ＋globe＋自前の空を持たないエンジンの
+  ときだけ、`#map` の**下**の `#space-canvas` に実カタログの星（`data/stars.bin`）と実位置の太陽・月を描く。地球が
+  不透明なので裏側の星は地球自身が隠す。`body.space-sky-on` が `#map` の `--bg-color` を外す。
+  ⚠ (#R219) **月は満ち欠けを描く**：照射率 k=(1−cos ψ)/2、明縁の位置角 χ（三日月の角の向き）、半径 r·|2k−1| の
+  明暗境界楕円、暗い側の地球照。太陽は周縁減光した円盤＋光冠＋コロナの3層。どちらもテクスチャではなく、
+  数値は `window.IntMapEphemeris` から来る。
 - **粗い地球全体の衛星ベース (#R186)**：`js/world-base.js`。同梱の正距円筒画像から `imapworld://` プロトコルで
   低ズーム衛星タイルを**ネットワーク無しで**生成し、`layer-sat` の下に敷く（衛星ベースマップのときだけ表示）。
+  ⚠ **±85.0511°〜±90° の極冠 (#R207 / #R219)**：Mercator にはそこのタイルが存在しないので、`layer-polar-cap`
+  （スタイル配列の先頭に宣言された `background`）が**どのベースマップでも**敷かれる（#R219。#R207 は衛星のときだけ
+  見せていたので、ベクター地図では実測 (7,7,15)＝レンダラの黒のままだった）。色は衛星＝画像の極の行から実測、
+  ベクター＝Carto の陸色を**画面に出る値**で（明＝`#f8f8f8` / 暗＝`#545454`。生の `#080808` は
+  `raster-brightness-min:0.33` を通る前の値なので使わない）。
+  さらに **`world-cap-src` / `layer-world-cap`**：同梱の正距円筒画像は ±90° まで持っているので、極冠を
+  **36扇 × 5帯のポリゴンのモザイク**にし、各セルをその画像の実際の平均色で塗る＝**極にも本物の絵**が出る。
+  ⚠ `image` ソースでは**できない**（実測：`ImageSource.setCoordinates` は各隅を MercatorCoordinate に通すので
+  緯度90は `y=Infinity` で例外。tests/smoke の「console.error なし」が検出した）。
 - **国境ライン**：`borders-only-line`（`cb-borders`、既定OFF）。国塗り＝`country-fill`/`country-line`（`cb-countries`=Countries(info)）。
 - **データレイヤー群**：`geoLayersDB` / 各種 setup 関数。`_registerLayerOpacity()` でレイヤーごとに透明度凡例。
 - **レイヤーパネル再構成**：`reorganizeLayerPanel()` が DOM を毎回並べ替えて分類:

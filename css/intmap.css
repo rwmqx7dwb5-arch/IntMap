@@ -2441,3 +2441,19 @@
          held upright has room for one of them. Tapping the sky closes it (js/space.js wires that). */
       #space-view .sp-timebox.open{ bottom:8px; }
     }
+
+/* ══ (#R219) A PANEL THAT LETS TAPS THROUGH, WITHOUT LETTING ITS OWN BUTTONS THROUGH ═══════════
+   js/map-pick.js sets `pointer-events:none` on the calling panel while a map pick is armed, so the
+   reader can place the epicentre under a panel that covers the map (#R196 measured 82 % coverage on
+   a phone; #R207 chose transparency over hiding). Inheritance took the panel's own controls with it
+   — pressing ◎ a second time placed the epicentre under the button instead of disarming — so the
+   surface stays transparent and the controls are given back their hit-testing. */
+.im-pick-ghost{ pointer-events:none; }
+.im-pick-ghost button,
+.im-pick-ghost input,
+.im-pick-ghost select,
+.im-pick-ghost textarea,
+.im-pick-ghost label,
+.im-pick-ghost a,
+.im-pick-ghost [role="button"],
+.im-pick-ghost .sq-head{ pointer-events:auto; }

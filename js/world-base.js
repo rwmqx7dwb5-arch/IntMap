@@ -263,15 +263,140 @@ window.IntMapWorldBase=(function(){
      no "list the layers in order", and a guard on a method that does not exist is a silent no-op for
      ever — #R200). This module owns only its visibility and its colour. */
   const CAP='layer-polar-cap';
+  /* ══ ⚠⚠ (#R219) #R207 COVERED THE CAPS ON ONE BASE MAP OUT OF TWO ═══════════════════════════════
+     「南極付近が真っ暗。何度も何度もふざけるな。修正からの再発何回目やねん」 — the sixth report, and
+     MEASURED this round rather than reasoned about: on the vector base map the pixel at the south
+     polar cap is (7,7,15). Pure black. `layer-polar-cap` is `visibility:'none'` there, because #R207
+     showed it only with the satellite view — its note argues that a satellite picture peeking through
+     a street map is not a floor. That argument is about the IMAGERY FLOOR (`layer-world-base`); it
+     does not apply to a flat background colour, and the consequence of extending it to the cap was
+     that the ±85°–90° hole #R207 set out to close stayed open on the other base map for eleven
+     rounds. Every basemap needs SOMETHING under the caps, because Web Mercator ends at ±85.0511° and
+     the globe draws to ±90°: with nothing there, the renderer's clear colour is what a reader sees.
+
+     So the cap is always on, and only its COLOUR depends on the map above it:
+       · satellite → the tone measured from the shipped picture's own polar rows (`polarColour()`),
+         so it matches the Esri tiles the floor was matched to;
+       · vector, light → the Carto light basemap's own land tone;
+       · vector, dark  → the Carto dark basemap's own land tone, so the cap is dark like the map it
+         belongs to and still is not the renderer's black.
+     ⚠ THE TONES ARE MEASURED, not chosen. Carto's own land colour over Antarctica (z3/4/7) is
+     #f8f8f8 on light_nolabels and #080808 on dark_nolabels — but the DARK layer is drawn through
+     `raster-brightness-min:0.33` + `raster-contrast:0.5` (js/app-body.js), and that shader turns
+     #080808 into ≈ (84,84,84): ((0.031−0.5)·2+0.5) clamps to 0, then 0.33 + 0·0.67 = 0.33. So the
+     cap must match what is on SCREEN, not what came off the wire — using #080808 there would put the
+     black straight back. The cap is ice, and ice on those maps is these two colours. */
+  const CAP_VEC_LIGHT='#f8f8f8', CAP_VEC_DARK='#545454';
+  function _darkBase(){
+    try{ for(const id of ['layer-dark','layer-dark-nl'])
+      if(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')!=='none') return true; }catch(_){}
+    try{ return document.documentElement.getAttribute('data-theme')==='dark'; }catch(_){}
+    return false;
+  }
   function applyCap(satOn){
     if(!GE().hasRenderer()||!GE().canDraw()) return false;
     if(!GE().layers.has(CAP)) return false;
-    try{ GE().layers.setLayout(CAP,'visibility',satOn?'visible':'none'); }catch(_){ return false; }
-    if(!satOn) return false;
+    try{ GE().layers.setLayout(CAP,'visibility','visible'); }catch(_){ return false; }
+    if(!satOn){
+      try{ GE().layers.setPaint(CAP,'background-color',_darkBase()?CAP_VEC_DARK:CAP_VEC_LIGHT); }catch(_){ return false; }
+      capImages(false);
+      return true;
+    }
     /* the measured colour arrives with the picture; until then the layer stands in ice-white, which
        is already the right order of magnitude and never black */
     polarColour().then(c=>{ try{ if(GE().layers.has(CAP)) GE().layers.setPaint(CAP,'background-color',c); }catch(_){} }).catch(()=>{});
+    capImages(true);
     return true;
+  }
+
+  /* ══ ⚠⚠ (#R219) …AND A COLOUR IS NOT IMAGERY. 「極付近に衛星画像がない」 ═══════════════════════════
+     The background above stops the caps being the renderer's black, which is the crash-level bug —
+     but what stands there is ONE FLAT TONE over 0.19 % of the sphere, and the report is not that the
+     poles are the wrong colour, it is that THE PICTURE STOPS. The bundled floor
+     (data/world-basemap.jpg, NASA EOSDIS GIBS Blue Marble) is EQUIRECTANGULAR and does reach ±90°;
+     only the delivery was Mercator, and Web Mercator has no tile for a pole.
+
+     ⚠ AND NO `image` SOURCE EITHER, WHICH IS MEASURED RATHER THAN ASSUMED. The obvious fix — the two
+     bands as image sources at their real corners — makes MapLibre throw on every load:
+         Error: x=0, y=Infinity, z=0 outside of bounds. 0<=x<1, 0<=y<1
+     because `ImageSource.setCoordinates` puts each corner through `MercatorCoordinate.fromLngLat`,
+     and latitude 90 has no Mercator y. Every raster path in the renderer is Mercator underneath, so
+     NOTHING that carries pixels can be placed at a pole. (Caught by tests/smoke «no critical
+     console.error» before it left the branch; it is written down because it looks like it should
+     work.)
+
+     What CAN be placed there is geometry: a polygon's vertices are lon/lat and 90 is a latitude. So
+     the caps are a MOSAIC — 36 sectors × 5 latitude bands per pole — and each cell is filled with the
+     colour the shipped picture actually has over that cell, averaged. That is the imagery, at the
+     resolution a fan of polygons can carry: not a photograph, but the real light and dark of the ice
+     sheet instead of one flat tone, and it is the same tone-mapped canvas (#R190) the tiles below it
+     come from, so the seam at 85.0511° matches.
+     ⚠ ONLY WITH THE SATELLITE VIEW, for the reason `apply()` gives about the floor. On the vector base
+     map the cap stays the measured Carto land tone. */
+  const CAPSRC = 'world-cap-src', CAPLYR = 'layer-world-cap';
+  const LIMLAT = 85.0511287798066;
+  const CAP_SECT = 36, CAP_BANDS = 5;
+  let capBusy = false, capFC = null;
+  function _capMosaic(im) {
+    const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+    const cv = document.createElement('canvas');
+    /* one output pixel per cell: the browser's own box filter does the averaging */
+    cv.width = CAP_SECT; cv.height = CAP_BANDS * 2;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    const rowOf = (lat) => Math.round(h * (90 - lat) / 180);
+    /* north band rows 0 … rowOf(LIMLAT); south rows rowOf(-LIMLAT) … h */
+    g.drawImage(im, 0, 0, w, rowOf(LIMLAT), 0, 0, CAP_SECT, CAP_BANDS);
+    g.drawImage(im, 0, rowOf(-LIMLAT), w, h - rowOf(-LIMLAT), 0, CAP_BANDS, CAP_SECT, CAP_BANDS);
+    const d = g.getImageData(0, 0, cv.width, cv.height).data;
+    const hex = (v) => ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2);
+    const feats = [];
+    for (let north = 1; north >= 0; north--) {
+      for (let b = 0; b < CAP_BANDS; b++) {
+        /* the picture's rows run north → south, so band 0 of the north cap is the pole itself */
+        const f0 = b / CAP_BANDS, f1 = (b + 1) / CAP_BANDS;
+        const la0 = north ? (90 - (90 - LIMLAT) * f0) : (-LIMLAT - (90 - LIMLAT) * f0);
+        const la1 = north ? (90 - (90 - LIMLAT) * f1) : (-LIMLAT - (90 - LIMLAT) * f1);
+        const row = north ? b : (CAP_BANDS + (CAP_BANDS - 1 - b));
+        for (let k = 0; k < CAP_SECT; k++) {
+          const o = (row * CAP_SECT + k) * 4;
+          const col = '#' + hex(d[o]) + hex(d[o + 1]) + hex(d[o + 2]);
+          const l0 = -180 + 360 * k / CAP_SECT, l1 = -180 + 360 * (k + 1) / CAP_SECT;
+          const ring = [];
+          for (let i = 0; i <= 4; i++) ring.push([l0 + (l1 - l0) * i / 4, la0]);
+          for (let i = 4; i >= 0; i--) ring.push([l0 + (l1 - l0) * i / 4, la1]);
+          ring.push([l0, la0]);
+          feats.push({ type: 'Feature', properties: { c: col },
+            geometry: { type: 'Polygon', coordinates: [ring] } });
+        }
+      }
+    }
+    return { type: 'FeatureCollection', features: feats };
+  }
+  function capImages(satOn) {
+    try {
+      if (!satOn) { try { if (GE().layers.has(CAPLYR)) GE().layers.setLayout(CAPLYR, 'visibility', 'none'); } catch (_) {} return false; }
+      /* ⚠ a style reload drops added layers; the LAYERS are the truth, not a flag (#R212) */
+      if (GE().layers.has(CAPLYR)) { try { GE().layers.setLayout(CAPLYR, 'visibility', 'visible'); } catch (_) {} return true; }
+      const put = () => {
+        if (!capFC || !GE().canDraw()) return false;
+        if (!GE().layers.hasSource(CAPSRC)) GE().layers.addSource(CAPSRC, { type: 'geojson', data: capFC });
+        else GE().layers.setSourceData(CAPSRC, capFC);
+        if (!GE().layers.has(CAPLYR)) {
+          const before = GE().layers.has(LYR) ? LYR : undefined;
+          GE().layers.add({ id: CAPLYR, type: 'fill', source: CAPSRC,
+            paint: { 'fill-color': ['get', 'c'], 'fill-antialias': false } }, before);
+        }
+        return GE().layers.has(CAPLYR);
+      };
+      if (capFC) return put();
+      if (capBusy) return false;
+      capBusy = true;
+      source().then((im) => { capBusy = false;
+        try { capFC = _capMosaic(im); } catch (_) { capFC = null; }
+        try { put(); } catch (_) {}
+      }).catch(() => { capBusy = false; });
+      return false;
+    } catch (_) { capBusy = false; return false; }
   }
 
   return {

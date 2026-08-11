@@ -838,6 +838,7 @@ window.IntMapModules.space=function(HOST){
       /* (#R213) …and the deep sky rides the same projection, for the same reason */
       if(showDeep){ gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
         drawDeepSky(skyM,{P:mPersp(45*D2R,W/Math.max(1,H),Math.max(1e-7,dist*1e-4),skyFar),V:cam.V},extraLabels);
+        drawCosmos({P:mPersp(45*D2R,W/Math.max(1,H),Math.max(1e-7,dist*1e-4),skyFar),V:cam.V},extraLabels);
         gl.disable(gl.BLEND); }
 
       if(mode==='system'){
@@ -992,8 +993,21 @@ window.IntMapModules.space=function(HOST){
       const E=EPH();
       const n=360/m.periodDays;                                  /* the table's own period, not a derived one */
       const M=m.mDeg+n*(jd-2451545.0);                           /* epoch is J2000 for every row */
+      /* ══ ⚠⚠ (#R219) `kepler()` ANSWERS IN RADIANS, AND THIS LINE CONVERTED IT AGAIN ═══════════════
+         「宇宙を探索は、地球以外の惑星の衛星の挙動・軌道がバグっている。」 Third report, and this is why:
+         js/ephemeris.js `kepler(Mdeg, e)` TAKES degrees and RETURNS the eccentric anomaly in RADIANS
+         (`let E = M + e·sin M` with M already through D2R). Its other caller — `heliocentric()`, i.e.
+         every planet — uses `Math.cos(E)` directly and is right. This one multiplied by D2R a second
+         time, so the anomaly the satellite was placed at was the true one times π/180: a full
+         revolution became a ±3.14° wobble around periapsis. Every moon of every planet sat almost
+         still near one end of its orbit and jittered — and the ORBIT LINE, drawn by sampling this same
+         function over one period, collapsed to that same short arc. The Moon itself was never affected
+         because it comes from ELP-2000 and never passes through here.
+         ⚠ tests/r219-checks ① runs this: one period of Io sweeps 360° and its radius stays between
+         a(1−e) and a(1+e). A unit error that survived three rounds does not get to survive on a
+         comment. */
       const ecc=E.kepler(M,m.e);
-      const cE=Math.cos(ecc*D2R), sE=Math.sin(ecc*D2R);
+      const cE=Math.cos(ecc), sE=Math.sin(ecc);
       const a=m.aKm/planetRadiusKm;
       /* in the orbital plane, periapsis on +x */
       const xv=a*(cE-m.e), yv=a*Math.sqrt(Math.max(0,1-m.e*m.e))*sE;
@@ -1105,6 +1119,39 @@ window.IntMapModules.space=function(HOST){
           out.push({ name:m.name, kind:'moon', x:sx, y:sy, w:R });
         }
       }
+    }
+
+    /* ══ (#R219) THE DISTANCE LADDER, DRAWN AS SHELLS ═══════════════════════════════════════════════
+       One ring per published distance (js/space-cosmos.js), in the ecliptic plane, with its name and
+       its own value beside it. Only the rungs that are actually on screen at this camera distance are
+       drawn — everything nearer is a dot at the centre and everything further is off the frame — so
+       zooming out is a sequence of named, measured boundaries rather than a slide into black.
+       ⚠ SCENE UNITS, THROUGH posScale, like everything else here: at model scale the ladder is
+       compressed by the same power law the orbits are, so the two never disagree about which is
+       further out. */
+    function drawCosmos(cam,out){
+      const C=window.IntMapCosmos; if(!C) return;
+      let rungs=[]; try{ rungs=C.visible(auOfDist(dist)); }catch(_){ return; }
+      if(!rungs.length) return;
+      const VP=mMul(cam.P,cam.V);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+      for(const r of rungs){
+        const R=posScale(r.au); if(!isFinite(R)||R<=0) continue;
+        const fa=C.ring(R,160);
+        const buf=gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
+        const strong=(r.key==='horizon'||r.key==='cmb');
+        drawLines(VP,buf,fa.length/3,strong?[0.72,0.80,1.0,0.42]:[0.62,0.70,0.86,0.22]);
+        try{ gl.deleteBuffer(buf); }catch(_){}
+        /* the label rides on the ring's own +x point, so it moves with the ring rather than floating */
+        const c=mApply(VP,[R,0,0]);
+        if(c[3]>0){
+          const sx=(c[0]/c[3]*0.5+0.5)*W, sy=(1-(c[1]/c[3]*0.5+0.5))*H;
+          if(sx>-200&&sy>-40&&sx<W+200&&sy<H+40)
+            out.push({ name:C.label(r,HOST.lang)+'  ·  '+C.fmt(r.au,HOST.lang), kind:'cosmos', x:sx, y:sy, w:0 });
+        }
+      }
+      gl.depthMask(true); gl.disable(gl.BLEND);
     }
 
     function drawBody(jd,pos,cam){
@@ -1260,7 +1307,17 @@ window.IntMapModules.space=function(HOST){
     function hud(){
       return '<div class="sp-bar" style="position:absolute;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0));pointer-events:auto;">'
         +'<button class="sp-close" style="'+BTN+'">✕ '+L('Back to the map','地図へ戻る','Zur Karte','К карте','Al mapa')+'</button>'
-        +'<button class="sp-mode" style="'+BTN+'">'+(mode==='system'?('🌍 '+L('View the body','天体を見る','Körper ansehen','Смотреть тело','Ver el cuerpo')):('🪐 '+L('Solar system','太陽系','Sonnensystem','Солнечная система','Sistema solar')))+'</button>'
+        /* ══ (#R219) THE 「天体を見る」 BUTTON IS GONE ══════════════════════════════════════════════
+           「宇宙を探索の「天体を見る」ボタンは不要」. It was a MODE switch beside a zoom, for a thing
+           the zoom already expresses: selecting a body now flies to it (setFocus → visitDist), and
+           carrying on inward is what "look at the body" means. So the crossing happens where the
+           reader already is — `autoMode()` enters the body view once the camera is inside a few of
+           the body's own radii and leaves it on the way back out — and the bar loses a control.
+           ⚠ `setMode` stays public: Atlas, the share link and the eclipse rows all drive it. */
+        /* ⚠ the bar's HTML is built ONCE (openView); only refreshChrome runs again. So this button is
+           always in the DOM and its `display` is the state — a conditional in the template would
+           simply never appear when the mode changed. */
+        +'<button class="sp-out" style="'+BTN+'display:none;">🪐 '+L('Solar system','太陽系','Sonnensystem','Солнечная система','Sistema solar')+'</button>'
         /* ══ (#R202) THE SCALE CONTROL SHOWS BOTH CHOICES ═════════════════════════════════════════
            「宇宙を探索で、実寸とモデル大に変えるボタンをもっとわかりやすくしろ。」
            It was ONE button carrying ONE label, and a lone label on a toggle is ambiguous by
@@ -1463,6 +1520,8 @@ window.IntMapModules.space=function(HOST){
         b.style.background=on?'#fff':'transparent';
         b.style.color=on?'#000':'rgba(255,255,255,0.62)';
       });
+      { const ob=root.querySelector('.sp-out'); if(ob){ ob.style.display=(mode==='body')?'':'none';
+          if(!ob.__w){ ob.__w=1; ob.onclick=()=>setMode('system'); } } }
       const lv=root.querySelector('.sp-live');
       if(lv){ lv.style.background=live?'rgba(90,230,140,0.22)':'rgba(255,255,255,0.06)';
         lv.style.borderColor=live?'rgba(90,230,140,0.75)':'rgba(255,255,255,0.22)';
@@ -1476,8 +1535,10 @@ window.IntMapModules.space=function(HOST){
       refreshClock();
       const side=root.querySelector('.sp-side');
       if(side){
+        /* (#R219) ONE lit row in the whole sidebar: a planet is lit only when neither of the two
+           other lists has a selection (see the note on setFocus). */
         side.innerHTML=BODIES.map(id=>{
-          const on=id===focus;
+          const on=(id===focus)&&!craftSel&&!smallSel;
           return '<button class="sp-b" data-b="'+id+'" style="'+BTN+'text-align:left;'
             +(on?'background:rgba(255,210,63,0.18);border-color:rgba(255,210,63,0.6);':'')+'">'
             +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+S(EPH().body(id).colour)+';margin-right:6px;"></span>'
@@ -1497,9 +1558,12 @@ window.IntMapModules.space=function(HOST){
           ()=>{ const B=SB(); return B.smallAt(jdNow(),{pickOnly:true}).map(b=>({ id:b.id, label:(b.name||b.full),
             dot:'rgb('+SMALL_COL[b.kind].slice(0,3).map(v=>Math.round(v*255)).join(',')+')', on:smallSel===b.id })); });
         side.querySelectorAll('.sp-b').forEach(b=>b.onclick=()=>{ setFocus(b.getAttribute('data-b')); });
+        /* (#R219) …and the same single selection here: choosing a spacecraft or a small body clears
+           the other list AND the planet highlight, so exactly one row in the sidebar is ever lit. */
         side.querySelectorAll('.sp-pop-row').forEach(b=>b.onclick=()=>{
           const k=b.getAttribute('data-pop'), id=b.getAttribute('data-id');
-          if(k==='craft') craftSel=(craftSel===id)?null:id; else smallSel=(smallSel===id)?null:id;
+          if(k==='craft'){ const same=(craftSel===id); smallSel=null; craftSel=same?null:id; }
+          else { const same=(smallSel===id); craftSel=null; smallSel=same?null:id; }
           refreshHUD();
         });
       }
@@ -1758,17 +1822,63 @@ window.IntMapModules.space=function(HOST){
       az=Math.atan2(s[1],s[0])+0.35;
       el=Math.max(-1.1,Math.min(1.1,Math.asin(Math.max(-1,Math.min(1,s[2])))+0.18));
     }
-    function setFocus(id){
+    /* ══ ⚠ (#R219) SELECTING A BODY MEANS GOING TO IT ═══════════════════════════════════════════════
+       「宇宙を探索で、複数天体を選択できてしまうのはUIとしておかしい。また、選択したらその天体の場所に
+        行き、中心をその天体に。」
+
+       TWO things were wrong and they are separate. (a) The three lists — planets, spacecraft, small
+       bodies — each kept their own selection, so a reader could light Jupiter AND Voyager 1 AND Ceres
+       and the panel would describe one of them: three lit rows, one subject. There is one selection
+       now, and choosing in any list clears the other two. (b) The scene HAS been centred on the
+       focused body since #R213 (`centre` in drawSystem), but the camera never MOVED, so picking
+       Jupiter from a whole-system framing re-centred on a dot that stayed a dot — 「その天体の場所に
+       行き」 is the missing half. `visitDist()` frames the body and the satellites it actually has.
+       ⚠ THE SUN IS NOT FRAMED THE SAME WAY: focusing it means the system, so it keeps the system
+       framing rather than diving into the photosphere. */
+    function visitDist(id){
+      const b=EPH().body(id); if(!b) return dist;
+      const R=radScale(b.rKm||6378);
+      let far=R*6;                                   /* the body itself, comfortably */
+      try{ const list=(moons&&moons.planets&&moons.planets[id])||[];
+        for(const m of list.slice(0,12)){
+          const d=(scale==='real'?0:radScale(b.rKm)*1.18)+moonSep(m.aKm||0);
+          if(d>far) far=d; } }catch(_){}
+      if(id==='earth'){ const d=(scale==='real'?0:0)+moonSep(384400); if(d>far) far=d; }
+      /* the framing: the furthest thing in this family at 62 % of the half-field, as systemDist does */
+      const d=far/Math.tan(45*D2R/2)*2.0;
+      return Math.max(distFloor(),Math.min(distCeil(),d));
+    }
+    function setFocus(id,opts){
       if(!EPH().body(id)) return false;
+      const was=focus;
       focus=id;
+      craftSel=null; smallSel=null;                  /* one selection, across all three lists */
       /* (#R208) start the satellite table as soon as a body is CHOSEN rather than when it is first
          drawn in body mode — it is 36 kB and the two events are usually a zoom apart, so by the
          time the moons are needed they are there. */
       loadMoons();
       if(mode==='body'){ dist=bodyDist(); faceSun(); loadNames(); texture(id); maxNames(); }
-      else if(scale==='real') dist=Math.max(0.02,posScale(1)*0.6);
+      else if(!(opts&&opts.keepView)&&id!=='sun'){ dist=visitDist(id); }
+      else if(scale==='real'&&was!==id) dist=Math.max(0.02,posScale(1)*0.6);
       refreshHUD();
       return true;
+    }
+    /* ══ (#R219) THE CROSSING INTO A BODY VIEW IS A ZOOM, NOT A BUTTON ═══════════════════════════
+       With 「天体を見る」 removed (see hud()), this is what replaces it: keep zooming toward the
+       selected body and, once the camera is inside a few of its drawn radii, the view becomes THAT
+       BODY — the same thing the button did, at the moment the picture is already about to say it.
+       Pulling back out reverses it.
+       ⚠ HYSTERESIS, NOT A THRESHOLD. One number would flip modes on every wheel notch at the
+       boundary; entering at 3·R and leaving at 5.5·R means a gesture that crosses in has to be
+       deliberately reversed to cross back.
+       ⚠ NEVER FOR THE SUN, and never while the focus is a body with no surface to show — `bodyDist()`
+       is the body view's own framing and this only decides WHEN, never WHERE. */
+    function autoMode(){
+      if(!open||!focus||focus==='sun') return;
+      const b=EPH().body(focus); if(!b||!b.rKm) return;
+      const R=radScale(b.rKm);
+      if(mode==='system'){ if(dist<R*3){ setMode('body'); } }
+      else if(dist>bodyDist()*5.5/3.0){ setMode('system'); dist=Math.max(distFloor(),Math.min(distCeil(),R*4.2)); refreshHUD(); }
     }
     function setMode(m){
       mode=(m==='body')?'body':'system';
@@ -1791,17 +1901,27 @@ window.IntMapModules.space=function(HOST){
        ⚠ Recomputed from `systemDist()` BEFORE and AFTER the switch rather than from a conversion
        factor, because `systemDist()` is the one place that knows what each scale considers "the whole
        system" (it reads Neptune in one and Pluto in the other). */
+    /* ══ ⚠⚠ (#R219) THE FRAMING RATIO IS NOT THE INVARIANT ONCE YOU LEAVE THE SOLAR SYSTEM ═════════
+       「宇宙を探索で、モデル大と実寸大を切り替えたときにズームレベルがジャンプしてしまうのをやめて。」
+       (#R207 answered this with `dist / systemDist()` — "this much of the system fills the screen" —
+       and that is right INSIDE the planets and wrong outside them, which is where the reach now goes.
+       Measured: at the model ceiling, dist = 19,730 scene units ≈ 10⁷ AU of real space; carrying the
+       framing ratio across gives 5,077 AU, i.e. the reader was looking at the local stellar
+       neighbourhood and lands inside the Oort cloud — a jump of three orders of magnitude, and the
+       report says exactly that. The two scales are two unit systems over the SAME physical space, so
+       the quantity that means the same thing in both is the distance in AU. Convert out, switch, and
+       convert back: inside the planets it is within a few per cent of #R207's framing (Neptune stays
+       framed like Neptune), and outside them it is exact.) */
+    function auOfDist(d){ return scale==='real'?d:Math.pow(Math.max(0,d)/POS_K,1/POS_P); }
     function setScale(s){
       const want=(s==='real')?'real':'model';
       if(want===scale) return true;
-      const before=systemDist();
+      const au=auOfDist(dist);
       scale=want;
       for(const k of Object.keys(orbitCache)){ gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
       if(mode==='system'){
-        const after=systemDist();
-        const k=(isFinite(before)&&before>0&&isFinite(after)&&after>0)?(after/before):1;
-        const d=dist*k;
-        dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(distCeil(),d)):after;
+        const d=posScale(au);
+        dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(distCeil(),d)):systemDist();
       }
       refreshHUD();
       return true;
@@ -1865,11 +1985,12 @@ window.IntMapModules.space=function(HOST){
         /* (#R201) the same integral as the map's, mirrored: a zoom-IN the camera has nowhere left to
            spend is how you come back down, so the way out and the way in are the one gesture. */
         if(e.deltaY<0) pushIn(Math.min(0.5,-e.deltaY/300));
-        dist=Math.max(mode==='body'?1.02:(scale==='real'?1e-5:0.02), Math.min(distCeil(), dist*Math.exp(e.deltaY*0.0012))); },{passive:false});
+        dist=Math.max(mode==='body'?1.02:(scale==='real'?1e-5:0.02), Math.min(distCeil(), dist*Math.exp(e.deltaY*0.0012)));
+        autoMode(); },{passive:false});
       ov.addEventListener('touchmove',(e)=>{ if(e.touches.length===2){ e.preventDefault();
         const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
         if(pinch){ if(d>pinch) pushIn(Math.log2(d/pinch));
-          dist=Math.max(mode==='body'?1.02:0.02,Math.min(distCeil(),dist*pinch/d)); }
+          dist=Math.max(mode==='body'?1.02:0.02,Math.min(distCeil(),dist*pinch/d)); autoMode(); }
         pinch=d; } },{passive:false});
       ov.addEventListener('touchend',()=>{ pinch=0; });
       /* clicking a body focuses it — the same list the sidebar shows */
@@ -1886,7 +2007,10 @@ window.IntMapModules.space=function(HOST){
         if(best) setFocus(best);
       });
       root.querySelector('.sp-close').onclick=()=>{ if(!leaveToMap()) close(); };
-      root.querySelector('.sp-mode').onclick=()=>setMode(mode==='system'?'body':'system');
+      /* (#R219) the only mode control left is the way OUT of a body view, and it exists because the
+         zoom that got you in has no obvious opposite once the body fills the screen. It is re-wired on
+         every refreshChrome because the button only exists while mode==='body'. */
+      { const ob=root.querySelector('.sp-out'); if(ob) ob.onclick=()=>setMode('system'); }
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
       /* (#R207) */
       { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }
@@ -2219,11 +2343,22 @@ window.IntMapModules.space=function(HOST){
        The rule is unchanged and is the one #R208 stated: the camera stops at the furthest thing this
        scene actually draws, never further — past that, a view that keeps zooming shows an empty
        claim. */
+    /* ══ ⚠ (#R219) …AND NOW THERE IS SOMETHING MEASURED ALL THE WAY OUT ═════════════════════════════
+       「宇宙を探索で、もっとズームして、もっと巨大な空間を見れるようにビッグバン級に拡張して。」
+       （確認済：「観測可能な宇宙まで（実データ）」）
+       The rule stated above is kept exactly — the camera stops at the furthest thing this scene
+       actually DRAWS — and what changed is the scene: js/space-cosmos.js supplies a ladder of
+       published distances (Voyager 1's heliopause crossing, Gaia's parallax to Proxima, GRAVITY's
+       distance to the Galactic centre, Planck's comoving radius of the last-scattering surface and of
+       the particle horizon), each drawn as a labelled shell at its own radius. So the ceiling is the
+       outermost rung: the edge of the observable universe, 46.5 Gly comoving — and every zoom level
+       between here and there has a measured object on it rather than an empty claim. */
     function reachAu(){
       let far=REACH_AU;
       try{ if(starMaxPc>0) far=Math.max(far,starMaxPc*AU_PER_PC); }catch(_){}
       if(showDeep){ let d=0; try{ const B=SB(); d=B?B.deepFarAu():0; }catch(_){}
         if(d>far) far=d*1.25; }
+      try{ const C=window.IntMapCosmos; if(C&&C.HORIZON_AU>far) far=C.HORIZON_AU; }catch(_){}
       return far;
     }
     function distCeil(){ return mode==='body'?60:posScale(reachAu()); }

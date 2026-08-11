@@ -224,6 +224,10 @@ import '../js/space-events.js';
    and SIMBAD deep-sky positions with measured distances. Arithmetic only, like the two files above,
    so it is verified in Node — and it FETCHES NOTHING until one of the three switches is pressed. */
 import '../js/space-bodies.js';
+/* (#R219) the distance ladder out of the solar system — published radii from the Kuiper cliff to the
+   particle horizon, so «zoom out past the planets» has a measured object on every step instead of an
+   empty claim. Pure data + arithmetic, verified in Node (tests/r219-checks). */
+import '../js/space-cosmos.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
@@ -275,7 +279,7 @@ const MODULE_FACTORIES = [
    is deleted or renamed still has somewhere to be missing from. */
 const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView'];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');

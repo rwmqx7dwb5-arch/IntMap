@@ -37,7 +37,14 @@ test('R207 ① the polar-cap background is the first layer in the style', () => 
 test('R207 ② world-base owns the cap: it is toggled with the satellite basemap and coloured from the picture', () => {
   const s = read('js/world-base.js');
   assert.ok(/function applyCap\(satOn\)/.test(s), 'applyCap takes the satellite state');
-  assert.ok(/setLayout\(CAP,'visibility',satOn\?'visible':'none'\)/.test(s), 'visibility follows satOn');
+  /* ⚠ (#R219) INTENDED REPLACEMENT. #R207 showed the cap only with the satellite basemap; measured
+     this round, that left the ±85°–90° hole as the renderer's black on the vector map — the pixel at
+     the south polar cap was (7,7,15). The cap is now unconditional and only its COLOUR depends on the
+     map above it, so this assertion is inverted rather than dropped: the satellite-only guard must be
+     gone, and both vector tones must exist. See DEV-NOTES #R219 §1. */
+  assert.ok(/setLayout\(CAP,'visibility','visible'\)/.test(s), 'the cap is shown on every base map (#R219)');
+  assert.ok(!/setLayout\(CAP,'visibility',satOn\?/.test(s), 'the satellite-only guard is the #R219 defect');
+  assert.ok(/CAP_VEC_LIGHT/.test(s) && /CAP_VEC_DARK/.test(s), 'the vector base map has its own cap tone');
   assert.ok(/polarColour\(\)\.then/.test(s), 'the colour is measured from the shipped picture, not written down');
   /* apply() is the one place the basemap state arrives, so the cap must be driven from there */
   const apply = s.slice(s.indexOf('function apply('));
@@ -148,9 +155,15 @@ test('R207 ⑩ space: the way back is the Earth\'s, the scale switch preserves f
     'the return-to-map gesture is armed only when the Earth is the subject');
   /* the framing, not the number, is what survives a scale change */
   const sc = s.slice(s.indexOf('function setScale('), s.indexOf('function setScale(') + 900);
-  assert.ok(/const before=systemDist\(\)/.test(sc) && /const after=systemDist\(\)/.test(sc),
-    'setScale measures the system extent on both sides');
-  assert.ok(/dist\*k/.test(sc), 'and carries dist across as a ratio');
+  /* ⚠ (#R219) INTENDED REPLACEMENT. #R207's invariant was the FRAMING (`dist / systemDist()`), which
+     is right inside the planets and wrong outside them: at the model ceiling it lands the camera three
+     orders of magnitude off (measured — DEV-NOTES #R219 §7). The two scales are two unit systems over
+     the same physical space, so the quantity that survives is the distance in AU. */
+  assert.ok(/auOfDist\(dist\)/.test(sc) && /posScale\(au\)/.test(sc),
+    'setScale converts the camera distance through AU and back (#R219)');
+  assert.ok(!/dist\*k/.test(sc), 'the framing ratio is what #R219 replaced — it must be gone');
+  assert.ok(/Math\.max\(distFloor\(\),Math\.min\(distCeil\(\),d\)\)/.test(sc),
+    'and the result is still clamped to the reach');
   /* 「実寸大とモデル大には絵文字を付けるな」 */
   const seg = s.slice(s.indexOf(".sp-scale\" data-s=\"real\"") >= 0 ? 0 : s.indexOf("class=\"sp-scale\""));
   const line = /<button class="sp-scale" data-s="real" style="'\+SEG\+'">([^']*)/.exec(s);

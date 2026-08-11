@@ -80,11 +80,25 @@ window.IntMapPick=(function(){
 
      `pointerEvents` is the half that does the work and it stays. `op` stays in the saved record
      (and is restored) so a caller that had set its own inline opacity still gets it back untouched. */
+  /* ══ ⚠ (#R219) …AND THE BUTTONS WENT WITH IT ═══════════════════════════════════════════════════
+     「◎ 震源地を設置・移動をクリックしたら、その後にポップアップ上でクリックしても、その直下の地図が
+      クリックされた判定になってしまう。」 `pointer-events:none` on the panel is inherited by everything
+     inside it, so while the pick was armed the ◎ button that armed it — and the depth, the magnitude,
+     the ✕ — were all transparent too: pressing ◎ again to change your mind DROPPED THE EPICENTRE
+     UNDER THE BUTTON. The panel could be read and not touched, and nothing said so.
+
+     What #R196/#R207 need is that the panel's SURFACE lets a tap through, not that its controls stop
+     being controls. Those are separable in one line of CSS: the box is `none`, its own interactive
+     descendants are `auto` (css/intmap.css `.im-pick-ghost`). Tapping the panel's background still
+     places the epicentre underneath — the phone case #R196 measured — and tapping a control still
+     works the control. */
   function _ghost(el){ if(!el) return null;
     const prev={ pe:el.style.pointerEvents, op:el.style.opacity };
     el.style.pointerEvents='none';
+    try{ el.classList.add('im-pick-ghost'); }catch(_){}
     return prev; }
   function _unghost(el,prev){ if(!el||!prev) return;
+    try{ el.classList.remove('im-pick-ghost'); }catch(_){}
     el.style.pointerEvents=prev.pe||''; el.style.opacity=prev.op||''; }
 
   function _teardown(){
