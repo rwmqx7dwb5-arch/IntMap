@@ -235,7 +235,13 @@ test('R217 ⑦a: DEV-NOTES.md is the RECENT rounds only, newest first', () => {
   const md = rd('DEV-NOTES.md');
   const rounds = ROUND_HEADS(md);
   assert.ok(rounds.length > 0, 'it still has round headings');
-  assert.equal(rounds[0], 217, 'the newest round is at the top (standing instruction 9 — prepend)');
+  /* ⚠ (#R218) THE ASSERTION IS THE ORDER, NOT THE NUMBER. This line read `rounds[0] === 217`, which is
+     a test that pins the value the round that wrote it happened to have — so it fails on the next
+     round for doing exactly what standing instruction 9 asks (prepend). It is the same trap the memory
+     index records for #R203. What #R217 was protecting is that the newest heading is FIRST, which is
+     the max, and the loop below already re-checks the whole ordering. The build stamp is separately
+     tied to this same maximum by tests/r207 ⑬, so "which round is newest" still has one owner. */
+  assert.equal(rounds[0], Math.max(...rounds), 'the newest round is at the top (standing instruction 9 — prepend)');
   assert.ok(Math.min(...rounds) >= 200, `nothing below R200 is left here — found R${Math.min(...rounds)}`);
   for (let i = 1; i < rounds.length; i++) {
     assert.ok(rounds[i] < rounds[i - 1], `newest-first: R${rounds[i]} follows R${rounds[i - 1]}`);
