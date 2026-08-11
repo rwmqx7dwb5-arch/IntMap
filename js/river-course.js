@@ -98,9 +98,15 @@ window.IntMapRiverCourse=(function(){
      `feats`   — the candidates (whatever the caller could see; for the map that is the loaded tiles).
      Returns the candidates that are the same river, in input order.
      `opts.limit` caps the result the way the caller's frame budget requires. */
+  /* `opts.names` — a Set of ALREADY NORMALISED names to start the closure from, instead of (or as
+     well as) the clicked feature's own. (#R219) The map's highlight keeps growing as tiles load, and
+     each pass has to resume from every name the closure has agreed on so far; handing that set in is
+     the same shape `course()` already takes, and it keeps the transitivity #R217 established across a
+     pan (a river picked up as «Duna» still matches «Donau» three tiles later). */
   function sameRiver(clicked,feats,opts){
     const o=opts||{}, limit=o.limit>0?o.limit:Infinity;
     const want=nameSet(clicked);
+    if(o.names&&o.names.forEach) o.names.forEach(n=>{ const v=norm(n); if(v) want.add(v); });
     const out=[];
     if(!want.size||!feats||!feats.length) return out;
     const props=[], taken=new Uint8Array(feats.length);

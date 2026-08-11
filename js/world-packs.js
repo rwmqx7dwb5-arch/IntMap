@@ -1405,7 +1405,14 @@ window.IntMapModules.worldPacks=function(HOST){
         whenDrawable(()=>{ ensureLayers(); gridKey=''; scanCoast(); });
         try{ HOST.imToast(L('Tap a coast for its tide times and how far the water reaches.','海岸をタップすると満干潮の時刻と浸水範囲が出ます。','Küste antippen für Gezeiten und Überflutung.','Нажмите побережье — время приливов и затопление.','Toque una costa para mareas e inundación.')); }catch(_){} }
 
-      onRestyle(()=>{ if(on) whenDrawable(()=>{ ensureLayers(); drawStations(); }); });
+      /* ⚠ (#R219) A RESTYLE DROPS EVERY ADDED LAYER — INCLUDING THE SHADING. 「（追記：海を描画する
+         機能が消えている。）」 `onRestyle` put the dots and the labels back and left the flood image
+         out, so any basemap swap, theme change or style reload silently ended the one thing #R218
+         added — the sea painted before a tap — until the next scan happened to run. The shading is
+         re-drawn from the stations already in hand: no request, and no waiting for a pan. */
+      onRestyle(()=>{ if(on) whenDrawable(()=>{ ensureLayers(); drawStations();
+        if(at&&series&&series.length){ const lv=levelAt(series,when()); if(lv!=null) paintFlood(at[0],at[1],lv); }
+        else paintFloodFromStations(); }); });
       try{ GE().events.on('moveend',()=>{ if(on) setTimeout(scanCoast,180); }); }catch(_){}
       mapClick((e)=>{ if(!on) return false; probe(e.lngLat.lng,e.lngLat.lat); return true; });
       /* the clock drives BOTH: the tapped point's table and the whole visible coast (#R212).
@@ -1479,6 +1486,17 @@ window.IntMapModules.worldPacks=function(HOST){
         return Math.log(Math.tan(Math.PI/4+l*Math.PI/360))*R; };
       const invY=(y)=>(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI;
 
+      /* ══ ⚠ (#R219) A CACHED REJECTION IS A LAYER THAT NEVER WORKS AGAIN ═══════════════════════════
+         「作物栽培レイヤーで、読み込み時間が長い…（追記：まったく何も起こらなくなってしまった）」
+         Not reproducible here (measured: the FAO picture draws on localhost and on the production
+         origin, globally and at z4). What IS certainly wrong is the failure path, and it has exactly
+         the shape of the report: `_cat` and `_stats[oid]` memoise the PROMISE, so one refused request
+         — a dropped connection, a proxy hiccup, one 500 from ArcGIS — is remembered as the answer for
+         the rest of the session. Every later paint awaits the same rejected promise and throws before
+         it asks anything, and `drawKey` has already been latched to the cell that failed, so panning
+         back to it does not retry either. From the reader's side that is 「まったく何も起こらない」,
+         permanently, from one transient error. A rejection is now forgotten, and a failed draw
+         releases its key. */
       let _cat=null;
       function catalog(){ if(_cat) return _cat;
         _cat=(async()=>{ const u=GAEZ+'/query?where='+encodeURIComponent("1=1")
@@ -1487,7 +1505,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const j=await r.json(); const by=Object.create(null);
           (j.features||[]).forEach(f=>{ const a=f.attributes||{};
             by[[a.crop,a.year,a.variable,a.water_supply].join('|')]=a; });
-          return by; })();
+          return by; })().catch(e=>{ _cat=null; throw e; });
         return _cat; }
       const _stats=Object.create(null);
       async function statsFor(oid){ if(_stats[oid]) return _stats[oid];
@@ -1497,7 +1515,7 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!r.ok) throw new Error('gaez stats '+r.status);
           const j=await r.json(); const s=(j.statistics||[])[0];
           if(!s) throw new Error('gaez stats empty');
-          return { min:+s.min, max:+s.max, mean:+s.mean }; })();
+          return { min:+s.min, max:+s.max, mean:+s.mean }; })().catch(e=>{ delete _stats[oid]; throw e; });
         return _stats[oid]; }
 
       /* grey → the ramp, with nothing drawn where there is no crop */
@@ -1628,7 +1646,9 @@ window.IntMapModules.worldPacks=function(HOST){
           lastMeta=meta;
           render();
         }catch(e){ console.warn('crops',e);
-          stat('⚠ '+L('This crop and variable could not be fetched from GAEZ.','この作物・指標を GAEZ から取得できませんでした。','Nicht abrufbar.','Не удалось получить.','No se pudo obtener.')); }
+          /* ⚠ release the key, or a pan back to this cell is a silent no-op for ever (see above) */
+          drawKey='';
+          stat('⚠ '+L('This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.','この作物・指標を GAEZ から取得できませんでした（地図を動かすと再試行します）。','Nicht abrufbar — beim nächsten Verschieben wird es erneut versucht.','Не удалось получить — повторим при перемещении карты.','No se pudo obtener; se reintentará al mover el mapa.')); }
         busy=false; }
 
       function clearImg(){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}

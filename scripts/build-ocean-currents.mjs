@@ -58,33 +58,35 @@ const STRIDE = 3;                       /* 3 × 1/3° = one sample per degree */
    Seeds are the published centre of each current's core. They decide where the trace STARTS; the
    trace itself follows the measured field, so a seed that is slightly off simply starts a little
    further along the same stream. */
+/* ⚠ (#R219) FIVE NAMES PER ROW, not two — standing rule 3. The row is
+   [en, ja, de, ru, es, lng, lat]. */
 const SEEDS = [
-  ['Gulf Stream', 'メキシコ湾流', -75.0, 35.0],
-  ['North Atlantic Drift', '北大西洋海流', -20.0, 53.0],
-  ['Canary Current', 'カナリア海流', -20.0, 25.0],
-  ['North Equatorial Current (Atlantic)', '北赤道海流（大西洋）', -40.0, 10.0],
-  ['South Equatorial Current (Atlantic)', '南赤道海流（大西洋）', -25.0, -5.0],
-  ['Brazil Current', 'ブラジル海流', -46.0, -25.0],
-  ['Benguela Current', 'ベンゲラ海流', 12.0, -28.0],
-  ['Labrador Current', 'ラブラドル海流', -52.0, 55.0],
-  ['East Greenland Current', '東グリーンランド海流', -30.0, 67.0],
-  ['Kuroshio', '黒潮', 135.0, 32.0],
-  ['Kuroshio Extension', '黒潮続流', 150.0, 35.0],
-  ['Oyashio', '親潮', 150.0, 45.0],
-  ['California Current', 'カリフォルニア海流', -128.0, 38.0],
-  ['North Pacific Current', '北太平洋海流', -170.0, 42.0],
-  ['North Equatorial Current (Pacific)', '北赤道海流（太平洋）', -160.0, 12.0],
-  ['South Equatorial Current (Pacific)', '南赤道海流（太平洋）', -150.0, -5.0],
-  ['Equatorial Counter Current', '赤道反流', -170.0, 6.0],
-  ['Peru (Humboldt) Current', 'ペルー海流（フンボルト海流）', -80.0, -20.0],
-  ['East Australian Current', '東オーストラリア海流', 154.0, -30.0],
-  ['Agulhas Current', 'アガラス海流', 32.0, -32.0],
-  ['Somali Current', 'ソマリ海流', 52.0, 8.0],
-  ['South Equatorial Current (Indian)', '南赤道海流（インド洋）', 70.0, -12.0],
-  ['West Australian Current', '西オーストラリア海流', 110.0, -31.0],
-  ['Antarctic Circumpolar Current (Atlantic)', '南極周極流（大西洋区）', -20.0, -52.0],
-  ['Antarctic Circumpolar Current (Indian)', '南極周極流（インド洋区）', 80.0, -52.0],
-  ['Antarctic Circumpolar Current (Pacific)', '南極周極流（太平洋区）', -160.0, -58.0],
+  ['Gulf Stream', 'メキシコ湾流', 'Golfstrom', 'Гольфстрим', 'Corriente del Golfo', -75.0, 35.0],
+  ['North Atlantic Drift', '北大西洋海流', 'Nordatlantikstrom', 'Североатлантическое течение', 'Corriente del Atlántico Norte', -20.0, 53.0],
+  ['Canary Current', 'カナリア海流', 'Kanarenstrom', 'Канарское течение', 'Corriente de Canarias', -20.0, 25.0],
+  ['North Equatorial Current (Atlantic)', '北赤道海流（大西洋）', 'Nordäquatorialstrom (Atlantik)', 'Северное пассатное течение (Атлантика)', 'Corriente Ecuatorial del Norte (Atlántico)', -40.0, 10.0],
+  ['South Equatorial Current (Atlantic)', '南赤道海流（大西洋）', 'Südäquatorialstrom (Atlantik)', 'Южное пассатное течение (Атлантика)', 'Corriente Ecuatorial del Sur (Atlántico)', -25.0, -5.0],
+  ['Brazil Current', 'ブラジル海流', 'Brasilstrom', 'Бразильское течение', 'Corriente de Brasil', -46.0, -25.0],
+  ['Benguela Current', 'ベンゲラ海流', 'Benguelastrom', 'Бенгельское течение', 'Corriente de Benguela', 12.0, -28.0],
+  ['Labrador Current', 'ラブラドル海流', 'Labradorstrom', 'Лабрадорское течение', 'Corriente del Labrador', -52.0, 55.0],
+  ['East Greenland Current', '東グリーンランド海流', 'Ostgrönlandstrom', 'Восточно-Гренландское течение', 'Corriente de Groenlandia Oriental', -30.0, 67.0],
+  ['Kuroshio', '黒潮', 'Kuroshio', 'Куросио', 'Corriente de Kuroshio', 135.0, 32.0],
+  ['Kuroshio Extension', '黒潮続流', 'Kuroshio-Ausläufer', 'Продолжение Куросио', 'Extensión de Kuroshio', 150.0, 35.0],
+  ['Oyashio', '親潮', 'Oyashio', 'Оясио', 'Corriente de Oyashio', 150.0, 45.0],
+  ['California Current', 'カリフォルニア海流', 'Kalifornienstrom', 'Калифорнийское течение', 'Corriente de California', -128.0, 38.0],
+  ['North Pacific Current', '北太平洋海流', 'Nordpazifikstrom', 'Северо-Тихоокеанское течение', 'Corriente del Pacífico Norte', -170.0, 42.0],
+  ['North Equatorial Current (Pacific)', '北赤道海流（太平洋）', 'Nordäquatorialstrom (Pazifik)', 'Северное пассатное течение (Тихий океан)', 'Corriente Ecuatorial del Norte (Pacífico)', -160.0, 12.0],
+  ['South Equatorial Current (Pacific)', '南赤道海流（太平洋）', 'Südäquatorialstrom (Pazifik)', 'Южное пассатное течение (Тихий океан)', 'Corriente Ecuatorial del Sur (Pacífico)', -150.0, -5.0],
+  ['Equatorial Counter Current', '赤道反流', 'Äquatorialer Gegenstrom', 'Экваториальное противотечение', 'Contracorriente Ecuatorial', -170.0, 6.0],
+  ['Peru (Humboldt) Current', 'ペルー海流（フンボルト海流）', 'Humboldtstrom (Perustrom)', 'Перуанское течение (Гумбольдта)', 'Corriente de Humboldt (del Perú)', -80.0, -20.0],
+  ['East Australian Current', '東オーストラリア海流', 'Ostaustralstrom', 'Восточно-Австралийское течение', 'Corriente de Australia Oriental', 154.0, -30.0],
+  ['Agulhas Current', 'アガラス海流', 'Agulhasstrom', 'Течение Агульяс', 'Corriente de Agulhas', 32.0, -32.0],
+  ['Somali Current', 'ソマリ海流', 'Somalistrom', 'Сомалийское течение', 'Corriente de Somalia', 52.0, 8.0],
+  ['South Equatorial Current (Indian)', '南赤道海流（インド洋）', 'Südäquatorialstrom (Indik)', 'Южное пассатное течение (Индийский океан)', 'Corriente Ecuatorial del Sur (Índico)', 70.0, -12.0],
+  ['West Australian Current', '西オーストラリア海流', 'Westaustralstrom', 'Западно-Австралийское течение', 'Corriente de Australia Occidental', 110.0, -31.0],
+  ['Antarctic Circumpolar Current (Atlantic)', '南極周極流（大西洋区）', 'Antarktischer Zirkumpolarstrom (Atlantik)', 'Антарктическое циркумполярное течение (Атлантика)', 'Corriente Circumpolar Antártica (Atlántico)', -20.0, -52.0],
+  ['Antarctic Circumpolar Current (Indian)', '南極周極流（インド洋区）', 'Antarktischer Zirkumpolarstrom (Indik)', 'Антарктическое циркумполярное течение (Индийский океан)', 'Corriente Circumpolar Antártica (Índico)', 80.0, -52.0],
+  ['Antarctic Circumpolar Current (Pacific)', '南極周極流（太平洋区）', 'Antarktischer Zirkumpolarstrom (Pazifik)', 'Антарктическое циркумполярное течение (Тихий океан)', 'Corriente Circumpolar Antártica (Pacífico)', -160.0, -58.0],
 ];
 
 async function grid(tSel) {
@@ -199,7 +201,7 @@ async function main() {
 
   const sample = sampler(mean);
   const named = [];
-  for (const [en, ja, lng0, lat0] of SEEDS) {
+  for (const [en, ja, de, ru, es, lng0, lat0] of SEEDS) {
     const sn = snap(sample, lng0, lat0);
     if (!sn) { console.log('  ⚠ ' + en + ': no flow within 5° of the seed'); continue; }
     const path = trace(sample, sn.lng, sn.lat);
@@ -210,7 +212,7 @@ async function main() {
     const pole = path.reduce((a, q) => a + (q[3] || 0), 0) / path.length;
     const kind = pole > 0.012 ? 'warm' : (pole < -0.012 ? 'cold' : 'zonal');
     const speeds = path.map((p) => p[2]);
-    named.push({ en, ja, kind, polewardMs: +pole.toFixed(4),
+    named.push({ en, ja, de, ru, es, kind, polewardMs: +pole.toFixed(4),
       meanSpeed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3),
       maxSpeed: +Math.max.apply(null, speeds).toFixed(3),
       seed: [lng0, lat0], seedSnappedTo: [sn.lng, sn.lat],
@@ -235,7 +237,7 @@ async function main() {
       + 'Paths traced through the measured mean velocity field; names and seed points are editorial.',
     method: 'mean of ' + EPOCHS + ' five-day composites on a 1° grid; named paths integrated (RK2, 60 km steps) '
       + 'from a published seed on each current\'s core; warm/cold derived from the net poleward change along the trace',
-    fields: { named: ['en', 'ja', 'kind', 'polewardMs', 'meanSpeed', 'maxSpeed', 'seed', 'seedSnappedTo', 'path'], arrows: ['lng', 'lat', 'bearingDeg', 'speedMs'] },
+    fields: { named: ['en', 'ja', 'de', 'ru', 'es', 'kind', 'polewardMs', 'meanSpeed', 'maxSpeed', 'seed', 'seedSnappedTo', 'path'], arrows: ['lng', 'lat', 'bearingDeg', 'speedMs'] },
     named, arrows,
   };
   writeFileSync(OUT, JSON.stringify(doc));

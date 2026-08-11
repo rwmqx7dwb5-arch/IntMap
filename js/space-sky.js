@@ -330,26 +330,106 @@ window.IntMapSky=(function(){
         drawn++;
       }
     }
+    /* == (#R219) THE MOON, AND A SUN THAT IS A STAR RATHER THAN A WHITE CIRCLE ====================
+       「宇宙を探索ではないときの通常の時に、宇宙に実際の時間の実際の場所の忠実な光りかた、グラフィックの
+        月を配置するように。また、太陽のグラフィックがチープだからリアルに。（地球視点での見た目。）」
+
+       Both are drawn at their REAL geocentric right ascension and declination for the instant on the
+       app clock, and at their REAL angular diameter over the camera's own field of view — the same
+       arrangement the Sun has had since #R186, which is why they sit in the correct place among the
+       stars and are hidden by the Earth without any occlusion test (see the header).
+
+       THE MOON'S LIGHT IS THE POINT. 「実際の時間の実際の場所の忠実な光りかた」 is the PHASE, and the
+       phase is not a decoration — it is where the Sun is:
+         · the illuminated fraction k = (1 − cos ψ)/2 from the elongation ψ (Meeus ch. 48), so a
+           first-quarter Moon is half lit on the day it actually is;
+         · the BRIGHT LIMB'S POSITION ANGLE χ = atan2(cos δ☉·sin Δα, sin δ☉·cos δ☾ − cos δ☉·sin δ☾·cos Δα),
+           which is what decides whether the crescent's horns point up, left or down — the thing a
+           drawn-on crescent always gets wrong;
+         · the terminator is the projection of the great circle dividing day from night, i.e. an
+           ELLIPSE whose semi-minor axis is r·|2k−1| and whose curvature flips at half phase;
+         · the dark side is not black: it carries EARTHSHINE, sunlight off the Earth, which is
+           brightest when the Moon is a thin crescent — so its alpha follows (1−k).
+       ⚠ Nothing here is a texture. It is a lit sphere's outline, and every number comes from the same
+       ephemeris the eclipse finder and the star map use. */
+    let moon=null;
+    try{
+      const E=window.IntMapEphemeris;
+      if(E&&E.equatorial&&E.moonGeocentric&&E.julianDay){
+        const jd=E.julianDay(ms);
+        const em=E.equatorial('moon',jd), es=E.equatorial('sun',jd);
+        const mg=E.moonGeocentric(jd);
+        const mp=(em&&es)?projectDirection(F,em.raDeg-gm,em.decDeg):null;
+        if(mp&&mg&&isFinite(mg.distKm)){
+          const pxPerDeg=(F.height/2)/Math.tan(F.fovRad/2)*D2R;
+          /* the Moon's apparent semi-diameter is asin(R/d); R = 1737.4 km */
+          const semi=Math.asin(Math.min(1,1737.4/mg.distKm))/D2R;
+          const r=Math.max(1.6,semi*pxPerDeg);
+          const dA=(es.raDeg-em.raDeg)*D2R, d1=em.decDeg*D2R, d0=es.decDeg*D2R;
+          const cosPsi=Math.sin(d0)*Math.sin(d1)+Math.cos(d0)*Math.cos(d1)*Math.cos(dA);
+          const k=Math.max(0,Math.min(1,(1-cosPsi)/2));            /* illuminated fraction */
+          const chi=Math.atan2(Math.cos(d0)*Math.sin(dA), Math.sin(d0)*Math.cos(d1)-Math.cos(d0)*Math.sin(d1)*Math.cos(dA));
+          const x=mp[0], y=mp[1];
+          ctx.save();
+          ctx.beginPath(); ctx.arc(x,y,r,0,6.283185307);
+          ctx.fillStyle='rgba(64,66,76,'+(0.30+0.45*(1-k)).toFixed(3)+')';   /* earthshine */
+          ctx.fill();
+          if(k>0.004){
+            ctx.translate(x,y); ctx.rotate(-chi);                  /* +x now points at the bright limb */
+            const b=r*Math.abs(2*k-1), lit=(k>0.5);
+            ctx.beginPath();
+            ctx.arc(0,0,r,-Math.PI/2,Math.PI/2,false);             /* the bright limb: a half circle */
+            ctx.ellipse(0,0,b,r,0,Math.PI/2,-Math.PI/2,lit);       /* the terminator: half an ellipse */
+            ctx.closePath();
+            const gm2=ctx.createRadialGradient(-r*0.15,-r*0.15,r*0.05,0,0,r*1.12);
+            gm2.addColorStop(0,'rgba(248,246,238,1)');
+            gm2.addColorStop(0.72,'rgba(226,222,211,1)');
+            gm2.addColorStop(1,'rgba(196,191,180,1)');             /* the limb is darker, as it is */
+            ctx.fillStyle=gm2; ctx.fill();
+          }
+          ctx.restore();
+          moon={ x, y, radiusPx:+r.toFixed(2), illum:+k.toFixed(4),
+                 limbAngleDeg:+(chi/D2R).toFixed(1), distKm:Math.round(mg.distKm) };
+        }
+      }
+    }catch(_){ moon=null; }
+
     /* The Sun. Its real angular diameter over the camera's real field of view — at a typical globe
        view that is a disc of a few pixels with a glow around it, which is what the Sun looks like
-       from here. Drawn last so it is over the stars, as it is. */
+       from here. Drawn last so it is over the stars, as it is.
+       ⚠ (#R219) 「太陽のグラフィックがチープ」. It was a flat white circle inside one radial gradient.
+       What a star shows from 1 AU is a LIMB-DARKENED disc (I(μ)/I(1) ≈ 0.3 + 0.7μ in the visible —
+       the standard linear law) inside an inner aureole and a far corona that falls off far more
+       slowly than one gradient can express. Three gradients, each the shape of the thing it is. */
     const S=sunPosition(ms);
     const sp=projectDirection(F,S.ra-gm,S.dec);
     let sun=null;
     if(sp){
       const pxPerDeg=(F.height/2)/Math.tan(F.fovRad/2)*D2R;
       const rad=Math.max(1.5,S.angularDiamDeg/2*pxPerDeg);
-      const glow=Math.max(rad*7,26);
-      const g=ctx.createRadialGradient(sp[0],sp[1],0,sp[0],sp[1],glow);
-      g.addColorStop(0,'rgba(255,246,214,0.85)');
-      g.addColorStop(0.16,'rgba(255,226,160,0.30)');
-      g.addColorStop(0.45,'rgba(255,204,130,0.08)');
-      g.addColorStop(1,'rgba(255,190,110,0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sp[0],sp[1],glow,0,6.283185307); ctx.fill();
-      ctx.fillStyle='rgba(255,250,235,1)'; ctx.beginPath(); ctx.arc(sp[0],sp[1],rad,0,6.283185307); ctx.fill();
+      const corona=Math.max(rad*16,64);
+      let g=ctx.createRadialGradient(sp[0],sp[1],rad*0.9,sp[0],sp[1],corona);
+      g.addColorStop(0,'rgba(255,236,190,0.22)');
+      g.addColorStop(0.30,'rgba(255,222,160,0.075)');
+      g.addColorStop(0.65,'rgba(255,206,140,0.022)');
+      g.addColorStop(1,'rgba(255,196,130,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sp[0],sp[1],corona,0,6.283185307); ctx.fill();
+      const aur=Math.max(rad*4.2,20);
+      g=ctx.createRadialGradient(sp[0],sp[1],rad*0.95,sp[0],sp[1],aur);
+      g.addColorStop(0,'rgba(255,248,222,0.62)');
+      g.addColorStop(0.42,'rgba(255,232,176,0.20)');
+      g.addColorStop(1,'rgba(255,214,150,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sp[0],sp[1],aur,0,6.283185307); ctx.fill();
+      /* the photosphere: white at the centre of the disc, cooler and redder at the limb */
+      g=ctx.createRadialGradient(sp[0],sp[1],0,sp[0],sp[1],rad);
+      g.addColorStop(0,'rgba(255,253,247,1)');
+      g.addColorStop(0.70,'rgba(255,248,226,1)');
+      g.addColorStop(0.93,'rgba(255,236,193,1)');
+      g.addColorStop(1,'rgba(255,222,168,1)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sp[0],sp[1],rad,0,6.283185307); ctx.fill();
       sun={ x:sp[0], y:sp[1], radiusPx:rad };
     }
-    lastDraw={ ms, gmstDeg:gm, stars:drawn, sun, sunRa:S.ra, sunDec:S.dec, at:Date.now(),
+    lastDraw={ ms, gmstDeg:gm, stars:drawn, sun, moon, sunRa:S.ra, sunDec:S.dec, at:Date.now(),
                catalogue:stars?stars.n:0, drawMs:+(performance.now()-_t0).toFixed(2) };
   }
   function schedule(){ if(raf) return; raf=requestAnimationFrame(draw); }
