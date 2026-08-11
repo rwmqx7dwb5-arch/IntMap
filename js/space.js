@@ -780,6 +780,39 @@ window.IntMapModules.space=function(HOST){
       if(!b) return mIdent();
       return new Float32Array([b.x[0],b.x[1],b.x[2],0, b.y[0],b.y[1],b.y[2],0, b.z[0],b.z[1],b.z[2],0, 0,0,0,1]);
     }
+    /* ══ ⚠ (#R220) THE SCENE CENTRES ON WHATEVER IS SELECTED — NOT ONLY ON A PLANET ════════════════
+       「宇宙を探索で天体を選択したらその天体の場所に行き、中心をその天体に。（惑星以外でも）」
+
+       #R219 answered the planet half of this (`visitDist`, and one selection across the three lists)
+       and left the OTHER TWO LISTS where they were: choosing Voyager 1 or Ceres lit a row and
+       described it in the panel, while the scene stayed centred on the focused planet and the camera
+       did not move — so 「その天体の場所に行き」 was still false for everything that is not a planet.
+       The centre is a spacecraft's or a small body's own scene position when one is selected, and
+       `visitSel()` puts the camera at a distance that frames its neighbourhood. */
+    function selScenePos(jd){
+      const B=SB(); if(!B) return null;
+      try{
+        if(craftSel&&B.ready('craft')){ const c=B.craftAt(jd).find(x=>x.key===craftSel); if(c&&c.pos) return auToScene(c.pos); }
+        if(smallSel&&B.ready('small')){ const b=B.smallAt(jd,{}).find(x=>x.id===smallSel); if(b&&b.pos) return auToScene(b.pos); }
+      }catch(_){}
+      return null;
+    }
+    function sceneCentre(jd,pos){
+      const s=selScenePos(jd); if(s) return s;
+      return (focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
+    }
+    /* the framing for a POINT object: it has no radius to fill the screen with, so what is framed is
+       the space around it — a third of its own distance from the Sun, floored so that a body near
+       the Sun does not put the camera inside it. */
+    function visitSel(){
+      try{
+        const s=selScenePos(jdNow()); if(!s) return false;
+        const r=Math.hypot(s[0],s[1],s[2]);
+        const d=Math.max(posScale(0.08),r*0.30);
+        if(isFinite(d)&&d>0){ dist=Math.max(distFloor(),Math.min(distCeil(),d)); return true; }
+      }catch(_){}
+      return false;
+    }
     function scenePos(pos,id,centre){
       /* (#R203) the Moon is placed relative to the EARTH — see moonSep() for why it has to be */
       if(id==='moon'&&pos._moonGeo&&isFinite(pos._moonKm)){
@@ -842,7 +875,7 @@ window.IntMapModules.space=function(HOST){
         gl.disable(gl.BLEND); }
 
       if(mode==='system'){
-        const centre=(focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
+        const centre=sceneCentre(jd,pos);
         const VP=mMul(cam.P,mMul(cam.V,mIdent()));
         /* orbits first, so a body is never hidden behind its own line */
         if(showOrbits){                                            /* (#R207) */
@@ -1121,14 +1154,22 @@ window.IntMapModules.space=function(HOST){
       }
     }
 
-    /* ══ (#R219) THE DISTANCE LADDER, DRAWN AS SHELLS ═══════════════════════════════════════════════
-       One ring per published distance (js/space-cosmos.js), in the ecliptic plane, with its name and
-       its own value beside it. Only the rungs that are actually on screen at this camera distance are
-       drawn — everything nearer is a dot at the centre and everything further is off the frame — so
-       zooming out is a sequence of named, measured boundaries rather than a slide into black.
-       ⚠ SCENE UNITS, THROUGH posScale, like everything else here: at model scale the ladder is
-       compressed by the same power law the orbits are, so the two never disagree about which is
-       further out. */
+    /* ══ ⚠⚠ (#R220) THE DISTANCE LADDER IS A SCALE, AND A SCALE IS NOT AN ORBIT ═════════════════════
+       「宇宙を探索で軌道ではないものに軌道のような円をつけるのはやめて」——確認の答えは
+       「実際の軌道ではないが単に距離の目安として置かれている円はやめろ」.
+
+       #R219 drew each published distance (js/space-cosmos.js) as a full circle in the ECLIPTIC PLANE,
+       which is precisely the plane, the shape and the line weight the planetary orbits are drawn in.
+       Nothing about the picture said "this is a radius, not a path": the Oort cloud got the same
+       ellipse Neptune has, and so did the last-scattering surface — a shell 45.6 Gly across that
+       orbits nothing at all. Reading it as an orbit was not a mistake by the reader; it was what the
+       drawing said.
+
+       So the geometry is gone and the MEASUREMENT stays. Each rung on screen is now a small tick
+       with its name and its own published value, sitting at its true radius along +x. Zooming out is
+       still a sequence of named, measured boundaries — it is simply no longer drawn as motion.
+       ⚠ SCENE UNITS, THROUGH posScale, as before: at model scale the ladder is compressed by the same
+       power law the orbits are, so the two never disagree about which is further out. */
     function drawCosmos(cam,out){
       const C=window.IntMapCosmos; if(!C) return;
       let rungs=[]; try{ rungs=C.visible(auOfDist(dist)); }catch(_){ return; }
@@ -1137,13 +1178,15 @@ window.IntMapModules.space=function(HOST){
       gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
       for(const r of rungs){
         const R=posScale(r.au); if(!isFinite(R)||R<=0) continue;
-        const fa=C.ring(R,160);
+        /* the tick: a short segment ACROSS the radius (out of the ecliptic plane), 3 % of the radius
+           long. It cannot be mistaken for a path because it does not go anywhere. */
+        const t=R*0.03;
+        const fa=new Float32Array([R,0,-t, R,0,t]);
         const buf=gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
         const strong=(r.key==='horizon'||r.key==='cmb');
-        drawLines(VP,buf,fa.length/3,strong?[0.72,0.80,1.0,0.42]:[0.62,0.70,0.86,0.22]);
+        drawLines(VP,buf,2,strong?[0.72,0.80,1.0,0.55]:[0.62,0.70,0.86,0.34]);
         try{ gl.deleteBuffer(buf); }catch(_){}
-        /* the label rides on the ring's own +x point, so it moves with the ring rather than floating */
         const c=mApply(VP,[R,0,0]);
         if(c[3]>0){
           const sx=(c[0]/c[3]*0.5+0.5)*W, sy=(1-(c[1]/c[3]*0.5+0.5))*H;
@@ -1418,6 +1461,14 @@ window.IntMapModules.space=function(HOST){
            body list into a horizontal strip — see the `#space-view` block there. */
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
         +'<div class="sp-col" style="position:absolute;right:10px;top:52px;width:min(280px,44vw);max-height:calc(100% - 120px);display:flex;flex-direction:column;gap:8px;pointer-events:auto;overflow:hidden;">'
+        /* ══ ⚠ (#R220) ON A PHONE THE SHEET STARTS CLOSED ═══════════════════════════════════════════
+           「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。（機能は削るな）」
+           Measured at 390 × 844 after #R218: the info panel and the events list together own the
+           bottom 38 % of the screen from the moment the view opens, and the solar system — the thing
+           the reader came for — gets the strip above them. Nothing is removed: the sheet now has a
+           HANDLE and starts collapsed on a phone, so the sky is whole until the reader asks for the
+           numbers. `display:none` on the desktop; the class is the only state. */
+        +'<button class="sp-sheet-t" aria-label="'+S(L('Details','詳細','Details','Подробности','Detalles'))+'"><i></i></button>'
         +'<div class="sp-info" style="flex:0 0 auto;max-height:52%;overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11.5px;line-height:1.55;"></div>'
         +'<div class="sp-events" style="flex:1 1 auto;min-height:0;overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11px;line-height:1.5;"></div>'
         +'</div>'
@@ -1564,6 +1615,8 @@ window.IntMapModules.space=function(HOST){
           const k=b.getAttribute('data-pop'), id=b.getAttribute('data-id');
           if(k==='craft'){ const same=(craftSel===id); smallSel=null; craftSel=same?null:id; }
           else { const same=(smallSel===id); craftSel=null; smallSel=same?null:id; }
+          /* (#R220) …and selecting GOES THERE, exactly as selecting a planet does */
+          if(craftSel||smallSel) visitSel();
           refreshHUD();
         });
       }
@@ -1998,7 +2051,7 @@ window.IntMapModules.space=function(HOST){
         if(mode!=='system') return;
         const r=ov.getBoundingClientRect(), x=(e.clientX-r.left)*dpr, y=(e.clientY-r.top)*dpr;
         const jd=jdNow(), pos=positions(jd), cam=camera();
-        const centre=(focus&&focus!=='sun')?scenePos(pos,focus,[0,0,0]):[0,0,0];
+        const centre=sceneCentre(jd,pos);
         let best=null, bd=26*dpr;
         for(const id of BODIES){ const p=scenePos(pos,id,centre);
           const c=mApply(mMul(cam.P,cam.V),p); if(!(c[3]>0)) continue;
@@ -2012,6 +2065,14 @@ window.IntMapModules.space=function(HOST){
          every refreshChrome because the button only exists while mode==='body'. */
       { const ob=root.querySelector('.sp-out'); if(ob) ob.onclick=()=>setMode('system'); }
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
+      /* (#R220) the phone's detail sheet. One class, set here and read only by css/intmap.css, so a
+         pointer machine never sees a collapsed panel and nothing about the desktop layout changes. */
+      try{
+        const col=root.querySelector('.sp-col'), th=root.querySelector('.sp-sheet-t');
+        const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+        if(col&&_phone()) col.classList.add('sp-min');
+        if(th&&col) th.onclick=()=>{ col.classList.toggle('sp-min'); };
+      }catch(_){}
       /* (#R207) */
       { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }
       /* (#R216) the 「表示」 menu: opens on its button, closes on anything else, and never on a click

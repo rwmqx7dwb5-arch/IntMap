@@ -1053,7 +1053,8 @@ window.IntMapModules.worldPacks=function(HOST){
      *  hydrodynamic run-up model.
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function tides(){
-      const IMG='wp-tide-src', LYR='wp-tide-img', SRC='wp-tide', PT='wp-tide-pt', LBL='wp-tide-lbl';
+      const IMG='wp-tide-src', LYR='wp-tide-img', SRC='wp-tide', PT='wp-tide-pt', LBL='wp-tide-lbl',
+            SEL='wp-tide-sel', SELLBL='wp-tide-sel-lbl';
       let on=false, at=null, series=null, busy=false, stations=[], gridKey='', gridBusy=false, scanning=false;
       /* ══ (#R216) 「潮汐レイヤーは日時選択、再生もできるように。」 ══════════════════════════════════
          A tide is a curve in time, so the layer needs a handle on time. ⚠ IT DOES NOT GET A CLOCK OF
@@ -1066,19 +1067,39 @@ window.IntMapModules.worldPacks=function(HOST){
          asked again when the instant leaves the window every station actually covers. */
       let playTmr=0, playStep=20*60e3, floodTick=0;
       const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
-        { legendId:'wptides', layers:()=>[LYR,PT,LBL],
+        { legendId:'wptides', layers:()=>[LYR,PT,SEL,LBL,SELLBL],
           names:()=>({en:'🌊 Tides',jp:'🌊 潮汐（満潮・干潮）',de:'🌊 Gezeiten',ru:'🌊 Приливы',es:'🌊 Mareas'}) });
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PT)) GE().layers.add({id:PT,type:'circle',source:SRC,layout:{visibility:'none'},
-          /* colour IS the state of the tide at that place: its own low → its own high, right now */
-          paint:{'circle-radius':['case',['==',['get','kind'],'probe'],7,['interpolate',['linear'],['zoom'],2,3.4,8,7]],
-            'circle-color':['interpolate',['linear'],['to-number',['get','rel'],0.5],0,'#1b4f9c',0.5,'#2ea3d8',1,'#7ff0ff'],
-            'circle-stroke-color':'rgba(3,26,40,0.85)','circle-stroke-width':1.4}});
+          /* colour IS the state of the tide at that place: its own low → its own high, right now.
+             ⚠ (#R220) …except the TAPPED one, which is white: the reader has to be able to find the
+             point they chose among the scan's dots without reading the panel to work out which. */
+          paint:{'circle-radius':['case',['==',['get','kind'],'probe'],6.5,['interpolate',['linear'],['zoom'],2,3.4,8,7]],
+            'circle-color':['case',['==',['get','kind'],'probe'],'#ffffff',
+              ['interpolate',['linear'],['to-number',['get','rel'],0.5],0,'#1b4f9c',0.5,'#2ea3d8',1,'#7ff0ff']],
+            'circle-stroke-color':['case',['==',['get','kind'],'probe'],'#0b2740','rgba(3,26,40,0.85)'],
+            'circle-stroke-width':['case',['==',['get','kind'],'probe'],2,1.4]}});
+        /* ══ (#R220) THE SELECTED POINT, AS A MARK RATHER THAN AS ANOTHER DOT ═════════════════════
+           「潮汐レイヤーは地点を選択したらどこを選択したかわかるようにしておけ。」 The tapped point had
+           been drawn by the SAME paint as the ~28 scanned coasts — the same colour ramp, a radius 7
+           against their 3.4–7 — so on any coast with stations near it the answer to 「どこを選んだか」
+           was invisible. It is now a RING around the point (its own colour, twice the radius, drawn
+           under the dot so the dot stays readable) plus a label that names the place, and both are
+           allow-overlap: a selection must not be dropped by the label collider. */
+        if(!GE().layers.has(SEL)) GE().layers.add({id:SEL,type:'circle',source:SRC,layout:{visibility:'none'},
+          filter:['==',['get','kind'],'probe'],
+          paint:{'circle-radius':15,'circle-opacity':0.10,'circle-color':'#ffd60a',
+            'circle-stroke-color':'#ffd60a','circle-stroke-width':2.4,'circle-stroke-opacity':0.95,'circle-pitch-alignment':'map'}});
         if(!GE().layers.has(LBL)) GE().layers.add({id:LBL,type:'symbol',source:SRC,minzoom:3.4,
           filter:['==',['get','kind'],'st'],layout:{visibility:'none','text-field':['get','lbl'],
             'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.15],'text-anchor':'top','text-allow-overlap':false},
           paint:{'text-color':'#d8f6ff','text-halo-color':'rgba(0,18,32,0.88)','text-halo-width':1.4}});
+        if(!GE().layers.has(SELLBL)) GE().layers.add({id:SELLBL,type:'symbol',source:SRC,
+          filter:['==',['get','kind'],'probe'],layout:{visibility:'none','text-field':['get','lbl'],
+            'text-size':window.IntMapLabelScale.sub(0.95),'text-offset':[0,-1.5],'text-anchor':'bottom',
+            'text-allow-overlap':true,'text-ignore-placement':true},
+          paint:{'text-color':'#ffd60a','text-halo-color':'rgba(0,18,32,0.94)','text-halo-width':1.7}});
         return true; }catch(_){ return false; } }
 
       /* ══ (#R212) A LAYER, NOT A PROBE ═══════════════════════════════════════════════════════════
@@ -1130,14 +1151,21 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function fmtHM(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); }
 
+      /* (#R220) what the mark on the map says. Coordinates rather than a place name on purpose: the
+         tap can land in open water where no gazetteer has a name, and a label that is sometimes a
+         name and sometimes nothing is worse at 「どこを選んだか」 than one that is always the point. */
+      function selLabel(){
+        if(!at) return '';
+        return L('Selected','選択地点','Ausgewählt','Выбрано','Seleccionado')
+          +'  '+Math.abs(at[1]).toFixed(2)+'°'+(at[1]>=0?'N':'S')+' '+Math.abs(at[0]).toFixed(2)+'°'+(at[0]>=0?'E':'W'); }
       function drawStations(){
         const feats=stations.map(s=>{
           const f={type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},
             properties:{kind:'st',rel:s.rel,lbl:s.lbl}};
           return f; });
-        if(at) feats.push({type:'Feature',geometry:{type:'Point',coordinates:at},properties:{kind:'probe',rel:0.5,lbl:''}});
+        if(at) feats.push({type:'Feature',geometry:{type:'Point',coordinates:at},properties:{kind:'probe',rel:0.5,lbl:selLabel()}});
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-        setVis([PT,LBL],on); }
+        setVis([PT,SEL,LBL,SELLBL],on); }
 
       /* ══ ⚠⚠ (#R215) THE SCAN ASKED THE LAND MASK BEFORE THE LAND MASK EXISTED ═════════════
          「（追記：いやさぼってんじゃねーよ。指示通り作れ）」 reported a THIRD time, and switching the
@@ -1368,6 +1396,9 @@ window.IntMapModules.worldPacks=function(HOST){
 
       async function probe(lng,lat){
         at=[lng,lat]; busy=true;
+        /* (#R220) the mark goes down on the TAP, not when the model answers — otherwise the one
+           second the reader is still looking at their finger is the one second there is nothing to see. */
+        try{ drawStations(); }catch(_){}
         const b=openTide('<div class="wp-t-body">'+L('Reading the tide…','潮位を取得中…','Gezeiten werden gelesen…','Чтение прилива…','Leyendo la marea…')+'</div>',
           '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
           +L('Sea level above mean sea level from the Open-Meteo Marine model, hourly, at the point you tapped. Highs and lows are the local extrema of that series (refined between samples). The shading is the ground at or below the current tide level, read from the same elevation model the sea-level layer uses — a still-water fill, not a run-up model.',
@@ -1400,7 +1431,7 @@ window.IntMapModules.worldPacks=function(HOST){
           +(wet!=null?('<div style="margin-top:6px;color:var(--text-muted);font-size:11px;">'+L('Shaded cells at this level','この潮位で浸かるセル','Gefärbte Zellen','Затопленные ячейки','Celdas inundadas')+': '+wet+'</div>'):''); }
 
       function toggle(v){ on=v;
-        if(!on){ stopPlay(); panel.hide(); clearFlood(); setVis([PT,LBL],false); stations=[]; at=null; gridKey=''; return; }
+        if(!on){ stopPlay(); panel.hide(); clearFlood(); setVis([PT,SEL,LBL,SELLBL],false); stations=[]; at=null; gridKey=''; return; }
         at=null; stations=[]; scanning=true; overview();   /* (#R215) the window opens WITH the layer, not on a tap */
         whenDrawable(()=>{ ensureLayers(); gridKey=''; scanCoast(); });
         try{ HOST.imToast(L('Tap a coast for its tide times and how far the water reaches.','海岸をタップすると満干潮の時刻と浸水範囲が出ます。','Küste antippen für Gezeiten und Überflutung.','Нажмите побережье — время приливов и затопление.','Toque una costa para mareas e inundación.')); }catch(_){} }
@@ -1605,7 +1636,12 @@ window.IntMapModules.worldPacks=function(HOST){
             panel.claim(); setVis([LYR],on); }catch(_){} });
           render(); return; }
         drawKey=key; busy=true;
-        stat(L('Reading the FAO grid…','FAO のグリッドを取得中…','FAO-Raster wird gelesen…','Загрузка сетки ФАО…','Leyendo la malla de la FAO…'));
+        /* ⚠ (#R220) 「「FAO のグリッドを取得中…」という文言はいらない。」 — and it is not needed for
+           anything: the line was a progress report for a fetch the reader did not ask for by name,
+           printed in the one slot this panel uses to answer 「この地点は何が穫れるのか」 (the cell
+           readout below). Clearing it is what a silent fetch looks like; the FAILURE line stays,
+           because "nothing arrived" is an answer and needs saying. */
+        stat('');
         try{
           const cat=await catalog();
           const rec=cat[[crop,yr,variable,supply].join('|')];

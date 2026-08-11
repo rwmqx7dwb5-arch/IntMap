@@ -51,15 +51,40 @@ window.IntMapModules.oceanCurrents=function(HOST){
     if(!W) return { state:()=>({on:false,err:'world-packs not loaded'}) };
     const { makePanel, ensureHead, row, esc, whenDrawable, setVis, L } = W;
 
-    const SRC='oc-src', LINE='oc-line', HEAD='oc-head', LBL='oc-label', FSRC='oc-flow-src', FLOW='oc-flow';
+    /* ══ ⚠⚠ (#R220) 「クオリティがゴミ。」 — WHAT WAS ACTUALLY ON SCREEN ═══════════════════════════
+       #R219 got the DATA right (bundled, fixed, measured — see the file header) and then drew it as
+       thin unoutlined threads. Measured on the built site: at z2 the named currents are 1.0–3.9 px
+       wide with no casing, so on the satellite basemap they are the same value as the sea they cross;
+       at z4, over the North Atlantic, NOT ONE arrowhead and NOT ONE name is legible, and the 5,484
+       field arrows — white SDF at `icon-opacity` 0.55 — have vanished into the water entirely. A plate
+       in an atlas is legible because every mark is OUTLINED against its background; none of these was.
 
-    /* the two colours the request names, plus the honest third one */
-    const COL_WARM='#ff453a', COL_COLD='#2f7fe0', COL_NEUTRAL='#9aa0a6';
+       So this round is a RENDERING round for this layer, and the data file is untouched:
+         · every mark now has a CASING (a darker, wider copy underneath) — line, arrowhead and field
+           arrow alike. That is the single change that makes the layer readable on both basemaps.
+         · the named currents are ribbons, not threads: a soft glow, a casing, then the colour, with
+           the width carrying the measured mean speed.
+         · the arrowheads repeat along each current at a spacing that follows the zoom, at ~2× their
+           old size, so the DIRECTION is visible without reading the panel.
+         · the names are ~15 % larger with a real halo, and no longer optional at low zoom.
+         · the field arrow is a tapered dart with a tail rather than a fat triangle, and its SIZE as
+           well as its shade carries the measured speed (the legend says so).
+       ⚠ Nothing here recomputes anything when the map moves: every one of these is a style
+       expression, exactly as #R219 left it. */
+    const SRC='oc-src', GLOW='oc-glow', CASE='oc-case', LINE='oc-line',
+          HEADC='oc-head-case', HEAD='oc-head', LBL='oc-label',
+          FSRC='oc-flow-src', FLOWC='oc-flow-case', FLOW='oc-flow';
+
+    /* the two colours the request names, plus the honest third one.
+       (#R220) …chosen against BOTH basemaps this time: the old #ff453a is an interface red that goes
+       muddy over the satellite ocean, and #2f7fe0 is within a few per cent of the sea it is drawn on. */
+    const COL_WARM='#ff5b41', COL_COLD='#38b6ff', COL_NEUTRAL='#c9d1d9';
+    const COL_CASE='rgba(2,16,28,0.82)';   /* the casing every mark shares */
 
     let on=false, doc=null, state='idle', err=null, picked=null;
 
     const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
-      { legendId:'wpcurrents', layers:()=>[FLOW,LINE,HEAD,LBL],
+      { legendId:'wpcurrents', layers:()=>[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL],
         names:()=>({en:'🌊 Ocean currents',jp:'🌊 海流（暖流・寒流）',de:'🌊 Meeresströmungen',ru:'🌊 Морские течения',es:'🌊 Corrientes marinas'}) });
 
     /* ── the arrowhead, drawn once and registered as an image ─────────────────────────────────────
@@ -72,32 +97,50 @@ window.IntMapModules.oceanCurrents=function(HOST){
        ⚠ IT IS `scene`, NOT `layers` (#R216): the renderer contract puts images beside the sky and the
        terrain; `GE().layers.addImage` is simply undefined. */
     let iconDone=false;
-    function ensureIcon(){
-      if(iconDone) return true;
+    /* (#R220) two glyphs now, both SDF, both pointing right:
+         `oc-arrow-img` — the solid head that repeats along a NAMED current
+         `oc-dart-img`  — the field mark: a tapered dart with a tail, which reads as "the water is
+                          moving this way" at 1/3 the ink of a triangle and does not turn a busy
+                          gyre into a field of confetti. */
+    function _mkIcon(name,S,paint){
       try{
-        const S=48, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+        if(GE().scene.hasImage(name)) return true;
+        const cv=document.createElement('canvas'); cv.width=S; cv.height=S;
         const c=cv.getContext('2d');
         c.translate(S/2,S/2);
-        c.beginPath();
-        c.moveTo(19,0); c.lineTo(-11,13); c.lineTo(-5,0); c.lineTo(-11,-13); c.closePath();
-        c.fillStyle='#ffffff'; c.fill();
-        c.lineWidth=2.0; c.strokeStyle='#ffffff'; c.stroke();
+        c.fillStyle='#ffffff'; c.strokeStyle='#ffffff'; c.lineCap='round'; c.lineJoin='round';
+        paint(c);
         /* ⚠ `getImageData` IS NOT TRANSFORMED (#R216). It reads raw bitmap pixels, so asking for
            (−S/2, −S/2) after `translate(S/2, S/2)` reads outside the canvas and hands back a fully
            TRANSPARENT block — which registers happily and then draws nothing at all. */
         const d=c.getImageData(0,0,S,S);
-        if(!GE().scene.hasImage('oc-arrow-img'))
-          GE().scene.addImage('oc-arrow-img',{width:S,height:S,data:new Uint8Array(d.data.buffer)},{sdf:true});
-        iconDone=GE().scene.hasImage('oc-arrow-img');
-      }catch(_){ iconDone=false; }
+        GE().scene.addImage(name,{width:S,height:S,data:new Uint8Array(d.data.buffer)},{sdf:true});
+        return GE().scene.hasImage(name);
+      }catch(_){ return false; } }
+    function ensureIcon(){
+      if(iconDone) return true;
+      const a=_mkIcon('oc-arrow-img',48,(c)=>{
+        c.beginPath(); c.moveTo(20,0); c.lineTo(-10,13); c.lineTo(-4,0); c.lineTo(-10,-13); c.closePath();
+        c.fill(); c.lineWidth=2.2; c.stroke(); });
+      const b=_mkIcon('oc-dart-img',48,(c)=>{
+        c.lineWidth=3.4; c.beginPath(); c.moveTo(-19,0); c.lineTo(4,0); c.stroke();      /* the tail */
+        c.beginPath(); c.moveTo(19,0); c.lineTo(2,7.5); c.lineTo(2,-7.5); c.closePath(); /* the head */
+        c.fill(); c.lineWidth=1.6; c.stroke(); });
+      iconDone=a&&b;
       return iconDone; }
 
     function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
 
-    /* the speed shading for the flow field: the ONE thing an arrow can say beyond its direction, and
-       it is measured (m/s in the file). Pale where the sea barely moves, deep where it races. */
+    /* The speed shading for the flow field: the ONE thing an arrow can say beyond its direction, and
+       it is measured (m/s in the file).
+       ⚠ (#R220) THE OLD RAMP WAS BLUE ON BLUE. It ran #9fc6e8 → #0a2f78, i.e. from "slightly lighter
+       than the satellite ocean" to "darker than it", so on the basemap the layer is actually used
+       with, speed was encoded in a channel the eye could not read. The new ramp goes from the water's
+       own pale to a warm high — white through amber — which separates from every sea colour either
+       basemap paints, and the SIZE carries the same number a second time (`SPEED_SZ`). */
     const SPEED_COL=['interpolate',['linear'],['get','s'],
-      0.02,'#9fc6e8', 0.15,'#5c9ede', 0.40,'#2f7fe0', 0.80,'#1550b4', 1.40,'#0a2f78'];
+      0.02,'#bcdcf2', 0.15,'#e8f4ff', 0.40,'#ffffff', 0.80,'#ffe08a', 1.40,'#ffb648'];
+    const SPEED_SZ=(k)=>['*',k,['interpolate',['linear'],['get','s'],0.02,0.72,0.35,1.0,1.2,1.34]];
 
     function ensureLayers(){
       if(!_canDraw()) return false;
@@ -107,25 +150,48 @@ window.IntMapModules.oceanCurrents=function(HOST){
         if(!GE().layers.hasSource(SRC))  GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         /* ① the field. Points, each rotated to its own measured bearing. `icon-allow-overlap:false`
            is what makes the density follow the zoom: the renderer drops the ones that would collide,
-           so a whole-Earth view is a readable field and a bay is every cell it has. */
-        if(!GE().layers.has(FLOW)) GE().layers.add({id:FLOW,type:'symbol',source:FSRC,layout:{visibility:'none',
-          'icon-image':'oc-arrow-img',
-          'icon-size':['interpolate',['linear'],['zoom'],0,0.20,3,0.28,6,0.40,9,0.52],
+           so a whole-Earth view is a readable field and a bay is every cell it has.
+           ⚠ (#R220) …under a CASING copy of itself. Two symbol layers over one source cost one more
+           placement pass and are what stop the field from disappearing into the sea. The casing must
+           `icon-allow-overlap:true` and `icon-ignore-placement:true` — if it took part in collision
+           it would sometimes win the slot its own arrow lost, and the map would show naked shadows. */
+        const FLOW_LAYOUT=(k)=>({visibility:'none',
+          'icon-image':'oc-dart-img',
+          'icon-size':SPEED_SZ(k?1:1),
           'icon-rotate':['-',['get','b'],90],
-          'icon-rotation-alignment':'map','icon-allow-overlap':false,'icon-ignore-placement':false,'icon-padding':1},
+          'icon-rotation-alignment':'map','icon-padding':1});
+        if(!GE().layers.has(FLOWC)) GE().layers.add({id:FLOWC,type:'symbol',source:FSRC,
+          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-size':SPEED_SZ(1),
+            'icon-allow-overlap':true,'icon-ignore-placement':true }),
+          paint:{'icon-color':COL_CASE,
+            'icon-opacity':['interpolate',['linear'],['zoom'],0,0.5,4,0.62,8,0.7],
+            'icon-halo-color':COL_CASE,'icon-halo-width':2.2,'icon-halo-blur':0.6,
+            'icon-translate':[0,0]}});
+        if(!GE().layers.has(FLOW)) GE().layers.add({id:FLOW,type:'symbol',source:FSRC,
+          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-allow-overlap':false,'icon-ignore-placement':false }),
           paint:{'icon-color':SPEED_COL,
-            'icon-opacity':['interpolate',['linear'],['zoom'],0,0.55,4,0.7,8,0.8]}});
-        /* ② the named currents, over the field */
+            'icon-opacity':['interpolate',['linear'],['zoom'],0,0.85,4,0.95,8,1]}});
+        /* ② the named currents, over the field — glow, casing, colour, in that order */
+        const WIDTH=(k,add)=>['interpolate',['linear'],['zoom'],
+          0,['+',['*',2.0*k,['get','w']],add], 3,['+',['*',3.2*k,['get','w']],add],
+          6,['+',['*',5.4*k,['get','w']],add], 9,['+',['*',8.0*k,['get','w']],add]];
+        if(!GE().layers.has(GLOW)) GE().layers.add({id:GLOW,type:'line',source:SRC,
+          layout:{visibility:'none','line-cap':'round','line-join':'round'},
+          paint:{'line-color':['get','col'],'line-width':WIDTH(3.1,0),'line-opacity':0.22,'line-blur':6}});
+        if(!GE().layers.has(CASE)) GE().layers.add({id:CASE,type:'line',source:SRC,
+          layout:{visibility:'none','line-cap':'round','line-join':'round'},
+          paint:{'line-color':COL_CASE,'line-width':WIDTH(1,2.6),'line-opacity':0.9}});
         if(!GE().layers.has(LINE)) GE().layers.add({id:LINE,type:'line',source:SRC,
           layout:{visibility:'none','line-cap':'round','line-join':'round'},
-          paint:{'line-color':['get','col'],
-            'line-width':['interpolate',['linear'],['zoom'],0,['*',1.3,['get','w']],4,['*',2.6,['get','w']],9,['*',4.4,['get','w']]],
-            'line-opacity':0.92,'line-blur':0.2}});
-        if(!GE().layers.has(HEAD)) GE().layers.add({id:HEAD,type:'symbol',source:SRC,layout:{visibility:'none',
-          'symbol-placement':'line','symbol-spacing':['interpolate',['linear'],['zoom'],0,70,6,130],
-          'icon-image':'oc-arrow-img','icon-size':['interpolate',['linear'],['zoom'],0,0.30,6,0.50],
-          'icon-rotation-alignment':'map','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-padding':0},
-          paint:{'icon-color':['get','col'],'icon-opacity':0.95}});
+          paint:{'line-color':['get','col'],'line-width':WIDTH(1,0),'line-opacity':1,'line-blur':0.15}});
+        const HEAD_LAYOUT=(sz)=>({visibility:'none',
+          'symbol-placement':'line','symbol-spacing':['interpolate',['linear'],['zoom'],0,86,4,120,8,170],
+          'icon-image':'oc-arrow-img','icon-size':['interpolate',['linear'],['zoom'],0,0.46*sz,4,0.62*sz,8,0.84*sz],
+          'icon-rotation-alignment':'map','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-padding':0});
+        if(!GE().layers.has(HEADC)) GE().layers.add({id:HEADC,type:'symbol',source:SRC,layout:HEAD_LAYOUT(1.34),
+          paint:{'icon-color':COL_CASE,'icon-opacity':0.9}});
+        if(!GE().layers.has(HEAD)) GE().layers.add({id:HEAD,type:'symbol',source:SRC,layout:HEAD_LAYOUT(1),
+          paint:{'icon-color':['get','col'],'icon-opacity':1}});
         /* ③ the name, along the current it belongs to */
         if(!GE().layers.has(LBL)) GE().layers.add({id:LBL,type:'symbol',source:SRC,layout:{visibility:'none',
           'symbol-placement':'line','symbol-spacing':600,
@@ -155,7 +221,10 @@ window.IntMapModules.oceanCurrents=function(HOST){
       const named=(doc.named||[]).map(c=>({type:'Feature',
         geometry:{type:'LineString',coordinates:c.path},
         properties:{ name:nameOf(c), kind:c.kind, col:colOf(c),
-                     w:Math.max(0.8,Math.min(3.0,0.8+(c.meanSpeed||0)*2.6)),
+                     /* (#R220) narrower than #R219's 0.8–3.0 because the WIDTH MULTIPLIERS grew: the
+                        ribbon is now up to 8 px per unit at z9, so a 3.0 would be a 24 px band across
+                        an ocean and the plate would be about the ribbons rather than about the sea. */
+                     w:Math.max(0.9,Math.min(2.0,0.85+(c.meanSpeed||0)*2.2)),
                      v:c.meanSpeed||0, vmax:c.maxSpeed||0 }}));
       const flow=(doc.arrows||[]).map(a=>({type:'Feature',
         geometry:{type:'Point',coordinates:[a[0],a[1]]},
