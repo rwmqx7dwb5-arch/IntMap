@@ -49,7 +49,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
        World-data layer uses. If world-packs has not registered, this module does not build. */
     const W=(window.IntMapWorld&&window.IntMapWorld._ui)||null;
     if(!W) return { state:()=>({on:false,err:'world-packs not loaded'}) };
-    const { makePanel, ensureHead, row, esc, whenDrawable, setVis, L } = W;
+    const { makePanel, ensureHead, row, esc, whenDrawable, setVis, onRestyle, L } = W;
 
     /* ══ ⚠⚠ (#R220) 「クオリティがゴミ。」 — WHAT WAS ACTUALLY ON SCREEN ═══════════════════════════
        #R219 got the DATA right (bundled, fixed, measured — see the file header) and then drew it as
@@ -80,11 +80,17 @@ window.IntMapModules.oceanCurrents=function(HOST){
        muddy over the satellite ocean, and #2f7fe0 is within a few per cent of the sea it is drawn on. */
     const COL_WARM='#ff5b41', COL_COLD='#38b6ff', COL_NEUTRAL='#c9d1d9';
     const COL_CASE='rgba(2,16,28,0.82)';   /* the casing every mark shares */
+    /* ⚠ (#R220) ONE LIST, and everything that switches the layer reads it. The first version of this
+       round updated the PANEL's list and left `setVis([FLOW,LINE,HEAD,LBL], …)` in `draw()` and
+       `toggle()` — measured on the built site: `oc-glow`, `oc-case`, `oc-head-case` and `oc-flow-case`
+       all `visibility:'none'`, i.e. every casing this round exists to add was built and never shown,
+       and the plate looked exactly as thin as it had before. */
+    const ALL=[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL];
 
     let on=false, doc=null, state='idle', err=null, picked=null;
 
     const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
-      { legendId:'wpcurrents', layers:()=>[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL],
+      { legendId:'wpcurrents', layers:()=>ALL.slice(),
         names:()=>({en:'🌊 Ocean currents',jp:'🌊 海流（暖流・寒流）',de:'🌊 Meeresströmungen',ru:'🌊 Морские течения',es:'🌊 Corrientes marinas'}) });
 
     /* ── the arrowhead, drawn once and registered as an image ─────────────────────────────────────
@@ -155,20 +161,25 @@ window.IntMapModules.oceanCurrents=function(HOST){
            placement pass and are what stop the field from disappearing into the sea. The casing must
            `icon-allow-overlap:true` and `icon-ignore-placement:true` — if it took part in collision
            it would sometimes win the slot its own arrow lost, and the map would show naked shadows. */
-        const FLOW_LAYOUT=(k)=>({visibility:'none',
+        /* ⚠ THE ZOOM EXPRESSION IS THE OUTERMOST ONE (#R196's rule), so the SPEED rides on the stop
+           OUTPUTS. Measured: writing `['*', speed, zoomRamp]` is accepted-looking and rejected, and a
+           rejected layout leaves the icons at their natural 48 px — which is what a first version of
+           this round did, and the whole ocean went dark under them. */
+        const FLOW_SIZE=(k)=>['interpolate',['linear'],['zoom'],
+          0,SPEED_SZ(0.26*k), 3,SPEED_SZ(0.34*k), 6,SPEED_SZ(0.46*k), 9,SPEED_SZ(0.58*k)];
+        const FLOW_LAYOUT=()=>({visibility:'none',
           'icon-image':'oc-dart-img',
-          'icon-size':SPEED_SZ(k?1:1),
           'icon-rotate':['-',['get','b'],90],
           'icon-rotation-alignment':'map','icon-padding':1});
         if(!GE().layers.has(FLOWC)) GE().layers.add({id:FLOWC,type:'symbol',source:FSRC,
-          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-size':SPEED_SZ(1),
+          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-size':FLOW_SIZE(1),
             'icon-allow-overlap':true,'icon-ignore-placement':true }),
           paint:{'icon-color':COL_CASE,
-            'icon-opacity':['interpolate',['linear'],['zoom'],0,0.5,4,0.62,8,0.7],
-            'icon-halo-color':COL_CASE,'icon-halo-width':2.2,'icon-halo-blur':0.6,
-            'icon-translate':[0,0]}});
+            'icon-opacity':['interpolate',['linear'],['zoom'],0,0.34,4,0.44,8,0.52],
+            'icon-halo-color':COL_CASE,'icon-halo-width':1.2,'icon-halo-blur':0.5}});
         if(!GE().layers.has(FLOW)) GE().layers.add({id:FLOW,type:'symbol',source:FSRC,
-          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-allow-overlap':false,'icon-ignore-placement':false }),
+          layout:Object.assign(FLOW_LAYOUT(),{ 'icon-size':FLOW_SIZE(1),
+            'icon-allow-overlap':false,'icon-ignore-placement':false }),
           paint:{'icon-color':SPEED_COL,
             'icon-opacity':['interpolate',['linear'],['zoom'],0,0.85,4,0.95,8,1]}});
         /* ② the named currents, over the field — glow, casing, colour, in that order */
@@ -201,6 +212,12 @@ window.IntMapModules.oceanCurrents=function(HOST){
         return true;
       }catch(_){ return false; } }
 
+    /* ⚠ (#R220) A RESTYLE DROPS EVERY ADDED LAYER. The basemap swap, a theme change and a style
+       reload all take the eight layers away, and this module had no `onRestyle` at all — so the plate
+       vanished until the reader toggled it off and on again. Redrawn from the document already in
+       hand: no request, no wait. (#R219 found and closed the same hole in the tide shading.) */
+    onRestyle(()=>{ if(on&&doc) whenDrawable(()=>{ if(ensureLayers()) draw(); }); });
+
     /* ── the file, once ───────────────────────────────────────────────────────────────────────────
        ⚠ NOT ON THE BOOT PATH. 146 kB is nothing next to the layer being useful, and everything about
        nothing next to a layer nobody switched on — so it is fetched on the first toggle and kept. */
@@ -232,7 +249,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
       whenDrawable(()=>{ if(!ensureLayers()) return;
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:named}); }catch(_){}
         try{ GE().layers.setSourceData(FSRC,{type:'FeatureCollection',features:flow}); }catch(_){}
-        setVis([FLOW,LINE,HEAD,LBL],on);
+        setVis(ALL,on);
         panel.claim(); }); }
 
     /* ── the window ─────────────────────────────────────────────────────────────────────────────── */
@@ -288,7 +305,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
 
     function toggle(v){
       on=!!v;
-      if(!on){ panel.hide(); setVis([FLOW,LINE,HEAD,LBL],false); picked=null; return; }
+      if(!on){ panel.hide(); setVis(ALL,false); picked=null; return; }
       render();
       whenDrawable(()=>{ ensureLayers(); if(doc){ draw(); } else load(); });
     }

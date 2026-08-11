@@ -1794,7 +1794,10 @@ window.IntMapModules.worldPacks=function(HOST){
        project and the second of `uncheckRow`, and the #R212 report 「ポップアップ消してもレイヤー
        選択状態」 was caused by exactly that kind of duplication getting out of step. So they are
        handed over rather than re-declared. Nothing here is new behaviour; it is the same functions. */
-    const _ui={ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, L };
+    /* (#R220) …and `onRestyle`, because a style reload drops every added layer and the ocean-current
+       plate — the only member of this family that lives in its own file — had no way to hear about
+       it. #R219 found the same hole in the tide shading; this closes it for the sixth layer too. */
+    const _ui={ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, onRestyle, L };
     return Object.assign({ _ui, state:()=>({ trade:STATE.trade&&STATE.trade(), energy:STATE.energy&&STATE.energy(),
       alerts:STATE.alerts&&STATE.alerts(), tides:STATE.tides&&STATE.tides(), crops:STATE.crops&&STATE.crops(),
       year:nowYear() }) }, STATE);
