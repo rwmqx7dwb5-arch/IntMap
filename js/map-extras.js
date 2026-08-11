@@ -42,13 +42,58 @@ window.IntMapModules.locate=function(HOST){
         return true;
       }catch(_){ return false; }
     }
-    function paint(lng,lat,accM){ const E=M(); if(!E) return; if(!ensure()){ try{ E.events.once('idle',()=>paint(lng,lat,accM)); }catch(_){} return; }
+    /* ══ ⚠ (#R219) THE PIN MOVED IN STEPS BECAUSE IT WAS DRAWN ONLY WHEN A FIX ARRIVED ═════════════
+       「現在地ピンは、地図上で離散的に動くのではなく、連続的に動くように。（私が電車で移動中に発見）」
+       `watchPosition` delivers a position roughly once a second at best, and on a train each one is
+       tens of metres from the last — so the dot teleported, and the accuracy circle snapped with it.
+       Nothing was wrong with the data; the drawing simply had no state between measurements.
+
+       So the DRAWN point is now its own value, eased toward the newest fix on an animation frame.
+       ⚠ IT NEVER LEADS THE DATA. This is interpolation between two measured positions, not dead
+       reckoning: the drawn point only ever travels from where it already was to where the receiver
+       says it is, and it stops the moment it gets there. Nothing on screen is ever ahead of a
+       measurement, and `last()` — what Atlas, the FAB and every caller read — is still the fix
+       itself, untouched.
+       ⚠ AND THE LOOP ENDS. It runs only while the drawn point is still catching up (and only while
+       the layer is active), so a stationary phone costs no frames at all. */
+    let anim=null, drawn=null, target=null;
+    const EASE_MS=900;                    /* time constant: a 30 m step is caught in about a second */
+    function _paintAt(lng,lat,accM){ const E=M(); if(!E) return;
       try{ const col=accent();
         try{ E.layers.setPaint('imloc-acc-fill','fill-color',col); E.layers.setPaint('imloc-acc-line','line-color',col); E.layers.setPaint('imloc-dot-halo','circle-color',col); E.layers.setPaint('imloc-dot','circle-color',col); }catch(_){}
         E.layers.setSourceData(SRC_DOT,{type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{}});
         let poly=null; try{ if(window.turf&&turf.circle&&accM>0) poly=turf.circle([lng,lat],Math.max(0.02,accM/1000),{units:'kilometers',steps:64}); }catch(_){}
         E.layers.setSourceData(SRC_ACC,poly||{type:'FeatureCollection',features:[]});
       }catch(_){}
+    }
+    /* metres between two fixes, so «has it arrived» is a distance and not a coordinate comparison */
+    function _mAway(a,b){ if(!a||!b) return Infinity;
+      const k=Math.cos((a.lat+b.lat)*0.5*Math.PI/180);
+      return Math.hypot((b.lng-a.lng)*k,(b.lat-a.lat))*111320; }
+    function _tick(){ anim=null;
+      if(!target){ return; }
+      const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      const dt=Math.max(0,Math.min(400,now-(drawn.t||now)));
+      /* exponential approach — frame-rate independent, and identical whether the browser gives us
+         60 fps or 12 (a dropped frame moves the dot further, not slower) */
+      const f=1-Math.exp(-dt/EASE_MS);
+      drawn={ lng:drawn.lng+(target.lng-drawn.lng)*f, lat:drawn.lat+(target.lat-drawn.lat)*f,
+              acc:drawn.acc+(target.acc-drawn.acc)*f, t:now };
+      _paintAt(drawn.lng,drawn.lat,drawn.acc);
+      if(_mAway(drawn,target)<0.35&&Math.abs(drawn.acc-target.acc)<0.5){
+        drawn={ lng:target.lng, lat:target.lat, acc:target.acc, t:now };
+        _paintAt(drawn.lng,drawn.lat,drawn.acc); return; }
+      if(!active) return;
+      try{ anim=requestAnimationFrame(_tick); }catch(_){ anim=null; }
+    }
+    function paint(lng,lat,accM){ const E=M(); if(!E) return; if(!ensure()){ try{ E.events.once('idle',()=>paint(lng,lat,accM)); }catch(_){} return; }
+      const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      target={ lng:+lng, lat:+lat, acc:+accM||0 };
+      /* the first fix, a restyle repaint, or a jump big enough to be a different place (a tunnel exit,
+         a re-acquired GPS lock) is DRAWN, not travelled — sliding a kilometre would be a lie */
+      if(!drawn||_mAway(drawn,target)>2000){ drawn={ lng:target.lng, lat:target.lat, acc:target.acc, t:now }; _paintAt(drawn.lng,drawn.lat,drawn.acc); return; }
+      drawn.t=now;
+      if(anim==null){ try{ anim=requestAnimationFrame(_tick); }catch(_){ _paintAt(target.lng,target.lat,target.acc); } }
     }
     function clear(){ const E=M(); if(!E) return; try{ if(E.layers.hasSource(SRC_DOT)) E.layers.setSourceData(SRC_DOT,{type:'FeatureCollection',features:[]}); if(E.layers.hasSource(SRC_ACC)) E.layers.setSourceData(SRC_ACC,{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R139) the locate FAB is accent-coloured ONLY when the MAP CENTRE sits on the current-location fix (the
@@ -77,7 +122,9 @@ window.IntMapModules.locate=function(HOST){
       try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:20000,maximumAge:0}); }catch(_){}
       if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:25000,maximumAge:0}); }catch(_){} }
     }
-    function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false; _syncFab(); clear(); }
+    function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false;
+      if(anim!=null){ try{ cancelAnimationFrame(anim); }catch(_){} anim=null; } drawn=null; target=null;
+      _syncFab(); clear(); }
     /* FAB tap: first tap starts + flies; while active it re-centres on the last known fix. */
     function toggleOrRecenter(){ const E=M(); if(active&&last&&E){ try{ E.camera.flyTo({center:[last.lng,last.lat],zoom:Math.max(E.camera.getZoom(),14),duration:900}); }catch(_){} } else start({fly:true}); }
     return { start, stop, toggleOrRecenter, _paint:paint, isActive:()=>active, last:()=>last };

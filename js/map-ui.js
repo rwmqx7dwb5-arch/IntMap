@@ -689,14 +689,62 @@ window.IntMapModules.labelPopup=function(HOST){
     /* (#R217) one sequence for the whole river highlight: a later click (or any clear) must be able
        to overrule a fetch that is still in the air, or a slow answer would repaint a river the user
        has already moved away from. */
-    let _riverSeq=0;
-    function clearRiverHL(){ _riverSeq++; try{ if(GE().layers.hasSource('river-hl-src')) GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    /* ⚠ declared HERE, beside _riverSeq and ABOVE clearRiverHL — a `let` further down is in the
+       temporal dead zone for any call that happens during boot, and #R200 lost a whole boot to that. */
+    let _riverSeq=0, _riverLive=null;
+    function clearRiverHL(){ _riverSeq++; _riverLive=null; try{ if(GE().layers.hasSource('river-hl-src')) GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     function _riverBbox(feats){
       let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
       const eat=(ln)=>{ for(const pt of ln){ const x=+pt[0],y=+pt[1]; if(!isFinite(x)||!isFinite(y)) continue; if(x<a)a=x; if(y<b)b=y; if(x>c)c=x; if(y>d)d=y; } };
       for(const f of feats){ for(const ln of (window.IntMapRiverCourse?window.IntMapRiverCourse.linesOf(f.geometry):[])) eat(ln); }
       return [a,b,c,d];
     }
+    /* ══ ⚠⚠ (#R219) THE TILE PASS ONLY EVER SEES THE TILES THAT ARE LOADED ═══════════════════════
+       「河川名ラベルクリック時に、クリック地点によっては全区間がハイライトされない問題を解決して。
+        （河川名が変わるから云々の話じゃないわボケ。同じ川の同じ名前の区間の話じゃ）」
+
+       #R217 and #R218 both answered the NAME question (the transitive closure, and asking the fetch
+       with the whole closure) and both were right about it — this report is about a river whose
+       segments all carry the SAME name, so neither of those is what is missing. What is missing is
+       simpler and is in this function: `querySourceFeatures` answers from the tiles the renderer has
+       IN MEMORY, which is the current viewport plus a margin. Half of a 900 km river is not in them,
+       so half of it cannot be highlighted, and WHICH half depends on where the map happens to be —
+       「クリック地点によっては」 exactly.
+       The fetched course (`RC.course`) is the answer when it lands, but it is one Nominatim/Overpass
+       round trip that can be slow, partial or refused, and when it is, the highlight is whatever the
+       tiles held at the instant of the click and it never grows again.
+       So the highlight is now LIVE: while a river is lit, every `idle` re-runs the closure over the
+       tiles that are loaded NOW and unions anything new into it. Panning along the river completes
+       it, and it never shrinks — a highlight that loses segments as you move is worse than one that
+       is short. The accumulated name set is carried, so the closure keeps its #R217 transitivity
+       across the panning too. */
+    function _riverKeyOf(g){
+      try{ const ls=window.IntMapRiverCourse.linesOf(g);
+        let k='';
+        for(const ln of ls){ if(!ln||!ln.length) continue;
+          const a=ln[0], b=ln[ln.length-1];
+          k+=a[0].toFixed(5)+','+a[1].toFixed(5)+'>'+b[0].toFixed(5)+','+b[1].toFixed(5)+';'+ln.length+'|'; }
+        return k; }catch(_){ return ''; }
+    }
+    function _riverGrow(){
+      const st=_riverLive; if(!st||st.seq!==_riverSeq) return;
+      const RC=window.IntMapRiverCourse; if(!RC) return;
+      let raw=[]; try{ raw=GE().coords.querySourceFeatures('ofm',{sourceLayer:'waterway'})||[]; }catch(_){ return; }
+      if(!raw.length) return;
+      /* the closure is asked with EVERY name gathered so far, not with the clicked segment's — that is
+         what makes a river picked up in Hungary keep growing when the map reaches Austria */
+      const picked=RC.sameRiver(st.seedProps,raw,{limit:4000,names:st.names});
+      let grew=false;
+      for(const f of picked){
+        const g=f&&f.geometry; if(!g||(g.type!=='LineString'&&g.type!=='MultiLineString')) continue;
+        const k=_riverKeyOf(g); if(!k||st.keys.has(k)) continue;
+        st.keys.add(k); st.feats.push({type:'Feature',geometry:g,properties:{}}); grew=true;
+        RC.nameSet(f.properties).forEach(n=>st.names.add(n));
+      }
+      if(grew){ try{ GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:st.feats.concat(st.fetched||[])}); }catch(_){} }
+    }
+    if(!highlightRiver._grow){ highlightRiver._grow=true;
+      try{ GE().events.on('idle',()=>{ try{ _riverGrow(); }catch(_){} }); }catch(_){} }
     function highlightRiver(props,lngLat){
       try{
         const RC=window.IntMapRiverCourse;
@@ -711,6 +759,13 @@ window.IntMapModules.labelPopup=function(HOST){
           tile.push({type:'Feature',geometry:g,properties:{}});
         }
         GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:tile});
+        /* what the live pass carries forward: the segments already lit (by identity, so a tile that
+           reloads does not double them) and the names the closure has agreed on so far */
+        { const keys=new Set(); tile.forEach(f=>{ const k=_riverKeyOf(f.geometry); if(k) keys.add(k); });
+          const acc=new Set();
+          for(const f of picked) RC.nameSet(f&&f.properties).forEach(n=>acc.add(n));
+          RC.nameSet(props).forEach(n=>acc.add(n));
+          _riverLive={ seq, keys, feats:tile.slice(), fetched:null, names:acc, seedProps:props }; }
         if(!lngLat||!isFinite(lngLat.lng)) return;
         /* ══ ⚠ (#R218) ASK ABOUT THE RIVER, NOT ABOUT THE PIXEL ═══════════════════════════════════
            「クリック地点によっては全区間がハイライトされない」— see js/river-course.js for the two
@@ -738,6 +793,12 @@ window.IntMapModules.labelPopup=function(HOST){
              superset — a doubled line looks slightly brighter, a vanished one looks broken. */
           const tb=_riverBbox(tile), cb=_riverBbox(full), e=0.02;
           const covers=isFinite(tb[0])&&cb[0]<=tb[0]+e&&cb[1]<=tb[1]+e&&cb[2]>=tb[2]-e&&cb[3]>=tb[3]-e;
+          /* ⚠ the fetched course is kept BESIDE the live tile set, not instead of it: the live pass
+             keeps adding tile segments as the reader pans, and it must not undo this. */
+          if(_riverLive&&_riverLive.seq===seq){ _riverLive.fetched=full;
+            GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',
+              features:covers?full:_riverLive.feats.concat(full)});
+            return; }
           GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:covers?full:full.concat(tile)});
         }).catch(()=>{});
       }catch(_){}

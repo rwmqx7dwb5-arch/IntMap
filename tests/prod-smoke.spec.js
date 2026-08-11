@@ -63,7 +63,10 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   // global at import without fetching anything. If the file failed to deploy, the map still boots,
   // the river labels still draw, and a click on one just lights up nothing — a feature silently
   // gone with every assertion above green, which is the exact failure this list exists to catch.
-  'IntMapRiverCourse'];
+  'IntMapRiverCourse',
+  /* (#R219) the cosmic distance ladder — eager, so its absence means js/space-cosmos.js is missing
+     from the deploy rather than merely unasked-for */
+  'IntMapCosmos'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

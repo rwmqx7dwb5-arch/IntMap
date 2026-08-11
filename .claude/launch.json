@@ -429,6 +429,33 @@
       ],
       "port": 4218,
       "url": "http://127.0.0.1:4218"
+    },
+    {
+      "name": "intmap-vite-r219",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5219",
+        "--strictPort"
+      ],
+      "port": 5219,
+      "url": "http://localhost:5219"
+    },
+    {
+      "name": "intmap-preview-r219",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4219"
+      ],
+      "port": 4219,
+      "url": "http://127.0.0.1:4219"
     }
   ]
 }
