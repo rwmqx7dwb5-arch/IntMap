@@ -57,7 +57,13 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   // (#R198) js/label-scale.js — if this file fails to deploy, every symbol layer that asks it for a
   // size throws inside its own try and the map comes up with NO LABELS AT ALL. Exactly the failure
   // shape this list exists for.
-  'IntMapLabelScale'];
+  'IntMapLabelScale',
+  // (#R217) js/river-course.js — EAGER, so a boot-time presence check is the right shape for it:
+  // src/main.js imports it directly rather than through js/lazy-modules.js, and it publishes its
+  // global at import without fetching anything. If the file failed to deploy, the map still boots,
+  // the river labels still draw, and a click on one just lights up nothing — a feature silently
+  // gone with every assertion above green, which is the exact failure this list exists to catch.
+  'IntMapRiverCourse'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test
