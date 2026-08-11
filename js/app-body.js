@@ -1771,8 +1771,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      into view, max 2 in flight), real member sets (NATO/EU/FSU), the real geoLayersDB geometry (chokepoints,
      island chains, pipelines…), live USGS quakes, a real day/night terminator — and a hand-drawn
      REPRESENTATIVE sketch only where the layer's data is a live stream that cannot be sampled cheaply. ===== */
-  /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
-  window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);
+  window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
   window.IntMapModules.layerSidebar(IM_HOST);
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
@@ -3457,19 +3456,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, geoLayersDB, i18n, saveSettings, t });
 
-  /* ---------- Data sources & attribution modal (#37) ---------- */
-  /* (#R162) moved to js/reference-data.js — see Architecture.md "File layout". */
+  /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
   const DATA_SOURCES=window.IntMapRefData.dataSources;
+  /* (#R218) DE/RU/ES descriptions live in js/locales/pages.<lang>.js (`sourceUse`) — the same file sources.html reads — fetched ONLY when this dialog opens in one of those languages, so the five-language registry costs a phone nothing at start-up. Per-key fallback to en/jp. */
+  const _pgDoc=(l)=>{ try{ return window.IntMapPageI18N&&window.IntMapPageI18N.doc&&window.IntMapPageI18N.doc(l); }catch(_){ return null; } };
   function openSourcesModal(){
     const m=document.getElementById('sources-modal'); if(!m) return;
-    document.getElementById('sources-title').textContent=t('srcModalTitle');
-    document.getElementById('sources-sub').textContent=t('srcModalSub');
-    document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(s.use[currentLang]||s.use.en)}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join('');
-    m.style.display='flex';
-  }
+    document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
+    const use=(s)=>{ const d=_pgDoc(currentLang); return (d&&d.sourceUse&&d.sourceUse[s.n])||s.use[currentLang]||s.use.en; };
+    const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
+    paint(); m.style.display='flex';
+    if(['de','ru','es'].includes(currentLang)&&!_pgDoc(currentLang)){ const sc=document.createElement('script'); sc.src='./js/locales/pages.'+currentLang+'.js'; sc.async=true; sc.onload=paint; document.head.appendChild(sc); } }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
-    const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }
+    const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }   /* (#R218) folded onto one line: tests/r200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */

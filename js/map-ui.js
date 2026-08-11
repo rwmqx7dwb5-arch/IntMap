@@ -712,8 +712,21 @@ window.IntMapModules.labelPopup=function(HOST){
         }
         GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:tile});
         if(!lngLat||!isFinite(lngLat.lng)) return;
-        /* …then the part of the river that is not on screen. Nothing waits for this. */
-        RC.course(props,lngLat).then(hit=>{
+        /* ══ ⚠ (#R218) ASK ABOUT THE RIVER, NOT ABOUT THE PIXEL ═══════════════════════════════════
+           「クリック地点によっては全区間がハイライトされない」— see js/river-course.js for the two
+           click-dependent things inside `course()`. Both need the caller to hand over what the TILE
+           closure already established: every name in it (so a Hungarian click asks the same question
+           an Austrian one does), its extent (so the Overpass box is the river's, not the finger's),
+           and points along it (so a candidate is accepted for passing THIS RIVER rather than for
+           passing this click, which a 2,850 km river's far reach never does). */
+        const allNames=new Set(), allList=[];
+        for(const f of picked){ const s=RC.nameSet(f&&f.properties); s.forEach(n=>allNames.add(n));
+          for(const n of RC.nameList(f&&f.properties)) if(allList.indexOf(n)<0) allList.push(n); }
+        const anchors=[]; { const step=Math.max(1,Math.floor(tile.length/24));
+          for(let i=0;i<tile.length;i+=step){ const ln=RC.linesOf(tile[i].geometry)[0];
+            if(ln&&ln.length) anchors.push(ln[(ln.length/2)|0]); } }
+        if(!anchors.length) anchors.push([lngLat.lng,lngLat.lat]);
+        RC.course(props,lngLat,{ names:allNames, nameList:allList, anchors, bbox:_riverBbox(tile) }).then(hit=>{
           if(!hit||!hit.geo||seq!==_riverSeq) return;
           const full=RC.linesOf(hit.geo).filter(ln=>ln&&ln.length>1)
             .map(ln=>({type:'Feature',geometry:{type:'LineString',coordinates:ln},properties:{}}));

@@ -1,0 +1,273 @@
+/* ============================================================================
+ *  IntMap · The two reading pages — sources.html and science.html   (#R218)
+ * ----------------------------------------------------------------------------
+ *  「データ出典ページのデザインと配色に不自然な箇所がある。Apple風の洗練されたページに。
+ *    （ロジック解説ページも）」
+ *
+ *  WHAT WAS UNNATURAL, AND WHAT REPLACED IT.  The two pages carried a copy each of the
+ *  same 50-line <style> block whose palette was DARK-FIRST (`--bg:#0e0f12`, with light as
+ *  an override). Nothing else in IntMap is dark-first, so the pages disagreed with the app
+ *  they hang off: opening 「出典」 from a light-mode map produced a black page, and the
+ *  light override then repainted the SAME dark card colours over a white background —
+ *  a `--card:#ffffff` on a `--bg:#f6f7f9` with a blue that was picked for the dark side
+ *  (#4da3ff on white is 2.4:1). That is the 「不自然」: two palettes, one of them borrowed.
+ *
+ *  This sheet is ONE palette expressed twice, and both expressions are authored:
+ *    · light  — paper (#fff) on Apple's own page grey (#f5f5f7), ink #1d1d1f, blue #0066cc
+ *    · dark   — ink (#000) with elevated surfaces (#1c1c1e), paper #f5f5f7, blue #2997ff
+ *  Every pair is at or above 4.5:1 for body text and 3:1 for large text, measured, so the
+ *  page is legible in whichever mode the reader arrives in.
+ *
+ *  WHY IT IS A FILE AND NOT TWO <style> BLOCKS.  Standing rule 13: new work leaves the
+ *  page. The two pages answer the two halves of one question — where the numbers come from
+ *  and what is done with them — and a reader moving between them must not have to re-learn
+ *  the page. One stylesheet is the only way that stays true as either page changes.
+ * ========================================================================== */
+
+:root{
+  /* the light expression — the default, because the app is light by default */
+  --pg-bg:#f5f5f7;
+  --pg-surface:#ffffff;
+  --pg-surface-2:#fbfbfd;
+  --pg-ink:#1d1d1f;
+  --pg-ink-2:#494950;
+  --pg-mut:#6e6e73;
+  --pg-line:rgba(0,0,0,0.10);
+  --pg-line-soft:rgba(0,0,0,0.06);
+  --pg-accent:#0066cc;
+  --pg-accent-ink:#ffffff;
+  --pg-accent-soft:rgba(0,102,204,0.08);
+  --pg-warn:#8a5a00;
+  --pg-warn-bg:rgba(255,179,0,0.10);
+  --pg-warn-line:#e0a200;
+  --pg-code-bg:rgba(0,0,0,0.05);
+  --pg-header-bg:rgba(245,245,247,0.72);
+  --pg-shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 28px rgba(0,0,0,0.06);
+  --pg-radius:18px;
+  --pg-maxw:820px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --pg-bg:#000000;
+    --pg-surface:#1c1c1e;
+    --pg-surface-2:#161618;
+    --pg-ink:#f5f5f7;
+    --pg-ink-2:#d4d4d8;
+    --pg-mut:#98989d;
+    --pg-line:rgba(255,255,255,0.13);
+    --pg-line-soft:rgba(255,255,255,0.07);
+    --pg-accent:#2997ff;
+    --pg-accent-ink:#00203f;
+    --pg-accent-soft:rgba(41,151,255,0.12);
+    --pg-warn:#ffd426;
+    --pg-warn-bg:rgba(255,212,38,0.08);
+    --pg-warn-line:#ffd426;
+    --pg-code-bg:rgba(255,255,255,0.08);
+    --pg-header-bg:rgba(0,0,0,0.68);
+    --pg-shadow:0 1px 2px rgba(0,0,0,0.5), 0 8px 28px rgba(0,0,0,0.5);
+    color-scheme:dark;
+  }
+}
+/* …and the app's own theme setting wins over the OS, in both directions, so opening this
+   page from a map the reader has deliberately set to dark does not flash white. */
+:root[data-theme="dark"]{
+  --pg-bg:#000000; --pg-surface:#1c1c1e; --pg-surface-2:#161618;
+  --pg-ink:#f5f5f7; --pg-ink-2:#d4d4d8; --pg-mut:#98989d;
+  --pg-line:rgba(255,255,255,0.13); --pg-line-soft:rgba(255,255,255,0.07);
+  --pg-accent:#2997ff; --pg-accent-ink:#00203f; --pg-accent-soft:rgba(41,151,255,0.12);
+  --pg-warn:#ffd426; --pg-warn-bg:rgba(255,212,38,0.08); --pg-warn-line:#ffd426;
+  --pg-code-bg:rgba(255,255,255,0.08); --pg-header-bg:rgba(0,0,0,0.68);
+  --pg-shadow:0 1px 2px rgba(0,0,0,0.5), 0 8px 28px rgba(0,0,0,0.5);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--pg-bg);
+  color:var(--pg-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",
+              "Hiragino Sans","Noto Sans JP","Yu Gothic UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;
+  line-height:1.62;
+  letter-spacing:-0.003em;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.pg-wrap{max-width:var(--pg-maxw);margin:0 auto;padding:0 22px 96px}
+
+/* ── the header: translucent, hairline, and it does not move ─────────────────────────── */
+.pg-top{
+  position:sticky;top:0;z-index:20;
+  background:var(--pg-header-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--pg-line-soft);
+}
+.pg-top-in{
+  max-width:var(--pg-maxw);margin:0 auto;padding:10px 22px;
+  display:flex;align-items:center;gap:12px;
+}
+.pg-back{
+  display:inline-flex;align-items:center;gap:5px;
+  color:var(--pg-accent);text-decoration:none;font-size:14px;font-weight:500;
+  padding:5px 8px;margin-left:-8px;border-radius:9px;white-space:nowrap;
+}
+.pg-back:hover{background:var(--pg-accent-soft)}
+.pg-top-spacer{flex:1 1 auto}
+.pg-sibling{
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  color:var(--pg-accent);text-decoration:none;font-size:14px;font-weight:500;
+  padding:5px 10px;border-radius:980px;border:1px solid var(--pg-line);
+}
+.pg-sibling:hover{background:var(--pg-accent-soft)}
+
+/* the language control. A native <select> on purpose: it is the one control that stays
+   usable at five languages and at fifteen, which is the stated direction (#R218). */
+.pg-lang{position:relative;display:inline-flex;align-items:center}
+.pg-lang select{
+  appearance:none;-webkit-appearance:none;
+  font:inherit;font-size:14px;font-weight:500;
+  color:var(--pg-ink);background:transparent;
+  border:1px solid var(--pg-line);border-radius:980px;
+  padding:5px 30px 5px 32px;cursor:pointer;line-height:1.3;
+}
+.pg-lang select:hover{background:var(--pg-accent-soft)}
+.pg-lang select:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.pg-lang .pg-lang-globe{position:absolute;left:11px;pointer-events:none;font-size:13px;opacity:.75}
+.pg-lang .pg-lang-chev{position:absolute;right:12px;pointer-events:none;font-size:10px;opacity:.6}
+
+/* ── the hero ───────────────────────────────────────────────────────────────────────── */
+.pg-hero{padding:52px 0 26px;border-bottom:1px solid var(--pg-line-soft)}
+.pg-hero h1{
+  margin:0 0 10px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-0.022em;
+}
+.pg-hero .pg-sub{margin:0;font-size:19px;line-height:1.5;color:var(--pg-mut);letter-spacing:-0.01em}
+.pg-hero .pg-sub a{color:var(--pg-accent);text-decoration:none}
+.pg-hero .pg-sub a:hover{text-decoration:underline}
+
+/* ── contents ───────────────────────────────────────────────────────────────────────── */
+.pg-toc{margin:28px 0 8px}
+.pg-toc h2{
+  font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--pg-mut);margin:0 0 10px;
+}
+.pg-toc ol{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 18px;
+  counter-reset:pgtoc;
+}
+.pg-toc li{counter-increment:pgtoc;margin:0}
+.pg-toc a{
+  display:block;padding:7px 10px;margin-left:-10px;border-radius:9px;
+  color:var(--pg-ink-2);text-decoration:none;font-size:15px;letter-spacing:-0.008em;
+}
+.pg-toc a::before{content:counter(pgtoc) ".";color:var(--pg-mut);margin-right:8px;font-variant-numeric:tabular-nums}
+.pg-toc a:hover{background:var(--pg-accent-soft);color:var(--pg-accent)}
+
+/* ── a section ──────────────────────────────────────────────────────────────────────── */
+.pg-sec{
+  margin:22px 0 0;padding:26px 28px 22px;
+  background:var(--pg-surface);border:1px solid var(--pg-line-soft);
+  border-radius:var(--pg-radius);box-shadow:var(--pg-shadow);
+}
+.pg-sec > h2{
+  margin:0 0 4px;font-size:25px;line-height:1.2;font-weight:650;letter-spacing:-0.016em;
+  scroll-margin-top:82px;
+}
+.pg-sec .pg-tagline{margin:0 0 16px;color:var(--pg-mut);font-size:15.5px;letter-spacing:-0.006em}
+.pg-sec h3{
+  margin:22px 0 6px;font-size:17px;font-weight:650;letter-spacing:-0.01em;color:var(--pg-ink);
+}
+.pg-sec h3:first-of-type{margin-top:14px}
+.pg-sec p{margin:10px 0}
+.pg-sec ul{margin:10px 0;padding-left:22px}
+.pg-sec li{margin:6px 0}
+.pg-sec b,.pg-sec strong{font-weight:640}
+.pg-sec a{color:var(--pg-accent);text-decoration:none}
+.pg-sec a:hover{text-decoration:underline}
+code{
+  font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:0.88em;background:var(--pg-code-bg);padding:2px 6px;border-radius:6px;
+}
+.pg-eq{
+  display:block;font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:14.5px;line-height:1.7;
+  background:var(--pg-surface-2);border:1px solid var(--pg-line-soft);
+  border-radius:12px;padding:12px 16px;margin:14px 0;overflow-x:auto;white-space:nowrap;
+}
+.pg-eq.pg-eq-inline{display:inline;padding:1px 6px;border-radius:6px;white-space:normal;font-size:0.9em}
+.pg-note{
+  font-size:14.5px;color:var(--pg-mut);line-height:1.6;
+  border-left:3px solid var(--pg-line);padding:2px 0 2px 14px;margin:14px 0 4px;
+}
+.pg-lim{
+  font-size:14.5px;line-height:1.6;margin:16px 0 6px;
+  background:var(--pg-warn-bg);border:1px solid var(--pg-warn-line);
+  border-left-width:3px;border-radius:12px;padding:11px 15px;
+}
+.pg-lim b:first-child{color:var(--pg-warn);font-weight:680}
+
+/* tables scroll inside their own box — the page body never scrolls sideways */
+.pg-tablewrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch}
+.pg-tablewrap table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:360px}
+.pg-tablewrap th,.pg-tablewrap td{
+  border-bottom:1px solid var(--pg-line-soft);padding:9px 12px;text-align:left;vertical-align:top;
+}
+.pg-tablewrap th{color:var(--pg-mut);font-weight:600;font-size:13px;white-space:nowrap;letter-spacing:0.01em}
+.pg-tablewrap tr:last-child td{border-bottom:none}
+
+/* ── the generated registry (sources.html §6) ───────────────────────────────────────── */
+.pg-count{
+  float:right;color:var(--pg-mut);font-size:14px;font-weight:400;
+  font-variant-numeric:tabular-nums;padding-top:8px;
+}
+.pg-filter{
+  width:100%;font:inherit;font-size:16px;
+  padding:11px 14px;margin:6px 0 4px;
+  border-radius:12px;border:1px solid var(--pg-line);
+  background:var(--pg-surface-2);color:var(--pg-ink);
+}
+.pg-filter::placeholder{color:var(--pg-mut)}
+.pg-filter:focus{outline:none;border-color:var(--pg-accent);box-shadow:0 0 0 4px var(--pg-accent-soft)}
+.pg-grouph{
+  margin:26px 0 2px;font-size:13px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;
+  color:var(--pg-mut);display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+}
+.pg-grouph span{font-variant-numeric:tabular-nums;font-weight:400;text-transform:none;letter-spacing:0}
+.pg-srcitem{border-bottom:1px solid var(--pg-line-soft);padding:13px 0}
+.pg-srcitem:last-child{border-bottom:none}
+.pg-srcitem b{font-size:16px;font-weight:640;letter-spacing:-0.008em}
+.pg-srcitem .pg-use{font-size:15px;color:var(--pg-ink-2);margin:3px 0 5px;line-height:1.55}
+.pg-srcitem .pg-u{
+  display:inline-block;font-size:13px;color:var(--pg-accent);text-decoration:none;word-break:break-all;
+}
+.pg-srcitem .pg-u:hover{text-decoration:underline}
+.pg-empty{color:var(--pg-mut);font-size:15px;padding:14px 0}
+
+/* ── footer ─────────────────────────────────────────────────────────────────────────── */
+.pg-foot{
+  margin:40px 0 0;padding-top:26px;border-top:1px solid var(--pg-line-soft);
+  color:var(--pg-mut);font-size:14.5px;text-align:center;line-height:1.6;
+}
+.pg-foot a{color:var(--pg-accent);text-decoration:none}
+.pg-foot a:hover{text-decoration:underline}
+
+/* ── phones ─────────────────────────────────────────────────────────────────────────── */
+@media (max-width:720px){
+  body{font-size:16px}
+  .pg-wrap{padding:0 16px 72px}
+  .pg-top-in{padding:9px 16px;gap:8px}
+  .pg-back span.pg-back-t{display:none}
+  .pg-sibling span.pg-sibling-t{display:none}
+  .pg-hero{padding:34px 0 20px}
+  .pg-hero h1{font-size:32px}
+  .pg-hero .pg-sub{font-size:17px}
+  .pg-sec{padding:20px 18px 16px;border-radius:16px;margin-top:16px}
+  .pg-sec > h2{font-size:21px}
+  .pg-toc ol{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto !important} }
+html{scroll-behavior:smooth}

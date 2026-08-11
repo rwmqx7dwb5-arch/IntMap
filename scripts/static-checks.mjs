@@ -313,6 +313,18 @@ try {
        the complaint. A named binding is resolved by the bundler — a typo is a BUILD error rather than an
        undefined at runtime — and the import graph, not src/main.js's list, decides the order. */
     const sib = new Set();
+    /* (#R218) …and the fourth: a <script src> from one of the STANDALONE PAGES. index.html is not the
+       only entry point this repo ships — sources.html and science.html are their own documents (see
+       vite.config.js's STATIC_ASSETS), and since #R218 they are shells that pull js/page-i18n.js and
+       js/sources-list.js directly. Those files are reachable, on purpose, and the question this check
+       asks («is this module dead code whose feature silently never exists?») is answered by the page
+       that loads them. Reading the pages rather than exempting the two filenames keeps the check
+       honest: delete the <script> tag and the module goes back to failing. */
+    for (const page of ['sources.html', 'science.html', 'admin.html']) {
+      const p = join(ROOT, page);
+      if (!existsSync(p)) continue;
+      for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);
+    }
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
       const t = read(f);
       for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);

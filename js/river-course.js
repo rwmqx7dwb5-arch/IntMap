@@ -171,32 +171,76 @@ window.IntMapRiverCourse=(function(){
   const _cache=Object.create(null);
   function cacheKey(names){ return Array.from(names).sort().join('|'); }
 
-  async function _nominatim(name,lng,lat){
+  /* ══ ⚠⚠ (#R218) THE ANCHOR IS THE RIVER THE TILES FOUND, NOT THE PIXEL THAT WAS PRESSED ═══════════
+     「河川名ラベルクリック時に、クリック地点によっては全区間がハイライトされない問題を解決して。」
+     #R217 fixed the TILE side of this — the transitive name closure — and left two click-dependent
+     things in the fetch, which is why the report came back:
+
+       (1) `course()` asked with the CLICKED FEATURE's names only. Press a Hungarian way and the query
+           is {Duna}; press an Austrian one and it is {Donau, Danube}. Nominatim answers with a
+           different OSM object for each, so the highlight literally depended on which way was under
+           the finger — the exact sentence in the report. It now asks with the WHOLE closure's names,
+           which is a property of the river and not of the click.
+       (2) A candidate had to run within 40 km OF THE CLICK. That is the right guard against a
+           same-named river on another continent, and the wrong one for a river 2,850 km long: the
+           Nominatim object for the Romanian Dunărea is the correct answer and passes nowhere near a
+           click in Vienna. The guard now measures against ANY of the segments the tiles already
+           matched, so it still rejects a different river and no longer rejects a distant reach of
+           this one.
+     ⚠ And every accepted candidate is UNIONED rather than the nearest one winning: a river that is
+     renamed at each border is several OSM objects, and taking one of them is taking one country's
+     stretch. */
+  function _minKmToAny(geo,pts){
+    let best=Infinity;
+    for(const p of pts){ const d=nearestKm(geo,p[0],p[1]); if(d<best) best=d; if(best<=0) break; }
+    return best;
+  }
+  async function _nominatim(name,anchors){
     try{
       const r=await fetch(NOMINATIM+'?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(name),{headers:{Accept:'application/json'}});
       if(!r.ok) return null;
       const j=await r.json(); if(!Array.isArray(j)) return null;
-      /* waterway results only, and only the one that actually runs past the click */
+      /* waterway results only, and only the ones that actually run past the river we already have */
       const cands=j.filter(o=>{
         const cls=String(o.class||o.category||'').toLowerCase();
         const typ=String(o.type||'').toLowerCase();
         const gt=(o.geojson&&o.geojson.type)||'';
         return (cls==='waterway'||/^(river|canal|stream)$/.test(typ))&&/LineString/.test(gt);
       });
-      let best=null,bestD=Infinity;
-      for(const c of cands){ const d=nearestKm(c.geojson,lng,lat); if(d<bestD){ bestD=d; best=c; } }
-      if(best&&bestD<=NEAR_KM) return {geo:best.geojson,src:'nominatim',km:bestD};
+      const keep=[]; let bestD=Infinity;
+      for(const c of cands){ const d=_minKmToAny(c.geojson,anchors);
+        if(d<=NEAR_KM){ keep.push(c.geojson); if(d<bestD) bestD=d; } }
+      if(keep.length) return {geo:_union(keep),src:'nominatim',km:bestD};
     }catch(_){ }
     return null;
   }
-  /* The fallback: every named way of this river inside a box around the click. `names` is the whole
-     set, so the query spans the border the way the tile matcher does — one alternation, one request. */
-  async function _overpass(names,lng,lat){
+  function _union(geos){
+    const coords=[];
+    for(const g of geos) for(const ln of linesOf(g)) if(ln&&ln.length>1) coords.push(ln);
+    return { type:'MultiLineString', coordinates:coords };
+  }
+  /* The fallback: every named way of this river inside a box around WHAT IS ALREADY MATCHED. `names`
+     is the whole set, so the query spans the border the way the tile matcher does — one alternation,
+     one request. ⚠ (#R218) the box comes from the matched river's own extent (grown by a degree and
+     floored at the old ±3.2° so a single-segment match still reaches), not from the click: a box drawn
+     round a pixel can only ever return the reach beside that pixel. Overpass is bounded either way —
+     the box is capped, and the query has its own limit and timeout. */
+  async function _overpass(names,lng,lat,bbox){
     const alts=Array.from(new Set(names)).filter(n=>n&&n.length>1).slice(0,12)
       .map(n=>String(n).replace(/[\\"^$.|?*+()[\]{}]/g,'\\$&'));
     if(!alts.length) return null;
     const d=3.2;
-    const bb='('+(lat-d).toFixed(2)+','+(lng-d).toFixed(2)+','+(lat+d).toFixed(2)+','+(lng+d).toFixed(2)+')';
+    let w=lng-d, s=lat-d, e=lng+d, n=lat+d;
+    if(bbox&&bbox.length===4&&isFinite(bbox[0])&&bbox[2]>bbox[0]){
+      w=Math.min(w,bbox[0]-1); s=Math.min(s,bbox[1]-1); e=Math.max(e,bbox[2]+1); n=Math.max(n,bbox[3]+1);
+    }
+    /* a box wider than this is a request for a continent's worth of ways; the service will refuse it
+       anyway, and the tiles already carry what is on screen */
+    const CAP=24;
+    if(e-w>CAP){ const c=(e+w)/2; w=c-CAP/2; e=c+CAP/2; }
+    if(n-s>CAP){ const c=(n+s)/2; s=c-CAP/2; n=c+CAP/2; }
+    s=Math.max(-85,s); n=Math.min(85,n);
+    const bb='('+s.toFixed(2)+','+w.toFixed(2)+','+n.toFixed(2)+','+e.toFixed(2)+')';
     const q='[out:json][timeout:30];way["waterway"~"^(river|canal)$"]["name"~"^('+alts.join('|')+')$",i]'+bb+';out geom 800;';
     for(const ep of OP_EPS){
       try{
@@ -213,18 +257,25 @@ window.IntMapRiverCourse=(function(){
   }
   /* Resolve the real course of the river the clicked feature belongs to.
      Resolves to `{geo, src}` or null — it never rejects, because the caller already has a picture. */
-  async function course(clickedProps,lngLat){
-    const set=nameSet(clickedProps);
+  async function course(clickedProps,lngLat,opts){
+    opts=opts||{};
+    /* (#R218) the names of the WHOLE matched river when the caller has them, the clicked feature's
+       when it does not — so the question asked of OSM is about the river rather than the pixel. */
+    const set=(opts.names&&opts.names.size)?new Set(opts.names):nameSet(clickedProps);
     if(!set.size||!lngLat||!isFinite(lngLat.lng)||!isFinite(lngLat.lat)) return null;
     const key=cacheKey(set);
     if(key in _cache) return _cache[key];
+    /* the points a candidate has to run past: the matched segments if there are any, the click if not */
+    const anchors=(opts.anchors&&opts.anchors.length)?opts.anchors.slice(0,64):[[lngLat.lng,lngLat.lat]];
     const p=(async()=>{
-      const names=nameList(clickedProps);
-      for(const n of names.slice(0,3)){
-        const hit=await _nominatim(n,lngLat.lng,lngLat.lat);
-        if(hit) return hit;
+      const names=(opts.nameList&&opts.nameList.length)?opts.nameList:nameList(clickedProps);
+      const found=[]; let km=Infinity;
+      for(const n of names.slice(0,4)){
+        const hit=await _nominatim(n,anchors);
+        if(hit){ found.push(hit.geo); if(hit.km<km) km=hit.km; }
       }
-      return await _overpass(names,lngLat.lng,lngLat.lat);
+      if(found.length) return { geo:_union(found), src:'nominatim', km:isFinite(km)?km:0 };
+      return await _overpass(names,lngLat.lng,lngLat.lat,opts.bbox);
     })().catch(()=>null);
     _cache[key]=p;
     const out=await p;
@@ -232,6 +283,6 @@ window.IntMapRiverCourse=(function(){
     return out;
   }
 
-  return { nameSet, nameList, sameRiver, nearestKm, linesOf, course,
+  return { nameSet, nameList, sameRiver, nearestKm, linesOf, course, union:_union,
     _cacheKey:cacheKey, NEAR_KM, PASSES };
 })();

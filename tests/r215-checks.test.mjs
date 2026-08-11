@@ -174,16 +174,26 @@ test('R215 ⑥: a snapshot always carries an analysis object, and the renderer d
 /* ═══ ⑦ THE DATA-SOURCES PAGE IS FOR A READER ════════════════════════════════════════════════
    「いや私向けに作ってんじゃねーよ。サイトに開発者向けのページおくわけないやろがくそ。作り直せ。」 */
 test('R215 ⑦: sources.html explains the data, not the build', () => {
-  const src = read('sources.html');
-  const body = src.slice(src.indexOf('<body>'), src.indexOf('<script'));
-  assert.equal(/reference-data\.js/.test(body), false, 'no source filename is shown to a reader');
-  assert.equal(/登録簿/.test(body), false, 'no internal vocabulary for the list');
-  assert.equal(/二重に持たない|single source of truth/.test(body), false, 'no maintenance argument');
-  /* and it still answers the four questions a reader actually has */
-  for (const id of ['what', 'live', 'privacy', 'licence', 'limits', 'list']) {
-    assert.match(body, new RegExp(`id="${id}"`), `the page keeps its «${id}» section`);
+  /* ⚠ (#R218) sources.html is a shell and its words are in js/locales/pages.<lang>.js. The subject of
+     this test is the WORDS, so it reads them where they are — and it now reads all five languages,
+     which is strictly more than it checked before. The section ids are language-independent by
+     construction (js/page-i18n.js renders `id` from the document), so they are checked once. */
+  const langs = ['en', 'ja', 'de', 'ru', 'es'];
+  for (const l of langs) {
+    /* ⚠ block comments stripped first: a locale file has a MAINTAINER's header that names the file
+       the registry lives in, and a maintainer's note is not something a reader is shown. The subject
+       here is the reader-facing strings (#R216's own convention for "this must not appear"). */
+    const body = read(`js/locales/pages.${l}.js`).replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.equal(/reference-data\.js/.test(body), false, `no source filename is shown to a reader (${l})`);
+    assert.equal(/登録簿/.test(body), false, `no internal vocabulary for the list (${l})`);
+    assert.equal(/二重に持たない|single source of truth/.test(body), false, `no maintenance argument (${l})`);
+    assert.match(body, /science\.html/, `and still points at the method page (${l})`);
   }
-  assert.match(body, /science\.html/, 'and still points at the method page for how things are computed');
+  /* and it still answers the questions a reader actually has */
+  const en = read('js/locales/pages.en.js');
+  for (const id of ['what', 'live', 'privacy', 'licence', 'limits', 'list']) {
+    assert.match(en, new RegExp(`id: '${id}'`), `the page keeps its «${id}» section`);
+  }
 });
 
 /* ═══ ⑧ THE TIDE LAYER IS A LAYER ════════════════════════════════════════════════════════════

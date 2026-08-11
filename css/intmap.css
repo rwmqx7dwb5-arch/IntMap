@@ -2402,9 +2402,42 @@
       #space-view .sp-info{ max-height:22vh !important; }
       #space-view .sp-notewrap{ bottom:6px !important; }
       #space-view .sp-note{ max-height:30vh; }
+      /* ══ ⚠ (#R218) THE PHONE'S BAR IS FIVE THINGS, NOT FIFTEEN ════════════════════════════════════
+         「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。」
+         #R216 made the bar scroll sideways so it stopped stacking into five rows; measured at 390 px
+         it then had a 1,046 px scroll width, i.e. two thirds of the controls were off-screen to the
+         right and the reader had to know they were there. Two thirds of that width is the time group,
+         so on a phone the group collapses behind ONE handle (js/space.js's `.sp-timeb`, which carries
+         the instant so nothing is hidden) and opens as a sheet with room to actually type in. What is
+         left in the bar — leave, which view, which scale, what is drawn, when — fits without scrolling
+         at 390 px, which is the point: a control you can see is a control you can use.
+         ⚠ The controls themselves are UNCHANGED. This is layout only; every handler, every id and
+         every state light is the one that was already there (the rule #R216 set for this block). */
+      #space-view .sp-timeb{ display:inline-flex !important; align-items:center; font-variant-numeric:tabular-nums; }
+      #space-view .sp-timebox{ display:none !important; position:fixed; left:8px; right:8px; bottom:8px;
+        z-index:8; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:6px !important;
+        padding:10px; border-radius:14px; background:rgba(10,10,14,0.95);
+        border:1px solid rgba(255,255,255,0.18); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+        max-height:52vh; overflow:auto; overscroll-behavior:contain; }
+      #space-view .sp-timebox.open{ display:flex !important; }
+      /* fingers, not cursors: the seven step arrows and the two fields get a real target */
+      #space-view .sp-timebox button{ min-width:34px; min-height:34px; font-size:13px; }
+      #space-view .sp-timebox .sp-whenbox,
+      #space-view .sp-timebox .sp-ratebox{ flex:1 1 100%; justify-content:center; padding:6px 8px; }
+      #space-view .sp-timebox .sp-when{ flex:1 1 auto; min-width:0; font-size:13px; padding:5px 6px; }
+      #space-view .sp-timebox .sp-rate{ width:88px !important; font-size:13px !important; }
+      /* the leave button is an icon on a phone — its four words were the widest thing in the bar */
+      #space-view .sp-close{ font-size:0 !important; padding:5px 9px !important; }
+      #space-view .sp-close::before{ content:'✕'; font-size:13px; }
+      /* one row of comfortable targets rather than two rows of small ones */
+      #space-view .sp-bar button, #space-view .sp-bar .sp-seg button{ min-height:32px; }
+      #space-view .sp-side .sp-b{ min-height:32px; }
     }
     /* a phone held upright has almost no height to give away — the sheet shrinks rather than
        pushing the sky off the screen */
     @media (max-width:768px) and (orientation:portrait){
       #space-view .sp-col{ max-height:32vh !important; }
+      /* the time sheet opens over the info sheet on purpose: both are bottom-anchored, and a phone
+         held upright has room for one of them. Tapping the sky closes it (js/space.js wires that). */
+      #space-view .sp-timebox.open{ bottom:8px; }
     }
