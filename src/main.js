@@ -83,6 +83,11 @@ import '../js/wb-layers.js';
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
 import '../js/atlas-console.js';
+/* (#R217) "which tile segments are the same river, and where does that river really go" — pure
+   set-of-names matching plus the OSM course resolver. Ahead of js/map-ui.js because the river-label
+   click is its first caller; it publishes window.IntMapRiverCourse at import and fetches nothing
+   until a label is actually clicked. */
+import '../js/river-course.js';
 import '../js/map-ui.js';
 import '../js/map-tools.js';
 /* (#R192) "where is the land" — the bundled 1-bit world mask (data/land-mask.png). Ahead of the

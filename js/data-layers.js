@@ -1492,12 +1492,30 @@ window.IntMapModules.dataLayers=function(HOST){
        plenty to classify a point, and it makes the per-pixel index + highlight ~16× cheaper → the
        laggy period-switch / class-select the user reported is gone. */
     const KWORK_CAP=2048;
+    /* ══ (#R217) THE DECODED SOURCE IMAGE IS NOT KEPT WHERE NOTHING CAN USE ITS EXTRA PIXELS ══════
+       「モバイル版が、非常に重くなっている…わたしのguessは…iPhoneのメモリを占有して」— measured, and this
+       is one of the two places the phone's memory was going. A phone loads the 4k Köppen file
+       (koppenWorkURL), and the decoded bitmap of a 4096² PNG is 4096·4096·4 = 67 MB. It was then
+       held FOREVER in window._koppenImg, on top of the ≤2048² work canvas built from it (17 MB) and
+       the renderer's own texture for the same file (another 67 MB).
+
+       Its only reader is ensureKoppenFull(), and on a phone _koppenFullCap() is 2048 — the SAME cap
+       the work canvas is already built at. So the extra pixels are unreachable by construction, and
+       dropping them is not a quality decision: the class highlight is rasterised from exactly the
+       resolution it would have used. Where the cap IS higher than the work canvas (desktop: 3072 or
+       4096) the image is kept, unchanged.
+
+       ⚠ `im.src=''` as well as the reference: an <img> that is not in the document still owns its
+       decoded bitmap for as long as anything points at it, and dropping the last reference only
+       makes it collectable — which on a phone under pressure is later than "now". */
     function _mkKoppenWork(im){
       const nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
       const sc=Math.min(1, KWORK_CAP/Math.max(nw,nh,1));
       const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(nw*sc)); c.height=Math.max(1,Math.round(nh*sc));
       const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false; cx.drawImage(im,0,0,c.width,c.height);
-      window._koppenImg=im; window._koppenCanvas=c; window._koppenReady=true;
+      window._koppenCanvas=c; window._koppenReady=true;
+      if(_koppenFullCap()<=c.width&&_koppenFullCap()<=c.height){ window._koppenImg=null; try{ im.src=''; }catch(_){ } }
+      else window._koppenImg=im;
     }
     /* ⚠ (#R201) THE 738 KB PNG THAT LOOKS LIKE IT IS FETCHED TWICE IS NOT. Measured on the local
        preview it arrives at t≈320 ms (this Image) and again at t≈810 ms (the renderer's own fetch for
@@ -1642,7 +1660,10 @@ window.IntMapModules.dataLayers=function(HOST){
        Any allocation/taint failure is caught → the caller falls back to the small-canvas highlight. */
     function ensureKoppenFull(){
       if(window._koppenFull) return window._koppenFull;
-      const im=window._koppenImg; if(!im) return null;
+      /* (#R217) the work canvas is the source wherever the decoded image was released — on a phone
+         the two are the same 2048², so this is the identical raster and not a fallback in quality.
+         `drawImage` reads a canvas exactly as it reads an <img>; only the size fields differ. */
+      const im=window._koppenImg||window._koppenCanvas; if(!im) return null;
       const nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
       const cap=_koppenFullCap(), sc=Math.min(1, cap/Math.max(nw,nh,1));
       const W=Math.max(1,Math.round(nw*sc)), H=Math.max(1,Math.round(nh*sc));

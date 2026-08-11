@@ -208,7 +208,14 @@ window.IntMapModules.searchGeocode=function(HOST){
       </div>`;
     searchCardEl.querySelector('.src-card-close').onclick=closeSearchCard;
     searchCardEl.querySelector('#src-copy').onclick=()=>{ try{ navigator.clipboard.writeText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }catch(_){} };
-    searchCardEl.querySelector('#src-pin').onclick=()=>{ const id=HOST.addPin(lng,lat); HOST.openPinPopup(id); };
+    /* (#R217) 「地名検索時のポップアップからdrop pin hereを押したら、地名検索時のポップアップは自動で消えるように。」
+       The card is the ASK ("is this the place you meant?"); dropping a pin is the answer, so leaving the card open
+       left the question on screen next to its own answer. closeSearchCard() takes the transient search marker with
+       it, and that is the point rather than a side effect: a real user pin now stands at the same coordinates, and
+       the ✕ that was the search marker's ONLY remover is the thing being closed — keeping it would strand a second,
+       un-removable pin under the first. Pin first, then close: HOST.openPinPopup(id) must not open into a card that
+       is still being torn down. */
+    searchCardEl.querySelector('#src-pin').onclick=()=>{ const id=HOST.addPin(lng,lat); HOST.openPinPopup(id); closeSearchCard(); };
     /* (#R36) rAF-coalesce the per-move reposition (mobile pan/zoom smoothness #13): `move` can fire several
        times per frame during inertia, and positionSearchCard does layout (getBoundingClientRect + style writes);
        collapse it to at most once per frame so it never piles up work mid-gesture. */

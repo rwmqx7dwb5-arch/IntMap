@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R216';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R217';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R216';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-11-R216';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-11-R217';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -389,6 +389,14 @@ window.__imBuild='R216';   /* (#R121) build marker — bump when verifying that 
       </div>
       <div class="map-view-group" id="map-tools-group">
         <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" style="display:none;">🌐 Grid</button>
+        <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
+             toolbar. Shown only when >=1 map object exists (same visibility as the old FAB); wired + counted by
+             IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays.
+             (#R217) 「オブジェクト一覧は、MeasureとShareの間ではなく、Measureの左に出るように。（デスクトップ版）」 —
+             it sat between the Measure menu and the Share menu; it belongs to the LEFT of Measure. Markup order is
+             the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
+             follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
+        <button class="view-btn" id="btn-tool-objects" title="Objects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
         <div class="measure-menu-container">
           <button class="view-btn" id="btn-measure-menu" title="Measurement tools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
@@ -401,10 +409,6 @@ window.__imBuild='R216';   /* (#R121) build marker — bump when verifying that 
                  answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
           </div>
         </div>
-        <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
-             toolbar, next to Measure/Radius, per request. Shown only when >=1 map object exists (same visibility as
-             the old FAB); wired + counted by IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays. -->
-        <button class="view-btn" id="btn-tool-objects" title="Objects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
         <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
         <div class="share-menu-container">
           <button class="view-btn" id="btn-share-menu" title="Share"><span aria-hidden="true">🔗</span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
