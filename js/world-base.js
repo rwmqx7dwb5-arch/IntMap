@@ -372,11 +372,26 @@ window.IntMapWorldBase=(function(){
     }
     return { type: 'FeatureCollection', features: feats };
   }
+  /* ══ ⚠⚠ (#R219) …AND THE `background` LAYER DOES NOT REACH THE CAP AT ALL ═══════════════════════
+     MEASURED after the first fix landed: with the vector base map and the cap background declared
+     `visible` at `#545454`, the pixel at the south pole was still (11,11,11). A MapLibre `background`
+     layer is painted over the TILE COVERAGE, and there is no tile above 85.0511° — so #R207's
+     background could never have covered the hole it was added to cover. The satellite view looked
+     fixed only because the mosaic below is a FILL, i.e. geometry, and geometry does reach the pole.
+     So the mosaic is what covers the caps on EVERY base map; only its colour changes:
+       · satellite → each cell's own measured colour from the shipped picture (`['get','c']`);
+       · vector    → the flat Carto land tone, because a satellite mosaic under a street map is the
+                     「別の地図が透けている」 #R207's note is right about.
+     The background layer stays as it is: harmless, and it is the floor for the Mercator area. */
   function capImages(satOn) {
     try {
-      if (!satOn) { try { if (GE().layers.has(CAPLYR)) GE().layers.setLayout(CAPLYR, 'visibility', 'none'); } catch (_) {} return false; }
+      const col = satOn ? ['get', 'c'] : (_darkBase() ? CAP_VEC_DARK : CAP_VEC_LIGHT);
       /* ⚠ a style reload drops added layers; the LAYERS are the truth, not a flag (#R212) */
-      if (GE().layers.has(CAPLYR)) { try { GE().layers.setLayout(CAPLYR, 'visibility', 'visible'); } catch (_) {} return true; }
+      if (GE().layers.has(CAPLYR)) {
+        try { GE().layers.setLayout(CAPLYR, 'visibility', 'visible'); } catch (_) {}
+        try { GE().layers.setPaint(CAPLYR, 'fill-color', col); } catch (_) {}
+        return true;
+      }
       const put = () => {
         if (!capFC || !GE().canDraw()) return false;
         if (!GE().layers.hasSource(CAPSRC)) GE().layers.addSource(CAPSRC, { type: 'geojson', data: capFC });
@@ -384,7 +399,7 @@ window.IntMapWorldBase=(function(){
         if (!GE().layers.has(CAPLYR)) {
           const before = GE().layers.has(LYR) ? LYR : undefined;
           GE().layers.add({ id: CAPLYR, type: 'fill', source: CAPSRC,
-            paint: { 'fill-color': ['get', 'c'], 'fill-antialias': false } }, before);
+            paint: { 'fill-color': col, 'fill-antialias': false } }, before);
         }
         return GE().layers.has(CAPLYR);
       };
