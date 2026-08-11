@@ -189,9 +189,17 @@ test('R213 ④: deep-sky objects carry published distances, and nulls stay null'
    ceiling may only move because there is now something out there — so it is derived, not typed.    */
 test('R213 ⑤: the zoom-out ceiling is derived from the furthest measured object', () => {
   const space = read('js/space.js');
-  assert.match(space, /function reachAu\(\)\{[\s\S]*?if\(!showDeep\) return REACH_AU;/,
-    'with the deep-sky population off, the reach is exactly what #R208 measured');
-  assert.match(space, /B\?B\.deepFarAu\(\):0/, 'and with it on, the reach comes from the data');
+  /* ⚠ (#R215) THE CLAIM, WIDENED BY A MEASUREMENT. This used to require `if(!showDeep) return
+     REACH_AU;` — i.e. with the deep-sky population off, the ceiling is the #R208 constant. Measured
+     on the built site, that constant put the ceiling at 22,645 scene units while `starFarEdge` was
+     80,729: the STAR catalogue is drawn at its parallax distances in every frame, so the camera was
+     penned three and a half times inside the furthest thing on screen and 「太陽系のさらに外の宇宙も
+     見れるように」 was still not true. The rule #R208 stated — stop at the furthest thing this scene
+     actually draws, never further — is unchanged; what changed is that the stars now count. */
+  const reach = space.slice(space.indexOf('function reachAu()'), space.indexOf('function distCeil()'));
+  assert.match(reach, /let far=REACH_AU;/, 'the #R208 constant is still the floor of the reach');
+  assert.match(reach, /starMaxPc\s*\*\s*AU_PER_PC/, 'and the star catalogue, which is always drawn, raises it');
+  assert.match(reach, /B\?B\.deepFarAu\(\):0/, 'and with the deep-sky population on, the reach comes from that data');
   assert.match(space, /function distCeil\(\)\{ return mode==='body'\?60:posScale\(reachAu\(\)\); \}/,
     'the ceiling goes through posScale like everything else — a raw AU limit means a different thing in each scale');
 
@@ -226,7 +234,12 @@ test('R213 ⑦: Settings → Data & attribution is the sources page, and the in-
   const grp = /<div class="setting-group"><label data-i18n="lblDataSources">[\s\S]*?<\/div>/.exec(html);
   assert.ok(grp, 'the Data & attribution group exists');
   assert.match(grp[0], /<a id="link-sources" href="\.\/sources\.html"/, 'the primary control in that group is the page');
-  assert.match(grp[0], /id="btn-data-sources"/, 'and the in-app list is still reachable from it — nothing was removed');
+  /* (#R215) …and the group offers ONE control. 「アプリ内で簡易一覧を見る←ふざけんじゃねえよ」 — a
+     "quick list" beside the real page is a worse copy of the same answer with a choice attached.
+     The dialog itself is not deleted (js/app-body.js publishes `window.imOpenSources`); what is gone
+     is the second entry in Settings. */
+  assert.doesNotMatch(grp[0], /id="btn-data-sources"/, 'the group does not offer a lesser copy beside the page');
+  assert.match(read('js/app-body.js'), /window\.imOpenSources\s*=/, 'the in-app dialog is kept reachable rather than deleted');
   /* the duplicate group #R212 left two rows below is gone, so there is one answer to "data sources" */
   assert.doesNotMatch(html, /data-i18n="lblSourcesPage"/, 'the second, duplicate settings group is gone');
   assert.equal((html.match(/href="\.\/sources\.html"/g) || []).length, 2,
@@ -261,7 +274,10 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   /* the great circle, for the same reason #R212 §6 gave for the 3-D solids */
   assert.match(iw, /function greatCircle\(a, b, n\)/, 'an ownership line follows the great circle, not a screen-space segment');
   /* one window: legend + picker + selection, and closing it unchecks the row */
-  assert.match(iw, /makePanel\('iw-panel'[\s\S]{0,200}'wp-dl-industry'\)/, 'the panel is bound to its layer row');
+  /* (#R215) …and that one window is now the app's own generic legend rather than a box of this
+     module's own — so the binding to the row is still asserted, without pinning the call's shape. */
+  assert.match(iw, /makePanel\('iw-panel'[\s\S]{0,400}'wp-dl-industry'/, 'the panel is bound to its layer row');
+  assert.match(iw, /legendId:\s*'wpindustry'/, 'and it renders into the standard legend, not beside it');
   assert.doesNotMatch(iw, /new maplibregl\.Popup|GE\(\)\.ui\.popup/, 'there is no second, separate popup');
   /* it borrows the layer-family toolkit instead of carrying a second copy */
   assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');

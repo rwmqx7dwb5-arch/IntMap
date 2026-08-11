@@ -235,12 +235,17 @@ test('R214 ⑤: turning the day/night side off reaches the renderer that owns it
   /* ⚠ and NOT from js/app-body.js — tests/r200 ⑤ ratchets that file and eight lines broke it. */
   assert.ok(!/window\.IntMapThemeSky\s*=/.test(ab), 'the hook must not be published from the core file');
   assert.ok(/window\.IntMapThemeSky/.test(ns), 'js/night-side.js must use it when the switch flips');
-  /* the light is only unaimed where the RENDERER draws the night side — MapLibre's night side is a
-     layer this module removes, and its light is the fill-extrusion lighting, which is not the
-     subject. So the guard has to be on the engine, not unconditional. */
+  /* ⚠⚠ (#R215) THIS ASSERTION USED TO REQUIRE THE OPPOSITE, AND IT WAS WRONG. #R214 excused MapLibre
+     on a stated argument — "its night side is a layer this module removes, and this light is only
+     the fill-extrusion shading" — and the report came back a fifth time («オフにしてもオフにならない。
+     MapLibre。»). The argument is half true: the layers really do go. But maplibre-gl's own
+     atmosphere pass builds `u_sun_pos` FROM `style.light` (drawAtmosphere → getSunPos), so the globe's
+     halo is itself bright over the day side and dark over the night side, and this app re-aims that
+     light at the real Sun every sixty seconds. No engine is excused. Measured on MapLibre: on →
+     anchor 'map' at the Sun's own azimuth/polar; off → anchor 'viewport' at the default [1.15,210,30]. */
   const aim = ts.slice(ts.indexOf('function _nightSideOff'), ts.indexOf('function _aimSun') + 700);
-  assert.ok(/_rendererLightsTheGlobe/.test(aim) && /!==\s*'maplibre'/.test(aim),
-    'the un-aiming must be conditional on the engine that lights its own globe');
+  assert.ok(!/_rendererLightsTheGlobe/.test(aim),
+    'the un-aiming is unconditional — the engine gate is what left MapLibre lit (#R215)');
   assert.ok(/setSunDirection\(null\)/.test(aim), 'and it restores the default light rather than inventing one');
   /* …and it has to survive the periodic re-aim, which is what made the old behaviour look like the
      switch "not working": the setting was read nowhere, so the next tick lit the globe again. */

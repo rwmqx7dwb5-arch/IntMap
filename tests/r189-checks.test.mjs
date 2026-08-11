@@ -186,8 +186,13 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
      Netherlands, the Caspian Depression and Death Valley are dry land below zero and were dropped
      out of the map entirely. The land mask decides, bounded at −440 m (below which nothing on Earth
      is dry), and the sign of the elevation only decides where the mask has nothing to say. */
-  assert.match(src, /if\(!\(landMask&&landMask\.isLand\(lo,la\)===true&&e0>-440\)\)\{ sea\+\+; vs\[k\]=-1; continue; \}/,
-    'a sub-zero cell is sea unless the land mask says it is land');
+  /* ⚠ (#R215) THE CLAIM, NOT THE LINE. This used to pin the exact `landMask&&landMask.isLand(...)`
+     text, which is #R203's trap: the claim survived while the literal did not. The land answer now
+     comes from `landAt()` — js/coast-mask.js rasterised into THIS field's own grid, with the 19.5 km
+     bundled mask behind it — because deciding a 1.5 km cell's coast with a 19.5 km majority raster
+     is the 「大きなタイルでごまかすな」 the report was about. What must stay true is the RULE. */
+  assert.match(src, /if\(!\(landAt\(k,lo,la\)===true&&e0>-440\)\)\{ sea\+\+; vs\[k\]=-1; continue; \}/,
+    'a sub-zero cell is sea unless the land answer says it is land, and only down to −440 m');
   assert.match(src, /LYR_IMG='seis-mmi-fill'/, 'rendered as a raster fill');
   assert.ok(!/id:'seis-mmi',/.test(src), 'the dashed contour layer is gone');
   assert.ok(!/'seis-mmi-lbl'/.test(src), 'and its labels with it');

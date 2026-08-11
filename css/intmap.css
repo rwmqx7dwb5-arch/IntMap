@@ -2140,6 +2140,16 @@
     .dl-op-row{ display:flex; align-items:center; gap:8px; margin:5px 0 2px; font-size:10px; color:var(--text-muted); }
     .dl-op-row input[type=range]{ flex:1; min-width:0; accent-color:var(--primary-color); height:4px; }
     .dl-op-row .dl-op-val{ min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
+    /* ══ (#R215) THE WORLD-DATA FAMILIES RENDER INTO THIS SAME BOX ═══════════════════════════════
+       「いや汎用の凡例の方に統合させろ。余計な例外作んなぼけ」 — trade / energy / warnings / tides /
+       crops / the industry web used to open a second floating window of their own beside the
+       legend. They now put their controls in `.wp-body` inside the legend itself, so there is one
+       window per layer: title, controls, colour key, the tapped answer, the opacity slider and the
+       ✕ that unchecks the row. The only thing this rule does is give that box room for a <select>. */
+    .data-legend.wp-legend{ width:min(330px,92vw); max-height:min(72vh,620px); overflow-y:auto; }
+    .data-legend .wp-body{ display:flex; flex-direction:column; gap:8px; margin:7px 0 2px; }
+    .data-legend .wp-body select, .data-legend .wp-body input[type=text], .data-legend .wp-body input[type=search]{ max-width:172px; }
+    .legend-collapsed .wp-body{ display:none !important; }
     .dl-op-extra{ margin-top:5px; }
     .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-muted); }
     .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }

@@ -187,28 +187,57 @@ window.IntMapModules.worldPacks=function(HOST){
     function uncheckRow(cbId){ try{ const cb=cbId&&document.getElementById(cbId);
       if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); return true; } }catch(_){}
       return false; }
-    function makePanel(id,title,cbId){
-      let el=document.getElementById(id);
-      if(!el){ el=document.createElement('div'); el.id=id;
-        el.style.cssText='position:fixed;left:16px;top:96px;width:min(340px,92vw);max-height:76vh;overflow:auto;z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-        document.body.appendChild(el); }
-      const P={ el,
-        open(bodyHTML){ el.innerHTML='<div class="wp-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;position:sticky;top:0;">'
-            +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+title()+'</span>'
-            +'<button class="wp-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 3px;">—</button>'
-            +'<button class="wp-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">&#10005;</button></div>'
-            +'<div class="wp-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'+bodyHTML+'</div>';
-          el.style.display='flex';
-          if(P._min) el.querySelector('.wp-body').style.display='none';
-          el.querySelector('.wp-close').onclick=()=>{ el.style.display='none'; uncheckRow(cbId); };
-          el.querySelector('.wp-min').onclick=()=>{ const b=el.querySelector('.wp-body'); if(!b) return;
-            P._min=(b.style.display!=='none'); b.style.display=P._min?'none':'flex';
-            el.querySelector('.wp-min').textContent=P._min?'▢':'—'; };
-          try{ HOST.makeDraggable(el,el.querySelector('.wp-head')); }catch(_){}
-          return el.querySelector('.wp-body'); },
-        body(){ return el.querySelector('.wp-body'); },
-        hide(){ el.style.display='none'; },
-        shown(){ return el.style.display!=='none'; } };
+    /* ══ (#R215) THE PANEL **IS** THE GENERIC LEGEND — THERE IS NO SECOND WINDOW ═══════════════════
+       「いやなんで凡例とポップアップをわざわざ分割するねんあほか」／「いやだからなんで凡例とポップアップ
+       分離にしとんねんふざけんな」／「いや汎用の凡例の方に統合させろ。余計な例外作んなぼけ」
+
+       MEASURED on the built site: ticking Energy mix produced TWO floating things — `wp-energy-panel`
+       (this file's own window: title, switch, ramp, the tapped country) and `data-legend-wpenergy`,
+       the app's standard legend, whose entire contents were the words «Energy mix» and an opacity
+       slider. Crops was the same pair. That is also why the report says the crop layer has no
+       transparency control: the control existed, in the OTHER window.
+
+       The answer is not a third arrangement. Every other layer in the app already has exactly one
+       box — `.data-legend.generic-legend` from js/data-layers.js — with the drag grip, the ✕ that
+       unchecks the layer row, the minimise button, the opacity slider and the "what is this data"
+       line, all tiled by `tileLegends()`. These families now render INTO that box instead of beside
+       it. Nothing about it is special-cased for them: `_registerLayerOpacity` builds it, the ✕ is
+       its own (already wired to `dataset.cbId`), the slider is `ensureLegendOpacity`'s, and the
+       family's controls go in a `.wp-body` right under the title.
+
+       ⚠ `_registerLayerOpacity` must be called with the layer ids, and again when they change —
+       for the raster families the layer does not exist until the first image lands, so `open()`
+       takes a THUNK for the ids and re-registers on every render. */
+    function panelNames(o){ return [o.en,o.jp||o.en,o.de||o.en,o.ru||o.en,o.es||o.en]; }
+    function makePanel(id,title,cbId,opt){
+      opt=opt||{};
+      const LID=opt.legendId||id;                 /* the legend id === the opacity id (#R19) */
+      const names=()=>{ try{ return opt.names?panelNames(opt.names()):[title(),title(),title(),title(),title()]; }catch(_){ return [id,id,id,id,id]; } };
+      const layers=()=>{ try{ return (opt.layers?opt.layers():[])||[]; }catch(_){ return []; } };
+      const legend=()=>document.getElementById('data-legend-'+LID);
+      const P={
+        get el(){ return legend(); },
+        open(bodyHTML){
+          let el=null;
+          try{ el=window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
+          if(!el) el=legend();
+          if(!el) return null;
+          el.style.display='block'; el.classList.add('wp-legend');
+          let b=el.querySelector('.wp-body');
+          if(!b){ b=document.createElement('div'); b.className='wp-body';
+            const h=el.querySelector('h4');
+            if(h&&h.parentNode===el) el.insertBefore(b,h.nextSibling); else el.appendChild(b); }
+          b.innerHTML=bodyHTML;
+          if(el.classList.contains('legend-collapsed')) b.style.display='none';
+          try{ window._ensureLegendMinimize&&window._ensureLegendMinimize(el); }catch(_){}
+          try{ window._tileLegends&&window._tileLegends(); }catch(_){}
+          return b; },
+        body(){ const el=legend(); return el?el.querySelector('.wp-body'):null; },
+        /* re-register the ids once the layers actually exist (raster families build theirs late) */
+        claim(){ try{ window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){} },
+        hide(){ try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
+          const el=legend(); if(el) el.style.display='none'; },
+        shown(){ const el=legend(); return !!(el&&el.style.display!=='none'&&el.style.display!==''); } };
       return P; }
 
     /* a colour-scale legend, so a choropleth says what its colours mean where the colours are.
@@ -292,7 +321,9 @@ window.IntMapModules.worldPacks=function(HOST){
         ['19','Arms','武器','Waffen','Оружие','Armas']];
       const secLabel=(s)=>{ const i={jp:2,de:3,ru:4,es:5}[HOST.lang]||1; const r=SECTIONS.find(x=>x[0]===s); return r?r[i]:s; };
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
-      const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade');
+      const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
+        { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
+          names:()=>({en:'🚢 Trade flows',jp:'🚢 貿易フロー',de:'🚢 Handelsströme',ru:'🚢 Торговые потоки',es:'🚢 Flujos comerciales'}) });
 
       /* ══ (#R212) THEY ARE ARROWS. 「いや矢印って言ってんだろうが。」 ═══════════════════════════════
          A trade flow has a direction and a bare line does not carry one. Two flat-coloured icons
@@ -310,6 +341,41 @@ window.IntMapModules.worldPacks=function(HOST){
       function ensureArrows(){ try{ Object.keys(ARROW).forEach(k=>{ const id='wp-arrow-'+k;
         if(!GE().layers.hasImage(id)) GE().layers.addImage(id,arrowImg(ARROW[k]),{pixelRatio:2}); }); }catch(_){} }
 
+      /* ══ (#R215) 「貿易レイヤーは該当国がぬられるように」 — AND NO COUNTRY WAS PAINTED AT ALL ══════
+         The layer drew arcs, arrowheads, partner dots and their labels; the countries themselves were
+         never shaded, so the instruction was simply not implemented. It is one choropleth on the SAME
+         `countries` source every other country layer in this app uses (js/countries-ui.js's 10 m
+         outline — the 「いつもの国境線」), driven by feature-state:
+
+             wpTrade  = this partner's share of the selected country's total, in %  (0 → not a partner)
+             wpTradeH = 1 on the country the flows belong to, so home reads as home and not as a partner
+
+         The share is what the ramp can honestly carry: absolute dollars span six orders of magnitude
+         between the largest partner and the smallest, and a colour scale over that says nothing.
+         The exact figure is still one hover away on the arc, and the panel prints both (#R213). */
+      const CHORO='wp-trade-fill';
+      const TRADE_RAMP=[[0.2,'#fff3d6'],[1,'#ffd591'],[4,'#ffab40'],[12,'#ff7043'],[30,'#d84315']];
+      function ensureChoro(){ if(GE().layers.has(CHORO)) return true;
+        if(!_imCanDraw()||!GE().layers.hasSource('countries')) return false;
+        const ramp=['interpolate',['linear'],['to-number',['feature-state','wpTrade'],0]]
+          .concat(TRADE_RAMP.reduce((a,x)=>a.concat([x[0],x[1]]),[]));
+        try{ GE().layers.add({id:CHORO,type:'fill',source:'countries',layout:{visibility:'none'},
+          paint:{'fill-color':['case',['==',['to-number',['feature-state','wpTradeH'],0],1],'#ffffff',
+                                ['<=',['to-number',['feature-state','wpTrade'],0],0],'rgba(0,0,0,0)',ramp],
+                 'fill-opacity':0.55}},
+          GE().layers.has('wp-trade-arc')?'wp-trade-arc':(GE().layers.has('tool-poly')?'tool-poly':undefined)); }
+        catch(_){ return false; }
+        return true; }
+      let _painted=[];
+      function paintCountries(){
+        if(!GE().layers.hasSource('countries')) return;
+        _painted.forEach(id=>{ try{ GE().layers.setFeatureState({source:'countries',id},{wpTrade:0,wpTradeH:0}); }catch(_){} });
+        _painted=[];
+        if(!(on&&rows&&rows.length&&iso)) return;
+        const tot=rows.reduce((a,d)=>a+d.v,0)||1;
+        const list=(topN>=999)?rows:rows.slice(0,topN);
+        list.forEach(d=>{ try{ GE().layers.setFeatureState({source:'countries',id:d.iso},{wpTrade:d.v/tot*100,wpTradeH:0}); _painted.push(d.iso); }catch(_){} });
+        try{ GE().layers.setFeatureState({source:'countries',id:iso},{wpTrade:0,wpTradeH:1}); _painted.push(iso); }catch(_){} }
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         ensureArrows();
@@ -366,7 +432,9 @@ window.IntMapModules.worldPacks=function(HOST){
               properties:{kind:'node',col:'#ffffff',r:7,name:countryName(iso),v:0,vShort:'',vExact:''}});
           }
         }
-        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } }); }
+        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); }
+          withCountrySource().then(()=>{ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(); }catch(_){}
+            if(ensureChoro()){ paintCountries(); setVis([CHORO],on); panel.claim(); } }); }); }
 
       function render(){
         if(!panel.shown()&&!on) return;
@@ -379,6 +447,10 @@ window.IntMapModules.worldPacks=function(HOST){
             +'<select class="wp-sec" style="'+SEL+'">'+SECTIONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===section?' selected':'')+'>'+esc(secLabel(s[0]))+'</option>').join('')+'</select></label>'
           +'<div style="'+ROW+'">'+L('Partners shown','表示する相手国','Angezeigte Partner','Показано партнёров','Socios mostrados')
             +'<span style="display:flex;gap:4px;">'+[10,20,999].map(n=>'<button class="wp-n" data-n="'+n+'" style="'+BTN+'padding:4px 7px;">'+(n>=999?L('All','すべて','Alle','Все','Todos'):n)+'</button>').join('')+'</span></div>'
+          +rampLegend(TRADE_RAMP.map(x=>[x[0]+'%',x[1]]),
+              L('Share of the selected country’s total trade (the white country is the one selected)',
+                '選択した国の貿易額全体に占める割合（白い国が選択中の国）',
+                'Anteil am Gesamthandel des gewählten Landes','Доля в общей торговле выбранной страны','Cuota del comercio total del país elegido'))
           +'<div class="wp-stat" style="font-size:11.5px;color:var(--text-main);line-height:1.55;min-height:16px;"></div>'
           +'<div class="wp-list" style="font-size:11.5px;color:var(--text-main);"></div>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
@@ -434,8 +506,8 @@ window.IntMapModules.worldPacks=function(HOST){
           GE().events.onLayer('mouseleave',id,()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }); }); }
 
       function toggle(v){ on=v;
-        if(!on){ panel.hide(); draw(); return; }
-        whenDrawable(()=>{ if(ensureLayers()) wire(); draw(); }); render();
+        if(!on){ panel.hide(); draw(); setVis([CHORO],false); return; }
+        whenDrawable(()=>{ if(ensureLayers()) wire(); draw(); }); render(); hiResCountries();
         withCountryGeo().then(()=>{ if(on&&iso) load(iso,true); });
         try{ HOST.imToast(L('Tap a country to see who it trades with.','国をタップすると相手国別の貿易が出ます。','Land antippen.','Нажмите страну.','Toque un país.')); }catch(_){} }
       STATE.trade=()=>({ on, dir, section, topN, iso, year, partners:rows?rows.length:0,
@@ -495,7 +567,9 @@ window.IntMapModules.worldPacks=function(HOST){
                  ['other_renewables_twh','Other renewables','その他再エネ','#26a69a']],
           clean:['nuclear_twh','hydro_twh','wind_twh','solar_twh','other_renewables_twh'] } };
       let on=false, iso=null, kind='elec';
-      const panel=makePanel('wp-energy-panel',()=>'⚡ '+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy');
+      const panel=makePanel('wp-energy-panel',()=>'⚡ '+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy',
+        { legendId:'wpenergy', layers:()=>[fillId('elec'),fillId('prim')],
+          names:()=>({en:'⚡ Energy mix',jp:'⚡ エネルギー構成',de:'⚡ Energiemix',ru:'⚡ Энергобаланс',es:'⚡ Mezcla energética'}) });
       const partName=(p)=>HOST.lang==='jp'?p[2]:p[1];
 
       function fillId(k){ return 'wp-'+k+'-fill'; }
@@ -504,8 +578,13 @@ window.IntMapModules.worldPacks=function(HOST){
         const ramp=['interpolate',['linear'],['to-number',['feature-state',key],-1]]
           .concat(ENERGY_RAMP[k].reduce((a,s)=>a.concat([s[0],s[1]]),[]));
         const noData=['<=',['to-number',['feature-state',key],0],0];
+        /* ⚠ (#R215) NO-DATA IS A COLOUR HERE, NOT AN OPACITY. The fill-opacity used to be
+           `['case', no-data, 0.18, 0.55]`, which meant the shared opacity slider (one control for
+           every layer in the app) could not own this property without deleting the distinction.
+           Grey #9aa0a6 already says «no data» and the legend prints that swatch, so the case moves
+           into the colour and `fill-opacity` becomes an ordinary number the slider can set. */
         try{ GE().layers.add({id,type:'fill',source:'countries',layout:{visibility:'none'},
-          paint:{'fill-color':['case',noData,'#9aa0a6',ramp],'fill-opacity':['case',noData,0.18,0.55]}},
+          paint:{'fill-color':['case',noData,'#9aa0a6',ramp],'fill-opacity':0.55}},
           GE().layers.has('tool-poly')?'tool-poly':undefined); }catch(_){ return false; }
         return true; }
 
@@ -600,9 +679,7 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!ensureChoro(kind)){ whenDrawable(()=>{ if(on&&ensureChoro(kind)) apply(kind).then(()=>setVis([fillId(kind)],true)).catch(()=>{}); }); return; }
         try{ await apply(kind); }catch(e){ try{ HOST.imToast(L('Energy data could not be fetched.','エネルギーデータを取得できませんでした。','Daten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.')); }catch(_){} }
         setVis([fillId(kind)],true);
-        try{ if(window._registerLayerOpacity) window._registerLayerOpacity('wpenergy',
-          ['Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'],
-          [fillId('elec'),fillId('prim')],'wp-dl-energy'); }catch(_){}
+        panel.claim();               /* (#R215) the ids the one box's opacity slider drives */
       }); }
 
       function toggle(v){ on=!!v;
@@ -654,7 +731,9 @@ window.IntMapModules.worldPacks=function(HOST){
          feed while writing this: 16 of 47 prefectures were under a warning at the time. */
       const FEED_STATE={};        /* jma | nws | gdacs → 'idle' | 'loading' | 'ok' | 'error' */
       let lastAt=0;
-      const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts');
+      const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
+        { legendId:'wpalerts', layers:()=>LYR.concat([CHORO]),
+          names:()=>({en:'⚠ Weather & disaster warnings',jp:'⚠ 気象・災害警報',de:'⚠ Wetter- und Katastrophenwarnungen',ru:'⚠ Метеопредупреждения',es:'⚠ Avisos meteorológicos'}) });
       /* JMA warning codes → the kind of hazard, and the tier the code belongs to.
          Tier comes from the code range JMA publishes: 3x = 特別警報, 0x/1x = 警報, 2x = 注意報. */
       const JMA_KIND={'02':['暴風雪','Snowstorm'],'03':['大雨','Heavy rain'],'04':['洪水','Flood'],'05':['暴風','Storm'],
@@ -945,8 +1024,10 @@ window.IntMapModules.worldPacks=function(HOST){
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function tides(){
       const IMG='wp-tide-src', LYR='wp-tide-img', SRC='wp-tide', PT='wp-tide-pt', LBL='wp-tide-lbl';
-      let on=false, at=null, series=null, busy=false, stations=[], gridKey='', gridBusy=false;
-      const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides');
+      let on=false, at=null, series=null, busy=false, stations=[], gridKey='', gridBusy=false, scanning=false;
+      const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
+        { legendId:'wptides', layers:()=>[LYR,PT,LBL],
+          names:()=>({en:'🌊 Tides',jp:'🌊 潮汐（満潮・干潮）',de:'🌊 Gezeiten',ru:'🌊 Приливы',es:'🌊 Mareas'}) });
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PT)) GE().layers.add({id:PT,type:'circle',source:SRC,layout:{visibility:'none'},
@@ -1018,17 +1099,38 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
         setVis([PT,LBL],on); }
 
+      /* ══ ⚠⚠ (#R215) THE SCAN ASKED THE LAND MASK BEFORE THE LAND MASK EXISTED ═════════════
+         「（追記：いやさぼってんじゃねーよ。指示通り作れ）」 reported a THIRD time, and switching the
+         layer on this round still drew nothing: measured, `stations: 0`, no window, an empty map and
+         a toast telling the reader to tap something. Two causes, both here.
+
+         (1) `coastPoints()` returns [] unless `IntMapLandMask.ready()`, and `warm()` is a PROMISE that
+             had just been fired and not awaited — so the very first scan, the one that runs when the
+             layer is switched on, always sampled a mask that had not decoded yet and found no coast.
+             Nothing retried it: `gridKey` had already been set to this view, so the next `moveend` at
+             the same camera returned early. The layer stayed empty until the user happened to pan.
+         (2) Even with stations, the WINDOW only opened from `probe()`, i.e. only on a tap. A layer
+             whose answer is invisible until you guess where to click is the 「さぼってる」.
+
+         So: the mask is awaited, a scan that answered nothing re-arms its key instead of latching the
+         view, and `toggle(true)` opens the window immediately and says which of the three states it is
+         in — scanning, N coasts carrying their level, or the model has nothing here. */
       function scanCoast(){
         if(!on) return;
-        let key=''; try{ const b=GE().camera.getBounds(); const c=GE().camera.getCenter();
+        let key=''; try{ const c=GE().camera.getCenter();
           key=[Math.round(GE().camera.getZoom()*2),Math.round(c.lng*4),Math.round(c.lat*4)].join('/'); }catch(_){}
         if(!key||key===gridKey||gridBusy) return;
         gridKey=key; gridBusy=true;
-        try{ window.IntMapLandMask&&window.IntMapLandMask.warm&&window.IntMapLandMask.warm(); }catch(_){}
+        const rearm=()=>{ gridKey=''; };          /* a scan that answered nothing must be retriable */
+        Promise.resolve().then(()=>{ try{ const LM=window.IntMapLandMask; return (LM&&LM.warm)?LM.warm():null; }catch(_){ return null; } })
+          .then(()=>scanNow(rearm)).catch(()=>{ gridBusy=false; rearm(); }); }
+      function scanNow(rearm){
+        scanning=false;
+        if(!on){ gridBusy=false; return; }
         const pts=coastPoints(28);
-        if(!pts.length){ gridBusy=false; stations=[]; drawStations(); return; }
+        if(!pts.length){ gridBusy=false; rearm(); stations=[]; drawStations(); overview(); return; }
         const t0=when();
-        fetchMany(pts,t0).then(list=>{
+        return fetchMany(pts,t0).then(list=>{
           stations=list.map(o=>{
             if(!o.pts.length) return null;
             const lv=levelAt(o.pts,t0); if(lv==null) return null;
@@ -1037,9 +1139,35 @@ window.IntMapModules.worldPacks=function(HOST){
             const nx=extrema(o.pts).filter(x=>x.t>t0).sort((a,b)=>a.t-b.t)[0];
             const lbl=lv.toFixed(1)+' m'+(nx?('  '+(nx.high?'▲':'▼')+fmtHM(nx.t-t0)):'');
             return { lng:o.lng, lat:o.lat, lv, rel, lbl, next:nx||null }; }).filter(Boolean);
-          drawStations();
-        }).catch(()=>{ stations=[]; drawStations(); })
+          if(!stations.length) rearm();
+          drawStations(); overview();
+        }).catch(()=>{ stations=[]; rearm(); drawStations(); overview(true); })
           .then(()=>{ gridBusy=false; }); }
+      /* what the layer says WITHOUT a tap: the coasts in view, the level now and when each next turns.
+         A tapped point replaces this with its own table (probe) and it returns on the next scan. */
+      const SRCNOTE=()=>'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
+        +L('Sea level above mean sea level from the Open-Meteo Marine model, hourly. Highs and lows are the local extrema of that series, refined between samples. Tap a coast for its own table and how far the water reaches \u2014 the shading is ground at or below that level, from the same elevation model the sea-level layer uses (a still-water fill, not a run-up model). The clock drives all of it.',
+           '\u51fa\u5178\u306f Open-Meteo Marine \u306e1\u6642\u9593\u3054\u3068\u306e\u5e73\u5747\u6d77\u9762\u57fa\u6e96\u306e\u6f6e\u4f4d\u3002\u6e80\u6f6e\u30fb\u5e72\u6f6e\u306f\u305d\u306e\u7cfb\u5217\u306e\u6975\u5024\uff08\u6a19\u672c\u9593\u3092\u88dc\u9593\uff09\u3002\u6d77\u5cb8\u3092\u30bf\u30c3\u30d7\u3059\u308b\u3068\u305d\u306e\u5730\u70b9\u306e\u6642\u523b\u8868\u3068\u6d78\u6c34\u7bc4\u56f2\u304c\u51fa\u307e\u3059\uff08\u5857\u308a\u306f\u73fe\u5728\u306e\u6f6e\u4f4d\u4ee5\u4e0b\u306e\u5730\u9762\u3067\u3001Sea-level change \u3068\u540c\u3058\u6a19\u9ad8\u30c7\u30fc\u30bf\u3092\u4f7f\u3063\u305f\u9759\u6c34\u9762\u306e\u5857\u308a\u3002\u9061\u4e0a\u30e2\u30c7\u30eb\u3067\u306f\u3042\u308a\u307e\u305b\u3093\uff09\u3002\u6642\u8a08\u3092\u52d5\u304b\u3059\u3068\u5168\u90e8\u304c\u8ffd\u96a8\u3057\u307e\u3059\u3002',
+           'Pegel aus dem Open-Meteo-Marine-Modell; K\u00fcste antippen f\u00fcr Tabelle und \u00dcberflutung.',
+           '\u0423\u0440\u043e\u0432\u0435\u043d\u044c \u043c\u043e\u0440\u044f \u0438\u0437 \u043c\u043e\u0434\u0435\u043b\u0438 Open-Meteo Marine; \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u0435 \u0434\u043b\u044f \u0442\u0430\u0431\u043b\u0438\u0446\u044b \u0438 \u0437\u0430\u0442\u043e\u043f\u043b\u0435\u043d\u0438\u044f.',
+           'Nivel del mar del modelo Open-Meteo Marine; toque una costa para su tabla e inundaci\u00f3n.')+'</div>';
+      function overview(failed){
+        if(!on||at) return;                       /* a tapped point owns the window until the next scan */
+        const t0=when();
+        let body;
+        if((gridBusy||scanning)&&!stations.length) body='<div class="wp-t-body">'+L('Scanning the coast in view\u2026','\u8868\u793a\u4e2d\u306e\u6d77\u5cb8\u3092\u8d70\u67fb\u3057\u3066\u3044\u307e\u3059\u2026','K\u00fcste wird abgetastet\u2026','\u0421\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u044f\u2026','Explorando la costa\u2026')+'</div>';
+        else if(failed) body='<div class="wp-t-body">\u26a0 '+L('The tide model could not be fetched.','\u6f6e\u6c50\u30c7\u30fc\u30bf\u3092\u53d6\u5f97\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002','Gezeitendaten nicht abrufbar.','\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435.','No se pudieron obtener los datos.')+'</div>';
+        else if(!stations.length) body='<div class="wp-t-body">'+L('No coast in this view \u2014 pan to a coastline, or tap one for its tide times.','\u3053\u306e\u8868\u793a\u7bc4\u56f2\u306b\u6d77\u5cb8\u304c\u3042\u308a\u307e\u305b\u3093\u3002\u6d77\u5cb8\u7dda\u307e\u3067\u79fb\u52d5\u3059\u308b\u304b\u3001\u6d77\u5cb8\u3092\u30bf\u30c3\u30d7\u3057\u3066\u304f\u3060\u3055\u3044\u3002','Keine K\u00fcste im Bild.','\u0412 \u044d\u0442\u043e\u043c \u0432\u0438\u0434\u0435 \u043d\u0435\u0442 \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u044f.','No hay costa en esta vista.')+'</div>';
+        else {
+          const rows=stations.slice().sort((a,b)=>(a.next?a.next.t:Infinity)-(b.next?b.next.t:Infinity)).slice(0,8);
+          body='<div class="wp-t-body"><div style="font-size:11.5px;color:var(--text-muted);margin-bottom:4px;">'
+            +stations.length+' '+L('coasts in view \u00b7 level now, and the next turn','\u304b\u6240\uff08\u73fe\u5728\u306e\u6f6e\u4f4d\u3068\u6b21\u306e\u8ee2\u6d41\uff09','K\u00fcstenpunkte','\u0442\u043e\u0447\u0435\u043a \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u044f','puntos de costa')+'</div>'
+            +rows.map(st=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;">'
+              +'<span>'+st.lat.toFixed(1)+', '+st.lng.toFixed(1)+'</span>'
+              +'<b>'+st.lv.toFixed(2)+' m</b>'
+              +'<span style="color:var(--text-muted);">'+(st.next?((st.next.high?'\u25b2 ':'\u25bc ')+esc(fmtT(st.next.t))):'\u2014')+'</span></div>').join('')
+            +'<div style="margin-top:5px;color:var(--text-muted);font-size:11px;">'+esc(fmtT(t0))+'</div></div>'; }
+        panel.open(body+SRCNOTE()); drawStations(); }
 
       async function fetchSeries(lng,lat,when){
         const day=new Date(when); const iso=(d)=>d.toISOString().slice(0,10);
@@ -1132,7 +1260,8 @@ window.IntMapModules.worldPacks=function(HOST){
         busy=false; }
 
       function toggle(v){ on=v;
-        if(!on){ panel.hide(); clearFlood(); setVis([PT,LBL],false); stations=[]; gridKey=''; return; }
+        if(!on){ panel.hide(); clearFlood(); setVis([PT,LBL],false); stations=[]; at=null; gridKey=''; return; }
+        at=null; stations=[]; scanning=true; overview();   /* (#R215) the window opens WITH the layer, not on a tap */
         whenDrawable(()=>{ ensureLayers(); gridKey=''; scanCoast(); });
         try{ HOST.imToast(L('Tap a coast for its tide times and how far the water reaches.','海岸をタップすると満干潮の時刻と浸水範囲が出ます。','Küste antippen für Gezeiten und Überflutung.','Нажмите побережье — время приливов и затопление.','Toque una costa para mareas e inundación.')); }catch(_){} }
 
@@ -1189,7 +1318,9 @@ window.IntMapModules.worldPacks=function(HOST){
       const SUPPLY=[['Total','合計','Gesamt','Всего','Total'],['Rainfed','天水','Regenfeld','Богарное','Secano'],
         ['Irrigated','灌漑','Bewässert','Орошаемое','Regadío']];
       let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null;
-      const panel=makePanel('wp-crop-panel',()=>'🌾 '+L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops');
+      const panel=makePanel('wp-crop-panel',()=>'🌾 '+L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
+        { legendId:'wpcrop', layers:()=>[LYR],
+          names:()=>({en:'🌾 Crop cultivation',jp:'🌾 作物の栽培',de:'🌾 Feldfrüchte',ru:'🌾 Сельхозкультуры',es:'🌾 Cultivos'}) });
       const cropName=(k)=>{ const r=CROPS.find(c=>c[0]===k); return (r&&HOST.lang==='jp')?r[1]:k; };
       const varName=(v)=>{ const r=VARS.find(x=>x[0]===v); const i={jp:1,de:2,ru:3,es:4}[HOST.lang]||0; return r?r[i]:v; };
       const supName=(s)=>{ const r=SUPPLY.find(x=>x[0]===s); const i={jp:1,de:2,ru:3,es:4}[HOST.lang]||0; return r?r[i]:s; };
@@ -1284,8 +1415,8 @@ window.IntMapModules.worldPacks=function(HOST){
               GE().layers.add({id:LYR,type:'raster',source:IMG,
                 paint:{'raster-opacity':0.85,'raster-fade-duration':0,'raster-resampling':'nearest'}},
                 GE().layers.has('tool-poly')?'tool-poly':undefined);
-              try{ if(window._registerLayerOpacity) window._registerLayerOpacity('wpcrop',
-                ['Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'],[LYR],'wp-dl-crops'); }catch(_){} }
+              panel.claim(); }
+            panel.claim();
             setVis([LYR],on); }catch(_){} });
           lastMeta={ st, units:rec.units, year:yr, oid:rec.OBJECTID };
           render();
@@ -1309,7 +1440,6 @@ window.IntMapModules.worldPacks=function(HOST){
           +(st?rampLegend(CROP_RAMP.map(s=>[fmt(st.min+(st.max-st.min)*s[0]),s[1]]),
               varName(variable)+' — '+un+' '+L('per 5-arcminute cell (~9 km)','（5分メッシュ＝約9km 四方あたり）','pro 5-Bogenminuten-Zelle','на ячейку 5′','por celda de 5′')):'')
           +'<div class="wp-c-stat" style="font-size:11.5px;color:var(--text-main);min-height:15px;"></div>'
-          +'<button class="wp-c-lc" style="'+BTN+'width:100%;">'+L('Also show 10 m land cover','10m 土地被覆も表示','10-m-Landbedeckung','Покрытие 10 м','Cobertura de 10 m')+'</button>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
           +L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The color scale is fixed to this raster’s own measured minimum and maximum, so the same color means the same number wherever you pan. Tap the map for the value in that cell.',
              '出典: FAO GAEZ v4「面積・収量・生産量」——各作物が実際に栽培されている場所の5分メッシュ格子（基準年 2000 / 2010。時計が近い方を選びます。現在の表示は '+(lastMeta?lastMeta.year:'2010')+' 年）。色階はこのラスタ自身の実測の最小・最大に固定してあるので、同じ色はどこへ動かしても同じ値です。地図をタップするとそのセルの値が出ます。',
@@ -1319,9 +1449,6 @@ window.IntMapModules.worldPacks=function(HOST){
         b.querySelector('.wp-crop').onchange=(e)=>{ crop=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-cvar').onchange=(e)=>{ variable=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-csup').onchange=(e)=>{ supply=e.target.value; lastMeta=null; paint(true); };
-        b.querySelector('.wp-c-lc').onclick=()=>{ const cb=document.getElementById('eco-dl-worldcover');
-          if(cb){ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }
-          else { try{ HOST.imToast(L('Land cover layer not available.','土地被覆レイヤーが見つかりません。','Landbedeckung nicht verfügbar.','Слой недоступен.','Capa no disponible.')); }catch(_){} } };
         return b; }
       function stat(txt){ const b=panel.body(); const s=b&&b.querySelector('.wp-c-stat'); if(s) s.textContent=txt||''; }
 
