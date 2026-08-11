@@ -285,7 +285,9 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   assert.doesNotMatch(iw, /new maplibregl\.Popup|GE\(\)\.ui\.popup/, 'there is no second, separate popup');
   /* it borrows the layer-family toolkit instead of carrying a second copy */
   assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');
-  assert.match(read('js/world-packs.js'), /const _ui=\{ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, L \};/,
+  /* (#R220) …plus `onRestyle`: a style reload drops every added layer, and the current plate — the
+     one member of this family in its own file — had no way to hear about it. */
+  assert.match(read('js/world-packs.js'), /const _ui=\{ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, onRestyle, L \};/,
     'and world-packs publishes exactly that toolkit');
   /* the module is imported after world-packs, which is what makes the line above true at boot */
   const main = read('src/main.js');
