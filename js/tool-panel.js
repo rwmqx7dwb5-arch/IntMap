@@ -464,40 +464,49 @@ window.IntMapModules.toolPanel=function(HOST){
   function showContextMenu(point,lngLat){
     const m=document.getElementById('ctx-menu'); let mc=document.getElementById('map-container').getBoundingClientRect();   /* (#R210) `let`: place() re-reads it */
     const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    /* ══ (#R216) THE MENU SAYS WHICH POINT ONCE, AT THE TOP ═══════════════════════════════════════
+       「『この地点: 35.986°N 137.863°E / この地点』ってなんやねんネーミングセンス悪すぎ。右クリック
+        したときに、『この』『ここの』『ここ』が多すぎて気持ち悪い。」 — and counted, it was: the
+       coordinate row said 「この地点」, the first heading said 「この地点」 again, and then eleven of the
+       fifteen entries opened with 「ここ」「ここの」「この」. Every one of them was pointing at the same
+       fact, which the row at the top already states.
+       So the coordinate stands alone (it IS the subject of the menu), the headings name what the
+       group is for, and each entry names only what it DOES. Nothing is removed and nothing changes
+       behaviour — `items` is the same fifteen actions in the same order. */
     const items=[
-      {coord:`${HOST.t('ctxThisPoint')}: ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`},
-      {h:HOST.t('ctxThisPoint'),head:true},
-      {label:`${L('Ask Atlas about here','ここをAtlasに聞く','Atlas zu diesem Ort fragen','Спросить Atlas об этом месте','Preguntar a Atlas sobre aquí')}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
-      {label:`🧍 ${L('Street View here','ここのストリートビュー','Street View hier','Просмотр улиц здесь','Street View aquí')}`, action:()=>{ window.IntMapLazy.need('streetView').then(()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {coord:`📍 ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`,label2:HOST.t('ctxThisPoint')},
+      {h:L('Actions','操作','Aktionen','Действия','Acciones'),head:true},
+      {label:`${L('Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas')}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
+      {label:`🧍 ${L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')}`, action:()=>{ window.IntMapLazy.need('streetView').then(()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       {label:`📍 ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
       /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to
          this view" removed per request — the live-permalink hash still restores a reload. */
       {label:`📋 ${HOST.t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       /* (#R40/#R42) Share the EXACT current state (position, zoom, projection, base map, layers, time-travel,
          compare) as a link — opens the surfaced IntMapShare panel (link shown + copy + native share). */
-      {label:`🔗 ${L('Share this view','この表示を共有','Diese Ansicht teilen','Поделиться этим видом','Compartir esta vista')}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
+      {label:`🔗 ${L('Share the view','表示を共有','Ansicht teilen','Поделиться видом','Compartir la vista')}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
       {label:`💬 ${HOST.t('ctxPostHere')}`, action:()=>{ if(!HOST.requireLogin()) return; HOST.pendingPostLoc=[lngLat.lng,lngLat.lat]; HOST.communityAddArmed=false; HOST.openComposeModal(); }},
       {h:L('Measure','計測','Messen','Измерение','Medir'),head:true},
       {label:`📏 ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
-      {label:`⭕ ${L('Radius from here','ここからの半径','Radius von hier','Радиус отсюда','Radio desde aquí')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
-      {h:L('About this point','ここの情報','Zu diesem Punkt','Об этой точке','Sobre este punto'),head:true},
-      {label:`🌤 ${L('Weather here (live)','ここの天気（最新）','Wetter hier (aktuell)','Погода здесь (сейчас)','El tiempo aquí (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
-      {label:`🛬 ${L('Runway search (from here)','滑走路検索（ここから）','Start-/Landebahn-Suche (von hier)','Поиск ВПП (отсюда)','Búsqueda de pistas (desde aquí)')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
+      {label:`⭕ ${L('Draw a radius','半径を描く','Radius zeichnen','Начертить радиус','Dibujar un radio')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
+      {h:L('Live info','現地の情報','Aktuelle Infos','Данные на месте','Datos en vivo'),head:true},
+      {label:`🌤 ${L('Weather (live)','天気（最新）','Wetter (aktuell)','Погода (сейчас)','El tiempo (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
+      {label:`🛬 ${L('Find runways','滑走路を検索','Landebahnen suchen','Найти ВПП','Buscar pistas')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {h:L('Analysis & simulation','解析・シミュレーション','Analyse & Simulation','Анализ и моделирование','Análisis y simulación'),head:true},
       {label:`📡 ${L('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)')}`, action:()=>{ window.IntMapLazy.need('los').then(()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }); }},
       {label:`🎯 ${L('Reachable area (drive/walk/cycle)','到達圏（車/徒歩/自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)')}`, action:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.open(lngLat); }catch(_){} }},
       /* (#R176) The three simulators this round added. They live HERE and in Atlas — not in the Measure
          menu, which is where the drone planner was and which the user rejected outright. */
       {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ window.IntMapLazy.need('terrainWater').then(()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
-      {label:`🌐 ${L('Seismic waves from here','ここを震源に地震波シミュレーション','Seismische Wellen von hier','Сейсмические волны отсюда','Ondas sísmicas desde aquí')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
-      {label:`🌇 ${L('Sunlight hours & shade here','ここの日照時間・影を解析','Sonnenstunden & Schatten hier','Часы солнца и тени здесь','Horas de sol y sombra aquí')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
+      {label:`🌐 ${L('Seismic waves (set as epicentre)','地震波シミュレーション（震源に設定）','Seismische Wellen (als Epizentrum)','Сейсмические волны (как эпицентр)','Ondas sísmicas (como epicentro)')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */
-      {label:`✨ ${L('Night sky from here','ここからの星空','Sternhimmel von hier','Звёздное небо отсюда','El cielo desde aquí')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'dome'}); }catch(_){} }); }},
+      {label:`✨ ${L('Night sky','星空を見る','Sternhimmel','Звёздное небо','El cielo nocturno')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'dome'}); }catch(_){} }); }},
       /* (#R214) 「実際にその地点に立ったように見れるモードも追加して。」 — the same sky and the same
          measured skyline, through a lens instead of onto a chart. A separate entry because the whole
          point of it is the first-person view, and a mode hidden inside a panel is not that. */
-      {label:`🧍 ${L('Stand here and look at the sky','ここに立って空を見る','Hier stehen und zum Himmel sehen','Встать здесь и смотреть на небо','Ponerse aquí y mirar al cielo')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'stand'}); }catch(_){} }); }},
+      {label:`🧍 ${L('Stand and look up','立って空を見上げる','Stehen und hinaufsehen','Встать и посмотреть вверх','Ponerse de pie y mirar arriba')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'stand'}); }catch(_){} }); }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
@@ -512,7 +521,7 @@ window.IntMapModules.toolPanel=function(HOST){
        returns the FIRST equal element, which two identically-labelled entries would collide on. */
     let html='', open=false, gi=0;
     items.forEach((it,i)=>{
-      if(it.coord){ html+=`<div class="ctx-coord">${IntMapSafe.html(it.coord)}</div>`; return; }
+      if(it.coord){ html+=`<div class="ctx-coord" title="${IntMapSafe.html(it.label2||'')}">${IntMapSafe.html(it.coord)}</div>`; return; }
       if(it.head){ if(open) html+='</div>'; gi++; open=true;
         html+=`<button class="ctx-grp" data-grp="${gi}" aria-expanded="false"><span>${IntMapSafe.html(it.h)}</span><span class="ctx-chev">▶</span></button>`
              +`<div class="ctx-sec" data-sec="${gi}" hidden>`; return; }

@@ -214,7 +214,9 @@ test('R215 ⑨: trade shades the countries on the app’s own country source', (
   assert.match(blk, /source:'countries'/, 'on the SAME country geometry every other layer uses (「いつもの国境線」)');
   assert.match(blk, /feature-state','wpTrade'/, 'driven by feature-state, so it repaints without rebuilding geometry');
   assert.match(blk, /wpTradeH/, 'and the selected country reads as itself, not as its own partner');
-  assert.match(wp, /hiResCountries\(\)/, 'and it asks for the 10 m outline rather than drawing the 110 m boot copy');
+  /* (#R216) …and it now hands over a REPAINT: the flush clears feature state, so a flush that
+     succeeds after the colours are on would blank the choropleth it just improved. */
+  assert.match(wp, /hiResCountries\((?:\)|\(\)=>)/, 'and it asks for the 10 m outline rather than drawing the 110 m boot copy');
 });
 
 /* ═══ ⑩ THE SPACE EXPLORER ═══════════════════════════════════════════════════════════════════

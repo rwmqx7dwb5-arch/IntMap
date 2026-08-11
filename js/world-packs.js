@@ -150,8 +150,12 @@ window.IntMapModules.worldPacks=function(HOST){
        runs. A choropleth IS that layer, so it asks for the flush: once now, and again while the
        upgrade is still in flight (it lands 4-15 s after boot, later on a phone). `_imFlushCountryGeo`
        is a no-op when nothing is pending, so the retry costs a function call. */
-    function hiResCountries(){ let n=0;
-      (function t(){ try{ if(window._imFlushCountryGeo&&window._imFlushCountryGeo()) return; }catch(_){}
+    /* ⚠ (#R216) `force` — the flush used to refuse unless the Countries(info) mode was on, so every
+       choropleth here painted the 110 m stand-in for the whole session (measured). And because
+       `setSourceData` CLEARS FEATURE STATE, a flush that succeeds after the colours are on wipes
+       them: `after` is the family's own repaint, run once the fine geometry is actually in. */
+    function hiResCountries(after){ let n=0;
+      (function t(){ try{ if(window._imFlushCountryGeo&&window._imFlushCountryGeo(true)){ try{ after&&after(); }catch(_){} return; } }catch(_){}
         if(n++<14) setTimeout(t,1600); })(); }
 
     /* ── a great circle that does not wrap round the back of the world ───────────────────────────
@@ -215,10 +219,21 @@ window.IntMapModules.worldPacks=function(HOST){
       const names=()=>{ try{ return opt.names?panelNames(opt.names()):[title(),title(),title(),title(),title()]; }catch(_){ return [id,id,id,id,id]; } };
       const layers=()=>{ try{ return (opt.layers?opt.layers():[])||[]; }catch(_){ return []; } };
       const legend=()=>document.getElementById('data-legend-'+LID);
+      /* ══ ⚠⚠ (#R216) THE ✕ CLOSED IT AND THE LAYER PUT IT STRAIGHT BACK ═════════════════════════
+         「貿易フローのポップアップを消しても、また出現して消せない。」 MEASURED: closing the trade
+         legend runs toggle(false) → panel.hide() (synchronous, the box goes) → draw(), whose
+         `withCountrySource().then(…)` continuation lands a moment later and calls `panel.claim()`.
+         `claim()` is `_registerLayerOpacity`, and that function ENDS WITH `el.style.display='block'`
+         — it is the toggle-ON entry point, so re-registering the layer ids also re-opens the box.
+         The window therefore reappeared a few hundred milliseconds after every close, for ever.
+         `_want` is this panel's own idea of whether it should be on screen; `claim()` restores it
+         after re-registering, so re-declaring the opacity targets stays what it says it is. */
+      let _want=false;
       const P={
         get el(){ return legend(); },
         open(bodyHTML){
           let el=null;
+          _want=true;
           try{ el=window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
           if(!el) el=legend();
           if(!el) return null;
@@ -233,9 +248,13 @@ window.IntMapModules.worldPacks=function(HOST){
           try{ window._tileLegends&&window._tileLegends(); }catch(_){}
           return b; },
         body(){ const el=legend(); return el?el.querySelector('.wp-body'):null; },
-        /* re-register the ids once the layers actually exist (raster families build theirs late) */
-        claim(){ try{ window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){} },
-        hide(){ try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
+        /* re-register the ids once the layers actually exist (raster families build theirs late).
+           ⚠ never a way to re-open a box the user closed — see the note on `_want` above. */
+        claim(){ try{ window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
+          if(!_want){ const el=legend(); if(el) el.style.display='none';
+            try{ window._tileLegends&&window._tileLegends(); }catch(_){} } },
+        hide(){ _want=false;
+          try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
           const el=legend(); if(el) el.style.display='none'; },
         shown(){ const el=legend(); return !!(el&&el.style.display!=='none'&&el.style.display!==''); } };
       return P; }
@@ -433,7 +452,7 @@ window.IntMapModules.worldPacks=function(HOST){
           }
         }
         whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); }
-          withCountrySource().then(()=>{ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(); }catch(_){}
+          withCountrySource().then(()=>{ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(true); }catch(_){}
             if(ensureChoro()){ paintCountries(); setVis([CHORO],on); panel.claim(); } }); }); }
 
       function render(){
@@ -507,7 +526,7 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function toggle(v){ on=v;
         if(!on){ panel.hide(); draw(); setVis([CHORO],false); return; }
-        whenDrawable(()=>{ if(ensureLayers()) wire(); draw(); }); render(); hiResCountries();
+        whenDrawable(()=>{ if(ensureLayers()) wire(); draw(); }); render(); hiResCountries(()=>{ if(on) draw(); });
         withCountryGeo().then(()=>{ if(on&&iso) load(iso,true); });
         try{ HOST.imToast(L('Tap a country to see who it trades with.','国をタップすると相手国別の貿易が出ます。','Land antippen.','Нажмите страну.','Toque un país.')); }catch(_){} }
       STATE.trade=()=>({ on, dir, section, topN, iso, year, partners:rows?rows.length:0,
@@ -675,7 +694,7 @@ window.IntMapModules.worldPacks=function(HOST){
         paint(); render(); if(iso) show(iso); return kind; }
 
       function paint(){ withCountrySource().then(async()=>{ if(!on) return;
-        try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(); }catch(_){}
+        try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(true); }catch(_){}
         if(!ensureChoro(kind)){ whenDrawable(()=>{ if(on&&ensureChoro(kind)) apply(kind).then(()=>setVis([fillId(kind)],true)).catch(()=>{}); }); return; }
         try{ await apply(kind); }catch(e){ try{ HOST.imToast(L('Energy data could not be fetched.','エネルギーデータを取得できませんでした。','Daten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.')); }catch(_){} }
         setVis([fillId(kind)],true);
@@ -684,7 +703,7 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function toggle(v){ on=!!v;
         if(!on){ setVis([fillId('elec'),fillId('prim')],false); panel.hide(); return; }
-        render(); paint(); hiResCountries(); }
+        render(); paint(); hiResCountries(()=>{ if(on) paint(); }); }
 
       mapClick((e)=>{ if(!on) return false;
         const c=countryAt(e.lngLat.lng,e.lngLat.lat); if(!c) return false;
@@ -992,7 +1011,7 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function toggle(v){ on=v;
         if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); setVis(LYR,false); setVis([CHORO],false); return; }
-        whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries();
+        whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(); });
         if(!timer) timer=setInterval(()=>{ if(on) refresh(); },300000); }
 
       onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,true); paintCountries(); }); });
@@ -1025,6 +1044,16 @@ window.IntMapModules.worldPacks=function(HOST){
     (function tides(){
       const IMG='wp-tide-src', LYR='wp-tide-img', SRC='wp-tide', PT='wp-tide-pt', LBL='wp-tide-lbl';
       let on=false, at=null, series=null, busy=false, stations=[], gridKey='', gridBusy=false, scanning=false;
+      /* ══ (#R216) 「潮汐レイヤーは日時選択、再生もできるように。」 ══════════════════════════════════
+         A tide is a curve in time, so the layer needs a handle on time. ⚠ IT DOES NOT GET A CLOCK OF
+         ITS OWN — the standing rule (#R94) is that `window.IntMapTime` is the one master clock, and a
+         second one here would put the tide, the terminator and the news on different instants. These
+         controls DRIVE that clock (`allowFuture:true`, because the marine model is a forecast and its
+         window reaches ~36 h ahead), and the existing `onYear` subscription is what redraws.
+         ⚠ AND PLAYBACK MUST NOT BE A REQUEST LOOP. Each station keeps the hourly series it was
+         already given, so stepping the clock inside that window is arithmetic; the network is only
+         asked again when the instant leaves the window every station actually covers. */
+      let playTmr=0, playStep=20*60e3, floodTick=0;
       const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
         { legendId:'wptides', layers:()=>[LYR,PT,LBL],
           names:()=>({en:'🌊 Tides',jp:'🌊 潮汐（満潮・干潮）',de:'🌊 Gezeiten',ru:'🌊 Приливы',es:'🌊 Mareas'}) });
@@ -1131,18 +1160,41 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!pts.length){ gridBusy=false; rearm(); stations=[]; drawStations(); overview(); return; }
         const t0=when();
         return fetchMany(pts,t0).then(list=>{
+          /* ⚠ (#R216) the hourly series is KEPT on the station. It is what makes the clock scrubbable
+             and the play button affordable: a step inside this window is arithmetic, not a request. */
           stations=list.map(o=>{
             if(!o.pts.length) return null;
-            const lv=levelAt(o.pts,t0); if(lv==null) return null;
-            let lo=Infinity,hi=-Infinity; o.pts.forEach(p=>{ if(p[1]<lo)lo=p[1]; if(p[1]>hi)hi=p[1]; });
-            const rel=(hi-lo>1e-6)?Math.max(0,Math.min(1,(lv-lo)/(hi-lo))):0.5;
-            const nx=extrema(o.pts).filter(x=>x.t>t0).sort((a,b)=>a.t-b.t)[0];
-            const lbl=lv.toFixed(1)+' m'+(nx?('  '+(nx.high?'▲':'▼')+fmtHM(nx.t-t0)):'');
-            return { lng:o.lng, lat:o.lat, lv, rel, lbl, next:nx||null }; }).filter(Boolean);
+            const st=restat({ lng:o.lng, lat:o.lat, pts:o.pts },t0);
+            return st; }).filter(Boolean);
           if(!stations.length) rearm();
           drawStations(); overview();
         }).catch(()=>{ stations=[]; rearm(); drawStations(); overview(true); })
           .then(()=>{ gridBusy=false; }); }
+      /* the level, the phase and the next turn AT `t0`, from a series this station already has */
+      function restat(st,t0){
+        const lv=levelAt(st.pts,t0); if(lv==null) return null;
+        let lo=Infinity,hi=-Infinity; st.pts.forEach(p=>{ if(p[1]<lo)lo=p[1]; if(p[1]>hi)hi=p[1]; });
+        st.lv=lv;
+        st.rel=(hi-lo>1e-6)?Math.max(0,Math.min(1,(lv-lo)/(hi-lo))):0.5;
+        const nx=extrema(st.pts).filter(x=>x.t>t0).sort((a,b)=>a.t-b.t)[0];
+        st.next=nx||null;
+        st.lbl=lv.toFixed(1)+' m'+(nx?('  '+(nx.high?'▲':'▼')+fmtHM(nx.t-t0)):'');
+        return st; }
+      /* does every cached series still cover this instant? (leaving the window is the only re-fetch) */
+      function covered(t0){
+        const has=(pts)=>!!(pts&&pts.length>1&&t0>=pts[0][0]&&t0<=pts[pts.length-1][0]);
+        if(at&&!has(series)) return false;
+        if(!stations.length) return !!(at&&has(series));
+        return stations.every(s=>has(s.pts)); }
+      /* the clock moved inside the cached window: recompute, redraw, never fetch */
+      function restatAll(t0){
+        stations=stations.map(s=>restat(s,t0)).filter(Boolean);
+        drawStations();
+        if(at&&series&&series.length){
+          const lv=levelAt(series,t0);
+          if(lv!=null&&(++floodTick%3===0||!playTmr)) paintFlood(at[0],at[1],lv);
+          probeHtml(t0,lv);
+        } else overview(); }
       /* what the layer says WITHOUT a tap: the coasts in view, the level now and when each next turns.
          A tapped point replaces this with its own table (probe) and it returns on the next scan. */
       const SRCNOTE=()=>'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
@@ -1167,7 +1219,7 @@ window.IntMapModules.worldPacks=function(HOST){
               +'<b>'+st.lv.toFixed(2)+' m</b>'
               +'<span style="color:var(--text-muted);">'+(st.next?((st.next.high?'\u25b2 ':'\u25bc ')+esc(fmtT(st.next.t))):'\u2014')+'</span></div>').join('')
             +'<div style="margin-top:5px;color:var(--text-muted);font-size:11px;">'+esc(fmtT(t0))+'</div></div>'; }
-        panel.open(body+SRCNOTE()); drawStations(); }
+        openTide(body); drawStations(); }
 
       async function fetchSeries(lng,lat,when){
         const day=new Date(when); const iso=(d)=>d.toISOString().slice(0,10);
@@ -1231,11 +1283,45 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function fmtT(ms){ try{ return new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return new Date(ms).toISOString().slice(0,16).replace('T',' '); } }
       function when(){ try{ const st=window.IntMapTime.state(); return st.isLive?Date.now():+new Date(st.when); }catch(_){ return Date.now(); } }
+      const isLive=()=>{ try{ return window.IntMapTime.isLive(); }catch(_){ return true; } };
+      /* ══ (#R216) THE DATE FIELD AND THE PLAY BUTTON ═══════════════════════════════════════════════
+         Local time in the field, because a tide table is read in local time; the master clock stores
+         the instant. Steps are the shape of the phenomenon — an hour, and 6h12m, which is a quarter
+         of the mean semi-diurnal period (12h25m), i.e. high water → slack → low water. */
+      const TB='padding:3px 6px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;line-height:1.1;';
+      function localValue(ms){ const d=new Date(ms-new Date(ms).getTimezoneOffset()*60e3); return d.toISOString().slice(0,16); }
+      function timeBar(){
+        const live=isLive();
+        return '<div class="wp-t-time" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:5px;">'
+          +'<button class="wp-t-step" data-d="-6.2" title="'+esc(L('back a quarter cycle (6h12m)','1/4周期戻る（6時間12分）','ein Viertelzyklus zurück','на четверть цикла назад','un cuarto de ciclo atrás'))+'" style="'+TB+'">«</button>'
+          +'<button class="wp-t-step" data-d="-1" title="'+esc(L('an hour back','1時間前','eine Stunde zurück','на час назад','una hora atrás'))+'" style="'+TB+'">‹</button>'
+          +'<button class="wp-t-play" style="'+TB+'min-width:26px;">'+(playTmr?'⏸':'▶')+'</button>'
+          +'<button class="wp-t-step" data-d="1" title="'+esc(L('an hour on','1時間後','eine Stunde weiter','на час вперёд','una hora adelante'))+'" style="'+TB+'">›</button>'
+          +'<button class="wp-t-step" data-d="6.2" title="'+esc(L('on a quarter cycle (6h12m)','1/4周期進む（6時間12分）','ein Viertelzyklus weiter','на четверть цикла вперёд','un cuarto de ciclo adelante'))+'" style="'+TB+'">»</button>'
+          +'<input class="wp-t-when" type="datetime-local" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
+          +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
+          +'</div>'; }
+      function setWhen(ms){ try{ window.IntMapTime.set(new Date(ms),{allowFuture:true,source:'tides'}); }catch(_){} }
+      function stopPlay(){ if(playTmr){ clearInterval(playTmr); playTmr=0; } }
+      function togglePlay(){
+        if(playTmr){ stopPlay(); }
+        else playTmr=setInterval(()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); },240);
+        const b=panel.body(), pb=b&&b.querySelector('.wp-t-play'); if(pb) pb.textContent=playTmr?'⏸':'▶'; }
+      function wireTime(b){
+        if(!b) return;
+        const w=b.querySelector('.wp-t-when');
+        if(w&&document.activeElement!==w) w.value=localValue(when());
+        if(w) w.onchange=()=>{ const d=new Date(w.value); if(!isNaN(d.getTime())){ stopPlay(); setWhen(+d); } };
+        b.querySelectorAll('.wp-t-step').forEach(x=>x.onclick=()=>{ stopPlay(); setWhen(when()+parseFloat(x.getAttribute('data-d'))*3600e3); });
+        const pb=b.querySelector('.wp-t-play'); if(pb) pb.onclick=togglePlay;
+        const lb=b.querySelector('.wp-t-live'); if(lb) lb.onclick=()=>{ stopPlay(); try{ window.IntMapTime.setNow({source:'tides'}); }catch(_){} }; }
+      /* every open of this panel goes through here, so the controls are never missing from one of them */
+      function openTide(bodyHTML,note){ const b=panel.open(timeBar()+bodyHTML+(note==null?SRCNOTE():note)); wireTime(b); return b; }
 
       async function probe(lng,lat){
         at=[lng,lat]; busy=true;
-        const b=panel.open('<div class="wp-t-body">'+L('Reading the tide…','潮位を取得中…','Gezeiten werden gelesen…','Чтение прилива…','Leyendo la marea…')+'</div>'
-          +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
+        const b=openTide('<div class="wp-t-body">'+L('Reading the tide…','潮位を取得中…','Gezeiten werden gelesen…','Чтение прилива…','Leyendo la marea…')+'</div>',
+          '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
           +L('Sea level above mean sea level from the Open-Meteo Marine model, hourly, at the point you tapped. Highs and lows are the local extrema of that series (refined between samples). The shading is the ground at or below the current tide level, read from the same elevation model the sea-level layer uses — a still-water fill, not a run-up model.',
              '出典は Open-Meteo Marine の1時間ごとの平均海面基準の潮位（タップした地点）。満潮・干潮はその系列の極値（標本間を補間して算出）。塗りは現在の潮位以下の地面で、Sea-level change と同じ標高データを使った静水面の塗りです（遡上モデルではありません）。',
              'Pegel aus dem Open-Meteo-Marine-Modell; Füllung ist Gelände unter dem Pegel (Stillwasser).',
@@ -1247,20 +1333,26 @@ window.IntMapModules.worldPacks=function(HOST){
           const t0=when();
           series=await fetchSeries(lng,lat,t0);
           if(!series.length){ host.innerHTML='⚠ '+L('No tide model at this point (inland or outside the model domain).','この地点には潮汐モデルがありません（内陸またはモデル範囲外）。','Kein Gezeitenmodell an diesem Punkt.','Нет модели прилива в этой точке.','Sin modelo de marea en este punto.'); busy=false; return; }
-          const ex=extrema(series).filter(x=>Math.abs(x.t-t0)<30*3600e3).sort((a,b2)=>a.t-b2.t);
           const lv=levelAt(series,t0);
           const wet=(lv!=null)?paintFlood(lng,lat,lv):0;
-          host.innerHTML='<div style="font-weight:700;font-size:13px;">'+lv.toFixed(2)+' m <span style="font-weight:400;color:var(--text-muted);font-size:11px;">'+L('above MSL','平均海面基準','über NN','над средним уровнем','sobre el nivel medio')+'</span></div>'
-            +'<div style="color:var(--text-muted);font-size:11px;margin-bottom:6px;">'+fmtT(t0)+'</div>'
-            +ex.slice(0,10).map(x=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;">'
-              +'<span>'+(x.high?('▲ '+L('High tide','満潮','Hochwasser','Прилив','Pleamar')):('▼ '+L('Low tide','干潮','Niedrigwasser','Отлив','Bajamar')))+'</span>'
-              +'<span>'+esc(fmtT(x.t))+'</span><b>'+x.h.toFixed(2)+' m</b></div>').join('')
-            +'<div style="margin-top:6px;color:var(--text-muted);font-size:11px;">'+L('Shaded cells at this level','この潮位で浸かるセル','Gefärbte Zellen','Затопленные ячейки','Celdas inundadas')+': '+wet+'</div>';
+          probeHtml(t0,lv,wet);
         }catch(e){ host.innerHTML='⚠ '+L('The tide model could not be fetched.','潮汐データを取得できませんでした。','Gezeitendaten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.'); }
         busy=false; }
+      /* (#R216) the tapped point's table, at whatever instant the clock is on — split out of probe()
+         so scrubbing and playback can re-draw it from the series that is already in hand */
+      function probeHtml(t0,lv,wet){
+        const b=panel.body(); const host=b&&b.querySelector('.wp-t-body'); if(!host||lv==null) return;
+        const ex=extrema(series).filter(x=>Math.abs(x.t-t0)<30*3600e3).sort((a,b2)=>a.t-b2.t);
+        host.innerHTML='<div style="font-weight:700;font-size:13px;">'+lv.toFixed(2)+' m <span style="font-weight:400;color:var(--text-muted);font-size:11px;">'+L('above MSL','平均海面基準','über NN','над средним уровнем','sobre el nivel medio')+'</span></div>'
+          +'<div style="color:var(--text-muted);font-size:11px;margin-bottom:6px;">'+fmtT(t0)+'</div>'
+          +ex.slice(0,10).map(x=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;'
+              +((x.t>=t0&&(!ex.find(y=>y.t>=t0&&y.t<x.t)))?'background:rgba(46,163,216,0.16);border-radius:5px;':'')+'">'
+            +'<span>'+(x.high?('▲ '+L('High tide','満潮','Hochwasser','Прилив','Pleamar')):('▼ '+L('Low tide','干潮','Niedrigwasser','Отлив','Bajamar')))+'</span>'
+            +'<span>'+esc(fmtT(x.t))+'</span><b>'+x.h.toFixed(2)+' m</b></div>').join('')
+          +(wet!=null?('<div style="margin-top:6px;color:var(--text-muted);font-size:11px;">'+L('Shaded cells at this level','この潮位で浸かるセル','Gefärbte Zellen','Затопленные ячейки','Celdas inundadas')+': '+wet+'</div>'):''); }
 
       function toggle(v){ on=v;
-        if(!on){ panel.hide(); clearFlood(); setVis([PT,LBL],false); stations=[]; at=null; gridKey=''; return; }
+        if(!on){ stopPlay(); panel.hide(); clearFlood(); setVis([PT,LBL],false); stations=[]; at=null; gridKey=''; return; }
         at=null; stations=[]; scanning=true; overview();   /* (#R215) the window opens WITH the layer, not on a tap */
         whenDrawable(()=>{ ensureLayers(); gridKey=''; scanCoast(); });
         try{ HOST.imToast(L('Tap a coast for its tide times and how far the water reaches.','海岸をタップすると満干潮の時刻と浸水範囲が出ます。','Küste antippen für Gezeiten und Überflutung.','Нажмите побережье — время приливов и затопление.','Toque una costa para mareas e inundación.')); }catch(_){} }
@@ -1268,8 +1360,14 @@ window.IntMapModules.worldPacks=function(HOST){
       onRestyle(()=>{ if(on) whenDrawable(()=>{ ensureLayers(); drawStations(); }); });
       try{ GE().events.on('moveend',()=>{ if(on) setTimeout(scanCoast,180); }); }catch(_){}
       mapClick((e)=>{ if(!on) return false; probe(e.lngLat.lng,e.lngLat.lat); return true; });
-      /* the clock drives BOTH: the tapped point's table and the whole visible coast (#R212) */
-      onYear(()=>{ if(!on) return; gridKey=''; scanCoast(); if(at) probe(at[0],at[1]); });
+      /* the clock drives BOTH: the tapped point's table and the whole visible coast (#R212).
+         ⚠ (#R216) …and it is now also what the panel's own date field and play button move, so this
+         has to be cheap: while the instant is still inside the series every station already holds,
+         redraw from that series. Only leaving the window costs a request. */
+      onYear(()=>{ if(!on) return;
+        const t0=when();
+        if(covered(t0)){ restatAll(t0); return; }
+        stopPlay(); gridKey=''; scanCoast(); if(at) probe(at[0],at[1]); });
 
       STATE.tides=()=>({ on, at, points:series?series.length:0, stations:stations.length,
         levels:stations.slice(0,4).map(s=>+s.lv.toFixed(2)) });
@@ -1374,7 +1472,17 @@ window.IntMapModules.worldPacks=function(HOST){
           const g=px[i], al=px[i+3];
           if(al<8||g===0){ px[i+3]=0; continue; }
           px[i]=lut[g*3]; px[i+1]=lut[g*3+1]; px[i+2]=lut[g*3+2];
-          px[i+3]=Math.round(255*Math.min(1,0.30+0.70*(g/255)));
+          /* ══ ⚠ (#R216) A DATA CELL IS OPAQUE. THE VALUE IS THE COLOUR. ═══════════════════════════
+             「作物栽培レイヤーは透明度100%が全然100%ではない。」 — and it could not be: this line used
+             to bake `0.30 + 0.70·value` into the PNG's own alpha channel, so a low-value cell was 30 %
+             transparent BEFORE `raster-opacity` was applied. Dragging the shared slider to 100 % set
+             the layer to 1.0 over an image that was already see-through, and the reader was right that
+             it never got there. It is the same defect #R215 removed from the energy choropleth (a
+             `['case', …]` in `fill-opacity` competing with the one slider that owns opacity), one
+             layer down: the ramp above already says what the number is, so opacity says nothing and
+             belongs entirely to the control the reader is holding. No-crop (g===0) stays transparent
+             — that is absence of data, not a small value. */
+          px[i+3]=255;
           n++; }
         ct.putImageData(d,0,0);
         return { url:cv.toDataURL('image/png'), n }; }

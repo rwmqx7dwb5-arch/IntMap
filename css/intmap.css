@@ -2361,3 +2361,50 @@
     .cesium-widget canvas{width:100%;height:100%;display:block;touch-action:none}
     .cesium-widget-credits{display:none!important}   /* the app renders attribution in its own Sources modal */
     #map:has(> .cesium-widget){position:relative}
+
+    /* ══ (#R216) THE SPACE EXPLORER ON A SMALL SCREEN ═══════════════════════════════════════
+       「宇宙を探索のUIが重複したり配置が見にくかったりいろいろ煩雑になっているから整理して。
+        また、スマホ画面だとさらにひどい有様。」
+
+       js/space.js builds its chrome as one HTML string with inline styles, which is why the
+       phone had no layout of its own: the bar `flex-wrap`ped into five rows, the 190 px body
+       list sat over the left third of the sky, and the info + events panels took `44vw` on the
+       right. Between them the actual scene was a strip in the middle.
+
+       This is that layout, and only that — every control, every panel and every handler is the
+       one js/space.js already built. Desktop is untouched apart from `.sp-showmenu`'s scroll
+       cap; the phone gets: a bar that scrolls sideways instead of stacking, the body list as a
+       horizontal strip under it, and the info/events column as a bottom sheet that is at most
+       38 % of the screen. ⚠ `-webkit-overflow-scrolling` and `overscroll-behavior` matter here:
+       without them a swipe that reaches the end of the strip drags the page behind the view. */
+    #space-view .sp-showmenu{ max-height:min(60vh,420px); overflow:auto; overscroll-behavior:contain; }
+    @media (max-width:768px){
+      #space-view .sp-bar{ flex-wrap:nowrap !important; overflow-x:auto; overflow-y:hidden;
+        gap:5px !important; padding:6px 8px !important; overscroll-behavior-x:contain;
+        -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      #space-view .sp-bar::-webkit-scrollbar{ display:none; }
+      #space-view .sp-bar > *{ flex:0 0 auto; }
+      #space-view .sp-bar button{ font-size:11px; padding:5px 8px; }
+      /* the spacer that pushes the clock right on a desktop must not add 8 px of scroll here */
+      #space-view .sp-bar > span[style*="flex:1 1 8px"]{ display:none; }
+      #space-view .sp-showmenu{ position:fixed !important; left:8px !important; right:8px;
+        top:auto !important; bottom:8px; min-width:0 !important; max-height:52vh; }
+      /* the body list: a strip along the top, not a column over the planets */
+      #space-view .sp-side{ left:0 !important; right:0; top:44px !important; width:auto !important;
+        max-height:none !important; flex-direction:row !important; overflow-x:auto; overflow-y:hidden;
+        padding:0 8px; gap:5px !important; overscroll-behavior-x:contain;
+        -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      #space-view .sp-side::-webkit-scrollbar{ display:none; }
+      #space-view .sp-side > *{ flex:0 0 auto; white-space:nowrap; }
+      /* …and the two panels as one bottom sheet, so they can never overlap each other */
+      #space-view .sp-col{ left:8px !important; right:8px !important; top:auto !important;
+        bottom:52px; width:auto !important; max-height:38vh !important; }
+      #space-view .sp-info{ max-height:22vh !important; }
+      #space-view .sp-notewrap{ bottom:6px !important; }
+      #space-view .sp-note{ max-height:30vh; }
+    }
+    /* a phone held upright has almost no height to give away — the sheet shrinks rather than
+       pushing the sky off the screen */
+    @media (max-width:768px) and (orientation:portrait){
+      #space-view .sp-col{ max-height:32vh !important; }
+    }

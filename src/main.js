@@ -130,6 +130,7 @@ import '../js/world-packs.js';
    `window.IntMapWorld._ui` rather than carrying a second copy of it, and it says so out loud if the
    toolkit is not there instead of half-building a layer. */
 import '../js/industry-web.js';
+import '../js/ocean-currents.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is */
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
@@ -250,6 +251,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources', 'industryWeb',
+  'oceanCurrents',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These eight files are not in the import list above: they are fetched by js/lazy-modules.js the

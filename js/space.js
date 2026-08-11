@@ -85,7 +85,10 @@ window.IntMapModules.space=function(HOST){
        `showOrbits` is the system view's orbit lines; `showNames` is the IAU nomenclature drawn on a
        body in body view (the "地名ラベル"). The body NAMES in the system view are what identifies the
        dots at all, so they are not part of either switch. */
-    let showOrbits=true, showNames=true;
+    /* (#R216) …and a third: the satellites of whichever planet is selected. Default ON — the request
+       was to see them, and they cost nothing beyond data/moons.json, which the body view already
+       loads. See drawSysMoons for why they are placed with the Moon's law rather than their own. */
+    let showOrbits=true, showNames=true, showMoons=true;
     /* ══ (#R213) THREE POPULATIONS THAT ARE NOT THE PLANETS ═══════════════════════════════════════
        「Voyager 1 / 2、New Horizons、Parker Solar Probe、各種惑星探査機…の位置を見れるように。」
        「宇宙を探索に小惑星、彗星も追加して。」
@@ -870,6 +873,9 @@ window.IntMapModules.space=function(HOST){
         }
         /* (#R213) the three optional populations, after the planets so a planet is never hidden by a
            dot, and before the labels so the label pass can see every collision at once */
+        /* (#R216) …and the satellites of whichever planet is selected, before the dots so a moon is
+           never hidden by an asteroid and after the planets so it is never hidden by its own primary */
+        drawSysMoons(jd,pos,VP,centre,cam,extraLabels);
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
         if(showSmall) drawSmall(jd,VP,centre,cam,extraLabels);
         if(showCraft) drawCraft(jd,VP,centre,cam,extraLabels);
@@ -1008,6 +1014,66 @@ window.IntMapModules.space=function(HOST){
       return all.slice()
         .sort((a,b)=>((b.radiusKm||0)-(a.radiusKm||0))||((a.aKm||0)-(b.aKm||0)))
         .slice(0,12);
+    }
+
+    /* ══ ⚠ (#R216) THE SELECTED PLANET'S SATELLITES, IN THE SYSTEM VIEW ═══════════════════════════
+       「宇宙を探索は、月にも軌道を付けるように。地球以外の惑星にも衛星が出るように。（各惑星を選択時
+        に、その惑星の衛星たちも出るように。）」 #R208 propagated data/moons.json from real JPL mean
+       elements and #R215 fixed the ordering — but every one of those satellites was drawn ONLY in
+       `drawBody`, i.e. only after switching to 「天体を見る」. In the system view, which is where a
+       planet is SELECTED, Jupiter was a bare disc: picking it showed no Galileans, picking Saturn
+       showed no Titan, and the only satellite anywhere was the Moon (which is a member of BODIES).
+
+       They are placed by the SAME law the Moon is (#R203 `moonSep`), not by their raw distance:
+       model scale compresses a heliocentric radius, so a satellite dropped in at its true separation
+       is inside its planet at model scale for exactly the reason the Moon was. Direction comes from
+       `moonPos` (the real elements, in the real frame), magnitude from `moonSep` of the real
+       kilometres — so at true scale it IS the real geometry, and at model scale the family's own
+       ratios survive, which is what model scale promises everywhere else in this file.
+       ⚠ The Moon itself is skipped here: it is already drawn, and with its own orbit line, as a
+       BODY. Drawing it twice would put two Moons beside the Earth. */
+    function drawSysMoons(jd,pos,VP,centre,cam,out){
+      if(!focus||focus==='sun'||!showMoons) return;
+      loadMoons();
+      const list=moonList(); if(!list.length) return;
+      const b=EPH().body(focus); if(!b||!b.rKm) return;
+      const P=scenePos(pos,focus,centre);
+      const sunScene=[-centre[0],-centre[1],-centre[2]];
+      const place=(m,t)=>{ const q=moonPos(m,t,b.rKm);
+        const rr=Math.hypot(q[0],q[1],q[2])||1, d=moonSep(rr*b.rKm);
+        return [P[0]+q[0]/rr*d, P[1]+q[1]/rr*d, P[2]+q[2]/rr*d]; };
+      for(const m of list){
+        if(focus==='earth'&&(m.code===301||m.name==='Moon')) continue;
+        if(showOrbits){
+          const pts=[]; for(let k=0;k<=96;k++) pts.push(place(m,jd+m.periodDays*(k/96-0.5)));
+          const buf=gl.createBuffer(), fa=new Float32Array(pts.length*3);
+          pts.forEach((p,k)=>{ fa[k*3]=p[0]; fa[k*3+1]=p[1]; fa[k*3+2]=p[2]; });
+          gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,fa,gl.STREAM_DRAW);
+          gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+          drawLines(VP,buf,pts.length,[0.55,0.68,0.92,0.34]);
+          gl.depthMask(true); gl.disable(gl.BLEND);
+          try{ gl.deleteBuffer(buf); }catch(_){}
+        }
+        const p=place(m,jd);
+        /* a satellite with no published radius gets a FLOOR, not a guess (#R208's rule) */
+        const R=Math.max(radScale(600), m.radiusKm?radScale(m.radiusKm):radScale(400));
+        const sun=norm([sunScene[0]-p[0],sunScene[1]-p[1],sunScene[2]-p[2]]);
+        drawSphere(mMul(VP,mMul(mTrans(p[0],p[1],p[2]),mScale(R))),mIdent(),'moonlet',sun,0,[0.78,0.78,0.74]);
+        const c=mApply(mMul(cam.P,cam.V),p);
+        if(c[3]>0){
+          const sx=(c[0]/c[3]*0.5+0.5)*W, sy=(1-(c[1]/c[3]*0.5+0.5))*H;
+          /* ⚠ A SATELLITE SMALLER THAN A PIXEL IS STILL THERE. Measured at the system view's default
+             camera (182 scene units): Jupiter's twelve are sub-pixel, so switching them on changed
+             two pixels in a 1000 × 700 sample — i.e. the reader who selects Jupiter sees nothing and
+             reports 「衛星が出ない」 again. `drawSystemLabels` already answers this for a planet in true
+             scale (a body under 1.5 px gets a mark), and this is the same rule one level down. */
+          const px=R/Math.max(1e-9,dist)*H/(2*Math.tan(45*D2R/2));
+          if(px<1.6&&sx>=0&&sy>=0&&sx<=W&&sy<=H){
+            octx.fillStyle='rgba(214,222,236,0.92)';
+            octx.beginPath(); octx.arc(sx,sy,1.5*dpr,0,6.284); octx.fill(); }
+          out.push({ name:m.name, kind:'moon', x:sx, y:sy, w:R });
+        }
+      }
     }
 
     function drawBody(jd,pos,cam){
@@ -1174,13 +1240,28 @@ window.IntMapModules.space=function(HOST){
         +'</span>'
         /* (#R207) 「軌道をオンオフしたりできるように。また、各惑星の地名ラベルをオンオフできるように。」
            State switches, lit from the state by refreshChrome — same language as the scale segments. */
-        +'<button class="sp-orbits" style="'+BTN+'">'+L('Orbits','軌道','Bahnen','Орбиты','Órbitas')+'</button>'
-        +'<button class="sp-names" style="'+BTN+'">'+L('Place names','地名','Ortsnamen','Названия','Topónimos')+'</button>'
+        /* ══ (#R216) SIX SWITCHES, ONE BUTTON ═════════════════════════════════════════════════════
+           「宇宙を探索のUIが重複したり配置が見にくかったりいろいろ煩雑になっているから整理して。また、
+            スマホ画面だとさらにひどい有様。」 The bar carried fourteen controls in one `flex-wrap` run:
+           on a laptop it was two rows, on a phone it was five and covered a third of the sky. Six of
+           them answer the same question — WHAT IS DRAWN — so they live behind one 「表示」 button that
+           opens a panel holding all six, unchanged (same classes, same handlers, same state lighting).
+           The bar is then five things: leave, which view, which scale, what is drawn, and when. */
+        +'<span class="sp-showwrap" style="position:relative;display:inline-flex;">'
+        +'<button class="sp-show" style="'+BTN+'">'+L('Show','表示','Anzeige','Показать','Mostrar')+' ▾</button>'
+        +'<span class="sp-showmenu" style="display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;'
+          +'flex-direction:column;gap:4px;padding:8px;border-radius:12px;min-width:190px;'
+          +'background:rgba(12,12,16,0.94);border:1px solid rgba(255,255,255,0.18);'
+          +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);">'
+        +'<button class="sp-orbits" style="'+BTN+'text-align:left;">'+L('Orbits','軌道','Bahnen','Орбиты','Órbitas')+'</button>'
+        +'<button class="sp-moons" style="'+BTN+'text-align:left;" title="'+S(L('The satellites of the selected planet, propagated from JPL mean elements','選択中の惑星の衛星（JPL の平均軌道要素から計算）','Die Monde des gewählten Planeten (JPL-Elemente)','Спутники выбранной планеты (элементы JPL)','Los satélites del planeta elegido (elementos JPL)'))+'">'+L('Moons','衛星','Monde','Спутники','Satélites')+'</button>'
+        +'<button class="sp-names" style="'+BTN+'text-align:left;">'+L('Place names','地名','Ortsnamen','Названия','Topónimos')+'</button>'
         /* (#R213) the three optional populations. Each one is a fetch, so the label says what it is
            and the button reports its own loading/failed state rather than staying dark in silence. */
-        +'<button class="sp-craft" style="'+BTN+'" title="'+S(L('Interplanetary spacecraft, from JPL Horizons trajectories','惑星間探査機（JPL Horizons の軌道）','Interplanetare Raumsonden (JPL Horizons)','Межпланетные аппараты (JPL Horizons)','Naves interplanetarias (JPL Horizons)'))+'">'+L('Spacecraft','探査機','Raumsonden','Аппараты','Naves')+'</button>'
-        +'<button class="sp-small" style="'+BTN+'" title="'+S(L('Asteroids and comets, from JPL Small-Body Database elements','小惑星・彗星（JPL SBDB の軌道要素）','Asteroiden und Kometen (JPL SBDB)','Астероиды и кометы (JPL SBDB)','Asteroides y cometas (JPL SBDB)'))+'">'+L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas')+'</button>'
-        +'<button class="sp-deep" style="'+BTN+'" title="'+S(L('Galaxies, clusters and nebulae at their measured distances (SIMBAD)','銀河・星団・星雲を実測距離で（SIMBAD）','Galaxien und Nebel in gemessener Entfernung (SIMBAD)','Галактики и туманности на измеренных расстояниях (SIMBAD)','Galaxias y nebulosas a su distancia medida (SIMBAD)'))+'">'+L('Beyond the solar system','太陽系の外','Jenseits des Sonnensystems','За пределами системы','Más allá del sistema')+'</button>'
+        +'<button class="sp-craft" style="'+BTN+'text-align:left;" title="'+S(L('Interplanetary spacecraft, from JPL Horizons trajectories','惑星間探査機（JPL Horizons の軌道）','Interplanetare Raumsonden (JPL Horizons)','Межпланетные аппараты (JPL Horizons)','Naves interplanetarias (JPL Horizons)'))+'">'+L('Spacecraft','探査機','Raumsonden','Аппараты','Naves')+'</button>'
+        +'<button class="sp-small" style="'+BTN+'text-align:left;" title="'+S(L('Asteroids and comets, from JPL Small-Body Database elements','小惑星・彗星（JPL SBDB の軌道要素）','Asteroiden und Kometen (JPL SBDB)','Астероиды и кометы (JPL SBDB)','Asteroides y cometas (JPL SBDB)'))+'">'+L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas')+'</button>'
+        +'<button class="sp-deep" style="'+BTN+'text-align:left;" title="'+S(L('Galaxies, clusters and nebulae at their measured distances (SIMBAD)','銀河・星団・星雲を実測距離で（SIMBAD）','Galaxien und Nebel in gemessener Entfernung (SIMBAD)','Галактики и туманности на измеренных расстояниях (SIMBAD)','Galaxias y nebulosas a su distancia medida (SIMBAD)'))+'">'+L('Galaxies & nebulae','銀河・星雲','Galaxien & Nebel','Галактики и туманности','Galaxias y nebulosas')+'</button>'
+        +'</span></span>'
         +'<span style="flex:1 1 8px;"></span>'
         /* ══ ⚠⚠ (#R215) ONE CLOCK. 「宇宙を探索の年月日時選択欄のUIがくそ。（現在日時表示欄と別とか、
            あほか）」 — and it was literally two controls for one quantity: a read-only `.sp-clock`
@@ -1189,6 +1270,9 @@ window.IntMapModules.space=function(HOST){
            into the other is the 煩雑 of #16 in its clearest form. The readout is gone; the FIELD is
            the readout, and the live dot moved onto the box that holds it, so there is one place that
            says when this sky is and one place to change it. */
+        /* (#R216) the five time controls travel together — they are one subject, and letting them
+           wrap individually is how the bar became five ragged rows on a phone */
+        +'<span class="sp-timebox" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;">'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
         +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
         +'<button class="sp-play" style="'+BTN+'">▶</button>'
@@ -1214,11 +1298,26 @@ window.IntMapModules.space=function(HOST){
         +'<button class="sp-when-step" data-d="30" title="'+S(L('a month on','1か月後','einen Monat weiter','на месяц вперёд','un mes adelante'))+'" style="'+STEPB+'">››</button>'
         +'<button class="sp-when-step" data-d="365" title="'+S(L('a year on','1年後','ein Jahr weiter','на год вперёд','un año adelante'))+'" style="'+STEPB+'">»</button>'
         +'</span>'
+        +'</span>'
         +'</div>'
+        /* ══ (#R216) THE THREE PANELS ARE ONE LAYOUT, NOT THREE ABSOLUTE BOXES ═══════════════════════
+           `.sp-events` used to be positioned at `top: calc(52px + 232px)` — a literal guess at how
+           tall `.sp-info` would be. Whenever the info panel was taller than 232 px (a selected comet,
+           a moon list, any Japanese text) the two overlapped, which is the 「重複」 in the report. They
+           are now a single right-hand COLUMN that stacks, so neither can land on the other whatever
+           either one contains. On a phone css/intmap.css turns that column into a bottom sheet and the
+           body list into a horizontal strip — see the `#space-view` block there. */
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
-        +'<div class="sp-info" style="position:absolute;right:10px;top:52px;width:min(280px,44vw);padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11.5px;line-height:1.55;pointer-events:auto;"></div>'
-        +'<div class="sp-events" style="position:absolute;right:10px;top:calc(52px + 232px);width:min(280px,44vw);max-height:calc(100% - 320px);overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11px;line-height:1.5;pointer-events:auto;"></div>'
-        +'<div class="sp-note" style="position:absolute;left:10px;bottom:8px;right:10px;font-size:9.5px;color:rgba(255,255,255,0.55);line-height:1.45;pointer-events:none;"></div>';
+        +'<div class="sp-col" style="position:absolute;right:10px;top:52px;width:min(280px,44vw);max-height:calc(100% - 120px);display:flex;flex-direction:column;gap:8px;pointer-events:auto;overflow:hidden;">'
+        +'<div class="sp-info" style="flex:0 0 auto;max-height:52%;overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11.5px;line-height:1.55;"></div>'
+        +'<div class="sp-events" style="flex:1 1 auto;min-height:0;overflow:auto;padding:9px 11px;border-radius:12px;background:rgba(12,12,16,0.78);border:1px solid rgba(255,255,255,0.14);color:#eee;font-size:11px;line-height:1.5;"></div>'
+        +'</div>'
+        /* the sources line: a long paragraph nobody reads twice, so it collapses to one ⓘ row that
+           opens on demand rather than sitting across the bottom of the sky for ever */
+        +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;pointer-events:auto;">'
+        +'<button class="sp-noteb" style="'+BTN+'font-size:10px;padding:3px 8px;">ⓘ '+L('Sources','出典','Quellen','Источники','Fuentes')+'</button>'
+        +'<div class="sp-note" style="display:none;margin-top:5px;max-height:26vh;overflow:auto;font-size:9.5px;color:rgba(255,255,255,0.62);line-height:1.45;"></div>'
+        +'</div>';
     }
     function refreshClock(){
       if(!root) return;
@@ -1253,7 +1352,7 @@ window.IntMapModules.space=function(HOST){
     function refreshChrome(){
       if(!root) return;
       /* this runs on every clock tick; nothing below is worth a DOM write when nothing moved */
-      const sig=scale+'|'+live+'|'+rate+'|'+showOrbits+'|'+showNames+'|'+mode   /* (#R207) */
+      const sig=scale+'|'+live+'|'+rate+'|'+showOrbits+'|'+showNames+'|'+showMoons+'|'+mode   /* (#R207/#R216) */
         +'|'+showCraft+showSmall+showDeep+'|'+popState('craft')+popState('small')+popState('deep');   /* (#R213) */
       if(sig===refreshChrome._sig) return;
       refreshChrome._sig=sig;
@@ -1264,6 +1363,13 @@ window.IntMapModules.space=function(HOST){
         b.style.borderColor=on?'rgba(255,210,63,0.65)':'rgba(255,255,255,0.22)';
         b.style.color=on?'#ffe9a8':'#f2f2f2'; };
       litOn(root.querySelector('.sp-orbits'),showOrbits);
+      litOn(root.querySelector('.sp-moons'),showMoons);
+      /* (#R216) the 「表示」 button itself carries how many of its six are on, so closing the menu does
+         not hide the state — a summary button that says nothing is worse than the row it replaced */
+      { const sb=root.querySelector('.sp-show');
+        if(sb){ const n=[showOrbits,showMoons,showNames,showCraft,showSmall,showDeep].filter(Boolean).length;
+          sb.textContent=L('Show','表示','Anzeige','Показать','Mostrar')+' '+n+'/6 ▾';
+          litOn(sb,n>0); } }
       /* ⚠ (#R213) A SWITCH THAT IS ON BUT STILL FETCHING MUST NOT LOOK LIKE A SWITCH THAT IS ON AND
          SHOWING NOTHING — that is #R212's "取得中を無いと答えるな" as a piece of chrome. The button
          carries the population's own load state, and a failed fetch says so instead of staying lit
@@ -1540,7 +1646,7 @@ window.IntMapModules.space=function(HOST){
         'Asteroides y cometas: elementos del JPL SBDB, propagación de dos cuerpos.');
       if(showDeep&&popState('deep')==='ok') s2b+=' '+L(
         'Beyond the solar system: SIMBAD (CDS Strasbourg) positions, placed at the MEDIAN of every published distance measurement — methods disagree, sometimes by tens of per cent. Objects with no published distance are drawn on the sphere, without depth.',
-        '太陽系の外：SIMBAD（CDS ストラスブール）の位置。距離は公表された全測定値の中央値で、測定手法どうしは数十％食い違うことがあります。距離の公表が無い天体は奥行きを与えず天球上に描いています。',
+        '銀河・星雲：SIMBAD（CDS ストラスブール）の位置。距離は公表された全測定値の中央値で、測定手法どうしは数十％食い違うことがあります。距離の公表が無い天体は奥行きを与えず天球上に描いています。',
         'Jenseits des Sonnensystems: SIMBAD (CDS), Median aller veröffentlichten Entfernungen.',
         'За пределами системы: SIMBAD (CDS), медиана всех опубликованных расстояний.',
         'Más allá del sistema: SIMBAD (CDS), mediana de todas las distancias publicadas.');
@@ -1707,11 +1813,21 @@ window.IntMapModules.space=function(HOST){
           const d=Math.hypot(sx-x,sy-y); if(d<bd){ bd=d; best=id; } }
         if(best) setFocus(best);
       });
-      root.querySelector('.sp-close').onclick=()=>close();
+      root.querySelector('.sp-close').onclick=()=>{ if(!leaveToMap()) close(); };
       root.querySelector('.sp-mode').onclick=()=>setMode(mode==='system'?'body':'system');
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
       /* (#R207) */
       { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }
+      /* (#R216) the 「表示」 menu: opens on its button, closes on anything else, and never on a click
+         INSIDE itself — the six switches are meant to be flipped one after another */
+      { const sb=root.querySelector('.sp-show'), sm=root.querySelector('.sp-showmenu');
+        if(sb&&sm){ sb.onclick=(e)=>{ e.stopPropagation();
+            sm.style.display=(sm.style.display==='flex')?'none':'flex'; refreshChrome(); };
+          sm.addEventListener('click',(e)=>e.stopPropagation());
+          root.addEventListener('click',()=>{ sm.style.display='none'; }); } }
+      { const mb=root.querySelector('.sp-moons'); if(mb) mb.onclick=()=>{ showMoons=!showMoons; refreshChrome(); }; }
+      { const nb=root.querySelector('.sp-noteb'), nd=root.querySelector('.sp-note');
+        if(nb&&nd) nb.onclick=(e)=>{ e.stopPropagation(); nd.style.display=(nd.style.display==='none')?'block':'none'; }; }
       /* (#R213) */
       [['craft',()=>showCraft,(v)=>{showCraft=v;}],['small',()=>showSmall,(v)=>{showSmall=v;}],['deep',()=>showDeep,(v)=>{showDeep=v;}]]
         .forEach(([k,get,set])=>{ const b=root.querySelector('.sp-'+k); if(b) b.onclick=()=>setPopulation(k,!get()); });
@@ -1928,7 +2044,15 @@ window.IntMapModules.space=function(HOST){
        quarters of a zoom level are being spent — the map is still zooming, nothing is being counted
        towards the trigger, and the caption says what continuing will do. The integral itself still
        only accumulates on refused zoom-out, so a normal zoom-out can never fall into space. */
-    const NEAR_FLOOR=0.75;
+    /* ⚠⚠ (#R216) 0.75 → 2.0. 「宇宙への開始ズームレベルをもう少し前から始まるように。」 — the third
+       round this sentence has been sent. #R212 did put the prompt before the floor, but three
+       quarters of ONE zoom level is a single wheel notch on a mouse and less than one pinch on a
+       phone: the hint appeared and the floor arrived in the same gesture, which is indistinguishable
+       from the hint appearing AT the floor. Two full zoom levels is about three notches of warning,
+       so the reader learns that space is down there while the map is still zooming normally.
+       ⚠ The trigger itself is untouched: `over` only accumulates on REFUSED zoom-out (`atFloor()`),
+       so widening the hint cannot make an ordinary zoom-out fall into space. */
+    const NEAR_FLOOR=2.0;
     function nearFloor(){ return zoomNow()<=minZoom()+NEAR_FLOOR; }
     /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
     function pushOut(dz){

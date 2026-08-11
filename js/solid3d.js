@@ -54,27 +54,61 @@ window.IntMapModules.solid3d=function(){
   function ringArea(p){ let a=0; for(let i=0,j=p.length-1;i<p.length;j=i++) a+=(p[j][0]*p[i][1]-p[i][0]*p[j][1]); return a/2; }
   /* Ear clipping. O(n²), which for a footprint of ≤ a few hundred points is nothing, and unlike a
      fan it survives the concave outlines a traced freehand shape produces. */
+  /* ══ ⚠⚠ (#R216) A CLIPPER THAT GIVES UP LEAVES A WEDGE OF THE LID MISSING ═══════════════════════
+     「3D立体にバグとしてたまに不自然な切り込み線が入ってしまうことがある。」 — and this is where the
+     cut came from. `if(!clipped) break` abandoned the ring half-triangulated, so the cap was covered
+     everywhere the clipper had got to and NOT covered over the remaining polygon: a straight-edged
+     bite out of the lid and the floor, in a body whose walls are still complete. That reads exactly
+     as an unnatural incision, and it is intermittent for a reason —
+
+     #R212's `densify()` inserts points every ≤100 km along each edge, LINEARLY IN LNG/LAT. Those
+     points are collinear in geographic coordinates but the test below runs in MERCATOR, where the
+     same run is very slightly curved: the cross products come out at ~1e-15, i.e. pure float noise,
+     and whichever way the noise falls decides «convex» or «reflex». A run of them that all land on
+     the reflex side has no ear, the pass finds nothing, and the loop broke. So whether a body is cut
+     depended on where its edges happened to sit — 「たまに」.
+
+     Now the loop cannot fail to make progress: strict ears first; if a whole pass finds none, the
+     containment test is retried with a tolerance (a collinear neighbour is not really inside); and
+     if that also finds none the most convex vertex is clipped ANYWAY. A forced ear can produce a
+     sliver triangle, which is invisible; an abandoned ring produces a hole, which is the report. */
   function triangulate(p){
-    const n=p.length; if(n<3) return [];
-    const idx=[]; for(let i=0;i<n;i++) idx.push(i);
-    if(ringArea(p)<0) idx.reverse();                       /* work counter-clockwise */
+    if(p.length<3) return [];
+    /* consecutive duplicates are the other way to make an unclippable vertex — densify can emit them
+       when an edge is shorter than the floating-point spacing of its own interpolation */
+    const keep=[];
+    for(let i=0;i<p.length;i++){ const q=p[i], r=keep.length?p[keep[keep.length-1]]:null;
+      if(r&&Math.abs(q[0]-r[0])<1e-13&&Math.abs(q[1]-r[1])<1e-13) continue; keep.push(i); }
+    if(keep.length>=3){ const f=p[keep[0]], l=p[keep[keep.length-1]];
+      if(Math.abs(f[0]-l[0])<1e-13&&Math.abs(f[1]-l[1])<1e-13) keep.pop(); }
+    if(keep.length<3) return [];
+    const idx=keep.slice();
+    const sub=idx.map(i=>p[i]);
+    if(ringArea(sub)<0) idx.reverse();                     /* work counter-clockwise */
     const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
-    const inside=(a,b,c,q)=>cross(a,b,q)>=0&&cross(b,c,q)>=0&&cross(c,a,q)>=0;
+    const inside=(a,b,c,q,eps)=>cross(a,b,q)>=eps&&cross(b,c,q)>=eps&&cross(c,a,q)>=eps;
     const out=[]; let guard=0;
-    while(idx.length>3&&guard++<n*n+64){
-      let clipped=false;
-      for(let i=0;i<idx.length;i++){
-        const i0=idx[(i+idx.length-1)%idx.length], i1=idx[i], i2=idx[(i+1)%idx.length];
-        const a=p[i0], b=p[i1], c=p[i2];
-        if(cross(a,b,c)<=0) continue;                      /* reflex — not an ear */
-        let ok=true;
-        for(let k=0;k<idx.length;k++){ const m=idx[k];
-          if(m===i0||m===i1||m===i2) continue;
-          if(inside(a,b,c,p[m])){ ok=false; break; } }
-        if(!ok) continue;
-        out.push(i0,i1,i2); idx.splice(i,1); clipped=true; break;
+    while(idx.length>3&&guard++<idx.length*idx.length+256){
+      let cut=-1, bestConvex=-1, bestCross=-Infinity;
+      for(let pass=0;pass<2&&cut<0;pass++){
+        const eps=pass===0?0:1e-12;                        /* pass 2: a collinear point is not "inside" */
+        for(let i=0;i<idx.length;i++){
+          const i0=idx[(i+idx.length-1)%idx.length], i1=idx[i], i2=idx[(i+1)%idx.length];
+          const a=p[i0], b=p[i1], c=p[i2];
+          const cr=cross(a,b,c);
+          if(cr>bestCross){ bestCross=cr; bestConvex=i; }
+          if(!(cr>0)) continue;                            /* reflex or collinear — not an ear */
+          let ok=true;
+          for(let k=0;k<idx.length;k++){ const m=idx[k];
+            if(m===i0||m===i1||m===i2) continue;
+            if(inside(a,b,c,p[m],eps)){ ok=false; break; } }
+          if(ok){ cut=i; break; }
+        }
       }
-      if(!clipped) break;                                  /* self-intersecting ring — keep what we have */
+      /* ⚠ NEVER `break`. A forced ear is a sliver nobody can see; a hole is the reported defect. */
+      if(cut<0) cut=(bestConvex>=0)?bestConvex:0;
+      const i0=idx[(cut+idx.length-1)%idx.length], i1=idx[cut], i2=idx[(cut+1)%idx.length];
+      out.push(i0,i1,i2); idx.splice(cut,1);
     }
     if(idx.length===3) out.push(idx[0],idx[1],idx[2]);
     return out;

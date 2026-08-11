@@ -399,10 +399,21 @@ LIMIT ${limit}`;
 
     function ensureLayers() {
       const { nf, ef } = geo();
+      /* ══ ⚠⚠ (#R216) THE SECOND INDUSTRY NEVER REACHED THE MAP ═════════════════════════════════════
+         「業界の相関で、凡例から業界を変更しても、地図上はずっと自動車の業界のまま。」 These two lines
+         called `GE().layers.setData(…)`, and the renderer contract's name for that operation is
+         `setSourceData` (js/geo-engine.js) — `setData` is undefined on it. This file was the only
+         caller of the wrong name in the app, so nothing else ever noticed.
+         ⚠ WHY IT LOOKED LIKE THE PICKER WAS IGNORED RATHER THAN LIKE A CRASH: on the FIRST industry
+         the sources do not exist yet, so the `addSource` branch runs and the map is correct. Every
+         later industry takes the `else`, throws a TypeError inside `whenDrawable`'s try/catch — which
+         warns and moves on — and the map keeps the geometry of the first one. The panel meanwhile
+         re-rendered from the new `nodes`, so the window and the map disagreed, with the map stuck on
+         whatever was picked first: the default, automotive. */
       if (!GE().layers.hasSource(SRC_EDGE)) GE().layers.addSource(SRC_EDGE, { type: 'geojson', data: ef });
-      else GE().layers.setData(SRC_EDGE, ef);
+      else GE().layers.setSourceData(SRC_EDGE, ef);
       if (!GE().layers.hasSource(SRC_NODE)) GE().layers.addSource(SRC_NODE, { type: 'geojson', data: nf });
-      else GE().layers.setData(SRC_NODE, nf);
+      else GE().layers.setSourceData(SRC_NODE, nf);
       if (!GE().layers.has('iw-edge-line')) GE().layers.add({
         id: 'iw-edge-line', type: 'line', source: SRC_EDGE,
         paint: {

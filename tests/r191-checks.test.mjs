@@ -130,8 +130,14 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
 test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come out striped', () => {
   const s = read('js/seismic.js');
   const build = s.slice(s.indexOf('async function buildField'), s.indexOf('function ensure()'));
-  assert.match(build, /const snap=\(typeof demSnapshot==='function'\)\?demSnapshot\(W,Ss,E,Nn,z\):null;/,
+  /* (#R216) the binding became `let`: #R216 re-warms ONCE when more than a third of the tiles missed
+     the deadline and replaces the snapshot before the loop starts, because a field built from mostly
+     missing DEM is painted with one site class — i.e. as concentric circles, which is what that round
+     was asked to remove. The invariant this test exists for is unchanged: the LOOP reads one frozen
+     snapshot, so a row's answer cannot depend on when it was computed. */
+  assert.match(build, /(?:const|let) snap=\(typeof demSnapshot==='function'\)\?demSnapshot\(W,Ss,E,Nn,z\):null;/,
     'one snapshot for the whole picture');
+  assert.match(build, /const demAt=snap\?\(\(lo,la\)=>snap\.at\(lo,la\)\)/, 'and the loop reads it');
   assert.ok(!/demElevAt\(/.test(build),
     'and no demElevAt in the loop: it REQUESTS, which is what evicted the tiles the field was reading');
   assert.ok(!/demElevBilinear\(lo\+dLngS,la,z\)/.test(build), 'the slope samples come from the snapshot too');

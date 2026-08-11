@@ -246,10 +246,13 @@ window.IntMapModules.flightSim=function(HOST){
         +'#fs-hud .fs-heading{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:22px;font-weight:700;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:9px;padding:4px 14px;}'
         +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;gap:26px;pointer-events:auto;z-index:9;}'
         +'#fs-hud .fs-btns button{min-width:64px;height:44px;border-radius:22px;border:1px solid rgba(120,190,255,0.4);background:rgba(6,14,24,0.55);color:#e8f4ff;font-size:12px;font-weight:700;padding:0 12px;}'
-        /* (#R117) analog touch stick (right thumb): pitch + roll with natural centre return; knob follows the finger */
-        +'#fs-hud .fs-stick{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(10,22,38,0.30),rgba(6,14,24,0.55));border:1.5px solid rgba(120,190,255,0.40);display:none;pointer-events:auto;touch-action:none;z-index:9;}'
-        +'#fs-hud .fs-stick-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(120,190,255,0.28);border:1.5px solid rgba(160,215,255,0.75);box-shadow:0 2px 8px rgba(0,0,0,0.5);}'
-        +'@media(hover:none){#fs-hud .fs-btns{display:flex;left:calc(70px + env(safe-area-inset-left,0px));transform:none;} #fs-hud .fs-stick{display:block;} #fs-hud .fs-adi{bottom:70px;}'
+        /* (#R216) the four-way pad (right thumb) — a 3×3 grid so the arrows sit where the fingers
+           expect them, 46 px targets, and `touch-action:none` so a press never scrolls anything */
+        +'#fs-hud .fs-dpad{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:none;grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;pointer-events:auto;touch-action:none;z-index:9;}'
+        +'#fs-hud .fs-dp{border-radius:12px;border:1.5px solid rgba(120,190,255,0.42);background:rgba(6,14,24,0.58);color:#dcefff;font-size:16px;line-height:1;padding:0;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;}'
+        +'#fs-hud .fs-dp:active{background:rgba(120,190,255,0.32);border-color:rgba(160,215,255,0.9);}'
+        +'#fs-hud .fs-dp-u{grid-column:2;grid-row:1;} #fs-hud .fs-dp-l{grid-column:1;grid-row:2;} #fs-hud .fs-dp-r{grid-column:3;grid-row:2;} #fs-hud .fs-dp-d{grid-column:2;grid-row:3;}'
+        +'@media(hover:none){#fs-hud .fs-btns{display:flex;left:calc(70px + env(safe-area-inset-left,0px));transform:none;} #fs-hud .fs-dpad{display:grid;} #fs-hud .fs-adi{bottom:70px;}'
           +'#fs-hud .fs-thr{width:40px;pointer-events:auto;touch-action:none;height:140px;bottom:calc(20px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-thrlbl{bottom:calc(166px + env(safe-area-inset-bottom,0px));}'
           +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-act{min-width:48px;height:44px;}}'
         /* (#R118) LANDSCAPE phones — verified zone layout: top band = panels/badge/tape · centre band = instruments ·
@@ -264,7 +267,23 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-panel.fs-tl{left:8px;top:8px;min-width:0;padding:4px 8px;} #fs-hud .fs-panel.fs-tr{right:8px;top:8px;min-width:0;padding:4px 8px;}'
           +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:14px;}'
           +'#fs-hud .fs-minimap{left:auto;right:164px;bottom:12px;width:112px;height:112px;}'
+          /* (#R216) the pad is the right-hand thumb zone; the minimap moves clear of it */
+          +'#fs-hud .fs-dpad{grid-template-columns:repeat(3,42px);grid-auto-rows:42px;gap:4px;}'
         +'}'
+        /* ══ (#R216) A PHONE HELD UPRIGHT IS NOT A COCKPIT ═══════════════════════════════════════════
+           「フライトシミュレーターはスマホ画面ではUIが潰れている。…スマホでは横画面でスタートさせる
+            ように。フライトシミュレーターは縦画面のスマホ向けではない。」 Everything above assumes a wide
+           band at the top for instruments and a wide band at the bottom for controls; in portrait
+           those two bands are the whole screen and they meet in the middle — the 「潰れている」. The
+           view asks the browser to lock landscape when it can (that needs fullscreen, so it asks for
+           that first), and where the browser refuses — iOS Safari refuses on principle — it says so
+           and waits, instead of drawing a cockpit nobody can fly. */
+        +'#fs-rotate{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;'
+          +'background:rgba(4,8,16,0.96);color:#dcefff;text-align:center;padding:28px;font-size:15px;line-height:1.6;}'
+        +'#fs-rotate .fs-rot-icon{font-size:44px;animation:fsRot 2.2s ease-in-out infinite;}'
+        +'#fs-rotate button{pointer-events:auto;margin-top:4px;padding:9px 18px;border-radius:10px;border:1px solid rgba(120,190,255,0.45);background:rgba(6,14,24,0.7);color:#e8f4ff;font-size:13px;font-weight:700;cursor:pointer;}'
+        +'@keyframes fsRot{0%,45%{transform:rotate(0deg)}55%,100%{transform:rotate(-90deg)}}'
+        +'@media(prefers-reduced-motion:reduce){#fs-rotate .fs-rot-icon{animation:none;}}'
         /* (#R84) game-grade HUD: scrolling heading tape, banking aircraft symbol, altitude sky tint, boost bar */
         +'#fs-hud .fs-htape{position:absolute;left:50%;top:12px;transform:translateX(-50%);width:min(360px,64vw);height:26px;overflow:hidden;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.35);border-radius:8px;}'
         +'#fs-hud .fs-htape-strip{position:absolute;top:0;bottom:0;left:0;will-change:transform;}'
@@ -374,11 +393,20 @@ window.IntMapModules.flightSim=function(HOST){
     function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint(AC())
       +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
       +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
-      /* (#R117) touch controls: a REAL analog stick (pitch+roll, natural centre return) + the throttle bar is draggable
-         + a rudder button pair. The old 6 tiny arrow buttons are replaced by the stick (they were the roll/pitch/throttle
-         taps); every control they offered is still available (stick=↑↓←→, throttle bar=W/S, deck=rest). */
+      /* ══ ⚠ (#R216) THE ARROWS ARE BACK, BECAUSE THEY WERE ASKED FOR ═══════════════════════════════
+         「上下左右の操作は上下左右ボタンに戻して。」 #R117 replaced six arrow buttons with an analog
+         stick and wrote down why (an analog axis is a better control than a tap). The reader has now
+         asked for the buttons, explicitly, so the buttons are what the touch layout has: a four-way
+         pad whose presses hold exactly the keys the keyboard holds — ↑↓ pitch, ←→ roll — so there is
+         ONE control path for the physics rather than two that can disagree. The rudder pair and the
+         draggable throttle bar are unchanged. */
       +'<div class="fs-btns"><button data-k="a">◀ '+LL('RUD','ラダー','SR','РН','TIM')+'</button><button data-k="d">'+LL('RUD','ラダー','SR','РН','TIM')+' ▶</button></div>'
-      +'<div class="fs-stick"><div class="fs-stick-knob"></div></div>'
+      +'<div class="fs-dpad">'
+        +'<button class="fs-dp fs-dp-u" data-k="arrowup" aria-label="'+LL('Nose down','機首下げ','Nase runter','Нос вниз','Morro abajo')+'">▲</button>'
+        +'<button class="fs-dp fs-dp-l" data-k="arrowleft" aria-label="'+LL('Roll left','左ロール','Rollen links','Крен влево','Alabeo izq.')+'">◀</button>'
+        +'<button class="fs-dp fs-dp-r" data-k="arrowright" aria-label="'+LL('Roll right','右ロール','Rollen rechts','Крен вправо','Alabeo der.')+'">▶</button>'
+        +'<button class="fs-dp fs-dp-d" data-k="arrowdown" aria-label="'+LL('Nose up','機首上げ','Nase hoch','Нос вверх','Morro arriba')+'">▼</button>'
+      +'</div>'
       +'<div class="fs-thrlbl">'+LL('THR','出力','SCHUB','ТЯГА','GAS')+'</div><div class="fs-thr"><div class="fs-thrfill" style="height:0%"></div></div>'
       +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
       /* (#R119) PAPI — 4 real precision-approach lights vs the 3° glide path to the ACTIVE runway threshold */
@@ -469,19 +497,15 @@ window.IntMapModules.flightSim=function(HOST){
       hud.querySelectorAll('.fs-deck [data-hold]').forEach(b=>{ const k=b.getAttribute('data-hold');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
-      /* (#R117) analog stick: continuous pitch/roll from the finger offset, natural centre-return on release */
-      const stick=hud.querySelector('.fs-stick'), knob=hud.querySelector('.fs-stick-knob');
-      if(stick&&knob){ let sid=null;
-        const setFrom=e=>{ const r=stick.getBoundingClientRect(), R=r.width/2-12;
-          let dx=(e.clientX-(r.left+r.width/2))/R, dy=(e.clientY-(r.top+r.height/2))/R;
-          const m=Math.hypot(dx,dy); if(m>1){ dx/=m; dy/=m; }
-          if(st){ st._tR=dx; st._tP=-dy; }                       /* drag DOWN = pull = nose up (elev −1) */
-          knob.style.transform='translate('+(dx*R).toFixed(0)+'px,'+(dy*R).toFixed(0)+'px)'; };
-        const clear=()=>{ sid=null; if(st){ st._tR=null; st._tP=null; } knob.style.transform=''; };
-        stick.addEventListener('pointerdown',e=>{ e.preventDefault(); sid=e.pointerId; try{ stick.setPointerCapture(sid); }catch(_){} setFrom(e); });
-        stick.addEventListener('pointermove',e=>{ if(sid!=null&&e.pointerId===sid) setFrom(e); });
-        stick.addEventListener('pointerup',e=>{ if(sid!=null&&e.pointerId===sid) clear(); });
-        stick.addEventListener('pointercancel',clear); }
+      /* (#R216) the four-way pad — each button HOLDS the same key the keyboard holds, so the physics
+         has one input path. ⚠ `pointercancel` and `pointerleave` must release too: a finger that
+         slides off a button without lifting would otherwise leave the elevator hard over. */
+      hud.querySelectorAll('.fs-dp').forEach(b=>{ const k=b.getAttribute('data-k');
+        const dn=e=>{ e.preventDefault(); keys[k]=true; try{ b.setPointerCapture(e.pointerId); }catch(_){} };
+        const up=e=>{ if(e&&e.preventDefault) e.preventDefault(); keys[k]=false; };
+        b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up);
+        b.addEventListener('pointerleave',up); b.addEventListener('pointercancel',up);
+        b.addEventListener('contextmenu',e=>e.preventDefault()); });
       /* (#R117) the throttle bar is a real control now (drag/click to set power — mouse or touch) */
       const thrEl=hud.querySelector('.fs-thr');
       if(thrEl){ let tid=null;
@@ -855,7 +879,47 @@ window.IntMapModules.flightSim=function(HOST){
         }
         ov.remove(); start(o); };
     }
+    /* ══ (#R216) LANDSCAPE, OR SAY WHY NOT ═══════════════════════════════════════════════════════
+       Touch device only — a narrow desktop window is somebody's choice and is left alone. The lock
+       is attempted (it requires fullscreen, so that is attempted first) and, whether or not it takes,
+       a portrait screen gets the overlay until it is turned. Everything is optional and wrapped: a
+       browser that has none of these APIs simply shows the overlay, which is the honest outcome. */
+    let _rotEl=null, _rotMq=null;
+    function _isTouch(){ try{ return window.matchMedia('(hover:none)').matches||('ontouchstart' in window); }catch(_){ return false; } }
+    function _portrait(){ try{ return window.matchMedia('(orientation:portrait)').matches; }catch(_){ return window.innerHeight>window.innerWidth; } }
+    function _ensureRotate(){
+      if(_rotEl) return _rotEl;
+      _rotEl=document.createElement('div'); _rotEl.id='fs-rotate';
+      _rotEl.innerHTML='<div class="fs-rot-icon">📱</div>'
+        +'<div>'+LL('Turn your phone sideways.<br>The flight deck needs a landscape screen.',
+                    '端末を横向きにしてください。<br>コックピットは横画面用です。',
+                    'Bitte das Gerät quer halten.<br>Das Cockpit braucht Querformat.',
+                    'Поверните телефон горизонтально.<br>Кабине нужен ландшафтный экран.',
+                    'Gira el teléfono.<br>La cabina necesita pantalla horizontal.')+'</div>'
+        +'<button class="fs-rot-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>';
+      document.body.appendChild(_rotEl);
+      _rotEl.querySelector('.fs-rot-x').onclick=()=>{ try{ stop(); }catch(_){} };
+      return _rotEl; }
+    function _syncRotate(){ if(!_rotEl) return;
+      _rotEl.style.display=(on&&_isTouch()&&_portrait())?'flex':'none'; }
+    function _goLandscape(){
+      if(!_isTouch()) return;
+      _ensureRotate(); _syncRotate();
+      try{ const el=document.documentElement;
+        const fs=(document.fullscreenElement||document.webkitFullscreenElement)?Promise.resolve()
+          :(el.requestFullscreen?el.requestFullscreen({navigationUI:'hide'}):Promise.reject());
+        Promise.resolve(fs).then(()=>{ try{ const o=screen&&screen.orientation;
+          if(o&&o.lock) return o.lock('landscape'); }catch(_){} }).catch(()=>{}).then(()=>setTimeout(_syncRotate,240),()=>setTimeout(_syncRotate,240));
+      }catch(_){}
+      if(!_rotMq){ _rotMq=()=>_syncRotate();
+        try{ window.addEventListener('orientationchange',_rotMq); window.addEventListener('resize',_rotMq); }catch(_){} } }
+    function _endLandscape(){
+      if(_rotEl) _rotEl.style.display='none';
+      try{ const o=screen&&screen.orientation; if(o&&o.unlock) o.unlock(); }catch(_){}
+      try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(_){} }
+
     function start(opts){ if(on) return true; on=true; opts=opts||{}; _closeAtlas();
+      try{ _goLandscape(); }catch(_){}
       /* (#R158) SOLE CAMERA CONTROLLER: cancel any in-flight MapLibre camera animation (Atlas flyTo, a snap-back easeTo, the
          globe intro) before the sim takes over — the per-frame jumpTo below is then the only thing driving the camera. The
          globe-tour auto-spin is stopped separately by _fsStashLayers() (its checkbox lives in #layer-dropdown). */
@@ -1019,6 +1083,7 @@ window.IntMapModules.flightSim=function(HOST){
       window.__fsCamActive=true;
       st.t=performance.now(); raf=requestAnimationFrame(loop); return true; }
     function stop(){ if(!on) return; on=false; if(raf) cancelAnimationFrame(raf); raf=null;
+      try{ _endLandscape(); }catch(_){}   /* (#R216) the orientation lock and fullscreen belong to the flight */
       window.removeEventListener('keydown',onKey,true); window.removeEventListener('keyup',onKeyUp,true);
       window.removeEventListener('blur',onLoseFocus); document.removeEventListener('visibilitychange',onVisChange);
       window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
