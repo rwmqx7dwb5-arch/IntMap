@@ -89,6 +89,17 @@ export function appSource(root) {
       parts.push(readFileSync(new URL(f, jsDir), 'utf8'));
     }
   }
+  /* ⚠ (#R221) …AND js/locales/, WHICH IS WHERE THE UI STRINGS NOW ARE. This walk was one level deep,
+     so when the five-language table moved out of js/i18n.js into js/locales/ui.<code>.js (one file
+     per language — see js/lang-registry.js) every assertion of the form "this string exists in all
+     five languages" stopped being able to see any of them. The reading pages' own documents
+     (pages.<lang>.js) live here too and are part of the app's source for the same reason. */
+  const locDir = new URL('js/locales/', root);
+  if (existsSync(locDir)) {
+    for (const f of readdirSync(locDir).filter((f) => f.endsWith('.js')).sort()) {
+      parts.push(readFileSync(new URL(f, locDir), 'utf8'));
+    }
+  }
   /* (#R175) …and src/, the Vite entry. Code left index.html again this round — the Supabase client
      creation and the required-module guard are in src/vendor.js and src/main.js now — so a source
      assertion that only looked at index.html + js/ would silently stop covering them. */

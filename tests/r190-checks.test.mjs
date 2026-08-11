@@ -168,7 +168,10 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   assert.match(src, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); syncTsunamiSource\(\); \}/, '…for the panel’s own spinners');
   assert.match(src, /class="sq-progb"/, 'the LOS-style bar');
   assert.match(src, /fldPct\+'%'/, 'with a real percentage');
-  assert.match(src, /await warmDEMTiles\(warm,z,12000,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\)\)/,
+  /* (#R221) the call gained the tile-grid warm list, a deadline that scales with the tile count, and
+     the PIN that stops the field evicting its own tiles. The progress callback — which is what this
+     assertion is about — is unchanged. */
+  assert.match(src, /await warmDEMTiles\(warm,z,[^,]+,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\),true\)/,
     'driven by the DEM warm’s own progress');
   /* the shared draw tool is borrowed without its panel.
      ⚠ (#R207) THIS PINNED THE CALL SITE'S SHAPE, NOT THE FACT. #R207 gave the same call a second

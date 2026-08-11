@@ -16,17 +16,26 @@
  *  Everything on screen comes from `data/ocean-currents.json`, which ships with the app and is built
  *  offline by `scripts/build-ocean-currents.mjs` (#R208). NOTHING here touches the network.
  *
- *    · 26 NAMED CURRENTS — Gulf Stream, Kuroshio, Oyashio, Agulhas, Humboldt, the three Antarctic
- *      Circumpolar sectors, … Each is a POLYLINE, and ⚠ the polyline is not copied from a drawing:
- *      it was TRACED through NASA/JPL OSCAR's measured sea-surface velocity field (1/3° L4, mean of
- *      eight five-day composites, served by NOAA CoastWatch ERDDAP — U.S. Government work, public
- *      domain). The name and one seed point per current are editorial; every vertex is the field's.
- *    · WARM / COLD / ZONAL — derived, not asserted: the mean poleward component sign(lat)·v along the
- *      traced path. Water carried toward its own pole is warm relative to the sea it crosses, toward
- *      the equator is cold, and near zero is genuinely zonal (the Antarctic Circumpolar and the
- *      equatorial currents) — which is drawn in grey rather than forced into one of the two colours.
- *    · THE GLOBAL FLOW FIELD — 5,484 arrows, one per moving ocean cell of the same mean field, at
- *      every zoom. This is what makes the layer a MAP of the ocean rather than 26 lines: the gyres,
+ *  ⚠ (#R221) 「海流レイヤーのquality, coverageが悪すぎる。」 — THE DATA WAS REBUILT. What follows
+ *  describes the current file; scripts/build-ocean-currents.mjs's header has the measurements of
+ *  what was wrong with the old one (40 days of one year on a 1° grid: the Kuroshio's trace was an
+ *  eddy that ended where it started, the Canary Current was a 369 km stub of a 3,000 km current).
+ *
+ *    · 61 NAMED CURRENTS — Gulf Stream, Kuroshio, Oyashio, Agulhas, Humboldt, Leeuwin, Malvinas,
+ *      Mozambique, Tsushima, the four Antarctic Circumpolar sectors, … Each is a POLYLINE, and ⚠ the
+ *      polyline is not copied from a drawing: it was TRACED through a measured CLIMATOLOGICAL mean
+ *      velocity field on its source's own 0.25° grid — NOAA CoastWatch's blended geostrophic surface
+ *      current from multi-mission altimetry, plus the Ekman part from NOAA NCEI wind stress through
+ *      Ralph & Niiler (1999). The name and one seed point per current are editorial; every vertex is
+ *      the field's.
+ *    · WARM / COLD / ZONAL — ⚠ MEASURED, not derived from the flow any more: each current's own SST
+ *      against the ZONAL MEAN at the same latitude (NOAA OISST v2.1), which is what the words mean.
+ *      The old derivation (the mean poleward component of the velocity) called the Benguela warm and
+ *      the Canary zonal, because the sign of v along a real path is dominated by meanders. Within
+ *      ±0.6 K the current is drawn grey — the equatorial and circumpolar currents genuinely run
+ *      along their own isotherms, and forcing them into one of two colours would be a claim.
+ *    · THE GLOBAL FLOW FIELD — 28,208 arrows on a 1° grid, one per moving ocean cell of the same mean
+ *      field, at every zoom. This is what makes the layer a MAP of the ocean rather than 61 lines: the gyres,
  *      the equatorial counter-flow and the western boundary intensification are all in it. The arrow
  *      is shaded by the measured speed; the renderer thins them by collision, so the density follows
  *      the zoom without anything being recomputed.
@@ -37,7 +46,7 @@
  *      thing given up, and it is what 「固定」 asks for.)
  *    · The Wikidata name fetch is gone. Its names are now bundled, in all five languages, so the
  *      layer needs no query service to be complete.
- *    · Turning the layer on is one 146 kB file, fetched once per session and kept.
+ *    · Turning the layer on is one ~760 kB file, fetched once per session and kept — and NOT on the boot path.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.oceanCurrents=function(HOST){
@@ -267,29 +276,36 @@ window.IntMapModules.oceanCurrents=function(HOST){
       else if(!doc) head='';
       else head=(doc.named||[]).length+' '+L('named currents · ','本の海流 · ','benannte Strömungen · ','названных течений · ','corrientes con nombre · ')
         +(doc.arrows||[]).length.toLocaleString()+' '+L('field arrows','点の流向','Feldpfeile','стрелок поля','flechas de campo');
+      /* (#R221) the row now carries the two numbers the rebuild made real: how LONG the current is
+         (the old data's Canary Current was a 369 km stub of a 3,000 km current, and only a length
+         shows that) and its measured temperature contrast, which is what warm/cold now means. */
       const list=(doc&&doc.named||[]).slice()
         .sort((a,b)=>(b.meanSpeed||0)-(a.meanSpeed||0))
         .map(c=>'<div class="oc-row" data-en="'+esc(c.en)+'" style="display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;cursor:pointer;'
           +((picked&&picked===c.en)?'background:rgba(47,127,224,0.14);border-radius:5px;':'')+'">'
-          +'<span style="color:'+colOf(c)+';white-space:nowrap;">'+esc(kindWord(c.kind))+'</span>'
+          +'<span style="color:'+colOf(c)+';white-space:nowrap;">'+esc(kindWord(c.kind))
+          +((c.sstAnomK!=null)?('<span style="opacity:0.72;font-size:10px;"> '+(c.sstAnomK>0?'+':'')+c.sstAnomK.toFixed(1)+'K</span>'):'')+'</span>'
           +'<span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(nameOf(c))+'</span>'
+          +((c.lengthKm)?('<span style="white-space:nowrap;color:var(--text-muted);font-size:10.5px;">'+Math.round(c.lengthKm).toLocaleString()+' km</span>'):'')
           +'<b style="white-space:nowrap;">'+(c.meanSpeed||0).toFixed(2)+' m/s</b></div>').join('');
       const b=panel.open('<div style="font-size:11.5px;color:var(--text-main);margin-bottom:4px;">'+esc(head)+'</div>'
         +'<div style="max-height:34vh;overflow:auto;">'+list+'</div>'
         +'<div style="margin-top:6px;">'
-        +KEY(COL_WARM,L('Warm current — the water is carried toward its own pole','暖流 — 水が高緯度側へ運ばれている流れ','Warme Strömung','Тёплое течение','Corriente cálida'))
-        +KEY(COL_COLD,L('Cold current — the water is carried toward the equator','寒流 — 水が赤道側へ運ばれている流れ','Kalte Strömung','Холодное течение','Corriente fría'))
-        +KEY(COL_NEUTRAL,L('Zonal — the flow is east–west and carries no temperature contrast','東西流 — 南北にほとんど運ばない流れ','Zonal','Зональное','Zonal'))
+        /* (#R221) the legend says what the colour now MEANS — a measured temperature contrast — and
+           not what it used to be derived from (the sign of the flow's poleward component). */
+        +KEY(COL_WARM,L('Warm current — measurably warmer than the sea at the same latitude','暖流 — 同じ緯度の海より実測で暖かい流れ','Warme Strömung — messbar wärmer als das Meer derselben Breite','Тёплое течение — теплее моря на той же широте','Corriente cálida — más cálida que el mar de su latitud'))
+        +KEY(COL_COLD,L('Cold current — measurably colder than the sea at the same latitude','寒流 — 同じ緯度の海より実測で冷たい流れ','Kalte Strömung — messbar kälter','Холодное течение — холоднее','Corriente fría — más fría'))
+        +KEY(COL_NEUTRAL,L('Zonal — within ±0.6 K of the sea it flows through','東西流 — 周囲の海と ±0.6 K 以内','Zonal — innerhalb ±0,6 K','Зональное — в пределах ±0,6 K','Zonal — dentro de ±0,6 K'))
         +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
         +'<span style="width:22px;height:9px;border-radius:2px;flex:none;background:linear-gradient(90deg,#9fc6e8,#2f7fe0,#0a2f78);"></span>'
         +esc(L('Field arrows: shading is the measured speed (0 → 1.4 m/s)','流向の矢印：濃さは実測の流速（0 → 1.4 m/s）','Pfeile: Farbe = gemessene Geschwindigkeit','Стрелки: цвет — измеренная скорость','Flechas: el color es la velocidad medida'))+'</div>'
         +'</div>'
         +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +esc(L('Source: NASA/JPL OSCAR sea-surface velocity (1/3° L4) via NOAA CoastWatch ERDDAP — a U.S. Government work in the public domain. This layer is a FIXED dataset that ships with the app: the mean of eight five-day composites, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is derived from the mean poleward component along the trace, not asserted. Because it is a mean, it does not follow the app clock — it is the climatological picture, the same everywhere and every time you open it.',
-             '出典: NASA/JPL OSCAR の海面流速（1/3° L4）を NOAA CoastWatch ERDDAP 経由で取得（米国政府作成物・パブリックドメイン）。このレイヤーはアプリに同梱された固定データです：5日合成×8回分の平均場を作り、各海流はその実測の場を、公表されている核の位置から積分して辿ったものです。暖流・寒流・東西流は流路に沿った南北成分の平均から導いており、決めつけではありません。平均場なので時計には追随しません——いつ開いても同じ、気候学的な海流図です。',
-             'Quelle: NASA/JPL OSCAR (1/3° L4) über NOAA CoastWatch ERDDAP, gemeinfrei. Mitgelieferter, fester Datensatz: Mittel aus acht Fünf-Tage-Kompositen; jede benannte Strömung wurde durch dieses gemessene Feld verfolgt. Warm/kalt/zonal ist abgeleitet. Ein Mittelfeld folgt der Uhr nicht.',
-             'Источник: NASA/JPL OSCAR (1/3° L4) через NOAA CoastWatch ERDDAP, общественное достояние. Это фиксированный набор данных в составе приложения: среднее из восьми пятидневных композитов; каждое течение прослежено по этому измеренному полю. Тёплое/холодное/зональное выведено, а не заявлено. Среднее поле не следует за часами.',
-             'Fuente: NASA/JPL OSCAR (1/3° L4) vía NOAA CoastWatch ERDDAP, dominio público. Es un conjunto fijo incluido en la app: media de ocho composiciones de cinco días; cada corriente con nombre se trazó por ese campo medido. Cálida/fría/zonal se deriva, no se afirma. Una media no sigue al reloj.'))
+        +esc(L('Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.',
+             '出典: NOAA CoastWatch の海面地衡流（複数衛星の高度計をブレンド、0.25°）、NOAA NCEI の海上風応力（Ralph & Niiler 1999 の漂流ブイ実測式でエクマン流に換算）、および NOAA OISST v2.1 の海面水温。いずれも米国政府作成物でパブリックドメイン（高度計プロダクトは AVISO+ を使用）。このレイヤーはアプリに同梱された固定データです：記録全体にわたる多数の場を平均した気候値を、提供元と同じ 0.25° 格子のまま作り、各海流はその実測の場を、公表されている核の位置から積分して辿ったものです。暖流・寒流・東西流は決めつけではなく実測です——その海流自身の水温を、同じ緯度の帯平均と比べて判定しています。平均場なので時計には追随しません——いつ開いても同じ、気候学的な海流図です。',
+             'Quellen: NOAA CoastWatch (geostrophische Oberflächenströmung aus Multi-Missions-Altimetrie, 0.25°), NOAA NCEI Windschub → Ekman-Strömung nach Ralph & Niiler (1999), NOAA OISST v2.1 Meeresoberflächentemperatur. Gemeinfrei. Mitgelieferter, fester Datensatz: ein klimatologisches Mittel über den gesamten Zeitraum auf dem 0.25°-Gitter der Quelle. Warm/kalt/zonal wird GEMESSEN (Temperatur gegen das zonale Mittel derselben Breite). Ein Mittelfeld folgt der Uhr nicht.',
+             'Источники: NOAA CoastWatch (геострофические поверхностные течения по мультимиссионной альтиметрии, 0.25°), NOAA NCEI (напряжение ветра → экмановское течение по Ralph & Niiler, 1999), NOAA OISST v2.1 (температура поверхности). Общественное достояние. Фиксированный набор данных в составе приложения: климатическое среднее за весь период на сетке 0.25° самого источника. Тёплое/холодное/зональное ИЗМЕРЕНО — температура течения против зонального среднего на той же широте. Среднее поле не следует за часами.',
+             'Fuentes: NOAA CoastWatch (corrientes geostróficas superficiales por altimetría multimisión, 0.25°), NOAA NCEI (tensión del viento → corriente de Ekman según Ralph y Niiler, 1999) y NOAA OISST v2.1 (temperatura superficial). Dominio público. Conjunto fijo incluido en la app: una media climatológica de todo el registro en la propia malla de 0.25°. Cálida/fría/zonal se MIDE — la temperatura de la corriente frente a la media zonal de su misma latitud. Una media no sigue al reloj.'))
         +'</div>');
       if(b) b.querySelectorAll('.oc-row').forEach(r=>{ r.onclick=()=>flyTo(r.getAttribute('data-en')); });
     }

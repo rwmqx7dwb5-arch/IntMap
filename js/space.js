@@ -55,7 +55,7 @@ window.IntMapModules.space=function(HOST){
 
   window.IntMapSpace=(function(){
     'use strict';
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     const EPH=()=>window.IntMapEphemeris;
     /* ⚠ (#R138) EVERY VALUE THAT REACHES THE DOM GOES THROUGH THE ONE SANITISER. Two of the strings
        this panel builds HTML from are DATA rather than literals — the body colour out of
@@ -1375,6 +1375,10 @@ window.IntMapModules.space=function(HOST){
         +'<button class="sp-scale" data-s="real" style="'+SEG+'">'+L('True scale','実寸大','Maßstabsgetreu','Реальный масштаб','Escala real')+'</button>'
         +'<button class="sp-scale" data-s="model" style="'+SEG+'">'+L('Model scale','モデル大','Modellmaßstab','Модельный масштаб','Escala modelo')+'</button>'
         +'</span>'
+        /* (#R221) the handle the body list hides behind on a phone. It names what the picture is of,
+           which is the one thing the horizontal strip never showed. `display:none` on a pointer
+           machine — the column is still the column there. */
+        +'<button class="sp-bodyb" style="'+BTN+'">🪐 <span class="sp-bodyb-t"></span> ▾</button>'
         /* (#R207) 「軌道をオンオフしたりできるように。また、各惑星の地名ラベルをオンオフできるように。」
            State switches, lit from the state by refreshChrome — same language as the scale segments. */
         /* ══ (#R216) SIX SWITCHES, ONE BUTTON ═════════════════════════════════════════════════════
@@ -1459,7 +1463,26 @@ window.IntMapModules.space=function(HOST){
            are now a single right-hand COLUMN that stacks, so neither can land on the other whatever
            either one contains. On a phone css/intmap.css turns that column into a bottom sheet and the
            body list into a horizontal strip — see the `#space-view` block there. */
+        /* ══ ⚠⚠ (#R221) 106 THINGS CANNOT BE A HORIZONTAL STRIP ═══════════════════════════════════════
+           「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。（機能は削るな）」
+           — sent again. #R218 turned this list sideways so it would stop stacking into rows, and #R220
+           collapsed the DETAIL sheet. Measured at 375 × 812 after both: `.sp-side` has 106 children and
+           a scrollWidth of **8,463 px** in a 375 px window. Twenty-two screens of list, in one
+           direction, with no heading visible and no indication that anything is out there — reaching
+           Neptune means swiping past every spacecraft and every asteroid, blind. That is not a list,
+           it is a corridor, and it is the whole of 「使いやすいとは言えない」.
+           So on a phone it becomes what a list of 106 things has to be: a SHEET behind one chip that
+           names the current focus, scrolling VERTICALLY, with a filter box — 106 entries reachable by
+           typing three letters instead of by twenty-two swipes. ⚠ Nothing is removed and nothing is
+           re-ordered: the same rows, the same handlers, the same sections. The wrapper is
+           `display:contents` on a pointer machine, so the desktop column is byte-for-byte what it was. */
+        +'<div class="sp-sidebox">'
+        +'<div class="sp-sideh">'
+          +'<input class="sp-sidef" type="search" placeholder="'+S(L('Filter bodies…','天体を絞り込み…','Objekte filtern…','Фильтр объектов…','Filtrar cuerpos…'))+'">'
+          +'<button class="sp-sidex" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
+        +'</div>'
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
+        +'</div>'
         +'<div class="sp-col" style="position:absolute;right:10px;top:52px;width:min(280px,44vw);max-height:calc(100% - 120px);display:flex;flex-direction:column;gap:8px;pointer-events:auto;overflow:hidden;">'
         /* ══ ⚠ (#R220) ON A PHONE THE SHEET STARTS CLOSED ═══════════════════════════════════════════
            「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。（機能は削るな）」
@@ -1581,9 +1604,45 @@ window.IntMapModules.space=function(HOST){
       if(inp&&document.activeElement!==inp){ const v=String(rate); if(inp.value!==v) inp.value=v; }
       const rv=root.querySelector('.sp-ratev'); if(rv) rv.textContent=live?L('(live)','（ライブ）','(live)','(сейчас)','(en vivo)'):rateLabel(Math.abs(rate))+((rate<0)?' ◀':'');
     }
+    /* (#R221) the filter over the body sheet. It matches the row's own visible text, so it works for
+       every section (planets, spacecraft, small bodies) and in every language without a second index;
+       a section heading whose rows are all hidden goes with them, which is what stops the sheet from
+       being a list of empty headings. */
+    function applySideFilter(){
+      try{
+        const root2=root; if(!root2) return;
+        const f=root2.querySelector('.sp-sidef');
+        const q=((f&&f.value)||'').trim().toLowerCase();
+        const side=root2.querySelector('.sp-side'); if(!side) return;
+        let shownInSection=0, lastHead=null;
+        Array.prototype.forEach.call(side.children,(el)=>{
+          const isRow=el.classList&&(el.classList.contains('sp-b')||el.tagName==='BUTTON');
+          if(!isRow){
+            if(lastHead) lastHead.style.display=shownInSection?'':'none';
+            lastHead=el; shownInSection=0; return;
+          }
+          const hit=!q||(el.textContent||'').toLowerCase().indexOf(q)>=0;
+          el.style.display=hit?'':'none';
+          if(hit) shownInSection++;
+        });
+        if(lastHead) lastHead.style.display=shownInSection?'':'none';
+      }catch(_){}
+    }
+    /* the chip's label is the one thing the strip never showed: what the picture is of */
+    function refreshBodyChip(){
+      try{
+        const t=root&&root.querySelector('.sp-bodyb-t'); if(!t) return;
+        let nm='';
+        if(craftSel){ const B=SB(); const c=B&&B.ready('craft')&&B.craftAt(jdNow()).find(x=>x.key===craftSel); nm=(c&&(c.name||c.key))||craftSel; }
+        else if(smallSel){ const B=SB(); const b=B&&B.ready('small')&&B.smallAt(jdNow(),{}).find(x=>x.id===smallSel); nm=(b&&(b.name||b.id))||smallSel; }
+        else nm=bodyName(focus);
+        t.textContent=String(nm||'');
+      }catch(_){}
+    }
     function refreshHUD(){
       if(!root||!open) return;
       refreshClock();
+      refreshBodyChip();
       const side=root.querySelector('.sp-side');
       if(side){
         /* (#R219) ONE lit row in the whole sidebar: a planet is lit only when neither of the two
@@ -1608,7 +1667,11 @@ window.IntMapModules.space=function(HOST){
           L('Asteroids & comets','小惑星・彗星','Asteroiden & Kometen','Астероиды и кометы','Asteroides y cometas'),
           ()=>{ const B=SB(); return B.smallAt(jdNow(),{pickOnly:true}).map(b=>({ id:b.id, label:(b.name||b.full),
             dot:'rgb('+SMALL_COL[b.kind].slice(0,3).map(v=>Math.round(v*255)).join(',')+')', on:smallSel===b.id })); });
-        side.querySelectorAll('.sp-b').forEach(b=>b.onclick=()=>{ setFocus(b.getAttribute('data-b')); });
+        /* (#R221) …and on a phone, choosing CLOSES the sheet — a picker that stays open after a pick
+           is a picker you have to dismiss twice. On a pointer machine there is no sheet and the class
+           is not there to remove, so this is inert. */
+        const _closeSheet=()=>{ try{ const bx=root.querySelector('.sp-sidebox'); if(bx) bx.classList.remove('open'); }catch(_){} };
+        side.querySelectorAll('.sp-b').forEach(b=>b.onclick=()=>{ setFocus(b.getAttribute('data-b')); _closeSheet(); });
         /* (#R219) …and the same single selection here: choosing a spacecraft or a small body clears
            the other list AND the planet highlight, so exactly one row in the sidebar is ever lit. */
         side.querySelectorAll('.sp-pop-row').forEach(b=>b.onclick=()=>{
@@ -1617,8 +1680,10 @@ window.IntMapModules.space=function(HOST){
           else { const same=(smallSel===id); craftSel=null; smallSel=same?null:id; }
           /* (#R220) …and selecting GOES THERE, exactly as selecting a planet does */
           if(craftSel||smallSel) visitSel();
-          refreshHUD();
+          refreshHUD(); _closeSheet();
         });
+        /* the rows were just rewritten, so whatever is typed in the filter has to be re-applied */
+        applySideFilter();
       }
       const info=root.querySelector('.sp-info'); if(info) info.innerHTML=infoHtml();
       const note=root.querySelector('.sp-note'); if(note) note.innerHTML=noteHtml();
@@ -1926,8 +1991,25 @@ window.IntMapModules.space=function(HOST){
        deliberately reversed to cross back.
        ⚠ NEVER FOR THE SUN, and never while the focus is a body with no surface to show — `bodyDist()`
        is the body view's own framing and this only decides WHEN, never WHERE. */
+    /* ══ ⚠⚠ (#R221) ZOOMING IN ON A PROBE MUST NOT LAND YOU ON THE EARTH ═══════════════════════════
+       「宇宙を探索で、地球じゃないのに、ズームインしたら地球に戻されるバグがある。」
+
+       `focus` is a PLANET and it is never empty — it starts at 'earth' and #R219 made choosing a
+       spacecraft or a small body clear the other lists WITHOUT changing it, because the scene is
+       centred on the selection through `sceneCentre()` instead. So with Voyager 1 selected the
+       picture is of Voyager 1 while `focus` is still 'earth', and this function — which asks only
+       `dist < radScale(focus)*3` — crosses into BODY mode as soon as the camera gets close to the
+       probe. Body mode then frames `focus`: `texture('earth')`, `faceSun()` on the Earth, the
+       Earth's own framing distance. The reader zoomed toward a spacecraft 160 AU away and arrived
+       at the Earth, which is exactly the report.
+
+       ⚠ THE CONDITION IS "IS THERE A BODY TO ENTER", NOT "WHICH BODY". A spacecraft and a small body
+       have no surface to show and no texture to load, so there is nothing for body mode to be about;
+       the camera simply keeps closing on the point. Nothing else changes — deselect and the planet
+       crossing behaves exactly as it did. */
     function autoMode(){
       if(!open||!focus||focus==='sun') return;
+      if(craftSel||smallSel){ if(mode==='body') setMode('system'); return; }
       const b=EPH().body(focus); if(!b||!b.rKm) return;
       const R=radScale(b.rKm);
       if(mode==='system'){ if(dist<R*3){ setMode('body'); } }
@@ -1965,15 +2047,72 @@ window.IntMapModules.space=function(HOST){
        the quantity that means the same thing in both is the distance in AU. Convert out, switch, and
        convert back: inside the planets it is within a few per cent of #R207's framing (Neptune stays
        framed like Neptune), and outside them it is exact.) */
+    /* ══ ⚠⚠ (#R221) THE AU ROUND TRIP IS EXACT AND IT IS STILL THE WRONG INVARIANT NEAR A BODY ══════
+       「宇宙を探索で、モデル大と実寸大を切り替えたときにズームレベルがジャンプしてしまうのをやめて。」
+       — the third round for this line, so this one starts from what the previous two actually did.
+
+       #R207 carried the FRAMING RATIO `dist / systemDist()` across, which is right among the planets
+       and wrong outside them. #R219 replaced it with the DISTANCE IN AU, which is right outside them,
+       and #R220 measured the conversion round-tripping to the last digit and concluded there was
+       nothing left to reproduce. Both of those measurements are correct and the jump is still real,
+       because what a reader sees is not a distance — it is an ANGULAR SIZE, and the two scales do not
+       map sizes the way they map positions:
+
+           position   posScale(au) = 26 · au^0.42        (model)      au        (real)
+           radius     radScale(km) = 0.12 · (km/6378)^⅓  (model)      km/AU     (real)
+
+       Those are different laws, so no single conversion of `dist` can hold both. Concretely: park the
+       camera where the Earth just fills the frame in model scale (dist ≈ 0.12 units, since the Earth's
+       model radius is 0.12) and convert by AU — (0.12/26)^(1/0.42) = 2.7 × 10⁻⁶ AU — while the Earth's
+       REAL radius is 4.26 × 10⁻⁵ AU. The camera lands sixteen times INSIDE the planet it was looking at.
+
+       So the quantity carried across is the one the picture is actually about, chosen by what fills
+       the frame:
+         · far out, the AU distance (#R219's answer, exact, and what the outer solar system needs);
+         · close in, `dist / radScale(focus)` — "this many radii from the body", which holds the
+           body's apparent size across the switch exactly;
+         · and BETWEEN them a blend in log space, weighted by how much of the half-frame the focused
+           body fills, so there is no seam where one rule hands over to the other.
+       ⚠ Body mode is unaffected — there `dist` is already in body radii (`bodyDist()` = 3.0, floor
+       1.02) and the sphere is drawn normalised, so the switch has never moved it and still does not. */
     function auOfDist(d){ return scale==='real'?d:Math.pow(Math.max(0,d)/POS_K,1/POS_P); }
+    /* the drawn radius of whatever the picture is centred on, in the CURRENT scale's units.
+       ⚠ ZERO WHEN A PROBE OR A SMALL BODY IS SELECTED: `sceneCentre()` is then that object's
+       position and the thing being framed is a POINT with no angular size, so the only invariant
+       that means anything is the distance in AU. */
+    function focusRadius(){
+      if(craftSel||smallSel) return 0;
+      try{ const b=EPH().body(focus); if(b&&b.rKm) return radScale(b.rKm); }catch(_){}
+      return 0;
+    }
     function setScale(s){
       const want=(s==='real')?'real':'model';
       if(want===scale) return true;
       const au=auOfDist(dist);
+      const r0=focusRadius();
+      /* how much of the half-frame the focused body fills right now, 0…1 */
+      const fill=(r0>0&&dist>0)?Math.max(0,Math.min(1,r0/(dist*Math.tan(45*D2R/2)))):0;
       scale=want;
       for(const k of Object.keys(orbitCache)){ gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
       if(mode==='system'){
-        const d=posScale(au);
+        const byAu=posScale(au);
+        const r1=focusRadius();
+        const byRadii=(r0>0&&r1>0)?dist*(r1/r0):0;
+        /* w = 1 when the body dominates the frame, 0 when it is a dot. smoothstep on the log of the
+           fill fraction between 2 % and 35 % of the half-frame — the range over which "the picture is
+           of that body" stops and "the picture is of the space around it" begins.
+           ⚠ THE LOW END IS DELIBERATELY HIGH. At 2 % the body is a few pixels across, and what is on
+           screen is the system, for which the AU rule is not a compromise but the right answer:
+           model scale compresses positions by au^0.42, so a model distance of d shows real space out
+           to (d/26)^(1/0.42) AU — carrying the AU across is what keeps the SAME PLANETS in frame. */
+        let w=0;
+        if(byRadii>0&&fill>0){
+          const t=Math.max(0,Math.min(1,(Math.log(fill)-Math.log(0.02))/(Math.log(0.35)-Math.log(0.02))));
+          w=t*t*(3-2*t);
+        }
+        let d=(byAu>0&&byRadii>0)
+          ? Math.exp(w*Math.log(byRadii)+(1-w)*Math.log(byAu))
+          : (byAu>0?byAu:byRadii);
         dist=isFinite(d)&&d>0?Math.max(distFloor(),Math.min(distCeil(),d)):systemDist();
       }
       refreshHUD();
@@ -2072,6 +2211,18 @@ window.IntMapModules.space=function(HOST){
         const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
         if(col&&_phone()) col.classList.add('sp-min');
         if(th&&col) th.onclick=()=>{ col.classList.toggle('sp-min'); };
+      }catch(_){}
+      /* (#R221) the phone's BODY sheet: the chip opens it, ✕ and choosing a body close it, and the
+         filter hides rows by matching their own text. Everything here is class + display only —
+         `refreshHUD` rewrites `.sp-side`'s rows whenever it likes and none of this is disturbed. */
+      try{
+        const box=root.querySelector('.sp-sidebox'), chip=root.querySelector('.sp-bodyb');
+        const f=root.querySelector('.sp-sidef'), x=root.querySelector('.sp-sidex');
+        if(chip&&box) chip.onclick=(e)=>{ e.stopPropagation(); box.classList.toggle('open');
+          if(box.classList.contains('open')&&f){ try{ f.focus(); }catch(_){} } };
+        if(x&&box) x.onclick=()=>box.classList.remove('open');
+        if(f) f.addEventListener('input',()=>applySideFilter());
+        if(box) box.addEventListener('click',(e)=>e.stopPropagation());
       }catch(_){}
       /* (#R207) */
       { const ob=root.querySelector('.sp-orbits'); if(ob) ob.onclick=()=>setOrbits(!showOrbits); }

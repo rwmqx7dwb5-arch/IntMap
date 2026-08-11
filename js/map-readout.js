@@ -13,7 +13,7 @@ window.IntMapModules.mapReadout=function(HOST){
   /* ===== Grid (zoom-adaptive, red equator, 山吹色 tropics) ===== */
   const TROPIC_LAT=23.4362;   /* (#R210) mean obliquity of the ecliptic, this epoch — not 23.5 */
   function tropicLabel(side){
-    const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     return side==='n'
       ? L('Tropic of Cancer','北回帰線','Wendekreis des Krebses','Северный тропик','Trópico de Cáncer')
       : L('Tropic of Capricorn','南回帰線','Wendekreis des Steinbocks','Южный тропик','Trópico de Capricornio');
@@ -269,8 +269,34 @@ window.IntMapModules.mapReadout=function(HOST){
   }
   /* === Instant elevation/depth from cached terrarium DEM tiles (includes ocean bathymetry) === */
   const _demCache=new Map();
-  function _demCacheTrim(){ if(_demCache.size<=HOST._DEM_CACHE_MAX) return;
-    for(const k of _demCache.keys()){ if(_demCache.size<=HOST._DEM_CACHE_MAX) break; const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
+  /* ══ ⚠⚠ (#R221) THE PICTURE THAT NEEDS 520 TILES WAS SHARING A CACHE THAT HOLDS 140 ═════════════
+     「震度分布はたまに単なる同心円になることがある。ふざけるな。」
+
+     The intensity field's site term is a slope read off this DEM, and where a cell has no DEM the
+     field uses the panel's single site class instead — one amplification everywhere, so the
+     intensity becomes a function of distance alone, which is drawn as perfect rings. #R216 named
+     that mechanism and closed ONE of its two doors (the slope-baseline give-up). This is the other,
+     and it is arithmetic rather than luck:
+
+         one continental field asks for up to  520 tiles  (1,600 since #R216 raised the ceiling
+                                                            for fields that need a finer baseline)
+         _DEM_CACHE_MAX                          560 desktop  ·  **140 on a phone**
+
+     Every request past the budget evicts a tile ALREADY FETCHED FOR THE SAME PICTURE. By the time
+     `demSnapshot()` runs — after the warm-up, which is the only moment it takes strong references —
+     most of what arrived has been thrown away, `noDem` covers the map, and the whole field is
+     concentric. On a phone it cannot even hold a quarter of one field, which is why the report says
+     たまに: it depends on the magnitude (the span), the zoom the span picks, and the device.
+
+     A build now PINS the tiles it is depending on. Pinned keys are exempt from the trim and the
+     ceiling floats above them, so an ordinary mouse-move over the map still evicts normally and
+     nothing about the steady state changes — the pin exists only between `hold` and `release`. */
+  const _demHold=new Set();
+  function _demCap(){ return HOST._DEM_CACHE_MAX+_demHold.size; }
+  function _demCacheTrim(){ if(_demCache.size<=_demCap()) return;
+    for(const k of _demCache.keys()){ if(_demCache.size<=_demCap()) break;
+      if(_demHold.has(k)) continue;                       /* a build is reading this one */
+      const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
   /* (#R19) Per-tile decoded pixel buffer, extracted ONCE. demElevBilinear used to call a full 256×256
      getImageData (a ~256 KB copy) for EVERY sample — ~72,000 samples per LOS run ≈ 18 GB of memory
      traffic, which is exactly the "Line of sightを使うとパソコンでもブラウザがフリーズ" freeze. */
@@ -290,7 +316,14 @@ window.IntMapModules.mapReadout=function(HOST){
       _demCache.set(key,'loading');
       const img=new Image(); img.crossOrigin='anonymous';
       img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=256; cv.height=256; cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0); _demCache.set(key,cv); if(onReady) onReady(); }catch(e){ _demCache.set(key,null); } };
-      img.onerror=()=>_demCache.set(key,null);
+      /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. `null` is the "asked and got
+         nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
+         network, a 503 from the tile host) left a permanent hole that every later intensity field
+         painted with the fallback site class. The marker is kept, so the field being built right now
+         still sees a definite answer rather than waiting, and it EXPIRES a few seconds later so the
+         next build asks again. Bounded: one retry per tile per 4 s, never a loop. */
+      img.onerror=()=>{ _demCache.set(key,null);
+        setTimeout(()=>{ if(_demCache.get(key)===null) _demCache.delete(key); },4000); };
       img.src=`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${xi}/${yi}.png`;
       return null;
     }
@@ -308,11 +341,39 @@ window.IntMapModules.mapReadout=function(HOST){
   function _demZoomForSpan(km){ return Math.max(5, Math.min(13, Math.round(Math.log2(481000/Math.max(1,km))))); }
   /* (#R18) onProgress(frac 0..1) lets callers (Line of Sight / elevation profile) show a real % + bar
      while the covering DEM tiles load — the slow part of a viewshed ("計算の進捗をパーセントで表示"). */
-  function warmDEMTiles(points, z, timeoutMs, onProgress){
+  /* (#R221) `hold` pins every tile this call warms until `releaseDEMHold()` — see _demCacheTrim.
+     ⚠ The caller MUST release in a `finally`, or the cache keeps growing for the rest of the session. */
+  function warmDEMTiles(points, z, timeoutMs, onProgress, hold){
     const keys=new Set();
-    points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); demElevAt(p[0],p[1],null,z); } });
+    points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); } });
+    if(hold) keys.forEach(k=>_demHold.add(k));
+    /* ⚠ PIN FIRST, REQUEST SECOND. `demElevAt` calls `_demCacheTrim` before it inserts, so asking
+       for the tiles while building the key set means the first requests of a big field are evicted
+       by its own later ones — the exact loop this pin exists to break. */
+    points.forEach(p=>{ if(p) demElevAt(p[0],p[1],null,z); });
     const total=keys.size||1;
     return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(onProgress){ try{ onProgress((total-pending)/total); }catch(_){} } if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,90); })(); });
+  }
+  function releaseDEMHold(){ _demHold.clear(); _demCacheTrim(); }
+  /* (#R221) ONE POINT PER TILE over the rectangle demSnapshot will read — INCLUDING the ±1 tile
+     margin it expands by. The intensity field used to warm a fixed 33 × 33 lattice of positions,
+     which is neither necessary (many samples land in the same tile) nor sufficient (a field whose
+     tile grid is wider than 33 leaves whole columns unrequested, and those columns then paint with
+     the fallback site class — a stripe of "concentric" through an otherwise terrain-shaped field).
+     Asking the tile grid itself makes the warm-up exactly the set demSnapshot will look for. */
+  function demTilePoints(w,s,e,n,z){
+    const N=Math.pow(2,z);
+    const t0=_ll2tile(Math.max(-179.999,w),Math.min(85,n),z), t1=_ll2tile(Math.min(179.999,e),Math.max(-85,s),z);
+    const x0=Math.max(0,Math.floor(t0.x)-1), x1=Math.min(N-1,Math.floor(t1.x)+1);
+    const y0=Math.max(0,Math.floor(t0.y)-1), y1=Math.min(N-1,Math.floor(t1.y)+1);
+    const out=[];
+    for(let yi=y0;yi<=y1;yi++) for(let xi=x0;xi<=x1;xi++){
+      const lng=(xi+0.5)/N*360-180;
+      const ly=Math.PI*(1-2*(yi+0.5)/N);
+      const lat=180/Math.PI*Math.atan(0.5*(Math.exp(ly)-Math.exp(-ly)));
+      out.push([lng,lat]);
+    }
+    return out;
   }
   /* ══ (#R191) A SNAPSHOT, SO A PICTURE BUILT OVER SEVERAL FRAMES CANNOT CHANGE UNDER IT ═════════════
      「震度分布の色塗りが、たまにバグって縞々になる場合がある。」 — and the stripes are horizontal, in
@@ -477,5 +538,5 @@ const _wxCache=new Map();
     }catch(_){}
   }
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&GE().hasRenderer())s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
-  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demZoomForMap, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
+  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
 };

@@ -99,7 +99,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     return _satP;
   }
   const GE=()=>window.IntMapGeoEngine;
-  const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+  const L=window.IntMapLang.pick(()=>HOST.lang);
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const D2R=Math.PI/180, R2D=180/Math.PI;
   const R_EARTH=6378.137;                    /* km, equatorial — the same figure SGP4 uses */

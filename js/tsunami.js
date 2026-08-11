@@ -94,7 +94,7 @@ window.IntMapModules.tsunami=function(HOST){
 
   window.IntMapTsunami=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, RE=6371000;
     const DYN='tsu-field', SRC_V='tsu-vec', LYR_EPI='tsu-epi', SRC_ISO='tsu-iso', LYR_ISO='tsu-iso-ln', LYR_ISOL='tsu-iso-lb';
 

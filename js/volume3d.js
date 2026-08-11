@@ -319,7 +319,7 @@ window.IntMapModules.volume3d=function(HOST){
     /* ---- the object list's operations ------------------------------------------------------- */
     /* declared ABOVE its first use — the #R167/#R183 dead-zone trap, which cost a whole module the
        last time it was written the other way round */
-    const L2=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L2=window.IntMapLang.pick(()=>HOST.lang);
     function commit(name){
       const r=closedRing(); if(!r) return null;                     /* nothing finished to save */
       const o={ id:'v'+(++seq), ring:ring.map(p=>[+p[0],+p[1]]),
@@ -518,7 +518,7 @@ window.IntMapModules.volume3d=function(HOST){
        annotation layer is 2-D, so this deliberately keeps the FOOTPRINT plus its altitude label —
        it does not pretend to persist the extrusion. */
     function keep(){ const r=closedRing(); if(!r||!window.IntMapAnnotations) return false;
-      const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+      const L=window.IntMapLang.pick(()=>HOST.lang);
       try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{
           color, op:0.18,
           name:L('3-D volume','3D立体','3-D-Volumen','3-D объём','Volumen 3-D'),

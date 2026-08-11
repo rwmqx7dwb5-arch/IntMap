@@ -10,10 +10,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { appShell } from './app-source.mjs';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
-const R = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language (see js/lang-registry.js). Asking this
+   reader for js/i18n.js therefore hands back the whole table, which is what these assertions mean. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const R = (p) => (String(p).endsWith('js/i18n.js')
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8')).join('\n')
+  : readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
 /* comments are prose here — every one of these files documents its own traps at length, and a naive
    substring search would happily match the explanation of a bug instead of the code that fixes it */
 const stripComments = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');

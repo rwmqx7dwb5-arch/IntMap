@@ -22,7 +22,7 @@ window.IntMapModules.flightSim=function(HOST){
   const imToast=HOST.imToast;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const LL=window.IntMapLang.pick(()=>HOST.lang);
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     /* (#R175) SPAWN CLEARANCE, in one place. An airborne start is normally lifted to ground +1,500 m and
        held above ground +1,200 m until the DEM has settled (#R95) — the pre-flight card gives no altitude,
@@ -465,9 +465,56 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-config{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));}'
           +'#fs-hud .fs-cfg{font-size:9px;padding:1px 6px;}'
         +'}'
-        /* the landscape deck: a phone on its side has width and no height, so the readouts shrink and
-           the moving map moves up under the altitude panel, clear of the whole bottom band. */
+        /* the rotate gate — see _syncRotate(). It covers the HUD, has nothing to confirm, and leaves
+           by itself when the phone is turned. */
+        +'#fs-gate{position:fixed;inset:0;z-index:10005;display:none;align-items:center;justify-content:center;'
+          +'background:rgba(3,8,16,0.94);color:#dcefff;font-family:ui-monospace,Menlo,Consolas,monospace;'
+          +'-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);text-align:center;padding:24px;}'
+        +'#fs-gate .fs-gate-in{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px;}'
+        +'#fs-gate .fs-gate-ico{font-size:46px;line-height:1;animation:fsRot 2.2s ease-in-out infinite;}'
+        +'#fs-gate .fs-gate-t{font-size:16px;font-weight:700;letter-spacing:0.01em;}'
+        +'#fs-gate .fs-gate-s{font-size:12px;opacity:0.72;line-height:1.5;}'
+        +'#fs-gate .fs-gate-x{display:none;margin-top:8px;background:none;border:none;color:#8ab6dd;'
+          +'font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 8px;font-family:inherit;}'
+        +'@media(prefers-reduced-motion:reduce){#fs-gate .fs-gate-ico{animation:none;}}'
+        /* ══ ⚠⚠ (#R221) THE LANDSCAPE DECK WAS LAID ACROSS THE MIDDLE OF THE SCREEN ═════════════════
+           「フライトシミュレーターはスマホ画面ではUIが潰れている。徹底的に整理し、洗練されたモバイル
+            最適化されたUIデザインにしろ。」 — with a photograph again, and the photograph shows what
+           #R220's fix did NOT reach. #R220 moved the eight action buttons behind `⋯`, which was the
+           right decision, and then opened them as `repeat(8,50px)` at `bottom:52px`: a 435 px bar
+           straight through the centre of a 844 × 390 screen, sitting on the ADI and the attitude
+           ladder. The aircraft badge does the same thing one row above it — measured at THIS size,
+           480 px wide starting at x = 182, i.e. the wide grey bar across the middle of the picture.
+
+           The rule this layout now follows is the one a cockpit follows: THE MIDDLE IS THE VIEW.
+           Everything the thumbs need is on the left and right EDGES, everything the eyes need is on
+           the top edge, and nothing but the ADI is allowed below the centre line.
+
+               ┌──────────────────────────────────────────────────────┐
+               │ speed/VS/G/AoA    compass tape        alt/AGL   ✕    │  top band
+               │                                       minimap        │
+               │                    ( the view )                      │
+               │ ⋯  ┌──────┐                                  ┌─────┐ │
+               │ ▮  │ deck │  badge · config          ADI     │ pad │ │  bottom band
+               └──────────────────────────────────────────────────────┘
+           ⚠ NOTHING IS REMOVED — same eight actions, same keys, same rudder chips, same badge text. */
         +'@media(hover:none) and (orientation:landscape){'
+          /* the deck opens as a 2 × 4 column beside the throttle, never across the view */
+          +'#fs-hud[data-deck="1"] .fs-deck{grid-template-columns:repeat(2,54px);grid-auto-rows:40px;'
+            +'left:calc(50px + env(safe-area-inset-left,0px));right:auto;top:auto;transform:none;'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud[data-deck="1"] .fs-act{min-width:54px;height:40px;font-size:10px;}'
+          /* the rudder chips and the badge share the band to the RIGHT of the deck column, clear of
+             the ADI in the centre (measured: the ADI occupies x 384…460 at 844 px wide) */
+          +'#fs-hud .fs-btns{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-acbadge{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'bottom:calc(96px + env(safe-area-inset-bottom,0px));max-width:min(34vw,280px);font-size:9.5px;}'
+          +'#fs-hud .fs-config{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'bottom:calc(120px + env(safe-area-inset-bottom,0px));}'
+          /* ⚠ the exit needs its own column or it lands on the altitude panel: measured, `.fs-tr` at
+             right:64px ends at x 780 and `.fs-x` starts at 770. */
+          +'#fs-hud .fs-panel.fs-tr{right:calc(80px + env(safe-area-inset-right,0px));}'
           +'#fs-hud .fs-panel.fs-tl,#fs-hud .fs-panel.fs-tr{top:calc(5px + env(safe-area-inset-top,0px));padding:3px 8px;}'
           +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:14px;} #fs-hud .fs-tl .fs-k,#fs-hud .fs-tr .fs-k{font-size:8px;}'
           +'#fs-hud .fs-htape{top:calc(5px + env(safe-area-inset-top,0px));width:min(210px,28vw);height:20px;}'
@@ -484,7 +531,7 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-btns button{min-width:46px;height:36px;font-size:10px;padding:0 8px;}'
           +'#fs-hud .fs-warn{top:calc(46px + env(safe-area-inset-top,0px));font-size:14px;}'
           +'#fs-hud .fs-papi,#fs-hud .fs-ils{display:none;}'
-          +'#fs-hud[data-deck="1"] .fs-deck{grid-template-columns:repeat(8,50px);bottom:calc(52px + env(safe-area-inset-bottom,0px));}'
+          
         +'}'
         /* a phone held UPRIGHT has no room for a row of thumb targets beside a 92-px ADI, so the two
            stack: instruments above, controls below, and the minimap goes with the readouts. */
@@ -1043,12 +1090,62 @@ window.IntMapModules.flightSim=function(HOST){
       document.body.appendChild(_rotEl);
       _rotEl.onclick=()=>{ _rotEl.style.display='none'; };
       return _rotEl; }
-    /* the hint, not a gate: shown only while the screen really is portrait, and only for a moment */
+    /* ══ ⚠⚠ (#R221) A GATE THAT NOBODY HAS TO DISMISS ═══════════════════════════════════════════════
+       「フライトシミュレーターは…スマホでは横画面でスタートさせろ。」 (confirmed: lock where the
+       platform allows it, and a rotate gate where it does not — iOS Safari has no
+       `screen.orientation.lock` at all, so a phone held upright CANNOT be turned by this app.)
+
+       ⚠ THIS IS NOT #R216's SCREEN COMING BACK, and the difference is the whole point of #R218's
+       instruction 「確認なんかいらない。そのままフライトシミュレーターを開始すればいいだけ」: that one
+       was a CONFIRMATION — a full-screen card with an ✕ Exit button that had to be tapped before the
+       flight would begin, i.e. a second START. This one has no button to press and nothing to
+       confirm. It appears only if the phone is actually upright, it goes away BY ITSELF the instant
+       the phone is turned, and the flight is already running behind it.
+       ⚠ AND IT PAUSES, so the aircraft is not flying into terrain while nobody can see it. The
+       reader's OWN pause state is remembered and restored — a gate must not un-pause a paused sim.
+       ⚠ AND IT HAS A WAY OUT. A phone with rotation locked in Control Centre never becomes
+       landscape, so after four seconds a quiet line offers to carry on upright (the portrait HUD
+       layout exists and is what #R218 left in place). Without it the gate would be a dead end for
+       exactly the readers who cannot obey it. */
+    let _gateEl=null, _gatePaused=false, _gateOff=false, _gateT=0;
+    function _ensureGate(){
+      if(_gateEl) return _gateEl;
+      _gateEl=document.createElement('div'); _gateEl.id='fs-gate';
+      _gateEl.innerHTML='<div class="fs-gate-in">'
+        +'<div class="fs-gate-ico">📱</div>'
+        +'<div class="fs-gate-t">'+LL('Turn your phone sideways','端末を横向きにしてください',
+            'Bitte quer halten','Поверните телефон горизонтально','Gira el teléfono')+'</div>'
+        +'<div class="fs-gate-s">'+LL('The flight starts the moment you do.','横向きにした瞬間に開始します。',
+            'Der Flug beginnt sofort danach.','Полёт начнётся сразу же.','El vuelo empieza en ese momento.')+'</div>'
+        +'<button class="fs-gate-x" type="button">'+LL('Continue upright','このまま縦で続ける',
+            'Hochkant fortfahren','Продолжить вертикально','Continuar en vertical')+'</button></div>';
+      document.body.appendChild(_gateEl);
+      const x=_gateEl.querySelector('.fs-gate-x');
+      if(x) x.onclick=()=>{ _gateOff=true; _syncRotate(); };
+      return _gateEl; }
     function _syncRotate(){
-      if(!(on&&_isTouch()&&_portrait())){ if(_rotEl) _rotEl.style.display='none'; return; }
-      const el=_ensureRotate(); el.style.display='flex'; el.style.opacity='1';
-      if(_rotTmr) clearTimeout(_rotTmr);
-      _rotTmr=setTimeout(()=>{ try{ el.style.opacity='0'; setTimeout(()=>{ if(el.style.opacity==='0') el.style.display='none'; },420); }catch(_){} },3600); }
+      const portrait=!!(on&&_isTouch()&&_portrait());
+      const want=portrait&&!_gateOff;
+      if(!want){
+        if(_gateEl) _gateEl.style.display='none';
+        if(_gatePaused){ _gatePaused=false; paused=false; try{ syncHUDChrome(); }catch(_){} }
+        if(_gateT){ clearTimeout(_gateT); _gateT=0; }
+        /* ⚠ #R218's HINT CHIP IS NOT GONE — it is what a reader who chose "continue upright" gets
+           instead of the gate, so the offer to turn the phone is still there and still fades. */
+        if(portrait&&_gateOff){
+          const el=_ensureRotate(); el.style.display='flex'; el.style.opacity='1';
+          if(_rotTmr) clearTimeout(_rotTmr);
+          _rotTmr=setTimeout(()=>{ try{ el.style.opacity='0'; setTimeout(()=>{ if(el.style.opacity==='0') el.style.display='none'; },420); }catch(_){} },3600);
+        } else if(_rotEl) _rotEl.style.display='none';
+        return;
+      }
+      const el=_ensureGate(); el.style.display='flex';
+      /* the escape line is not offered immediately — a reader who is turning the phone should never
+         see it, and one whose phone will not turn sees it four seconds later */
+      const x=el.querySelector('.fs-gate-x'); if(x) x.style.display='none';
+      if(_gateT) clearTimeout(_gateT);
+      _gateT=setTimeout(()=>{ try{ if(x) x.style.display='inline-block'; }catch(_){} },4000);
+      if(!paused){ paused=true; _gatePaused=true; try{ syncHUDChrome(); }catch(_){} } }
     function _goLandscape(){
       if(!_isTouch()) return;
       try{ const el=document.documentElement;
@@ -1061,6 +1158,11 @@ window.IntMapModules.flightSim=function(HOST){
         try{ window.addEventListener('orientationchange',_rotMq); window.addEventListener('resize',_rotMq); }catch(_){} } }
     function _endLandscape(){
       if(_rotEl) _rotEl.style.display='none';
+      /* (#R221) the gate belongs to THIS flight — a new one starts with it armed again */
+      if(_gateEl) _gateEl.style.display='none';
+      if(_gateT){ clearTimeout(_gateT); _gateT=0; }
+      if(_gatePaused){ _gatePaused=false; paused=false; }
+      _gateOff=false;
       if(_rotTmr){ clearTimeout(_rotTmr); _rotTmr=0; }
       try{ const o=screen&&screen.orientation; if(o&&o.unlock) o.unlock(); }catch(_){}
       try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(_){} }

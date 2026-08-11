@@ -8,11 +8,21 @@
 // they show up as a feature that silently is not there (#R162's lesson exactly).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 
 const root = new URL('../', import.meta.url);
-const rd = (p) => readFileSync(new URL(p, root), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language, so that adding a sixth is one file plus
+   one row (see js/lang-registry.js). Every assertion below that searches "the i18n source" for a key
+   is asking about the TABLE, so asking for js/i18n.js hands back the whole of it. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const rd = (p) => (p === 'js/i18n.js'
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL(f, root), 'utf8')).join('\n')
+  : readFileSync(new URL(p, root), 'utf8'));
 
 /* ── ① THE NEW MODULES ARE IMPORTED, INSTANTIATED AND GUARDED ─────────────────────────────── */
 test('R184 #1: every new module is in the import graph, the factory guard and app-body', () => {

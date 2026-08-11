@@ -42,7 +42,7 @@ window.IntMapModules.monitors=function(HOST){
     const FN_URL=((window.SUPABASE_URL||'').replace(/\/$/,''))+'/functions/v1/monitor-run';
     const S=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.html(v==null?'':String(v)) : String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }catch(_){ return ''; } };
     const URLS=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.url(v) : (/^https?:\/\//i.test(String(v||''))?String(v):'#'); }catch(_){ return '#'; } };
-    const ML=(en,jp,de,ru,es)=>{ const l=(HOST.lang||'en'); return l==='jp'?jp:l==='de'?de:l==='ru'?ru:l==='es'?(es||en):en; };
+    const ML=window.IntMapLang.pick(()=>HOST.lang||'en');
     const _loggedIn=()=> !!HOST.user;
     const _promptLogin=()=>{ try{ if(typeof requireLogin==='function') return requireLogin(); if(typeof openAuthModal==='function') openAuthModal(); }catch(_){} };
 

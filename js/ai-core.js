@@ -61,7 +61,7 @@ window.IntMapModules.aiCore=function(HOST){
   /* (#R113) Map a typed PROVIDER error (ai-proxy 502/503) to a clear, localized message. These are DISTINCT from
      the IntMap daily free-use limit (HTTP 429) — a Google-side 429 must never be shown as "out of free uses". */
   function aiProviderErrMsg(code, message){
-    const _pl=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const _pl=window.IntMapLang.pick(()=>HOST.lang);
     const M={
       provider_rate_limit:_pl('The AI service is busy right now — please try again in a moment (this is not your IntMap usage limit).','AIサービスが混雑しています。少し待って再試行してください（IntMapの利用回数上限ではありません）。','Der KI-Dienst ist gerade ausgelastet — bitte gleich erneut versuchen (nicht Ihr IntMap-Limit).','Сервис ИИ сейчас перегружен — повторите через мгновение (это не ваш лимит IntMap).','El servicio de IA está ocupado — inténtalo de nuevo en un momento (no es tu límite de IntMap).'),
       provider_quota:_pl('The AI provider quota was reached — this is separate from your IntMap free uses. Please try again later.','AIプロバイダ側の利用上限に達しました（あなたのIntMap無料利用枠とは別です）。後ほど再試行してください。','Das Kontingent des KI-Anbieters ist erschöpft — getrennt von Ihren IntMap-Freinutzungen. Später erneut versuchen.','Достигнут лимит провайдера ИИ — это отдельно от бесплатных использований IntMap. Повторите позже.','Se alcanzó la cuota del proveedor de IA — es independiente de tus usos gratuitos de IntMap. Inténtalo más tarde.'),

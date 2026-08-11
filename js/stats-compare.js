@@ -24,7 +24,7 @@ window.IntMapModules.statsCompare=function(HOST){
   const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
   const cName=HOST.cName, countryStats=HOST.countryStats, imToast=HOST.imToast, renderCompareFixed=HOST.renderCompareFixed, renderStats=HOST.renderStats, resolveCountryId=HOST.resolveCountryId, searchVal=HOST.searchVal;
   return (function(){
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const LL=window.IntMapLang.pick(()=>HOST.lang);
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
@@ -970,7 +970,7 @@ window.IntMapModules.statsCompare=function(HOST){
       return true; }
     /* (#R115) Atlas needs the indicator vocabulary to honour "compare … — GDP, defense and population":
        expose the valid metric keys + a localized label so the compareStats action can resolve & report them. */
-    function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; const li=({en:0,jp:1,de:2,ru:3,es:4})[HOST.lang]||0; return (i2.l&&(i2.l[li]||i2.l[0]))||k; }catch(_){ return k; } }
+    function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; const li=Math.max(0,window.IntMapLang.index(HOST.lang)); return (i2.l&&(i2.l[li]||i2.l[0]))||k; }catch(_){ return k; } }
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }

@@ -6,11 +6,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 
 const ROOT = process.cwd();
-const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language, so that adding a sixth is one file plus
+   one row (see js/lang-registry.js). Every assertion below that searches "the i18n source" for a key
+   is asking about the TABLE, so asking for js/i18n.js hands back the whole of it. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const read = (p) => (p === 'js/i18n.js'
+  ? IM_I18N_FILES.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n')
+  : fs.readFileSync(path.join(ROOT, p), 'utf8'));
 const bytes = (p) => fs.readFileSync(path.join(ROOT, p));
 
 /* ── the bundled sky ─────────────────────────────────────────────────────────────────────────── */

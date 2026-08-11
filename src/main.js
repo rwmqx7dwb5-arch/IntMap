@@ -54,6 +54,16 @@ import '../js/place-framing.js';
    renderer, no app state — so it is verified in Node, and it must precede every module that builds a
    symbol layer, which is all of them. */
 import '../js/label-scale.js';
+/* (#R221) THE LANGUAGE REGISTRY COMES FIRST, and the locale files come before the table they build.
+   ⚠ ADDING A LANGUAGE IS THREE EDITS AND TWO OF THEM ARE HERE: one row in js/lang-registry.js's
+   LANGS, one file js/locales/ui.<code>.js, and one import line below. Nothing else in the app —
+   including the 2,238 inline L(…) call sites — has to be touched; see the registry's header. */
+import '../js/lang-registry.js';
+import '../js/locales/ui.en.js';
+import '../js/locales/ui.jp.js';
+import '../js/locales/ui.de.js';
+import '../js/locales/ui.ru.js';
+import '../js/locales/ui.es.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
@@ -161,6 +171,9 @@ import '../js/solid3d.js';
 import '../js/orbit-points.js';
 /* (#R202) the gesture-time render resolution — measured, mobile-only; see the file header. */
 import '../js/render-scale.js';
+/* (#R221) …and the effect that measured MORE expensive than the resolution did: the frosted glass is
+   not frosted while the camera moves. See js/glass-motion.js for the measurement. */
+import '../js/glass-motion.js';
 import '../js/volume3d.js';
 import '../js/view-controls.js';
 import '../js/drone-nav.js';
@@ -264,7 +277,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'newsSources', 'industryWeb',
+  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'glassMotion', 'newsSources', 'industryWeb',
   'oceanCurrents',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────

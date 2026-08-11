@@ -23,7 +23,7 @@ window.IntMapModules.radiation=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapRadiation=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const LL=window.IntMapLang.pick(()=>HOST.lang);
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
     const ISOTOPES={ 'cs137':{n:'Cs-137',h:264289,dose:2.0e-6}, 'i131':{n:'I-131',h:192.5,dose:1.5e-6}, 'cs134':{n:'Cs-134',h:18045,dose:5.4e-6}, 'sr90':{n:'Sr-90',h:252648,dose:0.2e-6} };
@@ -324,7 +324,7 @@ window.IntMapModules.slope=function(HOST){
   window.IntMapSlope=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { toggle(){}, run(){}, clear(){}, setMode(){} };
     const SRC='imslope-src'; let on=false, mode='slope', busy=false, moveT=null, lastKey='';
-    const SL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const SL=window.IntMapLang.pick(()=>HOST.lang);
     function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
     function aspectColor(a){ return 'hsl('+Math.round(a)+',72%,55%)'; }
     function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
@@ -387,7 +387,7 @@ window.IntMapModules.rf=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
     const SRC='imrf-src'; let panel=null, ant=null, busy=false, picking=false, pickH=null;
     let antH=30, txDbm=30, freq=900;   /* metres, dBm (1 W), MHz */
-    const RF=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const RF=window.IntMapLang.pick(()=>HOST.lang);
     const R2=6371008, Reff=R2*4/3;
     function dest(lng,lat,brg,dkm){ const dr=dkm/6371, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(brg)); const lo2=lo+Math.atan2(Math.sin(brg)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
     function horizonKm(h){ return 4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2)); }   /* 4/3-earth radio horizon, RX at 2 m */
@@ -475,7 +475,7 @@ window.IntMapModules.sun=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setTime(){} };
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
-    const SN=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const SN=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R176) shared style for the three engine buttons added below */
     const SBTN='flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
     const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
@@ -781,7 +781,7 @@ window.IntMapModules.disaster=function(HOST){
   window.IntMapDisaster=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
     const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
-    const DZ=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const DZ=window.IntMapLang.pick(()=>HOST.lang);
     const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
     function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -926,7 +926,7 @@ window.IntMapModules.earthReplay=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setWhen(){} };
     const SRC='imrep-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), playing=0;
-    const ER=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const ER=window.IntMapLang.pick(()=>HOST.lang);
     const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
     function solar(date){ const d=toDays(date); const M=rad*(357.5291+0.98560028*d), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI;
       const dec=Math.asin(Math.sin(e)*Math.sin(L)), ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L)); return { d, dec, ra }; }

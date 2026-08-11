@@ -18,7 +18,16 @@ import * as acorn from 'acorn';
 import { scanAll, scanFile, VALUE_BUDGET, IMAP_GLOBAL_FILES, ENGINE_FILE } from '../scripts/engine-coupling.mjs';
 
 const ROOT = new URL('../', import.meta.url);
-const R = (p) => readFileSync(new URL(p, ROOT), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language (see js/lang-registry.js). Asking this
+   reader for js/i18n.js therefore hands back the whole table, which is what these assertions mean. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const R = (p) => (String(p).endsWith('js/i18n.js')
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL(f, ROOT), 'utf8')).join('\n')
+  : readFileSync(new URL(p, ROOT), 'utf8'));
 
 /* ══ ① THE DECOUPLING ═══════════════════════════════════════════════════════════════════ */
 

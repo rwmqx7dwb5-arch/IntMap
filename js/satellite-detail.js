@@ -36,7 +36,7 @@ window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satelliteDetail=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   const SATS=()=>window.IntMapSatellites;
-  const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+  const L=window.IntMapLang.pick(()=>HOST.lang);
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
 
   const n0=(v)=>(v==null||!isFinite(v))?'':Math.round(v).toLocaleString(HOST.lang==='jp'?'ja-JP':'en-US');

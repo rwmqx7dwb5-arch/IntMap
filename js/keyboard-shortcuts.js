@@ -17,7 +17,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
   /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
      ignored while typing. `?` opens a 5-language cheat-sheet. Esc(sidebar) + Ctrl/⌘+K(Atlas) live elsewhere. ===== */
   (function(){
-    const KL=(en,j,de,ru,es)=>({en,jp:j,de,ru,es})[HOST.lang]||en;
+    const KL=window.IntMapLang.pick(()=>HOST.lang);
     function helpModal(){
       let m=document.getElementById('kbd-help-modal');
       if(m){ m.style.display=(m.style.display==='none'||!m.style.display)?'flex':'none'; return; }

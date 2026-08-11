@@ -73,7 +73,7 @@ window.IntMapModules.newsTimeline=function(HOST){
     }catch(_){} }
     function _tmSyncTerminator(){ try{ _tmTerminator(); }catch(_){} }   /* (#R210) js/night-side.js is the day/night line — this only clears the old duplicate */
     const curY=new Date().getFullYear();
-    const L5=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const L5=window.IntMapLang.pick(()=>HOST.lang);
     const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
     const yLabel=(y)=>HOST.lang==='jp'?(y+'年'):(''+y);
     /* Köppen climate era covering a given year (matches window.KOPPEN_PERIODS). */

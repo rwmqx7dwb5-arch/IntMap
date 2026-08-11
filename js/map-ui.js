@@ -183,7 +183,7 @@ window.IntMapModules.layerSidebar=function(HOST){
   window.IntMapLayerSidebar=(function(){
     let sb=null,built=false;
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
-    const T=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const T=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
        UIで作り直せ。タイル形式にして"): the sidebar no longer adopts/reparents #layer-dropdown. It is its own
        TILE GRID — every layer row of the classic panel becomes a visual tile (preview image via
@@ -484,7 +484,7 @@ window.IntMapModules.ticker=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const fetchData=HOST.fetchData, saveSettings=HOST.saveSettings;
   window.IntMapTicker=(function(){
-    const T=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const T=window.IntMapLang.pick(()=>HOST.lang);
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     let bar=null,track=null,built=false,timer=0,mkt=[],news=[];
@@ -1242,7 +1242,7 @@ window.IntMapModules.share=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t;
   window.IntMapShare=(function(){
-    const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     let panel=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       s.textContent='#share-panel{position:absolute;z-index:1800;left:50%;top:80px;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:16px 18px;font-size:13px;}'

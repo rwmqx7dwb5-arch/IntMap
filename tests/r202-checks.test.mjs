@@ -180,8 +180,13 @@ test('R202 ③f the render scale is mobile-only, deferred, and armed only after 
   const s = rd('js/render-scale.js');
   assert.match(s, /if\(!\(typeof isMobile==='function'&&isMobile\(\)\)\) return/, 'desktop is a no-op');
   assert.match(s, /armed/, 'it arms rather than acting immediately');
-  assert.match(s, /setTimeout\(\(\)=>\{ try\{ if\(GE\(\)\.canDraw\(\)\) set\(r\); \}catch\(_\)\{\} \},0\)/,
+  /* (#R221) The deferral itself is unchanged — what is new INSIDE it is the echo guard that stops
+     this module driving itself through the resize its own call causes (js/render-scale.js). So the
+     invariant is asserted rather than the literal: the set happens in a `setTimeout(…, 0)` and is
+     still gated on `canDraw()`. */
+  assert.match(s, /setTimeout\(\(\)=>\{[\s\S]{0,160}if\(GE\(\)\.canDraw\(\)/,
     'and the resize never happens synchronously inside the renderer event — that crashed the GL context');
+  assert.match(s, /,0\);/, 'and it is deferred by a zero timeout, not by a frame');
   assert.match(s, /IntMapFlightSim/, 'a flight is excluded: its camera never stops moving');
 });
 

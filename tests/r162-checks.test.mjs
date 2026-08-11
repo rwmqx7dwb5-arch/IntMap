@@ -15,11 +15,21 @@
 // and nothing else in the suite would notice. That invariant is the load-bearing test here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { appSource, appShell } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const rd = (p) => readFileSync(new URL(p, root), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language, so that adding a sixth is one file plus
+   one row (see js/lang-registry.js). Every assertion below that searches "the i18n source" for a key
+   is asking about the TABLE, so asking for js/i18n.js hands back the whole of it. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const rd = (p) => (p === 'js/i18n.js'
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL(f, root), 'utf8')).join('\n')
+  : readFileSync(new URL(p, root), 'utf8'));
 /* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
    appShell() concatenates them so every assertion below keeps meaning what it meant. */
 const html = appShell(root);
@@ -162,7 +172,9 @@ test('R162 #5b INVARIANT: mutable host values reach monitors as GETTERS, never c
 });
 
 test('R162 #6 the extracted files define the globals the app depends on', () => {
-  assert.ok(rd('js/i18n.js').includes('window.IntMapI18N={'), 'i18n.js sets window.IntMapI18N');
+  /* (#R221) js/i18n.js still PUBLISHES window.IntMapI18N — it just builds it from js/locales/ui.*.js
+     now instead of being a literal, so the assertion is on the assignment rather than on `={`. */
+  assert.ok(/window\.IntMapI18N\s*=/.test(rd('js/i18n.js')), 'i18n.js sets window.IntMapI18N');
   assert.ok(rd('js/gazetteer.js').includes('window.IntMapGazetteer='), 'gazetteer.js sets window.IntMapGazetteer');
   assert.ok(rd('js/reference-data.js').includes('window.IntMapRefData='), 'reference-data.js sets window.IntMapRefData');
   for (const f of ['js/layer-previews.js', 'js/history.js', 'js/monitors.js']) {
@@ -174,8 +186,10 @@ test('R162 #6 the extracted files define the globals the app depends on', () => 
 
 test('R162 #7 the data survived the move intact (all 5 languages, real row counts)', () => {
   const i18n = rd('js/i18n.js');
-  for (const lang of ['en:{', 'jp:{', 'de:{', 'ru:{', 'es:{']) {
-    assert.ok(i18n.includes(lang), `i18n.js still carries ${lang.slice(0, 2)} (standing rule 3: all five languages)`);
+  /* (#R221) one file per language now — `rd('js/i18n.js')` returns the whole table (see the reader
+     at the top), so the question is still "are all five here", asked of the new shape. */
+  for (const lang of ['en', 'jp', 'de', 'ru', 'es']) {
+    assert.ok(i18n.includes(`IntMapLang.define('${lang}'`), `${lang} is still carried (standing rule 3: all five languages)`);
   }
   const gz = rd('js/gazetteer.js');
   assert.ok((gz.match(/\['flashpoint',/g) || []).length > 10, 'flashpoint rows survived');
@@ -209,5 +223,7 @@ test('R162 #9 source-level suites read the whole app, not just index.html', () =
   const decl = (rd('css/intmap.css').match(/--sidebar-w:\s*\d+(?:px|vw)/) || [])[0];
   assert.ok(decl, 'css/intmap.css declares --sidebar-w');
   assert.ok(app.includes(decl), 'app source includes the extracted CSS');
-  assert.ok(app.includes('window.IntMapI18N={'), 'app source includes the extracted JS');
+  assert.ok(/window\.IntMapI18N\s*=/.test(app), 'app source includes the extracted JS');
+  /* (#R221) …and the locale files, which is where the strings themselves went */
+  assert.ok(app.includes("IntMapLang.define('jp'"), 'app source includes js/locales/');
 });

@@ -12,9 +12,19 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
-const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
+
+/* ⚠ (#R221) js/i18n.js IS NO LONGER THE TABLE — it is the assembler. The five-language UI strings
+   live in js/locales/ui.<code>.js, one file per language, so that adding a sixth is one file plus
+   one row (see js/lang-registry.js). Every assertion below that searches "the i18n source" for a key
+   is asking about the TABLE, so asking for js/i18n.js hands back the whole of it. */
+const IM_I18N_FILES = ['js/i18n.js', 'js/lang-registry.js']
+  .concat(readdirSync(new URL('../js/locales/', import.meta.url))
+    .filter((f) => /^ui\.[a-z-]+\.js$/.test(f)).map((f) => 'js/locales/' + f));
+const read = (p) => (p === 'js/i18n.js'
+  ? IM_I18N_FILES.map((f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8')).join('\n')
+  : readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
 /* ⚠ a comment that DESCRIBES a defect is not the defect. Two checks below assert that a string does
    NOT appear in a file, and both files explain in prose why it must not — so they are read with the
    block comments taken out, or the note about the bug would trip the test for the bug. */
@@ -208,7 +218,10 @@ test('⑪ the ocean-current layer draws the bundled, measured dataset (#R219)', 
   assert.match(b, /jplOscar/, 'the paths must still be traced through the measured OSCAR field');
   assert.match(b, /poleward/i, 'warm/cold must still be DERIVED from the flow, not asserted');
   const doc = JSON.parse(read('data/ocean-currents.json'));
-  assert.match(String(doc.source || ''), /OSCAR/, 'the dataset must name its source');
+  /* (#R221) the dataset was rebuilt: the velocity is NOAA CoastWatch blended altimetry (geostrophic)
+     plus a Ralph & Niiler Ekman term, and the classification is NOAA OISST v2.1. The claim this
+     assertion stands for — the file NAMES where its numbers came from — is unchanged. */
+  assert.match(String(doc.source || ''), /NOAA/, 'the dataset must name its source');
   assert.ok(doc.named.length >= 20 && doc.named.every((c) => Array.isArray(c.path) && c.path.length >= 5),
     'every named current carries a traced path');
   /* the image is still registered on the object that has addImage (#R216 ③).
@@ -260,8 +273,11 @@ test('⑬ seismic raises the DEM zoom instead of discarding the site term', () =
   const s = read('js/seismic.js');
   assert.match(s, /while\(z<12&&\(40075017\*Math\.max\(0\.05,cosC\)\/\(Math\.pow\(2,z\)\*256\)\)>2000/,
     'the zoom is not raised to keep the slope baseline usable');
-  /* and a build whose tiles missed the deadline gets one more bounded pass */
-  assert.match(s, /snap\.missing>Math\.max\(8,snap\.have\*0\.35\)/, 'a mostly-missing DEM is not retried');
+  /* (#R221) still bounded, now a LOOP rather than one pass: with the tile pin in place a retry KEEPS
+     what it recovers, which is what makes retrying worth doing at all — before, the second pass
+     re-fetched tiles the first had lost and lost them again to the same cache ceiling. */
+  assert.match(s, /pass<2 && snap && snap\.missing>Math\.max\(4,snap\.want\*0\.08\)/,
+    'a mostly-missing DEM is not retried');
 });
 test('⑬ …and a drawn rupture is screened over its AREA, not at one point', () => {
   const s = read('js/seismic.js');

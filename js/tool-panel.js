@@ -112,7 +112,7 @@ window.IntMapModules.toolPanel=function(HOST){
          (#R171) Rebuilt: a shape picker (the footprint is no longer only straight edges), colour and
          opacity, and — the actual defect — derived numbers that refresh IN PLACE. See v3dSync below. */
       const V=window.IntMapVolume3D;
-      const _L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+      const _L=window.IntMapLang.pick(()=>HOST.lang);
       const drag=!!(V&&V.ownsGesture&&V.ownsGesture());
       /* Only the click-vertex shape takes its footprint from measurePoints; a stroke shape owns its own.
          (#R172) …and it goes through syncClicks, which refuses to replace a ring it did not create. The old
@@ -239,7 +239,7 @@ window.IntMapModules.toolPanel=function(HOST){
          The derived numbers are refreshed IN PLACE now; nothing under the cursor is ever replaced. */
       const V=window.IntMapVolume3D;
       const bI=p.querySelector('#v3d-base'), tI=p.querySelector('#v3d-top');
-      const _L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+      const _L=window.IntMapLang.pick(()=>HOST.lang);
       const sync=()=>{ if(!V) return; const st=V.state();
         const set=(id,html)=>{ const el=p.querySelector(id); if(el) el.innerHTML=html; };
         set('#v3d-pts', String(st.points));
@@ -463,7 +463,7 @@ window.IntMapModules.toolPanel=function(HOST){
      collapsed. */
   function showContextMenu(point,lngLat){
     const m=document.getElementById('ctx-menu'); let mc=document.getElementById('map-container').getBoundingClientRect();   /* (#R210) `let`: place() re-reads it */
-    const L=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     /* ══ (#R216) THE MENU SAYS WHICH POINT ONCE, AT THE TOP ═══════════════════════════════════════
        「『この地点: 35.986°N 137.863°E / この地点』ってなんやねんネーミングセンス悪すぎ。右クリック
         したときに、『この』『ここの』『ここ』が多すぎて気持ち悪い。」 — and counted, it was: the

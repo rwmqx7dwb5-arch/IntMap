@@ -249,7 +249,7 @@ window.IntMapModules.drawTool=function(HOST){
     function renderPanel(){ const p=ensurePanel(); if(silent){ p.style.display='none'; return; } p.style.display='block';
       /* (#R139) touch devices trace by PRESS-DRAG-RELEASE (not tap) — the hint must say so, or a user taps and
          nothing draws. Detect coarse pointers and give the right instruction; 5 languages. */
-      const _L5=(en,ja,de,ru,es)=>HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+      const _L5=window.IntMapLang.pick(()=>HOST.lang);
       const _coarse=(()=>{ try{ return !!(window.matchMedia&&matchMedia('(pointer:coarse)').matches); }catch(_){ return false; } })();
       const hint = state==='armed'
                    ? (_coarse ? _L5('Press and drag on the map to trace an area','地図を指でなぞって範囲を描く（押したまま動かす）','Auf der Karte gedrückt ziehen, um eine Fläche zu zeichnen','Проведите пальцем по карте, чтобы обвести область','Mantén y arrastra en el mapa para trazar un área')
@@ -676,7 +676,7 @@ window.IntMapModules.outline=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapOutline=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, clear(){} };
-    const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
     function setVis(v){ try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setLayout('pl-outline-fill','visibility',v); if(GE().layers.has('pl-outline-line')) GE().layers.setLayout('pl-outline-line','visibility',v); }catch(_){} }
     function ensureLayers(){ try{
@@ -816,7 +816,7 @@ window.IntMapModules.moveShape=function(HOST){
     function showPill(name){ try{ if(pill) pill.remove();
       pill=document.createElement('div'); pill.id='immove-pill';
       pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:1450;display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
-      const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+      const L=window.IntMapLang.pick(()=>HOST.lang);
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
       const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
       const rotNote=L(' · right-drag to rotate',' · 右ドラッグで回転',' · Rechtsziehen: drehen',' · правая кнопка — поворот',' · clic derecho: girar');
@@ -862,7 +862,7 @@ window.IntMapModules.isochrone=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable, bringToFront=HOST.bringToFront;
   window.IntMapIsochrone=(function(){
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const LL=window.IntMapLang.pick(()=>HOST.lang);
     const SRC='im-iso-src';
     const COST={auto:'auto',car:'auto',drive:'auto',driving:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',pedestrian:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle'};
     const ICON={auto:'🚗',pedestrian:'🚶',bicycle:'🚲'};
@@ -969,7 +969,7 @@ window.IntMapModules.objectList=function(HOST){
   const removePin=HOST.removePin, refreshTool=HOST.refreshTool, makeDraggable=HOST.makeDraggable, isMobile=HOST.isMobile;
   window.IntMapObjects=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
-    const OL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[HOST.lang]||en;
+    const OL=window.IntMapLang.pick(()=>HOST.lang);
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

@@ -24,7 +24,7 @@ window.IntMapModules.cameras=function(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     const EP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-    const LLw=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    const LLw=window.IntMapLang.pick(()=>HOST.lang);
     const lbl=()=>LLw('Live cameras','ライブカメラ','Live-Kameras','Веб-камеры','Cámaras en vivo');
     let on=false, popup=null, fetching=false, lastBox=null, lastZoom=-1, moveT=null, camById={}, tflDone=false, caltransDone=false, finlandDone=false, otcmDone=false, oneStopDone=false, refreshTimer=null, _osDataT=null;
     function fc(){ const a=[]; for(const k in camById) a.push(camById[k]); return {type:'FeatureCollection',features:a}; }
