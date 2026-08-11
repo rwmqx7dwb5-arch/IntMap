@@ -259,6 +259,11 @@ test('R208 ④c: the stale-build guard compares round numbers, not the stamp as 
    with a stub — no browser, no canvas, ~1 ms. */
 function nightSky() {
   const win = { addEventListener() { }, devicePixelRatio: 1 };
+  /* ⚠ (#R221) THE LANGUAGE REGISTRY IS A DEPENDENCY OF EVERY MODULE NOW, exactly as the renderer
+     contract is: js/night-sky.js asks window.IntMapLang for its label helper instead of hand-rolling
+     a five-argument one. A sandbox that does not provide it is not the environment the file runs in,
+     and the module throws on the first line that reaches for it. */
+  new Function('window', read('js/lang-registry.js'))(win);
   new Function('window', 'document', read('js/night-sky.js'))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
   return win.IntMapNightSky;
 }
@@ -452,7 +457,11 @@ test('R208 ⑧a: the paths are traced through a measured field, and warm/cold is
      IS CC BY 3.0 and its API then answered `allow_anonymous_download: false`, which needs an account
      this build may not create. What is here is built from a public-domain field instead, and the
      attribution has to say so rather than implying the approved source. */
-  assert.ok(/OSCAR/.test(doc.source) && /public domain/i.test(doc.attribution),
+  /* (#R221) the dataset was rebuilt from three NOAA products (blended altimetric geostrophic
+     currents + NCEI wind stress → Ekman + OISST for the warm/cold classification), all U.S.
+     Government works in the public domain. The CLAIM this assertion stands for is unchanged: the
+     file names where its numbers came from and states the licence. */
+  assert.ok(/NOAA/.test(doc.source) && /public domain/i.test(doc.attribution),
     'the source is named and its licence stated');
   assert.ok(/traced/i.test(doc.attribution) && /seed/i.test(doc.attribution),
     'and it says which part is measured and which part is editorial');
@@ -472,9 +481,20 @@ test('R208 ⑧a: the paths are traced through a measured field, and warm/cold is
     }
     /* ⚠ the classification must AGREE with the number it was derived from — if these can disagree,
        one of them is decoration. The first version compared the trace's endpoints and got the
-       Kuroshio zonal and the North Atlantic Drift cold; this is the poleward component instead. */
-    const k = c.polewardMs > 0.012 ? 'warm' : (c.polewardMs < -0.012 ? 'cold' : 'zonal');
-    assert.equal(c.kind, k, `${c.en}: kind ${c.kind} but poleward ${c.polewardMs}`);
+       Kuroshio zonal and the North Atlantic Drift cold; #R208 used the poleward component instead.
+       ⚠ (#R221) …AND THE POLEWARD COMPONENT TURNED OUT TO BE WRONG TOO, for a reason worth keeping:
+       on a real traced path the meanders dominate the sign of v, so it called the Benguela WARM, the
+       Canary zonal and the West Australian warm — three textbook classifications inverted. Warm and
+       cold are temperatures, so they are now MEASURED as one (the current's own SST against the zonal
+       mean at its latitude), and `kindFrom` records which rule answered. The invariant is unchanged:
+       the kind must agree with the number it came from. */
+    if (c.kindFrom === 'sst') {
+      const k = c.sstAnomK > 0.6 ? 'warm' : (c.sstAnomK < -0.6 ? 'cold' : 'zonal');
+      assert.equal(c.kind, k, `${c.en}: kind ${c.kind} but ΔT ${c.sstAnomK} K`);
+    } else {
+      const k = c.polewardMs > 0.012 ? 'warm' : (c.polewardMs < -0.012 ? 'cold' : 'zonal');
+      assert.equal(c.kind, k, `${c.en}: kind ${c.kind} but poleward ${c.polewardMs}`);
+    }
   }
 
   /* the four best-known western boundary currents carry warm water poleward — that is what a

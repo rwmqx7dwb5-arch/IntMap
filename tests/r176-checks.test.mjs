@@ -118,7 +118,9 @@ test('R176 ②: the viewshed answers per raster cell, not per bearing', () => {
   /* five languages (standing instruction 3) */
   const L5 = los.match(/L\(/g) || [];
   assert.ok(L5.length > 25, 'the panel is written through the 5-language helper');
-  assert.match(los, /HOST\.lang==='jp'\?jp:HOST\.lang==='de'\?de:HOST\.lang==='ru'\?ru:HOST\.lang==='es'\?es:en/, 'EN/JP/DE/RU/ES');
+  /* (#R221) the hand-rolled five-argument helper became the shared, variadic one — which is what
+     makes a sixth language possible at all (js/lang-registry.js). The claim is unchanged. */
+  assert.match(los, /window\.IntMapLang\.pick\(\(\)=>HOST\.lang\)/, 'EN/JP/DE/RU/ES');
 });
 
 /* ── ③ 「DronesはMeasureに置くな。どこにも置くな。」 ─────────────────────────────────────────── */

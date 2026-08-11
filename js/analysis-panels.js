@@ -143,7 +143,7 @@ window.IntMapModules.aiResearch=function(HOST){
   window.IntMapAIResearch=(function(){
     const jp=()=>HOST.lang==='jp';
     /* (#R39) 4-language helper so the brief panel's own UI follows the app language (DE/RU used to fall to EN). */
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;   /* (#R40) +Spanish (falls back to EN when a 5th arg isn't supplied) */
+    const LL=window.IntMapLang.pick(()=>HOST.lang);   /* (#R40) +Spanish (falls back to EN when a 5th arg isn't supplied) */
     let panel=null;
     function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
     /* minimal safe markdown: ## headers, **bold**, bullet lines */
@@ -309,7 +309,7 @@ window.IntMapModules.correlate=function(HOST){
   (function(){
     if(typeof countryStats==='undefined') return;
     const L=()=>HOST.lang;
-    const tr=(en,jp,de,ru,es)=>L()==='jp'?jp:L()==='de'?de:L()==='ru'?ru:L()==='es'?(es||en):en;
+    const tr=window.IntMapLang.pick(()=>L());
     function compact(v){ v=+v; const a=Math.abs(v); if(a>=1e12)return (v/1e12).toFixed(1)+'T'; if(a>=1e9)return (v/1e9).toFixed(1)+'B'; if(a>=1e6)return (v/1e6).toFixed(1)+'M'; if(a>=1e3)return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const METRICS=[
       {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:['Population','人口','Bevölkerung','Население','Población']},

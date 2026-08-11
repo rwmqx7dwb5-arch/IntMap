@@ -46,7 +46,7 @@ window.IntMapModules.terrainWater=function(HOST){
 
   window.IntMapTerrainWater=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, R_EARTH=6371008.8, CIRC=2*Math.PI*R_EARTH;
     const mX=lng=>(180+lng)/360;
     const mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;

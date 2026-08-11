@@ -77,6 +77,34 @@ function copyStatic() {
   };
 }
 
+/* ── (#R221) KaTeX, FOR THE TWO STATIC PAGES ─────────────────────────────────
+   「数式はそのままのテキストだから、もっとちゃんとした数式用のテキストに。」
+   science.html is a SHELL served verbatim (see STATIC_ASSETS above) — it is not part of the app
+   bundle, so the `katex` dependency Rollup already chunks for index.html is unreachable from it.
+   The three things a browser needs to typeset — the stylesheet, the renderer and the fonts — are
+   therefore copied out of node_modules into dist/katex/, and js/page-i18n.js loads them lazily and
+   ONLY when a document actually contains a `['tex', …]` block. A page with no mathematics on it
+   pays nothing, and a page whose fonts fail to arrive falls back to the monospace line the
+   equations used to be (see renderBlock). */
+const KATEX_SRC = join(ROOT, 'node_modules', 'katex', 'dist');
+const KATEX_FILES = ['katex.min.css', 'katex.min.js'];
+function katexAssets() {
+  return {
+    name: 'intmap-katex-assets',
+    apply: 'build',
+    closeBundle() {
+      if (!existsSync(KATEX_SRC)) { this.warn('katex/dist not found — the science page will show plain-text equations'); return; }
+      const out = join(ROOT, 'dist', 'katex');
+      for (const f of KATEX_FILES) {
+        const from = join(KATEX_SRC, f);
+        if (existsSync(from)) cpSync(from, join(out, f));
+      }
+      const fonts = join(KATEX_SRC, 'fonts');
+      if (existsSync(fonts)) cpSync(fonts, join(out, 'fonts'), { recursive: true });
+    },
+  };
+}
+
 /* ── (#R180) CESIUM'S RUNTIME DIRECTORIES ────────────────────────────────────
    Cesium is not only a JS module: it resolves Workers/, Assets/, ThirdParty/ and
    Widgets/ at RUN TIME against `window.CESIUM_BASE_URL`, so bundling the module
@@ -185,5 +213,5 @@ export default defineConfig({
   },
   server: { port: 5173, strictPort: false },
   preview: { port: 4173, strictPort: false },
-  plugins: [copyStatic(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [copyStatic(), katexAssets(), cesiumAssets(), cesiumDevAssets()],
 });

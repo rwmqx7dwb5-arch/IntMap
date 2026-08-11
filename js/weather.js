@@ -298,7 +298,7 @@ window.IntMapModules.weatherEC=function(HOST){
       {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:['CAPE instability (ECMWF)','CAPE 不安定度（ECMWF）','CAPE-Instabilität (ECMWF)','Неустойчивость CAPE (ECMWF)']},
       {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature (ECMWF)','海水温（ECMWF）','Meerestemperatur (ECMWF)','Температура океана (ECMWF)']}
     ];
-    const ecLbl=(l)=>l.label[{en:0,jp:1,de:2,ru:3}[HOST.lang]]||l.label[0];
+    const ecLbl=(l)=>l.label[Math.max(0,window.IntMapLang.index(HOST.lang))]||l.label[0];
     let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
     const state={};   /* id → {on, op} */
     LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
@@ -422,7 +422,7 @@ window.IntMapModules.weatherPanel=function(HOST){
   const t=HOST.t, fmtTemp=HOST.fmtTemp;
   window.IntMapWeather=(function(){
     if(!GE().hasRenderer()) return { open(){} };
-    const L=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     function wx(code){ const M={
       0:['☀️','Clear sky','快晴','Klarer Himmel','Ясно','Despejado'],1:['🌤','Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado'],
       2:['⛅','Partly cloudy','一部曇り','Teilweise bewölkt','Переменная облачность','Parcialmente nublado'],3:['☁️','Overcast','曇り','Bedeckt','Пасмурно','Nublado'],

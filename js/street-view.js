@@ -21,7 +21,7 @@ window.IntMapModules.streetView=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   const bringToFront=HOST.bringToFront, imToast=HOST.imToast, makeDraggable=HOST.makeDraggable;
   return (function(){
-    const LL=(en,j,de,ru,es)=>HOST.lang==='jp'?j:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?(es||en):en;
+    const LL=window.IntMapLang.pick(()=>HOST.lang);
     let panel=null, iframe=null;
     function ensure(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='streetview-panel';

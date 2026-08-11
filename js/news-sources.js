@@ -36,7 +36,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
   window.IntMapNewsSources=(function(){
     'use strict';
     const esc=(s)=>{ try{ return window.IntMapSafe.html(s==null?'':String(s)); }catch(_){ return ''; } };
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
 
     /* the outlets the CURRENT feed carries, with how many headlines each has, most first */
     function counts(){

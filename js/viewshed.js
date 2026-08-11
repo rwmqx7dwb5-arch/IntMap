@@ -44,7 +44,7 @@ window.IntMapModules.los=function(HOST){
 
   window.IntMapLOS=(function(){
     if(!GE().hasRenderer()) return { open(){}, clear(){}, run(){}, state:()=>({}) };
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
 
     const SRC='los-src', IMGSRC='los-img-src', IMGLYR='los-img';
     const R_EARTH=6371008.8, D=Math.PI/180, CIRC=2*Math.PI*R_EARTH;

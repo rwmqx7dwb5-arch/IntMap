@@ -329,7 +329,11 @@ test('R213 ⑨: the horizon band keeps the measured daylight colour and gains a 
 
   /* the band THICKNESS is now geometric, and still 0.55 at the height #R196 measured it at */
   assert.match(sky, /'sky-horizon-blend':_horizonBlend\(\)/);
-  assert.match(sky, /if\(!\(h>0\)\) return 0\.55;/, 'at ground level it is unchanged');
+  /* (#R221) the height term is unchanged; the literal early return is gone because the thickness now
+     follows the Sun as well (js/theme-sky.js). What #R196 measured is still what the function returns
+     at ground level under a high Sun — the Sun factor is normalised to exactly that condition. */
+  assert.match(sky, /0\.14\+0\.41\*frac/, 'at ground level the height term is unchanged');
+  assert.match(sky, /const _HB_REF=/, 'and the Sun term is normalised to the reference #R196 measured at');
 });
 
 /* ⑩ EVERY NEW SOURCE IS IN THE ONE REGISTRY BOTH THE DIALOG AND THE PAGE READ (instruction 4).     */

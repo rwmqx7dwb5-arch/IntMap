@@ -285,7 +285,10 @@ test('⑦ the currents are the bundled, measured dataset (#R219 replaced the liv
   assert.match(b, /jplOscar/, 'the paths must still be traced through the measured OSCAR field');
   assert.match(b, /poleward/i, 'warm/cold must still be DERIVED from the flow, not asserted');
   const doc = JSON.parse(read('data/ocean-currents.json'));
-  assert.match(String(doc.source || ''), /OSCAR/, 'the dataset must name its source');
+  /* (#R221) the dataset was rebuilt: the velocity is NOAA CoastWatch blended altimetry (geostrophic)
+     plus a Ralph & Niiler Ekman term, and the classification is NOAA OISST v2.1. The claim this
+     assertion stands for — the file NAMES where its numbers came from — is unchanged. */
+  assert.match(String(doc.source || ''), /NOAA/, 'the dataset must name its source');
   assert.ok(doc.named.length >= 20 && doc.named.every((c) => Array.isArray(c.path) && c.path.length >= 5),
     'every named current carries a traced path');
   /* the image is still registered on the object that has addImage (#R216 ③).

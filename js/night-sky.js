@@ -73,7 +73,7 @@ window.IntMapNightSky = (function () {
   const EPH = () => window.IntMapEphemeris;
   const TER = () => window.IntMapTerrain;
   const lang = () => { try { return (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.lang || 'en'; } catch (_) { return 'en'; } };
-  const L = (en, jp, de, ru, es) => ({ en, jp, de, ru, es })[lang()] || en;
+  const L = window.IntMapLang.pick(()=>lang());
   const esc = (s) => { try { return window.IntMapSafe.html(String(s)); } catch (_) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); } };
 
   /* ── state ──────────────────────────────────────────────────────────────────────────────── */

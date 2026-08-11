@@ -229,7 +229,7 @@ window.IntMapModules.landCover=function(HOST){
          the first click. There is no `escapeHtml` anywhere in js/ except that mistake. */
       const esc=(s)=>{ try{ return window.IntMapSafe?window.IntMapSafe.html(String(s)):String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         catch(_){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } };
-      const L=(en,ja,de,ru,es)=>({en,jp:ja,de,ru,es})[HOST.lang]||en;
+      const L=window.IntMapLang.pick(()=>HOST.lang);
       let html='<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
       if(code) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+L('Plate code','プレートコード','Plattencode','Код плиты','Código de placa')+': <b style="color:var(--text-main);">'+esc(code)+'</b></div>';
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Bird (2002) plate model','Bird (2002) プレートモデル','Plattenmodell nach Bird (2002)','Модель плит Bird (2002)','Modelo de placas de Bird (2002)')+'</div>';
@@ -722,7 +722,7 @@ window.IntMapModules.timeZones=function(HOST){
     const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
     let on=false, geo=null, loading=false, timer=null;
     const lbl=()=>({en:'Time zones (live clock)',jp:'タイムゾーン（現在時刻）',de:'Zeitzonen (Uhr)',ru:'Часовые пояса (время)',es:'Husos horarios (hora)'})[HOST.lang]||'Time zones';
-    const T=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[HOST.lang]||en;
+    const T=window.IntMapLang.pick(()=>HOST.lang);
     function zoneTime(off){ const n=new Date(); const z=new Date(n.getTime()+n.getTimezoneOffset()*60000+off*3600000); const h=z.getHours(),m=z.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
     function offLabel(off){ const s=off<0?'−':'+'; const a=Math.abs(off); const hh=Math.floor(a); const mm=Math.round((a-hh)*60); return 'UTC'+s+hh+(mm?(':'+(mm<10?'0':'')+mm):''); }
     function bboxOf(f){ if(f.bbox) return f.bbox; let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=r=>r.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; }); const g=f.geometry; if(!g) return null; const polys=g.type==='Polygon'?g.coordinates:g.type==='MultiPolygon'?[].concat.apply([],g.coordinates):[]; polys.forEach(eat); return [mnx,mny,mxx,mxy]; }

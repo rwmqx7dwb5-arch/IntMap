@@ -57,7 +57,7 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.droneNav=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
-  const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+  const L=window.IntMapLang.pick(()=>HOST.lang);
 
   /* ---- geodesy (spherical; the same radius the rest of the app measures with) ---------------- */
   const R_EARTH=6371008.8, D2R=Math.PI/180, R2D=180/Math.PI;

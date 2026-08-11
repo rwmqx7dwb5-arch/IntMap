@@ -1,0 +1,70 @@
+/* ============================================================================
+ *  IntMap · UI STRINGS — Russian (Русский)   (#R221)
+ * ----------------------------------------------------------------------------
+ *  ONE LANGUAGE, ONE FILE. Moved out of js/i18n.js verbatim — not a character of the text below
+ *  was retyped; only the object it sits in changed owner. See js/lang-registry.js for what a new
+ *  language costs (this file, one row in LANGS, one import in src/main.js) and for why the
+ *  the `inline` table exists (a NEW language uses it; the first five do not).
+ *
+ *  ⚠ A KEY MISSING FROM THIS FILE FALLS BACK TO ENGLISH, PER KEY — js/i18n.js chains the table
+ *  onto the English one with Object.create, so a young translation shows its own language wherever
+ *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
+ * ========================================================================== */
+window.IntMapLang.define('ru', { ui: {
+      tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
+      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
+      settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
+      setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
+      lblTheme:"Оформление", optAuto:"Как в системе", optLight:"Светлая", optDark:"Тёмная", optClassic:"Классика", optCyber:"Кибер",
+      lblMapColor:"Цвет карты", mapColorAuto:"Как оформление", mapColorLight:"Светлый (белый)", mapColorDark:"Тёмный (чёрный)",
+      lblUnits:"Единицы измерения", unitBoth:"Метрические + имперские", unitMetric:"Только метрические", unitImperial:"Только имперские",
+      lblTempUnit:"Температура", tempBoth:"°C + °F", tempC:"Только °C", tempF:"Только °F",
+      lblTz:"Часовой пояс", tzSearch:"Поиск часового пояса…", optLocal:"Локальное (как в системе)",
+      lblNewsLang:"Языки новостей", newsLangUi:"Только текущий язык", newsLangMultiSel:"Несколько языков…", newsLangMulti:"Все языки (автоперевод заголовков)", newsLangHint:"Заголовки на всех языках показываются вместе; с ключом ИИ их названия переводятся автоматически.",
+      lblAiLocate:"ИИ-анализ местоположения", aiLocManual:"Вручную (кнопка)", aiLocAuto:"Автоматически для всех новостей",
+      lblSidebarStyle:"Вид боковой панели", sidebarOpaque:"Непрозрачная (по умолчанию)", sidebarTranslucent:"Матовое стекло", sidebarGlass2:"Матовое стекло (прозрачнее)",
+      lblLabelLang:"Подписи мест", labelLangUi:"Как язык приложения", labelLangLocal:"Местный язык (родной алфавит)", labelLangEn:"Всегда английский",
+      lblFlatPan:"Плоская карта", flatPanFixed:"Фикс. область (Европа)", flatPanFree:"Свободно (вокруг мира)",
+      /* (#R180) движок отрисовки */
+      lblEngine:"Движок карты", engineMapLibre:"MapLibre — 2D/3D-карта (по умолчанию)", engineCesium:"Cesium — настоящий 3D-глобус с реальным рельефом",
+      engineHint:"Cesium рисует Землю настоящим эллипсоидом на любом масштабе, с теми же спутниковыми снимками и теми же данными о высотах. Он загружается только при выборе, а переключение перезагружает страницу. Изолинии и инструмент замкнутого 3D-тела остаются только в MapLibre.",
+      engineSwitching:"Смена движка — перезагрузка…", engineFellBack:"Cesium не запустился, поэтому сеанс работает на MapLibre.",
+      engineActive:"Сейчас работает: ",
+      /* (#R171) предел наклона + высота камеры */
+      lblTiltLimit:"Предел наклона карты", tiltStandard:"Стандартный — до 78° (по умолчанию)", tiltUnlimited:"Без предела — весь диапазон 0–180°",
+      tiltHint:"Без предела карту можно наклонять за горизонт, пока камера не посмотрит строго вверх. За 180° вид повторяется с развёрнутым азимутом, поэтому правый клик по компасу позволяет задать любой угол от 0 до 360.",
+      lblEyeAlt:"Высота камеры в строке состояния", eyeAltOff:"Выкл. (по умолчанию)", eyeAltOn:"Вкл. — показывать высоту точки обзора", lblNightSide:"Затенение дня и ночи", nightSideOn:"Вкл. (по умолчанию) — затемнять ночную сторону и показывать огни городов", nightSideOff:"Выкл. — равномерно освещённый глобус",
+      lblNavSens:"Чувствительность навигации", lblNavZoom:"Зум", lblNavPan:"Перемещение",
+      satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
+      aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
+      aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 10 раз в день). Ключ API не нужен.",
+      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
+      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", vol3dBtn:"🧊 3-D объём", droneBtn:"🛸 Дрон", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
+      lblDataSources:"Источники данных", viewDataSources:"Краткий список в приложении", lblScience:"Наука и логика", viewScience:"Как считает каждая модель ↗", lblSourcesPage:"Источники данных", viewSourcesPage:"Открыть страницу источников данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
+      lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
+      filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
+      tlTitle:"Машина времени", tlMachine:"Машина времени", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
+      lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",
+      aiTranslateTitles:"Перевести заголовки", aiViewSumBtn:"Сводка по этому виду",
+      /* (#R37) full RU coverage — the same 184 keys that were falling back to English. */
+      loading:"Загрузка статей...", noMatch:"Ничего не найдено.", networkError:"Не удалось загрузить новости. Повтор…", emptyHint:"Вкладка не выбрана — карта пуста.<br>Выберите вкладку выше, чтобы показать содержимое.",
+      dashCatMil:"Военные базы", dashCatTech:"Технологии / Кибер", dashCatMar:"Море / Проливы", dashCatGeo:"Гео / Климат", readWiki:"Читать в Википедии ↗",
+      measure:"Измерить", areaTool:"Площадь", radius:"Радиус", vol3dTool:"3-D объём", points:"Точки", total:"Всего", perimeter:"Периметр", area:"Площадь", clear:"Очистить", undoPt:"Отменить точку",
+      measureHint:"Нажимайте, чтобы добавить точки · двойной клик для завершения", areaHint:"Добавьте 3+ точек для замыкания · двойной клик для завершения", radiusHint:"Нажмите на карту, чтобы поставить круг. Можно несколько кругов.", addCircle:"Поставить круг", removeAll:"Очистить всё", color:"Цвет",
+      statPop:"Население", statGdp:"ВВП (номинал)", statGdpPc:"ВВП на душу", statGdpPPP:"ВВП (ППС)", statGdpPcPPP:"ВВП на душу (ППС)", statArea:"Площадь", statDensity:"Плотность населения", statRegion:"Регион", statSub:"Субрегион", statCapital:"Столица", statCurrency:"Валюта", statLang:"Языки", statHDI:"ИЧР", statDem:"Индекс демократии", statMil:"Военные расходы", statLife:"Ожид. продолжительность жизни", statInet:"Интернет-пользователи",
+      details:"Подробнее ↗", loadingData:"Загрузка данных о странах...", dataNA:"н/д", noData:"Данные о стране недоступны.",
+      sortGdp:"ВВП", sortPop:"Нас.", sortArea:"Пл.", sortName:"А–Я", sortHDI:"ИЧР", sortMil:"Воен.$", elev:"Высота", bearing:"Азимут", presetNone:"— выбрать —", presetLbl:"Предустановки диапазона", opacity:"Непрозрачность", circumference:"Длина окружности",
+      spRunway:"ВПП", spGarrison:"Гарнизон", spOperator:"Оператор", spEstd:"Основано", spAircraft:"Самолёты", spType:"Тип", spCapacity:"Мощность", spDepth:"Глубина", spOutput:"Добыча", spReserves:"Запасы",
+      widgetsBtn:"Виджеты", measureBtn:"📏 Измерить", areaBtn:"📐 Площадь",
+      ctxDropPin:"Поставить метку", ctxMeasureFrom:"Начать измерение", ctxPostHere:"Опубликовать в сообществе", ctxDistFrom:"Расстояние от предыдущей метки", ctxCopy:"Скопировать координаты", ctxClearPins:"Удалить все метки", ctxThisPoint:"Эта точка", coords:"Координаты", depth:"Глубина", climate:"Климат",
+      lyrEEZ:"Морская ИЭЗ / 12 миль", lyrShips:"Суда в реальном времени", lyrPlanes:"Самолёты в реальном времени", lyrSats:"Спутники в реальном времени", lyrThermal:"Тепловые аномалии (пожары)", planesZoomHint:"Приблизьте, чтобы загрузить самолёты", planesAreaHint:"Приблизьте — самолёты загружены для центральной части вида", poiLabels:"Объекты, предприятия и учреждения", shipsZoomHint:"Приблизьте, чтобы загрузить суда", aisNoKey:"Для судов нужен бесплатный ключ API AISstream.io — добавьте его в Настройках.", trafficFilter:"Фильтр", lyrTime:"Дата слоя",
+      commAdd:"+ Новый пост", commAddArmed:"Нажмите на карту, чтобы поставить метку", commTitle:"Заголовок", commBody:"Поделитесь наблюдением, вопросом или теорией...", commPost:"Опубликовать", commCancel:"Отмена", commEmpty:"Пока нет постов. Нажмите \"+ Новый пост\", чтобы начать обсуждение.", commComment:"Комментировать", commLocate:"Показать на карте", commDelete:"Удалить", commReply:"Ответить", commWrite:"Написать комментарий...", commPostNew:"Новый пост", commPlacedAt:"Размещено в", commSortHot:"Популярное", commSortNew:"Новое", commSortTop:"Лучшее", commSearchPh:"Поиск постов…", commInView:"В поле зрения", commCat:"Категория", commCatAll:"Все", commEdit:"Изменить", commEdited:"изменено", commEditPost:"Редактировать пост", commSaveEdit:"Сохранить изменения", commNoMatch:"Нет постов по вашим фильтрам.",
+      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить.", coCompareEmpty:"Нажимайте на строки компаний, чтобы выбрать и сравнить.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
+      satCtrlTitle:"Спутниковые снимки", satProvider:"Провайдер", satDate:"Дата съёмки", satLatest:"Самые свежие", satMosaicSuffix:"безоблачная мозаика", satLocked:"добавьте ключ API", satPrevDay:"Предыдущий день", satNextDay:"Следующий день", satKeyConnected:"Подключено", satKeyNone:"Нет ключа", satErrAuth:"{provider}: ошибка аутентификации — проверьте ключ API", satErrTiles:"{provider}: снимки недоступны — переключено на резерв",
+      aiProvider:"Провайдер ИИ", aiModel:"Модель", aiApiKey:"Ключ API", aiKeyConnected:"Подключено", aiKeyNone:"Нет ключа", aiGetKey:"Получить ключ ↗", aiOnDevice:"Работает локально в Chrome — ключ API не нужен.", aiTest:"Проверить подключение", aiTesting:"Проверка…", aiTestOk:"Подключение в порядке ✓", aiNoKey:"Сначала добавьте ключ API ИИ в Настройки → Функции ИИ.", aiNoVision:"Эта модель не читает изображения. Выберите GPT-4o, Claude 3.5 Sonnet или Gemini 1.5 Pro.", aiChromeUnavail:"Встроенный ИИ Chrome здесь недоступен. Используйте Chrome 127+ с включённым ИИ на устройстве или выберите другого провайдера.", aiThinking:"ИИ анализирует…", aiError:"Сбой запроса к ИИ", aiCopy:"Копировать", aiCopied:"Скопировано ✓", aiClose:"Закрыть", aiRetry:"Повторить",
+      aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
+      aiSumBtn:"Сводка по этой области (ИИ)", popInArea:"Население в этой области", popCalcing:"Расчёт населения…", popFail:"Не удалось получить население — попробуйте ещё раз.", newsInArea:"Новости в этой области", elevProfile:"Профиль высот", finalizeMeas:"Оставить на карте", aiSumTitle:"Сводка по области", aiSumSub:"Меток новостей в выбранной области: {n}", aiSumNoArea:"Сначала нарисуйте область или поставьте круг.", aiSumNoNews:"В этой области нет меток новостей.", aiViewSumTitle:"Что происходит на экране",
+      aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
+      mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" 
+} });

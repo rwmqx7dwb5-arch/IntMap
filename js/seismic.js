@@ -53,7 +53,7 @@ window.IntMapModules.seismic=function(HOST){
 
   window.IntMapSeismic=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+    const L=window.IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, RE=6371.0;                       /* IASP91 works in km */
     const SRC='seis-src';
 
@@ -1049,13 +1049,31 @@ window.IntMapModules.seismic=function(HOST){
            that cannot reach 2 km the old fallback still applies and `stats.slopeUsable` still says so
            — this makes the give-up rare, it does not pretend it cannot happen. */
         while(z<12&&(40075017*Math.max(0.05,cosC)/(Math.pow(2,z)*256))>2000&&est(z+1)<=1600) z++;
+        /* ══ ⚠⚠ (#R221) THE WARM-UP ASKS THE TILE GRID, AND PINS WHAT IT ASKS FOR ═══════════════════
+           「震度分布はたまに単なる同心円になることがある。ふざけるな。」 Two defects, both here:
+
+           ① THE FIELD EVICTED ITS OWN TILES. `warmDEMTiles` shares `_demCache`, whose ceiling is 560
+              on desktop and **140 on a phone**, and one continental field asks for up to 520 (1,600
+              since #R216). Past the ceiling every new tile threw out one this same picture had
+              already fetched, so `demSnapshot` — which is the only moment strong references are
+              taken — found a fraction of them. Every cell without a DEM takes the panel's single
+              site class, and an intensity with one amplification everywhere is a function of
+              DISTANCE ALONE: concentric circles, exactly as reported, on the whole field rather
+              than part of it. `hold` pins the set for the duration and the `finally` releases it.
+           ② THE WARM LIST WAS A 33 × 33 LATTICE, not the tile grid. Positions are not tiles: many
+              samples share one tile (wasted) and, once the field's tile grid is wider than 33, whole
+              columns are never requested at all (missed). `demTilePoints` asks for exactly the
+              rectangle `demSnapshot` will read, margin included — one point per tile, no more. */
         try{
-          const warm=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
-            warm.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
+          const warm=HOST.demTilePoints(W,Ss,E,Nn,z);
           prog(6);
           /* (#R190) 20 s was the whole of a slow build: the timeout, not the arithmetic. A field this
-             wide is answered by whatever arrived — the cells that did not are counted and declared. */
-          await warmDEMTiles(warm,z,12000,(f)=>prog(6+34*(+f||0)));
+             wide is answered by whatever arrived — the cells that did not are counted and declared.
+             (#R221) …and the deadline now scales with how many tiles were actually asked for, because
+             a phone fetching 400 tiles over mobile data is not a 12-second job and the old constant
+             is what turned a slow network into a ring pattern. */
+          const _ms=Math.max(12000,Math.min(45000,600*Math.sqrt(warm.length)*1.6));
+          await warmDEMTiles(warm,z,_ms,(f)=>prog(6+34*(+f||0)),true);
         }catch(_){}
         prog(40);
         if(seq!==fldSeq) return;
@@ -1103,14 +1121,17 @@ window.IntMapModules.seismic=function(HOST){
            field this round is removing — over the part of the map the tiles were missing for, which
            is the 「一部は」 in the report. One more bounded pass costs eight seconds in the case that
            was going to be wrong anyway, and nothing at all in the normal case. */
-        if(snap&&snap.missing>Math.max(8,snap.have*0.35)){
-          try{ const warm2=[]; for(let j=0;j<=32;j++) for(let i=0;i<=32;i++)
-              warm2.push([W+(E-W)*i/32, Math.max(-85,Math.min(85,latOfY(y0+(y1-y0)*j/32)))]);
-            await warmDEMTiles(warm2,z,8000,null);
+        /* (#R221) …and the second pass asks the same tile grid, twice if it is still short. With the
+           pin in place a retry now KEEPS what it recovers, which is what makes retrying worth doing
+           at all — before, the second pass re-fetched tiles the first pass had already lost and then
+           lost them again to the same ceiling. */
+        for(let pass=0; pass<2 && snap && snap.missing>Math.max(4,snap.want*0.08); pass++){
+          try{
+            await warmDEMTiles(HOST.demTilePoints(W,Ss,E,Nn,z),z,10000,null,true);
             if(seq!==fldSeq) return;
             const s2=demSnapshot(W,Ss,E,Nn,z);
             if(s2&&s2.have>=snap.have) snap=s2;
-          }catch(_){}
+          }catch(_){ break; }
         }
         const demAt=snap?((lo,la)=>snap.at(lo,la)):((lo,la)=>demElevBilinear(lo,la,z));
         /* (#R192) the bundled land/sea sign, for the cells the DEM did not answer for — see below */
@@ -1258,7 +1279,8 @@ window.IntMapModules.seismic=function(HOST){
         await buildFar(prof,{W,E,Ss,Nn},rFine,rEdge,seq);
         if(fld&&fld.stats) fld.stats.ms=Math.round(performance.now()-t0);
         prog(100);
-      } finally { if(seq===fldSeq){ fldBusy=false;
+      } finally { try{ HOST.releaseDEMHold(); }catch(_){}   /* (#R221) the pin is for THIS build only */
+        if(seq===fldSeq){ fldBusy=false;
         /* (#R190) the build warmed the DEM around the epicentre, so the tsunami screening may have an
            answer now that it did not have when the panel was drawn — see syncTsunami. */
         const _t=!!tsunamiCase();
@@ -1819,9 +1841,16 @@ window.IntMapModules.seismic=function(HOST){
         +(fldBusy?''
           :(fldStale?('<div style="color:#ffd23f;">'+L('The parameters changed — press ▶ to recompute the intensity map.','設定を変更しました。▶ を押すと震度分布を再計算します。','Parameter geändert — ▶ drücken, um neu zu rechnen.','Параметры изменены — нажмите ▶ для пересчёта.','Los parámetros cambiaron — pulse ▶ para recalcular.')+'</div>')
           :(fld&&fld.stats?('<div style="opacity:0.72;font-size:10.5px;">'
+            /* ⚠ (#R221) WHEN THE SITE TERM IS UNIFORM, THE FIELD IS RINGS — SO SAY WHICH OF THE TWO
+               REASONS IT IS. "Terrain too coarse" was printed for both, and only one of them was
+               true: the common case was that the DEM tiles had been EVICTED (see the warm-up), which
+               is a fetch that did not finish, not a landscape the model cannot resolve. Naming it
+               separately is what makes the difference visible if it ever comes back. */
             +(fld.stats.terrain
               ?L('Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM','震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007）','Intensitätsfeld: Vs30 aus Hangneigung, echtes DEM','Поле интенсивности: Vs30 по уклону, реальный DEM','Campo de intensidad: Vs30 por pendiente, DEM real')
-              :('⚠ '+L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme')))
+              :(fld.stats.slopeUsable
+                ?('⚠ '+L('Elevation tiles did not arrive — uniform site class, so the field is distance alone','標高タイルが届かず一様地盤で計算（距離だけの分布になります）','Höhenkacheln kamen nicht an — einheitlicher Untergrund','Тайлы рельефа не пришли — однородный грунт','No llegaron los mosaicos de elevación — terreno uniforme'))
+                :('⚠ '+L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme'))))
             +' · z'+fld.stats.z+' ('+fld.stats.demSpacingM.toLocaleString()+' m'
             /* (#R190) the slope baseline actually used, because the Vs30 proxy is calibrated at ~900 m
                and a field wider than the DEM can resolve does not get to pretend otherwise */

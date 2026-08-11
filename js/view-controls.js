@@ -15,7 +15,7 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.viewControls=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
-  const L=(en,jp,de,ru,es)=>HOST.lang==='jp'?jp:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
+  const L=window.IntMapLang.pick(()=>HOST.lang);
 
   /* =========================================================================================
    *  TILT LIMIT — Settings ▸ Map behaviour ▸ "Tilt limit"

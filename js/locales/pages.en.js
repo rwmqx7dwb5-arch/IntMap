@@ -143,9 +143,9 @@ window.IntMapPageI18N.define('en', {
         id: 'elevation', nav: 'Elevation data', h: 'Elevation data — the base of every terrain computation',
         blocks: [
           ['p', 'Every terrain feature shares one elevation sampler. The data is Terrarium-encoded RGB elevation tiles, where the pixel colour <em>is</em> the height.'],
-          ['eq', 'elevation (m) = (R &times; 256 + G + B / 256) &minus; 32768'],
+          ['tex', 'h \\;=\\; \\bigl(R \\cdot 256 + G + B/256\\bigr) - 32768 \\quad [\\mathrm{m}]'],
           ['p', 'A point\'s elevation is <b>bilinearly interpolated</b> from the four surrounding samples — nearest-neighbour would turn tile pixels into false steps and corrupt slope and flow answers. The ground spacing of one sample at zoom z is:'],
-          ['eq', '&Delta;(z) = 40 075 017 &middot; cos(&phi;) / (2<sup>z</sup> &middot; 256) &nbsp;m'],
+          ['tex', '\\Delta(z) \\;=\\; \\frac{40\\,075\\,017 \\, \\cos\\varphi}{2^{z} \\cdot 256} \\quad [\\mathrm{m\\;per\\;pixel}]'],
           ['table', ['z', 'Spacing at mid-latitude', 'Used for'], [
             ['14', '~10 m', 'Channel head, cross-sections'],
             ['11', '~54 m', 'Long-range downstream trace'],
@@ -166,7 +166,7 @@ window.IntMapPageI18N.define('en', {
           ]],
           ['h3', '② Volume routing — multiple flow direction'],
           ['p', 'D8 collapses flow into single-cell lines on an open hillside — its signature artefact. Instead each cell splits its water between <b>every lower neighbour</b>, weighted by slope and contour width (Freeman 1991 / Quinn 1991):'],
-          ['eq', 'w<sub>i</sub> &prop; (&Delta;z<sub>i</sub> / L<sub>i</sub>)<sup>1.1</sup> &times; C<sub>i</sub> &nbsp;&nbsp; C = 0.5&Delta; (face) / 0.354&Delta; (corner)'],
+          ['tex', 'w_i \\;\\propto\\; \\left(\\frac{\\Delta z_i}{L_i}\\right)^{1.1} \\! \\cdot C_i, \\qquad C = \\tfrac{1}{2}\\Delta \\ (\\text{face}), \\;\\; 0.354\\,\\Delta \\ (\\text{corner})'],
           ['p', 'The weighting is super-linear in slope, so hillslopes disperse and valleys converge on their own. A share only ever moves to a strictly lower <code>filled</code>, so cycles are impossible.'],
           ['h3', '③ Lakes hold, then cascade'],
           ['p', 'Sorting a depression\'s cells by elevation once makes stored volume a prefix sum and the level for a given volume a binary search. If the inflow does not fill it, the water stops there; only the <b>overflow</b> is injected at the outlet the priority flood already identified. An empty reservoir therefore does not deliver its full inflow downstream.'],
@@ -179,7 +179,7 @@ window.IntMapPageI18N.define('en', {
           ['p', 'When the lake is wider than the window (Lake Biwa is 63 km; the window is 15 km) there is no descending neighbour anywhere inside it. The look-ahead then widens to <b>3&times; → 9&times; → 27&times;</b>, each asking the DEM at the level whose own spacing matches that window. At 9&times; (~135 km) Biwa fits with room to spare and the Seta — the only way the level drops — is visible. <b>The threshold does not grow with the ladder</b>: a coarser sample can only over-estimate the fill required, so holding the number fixed makes the test stricter as the window widens, which is the safe direction.'],
           ['h3', '⑤ The width and depth that get drawn'],
           ['p', 'At each point the DEM is read on the <b>perpendicular</b> out to ±1.8 km, and the water surface is raised until the wetted area matches what has to pass. That requirement comes from continuity:'],
-          ['eq', 'A(s) = C / &radic;S(s) &nbsp;&nbsp; where C is Q/K &nbsp;or&nbsp; V / &int;(ds/&radic;S), &nbsp; v = K&radic;S, K = 40'],
+          ['tex', 'A(s) \\;=\\; \\frac{C}{\\sqrt{S(s)}}, \\qquad v \\;=\\; K\\sqrt{S}, \\quad K = 40'],
           ['p', 'Speed going as &radic;slope is the friction-slope term every open-channel formula shares; K = 40 gives 1.3 m/s on a 0.1 % grade, mid-range for a real lowland river. Steep reaches come out narrow and quick, flat reaches broad and slow. <b>The only free number is the volume (or discharge) the user entered.</b>'],
           ['lim', 'This is a <b>steady-state routing model</b>, not a shallow-water solver: it does not answer arrival time (a separate feature does). "Continuous pour" repeats the same steady solve as the volume grows — a quasi-static filling sequence — and the panel shows simulated time, never wall clock.']
         ]
@@ -187,6 +187,16 @@ window.IntMapPageI18N.define('en', {
       {
         id: 'seismic', nav: 'Seismic shaking', h: 'Seismic shaking',
         blocks: [
+          ['p', 'The source is a Brune ω<sup>−2</sup> spectrum; everything between it and the ground is a product of three attenuations, each with a published form and a published constant.'],
+          ['tex', '\\dot{M}(f) = \\dfrac{M_0}{1+(f/f_c)^2}, \\qquad f_c = 4.906\\times10^{6}\\,\\beta\\left(\\dfrac{\\Delta\\sigma}{M_0}\\right)^{1/3}'],
+          ['tex', 'A(f) = \\underbrace{\\dfrac{R_{\\theta\\phi}\\,F\\,V}{4\\pi\\rho\\beta^{3}}}_{\\text{source}}\\; \\dot{M}(f)\\; \\underbrace{G(r)}_{\\text{spreading}}\\; \\underbrace{e^{-\\pi f r/(Q(f)\\beta)}}_{\\text{anelastic}}\\; \\underbrace{e^{-\\pi\\kappa f}}_{\\text{near-surface}}'],
+          ['tex', 'G(r) = \\begin{cases} r^{-1.3} & r \\le 70\\ \\text{km}\\\\ r^{+0.2} & 70 < r \\le 140\\ \\text{km}\\\\ r^{-0.5} & r > 140\\ \\text{km}\\end{cases} \\qquad Q(f) = Q_0 f^{\\eta},\\;\\; \\kappa = 0.035\\ \\text{s}'],
+          ['tex', '\\log_{10} h_{\\text{eff}} = -0.405 + 0.235\\,M'],
+          ['p', 'A spectrum is not a peak. The peak of a random process with this spectrum comes from the Cartwright &amp; Longuet-Higgins peak factor, with N<sub>z</sub> the number of zero crossings in the path duration T<sub>d</sub> — which is why the same spectrum gives a smaller peak for a long, scattered path than for a short one.'],
+          ['tex', 'y_{\\max} = \\sqrt{2\\ln N_z}\\left(1+\\dfrac{0.5772}{2\\ln N_z}\\right)\\sqrt{\\dfrac{1}{T_d}\\int_0^{\\infty}\\!\\!|Y(f)|^{2}df}'],
+          ['p', 'The site term is the terrain: V<sub>S30</sub> from topographic slope, measured over the DEM&rsquo;s own sample spacing rather than at a fictional 900 m, then quarter-wavelength amplification. Where the elevation tiles do not arrive the field falls back to one site class everywhere, and the panel says so — an intensity with a single amplification is a function of distance alone, which is drawn as concentric circles.'],
+          ['tex', '\\text{slope} = \\dfrac{\\lVert\\nabla h\\rVert}{\\Delta s},\\quad \\Delta s = \\max\\!\\bigl(900\\,\\text{m},\\,1.25\\,\\Delta(z)\\bigr) \\;\\longrightarrow\\; V_{S30} \\;\\longrightarrow\\; A_{qwl} = \\sqrt{\\dfrac{\\rho_r\\beta_r}{\\overline{\\rho\\beta}(\\lambda/4)}}'],
+          ['tex', '\\mathrm{MMI} = 3.78 + 1.47\\log_{10}\\mathrm{PGV}\\;\\;(\\mathrm{PGV}>0.76\\ \\text{cm/s}) \\qquad I_{\\mathrm{JMA}} = 2\\log_{10}a_0 + 0.94'],
           ['p', 'Arrival times are ray-traced through the <b>IASP91</b> velocity structure — the take-off angle is solved for the source depth and epicentral distance and the path is integrated, rather than read from a table. That gives the P and S arrivals.'],
           ['p', 'Amplitude is an empirical distance decay times a <b>frequency-dependent Q</b> (anelastic attenuation), times a <b>site amplification</b>. The site class is not assumed: it comes from the slope measured at the DEM\'s own sample spacing at that point (steep = rock, flat = alluvium).'],
           ['lim', 'Beyond the bottom of the intensity scale the field is <b>extrapolating</b>, and says so. The epicentre is where the user put it; no AI-guessed coordinate is ever used.']
@@ -195,6 +205,11 @@ window.IntMapPageI18N.define('en', {
       {
         id: 'tsunami', nav: 'Tsunami', h: 'Tsunami',
         blocks: [
+          ['p', 'The propagation is the non-linear shallow-water equations with Manning bottom friction, solved explicitly on a staggered grid. The time step is bounded by the fastest cell, not chosen.'],
+          ['tex', '\\dfrac{\\partial\\eta}{\\partial t} + \\nabla\\!\\cdot\\!\\bigl[(h+\\eta)\\mathbf{u}\\bigr] = 0, \\qquad \\dfrac{\\partial\\mathbf{u}}{\\partial t} + g\\nabla\\eta + \\dfrac{g\\,n^{2}\\lVert\\mathbf{u}\\rVert\\mathbf{u}}{(h+\\eta)^{4/3}} = 0'],
+          ['tex', 'c = \\sqrt{g\\,h}, \\qquad \\Delta t \\le \\dfrac{\\mathrm{CFL}\\,\\Delta x}{\\max\\sqrt{g\\,h}}, \\qquad \\dfrac{H_2}{H_1} = \\left(\\dfrac{h_1}{h_2}\\right)^{1/4}'],
+          ['p', 'The initial surface is the Okada (1985) elastic half-space displacement of the drawn rupture — so the wave starts from a fault with a length, a width, a depth, a dip and a slip, not from a bump.'],
+          ['tex', '\\eta_0(x,y) = u_z^{\\,\\text{Okada}}\\bigl(x,y;\\,L,\\,W,\\,d,\\,\\delta,\\,\\lambda,\\,\\bar{D}\\bigr), \\qquad M_0 = \\mu\\,L\\,W\\,\\bar{D}'],
           ['p', 'The initial sea-surface displacement is the <b>Okada (1985)</b> elastic half-space solution for a rectangular fault. Two implementation points matter:'],
           ['ul', [
             'The arctangent must be the <b>principal value</b> — using <code>atan2</code> produces a false subsidence lobe behind the fault.',
@@ -214,7 +229,7 @@ window.IntMapPageI18N.define('en', {
         id: 'tides', nav: 'Tides', h: 'Tides',
         blocks: [
           ['p', 'The series is Open-Meteo Marine\'s global tide model — hourly sea level above MSL. Highs and lows are its <b>local extrema</b>, with the time refined by fitting a parabola through the three samples around each turn, so the answer is not pinned to the hour the model is sampled at.'],
-          ['eq', 't* = t<sub>i</sub> + &frac12; &middot; (a &minus; c) / (a &minus; 2b + c) &middot; &Delta;t'],
+          ['tex', 't^{*} \\;=\\; t_i + \\tfrac{1}{2}\\,\\frac{a-c}{a-2b+c}\\,\\Delta t'],
           ['p', 'Switching the layer on samples the coastline in view and asks the model for all of those points at once, so the whole visible coast carries its level, its phase and its next turn before anything is tapped — and the ground at or below that level is shaded from the same elevation data as §6. Tapping a coast replaces the overview with that point\'s own table, asked for on its own coordinates.'],
           ['p', '"How far the water comes" uses exactly the construction in §6, with the current tide level as the water level. Over minutes to hours a still-water fill is a fair approximation — but it is not a run-up model.']
         ]
@@ -222,6 +237,12 @@ window.IntMapPageI18N.define('en', {
       {
         id: 'currents', nav: 'Ocean currents', h: 'Ocean currents',
         blocks: [
+          ['p', 'The bundled field is geostrophic flow from satellite altimetry plus the wind-driven Ekman part; each named current is then integrated through that measured field from a published seed on its core.'],
+          ['tex', 'u_g = -\\dfrac{g}{f}\\dfrac{\\partial\\eta}{\\partial y}, \\qquad v_g = \\dfrac{g}{f}\\dfrac{\\partial\\eta}{\\partial x}, \\qquad f = 2\\Omega\\sin\\varphi'],
+          ['tex', '\\lVert\\mathbf{u}_{ek}\\rVert = \\dfrac{B}{\\sqrt{|f|}}\\dfrac{\\lVert\\boldsymbol{\\tau}\\rVert}{\\rho_w},\\quad B = 0.065\\ \\text{s}^{-1/2}, \\qquad \\theta = \\theta_{\\tau} - \\operatorname{sgn}(\\varphi)\\,55^{\\circ}'],
+          ['tex', '\\mathbf{x}_{n+1} = \\mathbf{x}_n + \\Delta s\\,\\hat{\\mathbf{u}}\\!\\left(\\mathbf{x}_n + \\tfrac{\\Delta s}{2}\\hat{\\mathbf{u}}(\\mathbf{x}_n)\\right), \\qquad \\Delta s = 25\\ \\text{km}'],
+          ['p', 'Warm or cold is <b>measured</b>, not inferred from the direction of the flow: it is the current&rsquo;s own sea-surface temperature against the zonal mean at the same latitude. Within ±0.6 K the current is drawn grey, because the equatorial and circumpolar currents genuinely run along their own isotherms.'],
+          ['tex', '\\overline{\\Delta T} = \\dfrac{1}{N}\\sum_{i=1}^{N}\\Bigl[T(\\mathbf{x}_i)-\\langle T\\rangle_{\\varphi_i}\\Bigr] \\quad \\begin{cases}>+0.6\\ \\text{K} & \\text{warm}\\\\ <-0.6\\ \\text{K} & \\text{cold}\\\\ \\text{otherwise} & \\text{zonal}\\end{cases}'],
           ['tagline', 'A flow field, drawn as the streamlines of the water that is actually moving.'],
           ['p', 'The velocity field is Open-Meteo Marine\'s <code>ocean_current_velocity</code> and <code>ocean_current_direction</code> — the same keyless model the tides use. A grid covering the view is asked for in one request, land cells are skipped from the bundled land mask, and the answers are bilinearly interpolated into a continuous field.'],
           ['p', 'A <b>streamline</b> is then integrated through that field from each seed point with a 4th-order Runge–Kutta step, forwards and backwards, so one line is a path the water actually takes rather than an arrow standing on its own. Line width is the speed; arrowheads along the line say which way it goes.'],
@@ -229,6 +250,25 @@ window.IntMapPageI18N.define('en', {
           ['p', 'Warm or cold is <b>measured, not assumed</b>. 暖流 / 寒流 is a claim about what the water carries, so each streamline is compared with the sea-surface temperature about 110 km <b>upstream</b> along its own path. Upstream warmer than here means the current is bringing warmth (red); upstream colder means it is bringing cold (blue).'],
           ['lim', 'Where the difference is under 0.25 K — inside the model\'s own noise — the line is <b>grey</b> and the legend says "neither". A current that is not carrying a temperature contrast must not be coloured as though it were. Names are Wikidata (CC0), drawn at the coordinate published for each current; a name is a point on the map and does not claim that the line beside it is that current.']
         ]
+      },
+      {
+        id: 'atmosphere', nav: 'Atmosphere & sky', h: 'Atmosphere & sky colour',
+        blocks: [
+          ['tagline', 'What colour the sky is, from this height, at this Sun angle, looking this way — integrated rather than chosen.'],
+          ['p', 'A renderer that picks two hex colours and interpolates them agrees with the sky at exactly one Sun elevation and one camera height. This app flies from a street to low orbit and travels in time, so the sky is <b>marched</b>: the view ray is integrated to the top of the atmosphere, and at every step the ray back to the Sun is integrated too. A step whose Sun ray is blocked by the Earth contributes nothing — which is what makes dusk fall from the ground upward, and gives twilight without any twilight term.'],
+          ['h3', 'The radiative transfer that is actually marched'],
+          ['tex', 'L(\\mathbf{x},\\boldsymbol{\\omega}) \\;=\\; \\int_{0}^{t_{\\max}} T(\\mathbf{x},\\mathbf{p})\\,\\Bigl[\\, \\sigma_s^{R}(\\mathbf{p})\\,p_R(\\mu)\\,T(\\mathbf{p},\\mathbf{p}_{\\odot})\\,E_\\odot \\;+\\; \\sigma_s^{M}(\\mathbf{p})\\,p_M(\\mu)\\,T(\\mathbf{p},\\mathbf{p}_{\\odot})\\,E_\\odot \\;+\\; \\sigma_s(\\mathbf{p})\\,\\Psi_{ms}(h,\\theta_\\odot) \\Bigr]\\,dt'],
+          ['tex', 'T(\\mathbf{a},\\mathbf{b}) \\;=\\; \\exp\\!\\left[-\\!\\int_{\\mathbf{a}}^{\\mathbf{b}}\\!\\bigl(\\beta_R\\,e^{-h/H_R} + 1.1\\,\\beta_M\\,e^{-h/H_M} + \\beta_{O_3}\\,\\Lambda(h)\\bigr)ds\\right]'],
+          ['tex', 'p_R(\\mu) = \\frac{3}{16\\pi}\\bigl(1+\\mu^{2}\\bigr), \\qquad p_M(\\mu) = \\frac{3}{8\\pi}\\,\\frac{(1-g^{2})(1+\\mu^{2})}{(2+g^{2})\\,(1+g^{2}-2g\\mu)^{3/2}}, \\quad g = 0.76'],
+          ['h3', 'Ozone, and why twilight is blue'],
+          ['p', 'Ozone <b>absorbs and does not scatter</b>, so it appears in the optical depth on both rays and in no phase function. It is what makes the blue hour blue: with the Sun below the horizon the sight-line passes through 10–40 km, where Rayleigh scattering has little left to remove, and what takes the residual yellow-red out is the Chappuis band near 600 nm.'],
+          ['tex', '\\Lambda(h) \\;=\\; \\max\\!\\left(0,\\; 1 - \\frac{|h - 25\\,\\mathrm{km}|}{15\\,\\mathrm{km}}\\right), \\qquad \\beta_{O_3} = (0.650,\\,1.881,\\,0.085)\\times10^{-6}\\ \\mathrm{m^{-1}}'],
+          ['h3', 'Multiple scattering'],
+          ['p', 'Single scattering counts a photon once. In the blue, air is optically thick enough that most of what reaches the eye has bounced several times, and every bounce erases direction — so the multiply-scattered part is <b>isotropic</b> and appears with no phase function at all. Closing the geometric series gives a term that depends only on height and Sun elevation, so it is tabulated (16 heights × 24 Sun elevations) and interpolated twice per sample.'],
+          ['tex', '\\Psi_{ms} \\;=\\; \\frac{L^{(2)}}{1 - f}, \\qquad f = \\frac{1}{4\\pi}\\oint \\sigma_s\\,T\\,d\\omega \\;<\\; 1'],
+          ['tex', 'C \\;=\\; \\Bigl[\\,1 - e^{-L\\,\\varepsilon}\\,\\Bigr]^{1/2.2}, \\qquad \\varepsilon = 0.7'],
+          ['lim', 'One aerosol profile for the whole planet, no clouds, no airglow and no starlight — so a deep night integrates to black and is floored at a measured night colour rather than shown as the model returns it. The limb seen from space is the renderer\'s own scattering pass, not this integral; this model decides the colour that pass is blended toward.'],
+        ],
       },
       {
         id: 'sun', nav: 'Sun, shadow, viewshed', h: 'Sun, shadow and viewshed',
