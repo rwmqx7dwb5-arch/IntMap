@@ -87,8 +87,21 @@ window.IntMapModules.solid3d=function(){
     if(ringArea(sub)<0) idx.reverse();                     /* work counter-clockwise */
     const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
     const inside=(a,b,c,q,eps)=>cross(a,b,q)>=eps&&cross(b,c,q)>=eps&&cross(c,a,q)>=eps;
-    const out=[]; let guard=0;
-    while(idx.length>3&&guard++<idx.length*idx.length+256){
+    /* ══ ⚠⚠ (#R218) THE GUARD WAS THE REMAINING HOLE ═══════════════════════════════════════════════
+       「3D立体にバグとしてたまに不自然な切り込み線が入ってしまうことがある。」 — reported again after
+       #R216 removed the `break`. #R216's fix is right and stays; what it left behind is this loop
+       bound, which is re-evaluated with the SHRINKING `idx.length`. Clipping n vertices needs n−3
+       iterations, so the loop survives only while k < (n−k)² + 256, and it exits early for every
+       ring with n ≥ 276:
+           n = 300 → the condition fails at idx.length = 6, and the loop stops
+       leaving a 6-gon of the cap simply not triangulated — a straight-edged bite out of the lid and
+       the floor of a body whose walls are complete. That is the reported incision exactly, and it is
+       「たまに」 for the same reason as before: `densify()` inserts a point every ≤100 km, so whether a
+       footprint crosses 276 vertices depends on how big it is and where it was drawn.
+       The bound is now taken from the ORIGINAL length, once. It is still a bound — a runaway loop is
+       still impossible — but it can no longer expire before the work is done. */
+    const out=[]; let guard=0; const guardMax=idx.length*idx.length+256;
+    while(idx.length>3&&guard++<guardMax){
       let cut=-1, bestConvex=-1, bestCross=-Infinity;
       for(let pass=0;pass<2&&cut<0;pass++){
         const eps=pass===0?0:1e-12;                        /* pass 2: a collinear point is not "inside" */
@@ -110,7 +123,12 @@ window.IntMapModules.solid3d=function(){
       const i0=idx[(cut+idx.length-1)%idx.length], i1=idx[cut], i2=idx[(cut+1)%idx.length];
       out.push(i0,i1,i2); idx.splice(cut,1);
     }
+    /* ⚠ …AND IF IT EVER DOES EXPIRE, THE REMAINDER IS STILL COVERED. A fan over what is left is not a
+       correct triangulation of a concave polygon, but it is a SURFACE — and the whole lesson of #R216
+       is that a sliver nobody can see beats a hole everybody reports. Belt and braces on purpose: the
+       bound above is the fix, and this is what makes "a hole" unreachable by any future arithmetic. */
     if(idx.length===3) out.push(idx[0],idx[1],idx[2]);
+    else if(idx.length>3) for(let i=1;i<idx.length-1;i++) out.push(idx[0],idx[i],idx[i+1]);
     return out;
   }
   /* ---- shaders ---------------------------------------------------------------------------- */

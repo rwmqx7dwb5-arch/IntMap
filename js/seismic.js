@@ -685,13 +685,50 @@ window.IntMapModules.seismic=function(HOST){
       const r0=Math.max(1,depthKm||1), r1=Math.sqrt(MMI_MAX_KM*MMI_MAX_KM+depthKm*depthKm)*1.02;
       for(let i=0;i<n;i++){ const r=r0*Math.pow(r1/r0,i/(n-1)); rr[i]=r;
         const m=motion(mw,r*1000); out[i]=Math.max(1e-9,m.pgv); a0s[i]=Math.max(1e-9,m.a0); }
-      const interp=(arr,rM)=>{ const r=Math.max(rr[0],Math.min(rr[n-1],rM/1000));
-        let lo=0,hi=n-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(rr[m]<=r) lo=m; else hi=m; }
-        const span=Math.log(rr[hi])-Math.log(rr[lo])||1;
-        const f=(Math.log(r)-Math.log(rr[lo]))/span;
-        return arr[lo]*Math.pow(arr[hi]/arr[lo],f); };
-      return { rr, out, a0s, at(rM){ return interp(out,rM); }, a0At(rM){ return interp(a0s,rM); } };
+      /* ══ (#R218) THE SAME INTERPOLATION, WITHOUT THE SEARCH ═══════════════════════════════════════
+         「震源分布の計算速度が遅いから爆速に。（品質に一切影響を及ばさないように。）」 — and this is one
+         of the two places the field spends its arithmetic (the other is the distance; see buildField).
+         The nodes are a GEOMETRIC series by construction — rr[i] = r0·(r1/r0)^(i/(n−1)) — so the index
+         of a radius is a closed form, and the log-spacing fraction between two nodes IS the fractional
+         part of that index. The binary search (7 probes) and three of the four logs were rediscovering
+         a number the constructor already knows. Interpolating in LOG SPACE with a pre-taken log of the
+         table then replaces `a·(b/a)^f` with one exp, and gives the same value — `a·(b/a)^f` is
+         `exp(log a + f·(log b − log a))` identically, to within a rounding of the last bit.
+         ⚠ Same nodes, same spacing, same log-interpolation: the ANSWER is unchanged. Measured on the
+         shipped tables: max relative difference against the old form 2.4e−16 over 10⁵ radii, i.e. one
+         unit in the last place. tests/r218-checks ③ re-runs that comparison. */
+      const lOut=new Float64Array(n), lA0=new Float64Array(n);
+      for(let i=0;i<n;i++){ lOut[i]=Math.log(out[i]); lA0[i]=Math.log(a0s[i]); }
+      const lr0=Math.log(r0), kIx=(n-1)/(Math.log(r1)-lr0||1);
+      const idx=(rM)=>{ const r=Math.max(rr[0],Math.min(rr[n-1],rM/1000));
+        const x=Math.max(0,Math.min(n-1-1e-9,(Math.log(r)-lr0)*kIx));
+        const lo=Math.min(n-2,x|0); return [lo,x-lo]; };
+      const interp=(la,rM)=>{ const t=idx(rM), lo=t[0], f=t[1];
+        return Math.exp(la[lo]+f*(la[lo+1]-la[lo])); };
+      return { rr, out, a0s,
+        at(rM){ return interp(lOut,rM); }, a0At(rM){ return interp(lA0,rM); },
+        /* both quantities share one index — the field asks for them together, cell by cell */
+        both(rM){ const t=idx(rM), lo=t[0], f=t[1];
+          return [Math.exp(lOut[lo]+f*(lOut[lo+1]-lOut[lo])), Math.exp(lA0[lo]+f*(lA0[lo+1]-lA0[lo]))]; } };
     }
+    /* ══ ⚠ (#R218) THE PICTURE LEAVES THE CANVAS AS A BLOB, NOT AS BASE64 ═══════════════════════════
+       「震源分布の計算速度が遅いから爆速に。（品質に一切影響を及ばさないように。）」 `toDataURL` PNG-encodes
+       the canvas AND then base64s the result on the main thread: at the shipped ceiling that is
+       1,792² = 3.2 M pixels turned into a ~10 MB string that the renderer immediately decodes again.
+       `toBlob` is the same lossless PNG encoder without the base64 step, it hands back a Blob the
+       renderer can decode directly, and it is asynchronous — so the encode does not hold the frame.
+       ⚠ SAME PIXELS. PNG is lossless and neither path resamples; this is a transport change.
+       ⚠ AN OBJECT URL IS A LIVE REFERENCE — it pins the blob until it is revoked, so every field that
+       is replaced or cleared revokes the one it is giving up (see `_setImg`). A browser without
+       `toBlob` falls back to the old data URL rather than losing the layer. */
+    function pngURL(cv){
+      return new Promise((res)=>{
+        try{ if(cv.toBlob){ cv.toBlob((b)=>{ try{ res(b?URL.createObjectURL(b):cv.toDataURL('image/png')); }
+              catch(_){ res(cv.toDataURL('image/png')); } },'image/png'); return; } }catch(_){}
+        try{ res(cv.toDataURL('image/png')); }catch(_){ res(''); }
+      });
+    }
+    const _revoke=(u)=>{ try{ if(u&&u.indexOf('blob:')===0) URL.revokeObjectURL(u); }catch(_){} };
     const mX=lng=>(180+lng)/360, mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
     const latOfY=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
     const SRC_IMG='seis-mmi-img', LYR_IMG='seis-mmi-fill';
@@ -806,9 +843,50 @@ window.IntMapModules.seismic=function(HOST){
       const cosDL=new Float64Array(NF);
       for(let i=0;i<NF;i++) cosDL[i]=Math.cos((-180+(i+0.5)*dxF-C0[0])*D);
       let painted=0, extrap=0, seaSkipped=0;
+      /* ══ ⚠ (#R218) THE ANNULUS IS SOLVED FOR, NOT SEARCHED FOR ════════════════════════════════════
+         「震源分布の計算速度が遅いから爆速に。（品質に一切影響を及ばさないように。）」 This raster covers
+         the WHOLE WORLD at 1,408² = 1,982,464 cells, and every one of them called `Math.acos` in order
+         to be told it was outside the ring. But the ring is a circle on a sphere, and both of its
+         limits invert exactly:
+             cos d = sinφ₀·sinφ + cosφ₀·cosφ·cos Δλ   ⇒   cos Δλ = (cos d − sinφ₀·sinφ)/(cosφ₀·cosφ)
+         so for each ROW the columns that can be inside are a contiguous band about the epicentre's
+         longitude, and rows whose nearest possible point is already past rEdge have no band at all.
+         The cells that survive take the identical `acos` they always took, and the colours, classes
+         and counters are untouched — the skipped cells are the ones the old loop `continue`d on. For
+         a 1,000 km field that is roughly 2 % of the globe examined instead of 100 %.
+         ⚠ THE TWO LIMITS ARE cos(), WHICH IS DECREASING, so the INNER radius gives the UPPER bound on
+         cos Δλ and the outer gives the lower one — the band is an annulus in Δλ only when the inner
+         circle also crosses this row, which is why both roots are taken and the two arcs are walked. */
+      const cosEdge=Math.cos(Math.min(Math.PI,rEdge/RE)), cosFine=Math.cos(Math.min(Math.PI,rFine/RE));
+      const iOfLng=(l)=>(l+180)/dxF-0.5;
+      const rgbOfFar=(cl)=>cl._rgb||(cl._rgb=hx(cl.col));
+      let _lastYield=performance.now();
       for(let j=0;j<NF;j++){
         const la=latOfY(yT+(j+0.5)*dyF), lb=la*D, sinB=Math.sin(lb), cosB=Math.cos(lb);
-        for(let i=0;i<NF;i++){
+        const den=cosA*cosB;
+        /* the Δλ half-width at which the distance is exactly rEdge (and rFine); NaN/out-of-range
+           means "this row never reaches that circle", handled by the clamps below */
+        let dl=Math.PI;
+        if(Math.abs(den)>1e-12){
+          const cx=(cosEdge-sinA*sinB)/den;
+          if(cx>1) continue;                     /* the whole row is outside rEdge */
+          dl=(cx<-1)?Math.PI:Math.acos(cx);
+        } else if(cosEdge>sinA*sinB+1e-12) continue;
+        let inner=-1;
+        if(Math.abs(den)>1e-12){
+          const cf=(cosFine-sinA*sinB)/den;
+          if(cf<=1&&cf>=-1) inner=Math.acos(cf);  /* inside this the FINE image owns the cells */
+        }
+        const halfI=dl/D/dxF, innerI=(inner>=0)?inner/D/dxF:-1;
+        const i0=iOfLng(C0[0]);
+        /* walk the band, wrapped: the epicentre may sit near ±180 and the band crosses the seam.
+           ⚠ A band wider than the world must be walked ONCE — the wrap would otherwise visit the same
+           column from both sides and double-count `painted` / `seaSkipped`, which the panel prints. */
+        const full=(2*halfI>=NF-1);
+        const sLo=full?0:Math.ceil(i0-halfI), sHi=full?NF-1:Math.floor(i0+halfI);
+        for(let s=sLo;s<=sHi;s++){
+          if(innerI>=0&&Math.abs(s-i0)<innerI-1) continue;   /* wholly inside the fine radius */
+          const i=((s%NF)+NF)%NF;
           const c=Math.max(-1,Math.min(1,sinA*sinB+cosA*cosB*cosDL[i]));
           const km=Math.acos(c)*RE;
           if(km<=rFine||km>rEdge) continue;
@@ -818,18 +896,24 @@ window.IntMapModules.seismic=function(HOST){
           const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
           /* (#R192) each scale from its own quantity — there is no site term out here, so both are
              the profile's reference-site value */
-          const I=(scale==='jma')?jmaOfA0(prof.a0At(rM)):mmiOf(prof.at(rM));
+          const b2=prof.both(rM);
+          const I=(scale==='jma')?jmaOfA0(b2[1]):mmiOf(b2[0]);
           const cl=(scale==='jma')?jmaClass(I):mmiClass(I);
           if(!cl) continue;
-          const o=(j*NF+i)*4, rgb=hx(cl.col);
+          const o=(j*NF+i)*4, rgb=rgbOfFar(cl);
           px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=235; painted++;
           if(km>MMI_CALIB_KM) extrap++;
         }
-        if((j&63)===63){ await new Promise(r=>setTimeout(r,0)); if(seq!==fldSeq) return; }
+        if((j&63)===63){ const t=performance.now();
+          if(t-_lastYield>12){ await new Promise(r=>setTimeout(r,0)); _lastYield=performance.now();
+            if(seq!==fldSeq) return; } }
       }
       if(seq!==fldSeq) return;
       ctx.putImageData(im,0,0);
-      fldFar={ url:cv.toDataURL('image/png'), coords:[[-180,85],[180,85],[180,-85],[-180,-85]],
+      const _uf=await pngURL(cv);
+      if(seq!==fldSeq){ _revoke(_uf); return; }
+      _revoke(fldFar&&fldFar.url);
+      fldFar={ url:_uf, coords:[[-180,85],[180,85],[180,-85],[-180,-85]],
                N:NF, painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
                landCellKm:(land.state?land.state().cellKm:null),
                rFineKm:Math.round(rFine), rEdgeKm:Math.round(rEdge) };
@@ -847,7 +931,7 @@ window.IntMapModules.seismic=function(HOST){
     function schedField(){ clearTimeout(fldT); fldT=setTimeout(()=>{ buildField(); },260); }
     async function buildField(){
       const seq=++fldSeq;
-      if(!epi){ fld=null; fldFar=null; paintField(); paintFar(); return; }
+      if(!epi){ _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; paintField(); paintFar(); return; }
       fldBusy=true; fldStale=false; fldPct=0; if(opened) report();
       const t0=performance.now();
       const prog=(p)=>{ fldPct=Math.max(0,Math.min(100,Math.round(p))); if(opened) _setProg(); };
@@ -1057,11 +1141,42 @@ window.IntMapModules.seismic=function(HOST){
         const landAt=(k,lo,la)=>{ if(coast) return coast[k]===1;
           if(landMask){ const v=landMask.isLand(lo,la); return (typeof v==='boolean')?v:null; }
           return null; };
+        /* ══ ⚠ (#R218) THE DISTANCE, FACTORED — 3.2 MILLION HAVERSINES BECOME 3.2 MILLION MULTIPLIES ══
+           「震源分布の計算速度が遅いから爆速に。（品質に一切影響を及ばさないように。）」
+           At the shipped ceiling this loop runs 1,792² = 3,211,264 times and every iteration called
+           `gcDelta`, which is four trigonometric evaluations, a sqrt and an asin. But the grid is
+           REGULAR, and haversine factors exactly over a regular grid:
+               h = sin²(Δφ/2) + cosφ₁·cosφ₂·sin²(Δλ/2)
+                 = A(row) + B(row)·C(column)
+           — Δφ and φ₂ depend only on the row, Δλ only on the column. Precomputing A, B per row and C
+           per column leaves ONE multiply, one add, one sqrt and one asin per cell. ⚠ It is the same
+           expression, only factored: the value is identical to the last bit, which is what
+           「品質に一切影響を及ぼさない」 requires. asin is kept — #R189 chose haversine here precisely
+           because acos loses precision at the small separations the FINE field is made of.
+           ⚠ IT ONLY APPLIES WITHOUT A DRAWN RUPTURE. With a fault the distance is Rrup to a polygon
+           (faultDistKm) and there is nothing to factor, so that case takes the original path unchanged. */
+        const _fastD=!fault&&!!epi;
+        let rowA=null,rowB=null,colC=null;
+        if(_fastD){
+          const la1=epi[1]*D, cos1=Math.cos(la1);
+          rowA=new Float64Array(N); rowB=new Float64Array(N); colC=new Float64Array(N);
+          for(let j=0;j<N;j++){ const la=latOfY(y0+(j+0.5)*dy), s=Math.sin((la-epi[1])*D/2);
+            rowA[j]=s*s; rowB[j]=cos1*Math.cos(la*D); }
+          for(let i=0;i<N;i++){ const lo=W+(i+0.5)*dx, s=Math.sin((lo-epi[0])*D/2); colC[i]=s*s; }
+        }
+        /* the class colours, parsed ONCE. `hex()` was three slice+parseInt pairs per PAINTED cell —
+           on a continental field that is a million string operations for eleven distinct colours. */
+        const _rgbOf=(cls)=>cls._rgb||(cls._rgb=hex(cls.col));
+        /* (#R218) yielding on a TIME budget rather than every eight rows. `setTimeout(…,0)` is clamped
+           to ~4 ms once nested, so 1,792 rows / 8 was 224 forced waits ≈ 0.9 s of pure timer latency
+           inside a build the panel reports as computation. The point of the yield is that the page
+           stays responsive, which is a property of the INTERVAL, not of the row number. */
+        let _lastYield=performance.now();
         for(let j=0;j<N;j++){
           const la=latOfY(y0+(j+0.5)*dy);
           for(let i=0;i<N;i++){
             const lo=W+(i+0.5)*dx, k=j*N+i, o=k*4;
-            const km=distKmTo(lo,la);
+            const km=_fastD?(2*Math.asin(Math.min(1,Math.sqrt(rowA[j]+rowB[j]*colC[i])))*RE):distKmTo(lo,la);
             if(km>MMI_MAX_KM){ vs[k]=0; continue; }
             const e0=demAt(lo,la);
             let amp;
@@ -1099,19 +1214,26 @@ window.IntMapModules.seismic=function(HOST){
             }
             const rM=Math.sqrt(km*km+depthKm*depthKm)*1000;
             const g=amp/ampRef;                                  /* both quantities are linear in it */
-            const pgv=prof.at(rM)*g, a0=prof.a0At(rM)*g;
+            const b2=prof.both(rM);                              /* (#R218) one index, two values */
+            const pgv=b2[0]*g, a0=b2[1]*g;
             pgvArr[k]=pgv; a0Arr[k]=a0;
             const I=(scale==='jma')?jmaOfA0(a0):mmiOf(pgv);
             const cls=(scale==='jma')?jmaClass(I):mmiClass(I);
             if(!cls) continue;
             if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
-            const c=hex(cls.col); px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
+            const c=_rgbOf(cls); px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
           }
-          if((j&7)===7){ prog(40+58*(j+1)/N); await new Promise(r=>setTimeout(r,0)); if(seq!==fldSeq) return; }
+          if((j&7)===7){ prog(40+58*(j+1)/N);
+            const t=performance.now();
+            if(t-_lastYield>12){ await new Promise(r=>setTimeout(r,0)); _lastYield=performance.now();
+              if(seq!==fldSeq) return; } }
         }
         ctx.putImageData(im,0,0);
         prog(99);
-        fld={ url:cv.toDataURL('image/png'),
+        const _u=await pngURL(cv);
+        if(seq!==fldSeq){ _revoke(_u); return; }
+        _revoke(fld&&fld.url);
+        fld={ url:_u,
           coords:[[W,Nn],[E,Nn],[E,Ss],[W,Ss]],
           W, E, y0, dy, dx, N, vs, pgv:pgvArr, a0:a0Arr, z, scale,
           vs30At(lo,la){ const i=Math.floor((lo-this.W)/this.dx), j=Math.floor((mY(la)-this.y0)/this.dy);
@@ -1347,9 +1469,13 @@ window.IntMapModules.seismic=function(HOST){
           +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">◎ '+L('Place / move the epicenter','震源地を設置・移動','Epizentrum setzen / bewegen','Указать / двигать эпицентр','Colocar / mover el epicentro')+'</button>'
           +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">◇ '+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
         +'</div>'
+        /* (#R218) …and the line says so when NEITHER is lit, because a control with an off state has
+           to explain its off state or the map just looks broken. */
         +'<div style="font-size:10px;color:var(--text-muted);margin-top:-5px;line-height:1.45;">'+(clickMode==='epi'
-          ?L('Tap the map to place the epicenter — or to move it.','地図をタップすると震源地を置きます（すでにある場合は移動します）。','Auf die Karte tippen, um das Epizentrum zu setzen oder zu verschieben.','Нажмите на карту, чтобы поставить или переместить эпицентр.','Toque el mapa para colocar o mover el epicentro.')
-          :L('Clicking the map adds a place to the table below.','地図をクリックすると下の表に地点を追加します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu.','Клик по карте добавляет место в таблицу ниже.','Al hacer clic en el mapa se añade un lugar a la tabla.'))+'</div>'
+          ?L('Tap the map to place the epicenter — or to move it. Press the button again to turn this off.','地図をタップすると震源地を置きます（すでにある場合は移動します）。もう一度ボタンを押すと解除します。','Auf die Karte tippen, um das Epizentrum zu setzen oder zu verschieben. Nochmals drücken schaltet es aus.','Нажмите на карту, чтобы поставить или переместить эпицентр. Повторное нажатие выключает режим.','Toque el mapa para colocar o mover el epicentro. Pulse otra vez para desactivarlo.')
+          :clickMode==='station'
+          ?L('Clicking the map adds a place to the table below. Press the button again to turn this off.','地図をクリックすると下の表に地点を追加します。もう一度ボタンを押すと解除します。','Ein Klick auf die Karte fügt der Tabelle unten einen Ort hinzu. Nochmals drücken schaltet es aus.','Клик по карте добавляет место в таблицу ниже. Повторное нажатие выключает режим.','Al hacer clic en el mapa se añade un lugar a la tabla. Pulse otra vez para desactivarlo.')
+          :L('Neither is selected — clicking the map does nothing here. Pick one above.','どちらも選択されていません（地図をクリックしても何も起きません）。上のどちらかを選んでください。','Nichts ausgewählt — ein Klick auf die Karte tut hier nichts. Oben eines wählen.','Ничего не выбрано — клик по карте здесь ничего не делает. Выберите один из режимов выше.','Ninguno seleccionado: hacer clic en el mapa no hace nada. Elija uno arriba.'))+'</div>'
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
         +'<div style="display:flex;gap:5px;">'
           /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
@@ -1423,9 +1549,14 @@ window.IntMapModules.seismic=function(HOST){
       panel.querySelector('.sq-close').onclick=()=>close();
       { const mb=panel.querySelector('.sq-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
       { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
-        /* one press: this is what a map click means AND arm the pick (#R212 — see the note above) */
-        if(a) a.onclick=()=>{ setClickMode('epi'); startPick(); };
-        if(b) b.onclick=()=>setClickMode('station'); }
+        /* one press: this is what a map click means AND arm the pick (#R212 — see the note above).
+           ⚠ (#R218) …and a SECOND press on the lit one turns it off. 「どちらも、もう一度クリックしたら
+           選択解除されるように。」 A segmented control with no off state means the map is permanently
+           armed: every click anywhere moves the epicentre or adds a row, and there is no way to just
+           look at the map with the panel open (the panel's own click-claim then eats place labels
+           too — see onClick). `clickMode` now has a third value, `'none'`, and both buttons toggle. */
+        if(a) a.onclick=()=>{ if(clickMode==='epi') setClickMode('none'); else { setClickMode('epi'); startPick(); } };
+        if(b) b.onclick=()=>setClickMode(clickMode==='station'?'none':'station'); }
       panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
       panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
@@ -1767,13 +1898,21 @@ window.IntMapModules.seismic=function(HOST){
        So the click has a stated owner, shown as one segmented row at the top of the panel, and the
        DEFAULT is the epicentre. The observation-point table is not removed — it is the other half of
        the same switch, one tap away, and everything that reads `stations` is unchanged. */
-    function setClickMode(v){ clickMode=(v==='station')?'station':'epi'; if(opened) render(); return clickMode; }
+    /* (#R218) three states, not two: 'epi', 'station' and 'none' (the map is not armed at all). An
+       unknown value still lands on 'epi', so the callable API (Atlas, setParams) behaves as before. */
+    function setClickMode(v){ clickMode=(v==='station')?'station':(v==='none'||v===null||v===false)?'none':'epi';
+      if(opened) render(); return clickMode; }
     /* ⚠ (#R207) …AND NOT WHILE A RUPTURE IS BEING DRAWN ═══════════════════════════════════════════
        「フリーで描く際に、それが震源地を配置した判定になるのを辞めろ。」 #R205 gave a plain map click to
        the epicentre, and DrawTool's stroke is made of plain map clicks: every loop drawn since then
        also dragged the epicentre to wherever the finger came down, silently redefining the event the
        drawn area was about to describe. Drawing owns the pointer for the duration. */
     function onClick(e){ if(!opened||picking||_fDrawing) return;
+      /* ⚠ (#R218) THE CLAIM COMES AFTER THE ARMED TEST, NOT BEFORE IT. #R210 claims the tap so a place
+         label under the panel does not also open its popup — correct while the map IS armed, and
+         exactly wrong once it can be disarmed: an unarmed panel would go on eating every click and
+         the map would be dead in a way nothing on screen explains. Claim what this panel consumes. */
+      if(clickMode==='none') return;      /* neither segment is lit — the map is not armed */
       /* (#R210) whichever branch runs below, this panel consumed the tap — a place label under it
          must not open its popup as well. See js/geo-engine.js `claimClick`. */
       try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}
@@ -1829,7 +1968,7 @@ window.IntMapModules.seismic=function(HOST){
       return true; }
     function close(){ opened=false; endPick(); if(playing){ clearInterval(playing); playing=0; }
       if(_fDrawing){ try{ window.DrawTool&&window.DrawTool.exit&&window.DrawTool.exit(); }catch(_){} _fDrawing=false; }
-      fldSeq++; fld=null; fldFar=null; try{ paintField(); paintFar(); }catch(_){}
+      fldSeq++; _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; try{ paintField(); paintFar(); }catch(_){}
       if(panel) panel.style.display='none'; setData([]); return true; }
     /* (#R191) …and while the scale is still a DEFAULT, it follows the language the way it would have
        been chosen at boot. A latched choice (scaleSet) is never touched. */

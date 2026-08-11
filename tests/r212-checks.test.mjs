@@ -158,8 +158,12 @@ test('R212 ⑨: one epicenter control, and sub-sea-level LAND is painted', () =>
   const s = read('js/seismic.js');
   assert.ok(!/class="sq-pick"/.test(s), 'the separate "place the epicenter" button is gone');
   assert.ok(!/const PICKBTN=/.test(s), 'and so is the style that only it used');
-  assert.match(s, /\.sq-cm-epi'\)[\s\S]{0,400}setClickMode\('epi'\);\s*startPick\(\)/,
+  /* ⚠ (#R218) the segment gained an OFF state — 「もう一度クリックしたら選択解除されるように」 — so the
+     handler is now a toggle. The claim this line makes is unchanged and still checked: pressing it ON
+     both sets the click mode AND arms the pick, in that order, from the one control. */
+  assert.match(s.replace(/\/\*[\s\S]*?\*\//g, ''), /\.sq-cm-epi'\)[\s\S]{0,400}setClickMode\('epi'\);\s*startPick\(\)/,
     'the one segment both sets the click mode and arms the pick');
+  assert.match(s, /if\(clickMode==='epi'\) setClickMode\('none'\)/, '…and a second press turns it off');
   /* the land test is the MASK plus a depth bound, not the sign of the elevation */
   /* (#R215) same claim, finer answer — see js/coast-mask.js and tests/r215 ②b */
   assert.match(s, /landAt\(k,lo,la\)===true&&e0>-440/,
@@ -222,11 +226,15 @@ test('R212 ⑬: the news proxies and the wind grid both carry a deadline', () =>
 test('R212 ⑭: sources.html renders js/reference-data.js and ships with the build', () => {
   const html = read('sources.html');
   assert.match(html, /<script src="\.\/js\/reference-data\.js"><\/script>/);
-  assert.match(html, /window\.IntMapRefData && window\.IntMapRefData\.dataSources/);
-  assert.ok(!/dataSources\s*=\s*\[/.test(html), 'the page must not carry its own copy of the list');
+  /* ⚠ (#R218) the renderer moved out of the page into js/sources-list.js — the page is a shell now.
+     The invariant is unchanged and is the whole point of this test: ONE list, read, never copied. */
+  const list = read('js/sources-list.js');
+  assert.match(list, /window\.IntMapRefData && window\.IntMapRefData\.dataSources/);
+  assert.ok(!/dataSources\s*=\s*\[/.test(html + list), 'the page must not carry its own copy of the list');
   const vite = read('vite.config.js');
   assert.match(vite, /'sources\.html'/);
   assert.match(vite, /'js\/reference-data\.js'/, 'the registry is copied so the page can read it in production');
+  assert.match(vite, /'js\/sources-list\.js'/, '…and so is the renderer it moved into');
 });
 
 /* ── 15. the spelling landmines are still intact (#R210 §10, #R211 §7) ─────────────────────────── */

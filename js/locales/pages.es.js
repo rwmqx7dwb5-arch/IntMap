@@ -1,0 +1,422 @@
+/* ============================================================================
+ *  IntMap · Reading pages — ESPAÑOL  (#R218)
+ *  Un archivo por idioma; la forma del documento y lo que cuesta añadir otro idioma están
+ *  en la cabecera de js/page-i18n.js. Las claves ausentes caen una a una al inglés.
+ * ========================================================================== */
+/* ⚠ the one-line bootstrap: on sources.html / science.html js/page-i18n.js has already run and
+   this is a no-op; inside the app (where that file is never loaded) it creates a minimal registry so
+   the Sources dialog can lazily read this file for the translated source descriptions. */
+window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d[c]=d;},doc:function(c){return this._d[c];}};
+window.IntMapPageI18N.define('es', {
+
+  common: {
+    backToMap: 'Volver al mapa',
+    contents: 'Contenido',
+    toScience: 'Ciencia y lógica',
+    toSources: 'Fuentes de datos'
+  },
+
+  /* ══════════════════════════════════════════════════════════════════════════════════════════ */
+  sources: {
+    title: 'Fuentes de datos',
+    meta: 'Cada organización cuyos datos muestra IntMap, dónde se usan, cómo se obtienen, su licencia y qué significa para tu privacidad.',
+    sub: 'Cada número, línea e imagen que muestra IntMap y <b>de dónde procede</b>. Lo que se calcula con ellos está en la página <a href="./science.html">Ciencia y lógica</a>.',
+    footer: [
+      'Esta página enumera los <b>proveedores de datos</b>. Cómo se usan esos datos en los cálculos está en la página <a href="./science.html">Ciencia y lógica</a>.<br>Si encuentras un error aquí, avísanos con el formulario de comentarios de la aplicación.'
+    ],
+    sections: [
+      {
+        id: 'what', nav: 'Sobre esta página', h: 'Sobre esta página',
+        blocks: [
+          ['tagline', 'Todo lo que muestra IntMap fue medido y publicado por una organización externa. Esta página nombra esas organizaciones.'],
+          ['p', 'IntMap no produce datos propios. Descarga lo que publican los servicios meteorológicos, la NASA, organismos de la ONU, universidades y la comunidad de OpenStreetMap, y lo dibuja en un solo mapa. Cuánto se puede confiar en una cifra de la pantalla depende de la organización que la publicó, y aquí puedes comprobar cuál es.'],
+          ['p', 'La lista de abajo muestra los proveedores que la aplicación usa realmente, y crece a medida que crece el mapa. Para encontrar algo concreto, filtra por el nombre de una capa («mareas», «cultivos») o por la organización.']
+        ]
+      },
+      {
+        id: 'live', nav: 'Cuán actuales son los datos', h: 'Cuán actuales son las cifras',
+        blocks: [
+          ['tagline', 'La actualidad de los datos depende de la capa. La tabla siguiente indica qué momento representa cada tipo de capa.'],
+          ['table',
+            ['Tipo', 'Qué momento estás viendo', 'Ejemplos'],
+            [
+              ['Se descarga al mirar', 'El momento en que la activaste. Los terremotos se actualizan en minutos; los avisos se releen cada cinco aproximadamente', 'Terremotos, avisos, tiempo, aeronaves, imágenes de satélite'],
+              ['Estadística anual', 'El último año publicado, y la aplicación siempre escribe cuál es', 'Comercio, mezcla energética, población, indicadores económicos'],
+              ['Un año de referencia', 'Una observación de un año declarado; nada posterior está incluido', 'Cultivos (2000, 2010), zonas climáticas (1901&ndash;2020)'],
+              ['Incluido en la aplicación', 'Capturado en la última actualización; la misma respuesta sin red alguna', 'Fronteras, litorales, fondo marino, catálogo estelar, texturas de planetas, elementos orbitales de satélites']
+            ]
+          ],
+          ['lim', '<b>Conviene saberlo</b> — Algunos datos se alejan de la realidad al envejecer; los elementos orbitales de los satélites son el ejemplo más claro. Para esas capas, el panel muestra la fecha de captura. Nunca se presentan datos antiguos como si fueran actuales.']
+        ]
+      },
+      {
+        id: 'privacy', nav: 'Qué envía una capa', h: 'Qué ocurre al abrir una capa',
+        blocks: [
+          ['tagline', 'Tu navegador descarga los datos directamente del proveedor.'],
+          ['p', 'IntMap casi no usa servidores intermedios: las teselas, el tiempo, los terremotos y todo lo demás los pide tu dispositivo directamente al proveedor. Por eso en sus registros de acceso quedarán <b>tu dirección IP y las teselas de mapa solicitadas</b>, lo que indica aproximadamente la zona que estabas viendo. Esto es igual en otras aplicaciones de mapas, pero se dice aquí con claridad.'],
+          ['p', 'Tu ubicación se usa solo en tu dispositivo. Las coordenadas salen únicamente cuando preguntas algo sobre un lugar: una búsqueda, una ruta, una previsión. Las cuentas, las funciones de IA y los monitores se explican en el diálogo de Privacidad de la propia aplicación.']
+        ]
+      },
+      {
+        id: 'licence', nav: 'Quién hizo los datos', h: 'Quién hizo estos datos y en qué condiciones',
+        blocks: [
+          ['tagline', 'La atribución es obligatoria según estas licencias, y también es la forma de saber de quién es el trabajo detrás de una cifra.'],
+          ['ul', [
+            '<b>OpenStreetMap</b> (ODbL 1.0) &mdash; el mapa construido por voluntarios: carreteras, ferrocarril, edificios, lugares y límites administrativos, además de los datos base del cálculo de rutas. Se acredita en el mapa en todo momento.',
+            '<b>Obras del Gobierno de EE. UU.</b> (NASA, NOAA, USGS, NWS &hellip;) &mdash; por norma, dominio público: imágenes, terremotos, luces urbanas, posiciones planetarias. Los logotipos y emblemas de la NASA no lo son.',
+            '<b>Servicios meteorológicos nacionales</b> &mdash; los avisos se muestran tal como los publicó el organismo emisor, y el organismo siempre se nombra.',
+            '<b>Natural Earth</b> &mdash; fronteras y litorales de dominio público.',
+            '<b>Our World in Data</b> (CC BY 4.0) &mdash; estadísticas de electricidad, energía y cultivos, con el compilador original (Ember, Energy Institute, FAO) nombrado junto a ellas.',
+            '<b>Banco Mundial</b>, <b>FAO</b>, <b>Wikipedia / Wikidata</b> &mdash; según las condiciones propias de cada proveedor, nombrados en el panel que los utiliza.'
+          ]],
+          ['note', 'Cada entrada enlaza a la página del proveedor, donde está el texto completo de la licencia. Las descripciones de aquí son resúmenes y no prevalecen sobre ese texto.']
+        ]
+      },
+      {
+        id: 'limits', nav: 'Lo que una fuente no dice', h: 'Lo que una fuente no te dice',
+        blocks: [
+          ['tagline', 'Que se cite una fuente no significa por sí solo que los datos sean exactos, actuales ni aplicables a tu propia ubicación.'],
+          ['ul', [
+            '<b>Un total nacional no es un valor local.</b> Una estadística de país pintada sobre todo el país no dice de dónde sale la cifra dentro de él. El sombreado cambia en la frontera; el fenómeno que describe normalmente no.',
+            '<b>Donde no hay fuente de datos, la aplicación lo dice con palabras.</b> Un mapa vacío no es una afirmación de que no hay avisos en vigor.',
+            '<b>Un resultado de simulación no es un dato de origen.</b> Los resultados de terremoto, tsunami, inundación e insolación se calculan a partir de los datos aquí listados. Las ecuaciones, los supuestos y los límites están en la página <a href="./science.html">Ciencia y lógica</a>.',
+            '<b>En una emergencia, sigue siempre a las autoridades oficiales.</b> Lo que muestra esta aplicación es orientativo.'
+          ]]
+        ]
+      },
+      {
+        id: 'list', nav: 'La lista, por temas', h: 'La lista, por temas', count: 'src-count',
+        blocks: [
+          ['tagline', 'Cada entrada es un proveedor, con su nombre, dónde lo usa IntMap y un enlace a su propia página.'],
+          ['slot', 'src-panel']
+        ]
+      }
+    ],
+    filterPh: 'Filtrar — terremotos, mareas, NASA…',
+    entries: 'entradas',
+    loading: 'Cargando…',
+    loadFail: 'No se pudo cargar la lista: vuelve a cargar la página.',
+    noMatch: 'Ninguna fuente coincide con ese filtro.',
+    groups: {
+      base: 'Mapa base, relieve, elevación',
+      imagery: 'Imágenes y teledetección',
+      weather: 'Tiempo, océano, clima',
+      hazard: 'Terremotos, peligros, avisos',
+      space: 'Espacio y astronomía',
+      econ: 'Economía, estadística, energía',
+      geo: 'Países, límites, topónimos',
+      transit: 'Transporte, rutas, aeronaves, buques',
+      news: 'Noticias y referencia',
+      other: 'Otros'
+    }
+  },
+
+  /* ══════════════════════════════════════════════════════════════════════════════════════════ */
+  science: {
+    title: 'Ciencia y lógica',
+    meta: 'Qué datos usa cada función y cada simulación de IntMap, con qué ecuaciones y bajo qué supuestos.',
+    sub: 'Qué calcula realmente cada función de IntMap, a partir de qué datos y bajo qué supuestos. Aparte de la lista de fuentes: esta página trata del <b>método</b>.',
+    footer: [
+      'Esta página documenta el <b>método</b>. La lista de proveedores de datos está en la página <a href="./sources.html">Fuentes de datos</a>.<br>Si encuentras un error aquí, usa los comentarios de la aplicación.'
+    ],
+    sections: [
+      {
+        id: 'principles', nav: 'Principios', h: 'Principios',
+        blocks: [
+          ['tagline', 'Cuatro promesas que rigen en todas las funciones siguientes.'],
+          ['h3', '① Ningún dato de relleno'],
+          ['p', 'Cada número está medido, observado o publicado. Nada se genera para que parezca plausible. Cuando una descarga falla, la aplicación <b>dice que falló</b> en lugar de sustituirla por algo de aspecto razonable.'],
+          ['h3', '② Todo tope se declara'],
+          ['p', 'Los cálculos tienen presupuestos: longitud de recorrido, número de teselas, tamaño de malla. Alcanzar el presupuesto y devolver el resultado truncado en silencio sería afirmar que el fenómeno terminaba ahí, así que un presupuesto agotado siempre consta en la respuesta.'],
+          ['h3', '③ Ninguna afirmación más fina que los datos'],
+          ['p', 'Un cauce más estrecho que una muestra de elevación, o una inundación más fina que una celda del solucionador, se dibuja a la resolución propia de los datos, y el número de esos casos se <b>informa</b>, no se oculta.'],
+          ['h3', '④ Cada modelo declara lo que no responde'],
+          ['p', 'El modelo de agua responde «dónde queda y por dónde sale», no «a qué velocidad viaja el frente». Cada panel dice qué pregunta no está respondiendo.']
+        ]
+      },
+      {
+        id: 'elevation', nav: 'Datos de elevación', h: 'Datos de elevación — la base de todo cálculo de relieve',
+        blocks: [
+          ['p', 'Todas las funciones de relieve comparten un mismo muestreador de elevación. Los datos son teselas RGB de elevación codificadas en Terrarium, donde el color del píxel <em>es</em> la altura.'],
+          ['eq', 'elevación (m) = (R &times; 256 + G + B / 256) &minus; 32768'],
+          ['p', 'La elevación de un punto se <b>interpola bilinealmente</b> a partir de las cuatro muestras que lo rodean; el vecino más próximo convertiría los píxeles de la tesela en escalones falsos y estropearía las respuestas de pendiente y de flujo. El espaciado sobre el terreno de una muestra en el nivel z es:'],
+          ['eq', '&Delta;(z) = 40 075 017 &middot; cos(&phi;) / (2<sup>z</sup> &middot; 256) &nbsp;m'],
+          ['table', ['z', 'Espaciado en latitudes medias', 'Se usa para'], [
+            ['14', '~10 m', 'Cabecera de cauce, secciones transversales'],
+            ['11', '~54 m', 'Traza larga aguas abajo'],
+            ['7', '~860 m', '«¿Es el mar o una cuenca cerrada?»']
+          ]],
+          ['lim', 'Los huecos se rellenan a partir de los vecinos y el <b>número de celdas rellenadas se muestra siempre</b>. Si falta más del 30 %, el muestreador baja un nivel de zoom y reintenta; solo si también falla el nivel más grueso informa de un fallo, y nombra a la red, no al lugar.']
+        ]
+      },
+      {
+        id: 'water', nav: 'Relieve y encaminamiento del agua', h: 'Modelado del relieve y encaminamiento del agua',
+        blocks: [
+          ['tagline', 'Dónde queda el agua, por dónde sale y dónde desborda — resuelto sobre el modelo digital de elevaciones real.'],
+          ['h3', '① Relleno de depresiones — priority flood'],
+          ['p', 'Barnes, Lehman &amp; Mulla (2014), la forma moderna de Planchon–Darboux. Un montículo mínimo crece hacia dentro desde el borde de la malla, tomando siempre la celda más baja alcanzada hasta el momento. El orden de extracción es un orden topológico de la red de drenaje, así que no hace falta una pasada aparte de direcciones de flujo, ni un caso especial para las depresiones, y los llanos drenan en vez de atascarse. Cada celda sale con:'],
+          ['ul', [
+            '<b>filled</b> — el nivel hasta el que se llena una depresión antes de desbordar',
+            '<b>parent</b> — el vecino desde el que fue alcanzada, es decir, su salida'
+          ]],
+          ['h3', '② Reparto del volumen — flujo multidireccional'],
+          ['p', 'D8 colapsa el flujo en líneas de una celda en una ladera abierta: es su artefacto característico. En su lugar, cada celda reparte el agua entre <b>todos los vecinos más bajos</b>, ponderando por pendiente y ancho de contorno (Freeman 1991 / Quinn 1991):'],
+          ['eq', 'w<sub>i</sub> &prop; (&Delta;z<sub>i</sub> / L<sub>i</sub>)<sup>1,1</sup> &times; C<sub>i</sub> &nbsp;&nbsp; C = 0,5&Delta; (lado) / 0,354&Delta; (esquina)'],
+          ['p', 'La ponderación es superlineal en la pendiente, así que las laderas dispersan y los valles convergen por sí solos. Una parte solo pasa a un <code>filled</code> estrictamente menor, de modo que los ciclos son imposibles.'],
+          ['h3', '③ Los lagos retienen y luego cascadean'],
+          ['p', 'Ordenar una sola vez las celdas de una depresión por elevación convierte el volumen almacenado en una suma prefija y el nivel para un volumen dado en una búsqueda binaria. Si la entrada no la llena, el agua se detiene ahí; solo el <b>desbordamiento</b> se inyecta en la salida que el priority flood ya identificó. Un embalse vacío, por tanto, no entrega toda su entrada aguas abajo.'],
+          ['h3', '④ Más allá de la malla — caminar sobre el MDE en bruto'],
+          ['p', 'La malla de trabajo mide como mucho 60 km; un río no. Fuera de ella, la traza inunda una ventana, sigue el <b>talweg</b> de esa ventana (la rama descendente con la mayor cuenca acumulada), mueve la ventana adonde se quedó y repite. Hay exactamente dos finales:'],
+          ['ul', [
+            '<b>El mar</b> — 1,5 km de terreno continuo a 0 m o por debajo. La elevación por sí sola no distingue el océano del mar Muerto o del valle de la Muerte, así que el último paso comprueba si la región ≤ 0 m está conectada al borde de una ventana de ~240 km <em>y</em> ocupa ≥ 15 % de ella (Pacífico abierto 100 %, mar Muerto 7 %).',
+            '<b>Se detiene</b> — una cuenca que tendría que llenarse más de 25 m para salir. Eso es un lago, no ruido del MDE.'
+          ]],
+          ['p', 'Cuando el lago es más ancho que la ventana (el lago Biwa mide 63 km; la ventana, 15 km), no hay ningún vecino descendente dentro de él. La anticipación se ensancha entonces a <b>3&times; → 9&times; → 27&times;</b>, preguntando cada vez al MDE en el nivel cuyo espaciado corresponde a esa ventana. A 9&times; (~135 km) el Biwa cabe de sobra y se ve el Seta, el único camino por el que baja el nivel. <b>El umbral no crece con la escalera</b>: una muestra más gruesa solo puede sobreestimar el llenado necesario, así que mantener fijo el número hace la prueba más estricta al ensanchar la ventana, que es el lado seguro.'],
+          ['h3', '⑤ El ancho y la profundidad que se dibujan'],
+          ['p', 'En cada punto se lee el MDE en la <b>perpendicular</b> hasta ±1,8 km y la lámina de agua sube hasta que el área mojada iguala lo que tiene que pasar. Ese requisito sale de la continuidad:'],
+          ['eq', 'A(s) = C / &radic;S(s) &nbsp;&nbsp; donde C = Q/K &nbsp;o&nbsp; V / &int;(ds/&radic;S), &nbsp; v = K&radic;S, K = 40'],
+          ['p', 'Que la velocidad vaya como &radic;pendiente es el término de pendiente de fricción que comparten todas las fórmulas de lámina libre; K = 40 da 1,3 m/s con un 0,1 % de pendiente, valor medio para un río de llanura real. Los tramos empinados salen estrechos y rápidos; los llanos, anchos y lentos. <b>El único número libre es el volumen (o el caudal) que introdujo el usuario.</b>'],
+          ['lim', 'Es un <b>modelo estacionario de encaminamiento</b>, no un solucionador de aguas someras: no responde al tiempo de llegada (para eso hay otra función). El «vertido continuo» repite la misma solución estacionaria a medida que crece el volumen —una secuencia de llenado cuasiestática— y el panel muestra tiempo simulado, nunca tiempo de reloj.']
+        ]
+      },
+      {
+        id: 'seismic', nav: 'Sacudida sísmica', h: 'Sacudida sísmica',
+        blocks: [
+          ['p', 'Los tiempos de llegada se trazan por rayos a través de la estructura de velocidades <b>IASP91</b>: el ángulo de salida se resuelve para la profundidad del foco y la distancia epicentral, y el camino se integra en vez de leerse de una tabla. De ahí salen las llegadas P y S.'],
+          ['p', 'La amplitud es una atenuación empírica con la distancia por un <b>Q dependiente de la frecuencia</b> (atenuación anelástica) por una <b>amplificación del suelo</b>. La clase de suelo no se supone: sale de la pendiente medida al espaciado propio del MDE en ese punto (empinado = roca, llano = aluvial).'],
+          ['lim', 'Más allá del extremo inferior de la escala de intensidad el campo está <b>extrapolando</b>, y lo dice. El epicentro está donde lo puso el usuario; nunca se usa una coordenada adivinada por la IA.']
+        ]
+      },
+      {
+        id: 'tsunami', nav: 'Tsunami', h: 'Tsunami',
+        blocks: [
+          ['p', 'El desplazamiento inicial de la superficie del mar es la solución de <b>Okada (1985)</b> para una falla rectangular en un semiespacio elástico. Importan dos detalles de implementación:'],
+          ['ul', [
+            'La arcotangente debe ser el <b>valor principal</b>: usar <code>atan2</code> produce un lóbulo falso de subsidencia detrás de la falla.',
+            'Truncar la ventana de cálculo deja un escalón, y el escalón se propaga como un <b>frente de onda falso</b>. La ventana se ensancha hasta que el desplazamiento es despreciable.'
+          ]],
+          ['p', 'La propagación es la ecuación de <b>onda larga lineal</b> sobre batimetría medida, con velocidad de fase <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — unos 200 m/s sobre 4 000 m de agua (velocidad de avión comercial), frenando y empinándose al disminuir la profundidad. Se ejecuta en un Web Worker para que el mapa siga respondiendo.']
+        ]
+      },
+      {
+        id: 'sealevel', nav: 'Nivel del mar e inundación', h: 'Nivel del mar e inundación',
+        blocks: [
+          ['p', 'El terreno al nivel elegido o por debajo se sombrea: un llenado de bañera. El tono es la <b>propia profundidad</b>, y la resolución de los datos de elevación es directamente la resolución del borde inundado.'],
+          ['lim', 'Diques, compuertas y drenaje no se modelan, y por defecto no se exige conectividad con el mar. La afirmación es, por tanto, <b>«este terreno está por debajo de ese nivel»</b>, no «esto es lo que se inundaría».']
+        ]
+      },
+      {
+        id: 'tides', nav: 'Mareas', h: 'Mareas',
+        blocks: [
+          ['p', 'La serie es el modelo global de mareas de Open-Meteo Marine: nivel del mar horario sobre el nivel medio. Las pleamares y bajamares son sus <b>extremos locales</b>, con la hora afinada ajustando una parábola a las tres muestras alrededor de cada giro, de modo que la respuesta no queda clavada a la hora en que se muestrea el modelo.'],
+          ['eq', 't* = t<sub>i</sub> + &frac12; &middot; (a &minus; c) / (a &minus; 2b + c) &middot; &Delta;t'],
+          ['p', 'Al activar la capa se explora el litoral a la vista y se pregunta al modelo por todos esos puntos a la vez, así que toda la costa visible lleva su nivel, su fase y su próximo giro <b>antes de tocar nada</b>, y el terreno a ese nivel o por debajo queda sombreado con los mismos datos de elevación del §6. Al tocar una costa, la vista general se sustituye por la tabla propia de ese punto, pedida con sus propias coordenadas.'],
+          ['p', '«Hasta dónde llega el agua» usa exactamente la construcción del §6, con el nivel de marea actual como nivel del agua. En minutos u horas, un llenado en agua quieta es una aproximación razonable, pero no es un modelo de remonte.']
+        ]
+      },
+      {
+        id: 'currents', nav: 'Corrientes marinas', h: 'Corrientes marinas',
+        blocks: [
+          ['tagline', 'Un campo de flujo, dibujado como las líneas de corriente del agua que realmente se mueve.'],
+          ['p', 'El campo de velocidades es <code>ocean_current_velocity</code> y <code>ocean_current_direction</code> de Open-Meteo Marine, el mismo modelo sin clave que usan las mareas. Se pide en una sola petición una malla que cubre la vista, las celdas de tierra se descartan con la máscara de tierra incluida, y las respuestas se interpolan bilinealmente hasta formar un campo continuo.'],
+          ['p', 'A través de ese campo se integra una <b>línea de corriente</b> desde cada punto semilla, hacia delante y hacia atrás, con un paso de Runge-Kutta de cuarto orden. Una línea es así un camino que el agua recorre de verdad, y no una flecha aislada. El grosor de la línea es la velocidad; las puntas de flecha a lo largo indican el sentido.'],
+          ['eq', 'x<sub>n+1</sub> = x<sub>n</sub> + (h/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>), &nbsp; k<sub>i</sub> = u(x)/|u| &nbsp; (velocidad unitaria: el paso es una distancia)'],
+          ['p', 'Cálida o fría se <b>mide, no se supone</b>. Una corriente cálida es una afirmación sobre lo que transporta el agua, así que cada línea de corriente se compara con la temperatura superficial del mar unos 110 km <b>aguas arriba</b> a lo largo de su propio camino. Si aguas arriba está más caliente, la corriente trae calor (rojo); si está más fría, trae frío (azul).'],
+          ['lim', 'Donde la diferencia es menor de 0,25 K —dentro del propio ruido del modelo— la línea es <b>gris</b> y la leyenda dice «ninguna». Una corriente que no transporta contraste térmico no debe colorearse como si lo hiciera. Los nombres son de Wikidata (CC0), dibujados en la coordenada publicada para cada corriente; un nombre es un punto del mapa y no afirma que la línea contigua sea esa corriente.']
+        ]
+      },
+      {
+        id: 'sun', nav: 'Sol, sombra, cuenca visual', h: 'Sol, sombra y cuenca visual',
+        blocks: [
+          ['p', 'La posición solar sale del algoritmo astronómico estándar: de la declinación y el ángulo horario al acimut y la altura. Está verificado que da declinación 0° en un equinoccio y la oblicuidad en un solsticio.'],
+          ['p', 'La insolación anual barre el MDE circundante por acimut para construir el <b>perfil real del horizonte</b> del punto y luego integra la trayectoria del Sol contra él. La cuenca visual responde <b>por celda del ráster</b> y no por rumbo, porque un barrido por rumbos se salta celdas a distancia.']
+        ]
+      },
+      {
+        id: 'sats', nav: 'Satélites', h: 'Satélites',
+        blocks: [
+          ['p', 'Las órbitas se propagan desde TLE con <b>SGP4/SDP4</b>. Un TLE se degrada con la edad y —esto es lo importante— <b>diverge en silencio</b>, así que hay un límite duro a la antigüedad del juego de elementos y nada por encima de él se dibuja.'],
+          ['p', 'El catálogo es una instantánea incluida más una descarga en vivo. Una categoría sin lista se <b>omite, no se muestra vacía</b>: un array vacío sería afirmar que esa categoría no tiene satélites.']
+        ]
+      },
+      {
+        id: 'space', nav: 'Espacio y cuerpos', h: 'Espacio y cuerpos celestes',
+        blocks: [
+          ['p', 'Las posiciones de planetas y lunas son keplerianas, a partir de elementos orbitales. Los cuerpos se dibujan ampliados (a escala real son de menos de un píxel), pero el <b>techo de la ampliación es geometría, no gusto</b>: se sigue de exigir que la Luna quede libre de la Tierra incluso en el perigeo.'],
+          ['p', 'Los satélites de los demás planetas provienen de la tabla de elementos medios del JPL para 177 lunas en una época declarada, cada uno propagado hasta la hora del reloj. Los elementos no están todos en un mismo plano: un satélite cercano de un planeta gigante declara el <b>plano de Laplace</b> local de su planeta, cuyo polo la tabla da en ascensión recta y declinación, y ese marco se arrastra en lugar de leerse como si fuera la eclíptica.'],
+          ['p', 'A escala de modelo, un satélite se coloca con la misma ley de compresión que la Luna y luego se <b>empuja hacia fuera hasta librar a su primario</b>: comprimir una distancia y un radio con exponentes distintos puede meter una luna interior dentro del planeta que orbita. A escala real no se mueve nada, porque no hay nada que comprimir.'],
+          ['p', 'Las estrellas salen de un catálogo incluido de estrellas brillantes de todo el cielo, en sus posiciones y magnitudes reales; el color se deriva del índice B&minus;V, es decir, de la temperatura de color real.']
+        ]
+      },
+      {
+        id: 'flight', nav: 'Modelo de vuelo', h: 'Modelo de vuelo',
+        blocks: [
+          ['p', 'El empuje y la sustentación caen con la densidad del aire, así que el <b>techo de servicio no es un muro</b>: un avión iniciado por encima desciende hasta que el aire puede sostenerlo, en vez de quedar sujeto artificialmente.'],
+          ['p', 'La cámara está <em>en</em> el avión, y no es una vista de persecución corregida a posteriori.']
+        ]
+      },
+      {
+        id: 'routing', nav: 'Rutas y accesibilidad', h: 'Rutas y accesibilidad',
+        blocks: [
+          ['p', 'Las rutas por carretera vienen de OSRM sobre la red de OpenStreetMap, y las alternativas del mismo motor. El cálculo ferroviario corre sobre vía real de OSM y <b>se ajusta a la mayor componente conexa</b>: ajustarse a un apartadero aislado haría inalcanzable el destino. El transporte público usa horarios reales vía MOTIS/Transitous.'],
+          ['p', 'Una isócrona es el conjunto de puntos que alcanza un presupuesto de tiempo, envuelto en una envolvente. La envolvente es para mostrarla; <b>la accesibilidad en sí se decide sobre la red</b>, no con la envolvente.']
+        ]
+      },
+      {
+        id: 'trade', nav: 'Flujos comerciales', h: 'Flujos comerciales',
+        blocks: [
+          ['p', 'Comercio bilateral de bienes de BACI (CEPII) vía OEC: país declarante &times; socio &times; sección del SA &times; año, 1995–2024.'],
+          ['p', '<b>El ancho de línea es proporcional a la raíz cuadrada del valor.</b> Por dos motivos. El principal socio de un país suele ser 500&times; su centésimo, así que un ancho lineal borra todo lo que no sean los tres primeros; y un logaritmo hace que un flujo de 200 M$ parezca un tercio de ancho que uno de 200 000 M$, lo que miente en el otro sentido. Con &radic;, el <b>área</b> del trazo (ancho &times; longitud) sigue la magnitud, que es la convención de los mapas de flujo.'],
+          ['eq', 'w = 1,2 + 11,8 &middot; &radic;(v / v<sub>max</sub>) &nbsp;px'],
+          ['lim', 'Solo se comprime la <b>imagen</b>. Al pasar el cursor aparecen tanto la forma corta (<code>$141.6B</code>) como la <b>cifra exacta y sin redondear</b> (<code>$141,585,432,101</code>). Nada en esta aplicación reescala un valor para mostrarlo.']
+        ]
+      },
+      {
+        id: 'energy', nav: 'Mezcla energética', h: 'Mezcla energética',
+        blocks: [
+          ['p', 'La mezcla eléctrica viene de Ember y la energía primaria del informe del Energy Institute, ambas vía Our World in Data, por país y año. El mapa lleva <b>el único número que ordena países</b> (proporción baja en carbono de la electricidad / proporción fósil de la energía primaria); la composición en sí es una <b>barra apilada</b>, porque nueve fuentes no son un color.'],
+          ['p', 'Viajar en el tiempo relee <b>las filas de ese año</b> en lugar de interpolar. Si un país no tiene fila para ese año se usa la observación más reciente en ese año o antes, y se indica qué año se usó realmente.']
+        ]
+      },
+      {
+        id: 'crops', nav: 'Cultivos', h: 'Cultivos',
+        blocks: [
+          ['p', 'El ráster es FAO GAEZ v4: superficie cosechada, rendimiento o producción de un cultivo, en un año de referencia declarado, dibujado a la resolución que el servicio devuelve para la zona en pantalla.'],
+          ['p', 'Una celda con datos es <b>opaca</b>: la rampa ya dice cuál es el número, así que la transparencia no dice nada y pertenece por entero al control de opacidad. Una celda sin cultivo permanece transparente, porque eso es ausencia de datos y no un valor pequeño.'],
+          ['lim', 'Es una malla de año de referencia, no en vivo, y el panel dice de qué año. Una estadística nacional no es un mapa de parcelas: cuando necesites la extensión física del suelo cultivado, se ofrece aparte la clase de tierras de cultivo de 10 m de ESA WorldCover, y <b>ambas nunca se mezclan en una sola imagen</b>.']
+        ]
+      },
+      {
+        id: 'alerts', nav: 'Avisos', h: 'Avisos meteorológicos y de desastre',
+        blocks: [
+          ['p', 'Japón lee el flujo en tiempo real de la JMA <b>en la unidad para la que se emite el aviso</b>: incluye un nivel de prefectura y otro de municipio. El mapa se pinta por prefectura y las filas municipales se listan al tocar. El color es el nivel más alto realmente en vigor (aviso de emergencia = morado, aviso = rojo, advertencia = amarillo). Estados Unidos usa el flujo de avisos activos del NWS, que trae su propia geometría.'],
+          ['lim', 'Que no se dibuje nada <b>no</b> es lo mismo que que no haya nada en vigor. Al tocar un país cuyo organismo no está conectado, la aplicación lo dice con palabras: no hará una afirmación sobre seguridad con un mapa vacío.']
+        ]
+      },
+      {
+        id: 'news', nav: 'Geolocalización de noticias', h: 'Geolocalización de noticias',
+        blocks: [
+          ['p', 'Situar un artículo en el mapa lo hace <b>código determinista</b>, no un modelo: la extracción, el emparejamiento y la desambiguación son reglas y nomenclátores, y la IA solo explica el significado. La agrupación también es determinista, con bigramas CJK para los titulares en japonés.'],
+          ['p', 'La fecha de un artículo <b>no</b> es la fecha del suceso, y ambas se mantienen separadas.']
+        ]
+      },
+      {
+        id: 'time', nav: 'Reloj y máquina del tiempo', h: 'Reloj y máquina del tiempo',
+        blocks: [
+          ['p', 'En la aplicación hay exactamente un reloj. El terminador día-noche, las posiciones de los cuerpos, el año de las estadísticas, el año del comercio y la hora de descarga de los avisos están suscritos a él, de modo que moverse entre «ahora» y un instante pasado es un solo cambio que llega a todas las funciones.'],
+          ['p', 'Viajar a un año pasado dibuja también <b>las fronteras de aquella época</b> (la instantánea histórica más próxima en ese año o antes). Nada que solo exista por años se interpola para parecer diario.']
+        ]
+      },
+      {
+        id: 'labels', nav: 'Tamaño de las etiquetas', h: 'Tamaño de las etiquetas',
+        blocks: [
+          ['p', 'Todo tamaño de texto del mapa deriva de una única escalera cuya especificación es una <b>relación</b>, no un valor: una etiqueta que no es de lugar es menor que una etiqueta de lugar. La referencia de las etiquetas que no son de lugar se mantiene aparte, de modo que subir el techo de los nombres de países no infla en silencio las etiquetas de mares, POI y retícula.']
+        ]
+      },
+      {
+        id: 'ai', nav: 'Lo que la IA no decide', h: 'Lo que la IA no puede decidir',
+        blocks: [
+          ['p', 'Atlas (la consola de IA) se encarga del <b>significado</b>; el código se encarga de la <b>ejecución</b>. En concreto:'],
+          ['ul', [
+            'La IA nunca escribe <b>coordenadas</b>. Nombra lugares como objetivos estructurados (códigos ISO, topónimos) que se resuelven contra conjuntos de datos reales.',
+            'Un objetivo irresoluble ni se rescata ni se descarta en silencio: el fallo se devuelve como un hecho.',
+            'Si algo ha cambiado lo decide el <b>código</b>; la IA solo escribe la explicación (monitores y alertas).',
+            'La IA no puede informar de una acción que no ejecutó; una ejecución parcial se marca como parcial en el resultado.'
+          ]]
+        ]
+      }
+    ]
+  },
+
+  /* ── las descripciones de las entradas del registro (#R218) ──────────────────────────────────
+     El registro en sí (js/reference-data.js) lleva inglés y japonés; los demás idiomas están aquí,
+     indexados por el nombre de la entrada. Una entrada sin traducir cae al inglés una a una,
+     igual que la prosa de arriba. */
+  sourceUse: {
+    'CARTO basemaps': 'Teselas vectoriales del mapa base (claro/oscuro).',
+    'MapLibre GL JS': 'El motor de dibujo predeterminado del mapa (BSD-3-Clause). Dibuja todas las vistas 2D/3D, la proyección de globo y la malla de relieve.',
+    'CesiumJS': 'Segundo motor de dibujo opcional (Apache-2.0), seleccionable en Ajustes ▸ Comportamiento del mapa ▸ Motor del mapa. Solo se descarga si se elige. NO usa ningún activo de Cesium Ion ni token de acceso: dibuja las mismas imágenes de satélite de Esri y los mismos datos de elevación AWS terrarium que el motor predeterminado.',
+    'Twemoji (Twitter Emoji)': 'Fuente web de banderas alojada por nosotros (TwemojiCountryFlags.woff2) para que los emoji de bandera se vean en plataformas sin glifos propios (por ejemplo Windows). Gráficos con licencia CC-BY 4.0.',
+    'Esri World Imagery': 'Imágenes de satélite y etiquetas de lugares; teselas de referencia World Hillshade y World Transportation (capa de sombreado y la imagen de vista previa de la capa de carreteras).',
+    'OpenStreetMap': 'Búsqueda de lugares y contornos de lugares/regiones (Nominatim), el curso real de un río al hacer clic en su nombre (#R217) y los datos del mapa base.',
+    'NASA GIBS / Worldview': 'Temperatura, precipitación, temperatura superficial del mar, concentración de hielo marino y anomalía de TSM, nieve, índice de aerosoles y de aerosoles UV, monóxido de carbono, humedad del suelo, clorofila oceánica, incendios, vegetación (NDVI), temperatura de la superficie terrestre y del tope de nubes, color natural y sombreado del relieve.',
+    'NASA Blue Marble (via NASA EOSDIS GIBS)': 'La imagen base de la Tierra entera incluida con la aplicación (data/world-basemap.jpg — Blue Marble: Shaded Relief and Bathymetry, 2048×1024 equirrectangular). Se dibuja DEBAJO de las teselas de satélite para que el globo nunca esté vacío mientras cargan y, al ser equirrectangular y no Web Mercator, es también la base SIN CONEXIÓN de los casquetes polares más allá de ±85,05° en el motor Cesium, donde las teselas Mercator no llegan. Encima de ella, los casquetes se dibujan con el servicio teselado EPSG:4326 de NASA GIBS (Blue Marble: Shaded Relief and Bathymetry, 500 m), porque una sola imagen equirrectangular tiene UNA única fila de píxeles para sus 0,176° superiores de latitud y la estira en un borrón radial sobre todo el casquete. En el motor MapLibre, donde una imagen equirrectangular no puede envolver el globo, la misma imagen se usa un paso más gruesa: se mide en ejecución el COLOR MEDIO de sus filas polares y se pinta como capa inferior, de modo que los casquetes más allá de ±85,05° sean hielo y no el color de borrado del motor. Ese color es una medida de esta imagen, no un valor elegido. Regenerado por scripts/build-world-basemap.mjs.',
+    'NASA/JPL OSCAR sea-surface velocity (via NOAA CoastWatch ERDDAP)': 'El conjunto de corrientes marinas incluido (data/ocean-currents.json): 5.484 flechas y 26 corrientes con nombre. ⚠ Tanto las flechas como los TRAZADOS están medidos: una media de ocho compuestos de cinco días del campo global de velocidad superficial a 1/3°, con cada corriente con nombre trazada a través de ese campo por integración numérica desde una semilla publicada sobre su núcleo. Solo el NOMBRE y la semilla son editoriales; ninguna geometría se copia de un mapa. Cálida o fría también se deriva —la componente media hacia el polo a lo largo del trazado—, así que una corriente realmente zonal (la Circumpolar Antártica, los chorros ecuatoriales) sale como «ninguna» y se dibuja en gris. Obra del Gobierno de EE. UU., dominio público.',
+    'JPL Solar System Dynamics — planetary satellites': 'Las 177 lunas dibujadas alrededor de los demás planetas (data/moons.json): elementos orbitales medios INCLUIDA la anomalía media en la época 2000-01-01.5 TDB, que es el número que convierte la posición de una luna en una respuesta y no en una colocación, además del plano de referencia propio de cada satélite (la eclíptica, o el plano de Laplace local de su planeta con su polo). Radios medios de la tabla de parámetros físicos acompañante.',
+    'Hipparcos Catalog (ESA 1997) — CDS I/239': 'Las 98.887 estrellas tras el globo en modo oscuro (data/stars.bin: ascensión recta, declinación, magnitud V, índice de color B−V y el paralaje medido, hasta V 9,5). Las posiciones se precesan de J2000 al reloj del propio mapa y se giran según el tiempo sidéreo medio de Greenwich, de modo que el cielo es el cielo real de ese instante; los tamaños salen de las magnitudes medidas y los colores del B−V medido. Llegar tan por debajo del límite del ojo desnudo es también lo que dibuja la Vía Láctea: esa banda no es un degradado pintado, es donde las estrellas están realmente. Servido por el Centro de Datos astronómicos de Estrasburgo (CDS); el Bright Star Catalog (Hoffleit & Warren 1991, Harvard–Smithsonian TDC) sigue siendo la fuente de respaldo de la compilación.',
+    'NASA/JPL Horizons — interplanetary spacecraft trajectories': 'El grupo «Naves» de Explorar el espacio (data/spacecraft.json): 17 vehículos — Voyager 1 y 2, Pioneer 10 y 11, New Horizons, Parker Solar Probe, Solar Orbiter, Juno, JUICE, Europa Clipper, Lucy, Psyche, BepiColombo, Hayabusa2, OSIRIS-APEX, JWST y Gaia. Posición Y velocidad heliocéntricas en la eclíptica J2000, muestreadas con un paso propio de cada nave (90 días para Voyager, 3 para Parker) e interpoladas en el cliente con Hermite cúbica, para reproducir el trayecto reconstruido en vez de encordarlo. ⚠ Horizons responde sin cabeceras CORS, así que esto se descarga en tiempo de COMPILACIÓN y se incluye; y ⚠ una trayectoria no es telemetría: Pioneer 10 y 11 dejaron de responder en 2003 y 1995 y Gaia fue pasivada en 2025, así que lo que se dibuja para ellas es una posición propagada, y el panel lo dice sin rodeos. Fuera de la cobertura declarada, la aplicación dice que el archivo no lo sabe en lugar de repetir el último punto en silencio. Obra del Gobierno de EE. UU., no sujeta a derechos de autor.',
+    'NASA/JPL Small-Body Database (SBDB)': 'El grupo «Asteroides y cometas» de Explorar el espacio (data/small-bodies.json): 1.142 objetos. Los conjuntos masivos se definen por medida, no por gusto: todos los asteroides de 150 km o más, todos los objetos transneptunianos más brillantes que H 5,5, todos los cometas NUMERADOS (es decir, de retorno confirmado) y todos los asteroides potencialmente peligrosos más brillantes que H 18, más una lista explícitamente editorial de objetivos de misiones y cuerpos famosos, incluidos los tres objetos interestelares. Elementos heliocéntricos osculadores, propagados en el cliente como problema de dos cuerpos: elíptico desde el instante del perihelio, hiperbólico para e>1 y ecuación de Barker con e=1. ⚠ Los elementos osculadores describen la órbita en UNA época; las perturbaciones planetarias (y, en un cometa activo, las fuerzas no gravitatorias) apartan al cuerpo real de esa elipse con los años. Suficiente para ver dónde está un cuerpo en el sistema solar, insuficiente para apuntar un telescopio. SBDB no envía cabeceras CORS, así que se incluye en la compilación. Obra del Gobierno de EE. UU.',
+    'SIMBAD — CDS, Strasbourg (deep-sky objects and their published distances)': 'El grupo «Más allá del sistema solar» de Explorar el espacio (data/deep-sky.json): 150 objetos — los 110 objetos Messier más el Grupo Local, las galaxias grandes más cercanas, el centro galáctico y los grupos de Virgo, Coma, Fornax y Sculptor. Posiciones y tipos de objeto de la tabla `basic` de SIMBAD; la distancia es la MEDIANA de todas las medidas de distancia que SIMBAD guarda para ese objeto (`mesDistance`), con el número de medidas y los cuartiles al lado. ⚠ Una distancia publicada es una medida con un método detrás, y los métodos discrepan: cefeidas, punta de la rama de gigantes rojas, Tully-Fisher, fluctuación de brillo superficial y corrimiento al rojo pueden diferir en decenas por ciento, que es lo que dicen los cuartiles. 131 de los 150 tienen distancia publicada; los otros 19 se dibujan sobre la esfera celeste SIN profundidad en vez de recibir una inventada. Esto fija también hasta dónde puede retroceder la cámara: el techo es el objeto medido más lejano (unos 72 Mpc), no un número arbitrario. Wenger et al. 2000, A&AS 143, 9 — cite a SIMBAD si lo reutiliza.',
+    'REST Countries': 'Datos de referencia de países (capital, moneda, idiomas, países vecinos) para la página de información.',
+    'NASA FIRMS': 'Incendios activos y anomalías térmicas.',
+    'RainViewer': 'Radar de precipitación en vivo y nubes en infrarrojo.',
+    'Open-Meteo': 'Elevación (incluida la malla Copernicus DEM para los resaltes de Atlas por encima/por debajo del nivel del mar), campo de viento, el globo de tiempo en vivo con clic derecho (condiciones actuales y previsión a 5 días) y lecturas en vivo de tiempo, calidad del aire, temperatura del mar y elevación para los widgets y el análisis integrado de Atlas; además del campo espaciotemporal de viento, temperatura y precipitación que impulsa la simulación de dispersión de Atlas.',
+    'Open-Meteo Marine': 'Nivel del mar horario sobre el nivel medio para la capa de mareas y — (#R216/#R218) — la velocidad y la dirección de la corriente marina más la temperatura superficial del mar con las que la capa de corrientes integra sus líneas de corriente y las clasifica como cálidas o frías (la temperatura se compara con el mismo modelo unos 110 km aguas arriba).',
+    'MET Norway (Locationforecast)': 'Respaldo automático del globo de tiempo puntual cuando Open-Meteo no está disponible (NLOD/CC-BY 4.0).',
+    'OSRM (Open Source Routing Machine)': 'Indicaciones por carretera de Atlas: rutas paso a paso en coche, a pie o en bici sobre datos viarios de OpenStreetMap (servidores públicos de demostración router.project-osrm.org y routing.openstreetmap.de; ODbL).',
+    'Transitous / MOTIS': 'Indicaciones de transporte público de Atlas: rutas reales de tren, metro, tranvía, autobús y ferri sobre datos GTFS abiertos de todo el mundo (api.transitous.org, motor MOTIS), devolviendo todos los itinerarios alternativos; se envían las coordenadas de origen y destino para calcularlo. Para el ferrocarril interurbano sin horario abierto (por ejemplo JR/Shinkansen en Japón), Atlas recurre a calcular la ruta sobre la red ferroviaria de OpenStreetMap mediante la API Overpass.',
+    'Valhalla (FOSSGIS)': 'Isocronas y área alcanzable de Atlas («30 min en coche», «15 min a pie»): polígonos de tiempo sobre la red viaria de OpenStreetMap mediante el servicio público FOSSGIS Valhalla /isochrone sin clave (coche/a pie/bici); se envían la coordenada de origen y los minutos elegidos.',
+    'Google Street View': 'Panorámicas incrustadas a pie de calle (el panel «Street View aquí» y la acción de Atlas) mediante la incrustación sin clave de maps.google.com, más la capa real de cobertura de Street View y el ajuste por clic usando las teselas de cobertura sin clave de Google (mts.google.com); imágenes y cobertura © Google.',
+    'Global Watersheds (mghydro.com)': 'Delimitación de cuencas en vivo basada en HydroSHEDS para los resaltes de cuencas fluviales de Atlas (crédito: Global Watersheds, mghydro.com).',
+    'GRDC / World Bank — Major River Basins of the World': 'Polígonos de las grandes cuencas alojados por nosotros (236 cuencas) para los resaltes de cuencas fluviales de Atlas (CC BY 4.0, incorpora datos de HydroSHEDS).',
+    'OpenTopoMap': 'Una tesela de ejemplo como imagen de vista previa de la capa de curvas de nivel (CC-BY-SA).',
+    'USGS Earthquake Hazards Program': 'Terremotos en vivo e históricos (capa del mapa, widget, comparación y análisis integrado de Atlas), y los eventos reales que el simulador de ondas sísmicas puede cargar como escenario.',
+    'OpenStreetMap Overpass API': 'Cartografía de instalaciones y POI en Atlas: consultas en vivo por área para tipos de instalación con nombre (petróleo, centrales eléctricas, aeropuertos, militares…); y las vías de río o canal con nombre alrededor de una etiqueta fluvial pulsada, cuando Nominatim no puede responder por ese río (#R217) (ODbL).',
+    'Wikidata Query Service': 'Cartografía de instalaciones y POI en Atlas: segunda fuente independiente (entidades curadas con coordenadas, fusionadas con los resultados de OSM; CC0). Además, los NOMBRES en ja/de/ru/es del nomenclátor mundial incluido, consultados en compilación por identificador GeoNames (P1566) porque la columna de nombres alternativos de GeoNames no lleva etiqueta de idioma; la consulta en vivo de los cargos actuales (jefe de Estado y de Gobierno) en que se apoyan las respuestas de Atlas sobre dirigentes; el grafo de empresas y participaciones tras la capa de red industrial; y los NOMBRES de las corrientes marinas del mundo con sus coordenadas publicadas (CC0).',
+    'GeoNames': 'El nomenclátor mundial incluido data/gazetteer-world.json.gz: 147.924 lugares habitados en 242 países (coordenadas, población y país de la exportación cities1000; nombres en 18 idiomas de alternateNamesV2, que a diferencia de la columna en línea lleva un código de idioma ISO por nombre), comprimido a 3,9 MB y descomprimido en el navegador. Generado por scripts/build-gazetteer.mjs. Es lo que permite que la localización de noticias sin IA y el cuadro de búsqueda resuelvan lugares diez veces más lejos en la cola larga que la tabla curada por sí sola. CC BY 4.0.',
+    'geoBoundaries': 'Límites administrativos (ADM1) para las composiciones de región de Atlas: fuente de respaldo de límites (CC BY 4.0).',
+    'GDELT Project': 'Búsqueda mundial de noticias en vivo (últimas 72 h) que alimenta los informes y el análisis integrado de Atlas.',
+    'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)': 'Tipos de cambio, oro y plata, precios de criptomonedas e indicadores de sentimiento: widgets y el teletipo inferior.',
+    'Yahoo Finance': 'Cotizaciones de índices bursátiles para el teletipo inferior y precios de acciones en vivo para calcular la capitalización de mercado en la pestaña Empresas (valores cotizados en EE. UU.).',
+    'Clearbit Logo API / Google favicons': 'Logotipos de empresas en la pestaña Empresas: se envía el dominio de la empresa para obtener su logotipo (con respaldo en los favicons de Google y después un monograma).',
+    'Wikipedia (Wikimedia REST API)': 'Comprobación de artículos para los globos de lugar y resúmenes de contexto para el análisis de Atlas (CC BY-SA).',
+    'Live cameras — OpenStreetMap (Overpass API)': 'Puntos de webcams públicas de todo el mundo, consultados en vivo desde OSM según la vista del mapa (etiquetas contact:webcam / webcam, ODbL) y FILTRADOS a las cámaras que realmente muestran imagen dentro de la aplicación: imagen que se actualiza, directo de YouTube, Roundshot · Panomax 360° o vídeo (se descartan las que solo enlazan); la imagen fija se actualiza sola en el globo (sin clave de API).',
+    'Transport for London — JamCams': 'Unas 880 cámaras de tráfico en vivo de Londres (API unificada de TfL sin clave, lugares «JamCam»): cada una un JPEG que se actualiza más un clip corto, mostrados con actualización automática en la capa de cámaras en vivo (Powered by TfL Open Data; contiene datos de OS © Crown copyright).',
+    'Caltrans — California DOT CCTV': 'Unas 3.300 cámaras de tráfico en vivo de California (JSON abierto de estado de CCTV de los 12 distritos, sin clave): JPEG directos que se actualizan, mostrados en la capa de cámaras en vivo (© Departamento de Transporte de California).',
+    'Fintraffic / Digitraffic — Finland road-weather cameras': '811 estaciones finlandesas de cámaras de carretera y meteorología / 2.272 vistas en vivo (API Digitraffic sin clave y con CORS abierto): JPEG directos y deterministas, con actualización automática y selector de vista por estación en la capa de cámaras en vivo (© Fintraffic, CC BY 4.0).',
+    'OpenTrafficCamMap — US state DOT cameras': '1.815 cámaras de tráfico en vivo más de EE. UU. (DOT de Colorado, Indiana, Alaska y Arizona) del conjunto abierto OpenTrafficCamMap con licencia MIT, servido sin clave desde la CDN de jsDelivr (commit fijado); solo se muestran las fuentes cuyas imágenes admiten enlace directo comprobado. Imágenes © los respectivos DOT estatales.',
+    'US / Canada DOT “511” traffic cameras': 'Unas 17.000 cámaras de tráfico en vivo más de 13 redes «511» de estados de EE. UU. y provincias de Canadá (Florida, Georgia, Nueva York, Pensilvania, Carolina del Norte, Nevada, Wisconsin, Idaho, Luisiana, Nueva Inglaterra, Ontario, Alberta, Yukón) sobre la plataforma común «511». La lista de cámaras de cada sitio se obtiene una vez mediante un relé CORS público (esos puntos no envían cabecera CORS); cada imagen se enlaza directamente y se actualiza sola en la capa de cámaras en vivo. Imágenes © los respectivos DOT estatales y provinciales.',
+    'Mapzen / AWS Terrain Tiles — elevation model (DEM)': 'Teselas públicas de relieve RGB «terrarium» sin clave (AWS Open Data). Se decodifican en el cliente en un muestreador de elevación que alimenta el análisis de pendiente y orientación, la cuenca visual por línea de vista, la cobertura radioeléctrica, el simulador de modelado del relieve y encaminamiento del agua, el motor de sombras del terreno y horas anuales de sol, y la inundación por crecida y tsunami. Construido a partir de SRTM, ETOPO1 y fuentes nacionales de elevación; la atribución completa está en el registro.',
+    'IASP91 reference Earth model — Kennett & Engdahl (1991)': 'El modelo radial de velocidades P y S por el que el simulador de ondas sísmicas traza rayos para obtener los tiempos de viaje P/S, las triplicaciones de la curva de tiempos y la zona de sombra del núcleo. Verificado contra las tablas IASP91 publicadas (P a 30°/60°/90° con unos pocos segundos de diferencia).',
+    'Brune (1970) source model · Hanks & Kanamori (1979) · Boore stochastic method': 'La cadena de movimiento del suelo para fuente puntual en el simulador sísmico: momento sísmico a partir de la magnitud, frecuencia de esquina a partir de la caída de esfuerzos, espectro de campo lejano con dispersión geométrica trilineal, atenuación anelástica y amplificación de sitio de un cuarto de longitud de onda, convertidos a valores pico por teoría de vibraciones aleatorias.',
+    'Wald, Quitoriano, Heaton & Kanamori (1999) — PGV → Modified Mercalli intensity': 'La relación con la que el simulador declara una intensidad (MMI = 3,47 log10 PGV + 2,35). Es MMI, no la escala shindo de la JMA, y solo se muestra dentro del rango sobre el que se ajustó la regresión.',
+    'Wald & Allen (2007) — topographic slope → Vs30 site proxy': 'El indicador global de condiciones de sitio del USGS con el que el simulador pinta un campo de intensidad sensible al relieve: Vs30 estimada a partir de la pendiente topográfica del MDE real (tabla para zonas tectónicamente activas), que entra celda a celda en la amplificación de un cuarto de longitud de onda. Las celdas de mar y las que no tienen MDE se informan, no se pintan.',
+    '気象庁「計測震度の算出方法」 (JMA instrumental seismic intensity)': 'El shindo de la JMA que muestra el simulador se calcula según la definición propia de la JMA y no se convierte desde PGV: se aplican al espectro de aceleración del modelo el filtro de periodo y los cortes en 10 Hz y 0,5 Hz, se resuelve por teoría de vibraciones aleatorias el nivel a₀ superado durante 0,3 s en TOTAL, y I = 2·log₁₀ a₀ + 0,94. Las tres componentes se isotropizan con V/H = 2/3 en lugar de simularse por separado, y el panel lo indica. Sustituye la regresión sobre PGV de Fujimoto y Midorikawa (2005) usada hasta #R191.',
+    'Okada (1985) · Wells & Coppersmith (1994) · Atkinson & Silva (2000)': 'La solución cerrada de Okada para la deformación superficial de una dislocación rectangular da el desplazamiento cosísmico del fondo marino con el que arranca el modelo de propagación del tsunami (verificada contra el caso de prueba publicado antes de usarla); el escalado de falla inversa de Wells y Coppersmith da longitud, anchura y deslizamiento a partir de la magnitud; y el espectro de fuente de dos esquinas de Atkinson y Silva sustituyó a la única esquina de Brune, que subestimaba las frecuencias intermedias de los grandes terremotos. El campo de Okada se suma sobre una malla de subfallas 8×3 con atenuación en los bordes y se renormaliza para que el momento sísmico sea exactamente el que implica la magnitud.',
+    'Kotani et al. (1998) — Manning roughness for tsunami run-up computation': 'El coeficiente de fricción de fondo que usa el modelo de propagación del tsunami (rugosidad de Manning n = 0,025 s·m^(−1/3) sobre fondo oceánico), el valor con el que se ejecutan los modelos operativos japoneses de onda larga. En aguas profundas la fricción es despreciable (escala como la profundidad total elevada a −7/3) y es lo que limita la ola sobre una plataforma continental, así que un modelo de onda larga sin fricción sobrestima la amplitud costera.',
+    'Kasten & Young (1989) air mass · Meinel & Meinel clear-sky beam': 'La irradiancia directa normal en cielo despejado que hay detrás del motor de horas anuales de sol (1361 W/m² · 0,7^AM^0,678). Es una cifra de cielo despejado calculada a partir del horizonte real del terreno en ese punto: no es una previsión meteorológica ni una estimación de producción.',
+    'GEBCO 2020': 'Batimetría oceánica (lectura de profundidad).',
+    'AWS Terrain Tiles': 'Relieve 3D, sombreado y generación de curvas de nivel.',
+    'Beck et al. Köppen-Geiger (2018)': 'Clasificación de zonas climáticas a 1 km.',
+    'MarineRegions': 'Límites marítimos: ZEE y mar territorial.',
+    'TeleGeography Submarine Cable Map': 'Trazados de cables submarinos de telecomunicaciones.',
+    'NASA SEDAC GPW v4': 'Densidad de población en malla.',
+    'UNDP / EIU / SIPRI / World Bank': 'IDH, índice de democracia, PIB, gasto militar, demografía.',
+    'AISstream.io': 'Tráfico marítimo AIS en vivo (con su clave).',
+    'airplanes.live': 'Tráfico aéreo en vivo (ADS-B comunitario; también proporciona la imagen de vista previa de la capa de aeronaves).',
+    'CelesTrak': 'Conjuntos de elementos orbitales (GP/OMM, el sucesor moderno del conjunto de dos líneas) para la capa de satélites en vivo, por grupo de catálogo. Sin clave y con CORS abierto; gratuito para uso no comercial con atribución. NO se descargan posiciones, sino los conjuntos de elementos, una vez cada dos horas, y cada posición en pantalla se propaga localmente a partir de ellos con SGP4/SDP4 (satellite.js, MIT), de modo que desplazar el mapa o avanzar el tiempo no cuesta peticiones. TAMBIÉN SE INCLUYEN DOS COSAS CON LA APLICACIÓN, ambas regeneradas por CI desde esta misma fuente: data/tle/catalogue.tle, una instantánea real del catálogo `active` con época real, para que la capa siga dibujándose cuando celestrak.org no es accesible (la aplicación indica qué antigüedad tienen los elementos usados); y data/tle/groups.json, los números de catálogo NORAD de cada grupo de CelesTrak, para que una petición de una CATEGORÍA pueda responderse desde esa instantánea en vez de no dibujar nada. La pertenencia a un grupo no se deduce de un conjunto de elementos y nunca se infiere del nombre: un grupo cuyo listado no se pudo obtener se registra como ausente, no como vacío.',
+    'satellite.js': 'El propagador orbital SGP4/SDP4 que hay detrás de cada posición de satélite, huella, traza terrestre, ángulo de observación y predicción de paso de la aplicación (licencia MIT). Verificado contra el vector de prueba canónico de Vallado con 7 micrómetros de error y contra los elementos reales de la ISS (436,6 km, 7,650 km/s, 92,96 min, 51,631°).',
+    'Planespotters.net': 'Fotografía del avión concreto en la ficha de detalle, buscada por la dirección ICAO de 24 bits que informa el flujo ADS-B. API pública de fotos sin clave, gratuita para uso no comercial; cada foto se muestra con el crédito de su autor y enlaza al original: ninguna foto se almacena ni se rehospeda, y no se envía nada sobre usted (toda la petición es el código hex del avión).',
+    'NOAA SWPC': 'Óvalo auroral (OVATION) e índice K planetario: la capa de auroras y su imagen de vista previa.',
+    'Natural Earth': 'Fronteras y polígonos de países; límites de husos horarios (capa de husos horarios); y la máscara de tierra y mar incluida data/land-mask.png, los polígonos físicos de tierra a escala 1:50 M rasterizados por scripts/build-land-mask.mjs en una malla equirrectangular de 1 bit y 2048×1024, para que el campo de intensidad distinga tierra de mar sin preguntar a la red (antes leía teselas de relieve para esto y pintaba el océano siempre que llegaban demasiado pocas). Dominio público.',
+    'AWS Terrain Tiles — the bundled global sea floor': 'data/bathymetry.png: los mismos datos públicos de elevación terrarium, leídos una vez en compilación para todo el mundo (scripts/build-bathymetry.mjs) y distribuidos como una malla de 1440×720 (0,25°) que lleva la profundidad media de las muestras marinas de cada celda y su fracción de mar. Es sobre lo que integra el modelo GLOBAL de propagación de tsunamis, de modo que cada celda del planeta tiene una profundidad medida antes del primer paso temporal, en lugar de que la aplicación pida mil teselas y modele las que lleguen. Batimetría de ETOPO1; atribución completa en el registro.',
+    'Solar System Scope — planetary surface textures': 'Los mapas de superficie equirrectangulares con los que Explorar el espacio dibuja cada mundo (data/planets/*.jpg — todos menos la Tierra, que desde #R203 se dibuja con la propia data/world-basemap.jpg de la aplicación para que el explorador y el mapa muestren UNA sola Tierra), montados por Solar System Scope a partir de imágenes de NASA/JPL/USGS: MESSENGER para Mercurio, radar Magellan para Venus, LRO para la Luna, Viking/MOLA para Marte, Cassini y Voyager para los gigantes. Distribuidos byte a byte tal como se publicaron. Licencia CC BY 4.0. Plutón no está entre ellos y se dibuja con su color medido, no con una superficie inventada.',
+    'USGS Gazetteer of Planetary Nomenclature': 'Los topónimos aprobados por la UAI en los demás mundos (data/planet-names.json): 2.772 formaciones en Mercurio, Venus, la Luna, Marte y Plutón con sus coordenadas centrales, diámetros y tipos publicados, de modo que un planeta se etiqueta igual que la Tierra. Dominio público; la autoridad de nomenclatura es la UAI.',
+    'OpenRailwayMap / OpenSeaMap': 'Infraestructura ferroviaria mundial y señalización náutica como superposición (teselas ráster, beta).',
+    'Wikipedia / Wikimedia': 'Fichas informativas e imágenes.',
+    'Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)': 'NO es una fuente de datos, sino una forma de LLEGAR a una. El RSS de Google News, algunos índices de cámaras «511» y unas pocas fuentes más no envían la cabecera Access-Control-Allow-Origin, así que un navegador no puede leerlas directamente; estos relés públicos descargan el documento en el servidor y lo vuelven a servir con la cabecera. Lo que ve un relé es la URL solicitada (la dirección de una fuente pública) y la conexión en sí; jamás se envían por ahí cuentas, coordenadas ni datos personales. Los cuatro compiten con un plazo de 8 segundos cada uno y los perdedores se abortan, así que uno caído o lento no puede retener la página. ⚠ NO SON INTERCAMBIABLES SEGÚN EL DESTINO, y eso está medido, no supuesto: en esta compilación Google sirvió la edición de noticias de EE. UU. a través de corsproxy.io en 5 ms y respondió al MISMO proxy con su página de bloqueo «Sorry…» (503) para la edición japonesa, que es por lo que la fuente japonesa estaba vacía hasta que se añadió un cuarto relé. Donde se usa un relé, se indica en la entrada de la propia fuente.',
+    'Google News': 'Titulares de noticias (RSS): descargados y geolocalizados en el servidor; también consultados en vivo desde el navegador para la búsqueda web de Atlas (se envía el nombre del tema). El MEDIO DE ORIGEN de cada pieza lo lleva la propia fuente (Google News lo añade al titular tras el último « - »), y de ahí sale la lista de Ajustes ▸ Medios de noticias: los medios ofrecidos son los que la fuente actual entrega realmente, contados, y no una lista mantenida aquí. Elegir medios filtra lo que se muestra; no cambia lo que se descarga, y nunca se infiere el nombre de un medio.',
+    'OpenFreeMap / OpenMapTiles': 'Etiquetas vectoriales de lugares y huellas de edificios en 3D.',
+    'ESA WorldCover': 'Clasificación global de cobertura del suelo a 10 m.',
+    'RESOLVE / WWF Ecoregions 2017': 'Ecorregiones terrestres.',
+    'Smithsonian GVP': 'Volcanes del Holoceno.',
+    'DeepStateMap': 'Línea del frente en Ucrania (capa beta).',
+    'historical-basemaps (aourednik)': 'Fronteras históricas: la capa beta de superposición y el respaldo automático de las fronteras de años pasados del propio mapa (la instantánea más cercana).',
+    'CShapes 2.0 (Schvitz et al., ETH Zürich)': 'Fronteras internacionales anuales de 1886 a 2019 para la máquina del tiempo (cada cambio fechado por año; copia simplificada alojada por nosotros). Las fronteras de Alemania Oriental/Occidental/unificada de 1945 a 2019 se reconstruyeron a partir de los Länder modernos de referencia (deutschlandGeoJSON, © GeoBasis-DE / BKG) para que la frontera interalemana coincida con la realidad.',
+    'Maddison Project Database 2020 (Bolt & van Zanden)': 'PIB real HISTÓRICO de referencia (dólares internacionales constantes de 2011) y población desde 1900 para la máquina del tiempo: la pestaña de países, los mapas coropléticos y la comparación de países al viajar antes del límite de 1960 del Banco Mundial y para Estados desaparecidos (la antigua URSS, Yugoslavia y Checoslovaquia son entidades propias en Maddison).',
+    'World Bank Open Data': 'Series temporales de indicadores por país (gráficos de series, la comparación de hasta cinco países y la máquina del tiempo: toda la pestaña de países, las lecturas al pasar el cursor y los coropléticos muestran las cifras reales del año en que está puesto el reloj maestro).',
+    'IMF World Economic Outlook': 'Relleno de huecos en la capa de deuda pública y fuente económica alternativa en la comparación de países (API DataMapper).',
+    'WorldPop (University of Southampton)': 'Población dentro de un área dibujada, un círculo o el límite de un lugar: sumada de la malla global de población de unos 100 m mediante la API estadística de WorldPop.',
+    'AI provider — OpenAI (Anthropic / Google selectable)': 'IA en el servidor (la clave se guarda en el servidor): asistente Atlas, geolocalización de noticias, funciones de IA dentro de la aplicación y búsqueda web para preguntas de actualidad.'
+  }
+});

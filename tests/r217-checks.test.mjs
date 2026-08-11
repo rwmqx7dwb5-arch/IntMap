@@ -116,7 +116,13 @@ test('R217 ②b: the resolver asks the two sources this app already declares, in
   assert.match(src, /nominatim\.openstreetmap\.org\/search/, 'Nominatim first — one GET for the whole named river');
   assert.match(src, /overpass-api\.de\/api\/interpreter/, 'Overpass as the fallback');
   assert.ok(src.indexOf('_nominatim(') < src.indexOf('_overpass('), 'Nominatim is tried before Overpass');
-  assert.match(src, /if\(hit\)\s*return hit;/, 'the first source that answers wins');
+  /* ⚠ (#R218) INTENDED REPLACEMENT: every Nominatim answer that runs past the river is now KEPT and
+     unioned, because a river renamed at each border is several OSM objects and taking the first one
+     is taking one country's stretch. Overpass is still the fallback, still only reached when
+     Nominatim gave nothing at all. */
+  assert.match(src, /if\(hit\)\{ found\.push\(hit\.geo\);/, 'a Nominatim answer is discarded');
+  assert.match(src, /if\(found\.length\) return \{ geo:_union\(found\)/, 'the answers are not unioned');
+  assert.match(src, /return await _overpass\(names,lngLat\.lng,lngLat\.lat,opts\.bbox\);/, 'Overpass is not the fallback');
 });
 
 /* ═══ ③ THE WIRING — the click hands over the whole property bag, and the tiles are never lost ═══ */
@@ -134,7 +140,7 @@ test('R217 ③a: js/map-ui.js no longer compares one name, and both click paths 
 test('R217 ③b: the tile highlight is drawn BEFORE the fetch and is never replaced by less', () => {
   const ui = rd('js/map-ui.js');
   const draw = ui.indexOf("GE().layers.setSourceData('river-hl-src',{type:'FeatureCollection',features:tile});");
-  const fetchAt = ui.indexOf('RC.course(props,lngLat)');
+  const fetchAt = ui.indexOf('RC.course(props,lngLat,');   /* (#R218) …now with the closure's context */
   assert.ok(draw > 0 && fetchAt > draw, 'the tiles are painted first, then the network is asked');
   assert.match(ui, /features:covers\?full:full\.concat\(tile\)/,
     'a fetched course that does not cover the tile segments is unioned with them, never substituted for them');
@@ -229,7 +235,13 @@ test('R217 ⑦a: DEV-NOTES.md is the RECENT rounds only, newest first', () => {
   const md = rd('DEV-NOTES.md');
   const rounds = ROUND_HEADS(md);
   assert.ok(rounds.length > 0, 'it still has round headings');
-  assert.equal(rounds[0], 217, 'the newest round is at the top (standing instruction 9 — prepend)');
+  /* ⚠ (#R218) THE ASSERTION IS THE ORDER, NOT THE NUMBER. This line read `rounds[0] === 217`, which is
+     a test that pins the value the round that wrote it happened to have — so it fails on the next
+     round for doing exactly what standing instruction 9 asks (prepend). It is the same trap the memory
+     index records for #R203. What #R217 was protecting is that the newest heading is FIRST, which is
+     the max, and the loop below already re-checks the whole ordering. The build stamp is separately
+     tied to this same maximum by tests/r207 ⑬, so "which round is newest" still has one owner. */
+  assert.equal(rounds[0], Math.max(...rounds), 'the newest round is at the top (standing instruction 9 — prepend)');
   assert.ok(Math.min(...rounds) >= 200, `nothing below R200 is left here — found R${Math.min(...rounds)}`);
   for (let i = 1; i < rounds.length; i++) {
     assert.ok(rounds[i] < rounds[i - 1], `newest-first: R${rounds[i]} follows R${rounds[i - 1]}`);

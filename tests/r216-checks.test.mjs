@@ -179,13 +179,22 @@ test('⑩ …and a flight asks for landscape, then says so if it cannot have it'
 });
 
 /* ── ⑪ ocean currents: measured, never a shipped table ──────────────────────────────── */
+/* ⚠ (#R218) THIS LAYER WAS REPLACED, ON PURPOSE, AND THESE TESTS WERE UPDATED WITH IT.
+   「海流レイヤー、思ってたのと違う。ちゃんとレイヤーとして地図上に描画してください。作り直せ。」 — #R216's
+   24 single arrows became a STREAMLINE field (js/ocean-currents.js + js/streamline.js), so the two
+   assertions below that quoted #R216's own lines (`const dT=(a.sst!=null…)` and the point-symbol
+   arrow layer) no longer describe anything. What they were PROTECTING is unchanged and is still
+   checked here: the values are the model's, warm/cold is a measurement against the water upstream, a
+   difference inside the model's noise is grey, and no current is named or drawn by this file.
+   The new form of the same guarantees is re-checked in tests/r218-checks ⑦; this is the older
+   statement of them, kept live rather than deleted. */
 test('⑪ the ocean-current layer ships no currents of its own', () => {
   const s = read('js/ocean-currents.js');
-  assert.match(s, /ocean_current_velocity/, 'the arrows are not model values');
+  assert.match(s, /ocean_current_velocity/, 'the speeds are not model values');
   assert.match(s, /ocean_current_direction/, 'the direction is not model values');
   /* warm/cold is a MEASUREMENT against the water upstream, not a table of famous currents */
   assert.match(s, /UPSTREAM_KM\s*=\s*\d+/, 'there is no upstream comparison');
-  assert.match(s, /const dT=\(a\.sst!=null&&tu!=null\)\?\(tu-a\.sst\):null/, 'the classification is not from two temperatures');
+  assert.match(s, /const dT=\([^)]*!=null&&[^)]*!=null\)\?\([^)]*-[^)]*\):null;/, 'the classification is not from two temperatures');
   assert.match(s, /Math\.abs\(dT\)<DT_MIN\)\?'neutral'/, 'a difference inside the noise is still coloured');
   /* the names are third-party statements with a source, not strings in this file */
   assert.match(s, /wd:Q129558/, 'the names do not come from Wikidata');
@@ -246,7 +255,11 @@ test('⑬ …and a drawn rupture is screened over its AREA, not at one point', (
 
 /* ── ⑭ the sources page is written for readers ──────────────────────────────────────── */
 test('⑭ sources.html has no essayistic register left in it', () => {
-  const s = read('sources.html');
+  /* ⚠ (#R218) THE PROSE MOVED, THE QUESTION DID NOT. sources.html is a shell now and the Japanese
+     text lives in js/locales/pages.ja.js — one file per language, so that adding a sixth costs one
+     file instead of a pass over two HTML documents. Reading the locale keeps this check alive; it is
+     the same sentences, and they still have to not be there (and the two good ones still have to be). */
+  const s = read('js/locales/pages.ja.js');
   const bad = [
     'その「誰か」の一覧です',            /* an aphorism, not a sentence a reader needs */
     '色は国境で止まりますが、現実はそこで止まりません',

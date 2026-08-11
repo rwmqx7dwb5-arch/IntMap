@@ -47,6 +47,13 @@ export const STATIC_ASSETS = [
      app bundle, and window.IntMapRefData.dataSources is the ONE list both it and the in-app Sources
      dialog read. Copying it is how the page avoids becoming a duplicate that goes stale. */
   'js/reference-data.js',
+  /* (#R218) …and the rest of what those two pages are made of, for exactly the same reason: they are
+     shells now (see the note at the top of sources.html). `js/locales` is a DIRECTORY on purpose —
+     adding a language must not also mean editing this list, which is the whole promise of #R218. */
+  'css/pages.css',
+  'js/page-i18n.js',
+  'js/sources-list.js',
+  'js/locales',
   'google0266d9db8efbc48c.html',        // Google Search Console site verification
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)
   'og-image.jpg',                       // social preview

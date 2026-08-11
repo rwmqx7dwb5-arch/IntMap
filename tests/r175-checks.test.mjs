@@ -172,6 +172,16 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
     for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
     for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
   }
+  /* (#R218) …and the fourth form of reachability: a <script src> from one of the STANDALONE PAGES.
+     index.html is not the only entry point this repo ships — sources.html and science.html are
+     their own documents, and since #R218 they pull two js/ modules directly. Reading the pages
+     rather than exempting two filenames keeps the question the same one: is this module dead code?
+     Delete the <script> tag and the module goes back to failing, here and in static-checks.mjs. */
+  for (const page of ['sources.html', 'science.html', 'admin.html']) {
+    const p = join(ROOT, page);
+    if (!existsSync(p)) continue;
+    for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);
+  }
   for (const f of jsFiles) assert.ok(imported.includes('js/' + f) || dyn.has('js/' + f) || sib.has('js/' + f),
     `js/${f} is never imported by src/main.js, and no reachable module import()s it either`);
   for (const rel of imported) assert.ok(existsSync(join(ROOT, rel)), `src/main.js imports ${rel}, which does not exist`);

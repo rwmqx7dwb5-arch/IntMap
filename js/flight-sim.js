@@ -278,10 +278,10 @@ window.IntMapModules.flightSim=function(HOST){
            view asks the browser to lock landscape when it can (that needs fullscreen, so it asks for
            that first), and where the browser refuses — iOS Safari refuses on principle — it says so
            and waits, instead of drawing a cockpit nobody can fly. */
-        +'#fs-rotate{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;'
-          +'background:rgba(4,8,16,0.96);color:#dcefff;text-align:center;padding:28px;font-size:15px;line-height:1.6;}'
-        +'#fs-rotate .fs-rot-icon{font-size:44px;animation:fsRot 2.2s ease-in-out infinite;}'
-        +'#fs-rotate button{pointer-events:auto;margin-top:4px;padding:9px 18px;border-radius:10px;border:1px solid rgba(120,190,255,0.45);background:rgba(6,14,24,0.7);color:#e8f4ff;font-size:13px;font-weight:700;cursor:pointer;}'
+        /* (#R218) …and the same id is now a HINT CHIP, not a gate: bottom-centre, one line, tappable
+           away, fading on its own. It does not cover the deck and it never stops the flight. */
+        +'#fs-rotate{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:10001;display:none;align-items:center;gap:8px;white-space:nowrap;pointer-events:auto;transition:opacity .4s ease;padding:7px 13px;border-radius:999px;background:rgba(6,14,24,0.82);border:1px solid rgba(120,190,255,0.45);color:#dcefff;font-size:12px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}'
+        +'#fs-rotate .fs-rot-icon{font-size:15px;display:inline-block;animation:fsRot 2.2s ease-in-out infinite;}'
         +'@keyframes fsRot{0%,45%{transform:rotate(0deg)}55%,100%{transform:rotate(-90deg)}}'
         +'@media(prefers-reduced-motion:reduce){#fs-rotate .fs-rot-icon{animation:none;}}'
         /* (#R84) game-grade HUD: scrolling heading tape, banking aircraft symbol, altitude sky tint, boost bar */
@@ -370,7 +370,63 @@ window.IntMapModules.flightSim=function(HOST){
         +'#fs-hud .pfd-htk{position:absolute;font-size:10px;color:#cfe0f0;transform:translateX(-50%);white-space:nowrap;}'
         +'#fs-hud .pfd-hdg-ptr{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#ffd60a;transform:translateX(-50%);}'
         +'#fs-hud .pfd-cap{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:8.5px;color:#7fa8cc;letter-spacing:0.08em;z-index:3;pointer-events:none;}'
-        +'@media(max-width:640px){#fs-hud .fs-pfd{width:206px;height:220px;left:6px;} #fs-hud .pfd-att,#fs-hud .pfd-hdg{left:46px;right:46px;} #fs-hud .pfd-tape{width:46px;}}';
+        +'@media(max-width:640px){#fs-hud .fs-pfd{width:206px;height:220px;left:6px;} #fs-hud .pfd-att,#fs-hud .pfd-hdg{left:46px;right:46px;} #fs-hud .pfd-tape{width:46px;}}'
+        /* ══ ⚠⚠ (#R218) THE PHONE DECK — ONE INSTRUMENT PER QUANTITY ═══════════════════════════════════
+           「フライトシミュレーターはスマホ画面ではUIが潰れている。徹底的に整理し、洗練されたモバイル最適化
+            されたUIデザインにしろ。」 The crush is not that the pieces are too big; it is that there are
+           FOUR readouts of the same four numbers on a 390-px-tall screen, all of them positioned
+           independently and therefore all of them on top of each other:
+
+             speed      the .fs-tl panel   AND the six-pack's ASI   AND the PFD's speed tape
+             altitude   the .fs-tr panel   AND the six-pack's ALT   AND the PFD's altitude tape
+             attitude   the pitch ladder   AND the ADI              AND the six-pack's AI  AND the PFD
+             heading    the heading tape   AND the six-pack's HI    AND the PFD's heading strip
+
+           On a desktop that is a cockpit; on a phone it is the same four numbers competing for the
+           same 300 × 844 px. #R118 and #R117 answered it by SHRINKING everything, which is how the
+           six-pack became six 48-px dials nobody can read and the PFD a 300 × 150 postage stamp.
+           This block deletes the duplicates instead of shrinking them: on a touch device the phone
+           keeps the tape, the two panels, the ladder and the ADI — one each — and drops the six-pack,
+           the PFD, the boost bar and the keyboard cheat-sheet, which say nothing a finger can use.
+           ⚠ NOTHING IS REMOVED FROM THE SIM. All four still build, still update and still appear on
+           every desktop and tablet; this is a layout for a hand, not a reduced simulator.
+           What is left is then placed in the three zones a phone actually has — a top band of
+           readouts, a middle band that is the view, and a bottom band of thumb targets — with the two
+           thumbs' zones (throttle left, pad right) kept clear of everything else. */
+        +'@media(hover:none){'
+          +'#fs-hud .fs-sixpack,#fs-hud .fs-pfd,#fs-hud .fs-boost,#fs-hud .fs-hint{display:none !important;}'
+          /* the top band: speed · heading · altitude, one line each, nothing overlapping */
+          +'#fs-hud .fs-panel.fs-tl{left:calc(8px + env(safe-area-inset-left,0px));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(8px + env(safe-area-inset-right,0px));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
+          +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:16px;} #fs-hud .fs-tl .fs-k,#fs-hud .fs-tr .fs-k{font-size:9px;}'
+          +'#fs-hud .fs-htape{top:8px;width:min(240px,42vw);height:24px;}'
+          +'#fs-hud .fs-hdg-box{top:26px;font-size:12px;padding:0 7px;}'
+          +'#fs-hud .fs-heading{display:none;}'
+          /* the exit, and the deck, tucked under the altitude panel rather than across the view */
+          +'#fs-hud .fs-x{right:calc(8px + env(safe-area-inset-right,0px));top:58px;padding:5px 10px;font-size:11px;}'
+          +'#fs-hud .fs-deck{top:58px;left:calc(8px + env(safe-area-inset-left,0px));right:auto;bottom:auto;transform:none;'
+            +'grid-template-columns:repeat(2,44px);gap:4px;z-index:6;}'
+          +'#fs-hud .fs-act{min-width:44px;height:38px;font-size:11px;}'
+          /* the bottom band: throttle at the left thumb, pad at the right thumb, nothing between them */
+          +'#fs-hud .fs-thr{left:calc(8px + env(safe-area-inset-left,0px));width:36px;height:132px;bottom:calc(10px + env(safe-area-inset-bottom,0px));pointer-events:auto;touch-action:none;}'
+          +'#fs-hud .fs-thrlbl{left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(148px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-dpad{right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));'
+            +'grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;}'
+          +'#fs-hud .fs-btns{left:calc(52px + env(safe-area-inset-left,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:none;gap:8px;}'
+          +'#fs-hud .fs-btns button{min-width:52px;height:40px;font-size:11px;padding:0 10px;}'
+          +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:92px;height:92px;bottom:calc(10px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-minimap{left:auto;right:calc(160px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:11px;}'
+          +'#fs-hud .fs-warn{top:56px;font-size:15px;padding:2px 10px;}'
+        +'}'
+        /* a phone held UPRIGHT has no room for a row of thumb targets beside a 92-px ADI, so the two
+           stack: instruments above, controls below, and the minimap goes with the readouts. */
+        +'@media(hover:none) and (orientation:portrait){'
+          +'#fs-hud .fs-adi{bottom:calc(158px + env(safe-area-inset-bottom,0px));width:84px;height:84px;}'
+          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-minimap{right:calc(8px + env(safe-area-inset-right,0px));bottom:auto;top:106px;width:88px;height:88px;}'
+          +'#fs-hud .fs-deck{grid-template-columns:repeat(3,44px);}'
+          +'#fs-hud .fs-htape{width:min(200px,54vw);}'
+        +'}';
       document.head.appendChild(s); }
     /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
        called on build and whenever an action key/button changes a discrete state. */
@@ -884,37 +940,51 @@ window.IntMapModules.flightSim=function(HOST){
        is attempted (it requires fullscreen, so that is attempted first) and, whether or not it takes,
        a portrait screen gets the overlay until it is turned. Everything is optional and wrapped: a
        browser that has none of these APIs simply shows the overlay, which is the honest outcome. */
-    let _rotEl=null, _rotMq=null;
+    /* ══ ⚠⚠ (#R218) NO "PLEASE TURN YOUR PHONE" SCREEN ═══════════════════════════════════════════════
+       「スマホでは横画面でスタートさせるのに、確認なんかいらない。そのままフライトシミュレーターを開始
+        すればいいだけ。」 Confirmed this round: it is THAT screen — #R216's `#fs-rotate`, a full-screen
+       black card with a rotating phone and an ✕ Exit button — that has to go. The reader pressed START;
+       being asked to confirm the shape of their own screen before anything happens is a second START.
+       What replaces it is what the overlay was in front of anyway: the fullscreen request and the
+       orientation lock, attempted SILENTLY, and the flight starting either way. If the lock takes
+       (Android/Chrome), the deck is already in landscape by the first frame. If it does not (iOS
+       Safari has no `screen.orientation.lock`), the flight still starts, and the HUD has a portrait
+       layout of its own — see the `orientation:portrait` block in css/intmap.css. A hint chip says
+       turning the phone gives more room; it is a hint, not a gate, and it fades.
+       ⚠ BOTH CALLS STILL HAVE TO BE INSIDE THE USER GESTURE. `start()` runs from the START button's
+       own handler, which is why the request is made here and not from a later callback. */
+    let _rotEl=null, _rotMq=null, _rotTmr=0;
     function _isTouch(){ try{ return window.matchMedia('(hover:none)').matches||('ontouchstart' in window); }catch(_){ return false; } }
     function _portrait(){ try{ return window.matchMedia('(orientation:portrait)').matches; }catch(_){ return window.innerHeight>window.innerWidth; } }
     function _ensureRotate(){
       if(_rotEl) return _rotEl;
       _rotEl=document.createElement('div'); _rotEl.id='fs-rotate';
-      _rotEl.innerHTML='<div class="fs-rot-icon">📱</div>'
-        +'<div>'+LL('Turn your phone sideways.<br>The flight deck needs a landscape screen.',
-                    '端末を横向きにしてください。<br>コックピットは横画面用です。',
-                    'Bitte das Gerät quer halten.<br>Das Cockpit braucht Querformat.',
-                    'Поверните телефон горизонтально.<br>Кабине нужен ландшафтный экран.',
-                    'Gira el teléfono.<br>La cabina necesita pantalla horizontal.')+'</div>'
-        +'<button class="fs-rot-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>';
+      _rotEl.innerHTML='<span class="fs-rot-icon">📱</span> '
+        +LL('Turn sideways for the full deck','横向きにすると全体が見えます',
+            'Quer halten für das ganze Cockpit','Поверните — будет видно всю кабину',
+            'Gira el teléfono para ver toda la cabina');
       document.body.appendChild(_rotEl);
-      _rotEl.querySelector('.fs-rot-x').onclick=()=>{ try{ stop(); }catch(_){} };
+      _rotEl.onclick=()=>{ _rotEl.style.display='none'; };
       return _rotEl; }
-    function _syncRotate(){ if(!_rotEl) return;
-      _rotEl.style.display=(on&&_isTouch()&&_portrait())?'flex':'none'; }
+    /* the hint, not a gate: shown only while the screen really is portrait, and only for a moment */
+    function _syncRotate(){
+      if(!(on&&_isTouch()&&_portrait())){ if(_rotEl) _rotEl.style.display='none'; return; }
+      const el=_ensureRotate(); el.style.display='flex'; el.style.opacity='1';
+      if(_rotTmr) clearTimeout(_rotTmr);
+      _rotTmr=setTimeout(()=>{ try{ el.style.opacity='0'; setTimeout(()=>{ if(el.style.opacity==='0') el.style.display='none'; },420); }catch(_){} },3600); }
     function _goLandscape(){
       if(!_isTouch()) return;
-      _ensureRotate(); _syncRotate();
       try{ const el=document.documentElement;
         const fs=(document.fullscreenElement||document.webkitFullscreenElement)?Promise.resolve()
           :(el.requestFullscreen?el.requestFullscreen({navigationUI:'hide'}):Promise.reject());
         Promise.resolve(fs).then(()=>{ try{ const o=screen&&screen.orientation;
-          if(o&&o.lock) return o.lock('landscape'); }catch(_){} }).catch(()=>{}).then(()=>setTimeout(_syncRotate,240),()=>setTimeout(_syncRotate,240));
+          if(o&&o.lock) return o.lock('landscape'); }catch(_){} }).catch(()=>{}).then(()=>setTimeout(_syncRotate,300),()=>setTimeout(_syncRotate,300));
       }catch(_){}
       if(!_rotMq){ _rotMq=()=>_syncRotate();
         try{ window.addEventListener('orientationchange',_rotMq); window.addEventListener('resize',_rotMq); }catch(_){} } }
     function _endLandscape(){
       if(_rotEl) _rotEl.style.display='none';
+      if(_rotTmr){ clearTimeout(_rotTmr); _rotTmr=0; }
       try{ const o=screen&&screen.orientation; if(o&&o.unlock) o.unlock(); }catch(_){}
       try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(_){} }
 

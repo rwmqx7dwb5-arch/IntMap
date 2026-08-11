@@ -402,6 +402,33 @@
       ],
       "port": 4216,
       "url": "http://127.0.0.1:4216"
+    },
+    {
+      "name": "intmap-static-r218",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-3",
+        "-m",
+        "http.server",
+        "8791",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8791,
+      "url": "http://127.0.0.1:8791"
+    },
+    {
+      "name": "intmap-preview-r218",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4218"
+      ],
+      "port": 4218,
+      "url": "http://127.0.0.1:4218"
     }
   ]
 }
