@@ -753,7 +753,8 @@ window.IntMapModules.tsunami=function(HOST){
            close just to see the wave it is drawing. See js/seismic.js for the reasoning. */
         +'<button class="tsu-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>';
-      let body='<div class="tsu-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
+      /* (#R215) the same two-declaration bug js/seismic.js carried — see the note there. */
+      let body='<div class="tsu-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
       if(epi) body+='<div style="font-size:11.5px;color:var(--text-main);">M '+mw.toFixed(1)+' · '
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';

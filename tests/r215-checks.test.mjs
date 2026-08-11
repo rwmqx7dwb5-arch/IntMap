@@ -255,3 +255,22 @@ test('R215 ⑩c: there is ONE clock — the date field is the readout', () => {
   assert.match(rc, /\.sp-when/, 'refreshClock writes the instant into the field');
   assert.match(rc, /document\.activeElement!==w/, '…but never while the caret is in it');
 });
+
+/* ═══ ⑪ THE SIMULATOR WINDOWS ACTUALLY MINIMISE ══════════════════════════════════════════════
+   「地震・津波シミュレータウィンドウは最小化可能に」 — #R210 added the buttons and both were no-ops:
+   the inline style said `display:none;` when minimised and then unconditionally `…;display:flex;…`,
+   so CSS's last-declaration-wins put the body straight back. MEASURED before the fix: the glyph
+   flipped to ▢ and getComputedStyle(.sq-body).display stayed `flex`. */
+for (const [file, cls] of [['js/seismic.js', 'sq-body'], ['js/tsunami.js', 'tsu-body']]) {
+  test(`R215 ⑪: ${cls} declares display ONCE, and minimised drives it`, () => {
+    const src = read(file);
+    const i = src.indexOf(`class="${cls}" style=`);
+    assert.ok(i > 0, `${cls} is built with an inline style`);
+    /* the whole style string, up to the closing quote of the attribute */
+    const style = src.slice(i, src.indexOf('">', i) + 2);
+    const decls = (style.match(/display:/g) || []).length;
+    assert.equal(decls, 1, `two display declarations in one style is how the minimise button became a no-op (found ${decls})`);
+    assert.match(style, /display:'\+\(minimised\?'none':'flex'\)/,
+      'and the one declaration is the state — not a prefix that a later default overrides');
+  });
+}

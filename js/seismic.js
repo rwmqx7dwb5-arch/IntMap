@@ -1294,7 +1294,13 @@ window.IntMapModules.seismic=function(HOST){
            the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
         +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
         +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
-        +'<div class="sq-body" style="'+(minimised?'display:none;':'')+'padding:10px 12px;display:flex;flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
+        /* ⚠⚠ (#R215) `display` WAS DECLARED TWICE IN THE SAME INLINE STYLE, AND THE SECOND ONE WON.
+           「地震・津波シミュレータウィンドウは最小化可能に」 — #R210 added the button and it has been a no-op ever
+           since: the string began `display:none;` when minimised and then unconditionally continued
+           `…;display:flex;…`, so CSS's last-declaration-wins put the body straight back. MEASURED: the
+           glyph flipped to ▢ and `getComputedStyle(.sq-body).display` stayed `flex`. One property, one
+           declaration. */
+        +'<div class="sq-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
         /* ══ (#R212) ONE CONTROL FOR ONE THING ═══════════════════════════════════════════════════════
            「震源地を設置と震源地を移動と、二つのボタンに分ける意味が全く分からない。」 There is no
            difference between the two — an epicentre that exists is moved and one that does not is
