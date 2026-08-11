@@ -1055,6 +1055,18 @@ js/
                                     **13倍粗い階段**になる（「大きなタイルでごまかすな」）。ジオメトリは持たず、
                                     描くだけ。国境が未到着なら `land-mask.js` が従来どおりフォールバック、
                                     `source()` がどちらが答えたかを返す（`fld.stats.coastSource`）。
+  ocean-currents.js                 (#R216) **世界の海流 `IntMapCurrents`**——矢印・寒暖流・名称。`world-packs.js` の
+                                    `_ui` ツールキット（`makePanel` / `row` / `whenDrawable` / `setVis` / `onYear`）を
+                                    借りる6番目の「世界のデータ」レイヤーで、自前の窓は持たない。
+                                    **数値は一切同梱しない**：矢印は Open-Meteo Marine の
+                                    `ocean_current_velocity` / `ocean_current_direction`（表示範囲の海上を最大24点、
+                                    1リクエスト。向きは「水が向かう方位」で、黒潮 35N/141E→39°、アガラス
+                                    35S/20E→250° の実測で確認）。**暖流/寒流は判定ではなく計測**——各点の海面水温を、
+                                    その流れに沿って約110 km**上流**の水温と比べ、上流が暖かければ暖流（赤）、
+                                    冷たければ寒流（青）、差が 0.25 K 未満なら**どちらでもない（灰）**とする。
+                                    名称は Wikidata の `wdt:P31/wdt:P279* wd:Q129558`（ocean current）＋`P625`——
+                                    実測 209件・5言語ラベル・CC0。矢印は SDF アイコン1枚を `icon-color` で
+                                    着色し `icon-rotate` で回す（暖・寒・中立で画像を分けない）。
   tsunami.js                        (#R192, #R193 で全面再構築) **津波伝播 `IntMapTsunami`**——パネル・震源・描画・
                                     再生。**時間積分そのものは `src/tsunami-worker.js`**（ワーカー）にあり、
                                     フレームは**できた側から流れてくる**のでページは一切止まらない。水深は terrarium
@@ -2543,6 +2555,38 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 > #R169 で整理: これらは §1–§18 の間に**バラバラの順序で挟まっていた**（R127→R128→R129→R131→R132→
 > R157→R154→R153→R152→R151→R150→R143→R142→R140→R139→R137→R136→R135）。内容は残す価値があるので
 > 消さずにここへ集め、**新しい順**に並べ直した。各ラウンドの完全な記録は `DEV-NOTES.md` にある。
+
+### #R216 補足（本番オリジンのニュース中継／10 m 国境は「描く直前」に流す／潮汐の時計／海流／宇宙UI／大気の遠近）
+
+**ニュースの CORS 中継は、まず自前の Edge Function を通る。** `supabase/functions/news-relay` は
+`https://news.google.com/rss/...` **だけ**を許可リストで中継し、上流がフィードでない本文（Google の
+ボット遮断ページは 200 で返る）を返したら **502** にして次の中継へ譲る。`js/proxy-fetch.js` の
+`proxiesFor(url)` が **呼び出し時に** `window.SUPABASE_URL` を読んでこれを先頭に置き、#R214 の公開中継4本は
+その後ろに残る（Edge Function のコールドスタートや Supabase 障害でも従来の挙動に戻る）。
+⚠ **中継の可否は「呼び出し元オリジン」で決まる**：`proxy.corsfix.com` は localhost を既定で許可し、
+本番ドメインは登録制なので **403 `domain_not_registered`** を返す。localhost で測った CORS は本番の答えではない。
+
+**10 m 国境（`window._imCountryGeoPending`）は「描く直前」の宣言で流せる。** `window._imFlushCountryGeo(force)`
+の `force===true` が #R195 の保留を解く唯一の追加口で、Countries(info) モードとは独立。
+⚠ `setSourceData` は **feature-state を消す**ので、流すのは `apply()` の**前**。遅れて成功した場合に備えて
+`js/world-packs.js` の `hiResCountries(after)` が家族ごとの再描画コールバックを受け取る。
+
+**潮汐レイヤーは自前の時計を持たない。** パネルの日時欄・◀▶・▶（再生）は `window.IntMapTime`（#R94 の唯一の
+時計）を `allowFuture:true` で動かし、既存の `onYear` 購読が再描画する。各観測点は取得した1時間ごとの系列を
+保持するので、**その窓の中の移動は演算だけ**（実測：再生6秒間の marine-api リクエスト **0件**）。
+窓の外に出たときだけ再取得する（`covered(t0)` / `restatAll(t0)`）。
+
+**宇宙を探索の HUD。** 「何を描くか」を答える6つのスイッチ（軌道・衛星・地名・探査機・小惑星・銀河）は
+`.sp-show`（「表示 n/6」）1つの中に入り、バーは**1行47 px**になった。右側の情報パネルと現象パネルは
+`.sp-col` という**1本の縦カラム**（#R212 以来 `top:calc(52px + 232px)` という「高さの当て推量」で重なっていた）。
+スマホは `css/intmap.css` の `#space-view` ブロックで、バーが横スクロール・天体一覧が上端の横ストリップ・
+2枚のパネルが最大38 vh のボトムシートになる。`drawSysMoons()` が**システム表示でも選択中の惑星の衛星**を
+描く（配置は #R203 の `moonSep`。モデル大では実距離を入れると惑星の中に入るため）。
+
+**大気には「空気の遠近」がある。** `js/theme-sky.js` の `_aerial()` は視点高度から `fog-ground-blend` /
+`horizon-fog-blend` を決める（地表付近 0.62 / 0.30 → 80 km 以上で完全オフ）。#R196 が Cesium に合わせて
+切っていた唯一の項目で、遠景が地平線と硬い線で接する原因だった。色は `horizon-color` と同じなので、
+夜側では白く霞まず暗くなる。
 
 ### #R215 補足（レイヤーの窓は汎用凡例ひとつ／海岸線は呼び出し側の解像度／大圏の立体／Wikidata の分割）
 

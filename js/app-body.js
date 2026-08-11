@@ -1195,11 +1195,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   /* (#R195) the held 10 m country geometry (js/countries-ui.js) reaches the renderer HERE — the one
      moment something is about to draw it. Flushed before the layers are shown, so the first frame
-     with Countries(info) on already carries the fine outline rather than the 110 m stand-in. */
-  window._imFlushCountryGeo=function(){ try{
+     with Countries(info) on already carries the fine outline rather than the 110 m stand-in. ⚠⚠ (#R216) `force` — «about to draw it» was only ever the Countries tab, so every choropleth painted that stand-in under the 10 m border line. setSourceData CLEARS FEATURE STATE: flush BEFORE the paint, and repaint when a later one lands (js/world-packs.js hiResCountries). DEV-NOTES #R216 §4. */
+  window._imFlushCountryGeo=function(force){ try{
     const hi=window._imCountryGeoPending; if(!hi) return false;
     if(!(GE().hasRenderer()&&GE().layers.hasSource('countries'))) return false;
-    if(!countryInfoOn) return false;
+    if(!(force===true||countryInfoOn)) return false;
     GE().layers.setSourceData('countries',hi); window._imCountryGeoPending=null; return true;
   }catch(_){ return false; } };
   function applyCountryVisibility(){ if(!GE().hasRenderer()||!GE().layers.has('country-fill'))return; const v=countryInfoOn?'visible':'none';
@@ -4346,7 +4346,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      DOM APIs (no innerHTML/template literals → no CSS-back-tick risk). */
   window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.industryWeb(IM_HOST);   /* (#R213) the industry ownership web — js/industry-web.js. AFTER worldPacks: it borrows that module's panel/row toolkit. */
+  window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

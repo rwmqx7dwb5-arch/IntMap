@@ -133,7 +133,21 @@ test('R196 ③b the sky is set for EVERY basemap, and set3D no longer fights it'
   assert.match(sky, /'sky-horizon-blend':_horizonBlend\(\)/, 'the atmosphere band is declared');
   assert.match(sky, /function _horizonBlend\(\)\{\s*const h=Math\.max\(0,_eyeAltM\(\)\);\s*if\(!\(h>0\)\) return 0\.55;/,
     'and at ground level it is still the 0.55 #R196 measured');
-  assert.match(sky, /'fog-ground-blend':1/, 'no ground fog on the map either');
+  /* ⚠ (#R216) SUPERSEDED, DELIBERATELY. #R196 pinned the fog OFF because it was matching a Cesium
+     capture, and Cesium's SkyAtmosphere draws no ground haze. #R216 was asked to make the atmosphere
+     「もっとリアルで忠実で」 and put aerial perspective back: it is the same Rayleigh scattering seen
+     along a horizontal path, and with it off the terrain met the horizon at a hard line. What #R196
+     was actually protecting — that no white wash covers the middle of the map (#R174's complaint about
+     the flight simulator) — is kept as a FLOOR on `fog-ground-blend`, and the fog is off entirely above
+     the atmosphere, which is where Cesium's capture and this model agree again. */
+  assert.match(sky, /'fog-ground-blend':fg\.ground/, 'the fog is not driven by the aerial-perspective term');
+  assert.match(sky, /function _aerial\(\)/, 'there is no aerial-perspective term');
+  assert.match(sky, /if\(h>=80000\)\s*return\s*\{\s*ground:1,\s*horizon:0\s*\}/,
+    'haze is drawn from above the atmosphere, where none is in the line of sight');
+  {
+    const m = /ground:\+\(1-([\d.]+)\*f\)/.exec(sky);
+    assert.ok(m && 1 - parseFloat(m[1]) >= 0.6, 'the haze reaches too far in from the horizon (#R174)');
+  }
   /* the horizon colour follows the Sun, so it cannot be a constant */
   assert.match(sky, /function _horizonColour\(\)/);
   assert.match(sky, /function _sunElevAtCentre\(\)/);

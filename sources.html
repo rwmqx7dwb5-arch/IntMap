@@ -75,7 +75,7 @@
 <header>
   <a class="back" href="./index.html">&#8592; <span data-l="ja">地図に戻る</span><span data-l="en">Back to the map</span></a>
   <h1><span data-l="ja">データ出典</span><span data-l="en">Data sources</span></h1>
-  <p class="sub"><span data-l="ja">IntMap が表示する数字・線・画像が<b>どこから来たか</b>の全一覧です。何をどう計算しているかは <a href="./science.html">科学的根拠とロジック</a> のページにあります。</span><span data-l="en">Every number, line and image IntMap shows, and <b>where it came from</b>. What is computed from them is on the <a href="./science.html">Science &amp; logic</a> page.</span></p>
+  <p class="sub"><span data-l="ja">IntMap に表示される数値・線・画像が<b>どこから提供されたもの</b>なのかをまとめたページです。それらを使ってどのような計算を行っているかは、<a href="./science.html">科学的根拠とロジック</a> のページをご覧ください。</span><span data-l="en">Every number, line and image IntMap shows, and <b>where it came from</b>. What is computed from them is on the <a href="./science.html">Science &amp; logic</a> page.</span></p>
   <div class="langbar">
     <button id="b-ja" aria-pressed="true" onclick="setLang('ja')">日本語</button>
     <button id="b-en" aria-pressed="false" onclick="setLang('en')">English</button>
@@ -86,114 +86,114 @@
 <nav>
   <ol>
     <li><a href="#what"><span data-l="ja">このページについて</span><span data-l="en">About this page</span></a></li>
-    <li><a href="#live"><span data-l="ja">いつの数字なのか</span><span data-l="en">How current the numbers are</span></a></li>
-    <li><a href="#privacy"><span data-l="ja">地図を開くと何が起きるか</span><span data-l="en">What happens when you open a layer</span></a></li>
-    <li><a href="#licence"><span data-l="ja">作った人たちと利用条件</span><span data-l="en">Who made this data, and the terms</span></a></li>
-    <li><a href="#limits"><span data-l="ja">出典があっても分からないこと</span><span data-l="en">What a source does not tell you</span></a></li>
+    <li><a href="#live"><span data-l="ja">データの新しさについて</span><span data-l="en">How current the numbers are</span></a></li>
+    <li><a href="#privacy"><span data-l="ja">レイヤーを表示したときの通信について</span><span data-l="en">What happens when you open a layer</span></a></li>
+    <li><a href="#licence"><span data-l="ja">提供元と利用条件</span><span data-l="en">Who made this data, and the terms</span></a></li>
+    <li><a href="#limits"><span data-l="ja">出典だけでは分からないこと</span><span data-l="en">What a source does not tell you</span></a></li>
     <li><a href="#list"><span data-l="ja">分野別の一覧</span><span data-l="en">The list, by subject</span></a></li>
   </ol>
 </nav>
 
 <section id="what">
   <h2><span data-l="ja">1. このページについて</span><span data-l="en">1. About this page</span></h2>
-  <p class="tagline"><span data-l="ja">IntMap に出てくる数字・線・画像は、すべてどこかの誰かが測って公開したものです。その「誰か」の一覧です。</span>
-     <span data-l="en">Every number, line and image in IntMap was measured and published by somebody. This page is the list of who.</span></p>
-  <p><span data-l="ja">IntMap 自身はデータを作っていません。気象庁や NASA、国連の機関、大学、OpenStreetMap の有志などが公開しているデータを集めて、地図の上に重ねて見せています。ですから、画面の数字を信じてよいかどうかは、元を公開している組織を見れば判断できます。そのためのページです。</span>
-     <span data-l="en">IntMap does not produce data. It collects what meteorological agencies, NASA, UN bodies, universities and the OpenStreetMap community already publish, and draws it on one map. So whether a number on screen deserves your trust is a question about the organisation that published it &mdash; and this page is how you find out which one that is.</span></p>
-  <p><span data-l="ja">下の一覧は、アプリが実際に使っている提供元そのものです。レイヤーが増えればここも増えます。探しているものがあるときは、レイヤー名（例：「潮汐」「作物」）や機関名で絞り込めます。</span>
-     <span data-l="en">The list below is the providers the app actually uses; it grows when the map does. If you are looking for something in particular, filter it by the layer's name (&ldquo;tides&rdquo;, &ldquo;crops&rdquo;) or by the organisation.</span></p>
+  <p class="tagline"><span data-l="ja">IntMap に表示される情報は、いずれも外部の機関や団体が観測・公開しているデータです。このページでは、その提供元を一覧にしています。</span>
+     <span data-l="en">Everything IntMap shows was measured and published by an outside organisation. This page lists those organisations.</span></p>
+  <p><span data-l="ja">IntMap 自体はデータを作成していません。気象庁、NASA、国連機関、大学、OpenStreetMap のコミュニティなどが公開しているデータを取得し、1 つの地図上にまとめて表示しています。表示されている内容がどの程度信頼できるかは、そのデータを公開している組織によって決まります。このページは、それを確認していただくためのものです。</span>
+     <span data-l="en">IntMap does not produce any data of its own. It fetches what meteorological agencies, NASA, UN bodies, universities and the OpenStreetMap community publish, and draws it on a single map. How much a figure on screen can be relied on depends on the organisation that published it, and this page is where you can check which organisation that is.</span></p>
+  <p><span data-l="ja">下の一覧は、アプリが実際に利用している提供元をそのまま掲載しています。レイヤーが追加されると、この一覧にも追加されます。目的の項目を探すときは、レイヤー名（例：「潮汐」「作物」）や機関名で絞り込むことができます。</span>
+     <span data-l="en">The list below shows the providers the app actually uses, and it grows as the map does. To find something specific, filter by a layer name (&ldquo;tides&rdquo;, &ldquo;crops&rdquo;) or by the organisation.</span></p>
 </section>
 
 <section id="live">
-  <h2><span data-l="ja">2. いつの数字なのか</span><span data-l="en">2. How current the numbers are</span></h2>
-  <p class="tagline"><span data-l="ja">「今」と「アプリに入っているもの」は違います。そしてレイヤーごとに違います。</span>
-     <span data-l="en">&ldquo;Now&rdquo; and &ldquo;what is in the app&rdquo; are not the same thing, and the gap differs by layer.</span></p>
+  <h2><span data-l="ja">2. データの新しさについて</span><span data-l="en">2. How current the numbers are</span></h2>
+  <p class="tagline"><span data-l="ja">表示されているデータがいつの時点のものかは、レイヤーによって異なります。</span>
+     <span data-l="en">How recent the data is depends on the layer. The table below shows which moment each kind of layer represents.</span></p>
   <table>
     <tr><th><span data-l="ja">種類</span><span data-l="en">Kind</span></th>
-        <th><span data-l="ja">いつの数字か</span><span data-l="en">Which moment you are seeing</span></th>
+        <th><span data-l="ja">データの時点</span><span data-l="en">Which moment you are seeing</span></th>
         <th><span data-l="ja">例</span><span data-l="en">Examples</span></th></tr>
-    <tr><td><span data-l="ja">その場で取得</span><span data-l="en">Fetched as you look</span></td>
-        <td><span data-l="ja">レイヤーを開いた瞬間のもの。地震は数分、警報は約5分ごとに取り直します</span>
+    <tr><td><span data-l="ja">表示時に取得</span><span data-l="en">Fetched as you look</span></td>
+        <td><span data-l="ja">レイヤーを表示した時点のデータです。地震は数分ごと、警報は約 5 分ごとに取得し直します</span>
             <span data-l="en">The moment you switched it on. Earthquakes update in minutes; warnings are re-read about every five</span></td>
         <td><span data-l="ja">地震・警報・天気・航空機・衛星画像</span><span data-l="en">Earthquakes, warnings, weather, aircraft, satellite imagery</span></td></tr>
     <tr><td><span data-l="ja">年次の統計</span><span data-l="en">Annual statistics</span></td>
-        <td><span data-l="ja">公表済みの最新年。画面には必ずその年を出します</span>
+        <td><span data-l="ja">公表されている最新の年のデータです。対象年は画面に必ず表示します</span>
             <span data-l="en">The most recent published year, and the app always prints which year that is</span></td>
         <td><span data-l="ja">貿易・電力構成・人口・経済指標</span><span data-l="en">Trade, energy mix, population, economic indicators</span></td></tr>
     <tr><td><span data-l="ja">基準年の観測</span><span data-l="en">A reference year</span></td>
-        <td><span data-l="ja">決められた年の観測。その後の変化は入っていません</span>
+        <td><span data-l="ja">定められた基準年の観測データです。それ以降の変化は含まれません</span>
             <span data-l="en">An observation of a stated year; nothing after it is included</span></td>
         <td><span data-l="ja">作物の栽培（2000 / 2010）・気候区分（1901–2020）</span><span data-l="en">Crop cultivation (2000, 2010), climate zones (1901&ndash;2020)</span></td></tr>
     <tr><td><span data-l="ja">アプリに同梱</span><span data-l="en">Shipped with the app</span></td>
-        <td><span data-l="ja">更新時に取り込んだもの。通信がなくても同じ答えが出ます</span>
+        <td><span data-l="ja">アプリの更新時に取り込んだデータです。通信できない状態でも同じ内容を表示します</span>
             <span data-l="en">Captured when the app was last updated; the same answer with no network at all</span></td>
         <td><span data-l="ja">国境線・海岸線・海底地形・星のカタログ・惑星の画像・衛星の軌道要素</span>
             <span data-l="en">Borders, coastlines, sea floor, the star catalogue, planet textures, satellite orbital elements</span></td></tr>
   </table>
-  <p class="lim"><b data-l="ja">ここは注意</b><b data-l="en">Worth knowing</b>
-     <span data-l="ja">衛星の軌道要素のように、古くなるほど少しずつずれていくデータがあります。そういうものは「いつのデータか」をパネルに出しています。古いものを新しいふりをして見せることはしません。</span>
-     <span data-l="en">Some data drifts as it ages &mdash; satellite orbits most of all. Where that is true the panel prints the date the data was taken, and nothing old is presented as if it were current.</span></p>
+  <p class="lim"><b data-l="ja">ご注意ください</b><b data-l="en">Worth knowing</b>
+     <span data-l="ja">データの中には、時間が経つほど実際の値からずれていくものがあります（人工衛星の軌道要素などが該当します）。そうしたデータについては、パネルに取得日時を表示しています。古いデータを最新のものとして表示することはありません。</span>
+     <span data-l="en">Some data drifts away from reality as it ages; satellite orbital elements are the clearest example. For those layers the panel shows the date the data was captured. Older data is never presented as if it were current.</span></p>
 </section>
 
 <section id="privacy">
-  <h2><span data-l="ja">3. 地図を開くと何が起きるか</span><span data-l="en">3. What happens when you open a layer</span></h2>
-  <p class="tagline"><span data-l="ja">あなたのブラウザが、提供元へ直接取りにいきます。</span>
-     <span data-l="en">Your browser goes to the provider itself.</span></p>
-  <p><span data-l="ja">IntMap は途中に中継サーバーをほとんど置いていません。地図タイルも、天気も、地震も、あなたの端末から提供元へ直接届きます。そのため提供元の記録には <b>IP アドレスと、要求した地図の区画（つまり、おおよそどこを見ていたか）</b> が残ります。これはどの地図アプリでも同じですが、書いておきます。</span>
-     <span data-l="en">IntMap proxies almost nothing: tiles, weather, earthquakes and the rest travel from your device to the provider. Their logs will therefore contain <b>your IP address and which map squares you asked for</b> &mdash; roughly, where you were looking. This is true of every map application; it is said here rather than left implicit.</span></p>
-  <p><span data-l="ja">現在地は端末の中だけで使います。座標が外に出るのは、検索・経路探索・天気など、あなたがその場所について何かを頼んだときだけです。アカウント・AI・モニターの扱いは、アプリ内の「プライバシー」にあります。</span>
-     <span data-l="en">Your location stays on the device. Coordinates leave it only where you ask something about a place &mdash; a search, a route, a forecast. Accounts, AI and monitors are described in the app's own Privacy dialog.</span></p>
+  <h2><span data-l="ja">3. レイヤーを表示したときの通信について</span><span data-l="en">3. What happens when you open a layer</span></h2>
+  <p class="tagline"><span data-l="ja">データはお使いのブラウザから、提供元へ直接取得しにいきます。</span>
+     <span data-l="en">Your browser fetches the data from the provider directly.</span></p>
+  <p><span data-l="ja">IntMap は中継サーバーをほとんど使用していません。地図タイル、気象、地震などのデータは、お使いの端末から提供元へ直接リクエストされます。そのため提供元のアクセス記録には、<b>IP アドレスと、リクエストした地図の区画（おおよそどのあたりを表示していたか）</b> が残ります。これは一般的な地図アプリと同様ですが、念のため記載しています。</span>
+     <span data-l="en">IntMap uses almost no relay servers: tiles, weather, earthquakes and the rest are requested by your device from the provider directly. Their access logs will therefore contain <b>your IP address and which map tiles you requested</b>, which indicates roughly the area you were viewing. This is the same as in other map applications, but it is stated here for clarity.</span></p>
+  <p><span data-l="ja">現在地の情報は端末内でのみ使用します。座標が外部へ送信されるのは、検索・経路探索・天気の取得など、その地点について操作を行ったときだけです。アカウント・AI 機能・モニター機能の取り扱いについては、アプリ内の「プライバシー」をご覧ください。</span>
+     <span data-l="en">Your location is used only on your device. Coordinates are sent out only when you ask something about a place, such as a search, a route or a forecast. Accounts, AI features and monitors are covered in the app&rsquo;s own Privacy dialog.</span></p>
 </section>
 
 <section id="licence">
-  <h2><span data-l="ja">4. 作った人たちと利用条件</span><span data-l="en">4. Who made this data, and the terms</span></h2>
-  <p class="tagline"><span data-l="ja">帰属表示は義務であり、同時に「この数字は誰の仕事か」を読み手に返すためのものです。</span>
-     <span data-l="en">Attribution is an obligation &mdash; and also how you get to know whose work a number is.</span></p>
+  <h2><span data-l="ja">4. 提供元と利用条件</span><span data-l="en">4. Who made this data, and the terms</span></h2>
+  <p class="tagline"><span data-l="ja">出典の表示は各ライセンス上の義務であり、そのデータが誰の作業によるものかを示すものでもあります。</span>
+     <span data-l="en">Attribution is required by these licences, and it is also how you can tell whose work a figure is.</span></p>
   <ul>
-    <li><span data-l="ja"><b>OpenStreetMap</b>（ODbL 1.0）&mdash; 世界中のボランティアが描いた地図。道・鉄道・建物・店・行政境界と、経路探索の土台。地図に常時表示しています。</span>
-        <span data-l="en"><b>OpenStreetMap</b> (ODbL 1.0) &mdash; the map volunteers drew: roads, rail, buildings, places, administrative boundaries, and the base for routing. Credited on the map at all times.</span></li>
-    <li><span data-l="ja"><b>米国政府の成果物</b>（NASA・NOAA・USGS・NWS ほか）&mdash; 原則パブリックドメイン。衛星画像、地震、夜間光、惑星の位置など。（NASA のロゴ・識別標は別扱いです。）</span>
+    <li><span data-l="ja"><b>OpenStreetMap</b>（ODbL 1.0）&mdash; 世界中のボランティアが作成している地図データです。道路・鉄道・建物・施設・行政境界のほか、経路探索の基礎データとして使用しています。地図上に常時クレジットを表示しています。</span>
+        <span data-l="en"><b>OpenStreetMap</b> (ODbL 1.0) &mdash; the map built by volunteers: roads, rail, buildings, places and administrative boundaries, and the base data for routing. Credited on the map at all times.</span></li>
+    <li><span data-l="ja"><b>米国政府の成果物</b>（NASA・NOAA・USGS・NWS ほか）&mdash; 原則としてパブリックドメインです。衛星画像、地震、夜間光、惑星の位置などに使用しています（NASA のロゴおよび識別標はこれに含まれません）。</span>
         <span data-l="en"><b>US Government works</b> (NASA, NOAA, USGS, NWS &hellip;) &mdash; public domain as a rule: imagery, earthquakes, city lights, planetary positions. NASA's logos and insignia are not.</span></li>
-    <li><span data-l="ja"><b>気象庁</b>ほか各国の気象機関 &mdash; 警報・注意報は発表した機関のものをそのまま表示し、どの機関の発表かを必ず名前で出します。</span>
+    <li><span data-l="ja"><b>気象庁</b>ほか各国の気象機関 &mdash; 警報・注意報は発表元の内容をそのまま表示し、どの機関による発表かを必ず明記しています。</span>
         <span data-l="en"><b>National weather agencies</b> &mdash; warnings are shown as the issuing agency published them, and the agency is always named.</span></li>
-    <li><span data-l="ja"><b>Natural Earth</b> &mdash; パブリックドメインの国境・海岸線。</span>
+    <li><span data-l="ja"><b>Natural Earth</b> &mdash; パブリックドメインの国境線・海岸線データです。</span>
         <span data-l="en"><b>Natural Earth</b> &mdash; public-domain borders and coastlines.</span></li>
-    <li><span data-l="ja"><b>Our World in Data</b>（CC BY 4.0）&mdash; 電力・エネルギー・作物などの統計。元データの作成元（Ember、Energy Institute、FAO）も併記します。</span>
+    <li><span data-l="ja"><b>Our World in Data</b>（CC BY 4.0）&mdash; 電力・エネルギー・作物などの統計データです。元データの作成元（Ember、Energy Institute、FAO）も併せて表示しています。</span>
         <span data-l="en"><b>Our World in Data</b> (CC BY 4.0) &mdash; electricity, energy and crop statistics, with the upstream compiler (Ember, the Energy Institute, FAO) named alongside.</span></li>
-    <li><span data-l="ja"><b>世界銀行</b>・<b>FAO</b>・<b>Wikipedia / Wikidata</b> &mdash; 各提供元の条件に従い、使っているパネルで名前とリンクを出しています。</span>
+    <li><span data-l="ja"><b>世界銀行</b>・<b>FAO</b>・<b>Wikipedia / Wikidata</b> &mdash; 各提供元の利用条件に従い、使用しているパネル上に名称とリンクを表示しています。</span>
         <span data-l="en"><b>The World Bank</b>, <b>FAO</b>, <b>Wikipedia / Wikidata</b> &mdash; under each provider's own terms, named in the panel that uses them.</span></li>
   </ul>
-  <p class="src"><span data-l="ja">一覧のリンク先は提供元の公式ページです。ライセンスの正文はそこにあります。ここに書いたのは要約であり、正文に優先しません。</span>
-     <span data-l="en">Each entry links to the provider's own page, which is where the licence text lives. The summaries here are summaries and do not override it.</span></p>
+  <p class="src"><span data-l="ja">一覧の各項目は提供元の公式ページにリンクしています。ライセンスの正式な条文はそちらをご確認ください。このページの記載は要約であり、正式な条文に優先するものではありません。</span>
+     <span data-l="en">Each entry links to the provider&rsquo;s own page, where the full licence text can be found. The descriptions here are summaries and do not take precedence over that text.</span></p>
 </section>
 
 <section id="limits">
-  <h2><span data-l="ja">5. 出典があっても分からないこと</span><span data-l="en">5. What a source does not tell you</span></h2>
-  <p class="tagline"><span data-l="ja">出典があることは、正しいことでも、最新であることでも、あなたの場所に当てはまることでもありません。</span>
-     <span data-l="en">Having a source is not the same as being right, being current, or applying to where you are.</span></p>
+  <h2><span data-l="ja">5. 出典だけでは分からないこと</span><span data-l="en">5. What a source does not tell you</span></h2>
+  <p class="tagline"><span data-l="ja">出典が明示されていても、その内容が正確であること、最新であること、お使いの地点に当てはまることまでは保証されません。</span>
+     <span data-l="en">A stated source does not by itself mean the data is accurate, current, or applicable to your own location.</span></p>
   <ul>
-    <li><span data-l="ja"><b>国の合計と、場所は別の問いです。</b> 国別の統計を国の形に塗っても、その国のどこでそうなのかは分かりません。色は国境で止まりますが、現実はそこで止まりません。</span>
-        <span data-l="en"><b>A national total is not a place.</b> A country-level statistic painted across a country says nothing about where inside it the number comes from &mdash; the colour stops at the border, the phenomenon does not.</span></li>
-    <li><span data-l="ja"><b>フィードのない国は「ない」と言葉で書きます。</b> 何も塗られていない地図は「警報が出ていない」という意味ではありません。</span>
-        <span data-l="en"><b>Where there is no feed, the app says so in words.</b> An empty map is never a statement that nothing is in force.</span></li>
-    <li><span data-l="ja"><b>シミュレーションは出典ではありません。</b> 地震・津波・浸水・日照などの結果は、この一覧のデータを入力にした<b>計算結果</b>です。式と仮定と限界は <a href="./science.html">ロジック解説</a> にあります。</span>
-        <span data-l="en"><b>A simulation is not a source.</b> The earthquake, tsunami, flood and sunlight answers are computed from the data listed here; the equations, assumptions and limits are on the <a href="./science.html">Science &amp; logic</a> page.</span></li>
-    <li><span data-l="ja"><b>緊急時は公的機関の発表に従ってください。</b> このアプリの表示は参考です。</span>
-        <span data-l="en"><b>In an emergency, follow the official authorities.</b> This application is for reference.</span></li>
+    <li><span data-l="ja"><b>国全体の統計は、国内の場所ごとの値ではありません。</b> 国別統計を国の形に塗り分けても、その国のどこがそうなのかまでは分かりません。塗り分けは国境で切り替わりますが、実際の現象は国境で切り替わるわけではありません。</span>
+        <span data-l="en"><b>A national total is not a local value.</b> A country-level statistic painted across a country does not say where inside it the figure comes from. The shading changes at the border; the phenomenon it describes usually does not.</span></li>
+    <li><span data-l="ja"><b>データの提供がない国については、その旨を文章で表示します。</b> 何も表示されていないことは、「警報が出ていない」という意味ではありません。</span>
+        <span data-l="en"><b>Where no feed is available, the app says so in words.</b> An empty map is not a statement that no warnings are in force.</span></li>
+    <li><span data-l="ja"><b>シミュレーションの結果は出典データではありません。</b> 地震・津波・浸水・日照などの結果は、この一覧のデータをもとにした<b>計算結果</b>です。計算式・前提・適用範囲については <a href="./science.html">科学的根拠とロジック</a> をご覧ください。</span>
+        <span data-l="en"><b>A simulation result is not source data.</b> The earthquake, tsunami, flood and sunlight results are computed from the data listed here. The equations, assumptions and limits are on the <a href="./science.html">Science &amp; logic</a> page.</span></li>
+    <li><span data-l="ja"><b>緊急時には、必ず公的機関の発表に従ってください。</b> このアプリの表示は参考情報です。</span>
+        <span data-l="en"><b>In an emergency, always follow the official authorities.</b> What this application shows is for reference only.</span></li>
   </ul>
 </section>
 
 <section id="list">
   <h2><span data-l="ja">6. 分野別の一覧</span><span data-l="en">6. The list, by subject</span><span class="count" id="src-count"></span></h2>
-  <p class="tagline"><span data-l="ja">1件 = 1提供元。名前と、IntMap のどこで使っているかと、公式ページへのリンクです。</span>
-     <span data-l="en">One entry = one provider: its name, where in IntMap it is used, and a link to its own page.</span></p>
+  <p class="tagline"><span data-l="ja">1 件が 1 つの提供元です。名称、IntMap での使用箇所、公式ページへのリンクを掲載しています。</span>
+     <span data-l="en">Each entry is one provider, with its name, where IntMap uses it, and a link to its own page.</span></p>
   <input class="filter" id="src-filter" type="search" placeholder="&#26908;&#32034; / filter — 地震, tides, NASA…">
   <div id="src-groups"><p class="empty" data-l="ja">読み込んでいます…</p><p class="empty" data-l="en">Loading…</p></div>
 </section>
 
 <footer>
-  <p><span data-l="ja">このページは<b>データの出どころ</b>の一覧です。それを使って何を計算しているかは <a href="./science.html">科学的根拠とロジック</a> にあります。<br>誤りを見つけた場合は、アプリ内のフィードバックからお知らせください。</span>
-     <span data-l="en">This page lists <b>sources</b>. The methods are on the <a href="./science.html">Science &amp; logic</a> page.<br>If you find an error here, please use the in-app feedback.</span></p>
+  <p><span data-l="ja">このページは<b>データの提供元</b>の一覧です。それらを使ってどのような計算を行っているかは <a href="./science.html">科学的根拠とロジック</a> をご覧ください。<br>記載に誤りを見つけた場合は、アプリ内のフィードバックからお知らせください。</span>
+     <span data-l="en">This page lists the <b>data providers</b>. How that data is used in calculations is on the <a href="./science.html">Science &amp; logic</a> page.<br>If you find an error on this page, please let us know through the in-app feedback form.</span></p>
   <p><a class="back" href="./index.html">&#8592; <span data-l="ja">地図に戻る</span><span data-l="en">Back to the map</span></a></p>
 </footer>
 </div>
@@ -259,7 +259,7 @@
              + '<a class="u" href="' + esc(s.u) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
       });
     });
-    host.innerHTML = out || ('<p class="empty">' + (ja ? '該当する出典はありません。' : 'No source matches that filter.') + '</p>');
+    host.innerHTML = out || ('<p class="empty">' + (ja ? '条件に一致する提供元はありません。' : 'No source matches that filter.') + '</p>');
   }
   (function () {
     var saved = null;
