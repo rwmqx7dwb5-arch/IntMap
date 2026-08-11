@@ -77,10 +77,25 @@ window.IntMapModules.oceanCurrents=function(HOST){
         c.moveTo(0,-26); c.lineTo(13,4); c.lineTo(4.5,4); c.lineTo(4.5,26);
         c.lineTo(-4.5,26); c.lineTo(-4.5,4); c.lineTo(-13,4); c.closePath();
         c.fillStyle='#ffffff'; c.fill();
-        c.lineWidth=2.6; c.strokeStyle='rgba(0,0,0,0.55)'; c.stroke();
-        const d=c.getImageData(-S/2,-S/2,S,S);
-        GE().layers.addImage&&GE().layers.addImage('oc-arrow-img',{width:S,height:S,data:new Uint8Array(d.data.buffer)},{sdf:true});
-        iconDone=true;
+        c.lineWidth=2.6; c.strokeStyle='#ffffff'; c.stroke();
+        /* ⚠ `getImageData` IS NOT TRANSFORMED. It reads raw bitmap pixels, so asking for
+           (−S/2, −S/2) after `translate(S/2, S/2)` reads from outside the canvas and hands back a
+           fully TRANSPARENT block — which registers happily and then draws nothing at all. Measured:
+           the layer was `visible` with 18 features and the map showed only the speed labels.
+           The shape is already centred BY the translate; the read starts at the origin.
+           ⚠ SDF uses the ALPHA channel only, which is what lets one image serve warm, cold and
+           neutral through `icon-color` — so the outline is drawn in white too (an RGB stroke would
+           be discarded, and a transparent one would eat into the silhouette). */
+        const d=c.getImageData(0,0,S,S);
+        /* ⚠ IT IS `scene`, NOT `layers`. The renderer contract puts images beside the sky and the
+           terrain (js/geo-engine.js), and `GE().layers.addImage` is simply undefined — a TypeError
+           that `ensureIcon`'s own catch swallowed, leaving a symbol layer whose `icon-image` names
+           an image nobody registered. MEASURED: the layer was `visible` with 37 features and
+           `queryRenderedFeatures` returned **0**, with only the speed labels on screen. Same class
+           of defect as this round's `layers.setData` — a plausible member name on the wrong object. */
+        if(!GE().scene.hasImage('oc-arrow-img'))
+          GE().scene.addImage('oc-arrow-img',{width:S,height:S,data:new Uint8Array(d.data.buffer)},{sdf:true});
+        iconDone=GE().scene.hasImage('oc-arrow-img');
       }catch(_){ iconDone=false; }
       return iconDone; }
 

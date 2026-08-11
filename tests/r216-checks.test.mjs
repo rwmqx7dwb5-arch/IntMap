@@ -191,6 +191,20 @@ test('⑪ the ocean-current layer ships no currents of its own', () => {
   assert.match(s, /wd:Q129558/, 'the names do not come from Wikidata');
   assert.equal(/Gulf Stream|Kuroshio|黒潮|メキシコ湾流/.test(code('js/ocean-currents.js')), false, 'a current name is hard-coded in the module');
 });
+test('⑪ …and its arrow image is registered on the object that actually has addImage', () => {
+  const s = code('js/ocean-currents.js');
+  /* ⚠ THE SAME CLASS AS ③: a plausible member name on the wrong object. `GE().layers.addImage` is
+     undefined — images live on `scene`, beside the sky and the terrain (js/geo-engine.js) — and the
+     TypeError was swallowed by ensureIcon's own catch, leaving a symbol layer whose `icon-image`
+     named an image nobody had registered. MEASURED: layer `visible`, 37 features,
+     `queryRenderedFeatures` = 0, and only the speed labels on the map. */
+  assert.equal(/layers\.addImage/.test(s), false, 'addImage is on scene, not layers');
+  assert.match(s, /GE\(\)\.scene\.addImage\('oc-arrow-img'/, 'the arrow image is never registered');
+  /* ⚠ …and getImageData is NOT transformed: reading at (−S/2, −S/2) after a translate returns a
+     fully transparent block, which registers happily and then draws nothing at all. */
+  assert.match(s, /getImageData\(0,0,S,S\)/, 'the icon is read from outside the canvas again');
+  assert.match(s, /iconDone=GE\(\)\.scene\.hasImage\('oc-arrow-img'\)/, 'a failed registration is not detected');
+});
 test('⑪ …and both of its sources are in the registry', () => {
   const r = read('js/reference-data.js');
   assert.match(r, /Open-Meteo Marine/, 'the marine model is not registered');
