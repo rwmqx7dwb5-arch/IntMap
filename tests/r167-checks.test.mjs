@@ -81,7 +81,8 @@ const ORDER = [
 
 /* The 27 tables. */
 const TABLES = ['SAT_PROVIDERS', '_ORG_GZ', '_DEMONYM_GZ', 'sourceDict', '_DERU_GZ', '_DERU_DEM', '_ES_GZ', '_ES_DEM',
-  'geoLayersDB', 'GEO_LABEL_JP', 'GDP', 'HDI', 'DEM', 'MILSPEND', 'LIFE', 'INTERNET', 'CAPITAL', 'CURRENCY', 'LANGS',
+  /* (#R225) geoLayersDB + GEO_LABEL_JP removed with the geopolitics layers */
+  'GDP', 'HDI', 'DEM', 'MILSPEND', 'LIFE', 'INTERNET', 'CAPITAL', 'CURRENCY', 'LANGS',
   'RADIUS_PRESETS', 'CO_SECTORS', 'CO_CC', '_DASH_BADGE', 'NEWS_EDITIONS_MULTI', 'NEWS_COUNTRY_EDITIONS',
   'COMM_CATEGORIES', 'NEWS_COUNTRY_FEEDS'];
 

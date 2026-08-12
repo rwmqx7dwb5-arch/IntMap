@@ -120,7 +120,10 @@ export function makeSessionTabs(HOST, CTX) {
          submarine cables start ON, absence means the user switched one off, and re-checking it on
          every reload would make it impossible to keep off. Only the default-on ids are treated this
          way — for every other layer "absent" still means "was already off". */
-      const defOff=(window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0); let offTries=0;
+      /* (#R225) …and the set is `IntMapDefaultOn` — every id the HTML ships CHECKED, not only the two
+         thematic ones. See the note by that list in js/data-layers.js: the base toggles were saved as
+         «off» and then restored to their HTML default, so switching one off never survived a reload. */
+      const defOff=(window.IntMapDefaultOn||window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0); let offTries=0;
       (function pollOff(){ offTries++; const left=[];
         defOff.forEach(id=>{ const cb=document.getElementById(id);
           if(cb){ if(cb.checked){ cb.__defFired=true; try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } else cb.__defFired=true; }

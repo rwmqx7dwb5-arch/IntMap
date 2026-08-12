@@ -1075,7 +1075,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       'data centers':'beta-dl-dc','datacenters':'beta-dl-dc','ai infrastructure':'beta-dl-dc',
       'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language'
     };
-    function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; try{ cb=document.querySelector('#layer-dropdown input[type=checkbox][data-layer="'+key+'"]'); }catch(_){ cb=null; } return cb||null; }
+    function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; cb=null;   /* (#R225) the `data-layer` convention retired with the geopolitics rows */ return cb||null; }
     function _labelOf(cb){ try{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } return disp.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } }
     function resolveLayer(name){ const q0=_lnorm(name); if(!q0) return null;
       /* 1) deterministic ALIAS — exact, then "… layer/overlay" stripped, then singular. */

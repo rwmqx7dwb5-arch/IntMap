@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R224';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R225';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R224';   /* (#R121) build marker — bump when verifying that 
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-12-R224';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-12-R225';   /* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -448,17 +448,15 @@ window.__imBuild='R224';   /* (#R121) build marker — bump when verifying that 
              <label class="layer-option"><input type="checkbox" id="cb-roads" checked> <span data-i18n="roadsLayer">Roads</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-rail2" checked> <span data-i18n="railLayer">Railways</span></label>
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
-             <div class="layer-group-title" data-i18n="lyrGrpGeo">Strategic geography</div>
-             <label class="layer-option"><input type="checkbox" data-layer="sahel" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ffcc00"></span> Sahel Risk Zone</label>
-             <label class="layer-option"><input type="checkbox" data-layer="islandChain1" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff9500"></span> 1st Island Chain</label>
-             <label class="layer-option"><input type="checkbox" data-layer="islandChain2" class="geo-layer-cb"> <span class="lyr-sw" style="background:#af52de"></span> 2nd Island Chain</label>
-             <label class="layer-option"><input type="checkbox" data-layer="stringOfPearls" class="geo-layer-cb"> <span class="lyr-sw" style="background:#5856d6"></span> String of Pearls</label>
-             <label class="layer-option"><input type="checkbox" data-layer="seaRoute" class="geo-layer-cb"> <span class="lyr-sw" style="background:#34c759"></span> Northern Sea Route</label>
-             <label class="layer-option"><input type="checkbox" data-layer="chokepoints" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff9500"></span> Global Chokepoints</label>
-             <div class="layer-group-title" data-i18n="lyrGrpStrat">Strategic networks</div>
-             <label class="layer-option"><input type="checkbox" data-layer="bri" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e8590c"></span> Belt &amp; Road (BRI)</label>
-             <label class="layer-option"><input type="checkbox" data-layer="pipelines" class="geo-layer-cb"> <span class="lyr-sw" style="background:#c2271f"></span> Major Pipelines</label>
-             <label class="layer-option"><input type="checkbox" data-layer="nuclear" class="geo-layer-cb"> <span class="lyr-sw" style="background:#9b59b6"></span> Nuclear Sites</label>
+             <!-- ⚠⚠ (#R225) THE NINE GEOPOLITICS ROWS WERE HERE AND THEY ARE GONE.
+                  「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。ふざけるな。」 — confirmed as
+                  「レイヤー自体を削除してほしい」. Strategic geography (Sahel / 1st / 2nd Island Chain /
+                  String of Pearls / Northern Sea Route / Global Chokepoints) and Strategic networks
+                  (Belt &amp; Road / Major Pipelines / Nuclear Sites) are deleted: the rows here, their
+                  geometry in js/tables.js (geoLayersDB), their labels, their previews and their
+                  favourites. They were the app’s ONLY `.geo-layer-cb` checkboxes, so that whole
+                  convention retires with them — see the note by `activeLayers()` in js/map-ui.js for
+                  why a retired key must also stop being READ, not merely stop being written. -->
           </div>
         </div>
       </div>
