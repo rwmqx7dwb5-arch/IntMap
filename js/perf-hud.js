@@ -19,18 +19,20 @@
  *    · `map._render` median / p90 — #R221's lesson: the FRAME INTERVAL LIES in a throttled tab
  *      (an empty rAF loop measured 34 ms there), so what is timed is the renderer's own call.
  *    · long tasks — where the main thread went, including work no profile of ours would attribute.
- *    · the backdrop-filter census — #R221's finding, and it has GROWN: measured on the shipped
- *      build at 375 × 812, nineteen elements covering **383 %** of the viewport when still (it was
- *      fifteen at 153 %). They are all marked and they all drop out during a move, so what this
- *      shows is the cost of the frame the gesture LANDS on.
- *    · the drawing-buffer ratio, live — because `setPixelRatio` reallocates the buffer and every
- *      framebuffer hanging off it, twice per gesture, and #R203 already suspected that reallocation
- *      costs more than the fragments it saves without being able to prove it.
+ *    · the backdrop-filter census — #R221's finding. ⚠ (#R228) ITS OWN HEADLINE NUMBER WAS WRONG:
+ *      «nineteen elements covering 383 % of the viewport» counted elements whose rect is non-zero but
+ *      which sit OFF SCREEN (the widget cards and the parked sheets). Clipped to the viewport the
+ *      honest figure is ten elements over 36 %. Measure the intersection, not the rect.
+ *    · the drawing-buffer ratio, live. ⚠ (#R229) nothing changes it during a gesture any more —
+ *      js/render-scale.js is deleted — so this now reports a constant, which is the point.
  *
- *  ══ AND THREE SWITCHES, BECAUSE A/B ON THE DEVICE IS THE ONLY HONEST TEST ═══════════════════════
- *  Tapping a row toggles the suspect it names, live, without a reload — render scale, the frosted
- *  glass, and every app-owned layer. #R206's rule: alternate, never A-then-B-then-conclude. The HUD
- *  keeps a per-setting median so the two readings sit next to each other on screen.
+ *  ══ AND TWO SWITCHES, BECAUSE A/B ON THE DEVICE IS THE ONLY HONEST TEST ═════════════════════════
+ *  Tapping a row toggles the suspect it names, live, without a reload — the frosted glass and every
+ *  app-owned layer. #R206's rule: alternate, never A-then-B-then-conclude. The HUD keeps a
+ *  per-setting median so the two readings sit next to each other on screen.
+ *  ⚠ (#R229) THE `render-scale` SWITCH IS GONE WITH THE MODULE IT MEASURED. And note what these
+ *  switches are: a MANUAL A/B behind ?perf=1 that ships nothing. #R221 turned its finding into
+ *  automatic behaviour for every reader without asking, and that is what was removed.
  *
  *  ⚠ IT MEASURES, IT DOES NOT DECIDE. Nothing here changes what ships; the toggles live for the life
  *  of the tab and are gone on reload.
@@ -86,21 +88,18 @@ window.IntMapPerfHud = (function () {
     return census;
   }
 
-  /* ── the three switches ────────────────────────────────────────────────────────────────────── */
-  const sw = { rs: true, glass: true, layers: true };
-  const runs = {};                                       /* "rs:off" → median map._render */
-  function key() { return (sw.rs ? 'R' : 'r') + (sw.glass ? 'G' : 'g') + (sw.layers ? 'L' : 'l'); }
+  /* ── the two switches ──────────────────────────────────────────────────────────────────────── */
+  /* ⚠ (#R229) THE `render-scale` SWITCH IS GONE because js/render-scale.js is gone — it lowered the
+     map's own resolution while the camera moved, which was never agreed. This HUD only ever
+     neutralised it for a measurement; there is nothing left to neutralise.
+     ⚠ The `glass` switch stays, and it is NOT the thing that was removed: it is a manual A/B behind
+     ?perf=1 that answers «what does the frosting cost here», and it changes nothing for a reader who
+     has not opened the HUD. What #R221 did — take the frosting off by itself, during every gesture,
+     for everyone — is what is gone. */
+  const sw = { glass: true, layers: true };
+  const runs = {};                                       /* "glass:off" → median map._render */
+  function key() { return (sw.glass ? 'G' : 'g') + (sw.layers ? 'L' : 'l'); }
 
-  function setRenderScaleOn(on) {
-    sw.rs = on;
-    try {
-      const S = window.IntMapRenderScale;
-      if (!S) return;
-      /* there is no "stop" on the module, so the effect is neutralised where it lands: pin the
-         buffer at the base ratio and let its own handlers write the same number they read. */
-      if (!on) { const st = S.state && S.state(); const b = st && st.base; if (b > 0) GE().render.setRenderScale(b); }
-    } catch (_) { }
-  }
   let glassStyle = null;
   function setGlassOn(on) {
     sw.glass = on;
@@ -108,7 +107,7 @@ window.IntMapPerfHud = (function () {
       if (!on) {
         if (!glassStyle) {
           glassStyle = document.createElement('style');
-          glassStyle.textContent = '.im-glass,[class*="glass"],.m-sheet,.m-fab,.data-legend,.coord-readout,.map-search'
+          glassStyle.textContent = '[class*="glass"],.m-sheet,.m-fab,.data-legend,.coord-readout,.map-search'
             + '{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}';
           document.head.appendChild(glassStyle);
         }
@@ -152,7 +151,6 @@ window.IntMapPerfHud = (function () {
     sync(); btns.appendChild(b); return sync;
   };
   const syncs = [
-    mk('render-scale', () => sw.rs, setRenderScaleOn),
     mk('glass', () => sw.glass, setGlassOn),
     mk('app layers', () => sw.layers, setLayersOn),
   ];
