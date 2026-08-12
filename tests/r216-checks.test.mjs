@@ -258,14 +258,19 @@ test('⑪ …and both of its sources are in the registry', () => {
 /* ── ⑫ the atmosphere has air in it ─────────────────────────────────────────────────── */
 test('⑫ aerial perspective is on near the ground and off above the atmosphere', async () => {
   const s = read('js/theme-sky.js');
-  assert.match(s, /function _aerial\(\)/, 'there is no aerial-perspective term');
-  assert.match(s, /'horizon-fog-blend':fg\.horizon/, 'the sky block still hard-codes fog off');
-  assert.match(s, /'fog-ground-blend':fg\.ground/, 'the sky block still hard-codes fog off');
-  assert.match(s, /if\(h>=80000\)\s*return\s*\{\s*ground:1,\s*horizon:0\s*\}/,
-    'haze would be drawn from above the atmosphere, where there is none in the line of sight');
-  /* and it must never wash the middle of the screen — #R174's white fog */
-  const m = /ground:\+\(1-([\d.]+)\*f\)/.exec(s);
-  assert.ok(m && 1 - parseFloat(m[1]) >= 0.6, 'the haze reaches too far in from the horizon');
+  /* ⚠ (#R223) THIS ROUND REMOVED THE GROUND HAZE, AT THE READER'S EXPLICIT INSTRUCTION —
+     「衛星画像で地平線付近を白い靄で見えなくするな。クソ機能つけるな。」 (confirmed: on every
+     basemap, not only over satellite imagery). #R216's argument was right about the physics and
+     wrong about the picture: `fog-ground-blend` is WHERE ALONG THE GROUND the wash starts, so 0.62
+     put a pale curtain across the far third of the screen — over the imagery the reader opened.
+     What this test now guards is that the removal has ONE owner and cannot creep back per-altitude;
+     the rest of #R216's sky (the band above the horizon) is untouched and still asserted below. */
+  assert.match(s, /function _aerial\(\)/, 'the single owner of the pair must still exist');
+  assert.match(s, /'horizon-fog-blend':fg\.horizon/, 'the sky block reads it rather than writing literals');
+  assert.match(s, /'fog-ground-blend':fg\.ground/, 'the sky block reads it rather than writing literals');
+  assert.match(s, /function _aerial\(\)\{ return \{ ground:1, horizon:0 \}; \}/,
+    'off at every altitude, from one line');
+  assert.ok(!/ground:\+\(1-[\d.]+\*f\)/.test(s), 'no altitude ramp may bring the wash back');
 });
 
 /* ── ⑬ the intensity field does not fall back to rings ──────────────────────────────── */

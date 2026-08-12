@@ -2,6 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "intmap-preview-r223",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4243"
+      ],
+      "port": 4243,
+      "url": "http://127.0.0.1:4243"
+    },
+    {
       "name": "intmap-static",
       "runtimeExecutable": "py",
       "runtimeArgs": [

@@ -297,13 +297,66 @@ window.IntMapModules.mapReadout=function(HOST){
     for(const k of _demCache.keys()){ if(_demCache.size<=_demCap()) break;
       if(_demHold.has(k)) continue;                       /* a build is reading this one */
       const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
-  /* (#R19) Per-tile decoded pixel buffer, extracted ONCE. demElevBilinear used to call a full 256×256
-     getImageData (a ~256 KB copy) for EVERY sample — ~72,000 samples per LOS run ≈ 18 GB of memory
-     traffic, which is exactly the "Line of sightを使うとパソコンでもブラウザがフリーズ" freeze. */
-  function _demPix(cv){ if(!cv||cv==='loading') return null;
-    if(!cv.__pix){ try{ cv.__pix=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,256,256).data; }catch(e){ return null; } }
-    return cv.__pix; }
+  /* ══ ⚠⚠ (#R223) A CACHED TILE IS 65,536 ELEVATIONS, NOT A CANVAS AND AN RGBA COPY ═══════════════
+     「モバイル版がまだ劇的に遅い。…ブラウザが落ちることもある。」
+
+     #R19 decoded each tile ONCE into an RGBA buffer instead of per sample, which fixed a freeze.
+     What it left behind is what a cached tile COSTS: the <canvas> keeps its own 256×256 backing
+     store (256 kB) and `__pix` is a second 256 kB copy of the same pixels hanging off it. Half a
+     megabyte a tile — and #R221 taught the intensity field to PIN every tile it depends on, up to
+     1,600 of them (#R216's budget). That is 800 MB of retained canvas for one picture, on a device
+     whose whole tab budget may be under a gigabyte. It is the most plausible thing in this app that
+     ends in the browser closing the tab, and it is arithmetic rather than a guess.
+
+     A tile is now decoded AT LOAD into a `Float32Array(65536)` of metres and neither the canvas nor
+     the RGBA copy is kept:
+         canvas 256 kB + RGBA 256 kB  →  Float32Array 256 kB      (half, per tile)
+     ⚠ IT IS EXACT. terrarium encodes height as R·256 + G + B/256 − 32768, whose smallest step is
+     1/256 m and whose range is ±32,768 m; a float32 mantissa holds 24 bits, so every value the
+     format can express is representable without rounding. This is a storage change, not a
+     resampling one — the samplers below read the same numbers they read before.
+     ⚠ AND IT MOVES THE `getImageData` OFF THE CRITICAL PATH. It used to happen lazily, which meant
+     ALL of it happened inside `demSnapshot` — measured at 2.8–3.4 s for one continental field,
+     charged to a progress bar that had already reached 40 %. Now it happens once per tile as the
+     tile lands, i.e. inside the network wait that is going on anyway.
+     ⚠ ONE decode canvas for the whole app, reused. Creating 700 canvases to throw 700 away is the
+     other half of the allocation this removes. */
+  let _decCv=null, _decCtx=null;
+  function _decodeTile(img){
+    try{
+      if(!_decCv){ _decCv=document.createElement('canvas'); _decCv.width=256; _decCv.height=256;
+        _decCtx=_decCv.getContext('2d',{willReadFrequently:true}); }
+      if(!_decCtx) return null;
+      _decCtx.clearRect(0,0,256,256);
+      _decCtx.drawImage(img,0,0,256,256);
+      const d=_decCtx.getImageData(0,0,256,256).data;
+      const out=new Float32Array(65536);
+      for(let i=0,o=0;i<65536;i++,o+=4) out[i]=(d[o]*256+d[o+1]+d[o+2]/256)-32768;
+      return out;
+    }catch(e){ return null; }
+  }
+  /* the decoded elevations for a cache entry — a Float32Array, or null while loading / after a failure */
+  function _demPix(v){ return (v&&v!=='loading'&&v.length===65536)?v:null; }
   function _ll2tile(lng,lat,z){ const n=Math.pow(2,z); const x=(lng+180)/360*n; const lr=lat*Math.PI/180; const y=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*n; return {x,y,n}; }
+  /* ══ ⚠ (#R223) FOUR HOST NAMES FOR ONE BUCKET — THE INTENSITY FIELD IS CONNECTION-BOUND ══════════
+     「地震と津波シミュレータの計算速度を爆速にして。ただし品質は一切落とさないように。」
+
+     MEASURED on the shipped build (M7.5 over Tokyo, phone viewport): the whole field takes 15.8 s
+     and the ARITHMETIC is 0.5 s of it. 9.1 s is spent waiting for 702 DEM tiles, which is not
+     bandwidth — a browser opens at most six connections to one host over HTTP/1.1, so 702 tiles are
+     117 sequential rounds of six no matter how fast the link is.
+
+     The same public bucket answers on four host names (the same four scripts/build-bathymetry.mjs
+     already uses), so the six-connection limit becomes twenty-four. ⚠ The host is a DETERMINISTIC
+     function of the tile, so a tile always has one URL and the HTTP cache still hits. ⚠ All four
+     were checked from the page, not from Node (#R216's lesson): all four load and none taints the
+     canvas. ⚠ Same bytes, same dataset, same attribution — this is a transport change. */
+  const _DEM_HOSTS=[
+    'https://s3.amazonaws.com/elevation-tiles-prod/terrarium',
+    'https://elevation-tiles-prod.s3.amazonaws.com/terrarium',
+    'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium',
+    'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium'];
+  function _demURL(z,x,y){ return _DEM_HOSTS[(x+y)&3]+'/'+z+'/'+x+'/'+y+'.png'; }
   /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
      whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
   function demZoomForMap(){ let mz=4; try{ if(GE().hasRenderer()) mz=GE().camera.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
@@ -315,7 +368,8 @@ window.IntMapModules.mapReadout=function(HOST){
       _demCacheTrim();
       _demCache.set(key,'loading');
       const img=new Image(); img.crossOrigin='anonymous';
-      img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=256; cv.height=256; cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0); _demCache.set(key,cv); if(onReady) onReady(); }catch(e){ _demCache.set(key,null); } };
+      /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
+      img.onload=()=>{ const el=_decodeTile(img); _demCache.set(key,el||null); if(el&&onReady) onReady(); };
       /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. `null` is the "asked and got
          nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
          network, a 503 from the tile host) left a permanent hole that every later intensity field
@@ -324,14 +378,15 @@ window.IntMapModules.mapReadout=function(HOST){
          next build asks again. Bounded: one retry per tile per 4 s, never a loop. */
       img.onerror=()=>{ _demCache.set(key,null);
         setTimeout(()=>{ if(_demCache.get(key)===null) _demCache.delete(key); },4000); };
-      img.src=`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${xi}/${yi}.png`;
+      img.src=_demURL(z,xi,yi);
       return null;
     }
     if(c==='loading'||c===null) return null;
-    /* (#R19) read from the per-tile decoded buffer — no per-sample getImageData */
+    /* (#R19) read from the per-tile decoded buffer — no per-sample getImageData
+       (#R223) …which is now a Float32Array of metres, so the read is one index */
     const d=_demPix(c); if(!d) return null;
     const px=Math.min(255,Math.max(0,Math.floor((tl.x-xi)*256))), py=Math.min(255,Math.max(0,Math.floor((tl.y-yi)*256)));
-    const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768;
+    return d[py*256+px];
   }
   /* === Shared async DEM sampler (#R12) — used by the elevation profile and line-of-sight viewshed.
      Warms every terrarium tile covering a set of points, then samples them LOCALLY. The terrarium
@@ -361,18 +416,30 @@ window.IntMapModules.mapReadout=function(HOST){
      tile grid is wider than 33 leaves whole columns unrequested, and those columns then paint with
      the fallback site class — a stripe of "concentric" through an otherwise terrain-shaped field).
      Asking the tile grid itself makes the warm-up exactly the set demSnapshot will look for. */
-  function demTilePoints(w,s,e,n,z){
+  /* (#R223) `keep(lng,lat,halfLngDeg,halfLatDeg)` — an optional filter over the tile grid, given a
+     tile's centre and its own half-extent. The intensity field passes a land test through it so a
+     picture whose box is mostly ocean stops paying for the ocean; demSnapshot takes the SAME filter
+     so `want`/`missing` still describe the set that was actually asked for (otherwise the skipped
+     tiles read as failures and trigger the retry passes this is meant to make unnecessary). */
+  function _demTileGrid(w,s,e,n,z,keep,fn){
     const N=Math.pow(2,z);
     const t0=_ll2tile(Math.max(-179.999,w),Math.min(85,n),z), t1=_ll2tile(Math.min(179.999,e),Math.max(-85,s),z);
     const x0=Math.max(0,Math.floor(t0.x)-1), x1=Math.min(N-1,Math.floor(t1.x)+1);
     const y0=Math.max(0,Math.floor(t0.y)-1), y1=Math.min(N-1,Math.floor(t1.y)+1);
-    const out=[];
-    for(let yi=y0;yi<=y1;yi++) for(let xi=x0;xi<=x1;xi++){
-      const lng=(xi+0.5)/N*360-180;
-      const ly=Math.PI*(1-2*(yi+0.5)/N);
-      const lat=180/Math.PI*Math.atan(0.5*(Math.exp(ly)-Math.exp(-ly)));
-      out.push([lng,lat]);
+    const latOf=(gy)=>{ const ly=Math.PI*(1-2*gy/N); return 180/Math.PI*Math.atan(0.5*(Math.exp(ly)-Math.exp(-ly))); };
+    const hLng=180/N;
+    for(let yi=y0;yi<=y1;yi++){
+      const lat=latOf(yi+0.5), hLat=Math.abs(latOf(yi)-latOf(yi+1))/2;
+      for(let xi=x0;xi<=x1;xi++){
+        const lng=(xi+0.5)/N*360-180;
+        if(keep&&!keep(lng,lat,hLng,hLat)) continue;
+        fn(xi,yi,lng,lat);
+      }
     }
+  }
+  function demTilePoints(w,s,e,n,z,keep){
+    const out=[];
+    _demTileGrid(w,s,e,n,z,keep,(xi,yi,lng,lat)=>out.push([lng,lat]));
     return out;
   }
   /* ══ (#R191) A SNAPSHOT, SO A PICTURE BUILT OVER SEVERAL FRAMES CANNOT CHANGE UNDER IT ═════════════
@@ -391,15 +458,12 @@ window.IntMapModules.mapReadout=function(HOST){
      interval. This hands the caller a fixed set of decoded tile buffers — strong references, so no
      eviction can reach them, and no new request can add to them — and every sample the field takes
      comes out of that set. What is missing is missing for the whole picture, and is counted once. */
-  function demSnapshot(w,s,e,n,z){
+  function demSnapshot(w,s,e,n,z,keep){
     const tiles=new Map(); const N=Math.pow(2,z);
-    const t0=_ll2tile(Math.max(-179.999,w),Math.min(85,n),z), t1=_ll2tile(Math.min(179.999,e),Math.max(-85,s),z);
-    const x0=Math.max(0,Math.floor(t0.x)-1), x1=Math.min(N-1,Math.floor(t1.x)+1);
-    const y0=Math.max(0,Math.floor(t0.y)-1), y1=Math.min(N-1,Math.floor(t1.y)+1);
     let have=0, want=0;
-    for(let yi=y0;yi<=y1;yi++) for(let xi=x0;xi<=x1;xi++){
+    _demTileGrid(w,s,e,n,z,keep,(xi,yi)=>{
       want++; const d=_demPix(_demCache.get(z+'/'+xi+'/'+yi));
-      if(d){ have++; tiles.set(xi+'/'+yi,d); } }
+      if(d){ have++; tiles.set(xi+'/'+yi,d); } });
     return { z, want, have, missing:want-have,
       /* the same bilinear read as demElevBilinear, against the frozen buffers */
       at(lng,lat){
@@ -411,8 +475,7 @@ window.IntMapModules.mapReadout=function(HOST){
         const ax=Math.max(0,Math.min(255,Math.floor(fx))), ay=Math.max(0,Math.min(255,Math.floor(fy)));
         const bx=Math.min(255,ax+1), by=Math.min(255,ay+1);
         const tx=Math.max(0,Math.min(1,fx-ax)), ty=Math.max(0,Math.min(1,fy-ay));
-        const el=(px,py)=>{ const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768; };
-        const p=el(ax,ay), q=el(bx,ay), r=el(ax,by), u=el(bx,by);
+        const p=d[ay*256+ax], q=d[ay*256+bx], r=d[by*256+ax], u=d[by*256+bx];
         return (p*(1-tx)+q*tx)*(1-ty)+(r*(1-tx)+u*tx)*ty;
       } };
   }
@@ -427,8 +490,7 @@ window.IntMapModules.mapReadout=function(HOST){
     const fx=(tl.x-xi)*256-0.5, fy=(tl.y-yi)*256-0.5;
     const x0=Math.max(0,Math.min(255,Math.floor(fx))), y0=Math.max(0,Math.min(255,Math.floor(fy)));
     const x1=Math.min(255,x0+1), y1=Math.min(255,y0+1); const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
-    const el=(px,py)=>{ const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768; };
-    const a=el(x0,y0), b=el(x1,y0), c=el(x0,y1), e=el(x1,y1);
+    const a=d[y0*256+x0], b=d[y0*256+x1], c=d[y1*256+x0], e=d[y1*256+x1];
     return (a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+e*tx)*ty;
   }
   /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */

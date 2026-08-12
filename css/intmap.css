@@ -2433,9 +2433,13 @@
          8,463 px corridor. The list is the vertical sheet declared above; only the scrollbar
          suppression it also wants is kept here. */
       #space-view .sp-side::-webkit-scrollbar{ display:none; }
-      /* …and the two panels as one bottom sheet, so they can never overlap each other */
+      /* …and the two panels as one bottom sheet, so they can never overlap each other.
+         ⚠ (#R223) the height belongs to the #R222 block below (`--sp-sheet-h`) — this used to
+         declare `max-height:38vh !important` as well, a second `!important` for the same property
+         that only lost because it is written earlier in the file. Two of those and a drag that
+         writes a third is how #R222's gesture ended up doing nothing; one owner now. */
       #space-view .sp-col{ left:8px !important; right:8px !important; top:auto !important;
-        bottom:52px; width:auto !important; max-height:38vh !important; }
+        bottom:52px; width:auto !important; }
       #space-view .sp-info{ max-height:22vh !important; }
       /* ══ ⚠ (#R220) THE DETAIL SHEET STARTS CLOSED — 「機能は削るな」, SO IT IS A HANDLE ═══════════
          Measured at 390 × 844 after #R218: `.sp-col` owns the bottom 38 % of the screen from the
@@ -2445,7 +2449,10 @@
         border:none; background:transparent; cursor:pointer; pointer-events:auto; flex:0 0 auto; }
       #space-view .sp-sheet-t i{ display:block; width:44px; height:5px; margin:10px auto 0;
         border-radius:3px; background:rgba(255,255,255,0.55); }
-      #space-view .sp-col.sp-min{ max-height:26px !important; background:transparent; }
+      /* (#R223) …and so does the collapsed height: the #R222 block owns `sp-min` (34 px, a real
+         touch target). This rule kept #R220's 26 px alive as a second `!important` for the same
+         property on the same selector. */
+      #space-view .sp-col.sp-min{ background:transparent; }
       #space-view .sp-col.sp-min .sp-info,
       #space-view .sp-col.sp-min .sp-events{ display:none !important; }
       /* the bar has to FIT at 390 px. ⚠ `!important`: every one of these controls carries an INLINE
@@ -2494,7 +2501,9 @@
     /* a phone held upright has almost no height to give away — the sheet shrinks rather than
        pushing the sky off the screen */
     @media (max-width:768px) and (orientation:portrait){
-      #space-view .sp-col{ max-height:32vh !important; }
+      /* (#R223) the third `max-height … !important` for `.sp-col` lived here (32vh). All three are
+         gone; the sheet's height has ONE owner, `--sp-sheet-h` in the block below, which is also
+         what the drag writes. */
       /* the time sheet opens over the info sheet on purpose: both are bottom-anchored, and a phone
          held upright has room for one of them. Tapping the sky closes it (js/space.js wires that). */
       #space-view .sp-timebox.open{ bottom:8px; }
@@ -2572,6 +2581,52 @@
       #space-view .sp-timebox .sp-live{ order:2; } #space-view .sp-timebox .sp-back{ order:3; }
       #space-view .sp-timebox .sp-play{ order:4; } #space-view .sp-timebox .sp-fwd{ order:5; }
       #space-view .sp-timebox .sp-ratebox{ grid-column:1 / -1; }
+
+      /* ══ ⚠⚠ (#R223) THE BAR IS TWO DECLARED ROWS, NOT A SIDEWAYS SCROLL ═══════════════════════════
+         「モバイル版の宇宙を探索のUIを整理して。現状だとスマホでは使いやすいとは言えない。」 (again)
+
+         MEASURED at 375 × 812 on the shipped build: `.sp-bar` has `scrollWidth 440` against a
+         `clientWidth` of 375, and the item that falls off the right-hand end is `.sp-timewrap` —
+         the ONLY way into the date and time. #R216 made the bar scroll sideways so it would stop
+         stacking into five rows, and #R218/#R221 then shaved labels to make it fit 390 px. At 375
+         it does not fit, and a control that has to be scrolled to is a control the reader does not
+         know exists.
+
+         Shaving another few pixels would be the fourth round of the same move. So the bar stops
+         being a run of items and becomes a GRID with two rows and a declared place for each
+         control, which fits at any width down to 320 px and never scrolls:
+
+             row 1   ✕            the body (stretches)          the clock
+             row 2   true / model scale (stretches)             what is drawn
+             row 3   ← the solar-system button when it is shown (body view only)
+
+         ⚠ Nothing is hidden and nothing is removed: the same five controls, the same handlers, the
+         same state lighting. It costs ~26 px of sky and buys a bar where every control is reachable
+         with one thumb. */
+      #space-view .sp-bar{ display:grid !important; grid-template-columns:auto minmax(0,1fr) auto;
+        grid-auto-rows:auto; align-items:center; justify-items:stretch;
+        overflow:visible !important; row-gap:6px !important; column-gap:6px !important;
+        padding:8px 8px 10px !important; }
+      #space-view .sp-bar > *{ min-width:0; }
+      #space-view .sp-bar .sp-close{ grid-area:1 / 1; justify-self:start; }
+      #space-view .sp-bar .sp-bodyb{ grid-area:1 / 2; overflow:hidden; white-space:nowrap;
+        text-overflow:ellipsis; justify-content:center; }
+      #space-view .sp-bar .sp-timewrap{ grid-area:1 / 3; justify-self:end; }
+      #space-view .sp-bar .sp-seg{ grid-area:2 / 1 / auto / 3; justify-self:stretch; }
+      #space-view .sp-bar .sp-seg .sp-scale{ flex:1 1 0; }
+      #space-view .sp-bar .sp-showwrap{ grid-area:2 / 3; justify-self:end; }
+      #space-view .sp-bar .sp-out{ grid-area:3 / 1 / auto / 4; justify-self:start; }
+      /* the clock can now use the width it has instead of being clipped at 92 px */
+      #space-view .sp-timeb{ max-width:none; }
+      /* ⚠ (#R223) THE SOURCES BUTTON WAS SITTING ON THE SHEET'S HANDLE. Measured: `.sp-notewrap` at
+         y 784 against a collapsed sheet occupying 770–804, i.e. the ⓘ button covered the left third
+         of the 34 px drag target — the one thing the reader has to grab. It moves to the top-right,
+         under the bar, where nothing else is on a phone. */
+      /* ⚠ 100 px, not 84: the two-row bar measures 94 px tall (measured at 375 × 812), so 84 put the
+         button's top ten pixels inside the bar's own box. */
+      #space-view .sp-notewrap{ left:auto !important; right:8px !important;
+        bottom:auto !important; top:100px !important; justify-content:flex-end; }
+      #space-view .sp-note{ position:absolute; right:0; top:calc(100% + 6px); width:min(94vw,420px); }
     }
 
 /* ══ (#R219) A PANEL THAT LETS TAPS THROUGH, WITHOUT LETTING ITS OWN BUTTONS THROUGH ═══════════

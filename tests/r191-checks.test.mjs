@@ -106,10 +106,18 @@ test('R191 seismic: the ground-motion chain names its models and uses their numb
   assert.match(s, /function a0AtJMA\(I\)/, 'the JMA inverse, in the quantity the scale is computed from');
   assert.match(s, /const arr=jmaScale\?prof\.a0s:prof\.out, floor=jmaScale\?A0_FLOOR_JMA:PGV_FLOOR_MMI;/,
     'and the paint edge walks whichever profile the active scale reads');
-  /* Yenier & Atkinson 2014 equivalent point-source depth, only for a POINT source */
-  assert.match(s, /function heffKm\(mw\)\{ return Math\.pow\(10,-0\.405\+0\.235\*mw\); \}/, 'Yenier & Atkinson 2014');
-  assert.match(s, /if\(!fault\)\{ const h=heffKm\(mw\)\*1000; r=Math\.sqrt\(r\*r\+h\*h\); \}/,
-    'added in quadrature, and never on top of a real drawn rupture');
+  /* ⚠ (#R223) THE NEAR-FIELD SATURATION MOVED FROM A PSEUDO-DEPTH TO THE GEOMETRY, and the
+     assertion moved with it. #R191's point was that a POINT source must not report ground motion
+     no instrument has recorded, and that a DRAWN rupture must not be given the same term twice;
+     both still hold, and the reader's report («点震源のほうが明らかに過小評価») was that the two
+     branches disagreed at the same magnitude. A point now stands for the rupture its magnitude
+     implies (Wells & Coppersmith 1994), so the finiteness is in the distance metric for both and
+     the curves are one curve. The claim here is STRONGER than the one it replaces: there is no
+     branch on `fault` inside the ground-motion chain at all. */
+  assert.ok(!/heffKm/.test(s), 'the equivalent point-source depth is gone (see #R223 ④)');
+  assert.match(s, /RUP_A=\(mw\)=>Math\.pow\(10,-3\.49\+0\.91\*mw\)/, 'Wells & Coppersmith 1994 instead');
+  assert.match(s, /function rupCutKm\(\)\{ return fault\?0:impliedRupKm\(mw\); \}/,
+    'and a drawn rupture is still never given the finiteness twice');
   /* Atkinson & Boore 1995 path duration — the same paper as the trilinear spreading above it */
   assert.match(s, /const Tp=\(rKm<=10\)\?0:\(rKm<=70\)\?\(0\.16\*\(rKm-10\)\):\(rKm<=130\)\?\(9\.6-0\.03\*\(rKm-70\)\):\(7\.8\+0\.04\*\(rKm-130\)\);/,
     'the four published segments');
@@ -146,14 +154,16 @@ test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come ou
      missing DEM is painted with one site class — i.e. as concentric circles, which is what that round
      was asked to remove. The invariant this test exists for is unchanged: the LOOP reads one frozen
      snapshot, so a row's answer cannot depend on when it was computed. */
-  assert.match(build, /(?:const|let) snap=\(typeof demSnapshot==='function'\)\?demSnapshot\(W,Ss,E,Nn,z\):null;/,
+  /* (#R223) …and the same call now carries the land filter, so `want`/`missing` describe the set
+     that was actually asked for rather than counting the open ocean as a failure. */
+  assert.match(build, /(?:const|let) snap=\(typeof demSnapshot==='function'\)\?demSnapshot\(W,Ss,E,Nn,z,_keepTile\):null;/,
     'one snapshot for the whole picture');
   assert.match(build, /const demAt=snap\?\(\(lo,la\)=>snap\.at\(lo,la\)\)/, 'and the loop reads it');
   assert.ok(!/demElevAt\(/.test(build),
     'and no demElevAt in the loop: it REQUESTS, which is what evicted the tiles the field was reading');
   assert.ok(!/demElevBilinear\(lo\+dLngS,la,z\)/.test(build), 'the slope samples come from the snapshot too');
   const ro = read('js/map-readout.js');
-  assert.match(ro, /function demSnapshot\(w,s,e,n,z\)/, 'the snapshot holds decoded buffers');
+  assert.match(ro, /function demSnapshot\(w,s,e,n,z,keep\)/, 'the snapshot holds decoded buffers');
   /* (#R221) demTilePoints joined the export list between demSnapshot and demZoomForMap — the field
      now warms the TILE GRID rather than a fixed lattice of positions. */
   assert.match(ro, /demElevBilinear, demSnapshot, demTilePoints, demZoomForMap/, 'and is exported');

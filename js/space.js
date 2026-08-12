@@ -2266,14 +2266,32 @@ window.IntMapModules.space=function(HOST){
         if(th&&col){
           const PEEK=34;
           const stops=()=>[PEEK, Math.round(innerHeight*0.42), Math.round(innerHeight*0.78)];
-          const setStop=(i)=>{ col.style.maxHeight=''; col.classList.remove('sp-min','sp-max');
+          /* ══ ⚠⚠ (#R223) THE DRAG WAS WRITING A VALUE CSS THREW AWAY ═══════════════════════════════
+             「ボトムシートの操作性がごみ。」 — and it is not a feel problem, the gesture did NOTHING.
+             #R222 wrote the dragged height to `col.style.maxHeight`, but the stylesheet declares
+             `max-height: var(--sp-sheet-h,42vh) !important`, and an author `!important` beats an
+             inline declaration. MEASURED on the shipped build: set the inline max-height to 420px
+             and the computed value stays 633.36px. So the sheet never followed the thumb; on release
+             it snapped to the stop nearest its UNCHANGED height, i.e. back to where it started, and
+             only the tap-to-cycle worked. Nine tenths of #R222's answer to this instruction was
+             invisible for that one reason.
+             The drag now writes the CUSTOM PROPERTY the rule reads — an inline custom property does
+             win, because the declarations that set it (`.sp-min`, `.sp-max`) are ordinary ones — and
+             the two class rules that carry their own `max-height: … !important` are dropped while
+             the finger is down, so nothing else can outrank it. */
+          const setStop=(i)=>{ col.style.removeProperty('--sp-sheet-h'); col.classList.remove('sp-min','sp-max');
             if(i<=0) col.classList.add('sp-min'); else if(i>=2) col.classList.add('sp-max'); };
           const current=()=>col.classList.contains('sp-min')?0:(col.classList.contains('sp-max')?2:1);
-          let id=null, y0=0, h0=0, moved=0;
+          let id=null, y0=0, h0=0, moved=0, i0=0;
           th.addEventListener('pointerdown',(e)=>{
             if(!_phone()) return;
             id=e.pointerId; y0=e.clientY; moved=0;
+            i0=current();                                   /* ⚠ read the stop BEFORE the classes come off */
             h0=col.getBoundingClientRect().height;
+            /* freeze the height where it is, THEN drop the stop classes, so the sheet does not jump
+               to 42vh on the first pixel of the gesture */
+            col.style.setProperty('--sp-sheet-h',h0+'px');
+            col.classList.remove('sp-min','sp-max');
             col.classList.add('sp-drag');
             try{ th.setPointerCapture(id); }catch(_){}
           });
@@ -2281,14 +2299,14 @@ window.IntMapModules.space=function(HOST){
             if(id==null||e.pointerId!==id) return;
             const dy=y0-e.clientY; moved=Math.max(moved,Math.abs(dy));
             const s=stops();
-            col.style.maxHeight=Math.max(PEEK,Math.min(s[2],h0+dy))+'px';
+            col.style.setProperty('--sp-sheet-h',Math.max(PEEK,Math.min(s[2],h0+dy))+'px');
             e.preventDefault();
           });
           const end=(e)=>{
             if(id==null||(e&&e.pointerId!==id)) return;
             try{ th.releasePointerCapture(id); }catch(_){}
             id=null; col.classList.remove('sp-drag');
-            if(moved<8){ setStop((current()+1)%3); return; }      /* a tap still cycles */
+            if(moved<8){ setStop((i0+1)%3); return; }              /* a tap still cycles (from the stop it started in) */
             const h=col.getBoundingClientRect().height, s=stops();
             let best=0, bd=Infinity;
             s.forEach((v,i)=>{ const d=Math.abs(v-h); if(d<bd){ bd=d; best=i; } });

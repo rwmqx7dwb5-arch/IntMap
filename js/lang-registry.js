@@ -59,7 +59,22 @@ window.IntMapLang = (function () {
     { code: 'jp', label: '日本語',    html: 'ja', alias: ['ja'] },
     { code: 'de', label: 'Deutsch',  html: 'de' },
     { code: 'ru', label: 'Русский',  html: 'ru' },
-    { code: 'es', label: 'Español',  html: 'es' }
+    { code: 'es', label: 'Español',  html: 'es' },
+    /* ══ (#R223) THE SIXTH LANGUAGE — THE FIRST ONE THIS REGISTRY WAS BUILT FOR ═════════════════
+       「繁体を追加して。(beta)」 Traditional Chinese is the first language added since #R221 made
+       adding one possible, and it cost exactly what that round promised: this row, one locale file
+       (js/locales/ui.zh.js — 284 keyed strings and all 1,816 inline ones), and one import line in
+       src/main.js. NOT ONE CALL SITE WAS TOUCHED: index 5 is past every L(…) call's arguments, so
+       every one of them answers from the `inline` table, keyed by its English string.
+       ⚠ `label` carries the (beta) mark because the reader asked for it that way — the picker is
+       where a reader learns how finished a translation is.
+       ⚠ THE ALIASES ARE THE SCRIPT TAGS, NOT 'zh'. zh-Hant / zh-TW / zh-HK / zh-MO are Traditional;
+       a bare 'zh' or 'zh-CN' is usually Simplified, and handing a Simplified reader Traditional
+       because the first two letters match is a guess this file should not make. `normalise` still
+       maps a bare 'zh' here (it falls back to the two-letter prefix), which is what the picker and
+       the share link need; nothing auto-detects the app's language from the browser (js/app-body.js
+       reads the saved setting only), so no one is switched into it without asking. */
+    { code: 'zh', label: '繁體中文 (beta)', html: 'zh-Hant', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] }
   ];
   var FALLBACK = 'en';
 

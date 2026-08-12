@@ -468,27 +468,29 @@ export function makeThemeSky(HOST, CTX) {
       return +Math.max(0.10,Math.min(0.55,byHeight*k)).toFixed(3);
     }catch(_){ return byHeight; }
   }
-  /* ══ (#R216) HOW MUCH AIR IS BETWEEN THE EYE AND THE FAR GROUND ═══════════════════════════════
-     `fog-ground-blend` is where along the ground the haze STARTS (1 = only exactly at the horizon,
-     i.e. off); `horizon-fog-blend` is how far the haze reaches UP into the sky band (0 = off).
-     Both are driven by the one quantity that decides how much atmosphere a horizontal view crosses:
-     the eye's height. A person on a hill looks through ~100 km of dense air and sees a pale blue
-     distance; from 200 km up there is no air between the eye and the ground at all (it is all
-     BELOW), and what is left is the limb, which `atmosphere-blend` already draws. So this fades out
-     with altitude rather than being a constant, and it is zero above the atmosphere — where a haze
-     would be a claim about air that is not in the line of sight.
-       ≤ 3 km   ground 0.62 / horizon 0.30   a lived-in distance: ridges pale toward the sky
-       15 km    ground 0.80 / horizon 0.16
-       ≥ 80 km  off                          above the scattering shell js/sky-model.js integrates
-     ⚠ IT MUST NEVER REACH THE MAP CENTRE. `fog-ground-blend` below ~0.5 starts washing the middle of
-     the screen, which is the 「白いモヤ」 #R174 removed from the flight simulator; 0.62 is the floor
-     here for that reason and the value is clamped rather than extrapolated. */
-  function _aerial(){
-    const h=Math.max(0,_eyeAltM());
-    if(h>=80000) return { ground:1, horizon:0 };
-    const f=Math.max(0,Math.min(1,1-Math.log10(1+h/3000)/Math.log10(1+80000/3000)));
-    return { ground:+(1-0.38*f).toFixed(3), horizon:+(0.30*f).toFixed(3) };
-  }
+  /* ══ ⚠⚠ (#R223) THE GROUND HAZE IS GONE — IT IS NOT A SETTING, IT IS REMOVED ════════════════════
+     「衛星画像で地平線付近を白い靄で見えなくするな。クソ機能つけるな。」 (confirmed with the reader:
+     remove it on EVERY basemap, not only over satellite imagery.)
+
+     #R216 added aerial perspective here and argued for it from physics: the same Rayleigh scattering
+     seen along a horizontal path, which is why a distant ridge is paler than a near one. The physics
+     is right and the picture was still wrong, because of what the two knobs actually control.
+     `fog-ground-blend` is not "how strong the haze is", it is WHERE ALONG THE GROUND IT STARTS —
+     0.62 begins washing at 62 % of the way from the map centre to the horizon and reaches full
+     strength at the horizon itself, in `horizon-color`, which on a sunlit day is a pale grey-blue
+     (measured on the shipped build: #c2ccd1). Over satellite imagery that is a white curtain across
+     the far third of the screen, and the imagery it hides is the thing the reader opened.
+
+     ⚠ THIS FUNCTION IS KEPT rather than deleted, and it keeps returning the pair, because
+     `_skyFollowCamera` compares it against the last value to decide whether the sky block needs
+     re-parsing. Returning the OFF values from one place is what guarantees there is no second
+     opinion anywhere: `fog-ground-blend:1` is "fog only exactly at the horizon" and
+     `horizon-fog-blend:0` is "the horizon band is the horizon colour" — i.e. off, both of them,
+     at every altitude, on every basemap.
+     ⚠ The limb over the globe (`atmosphere-blend`) and the sky band above the horizon
+     (`sky-color` / `horizon-color` / `sky-horizon-blend`) are UNTOUCHED — those are the air above
+     the horizon, they are what §大気 is about, and none of them paints over the ground. */
+  function _aerial(){ return { ground:1, horizon:0 }; }
   /* the eye's own height above sea level — the model's other input, and the reason the sky goes to
      space as you climb rather than only as the Sun sets */
   function _eyeAltM(){
@@ -565,21 +567,12 @@ export function makeThemeSky(HOST, CTX) {
       _applySkyAtmosphere._fog=fg;
       GE().scene.setSky({
         'sky-color':sc, 'sky-horizon-blend':_horizonBlend(),   /* (#R213) */
-        /* ══ (#R216) THE AIR BETWEEN THE EYE AND THE GROUND, WHICH WAS THE ONE PART SWITCHED OFF ═════
-           「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 Everything the previous rounds
-           built is about the air ABOVE the horizon — the scattering integral for `sky-color` (#R202),
-           the Sun-following band (#R213), the limb over the globe (#R187/#R205). The `fog-*` pair was
-           deliberately switched off (see the block comment above: ground-blend 1, horizon-fog-blend 0)
-           because Cesium's SkyAtmosphere draws no ground haze and #R196 was matching a Cesium capture.
-           But AERIAL PERSPECTIVE is not decoration and it is not Cesium's opinion — it is the same
-           Rayleigh scattering, seen along a horizontal path instead of an upward one, and it is why a
-           distant ridge is paler and bluer than a near one. With it off, terrain runs to the horizon
-           at full contrast and meets the sky at a hard line, which is precisely the un-real part of
-           this picture that no amount of tuning the band above it can fix.
-           It is switched on WHERE THERE IS AIR TO SEE THROUGH and off where there is not — see
-           `_aerial()`. The colour is the horizon colour, so the haze is the same air the band above it
-           is drawn from and cannot disagree with it; at night that colour is dark, so this darkens the
-           distance rather than fogging it white (#R174's complaint about the flight sim's white wash). */
+        /* ══ (#R223) THE `fog-*` PAIR IS OFF, AND `_aerial()` IS THE ONLY PLACE THAT SAYS SO ═════════
+           #R216 switched aerial perspective ON here; this round switches it back OFF at the reader's
+           explicit instruction — 「衛星画像で地平線付近を白い靄で見えなくするな。クソ機能つけるな。」
+           The values still come from `_aerial()` rather than being written as literals so there is
+           exactly one place to read, and `_skyFollowCamera` keeps comparing the same pair. See the
+           long note on `_aerial()` for why the physics was right and the picture was still wrong. */
         'horizon-color':hz, 'horizon-fog-blend':fg.horizon,
         'fog-color':hz, 'fog-ground-blend':fg.ground,
         /* ⚠ TWO STRENGTHS, EACH SETTLED BY ITS OWN MEASUREMENT. #R187 halved this to 0.55 because a

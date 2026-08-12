@@ -115,27 +115,53 @@ let abort = 0;
    (2,3): dip-slip uz = −3.5639e−2 against Okada's −3.564e−2 — tests/r197-checks.test.mjs runs that
    case against THIS file rather than asserting on its text).
    ⚠ arctan OF A RATIO, not atan2 — see the note inside. */
+/* ══ ⚠ (#R223) THE SAME FORMULA, WITHOUT THE WORK IT WAS REPEATING ══════════════════════════════════
+   「地震と津波シミュレータの計算速度を爆速にして。ただし品質は一切落とさないように。」 MEASURED on the
+   shipped build (M9 off Tōhoku, 6 h, global grid): the run takes 31.1 s wall, of which the SOLVER is
+   15.8 s — the other 15.2 s is the model build, and almost all of that is this function. It is called
+   ~4.7 million times for one M9 (the 5×5 cell quadrature inside 1.5 rupture lengths, 24 tapered
+   sub-faults each), and every single one of those calls was:
+     · recomputing sin(δ) and cos(δ) for a dip that is the same constant for the whole run;
+     · recomputing `q = y·sinδ − d·cosδ` FOUR times — once inside each corner of the Chinnery
+       difference — although it does not depend on the corner at all;
+     · allocating a closure for `f`.
+   None of that is the physics; all of it is per-call overhead. The arithmetic that remains is
+   identical, in the same order, so the answer is unchanged to the last bit — the published test case
+   (L=3, W=2, d=4, δ=70°, at (2,3) → −3.5639e−2) is re-run against THIS file by
+   tests/r197-checks.test.mjs, and #R223 adds a direct old-form/new-form comparison over a grid.
+   ⚠ THE DIP MEMO IS A SINGLE SLOT, not a map: every call in a run shares one dip, so a one-entry
+   cache hits every time and can never grow. */
+let _okDip = NaN, _okSd = 0, _okCd = 0, _okCdS = 1, _okVert = false, _ok2cdS = 0;
 function okadaUz(x, y, depth, L2, W2, dipDeg, slip) {
-  const dip = dipDeg * DEG, sd = Math.sin(dip), cd = Math.cos(dip);
-  const cdS = (Math.abs(cd) < 1e-6) ? 1e-6 : cd;          /* vertical faults are a limit, not a case */
+  if (dipDeg !== _okDip) {
+    _okDip = dipDeg;
+    const dip = dipDeg * DEG;
+    _okSd = Math.sin(dip); _okCd = Math.cos(dip);
+    _okVert = Math.abs(_okCd) < 1e-6;
+    _okCdS = _okVert ? 1e-6 : _okCd;                      /* vertical faults are a limit, not a case */
+    _ok2cdS = 2 / _okCdS;
+  }
+  const sd = _okSd, cd = _okCd, cdS = _okCdS;
   const p = y * cd + depth * sd;
+  const q = y * sd - depth * cd;                          /* ⚠ corner-independent — hoisted out of f */
+  const qq = q * q, sdcdS = sd * cdS;
+  /* ⚠ PRINCIPAL value. The two-argument form adds ±π wherever the numerator and denominator change
+     sign, and the Chinnery difference then keeps that jump as a plateau: measured before #R192
+     fixed it, a constant −5.14 m of "subsidence" 400 km behind the fault, which is exactly
+     slip·sinδ. Deformation must decay to zero away from a finite source. */
   const f = (xi, eta) => {
-    const q = y * sd - depth * cd;
-    const R = Math.sqrt(xi * xi + eta * eta + q * q); if (!(R > 0)) return 0;
+    const R = Math.sqrt(xi * xi + eta * eta + qq); if (!(R > 0)) return 0;
     const dt = eta * sd - q * cd;
-    const X = Math.sqrt(xi * xi + q * q);
-    /* ⚠ PRINCIPAL value. The two-argument form adds ±π wherever the numerator and denominator change
-       sign, and the Chinnery difference then keeps that jump as a plateau: measured before #R192
-       fixed it, a constant −5.14 m of "subsidence" 400 km behind the fault, which is exactly
-       slip·sinδ. Deformation must decay to zero away from a finite source. */
+    const X = Math.sqrt(xi * xi + qq);
     const den = xi * (R + X) * cdS;
-    const I5 = (Math.abs(cd) < 1e-6) ? (-0.5 * xi * q / Math.pow(R + dt, 2))
-      : ((Math.abs(den) < 1e-12) ? 0 : (0.5 * (2 / cdS) * Math.atan((eta * (X + q * cdS) + X * (R + X) * sd) / den)));
+    const I5 = _okVert ? (-0.5 * xi * q / ((R + dt) * (R + dt)))
+      : ((Math.abs(den) < 1e-12) ? 0 : (0.5 * _ok2cdS * Math.atan((eta * (X + q * cdS) + X * (R + X) * sd) / den)));
     const t1 = (R + xi) !== 0 ? dt * q / (R * (R + xi)) : 0;
     const t2 = sd * ((Math.abs(q * R) > 1e-12) ? Math.atan(xi * eta / (q * R)) : 0);
-    return t1 + t2 - I5 * sd * cdS;
+    return t1 + t2 - I5 * sdcdS;
   };
-  const v = f(x, p) - f(x, p - W2) - f(x - L2, p) + f(x - L2, p - W2);
+  const pw = p - W2, xl = x - L2;
+  const v = f(x, p) - f(x, pw) - f(xl, p) + f(xl, pw);
   return -(slip / (2 * Math.PI)) * v;
 }
 
@@ -380,6 +406,10 @@ function run(m) {
   const topDepth = Math.max(2000, depthKm * 1000 - g.W * Math.sin(dipDeg * DEG) / 2);
   const botDepth = topDepth + g.W * Math.sin(dipDeg * DEG);
   const subs = subFaults(g, dipDeg, topDepth);
+  /* (#R223) the model build is half of a run's wall clock and this loop is almost all of it — so it
+     is TIMED and the count is reported, rather than being the part nobody can see. */
+  const _tSrc = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  let _okCalls = 0;
   const sA = Math.sin(strike * DEG), cA = Math.cos(strike * DEG);
   const mPerLat = 111320, mPerLngAt = (la) => 111320 * Math.cos(la * DEG);
 
@@ -398,12 +428,13 @@ function run(m) {
   const nearM = 2.2 * g.L, farM = Math.max(6 * g.L, 2500e3);
   const blend0 = nearM, blend1 = 2.6 * g.L;
   const cosW = (g.W * Math.cos(dipDeg * DEG)) / 2;
-  const one = (xs, ys) => okadaUz(xs + g.L / 2, ys + cosW, botDepth, g.L, g.W, dipDeg, g.slip);
+  const one = (xs, ys) => { _okCalls++; return okadaUz(xs + g.L / 2, ys + cosW, botDepth, g.L, g.W, dipDeg, g.slip); };
   const many = (xs, ys) => {
     let u = 0;
     for (let s2 = 0; s2 < subs.length; s2++) {
       const f = subs[s2];
       const v = okadaUz(xs + g.L / 2 - f.x0, ys + cosW - f.y0, f.d0, f.L, f.W, dipDeg, f.slip);
+      _okCalls++;
       if (isFinite(v)) u += v;
     }
     return u;
@@ -478,7 +509,8 @@ function run(m) {
     }
     if ((j & 63) === 0) { if (abort === id) return null; }
   }
-  post({ id, type: 'progress', pct: 18, phase: 'source' });
+  const _srcMs = Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - _tSrc);
+  post({ id, type: 'progress', pct: 18, phase: 'source', ms: _srcMs, calls: _okCalls });
   if (abort === id) return null;
 
   /* ── 3. geometry, the time step, and the polar filter ─────────────────────────────────────── */
@@ -533,6 +565,7 @@ function run(m) {
     id, type: 'model', nx, ny, fx, fy, dec, lat0, lat1, dt, steps, total, nFrames, cellKm,
     strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0, drawnFault: !!drawn,
     eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, fineCells: sf.fineCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
+    sourceMs: _srcMs, okadaCalls: _okCalls,
     land, depth, landD
   }, [land.buffer, depth.buffer, landD.buffer]);
   if (abort === id) return null;
@@ -622,6 +655,8 @@ function run(m) {
   }
 
   let diverged = false;
+  /* (#R223) has this latitude circle ever carried a non-zero η? — see the polar-filter note below */
+  const wet = new Uint8Array(ny);
   const fbufD = new Float32Array(fx * fy);      /* hoisted: 140 frames is 140 allocations otherwise */
   for (let s = 0; s < steps; s++) {
     if (abort === id) return null;
@@ -713,8 +748,22 @@ function run(m) {
         if ((v >= ARRIVE || v <= -ARRIVE) && tarr[k] < 0) tarr[k] = t;
         i = (i + 1 === nx) ? 0 : i + 1;
       }
+      /* ══ ⚠ (#R223) THE POLAR FILTER ONLY RUNS ON ROWS THE WAVE HAS ACTUALLY REACHED ═══════════
+         「地震と津波シミュレータの計算速度を爆速にして。ただし品質は一切落とさないように。」
+         Poleward of 60° every row in the window is filtered twice, for two fields, over the WHOLE
+         latitude circle — 4·nx reads and writes per field per row per step. At nx = 1440 that is
+         ~11,500 operations a row a step, and about a quarter of the grid's rows are up there: for
+         an 872-step run it is of the same order as the entire rest of the solver.
+         A row whose η has been exactly zero for the whole run has an exactly zero M as well (the
+         only thing that drives M is ∂η/∂λ within the row, and M starts at zero), and a running
+         mean of zeros is zeros. So the filter is skipped until the row is first excited, and from
+         then on it runs every step exactly as before — the flag is STICKY, never cleared, so a row
+         that has gone quiet again is still filtered and nothing about the answer can drift.
+         ⚠ This is an identity, not a tolerance: the skipped work provably writes the values that
+         are already there. */
       const w = filtW[j];
-      if (w > 1) { zonalFilter(eta, row, w); zonalFilter(M, row, w); }
+      if (w > 1) { if (!wet[j]) { for (let c = 0, i2 = st; c < len; c++) { if (eta[row + i2] !== 0) { wet[j] = 1; break; } i2 = (i2 + 1 === nx) ? 0 : i2 + 1; } }
+        if (wet[j]) { zonalFilter(eta, row, w); zonalFilter(M, row, w); } }
     }
     t += dt;
 
@@ -722,8 +771,13 @@ function run(m) {
       /* the picture: an AREA AVERAGE over dec×dec, then companded */
       if (dec === 1) fbufD.set(eta);
       else {
+        /* ⚠ (#R223) ONLY THE ROWS INSIDE THE LIGHT CONE. Outside it η is exactly zero — that is what
+           the cone means — so those output rows are zero, and `fbufD` is zeroed once at the start
+           and only ever written by rows that are inside a cone that only grows. Same picture, and
+           for an early frame it is a few per cent of the reads. */
         const invD = 1 / (dec * dec);
-        for (let j = 0; j < fy; j++) {
+        const fj0 = Math.max(0, (J0 / dec) | 0), fj1 = Math.min(fy - 1, ((J1 + dec) / dec) | 0);
+        for (let j = fj0; j <= fj1; j++) {
           for (let i = 0; i < fx; i++) {
             let acc = 0;
             for (let b = 0; b < dec; b++) { const r = (j * dec + b) * nx + i * dec; for (let a = 0; a < dec; a++) acc += eta[r + a]; }

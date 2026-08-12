@@ -3352,7 +3352,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
-  window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
+  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
      lie: the Settings dropdown has said "Off (default)" since #R63 while #R101 actually defaulted desktop to ON.
      A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
@@ -3404,7 +3404,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
-    if(s.flatPan) window.imFlatPan=s.flatPan;
+    if(s.flatPanSet===true && (s.flatPan==='fixed'||s.flatPan==='free')){ window.imFlatPan=s.flatPan; window.imFlatPanSet=true; }   /* (#R223) only an EXPLICIT choice survives the default flip — `flatPanSet` is written when Settings is applied */
     if(s.mapColor) window.imMapColor=s.mapColor;
     /* (#R155) Right sidebar is the default (#R154). Only a saved value the user EXPLICITLY chose
        (layerPanelSet) may override it — a stale 'classic' left over from before the default flipped is
@@ -3424,7 +3424,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -3508,7 +3508,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(window._accentPending!=null){ window.imAccent=window._accentPending; try{ applyAccent(); }catch(_){} }   /* (#R114) commit the previewed accent (saveSettings below persists it) */
       if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
-      if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
+      if(v('setting-flat-pan')){     window.imFlatPan=v('setting-flat-pan').value; window.imFlatPanSet=true; }   /* (#R223) an explicit choice latches — see the default-flip note above */
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
       if(v('setting-layerpanel')){ const _oldLP=window.imLayerPanel; window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */
         /* (#R160) ROOT CAUSE of "設定を変更すると勝手に右サイドバーが出てくる": apply() ALWAYS re-opens the right
