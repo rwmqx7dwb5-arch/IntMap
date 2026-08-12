@@ -66,8 +66,6 @@ window.IntMapModules.limbLayer=function(){
      integral actually moves: near the horizon in elevation (where the air mass runs away) and near
      the ground in height (where the density is). */
   const SUN_W=128, SUN_H=64, OD_SCALE=1e6;
-  /* the shell is the model's own RT − RG; nothing here restates how thick the atmosphere is */
-  let SUN_TOP=100000;
 
   const VS=`#version 300 es
     in vec2 a_pos;
@@ -75,7 +73,10 @@ window.IntMapModules.limbLayer=function(){
     out vec3 v_dir;
     void main(){ v_dir=(u_invProj*vec4(a_pos,0.0,1.0)).xyz; gl_Position=vec4(a_pos,0.0,1.0); }`;
 
-  const FS=`#version 300 es
+  /* ⚠ THE SHADER SOURCE IS BUILT FROM THE MODEL, not beside it: the shell thickness and the
+     multiple-scattering table's top height are the model's numbers, and a copy of either here is a
+     way for the drawn limb and the computed sky to drift apart. Compiled once, in onAdd. */
+  const fsSource=(M)=>`#version 300 es
     precision highp float;
     in vec3 v_dir;
     out vec4 fragColor;
@@ -92,7 +93,8 @@ window.IntMapModules.limbLayer=function(){
 
     const int N=${MARCH_N};
     const float KW=${KWARP.toFixed(1)};
-    const float SUN_TOP=${SUN_TOP.toFixed(1)};
+    const float SUN_TOP=${(M.RT-M.RG).toFixed(1)};
+    const float MS_TOP=${(M.ms.h[M.ms.h.length-1]).toFixed(1)};
 
     /* the ozone tent of #R218: a peak at 25 km falling linearly to zero at 10 km and 40 km */
     float ozone(float h){ return max(0.0, 1.0 - abs(h-u_o3Peak)/u_o3Half); }
@@ -108,7 +110,7 @@ window.IntMapModules.limbLayer=function(){
     }
     vec3 msAt(float h, float seDeg){
       float u = clamp((seDeg-u_msE0)/(u_msE1-u_msE0), 0.0, 1.0);
-      float v = pow(clamp(h/99000.0, 0.0, 1.0), 1.0/3.0);
+      float v = pow(clamp(h/MS_TOP, 0.0, 1.0), 1.0/3.0);
       return texture(u_tMs, vec2(ax(u, u_msN), ax(v, 64.0))).rgb;
     }
 
@@ -211,7 +213,7 @@ window.IntMapModules.limbLayer=function(){
 
   /* the two tables, built from js/sky-model.js — see the header for why they are looked up */
   function buildTables(M){
-    const RG=M.RG, D2R=Math.PI/180;
+    const RG=M.RG, D2R=Math.PI/180, SUN_TOP=M.RT-M.RG;
     const sun=new Float32Array(SUN_W*SUN_H*4);
     for(let j=0;j<SUN_H;j++){
       const v=j/(SUN_H-1), h=SUN_TOP*v*v*v;
@@ -231,7 +233,7 @@ window.IntMapModules.limbLayer=function(){
     const MH=M.ms.h, ME=M.ms.n, msW=ME, msH=64;
     const ms=new Float32Array(msW*msH*4);
     for(let j=0;j<msH;j++){
-      const v=j/(msH-1), h=99000*v*v*v;
+      const v=j/(msH-1), h=MH[MH.length-1]*v*v*v;
       let a=0; while(a<MH.length-2&&MH[a+1]<h) a++;
       const fa=Math.max(0,Math.min(1,(h-MH[a])/(MH[a+1]-MH[a])));
       for(let i=0;i<ME;i++){
@@ -271,7 +273,7 @@ window.IntMapModules.limbLayer=function(){
              refuses to add the layer) rather than being handed a broken one */
           gl.getExtension('OES_texture_float_linear');
           gl.getExtension('EXT_color_buffer_float');
-          const vs=compile(gl,gl.VERTEX_SHADER,VS), fs=compile(gl,gl.FRAGMENT_SHADER,FS);
+          const vs=compile(gl,gl.VERTEX_SHADER,VS), fs=compile(gl,gl.FRAGMENT_SHADER,fsSource(model));
           prog=gl.createProgram(); gl.attachShader(prog,vs); gl.attachShader(prog,fs); gl.linkProgram(prog);
           if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error('limb link: '+gl.getProgramInfoLog(prog));
           gl.deleteShader(vs); gl.deleteShader(fs);
