@@ -230,7 +230,11 @@ test('(#R167) prod deployed the DOM-only modules (legal / news timeline) and the
     const T = window.IntMapTables || {};
     return { n: Object.keys(T).length, gdp: T.GDP && T.GDP.USA, cap: T.CAPITAL && T.CAPITAL.JPN };
   });
-  expect(tables.n, 'js/tables.js deployed with all 27 tables').toBe(27);
+  /* (#R225) 27 → 25: `geoLayersDB` and `GEO_LABEL_JP` left with the nine geopolitics layers they
+     described (「レイヤー自体を削除してほしい」). The count is hard-coded ON PURPOSE — what it catches is a
+     PARTIAL deploy, which a «more than zero» test would not. ⚠ It is only run post-deploy (NEVER tier),
+     so nothing before the deploy can catch it drifting; move it in the same commit as the table. */
+  expect(tables.n, 'js/tables.js deployed with all 25 tables').toBe(25);
   expect(tables, 'the tables carry real values').toMatchObject({ gdp: 27361, cap: 'Tokyo' });
 });
 
