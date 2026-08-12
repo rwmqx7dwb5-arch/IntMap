@@ -13,7 +13,7 @@
  *  ④  The day/night side can be switched off from Settings and the answer survives a reload.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
-import { SESSION_KEY, BASE } from './helpers/session-seed.js';
+import { SESSION_KEY, SESSION_VALUE, BASE } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -22,7 +22,14 @@ test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   await page.addInitScript(([k, v]) => {
     try { localStorage.setItem(k, v); } catch (_) {}
-  }, [SESSION_KEY, '{"v":2,"defv":190,"layers":[],"lsrOpen":false}']);
+  }, [SESSION_KEY, SESSION_VALUE]);
+  /* (#R224) the Atlas kernel is fetched on demand — this spec drives a feature THROUGH Atlas, so it
+     reaches for it the way a reader's first click does. This context does not go through
+     installHermeticRouting, which is where the rest of the suite gets the same hook. */
+  await page.addInitScript(() => { try {
+    const t = setInterval(() => { try { if (window.IntMapAtlas) { clearInterval(t); window.IntMapAtlas.ensure(); } } catch (_) { } }, 50);
+    setTimeout(() => { try { clearInterval(t); } catch (_) { } }, 30000);
+  } catch (_) { } });
   await page.goto(BASE + '/');
   await page.waitForFunction(() => !!(window.IntMapGeoEngine && window.IntMapGeoEngine.hasRenderer()), null, { timeout: 60_000 });
   await page.waitForFunction(() => { try { return window.IntMapGeoEngine.canDraw(); } catch (_) { return false; } }, null, { timeout: 60_000 });

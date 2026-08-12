@@ -50,15 +50,26 @@ test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable 
 test('R189 defaults: every test-suite session seed carries the CURRENT generation', () => {
   const gen = /defv:(\d+)/.exec(read('js/session-tabs.js'));
   assert.ok(gen, 'js/session-tabs.js stamps a generation');
-  const seeds = ['playwright.config.js', 'tests/r172.spec.js', 'tests/r173.spec.js', 'tests/r186.spec.js'];
+  /* ⚠ (#R225) `tests/helpers/session-seed.js` IS NOW ONE OF THE SEEDS. It gained `sessionWith()` so a
+     spec that needs its own layer set stops writing the whole snapshot inline — which is what let the
+     stamp drift in the first place. A file that DELEGATES to it is stamped by it, so it is checked
+     there rather than twice. */
+  const seeds = ['playwright.config.js', 'tests/r172.spec.js', 'tests/r173.spec.js', 'tests/r186.spec.js',
+                 'tests/helpers/session-seed.js'];
   for (const f of seeds) {
     const src = read(f);
     for (const m of src.matchAll(/intmap_session2[\s\S]{0,200}?\{[\s\S]{0,200}?\}/g)) {
       const stamp = /["']?defv["']?\s*:\s*(\d+)/.exec(m[0]);
+      if (!stamp && /sessionWith\s*\(/.test(m[0])) continue;    /* stamped by the helper, not here */
       assert.ok(stamp, `${f}: a session seed without defv is healed back to the default-on layers`);
       assert.equal(stamp[1], gen[1], `${f}: the seed's generation must track js/session-tabs.js`);
     }
   }
+  /* …and the helper itself stamps both of the snapshots it can produce */
+  const helper = read('tests/helpers/session-seed.js');
+  const stamps = [...helper.matchAll(/["']?defv["']?\s*:\s*(\d+)/g)].map((m) => m[1]);
+  assert.ok(stamps.length >= 2, 'both SESSION_VALUE and sessionWith() carry a generation');
+  for (const st of stamps) assert.equal(st, gen[1], "the helper's generation must track js/session-tabs.js");
 });
 
 test('R189 defaults: buildLegend survives a missing legend element', () => {

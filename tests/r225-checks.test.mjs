@@ -143,3 +143,25 @@ test('R225 ⑥ no shipped source still resolves a deleted geopolitics key', () =
     }
   }
 });
+
+/* ── ⑦ THE SEED IS IN ONE PLACE ────────────────────────────────────────────────────────────────────
+   ⚠ #R225 changed what an ABSENT id means, and the suite's seed said `"layers":[]` — so «no thematic
+   layer» silently became «switch every base toggle off» and tests/r211.spec.js ③ went red in CI. The
+   seed now states what it always meant. It was ALSO inlined verbatim in two specs, which is how a
+   value drifts (#R220): they import it. */
+test('R225 ⑦ the seeded session lives in exactly one place, and it states the base toggles', () => {
+  const seed = read('tests/helpers/session-seed.js');
+  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
+  const files = readdirSync(new URL('tests/', root)).filter((f) => f.endsWith('.spec.js'));
+  for (const f of files) {
+    const src = read('tests/' + f);
+    assert.ok(!/'\{"v":2,"defv":\d+,"layers"/.test(src),
+      `tests/${f} inlines its own session seed — import SESSION_VALUE instead`);
+  }
+  /* the seed's base half must be exactly the base half of the app's own list */
+  const dl = read('js/data-layers.js');
+  const m = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl);
+  assert.ok(m, 'IntMapDefaultOn is declared');
+  const appBase = m[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  for (const id of appBase) assert.ok(seed.includes('"' + id + '"'), `the seed is missing ${id}`);
+});
