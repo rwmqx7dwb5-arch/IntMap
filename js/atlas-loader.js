@@ -42,6 +42,18 @@ window.IntMapAtlas = (function () {
        now it only happens when the download genuinely failed. */
     call: function (fn) {
       const a = Array.prototype.slice.call(arguments, 1);
+      /* ⚠ SYNCHRONOUS WHEN THE KERNEL IS ALREADY HERE. `need().then(…)` always defers by at least a
+         microtask, and that is a behaviour change nobody asked for: the sidebar's Atlas tab used to
+         mount inside the click, and with an unconditional promise it mounted one turn later — so
+         anything reading `#atlas-panel .atl-chat` straight after the click found nothing (measured:
+         tests/r145.spec.js ⑦ went red in CI on exactly that). Deferring is the price of FETCHING;
+         once the kernel is loaded there is nothing to wait for. Still returns a promise, so the two
+         paths look the same to a caller that awaits. */
+      const now = window.IntMapConsole;
+      if (now) {
+        try { return Promise.resolve(typeof now[fn] === 'function' ? now[fn].apply(now, a) : null); }
+        catch (_) { return Promise.resolve(null); }
+      }
       return need().then(function (C) {
         try { return (C && typeof C[fn] === 'function') ? C[fn].apply(C, a) : null; } catch (_) { return null; }
       });

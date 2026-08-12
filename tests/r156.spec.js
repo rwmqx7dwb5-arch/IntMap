@@ -13,7 +13,10 @@ import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 
-const CRITICAL = ['IntMapConsole', 'IntMapAtlasDebug', 'katex'];
+/* ⚠ (#R224) `katex` IS NOT A BOOT GLOBAL ANY MORE — 258 kB + its stylesheet, on every session, for a
+   feature most sessions never reach. It is keyed to its first use (`window.IntMapVendor.katex()`), so
+   this spec asks for it in beforeAll below rather than waiting for a boot that no longer fetches it. */
+const CRITICAL = ['IntMapConsole', 'IntMapAtlasDebug'];
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
@@ -24,6 +27,8 @@ test.beforeAll(async ({ browser }) => {
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction((g) => g.every((k) => typeof window[k] !== 'undefined'), CRITICAL, { timeout: 45_000 });
+  await page.evaluate(() => window.IntMapVendor.katex());
+  await page.waitForFunction(() => !!(window.katex && window.katex.renderToString), null, { timeout: 45_000 });
   await page.waitForTimeout(500);
   // (#R170) #2 asserts on COMPUTED styles from the Atlas reply stylesheet, which Atlas injects when its
   // panel is first built (ensure() → ensureStyle()). Until #R170 the desktop booted straight into
@@ -40,6 +45,10 @@ test.beforeAll(async ({ browser }) => {
 test.afterAll(async () => { await page?.context()?.close(); });
 
 test('#1 boot: KaTeX loaded, unified renderer present, no page errors', async () => {
+  /* ⚠ (#R224) KATEX IS NO LONGER FETCHED AT BOOT — 258 kB + its stylesheet on every session for a
+     feature most sessions never reach. It is keyed to its first use (`window.IntMapVendor.katex()`,
+     src/vendor.js), and js/atlas-reply.js asks for it when a reply actually carries LaTeX. So this
+     spec asks the same way; what it is defending — «KaTeX renders, and nothing threw» — is unchanged. */
   const r = await page.evaluate(() => ({
     katex: typeof window.katex,
     render: !!(window.katex && window.katex.renderToString),

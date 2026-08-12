@@ -199,6 +199,11 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
     ['js/tool-panel.js', /IntMapAtlas\.ensure\(\)/],
     ['js/countries-ui.js', /IntMapAtlas\.ensure\(\)/],
     ['js/sims.js', /IntMapAtlas\.call\('dispatch'/]]) assert.match(read(f), re, `${f} must reach Atlas through the loader`);
+  /* ⚠ once the kernel is here, call() is SYNCHRONOUS — deferring is the price of FETCHING, not a
+     thing to pay for ever. The sidebar's Atlas tab used to mount inside the click, and an
+     unconditional promise moved that a turn later (tests/r145 ⑦ caught it in CI). */
+  assert.match(ld, /const now = window\.IntMapConsole;/);
+  assert.match(ld, /if \(now\) \{\s*\n\s*try \{ return Promise\.resolve\(typeof now\[fn\]/);
   /* …⚠ and the one that CLOSES it does not, because downloading 658 kB to close a panel that was
      never opened is the same defect pointed the other way */
   assert.ok(!/IntMapAtlas/.test(read('js/flight-sim.js')), 'the flight sim closes Atlas without fetching it');
