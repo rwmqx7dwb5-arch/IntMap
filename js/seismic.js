@@ -864,6 +864,42 @@ window.IntMapModules.seismic=function(HOST){
         setFieldOpacity(fldOpacity);
       }catch(_){}
     }
+    /* ══ ⚠⚠ (#R226) 100 % WAS 92 %, BECAUSE THE OPACITY WAS WRITTEN IN TWO PLACES ═══════════════════
+       「MMI震度分布の不透明度100%は全然100%ではない。」 And it never could be. Two independent
+       transparencies multiply into this picture:
+
+         · `raster-opacity`, which the slider sets — 1.00 at the top of its range, correctly;
+         · the ALPHA BAKED INTO EVERY PAINTED PIXEL of the PNG, which was 235/255 = 0.922.
+
+       So the top of the slider drew 0.922, and no setting of the control could ever reach 1. The
+       baked 235 dates from when the field had no slider at all (it was the only way to see the
+       basemap through it); once #R190 added the control it became a second, invisible opinion about
+       the same quantity. ⚠ ONE OWNER: the pixels are opaque and `raster-opacity` is the only
+       transparency, so the number on the slider is the transparency on the screen. ⚠ THAT MOVES THE
+       DEFAULT TOO, and deliberately: 85 % used to draw 0.85 × 0.922 = 0.784 and now draws 0.85. The
+       alternative — re-deriving the default as 0.78 so the first view is byte-identical — would keep
+       exactly the defect that was reported, one notch further down the slider. Every position on the
+       control now means the fraction it prints, including the default one.
+       ⚠ BOTH RASTERS. The fine field and the far annulus are one picture under one slider (#R191),
+       so they share the constant rather than each carrying a literal. */
+    const FIELD_ALPHA=255;
+    /* ══ ⚠ (#R226) A YIELD THAT COSTS 4 ms IS NOT A FREE YIELD ══════════════════════════════════════
+       「地震と津波の計算速度は品質を下げない範囲で爆速に。」 Both rasters below hand the event loop back
+       on a 12 ms budget so the page stays responsive while they compute — with `setTimeout(…,0)`, which
+       HTML clamps to ~4 ms once it is nested. At this round's 2,560 grid that is up to 320 waits of
+       4 ms inside a build the panel reports as computation, and #R218 already paid for it once by
+       yielding less often (which is responsiveness spent to buy back latency).
+       A MessageChannel message is an ordinary task — the event loop runs, input is delivered, a frame
+       can be produced — and it comes back in under a millisecond. One channel for the module, a queue
+       so overlapping builds cannot steal each other's resolver, and a setTimeout fallback. */
+    const _yield=(function(){
+      try{
+        if(typeof MessageChannel!=='function') throw 0;
+        const ch=new MessageChannel(), q=[];
+        ch.port1.onmessage=()=>{ const f=q.shift(); if(f) f(); };
+        return ()=>new Promise(r=>{ q.push(r); ch.port2.postMessage(0); });
+      }catch(_){ return ()=>new Promise(r=>setTimeout(r,0)); }
+    })();
     function setFieldOpacity(v){ fldOpacity=Math.max(0.05,Math.min(1,+v||0));
       try{ if(GE().layers.has(LYR_IMG)) GE().layers.setPaint(LYR_IMG,'raster-opacity',fldOpacity); }catch(_){}
       try{ if(GE().layers.has(LYR_FAR)) GE().layers.setPaint(LYR_FAR,'raster-opacity',fldOpacity); }catch(_){}   /* (#R191) the far annulus is the same field — one slider */
@@ -1034,11 +1070,11 @@ window.IntMapModules.seismic=function(HOST){
           if(scale==='jma'){ const cl=jmaClass(I); if(!cl) continue; rgb=rgbOfFar(cl); }
           else { if(I<2) continue; rgb=mmiRGB(I,_farRGB); }
           const o=(j*NF+i)*4;
-          px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=235; painted++;
+          px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=FIELD_ALPHA; painted++;
           if(km>MMI_CALIB_KM) extrap++;
         }
         if((j&63)===63){ const t=performance.now();
-          if(t-_lastYield>12){ await new Promise(r=>setTimeout(r,0)); _lastYield=performance.now();
+          if(t-_lastYield>12){ await _yield(); _lastYield=performance.now();
             if(seq!==fldSeq) return; } }
       }
       if(seq!==fldSeq) return;
@@ -1070,7 +1106,17 @@ window.IntMapModules.seismic=function(HOST){
       if(!epi){ _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; paintField(); paintFar(); return; }
       fldBusy=true; fldStale=false; fldPct=0; if(opened) report();
       const t0=performance.now();
-      const prog=(p)=>{ fldPct=Math.max(0,Math.min(100,Math.round(p))); if(opened) _setProg(); };
+      /* ══ ⚠ (#R226) THE PROGRESS BAR WAS REDRAWN FIVE TIMES PER VISIBLE STEP ═══════════════════════
+         「地震と津波の計算速度は品質を下げない範囲で爆速に。」 `prog()` is called every eight rows —
+         320 times at this round's 2,560 ceiling — and wrote to the DOM every time, although the number
+         it writes is a ROUNDED PERCENTAGE with at most 59 distinct values across the whole loop. Each
+         write invalidates style and paint for a visible element, i.e. the browser is asked for a frame
+         it has no new information for, in the middle of the arithmetic. A CPU profile of the build
+         charges 61 % of its wall clock to root-level native work with the page NOT idle — the frames
+         between the loop's yields — against 0.7 s of this app's own JavaScript.
+         ⚠ It is the SAME number and the same bar; it is written when it changes. */
+      const prog=(p)=>{ const v=Math.max(0,Math.min(100,Math.round(p)));
+        if(v===fldPct) return; fldPct=v; if(opened) _setProg(); };
       try{
         const prof=pgvProfile();
         const ampRef=siteAmp();
@@ -1160,9 +1206,35 @@ window.IntMapModules.seismic=function(HOST){
            patience; 640² × 10 B is 4.1 MB, which is nothing, and 640 is where it stops.
            ⚠ AND THE BUILD IS STILL DEM-BOUND — #R202 measured 2.4× the cells at the same wall clock,
            and this round re-measured it at the new ceiling rather than assuming it (see DEV-NOTES). */
+        /* ══ (#R226) 1.5 km → 1.0 km, AND THE CEILING WITH IT ═══════════════════════════════════════
+           「MMI震度分布の…解像度を上げて。」 (confirmed with the reader: 1.0 km cell, ceiling 2,560².)
+
+           Two quantities decide this picture's grain and only one of them was moved by #R204/#R205:
+           the CELL, and the ceiling N_MAX that overrides it once the field is wide. At 1,792 a field
+           spanning 2,700 km was already back to a 1.5 km cell, so raising the cell target alone would
+           have changed nothing for exactly the events that look blocky. Both move: 1.0 km, ceiling
+           2,560 — a 2,560 km field is 1.0 km a cell where it used to be 1.43, and everything narrower
+           than 2,560 km gets its full 1.0 km.
+
+           ⚠ THE FINER CELL BUYS REAL INFORMATION, not interpolation — which is the objection #R203
+           raised against going past 640 and which #R215 answered without noticing: the COASTLINE is
+           rasterised from the app's own 10 m outline INTO THIS GRID (js/coast-mask.js), so land/sea
+           is decided at whatever the cell is. At 1.5 km a 1 km-wide spit is a coin toss; at 1.0 km it
+           is drawn. The site term is still read at the DEM's own spacing (`dsM`), and still says so.
+
+           ⚠ THE CEILING IS STILL MEMORY (#R204/#R205's argument, re-costed here):
+               retained  1,792² × 10 B = 32.1 MB  →  2,560² × 10 B = 65.5 MB
+               transient RGBA 12.8 MB → 26.2 MB (freed with the canvas)
+           ⚠ AND THE PHONE DOES NOT MOVE. Its ceiling is the tab, not patience (#R20), the reader
+           chose not to raise it, and this round is also answering 「モバイル版がまだ劇的に遅い」 —
+           raising the phone's grid would work against that instruction. 288…640 is unchanged. */
         const spanKm0=2*halfKm, _mob=(typeof isMobile==='function'&&isMobile());
-        const CELL_KM=1.5, N_MIN=(_mob?288:640), N_MAX=(_mob?640:1792);
-        const N=Math.max(N_MIN,Math.min(N_MAX,Math.round(spanKm0/CELL_KM)));
+        /* the phone keeps #R204's cell, named rather than inlined — see the ⚠ above for why it does
+           not move this round. The line below stays the one place the grid rule is declared, which is
+           what #R202/#R203/#R204's checks read. */
+        const CELL_KM_MOB=1.5;
+        const CELL_KM=1.0, N_MIN=(_mob?288:640), N_MAX=(_mob?640:2560);
+        const N=Math.max(N_MIN,Math.min(N_MAX,Math.round(spanKm0/(_mob?CELL_KM_MOB:CELL_KM))));
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
         let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
@@ -1306,7 +1378,12 @@ window.IntMapModules.seismic=function(HOST){
             if(s2&&s2.have>=snap.have) snap=s2;
           }catch(_){ break; }
         }
-        const demAt=snap?((lo,la)=>snap.at(lo,la)):((lo,la)=>demElevBilinear(lo,la,z));
+        /* (#R226) ONE SAMPLER PER ROW, not one call per sample — see demSnapshot.rowSampler in
+           js/map-readout.js for why (the four transcendentals and the Map key are all latitude, and
+           the latitude is constant along a row). The fallback path, for a build with no snapshot at
+           all, keeps calling demElevBilinear exactly as before. */
+        const _rowAt=(snap&&snap.rowSampler)?((la)=>snap.rowSampler(la))
+                                            :((la)=>((lo)=>demElevBilinear(lo,la,z)));
         /* (#R192) the bundled land/sea sign, for the cells the DEM did not answer for — see below */
         let landMask=null;
         try{ const LM=window.IntMapLandMask; if(LM){ await LM.warm(); if(seq!==fldSeq) return; if(LM.ready()) landMask=LM; } }catch(_){}
@@ -1373,11 +1450,14 @@ window.IntMapModules.seismic=function(HOST){
         let _lastYield=performance.now();
         for(let j=0;j<N;j++){
           const la=latOfY(y0+(j+0.5)*dy);
+          /* (#R226) the row's own samplers: `_hereAt` reads this latitude, `_northAt` the one the
+             slope's second arm needs. Both are prepared once for the whole row (see _rowAt). */
+          const _hereAt=_rowAt(la), _northAt=_rowAt(Math.max(-85,Math.min(85,la+dLatS)));
           for(let i=0;i<N;i++){
             const lo=W+(i+0.5)*dx, k=j*N+i, o=k*4;
             const km=_fastD?(2*Math.asin(Math.min(1,Math.sqrt(rowA[j]+rowB[j]*colC[i])))*RE):distKmTo(lo,la);
             if(km>MMI_MAX_KM){ vs[k]=0; continue; }
-            const e0=demAt(lo,la);
+            const e0=_hereAt(lo);
             let amp;
             /* ⚠ (#R192) A CELL WITH NO ELEVATION IS NOT A CELL ON LAND. This branch used to paint —
                with the panel's site class — and over water that is the same reported bug as the far
@@ -1406,16 +1486,16 @@ window.IntMapModules.seismic=function(HOST){
               if(!(landAt(k,lo,la)===true&&e0>-440)){ sea++; vs[k]=-1; continue; }
               if(!slopeUsable){ coarse++; const bv=vsm?vsm.at(lo,la):null;
                 if(bv){ vs[k]=bv; amp=ampOf(bv); bulk++; } else { vs[k]=0; amp=ampRef; } }
-              else { let ex=demAt(lo+dLngS,la); if(ex==null) ex=e0;
-                let ey=demAt(lo,Math.max(-85,Math.min(85,la+dLatS))); if(ey==null) ey=e0;
+              else { let ex=_hereAt(lo+dLngS); if(ex==null) ex=e0;
+                let ey=_northAt(lo); if(ey==null) ey=e0;
                 const v=vs30FromSlope(Math.hypot(ex-e0,ey-e0)/dsM); vs[k]=v; amp=ampOf(v); } }
             /* (#R190) see the note by dsM. (#R223) …and the give-up is the bundled raster, not one
                class for the whole picture — the second of the two ways this field became rings. */
             else if(!slopeUsable){ coarse++; const bv=vsm?vsm.at(lo,la):null;
               if(bv){ vs[k]=bv; amp=ampOf(bv); bulk++; } else { vs[k]=0; amp=ampRef; } }
             else {
-              let ex=demAt(lo+dLngS,la); if(ex==null) ex=e0;
-              let ey=demAt(lo,Math.max(-85,Math.min(85,la+dLatS))); if(ey==null) ey=e0;
+              let ex=_hereAt(lo+dLngS); if(ex==null) ex=e0;
+              let ey=_northAt(lo); if(ey==null) ey=e0;
               const slope=Math.hypot(ex-e0,ey-e0)/dsM;
               const v=vs30FromSlope(slope); vs[k]=v; amp=ampOf(v);
             }
@@ -1430,11 +1510,11 @@ window.IntMapModules.seismic=function(HOST){
             if(scale==='jma'){ const cls=jmaClass(I); if(!cls) continue; c=_rgbOf(cls); }
             else { if(I<2) continue; c=mmiRGB(I,_fineRGB); }
             if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
-            px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
+            px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=FIELD_ALPHA; painted++;
           }
           if((j&7)===7){ prog(40+58*(j+1)/N);
             const t=performance.now();
-            if(t-_lastYield>12){ await new Promise(r=>setTimeout(r,0)); _lastYield=performance.now();
+            if(t-_lastYield>12){ await _yield(); _lastYield=performance.now();
               if(seq!==fldSeq) return; } }
         }
         ctx.putImageData(im,0,0);
