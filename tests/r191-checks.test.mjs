@@ -158,7 +158,13 @@ test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come ou
      that was actually asked for rather than counting the open ocean as a failure. */
   assert.match(build, /(?:const|let) snap=\(typeof demSnapshot==='function'\)\?demSnapshot\(W,Ss,E,Nn,z,_keepTile\):null;/,
     'one snapshot for the whole picture');
-  assert.match(build, /const demAt=snap\?\(\(lo,la\)=>snap\.at\(lo,la\)\)/, 'and the loop reads it');
+  /* ⚠ (#R226) THE INVARIANT IS «THE LOOP READS THE SNAPSHOT», NOT «IT CALLS at()». #R226 made the
+     read row-coherent — one sampler prepared per latitude instead of `at()` per sample, because the
+     four transcendentals inside `_ll2tile` and the Map key are all latitude and the latitude is
+     constant along a row. `at()` is now that same sampler (js/map-readout.js), so the frozen-DEM
+     property this test exists for is untouched; what changed is how often the row half is evaluated. */
+  assert.match(build, /const _rowAt=\(snap&&snap\.rowSampler\)/, 'and the loop reads it — by row');
+  assert.match(build, /const _hereAt=_rowAt\(la\), _northAt=_rowAt\(/, 'both of the row\'s latitudes, prepared once');
   assert.ok(!/demElevAt\(/.test(build),
     'and no demElevAt in the loop: it REQUESTS, which is what evicted the tiles the field was reading');
   assert.ok(!/demElevBilinear\(lo\+dLngS,la,z\)/.test(build), 'the slope samples come from the snapshot too');

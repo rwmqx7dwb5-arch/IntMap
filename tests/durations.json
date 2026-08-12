@@ -64,5 +64,6 @@
   "tests/r210.spec.js": 10,
   "tests/r211.spec.js": 10,
   "tests/security.spec.js": 9,
-  "tests/smoke.spec.js": 8
+  "tests/smoke.spec.js": 8,
+  "tests/r226-seismic.spec.js": 34
 }

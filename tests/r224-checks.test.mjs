@@ -149,7 +149,14 @@ test('R224 ④ Simplified Chinese is registered and regenerates byte-for-byte', 
 /* ── ⑤ THE SKY'S GREY-GREEN HORIZON WAS THE QUADRATURE ─────────────────────────────────────────── */
 test('R224 ⑤ the sky model converges, and its low-elevation horizon is blue', async () => {
   const src = read('js/sky-model.js');
-  assert.match(src, /const N = 32, M = 8, KWARP = 7;/, 'more samples, and a warp');
+  /* ⚠ (#R226) the COUNT is not what #R224 established — the warp and the convergence test are. Pinning
+     the literal 32 meant this failed the moment the limb ray was convergence-tested too (#R226 raised
+     it to 256 on the same argument, measured the same way). What has to stay true is that the march is
+     warped, ordered, and fine enough — so that is what is asserted. */
+  const _n = src.match(/const N = (\d+), M = (\d+), KWARP = (\d+);/);
+  assert.ok(_n, 'the march states its sample count, sun sub-march and warp');
+  assert.ok(+_n[1] >= 32, `the view march is at least #R224's 32 (found ${_n[1]})`);
+  assert.equal(+_n[3], 7, 'and the warp constant is unchanged');
   assert.match(src, /const tLow = Math\.max\(tIn, Math\.min\(tMax, -\(o\[0\] \* d\[0\]/,
     'the warp is anchored at the ray’s LOWEST point — the eye inside the air, the tangent from space');
   assert.match(src, /out\.sort\(\(p, q\) => p\[0\] - q\[0\]\);/,
