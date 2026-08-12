@@ -1557,7 +1557,13 @@ function _m(){ return window.__imap||null; }
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
     setLimb(id,o){ if(!_limbs[id]) return false; _limbOn[id]=!!(o&&o.on); _limbStrength[id]=(o&&o.strength!=null)?o.strength:1; return true; },
     removeLimb(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _limbs[id]; delete _limbOn[id]; return true; },
-    hasLimb(id){ return !!_limbs[id]; },
+    /* ⚠ THE QUESTION IS "IS IT IN THE STYLE", NOT "HAVE WE EVER BUILT ONE". `_limbs[id]` is the
+       cached layer OBJECT and it outlives a style reload; the layer does not. Answering from the
+       cache would mean that after any setStyle the caller would see `true`, never re-add, and the
+       Earth's edge would go quietly back to the renderer's own five-step halo — the #R170 shape of
+       defect ("isStyleLoaded() is not the question you are asking"). addLimb reuses the cached
+       object, so re-adding costs nothing but an onAdd. */
+    hasLimb(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* ══ (#R202) OBJECTS IN ORBIT — a cloud of points at their own altitudes ═══════════════════════
        「すべての地球周囲にある衛星をリアルタイムで実場所でアニメーションで見られるレイヤーを作って。」
        Asked for as an intent — "these things are at these altitudes, draw them there" — because that
