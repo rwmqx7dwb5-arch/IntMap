@@ -141,21 +141,16 @@ test('R196 ③b the sky is set for EVERY basemap, and set3D no longer fights it'
   assert.match(sky, /function _horizonBlend\(\)/, 'and it is a function of the camera and the Sun');
   assert.match(sky, /0\.14\+0\.41\*frac/, 'the height term #R213 measured is still the base');
   assert.match(sky, /Math\.sqrt\(r\/_HB_REF\)/, 'and at ground level it is still the 0.55 #R196 measured');
-  /* ⚠ (#R216) SUPERSEDED, DELIBERATELY. #R196 pinned the fog OFF because it was matching a Cesium
-     capture, and Cesium's SkyAtmosphere draws no ground haze. #R216 was asked to make the atmosphere
-     「もっとリアルで忠実で」 and put aerial perspective back: it is the same Rayleigh scattering seen
-     along a horizontal path, and with it off the terrain met the horizon at a hard line. What #R196
-     was actually protecting — that no white wash covers the middle of the map (#R174's complaint about
-     the flight simulator) — is kept as a FLOOR on `fog-ground-blend`, and the fog is off entirely above
-     the atmosphere, which is where Cesium's capture and this model agree again. */
-  assert.match(sky, /'fog-ground-blend':fg\.ground/, 'the fog is not driven by the aerial-perspective term');
-  assert.match(sky, /function _aerial\(\)/, 'there is no aerial-perspective term');
-  assert.match(sky, /if\(h>=80000\)\s*return\s*\{\s*ground:1,\s*horizon:0\s*\}/,
-    'haze is drawn from above the atmosphere, where none is in the line of sight');
-  {
-    const m = /ground:\+\(1-([\d.]+)\*f\)/.exec(sky);
-    assert.ok(m && 1 - parseFloat(m[1]) >= 0.6, 'the haze reaches too far in from the horizon (#R174)');
-  }
+  /* ⚠⚠ (#R223) AND SUPERSEDED BACK, AT THE READER'S EXPLICIT INSTRUCTION.
+     「衛星画像で地平線付近を白い靄で見えなくするな。クソ機能つけるな。」(confirmed: on every basemap.)
+     #R196 pinned the fog OFF; #R216 put aerial perspective back and argued the physics correctly;
+     #R223 measured the picture and took it out again. `fog-ground-blend` is not "how strong" but
+     WHERE ALONG THE GROUND the wash starts, so 0.62 painted the pale horizon colour across the far
+     third of the screen — over the satellite imagery the reader opened. What #R196 protected is
+     protected again, and from ONE place. */
+  assert.match(sky, /'fog-ground-blend':fg\.ground/, 'the pair still comes from _aerial(), not from literals');
+  assert.match(sky, /function _aerial\(\)\{ return \{ ground:1, horizon:0 \}; \}/, 'off at every altitude');
+  assert.ok(!/ground:\+\(1-[\d.]+\*f\)/.test(sky), 'no altitude ramp may bring the wash back (#R174)');
   /* the horizon colour follows the Sun, so it cannot be a constant */
   assert.match(sky, /function _horizonColour\(\)/);
   assert.match(sky, /function _sunElevAtCentre\(\)/);

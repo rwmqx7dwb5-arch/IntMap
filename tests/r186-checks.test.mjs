@@ -217,11 +217,14 @@ test('R186 launch screen: static markup, the real icon, and a failsafe', () => {
   assert.match(read('css/intmap.css'), /\.boot-splash\{/);
 });
 
-test('R186 i18n: every new string exists in all five languages', () => {
+test('R186 i18n: every new string exists in every registered language', () => {
+  /* ⚠ (#R223) EVERY REGISTERED LANGUAGE, not the number five — a sixth (zh) landed and this
+     assertion was about coverage. `LANGS` is the one list (js/lang-registry.js). */
+  const NL = (read('js/lang-registry.js').match(/\{\s*code:\s*'[a-z]+'/g) || []).length;
   const src = read('js/i18n.js');
   for (const key of ['poiLabels', 'planesAreaHint']) {
     const n = [...src.matchAll(new RegExp(key + ':"', 'g'))].length;
-    assert.equal(n, 5, `${key} is in ${n} languages, not 5`);
+    assert.equal(n, NL, `${key} is in ${n} languages, not ${NL}`);
   }
 });
 

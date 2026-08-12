@@ -3724,6 +3724,47 @@ window.IntMapModules.dataLayers=function(HOST){
         if(cb&&cb.checked) ["lyr-oceancur-arrows","lyr-oceancur","lyr-oceancur-lbl"].forEach(l=>setVis(l,true));
       }).catch(e=>{ _ocLoading=false; console.warn("ocean currents",e); autoUncheck("dl-oceancur"); });
     }
+    /* ══ ⚠ (#R223) THE OCEAN-CURRENT ROW HAD NO LEGEND AT ALL ═══════════════════════════════════════
+       「海流レイヤーに凡例がない。」 MEASURED on the shipped build: this row (the Oceans & maritime
+       one, #R208) paints three colours and an arrow field and registers NOTHING — no `makeLegend`
+       call, no `_registerLayerOpacity`, no entry in `GENERIC_LEG` — so the map showed red, blue and
+       grey lines with no statement anywhere of what the three mean. (The World-data plate,
+       js/ocean-currents.js, is a DIFFERENT layer and does have one; both are reachable, which is why
+       the report can be true while a legend exists somewhere.)
+
+       It goes into the app's ONE legend box — `.data-legend.generic-legend`, the same window every
+       other layer uses, with its drag grip, its ✕, its minimise and its opacity row (#R215's rule:
+       a family renders INTO that box rather than opening a second window beside it).
+       ⚠ The three keys read their colours from OC_WARM / OC_COLD / OC_ZONAL — the same constants the
+       paint expression is built from, never a second copy (#R212's lesson). */
+    const _ocL=window.IntMapLang.pick(()=>HOST.lang);
+    function _ocKey(col,txt){ return '<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
+      +'<span style="width:22px;height:4px;border-radius:2px;flex:none;background:'+col+';box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></span>'
+      +'<span>'+escapeHtml(txt)+'</span></div>'; }
+    function showOceanCurLegend(){
+      try{
+        const el=window._registerLayerOpacity&&window._registerLayerOpacity('oceancur',
+          ['Ocean currents','海流','Meeresströmungen','Океанские течения','Corrientes oceánicas'],
+          ['lyr-oceancur','lyr-oceancur-arrows','lyr-oceancur-lbl'],'dl-oceancur');
+        if(!el) return;
+        let b=el.querySelector('.oc-dl-key');
+        if(!b){ b=document.createElement('div'); b.className='oc-dl-key'; b.style.cssText='margin-top:4px;';
+          const h=el.querySelector('h4');
+          if(h&&h.parentNode===el) el.insertBefore(b,h.nextSibling); else el.appendChild(b); }
+        b.innerHTML=_ocKey(OC_WARM,_ocL('Warm current — warmer than the sea at the same latitude','暖流 — 同じ緯度の海より暖かい流れ','Warme Strömung — wärmer als das Meer derselben Breite','Тёплое течение — теплее моря на той же широте','Corriente cálida — más cálida que el mar de su latitud'))
+          +_ocKey(OC_COLD,_ocL('Cold current — colder than the sea at the same latitude','寒流 — 同じ緯度の海より冷たい流れ','Kalte Strömung — kälter als das Meer derselben Breite','Холодное течение — холоднее моря на той же широте','Corriente fría — más fría que el mar de su latitud'))
+          +_ocKey(OC_ZONAL,_ocL('Zonal — no measurable temperature contrast','東西流 — 有意な水温差なし','Zonal — kein messbarer Temperaturkontrast','Зональное — без заметного контраста','Zonal — sin contraste medible'))
+          +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
+          +'<span style="width:22px;flex:none;text-align:center;color:#cfe4ff;text-shadow:0 0 2px rgba(0,20,40,0.8);">➤</span>'
+          +'<span>'+escapeHtml(_ocL('Arrows: the measured flow — bigger and brighter where it is faster','矢印：実測の流れ。速いほど大きく明るい','Pfeile: die gemessene Strömung — größer und heller, wo sie schneller ist','Стрелки: измеренное течение — крупнее и ярче там, где быстрее','Flechas: el flujo medido — mayor y más brillante donde es más rápido'))+'</span></div>'
+          +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:2px;">'
+          +escapeHtml(_ocL('NOAA satellite altimetry (geostrophic) + blended wind stress (Ekman), 0.25° climatology. Warm / cold is measured against NOAA OISST at the same latitude.','NOAA の衛星海面高度計（地衡流）と混合風応力（エクマン流）による 0.25° 気候値。暖流・寒流は同緯度の NOAA OISST 水温との比較による実測です。','NOAA-Satellitenaltimetrie (geostrophisch) + Windschub (Ekman), 0,25°-Klimatologie. Warm/kalt gemessen an NOAA OISST derselben Breite.','Спутниковая альтиметрия NOAA (геострофическое течение) и ветровое напряжение (экмановское), климатология 0,25°. Тёплое/холодное — по NOAA OISST на той же широте.','Altimetría satelital de NOAA (geostrófica) + tensión del viento (Ekman), climatología de 0,25°. Cálida/fría se mide con NOAA OISST en la misma latitud.'))
+          +'</div>';
+        el.style.display='block';
+        try{ window._ensureLegendMinimize&&window._ensureLegendMinimize(el); }catch(_){}
+        try{ tileLegends(); }catch(_){}
+      }catch(_){}
+    }
     function addSubcables(){
       if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); return; }
       if(_subcablesLoading) return; _subcablesLoading=true;
@@ -3945,7 +3986,8 @@ window.IntMapModules.dataLayers=function(HOST){
           whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
         }
         else if(id==='subcables'){ whenStyleReady().then(()=>{ try{ addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
-        else if(id==='oceancur'){ whenStyleReady().then(()=>{ try{ addOceanCurrents(); }catch(e){ console.warn('ocean currents',e); } }); }   /* (#R208) */
+        else if(id==='oceancur'){ showOceanCurLegend();   /* (#R223) 「海流レイヤーに凡例がない。」 — shown at once, before the data lands */
+          whenStyleReady().then(()=>{ try{ addOceanCurrents(); }catch(e){ console.warn('ocean currents',e); } }); }   /* (#R208) */
         else if(id==='hillshade'){
           whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
@@ -4028,7 +4070,8 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
-        else if(id==='oceancur'){ ['lyr-oceancur-arrows','lyr-oceancur','lyr-oceancur-lbl'].forEach(l=>setVis(l,false)); }   /* (#R208) */
+        else if(id==='oceancur'){ ['lyr-oceancur-arrows','lyr-oceancur','lyr-oceancur-lbl'].forEach(l=>setVis(l,false));
+          try{ window._hideGenericLegend&&window._hideGenericLegend('oceancur'); }catch(_){} }   /* (#R208) (#R223) the legend goes with the layer */
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none';
           /* (#R19) Phones: drop the Köppen sampling work-set (4096² canvas + pixel copies, ~150 MB)

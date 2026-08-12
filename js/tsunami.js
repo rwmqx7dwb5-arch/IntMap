@@ -322,6 +322,8 @@ window.IntMapModules.tsunami=function(HOST){
           sim.dt=m.dt; sim.steps=m.steps; sim.total=m.total; sim.nFrames=m.nFrames; sim.cellKm=m.cellKm;
           sim.strike=m.strike; sim.dipDeg=m.dipDeg; sim.seaCells=m.seaCells; sim.hMax=m.hMax; sim.cMax=m.cMax;
           sim.fineCells=m.fineCells|0;   /* (#R205) how many cells took the measured floor */
+          /* (#R223) the model build is half of a run's wall clock — so it is reported, not invisible */
+          sim.sourceMs=m.sourceMs|0; sim.okadaCalls=m.okadaCalls|0;
           sim.fault={ L:m.faultL, W:m.faultW, slip:m.slip, M0:m.M0, mw, drawn:!!m.drawnFault };
           sim.eta0Up=m.eta0Up; sim.eta0Down=m.eta0Down;
           installPaint();
@@ -1035,7 +1037,7 @@ window.IntMapModules.tsunami=function(HOST){
           strike:Math.round(sim.strike||0), dipDeg:sim.dipDeg, slipM:sim.fault?+sim.fault.slip.toFixed(1):null,
           faultKm:sim.fault?[Math.round(sim.fault.L/1000),Math.round(sim.fault.W/1000)]:null,
           coastMaxM:+(sim.coastMax||0).toFixed(2), coastAt:sim.coastAt, seaCells:sim.seaCells,
-          fineCells:sim.fineCells||0, fineCellKm:+(111.32/FINE_CPD).toFixed(2), fineWhy,   /* (#R205) */
+          fineCells:sim.fineCells||0, sourceMs:sim.sourceMs||null, okadaCalls:sim.okadaCalls||null, fineCellKm:+(111.32/FINE_CPD).toFixed(2), fineWhy,   /* (#R205) */
           ampM:sim.amp, autoAmpM:sim.autoAmp||null, solveMs:sim.solveMs||null, ms:sim.ms }:null }) };
 
     /* ══ (#R214) …AND THE TSUNAMI TRAVELS WITH THE LINK TOO ═══════════════════════════════════════
