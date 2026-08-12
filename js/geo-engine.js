@@ -1566,6 +1566,39 @@ function _m(){ return window.__imap||null; }
            this project can automate is a software rasteriser (#R202 measured that once already, in
            the other direction), so without an override no test could ever look at the drawn band. */
         let forced=false; try{ forced=/[?&]limb=1\b/.test(String(location.search||'')); }catch(_){}
+        /* ══ ⚠⚠ (#R228) NOT ON A PHONE EITHER — AND THAT ONE IS *NOT* MEASURED ═══════════════════════
+           #R227 shipped this layer with one refusal (software rasterisers) and one measurement behind
+           it: `map._render` 4.7 ms against maplibre's own 5.1 on a desktop GPU. No phone was ever in
+           that measurement, and a phone is the one device where it cannot be waved through:
+
+             · the march is 2 × 128 = 256 steps PER FRAGMENT, each with two texture lookups
+             · an iPhone runs at devicePixelRatio 3 — 393 × 852 CSS is 1179 × 2556 = 3.0 M fragments,
+               2.3× the buffer this was measured at
+             · a tile-based deferred mobile GPU is fill- and bandwidth-bound, which is precisely the
+               axis this shader loads, and it shares that bandwidth with the basemap it draws over
+
+           The reader's report is 「重いどころの話じゃない…機種でどうとか言ってる場合じゃない」 on
+           iPhone Safari, and this layer landed the day before it. Refusing it there costs the rim's
+           extra fidelity on phones and NOTHING else — maplibre's own `atmosphere.fragment.glsl` still
+           draws a limb, exactly as it did through #R196–#R226, because `_applyLimb()` reports that the
+           layer was refused and leaves `atmosphere-blend` alone (#R227's own rule: a refusal is told
+           by RESULT, not by intent, or the globe ends up with no atmosphere at all).
+
+           ⚠ ASKED OF THE POINTER, NOT THE WIDTH — #R225's rule. «does this device pay for a
+           per-pixel full-screen march» is a question about the GPU, so `(hover:none) and
+           (pointer:coarse)` is the test: it is true for a phone or tablet in EITHER orientation and
+           false for a touchscreen laptop, where a narrow window would otherwise switch the rim off.
+           The Apple UA test sits beside it because iPadOS reports itself as a desktop.
+           ⚠ THIS IS A HOLD, NOT A VERDICT. `?limb=1` still forces it on, which is how the phone
+           measurement gets taken; if it turns out to be cheap there, this branch comes out. */
+        let phone=false;
+        if(!forced) try{
+          const ua=String(navigator.userAgent||'');
+          phone=(matchMedia('(hover: none) and (pointer: coarse)').matches)
+             || /iPhone|iPad|iPod|Android|Mobi/i.test(ua)
+             || (/Mac/.test(ua) && navigator.maxTouchPoints>1);
+        }catch(_){ phone=false; }
+        if(phone) return false;
         if(!forced) try{
           const g=cv.getContext('webgl2'), ext=g&&g.getExtension('WEBGL_debug_renderer_info');
           const name=String((ext&&g.getParameter(ext.UNMASKED_RENDERER_WEBGL))||'');

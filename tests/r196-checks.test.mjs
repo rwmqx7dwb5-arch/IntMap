@@ -196,7 +196,17 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
   assert.match(n, /if\(!GE\(\)\.layers\.hasDynamicImage\(DYN\)\)\{[^}]*destroy\(\); return false; \}/,
     'and the image — which now carries the whole effect — is read back too');
   assert.match(n, /imageRowLatitudes/, 'the lights image is placed through the engine’s row→latitude map (#R195)');
-  assert.match(n, /if\(zoomNow\(\)>ZMAX\+0\.4\)\{ return; \}/, 'nothing is built until the camera is wide enough');
+  /* ⚠⚠ (#R228) THIS PINNED THE LINE, SO IT PINNED THE DEFECT. It asserted the exact text
+     `if(zoomNow()>ZMAX+0.4){ return; }` — a bare `return` — and that bare return WAS the bug: the
+     guard stopped the layers being built above the ramp and never removed ones already built, so on
+     every cold load (the app opens at z1.7, inside the ramp) both full-screen layers survived every
+     zoom the reader actually uses. A test that pins this round's characters cannot survive next
+     round's fix; the check is the RELATIONSHIP (#R198). */
+  const guard = n.match(/if\s*\(\s*zoomNow\(\)\s*>\s*ZMAX[^)]*\)\s*\{[^}]*\}/);
+  assert.ok(guard, 'the camera-width guard is still there');
+  assert.match(guard[0], /return/, 'nothing is BUILT until the camera is wide enough');
+  assert.match(guard[0], /destroy\(\)/,
+    'and nothing is LEFT BUILT once it is not — above the ramp the layers are torn down (#R228)');
   /* …and the GIBS request is not on the boot path — the app opens at zoom 1.7 */
   assert.match(n, /requestIdleCallback\(_lights,\{timeout:6000\}\)/, 'the city lights wait for the first idle');
   /* ⚠ MapLibre ONLY — measured: whole-globe clamped-to-ground polygons stopped Cesium's camera
