@@ -581,6 +581,7 @@ export function makeThemeSky(HOST, CTX) {
      `sky` block because that block IS drawn once the projection leaves the globe. */
   function _limbOwnsRim(){
     try{
+      if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
       if(_skyIsOwnedElsewhere()||_sunSimOwnsLight()) return false;
       if(!(_eyeAltM()>_ATM_TOP_M)) return false;
       if(_sunElevAtCentre()==null) return false;
@@ -588,11 +589,23 @@ export function makeThemeSky(HOST, CTX) {
     }catch(_){ return false; }
   }
   const _LIMB_ID='im-limb';
-  function _applyLimb(on){
+  /* ⚠⚠ IT RETURNS WHAT ACTUALLY HAPPENED, AND THE CALLER USES THAT — not what was wanted. The engine
+     REFUSES this layer on a context that cannot afford it (no WebGL2, or a software rasteriser — see
+     the adapter's addLimb for the measurement). Switching maplibre's own atmosphere off on the
+     strength of an intention would then leave those contexts with NO atmosphere at all, which is
+     worse than either answer. Measured while writing this: `?rafshim=1` alone gave
+     `hasLimb:false, atmosphere-blend:0` — a globe with no air on it. */
+  function _applyLimb(want){
     try{
-      if(on&&!GE().layers.hasLimb(_LIMB_ID)) GE().layers.addLimb(_LIMB_ID);
-      GE().layers.setLimb(_LIMB_ID,{on:!!on});
-    }catch(_){}
+      if(want&&!GE().layers.hasLimb(_LIMB_ID)) GE().layers.addLimb(_LIMB_ID);
+      const there=!!GE().layers.hasLimb(_LIMB_ID);
+      /* ⚠ AND THE REFUSAL IS REMEMBERED. It is a property of the GL context, not of this camera, so
+         asking again on every settle would re-run the whole sky block for ever — the wish would say
+         yes, the answer would say no, and `_skyFollowCamera`'s comparison would never match. */
+      if(want&&!there) _applyLimb._refused=true;
+      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there)});
+      return !!(want&&there);
+    }catch(_){ return false; }
   }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
@@ -620,7 +633,9 @@ export function makeThemeSky(HOST, CTX) {
       _applySkyAtmosphere._hz=hz; _applySkyAtmosphere._sc=sc;
       const fg=_aerial();
       _applySkyAtmosphere._fog=fg;
-      const limb=_limbOwnsRim();
+      /* ⚠ the layer is added FIRST, because what goes into the sky block below has to be what
+         actually happened and not what was wanted — see _applyLimb */
+      const limb=_applyLimb(_limbOwnsRim());
       _applySkyAtmosphere._limb=limb;
       GE().scene.setSky({
         'sky-color':sc, 'sky-horizon-blend':_horizonBlend(),   /* (#R213) */
@@ -669,7 +684,6 @@ export function makeThemeSky(HOST, CTX) {
           :(_mapIsLight()
             ?['interpolate',['linear'],['zoom'],0,0.15,4,0.13,7,0.086,10,0.038,13,0.009,15,0]
             :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0])))});
-      _applyLimb(limb);
       _aimSun();
     }catch(_){}
   }

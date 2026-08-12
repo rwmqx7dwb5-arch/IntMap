@@ -1551,6 +1551,26 @@ function _m(){ return window.__imap||null; }
     addLimb(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
       try{ if(!(window.IntMapModules&&window.IntMapModules.limbLayer)) return false;
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
+        /* ══ ⚠⚠ (#R227) NOT ON A CPU RASTERISER, AND THAT IS A MEASURED REFUSAL ═════════════════════
+           The limb is a per-pixel scattering march. On any real GPU it is free — measured, it is
+           CHEAPER than the renderer's own atmosphere pass (map._render 4.7 ms against 5.1). On a
+           SOFTWARE rasteriser every fragment is a CPU instruction stream, and the full-screen pass
+           that decides which pixels are in the band costs a million of them per frame: measured on
+           SwiftShader, boot-to-`map.loaded()` went from 10.5 s to 46.5 s — 4.4×, which is what made
+           CI's 30-second boot waits time out. So an engine that cannot draw it says so, exactly the
+           way addSolid says so without WebGL2, and those contexts keep maplibre's own halo.
+           ⚠ IT IS THE RENDERER STRING, NOT A HEURISTIC ABOUT SPEED. SwiftShader, llvmpipe and
+           Direct3D's WARP name themselves; a browser that hides the string is treated as capable,
+           because refusing on absence would turn the feature off for privacy-hardened users. */
+        /* ⚠ `?limb=1` FORCES IT ON, and it exists so the refusal above can be TESTED. Every browser
+           this project can automate is a software rasteriser (#R202 measured that once already, in
+           the other direction), so without an override no test could ever look at the drawn band. */
+        let forced=false; try{ forced=/[?&]limb=1\b/.test(String(location.search||'')); }catch(_){}
+        if(!forced) try{
+          const g=cv.getContext('webgl2'), ext=g&&g.getExtension('WEBGL_debug_renderer_info');
+          const name=String((ext&&g.getParameter(ext.UNMASKED_RENDERER_WEBGL))||'');
+          if(name&&/swiftshader|llvmpipe|software|microsoft basic|warp/i.test(name)) return false;
+        }catch(_){}
         const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
         const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
         const L=(_limbs[id]||(_limbs[id]=window.IntMapModules.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));

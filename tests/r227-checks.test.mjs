@@ -30,6 +30,12 @@ test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off
   }
   assert.match(eng, /IntMapModules\.limbLayer\(\)\.makeLayer\(/,
     'the adapter builds it, so a second engine answers the same intent its own way');
+  /* ⚠ and it refuses on a CPU rasteriser. Measured: on SwiftShader the full-screen pass that decides
+     which pixels are in the band took boot-to-loaded from 10.5 s to 46.5 s. On a GPU the same layer
+     is CHEAPER than the renderer's own atmosphere (4.7 ms against 5.1). */
+  assert.match(eng, /swiftshader\|llvmpipe\|software/,
+    'a software rasteriser keeps maplibre\'s own halo rather than a per-pixel march');
+  assert.match(eng, /limb=1/, 'and `?limb=1` forces it on, so the drawn band can be tested at all');
 
   /* the two halves of the same switch: while our layer owns the rim, maplibre's pass is zero */
   const sky = code('js/theme-sky.js');
