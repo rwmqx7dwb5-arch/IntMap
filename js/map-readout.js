@@ -464,20 +464,53 @@ window.IntMapModules.mapReadout=function(HOST){
     _demTileGrid(w,s,e,n,z,keep,(xi,yi)=>{
       want++; const d=_demPix(_demCache.get(z+'/'+xi+'/'+yi));
       if(d){ have++; tiles.set(xi+'/'+yi,d); } });
-    return { z, want, have, missing:want-have,
-      /* the same bilinear read as demElevBilinear, against the frozen buffers */
-      at(lng,lat){
-        if(lat>85||lat<-85) return null;
-        const tl=_ll2tile(lng,lat,z), xi=Math.floor(tl.x), yi=Math.floor(tl.y);
-        if(xi<0||yi<0||xi>=N||yi>=N) return null;
-        const d=tiles.get(xi+'/'+yi); if(!d) return null;
-        const fx=(tl.x-xi)*256-0.5, fy=(tl.y-yi)*256-0.5;
-        const ax=Math.max(0,Math.min(255,Math.floor(fx))), ay=Math.max(0,Math.min(255,Math.floor(fy)));
-        const bx=Math.min(255,ax+1), by=Math.min(255,ay+1);
-        const tx=Math.max(0,Math.min(1,fx-ax)), ty=Math.max(0,Math.min(1,fy-ay));
-        const p=d[ay*256+ax], q=d[ay*256+bx], r=d[by*256+ax], u=d[by*256+bx];
-        return (p*(1-tx)+q*tx)*(1-ty)+(r*(1-tx)+u*tx)*ty;
+    /* ⚠ named, so `at` can reach `rowSampler` without `this` — a caller that detaches the method
+       (`const f=snap.at`) would otherwise get a TypeError instead of an elevation. */
+    const api={ z, want, have, missing:want-have,
+      /* the same bilinear read as demElevBilinear, against the frozen buffers.
+         ⚠ (#R226) …AND IT IS NOW THE ROW SAMPLER, CALLED ONCE. Keeping a second copy of the bilinear
+         here is how the two would eventually disagree, and the ONE property this round's speed-up
+         has to have is that the number does not move (「品質を下げない範囲で」). Delegating makes that
+         true by construction rather than by a test that samples a few thousand points and hopes.
+         The cursor readout calls this a few times a second, so the closure it allocates is free. */
+      at(lng,lat){ return api.rowSampler(lat)(lng); },
+      /* ══ ⚠ (#R226) A ROW OF SAMPLES SHARES ITS LATITUDE, AND `at()` RE-DERIVED IT EVERY TIME ══════
+         「地震と津波の計算速度は品質を下げない範囲で爆速に。」
+         The intensity field walks a REGULAR grid and takes three samples per cell, so at this round's
+         2,560² ceiling that is 19.7 million reads — and every one of them used to evaluate
+         `Math.tan`, `Math.cos`, `Math.log` and `Math.pow` (inside `_ll2tile`) and then build a
+         STRING, `xi+'/'+yi`, to index a Map. All four transcendentals depend on the LATITUDE alone,
+         which is constant along a row, and consecutive cells in a row sit in the same tile for
+         hundreds of samples at a time (one z8 tile is ~150 km; a cell is 1 km).
+         So a row is prepared once — the Mercator y, the tile row, the two pixel rows and the vertical
+         weight — and the returned sampler does one divide, one floor and a compare per sample, with
+         the tile buffer memoised until the column crosses a tile edge.
+         ⚠ THE ARITHMETIC IS THE SAME ARITHMETIC, expression for expression: `yy` is `_ll2tile`'s y,
+         `xx` is its x, and the four-texel blend below is the same product. What changed is how often
+         the row half of it is evaluated. */
+      rowSampler(lat){
+        if(!(lat<=85&&lat>=-85)) return ()=>null;
+        const lr=lat*Math.PI/180;
+        const yy=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*N;
+        const yi=Math.floor(yy);
+        if(yi<0||yi>=N) return ()=>null;
+        const fy=(yy-yi)*256-0.5;
+        const ay=Math.max(0,Math.min(255,Math.floor(fy))), by=Math.min(255,ay+1);
+        const ty=Math.max(0,Math.min(1,fy-ay)), ty1=1-ty;
+        const rA=ay*256, rB=by*256;
+        let lastXi=-1, d=null;
+        return (lng)=>{
+          const xx=(lng+180)/360*N, xi=Math.floor(xx);
+          if(xi<0||xi>=N) return null;
+          if(xi!==lastXi){ lastXi=xi; d=tiles.get(xi+'/'+yi)||null; }
+          if(!d) return null;
+          const fx=(xx-xi)*256-0.5;
+          const ax=Math.max(0,Math.min(255,Math.floor(fx))), bx=Math.min(255,ax+1);
+          const tx=Math.max(0,Math.min(1,fx-ax)), tx1=1-tx;
+          return (d[rA+ax]*tx1+d[rA+bx]*tx)*ty1+(d[rB+ax]*tx1+d[rB+bx]*tx)*ty;
+        };
       } };
+    return api;
   }
   /* (#R18) Bilinear DEM sample for the viewshed — smooths the stair-stepping of nearest-pixel sampling so
      ridge lines (which decide what's blocked) are physically truer. Reads the 4 surrounding texels and

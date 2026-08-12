@@ -39,7 +39,7 @@ closest HTMLElement Element Node NodeList Text OffscreenCanvas ImageData CanvasR
 AudioContext SpeechSynthesisUtterance speechSynthesis isSecureContext devicePixelRatio innerWidth innerHeight scrollX scrollY
 CSS Audio Option DOMRect Range getSelection AbortSignal WeakRef SVGElement ClipboardItem escape unescape scrollTo print
 ImageBitmap createImageBitmap WebGL2RenderingContext ReadableStream
-DecompressionStream CompressionStream scheduler
+DecompressionStream CompressionStream scheduler MessageChannel MessagePort BroadcastChannel
 maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pmtiles`.split(/\s+/).filter(Boolean));
 /* (#R180) `ImageBitmap`/`createImageBitmap` were already used in js/app-body.js's satellite
    protocol (#R178) but only ever inside a `typeof` guard, which this walker does not treat as a
@@ -47,6 +47,10 @@ maplibregl turf topojson mlcontour html2canvas katex supabase sb gtag clarity pm
    selector checks whether the second engine can run at all before importing 8 MB of it. */
 /* `pmtiles` is loaded on demand from unpkg by the land-cover pack (js/layer-packs.js) and every use
    is guarded by `typeof pmtiles!=='undefined'`, so it is a real vendor global, not a lost closure name. */
+/* (#R226) `MessageChannel` is a browser global of the same age as `Worker` — it was simply never used
+   here until js/seismic.js needed a yield that is not clamped to 4 ms (an unnested `setTimeout(…,0)`
+   is not; a nested one is, and both rasters yield from inside their own loop). Its two companions are
+   listed with it so the next use of either does not have to rediscover this list. */
 
 /* ── 1. names the app body declares at the closure's TOP level ────────────────
    (#R175) The closure moved: it was the last inline <script> in index.html and it is now

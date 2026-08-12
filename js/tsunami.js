@@ -336,7 +336,16 @@ window.IntMapModules.tsunami=function(HOST){
           if(sim.frames.length===fr.length){ tSim=0; buildLUT(); paint(); frameCamera(); }
           render();
         };
-        const onProg=(p)=>{ if(my!==seq) return; pct=Math.max(pct,Math.round(p)); if(opened) render(); };
+        /* ══ ⚠ (#R226) THE PANEL WAS REBUILT FOR PROGRESS IT HAD ALREADY DRAWN ═══════════════════════
+           「地震と津波の計算速度は品質を下げない範囲で爆速に。」 The solver runs in a worker, so what
+           the main thread does during a simulation is exactly this callback — and `render()` rebuilds
+           the WHOLE panel (its innerHTML, its numbers, its controls). It ran on every progress message
+           the worker sent, including the ones whose rounded percentage was the number already on
+           screen, so a run redrew the panel hundreds of times to show the same figure. The main thread
+           is also the thread the map draws on, which is what makes it visible as 「遅い」 rather than as
+           a busy panel. ⚠ Same number, same panel, written when it changes. */
+        const onProg=(p)=>{ if(my!==seq) return; const v=Math.max(pct,Math.round(p));
+          if(v===pct) return; pct=v; if(opened) render(); };
 
         /* (#R205) the measured floor around the source, when the DEM can be had — see fineFloor */
         let fine=null;

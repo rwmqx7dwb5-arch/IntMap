@@ -183,9 +183,19 @@ test('R205 ⑦ the intensity mesh can actually reach the cell size it aims at', 
   assert.ok(nMaxMob > 512 && nMaxMob < nMax, 'the phone moves too, and by less');
   /* the ceiling is memory, so the memory per cell had to come down for it to move */
   assert.match(s, /const vs=new Int16Array\(N\*N\), pgvArr=new Float32Array\(N\*N\), a0Arr=new Float32Array\(N\*N\);/);
-  /* the retained field must not grow more than the picture did */
-  const before = 1280 * 1280 * 12, after = nMax * nMax * 10;
-  assert.ok(after / before < 2, `the retained field grows ${(after / before).toFixed(2)}×`);
+  /* ⚠⚠ (#R226) THE INVARIANT IS BYTES PER CELL, AND IT WAS WRITTEN AS A TOTAL. #R205's own sentence
+     above is «the ceiling is memory, so the memory PER CELL had to come down for it to move», and the
+     line below then compared the TOTAL against a constant 2 — a number that is #R205's own result
+     (1,792² × 10 / 1,280² × 12 = 1.63) rather than the principle. #R226 raised the ceiling to 2,560
+     for a measured reason and the per-cell cost did not move at all, yet the total ratio is 3.33 and
+     this failed. The picture itself grew 4×, so by the sentence's own words nothing is wrong.
+     So the per-cell figure is what is asserted, derived from the declaration rather than restated:
+     Int16 + Float32 + Float32 = 10 bytes, and it may go down but never up. */
+  const arrays = [...s.matchAll(/new (Int8|Uint8|Int16|Uint16|Int32|Uint32|Float32|Float64)Array\(N\*N\)/g)]
+    .map((m) => ({ Int8: 1, Uint8: 1, Int16: 2, Uint16: 2, Int32: 4, Uint32: 4, Float32: 4, Float64: 8 }[m[1]]));
+  assert.ok(arrays.length >= 3, 'the retained field is still three arrays over the grid');
+  const perCell = arrays.reduce((a, b) => a + b, 0);
+  assert.ok(perCell <= 10, `the retained field costs ${perCell} B a cell; #R205 brought it to 10`);
 });
 
 /* ── ⑧ 「毎回毎回、テストに時間がかかりすぎ…簡易でいい」 ───────────────────────────────────── */

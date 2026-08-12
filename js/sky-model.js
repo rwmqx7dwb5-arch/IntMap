@@ -262,8 +262,38 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
      0.023. ⚠ The samples are built as [t, dt] pairs and marched in INCREASING t, because the optical
      depth accumulated so far is what attenuates the next sample — a warp that reversed the order
      would silently light the sky from the wrong end. */
+  /* ══ ⚠⚠ (#R226) THE LIMB WAS LILAC, AND IT WAS THE QUADRATURE AGAIN — ON THE OTHER RAY ═══════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 (confirmed with the reader: 宇宙から
+     見た地球の縁（リム）.)
+
+     #R224 convergence-tested this march and settled N at 32 — but it tested the GROUND ray, from sea
+     level at 1°–55°. The ray this round is about is the other one: a camera in space looking at the
+     limb, whose path is ~2,200 km of air with the whole of it concentrated near the tangent point.
+     MEASURED on the shipped model, at 24,422 km, tangent 6 km — which is what `horizon-color` is set
+     from, i.e. the band right at the Earth's edge:
+
+         march            Sun +80°           Sun +20°           worst channel error
+         N=32  (shipped)  #d3c7d4  LILAC     #af9bae            20
+         N=64             #d5cddf             …                  9
+         N=128            #d7d1e5             …                  3
+         N=256            #d7d3e8  pale blue  #b2a6c4            0
+         N=512, M=48      #d7d3e8  (reference)
+
+     The shipped answer is 20 counts short IN BLUE at the brightest, most visible part of the limb,
+     and 20 counts of blue is exactly the difference between a pale-blue collar and a pink one. Live
+     on the shipped build, globe at 24,422 km: `horizon-color` = **#cebfce** — a mauve-grey ring
+     around the Earth, which no photograph of the limb has ever shown.
+
+     ⚠ THE SUN SUB-MARCH IS NOT THE PROBLEM AND IS NOT TOUCHED. Measured at M = 8 / 16 / 32 with N
+     fixed: identical to the byte. Only the VIEW ray was under-sampled, so only it moves.
+     ⚠ THE GROUND RAY DOES NOT MOVE ENOUGH TO WALK #R224 BACK: at sea level, 0.6° view, the same
+     change is #99aab4 → #9badb8 at noon and #6a523e → #695240 at sunset — two counts, in the
+     direction of the N=512 reference. Everything #R224 and #R213 measured stays true.
+     ⚠ AND IT IS AFFORDABLE. 0.070 ms a call → 0.175 ms, and this runs four times per camera settle
+     (two in `_horizonBlend`, one each in `_horizonColour` / `_skyColour`), i.e. 0.7 ms when the map
+     stops moving — against a 60-second re-aim interval. Nothing draws per frame from here. */
   const radiance = (alt0, ve0, se0, az0) => {
-    const N = 32, M = 8, KWARP = 7;
+    const N = 256, M = 8, KWARP = 7;
     const alt = Math.max(0, alt0 || 0);
     const o = [0, 0, RG + alt];
     const ve = ve0 * D2R, az = (az0 || 0) * D2R, se = se0 * D2R;
