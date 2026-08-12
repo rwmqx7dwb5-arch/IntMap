@@ -3,6 +3,7 @@
 // Each one pins a behaviour that was found by MEASURING the running app, and each is written as the
 // measurement rather than as the code — so it keeps holding if the implementation moves.
 import { test, expect } from '@playwright/test';
+import { sessionWith } from './helpers/session-seed.js';
 import { bootEngine } from './helpers/engine.js';
 import { loadLazyModules } from './helpers/app.js';
 
@@ -75,7 +76,10 @@ test.describe('R186 default layers', () => {
   /* (#R189) `defv:189` — a session WITHOUT the stamp predates #R188's imAutoOff fix, and its
      absences can be an outage's poison as easily as a choice, so the restore heals them once.
      Only a stamped session's absence is a choice, which is what this test is about. */
-  await page.evaluate(() => localStorage.setItem('intmap_session2', JSON.stringify({ v: 2, defv: 190, layers: ['dl-subcables'], tabInit: true, lsrOpen: false })));
+  /* (#R225) the base toggles are in the session because this test is about a THEMATIC default, not
+     about the base map: omitting them now means «the reader switched the base map off too», and the
+     restore spends its poll doing that instead of reaching dl-climate inside this test's window. */
+  await page.evaluate((v) => localStorage.setItem('intmap_session2', v), sessionWith(['dl-subcables'], { tabInit: true }));
   await page.reload();
   await booted(page);
   await page.waitForTimeout(2500);

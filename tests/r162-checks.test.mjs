@@ -103,8 +103,9 @@ test('R162 #4 each factory is instantiated with exactly its declared dependencie
     // (#R163) the private host object became the shared IM_HOST and the parameter was renamed H → HOST
     // (#R180) …and the renderer parameter is gone: no module receives the raw handle any more.
     'window.IntMapMonitors=window.IntMapModules.monitors(IM_HOST);': ['js/monitors.js', 'monitors', ['HOST']],
-    'window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);':
-      ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'geoLayersDB', 'loadCountryData']],
+    /* (#R225) one argument fewer: geoLayersDB went with the geopolitics layers it described */
+    'window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);':
+      ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'loadCountryData']],
   };
   for (const [call, [file, name, params]] of Object.entries(calls)) {
     assert.ok(html.includes(call), `index.html instantiates ${name}`);
@@ -141,13 +142,10 @@ test('R162 #5 INVARIANT: every value passed to a factory is assigned exactly onc
   const cs = reassignments('countryStats');
   assert.equal(cs.length, 0, `countryStats must never be reassigned; found: ` + JSON.stringify(cs));
 
-  // `geoLayersDB` is const, `loadCountryData` is a function declaration — both unrebindable.
-  // (#R167) the table itself moved to js/tables.js, so the const is now a destructuring rebind
-  // (`const {geoLayersDB,…}=window.IntMapTables`). Still a const binding, still never reassigned —
-  // which is the property this assertion exists to protect.
-  assert.ok(/const\s+(?:geoLayersDB\s*=|\{[^}]*\bgeoLayersDB\b[^}]*\}\s*=\s*window\.IntMapTables)/.test(HTML_CODE),
-    'geoLayersDB is const');
-  assert.equal(reassignments('geoLayersDB').length, 0, 'geoLayersDB is never reassigned');
+  // (#R225) `geoLayersDB` is GONE with the nine geopolitics layers it described. The invariant this
+  // block protects — a factory is handed values that cannot be rebound under it — is carried by the
+  // remaining data argument, and by the fact that the removed one can no longer be reassigned at all.
+  assert.equal(reassignments('geoLayersDB').length, 0, 'geoLayersDB is gone and cannot be reassigned');
   assert.ok(/function\s+loadCountryData\s*\(/.test(HTML_CODE), 'loadCountryData is a function declaration');
 });
 

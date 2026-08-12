@@ -189,7 +189,8 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
 /* ── ② 「クリック可能ではない！ほかの地名ラベルと違う挙動にするな！」 ──────────────────────── */
 test('R201 ② a prefecture / state label opens the same popup a city label does', async () => {
   test.setTimeout(240_000);
-  /* the suite seeds `{"layers":[]}` (playwright.config.js), so the names layer is off here */
+  /* (#R225) the suite seeds the base toggles ON and the thematic layers off — see
+     tests/helpers/session-seed.js for why an empty list stopped meaning that */
   const on = await page.evaluate(() => {
     const c = document.getElementById('cb-names');
     if (!c) return false;

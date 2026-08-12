@@ -69,7 +69,7 @@ function code(src) {
 const MODULES = {
   satellite:        { file: 'js/satellite.js', k: 'IM_SAT', exports: ['aiCaptureSatAt', 'satApply', 'satBuildTiles', 'satCaptureLabel', 'satChipHTML', 'satHasKey', 'satProviderById', 'satReady', 'satRefreshReadout', 'satRenderController', 'satRenderKeyInputs', 'satRevertToFallback', 'satSaveKeyInputs', 'satSelectProvider', 'satSetOpacity', 'satSetup', 'satStepDay', 'satToast'] },
   aiCore:           { file: 'js/ai-core.js', k: 'IM_AI', exports: ['aiDev', 'aiEsc', 'aiFetchUsage', 'aiGate', 'aiLimitMsg', 'aiLoginMsg', 'aiParseJSON', 'aiReady', 'aiRenderSettings', 'aiReport', 'aiSaveSettings', 'aiSetBtnBusy', 'aiSyncFeatureButtons', 'aiToast', 'aiToday', 'aiUsesLeft', 'aiVisionReady', 'aiWaitMapIdle', 'askAI', 'askAIJSON', 'askAIJSONEnvelope'] },
-  placeLabels:      { file: 'js/place-labels.js', k: 'IM_LABELS', exports: ['applyLabelLang', 'buildGeoFC', 'ensureGeoLayers', 'ensurePlaceLabels', 'localizeGeoLabels', 'updateGeoLayers'] },
+  placeLabels:      { file: 'js/place-labels.js', k: 'IM_LABELS', exports: ['applyLabelLang', 'ensurePlaceLabels'] },
   windowManager:    { file: 'js/window-manager.js', k: 'IM_WINMGR', exports: ['addEdgeResize', 'bringToFront', 'makeDraggable', 'registerWindow'] },
   searchGeocode:    { file: 'js/search-geocode.js', k: 'IM_SEARCH', exports: ['doGeocode', 'localFuzzyPlaces'] },
   newsContext:      { file: 'js/news-context.js', k: 'IM_NEWSCTX', exports: ['analyzeContext', 'rebuildGeoIndex'] },

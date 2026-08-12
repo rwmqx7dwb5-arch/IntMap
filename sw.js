@@ -150,15 +150,41 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
-let _trimming = false;
+/* ══ ⚠⚠ (#R225) THE LRU WAS ENUMERATING THE WHOLE CACHE ON EVERY TILE STORED ═══════════════════════
+   「スマホでの地図スクロール、ズームが壊滅的に遅いです」
+
+   `trim()` is called after every successful store, and its first act is `await cache.keys()` — which
+   materialises a Request object for EVERY entry, up to MAX_ENTRIES = 12,000, only to compare a length
+   against a cap that is almost never reached. A pan across a city stores dozens of tiles, so the
+   service worker spends its time walking twelve thousand keys, over and over, on the same thread that
+   has to answer the tile requests the map is waiting for. The `_trimming` flag prevented re-entry, not
+   repetition: the next store simply started another walk.
+
+   The count is knowable without asking. It is read ONCE (lazily, on the first store after a start-up)
+   and then maintained: +1 per store, −n per eviction. `cache.keys()` now runs only when that counter
+   says the cap is genuinely in reach, i.e. a few times per thousand tiles instead of once per tile.
+   ⚠ The counter may drift — the browser evicts under storage pressure without telling us, and a second
+   tab shares the cache — so it is a HINT, never the authority: the eviction path still reads the real
+   keys, and a drifted counter is re-seeded from that same read. Drifting low delays a trim; drifting
+   high costs one wasted walk. Neither can lose a tile. */
+let _trimming = false, _n = -1, _sinceCheck = 0;
+const CHECK_EVERY = 64;              /* stores between two cheap re-checks once the count is known */
 async function trim(cache) {
   if (_trimming) return;
-  _trimming = true;
+  /* the first store after a start-up learns the size; after that the counter answers */
+  if (_n >= 0) {
+    _n++;
+    if (_n <= MAX_ENTRIES) return;                      /* nowhere near the cap — no walk */
+    if (_sinceCheck++ < CHECK_EVERY && _n < MAX_ENTRIES * 1.05) return;
+  }
+  _trimming = true; _sinceCheck = 0;
   try {
     const keys = await cache.keys();               // insertion order (oldest first)
+    _n = keys.length;                              // …and re-seed the hint from the truth
     if (keys.length > MAX_ENTRIES) {
       const remove = keys.slice(0, keys.length - TRIM_TO);
       await Promise.all(remove.map((req) => cache.delete(req)));
+      _n = Math.max(0, keys.length - remove.length);
     }
   } catch (_) {} finally { _trimming = false; }
 }

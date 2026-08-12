@@ -46,7 +46,17 @@ window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.glassMotion = function (HOST) {
   const GE = () => window.IntMapGeoEngine;
   const isMobile = HOST.isMobile;
-  if (!(typeof isMobile === 'function' && isMobile())) return { active: () => false, reason: 'desktop' };
+  /* ⚠⚠ (#R225) NOT `isMobile()` ALONE — that is `max-width: 768px`, and a phone held SIDEWAYS is
+     812 px wide. Measured this round: in landscape neither this module nor its CSS rule ran, so all
+     nineteen backdrop filters (383 % of the viewport) composited on every frame of every gesture —
+     which is exactly the report. The question «does this device pay for a backdrop filter» is about
+     the GPU, not about the layout (Architecture.md §9's own distinction), so it is asked of the
+     POINTER: `(hover: none) and (pointer: coarse)` is a phone or tablet in either orientation and is
+     false for a touchscreen laptop. The width test stays beside it, unchanged, so a narrow desktop
+     window behaves exactly as #R221 shipped it. The CSS rule carries the same pair. */
+  const coarse = () => { try { return matchMedia('(hover: none) and (pointer: coarse)').matches; } catch (_) { return false; } };
+  const wanted = () => (typeof isMobile === 'function' && isMobile()) || coarse();
+  if (!wanted()) return { active: () => false, reason: 'desktop' };
 
   let moving = false, offT = null, marked = 0;
 
