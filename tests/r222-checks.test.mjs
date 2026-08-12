@@ -198,11 +198,13 @@ test('⑥ the flight HUD is four zones, and nothing is stretched between two edg
     'the deck key is beside the pad, not under it');
 });
 
-test('⑥ the glass stands still for a scroll and a sheet transition too', () => {
-  const g = read('js/glass-motion.js');
-  assert.ok(/addEventListener\('scroll'/.test(g), 'a scroll behind the glass is movement');
-  assert.ok(/transitionrun/.test(g), 'so is a sheet sliding');
-  assert.ok(/passive: true/.test(g), 'and none of it may delay the gesture it is watching');
+/* (#R229) This asserted that #R221's suppression ALSO fired on a scroll and on a sheet transition —
+   i.e. that the frosting came off in even more situations. The whole mechanism is deleted; it was
+   never asked for. See tests/r221-checks ⑥ for the standing check. */
+test('⑥ the glass is never un-frosted by the app itself (#R229)', () => {
+  assert.ok(!existsSync(join(ROOT, 'js/glass-motion.js')), 'js/glass-motion.js must not exist');
+  /* ⚠ a SELECTOR, not the word — the comment that replaced the rule names it deliberately */
+  assert.doesNotMatch(read('css/intmap.css'), /body\.im-moving[^{]*\{/, 'and no CSS rule survives for it');
 });
 
 /* ── ⑦ THE SCIENCE PAGE, IN FIVE LANGUAGES ────────────────────────────────────────────────── */

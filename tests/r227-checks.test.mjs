@@ -93,21 +93,12 @@ test('R227 ③ the sun ray is one integral, called by both the CPU march and the
   assert.ok(sunOpticalDepth(60000, -5), 'while at 60 km the same elevation still sees the Sun');
 });
 
-test('R227 ④ render-scale arms before `idle`, and #R202\'s crash guards are intact', () => {
-  const rs = code('js/render-scale.js');
-  assert.match(rs, /E\.once\('load'/, 'the first painted frame is a door');
-  assert.match(rs, /armNow\('gesture'\)/, 'so is the first real gesture');
-  assert.match(rs, /E\.once\('idle'[\s\S]*?armNow\('idle'\)/, 'and `idle` is still one of them');
-  /* the guards that made it safe (#R202: a hard GL crash at DPR 3 when the buffer was reallocated
-     before the renderer had finished a frame) must all still be in the path */
-  assert.match(rs, /function armNow\([\s\S]*?GE\(\)\.canDraw\(\)/,
-    'nothing arms before the style is parsed');
-  assert.match(rs, /requestAnimationFrame\(\(\)=>requestAnimationFrame\(/,
-    'the load door waits two animation frames — the renderer has drawn on its own terms');
-  assert.match(rs, /ARM_GRACE_MS\s*=\s*(\d+)/, 'and then a stated grace, not zero');
-  assert.ok(Number(rs.match(/ARM_GRACE_MS\s*=\s*(\d+)/)[1]) >= 500, 'a grace long enough to mean it');
-  assert.match(rs, /function safeSet\(r\)\{ if\(!armed\) return;[\s\S]*?setTimeout\(/,
-    'the ratio is still applied out of the renderer\'s own event handler');
+/* (#R229) ④ used to assert that render-scale armed through three doors instead of one — #R227 made
+   the resolution cut MORE reliable in the first 35 seconds, which is the window the reader is most
+   likely to be looking at. The cut itself was never agreed to. The module is deleted. */
+test('R227 ④ the gesture-time resolution cut is gone (#R229)', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'js/render-scale.js')), 'js/render-scale.js must not exist');
+  assert.ok(!/renderScale/.test(read('src/main.js')), 'and nothing imports or mounts it');
 });
 
 test('R227 ⑤ the model is published, and what reads it is what publishes it', () => {

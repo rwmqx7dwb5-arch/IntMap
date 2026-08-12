@@ -204,11 +204,17 @@ import '../js/orbit-points.js';
    exists because maplibre discards the whole `sky` block while the globe is drawn, so everything
    #R196–#R226 computed for the Earth's edge never reached a pixel. See js/limb-layer.js. */
 import '../js/limb-layer.js';
-/* (#R202) the gesture-time render resolution — measured, mobile-only; see the file header. */
-import '../js/render-scale.js';
-/* (#R221) …and the effect that measured MORE expensive than the resolution did: the frosted glass is
-   not frosted while the camera moves. See js/glass-motion.js for the measurement. */
-import '../js/glass-motion.js';
+/* ⚠⚠ (#R229) js/render-scale.js (#R202) AND js/glass-motion.js (#R221) WERE DELETED HERE, and the
+   reason is not performance. Both lowered what the reader was looking at while the camera moved —
+   the map's own resolution (DPR 2 → 1.4, half the fragments) and the frosted glass on every panel —
+   and NEITHER was ever asked for. Both file headers quote an instruction that says the opposite
+   (「品質は落とすな」 / 「速度、画質を高めて。どちらか一方犠牲はNG」) and then argue that splitting
+   the trade IN TIME is not a sacrifice, because the still frame is unchanged. That argument was
+   invented here, not agreed: 「それって品質に影響しますか？」→ yes, it does — a frame being looked at
+   during a gesture is still a frame. 「外せ　良いわけないだろうが　なぜ確認しなかった」.
+   ⚠ THE RULE THIS BREAKS IS NOT ABOUT RENDERING. It is 「勝手なことを確認せずにやるな」 — do not
+   decide anything on the reader's behalf without asking first. Anything that changes what the app
+   looks like is theirs to approve, before it is written. */
 import '../js/volume3d.js';
 import '../js/view-controls.js';
 import '../js/drone-nav.js';
@@ -312,7 +318,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'renderScale', 'glassMotion', 'newsSources', 'industryWeb',
+  'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
   'oceanCurrents',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────

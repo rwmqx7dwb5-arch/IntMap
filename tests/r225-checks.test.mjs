@@ -17,13 +17,16 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
    viewport (#R221 found fifteen at 153 %). They are all marked and they all drop out during a move —
    but only when the gate says «phone», and the gate was `max-width: 768px`, which is FALSE on a phone
    held sideways (812 × 375). Rotating the device switched the whole suppression off. */
-test('R225 ① the phone gate covers a phone in landscape, in the CSS and in the JS', () => {
+/* ⚠ (#R229) THIS ROUND WIDENED A MECHANISM THAT SHOULD NOT HAVE EXISTED. The gate really was wrong —
+   `max-width: 768px` is false on a phone held sideways — but the thing being gated was #R221 taking
+   the frosting off every panel during a gesture, which was never agreed to. Fixing the gate made the
+   unwanted behaviour MORE reliable. The module is deleted; this now checks that it is. */
+test('R225 ① the gesture-time glass suppression is gone (#R229)', () => {
   const css = read('css/intmap.css');
-  assert.match(css, /@media \(max-width: 768px\), \(hover: none\) and \(pointer: coarse\)\{\s*\n\s*body\.im-moving \.im-glass\{/);
-  const gm = read('js/glass-motion.js');
-  assert.match(gm, /matchMedia\('\(hover: none\) and \(pointer: coarse\)'\)/, 'the module asks the same question');
-  assert.match(gm, /const wanted = \(\) => \(typeof isMobile === 'function' && isMobile\(\)\) \|\| coarse\(\);/,
-    'and the width test stays beside it, so a narrow desktop window is unchanged');
+  assert.ok(!/body\.im-moving\s+\.im-glass\s*\{/.test(css), 'no gesture-time backdrop-filter override');
+  let present = true;
+  try { read('js/glass-motion.js'); } catch (_) { present = false; }
+  assert.equal(present, false, 'js/glass-motion.js must not exist');
 });
 
 /* ── ② THE SERVICE WORKER'S LRU ────────────────────────────────────────────────────────────────────

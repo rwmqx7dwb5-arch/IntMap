@@ -96,15 +96,11 @@ export function makeLabelOcclusion(HOST, CTX) {
      ⚠ The five values it needs (mapType, satState, satProviderById, satBuildTiles, isMobile) are
      handed over through HOST rather than closed over — see scripts/check-split-scope.mjs. */
   try{ window.IntMapModules.tileWarm(HOST); }catch(_){}
-  /* (#R202) …and beside it, the gesture-time render resolution (js/render-scale.js). Same reason for
-     the placement: it registers movestart/moveend handlers, and it is a no-op on desktop. */
-  try{ const RS=window.IntMapModules.renderScale(HOST); RS&&RS.start&&RS.start(); }catch(_){}
-  /* (#R221) …and beside THAT, the gesture-time frosted glass (js/glass-motion.js), for exactly the
-     same three reasons: it registers movestart/moveend handlers, it is a no-op on desktop, and the
-     order of those handlers relative to this file's is observable. It measured more expensive than
-     the render scale did — fifteen backdrop-filters over 153 % of a phone viewport, none of them
-     cacheable while the camera moves. */
-  try{ window.IntMapModules.glassMotion(HOST); }catch(_){}
+  /* ⚠⚠ (#R229) THE TWO GESTURE-TIME QUALITY CUTS THAT USED TO MOUNT HERE ARE GONE — see src/main.js.
+     js/render-scale.js (#R202) dropped the map to 70 % resolution while the camera moved and
+     js/glass-motion.js (#R221) took the frosting off every panel for the same window. Neither was
+     asked for; both are deleted. Nothing replaces them, and nothing should be added here that
+     changes what the app looks like without being agreed first. */
   /* (#R202) …and the far plane that was cutting distant mountains off at a tenth of the horizon.
      Switched on once for the life of the view: the adapter re-evaluates it on movement and leaves
      the renderer's own number alone at pitches where the horizon is not what is binding. */
