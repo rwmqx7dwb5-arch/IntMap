@@ -176,18 +176,19 @@ test('R202 ③e the space HUD shows both scales and takes any multiplier', () =>
   assert.match(s, /sp-live/, 'and Live is a control of its own');
 });
 
-test('R202 ③f the render scale is mobile-only, deferred, and armed only after the first idle', () => {
-  const s = rd('js/render-scale.js');
-  assert.match(s, /if\(!\(typeof isMobile==='function'&&isMobile\(\)\)\) return/, 'desktop is a no-op');
-  assert.match(s, /armed/, 'it arms rather than acting immediately');
-  /* (#R221) The deferral itself is unchanged — what is new INSIDE it is the echo guard that stops
-     this module driving itself through the resize its own call causes (js/render-scale.js). So the
-     invariant is asserted rather than the literal: the set happens in a `setTimeout(…, 0)` and is
-     still gated on `canDraw()`. */
-  assert.match(s, /setTimeout\(\(\)=>\{[\s\S]{0,160}if\(GE\(\)\.canDraw\(\)/,
-    'and the resize never happens synchronously inside the renderer event — that crashed the GL context');
-  assert.match(s, /,0\);/, 'and it is deferred by a zero timeout, not by a frame');
-  assert.match(s, /IntMapFlightSim/, 'a flight is excluded: its camera never stops moving');
+/* ── ③f THE GESTURE-TIME RESOLUTION CUT IS GONE (#R229) ───────────────────────────────────────────
+   This asserted that js/render-scale.js was mobile-only, deferred and correctly armed — three rounds
+   (#R202, #R221, #R227) refined HOW it lowered the map's resolution while the camera moved, and none
+   of them asked WHETHER it should. Its own header quotes 「速度、画質を高めて。どちらか一方犠牲はNG」
+   and then answers it by cutting the resolution to 70 % during every gesture, on the argument that
+   splitting the trade in time is not a sacrifice. That argument was invented here, not agreed.
+   「外せ」「なぜ確認しなかった」— the module is deleted and the map is always at full resolution. */
+test('R202 ③f the gesture-time resolution cut is gone (#R229) and stays gone', () => {
+  /* ⚠ the SYNTAX, not the mention — the comments that replaced this code name the thing they removed,
+     which is the whole point of them (#R227's `code()` helper exists for the same reason) */
+  assert.ok(!fs.existsSync(path.join(ROOT, 'js/render-scale.js')), 'js/render-scale.js must not exist');
+  assert.doesNotMatch(rd('src/main.js'), /import\s+['"][^'"]*render-scale\.js['"]/, 'nothing imports it');
+  assert.doesNotMatch(rd('js/label-occlusion.js'), /IntMapModules\.renderScale\s*\(/, 'nothing mounts it');
 });
 
 test('R202 ③g the far plane is corrected from a PRISTINE value, never from its own output', () => {

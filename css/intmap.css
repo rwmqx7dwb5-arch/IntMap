@@ -2646,25 +2646,13 @@
 .im-pick-ghost .sq-head{ pointer-events:auto; }
 
 
-/* ══ (#R221) THE GLASS STANDS STILL WHILE THE MAP MOVES ═══════════════════════════════════════════
-   「マップのスクロール、ズームがかなりラグい。品質は落とすな。」 A backdrop-filter cannot be cached
-   while the content behind it changes, so on a phone in map view fifteen of them — 153 % of the
-   viewport, up to blur(30px) — were re-read, re-blurred and re-composited on EVERY frame of every
-   pan. js/glass-motion.js marks them '.im-glass' and puts 'im-moving' on <body> for the duration of
-   a gesture; this is the whole of the effect. The still frame is byte-identical to before.
-   ⚠ MOBILE ONLY (#R202 measured desktop at 60 fps), and ⚠ the rule needs !important because every
-   one of these elements declares its own backdrop-filter, several of them inline. */
-/* ⚠⚠ (#R225) THE GATE WAS A LAYOUT QUESTION AND THIS IS A GPU QUESTION. 「スマホでの地図スクロール、
-   ズームが壊滅的に遅いです」 — measured: `max-width: 768px` is FALSE on a phone held sideways (812 × 375),
-   so rotating the device switched this entire suppression off and put all nineteen backdrop filters
-   back on every frame of every gesture. Architecture.md §9 already states the distinction — width is
-   for LAYOUT, the device is for RAM and the GPU — and this rule was on the wrong side of it.
-   `(hover: none) and (pointer: coarse)` is the phone/tablet class in either orientation, and it is
-   false for a touchscreen laptop (whose primary pointer is fine). The width query stays beside it so
-   a narrow desktop window keeps the behaviour #R221 shipped. */
-@media (max-width: 768px), (hover: none) and (pointer: coarse){
-  body.im-moving .im-glass{
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-}
+/* ══ ⚠⚠ (#R229) THE GESTURE-TIME GLASS SUPPRESSION USED TO BE HERE, AND IT IS GONE ════════════════
+   #R221 marked every frosted element `.im-glass` and put `im-moving` on <body> for the duration of a
+   gesture, so the blur came off while the camera moved and went back when it stopped. #R225 then
+   widened the media query to catch a phone held sideways. Both rounds argued that the STILL frame is
+   unchanged, so 「品質は落とすな」 was satisfied.
+   That argument was wrong and was never put to the reader: 「それって品質に影響しますか？」— it does.
+   The frames during a gesture are frames someone is looking at. 「いやガラス抑止なんて余計なものつけ
+   てんじゃねーよ」「外せ」. The panels are frosted all the time now, exactly as they were before #R221.
+   ⚠ Nothing here should ever again change what the app looks like on its own. The rule is
+   「勝手なことを確認せずにやるな」 — ask first, then write it. */
