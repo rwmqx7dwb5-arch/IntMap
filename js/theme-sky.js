@@ -20,7 +20,14 @@
  *  (#R202) It also imports js/sky-model.js — the scattering integral that decides `sky-color`. That
  *  file is pure arithmetic with no DOM and no renderer, so tests/r202-checks.test.mjs runs it in Node.
  * ==========================================================================*/
-import { skyColour, limbViewElev } from './sky-model.js';
+import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-model.js';
+/* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
+   (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
+   but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
+   tent, same multiple-scattering table. So the tables and the sun-ray integral are put on the window
+   from the one file that already imports them, and js/geo-engine.js hands them to the layer.
+   ⚠ A `window.X` that nothing assigns is the #R162 trap; tests/r227-checks holds both ends. */
+window.IntMapSkyModel = { tables: skyModelTables, sunOpticalDepth };
 export function makeThemeSky(HOST, CTX) {
   const GE=CTX.GE, applyLabelLang=CTX.applyLabelLang, canDraw=CTX.canDraw, ensurePlaceLabels=CTX.ensurePlaceLabels, mapLabelsViaVector=CTX.mapLabelsViaVector, satRefreshReadout=CTX.satRefreshReadout, satRenderController=CTX.satRenderController;
   function applyTheme(){
@@ -558,6 +565,48 @@ export function makeThemeSky(HOST, CTX) {
       return (HOST.userTheme==='light')||(HOST.userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);
     }catch(_){ return false; }
   }
+  /* ══ ⚠⚠ (#R227) WHO DRAWS THE EARTH'S EDGE ═════════════════════════════════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 (confirmed: 宇宙から見た地球の縁.)
+
+     #R222 and #R226 both computed this band from js/sky-model.js and wrote it into `horizon-color`,
+     and #R227 measured that MapLibre THROWS THE WHOLE SKY BLOCK AWAY while the globe is drawn:
+     sky.fragment.glsl ends with `mix(fragColor, vec4(vec3(0.0),0.0), u_sky_blend)` and u_sky_blend
+     is `_globeness`, which is 1 there. So none of it was ever drawn, and what the reader saw was
+     maplibre's own five-step, ozone-free atmosphere shader. js/limb-layer.js draws the real one.
+
+     ⚠ THE PREDICATE IS THE SAME ONE THE LIMB HEXES ALREADY USED — the eye above the shell
+     (`_ATM_TOP_M`) and the Sun's position known — so 「Mapではなにも無し」 (#R221) still decides it:
+     with the day/night display off, or on the vector basemap, `_sunElevAtCentre()` is null, this is
+     false, and the renderer's own halo stays exactly as it was. `_limbHex` keeps answering for the
+     `sky` block because that block IS drawn once the projection leaves the globe. */
+  function _limbOwnsRim(){
+    try{
+      if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
+      if(_skyIsOwnedElsewhere()||_sunSimOwnsLight()) return false;
+      if(!(_eyeAltM()>_ATM_TOP_M)) return false;
+      if(_sunElevAtCentre()==null) return false;
+      return !!(GE().layers&&GE().layers.addLimb);
+    }catch(_){ return false; }
+  }
+  const _LIMB_ID='im-limb';
+  /* ⚠⚠ IT RETURNS WHAT ACTUALLY HAPPENED, AND THE CALLER USES THAT — not what was wanted. The engine
+     REFUSES this layer on a context that cannot afford it (no WebGL2, or a software rasteriser — see
+     the adapter's addLimb for the measurement). Switching maplibre's own atmosphere off on the
+     strength of an intention would then leave those contexts with NO atmosphere at all, which is
+     worse than either answer. Measured while writing this: `?rafshim=1` alone gave
+     `hasLimb:false, atmosphere-blend:0` — a globe with no air on it. */
+  function _applyLimb(want){
+    try{
+      if(want&&!GE().layers.hasLimb(_LIMB_ID)) GE().layers.addLimb(_LIMB_ID);
+      const there=!!GE().layers.hasLimb(_LIMB_ID);
+      /* ⚠ AND THE REFUSAL IS REMEMBERED. It is a property of the GL context, not of this camera, so
+         asking again on every settle would re-run the whole sky block for ever — the wish would say
+         yes, the answer would say no, and `_skyFollowCamera`'s comparison would never match. */
+      if(want&&!there) _applyLimb._refused=true;
+      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there)});
+      return !!(want&&there);
+    }catch(_){ return false; }
+  }
   function _applySkyAtmosphere(sat){
     if(!GE().hasRenderer()||_skyIsOwnedElsewhere()) return;
     _followClock();
@@ -584,6 +633,10 @@ export function makeThemeSky(HOST, CTX) {
       _applySkyAtmosphere._hz=hz; _applySkyAtmosphere._sc=sc;
       const fg=_aerial();
       _applySkyAtmosphere._fog=fg;
+      /* ⚠ the layer is added FIRST, because what goes into the sky block below has to be what
+         actually happened and not what was wanted — see _applyLimb */
+      const limb=_applyLimb(_limbOwnsRim());
+      _applySkyAtmosphere._limb=limb;
       GE().scene.setSky({
         'sky-color':sc, 'sky-horizon-blend':_horizonBlend(),   /* (#R213) */
         /* ══ (#R223) THE `fog-*` PAIR IS OFF, AND `_aerial()` IS THE ONLY PLACE THAT SAYS SO ═════════
@@ -620,11 +673,17 @@ export function makeThemeSky(HOST, CTX) {
            left where the eye can still see coastlines under it.
            ⚠ The DARK basemap keeps 0.80 and satellite keeps #R187's 0.55: nothing measured about
            either of them has changed, and this round does not undo a previous round's answer. */
-        'atmosphere-blend':(sat
+        /* ══ ⚠⚠ (#R227) …AND WHERE THE APP DRAWS THE LIMB ITSELF, THIS IS TURNED OFF ═══════════════
+           maplibre's own atmosphere pass is drawn AFTER every layer (render/painter.ts, line 601),
+           so a custom layer cannot draw over it — the two would add. Zero here is what hands the
+           rim to js/limb-layer.js, and it is zero only in the state that layer draws in: the globe,
+           with the eye above the shell and the Sun's position known. Every other camera keeps the
+           three ramps below exactly as #R187 / #R205 measured them. */
+        'atmosphere-blend':(limb?0:(sat
           ?['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]
           :(_mapIsLight()
             ?['interpolate',['linear'],['zoom'],0,0.15,4,0.13,7,0.086,10,0.038,13,0.009,15,0]
-            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0]))});
+            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0])))});
       _aimSun();
     }catch(_){}
   }
@@ -641,8 +700,12 @@ export function makeThemeSky(HOST, CTX) {
          camera that climbs without the Sun moving still has less air in front of it. Comparing only
          the two colours would leave the haze at the value it had on the ground. */
       const fg=_aerial(), of=_applySkyAtmosphere._fog||{};
+      /* (#R227) …and WHO owns the rim, which is a function of the eye's height alone: a camera that
+         climbs out of the atmosphere without the Sun moving still hands the band over. Comparing
+         only the colours would leave maplibre's own halo drawn under ours, or ours switched off. */
+      const limb=_limbOwnsRim();
       if(hz===_applySkyAtmosphere._hz&&sc===_applySkyAtmosphere._sc
-         &&fg.ground===of.ground&&fg.horizon===of.horizon) return;
+         &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb) return;
       _applySkyAtmosphere(HOST.mapType==='sat');
     }catch(_){}
   }

@@ -564,6 +564,70 @@ function _m(){ return window.__imap||null; }
   const _solids={};
   /* (#R202) …and the same, for layers.addOrbit (js/orbit-points.js) */
   const _orbits={};
+  /* (#R227) …and for layers.addLimb (js/limb-layer.js), plus whether each is switched on */
+  const _limbs={}, _limbOn={}, _limbStrength={};
+  /* ⚠ (#R227) THE ONE PLACE THAT TOUCHES THE TRANSFORM FOR THE LIMB. Everything the shader needs is
+     derived here, in the adapter, exactly as maplibre's own atmosphere pass derives it — so the two
+     can never be registered differently. Returns null when there is no limb to draw, which is what
+     switches the layer off without removing it. */
+  function _limbUniforms(id){
+    if(!_limbOn[id]) return null;
+    const m=_m(); if(!m) return null;
+    const t=m.transform; if(!(t&&t.inverseProjectionMatrix&&t.modelViewProjectionMatrix)) return null;
+    const RG=6371000, RT=6471000;
+    try{ if((m.getProjection&&m.getProjection().type)!=='globe') return null; }catch(_){ }
+    const mul=(M,v)=>{ const o=[0,0,0,0];
+      for(let r=0;r<4;r++) o[r]=M[r]*v[0]+M[4+r]*v[1]+M[8+r]*v[2]+M[12+r]*v[3];
+      return o; };
+    /* the globe's centre in EYE space — origin through the model-view-projection, back through the
+       inverse projection. maplibre's drawAtmosphere does exactly this. */
+    let g=mul(t.modelViewProjectionMatrix,[0,0,0,1]);
+    if(!(Math.abs(g[3])>1e-12)) return null;
+    g=[g[0]/g[3],g[1]/g[3],g[2]/g[3],1];
+    let e=mul(t.inverseProjectionMatrix,g);
+    if(!(Math.abs(e[3])>1e-12)) return null;
+    const gx=e[0]/e[3], gy=e[1]/e[3], gz=e[2]/e[3];
+    const gl_=Math.sqrt(gx*gx+gy*gy+gz*gz);
+    if(!(gl_>0)) return null;
+    /* ⚠ THE SCALE COMES OUT OF THE RENDERER, NOT OUT OF `camera.altitude()`. maplibre's own pass
+       writes `-u_globe_position * EARTH_RADIUS / u_globe_radius`, and its globe radius in world
+       units is worldSize/2π divided by cos(centre latitude) — it scales the sphere up toward the
+       poles so a zoom level means the same thing on the globe as on the plane. Deriving the metres
+       any other way is a second opinion about how big the Earth is on screen. */
+    const wr=(t.worldSize/(2*Math.PI))/Math.max(1e-9,Math.cos((t.center&&t.center.lat||0)*Math.PI/180));
+    if(!(wr>0)) return null;
+    const k=RG/wr;
+    const camPos=[-gx*k,-gy*k,-gz*k];
+    const eyeR=Math.sqrt(camPos[0]*camPos[0]+camPos[1]*camPos[1]+camPos[2]*camPos[2]);
+    if(!(eyeR>RT)) return null;                    /* inside the air: this is not a limb */
+    const sun=_lightVector(m); if(!sun) return null;
+    const inv=new Float32Array(16); for(let i=0;i<16;i++) inv[i]=t.inverseProjectionMatrix[i];
+    return { invProj:inv, camPos, sunDir:sun, strength:(_limbStrength[id]==null?1:_limbStrength[id]) };
+  }
+  /* ⚠ (#R227) THE SUN, AS THE RENDERER ITSELF COMPUTES IT. This is maplibre's `getSunPos`
+     (webgl/draw/draw_sky.ts) plus its `sphericalToCartesian` (util/util.ts): the app aims
+     `style.light` at the real Sun (js/theme-sky.js `_aimSun`), the Sun & shadow simulator and the
+     flight simulator can own that light instead, and every one of those has to reach the limb too.
+     Reading the light back is what makes that true without a second opinion about where the Sun is. */
+  function _lightVector(m){
+    try{
+      const L=m.getLight&&m.getLight(); if(!L||!L.position) return null;
+      const D=Math.PI/180;
+      const r=L.position[0], az=(L.position[1]+90)*D, po=L.position[2]*D;
+      let v=[-(r*Math.cos(az)*Math.sin(po)), -(r*Math.sin(az)*Math.sin(po)), -(r*Math.cos(po))];
+      if(L.anchor==='map'){
+        const rx=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[0],v[1]*c-v[2]*s,v[1]*s+v[2]*c]; };
+        const ry=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c]; };
+        const rz=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[0]*c-v[1]*s,v[0]*s+v[1]*c,v[2]]; };
+        const c=m.getCenter(), roll=(m.getRoll?m.getRoll():0)*D;
+        /* the matrix is Rz(roll)·Rx(−pitch)·Rz(bearing)·Rx(lat)·Ry(−lng), so the vector meets them
+           in the opposite order — the innermost factor first */
+        v=ry(v,-c.lng*D); v=rx(v,c.lat*D); v=rz(v,m.getBearing()*D); v=rx(v,-m.getPitch()*D); v=rz(v,roll);
+      }
+      const n=Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+      return n>0?[v[0]/n,v[1]/n,v[2]/n]:null;
+    }catch(_){ return null; }
+  }
   /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
   let _pd=null, _pdAt=0;
   let _appMinZoom=null, _eyePivot=false;
@@ -1469,6 +1533,57 @@ function _m(){ return window.__imap||null; }
         if(o&&!o.eye){ const e=this.eyePosition(); if(e) o=Object.assign({},o,{eye:e}); }
         L._set(o); return true; }catch(_){ return false; } },
     removeSolid(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _solids[id]; return true; },
+    /* ══ ⚠⚠ (#R227) THE LIMB — asked for as an intent, because the renderer's own answer is wrong ═══
+       「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 (confirmed: 宇宙から見た地球の縁.)
+
+       #R227 measured that MapLibre discards the whole `sky` block while the globe is drawn
+       (`u_sky_blend = projectionTransition = _globeness`), so six rounds of computed limb colour
+       never reached a pixel, and the ring is entirely maplibre's `atmosphere.fragment.glsl` — five
+       view samples, three sun samples, no ozone, no multiple scattering, Rayleigh blue at 22.4e−6.
+       The app therefore draws its own (js/limb-layer.js), and this is where the two meet.
+
+       ⚠ THE UNIFORMS ARE TAKEN FROM THE SAME PLACE MAPLIBRE'S OWN PASS TAKES THEM — the eye-space
+       inverse projection and the globe's centre in eye space (webgl/draw/draw_sky.ts
+       `drawAtmosphere`) and the Sun out of `style.light` (its `getSunPos`). That is what makes the
+       band register with the globe under any camera, pitched or not, instead of a screen-space
+       circle that would slide off the moment the reader tilts.
+       ⚠ A CESIUM-CLASS ENGINE ANSWERS THIS WITH ITS OWN SkyAtmosphere and never calls this. */
+    addLimb(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
+      try{ if(!(window.IntMapModules&&window.IntMapModules.limbLayer)) return false;
+        const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
+        /* ══ ⚠⚠ (#R227) NOT ON A CPU RASTERISER, AND THAT IS A MEASURED REFUSAL ═════════════════════
+           The limb is a per-pixel scattering march. On any real GPU it is free — measured, it is
+           CHEAPER than the renderer's own atmosphere pass (map._render 4.7 ms against 5.1). On a
+           SOFTWARE rasteriser every fragment is a CPU instruction stream, and the full-screen pass
+           that decides which pixels are in the band costs a million of them per frame: measured on
+           SwiftShader, boot-to-`map.loaded()` went from 10.5 s to 46.5 s — 4.4×, which is what made
+           CI's 30-second boot waits time out. So an engine that cannot draw it says so, exactly the
+           way addSolid says so without WebGL2, and those contexts keep maplibre's own halo.
+           ⚠ IT IS THE RENDERER STRING, NOT A HEURISTIC ABOUT SPEED. SwiftShader, llvmpipe and
+           Direct3D's WARP name themselves; a browser that hides the string is treated as capable,
+           because refusing on absence would turn the feature off for privacy-hardened users. */
+        /* ⚠ `?limb=1` FORCES IT ON, and it exists so the refusal above can be TESTED. Every browser
+           this project can automate is a software rasteriser (#R202 measured that once already, in
+           the other direction), so without an override no test could ever look at the drawn band. */
+        let forced=false; try{ forced=/[?&]limb=1\b/.test(String(location.search||'')); }catch(_){}
+        if(!forced) try{
+          const g=cv.getContext('webgl2'), ext=g&&g.getExtension('WEBGL_debug_renderer_info');
+          const name=String((ext&&g.getParameter(ext.UNMASKED_RENDERER_WEBGL))||'');
+          if(name&&/swiftshader|llvmpipe|software|microsoft basic|warp/i.test(name)) return false;
+        }catch(_){}
+        const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
+        const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
+        const L=(_limbs[id]||(_limbs[id]=window.IntMapModules.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
+        m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+    setLimb(id,o){ if(!_limbs[id]) return false; _limbOn[id]=!!(o&&o.on); _limbStrength[id]=(o&&o.strength!=null)?o.strength:1; return true; },
+    removeLimb(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _limbs[id]; delete _limbOn[id]; return true; },
+    /* ⚠ THE QUESTION IS "IS IT IN THE STYLE", NOT "HAVE WE EVER BUILT ONE". `_limbs[id]` is the
+       cached layer OBJECT and it outlives a style reload; the layer does not. Answering from the
+       cache would mean that after any setStyle the caller would see `true`, never re-add, and the
+       Earth's edge would go quietly back to the renderer's own five-step halo — the #R170 shape of
+       defect ("isStyleLoaded() is not the question you are asking"). addLimb reuses the cached
+       object, so re-adding costs nothing but an onAdd. */
+    hasLimb(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* ══ (#R202) OBJECTS IN ORBIT — a cloud of points at their own altitudes ═══════════════════════
        「すべての地球周囲にある衛星をリアルタイムで実場所でアニメーションで見られるレイヤーを作って。」
        Asked for as an intent — "these things are at these altitudes, draw them there" — because that
@@ -1882,6 +1997,10 @@ function _m(){ return window.__imap||null; }
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
       addSolid:(id,b)=>A().addSolid?A().addSolid(id,b):false, setSolid:(id,o)=>A().setSolid?A().setSolid(id,o):false,
+      /* (#R227) the atmosphere's limb, drawn by this app because the renderer discards the sky block
+         on the globe — see the adapter's addLimb */
+      addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
+      removeLimb:id=>A().removeLimb?A().removeLimb(id):false, hasLimb:id=>A().hasLimb?A().hasLimb(id):false,
       removeSolid:id=>A().removeSolid?A().removeSolid(id):false,
       /* (#R202) objects at their own altitudes, and the batched projection that makes them clickable */
       addOrbit:(id,b)=>A().addOrbit?A().addOrbit(id,b):false, setOrbit:(id,o)=>A().setOrbit?A().setOrbit(id,o):false,
