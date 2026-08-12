@@ -608,12 +608,50 @@ window.IntMapModules.seismic=function(HOST){
     const PGV_FLOOR_MMI=pgvAtMMI(2);                             /* MMI II — 0.062 cm/s */
     const PGV_FELT=PGV_FLOOR_MMI;
     function jmaLabel(id){ return id.replace('-',L(' lower','弱',' schwach',' слаб.',' débil')).replace('+',L(' upper','強',' stark',' сильн.',' fuerte')); }
-    /* the USGS ShakeMap colours for the MMI fill; nothing painted under II */
+    /* ══ ⚠⚠ (#R224) THE MMI COLOURS WERE ONE WHOLE CLASS COOLER THAN USGS'S ════════════════════════
+       「震度分布のMMIの震度別の色味は、USGS.能登.pdf と同じものにして。」
+
+       The reference is the USGS ShakeMap "Macroseismic Intensity Map" for the 2024-01-01 M7.5 Noto
+       event (us6000m0xl, Version 10). Its colour ramp was READ OUT OF THE FILE rather than
+       remembered: the legend bar at the foot of that PDF is drawn as 81 filled strips, and the nine
+       anchor colours below all appear in it, in order, at the x-positions the SHAKING row's own
+       column labels sit over (Not felt / Weak / Light / Moderate / Strong / Very strong / Severe /
+       Violent / Extreme). It is the `mmi` colormap ShakeMap paints with, anchored at INTEGER MMI and
+       linearly interpolated between.
+
+       What was wrong was not a hue, it was an OFF-BY-ONE-CLASS: this table paired class IV with the
+       ramp's MMI-3 colour, V with MMI-4, VI with MMI-5 … so IntMap drew MMI VI in GREEN where every
+       ShakeMap draws it YELLOW, and every class from IV up was a full step too cool. Reported as
+       「色味」 because that is exactly what it looks like — the right palette, shifted.
+
+       ⚠ AND THE FILL IS CONTINUOUS NOW (confirmed with the reader: 「連続塗り、離散凡例」). USGS
+       paints the intensity field as a smooth ramp, not as eight flat bands, and the banding was the
+       other visible difference from the PDF. `MMI_RAMP` is what the raster is painted from;
+       `MMI_CLASSES` survives as the LEGEND and as the class names the table and the rings quote —
+       each key carrying the ramp's colour at its own lower bound, so the two can never disagree.
+       ⚠ 震度 (JMA) is UNCHANGED and stays banded: 計測震度 is a discrete scale by definition and its
+       colours are the JMA's own published ones. */
+    const MMI_RAMP=[ [1,255,255,255], [2,191,204,255], [3,160,230,255], [4,128,255,255],
+                     [5,122,255,147], [6,255,255,  0], [7,255,200,  0], [8,255,145,  0],
+                     [9,255,  0,  0], [10,200,  0,  0] ];
+    /* the ramp at any intensity, clamped at both ends. Returns a fresh triple only at the anchors is
+       not worth the cache: this is three multiplies and the caller writes it straight into the raster. */
+    function mmiRGB(I,out){
+      const v=Math.max(1,Math.min(10,I)); let k=Math.min(8,Math.max(0,Math.floor(v)-1));
+      const a=MMI_RAMP[k], b=MMI_RAMP[k+1], f=Math.max(0,Math.min(1,v-a[0]));
+      const o=out||[0,0,0];
+      o[0]=(a[1]+(b[1]-a[1])*f)|0; o[1]=(a[2]+(b[2]-a[2])*f)|0; o[2]=(a[3]+(b[3]-a[3])*f)|0;
+      return o;
+    }
+    const _mmiHex=(I)=>{ const c=mmiRGB(I); return '#'+((1<<24)+(c[0]<<16)+(c[1]<<8)+c[2]).toString(16).slice(1); };
+    /* the legend's bands and the names the table/rings quote. ⚠ `col` is DERIVED from the ramp above
+       — never a second copy of a hex (#R212's lesson), so re-anchoring the ramp moves the legend with
+       it. Nothing is painted under II, which is the floor `mmiClass` already expressed. */
     const MMI_CLASSES=[
-      { min:2, id:'II–III', col:'#bfccff' }, { min:4, id:'IV',  col:'#a0e6ff' },
-      { min:5, id:'V',   col:'#80ffff' },    { min:6, id:'VI',  col:'#7aff93' },
-      { min:7, id:'VII', col:'#ffff00' },    { min:8, id:'VIII',col:'#ffc800' },
-      { min:9, id:'IX',  col:'#ff9100' },    { min:10,id:'X+',  col:'#ff0000' } ];
+      { min:2, id:'II–III' }, { min:4, id:'IV'  },
+      { min:5, id:'V'   },    { min:6, id:'VI'  },
+      { min:7, id:'VII' },    { min:8, id:'VIII'},
+      { min:9, id:'IX'  },    { min:10,id:'X+'  } ].map(k=>Object.assign(k,{ col:_mmiHex(k.min) }));
     function mmiClass(I){ let c=null; for(const k of MMI_CLASSES){ if(I>=k.min) c=k; } return c; }
 
     /* ══ (#R189) FINITE RUPTURE FROM A FREE-DRAWN AREA ═════════════════════════════════════════════
@@ -628,25 +666,59 @@ window.IntMapModules.seismic=function(HOST){
        each front is the envelope of fronts from points across the rupture, delayed by the rupture
        propagation itself at Vr = 0.75β from the hypocentre. */
     const MU=RHO*BETA*BETA, VRUP_KMS=0.75*BETA/1000;
-    let fault=null;      /* { ring:[[lng,lat]…], areaKm2, slipM, mw, centroid } */
-    let faultSlip=2;     /* the average slip D̄ (m) the next drawn rupture is given */
-    function faultDerive(areaKm2,slipM){
-      const M0=MU*(areaKm2*1e6)*Math.max(0.01,slipM);
-      return { M0, mw:(Math.log10(M0)-9.1)/1.5 };
+    /* ══ ⚠⚠ (#R224) THE DRAWN OUTLINE IS THE FAULT'S SHADOW, NOT THE FAULT ═══════════════════════
+       「震源域を自由描画した場合、それをそのまま断層面積にせず地表投影として扱い、規模・形状から最も
+         典型的な傾斜角・断層幅・深さを自動推定して…詳細設定では dip・上端/下端深さ・断層幅などを手動
+         上書きでき、Mw・M0・断層面積・平均すべり量が一貫して再計算されるように」
+
+       #R189 put the drawn area straight into M₀ = μ·A·D̄ with a fixed 2 m of slip. Two things were
+       wrong with that and js/fault-geometry.js fixes both (its header has the derivations and the
+       measurements against real earthquakes):
+         · a map can only carry the PROJECTION of a dipping plane, so A₃D = A_proj / cos δ;
+         · and 2 m is the average slip of an M7-ish crustal event, not of whatever was drawn — it made
+           a 20 km loop an M6.9 and Tōhoku an M8.5.
+       Verified on the shipped model: the Noto footprint (150 × 19 km) comes back dip 52° / W 31 km /
+       D̄ 2.55 m / Mw 7.66 against a published 50° / 30 km / 2–4 m / 7.5, and the Tōhoku footprint
+       (500 × 197 km) comes back dip 10° / W 200 km / D̄ 11.8 m / Mw 8.99.
+       ⚠ THE OVERRIDES LIVE IN ONE OBJECT and are re-solved through the SAME chain, never patched into
+       the result — that is what makes 「一貫して再計算」 true rather than approximately true. */
+    let fault=null;      /* { ring, areaKm2, areaProjKm2, dipDeg, widthKm, zTopKm, zBotKm, slipM, mw, M0, auto, centroid } */
+    let faultOver={};    /* dip / widthKm / zTopKm / zBotKm / slipM — only what the reader pinned */
+    const FG=()=>window.IntMapFaultGeom;
+    function faultSolve(ring,areaKm2){
+      const G=FG(); if(!G) return null;
+      const fp=G.footprint(ring,areaKm2); if(!fp) return null;
+      return G.solve({ footprint:fp, depthKm, stressDropMPa, muPa:MU, override:faultOver });
     }
-    function faultSet(ring,slipM){
+    function faultSet(ring){
       if(!Array.isArray(ring)||ring.length<3) return false;
       let aKm2=0; try{ aKm2=HOST.ringArea(ring); }catch(_){ aKm2=0; }   /* spherical excess, in km² */
       if(!(aKm2>0)) return false;
+      const s=faultSolve(ring,aKm2); if(!s) return false;
       let cx=0, cy=0; ring.forEach(p=>{ cx+=p[0]; cy+=p[1]; });
       const centroid=[cx/ring.length, cy/ring.length];
-      const d=faultDerive(aKm2,slipM);
-      fault={ ring:ring.map(p=>[+p[0],+p[1]]), areaKm2:aKm2, slipM:+slipM, mw:Math.max(3,Math.min(9.6,d.mw)), M0:d.M0, centroid };
+      fault=Object.assign({ ring:ring.map(p=>[+p[0],+p[1]]), centroid, footprintKm2:aKm2 }, s,
+                          { mw:Math.max(3,Math.min(9.6,s.mw)) });
       mw=fault.mw;
       if(!epi) epi=centroid.slice();
       return true;
     }
-    function faultClear(){ fault=null; }
+    /* re-run the chain on the SAME ring — every advanced control and every parameter the solve reads
+       (depth, stress drop) comes back through here rather than editing `fault` in place */
+    function faultResolve(){ return fault?faultSet(fault.ring):false; }
+    function faultClear(){ fault=null; faultOver={}; }
+    /* the whole solved plane, in one shape, for the panel · the callable API · state() · the tests.
+       ⚠ `auto` travels with the numbers: a reader (or Atlas) has to be able to tell an estimate from
+       a value that was typed, and that distinction is the difference between the two halves of the
+       instruction (「通常は自動推定だけ」 / 「詳細設定では手動上書き」). */
+    function faultGeom(){ if(!fault) return null;
+      return { areaKm2:Math.round(fault.areaKm2), areaProjKm2:Math.round(fault.areaProjKm2),
+        lengthKm:+fault.lengthKm.toFixed(1), widthKm:+fault.widthKm.toFixed(1),
+        widthProjKm:+fault.widthProjKm.toFixed(1), dipDeg:+fault.dipDeg.toFixed(1),
+        strikeDeg:(fault.strikeDeg!=null?Math.round(fault.strikeDeg):null),
+        zTopKm:+fault.zTopKm.toFixed(1), zBotKm:+fault.zBotKm.toFixed(1),
+        slipM:+fault.slipM.toFixed(2), M0:fault.M0, mw:+fault.mw.toFixed(2),
+        auto:Object.assign({},fault.auto), points:fault.ring.length }; }
     /* surface distance to the rupture: 0 inside, else nearest edge — local-equirect (a hand-drawn
        rupture is a local object; one that crosses the antimeridian is normalised into the
        centroid's window first) */
@@ -913,6 +985,7 @@ window.IntMapModules.seismic=function(HOST){
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
       const iOfLng=(l)=>(l+180)/dxF-0.5;
       const rgbOfFar=(cl)=>cl._rgb||(cl._rgb=hx(cl.col));
+      const _farRGB=[0,0,0];   /* (#R224) one scratch triple for the continuous MMI ramp — see mmiRGB */
       let _lastYield=performance.now();
       for(let j=0;j<NF;j++){
         const la=latOfY(yT+(j+0.5)*dyF), lb=la*D, sinB=Math.sin(lb), cosB=Math.cos(lb);
@@ -955,9 +1028,12 @@ window.IntMapModules.seismic=function(HOST){
           let g=1;
           if(vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; ampCells++; } }
           const I=(scale==='jma')?jmaOfA0(b2[1]*g):mmiOf(b2[0]*g);
-          const cl=(scale==='jma')?jmaClass(I):mmiClass(I);
-          if(!cl) continue;
-          const o=(j*NF+i)*4, rgb=rgbOfFar(cl);
+          /* (#R224) MMI is a CONTINUOUS ramp now (see MMI_RAMP); 震度 keeps its published bands.
+             `mmiClass` is still what decides whether anything is painted at all — the II floor. */
+          let rgb;
+          if(scale==='jma'){ const cl=jmaClass(I); if(!cl) continue; rgb=rgbOfFar(cl); }
+          else { if(I<2) continue; rgb=mmiRGB(I,_farRGB); }
+          const o=(j*NF+i)*4;
           px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=235; painted++;
           if(km>MMI_CALIB_KM) extrap++;
         }
@@ -1289,6 +1365,7 @@ window.IntMapModules.seismic=function(HOST){
         /* the class colours, parsed ONCE. `hex()` was three slice+parseInt pairs per PAINTED cell —
            on a continental field that is a million string operations for eleven distinct colours. */
         const _rgbOf=(cls)=>cls._rgb||(cls._rgb=hex(cls.col));
+        const _fineRGB=[0,0,0];   /* (#R224) scratch triple for the continuous MMI ramp — see mmiRGB */
         /* (#R218) yielding on a TIME budget rather than every eight rows. `setTimeout(…,0)` is clamped
            to ~4 ms once nested, so 1,792 rows / 8 was 224 forced waits ≈ 0.9 s of pure timer latency
            inside a build the panel reports as computation. The point of the yield is that the page
@@ -1348,10 +1425,12 @@ window.IntMapModules.seismic=function(HOST){
             const pgv=b2[0]*g, a0=b2[1]*g;
             pgvArr[k]=pgv; a0Arr[k]=a0;
             const I=(scale==='jma')?jmaOfA0(a0):mmiOf(pgv);
-            const cls=(scale==='jma')?jmaClass(I):mmiClass(I);
-            if(!cls) continue;
+            /* (#R224) the same split as buildFar: continuous ramp for MMI, published bands for 震度 */
+            let c;
+            if(scale==='jma'){ const cls=jmaClass(I); if(!cls) continue; c=_rgbOf(cls); }
+            else { if(I<2) continue; c=mmiRGB(I,_fineRGB); }
             if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
-            const c=_rgbOf(cls); px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
+            px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=235; painted++;
           }
           if((j&7)===7){ prog(40+58*(j+1)/N);
             const t=performance.now();
@@ -1530,6 +1609,45 @@ window.IntMapModules.seismic=function(HOST){
     const BTN='padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;';
     /* (#R205) the two halves of the map-click switch — the selected one wears the accent */
     const SEG=(on)=>BTN+'flex:1;'+(on?'background:var(--primary-color);color:#fff;border-color:transparent;font-weight:700;':'');
+    /* ══ (#R224) 詳細設定 — the five numbers the reader may take off auto ═══════════════════════════
+       A <details>, closed by default, because the instruction is explicit that the normal path is
+       「自動推定だけで自然な結果」 — the overrides must be reachable without being in the way.
+       ⚠ EVERY BOX IS EMPTY WHEN IT IS ON AUTO, with the estimate as its PLACEHOLDER. That is the one
+       arrangement in which the same control says "the model chose 52°" and "I choose 60°" without a
+       second widget per row, and clearing a box is how a value goes back to being estimated. */
+    let _fadvOpen=false;
+    function _fadvRow(k,label,val,step,min,max,unit){
+      const pinned=(faultOver[k]!=null);
+      return '<label style="'+ROW+'">'+label+(unit?(' <span style="opacity:.6;">'+unit+'</span>'):'')
+        +'<input class="sq-fadv" data-k="'+k+'" type="number" step="'+step+'" min="'+min+'" max="'+max+'"'
+        +' value="'+(pinned?faultOver[k]:'')+'" placeholder="'+val+'"'
+        +' title="'+L('Leave empty to estimate it','空欄で自動推定','Leer lassen = geschätzt','Пусто — оценивается','Vacío = estimado')+'"'
+        +' style="'+NUM+(pinned?'border-color:var(--primary-color);':'')+'"></label>';
+    }
+    function _faultAdvHTML(){
+      if(!fault) return '';
+      const pinned=Object.keys(faultOver).length;
+      return '<details class="sq-fadv-box"'+(_fadvOpen?' open':'')+' style="margin-top:-2px;">'
+        +'<summary style="font-size:11.5px;color:var(--text-muted);cursor:pointer;">'
+        +L('Advanced — fault geometry','詳細設定 — 断層形状','Erweitert — Bruchgeometrie','Подробно — геометрия разрыва','Avanzado — geometría de falla')
+        +(pinned?(' <b style="color:var(--primary-color);">'+pinned+'</b>'):'')+'</summary>'
+        +'<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;">'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'
+        +L('The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.',
+           '描いた輪郭は断層面の地表投影です。傾斜・幅・深さは長さと形状から推定します（Wells & Coppersmith 1994 からマグニチュードを消去した関係）。平均すべり量は上の応力降下量から決まります（Eshelby の円形クラック）。空欄のままなら自動推定です。',
+           'Der gezeichnete Umriss ist die Projektion der Bruchfläche. Einfallen, Breite und Tiefe werden aus Länge und Form geschätzt (Wells & Coppersmith 1994, Magnitude eliminiert); der mittlere Versatz folgt aus dem Spannungsabfall oben (Eshelby). Leeres Feld = geschätzt.',
+           'Нарисованный контур — проекция плоскости разрыва. Падение, ширина и глубина оцениваются по длине и форме (Wells & Coppersmith 1994 с исключённой магнитудой); средняя подвижка следует из сброса напряжений выше (Эшелби). Пустое поле — оценка.',
+           'El contorno dibujado es la proyección de la falla. Buzamiento, anchura y profundidad se estiman de su longitud y forma (Wells & Coppersmith 1994 eliminando la magnitud); el deslizamiento medio sale de la caída de esfuerzo (Eshelby). Deje el campo vacío para estimarlo.')
+        +'</div>'
+        +_fadvRow('dip',L('Dip','傾斜角','Einfallen','Падение','Buzamiento'),fault.dipDeg.toFixed(0),1,1,90,'°')
+        +_fadvRow('widthKm',L('Fault width','断層幅','Breite','Ширина','Anchura'),fault.widthKm.toFixed(0),1,0.5,1500,'km')
+        +_fadvRow('zTopKm',L('Top depth','上端深さ','Obere Tiefe','Верх','Prof. superior'),fault.zTopKm.toFixed(1),0.5,0,700,'km')
+        +_fadvRow('zBotKm',L('Bottom depth','下端深さ','Untere Tiefe','Низ','Prof. inferior'),fault.zBotKm.toFixed(1),0.5,0,700,'km')
+        +_fadvRow('slipM',L('Average slip','平均すべり量','Mittlerer Versatz','Средняя подвижка','Deslizamiento medio'),fault.slipM.toFixed(2),0.1,0.01,80,'m')
+        +'<button class="sq-fauto" style="'+BTN+'width:100%;">'
+        +L('Back to automatic','すべて自動推定に戻す','Zurück zu automatisch','Вернуть к авто','Volver a automático')+'</button>'
+        +'</div></details>';
+    }
     /* ══ (#R206) THE ACCENT FILL MEANS "ON", SO A BUTTON THAT IS NEVER ON MUST NOT WEAR IT ═════════
        「地震シミュレータで震源地を設置ボタンがずっと選択中になっているというUIがくそ。」
 
@@ -1571,7 +1689,12 @@ window.IntMapModules.seismic=function(HOST){
         /* (#R216) the point is the WET centroid of a drawn rupture — see _rupSeaDepth */
         const P=srcPoint()||epi;
         T.follow({ lng:P[0], lat:P[1], mw:(fault?fault.mw:mw), depth:depthKm,
-          rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null });
+          /* (#R224) `areaKm2` is the 3-D PLANE now and `slipM` the solved mean slip, so the tsunami's
+             moment and the panel's Mw are the same earthquake; the geometry rides along for the
+             solver to use when it stops deriving its own dip from Wells & Coppersmith. */
+          rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, areaProjKm2:fault.areaProjKm2,
+            slipM:+fault.slipM.toFixed(2), mw:fault.mw, dipDeg:fault.dipDeg, widthKm:fault.widthKm,
+            zTopKm:fault.zTopKm, strikeDeg:fault.strikeDeg }:null });
       }catch(_){}
     }
     function refresh(){ draw(); warmEpi(); schedField(); syncTsunamiSource(); }
@@ -1629,9 +1752,20 @@ window.IntMapModules.seismic=function(HOST){
               :('✏ '+L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura')))+'</button>'
           +(fault?('<button class="sq-fclear" style="'+BTN+'">✕</button>'):'')
         +'</div>'
-        +'<label style="'+ROW+'">'+L('Average slip (m)','平均すべり量 (m)','Mittlerer Versatz (m)','Средняя подвижка (м)','Deslizamiento medio (m)')+'<input class="sq-slip" type="number" min="0.1" max="80" step="0.1" value="'+faultSlip+'" style="'+NUM+'"></label>'
-        +(fault?('<div class="sq-finfo" style="font-size:11px;color:var(--text-muted);">'
-          +L('Rupture','震源域','Bruchfläche','Очаг','Ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km² · D̄ '+fault.slipM+' m → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'):'')
+        /* ══ (#R224) THE DRAWN AREA IS THE SHADOW; WHAT IS REPORTED IS THE PLANE ════════════════════
+           Both numbers are shown, because 「断層面積」 is now genuinely two numbers and leaving the
+           reader to guess which one is on screen would be the same defect in a new place. The slip is
+           an estimate until it is typed — the row says which, so 「自動推定」 is visible rather than
+           implied. */
+        +(fault?('<div class="sq-finfo" style="font-size:11px;color:var(--text-muted);line-height:1.65;">'
+          +L('Rupture','震源域','Bruchfläche','Очаг','Ruptura')+' <b style="color:var(--text-main);">'+Math.round(fault.areaKm2).toLocaleString()+' km²</b> '
+          +L('(3-D fault plane)','（3D断層面）','(3-D-Bruchfläche)','(3-D плоскость)','(plano 3-D)')
+          +' · '+L('surface projection','地表投影','Projektion','проекция','proyección')+' '+Math.round(fault.areaProjKm2).toLocaleString()+' km²<br>'
+          +Math.round(fault.lengthKm)+' × '+Math.round(fault.widthKm)+' km · '+L('dip','傾斜','Einfallen','падение','buzamiento')+' '+Math.round(fault.dipDeg)+'° · '
+          +L('depth','深さ','Tiefe','глубина','prof.')+' '+fault.zTopKm.toFixed(1)+'–'+fault.zBotKm.toFixed(1)+' km<br>'
+          +'D̄ '+fault.slipM.toFixed(2)+' m'+(fault.auto.slip?(' <span style="opacity:.7;">'+L('(auto)','（自動）','(auto)','(авто)','(auto)')+'</span>'):'')
+          +' → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'
+          +_faultAdvHTML()):'')
         +'<label style="'+ROW+'">'+L('Depth (km)','深さ (km)','Tiefe (km)','Глубина (км)','Profundidad (km)')+'<input class="sq-d" type="number" min="0" max="700" step="5" value="'+depthKm+'" style="'+NUM+'"></label>'
         +'<label style="'+ROW+'">'+L('Magnitude (Mw)','規模 (Mw)','Magnitude (Mw)','Магнитуда (Mw)','Magnitud (Mw)')+'<input class="sq-m" type="number" min="3" max="9.6" step="0.1" value="'+mw.toFixed(1)+'"'+(fault?' disabled title="'+L('Set by the drawn rupture — remove it to edit','描いた震源域から決まります（解除で編集可）','Durch die Bruchfläche bestimmt','Задана нарисованным очагом','Fijada por la ruptura dibujada')+'"':'')+' style="'+NUM+'"></label>'
         +'<label style="'+ROW+'">'+L('Stress drop (MPa)','応力降下量 (MPa)','Spannungsabfall (MPa)','Сброс напряжений (МПа)','Caída de esfuerzo (MPa)')+'<input class="sq-sd" type="number" min="0.3" max="30" step="0.5" value="'+stressDropMPa+'" style="'+NUM+'"></label>'
@@ -1703,8 +1837,24 @@ window.IntMapModules.seismic=function(HOST){
         if(b) b.onclick=()=>setClickMode(clickMode==='station'?'none':'station'); }
       panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
-      panel.querySelector('.sq-slip').onchange=e=>{ faultSlip=Math.max(0.1,Math.min(80,+e.target.value||2));
-        if(fault){ faultSet(fault.ring,faultSlip); render(); } touch(); };
+      /* ══ (#R224) THE ADVANCED GEOMETRY — every field is an OVERRIDE, and blank means "back to auto"
+         An empty box is not "zero", it is "you decide", which is the only way one control can express
+         both halves of 「通常は自動推定だけ…詳細設定では手動上書き」 without a second checkbox per row.
+         Each change re-enters faultSolve() with the pinned value, so Mw · M₀ · 断層面積 · 平均すべり量
+         are recomputed from the SAME chain rather than patched. */
+      panel.querySelectorAll('.sq-fadv').forEach(inp=>{ inp.onchange=e=>{
+        const k=e.target.dataset.k, raw=String(e.target.value||'').trim();
+        if(raw==='') delete faultOver[k]; else faultOver[k]=+raw;
+        /* a top and a bottom together state the width; typing a width releases them, and vice versa,
+           so the three can never be pinned into a contradiction */
+        if(k==='widthKm'&&raw!=='') delete faultOver.zBotKm;
+        if(k==='zBotKm'&&raw!=='') delete faultOver.widthKm;
+        if(faultResolve()){ render(); refresh(); } touch(); }; });
+      { const b=panel.querySelector('.sq-fauto'); if(b) b.onclick=()=>{ faultOver={};
+          if(faultResolve()){ render(); refresh(); } touch(); }; }
+      /* the panel re-renders on every solve, so the disclosure has to remember it was open — or
+         typing one number would close the box the number was typed into */
+      { const d=panel.querySelector('.sq-fadv-box'); if(d) d.addEventListener('toggle',()=>{ _fadvOpen=d.open; }); }
       panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); };
       panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } };
       panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); };
@@ -1867,7 +2017,9 @@ window.IntMapModules.seismic=function(HOST){
       const T=window.IntMapTsunami; if(!T||!T.open) return false;
       const P=srcPoint()||epi;   /* (#R216) centre the domain on the submarine part of the rupture */
       try{ T.open({ lng:P[0], lat:P[1], mw:(fault?fault.mw:mw), depth:depthKm,
-        rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, slipM:fault.slipM, mw:fault.mw }:null }); }catch(_){ return false; }
+        rupture: fault?{ ring:fault.ring, areaKm2:fault.areaKm2, areaProjKm2:fault.areaProjKm2,
+          slipM:+fault.slipM.toFixed(2), mw:fault.mw, dipDeg:fault.dipDeg, widthKm:fault.widthKm,
+          zTopKm:fault.zTopKm, strikeDeg:fault.strikeDeg }:null }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
     function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;
@@ -1903,7 +2055,7 @@ window.IntMapModules.seismic=function(HOST){
        the one place a run starts. One button, and it is the same one for every input. */
     function _fCapture(g,{keepDrawing}={}){
       const ring=_ringOf(g);
-      if(ring&&faultSet(ring,faultSlip)){ render(); touch(); return true; }
+      if(ring&&faultSet(ring)){ render(); touch(); return true; }
       return false;
     }
     function toggleFaultDraw(){
@@ -2161,16 +2313,27 @@ window.IntMapModules.seismic=function(HOST){
         if(o.stressDrop!=null) stressDropMPa=Math.max(0.3,Math.min(30,+o.stressDrop));
         if(o.scale==='mmi'||o.scale==='jma') pickScale(o.scale);                  /* (#R189) */
         if(o.speed!=null&&isFinite(+o.speed)&&+o.speed>0) speed=Math.max(0.1,Math.min(1000,+o.speed));
-        if(o.slip!=null){ faultSlip=Math.max(0.1,Math.min(80,+o.slip||faultSlip));
-          if(fault) faultSet(fault.ring,faultSlip); }
+        /* (#R224) a slip handed in is an OVERRIDE of the auto estimate — `null` puts it back on auto */
+        if(o.slip!==undefined){ if(o.slip==null) delete faultOver.slipM;
+          else faultOver.slipM=Math.max(0.01,Math.min(80,+o.slip||1));
+          faultResolve(); }
         if(opened) render(); refresh(); return true; },
       loadReal,
       setSite(id){ if(SITES.some(s=>s.id===id)){ siteId=id; if(opened) render(); refresh(); return true; } return false; },
       /* (#R189) the new controls, callable — the Atlas rule: every feature drives from a call */
       setScale(v){ if(pickScale(v)){ if(opened) render(); refresh(); return true; } return false; },
       setSpeed(v){ const n=+v; if(isFinite(n)&&n>0){ speed=Math.max(0.1,Math.min(1000,n)); if(opened) render(); return true; } return false; },
-      setFault(ring,slip){ if(slip!=null) faultSlip=Math.max(0.1,Math.min(80,+slip||faultSlip));
-        const ok=faultSet(ring,faultSlip); if(ok){ if(opened) render(); refresh(); } return ok; },
+      setFault(ring,slip){ if(slip!=null) faultOver.slipM=Math.max(0.01,Math.min(80,+slip||1));
+        const ok=faultSet(ring); if(ok){ if(opened) render(); refresh(); } return ok; },
+      /* (#R224) the advanced geometry, callable like every other control (#R82). Any of
+         dip / widthKm / zTopKm / zBotKm / slipM; `null` for a key puts that one back on auto,
+         and `{}` with reset:true puts ALL of them back. */
+      setFaultGeometry(o){ o=o||{};
+        if(o.reset) faultOver={};
+        ['dip','widthKm','zTopKm','zBotKm','slipM'].forEach(k=>{ if(!(k in o)) return;
+          if(o[k]==null) delete faultOver[k]; else faultOver[k]=+o[k]; });
+        const ok=faultResolve(); if(ok){ if(opened) render(); refresh(); } return ok?faultGeom():null; },
+      faultGeometry:()=>faultGeom(),
       clearFault(){ faultClear(); if(opened) render(); refresh(); return true; },
       rebuildField:()=>buildField(),
       /* (#R205) the map-click owner, callable (the Atlas rule) and readable by the regression test */
@@ -2187,7 +2350,9 @@ window.IntMapModules.seismic=function(HOST){
           return { scale:'jma', I:+I.toFixed(2), pgv:+pgv.toFixed(2), a0:+a0.toFixed(2), col:c.col,
                    label:L('Shindo','震度','Shindo','Синдо','Shindo')+' '+jmaLabel(c.id) }; }
         const I2=mmiOf(pgv); const c2=mmiClass(I2); if(!c2) return null;
-        return { scale:'mmi', I:+I2.toFixed(2), pgv:+pgv.toFixed(2), col:c2.col, label:'MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(I2)))] }; },
+        /* (#R224) the swatch is the RAMP at this exact intensity, not the class's lower bound — the
+           fill is continuous now, so a class colour here would disagree with the pixel underneath. */
+        return { scale:'mmi', I:+I2.toFixed(2), pgv:+pgv.toFixed(2), col:_mmiHex(I2), label:'MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(I2)))] }; },
       /* (#R190) 「震度の塗は透明度選択を可能に」 — callable, like every other control (#R82) */
       setOpacity:(v)=>setFieldOpacity(v),
       opacity:()=>fldOpacity,
@@ -2197,7 +2362,7 @@ window.IntMapModules.seismic=function(HOST){
       state:()=>({ open:opened, epi:epi?epi.slice():null, clickMode, depthKm, mw, tSec, speed, scale, stressDropMPa, siteId, siteAmp:siteAmp(),
         Q0:QS0, Qeta:QETA, opacity:fldOpacity, fieldStale:fldStale, fieldPct:fldPct,   /* (#R190) */
         tsunami:(()=>{ const t=tsunamiCase(); return t?{waveM:t.waveM,mw:+t.M.toFixed(2)}:null; })(),
-        fault:fault?{ areaKm2:Math.round(fault.areaKm2), slipM:fault.slipM, mw:+fault.mw.toFixed(2), points:fault.ring.length }:null,
+        fault:faultGeom(),
         field:(fld&&fld.stats)?fld.stats:null, fieldBusy:fldBusy,
         /* (#R191) the terrain-free annulus that carries the lowest class to its end */
         far:fldFar?{ N:fldFar.N, painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,

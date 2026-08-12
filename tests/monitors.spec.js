@@ -64,6 +64,9 @@ test('opening the Monitors tab (logged out) shows the login prompt, not a fake l
 });
 
 test('Atlas monitor action is HONEST: never claims success when it cannot', async () => {
+  /* (#R224) the Atlas kernel is fetched on demand — ask for it, as a reader's first click does */
+  await page.waitForFunction(() => !!window.IntMapAtlas, null, { timeout: 45_000 });
+  await page.evaluate(() => window.IntMapAtlas.ensure());
   const res = await page.evaluate(async () => {
     const out = {};
     // Extract plain text via an INERT DOMParser document (never executes scripts /

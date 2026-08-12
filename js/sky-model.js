@@ -233,8 +233,37 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
      file is reproduced to the byte. For a camera outside it, a ray that grazes the planet now marches
      through the 700–900 km of air it really crosses — which is the limb, and it comes out blue-white
      on the day side and red at the terminator because that is what the integral says. */
+  /* ══ ⚠⚠ (#R224) THE GREY-GREEN HORIZON WAS THE QUADRATURE, NOT THE PHYSICS ═══════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」
+
+     #R223 measured this model at a 3° view elevation and found #93a394 — G above BOTH R and B, i.e. a
+     grey-GREEN daytime sky — and wrote that the cause must be the single-scattering/grey-Mie/long-path
+     combination and that fixing it needed the multiple-scattering term re-calibrated. It measured the
+     symptom correctly and named the wrong cause, and this round settled it by CONVERGENCE TESTING
+     rather than by argument: the same model, same constants, same everything, with the march refined:
+
+         view elev    N=16 (shipped)   N=64      N=256     N=1024
+            1°        #878967 olive    #97a5a3   #9cadb4   #9dafb8   pale blue
+            3°        #93a394 green    #98aeb3   #9ab3be   #9bb4c0   pale blue
+           10°        #7a9ab2          #7c9ebb   #7d9fbe   #7ea0bf
+           55°        #547199          #5c779d   #5d779e   #5d779e
+
+     It CONVERGES, and it converges to a blue sky. Sixteen UNIFORM steps over a grazing ray is the
+     defect: at 3° from sea level the ray is ~250 km long, so the first sample sits 7.8 km up and the
+     march never sees the dense air the eye is standing in — the part that puts the blue back. The
+     error is 81 counts at 1°, which is the whole of the reported colour.
+
+     ⚠ THE FIX IS WHERE THE SAMPLES GO, NOT HOW MANY. Density is exp(−h/H), so the integrand is
+     concentrated at the ray's LOWEST point — which is the eye for a camera inside the air, and the
+     TANGENT POINT for one in space looking at the limb. So the march is warped geometrically away
+     from that point (t grows as (e^{kx}−1)/(e^k−1), k = 7) and split there when the ray descends
+     before it climbs. Measured against the N=1024 reference over ten cameras from sea level to
+     5,286 km and Sun +60° to −4°: worst channel error 81 → 3 counts, at 0.034 ms per call against
+     0.023. ⚠ The samples are built as [t, dt] pairs and marched in INCREASING t, because the optical
+     depth accumulated so far is what attenuates the next sample — a warp that reversed the order
+     would silently light the sky from the wrong end. */
   const radiance = (alt0, ve0, se0, az0) => {
-    const N = 16, M = 8;
+    const N = 32, M = 8, KWARP = 7;
     const alt = Math.max(0, alt0 || 0);
     const o = [0, 0, RG + alt];
     const ve = ve0 * D2R, az = (az0 || 0) * D2R, se = se0 * D2R;
@@ -268,7 +297,26 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
       if (t1 > 1e-6) tMax = Math.min(tMax, t1);
     }
     if (!(tMax > tIn)) return [0, 0, 0];
-    const dt = (tMax - tIn) / N;
+    /* the sample positions and their widths, densest at the ray's lowest point — see the note above */
+    const _steps = (function () {
+      const tLow = Math.max(tIn, Math.min(tMax, -(o[0] * d[0] + o[1] * d[1] + o[2] * d[2])));
+      const denom = Math.exp(KWARP) - 1;
+      const warp = (x) => (Math.exp(KWARP * x) - 1) / denom;
+      const out = [];
+      const seg = (a, b, n) => {
+        if (!(Math.abs(b - a) > 0) || n < 1) return;
+        let prev = a;
+        for (let i = 1; i <= n; i++) {
+          const tt = a + (b - a) * warp(i / n);
+          out.push([(prev + tt) / 2, Math.abs(tt - prev)]); prev = tt;
+        }
+      };
+      const lenA = tLow - tIn, lenB = tMax - tLow;
+      if (lenA > 0 && lenB > 0) { const nA = Math.max(2, Math.round(N * 0.35)); seg(tLow, tIn, nA); seg(tLow, tMax, N - nA); }
+      else if (lenA > 0) seg(tLow, tIn, N); else seg(tLow, tMax, N);
+      out.sort((p, q) => p[0] - q[0]);
+      return out;
+    })();
     let odR = 0, odM = 0, odO = 0;
     const sum = [0, 0, 0];
     /* ══ ⚠⚠ (#R221) THE MIE TERM WAS ATTENUATED THROUGH THE GREEN CHANNEL, FOR ALL THREE ═══════════
@@ -298,8 +346,8 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
        what it does not have is a sun-visibility test — light that has bounced arrives from the whole
        sky, which is exactly why it survives into twilight and into the Earth's shadow. */
     const ms = [0, 0, 0];
-    for (let i = 0; i < N; i++) {
-      const t = tIn + (i + 0.5) * dt;
+    for (let i = 0; i < _steps.length; i++) {
+      const t = _steps[i][0], dt = _steps[i][1];
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
       const h = Math.max(0, Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) - RG);
       const hr = Math.exp(-h / HR) * dt, hm = Math.exp(-h / HM) * dt, ho = ozone(h) * dt;

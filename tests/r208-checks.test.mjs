@@ -518,19 +518,30 @@ test('R208 ⑧a: the paths are traced through a measured field, and warm/cold is
   assert.ok(by['Gulf Stream'].maxSpeed > 0.6, `Gulf Stream max ${by['Gulf Stream'].maxSpeed} m/s`);
 });
 
-test('R208 ⑧b: the layer draws warm red, cold blue, and zonal neither', () => {
+/* ⚠ (#R224) REWRITTEN, BECAUSE THE LAYER THIS TESTED NO LONGER EXISTS. 「海流レイヤー、二つあるなんて
+   いうややこしいことするな。統一しろ。」 — the #R208 row in Oceans & maritime was the SECOND ocean-current
+   layer and it is deleted; js/ocean-currents.js is the one implementation. The properties #R208 was
+   protecting (warm red / cold blue / zonal grey, named on the map, arrows sized by the measured speed)
+   are asserted where they now live, so nothing this test was defending has been dropped. */
+test('R208 ⑧b: warm red, cold blue, zonal neither — in the ONE surviving layer', () => {
+  const oc = read('js/ocean-currents.js');
+  assert.ok(/warm/.test(oc) && /cold/.test(oc), 'the plate still classifies warm/cold');
+  assert.ok(/zonal/i.test(oc),
+    'and a genuinely zonal current is still neither, rather than forced into one of the two');
+  assert.ok(/'text-field':\['get','name'\]|"text-field":\["get","name"\]/.test(oc),
+    'the currents are named on the map');
+});
+test('R208 ⑧c (#R224): there is exactly ONE ocean-current layer left', () => {
   const dl = read('js/data-layers.js');
-  assert.ok(/OC_WARM="#e8503a", OC_COLD="#3a7fe8", OC_ZONAL="#9aa7b4"/.test(dl),
-    'the three colours are named once');
-  assert.ok(/c\.kind==="warm"\?OC_WARM:c\.kind==="cold"\?OC_COLD:OC_ZONAL/.test(dl),
-    'and chosen from the DERIVED kind, so a current that is genuinely zonal is not forced into one');
-  assert.ok(/lyr-oceancur-arrows/.test(dl) && /"text-rotate":\["get","bearing"\]/.test(dl),
-    'the arrows are rotated to the measured flow');
-  assert.ok(/"text-size":\["interpolate",\["linear"\],\["get","speed"\]/.test(dl),
-    'and sized by the measured speed');
-  assert.ok(/"symbol-placement":"line","text-field":\["get","name"\]/.test(dl), 'the currents are named on the map');
-  assert.ok(/lyrOceanCur:/.test(dl), 'the row is labelled');
-  assert.equal((dl.match(/lyrOceanCur:/g) || []).length, 5, 'in all five languages');
+  /* the row, its paint, its legend and its opacity hook are all gone from the data-layer file */
+  assert.ok(!/\['oceancur','lyrOceanCur'\]/.test(dl), 'no row in the Oceans & maritime list');
+  assert.ok(!/function addOceanCurrents/.test(dl), 'no second drawing implementation');
+  assert.ok(!/function showOceanCurLegend/.test(dl), 'no second legend');
+  assert.ok(!/lyr-oceancur/.test(dl), 'no second set of layer ids');
+  /* …and a session that had the old row ticked is carried over to the surviving one */
+  const st = read('js/session-tabs.js');
+  assert.match(st, /dl-oceancur/, 'the migration knows the retired id');
+  assert.match(st, /wp-dl-currents/, 'and where it goes');
 });
 
 /* ═══ ⑨ THE AXIS DOES NOT JUMP AT THE MAP↔SPACE SEAM ══════════════════════════════════════════ */

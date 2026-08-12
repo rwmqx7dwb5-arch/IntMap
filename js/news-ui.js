@@ -465,7 +465,8 @@ window.IntMapModules.newsUi=function(HOST){
        Information / Countries. Its own input replaces the news search bar. Workspace mode never reaches here (Atlas
        is its own window there). */
     if(HOST.mode==='atlas'){ if(afeed) afeed.style.display='flex'; if(sb) sb.style.display='none';
-      try{ window.IntMapConsole&&window.IntMapConsole.mountTab&&window.IntMapConsole.mountTab(); }catch(_){}
+      /* (#R224) fetches the kernel if this is the first time Atlas has been reached for */
+      try{ if(window.IntMapAtlas) window.IntMapAtlas.call('mountTab'); else if(window.IntMapConsole&&window.IntMapConsole.mountTab) window.IntMapConsole.mountTab(); }catch(_){}
       try{ HOST.updateOcclusion(); }catch(_){} return; }
     if(HOST.mode==='info'){ dash.style.display='flex'; sb.style.display='flex'; HOST.renderDashboard(); HOST.updateOcclusion(); return; }
     if(HOST.mode==='monitors'){ const mf=document.getElementById('monitors-feed'); if(mf) mf.style.display='flex'; sb.style.display='flex';   /* (#R141) Monitors tab */

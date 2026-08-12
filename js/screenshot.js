@@ -38,6 +38,10 @@ export function makeScreenshot(HOST, CTX) {
       const ctx=out.getContext('2d'); if(mapCv) ctx.drawImage(mapCv,0,0);
       const scale=out.width/cont.clientWidth;
       /* 2 — DOM overlays (legends, markers, timebar) via html2canvas, skipping the WebGL canvases */
+      /* (#R224) FETCHED HERE, NOT AT BOOT. html2canvas is 198 kB that only a screenshot needs, and
+         this is the only place that needs it — see src/vendor.js. The overlay pass is skipped if it
+         cannot be had, which is exactly what the old `typeof` guard meant. */
+      try{ if(window.IntMapVendor) await window.IntMapVendor.html2canvas(); }catch(_){}
       if(typeof html2canvas!=='undefined'){
         try{
           const ov=await html2canvas(cont,{backgroundColor:null,useCORS:true,logging:false,scale,

@@ -119,14 +119,35 @@ try {
       So the same two dynamic imports, behind the browser's own idle signal, with a ceiling so a
       permanently busy page still ends up with them. The contract at the call sites is unchanged:
       asynchronously available, gracefully absent, never awaited. */
-(function lazyVendors() {
-  const load = () => {
-    import('html2canvas').then((m) => { window.html2canvas = m.default || m; }).catch(() => {});
-    import('katex').then(async (m) => {
-      await import('katex/dist/katex.min.css');
-      window.katex = m.default || m;
-    }).catch(() => {});
+/* ══ ⚠⚠ (#R224) "AT IDLE" IS STILL "EVERY SESSION" — THESE TWO ARE ON DEMAND NOW ═══════════════════
+   「モバイル版がまだ劇的に遅い…ブラウザが落ちることもある。」
+
+   #R193 moved these off first paint and behind requestIdleCallback with a 6 s ceiling, which was the
+   right fix for what it measured. It is still 456 KB fetched, parsed and compiled ON EVERY SESSION —
+   measured on a clean phone-viewport first load this round, katex 258 KB and html2canvas 198 KB both
+   arriving at t = 1.04 s — for two features most sessions never touch: html2canvas runs when the
+   reader presses 📷 Screenshot, and katex when an Atlas answer contains LaTeX. An idle callback with a
+   ceiling is not laziness, it is a delay.
+
+   So the same two dynamic imports, keyed by their FIRST USE. `window.IntMapVendor.html2canvas()` and
+   `.katex()` return a promise for the library, memoised, and the call sites await it — which they can,
+   because both are already inside async paths. ⚠ THE GLOBALS ARE STILL SET when the module lands, so
+   every existing `if (window.katex)` guard keeps its exact meaning: absent until first use, present
+   after it, never half-loaded. */
+window.IntMapVendor = (function () {
+  let _h2c = null, _katex = null;
+  return {
+    html2canvas() {
+      if (!_h2c) _h2c = import('html2canvas')
+        .then((m) => { window.html2canvas = m.default || m; return window.html2canvas; })
+        .catch((e) => { _h2c = null; throw e; });
+      return _h2c;
+    },
+    katex() {
+      if (!_katex) _katex = import('katex')
+        .then(async (m) => { await import('katex/dist/katex.min.css'); window.katex = m.default || m; return window.katex; })
+        .catch((e) => { _katex = null; throw e; });
+      return _katex;
+    },
   };
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(load, { timeout: 6000 });
-  else setTimeout(load, 2500);
 })();

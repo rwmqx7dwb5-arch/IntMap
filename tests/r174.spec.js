@@ -10,6 +10,12 @@ import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
 
 const boot = async page => {
+  /* (#R224) the Atlas kernel is fetched on demand — reach for it the way a reader's first click
+     does, so a spec that drives an Atlas action finds `window.IntMapConsole` where it expects it. */
+  await page.addInitScript(() => { try {
+    const t = setInterval(() => { try { if (window.IntMapAtlas) { clearInterval(t); window.IntMapAtlas.ensure(); } } catch (_) { } }, 50);
+    setTimeout(() => { try { clearInterval(t); } catch (_) { } }, 30000);
+  } catch (_) { } });
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});

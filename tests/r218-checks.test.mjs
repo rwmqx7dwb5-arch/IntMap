@@ -167,7 +167,14 @@ test('④ …and it makes twilight bluer without moving the noon calibration', a
   const br = (c) => c[2] / Math.max(1, c[0]);
   /* twilight: measurably bluer */
   const a = br(noO(-4, 0, 90, 20).rgb), b = br(withO(-4, 0, 90, 20).rgb);
-  assert.ok(b > a * 1.08, `ozone moved the blue/red ratio at −4° only from ${a.toFixed(3)} to ${b.toFixed(3)}`);
+  /* ⚠ (#R224) THE THRESHOLD MOVED BECAUSE THE REST OF THE MODEL GOT MORE ACCURATE, and the number is
+     written down rather than quietly lowered. #R218 measured 1.042 → 1.190 (+14.3 %) with the march
+     at 16 UNIFORM steps; that march under-sampled the dense air at low view elevations and part of
+     what ozone was doing was making up for it. With #R224's density-warped march the ozone-free sky
+     is ALREADY bluer at −4° (1.042 → 1.083) and ozone adds 1.083 → 1.136 (+4.9 %). The claim this
+     test exists to defend — «ozone is what makes the blue hour blue, measurably» — is unchanged;
+     what shrank is how much of it ozone had to carry alone. */
+  assert.ok(b > a * 1.04, `ozone moved the blue/red ratio at −4° only from ${a.toFixed(3)} to ${b.toFixed(3)}`);
   /* noon: #R202's Cesium calibration must not move — the far end of the gradient stays put */
   const n0 = noO(75, 30, 90).rgb, n1 = withO(75, 30, 90).rgb;
   for (let k = 0; k < 3; k++) assert.ok(Math.abs(n0[k] - n1[k]) <= 3,

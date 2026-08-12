@@ -52,17 +52,15 @@ window.IntMapModules.dataLayers=function(HOST){
     Object.assign(i18n.de,{ lyrGrpOrbit:"Weltraum & Orbit" });
     Object.assign(i18n.ru,{ lyrGrpOrbit:"Космос и орбита" });
     Object.assign(i18n.es,{ lyrGrpOrbit:"Espacio y órbita" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrOceanCur:"Ocean currents", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     /* ⚠ (#R219) THE FOUR TRANSLATIONS WERE WRITTEN INTO THE ENGLISH OBJECT, ONE AFTER ANOTHER.
        One key repeated five times inside one object literal — English, Japanese, German, Russian and
        Spanish, all written into `i18n.en` — is a LEGAL object whose fifth value wins, so
        `i18n.en.lyrOceanCur` was Spanish. And because
        the other four languages never got the key at all, every language fell back to `en` and the
-       「海流」 layer row read «Corrientes oceánicas» in all five. One key per language object. */
-    Object.assign(i18n.jp,{ lyrOceanCur:"海流" });
-    Object.assign(i18n.de,{ lyrOceanCur:"Meeresströmungen" });
-    Object.assign(i18n.ru,{ lyrOceanCur:"Океанские течения" });
-    Object.assign(i18n.es,{ lyrOceanCur:"Corrientes oceánicas" });
+       「海流」 layer row read «Corrientes oceánicas» in all five. One key per language object.
+       ⚠ (#R224) The key itself is gone with the row it labelled (see the note by the row list); the
+       rule it is here to state is not, and every `Object.assign` around it still obeys it. */
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
     Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 Satellite Drop",
@@ -531,7 +529,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95,oceancur:0.92};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -644,7 +642,14 @@ window.IntMapModules.dataLayers=function(HOST){
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
-      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['oceancur','lyrOceanCur'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],
+      /* ⚠ (#R224) THERE IS NO 'oceancur' ROW HERE ANY MORE — 「海流レイヤー、二つあるなんていうややこしい
+         ことするな。統一しろ。」 This app had TWO ocean-current layers: this one (#R208 — 61 traced lines
+         plus a 1°-strided arrow field) and the World-data plate (js/ocean-currents.js — 108 named
+         currents, the source's own 0.25° grid strided to the view, twelve monthly climatologies, the
+         list panel and the legend). Both were reachable and both drew over each other. The plate is
+         the survivor and the ONLY implementation; a session that had this row ticked is migrated to
+         `wp-dl-currents` once, in js/session-tabs.js. */
+      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],
       ['__grp','lyrGrpHazard'],
       ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['night','lyrNight'],
       ['__grp','lyrGrpDemo'],
@@ -932,7 +937,7 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats']],
-          ['lyrGrpMaritime',['sst','eez','oceancur','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
@@ -1535,7 +1540,45 @@ window.IntMapModules.dataLayers=function(HOST){
        (github.io, real headers) the second request is `transferSize: 0` — a cache hit. The candidate
        fix for this was written, measured and REMOVED; what is on the record instead is that the
        instrument had the defect. */
+    /* ══ ⚠⚠ (#R224) THE WORK CANVAS DECODED 64 MB TO KEEP 17 ═══════════════════════════════════════
+       「モバイル版がまだ劇的に遅い…ブラウザが落ちることもある。」 (iPhone / iOS Safari, confirmed.)
+
+       MEASURED: koppen_mercator_1991-2020_4k.png is 4096 × 4096, i.e. 737 kB on the wire and
+       **64 MB as a decoded bitmap** — and the Köppen layer is ON BY DEFAULT (IntMapDefaultLayers).
+       `_mkKoppenWork` then draws that bitmap into a 2048² canvas and, on a phone, throws it away
+       again (#R217). So the phone allocated 64 MB, used 17, and released it — a peak spike of 64 MB
+       on a device whose whole tab budget is a few hundred, happening while MapLibre is uploading its
+       own texture for the SAME file. That is a plausible tab kill, and it is entirely avoidable.
+
+       `createImageBitmap(blob, { resizeWidth, resizeHeight })` decodes STRAIGHT to the target size:
+       the 64 MB intermediate never exists. ⚠ `resizeQuality:'pixelated'` is not a preference here, it
+       is the correctness condition — the whole point of the work canvas is that KCOL's exact palette
+       survives so a pixel can be classified, and any smoothing invents colours between classes. That
+       is the same reason `_mkKoppenWork` sets `imageSmoothingEnabled=false`.
+       ⚠ FALLS BACK TO THE <img> PATH on anything that cannot do it (no createImageBitmap, no resize
+       support, a fetch the CORS setup refuses), so the behaviour is unchanged where it cannot help. */
+    function _koppenBitmapWork(){
+      const cap=KWORK_CAP;
+      if(typeof createImageBitmap!=='function'||typeof fetch!=='function') return Promise.reject();
+      return fetch(koppenWorkURL(window._koppenPeriod),{cache:'force-cache'})
+        .then(r=>{ if(!r.ok) throw new Error('koppen '+r.status); return r.blob(); })
+        .then(b=>createImageBitmap(b,{resizeWidth:cap,resizeHeight:cap,resizeQuality:'pixelated'}))
+        .then(bm=>{
+          const c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
+          const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false;
+          cx.drawImage(bm,0,0);
+          try{ bm.close(); }catch(_){}
+          window._koppenCanvas=c; window._koppenReady=true; window._koppenImg=null;
+        });
+    }
     function loadKoppenCanvas(){
+      if(window._koppenImg||window._koppenReady) return Promise.resolve();
+      /* the phone is the case this exists for; on desktop `_koppenFullCap()` may be above the work
+         canvas, and then `_koppenImg` has readers, so that path is left exactly as it was */
+      if(koppenPhone()) return _koppenBitmapWork().catch(()=>_loadKoppenCanvasImg());
+      return _loadKoppenCanvasImg();
+    }
+    function _loadKoppenCanvasImg(){
       if(window._koppenImg) return Promise.resolve();
       return new Promise(resolve=>{
         /* (#R13b) NO crossOrigin on the LOCAL PNG: under file:// an `anonymous` request to a same-folder
@@ -3662,109 +3705,17 @@ window.IntMapModules.dataLayers=function(HOST){
       const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');
       const ex=r&&r.querySelector('.lyr-extras'); if(ex) ex.style.display='none'; }
     let _subcableTries=0;
-    /* ══ (#R208) OCEAN CURRENTS — traced through a measured velocity field ═══════════════════════
-       「海流レイヤー（矢印・寒暖流を青赤・名前つき）」. data/ocean-currents.json is built by
-       scripts/build-ocean-currents.mjs from three NOAA products (public domain) — see that file for why
-       it is not the Data Basin item that was approved (its download needs an account).
-       Three layers: the arrow field, the named current lines coloured by WARM/COLD, and the names.
-       ⚠ warm/cold is DERIVED in the build (the poleward component along each traced path), so a
-       current that is genuinely zonal — the Antarctic Circumpolar, the equatorial jets — is neither
-       and is drawn grey rather than forced into one of the two colours. */
-    let _ocLoading=false;
-    const OC_WARM="#e8503a", OC_COLD="#3a7fe8", OC_ZONAL="#9aa7b4";
-    function addOceanCurrents(){
-      if(GE().layers.has("lyr-oceancur")){ ["lyr-oceancur-arrows","lyr-oceancur","lyr-oceancur-lbl"].forEach(l=>setVis(l,true)); return; }
-      if(_ocLoading) return; _ocLoading=true;
-      let url; try{ url=new URL("data/ocean-currents.json",document.baseURI).toString(); }catch(_){ url="data/ocean-currents.json"; }
-      fetch(url).then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }).then(doc=>{
-        _ocLoading=false;
-        const lines={type:"FeatureCollection",features:(doc.named||[]).map(c=>({type:"Feature",
-          geometry:{type:"LineString",coordinates:c.path},
-          properties:{ name:(HOST.lang==="jp"?c.ja:c.en), en:c.en, kind:c.kind,
-            colour:(c.kind==="warm"?OC_WARM:c.kind==="cold"?OC_COLD:OC_ZONAL),
-            speed:c.meanSpeed, maxSpeed:c.maxSpeed }}))};
-        /* ⚠ (#R222) `doc.arrows` IS GONE — the field is a gridded file now (js/ocean-currents-field.js).
-           This older row (#R208) is a different layer from the World-data plate and is still reachable,
-           so it reads the same grid and strides it to 1°, which is exactly the spacing its arrows had.
-           It draws its lines and names the moment the JSON lands and fills the arrows in when the grid
-           does, rather than waiting for a second file to show anything. */
-        const arrows={type:"FeatureCollection",features:[]};
-        (function(){ try{
-          const F=window.IntMapCurrentField; if(!F) return;
-          const rel=(doc.field&&doc.field.file)||'data/ocean-currents-field.bin.gz';
-          let fu; try{ fu=new URL(rel,document.baseURI).toString(); }catch(_){ fu=rel; }
-          F.fetchField(fu).then(f=>{
-            const r=F.arrows(f,0,{w:-180,e:180,s:-80,n:82},40000);
-            if(GE().layers.hasSource("src-oceancur-a"))
-              GE().layers.setSourceData("src-oceancur-a",{type:"FeatureCollection",
-                features:r.features.map(ft=>({type:"Feature",geometry:ft.geometry,
-                  properties:{bearing:ft.properties.b,speed:ft.properties.s}}))});
-          }).catch(()=>{});
-        }catch(_){} })();
-        if(!GE().layers.hasSource("src-oceancur")) GE().layers.addSource("src-oceancur",{type:"geojson",data:lines});
-        if(!GE().layers.hasSource("src-oceancur-a")) GE().layers.addSource("src-oceancur-a",{type:"geojson",data:arrows});
-        /* the arrows: a text glyph rotated to the flow, sized and faded by SPEED — the number the
-           field actually carries, so a fast core reads as one without a legend saying so */
-        if(!GE().layers.has("lyr-oceancur-arrows")) GE().layers.add({id:"lyr-oceancur-arrows",type:"symbol",source:"src-oceancur-a",
-          layout:{visibility:"none","text-field":"➤","text-rotate":["get","bearing"],"text-rotation-alignment":"map",
-            "text-allow-overlap":true,"text-ignore-placement":true,
-            "text-size":["interpolate",["linear"],["get","speed"],0.05,9,0.6,17]},
-          paint:{"text-color":"#cfe4ff","text-opacity":["interpolate",["linear"],["get","speed"],0.05,0.28,0.5,0.95],
-            "text-halo-color":"rgba(0,20,40,0.65)","text-halo-width":1}},beforeId);
-        if(!GE().layers.has("lyr-oceancur")) GE().layers.add({id:"lyr-oceancur",type:"line",source:"src-oceancur",
-          layout:{visibility:"none","line-cap":"round","line-join":"round"},
-          paint:{"line-color":["get","colour"],"line-opacity":opacities.oceancur,
-            "line-width":["interpolate",["linear"],["zoom"],0,1.6,3,3,7,6]}},beforeId);
-        if(!GE().layers.has("lyr-oceancur-lbl")) GE().layers.add({id:"lyr-oceancur-lbl",type:"symbol",source:"src-oceancur",
-          layout:{visibility:"none","symbol-placement":"line","text-field":["get","name"],
-            "text-size":(window.IntMapLabelScale?window.IntMapLabelScale.sub(0.86):11),"text-max-angle":40,
-            "symbol-spacing":420,"text-letter-spacing":0.02},
-          paint:{"text-color":"#eaf2ff","text-halo-color":"rgba(0,18,36,0.85)","text-halo-width":1.6}},beforeId);
-        const cb=document.getElementById("dl-oceancur");
-        if(cb&&cb.checked) ["lyr-oceancur-arrows","lyr-oceancur","lyr-oceancur-lbl"].forEach(l=>setVis(l,true));
-      }).catch(e=>{ _ocLoading=false; console.warn("ocean currents",e); autoUncheck("dl-oceancur"); });
-    }
-    /* ══ ⚠ (#R223) THE OCEAN-CURRENT ROW HAD NO LEGEND AT ALL ═══════════════════════════════════════
-       「海流レイヤーに凡例がない。」 MEASURED on the shipped build: this row (the Oceans & maritime
-       one, #R208) paints three colours and an arrow field and registers NOTHING — no `makeLegend`
-       call, no `_registerLayerOpacity`, no entry in `GENERIC_LEG` — so the map showed red, blue and
-       grey lines with no statement anywhere of what the three mean. (The World-data plate,
-       js/ocean-currents.js, is a DIFFERENT layer and does have one; both are reachable, which is why
-       the report can be true while a legend exists somewhere.)
-
-       It goes into the app's ONE legend box — `.data-legend.generic-legend`, the same window every
-       other layer uses, with its drag grip, its ✕, its minimise and its opacity row (#R215's rule:
-       a family renders INTO that box rather than opening a second window beside it).
-       ⚠ The three keys read their colours from OC_WARM / OC_COLD / OC_ZONAL — the same constants the
-       paint expression is built from, never a second copy (#R212's lesson). */
-    const _ocL=window.IntMapLang.pick(()=>HOST.lang);
-    function _ocKey(col,txt){ return '<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
-      +'<span style="width:22px;height:4px;border-radius:2px;flex:none;background:'+col+';box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></span>'
-      +'<span>'+escapeHtml(txt)+'</span></div>'; }
-    function showOceanCurLegend(){
-      try{
-        const el=window._registerLayerOpacity&&window._registerLayerOpacity('oceancur',
-          ['Ocean currents','海流','Meeresströmungen','Океанские течения','Corrientes oceánicas'],
-          ['lyr-oceancur','lyr-oceancur-arrows','lyr-oceancur-lbl'],'dl-oceancur');
-        if(!el) return;
-        let b=el.querySelector('.oc-dl-key');
-        if(!b){ b=document.createElement('div'); b.className='oc-dl-key'; b.style.cssText='margin-top:4px;';
-          const h=el.querySelector('h4');
-          if(h&&h.parentNode===el) el.insertBefore(b,h.nextSibling); else el.appendChild(b); }
-        b.innerHTML=_ocKey(OC_WARM,_ocL('Warm current — warmer than the sea at the same latitude','暖流 — 同じ緯度の海より暖かい流れ','Warme Strömung — wärmer als das Meer derselben Breite','Тёплое течение — теплее моря на той же широте','Corriente cálida — más cálida que el mar de su latitud'))
-          +_ocKey(OC_COLD,_ocL('Cold current — colder than the sea at the same latitude','寒流 — 同じ緯度の海より冷たい流れ','Kalte Strömung — kälter als das Meer derselben Breite','Холодное течение — холоднее моря на той же широте','Corriente fría — más fría que el mar de su latitud'))
-          +_ocKey(OC_ZONAL,_ocL('Zonal — no measurable temperature contrast','東西流 — 有意な水温差なし','Zonal — kein messbarer Temperaturkontrast','Зональное — без заметного контраста','Zonal — sin contraste medible'))
-          +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
-          +'<span style="width:22px;flex:none;text-align:center;color:#cfe4ff;text-shadow:0 0 2px rgba(0,20,40,0.8);">➤</span>'
-          +'<span>'+escapeHtml(_ocL('Arrows: the measured flow — bigger and brighter where it is faster','矢印：実測の流れ。速いほど大きく明るい','Pfeile: die gemessene Strömung — größer und heller, wo sie schneller ist','Стрелки: измеренное течение — крупнее и ярче там, где быстрее','Flechas: el flujo medido — mayor y más brillante donde es más rápido'))+'</span></div>'
-          +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:2px;">'
-          +escapeHtml(_ocL('NOAA satellite altimetry (geostrophic) + blended wind stress (Ekman), 0.25° climatology. Warm / cold is measured against NOAA OISST at the same latitude.','NOAA の衛星海面高度計（地衡流）と混合風応力（エクマン流）による 0.25° 気候値。暖流・寒流は同緯度の NOAA OISST 水温との比較による実測です。','NOAA-Satellitenaltimetrie (geostrophisch) + Windschub (Ekman), 0,25°-Klimatologie. Warm/kalt gemessen an NOAA OISST derselben Breite.','Спутниковая альтиметрия NOAA (геострофическое течение) и ветровое напряжение (экмановское), климатология 0,25°. Тёплое/холодное — по NOAA OISST на той же широте.','Altimetría satelital de NOAA (geostrófica) + tensión del viento (Ekman), climatología de 0,25°. Cálida/fría se mide con NOAA OISST en la misma latitud.'))
-          +'</div>';
-        el.style.display='block';
-        try{ window._ensureLegendMinimize&&window._ensureLegendMinimize(el); }catch(_){}
-        try{ tileLegends(); }catch(_){}
-      }catch(_){}
-    }
+    /* ⚠ (#R224) THE #R208 OCEAN-CURRENT LAYER LIVED HERE AND IS GONE.
+       「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 What stood here was ~100 lines
+       that fetched data/ocean-currents.json, drew its 61 named lines, strided the shared 0.25° field
+       to 1° for a global arrow layer and (since #R223) registered a legend — a second, thinner copy of
+       js/ocean-currents.js. The plate in that file is the one implementation now: it reads the same
+       bundled data, strides the field to the VIEW instead of to a fixed 1°, carries the twelve monthly
+       climatologies and the named-current list, and owns the legend. Nothing here forwards to it —
+       forwarding would leave two rows, which is the thing being removed. The single row is
+       `wp-dl-currents` under World data, and js/session-tabs.js migrates a saved `dl-oceancur` to it.
+       ⚠ `data/ocean-currents.json` and `data/ocean-currents-field.bin.gz` are UNCHANGED and still
+       shipped — they were always the plate's data; this file was the second reader. */
     function addSubcables(){
       if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); return; }
       if(_subcablesLoading) return; _subcablesLoading=true;
@@ -3986,8 +3937,6 @@ window.IntMapModules.dataLayers=function(HOST){
           whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
         }
         else if(id==='subcables'){ whenStyleReady().then(()=>{ try{ addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
-        else if(id==='oceancur'){ showOceanCurLegend();   /* (#R223) 「海流レイヤーに凡例がない。」 — shown at once, before the data lands */
-          whenStyleReady().then(()=>{ try{ addOceanCurrents(); }catch(e){ console.warn('ocean currents',e); } }); }   /* (#R208) */
         else if(id==='hillshade'){
           whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
@@ -4070,8 +4019,6 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
-        else if(id==='oceancur'){ ['lyr-oceancur-arrows','lyr-oceancur','lyr-oceancur-lbl'].forEach(l=>setVis(l,false));
-          try{ window._hideGenericLegend&&window._hideGenericLegend('oceancur'); }catch(_){} }   /* (#R208) (#R223) the legend goes with the layer */
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none';
           /* (#R19) Phones: drop the Köppen sampling work-set (4096² canvas + pixel copies, ~150 MB)
@@ -4224,7 +4171,6 @@ window.IntMapModules.dataLayers=function(HOST){
       else if(id==='sealevel'){ if(GE().layers.has('lyr-sealevel'))GE().layers.setPaint('lyr-sealevel','color-relief-opacity',v); }
       else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=Math.min(1,0.5+v*0.5); try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v*0.82); }catch(_){} }   /* (#R8b) particle alpha barely dims; slider mainly drives the geo-anchored speed-field raster */
       else if(id==='subcables'){ if(GE().layers.has('lyr-subcables'))GE().layers.setPaint('lyr-subcables','line-opacity',v); }
-      else if(id==='oceancur'){ if(GE().layers.has('lyr-oceancur'))GE().layers.setPaint('lyr-oceancur','line-opacity',v); }   /* (#R208) */
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
       else { if(GE().layers.has('lyr-'+id))GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }
