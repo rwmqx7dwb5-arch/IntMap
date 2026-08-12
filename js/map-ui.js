@@ -870,7 +870,9 @@ window.IntMapModules.labelPopup=function(HOST){
             else { /* modern place: name is already in the current language */ _probe(wl,wtitle).then(j=>{ if(_showW(j)) return; _probe('en',wtitle).then(_showW); }); } }
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
-          if(ai) ai.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(name,lngLat); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
+          /* (#R224) Atlas is on demand — fetch it, and only fall back to the older research panel if
+             the kernel genuinely cannot be had. Testing for the global would ALWAYS take the fallback. */
+          if(ai) ai.onclick=()=>{ try{ if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(C=>{ try{ if(C&&C.brief) C.brief(name,lngLat); else if(window.IntMapAIResearch) window.IntMapAIResearch.open(name,lngLat); }catch(_){} }); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
           /* (#R122) resolve the clicked place's polygon: the caller-supplied era border, else the outline this
              popup drew (works for sub-national regions / cities too), else the modern country polygon under the point. */
           const _placeGeo=()=>{ try{ if(opts&&opts.geojson&&/Polygon/.test(opts.geojson.type||'')) return opts.geojson;

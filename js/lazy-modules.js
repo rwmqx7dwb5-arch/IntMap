@@ -75,6 +75,14 @@ export function makeLazyModules(HOST) {
       flightSim: 'IntMapFlightSim', playground: '_openPlayground', seismic: 'IntMapSeismic',
       tsunami: 'IntMapTsunami', terrainWater: 'IntMapTerrainWater', los: 'IntMapLOS',
       streetView: 'IntMapStreetView', nightSky: 'IntMapNightSky',
+      /* ══ (#R224) THE BIGGEST FILE IN THE BOOT BUNDLE ═══════════════════════════════════════════
+         「モバイル版がまだ劇的に遅い…ブラウザが落ちることもある。」 js/atlas-console.js is 658 kB of the
+         3.67 MB main chunk (#R218's measurement) and it is parsed on every session, including the
+         many that never open Atlas. It is the LAST of the big eight to move, and it moved last for a
+         reason: Atlas is this app's control plane, so a dozen features reach for `window.IntMapConsole`.
+         Every one of them now goes through `window.IntMapAtlas` (js/app-body.js), which fetches the
+         kernel first — so «Atlas can drive everything» is unchanged and only the MOMENT it arrives is. */
+      atlasConsole: 'IntMapConsole',
     };
 
     function record(name, why) {
@@ -104,6 +112,7 @@ export function makeLazyModules(HOST) {
         case 'los': return import('./viewshed.js');
         case 'streetView': return import('./street-view.js');
         case 'nightSky': return import('./night-sky.js');
+        case 'atlasConsole': return import('./atlas-console.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -123,6 +132,7 @@ export function makeLazyModules(HOST) {
         case 'los': window.IntMapModules.los(IM_HOST); return true;
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
         case 'nightSky': return !!window.IntMapNightSky;    /* publishes itself at import time */
+        case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
         default: return !!M;
       }
     }

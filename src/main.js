@@ -67,6 +67,10 @@ import '../js/locales/ui.es.js';
 /* (#R223) the sixth — Traditional Chinese. One row in LANGS, this line, and that file: the whole
    cost #R221's registry promised, with no call site touched (see the note by the LANGS row). */
 import '../js/locales/ui.zh.js';
+/* (#R224) the seventh — Simplified Chinese, GENERATED from the line above by scripts/zh-hans.mjs.
+   Same three edits as every other language (this line, one row in LANGS, one locale file); the only
+   difference is that this locale file is produced rather than written. */
+import '../js/locales/ui.zh-hans.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
@@ -95,7 +99,12 @@ import '../js/widgets.js';
 import '../js/wb-layers.js';
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
-import '../js/atlas-console.js';
+/* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
+   (js/lazy-modules.js), fetched the first time anything reaches for Atlas. 658 kB of the boot
+   bundle, for a panel most sessions never open. See LAZY_FACTORIES below.
+   What IS imported is the ~30-line loader every caller goes through, so that «Atlas can drive
+   everything» keeps meaning what it says while the kernel itself arrives later. */
+import '../js/atlas-loader.js';
 /* (#R217) "which tile segments are the same river, and where does that river really go" — pure
    set-of-names matching plus the OSM course resolver. Ahead of js/map-ui.js because the river-label
    click is its first caller; it publishes window.IntMapRiverCourse at import and fetches nothing
@@ -136,6 +145,12 @@ import '../js/map-pick.js';
    the seismic rings and the dashboard all build their shapes with. Pure functions of coordinates:
    no DOM, no renderer, no app state, so it needed no handover and is testable in Node. */
 import '../js/geodesy.js';
+/* (#R224) …and beside it, the other piece of pure geometry the seismic panel needs: a drawn outline
+   is a fault's SURFACE PROJECTION, and this turns it into a dipping plane (dip, down-dip width, top
+   and bottom depth, 3-D area, mean slip). Eager and tiny — the seismic module is lazy, but this has
+   no DOM, no renderer and no state, so it costs one `window.` assignment and is verified in Node
+   against real earthquakes instead of against a screenshot. */
+import '../js/fault-geometry.js';
 /* (#R196) index.html's ELEVENTH split — the service-worker tile cache and the directional prefetch.
    It only registers a factory; js/app-body.js calls it from the exact point the code used to occupy,
    because it attaches `moveend`/`move` handlers whose order relative to the shell's is observable. */
@@ -275,7 +290,7 @@ const MODULE_FACTORIES = [
   'maddison', 'histStates', 'histId', 'layerPreviews', 'monitors', 'companies',
   'statsCompare', 'compare', 'routing', 'timeBorders',
   'dataLayers', 'workspace', 'widgets', 'wbLayers', 'betaOverlays', 'cameras',
-  'atlasConsole', 'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
+  'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
   'geojsonUpload', 'viewHash', 'share', 'projView', 'drawTool',
   'isolate', 'seaRoute', 'outline', 'moveShape', 'isochrone',
   'arc3d', 'objectList', 'wind', 'weatherEC', 'weatherPanel', 'earthSky',
@@ -302,9 +317,9 @@ const MODULE_FACTORIES = [
    failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
    for all eight. Naming them here keeps ONE list of every factory the program has, so a file that
    is deleted or renamed still has somewhere to be missing from. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView'];
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole'];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');

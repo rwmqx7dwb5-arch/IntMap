@@ -832,7 +832,8 @@ window.IntMapModules.disaster=function(HOST){
         ring.push([origin.lng,origin.lat]); feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{col:bd[1],op:bd[2]}}); });
       return { feats, reach:Math.round(reach), windSpd:w.spd, toward }; }
     async function run(){ if(!origin||busy) return; busy=true; try{ ensure(); setStat(DZ('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
-      if(hazard==='radiation'){ try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
+      /* (#R224) Atlas is on demand — fetch it before dispatching, or this quietly did nothing */
+      if(hazard==='radiation'){ try{ if(window.IntMapAtlas) await window.IntMapAtlas.call('dispatch',{type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); else if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
       let r=null; if(hazard==='flood') r=await inund(); else r=await plume();
       if(r){ const feats=(r.feats||[]).concat([{type:'Feature',geometry:{type:'Point',coordinates:[origin.lng,origin.lat]},properties:{}}]);
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}

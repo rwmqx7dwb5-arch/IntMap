@@ -39,6 +39,7 @@ function isBootCdn(host) {
  */
 export async function installHermeticRouting(context, allow) {
   const blockedHosts = new Set();
+  await ensureAtlasOnDemand(context);
   const extra = allow || [];
   const isAllowed = (h) => extra.some((a) => h === a || h.endsWith('.' + a));
   await context.route('**/*', (route) => {
@@ -49,6 +50,28 @@ export async function installHermeticRouting(context, allow) {
     return route.abort('blockedbyclient');
   });
   return blockedHosts;
+}
+
+/* ══ ⚠ (#R224) THE ATLAS KERNEL IS FETCHED WHEN IT IS REACHED FOR ═══════════════════════════════
+ * js/atlas-console.js left the boot bundle this round — 658 kB that a session which never opens
+ * Atlas never downloads (see js/atlas-loader.js). Twenty-odd specs call `window.IntMapConsole`
+ * directly, and against a lazy kernel that global simply is not there yet.
+ *
+ * So the harness reaches for it the way a reader's first click does, ONCE, here — rather than in
+ * twenty `beforeAll` blocks that would each have to be kept in step. It is `window.IntMapAtlas`'s
+ * own public entry point; nothing test-only is added to the app, and a spec that does not touch
+ * Atlas is unaffected beyond one same-origin chunk fetch.
+ * ⚠ It polls because this runs BEFORE any page script: the loader itself has not been parsed yet.
+ */
+export async function ensureAtlasOnDemand(context) {
+  await context.addInitScript(() => {
+    try {
+      const t = setInterval(() => {
+        try { if (window.IntMapAtlas) { clearInterval(t); window.IntMapAtlas.ensure(); } } catch (_) { }
+      }, 50);
+      setTimeout(() => { try { clearInterval(t); } catch (_) { } }, 30000);
+    } catch (_) { }
+  });
 }
 
 // Console errors that are EXPECTED given our hermetic policy (a blocked external host)

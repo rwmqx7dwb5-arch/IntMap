@@ -17,6 +17,11 @@ test.beforeAll(async ({ browser }) => {
   await installHermeticRouting(context);
   page = await context.newPage();
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  /* ⚠ (#R224) THE ATLAS KERNEL IS ON DEMAND NOW — 658 kB that a session which never opens Atlas never
+     downloads. So a spec that needs its globals has to reach for it the way a reader does, rather
+     than waiting for something the boot no longer publishes. */
+  await page.waitForFunction(() => !!window.IntMapAtlas, null, { timeout: 45_000 });
+  await page.evaluate(() => window.IntMapAtlas.ensure());
   await page.waitForFunction(
     () => typeof window.IntMapAtlasQA !== 'undefined' && typeof window.IntMapRegionResolverTest !== 'undefined',
     null,

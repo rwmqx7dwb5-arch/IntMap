@@ -92,6 +92,19 @@ export function makeSessionTabs(HOST, CTX) {
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
       /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
       const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
+      /* ══ (#R224) A RETIRED CHECKBOX ID IS NOT A LAYER THE USER GAVE UP ═══════════════════════════
+         「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 The Oceans & maritime row
+         (`dl-oceancur`, #R208) is gone and js/ocean-currents.js is the one ocean-current layer. A saved
+         session naming the retired box would simply find no element and poll 25 times for nothing — the
+         reader would come back and their currents would be off, which is a feature disappearing in a
+         round that was about tidying, not removing. So the id is TRANSLATED, once, on the way in.
+         ⚠ A MAP, not an `if`: this is where any future retirement is recorded, and keeping it a table
+         is what stops the next one being written somewhere else. ⚠ De-duplicated, because a session
+         could legitimately hold BOTH ids (someone who had turned on the World-data plate as well). */
+      const RETIRED={ 'dl-oceancur':'wp-dl-currents' };
+      for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
+        if(!to) continue;
+        if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }
       /* (#R189) ONE-TIME MIGRATION of poisoned sessions. Every session written before #R188 shipped
          (no `defv` stamp) was written by a snapshot that could not tell "the user switched it off"
          from "the download failed and autoUncheck switched it off" — so an absent default-on id in
@@ -131,7 +144,9 @@ export function makeSessionTabs(HOST, CTX) {
   IntMapOS.register('tab.monitors', ()=>setMode('monitors','btn-monitors'), {label:'Monitors tab', btn:'btn-monitors', group:'tab'});   /* (#R141) area monitors */
   /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
      #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
-  const _atlasTab=()=>{ try{ if(document.body.classList.contains('ws-mode')){ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); } else setMode('atlas','btn-community'); }catch(_){} };
+  /* (#R224) the kernel is on demand — open() has to be reached through window.IntMapAtlas, or a
+     workspace-mode «Atlas» would silently do nothing on a session that had not opened it yet. */
+  const _atlasTab=()=>{ try{ if(document.body.classList.contains('ws-mode')){ if(window.IntMapAtlas) window.IntMapAtlas.call('open'); else if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); } else setMode('atlas','btn-community'); }catch(_){} };
   IntMapOS.register('tab.atlas', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});
   IntMapOS.register('tab.community', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});   /* legacy alias */
   document.getElementById('btn-news').onclick=()=>IntMapOS.exec('tab.news',{source:'ui'});
@@ -175,7 +190,9 @@ export function makeSessionTabs(HOST, CTX) {
   (function(){ const REGL=[
     ['layer.on',   (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · on (params.id = checkbox id)','layer'],
     ['layer.off',  (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · off (params.id)','layer'],
-    ['atlas.open', ()=>{ window.IntMapConsole&&window.IntMapConsole.open(); }, 'Atlas · open','atlas'],
+    ['atlas.open', ()=>{ if(window.IntMapAtlas) window.IntMapAtlas.call('open'); else window.IntMapConsole&&window.IntMapConsole.open(); }, 'Atlas · open','atlas'],
+    /* ⚠ (#R224) CLOSE DOES NOT FETCH. Downloading the kernel in order to close a panel that was never
+       opened is the same defect as loading it eagerly, so this one keeps the plain guard. */
     ['atlas.close',()=>{ window.IntMapConsole&&window.IntMapConsole.close(); }, 'Atlas · close','atlas'],
     ['compare.open',(p)=>{ if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
     ['compare.clear',()=>{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }, 'Country comparison · clear map paint','compare'],

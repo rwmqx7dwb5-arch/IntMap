@@ -4209,10 +4209,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      collision, with the MapLibre camera as the cockpit view and a live HUD (airspeed, altitude, heading, VSI,
      throttle, artificial horizon). Keyboard: W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc exit. ===== */
   /* (#R163) moved to js/flight-sim.js; (#R209) 102 kB fetched when a flight is actually started. */
-  window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);   /* (#R165) the Atlas kernel (~6,200 lines) moved to js/atlas-console.js — see Architecture.md §3.1 */
-  try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
-  /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
-  window.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){ const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; e.preventDefault(); try{ window.IntMapConsole.toggle(); }catch(_){} } });
+  /* (#R224) THE ATLAS KERNEL IS FETCHED WHEN IT IS REACHED FOR — 658 kB of boot bundle for a panel most
+     sessions never open. js/atlas-loader.js owns window.IntMapAtlas, the reasoning and the entry-point
+     wiring that used to be these four lines (⌘K, the button, the tab's prefetch); #R199/#R200's rule. */
+  try{ window.IntMapAtlas.wire(); }catch(_){}
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   window.IntMapModules.runwaySearch(IM_HOST);

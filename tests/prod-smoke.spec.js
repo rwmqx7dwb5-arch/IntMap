@@ -3,7 +3,7 @@
 // Distinguishes a real product outage from a transient upstream API failure (§6.3, §8.5):
 // it lets real network through and only fails on IntMap's own breakage.
 import { test, expect } from '@playwright/test';
-import { collectPageDiagnostics } from './helpers/network.js';
+import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
 
 const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
@@ -70,7 +70,12 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   /* (#R222) the ocean-current field decoder — eager, and the failure it guards against is silent in
      the worst way: BOTH ocean-current layers still draw their named lines from the JSON, so the map
      looks right and the entire measured flow field is simply absent. */
-  'IntMapCurrentField'];
+  'IntMapCurrentField',
+  /* (#R224) the fault-plane solver — eager, and its absence is silent in the same way: the seismic
+     panel still takes a drawn rupture, still paints a field and still prints an Mw. It just prints
+     the one computed from the outline's SHADOW with no dip, no width and no depth, which is the
+     defect this round removed. */
+  'IntMapFaultGeom'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test
@@ -87,6 +92,9 @@ let page, diag, response, lazyError;
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
+  /* (#R224) the Atlas kernel is fetched on demand now — reach for it the way a reader's first click
+     does, or `IntMapConsole` is legitimately absent and this reports a healthy deploy as broken. */
+  await ensureAtlasOnDemand(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   response = await page.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
