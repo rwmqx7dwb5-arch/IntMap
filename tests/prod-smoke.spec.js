@@ -64,6 +64,11 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   // the river labels still draw, and a click on one just lights up nothing — a feature silently
   // gone with every assertion above green, which is the exact failure this list exists to catch.
   'IntMapRiverCourse',
+  /* (#R227) the scattering model, published by js/theme-sky.js so the MapLibre adapter can hand it
+     to the limb layer (js/limb-layer.js). It is eager — assigned when that module is evaluated — so
+     its absence in production means the sky files did not deploy, and the Earth's edge would fall
+     back to the renderer's own five-step atmosphere without anything else looking wrong. */
+  'IntMapSkyModel',
   /* (#R219) the cosmic distance ladder — eager, so its absence means js/space-cosmos.js is missing
      from the deploy rather than merely unasked-for */
   'IntMapCosmos',

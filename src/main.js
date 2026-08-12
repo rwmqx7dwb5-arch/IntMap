@@ -200,6 +200,10 @@ import '../js/solid3d.js';
 /* (#R202) the orbit-point custom layer, behind IntMapGeoEngine.layers.addOrbit — the same shape as
    solid3d.js: a MapLibre adapter implementation detail that only js/geo-engine.js reaches for. */
 import '../js/orbit-points.js';
+/* (#R227) …and the third one: the atmosphere's limb, behind IntMapGeoEngine.layers.addLimb. It
+   exists because maplibre discards the whole `sky` block while the globe is drawn, so everything
+   #R196–#R226 computed for the Earth's edge never reached a pixel. See js/limb-layer.js. */
+import '../js/limb-layer.js';
 /* (#R202) the gesture-time render resolution — measured, mobile-only; see the file header. */
 import '../js/render-scale.js';
 /* (#R221) …and the effect that measured MORE expensive than the resolution did: the frosted glass is
@@ -308,7 +312,7 @@ const MODULE_FACTORIES = [
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'renderScale', 'glassMotion', 'newsSources', 'industryWeb',
+  'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'renderScale', 'glassMotion', 'newsSources', 'industryWeb',
   'oceanCurrents',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────

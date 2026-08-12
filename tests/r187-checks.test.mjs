@@ -121,11 +121,16 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
      added a third for the LIGHT map basemap at 0.15 — brighter surfaces clip sooner, which is this
      test's own argument applied one basemap further. The ramps are read in source order instead:
      `'atmosphere-blend':(sat ? <satellite> : (<light map> or <dark map>))`. */
-  const blend = /'atmosphere-blend':\(sat[\s\S]{0,800}?\)\}\);/.exec(src);
+  /* ⚠ (#R227) …AND THE THREE RAMPS NOW SIT BEHIND ONE MORE CONDITION, which does not change what
+     this test is about. Where the app draws the limb ITSELF (js/limb-layer.js — maplibre discards
+     the whole sky block on the globe, so its own atmosphere pass was the only thing drawing the
+     Earth's edge), this property is 0 so the two do not add. Everywhere else the ramps below are
+     what #R187 and #R205 measured, unchanged, and that is what is read here. */
+  const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,800}?\)\}\);/.exec(src);
   assert.ok(blend, 'the atmosphere-blend expression must still be there');
   const all = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),4,/g)].map((x) => +x[1]);
   assert.ok(all.length >= 2, 'both atmosphere ramps must still be there');
-  assert.match(src, /'atmosphere-blend':\(sat/, 'the strength is chosen by basemap');
+  assert.match(src, /'atmosphere-blend':\((?:limb\?0:\()?sat/, 'the strength is chosen by basemap');
   const sat = all[0], map = Math.max(...all.slice(1));
   /* 1.0 clipped the channels — an optically correct scattering term multiplied until it saturates
      is what read as a cheap white collar, and as an over-bright sunlit limb. */

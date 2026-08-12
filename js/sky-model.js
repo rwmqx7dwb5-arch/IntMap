@@ -389,17 +389,17 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
           ms[k] += av * psi[k] * (BR[k] * hr + BM * hm);
         }
       }
-      if (blocked(p, s)) continue;
-      const ts = toShell(p, s, RT);
-      if (!(ts > 0)) continue;
-      const dts = ts / M;
-      let odRs = 0, odMs = 0, odOs = 0;
-      for (let j = 0; j < M; j++) {
-        const u = (j + 0.5) * dts;
-        const q0 = p[0] + s[0] * u, q1 = p[1] + s[1] * u, q2 = p[2] + s[2] * u;
-        const hs = Math.max(0, Math.sqrt(q0 * q0 + q1 * q1 + q2 * q2) - RG);
-        odRs += Math.exp(-hs / HR) * dts; odMs += Math.exp(-hs / HM) * dts; odOs += ozone(hs) * dts;
-      }
+      /* ⚠ (#R227) THE SUN RAY IS `sunOpticalDepth`, AND THERE IS ONLY ONE OF IT. The three lines
+         this replaced were the same integral the GPU limb (js/limb-layer.js) has to look up in a
+         table — how much air stands between a point at height h and the Sun — and a shader that
+         computed it a second time is a shader that could disagree with this file. The function is
+         exported so the table IS this march; see the note on it. Same arithmetic, same M, and the
+         geometry is identical by rotation: the sun path depends on |p| and on p̂·ŝ, nothing else. */
+      const _hp = Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+      const _sep = Math.asin(Math.max(-1, Math.min(1, (p[0] * s[0] + p[1] * s[1] + p[2] * s[2]) / _hp))) / D2R;
+      const _od = sunOpticalDepth(h, _sep, M);
+      if (!_od) continue;
+      const odRs = _od[0], odMs = _od[1], odOs = _od[2];
       for (let k = 0; k < 3; k++) {
         const tau = BR[k] * (odR + odRs) + BM * 1.1 * (odM + odMs) + BO[k] * (odO + odOs);
         const a = Math.exp(-tau);
@@ -422,6 +422,88 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
     sunElevDeg, relAzDeg == null ? 90 : relAzDeg);
   const rgb = lin.map(tone);
   return { hex: '#' + rgb.map((n) => n.toString(16).padStart(2, '0')).join(''), rgb, linear: lin };
+}
+
+/**
+ * (#R227) How much air stands between a point in the atmosphere and the Sun.
+ *
+ * ⚠ WHY IT IS ITS OWN EXPORT. This is the inner loop of `skyColour`'s march — the sun ray — and it
+ * is also the one thing a GPU limb cannot afford to recompute per pixel per step. js/limb-layer.js
+ * marches the VIEW ray in the fragment shader (that part is cheap and must be exact, because #R224
+ * and #R226 both traced a wrong limb colour to a coarse view march) and reads THIS out of a small
+ * texture. Both callers therefore run the same integral with the same constants, and the table is
+ * built by calling this rather than by writing the profile down twice.
+ *
+ * The geometry is a rotation of the general case: the optical depth from a point to the top of the
+ * atmosphere along the Sun depends only on how high the point is and how high the Sun stands over
+ * it, never on where either of them is.
+ *
+ * @param {number} hM height of the point above sea level, metres
+ * @param {number} sunElevDeg Sun elevation at that point, degrees (negative = below the horizon)
+ * @param {number} [steps] samples along the sun ray (8, matching the march this came out of)
+ * @returns {number[]|null} [Rayleigh, Mie, ozone] optical-depth integrals, or null when the planet
+ *                          is in the way — which is what makes dusk fall from the ground up
+ */
+export function sunOpticalDepth(hM, sunElevDeg, steps) {
+  const RG = 6371000, RT = 6471000, HR = 8000, HM = 1200, D2R = Math.PI / 180;
+  const M = steps || 8;
+  const h = Math.max(0, hM || 0);
+  const r = RG + h;
+  const se = (sunElevDeg || 0) * D2R;
+  const p = [0, 0, r], s = [0, Math.cos(se), Math.sin(se)];
+  /* ⚠ THE SHADOW TEST IS THE HORIZON, NOT A QUADRATIC ROOT. Solving the ray-sphere intersection and
+     asking whether the NEAR root is positive is the obvious form and it fails at exactly h = 0: both
+     roots are then 0 and −b, the near one is 0, `> 0` is false, and a point on the surface reads as
+     sunlit with the Sun 20° BELOW its horizon. The march never sampled exactly the surface so this
+     never showed, but the GPU table (js/limb-layer.js) fills a whole row at h = 0. The angle the
+     planet subtends is the same statement without the degenerate case. */
+  {
+    const horiz = -Math.acos(Math.max(-1, Math.min(1, RG / r)));
+    if (se < horiz) return null;
+  }
+  const b = 2 * (p[0] * s[0] + p[1] * s[1] + p[2] * s[2]);
+  const c = r * r - RT * RT;
+  const disc = b * b - 4 * c;
+  if (disc < 0) return null;
+  const ts = (-b + Math.sqrt(disc)) / 2;
+  if (!(ts > 0)) return null;
+  const dts = ts / M;
+  let odR = 0, odM = 0, odO = 0;
+  for (let j = 0; j < M; j++) {
+    const u = (j + 0.5) * dts;
+    const q0 = p[0] + s[0] * u, q1 = p[1] + s[1] * u, q2 = p[2] + s[2] * u;
+    const hs = Math.max(0, Math.sqrt(q0 * q0 + q1 * q1 + q2 * q2) - RG);
+    odR += Math.exp(-hs / HR) * dts;
+    odM += Math.exp(-hs / HM) * dts;
+    odO += Math.max(0, 1 - Math.abs(hs - 25000) / 15000) * dts;
+  }
+  return [odR, odM, odO];
+}
+
+/**
+ * (#R227) Everything a GPU port of this model needs that is not geometry: the constants it tone-maps
+ * and phases with, and the multiple-scattering table `skyColour` builds on first use.
+ *
+ * ⚠ IT RETURNS THE LIVE TABLE, not a copy of the numbers. #R226's rule — "a value that must not
+ * drift is guaranteed by STRUCTURE, not by a test that hopes" — is why js/limb-layer.js uploads this
+ * rather than carrying its own: change a coefficient in `skyColour` and the shader has it on the
+ * next build of the texture.
+ *
+ * @returns {{SUN_I:number, EXPOSURE:number, GAMMA:number, G:number, RG:number, RT:number,
+ *            BR:number[], BM:number, BO:number[], HR:number, HM:number, MIE_EXT:number,
+ *            ms:{h:number[], e0:number, e1:number, n:number, data:number[][][]}}}
+ */
+export function skyModelTables() {
+  /* the table is private to `skyColour`'s closure and is built on its first call; ask for a colour
+     so it exists, then hand it over. One evaluation, once. */
+  if (!skyColour._ms) skyColour(45, 0);
+  const MS_H = [0, 500, 1500, 3000, 5000, 8000, 12000, 17000, 23000, 30000, 40000, 50000, 62000, 75000, 88000, 99000];
+  return {
+    SUN_I: 22, EXPOSURE: 0.7, GAMMA: 2.2, G: 0.76, RG: 6371000, RT: 6471000,
+    BR: [5.8e-6, 13.5e-6, 33.1e-6], BM: 21e-6, BO: [0.650e-6, 1.881e-6, 0.085e-6],
+    HR: 8000, HM: 1200, MIE_EXT: 1.1, O3_PEAK: 25000, O3_HALF: 15000,
+    ms: { h: MS_H, e0: -25, e1: 90, n: 24, data: skyColour._ms },
+  };
 }
 
 /**

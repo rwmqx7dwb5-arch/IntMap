@@ -114,9 +114,56 @@ window.IntMapModules.renderScale=function(HOST){
   let echo=0;
   function selfResize(){ echo=2; }
   function isEcho(){ if(echo>0){ echo--; return true; } return false; }
+  /* ══ ⚠⚠ (#R227) THE HELP ARRIVED AFTER THE ONLY MINUTE THAT NEEDED IT ═══════════════════════════
+     「モバイル版がまだ劇的に遅い…地図のスクロール、ズームが困難」 — #R226 measured this module and
+     found it INERT for the first ~35 seconds of a phone's session: `armed` was raised by
+     `E.once('idle')`, and MapLibre's `idle` means "no pending tiles and nothing left to draw", which
+     on this app (a climate raster, the cable network, satellites, twenty-one sources) does not happen
+     until long after the reader has put a finger on the map. #R202's own measurement of what this
+     module exists to fix was 「the FIRST gesture is slow, and by an order of magnitude」
+     (sweep 1 = 15.9 fps against sweep 3 = 39.2). So the one window where it was needed was the one
+     window in which it did nothing.
+
+     ⚠ WHY IT WAS `idle` AND NOT SOMETHING EARLIER, which is the part that must not be lost: changing
+     the ratio REALLOCATES the drawing buffer and every framebuffer hanging off it, and doing that
+     before the renderer has finished a frame on its own terms took the GL context down — measured by
+     #R202, twice out of two runs, a hard renderer crash on a 390×844 DPR-3 context during boot. That
+     is a real defect and this round does not trade it away; it opens EARLIER DOORS that all still
+     stand behind "the renderer has drawn at least once":
+
+       · `load`   — the style is up and MapLibre has rendered its first frame. Two animation frames
+                    and a short grace after it, the boot camera work #R202 crashed inside is over.
+                    (If `start()` runs after `load` has already fired, `canDraw()` answers the same
+                    question and the same grace applies — `once` on a past event never fires.)
+       · a real GESTURE — `dragstart`/`zoomstart`/`rotatestart`/`pitchstart`. A resize emits none of
+                    these (#R221), so this cannot be our own echo, and a finger on the glass is proof
+                    that frames are reaching a human. This one arms and then serves the SAME gesture,
+                    because `safeSet` defers out of the handler and re-checks `canDraw()`.
+       · `idle`   — unchanged, as the last door rather than the only one.
+
+     ⚠ THE GRACE IS THE ONLY NEW NUMBER AND IT IS DELIBERATELY NOT ZERO. 900 ms after the first
+     painted frame is ~2 % of the window this was missing, and it keeps the reallocation out of the
+     load-time burst of tile decodes that #R202's crash sat in. */
+  const ARM_GRACE_MS=900;
+  let armedBy=null;
+  function armNow(why){
+    if(armed) return false;
+    try{ if(!GE().canDraw()) return false; }catch(_){ return false; }
+    try{ ratios(); }catch(_){}
+    armed=true; armedBy=why; return true;
+  }
+  function armAfterFirstFrame(why){
+    if(armed||armAfterFirstFrame._q) return;
+    armAfterFirstFrame._q=true;
+    const go=()=>{ setTimeout(()=>{ armAfterFirstFrame._q=false; armNow(why); },ARM_GRACE_MS); };
+    try{
+      if(typeof requestAnimationFrame==='function') requestAnimationFrame(()=>requestAnimationFrame(go));
+      else go();
+    }catch(_){ go(); }
+  }
   function safeSet(r){ if(!armed) return; clearTimeout(setT); setT=setTimeout(()=>{
     try{ if(GE().canDraw()&&at!==r){ selfResize(); set(r); } }catch(_){} },0); }
-  function down(ev){ if(ev===1&&isEcho()) return; ratios(); if(flying()||low>=base) return; clearTimeout(offT); safeSet(low); }
+  function down(ev){ if(ev===1&&isEcho()) return; if(ev===0) armNow('gesture'); ratios(); if(flying()||low>=base) return; clearTimeout(offT); safeSet(low); }
   function up(ev){ if(ev===1&&isEcho()) return; ratios(); clearTimeout(offT);
     /* ⚠ AFTER the gesture, not during its tail. A wheel sweep is a run of movestart/moveend pairs a
        few tens of milliseconds apart; restoring on each of them would resize the drawing buffer
@@ -135,11 +182,14 @@ window.IntMapModules.renderScale=function(HOST){
       E.on('movestart',()=>down(1)); E.on('moveend',()=>up(1));
       ['zoomstart','rotatestart','pitchstart','dragstart'].forEach(e=>E.on(e,()=>down(0)));
       ['zoomend','rotateend','pitchend','dragend'].forEach(e=>E.on(e,()=>up(0)));
-      /* armed only once the renderer has finished a frame on its own terms */
-      E.once('idle',()=>{ try{ ratios(); armed=true; }catch(_){} });
+      /* armed once the renderer has finished a frame on its own terms — see the note above for why
+         `idle` is now the LAST of three doors rather than the only one */
+      E.once('idle',()=>{ armNow('idle'); });
+      E.once('load',()=>{ armAfterFirstFrame('load'); });
+      try{ if(GE().canDraw()) armAfterFirstFrame('canDraw'); }catch(_){}
     }catch(_){ on=false; return false; }
     return true;
   }
-  window.IntMapRenderScale={ start, active:()=>on, state:()=>({ base, low, at, on, armed, lowRatio:LOW_RATIO }) };
+  window.IntMapRenderScale={ start, active:()=>on, state:()=>({ base, low, at, on, armed, armedBy, lowRatio:LOW_RATIO }) };
   return window.IntMapRenderScale;
 };
