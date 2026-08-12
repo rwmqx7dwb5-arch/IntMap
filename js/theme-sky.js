@@ -20,7 +20,7 @@
  *  (#R202) It also imports js/sky-model.js — the scattering integral that decides `sky-color`. That
  *  file is pure arithmetic with no DOM and no renderer, so tests/r202-checks.test.mjs runs it in Node.
  * ==========================================================================*/
-import { skyColour } from './sky-model.js';
+import { skyColour, limbViewElev } from './sky-model.js';
 export function makeThemeSky(HOST, CTX) {
   const GE=CTX.GE, applyLabelLang=CTX.applyLabelLang, canDraw=CTX.canDraw, ensurePlaceLabels=CTX.ensurePlaceLabels, mapLabelsViaVector=CTX.mapLabelsViaVector, satRefreshReadout=CTX.satRefreshReadout, satRenderController=CTX.satRenderController;
   function applyTheme(){
@@ -340,7 +340,52 @@ export function makeThemeSky(HOST, CTX) {
      ever been. Nothing above that floor is touched. */
   const _HZ_VIEW_ELEV=0.6;
   const _lum=(c)=>0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+  /* ══ ⚠⚠ (#R222) FROM ORBIT THE BAND IS A LIMB, AND IT WAS A GREY HEX ═══════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 — asked again, with a photograph of the
+     globe, and confirmed as 「縁の帯の色（茶/くすみ）／とにかくリアルにしてほしい。現実に忠実に美しく。」
+
+     MEASURED on the shipped build, satellite globe at 5,286 km over Japan: `horizon-color` = #c2ccd1
+     and `sky-color` = #060b16. That first hex is `_SKY_H_DAY`, a NEUTRAL GREY, and it is what the
+     band around the Earth has been at every altitude and every hour — #R213's model contribution is
+     weighted to zero above a +6° Sun, and js/sky-model.js could not have answered anyway: its
+     `radiance()` CLAMPED the eye to the top of the atmosphere, so every orbital camera was modelled
+     as standing at 100 km and looking 0.6° up, which is empty space. A grey collar over blue-white
+     imagery, with maplibre-gl's own Rayleigh pass tinting it, is the 茶/くすみ in the report.
+
+     The physics of what the reader is looking at is not the sky ABOVE an observer — it is the
+     atmosphere seen EDGE-ON. A ray toward the planet's edge whose closest approach is a few km above
+     the surface crosses 700–900 km of air; one at 55 km crosses almost none. So the gradient the sky
+     block draws is exactly the limb if its two ends are those two rays, and js/sky-model.js can now
+     integrate both (the eye is no longer clamped, and `limbViewElev` gives the geometry). Measured
+     through the model at 5,286 km:
+
+         Sun 60° above the limb point   tangent  6 km  #b2b8d8      tangent 55 km  #111a28
+         Sun  0° (the terminator)                     #836d89                     #0e151f
+         Sun −12° (the night side)                    #0a0403                     #0b0a11
+
+     — blue-white low down on the day side, mauve-red through the terminator, black on the night side.
+     That is the limb, and it is an integral rather than a hex, so it is right at every altitude the
+     camera can reach rather than at the one #R196 measured.
+     ⚠ IT ONLY REPLACES THE BAND WHERE THERE IS A LIMB TO SEE — above the shell js/sky-model.js
+     integrates. Below 100 km the ground-level path below is untouched, byte for byte.
+     ⚠ AND ONLY WHERE THE SUN IS KNOWN. `_sunElevAtCentre()` returns null with the day/night display
+     off or on the vector basemap (#R221's gate), and this returns null with it, so the switch that
+     says 「Mapではなにも無し」 still means what it says. */
+  const _ATM_TOP_M=100000;
+  const _LIMB_LOW_M=6000, _LIMB_HIGH_M=55000;
+  function _limbHex(tangentM){
+    const alt=_eyeAltM();
+    if(!(alt>_ATM_TOP_M)) return null;
+    const e=_sunElevAtCentre(); if(e==null) return null;
+    const ve=limbViewElev(alt,tangentM); if(ve==null) return null;
+    try{
+      const c=skyColour(e,alt,_relAzimuth(),ve).rgb;
+      if(!c||!isFinite(c[0])) return null;
+      return '#'+[0,1,2].map(i=>Math.max(0,Math.min(255,Math.round(c[i]))).toString(16).padStart(2,'0')).join('');
+    }catch(_){ return null; }
+  }
   function _horizonColour(){
+    const limb=_limbHex(_LIMB_LOW_M); if(limb) return limb;
     const e=_sunElevAtCentre(); if(e==null) return _SKY_H_DAY;
     const t=Math.max(0,Math.min(1,(e+6)/12));
     const rampHex=_mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
@@ -464,6 +509,15 @@ export function makeThemeSky(HOST, CTX) {
     }catch(_){ return 90; }
   }
   function _skyColour(){
+    /* (#R222) the far end of the same limb: the ray that grazes at 55 km crosses almost no air, so
+       this is where the band has faded into space — and it fades THROUGH the model rather than to a
+       constant, which is what puts the deep blue between the bright limb and the black. */
+    const limb=_limbHex(_LIMB_HIGH_M);
+    if(limb){
+      const f=[parseInt(_SKY_SPACE.slice(1,3),16),parseInt(_SKY_SPACE.slice(3,5),16),parseInt(_SKY_SPACE.slice(5,7),16)];
+      const c=[parseInt(limb.slice(1,3),16),parseInt(limb.slice(3,5),16),parseInt(limb.slice(5,7),16)];
+      return '#'+[0,1,2].map(i=>Math.max(c[i],f[i]).toString(16).padStart(2,'0')).join('');
+    }
     const e=_sunElevAtCentre(); if(e==null) return _SKY_SPACE;
     try{
       const c=skyColour(e,_eyeAltM(),_relAzimuth()).rgb;

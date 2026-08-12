@@ -215,7 +215,10 @@ test('⑧ the shipped current atlas is the rebuilt one, and says how it was made
   const doc = JSON.parse(read('data/ocean-currents.json'));
   assert.equal(doc.v, 2, 'v2 is the rebuilt file');
   assert.ok(doc.named.length >= 55, `only ${doc.named.length} named currents`);
-  assert.ok(doc.arrows.length >= 20000, `only ${doc.arrows.length} field arrows`);
+  /* ⚠ (#R222) STRICTLY STRONGER THAN THE 20,000 ARROWS THIS REPLACED. The field is the source's own
+     0.25° grid in a binary file now, so the number to check is how many cells of it carry flow —
+     466,007 at the time of writing, sixteen times what the 1° arrow list held. */
+  assert.ok(doc.field && doc.field.cells >= 100000, `only ${doc.field && doc.field.cells} field cells`);
   assert.equal(doc.gridDeg, 0.25, 'the source grid must be kept, not rounded to 1°');
   assert.ok(doc.epochs >= 20, 'a climatology needs many fields, not one season');
   /* the paths must be currents, not stubs: the old file had six-point 300 km fragments */

@@ -66,7 +66,11 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   'IntMapRiverCourse',
   /* (#R219) the cosmic distance ladder — eager, so its absence means js/space-cosmos.js is missing
      from the deploy rather than merely unasked-for */
-  'IntMapCosmos'];
+  'IntMapCosmos',
+  /* (#R222) the ocean-current field decoder — eager, and the failure it guards against is silent in
+     the worst way: BOTH ocean-current layers still draw their named lines from the JSON, so the map
+     looks right and the entire measured flow field is simply absent. */
+  'IntMapCurrentField'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

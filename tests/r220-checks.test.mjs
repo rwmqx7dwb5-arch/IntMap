@@ -76,7 +76,10 @@ test('r220 ③ every mark on the current plate has a casing under it', () => {
      panel and left `setVis([FLOW,LINE,HEAD,LBL])` behind, so every casing was built and never shown. */
   assert.match(OCEAN, /const ALL=\[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL\];/, 'there is one list');
   assert.ok(OCEAN.includes('layers:()=>ALL.slice()'), 'the panel reads it');
-  assert.equal((OCEAN.match(/setVis\(ALL,/g) || []).length, 2, 'and so does every setVis');
+  /* (#R222) a third `setVis(ALL, on)` lives in `drawFlow`, which is what re-shows the plate after the
+     field is re-strided for a new view. The invariant is unchanged: every setVis names ALL. */
+  assert.ok((OCEAN.match(/setVis\(ALL,/g) || []).length >= 2, 'and so does every setVis');
+  assert.ok(!/setVis\(\[/.test(OCEAN.replace(/`setVis\(\[[^`]*`/g, '')), 'no setVis carries its own hand-written list');
   assert.ok(!/setVis\(\[FLOW,LINE,HEAD,LBL\]/.test(OCEAN.replace(/\/\*[\s\S]*?\*\//g, '')),
     'no partial list survives in the program (the note that records it may name it)');
 });

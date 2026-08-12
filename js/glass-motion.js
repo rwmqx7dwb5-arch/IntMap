@@ -140,6 +140,32 @@ window.IntMapModules.glassMotion = function (HOST) {
     ['moveend', 'zoomend', 'rotateend', 'pitchend', 'dragend'].forEach((e) => { try { ev.on(e, stop); } catch (_) {} });
   } catch (_) {}
 
+  /* ══ ⚠ (#R222) THE MAP IS NOT THE ONLY THING THAT MOVES BEHIND THE GLASS ═════════════════════════
+     「モバイル版がまだ劇的に遅い。もっと爆速に。快適な使用が困難なレベル。」（確認済：操作中）
+
+     #R221 tied this to the CAMERA, because that is what it had measured. But a backdrop filter is
+     re-computed whenever anything behind it changes, and on a phone the second thing that changes
+     constantly is the UI itself: the bottom sheet slides, a list scrolls INSIDE a blurred surface,
+     the layer sheet opens over the map. Every one of those is a full-height blurred region being
+     re-blurred at 60 Hz with the camera perfectly still, so #R221's guard — «is the camera moving» —
+     answers no and the saving is not taken.
+
+     A scroll or a sheet transition is exactly the same trade and gets exactly the same treatment:
+     the glass is flat while the thing moves and frosted the moment it stops, so every still frame is
+     unchanged. ⚠ SCROLL IS LISTENED FOR ON THE CAPTURE PHASE OF `document`, passively — a scroll
+     inside a sheet does not bubble, and a non-passive listener here would make the scroll itself
+     wait for this. ⚠ `transitionrun` rather than `transitionstart`: the sheet's transform starts
+     compositing before `transitionstart` fires. */
+  try {
+    const bump = () => { start(); stop(); };
+    document.addEventListener('scroll', bump, { capture: true, passive: true });
+    document.addEventListener('transitionrun', (e) => {
+      const el = e.target;
+      if (el && el.nodeType === 1 && /transform|opacity|height|width|inset|top|bottom/.test(e.propertyName || '')) bump();
+    }, { capture: true, passive: true });
+    ['touchmove', 'wheel'].forEach((k) => document.addEventListener(k, bump, { capture: true, passive: true }));
+  } catch (_) {}
+
   return {
     active: () => moving,
     marked: () => marked,

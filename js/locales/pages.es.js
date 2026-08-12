@@ -140,13 +140,17 @@ window.IntMapPageI18N.define('es', {
           ['p', 'Todas las funciones de relieve comparten un mismo muestreador de elevación. Los datos son teselas RGB de elevación codificadas en Terrarium, donde el color del píxel <em>es</em> la altura.'],
           ['eq', 'elevación (m) = (R &times; 256 + G + B / 256) &minus; 32768'],
           ['p', 'La elevación de un punto se <b>interpola bilinealmente</b> a partir de las cuatro muestras que lo rodean; el vecino más próximo convertiría los píxeles de la tesela en escalones falsos y estropearía las respuestas de pendiente y de flujo. El espaciado sobre el terreno de una muestra en el nivel z es:'],
+          ['tex', 'h \\;=\\; \\bigl(R \\cdot 256 + G + B/256\\bigr) - 32768 \\quad [\\mathrm{m}]'],
           ['tex', '\\Delta(z) \\;=\\; \\frac{40\\,075\\,017 \\, \\cos\\varphi}{2^{z} \\cdot 256} \\quad [\\mathrm{m\\;per\\;pixel}]'],
           ['table', ['z', 'Espaciado en latitudes medias', 'Se usa para'], [
             ['14', '~10 m', 'Cabecera de cauce, secciones transversales'],
             ['11', '~54 m', 'Traza larga aguas abajo'],
             ['7', '~860 m', '«¿Es el mar o una cuenca cerrada?»']
           ]],
-          ['lim', 'Los huecos se rellenan a partir de los vecinos y el <b>número de celdas rellenadas se muestra siempre</b>. Si falta más del 30 %, el muestreador baja un nivel de zoom y reintenta; solo si también falla el nivel más grueso informa de un fallo, y nombra a la red, no al lugar.']
+          ['lim', 'Los huecos se rellenan a partir de los vecinos y el <b>número de celdas rellenadas se muestra siempre</b>. Si falta más del 30 %, el muestreador baja un nivel de zoom y reintenta; solo si también falla el nivel más grueso informa de un fallo, y nombra a la red, no al lugar.'],
+          ['h3', 'Las cuatro muestras y el presupuesto del que salen'],
+          ['tex', 'h(x,y) \\;=\\; \\sum_{i,j\\in\\{0,1\\}} h_{ij}\\,\\bigl(1-|x-i|\\bigr)\\bigl(1-|y-j|\\bigr)'],
+          ['p', 'Una tesela son 256&times;256 muestras; una consulta a zoom 14 cuesta una petici&oacute;n HTTP por cuadrado de 2,4 km y se conserva durante la sesi&oacute;n. Todo c&aacute;lculo de terreno declara su presupuesto de teselas antes de empezar &mdash; un campo de intensidad pide hasta 1.600 y un tel&eacute;fono almacena 140 &mdash;, por eso las teselas en uso se <b>fijan</b> y se liberan en un <code>finally</code>. Sin eso, un campo grande expulsa sus propias entradas y vuelve a pedirlas: as&iacute; es como un campo se convierte en c&iacute;rculos conc&eacute;ntricos.']
         ]
       },
       {
@@ -176,7 +180,18 @@ window.IntMapPageI18N.define('es', {
           ['p', 'En cada punto se lee el MDE en la <b>perpendicular</b> hasta ±1,8 km y la lámina de agua sube hasta que el área mojada iguala lo que tiene que pasar. Ese requisito sale de la continuidad:'],
           ['tex', 'A(s) \\;=\\; \\frac{C}{\\sqrt{S(s)}}, \\qquad v \\;=\\; K\\sqrt{S}, \\quad K = 40'],
           ['p', 'Que la velocidad vaya como &radic;pendiente es el término de pendiente de fricción que comparten todas las fórmulas de lámina libre; K = 40 da 1,3 m/s con un 0,1 % de pendiente, valor medio para un río de llanura real. Los tramos empinados salen estrechos y rápidos; los llanos, anchos y lentos. <b>El único número libre es el volumen (o el caudal) que introdujo el usuario.</b>'],
-          ['lim', 'Es un <b>modelo estacionario de encaminamiento</b>, no un solucionador de aguas someras: no responde al tiempo de llegada (para eso hay otra función). El «vertido continuo» repite la misma solución estacionaria a medida que crece el volumen —una secuencia de llenado cuasiestática— y el panel muestra tiempo simulado, nunca tiempo de reloj.']
+          ['lim', 'Es un <b>modelo estacionario de encaminamiento</b>, no un solucionador de aguas someras: no responde al tiempo de llegada (para eso hay otra función). El «vertido continuo» repite la misma solución estacionaria a medida que crece el volumen —una secuencia de llenado cuasiestática— y el panel muestra tiempo simulado, nunca tiempo de reloj.'],
+          ['h3', 'El tama&ntilde;o de una ejecuci&oacute;n y qu&eacute; la limita'],
+          ['tex', '\\text{priority flood: } O(n\\log n),\\qquad \\text{MFD: } w_i = \\frac{(\\Delta z_i/L_i)^{1.1}C_i}{\\sum_j (\\Delta z_j/L_j)^{1.1}C_j}'],
+          ['table', ['Magnitud', 'Valor', 'Por qu&eacute; ese valor'], [
+              ['Malla de trabajo', 'hasta 60 km, &le; 512&times;512 celdas', 'un tel&eacute;fono debe sostener el mont&iacute;culo, el relleno y la acumulaci&oacute;n a la vez'],
+              ['Operaciones de mont&iacute;culo', 'O(n log n), n = celdas', 'cada celda entra y sale exactamente una vez'],
+              ['Recorrido aguas abajo', 'ventanas de 15 km, &times;3 &rarr; &times;9 &rarr; &times;27', 'un lago m&aacute;s ancho que la ventana no tiene vecino m&aacute;s bajo dentro de ella'],
+              ['Secci&oacute;n transversal', '&plusmn;1,8 km, 96 muestras', 'basta para un r&iacute;o de llanura y no borra un ca&ntilde;&oacute;n']
+            ]],
+          ['h3', 'La ley de fricci&oacute;n detr&aacute;s de K = 40'],
+          ['tex', 'v \\;=\\; \\frac{1}{n}R_h^{2/3}S^{1/2}\\;\\;(\\text{Manning}), \\qquad K=\\frac{R_h^{2/3}}{n}\\;\\approx\\;40\\ \\text{for } R_h\\sim2\\,\\text{m},\\; n\\sim0.035'],
+          ['p', 'La constante no es libre: es la ecuaci&oacute;n de Manning con un radio hidr&aacute;ulico de unos 2 m y n = 0,035, es decir un cauce natural con algo de vegetaci&oacute;n. Se indica aqu&iacute; para que el lector decida si aplica al tramo que mira.']
         ]
       },
       {
@@ -194,7 +209,10 @@ window.IntMapPageI18N.define('es', {
           ['tex', '\\mathrm{MMI} = 3.78 + 1.47\\log_{10}\\mathrm{PGV}\\;\\;(\\mathrm{PGV}>0.76\\ \\text{cm/s}) \\qquad I_{\\mathrm{JMA}} = 2\\log_{10}a_0 + 0.94'],
           ['p', 'Los tiempos de llegada se trazan por rayos a través de la estructura de velocidades <b>IASP91</b>: el ángulo de salida se resuelve para la profundidad del foco y la distancia epicentral, y el camino se integra en vez de leerse de una tabla. De ahí salen las llegadas P y S.'],
           ['p', 'La amplitud es una atenuación empírica con la distancia por un <b>Q dependiente de la frecuencia</b> (atenuación anelástica) por una <b>amplificación del suelo</b>. La clase de suelo no se supone: sale de la pendiente medida al espaciado propio del MDE en ese punto (empinado = roca, llano = aluvial).'],
-          ['lim', 'Más allá del extremo inferior de la escala de intensidad el campo está <b>extrapolando</b>, y lo dice. El epicentro está donde lo puso el usuario; nunca se usa una coordenada adivinada por la IA.']
+          ['lim', 'Más allá del extremo inferior de la escala de intensidad el campo está <b>extrapolando</b>, y lo dice. El epicentro está donde lo puso el usuario; nunca se usa una coordenada adivinada por la IA.'],
+          ['h3', 'Del espectro al n&uacute;mero en pantalla'],
+          ['p', 'El espectro de amplitudes de Fourier se eval&uacute;a en 64 frecuencias logar&iacute;tmicas entre 0,1 y 20 Hz; el resto es la integral del factor de pico anterior, por la regla del trapecio sobre esos 64 puntos. La duraci&oacute;n del trayecto es T<sub>d</sub> = T<sub>fuente</sub> + 0,05&thinsp;r (forma est&aacute;ndar de Boore).'],
+          ['p', 'El campo se resuelve en una malla cuyo paso sale de la magnitud (512 m para M &lt; 6, 1&ndash;2 km por encima) y luego se interpola <b>solo para dibujar</b>. Nada se dibuja m&aacute;s fino que la malla en que se resolvi&oacute;.']
         ]
       },
       {
@@ -210,14 +228,24 @@ window.IntMapPageI18N.define('es', {
             'La arcotangente debe ser el <b>valor principal</b>: usar <code>atan2</code> produce un lóbulo falso de subsidencia detrás de la falla.',
             'Truncar la ventana de cálculo deja un escalón, y el escalón se propaga como un <b>frente de onda falso</b>. La ventana se ensancha hasta que el desplazamiento es despreciable.'
           ]],
-          ['p', 'La propagación es la ecuación de <b>onda larga lineal</b> sobre batimetría medida, con velocidad de fase <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — unos 200 m/s sobre 4 000 m de agua (velocidad de avión comercial), frenando y empinándose al disminuir la profundidad. Se ejecuta en un Web Worker para que el mapa siga respondiendo.']
+          ['p', 'La propagación es la ecuación de <b>onda larga lineal</b> sobre batimetría medida, con velocidad de fase <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — unos 200 m/s sobre 4 000 m de agua (velocidad de avión comercial), frenando y empinándose al disminuir la profundidad. Se ejecuta en un Web Worker para que el mapa siga respondiendo.'],
+          ['h3', 'La discretizaci&oacute;n, escrita'],
+          ['p', 'Malla escalonada Arakawa C y salto de rana en el tiempo: la superficie &eta; en los centros de celda y los dos flujos M y N en las caras intermedias, medio paso desfasados. Es el esquema de cualquier c&oacute;digo operativo de onda larga, y se escribe aqu&iacute; porque decir &laquo;ecuaciones de aguas someras&raquo; no dice <b>c&oacute;mo</b> se resolvieron.'],
+          ['tex', '\\eta^{\\,t+1}_{i,j} = \\eta^{\\,t}_{i,j} - \\frac{\\Delta t}{\\Delta x}\\Bigl[(M^{\\,t+\\frac12}_{i+\\frac12,j}-M^{\\,t+\\frac12}_{i-\\frac12,j}) + (N^{\\,t+\\frac12}_{i,j+\\frac12}-N^{\\,t+\\frac12}_{i,j-\\frac12})\\Bigr]'],
+          ['tex', 'M^{\\,t+\\frac12}_{i+\\frac12,j} = M^{\\,t-\\frac12}_{i+\\frac12,j} - g\\,D\\,\\frac{\\Delta t}{\\Delta x}\\bigl(\\eta^{\\,t}_{i+1,j}-\\eta^{\\,t}_{i,j}\\bigr) - \\frac{g\\,n^{2}}{D^{7/3}}\\lVert\\mathbf{M}\\rVert M\\,\\Delta t'],
+          ['h3', 'Estabilidad, bordes y tierra seca'],
+          ['tex', '\\frac{\\partial \\eta}{\\partial t} \\pm c\\,\\frac{\\partial \\eta}{\\partial x} = 0 \\quad\\text{(Sommerfeld, at the open edge)}, \\qquad D = h+\\eta > \\varepsilon_{\\text{dry}} = 0.01\\ \\text{m}'],
+          ['p', 'El paso temporal sale de la condici&oacute;n CFL de la celda <b>m&aacute;s profunda</b> del dominio (0,45 del l&iacute;mite): es consecuencia de la batimetr&iacute;a, no un ajuste. Los bordes abiertos radian en vez de reflejar, y una celda solo est&aacute; mojada por encima de 1 cm, lo que impide que el t&eacute;rmino de fricci&oacute;n divida por una profundidad que se anula en la orilla.'],
+          ['lim', 'El solucionador es <b>no dispersivo</b> (onda larga): no reproduce la dispersi&oacute;n de la onda l&iacute;der de una fuente muy corta ni modela rotura o remonte sobre rugosidad. Su respuesta son los tiempos de llegada y la primera cresta; la profundidad de inundaci&oacute;n en tierra es una cota, no un c&aacute;lculo de remonte.']
         ]
       },
       {
         id: 'sealevel', nav: 'Nivel del mar e inundación', h: 'Nivel del mar e inundación',
         blocks: [
           ['p', 'El terreno al nivel elegido o por debajo se sombrea: un llenado de bañera. El tono es la <b>propia profundidad</b>, y la resolución de los datos de elevación es directamente la resolución del borde inundado.'],
-          ['lim', 'Diques, compuertas y drenaje no se modelan, y por defecto no se exige conectividad con el mar. La afirmación es, por tanto, <b>«este terreno está por debajo de ese nivel»</b>, no «esto es lo que se inundaría».']
+          ['lim', 'Diques, compuertas y drenaje no se modelan, y por defecto no se exige conectividad con el mar. La afirmación es, por tanto, <b>«este terreno está por debajo de ese nivel»</b>, no «esto es lo que se inundaría».'],
+          ['h3', 'Conectividad, cuando se pide'],
+          ['p', 'La respuesta por defecto es por celda: si ese suelo est&aacute; a ese nivel o por debajo. Con la conectividad activada, un relleno avanza desde el mar por la misma malla y solo se sombrean las celdas alcanzables &mdash; lo que excluye depresiones cerradas bajo el nivel del mar (Qattara, Valle de la Muerte). El panel dice cu&aacute;l de las dos se muestra.']
         ]
       },
       {
@@ -243,7 +271,19 @@ window.IntMapPageI18N.define('es', {
           ['p', 'A través de ese campo se integra una <b>línea de corriente</b> desde cada punto semilla, hacia delante y hacia atrás, con un paso de Runge-Kutta de cuarto orden. Una línea es así un camino que el agua recorre de verdad, y no una flecha aislada. El grosor de la línea es la velocidad; las puntas de flecha a lo largo indican el sentido.'],
           ['eq', 'x<sub>n+1</sub> = x<sub>n</sub> + (h/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>), &nbsp; k<sub>i</sub> = u(x)/|u| &nbsp; (velocidad unitaria: el paso es una distancia)'],
           ['p', 'Cálida o fría se <b>mide, no se supone</b>. Una corriente cálida es una afirmación sobre lo que transporta el agua, así que cada línea de corriente se compara con la temperatura superficial del mar unos 110 km <b>aguas arriba</b> a lo largo de su propio camino. Si aguas arriba está más caliente, la corriente trae calor (rojo); si está más fría, trae frío (azul).'],
-          ['lim', 'Donde la diferencia es menor de 0,25 K —dentro del propio ruido del modelo— la línea es <b>gris</b> y la leyenda dice «ninguna». Una corriente que no transporta contraste térmico no debe colorearse como si lo hiciera. Los nombres son de Wikidata (CC0), dibujados en la coordenada publicada para cada corriente; un nombre es un punto del mapa y no afirma que la línea contigua sea esa corriente.']
+          ['lim', 'Donde la diferencia es menor de 0,25 K —dentro del propio ruido del modelo— la línea es <b>gris</b> y la leyenda dice «ninguna». Una corriente que no transporta contraste térmico no debe colorearse como si lo hiciera. Los nombres son de Wikidata (CC0), dibujados en la coordenada publicada para cada corriente; un nombre es un punto del mapa y no afirma que la línea contigua sea esa corriente.'],
+          ['h3', 'El campo: qu&eacute; se promedia y sobre qu&eacute;'],
+          ['p', 'El campo incluido es una <b>climatolog&iacute;a</b>: 36 campos de velocidad repartidos por todo el registro disponible (2015&rarr;hoy) m&aacute;s 24 campos de tensi&oacute;n del viento, en la malla de 0,25&deg; de la propia fuente. Una media de 36 campos reduce la varianza mesoescalar (remolinos) unas seis veces: por eso una traza es una corriente y no un anillo.'],
+          ['tex', '\\mathbf{u}_{\\text{tot}} \\;=\\; \\underbrace{\\frac{g}{f}\\,\\hat{\\mathbf{k}}\\times\\nabla\\eta}_{\\text{geostrophic (altimetry)}} \\;+\\; \\underbrace{\\frac{B}{\\sqrt{|f|}}\\frac{\\boldsymbol{\\tau}}{\\rho_w}\\,\\mathcal{R}\\bigl(-\\operatorname{sgn}\\varphi\\cdot55^{\\circ}\\bigr)}_{\\text{Ekman (wind stress)}}'],
+          ['h3', 'C&oacute;mo se produce la l&iacute;nea de una corriente con nombre'],
+          ['tex', '\\mathbf{x}_{n+1} = \\mathbf{x}_n + \\Delta s\\;\\hat{\\mathbf{u}}\\!\\left(\\mathbf{x}_n + \\tfrac{\\Delta s}{2}\\,\\hat{\\mathbf{u}}(\\mathbf{x}_n)\\right), \\qquad \\Delta s = 25\\ \\text{km}'],
+          ['p', 'Cada una de las 108 corrientes se integra hacia adelante y hacia atr&aacute;s desde un punto publicado de su n&uacute;cleo, hasta 5.000 km por lado, a trav&eacute;s de ese campo medido. Tres reglas terminan un recorrido: reentrar en una celda m&aacute;s de 12 pasos despu&eacute;s (remolino cerrado), volver a menos de 60 km del origen tras un trayecto real, o agotar un presupuesto de 12 celdas seguidas por debajo de 2,2 cm/s. Una traza que se cierra en menos de 1.500 km se <b>rechaza</b> y la semilla se reintenta desde el anillo que la rodea.'],
+          ['h3', 'El archivo que lee el navegador'],
+          ['tex', 's_{\\text{byte}} = \\left\\lfloor 255\\sqrt{\\frac{\\min(s,\\,2.5)}{2.5}} \\right\\rceil, \\qquad b_{\\text{byte}} = \\left\\lfloor \\frac{255\\,\\theta}{360^{\\circ}} \\right\\rceil'],
+          ['tex', '\\text{stride} = \\min\\Bigl\\{\\,2^{k} \\;:\\; \\frac{\\Delta\\lambda_{\\text{view}}}{0.25^{\\circ}2^{k}}\\cdot\\frac{\\Delta\\varphi_{\\text{view}}}{0.25^{\\circ}2^{k}} \\le N_{\\max}\\Bigr\\},\\qquad N_{\\max}=4\\,200\\ (\\text{phone}),\\;9\\,000'],
+          ['p', 'El campo viaja como una malla regular (1.440 &times; 720 celdas, un byte de velocidad y otro de rumbo) y no como una lista de flechas, porque una lista fija el espaciado en el momento de construirla. El cliente recorre la malla a saltos y elige el salto m&aacute;s grueso que a&uacute;n llena la vista con N<sub>max</sub> marcas como m&aacute;ximo; cada celda es la <b>media vectorial</b> de su bloque. La velocidad se cuantiza con una ra&iacute;z, de modo que la resoluci&oacute;n en el extremo lento es de 0,05 cm/s.'],
+          ['h3', 'Los doce meses'],
+          ['p', 'Un segundo archivo lleva doce climatolog&iacute;as mensuales a 0,5&deg; (seis a&ntilde;os de cada mes natural) y solo se descarga si se elige un mes. Cada corriente lleva adem&aacute;s sus doce velocidades mensuales y la proyecci&oacute;n media del flujo de ese mes <b>sobre su propio trazado</b>; cuando esa proyecci&oacute;n cambia de signo, la corriente se invierte con la estaci&oacute;n y la lista lo indica. Los trazados no se rehacen mes a mes.']
         ]
       },
       {
@@ -263,20 +303,34 @@ window.IntMapPageI18N.define('es', {
           ['tex', '\\Psi_{ms} \\;=\\; \\frac{L^{(2)}}{1 - f}, \\qquad f = \\frac{1}{4\\pi}\\oint \\sigma_s\\,T\\,d\\omega \\;<\\; 1'],
           ['tex', 'C \\;=\\; \\Bigl[\\,1 - e^{-L\\,\\varepsilon}\\,\\Bigr]^{1/2.2}, \\qquad \\varepsilon = 0.7'],
           ['lim', 'Un solo perfil de aerosoles para todo el planeta, sin nubes, sin luminiscencia nocturna y sin luz estelar — la noche profunda integra a negro y se acota con un color nocturno medido. El limbo visto desde el espacio es el paso de dispersión del propio renderizador, no esta integral.'],
+          ['h3', 'La marcha y lo que cuesta'],
+          ['tex', 'L=\\sum_{i=1}^{16} T(\\mathbf{x},\\mathbf{p}_i)\\bigl[\\sigma_s^R p_R + \\sigma_s^M p_M\\bigr]T(\\mathbf{p}_i,\\odot)E_\\odot\\,\\Delta t \\;+\\;\\sum_{i}\\sigma_s\\Psi_{ms}\\Delta t,\\quad T \\text{ from } M=8 \\text{ sun steps}'],
+          ['p', 'Diecis&eacute;is pasos a lo largo del rayo de visi&oacute;n, ocho a lo largo del rayo solar en cada uno, y una tabla 16&times;24 de dispersi&oacute;n m&uacute;ltiple interpolada dos veces por muestra. Unas 300 exponenciales por color, evaluadas solo cuando el Sol o la c&aacute;mara se han movido de verdad.'],
+          ['h3', 'Vista desde fuera: el limbo'],
+          ['tex', '\\theta_{\\text{limb}}(h_t) \\;=\\; \\arcsin\\!\\frac{R_\\oplus+h_t}{R_\\oplus+h_{\\text{eye}}} \\;-\\; 90^{\\circ}, \\qquad \\ell(h_t)\\;\\approx\\;2\\sqrt{2R_\\oplus H}\\,e^{-h_t/2H}'],
+          ['p', 'Desde &oacute;rbita la atm&oacute;sfera no est&aacute; encima sino de canto: un rayo cuyo acercamiento m&iacute;nimo es de 6 km atraviesa unos 800 km de aire; uno de 55 km casi ninguno. Los dos extremos del degradado dibujado son esos dos rayos, as&iacute; que la banda es blanquiazul abajo en el lado diurno, roja en el terminador y negra en el lado nocturno, a cualquier altura de c&aacute;mara.'],
+          ['lim', 'Un solo perfil de aerosoles para todo el planeta, sin nubes, sin luminiscencia nocturna y sin luz estelar: una noche profunda integra a negro y se eleva a un color nocturno medido.']
         ],
       },
       {
         id: 'sun', nav: 'Sol, sombra, cuenca visual', h: 'Sol, sombra y cuenca visual',
         blocks: [
           ['p', 'La posición solar sale del algoritmo astronómico estándar: de la declinación y el ángulo horario al acimut y la altura. Está verificado que da declinación 0° en un equinoccio y la oblicuidad en un solsticio.'],
-          ['p', 'La insolación anual barre el MDE circundante por acimut para construir el <b>perfil real del horizonte</b> del punto y luego integra la trayectoria del Sol contra él. La cuenca visual responde <b>por celda del ráster</b> y no por rumbo, porque un barrido por rumbos se salta celdas a distancia.']
+          ['p', 'La insolación anual barre el MDE circundante por acimut para construir el <b>perfil real del horizonte</b> del punto y luego integra la trayectoria del Sol contra él. La cuenca visual responde <b>por celda del ráster</b> y no por rumbo, porque un barrido por rumbos se salta celdas a distancia.'],
+          ['h3', 'El horizonte, y el a&ntilde;o integrado contra &eacute;l'],
+          ['tex', 'H(\\alpha) = \\max_{r\\le R_{\\max}}\\arctan\\frac{z(r,\\alpha)-z_0}{r}, \\qquad E = \\int_{\\text{year}} I_0\\,\\cos\\theta_i\\,\\bigl[\\,\\gamma_s(t)>H(\\alpha_s(t))\\,\\bigr]\\,dt'],
+          ['p', 'El terreno circundante se barre por acimut en pasos de 1&deg; hasta 25 km, y el mayor &aacute;ngulo de elevaci&oacute;n hallado en cada rumbo es su horizonte. Despu&eacute;s la trayectoria solar de todo el a&ntilde;o se integra contra ese perfil en pasos de 10 minutos, contando solo los instantes en que est&aacute; por encima.'],
+          ['p', 'La cuenca visual responde <b>por celda de r&aacute;ster</b> y no por rumbo: un barrido por rumbos deja huecos que crecen con la distancia.']
         ]
       },
       {
         id: 'sats', nav: 'Satélites', h: 'Satélites',
         blocks: [
           ['p', 'Las órbitas se propagan desde TLE con <b>SGP4/SDP4</b>. Un TLE se degrada con la edad y —esto es lo importante— <b>diverge en silencio</b>, así que hay un límite duro a la antigüedad del juego de elementos y nada por encima de él se dibuja.'],
-          ['p', 'El catálogo es una instantánea incluida más una descarga en vivo. Una categoría sin lista se <b>omite, no se muestra vacía</b>: un array vacío sería afirmar que esa categoría no tiene satélites.']
+          ['p', 'El catálogo es una instantánea incluida más una descarga en vivo. Una categoría sin lista se <b>omite, no se muestra vacía</b>: un array vacío sería afirmar que esa categoría no tiene satélites.'],
+          ['h3', 'SGP4 y por qu&eacute; la edad de un juego de elementos es un l&iacute;mite duro'],
+          ['tex', 'n\'\' = n_0\\bigl[1 + \\tfrac{3}{2}k_2\\tfrac{(3\\cos^2 i-1)}{a^{2}(1-e^{2})^{3/2}}\\bigr],\\qquad \\sigma_{\\text{pos}} \\sim 1\\text{–}3\\ \\mathrm{km/day}\\ \\text{after epoch}'],
+          ['p', 'Un TLE no es una posici&oacute;n: es un juego de elementos medios ajustado a una teor&iacute;a anal&iacute;tica concreta, y solo SGP4/SDP4 puede leerlo. En &oacute;rbita baja su error crece del orden de 1&ndash;3 km por d&iacute;a tras la &eacute;poca, y lo hace <b>en silencio</b>. Por eso el propagador rechaza los juegos demasiado antiguos en vez de dibujar un punto plausible en el sitio equivocado.']
         ]
       },
       {
@@ -285,21 +339,38 @@ window.IntMapPageI18N.define('es', {
           ['p', 'Las posiciones de planetas y lunas son keplerianas, a partir de elementos orbitales. Los cuerpos se dibujan ampliados (a escala real son de menos de un píxel), pero el <b>techo de la ampliación es geometría, no gusto</b>: se sigue de exigir que la Luna quede libre de la Tierra incluso en el perigeo.'],
           ['p', 'Los satélites de los demás planetas provienen de la tabla de elementos medios del JPL para 177 lunas en una época declarada, cada uno propagado hasta la hora del reloj. Los elementos no están todos en un mismo plano: un satélite cercano de un planeta gigante declara el <b>plano de Laplace</b> local de su planeta, cuyo polo la tabla da en ascensión recta y declinación, y ese marco se arrastra en lugar de leerse como si fuera la eclíptica.'],
           ['p', 'A escala de modelo, un satélite se coloca con la misma ley de compresión que la Luna y luego se <b>empuja hacia fuera hasta librar a su primario</b>: comprimir una distancia y un radio con exponentes distintos puede meter una luna interior dentro del planeta que orbita. A escala real no se mueve nada, porque no hay nada que comprimir.'],
-          ['p', 'Las estrellas salen de un catálogo incluido de estrellas brillantes de todo el cielo, en sus posiciones y magnitudes reales; el color se deriva del índice B&minus;V, es decir, de la temperatura de color real.']
+          ['p', 'Las estrellas salen de un catálogo incluido de estrellas brillantes de todo el cielo, en sus posiciones y magnitudes reales; el color se deriva del índice B&minus;V, es decir, de la temperatura de color real.'],
+          ['h3', 'Posiciones'],
+          ['tex', 'M = E - e\\sin E \\;\\Longrightarrow\\; E_{k+1}=E_k-\\frac{E_k-e\\sin E_k-M}{1-e\\cos E_k}, \\qquad \\tan\\frac{\\nu}{2}=\\sqrt{\\tfrac{1+e}{1-e}}\\tan\\frac{E}{2}'],
+          ['p', 'Planetas y lunas provienen de elementos medios en una &eacute;poca declarada: se avanza la anomal&iacute;a media, se resuelve la ecuaci&oacute;n de Kepler por Newton-Raphson (cuatro iteraciones alcanzan 10<sup>&minus;12</sup> para e &lt; 0,9) y de ah&iacute; sale la anomal&iacute;a verdadera. Un sat&eacute;lite interior de un planeta gigante declara el <b>plano de Laplace</b> local de su planeta en vez de la ecl&iacute;ptica, y ese marco se arrastra tal cual.'],
+          ['h3', 'Las dos escalas y lo que se conserva entre ellas'],
+          ['tex', 'r_{\\text{model}} = 26\\,\\mathrm{AU}^{0.42}, \\qquad R_{\\text{model}} = 0.12\\left(\\frac{R}{R_\\oplus}\\right)^{1/3}, \\qquad d\' = \\frac{\\mathcal{P}\'\\bigl(\\mathcal{P}^{-1}(d\\tan\\tfrac{\\phi}{2})\\bigr)}{\\tan\\frac{\\phi}{2}}'],
+          ['p', 'La escala modelo comprime los radios orbitales con un exponente de 0,42 y los radios de los cuerpos con una ra&iacute;z c&uacute;bica: son dos leyes distintas y ninguna conversi&oacute;n de la distancia de la c&aacute;mara puede mantener ambas. Lo que se traslada es el <b>radio real en el borde del encuadre</b>: fuera con la ley de la escala vieja y dentro con la de la nueva. Cuando un cuerpo llena el encuadre, el invariante pasa a ser su tama&ntilde;o aparente, mezclado en el logaritmo.']
         ]
       },
       {
         id: 'flight', nav: 'Modelo de vuelo', h: 'Modelo de vuelo',
         blocks: [
           ['p', 'El empuje y la sustentación caen con la densidad del aire, así que el <b>techo de servicio no es un muro</b>: un avión iniciado por encima desciende hasta que el aire puede sostenerlo, en vez de quedar sujeto artificialmente.'],
-          ['p', 'La cámara está <em>en</em> el avión, y no es una vista de persecución corregida a posteriori.']
+          ['p', 'La cámara está <em>en</em> el avión, y no es una vista de persecución corregida a posteriori.'],
+          ['h3', 'Las fuerzas'],
+          ['tex', 'L=\\tfrac12\\rho V^{2}S\\,C_L(\\alpha),\\quad D=\\tfrac12\\rho V^{2}S\\bigl(C_{D0}+\\tfrac{C_L^{2}}{\\pi e A\\!R}\\bigr),\\quad T=T_0\\left(\\frac{\\rho}{\\rho_0}\\right)^{0.7}'],
+          ['p', 'C<sub>L</sub>(&alpha;) es lineal hasta el &aacute;ngulo de entrada en p&eacute;rdida y decae despu&eacute;s seg&uacute;n el modelo; la resistencia inducida es el t&eacute;rmino habitual 1/(&pi;eAR). El empuje cae con la densidad elevada a 0,7, y de ah&iacute; sale el techo de servicio sin ninguna regla que diga &laquo;hasta aqu&iacute;&raquo;.'],
+          ['h3', 'El aire por el que vuela'],
+          ['tex', '\\rho(h)=\\rho_0\\left(1-\\frac{Lh}{T_0}\\right)^{\\frac{g}{RL}-1},\\quad L=6.5\\ \\mathrm{K/km};\\qquad \\rho=\\rho_{11}e^{-\\frac{g(h-11\\,\\mathrm{km})}{R\\,T_{11}}}\\ (h>11\\ \\mathrm{km})'],
+          ['p', 'La Atm&oacute;sfera Est&aacute;ndar Internacional en dos tramos: troposfera de gradiente lineal y estratosfera isoterma por encima de 11 km. La velocidad del aire es por tanto dos n&uacute;meros distintos, y el HUD dice cu&aacute;l es cada uno.'],
+          ['h3', 'La integraci&oacute;n'],
+          ['tex', '\\mathbf{y}_{n+1}=\\mathbf{y}_n+\\Delta t\\,\\mathbf{f}(\\mathbf{y}_n),\\quad \\Delta t=\\min\\!\\left(\\tfrac{1}{30}\\ \\mathrm{s},\\,\\Delta t_{\\text{frame}}\\right)\\ \\text{sub-stepped so } \\Delta t\\le \\tfrac{1}{120}\\ \\mathrm{s}'],
+          ['p', 'Integraci&oacute;n expl&iacute;cita con paso acotado y subpasos, para que un fotograma largo no se convierta en un paso temporal largo. La c&aacute;mara est&aacute; <em>en</em> el avi&oacute;n, no es una vista de persecuci&oacute;n corregida despu&eacute;s.']
         ]
       },
       {
         id: 'routing', nav: 'Rutas y accesibilidad', h: 'Rutas y accesibilidad',
         blocks: [
           ['p', 'Las rutas por carretera vienen de OSRM sobre la red de OpenStreetMap, y las alternativas del mismo motor. El cálculo ferroviario corre sobre vía real de OSM y <b>se ajusta a la mayor componente conexa</b>: ajustarse a un apartadero aislado haría inalcanzable el destino. El transporte público usa horarios reales vía MOTIS/Transitous.'],
-          ['p', 'Una isócrona es el conjunto de puntos que alcanza un presupuesto de tiempo, envuelto en una envolvente. La envolvente es para mostrarla; <b>la accesibilidad en sí se decide sobre la red</b>, no con la envolvente.']
+          ['p', 'Una isócrona es el conjunto de puntos que alcanza un presupuesto de tiempo, envuelto en una envolvente. La envolvente es para mostrarla; <b>la accesibilidad en sí se decide sobre la red</b>, no con la envolvente.'],
+          ['h3', 'Qu&eacute; resuelve realmente una isocrona'],
+          ['p', 'Un presupuesto de tiempo se expande desde el origen por la red viaria &mdash; una b&uacute;squeda de caminos m&iacute;nimos, no un c&iacute;rculo &mdash; y los nodos alcanzados se envuelven despu&eacute;s en una envolvente c&oacute;ncava para dibujarlos. <b>La accesibilidad se decide en la red</b>; la envolvente es solo la imagen de la respuesta.']
         ]
       },
       {

@@ -150,6 +150,10 @@ import '../js/world-packs.js';
    `window.IntMapWorld._ui` rather than carrying a second copy of it, and it says so out loud if the
    toolkit is not there instead of half-building a layer. */
 import '../js/industry-web.js';
+/* (#R222) the field DECODER before the layer that reads it: a plain window module with no HOST, so
+   nothing here depends on load order beyond "defined before first use". Both ocean-current layers
+   (the World-data plate and the older data-layers row) read the same grid through it. */
+import '../js/ocean-currents-field.js';
 import '../js/ocean-currents.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is */
 import '../js/analysis-panels.js';
 import '../js/sims.js';

@@ -541,6 +541,114 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-minimap{right:calc(8px + env(safe-area-inset-right,0px));bottom:auto;top:106px;width:88px;height:88px;}'
           +'#fs-hud .fs-deck{grid-template-columns:repeat(3,44px);}'
           +'#fs-hud .fs-htape{width:min(200px,54vw);}'
+        +'}'
+        /* ══ ⚠⚠ (#R222) THE PHONE HUD IS FOUR ZONES, AND EVERY ELEMENT BELONGS TO ONE ══════════════════
+           「フライトシミュレーターはスマホ画面ではUIのデザインがごみ。散乱している。徹底的に整理し、
+             洗練されたモバイル最適化されたUIデザインにしろ。（機能は削るな）」
+
+           WHAT WAS ON SCREEN, from the reader's own capture of a landscape phone: the airspeed block
+           top-left, the heading tape top-centre, the altitude block top-right with a full-width RED
+           「✕ 終了」 pill beside it, the aircraft badge and the three configuration chips floating
+           loose across the middle of the sky (with the badge's own text cut off mid-word), the ADI
+           sitting on the bottom edge in the centre where it lands ON the two rudder keys, the minimap
+           in the right margin, the throttle and a 「⋯」 at the left, and the pad bottom-right. Eleven
+           anchors, three of them colliding. That is 「散乱している」, and it is what nine rounds of
+           per-element media queries (#R100 · #R117 · #R118 · #R216 · #R220) accumulate to: each one
+           moved the thing that was in the way and left the others where they were.
+
+           This block does not move one more element. It states the FOUR ZONES a hand-held cockpit has
+           and puts every element in one of them, so a future round has a place to add to rather than
+           a gap to find:
+
+             ① TOP BAND (44 px)      what the numbers are  — speed · heading tape · altitude · exit
+             ② UNDER THE BAND        what the aircraft IS   — badge + the three config chips, one line
+                                     …and the moving map, under the altitude block on the right
+             ③ THE VIEW              the ladder, the boresight, the warning — nothing else is in it
+             ④ THUMB RAILS           left: throttle + boost + rudder · right: pad + deck key
+                                     the ADI sits BETWEEN the rails, clear of both, where the eye
+                                     drops naturally between two thumbs
+
+           ⚠ NOTHING IS REMOVED. Every control, readout and instrument that existed still exists and
+           still updates; the six-pack and the PFD remain hidden on touch exactly as #R220 left them
+           (they are duplicates of the tape and the panels, and that decision is not revisited here).
+           ⚠ THE EXIT IS AN ICON. 「✕ 終了」 at 12 px was the widest thing in the top band and the only
+           red object on screen — on a phone it read as the primary action of a flight simulator. It
+           keeps its label for screen readers (`aria-label` is set in js/flight-sim.js) and becomes a
+           34 px square, which is the size everything else in the band already is. */
+        +'@media(hover:none){'
+          /* ② the identity line: badge and chips together, under the speed block, never over the view */
+          /* ⚠ `bottom:auto` IS LOAD-BEARING. Both of these are given a `bottom` by an earlier phone
+             block (#R220), and an element with BOTH top and bottom set is stretched between them —
+             measured on the first run of this layout, the badge's box came out 338 × 258 px and its
+             invisible half covered the whole left of the sky, swallowing taps meant for the map. */
+          +'#fs-hud .fs-acbadge{left:calc(8px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'top:calc(60px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(58vw,320px);'
+            +'font-size:10px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+          +'#fs-hud .fs-config{left:calc(8px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+            +'top:calc(82px + env(safe-area-inset-top,0px));bottom:auto;gap:4px;}'
+          +'#fs-hud .fs-cfg{font-size:9px;padding:2px 6px;}'
+          /* ① the exit is a square, not a banner */
+          +'#fs-hud .fs-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));'
+            +'width:34px;height:34px;padding:0;font-size:0;border-radius:10px;display:flex;align-items:center;justify-content:center;'
+            +'background:rgba(255,69,58,0.72);}'
+          +'#fs-hud .fs-x::before{content:"\\2715";font-size:15px;font-weight:700;color:#fff;}'
+          /* ③ the ladder is the view — its numbers were drawn at desktop size over a phone-sized sky */
+          +'#fs-hud .fs-ladder-g text{font-size:13px;} #fs-hud .fs-ladder-g line{stroke-width:1.8;}'
+        +'}'
+        /* ④ the rails, in the orientation a flight is actually flown in */
+        +'@media(hover:none) and (orientation:landscape){'
+          /* the top band, right edge in: altitude block shifts left of the ✕ so the two never touch */
+          +'#fs-hud .fs-panel.fs-tr{right:calc(50px + env(safe-area-inset-right,0px));}'
+          /* ⚠ 78px, NOT 52: `.fs-tr` measures 64 px tall from y=5 (altitude AND AGL), so a map at 52
+             covered the AGL figure — measured, 17 px of overlap, with the number under the map. */
+          +'#fs-hud .fs-minimap{top:calc(78px + env(safe-area-inset-top,0px));bottom:auto;'
+            +'right:calc(8px + env(safe-area-inset-right,0px));left:auto;width:92px;height:92px;border-radius:11px;}'
+          /* ② …and in landscape the identity line goes back to the CENTRE, under the tape: the left
+             column is the airspeed block, which is four rows tall on a fighter (speed, V/S, load,
+             AoA) and reaches y≈160 — measured, the left-aligned badge landed on top of it. */
+          +'#fs-hud .fs-acbadge{left:50%;right:auto;transform:translateX(-50%);'
+            +'top:calc(42px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(46vw,320px);}'
+          +'#fs-hud .fs-config{left:50%;right:auto;transform:translateX(-50%);'
+            +'top:calc(66px + env(safe-area-inset-top,0px));bottom:auto;}'
+          /* left rail — throttle, its boost bar beside it, the two rudder keys above them */
+          +'#fs-hud .fs-thr{left:calc(8px + env(safe-area-inset-left,0px));width:40px;'
+            +'height:min(150px,42vh);bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-thrlbl{left:calc(8px + env(safe-area-inset-left,0px));'
+            +'bottom:calc(min(150px,42vh) + 12px + env(safe-area-inset-bottom,0px));font-size:9px;}'
+          +'#fs-hud .fs-boost{display:block;left:calc(52px + env(safe-area-inset-left,0px));width:8px;'
+            +'height:min(150px,42vh);bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-btns{left:calc(68px + env(safe-area-inset-left,0px));transform:none;gap:8px;'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-btns button{min-width:58px;height:42px;font-size:11px;padding:0 10px;}'
+          /* between the rails: the attitude ball, lifted clear of both */
+          +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:84px;height:84px;'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          /* right rail — the pad, and the deck key beside it rather than across the sky */
+          +'#fs-hud .fs-dpad{right:calc(8px + env(safe-area-inset-right,0px));'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;}'
+          +'#fs-hud .fs-deck-t{right:calc(158px + env(safe-area-inset-right,0px));left:auto;top:auto;'
+            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));width:44px;height:44px;}'
+          +'#fs-hud[data-deck="1"] .fs-deck{right:calc(158px + env(safe-area-inset-right,0px));left:auto;top:auto;'
+            +'bottom:calc(58px + env(safe-area-inset-bottom,0px));transform:none;'
+            +'grid-template-columns:repeat(2,56px);grid-auto-rows:42px;gap:5px;}'
+          /* the approach aids stack above the throttle, where nothing else is */
+          +'#fs-hud .fs-papi{display:flex;left:calc(8px + env(safe-area-inset-left,0px));'
+            +'bottom:calc(min(150px,42vh) + 30px + env(safe-area-inset-bottom,0px));padding:3px 6px;}'
+          +'#fs-hud .fs-ils{left:calc(8px + env(safe-area-inset-left,0px));right:auto;'
+            +'bottom:calc(min(150px,42vh) + 58px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-warn{top:calc(50px + env(safe-area-inset-top,0px));font-size:15px;}'
+        +'}'
+        /* upright: the same four zones, stacked — the rails move to the bottom third */
+        +'@media(hover:none) and (orientation:portrait){'
+          +'#fs-hud .fs-minimap{top:calc(108px + env(safe-area-inset-top,0px));bottom:auto;'
+            +'right:calc(8px + env(safe-area-inset-right,0px));width:88px;height:88px;}'
+          +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:84px;height:84px;'
+            +'bottom:calc(150px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-deck-t{right:calc(8px + env(safe-area-inset-right,0px));left:auto;top:auto;'
+            +'bottom:calc(150px + env(safe-area-inset-bottom,0px));width:44px;height:44px;}'
+          +'#fs-hud[data-deck="1"] .fs-deck{left:50%;right:auto;transform:translateX(-50%);top:auto;'
+            +'bottom:calc(200px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(4,52px);grid-auto-rows:42px;gap:5px;}'
         +'}';
       document.head.appendChild(s); }
     /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
@@ -563,7 +671,10 @@ window.IntMapModules.flightSim=function(HOST){
       return '<div class="fs-hint">'+LL('W/S throttle'+abL+'<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space brake/airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit<br>Gamepad: stick + triggers','W/S 出力'+abL+'<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space ブレーキ/抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了<br>ゲームパッド対応（スティック＋トリガー）','W/S Schub'+abL+'<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende<br>Gamepad: Stick + Trigger','W/S тяга'+abL+'<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход<br>Геймпад: стик + триггеры','W/S gas'+abL+'<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir<br>Mando: stick + gatillos')+'</div>'; }
     function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint(AC())
       +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
-      +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
+      /* ⚠ (#R222) the label stays IN the button and is only hidden visually on a phone (font-size:0
+         with a ✕ drawn by ::before), so the accessible name is still the word — and `aria-label`
+         carries it for the case where the text is not rendered at all. */
+      +'<button class="fs-x" aria-label="'+LL('Exit','終了','Ende','Выход','Salir')+'">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
       /* ══ ⚠ (#R216) THE ARROWS ARE BACK, BECAUSE THEY WERE ASKED FOR ═══════════════════════════════
          「上下左右の操作は上下左右ボタンに戻して。」 #R117 replaced six arrow buttons with an analog
          stick and wrote down why (an analog axis is a better control than a tap). The reader has now

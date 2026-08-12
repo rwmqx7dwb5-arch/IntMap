@@ -125,7 +125,8 @@ test('R219 ③ the distance ladder is strictly increasing and ends at the partic
 test('R219 ④ data/ocean-currents.json ships every current in all five languages', () => {
   const d = JSON.parse(read('data/ocean-currents.json'));
   assert.ok(Array.isArray(d.named) && d.named.length >= 20);
-  assert.ok(Array.isArray(d.arrows) && d.arrows.length > 1000, 'the global flow field must be there');
+  /* (#R222) the global flow field is still required — it is a gridded file now, not `arrows` */
+  assert.ok(d.field && d.field.cells > 1000, 'the global flow field must be there');
   for (const c of d.named) {
     for (const l of ['en', 'ja', 'de', 'ru', 'es']) assert.ok(c[l] && c[l].length > 1, c.en + ' is missing ' + l);
     assert.ok(['warm', 'cold', 'zonal'].includes(c.kind), c.en + ' has kind ' + c.kind);
