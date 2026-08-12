@@ -466,7 +466,12 @@ test('R208 ⑧a: the paths are traced through a measured field, and warm/cold is
   assert.ok(/traced/i.test(doc.attribution) && /seed/i.test(doc.attribution),
     'and it says which part is measured and which part is editorial');
   assert.ok(doc.named.length >= 20, `${doc.named.length} named currents`);
-  assert.ok(doc.arrows.length > 3000, `${doc.arrows.length} arrows`);
+  /* ⚠ (#R222) `doc.arrows` IS GONE and the assertion it carried is not. The field left the JSON for
+     a gridded binary (data/ocean-currents-field.bin.gz, js/ocean-currents-field.js), so what used to
+     be "more than 3,000 arrows" is now "more than 3,000 measured cells" — the same claim about the
+     same data, read where the data now lives. */
+  assert.ok(doc.field && doc.field.cells > 3000, `${doc.field && doc.field.cells} measured cells`);
+  assert.ok(existsSync(join(ROOT, 'data', 'ocean-currents-field.bin.gz')), 'the field file ships');
 
   for (const c of doc.named) {
     assert.ok(c.en && c.ja, `${c.en}: both names`);

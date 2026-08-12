@@ -1,7 +1,33 @@
 #!/usr/bin/env node
 /* ============================================================================
  *  IntMap · BUILD THE OCEAN-CURRENT LAYER — data/ocean-currents.json   (#R221)
+ *  (#R222) …plus data/ocean-currents-field.bin.gz and data/ocean-currents-months.bin.gz
  * ----------------------------------------------------------------------------
+ *  ⚠⚠ (#R222) 「海流レイヤーのquality, coverageを増強して」 — confirmed as
+ *  「本数増＋格子0.5°＋季節（月別）」, and the three of those are three different builds:
+ *
+ *    1. THE NAMED LIST GREW from 61 to ~120 seeds — the marginal-sea and coastal currents an atlas
+ *       plate has and this file did not (Tsugaru, Sōya, Liman, East Korea Warm, Taiwan Warm, Yellow
+ *       Sea Warm, Vietnam Coastal, New Guinea Coastal, Costa Rica Coastal, Davidson, Yucatán,
+ *       Guiana, Cape Horn, West Spitsbergen, North Cape, Baffin, Beaufort Gyre, Algerian, Rim,
+ *       East African Coastal, the two India coastal currents, the two monsoon currents …).
+ *    2. THE FIELD IS A GRID, NOT A LIST OF ARROWS. `arrows` (28,208 points at 1°, 700 kB of JSON)
+ *       is replaced by data/ocean-currents-field.bin.gz — the source's OWN 0.25° grid, speed and
+ *       bearing as one byte each, gzipped. The client strides that grid for whatever spacing the
+ *       zoom asks for, so one file serves 2°, 1°, 0.5° and 0.25° and NOTHING is thinned away
+ *       before it ships. (⚠ This is also why the layer got LIGHTER while gaining 16× the cells.)
+ *    3. THE SEASON. data/ocean-currents-months.bin.gz carries twelve monthly climatologies on the
+ *       0.5° grid — one per calendar month, each the mean of several years of THAT month — so the
+ *       monsoon reversal (Somali Current, the two Indian monsoon currents, Davidson) is a thing the
+ *       reader can watch happen rather than a sentence. It is fetched only if a month is chosen.
+ *
+ *  ⚠ THE ANNUAL AND THE MONTHLY FIELDS ARE BUILT FROM THE SAME PIPELINE at two resolutions: the
+ *  annual one keeps the native 0.25° (it is what the named paths are traced through, and a western
+ *  boundary current is four cells wide there), the monthly ones are requested WITH A STRIDE of 2 so
+ *  twelve of them cost a quarter of what twelve native ones would. A season is a large-scale signal;
+ *  0.5° resolves the monsoon reversal completely.
+ *
+ *  ── the #R221 round that built the annual field ─────────────────────────────────────────────
  *  「海流レイヤーのquality, coverageが悪すぎる。」
  *
  *  ── ⚠ WHAT WAS WRONG WITH #R208's DATASET, MEASURED ─────────────────────────────────────────
@@ -55,11 +81,14 @@
  *      node scripts/build-ocean-currents.mjs --epochs 12   # a quicker, noisier one
  * ==========================================================================*/
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'ocean-currents.json');
+const OUT_FIELD = join(ROOT, 'data', 'ocean-currents-field.bin.gz');
+const OUT_MONTHS = join(ROOT, 'data', 'ocean-currents-months.bin.gz');
 const CACHE = join(ROOT, 'node_modules', '.cache', 'intmap-currents');
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) ocean-current-build';
 
@@ -71,6 +100,16 @@ const SST_EPOCHS = argNum('--sst-epochs', 8);
 const GRID = 0.25;                              /* the native grid, kept */
 const NX = Math.round(360 / GRID), NY = Math.round(180 / GRID);
 const BAND = 20;                                /* degrees of latitude per request */
+/* (#R222) the seasonal build — twelve calendar months, each averaged over this many years */
+const MON_EPOCHS = argNum('--month-epochs', 6);        /* velocity fields per calendar month */
+const MON_WIND_EPOCHS = argNum('--month-wind-epochs', 6);
+const MGRID = 0.5;                                     /* the monthly grid (stride 2 of the native) */
+const MNX = Math.round(360 / MGRID), MNY = Math.round(180 / MGRID);
+const MBAND = 40;                                      /* wider bands: a strided row is a quarter the bytes */
+const MON_CONC = argNum('--conc', 4);                  /* parallel ERDDAP requests */
+const SKIP_MONTHS = argv.includes('--no-months');
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
 
 /* ── the ladder ──────────────────────────────────────────────────────────────────────────── */
 /* ⚠ WHY jplOscar IS NOT THE PRIMARY, EVEN THOUGH IT IS THE BETTER PHYSICS. OSCAR is the TOTAL
@@ -171,6 +210,68 @@ const SEEDS = [
   ['Weddell Gyre', 'ウェッデル環流', 'Weddellwirbel', 'Круговорот Уэдделла', 'Giro de Weddell', -30.0, -65.0],
   ['Ross Gyre', 'ロス環流', 'Rosswirbel', 'Круговорот Росса', 'Giro de Ross', -160.0, -68.0],
   ['East Icelandic Current', '東アイスランド海流', 'Ostislandstrom', 'Восточно-Исландское течение', 'Corriente de Islandia Oriental', -12.0, 67.0],
+  /* ══ (#R222) THE SECOND HALF OF THE PLATE ═════════════════════════════════════════════════════
+     「海流レイヤーのquality, coverageを増強して」 — the 61 above are the currents a world map draws
+     at the scale of an ocean. These are the ones it draws at the scale of a COAST: the marginal-sea
+     and shelf currents, the monsoon system, and the polar branches. Every seed is a published core
+     position, exactly as above, and a seed whose field does not support a trace is dropped by the
+     build with a line saying so — nothing here is drawn from a name alone. */
+  /* ── North Atlantic & Arctic ─────────────────────────────────────────────────────────────── */
+  ['West Spitsbergen Current', '西スピッツベルゲン海流', 'Westspitzbergenstrom', 'Западно-Шпицбергенское течение', 'Corriente de Spitsbergen Occidental', 10.0, 78.0],
+  ['North Cape Current', '北岬海流', 'Nordkapstrom', 'Нордкапское течение', 'Corriente del Cabo Norte', 22.0, 71.5],
+  ['Norwegian Coastal Current', 'ノルウェー沿岸流', 'Norwegischer Küstenstrom', 'Норвежское прибрежное течение', 'Corriente Costera Noruega', 8.0, 63.0],
+  ['Baffin Island Current', 'バフィン島海流', 'Baffinstrom', 'Баффиново течение', 'Corriente de la Isla de Baffin', -62.0, 68.0],
+  ['Beaufort Gyre', 'ボーフォート環流', 'Beaufortwirbel', 'Круговорот Бофорта', 'Giro de Beaufort', -145.0, 76.0],
+  ['Nova Scotia Current', 'ノバスコシア海流', 'Neuschottlandstrom', 'Новошотландское течение', 'Corriente de Nueva Escocia', -63.0, 43.5],
+  ['Yucatán Current', 'ユカタン海流', 'Yucatánstrom', 'Юкатанское течение', 'Corriente de Yucatán', -86.0, 21.5],
+  ['Guiana Current', 'ギアナ海流', 'Guayanastrom', 'Гвианское течение', 'Corriente de Guayana', -52.0, 7.0],
+  ['Mauritania Current', 'モーリタニア海流', 'Mauretanienstrom', 'Мавританское течение', 'Corriente de Mauritania', -18.0, 17.0],
+  ['Iberian Poleward Current', 'イベリア極向流', 'Iberischer Polwärtsstrom', 'Иберийское полярное течение', 'Corriente Ibérica hacia el Polo', -9.5, 42.0],
+  /* ── the Mediterranean and the Black Sea ─────────────────────────────────────────────────── */
+  ['Algerian Current', 'アルジェリア海流', 'Algerienstrom', 'Алжирское течение', 'Corriente Argelina', 3.0, 37.5],
+  ['Liguro-Provençal Current', 'リグリア・プロヴァンス海流', 'Ligurisch-Provenzalischer Strom', 'Лигуро-Прованское течение', 'Corriente Liguro-Provenzal', 7.5, 43.3],
+  ['Asia Minor Current', '小アジア海流', 'Kleinasienstrom', 'Малоазиатское течение', 'Corriente de Asia Menor', 30.0, 35.5],
+  ['Black Sea Rim Current', '黒海周縁流', 'Randstrom des Schwarzen Meeres', 'Основное Черноморское течение', 'Corriente Perimetral del Mar Negro', 34.0, 43.5],
+  /* ── the north-western Pacific and its marginal seas ─────────────────────────────────────── */
+  ['Tsugaru Current', '津軽暖流', 'Tsugarustrom', 'Цугарское течение', 'Corriente de Tsugaru', 141.5, 41.5],
+  ['Sōya Current', '宗谷暖流', 'Sōyastrom', 'Течение Соя', 'Corriente de Sōya', 142.5, 45.3],
+  ['East Sakhalin Current', '東サハリン海流', 'Ostsachalinstrom', 'Восточно-Сахалинское течение', 'Corriente de Sajalín Oriental', 144.0, 51.0],
+  ['Liman Current', 'リマン海流', 'Limanstrom', 'Приморское течение', 'Corriente de Liman', 135.0, 44.0],
+  ['East Korea Warm Current', '東朝鮮暖流', 'Ostkoreanischer Warmstrom', 'Восточно-Корейское тёплое течение', 'Corriente Cálida de Corea Oriental', 130.0, 37.0],
+  ['North Korea Cold Current', '北朝鮮寒流', 'Nordkoreanischer Kaltstrom', 'Северо-Корейское холодное течение', 'Corriente Fría de Corea del Norte', 130.5, 40.5],
+  ['Yellow Sea Warm Current', '黄海暖流', 'Gelbmeer-Warmstrom', 'Тёплое течение Жёлтого моря', 'Corriente Cálida del Mar Amarillo', 124.0, 34.0],
+  ['China Coastal Current', '中国沿岸流', 'Chinesischer Küstenstrom', 'Китайское прибрежное течение', 'Corriente Costera de China', 121.5, 31.0],
+  ['Taiwan Warm Current', '台湾暖流', 'Taiwan-Warmstrom', 'Тайваньское тёплое течение', 'Corriente Cálida de Taiwán', 122.0, 25.5],
+  ['Ryukyu Current', '琉球海流', 'Ryukyustrom', 'Течение Рюкю', 'Corriente de Ryukyu', 128.0, 26.0],
+  ['Kuroshio Counter Current', '黒潮反流', 'Kuroshio-Gegenstrom', 'Противотечение Куросио', 'Contracorriente de Kuroshio', 138.0, 28.0],
+  ['Subtropical Counter Current (Pacific)', '亜熱帯反流（太平洋）', 'Subtropischer Gegenstrom (Pazifik)', 'Субтропическое противотечение (Тихий океан)', 'Contracorriente Subtropical (Pacífico)', 135.0, 21.0],
+  ['Vietnam Coastal Current', 'ベトナム沿岸流', 'Vietnamesischer Küstenstrom', 'Вьетнамское прибрежное течение', 'Corriente Costera de Vietnam', 110.0, 12.0],
+  /* ── the north-eastern Pacific ───────────────────────────────────────────────────────────── */
+  ['Bering Slope Current', 'ベーリング陸棚斜面流', 'Beringschelfstrom', 'Беринговоморское склоновое течение', 'Corriente del Talud de Bering', -177.0, 57.0],
+  ['Aleutian North Slope Current', 'アリューシャン北斜面流', 'Aleuten-Nordhangstrom', 'Северо-Алеутское склоновое течение', 'Corriente del Talud Norte de las Aleutianas', -168.0, 53.5],
+  ['Anadyr Current', 'アナディル海流', 'Anadyrstrom', 'Анадырское течение', 'Corriente de Anadyr', -176.0, 63.0],
+  ['Alaska Coastal Current', 'アラスカ沿岸流', 'Alaskischer Küstenstrom', 'Аляскинское прибрежное течение', 'Corriente Costera de Alaska', -150.0, 59.0],
+  ['Davidson Current', 'デービッドソン海流', 'Davidsonstrom', 'Течение Дэвидсона', 'Corriente de Davidson', -124.5, 44.0],
+  ['Costa Rica Coastal Current', 'コスタリカ沿岸流', 'Costa-Rica-Küstenstrom', 'Коста-риканское прибрежное течение', 'Corriente Costera de Costa Rica', -90.0, 10.0],
+  ['Hawaiian Lee Counter Current', 'ハワイ風下反流', 'Hawaii-Lee-Gegenstrom', 'Подветренное противотечение Гавайев', 'Contracorriente de Sotavento de Hawái', -175.0, 19.5],
+  /* ── the south-western Pacific ───────────────────────────────────────────────────────────── */
+  ['South Equatorial Counter Current (Pacific)', '南赤道反流（太平洋）', 'Südäquatorialer Gegenstrom (Pazifik)', 'Южное экваториальное противотечение (Тихий океан)', 'Contracorriente Ecuatorial del Sur (Pacífico)', -170.0, -8.0],
+  ['New Guinea Coastal Current', 'ニューギニア沿岸流', 'Neuguinea-Küstenstrom', 'Новогвинейское прибрежное течение', 'Corriente Costera de Nueva Guinea', 145.0, -5.0],
+  ['North Caledonian Jet', '北ニューカレドニア・ジェット', 'Nordkaledonischer Jet', 'Северо-Каледонская струя', 'Chorro de Nueva Caledonia Norte', 163.0, -18.0],
+  ['East Auckland Current', '東オークランド海流', 'Ostaucklandstrom', 'Восточно-Оклендское течение', 'Corriente de Auckland Oriental', 176.0, -36.0],
+  ['Southland Current', 'サウスランド海流', 'Southlandstrom', 'Течение Саутленд', 'Corriente de Southland', 172.0, -46.5],
+  ['Cape Horn Current', 'ホーン岬海流', 'Kap-Hoorn-Strom', 'Течение мыса Горн', 'Corriente del Cabo de Hornos', -73.0, -55.0],
+  /* ── the Indian Ocean and the monsoon system ─────────────────────────────────────────────── */
+  ['Monsoon Current (Indian Ocean)', 'モンスーン海流（インド洋）', 'Monsunstrom (Indik)', 'Муссонное течение (Индийский океан)', 'Corriente Monzónica (Índico)', 78.0, 5.0],
+  ['East African Coastal Current', '東アフリカ沿岸流', 'Ostafrikanischer Küstenstrom', 'Восточно-Африканское прибрежное течение', 'Corriente Costera de África Oriental', 41.0, -6.0],
+  ['West India Coastal Current', '西インド沿岸流', 'Westindischer Küstenstrom', 'Западно-Индийское прибрежное течение', 'Corriente Costera de la India Occidental', 72.0, 13.0],
+  ['East India Coastal Current', '東インド沿岸流', 'Ostindischer Küstenstrom', 'Восточно-Индийское прибрежное течение', 'Corriente Costera de la India Oriental', 82.0, 15.0],
+  ['Ras al Hadd Jet', 'ラス・アル・ハッド・ジェット', 'Ras-al-Hadd-Jet', 'Струя Рас-эль-Хадд', 'Chorro de Ras al Hadd', 59.5, 22.0],
+  ['South Indian Counter Current', '南インド反流', 'Südindischer Gegenstrom', 'Южно-Индийское противотечение', 'Contracorriente del Índico Sur', 80.0, -25.0],
+  ['Eastern Gyral Current', '東部環流流', 'Östlicher Gyralstrom', 'Восточное круговоротное течение', 'Corriente Giral Oriental', 108.0, -17.0],
+  ['Flinders Current', 'フリンダース海流', 'Flindersstrom', 'Течение Флиндерса', 'Corriente de Flinders', 135.0, -36.0],
+  /* ── the Southern Ocean ──────────────────────────────────────────────────────────────────── */
+  ['Prydz Bay Gyre', 'プリッツ湾環流', 'Prydz-Bucht-Wirbel', 'Круговорот залива Прюдс', 'Giro de la Bahía de Prydz', 75.0, -67.0],
 ];
 
 /* ══ the accumulator — one global 0.25° grid of Σu, Σv, n ══════════════════════════════════ */
@@ -264,6 +365,91 @@ async function sweep(src, tIdx, A, B, N) {
     used += accumulate(t, A, B, N, !!src.single);
   }
   return used;
+}
+
+/* ══ (#R222) THE SEASONAL BUILD ═══════════════════════════════════════════════════════════════
+   Twelve calendar months, each the mean of MON_EPOCHS different YEARS of that month, on the 0.5°
+   grid. Two things make twelve fields affordable where one native field is already 50 MB of CSV:
+
+     · ERDDAP STRIDES ON THE SERVER. `[(lat0):2:(lat1)][0:2:last]` returns every other cell of each
+       axis, so a monthly field costs a QUARTER of a native one and arrives already at 0.5°.
+     · THE REQUESTS RUN IN PARALLEL (MON_CONC at a time). ERDDAP's cost is mostly its own latency;
+       four in flight is polite to the server and turns half a day into half an hour.
+
+   ⚠ THE MONTH IS TAKEN FROM THE AXIS STAMP, NOT FROM AN INDEX GUESS. The daily set has gaps and the
+   monthly wind set is stamped on the 16th, so grouping the axis by `date.getUTCMonth()` and then
+   spreading the picks across the YEARS inside each group is the only construction that gives every
+   month the same number of samples without assuming a cadence. */
+const mix = (lng) => { let x = Math.floor((((lng + 180) % 360 + 360) % 360) / MGRID); return x >= MNX ? MNX - 1 : x; };
+const miy = (lat) => { let y = Math.floor((lat + 90) / MGRID); return y < 0 ? 0 : (y >= MNY ? MNY - 1 : y); };
+
+function accumulateM(csv, A, B, N, single) {
+  if (!csv) return 0;
+  let used = 0, i = 0;
+  const len = csv.length;
+  for (let k = 0; k < 2; k++) { const j = csv.indexOf('\n', i); if (j < 0) return 0; i = j + 1; }
+  while (i < len) {
+    let j = csv.indexOf('\n', i); if (j < 0) j = len;
+    const line = csv.slice(i, j); i = j + 1;
+    if (line.length < 12) continue;
+    const c = line.split(',');
+    const n = c.length;
+    if (n < 4) continue;
+    const lat = single ? +c[n - 3] : +c[n - 4], lon = single ? +c[n - 2] : +c[n - 3];
+    const a = single ? +c[n - 1] : +c[n - 2], b = single ? 0 : +c[n - 1];
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+    const k = miy(lat) * MNX + mix(lon);
+    A[k] += a; if (!single) B[k] += b; N[k]++; used++;
+  }
+  return used;
+}
+
+/* how long the longitude axis is, so `[0:2:last]` can be written without guessing its end — the
+   #R221 lesson about `[(0.1):(359.9)]` in a different shape (a stop past the last cell is a 404). */
+const lonLenCache = Object.create(null);
+async function lonLen(src) {
+  if (lonLenCache[src.id] != null) return lonLenCache[src.id];
+  const t = await getText(`${src.base}.csv?longitude`);
+  const n = t ? t.split('\n').slice(2).filter((s) => s.trim()).length : 0;
+  lonLenCache[src.id] = n;
+  return n;
+}
+
+/* a bounded-concurrency map. Nothing clever: N workers pulling from one cursor. */
+async function pmap(items, conc, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, conc) }, worker));
+  return out;
+}
+
+/* one strided band of one time index → a monthly accumulator */
+async function bandM(src, tIdx, s, s1, lastLon, A, B, N) {
+  const sel = `[${tIdx}]${src.extra || ''}[(${s}):2:(${s1})][0:2:${lastLon}]`;
+  const a = src.u || src.x, b = src.v || src.y;
+  const url = `${src.base}.csv?${a}${sel}` + (src.single ? '' : `,${b}${sel}`);
+  const t = await getText(url);
+  if (t == null) return -1;
+  return accumulateM(t, A, B, N, !!src.single);
+}
+
+/* group an ERDDAP time axis by calendar month and pick `n` of each, spread across the years */
+function byMonth(axis, n) {
+  const g = Array.from({ length: 12 }, () => []);
+  axis.forEach((s, i) => {
+    const d = new Date(s);
+    if (!isFinite(+d)) return;
+    g[d.getUTCMonth()].push(i);
+  });
+  return g.map((list) => spread(list, n).map((k) => list[k]));
 }
 
 /* ══ the sampler — bilinear over the mean field, skipping land ═════════════════════════════ */
@@ -401,6 +587,60 @@ function simplify(path, tolKm = 8) {
   return path.filter((_, i) => keep[i]);
 }
 
+/* ══ (#R222) THE FIELD IS A GRID FILE, NOT A LIST OF ARROWS ═══════════════════════════════════
+   #R219–#R221 shipped the field as `arrows` — a JSON array of [lng, lat, bearing, speed], thinned
+   to 1° because 0.25° would have been 700,000 rows of it. That format pays for four numbers per
+   cell in text AND it decides the spacing at BUILD time, which is the wrong place: the reader's
+   zoom is what should decide how far apart two arrows are.
+
+   A regular grid pays for two BYTES per cell and lets the client choose its own stride — 2°, 1°,
+   0.5°, 0.25° are `stride = 8, 4, 2, 1` over the same array — so one file serves every zoom and
+   the finest detail the source has is on the device. Measured: 1,036,800 cells at 0.25° is 2.07 MB
+   raw and gzips to a fraction of the 700 kB of JSON it replaces, with SIXTEEN times the cells.
+
+   ⚠ SPEED IS STORED THROUGH A SQUARE ROOT. A linear byte over 0–2.5 m/s would quantise at 1 cm/s
+   everywhere, which is coarse exactly where the field is interesting (the 3–10 cm/s eastern
+   boundary currents this round is meant to make legible). sqrt puts the resolution where the
+   density of the data is: 0.05 cm/s at the low end, 2 cm/s at the Gulf Stream's core.
+   ⚠ SPEED 0 MEANS "NOTHING HERE" — land, ice, or below the 3 cm/s floor the layer draws at — and
+   the bearing byte is zeroed with it so the gzip window sees runs rather than noise. */
+const SP_MAX = 2.5;
+function encodePlanes(planes, nx, ny, gridDeg) {
+  const head = Buffer.alloc(16);
+  head.write('IMOC', 0, 'ascii');
+  head.writeUInt8(1, 4);                       /* format version */
+  head.writeUInt8(planes.length, 5);
+  head.writeUInt16LE(nx, 6);
+  head.writeUInt16LE(ny, 8);
+  head.writeUInt16LE(Math.round(gridDeg * 1000), 10);
+  head.writeUInt16LE(Math.round(SP_MAX * 1000), 12);
+  head.writeUInt16LE(0, 14);
+  const parts = [head];
+  for (const p of planes) {
+    const n = nx * ny;
+    const sp = Buffer.alloc(n), br = Buffer.alloc(n);
+    for (let k = 0; k < n; k++) {
+      const s = p.speed[k];
+      if (!(s > 0.03)) continue;                /* the floor the layer draws at */
+      sp[k] = Math.max(1, Math.min(255, Math.round(255 * Math.sqrt(Math.min(s, SP_MAX) / SP_MAX))));
+      br[k] = Math.round((((p.bearing[k] % 360) + 360) % 360) / 360 * 255) & 255;
+    }
+    parts.push(sp, br);
+  }
+  return Buffer.concat(parts);
+}
+/* u/v (east/north, m/s) on a grid → the speed + bearing planes the encoder wants */
+function planeOf(u, v, n, cells) {
+  const speed = new Float32Array(cells), bearing = new Float32Array(cells);
+  for (let k = 0; k < cells; k++) {
+    if (!n[k]) continue;
+    const uu = u[k], vv = v[k];
+    speed[k] = Math.hypot(uu, vv);
+    bearing[k] = Math.atan2(uu, vv) * 180 / Math.PI;   /* 0 = north, clockwise — the map's own convention */
+  }
+  return { speed, bearing };
+}
+
 async function main() {
   if (!existsSync(CACHE)) mkdirSync(CACHE, { recursive: true });
   const meanFile = join(CACHE, `mean-${GRID}-${EPOCHS}.json`);
@@ -513,6 +753,112 @@ async function main() {
   }
   const zonalAt = (lat) => { const y = iy(lat); return zonalN[y] ? zonalSST[y] / zonalN[y] : null; };
 
+  /* ══ ⚠⚠ (#R222) THE ZONAL MEAN IS THE WRONG BACKGROUND FOR A MARGINAL SEA ═══════════════════════
+     #R221 replaced the flow derivation with a MEASURED temperature: the current's own SST against
+     the GLOBAL zonal mean at the same latitude. That is the textbook definition and it fixed the
+     open-ocean cases (Benguela cold, Canary cold). Run against the currents this round ADDS, it
+     produces four flat contradictions of the currents' own names:
+
+         East Korea WARM Current   −1.9 K      Yellow Sea WARM Current  −3.8 K
+         Tsugaru  (暖流)           −2.9 K      Taiwan WARM Current      zonal
+
+     and the reason is not the measurement, it is the reference. The Sea of Japan, the Yellow Sea and
+     the Sea of Okhotsk are each several kelvin colder than the GLOBAL water at their own latitude
+     (that latitude band is dominated by the open Pacific and the Gulf Stream). A current that is the
+     warm water OF ITS OWN SEA is therefore cold against the planet — which answers a question nobody
+     asked. 「暖流」 has always meant warmer than the sea it flows through, and for a current inside a
+     marginal sea the sea it flows through is that marginal sea.
+
+     So the background is LOCAL and the latitudinal trend is removed FIRST, which is what the zonal
+     mean was really for:
+
+         a(x)  = T(x) − ⟨T⟩(lat)                 the anomaly field: no latitude trend left in it
+         ā(x)  = mean of a over a 900 km disc    the water this current is flowing through
+         ΔT    = Σ w_i [ a(x_i) − ā(x_i) ]       weighted along the path as #R221 weights it
+
+     ⚠⚠ AND THEN IT WAS MEASURED, AND IT DID NOT EARN THE CLASSIFICATION. Scored against forty
+     currents whose warm/cold is not in doubt, the local contrast lands 26/40 and #R221's global
+     zonal mean lands 25/40 — the same answer, with the errors merely MOVED: the local reference
+     fixes the tropical eastern Atlantic (Angola, Guinea) and loses the broad eastern boundary
+     currents (Benguela, Peru), because the Benguela upwelling is itself 1,000 km wide and a local
+     background sits inside it. A water-connected flood fill (below) was built to keep the reference
+     inside a marginal sea and does not rescue it either — the Tsushima and Tsugaru straits are wide
+     enough that the fill leaks into the Pacific.
+
+     So the CLASSIFICATION IS LEFT EXACTLY AS #R221 MEASURED IT, and this local contrast ships beside
+     it as a second measured number (`sstLocalK`). A round does not overturn a previous round's
+     measured answer with one that measures no better — and now the panel can say both, which is the
+     honest description of a quantity that genuinely depends on what you compare it with. */
+  const anom = new Float64Array(NX * NY), anomN = new Uint8Array(NX * NY);
+  for (let y = 0; y < NY; y++) {
+    const z = zonalN[y] ? zonalSST[y] / zonalN[y] : null;
+    if (z == null) continue;
+    for (let x = 0; x < NX; x++) {
+      const k = y * NX + x; if (!sstN[k]) continue;
+      const t = sstS[k] / sstN[k];
+      if (t < -3 || t > 40) continue;
+      anom[k] = t - z; anomN[k] = 1;
+    }
+  }
+  /* ⚠ (#R222) THE REFERENCE MAY NOT CROSS LAND. A straight-line disc around a point in the Sea of
+     Japan reaches the Kuroshio, so the East Korea WARM Current is measured against water it never
+     touches — which is the whole reason a 「暖流」 came out blue. The neighbourhood is therefore a
+     WATER-DISTANCE region: a flood fill over ocean cells from the point, out to BG_KM of travel
+     THROUGH water. In the open ocean that is the same disc as before; inside a marginal sea it is
+     that sea, because land is where the fill stops. */
+  const bfsSeen = new Int32Array(NX * NY); let bfsMark = 0;
+  const bfsQ = new Int32Array(200000), bfsD = new Float32Array(200000);
+  function bgAnomWater(lng, lat, R) {
+    R = R || 900;
+    const k0 = iy(lat) * NX + ix(lng);
+    if (!anomN[k0]) return null;
+    bfsMark++;
+    let head = 0, tail = 0;
+    bfsQ[tail] = k0; bfsD[tail] = 0; tail++;
+    bfsSeen[k0] = bfsMark;
+    let s = 0, n = 0;
+    while (head < tail) {
+      const k = bfsQ[head], d = bfsD[head]; head++;
+      s += anom[k]; n++;
+      if (d >= R) continue;
+      const y = (k / NX) | 0, x = k - y * NX;
+      const dLat = 110.574 * GRID;
+      const dLng = 111.320 * GRID * Math.max(0.08, Math.cos((-90 + (y + 0.5) * GRID) * Math.PI / 180));
+      for (let e = 0; e < 4; e++) {
+        let ny = y, nx2 = x, step;
+        if (e === 0) { ny = y + 1; step = dLat; } else if (e === 1) { ny = y - 1; step = dLat; }
+        else if (e === 2) { nx2 = (x + 1) % NX; step = dLng; } else { nx2 = (x + NX - 1) % NX; step = dLng; }
+        if (ny < 0 || ny >= NY) continue;
+        const k2 = ny * NX + nx2;
+        if (bfsSeen[k2] === bfsMark || !anomN[k2]) continue;
+        if (tail >= bfsQ.length) continue;
+        bfsSeen[k2] = bfsMark;
+        bfsQ[tail] = k2; bfsD[tail] = d + step; tail++;
+      }
+    }
+    return n >= 40 ? s / n : null;
+  }
+  const BG_KM = 900;
+  function bgAnom(lng, lat, R) {
+    R = R || BG_KM;
+    const dy = Math.round(R / 110.574 / GRID);
+    const dx = Math.round(R / (111.320 * Math.max(0.12, Math.cos(lat * Math.PI / 180))) / GRID);
+    const y0 = iy(lat), x0 = ix(lng);
+    let s = 0, n = 0;
+    for (let j = -dy; j <= dy; j++) {
+      const y = y0 + j; if (y < 0 || y >= NY) continue;
+      const rr = 1 - (j / dy) * (j / dy);                 /* the disc, not the box */
+      if (rr <= 0) continue;
+      const w = Math.round(dx * Math.sqrt(rr));
+      for (let i = -w; i <= w; i++) {
+        const x = ((x0 + i) % NX + NX) % NX;
+        const k = y * NX + x; if (!anomN[k]) continue;
+        s += anom[k]; n++;
+      }
+    }
+    return n >= 40 ? s / n : null;
+  }
+
   /* ── the mean, and the Ekman sum ──────────────────────────────────────────────────────── */
   const mu = new Float64Array(NX * NY), mv = new Float64Array(NX * NY), mn = new Int32Array(NX * NY);
   const OMEGA = 7.2921e-5, RHO = 1025, B_RN = 0.065, DEG = Math.PI / 180;
@@ -620,7 +966,7 @@ async function main() {
        ⚠ THE FLOW DERIVATION REMAINS as the fallback for a build where SST did not load, and
        `kindFrom` records which one answered so the panel can never imply the wrong provenance. */
     const pole = raw.reduce((a, q) => a + (q[3] || 0), 0) / raw.length;
-    let kind, kindFrom = 'flow', dT = null;
+    let kind, kindFrom = 'flow', dT = null, dTlocal = null;
     /* ⚠ WEIGHTED BY DISTANCE FROM THE SEED, AND NEITHER OF THE TWO OBVIOUS ALTERNATIVES.
        A trace follows the measured flow into the current's own continuation — the Canary's runs
        6,400 km, well past the upwelling the name belongs to — so an unweighted mean over the whole
@@ -647,15 +993,18 @@ async function main() {
         cum[i] = cum[i - 1] + Math.hypot((raw[i][1] - raw[i - 1][1]) * 110.574, (raw[i][0] - raw[i - 1][0]) * 111.320 * Math.cos(la));
       }
       const D = 1200;
-      let s = 0, w = 0, n = 0;
+      let s = 0, w = 0, n = 0, sl = 0, wl = 0, nl = 0;
       for (let i = 0; i < raw.length; i++) {
         const q = raw[i];
         const t = sstAt(q[0], q[1]), z = zonalAt(q[1]);
         if (t == null || z == null || t < -3 || t > 40) continue;
         const wi = Math.exp(-Math.abs(cum[i] - cum[mid]) / D);
         s += (t - z) * wi; w += wi; n++;
+        const bg = bgAnomWater(q[0], q[1], BG_KM);        /* (#R222) the local reference */
+        if (bg != null) { sl += ((t - z) - bg) * wi; wl += wi; nl++; }
       }
       if (n >= Math.max(4, raw.length * 0.3) && w > 0) { dT = s / w; kindFrom = 'sst'; }
+      if (nl >= Math.max(4, raw.length * 0.3) && wl > 0) dTlocal = sl / wl;
     }
     if (kindFrom === 'sst') kind = dT > 0.6 ? 'warm' : (dT < -0.6 ? 'cold' : 'zonal');
     else kind = pole > 0.010 ? 'warm' : (pole < -0.010 ? 'cold' : 'zonal');
@@ -668,30 +1017,143 @@ async function main() {
       const la = (path[i][1] + path[i - 1][1]) / 2 * DEG;
       lenKm += Math.hypot((path[i][1] - path[i - 1][1]) * 110.574, (path[i][0] - path[i - 1][0]) * 111.320 * Math.cos(la));
     }
-    named.push({ en, ja, de, ru, es, kind, kindFrom, sstAnomK: (dT==null?null:+dT.toFixed(2)), polewardMs: +pole.toFixed(4),
+    named.push({ en, ja, de, ru, es, kind, kindFrom, sstAnomK: (dT==null?null:+dT.toFixed(2)),
+      sstLocalK: (dTlocal==null?null:+dTlocal.toFixed(2)), polewardMs: +pole.toFixed(4),
       meanSpeed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3),
       maxSpeed: +Math.max.apply(null, speeds).toFixed(3),
       lengthKm: Math.round(lenKm),
       seed: [lng0, lat0], seedSnappedTo: [sn2.lng, sn2.lat], path });
   }
 
-  /* ── the flow field: one arrow per moving ocean cell, thinned to 1° ───────────────────── */
-  const arrows = [];
-  const stride = Math.round(1 / GRID);
-  for (let y = 0; y < NY; y += stride) for (let x = 0; x < NX; x += stride) {
-    /* the 1° value is the mean of the GRID cells inside it, so thinning does not sample-and-hope */
-    let u = 0, v = 0, n = 0;
-    for (let dy = 0; dy < stride; dy++) for (let dx = 0; dx < stride; dx++) {
-      const k = (y + dy) * NX + ((x + dx) % NX);
-      if (y + dy < NY && mn[k]) { u += mu[k]; v += mv[k]; n++; }
+  /* ── (#R222) the flow field: the WHOLE 0.25° grid, two bytes a cell ────────────────────── */
+  const annualPlane = planeOf(mu, mv, mn, NX * NY);
+  let fieldCells = 0;
+  for (let k = 0; k < NX * NY; k++) if (annualPlane.speed[k] > 0.03) fieldCells++;
+  const fieldGz = gzipSync(encodePlanes([annualPlane], NX, NY, GRID), { level: 9 });
+  writeFileSync(OUT_FIELD, fieldGz);
+  console.log(`\nwrote data/ocean-currents-field.bin.gz — ${NX}×${NY} at ${GRID}°, `
+    + `${fieldCells.toLocaleString()} cells with flow, ${(fieldGz.length / 1024).toFixed(0)} kB gzipped`);
+
+  /* ── (#R222) the twelve months ──────────────────────────────────────────────────────────── */
+  let months = null, monthMeta = null;
+  if (!SKIP_MONTHS) {
+    const monFile = join(CACHE, `months-${MGRID}-${MON_EPOCHS}-${MON_WIND_EPOCHS}.json`);
+    let acc = null;
+    if (existsSync(monFile)) {
+      acc = JSON.parse(readFileSync(monFile, 'utf8'));
+      console.log(`\ncached monthly fields: ${acc.velEpochs} velocity + ${acc.windEpochs} wind epochs per month`);
+    } else {
+      console.log(`\nmonthly climatology — ${MON_EPOCHS} velocity + ${MON_WIND_EPOCHS} wind fields per calendar month, `
+        + `strided to ${MGRID}°, ${MON_CONC} requests in flight`);
+      const vAxis = await timeAxis(src);
+      const wAxis = await timeAxis(WIND_SOURCE);
+      const lastV = (await lonLen(src)) - 1, lastW = (await lonLen(WIND_SOURCE)) - 1;
+      const vPick = byMonth(vAxis || [], MON_EPOCHS), wPick = byMonth(wAxis || [], MON_WIND_EPOCHS);
+      const U = [], V = [], N = [], TX = [], TY = [], TN = [];
+      for (let m = 0; m < 12; m++) {
+        U.push(new Float64Array(MNX * MNY)); V.push(new Float64Array(MNX * MNY)); N.push(new Int32Array(MNX * MNY));
+        TX.push(new Float64Array(MNX * MNY)); TY.push(new Float64Array(MNX * MNY)); TN.push(new Int32Array(MNX * MNY));
+      }
+      const jobs = [];
+      for (let m = 0; m < 12; m++) {
+        for (const t of vPick[m]) for (let s = -80; s < 82; s += MBAND)
+          jobs.push({ src, t, s, s1: Math.min(82, s + MBAND) - 1e-3, last: lastV, A: U[m], B: V[m], N: N[m], m, kind: 'vel' });
+        for (const t of wPick[m]) for (let s = -80; s < 82; s += MBAND)
+          jobs.push({ src: WIND_SOURCE, t, s, s1: Math.min(82, s + MBAND) - 1e-3, last: lastW, A: TX[m], B: TY[m], N: TN[m], m, kind: 'wind' });
+      }
+      console.log(`  ${jobs.length} band requests`);
+      let done = 0, failed = 0;
+      await pmap(jobs, MON_CONC, async (j) => {
+        let used = -1;
+        try { used = await bandM(j.src, j.t, j.s, j.s1, j.last, j.A, j.B, j.N); }
+        catch (e) { used = -1; }
+        done++;
+        if (used < 0) failed++;
+        if (done % 25 === 0 || done === jobs.length)
+          process.stdout.write(`\r  ${done}/${jobs.length} bands (${failed} failed)   `);
+        return used;
+      });
+      console.log('');
+      acc = { velEpochs: MON_EPOCHS, windEpochs: MON_WIND_EPOCHS, failed,
+        u: U.map((a) => Array.from(a)), v: V.map((a) => Array.from(a)), n: N.map((a) => Array.from(a)),
+        tx: TX.map((a) => Array.from(a)), ty: TY.map((a) => Array.from(a)), tn: TN.map((a) => Array.from(a)) };
+      writeFileSync(monFile, JSON.stringify(acc));
     }
-    if (!n) continue;
-    u /= n; v /= n;
-    const sp = Math.hypot(u, v);
-    if (sp < 0.03) continue;
-    const lat = -90 + (y + stride / 2) * GRID, lng = ((-180 + (x + stride / 2) * GRID + 180) % 360 + 360) % 360 - 180;
-    if (lat < -80 || lat > 82) continue;
-    arrows.push([+lng.toFixed(2), +lat.toFixed(2), +(Math.atan2(u, v) * 180 / Math.PI).toFixed(1), +sp.toFixed(3)]);
+    /* the same Ralph & Niiler sum the annual field uses, month by month */
+    const planes = [];
+    months = [];
+    for (let m = 0; m < 12; m++) {
+      const u = new Float64Array(MNX * MNY), v = new Float64Array(MNX * MNY), n = new Int32Array(MNX * MNY);
+      let cells = 0;
+      for (let y = 0; y < MNY; y++) {
+        const lat = -90 + (y + 0.5) * MGRID;
+        const f = 2 * OMEGA * Math.sin(lat * DEG);
+        const taper = Math.min(1, Math.abs(lat) / 2.5);
+        for (let x = 0; x < MNX; x++) {
+          const k = y * MNX + x;
+          const cnt = acc.n[m][k];
+          if (!cnt) continue;
+          let uu = acc.u[m][k] / cnt, vv = acc.v[m][k] / cnt;
+          const wn = acc.tn[m][k];
+          if (wn && Math.abs(f) > 1e-6) {
+            const X = acc.tx[m][k] / wn, Y = acc.ty[m][k] / wn;
+            const mag = Math.hypot(X, Y);
+            if (mag > 1e-4) {
+              const sp = B_RN / Math.sqrt(Math.abs(f)) * mag / RHO;
+              const th = Math.atan2(Y, X) - Math.sign(lat) * 55 * DEG;
+              uu += Math.cos(th) * sp * taper; vv += Math.sin(th) * sp * taper;
+            }
+          }
+          u[k] = uu; v[k] = vv; n[k] = 1; cells++;
+        }
+      }
+      const p = planeOf(u, v, n, MNX * MNY);
+      planes.push(p);
+      months.push({ u, v, n });
+      let drawn = 0;
+      for (let k = 0; k < MNX * MNY; k++) if (p.speed[k] > 0.03) drawn++;
+      console.log(`  ${MONTH_NAMES[m].padEnd(10)} ${cells.toLocaleString()} cells, ${drawn.toLocaleString()} with flow`);
+    }
+    const gz = gzipSync(encodePlanes(planes, MNX, MNY, MGRID), { level: 9 });
+    writeFileSync(OUT_MONTHS, gz);
+    monthMeta = { file: 'data/ocean-currents-months.bin.gz', gridDeg: MGRID, nx: MNX, ny: MNY,
+      velEpochs: acc.velEpochs, windEpochs: acc.windEpochs, bytes: gz.length };
+    console.log(`wrote data/ocean-currents-months.bin.gz — 12 planes at ${MGRID}°, ${(gz.length / 1024).toFixed(0)} kB gzipped`);
+  }
+
+  /* ⚠ (#R222) THE SEASON OF A NAMED CURRENT IS SAMPLED ALONG ITS OWN PATH, NOT RE-TRACED.
+     Re-tracing on a 0.5° monthly field would give twelve DIFFERENT geometries, and a line that
+     jumps shape every time the reader steps a month is a claim about the path that a 0.5° field
+     cannot support. What the monthly field CAN say about a named current is how fast it runs and
+     WHICH WAY, so both are measured along the annual path: the mean speed, and the mean projection
+     of the monthly flow onto the path's own direction. A projection that goes negative is the
+     current running backwards — which is what the Somali Current and the two Indian coastal
+     currents really do between the monsoons, and it is now a number rather than a sentence. */
+  if (months) {
+    const mSample = (m, lng, lat) => {
+      const k = miy(lat) * MNX + mix(lng);
+      return months[m].n[k] ? { u: months[m].u[k], v: months[m].v[k] } : null;
+    };
+    for (const c of named) {
+      const speeds = [], along = [];
+      for (let m = 0; m < 12; m++) {
+        let s = 0, a = 0, n = 0;
+        for (let i = 1; i < c.path.length; i++) {
+          const p0 = c.path[i - 1], p1 = c.path[i];
+          const mlng = (p0[0] + p1[0]) / 2, mlat = (p0[1] + p1[1]) / 2;
+          if (Math.abs(p1[0] - p0[0]) > 180) continue;
+          const q = mSample(m, mlng, mlat); if (!q) continue;
+          const dx = (p1[0] - p0[0]) * Math.cos(mlat * DEG), dy = p1[1] - p0[1];
+          const L = Math.hypot(dx, dy); if (!(L > 0)) continue;
+          s += Math.hypot(q.u, q.v);
+          a += (q.u * dx + q.v * dy) / L;
+          n++;
+        }
+        speeds.push(n ? +(s / n).toFixed(3) : null);
+        along.push(n ? +(a / n).toFixed(3) : null);
+      }
+      if (speeds.some((x) => x != null)) { c.monthSpeed = speeds; c.monthAlong = along; }
+    }
   }
 
   const method = `mean of ${epochsUsed} fields spread evenly across ${dates[0]}…${dates[dates.length - 1]} on the source's native `
@@ -715,14 +1177,20 @@ async function main() {
       + 'Paths traced through the measured mean velocity field; names and seed points are editorial.',
     method,
     gridDeg: GRID, epochs: epochsUsed, windEpochs, sstEpochs,
-    fields: { named: ['en', 'ja', 'de', 'ru', 'es', 'kind', 'kindFrom', 'sstAnomK', 'polewardMs', 'meanSpeed', 'maxSpeed', 'lengthKm', 'seed', 'seedSnappedTo', 'path'], arrows: ['lng', 'lat', 'bearingDeg', 'speedMs'] },
-    named, arrows,
+    /* (#R222) where the field lives now, and everything the decoder needs to read it without
+       being told a second time. `stride` is the client's own contract: 1 = 0.25°, 2 = 0.5°, … */
+    field: { file: 'data/ocean-currents-field.bin.gz', format: 'IMOC1', gridDeg: GRID,
+      nx: NX, ny: NY, speedMax: SP_MAX, cells: fieldCells, bytes: fieldGz.length },
+    months: monthMeta,
+    fields: { named: ['en', 'ja', 'de', 'ru', 'es', 'kind', 'kindFrom', 'sstAnomK', 'sstLocalK', 'polewardMs', 'meanSpeed', 'maxSpeed', 'lengthKm', 'monthSpeed', 'monthAlong', 'seed', 'seedSnappedTo', 'path'] },
+    named,
   };
   writeFileSync(OUT, JSON.stringify(doc));
   console.log('\nwrote data/ocean-currents.json — ' + named.length + ' named currents, '
-    + arrows.length.toLocaleString() + ' arrows, ' + (readFileSync(OUT).length / 1024).toFixed(0) + ' kB');
+    + (readFileSync(OUT).length / 1024).toFixed(0) + ' kB');
   for (const n of named) {
-    console.log('  ' + n.kind.padEnd(5) + (n.sstAnomK==null?'      ':(n.sstAnomK>0?'+':'')+n.sstAnomK.toFixed(1)+'K ') + n.en.padEnd(46) + String(n.path.length).padStart(4) + ' pts  '
+    console.log('  ' + n.kind.padEnd(5) + (n.sstAnomK==null?'      ':(n.sstAnomK>0?'+':'')+n.sstAnomK.toFixed(1)+'K ')
+      + (n.sstLocalK==null?'       ':'(loc'+(n.sstLocalK>0?'+':'')+n.sstLocalK.toFixed(1)+') ') + n.en.padEnd(46) + String(n.path.length).padStart(4) + ' pts  '
       + String(n.lengthKm).padStart(6) + ' km  ' + n.meanSpeed.toFixed(2) + ' m/s mean, ' + n.maxSpeed.toFixed(2) + ' max');
   }
 }

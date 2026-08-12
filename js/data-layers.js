@@ -3683,9 +3683,24 @@ window.IntMapModules.dataLayers=function(HOST){
           properties:{ name:(HOST.lang==="jp"?c.ja:c.en), en:c.en, kind:c.kind,
             colour:(c.kind==="warm"?OC_WARM:c.kind==="cold"?OC_COLD:OC_ZONAL),
             speed:c.meanSpeed, maxSpeed:c.maxSpeed }}))};
-        const arrows={type:"FeatureCollection",features:(doc.arrows||[]).map(a=>({type:"Feature",
-          geometry:{type:"Point",coordinates:[a[0],a[1]]},
-          properties:{ bearing:a[2], speed:a[3] }}))};
+        /* ⚠ (#R222) `doc.arrows` IS GONE — the field is a gridded file now (js/ocean-currents-field.js).
+           This older row (#R208) is a different layer from the World-data plate and is still reachable,
+           so it reads the same grid and strides it to 1°, which is exactly the spacing its arrows had.
+           It draws its lines and names the moment the JSON lands and fills the arrows in when the grid
+           does, rather than waiting for a second file to show anything. */
+        const arrows={type:"FeatureCollection",features:[]};
+        (function(){ try{
+          const F=window.IntMapCurrentField; if(!F) return;
+          const rel=(doc.field&&doc.field.file)||'data/ocean-currents-field.bin.gz';
+          let fu; try{ fu=new URL(rel,document.baseURI).toString(); }catch(_){ fu=rel; }
+          F.fetchField(fu).then(f=>{
+            const r=F.arrows(f,0,{w:-180,e:180,s:-80,n:82},40000);
+            if(GE().layers.hasSource("src-oceancur-a"))
+              GE().layers.setSourceData("src-oceancur-a",{type:"FeatureCollection",
+                features:r.features.map(ft=>({type:"Feature",geometry:ft.geometry,
+                  properties:{bearing:ft.properties.b,speed:ft.properties.s}}))});
+          }).catch(()=>{});
+        }catch(_){} })();
         if(!GE().layers.hasSource("src-oceancur")) GE().layers.addSource("src-oceancur",{type:"geojson",data:lines});
         if(!GE().layers.hasSource("src-oceancur-a")) GE().layers.addSource("src-oceancur-a",{type:"geojson",data:arrows});
         /* the arrows: a text glyph rotated to the flow, sized and faded by SPEED — the number the

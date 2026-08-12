@@ -1347,6 +1347,8 @@ window.IntMapModules.space=function(HOST){
       else { i=0; for(let k=RATES.length-1;k>=0;k--){ if(RATES[k]<mag-1e-9){ i=k; break; } } }
       return sign*RATES[i];
     }
+    /* (#R222) the three step units, in the reader's language — see the step keys below */
+    const STEP_U={ d:L('day','日','Tag','день','día'), m:L('month','月','Monat','мес','mes'), y:L('year','年','Jahr','год','año') };
     function hud(){
       return '<div class="sp-bar" style="position:absolute;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0));pointer-events:auto;">'
         +'<button class="sp-close" style="'+BTN+'">✕ '+L('Back to the map','地図へ戻る','Zur Karte','К карте','Al mapa')+'</button>'
@@ -1445,13 +1447,18 @@ window.IntMapModules.space=function(HOST){
            month, a year, either way — are one press. */
         +'<span class="sp-whenbox" style="display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border-radius:9px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11px;">'
         +'<span class="sp-clock" style="opacity:.9;white-space:nowrap;font-variant-numeric:tabular-nums;"></span>'
-        +'<button class="sp-when-step" data-d="-365" title="'+S(L('a year back','1年前','ein Jahr zurück','на год назад','un año atrás'))+'" style="'+STEPB+'">«</button>'
-        +'<button class="sp-when-step" data-d="-30" title="'+S(L('a month back','1か月前','einen Monat zurück','на месяц назад','un mes atrás'))+'" style="'+STEPB+'">‹‹</button>'
-        +'<button class="sp-when-step" data-d="-1" title="'+S(L('a day back','1日前','einen Tag zurück','на день назад','un día atrás'))+'" style="'+STEPB+'">‹</button>'
+        /* ⚠ (#R222) EVERY STEP KEY NOW CARRIES ITS UNIT AS A WORD. On a phone these six were 34 px
+           squares reading « ‹‹ ‹ › ›› » and nothing else — the arrow says a direction and the number
+           of arrowheads was the only clue to whether a press moved a day or a year. The word is in a
+           `<span class="sp-step-l">` that css/intmap.css shows on a phone and hides on a pointer
+           machine, so the desktop row is exactly the seven glyphs it has always been. */
+        +'<button class="sp-when-step" data-d="-365" title="'+S(L('a year back','1年前','ein Jahr zurück','на год назад','un año atrás'))+'" style="'+STEPB+'">«<span class="sp-step-l">'+STEP_U.y+'</span></button>'
+        +'<button class="sp-when-step" data-d="-30" title="'+S(L('a month back','1か月前','einen Monat zurück','на месяц назад','un mes atrás'))+'" style="'+STEPB+'">‹‹<span class="sp-step-l">'+STEP_U.m+'</span></button>'
+        +'<button class="sp-when-step" data-d="-1" title="'+S(L('a day back','1日前','einen Tag zurück','на день назад','un día atrás'))+'" style="'+STEPB+'">‹<span class="sp-step-l">'+STEP_U.d+'</span></button>'
         +'<input class="sp-when" type="datetime-local" style="color-scheme:dark;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.18);border-radius:6px;color:#fff;font-size:11px;padding:2px 4px;font-variant-numeric:tabular-nums;">'
-        +'<button class="sp-when-step" data-d="1" title="'+S(L('a day on','1日後','einen Tag weiter','на день вперёд','un día adelante'))+'" style="'+STEPB+'">›</button>'
-        +'<button class="sp-when-step" data-d="30" title="'+S(L('a month on','1か月後','einen Monat weiter','на месяц вперёд','un mes adelante'))+'" style="'+STEPB+'">››</button>'
-        +'<button class="sp-when-step" data-d="365" title="'+S(L('a year on','1年後','ein Jahr weiter','на год вперёд','un año adelante'))+'" style="'+STEPB+'">»</button>'
+        +'<button class="sp-when-step" data-d="1" title="'+S(L('a day on','1日後','einen Tag weiter','на день вперёд','un día adelante'))+'" style="'+STEPB+'">›<span class="sp-step-l">'+STEP_U.d+'</span></button>'
+        +'<button class="sp-when-step" data-d="30" title="'+S(L('a month on','1か月後','einen Monat weiter','на месяц вперёд','un mes adelante'))+'" style="'+STEPB+'">››<span class="sp-step-l">'+STEP_U.m+'</span></button>'
+        +'<button class="sp-when-step" data-d="365" title="'+S(L('a year on','1年後','ein Jahr weiter','на год вперёд','un año adelante'))+'" style="'+STEPB+'">»<span class="sp-step-l">'+STEP_U.y+'</span></button>'
         +'</span>'
         +'</span>'
         +'</span>'
@@ -2085,17 +2092,50 @@ window.IntMapModules.space=function(HOST){
       try{ const b=EPH().body(focus); if(b&&b.rKm) return radScale(b.rKm); }catch(_){}
       return 0;
     }
+    /* ══ ⚠⚠ (#R222) THE FOURTH ROUND, AND THIS ONE MEASURED WHAT THE READER ACTUALLY HOLDS ══════════
+       「宇宙を探索で、モデル大と実寸大を切り替えたときにズームレベルがジャンプしてしまうのをやめて。」
+
+       #R207 carried the FRAMING RATIO across, #R219 replaced it with the CAMERA DISTANCE IN AU, #R221
+       measured that round trip to the last digit and blended in a body-radius term. MEASURED on the
+       shipped build, Earth focused, nothing selected:
+
+           model  dist 182.2685   ⟷   real  dist 103.1959      (exact, both ways)
+
+       So the conversion is not broken. What is broken is the QUANTITY. `dist` is where the CAMERA is;
+       what a reader calls the zoom level is WHAT IS IN FRAME, and the frame edge sits at
+       dist·tan(fov/2) scene units — a length that the two scales map by DIFFERENT laws, exactly as
+       the positions inside it are. Carrying the camera's own AU across therefore preserves the wrong
+       thing. Worked, for those two numbers:
+
+           model, frame edge = 182.2685 · tan 22.5° = 75.5 units → (75.5/26)^(1/0.42) = 12.6 AU
+           real  after the switch: 103.1959 · tan 22.5° = 42.7 AU
+
+       — the reader was looking out to Saturn and lands looking out past Neptune, every single time, a
+       factor of 3.38. That factor is CONSTANT (both maps are power laws), which is why it reads as a
+       fixed jump rather than as an error that comes and goes, and why three rounds of checking the
+       round trip found nothing.
+
+       The invariant is therefore the REAL-SPACE RADIUS AT THE FRAME EDGE: convert that out of the old
+       units and back into the new ones, and the same planets stay at the same places on the screen.
+       ⚠ #R221's body term is kept exactly as it was and still wins when a body fills the frame —
+       there the picture is of the body and its apparent size is what must not move. */
+    const HALF_FRAME=Math.tan(45*D2R/2);
     function setScale(s){
       const want=(s==='real')?'real':'model';
       if(want===scale) return true;
       const au=auOfDist(dist);
+      const edgeAu=auOfDist(dist*HALF_FRAME);   /* (#R222) what is at the EDGE of the picture */
       const r0=focusRadius();
       /* how much of the half-frame the focused body fills right now, 0…1 */
       const fill=(r0>0&&dist>0)?Math.max(0,Math.min(1,r0/(dist*Math.tan(45*D2R/2)))):0;
       scale=want;
       for(const k of Object.keys(orbitCache)){ gl.deleteBuffer(orbitCache[k].B); delete orbitCache[k]; }
       if(mode==='system'){
-        const byAu=posScale(au);
+        /* ⚠ (#R222) `byAu` is now the FRAME-EDGE conversion, not the camera's. The name is kept
+           because everything downstream — the blend against `byRadii`, the clamps — is unchanged;
+           what moved is which length is carried across. `au` is still computed above and still
+           reported by state(), so a caller comparing the two can see both. */
+        const byAu=(edgeAu>0)?posScale(edgeAu)/HALF_FRAME:posScale(au);
         const r1=focusRadius();
         const byRadii=(r0>0&&r1>0)?dist*(r1/r0):0;
         /* w = 1 when the body dominates the frame, 0 when it is a dot. smoothstep on the log of the
@@ -2206,11 +2246,58 @@ window.IntMapModules.space=function(HOST){
       root.querySelectorAll('.sp-scale').forEach(b=>{ b.onclick=()=>setScale(b.getAttribute('data-s')); });
       /* (#R220) the phone's detail sheet. One class, set here and read only by css/intmap.css, so a
          pointer machine never sees a collapsed panel and nothing about the desktop layout changes. */
+      /* ══ ⚠ (#R222) THE SHEET IS DRAGGED, NOT SWITCHED ═══════════════════════════════════════════════
+         「ボトムシートの操作性…がごみ。」 #R220's handle toggled ONE class, so the sheet had exactly two
+         heights and both of them were the app's choice: 34 px, or 42 % of a phone. Reading a moon list
+         in 42 % means scrolling a 250 px window; wanting the sky back costs the whole panel.
+
+         Three stops and a drag. `pointermove` writes the height straight onto the element (with the
+         transition suppressed, so the sheet tracks the thumb rather than easing after it) and the
+         release snaps to whichever stop is nearest. A TAP — under 8 px of travel — still cycles, which
+         is what #R220's handle did, so nothing that worked before stops working.
+         ⚠ `setPointerCapture` is what makes a drag that leaves the 34 px handle keep working; without
+         it the first fast flick loses the pointer and the sheet freezes half-open.
+         ⚠ THE HEIGHT IS WRITTEN AS `max-height`, the property the stylesheet animates, so the CSS
+         stops (`--sp-sheet-h`) and the drag speak about the same box. */
       try{
         const col=root.querySelector('.sp-col'), th=root.querySelector('.sp-sheet-t');
         const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
         if(col&&_phone()) col.classList.add('sp-min');
-        if(th&&col) th.onclick=()=>{ col.classList.toggle('sp-min'); };
+        if(th&&col){
+          const PEEK=34;
+          const stops=()=>[PEEK, Math.round(innerHeight*0.42), Math.round(innerHeight*0.78)];
+          const setStop=(i)=>{ col.style.maxHeight=''; col.classList.remove('sp-min','sp-max');
+            if(i<=0) col.classList.add('sp-min'); else if(i>=2) col.classList.add('sp-max'); };
+          const current=()=>col.classList.contains('sp-min')?0:(col.classList.contains('sp-max')?2:1);
+          let id=null, y0=0, h0=0, moved=0;
+          th.addEventListener('pointerdown',(e)=>{
+            if(!_phone()) return;
+            id=e.pointerId; y0=e.clientY; moved=0;
+            h0=col.getBoundingClientRect().height;
+            col.classList.add('sp-drag');
+            try{ th.setPointerCapture(id); }catch(_){}
+          });
+          th.addEventListener('pointermove',(e)=>{
+            if(id==null||e.pointerId!==id) return;
+            const dy=y0-e.clientY; moved=Math.max(moved,Math.abs(dy));
+            const s=stops();
+            col.style.maxHeight=Math.max(PEEK,Math.min(s[2],h0+dy))+'px';
+            e.preventDefault();
+          });
+          const end=(e)=>{
+            if(id==null||(e&&e.pointerId!==id)) return;
+            try{ th.releasePointerCapture(id); }catch(_){}
+            id=null; col.classList.remove('sp-drag');
+            if(moved<8){ setStop((current()+1)%3); return; }      /* a tap still cycles */
+            const h=col.getBoundingClientRect().height, s=stops();
+            let best=0, bd=Infinity;
+            s.forEach((v,i)=>{ const d=Math.abs(v-h); if(d<bd){ bd=d; best=i; } });
+            setStop(best);
+          };
+          th.addEventListener('pointerup',end);
+          th.addEventListener('pointercancel',end);
+          th.onclick=(e)=>{ if(!_phone()){ col.classList.toggle('sp-min'); } };
+        }
       }catch(_){}
       /* (#R221) the phone's BODY sheet: the chip opens it, ✕ and choosing a body close it, and the
          filter hides rows by matching their own text. Everything here is class + display only —
@@ -2661,7 +2748,25 @@ window.IntMapModules.space=function(HOST){
        is true when the Earth is the body being approached and false otherwise, so that is the test.
        A body that is not the Earth simply zooms up to the floor and stays there, which is what
        「拡大」 asked for. ✕ and Escape are unchanged and still leave from anywhere. */
-    function earthIsSubject(){ return focus==='earth'; }
+    /* ══ ⚠⚠ (#R222) THE SAME DEFECT, THE DOOR NEXT TO THE ONE #R221 CLOSED ═══════════════════════════
+       「宇宙を探索で、地球じゃないのに、ズームインしたら地球に戻されるものがあるバグがある。」 — sent
+       again, so the fix is somewhere #R221 did not look.
+
+       #R221 found the cause exactly right: `focus` is a PLANET and it is never empty, so selecting a
+       spacecraft or a small body leaves it on 'earth' while the picture is of the probe (the scene is
+       centred through `sceneCentre()` instead). It then fixed `autoMode()` — the crossing into the
+       BODY VIEW — and stopped. THIS function is the second reader of the same variable, and it decides
+       something much larger: whether a zoom-in at the floor HANDS THE APP BACK TO THE MAP. With
+       Voyager 1 selected, `focus==='earth'` is true, `dist<=distFloor()*1.02` is true at the floor,
+       and pressing on inward closes the space view and lands the reader on the Earth — 160 AU from
+       what they were looking at. That is the report, word for word, and it is why 「〜ものがある」:
+       it happens for the probe and asteroid selections and for nothing else.
+
+       ⚠ THE TEST IS "IS THE EARTH THE SUBJECT", so it has to ask both halves of what the subject is —
+       which body is focused AND whether something else has been chosen on top of it. Every other
+       exit is untouched: ✕, Escape and `leaveToMap()` still work from anywhere, and with nothing
+       selected this is byte-for-byte #R207's behaviour. */
+    function earthIsSubject(){ return focus==='earth'&&!craftSel&&!smallSel; }
     function atNearLimit(){
       if(!earthIsSubject()) return false;
       if(dist<=distFloor()*1.02) return true;

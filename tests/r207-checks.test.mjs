@@ -157,13 +157,20 @@ test('R207 ⑩ space: the way back is the Earth\'s, the scale switch preserves f
   /* (#R221) the window is longer: setScale now carries BOTH invariants — the AU distance far out and
      the focused body's apparent size close in — and blends them in log space, because neither one
      alone is what the reader is holding (DEV-NOTES #R221 §7). */
-  const sc = s.slice(s.indexOf('function setScale('), s.indexOf('function setScale(') + 2200);
+  /* (#R222) the window is longer again — the round wrote down why the frame edge is the invariant */
+  const sc = s.slice(s.indexOf('function setScale('), s.indexOf('function setScale(') + 3000);
   /* ⚠ (#R219) INTENDED REPLACEMENT. #R207's invariant was the FRAMING (`dist / systemDist()`), which
      is right inside the planets and wrong outside them: at the model ceiling it lands the camera three
      orders of magnitude off (measured — DEV-NOTES #R219 §7). The two scales are two unit systems over
      the same physical space, so the quantity that survives is the distance in AU. */
-  assert.ok(/auOfDist\(dist\)/.test(sc) && /posScale\(au\)/.test(sc),
-    'setScale converts the camera distance through AU and back (#R219)');
+  /* ⚠ (#R222) INTENDED REPLACEMENT, AGAIN, AND FOR THE SAME KIND OF REASON #R219 replaced #R207's.
+     #R219's invariant was the CAMERA's distance in AU, which round-trips exactly and still moves the
+     picture: what a reader calls the zoom level is what is IN FRAME, and the frame edge sits at
+     dist·tan(fov/2) — a length the two scales map by different laws. So the quantity carried across
+     is the real-space radius AT THE FRAME EDGE (DEV-NOTES #R222 §6). Both conversions still go
+     through `auOfDist` / `posScale`; what changed is the length handed to them. */
+  assert.ok(/auOfDist\(dist\*HALF_FRAME\)/.test(sc.replace(/\s/g, '')) && /posScale\(edgeAu\)/.test(sc),
+    'setScale converts the FRAME EDGE through AU and back (#R222)');
   assert.ok(!/dist\*k/.test(sc), 'the framing ratio is what #R219 replaced — it must be gone');
   assert.ok(/Math\.max\(distFloor\(\),Math\.min\(distCeil\(\),d\)\)/.test(sc),
     'and the result is still clamped to the reach');

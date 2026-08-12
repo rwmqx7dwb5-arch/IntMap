@@ -216,15 +216,43 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
   };
 
   /** linear, unbounded radiance along one ray */
+  /* ══ ⚠⚠ (#R222) THE EYE MAY BE OUTSIDE THE ATMOSPHERE, AND IT USUALLY IS ═════════════════════════
+     「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。（とにかくリアルに、現実に忠実に美しく）」
+
+     `alt` was CLAMPED to the top of the shell — `Math.min(RT - RG - 1, alt0)` — so every camera above
+     100 km was modelled as a camera at 100 km, and the march then started at t = 0 and spent most of
+     its sixteen samples in vacuum. That is the whole reason this file could never answer the question
+     the globe view actually asks. Measured on the shipped build at 5,286 km over Japan, the band the
+     reader sees around the Earth is `horizon-color` = **#c2ccd1** — a flat grey hex, the same one at
+     every altitude, every hour and every sun angle, because #R213's ramp is what answers when the
+     model has nothing to say. A grey collar is exactly 「茶/くすみ」.
+
+     Two lines fix the geometry and nothing else moves: the eye is placed where it really is, and the
+     march runs between the ray's ENTRY into the shell and its exit (or the ground). For any camera
+     inside the atmosphere the entry root is negative, t0 is 0, and every previous measurement in this
+     file is reproduced to the byte. For a camera outside it, a ray that grazes the planet now marches
+     through the 700–900 km of air it really crosses — which is the limb, and it comes out blue-white
+     on the day side and red at the terminator because that is what the integral says. */
   const radiance = (alt0, ve0, se0, az0) => {
     const N = 16, M = 8;
-    const alt = Math.max(0, Math.min(RT - RG - 1, alt0 || 0));
+    const alt = Math.max(0, alt0 || 0);
     const o = [0, 0, RG + alt];
     const ve = ve0 * D2R, az = (az0 || 0) * D2R, se = se0 * D2R;
     const d = [Math.sin(az) * Math.cos(ve), Math.cos(az) * Math.cos(ve), Math.sin(ve)];
     const s = [0, Math.cos(se), Math.sin(se)];
-    let tMax = toShell(o, d, RT);
-    if (!(tMax > 0)) return [0, 0, 0];
+    /* where the ray is INSIDE the shell: [tIn, tMax]. Outside it there is no medium to sample. */
+    let tIn = 0, tMax;
+    {
+      const b = 2 * (o[0] * d[0] + o[1] * d[1] + o[2] * d[2]);
+      const c = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - RT * RT;
+      const disc = b * b - 4 * c;
+      if (disc < 0) return [0, 0, 0];                 /* the ray misses the atmosphere entirely */
+      const rt = Math.sqrt(disc);
+      const ta = (-b - rt) / 2, tb = (-b + rt) / 2;
+      if (!(tb > 0)) return [0, 0, 0];
+      tIn = Math.max(0, ta); tMax = tb;
+    }
+    if (!(tMax > tIn)) return [0, 0, 0];
     /* ⚠ A VIEW RAY THAT MEETS THE GROUND STOPS THERE — and "the camera is exactly at sea level" is
        the case that has to be got right, not the one to hope does not happen. The near root is then
        t = 0, so a `t > 0` test lets the ray straight through the planet: the march samples negative
@@ -239,7 +267,8 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
       if (t2 > 1e-6 && t1 <= 1e-6) return [0, 0, 0];      /* pointing into the ground from on it */
       if (t1 > 1e-6) tMax = Math.min(tMax, t1);
     }
-    const dt = tMax / N;
+    if (!(tMax > tIn)) return [0, 0, 0];
+    const dt = (tMax - tIn) / N;
     let odR = 0, odM = 0, odO = 0;
     const sum = [0, 0, 0];
     /* ══ ⚠⚠ (#R221) THE MIE TERM WAS ATTENUATED THROUGH THE GREEN CHANNEL, FOR ALL THREE ═══════════
@@ -270,7 +299,7 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
        sky, which is exactly why it survives into twilight and into the Earth's shadow. */
     const ms = [0, 0, 0];
     for (let i = 0; i < N; i++) {
-      const t = (i + 0.5) * dt;
+      const t = tIn + (i + 0.5) * dt;
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
       const h = Math.max(0, Math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) - RG);
       const hr = Math.exp(-h / HR) * dt, hm = Math.exp(-h / HM) * dt, ho = ozone(h) * dt;
@@ -315,4 +344,26 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
     sunElevDeg, relAzDeg == null ? 90 : relAzDeg);
   const rgb = lin.map(tone);
   return { hex: '#' + rgb.map((n) => n.toString(16).padStart(2, '0')).join(''), rgb, linear: lin };
+}
+
+/**
+ * (#R222) Where to look, from `camAltM`, to see the atmosphere edge-on at a given tangent height.
+ *
+ * From outside the shell the whole atmosphere is a band a fraction of a degree wide at the planet's
+ * edge, and WHICH view elevation lands on it is pure geometry: a ray whose closest approach to the
+ * centre is R+h leaves an eye at R+alt at asin((R+h)/(R+alt)) from the nadir. Feeding that back into
+ * `skyColour` is what makes the limb the integral of the air it actually crosses — roughly 800 km of
+ * it at h = 12 km — rather than a hex chosen for the ground.
+ *
+ * @param {number} camAltM eye height above sea level, metres
+ * @param {number} [tangentM] closest approach of the ray to the surface, metres (default 12 km)
+ * @returns {number|null} view elevation in degrees (negative = below the horizontal), or null when
+ *                        the eye is inside that shell and there is no limb to look at
+ */
+export function limbViewElev(camAltM, tangentM) {
+  const RG = 6371000;
+  const D = RG + Math.max(0, camAltM || 0);
+  const b = RG + (tangentM == null ? 12000 : Math.max(0, tangentM));
+  if (!(D > b)) return null;
+  return Math.asin(b / D) * 180 / Math.PI - 90;
 }
