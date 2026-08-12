@@ -15,28 +15,17 @@ window.IntMapModules.placeLabels=function(HOST){
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
-     hard-coded English; pull the right language out of geoLayersDB instead). */
-  /* Fallback names for geo-layer checkboxes whose layer was pulled out of geoLayersDB (e.g. Rimland,
-     now a country-fill) so they still localize EN/JP (#3). */
-  const GEO_LABEL_FALLBACK={ rimland:{name:{en:'Rimland',jp:'リムランド'}}, fsu:{name:{en:'Former Soviet Union',jp:'旧ソ連諸国'}} };
-  function localizeGeoLabels(){
-    document.querySelectorAll('.geo-layer-cb').forEach(cb=>{
-      const key=cb.getAttribute('data-layer'), data=(typeof HOST.geoLayersDB!=='undefined'&&HOST.geoLayersDB[key])||GEO_LABEL_FALLBACK[key]; if(!data||!data.name) return;
-      const label=cb.closest('.layer-option'); if(!label) return;
-      let span=label.querySelector('.geo-label');
-      if(!span){ /* migrate the bare trailing text node into a span we can re-localize */
-        Array.from(label.childNodes).forEach(n=>{ if(n.nodeType===3 && n.textContent.trim()) n.remove(); });
-        span=document.createElement('span'); span.className='geo-label';
-        /* (#R15e) Insert the label BEFORE the favorite star — appending it to the end put it AFTER the
-           star (which has margin-left:auto), shoving the text to the right with a big gap ("ぐちゃっと"). */
-        const star=label.querySelector('.lyr-star');
-        if(star) label.insertBefore(span,star); else label.appendChild(span);
-      }
-      span.textContent=' '+(data.name[HOST.lang]||data.name.en||key);
-    });
-  }
+  /* (#R27) the one-shot latch the idempotent ensurePlaceLabels() still writes (it is read by
+     nothing now, and is kept because a value that stops being written is how a latch rots). */
   let _placeLabelsAdded=false;
+  /* ⚠⚠ (#R225) THE GEO-LAYER FAMILY LIVED IN THIS FILE AND IT IS GONE.
+     「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。ふざけるな。」 — confirmed as 「レイヤー自体を削除してほしい」.
+     `GEO_LABEL_FALLBACK`, `localizeGeoLabels`, `geoLabel`, `buildGeoFC`, `ensureGeoLayers` and
+     `updateGeoLayers` existed only to draw and label the nine Strategic geography / Strategic
+     networks layers, whose checkboxes were this app's only `.geo-layer-cb` elements and whose
+     geometry was `geoLayersDB` in js/tables.js. All of it goes together: a family that keeps its
+     machinery after its data is deleted is exactly how a retired feature comes back (#R220).
+     What stays here is the PLACE labels — a different subject that merely shared the file. */
   /* ══ (#R211) THE TIER AND ITS COLOURS ARE FACTORY-SCOPE CONSTANTS, NOT LOCALS ═══════════════
      They were declared inside ensurePlaceLabels() and copied out to two `let`s for the light/dark
      repaint below to reach — an ORDERING HAZARD of exactly the kind this project keeps paying for.
@@ -426,64 +415,5 @@ window.IntMapModules.placeLabels=function(HOST){
       GE().layers.setPaint(id,'text-halo-width', id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45);
     });
   }
-  function geoLabel(s){ return (HOST.lang==='jp' && HOST.GEO_LABEL_JP[s]) ? HOST.GEO_LABEL_JP[s] : s; }
-  function buildGeoFC(data){
-    const feats=[];
-    (data.areas||[]).forEach(a=>{
-      const ring=a.ring.slice(); const f=ring[0], l=ring[ring.length-1];
-      if(f[0]!==l[0]||f[1]!==l[1]) ring.push(f);
-      feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{}});
-      if(a.label){ let sx=0,sy=0; a.ring.forEach(p=>{sx+=p[0];sy+=p[1];}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:[sx/a.ring.length,sy/a.ring.length]},properties:{label:geoLabel(a.label)}}); }
-    });
-    (data.lines||[]).forEach(ln=>{
-      const path=(data.smooth&&window.smoothGeoPath)?window.smoothGeoPath(ln.path,16):ln.path;
-      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:path},properties:{kind:ln.kind||''}});
-      if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:geoLabel(ln.label),kind:ln.kind||''}}); }
-    });
-    (data.points||[]).forEach(pt=>{
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:pt.at},properties:{label:geoLabel(pt.label),marker:1}});
-    });
-    return {type:'FeatureCollection',features:feats};
-  }
-  function ensureGeoLayers(){
-    if(!GE().hasRenderer()) return;
-    /* Style may not be ready yet (e.g. right after setProjection on load). Retry until it is. */
-    if(!_imCanDraw()){ clearTimeout(ensureGeoLayers._t); ensureGeoLayers._t=setTimeout(ensureGeoLayers,160); return; }
-    for(const[key,data] of Object.entries(HOST.geoLayersDB)){
-      if(GE().layers.hasSource(key)) continue;
-      try{ GE().layers.addSource(key,{type:'geojson',data:buildGeoFC(data)}); }catch(e){ continue; }
-      try{
-        if(data.areas&&data.areas.length){
-          GE().layers.add({id:key+'-fill',type:'fill',source:key,filter:['==','$type','Polygon'],layout:{visibility:'none'},paint:{'fill-color':data.color,'fill-opacity':0.22}});
-          /* soft, fuzzy zone edge — no hard outline (zones are conceptual, not borders) */
-          GE().layers.add({id:key+'-edge',type:'line',source:key,filter:['==','$type','Polygon'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':data.color,'line-width':16,'line-opacity':0.18,'line-blur':8}});
-        }
-        /* (#R8) High-quality pipeline network: two-tone OIL/GAS color, a crisp dark casing and
-           zoom-scaled width = an "infrastructure map" look. Other geo lines (theory corridors) carry
-           kind:'' so the match falls through to their single conceptual color — unchanged. */
-        const _pipe=key==='pipelines';
-        const _lineColor=_pipe?['match',['get','kind'],'oil','#d6451f','gas','#f4a72c',data.color]:data.color;
-        GE().layers.add({id:key+'-glow',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,7,5,14]:10,'line-opacity':_pipe?0.22:0.18,'line-blur':4}});
-        if(_pipe) GE().layers.add({id:key+'-casing',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'#1f0d05','line-width':['interpolate',['linear'],['zoom'],1,3,4,5.5,8,10],'line-opacity':0.6}});
-        GE().layers.add({id:key+'-line',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,1.6,4,3.2,8,5.5]:3.5,'line-opacity':0.97}});
-        GE().layers.add({id:key+'-pt',type:'circle',source:key,filter:['==','marker',1],layout:{visibility:'none'},paint:{'circle-radius':5,'circle-color':data.color,'circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.95}});
-        GE().layers.add({id:key+'-label',type:'symbol',source:key,filter:['has','label'],layout:{visibility:'none','text-field':['get','label'],'text-size':LS.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'text-offset':[0,1.1],'text-anchor':'top','text-allow-overlap':false,'symbol-placement':'point'},paint:{'text-color':data.color,'text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':1.8}});
-      }catch(e){ console.warn('geoLayer add fail',key,e); }
-    }
-    updateGeoLayers();
-  }
-  function updateGeoLayers(){
-    if(!GE().hasRenderer())return;
-    /* (#R13c) If the style is mid-load, a toggle-OFF would silently no-op and the layer would STAY on
-       ("消したはずのレイヤーが残る"). Re-run once the style settles so the on/off state always lands. */
-    if(!_imCanDraw()){ try{ GE().events.once('idle',()=>{ try{ updateGeoLayers(); }catch(_){} }); }catch(_){} return; }
-    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-    for(const key of Object.keys(HOST.geoLayersDB)){
-      const cb=document.querySelector(`input[data-layer="${key}"]`);
-      const vis=((cb&&cb.checked)||HOST.forceHoverLayers.has(key))?'visible':'none';
-      ['-fill','-edge','-glow','-casing','-line','-pt','-label'].forEach(s=>{ if(GE().layers.has(key+s)) GE().layers.setLayout(key+s,'visibility',vis); });
-      if(GE().layers.has(key+'-label')) GE().layers.setPaint(key+'-label','text-halo-color',isDark?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.95)');
-    }
-  }
-  return { applyLabelLang, buildGeoFC, ensureGeoLayers, ensurePlaceLabels, localizeGeoLabels, updateGeoLayers };
+  return { applyLabelLang, ensurePlaceLabels };
 };

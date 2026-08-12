@@ -406,7 +406,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * snapshot: the world rows (data/gazetteer-world.json) arrive after boot, and a captured object
      * would be the pre-#R198 table forever. */
     get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return window.IntMapGazetteer.index(); },
-    get GEO_LABEL_JP(){ return GEO_LABEL_JP; }, get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
+    get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
     get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; },
     get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; },
     get _ORG_GZ(){ return _ORG_GZ; }, get _pubMatchers(){ return _pubMatchers; },
@@ -418,7 +418,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get elevText(){ return elevText; }, get fetchBathymetry(){ return fetchBathymetry; },
     get fetchViaProxy(){ return fetchViaProxy; }, get fmtElevVal(){ return fmtElevVal; },
     get forceHoverLayers(){ return forceHoverLayers; }, get geoLabelsOn(){ return geoLabelsOn; }, get poiOn(){ return poiOn; },
-    get geoLayersDB(){ return geoLayersDB; }, get imIsPro(){ return imIsPro; },
+    get imIsPro(){ return imIsPro; },
     get mapLabelsViaVector(){ return mapLabelsViaVector; }, get newsLangs(){ return newsLangs; },
     get renderCommunity(){ return renderCommunity; }, get renderReaderMode(){ return renderReaderMode; },
     get satKeys(){ return satKeys; }, get showComposeImgPreview(){ return showComposeImgPreview; },
@@ -465,8 +465,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const a=document.getElementById('opt-tz-auto'); if(a) a.innerText=d.optLocal;
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
-    try{ localizeGeoLabels(); }catch(_){}
-    try{ refreshGeoLabels(); }catch(_){}   /* on-map geo-theory labels follow the language too (#1) */
     try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
     try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}     /* (#R8c) lets modules (wind time pill, etc.) re-localize */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
@@ -1012,11 +1010,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function askAIJSONEnvelope(){ return IM_AI.askAIJSONEnvelope.apply(this,arguments); }
   const IM_LABELS=window.IntMapModules.placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
-  function buildGeoFC(){ return IM_LABELS.buildGeoFC.apply(this,arguments); }
-  function ensureGeoLayers(){ return IM_LABELS.ensureGeoLayers.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }
-  function localizeGeoLabels(){ return IM_LABELS.localizeGeoLabels.apply(this,arguments); }
-  function updateGeoLayers(){ return IM_LABELS.updateGeoLayers.apply(this,arguments); }
   const IM_WINMGR=window.IntMapModules.windowManager(IM_HOST);
   function addEdgeResize(){ return IM_WINMGR.addEdgeResize.apply(this,arguments); }
   function bringToFront(){ return IM_WINMGR.bringToFront.apply(this,arguments); }
@@ -1142,7 +1136,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R169) moved verbatim to js/news-context.js — see Architecture.md §3.1. */
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {geoLayersDB,GEO_LABEL_JP}=window.IntMapTables;
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   /* (#R8b) Catmull-Rom densifier → polylines render as natural CURVES through their control points
      instead of straight chords (the user: "線が直線的すぎる"). Returns the input unchanged for paths that
@@ -1158,11 +1151,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     out.push(pts[pts.length-1]); return out;
   };
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* Re-emit every geo source's data so on-map labels follow the active language (#1). */
-  function refreshGeoLabels(){ for(const key of Object.keys(geoLayersDB)){ try{ if(GE().layers.hasSource(key)) GE().layers.setSourceData(key,buildGeoFC(geoLayersDB[key])); }catch(_){} } }
-  window.refreshGeoLabels=refreshGeoLabels;
-  /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  window.triggerLayerHover=function(k,h){ if(!k)return; if(h)forceHoverLayers.add(k); else forceHoverLayers.delete(k); updateGeoLayers(); };
+  /* (#R225) `refreshGeoLabels` re-emitted the geo sources so their on-map labels followed the
+     language; there are no geo sources. ⚠ `triggerLayerHover` KEEPS ITS NAME — js/companies-ui.js and
+     js/news-ui.js call it from inline handlers with a `layerRef` that is now always empty, and the
+     early return was always the answer for that. It no longer drives a layer family that is gone. */
+  window.refreshGeoLabels=function(){};
+  window.triggerLayerHover=function(k,h){ if(!k) return; if(h) forceHoverLayers.add(k); else forceHoverLayers.delete(k); };
 
   let countryGeo=null, countryStats={}, countryDataLoaded=false, countryDataPromise=null;
   /* (#R22) GDP (PPP) + GDP-per-capita (PPP), live from the World Bank (NY.GDP.MKTP.PP.CD /
@@ -1522,13 +1516,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          spec — the point of the seam is that "a globe" is a request, and each engine decides what
          object expresses it. __imap is published at construction now (see there), not here. */
       try{ if(!/[?&]flat\b/.test(location.search)) GE().camera.setProjection('globe'); }catch(e){}
-      ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
+      setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* (#R207) the satellite default goes through the SAME kernel command the button does, so the
          provider controller and `_reassertBase` are set up identically. `IntMapOS.has` is real (it is
          defined beside `exec`), and the registration exists by the time this event fires. */
       try{ if(currentMapType==='sat') IntMapOS.exec('view.base.sat',{source:'default'}); }catch(_){}
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
-      GE().events.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
+      GE().events.once('idle',()=>{ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
       /* (#R26) "デフォルト選択なのに地名ラベル/国境が出ない、再チェックで初めて出る": both default ON but
          occasionally weren't DRAWN on first load (OFM vector source + country data settle after the first
          idle). Re-assert the place labels + borders visibility a few times, and the moment the OFM source's
@@ -1627,9 +1621,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        browser restore the context, and on restore we force a fresh repaint + re-assert our layers. */
     try{ const _cv=GE().render.canvas&&GE().render.canvas(); if(_cv&&_cv.addEventListener){
       _cv.addEventListener('webglcontextlost',(ev)=>{ try{ ev.preventDefault(); }catch(_){} },false);
-      _cv.addEventListener('webglcontextrestored',()=>{ try{ GE().render.resize(); GE().render.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
+      _cv.addEventListener('webglcontextrestored',()=>{ try{ GE().render.resize(); GE().render.triggerRepaint(); applyTheme(); }catch(_){} },false);
     } }catch(_){}
-    GE().events.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
+    GE().events.on('styledata',()=>{ setupIntelLayers(); setupPinLayers(); });
     GE().events.on('contextmenu',(e)=>{ e.preventDefault();
       let pt=e.point, ll=e.lngLat;
       /* (#R16) On mobile the interaction is center-fixed (crosshair). A long-press anywhere acts on the
@@ -1771,7 +1765,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      into view, max 2 in flight), real member sets (NATO/EU/FSU), the real geoLayersDB geometry (chokepoints,
      island chains, pipelines…), live USGS quakes, a real day/night terminator — and a hand-drawn
      REPRESENTATIVE sketch only where the layer's data is a live stream that cannot be sampled cheaply. ===== */
-  window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
+  window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
   window.IntMapModules.layerSidebar(IM_HOST);
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
@@ -1791,25 +1785,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapWorkspace=window.IntMapModules.workspace(IM_HOST);
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
   window.IntMapModules.ticker(IM_HOST);
-  document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
-    /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
-    if(cb.getAttribute('data-layer')==='rimland'){ if(window.imToggleRimland) window.imToggleRimland(cb.checked); return; }
-    /* Former Soviet Union is a red country-fill (#15) — route it to its own toggle too. */
-    if(cb.getAttribute('data-layer')==='fsu'){ if(window.imToggleFSU) window.imToggleFSU(cb.checked); return; }
-    ensureGeoLayers(); updateGeoLayers();
-    /* (#R19) Every geo/strategic layer gets a floating legend with an opacity slider on toggle-ON
-       ("どのレイヤーも透明度選択ができるように"); hidden again on toggle-OFF. */
-    try{
-      const key=cb.getAttribute('data-layer'); if(!key) return;
-      if(!cb.id) cb.id='geocb-'+key;
-      if(cb.checked && window._registerLayerOpacity){
-        const lab=cb.closest('label');
-        const nameEl=lab&&(lab.querySelector('.geo-label')||lab.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)'));
-        const name=((nameEl?nameEl.textContent:(lab?lab.textContent:key))||key).replace(/★/g,'').trim();
-        window._registerLayerOpacity('geo-'+key,[name,name],['-fill','-edge','-glow','-casing','-line','-pt','-label'].map(s=>key+s),cb.id);
-      } else if(!cb.checked && window._hideGenericLegend){ window._hideGenericLegend('geo-'+key); }
-    }catch(_){}
-  }));
+  /* (#R225) the `.geo-layer-cb` change listener went with the nine geopolitics rows it served —
+     see the note in index.html. There are no such checkboxes any more. */
   document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme();
     /* (#R34) "Place namesが反応しない" — the OFM label layers are added inside ensurePlaceLabels and the vector
        source can finish loading a beat AFTER the first applyTheme, so a single call sometimes toggled nothing.
@@ -1934,7 +1911,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      js/data-layers.js a moment later than this static HTML, so the ids simply join the same retry
      list: `fire` skips a box that does not exist yet and the 1,600 ms pass catches it. The
      `__defFired` latch keeps it to one dispatch each however many times fire() runs. */
-  (function(){ const IDS=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].concat(window.IntMapDefaultLayers||[]);
+  (function(){ const IDS=()=>(window.IntMapDefaultOn||['cb-borders','cb-admin1','cb-roads','cb-rail2'].concat(window.IntMapDefaultLayers||[]));   /* (#R225) one list — see js/data-layers.js */
     /* Read the saved layer set ONCE, synchronously, so the default-on decision and the session
        restore (which runs ~600 ms later) can never disagree for a few hundred milliseconds — that
        gap would show as Köppen appearing and then vanishing on every reload for a user who had
@@ -3454,7 +3431,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R200) moved to js/layer-favs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, geoLayersDB, i18n, saveSettings, t });
+  _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, i18n, saveSettings, t });
 
   /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
   const DATA_SOURCES=window.IntMapRefData.dataSources;

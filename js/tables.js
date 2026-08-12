@@ -496,134 +496,17 @@ window.IntMapTables=(function(){
   /* ===== Geopolitical layers — rebuilt with accurate geometry + labels =====
      Structure: each layer may contain areas[] (filled polygons), lines[] (paths),
      points[] (POI markers). Every feature carries a human label drawn on the map. */
-  const geoLayersDB={
-    /* (#R10) Heartland & Rimland removed per request — classic Mackinder/Spykman theory layers dropped. */
-    /* (#R13) Sahel band redrawn DENSE + faithful (≤2° vertices following the real Sahara↔Sudanian
-       transition), NOT a smoothed curve — the user: "現実データに忠実に…直線的すぎる". Northern edge ≈ the
-       Sahara limit (bulges north over Niger/Chad), southern edge ≈ the Sudanian savanna boundary. */
-    sahel:{ color:"#ffcc00", name:{en:"Sahel Risk Zone",jp:"サヘル危険地帯"}, areas:[
-      {label:"Sahel Risk Zone", ring:[
-        [-16.5,16.3],[-14.5,16.6],[-12.5,16.9],[-10.5,17.1],[-8.5,17.3],[-6.5,17.4],[-4.5,17.4],[-2.5,17.3],[-0.5,17.1],[1.5,16.9],[3.5,16.8],[5.5,16.8],[7.5,16.9],[9.5,17.0],[11.5,17.2],[13.5,17.5],[15.5,17.8],[17.5,18.0],[19.5,18.1],[21.5,18.0],[23.5,17.7],[25.5,17.2],[27.5,16.7],[29.5,16.3],[31.5,16.1],[33.5,16.1],[35.5,16.4],[37.5,16.8],[39.5,17.0],[41.5,16.9],[43.0,16.6],
-        [43.0,12.8],[41.0,12.9],[39.0,12.7],[37.0,12.3],[35.0,11.9],[33.0,11.6],[31.0,11.5],[29.0,11.7],[27.0,12.1],[25.0,12.5],[23.0,12.9],[21.0,13.1],[19.0,13.3],[17.0,13.5],[15.0,13.7],[13.0,13.8],[11.0,13.8],[9.0,13.7],[7.0,13.5],[5.0,13.4],[3.0,13.4],[1.0,13.5],[-1.0,13.7],[-3.0,13.9],[-5.0,14.1],[-7.0,14.4],[-9.0,14.7],[-11.0,15.1],[-13.0,15.5],[-15.0,15.9],[-16.5,16.1],[-16.5,16.3]
-      ]}
-    ]},
-    islandChain1:{ color:"#ff9500", name:{en:"1st Island Chain",jp:"第一列島線"}, lines:[
-      /* Kuriles → Japan → Ryūkyū (Okinawa) → Taiwan → Philippines → Borneo. */
-      {label:"1st Island Chain", path:[[156,45.5],[150,44.5],[145.5,43.5],[142,40.5],[140.5,36],[139,34.5],[134,33],[131,31],[129,28.5],[127.5,26.5],[124.5,24.2],[121.6,23.6],[121,20],[121.5,16.5],[123.5,12.5],[125.5,9.5],[126.3,6.8],[122,3],[118.5,-1]]}
-    ]},
-    islandChain2:{ color:"#af52de", name:{en:"2nd Island Chain",jp:"第二列島線"}, lines:[
-      /* Tokyo → Izu/Ogasawara → Marianas (Guam) → Palau → western New Guinea. */
-      {label:"2nd Island Chain", path:[[139.7,35],[139.6,31],[142,27],[142.5,24],[145,18],[145.2,15],[144.8,13.4],[141,9.5],[134.5,7.3],[134,2.5],[132.5,-1.5]]}
-    ]},
-    stringOfPearls:{ color:"#5856d6", name:{en:"String of Pearls",jp:"真珠の首飾り"}, lines:[
-      /* Hainan → (Malacca) → Kyaukpyu → Chittagong → Hambantota → Maldives → Gwadar → Djibouti. */
-      {label:"String of Pearls", path:[[109.5,18.2],[108,6],[100,2.5],[96,15],[93.5,19.4],[91.8,22.3],[84,9],[81.1,6.1],[73,3.5],[66,13],[62.3,25.1],[58,18],[48,12.5],[43.15,11.6]]}
-    ], points:[
-      {label:"Hainan (Yulin Base)", at:[109.5,18.2]},
-      {label:"Kyaukpyu", at:[93.5,19.4]},
-      {label:"Chittagong", at:[91.8,22.3]},
-      {label:"Hambantota", at:[81.1,6.1]},
-      {label:"Gwadar", at:[62.3,25.1]},
-      {label:"Djibouti", at:[43.15,11.6]}
-    ]},
-    seaRoute:{ color:"#34c759", name:{en:"Northern Sea Route",jp:"北極海航路"}, lines:[
-      /* Northern Sea Route — the real Russian-Arctic shipping lane (#7), traced through the actual
-         straits it transits, then SPLIT at the antimeridian so the polyline never wraps the wrong way
-         with renderWorldCopies:false. Murmansk → Kara Gate (Karskie Vorota, between Novaya Zemlya &
-         Vaygach) → Kara Sea → Vilkitsky Strait off Cape Chelyuskin (104.3°E, 77.7°N — the northernmost
-         point of mainland Eurasia) → Laptev Sea → Sannikov Strait (New Siberian Islands) → East
-         Siberian Sea → Long Strait (south of Wrangel Island) → Chukchi Sea → Bering Strait (66°N,
-         169°W). The second segment re-enters from −180 so the dateline crossing renders correctly. */
-      {label:"Northern Sea Route", path:[[33.1,69.0],[36,68.9],[39,68.8],[42,68.6],[44.5,68.5],[46,68.8],[48,69.2],[51,69.6],[54,70.0],[56.5,70.3],[58.5,70.5],[60.5,71.0],[63,71.6],[65.5,72.2],[68,72.7],[71,73.0],[74,73.2],[77,73.4],[80,73.6],[83.5,74.3],[87,75.0],[91,75.9],[95,76.7],[98,77.1],[101,77.4],[104.3,77.7],[107,77.2],[110,76.6],[115,75.8],[120,75.0],[124.5,74.5],[129,74.1],[133,74.4],[137,74.7],[140.5,74.9],[144,74.5],[148,74.0],[152.5,73.4],[157,72.7],[161.5,72.0],[166,71.2],[169.5,70.8],[173,70.4],[176,70.4],[178.5,70.4],[180,69.6]]},
-      {path:[[-180,69.4],[-179,69.0],[-178,68.4],[-176,67.8],[-174,67.2],[-172.5,66.9],[-171,66.6],[-170,66.3],[-169,66.0]]}
-    ], points:[
-      {label:"Kara Gate", at:[58.5,70.5]},
-      {label:"Vilkitsky Strait", at:[104.3,77.7]},
-      {label:"Sannikov Strait", at:[140.5,74.9]},
-      {label:"Long Strait", at:[178.5,70.4]},
-      {label:"Bering Strait", at:[-169,66.0]}
-    ]},
-    chokepoints:{ color:"#ff9500", name:{en:"Global Chokepoints",jp:"世界の海上要衝"}, points:[
-      {label:"Strait of Hormuz", at:[56.3,26.6]},
-      {label:"Strait of Malacca", at:[100.4,2.5]},
-      {label:"Suez Canal", at:[32.35,30.6]},
-      {label:"Bab-el-Mandeb", at:[43.35,12.6]},
-      {label:"Bosphorus", at:[29.02,41.1]},
-      {label:"Strait of Gibraltar", at:[-5.6,35.95]},
-      {label:"Panama Canal", at:[-79.7,9.1]},
-      {label:"Taiwan Strait", at:[119.6,24.4]},
-      {label:"Danish Straits", at:[11,56]},
-      {label:"Dover Strait", at:[1.4,51]},
-      {label:"Sunda Strait", at:[105.9,-6]},
-      {label:"Lombok Strait", at:[115.7,-8.7]},
-      {label:"Cape of Good Hope", at:[19.5,-34.8]}
-    ]},
-    /* NATO "Posture"/deployment layer removed per request (#14). NATO is now ONLY the members
-       country-fill (data layer "nato") with accession-year + defense-spend (%GDP) on hover. */
-    bri:{ color:"#e8590c", name:{en:"Belt & Road (BRI)",jp:"一帯一路"}, lines:[
-      /* (#R13c) Densified along the REAL overland route — every vertex is a named city the corridor
-         actually passes through (Xi'an→Lanzhou→Urumqi→Khorgos→Almaty→Tashkent→Samarkand→Ashgabat→Tehran
-         →Tabriz→Erzurum→Ankara→Istanbul→Sofia→Belgrade→Budapest→Vienna→Prague→Duisburg→Rotterdam). */
-      {label:"BRI — Silk Road Economic Belt", path:[[108.94,34.27],[107.14,34.36],[105.72,34.58],[103.83,36.06],[102.63,37.93],[100.45,38.93],[98.49,39.74],[97.04,40.28],[93.51,42.83],[89.18,42.95],[87.62,43.83],[84.90,44.43],[82.07,44.90],[80.42,44.21],[76.89,43.26],[74.59,42.87],[69.60,42.32],[69.24,41.31],[66.96,39.65],[64.42,39.77],[63.58,39.08],[61.83,37.60],[58.38,37.95],[54.44,36.84],[51.39,35.69],[49.99,36.27],[48.48,36.68],[46.30,38.07],[41.28,39.91],[37.88,39.75],[35.32,38.74],[32.86,39.93],[30.52,39.78],[28.98,41.01],[26.55,41.68],[24.75,42.14],[23.32,42.70],[21.90,43.32],[20.46,44.79],[19.84,45.25],[19.04,47.50],[17.11,48.15],[16.37,48.21],[16.61,49.20],[14.42,50.08],[13.74,51.05],[12.37,51.34],[8.68,50.11],[6.96,50.94],[6.76,51.43],[4.48,51.92]]},
-      /* Maritime road — real ports & straits: Quanzhou→Guangzhou→Singapore/Malacca→Colombo→Maldives
-         →Bab-el-Mandeb→Jeddah→Suez→Port Said→Piraeus→Otranto→Venice. */
-      {label:"BRI — Maritime Silk Road", path:[[118.59,24.87],[118.08,24.48],[114.27,22.55],[113.27,23.13],[110.40,21.20],[110.00,18.20],[109.20,15.00],[109.40,12.25],[107.00,9.80],[104.80,8.40],[103.85,1.29],[100.35,3.00],[98.30,5.40],[94.50,6.50],[88.00,7.00],[82.00,6.40],[79.85,6.93],[73.50,4.20],[66.00,9.00],[58.00,12.00],[51.00,13.50],[45.00,12.40],[43.35,12.60],[40.50,16.00],[39.20,21.50],[36.00,24.50],[33.80,27.80],[32.90,29.30],[32.55,29.97],[32.32,31.27],[30.50,32.20],[27.00,33.50],[25.00,34.30],[23.63,37.94],[19.50,38.20],[18.90,40.10],[16.20,42.00],[13.80,43.80],[12.34,45.44]]}
-    ]},
-    /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
-    /* (#R12) Pipelines redrawn as DENSE, route-faithful polylines from real corridor coordinates — NOT a
-       Catmull-Rom curve (the user: "数学的処理ではない…現実データに忠実に"). `smooth` is OFF so the line is the
-       actual surveyed vertices, drawn as-is. */
-    pipelines:{ color:"#e8843b", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
-      {label:"Nord Stream", kind:"gas", path:[[28.05,60.62],[27.3,60.25],[26.2,59.95],[24.8,59.62],[23.2,59.35],[21.5,59.0],[20.2,58.4],[19.3,57.6],[18.5,56.8],[17.5,56.0],[16.3,55.4],[15.0,55.0],[14.1,54.5],[13.64,54.14]]},
-      {label:"Yamal–Europe", kind:"gas", path:[[66.5,67.0],[63.0,66.0],[60.0,64.5],[56.0,62.2],[52.0,60.2],[48.0,58.6],[44.0,57.2],[40.0,56.2],[36.0,55.6],[34.0,57.0],[31.5,55.2],[28.5,53.6],[26.0,53.1],[24.0,52.9],[21.5,52.5],[18.5,52.4],[16.5,52.35],[14.6,52.3]]},
-      {label:"Power of Siberia", kind:"gas", path:[[120.0,63.0],[121.6,62.0],[123.0,60.4],[124.4,58.4],[125.4,56.4],[126.3,54.2],[127.0,52.2],[127.5,50.3],[127.4,49.5],[126.9,49.0],[126.6,48.5]]},
-      {label:"Druzhba (oil)", kind:"oil", path:[[54.0,54.0],[50.5,54.1],[47.0,53.9],[43.5,53.7],[40.0,53.5],[36.5,53.4],[33.0,53.2],[30.0,53.0],[27.5,52.9],[24.5,52.5],[21.5,52.2],[18.5,52.0],[15.5,51.6],[13.0,51.3],[12.0,51.2]]},
-      {label:"ESPO (oil)", kind:"oil", path:[[98.0,56.0],[101.0,56.1],[104.0,56.2],[108.0,56.3],[112.0,56.4],[116.0,56.0],[120.0,55.4],[124.0,54.0],[127.0,52.0],[129.0,50.0],[131.0,48.0],[131.8,45.5],[132.3,43.1]]},
-      {label:"TurkStream", kind:"gas", path:[[37.6,44.85],[36.5,44.0],[35.0,43.1],[33.0,42.3],[31.0,41.8],[29.5,41.5],[28.6,41.4],[28.05,41.4]]},
-      {label:"Blue Stream", kind:"gas", path:[[38.0,44.4],[37.3,43.5],[36.5,42.5],[36.0,41.7],[36.3,41.3]]},
-      {label:"Southern Gas Corridor (TANAP/TAP)", kind:"gas", path:[[49.6,40.2],[47.0,41.0],[45.0,41.5],[43.0,41.7],[41.0,40.6],[39.0,40.2],[36.0,40.0],[33.0,39.8],[30.0,39.7],[27.5,40.0],[26.2,40.9],[24.0,40.9],[22.0,40.7],[20.5,40.6],[19.5,40.5],[19.4,40.4],[18.4,40.15]]},
-      {label:"BTC (oil)", kind:"oil", path:[[49.9,40.4],[47.5,40.8],[45.5,41.5],[44.8,41.7],[43.5,41.2],[42.0,40.5],[40.5,40.0],[39.0,39.3],[37.5,38.0],[36.3,37.0],[35.9,36.9]]},
-      {label:"West–East Gas (China)", kind:"gas", path:[[80.0,41.0],[83.0,42.0],[86.0,42.5],[89.0,42.0],[92.0,41.5],[95.0,41.0],[98.0,39.5],[101.0,38.0],[104.0,37.0],[107.0,36.0],[110.0,35.0],[112.5,34.5],[114.0,33.5],[116.0,32.5],[118.0,31.8],[120.0,31.3],[121.5,31.2]]},
-      {label:"Central Asia–China Gas", kind:"gas", path:[[58.2,38.5],[60.0,39.2],[62.5,40.0],[64.5,40.6],[66.5,41.2],[68.5,41.5],[71.0,42.0],[73.0,42.5],[75.0,43.0],[77.0,43.5],[79.0,44.0],[80.4,44.2]]},
-      {label:"TAPI", kind:"gas", path:[[61.5,37.5],[61.8,36.0],[62.2,34.5],[63.5,33.0],[65.5,31.6],[66.5,30.5],[67.0,30.2],[67.5,29.6],[69.0,29.5],[70.5,29.5],[72.5,29.6],[74.0,30.4]]},
-      {label:"Trans-Med (Algeria→Italy)", kind:"gas", path:[[3.3,32.9],[5.0,33.5],[7.0,34.0],[9.0,34.5],[10.5,35.5],[11.0,36.8],[11.5,37.2],[12.0,37.3],[12.6,37.6],[13.5,37.8],[14.5,38.0],[15.2,38.2],[15.6,38.2],[16.0,39.0],[16.5,40.0]]},
-      {label:"Medgaz (Algeria→Spain)", kind:"gas", path:[[-1.36,35.3],[-1.6,35.8],[-2.0,36.2],[-2.3,36.6],[-2.46,36.83]]},
-      {label:"Keystone (oil)", kind:"oil", path:[[-111.4,52.7],[-108.0,51.0],[-104.0,49.5],[-101.0,49.0],[-98.0,47.0],[-97.0,45.0],[-96.7,42.5],[-97.0,40.0],[-96.0,38.5],[-93.0,38.0],[-89.1,38.5]]},
-      {label:"Trans-Alaska (oil)", kind:"oil", path:[[-148.5,70.25],[-149.0,69.0],[-149.5,68.0],[-149.5,67.0],[-149.0,65.5],[-148.0,64.5],[-147.8,64.0],[-146.0,63.0],[-145.5,62.0],[-146.0,61.1],[-146.35,61.13]]}
-    ]},
-    cables:{ color:"#30b0c7", name:{en:"Submarine Cables",jp:"海底ケーブル"}, lines:[
-      {label:"Transatlantic (MAREA)", path:[[-76,36.8],[-50,40],[-20,42],[-2.9,43.4]]},
-      {label:"Transpacific (E)", path:[[-124,44],[-160,40],[-179.5,38]]},
-      {label:"Transpacific (W)", path:[[179.5,38],[160,37],[140,36]]},
-      {label:"SEA-ME-WE", path:[[103.8,1.3],[80,6],[72.8,19],[60,14],[43.3,12.5],[32.5,30],[14,35],[5.3,43.3]]}
-    ]},
-    nuclear:{ color:"#9b59b6", name:{en:"Nuclear Sites",jp:"核関連施設"}, points:[
-      {label:"Minot AFB (US)", at:[-101.3,48.4]},
-      {label:"Plesetsk (RU)", at:[40.6,62.9]},
-      {label:"Lop Nur (CN)", at:[90.0,40.2]},
-      {label:"Île Longue (FR)", at:[-4.5,48.3]},
-      {label:"Faslane (UK)", at:[-4.8,56.1]},
-      {label:"Pokhran (IN)", at:[71.8,27.1]},
-      {label:"Kahuta (PK)", at:[73.4,33.6]},
-      {label:"Dimona (IL)", at:[35.1,31.0]},
-      {label:"Yongbyon (NK)", at:[125.8,39.8]},
-      {label:"Natanz (IR)", at:[51.7,33.7]}
-    ]}
-  };
+  /* ⚠⚠ (#R225) `geoLayersDB` WAS HERE — the geometry of the nine Strategic geography / Strategic
+   networks layers (Sahel, the two island chains, String of Pearls, the Northern Sea Route, the
+   chokepoints, Belt & Road, the pipelines, the nuclear sites) plus a `cables` entry that no
+   checkbox had referenced for rounds. 「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。
+   ふざけるな。」 — confirmed as 「レイヤー自体を削除してほしい」, so the data goes with the rows in
+   index.html, the drawing and labelling in js/place-labels.js, the preview in
+   js/layer-previews.js and the favourite in js/layer-favs.js. */
   /* JP translations for the on-map geo-theory labels (#1) — English leaked onto the Japanese map
      because these labels were drawn verbatim. geoLabel() swaps them when the UI is in Japanese, and
      refreshGeoLabels() re-emits the source data on a language switch. */
-  const GEO_LABEL_JP={
-    "Heartland (Pivot Area)":"ハートランド（中軸地帯）","Sahel Risk Zone":"サヘル危険地帯",
-    "1st Island Chain":"第一列島線","2nd Island Chain":"第二列島線","String of Pearls":"真珠の首飾り",
-    "Hainan (Yulin Base)":"海南島（楡林基地）","Kyaukpyu":"チャウピュー","Chittagong":"チッタゴン","Hambantota":"ハンバントタ","Gwadar":"グワダル","Djibouti":"ジブチ",
-    "Northern Sea Route":"北極海航路","Kara Gate":"カラ海峡","Vilkitsky Strait":"ヴィリキツキー海峡","Sannikov Strait":"サンニコフ海峡","Long Strait":"ロング海峡","Bering Strait":"ベーリング海峡",
-    "Strait of Hormuz":"ホルムズ海峡","Strait of Malacca":"マラッカ海峡","Suez Canal":"スエズ運河","Bab-el-Mandeb":"バブ・エル・マンデブ海峡","Bosphorus":"ボスポラス海峡","Strait of Gibraltar":"ジブラルタル海峡","Panama Canal":"パナマ運河","Taiwan Strait":"台湾海峡","Danish Straits":"デンマーク海峡群","Dover Strait":"ドーバー海峡","Sunda Strait":"スンダ海峡","Lombok Strait":"ロンボク海峡","Cape of Good Hope":"喜望峰",
-    "BRI — Silk Road Economic Belt":"一帯一路 — シルクロード経済ベルト","BRI — Maritime Silk Road":"一帯一路 — 21世紀海上シルクロード",
-    "Nord Stream":"ノルドストリーム","Power of Siberia":"シベリアの力","Druzhba":"ドルージバ","TurkStream":"トルコストリーム","Trans-Alaska":"トランスアラスカ",
-    "Transatlantic (MAREA)":"大西洋横断（MAREA）","Transpacific (E)":"太平洋横断（東）","Transpacific (W)":"太平洋横断（西）","SEA-ME-WE":"SEA-ME-WE",
-    "Minot AFB (US)":"マイノット空軍基地（米）","Plesetsk (RU)":"プレセツク（露）","Lop Nur (CN)":"ロプノール（中）","Île Longue (FR)":"イル・ロング（仏）","Faslane (UK)":"ファスレーン（英）","Pokhran (IN)":"ポカラン（印）","Kahuta (PK)":"カフータ（パキスタン）","Dimona (IL)":"ディモナ（イスラエル）","Yongbyon (NK)":"寧辺（北朝鮮）","Natanz (IR)":"ナタンズ（イラン）"
-  };
+  /* (#R225) `GEO_LABEL_JP` translated the geo layers' on-map labels; those layers are deleted. */
   /* ===== Country data & extended stats ===== */
   const GDP={USA:27361,CHN:17795,JPN:4213,DEU:4456,IND:3550,GBR:3340,FRA:3031,ITA:2255,BRA:2174,CAN:2140,RUS:2021,MEX:1789,AUS:1724,KOR:1713,ESP:1581,IDN:1371,TUR:1108,NLD:1118,SAU:1068,CHE:884,POL:811,TWN:790,BEL:632,SWE:593,ARG:641,IRL:545,NOR:486,AUT:516,ISR:510,ARE:504,THA:515,SGP:501,BGD:446,PHL:437,VNM:430,DNK:404,MYS:400,HKG:382,EGY:396,IRN:388,ZAF:378,COL:364,ROU:351,CHL:335,CZE:330,FIN:300,PRT:287,PER:268,IRQ:264,KAZ:261,NZL:251,GRC:238,QAT:235,DZA:240,HUN:213,UKR:179,KWT:162,ETH:156,MAR:142,SVK:132,ECU:119,KEN:108,OMN:108,GTM:102,BGR:101,VEN:92,CRI:86,LUX:86,PAN:82,CIV:79,HRV:80,LTU:79,UZB:90,TZA:76,GHA:76,SRB:75,LKA:74,BLR:73,SVN:68,COD:67,MMR:65,TKM:56,JOR:50,CMR:49,UGA:49,TUN:47,BOL:45,LBY:45,PRY:43,NPL:41,ZWE:32,CYP:32,ISL:30,GEO:30,SEN:31,KHM:31,PNG:31,ZMB:28,BIH:27,ARM:24,LBN:23,ALB:23,HTI:20,MOZ:21,YEM:21,GAB:21,BWA:20,MLT:20,BFA:20,MLI:20,BEN:19,PRK:18,MNG:18,NIC:17,NER:17,MDG:16,MDA:16,LAO:15,BRN:15,MUS:14,AFG:14,RWA:14,MWI:13,TCD:13,KGZ:12,TJK:12,NAM:12,SOM:11,CUB:107,SDN:109,FJI:5};
   /* HDI 2022, Democracy Index 2023, Military spending 2023 ($B SIPRI), Life expectancy 2022, Internet users % 2023 */
@@ -747,5 +630,5 @@ window.IntMapTables=(function(){
     au:{name:{en:'Australia',jp:'オーストラリア'},flag:'🇦🇺'}, sa:{name:{en:'Saudi Arabia',jp:'サウジ'},flag:'🇸🇦'},
     tr:{name:{en:'Türkiye',jp:'トルコ'},flag:'🇹🇷'}, eg:{name:{en:'Egypt',jp:'エジプト'},flag:'🇪🇬'}
   };
-  return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,geoLayersDB,GEO_LABEL_JP,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
+  return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
 })();

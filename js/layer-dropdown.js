@@ -60,7 +60,7 @@ export function makeLayerDropdown(HOST, CTX) {
     const bare=(id||'').replace(/^eco-/,'').replace(/^gx-/,'').replace(/^dl-/,'');
     if(id){
       const cands=[id,'dl-'+id,'eco-dl-'+id,'gx-'+id,'l9-dl-'+id,'beta-dl-'+id,bare,'dl-'+bare,'eco-dl-'+bare,'gx-'+bare,'ox-'+bare];
-      let cb=null; for(const k of cands){ cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb) break; }
+      let cb=null; for(const k of cands){ cb=document.getElementById(k); if(cb) break; }
       if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
       /* (#R41) BELT-AND-SUSPENDERS — the canonical uncheck above is the clean path, but "凡例の×を押しても
          レイヤーが消えない" still happened when the controlling checkbox couldn't be resolved (custom/legacy

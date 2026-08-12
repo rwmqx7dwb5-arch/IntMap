@@ -16,7 +16,7 @@
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
 export function makeLayerFavs(HOST, CTX) {
-  const escapeHtml=CTX.escapeHtml, geoLayersDB=CTX.geoLayersDB, i18n=CTX.i18n, saveSettings=CTX.saveSettings, t=CTX.t;
+  const escapeHtml=CTX.escapeHtml, i18n=CTX.i18n, saveSettings=CTX.saveSettings, t=CTX.t;
   /* ---------- Layer favorites (#16) — star any layer, quick-pick chips on top ---------- */
   function layerCbInfo(cb){
     if(!cb) return null;
@@ -25,7 +25,9 @@ export function makeLayerFavs(HOST, CTX) {
     if(cb.id==='cb-poi')       return {key:'poi', label:t('poiLabels')||'Shop & facility names'};   /* (#R186) */
     if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[HOST.lang].countries||'Countries'};
-    if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[HOST.lang]||d.name.en))||k, color:d&&d.color}; }
+    /* (#R225) the `geo:` key belonged to the nine geopolitics layers; they are deleted, and so is
+       the only kind of checkbox that carried `.geo-layer-cb`. A `geo:` favourite saved long ago simply
+       resolves to nothing now, which is what a favourite for a deleted layer should do. */
     if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const row=cb.closest('.layer-option')||cb.closest('.lyr-row'); const sp=row&&(row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
     /* (#R17/#R18) Some layer rows couldn't be favorited because their checkbox id isn't `dl-…` (land-cover /
        ecoregions `eco-dl-*`, Round-9 `l9-dl-*`) OR the row uses `.lyr-row` without a `.layer-option` wrapper.

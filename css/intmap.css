@@ -2654,7 +2654,15 @@
    a gesture; this is the whole of the effect. The still frame is byte-identical to before.
    ⚠ MOBILE ONLY (#R202 measured desktop at 60 fps), and ⚠ the rule needs !important because every
    one of these elements declares its own backdrop-filter, several of them inline. */
-@media (max-width: 768px){
+/* ⚠⚠ (#R225) THE GATE WAS A LAYOUT QUESTION AND THIS IS A GPU QUESTION. 「スマホでの地図スクロール、
+   ズームが壊滅的に遅いです」 — measured: `max-width: 768px` is FALSE on a phone held sideways (812 × 375),
+   so rotating the device switched this entire suppression off and put all nineteen backdrop filters
+   back on every frame of every gesture. Architecture.md §9 already states the distinction — width is
+   for LAYOUT, the device is for RAM and the GPU — and this rule was on the wrong side of it.
+   `(hover: none) and (pointer: coarse)` is the phone/tablet class in either orientation, and it is
+   false for a touchscreen laptop (whose primary pointer is fine). The width query stays beside it so
+   a narrow desktop window keeps the behaviour #R221 shipped. */
+@media (max-width: 768px), (hover: none) and (pointer: coarse){
   body.im-moving .im-glass{
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;

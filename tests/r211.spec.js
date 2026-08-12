@@ -20,7 +20,7 @@
  *  paths are exercised by hand and recorded in DEV-NOTES; what the gate holds is the app's own half.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
-import { SESSION_KEY, BASE } from './helpers/session-seed.js';
+import { SESSION_KEY, SESSION_VALUE, BASE } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -29,7 +29,7 @@ test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   await page.addInitScript(([k, v]) => {
     try { localStorage.setItem(k, v); } catch (_) {}
-  }, [SESSION_KEY, '{"v":2,"defv":190,"layers":[],"lsrOpen":false}']);
+  }, [SESSION_KEY, SESSION_VALUE]);
   await page.goto(BASE + '/');
   await page.waitForFunction(() => !!(window.IntMapGeoEngine && window.IntMapGeoEngine.hasRenderer()), null, { timeout: 60_000 });
   await page.waitForFunction(() => { try { return window.IntMapGeoEngine.canDraw(); } catch (_) { return false; } }, null, { timeout: 60_000 });

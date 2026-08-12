@@ -31,7 +31,7 @@ RangeError SyntaxError Intl parseInt parseFloat isNaN isFinite encodeURIComponen
 setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame requestIdleCallback
 cancelIdleCallback queueMicrotask structuredClone Infinity NaN undefined performance crypto CustomEvent Event MouseEvent
 KeyboardEvent TouchEvent PointerEvent Image Blob File FileReader URL URLSearchParams Headers Request Response
-AbortController FormData XMLHttpRequest WebSocket Worker EventSource IntersectionObserver ResizeObserver MutationObserver
+AbortController FormData XMLHttpRequest WebSocket Worker EventSource IntersectionObserver ResizeObserver MutationObserver PerformanceObserver
 DOMParser XMLSerializer TextEncoder TextDecoder Int8Array Uint8Array Uint8ClampedArray Int16Array Uint16Array Int32Array
 Uint32Array Float32Array Float64Array BigInt64Array BigUint64Array ArrayBuffer DataView BigInt Proxy Reflect Notification
 IDBKeyRange indexedDB matchMedia getComputedStyle alert confirm prompt atob btoa caches screen self top parent frames

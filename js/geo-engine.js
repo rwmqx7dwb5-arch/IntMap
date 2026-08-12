@@ -1391,6 +1391,39 @@ function _m(){ return window.__imap||null; }
        during a gesture and all of them on the frame the gesture lands on. */
     getRenderScale(){ const m=_m(); try{ return (m&&m.getPixelRatio)?m.getPixelRatio():null; }catch(_){ return null; } },
     setRenderScale(r){ const m=_m(); try{ if(m&&m.setPixelRatio&&isFinite(r)&&r>0){ m.setPixelRatio(r); return true; } }catch(_){} return false; },
+    /* ══ (#R225) THE FRAME'S OWN COST, AND WHAT THE SCENE COSTS IT ══════════════════════════════════
+       「スマホでの地図スクロール、ズームが壊滅的に遅いです」 — four rounds have argued about this and
+       three measured the wrong machine, so js/perf-hud.js exists to take the number ON THE DEVICE.
+       It cannot reach the renderer to do that (this file is the only place allowed to hold it —
+       #R178/#R180's ratchet, and the gate counts), so the two readings it needs are contract members.
+       ⚠ `instrumentFrames` wraps the renderer's own frame call ONCE and is never unwrapped: a second
+       wrapper would time the first one's wrapper, and there is no supported way to restore the
+       original. It is therefore installed only when something explicitly asks. A renderer with no
+       such internal (or a future adapter) answers false, and the HUD degrades to the frame interval —
+       which #R221 measured as a liar in a throttled tab, and says so on screen. */
+    instrumentFrames(cb){ const m=_m();
+      try{
+        if(!m||typeof cb!=='function') return false;
+        if(m.__imFrameInstrumented) return true;
+        if(typeof m._render!=='function') return false;
+        const orig=m._render.bind(m);
+        m.__imFrameInstrumented=true;
+        m._render=function(){ const t0=performance.now(); const r=orig.apply(null,arguments);
+          try{ cb(performance.now()-t0); }catch(_){} return r; };
+        return true;
+      }catch(_){ return false; } },
+    /* what the renderer is being asked to draw, as counts — layers, how many are visible, sources,
+       and the tiles resident across every source cache. The HUD's «is the scene the cost?» column. */
+    sceneStats(){ const m=_m();
+      try{
+        const st=m&&m.getStyle&&m.getStyle(); if(!st) return null;
+        let tiles=0;
+        try{ const sc=m.style&&m.style.sourceCaches; if(sc) for(const k in sc){ const t=sc[k]&&sc[k]._tiles; if(t) tiles+=Object.keys(t).length; } }catch(_){}
+        return { layers:st.layers.length,
+                 visible:st.layers.filter(l=>!l.layout||l.layout.visibility!=='none').length,
+                 sources:Object.keys(st.sources).length, tiles,
+                 ids:st.layers.filter(l=>!l.layout||l.layout.visibility!=='none').map(l=>l.id) };
+      }catch(_){ return null; } },
     setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }, removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){ if(k!==undefined) m.removeFeatureState(f,k); else m.removeFeatureState(f); } },
     /* (#R161) Phase-3 contract broadening — everything a self-contained OVERLAY subsystem needs so it
        can be written against the engine alone: readiness, the drawing surface's container + pixel size,
@@ -1912,7 +1945,10 @@ function _m(){ return window.__imap||null; }
       /* (#R178) the element gestures are dispatched on — NOT the canvas: MapLibre stacks markers
          and the attribution over it, and a synthetic pointer event has to land on the same node
          the renderer listens to. */
-      canvasContainer:()=>A().getCanvasContainer() },
+      canvasContainer:()=>A().getCanvasContainer(),
+      /* (#R225) the on-device instrument's two readings — see the adapter for why they live here */
+      instrumentFrames:cb=>A().instrumentFrames?A().instrumentFrames(cb):false,
+      sceneStats:()=>A().sceneStats?A().sceneStats():null },
     /* (#R171) gesture ownership — a drawing tool suspends the renderer's own pan for the stroke */
     /* (#R178) …and now the whole gesture set by NAME, because the flight simulator suspends all
        of them for a flight and was indexing map[handlerName] to do it. */

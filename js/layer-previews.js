@@ -3,12 +3,12 @@
  * ----------------------------------------------------------------------------
  *  Body moved byte-identically out of index.html's DOMContentLoaded closure. The three
  *  values it used to close over are now explicit FACTORY PARAMETERS — countryStats and
- *  geoLayersDB are never reassigned (mutated in place) and loadCountryData is a function
+ *  countryStats is never reassigned (mutated in place) and loadCountryData is a function
  *  declaration, so passing them by value is exactly what the closure saw.
- *      window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,geoLayersDB,loadCountryData);
+ *      window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);
  * ========================================================================== */
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountryData){
+window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
        (±72.5° ≈ exactly 2:1 — country shapes look like the basemap, no vertical stretch) and rendered at
        2× device pixels (crisp on the 3-column tiles). The tile CSS aspect-ratio matches 240/121 so nothing
@@ -191,14 +191,8 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
       try{ setView(spec.view||null); ocean(ctx); const S=new Set(spec.set.split(' '));
         const ok=drawLand(ctx,cd=>S.has(cd)?spec.col:'#22344c','rgba(0,0,0,0.25)');
         return ok?c.toDataURL('image/png'):null; } finally{ setView(null); } }
-    /* ---- 5) geoLayersDB — the strategic layers' REAL geometry ---- */
-    function geoDBPrev(key){ let db=null; try{ db=geoLayersDB&&geoLayersDB[key]; }catch(_){ } if(!db) return null;
-      const c=cnv(),ctx=c.getContext('2d'); ocean(ctx); if(!drawLand(ctx,null)) return null;
-      const col=db.color||'#ff9500';
-      (db.areas||[]).forEach(a=>{ if(!a.ring) return; ctx.beginPath(); a.ring.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.closePath(); ctx.fillStyle=col+'55'; ctx.fill(); ctx.strokeStyle=col; ctx.lineWidth=1; ctx.stroke(); });
-      (db.lines||[]).forEach(l=>{ if(!l.path) return; ctx.beginPath(); l.path.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.stroke(); });
-      (db.points||[]).forEach(p=>{ if(!p.at) return; ctx.beginPath(); ctx.arc(X(p.at[0]),Y(p.at[1]),2.4,0,7); ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=0.7; ctx.stroke(); });
-      return c.toDataURL('image/png'); }
+    /* (#R225) the geoLayersDB preview (`geoDBPrev`) went with the nine geopolitics layers whose
+       real geometry it drew — see the note in index.html. */
     /* ---- 6) special painters. Real where the data is client-side or computable (terminator, quakes,
        real coordinates of famous volcanoes/dams/hubs, coastline-derived EEZ halo); clearly stylised
        REPRESENTATIVE sketches only for live streams (planes/ships/webcams) and model fields (ECMWF). ---- */
@@ -616,9 +610,6 @@ window.IntMapModules.layerPreviews=function(countryStats,geoLayersDB,loadCountry
         _observe(el,()=>{ const run=()=>wbChoro(WBP[id]).then(u=>{ if(u){ cache[id]=u; apply(el,u); } });
           if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); } });
         return; }
-      const gk=(el.dataset.gk||id);
-      let db=null; try{ db=geoLayersDB&&geoLayersDB[gk]; }catch(_){}
-      if(db){ geoJob(()=>geoDBPrev(gk)); return; }
       /* (#R74) live-data painters first; the old sketch in PAINT[id] is only the fallback */
       if(REAL[id]){ const fn2=REAL[id];
         const run=()=>{ Promise.resolve().then(fn2).then(u=>{ if(u){ cache[id]=u; apply(el,u); return; }

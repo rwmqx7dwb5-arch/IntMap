@@ -1149,7 +1149,7 @@ window.IntMapModules.viewHash=function(HOST){
     function activeLayers(){ const ids=new Set(); try{
       /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
-      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
+      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
     }catch(_){} return Array.from(ids); }
     function encode(){ try{ const c=GE().camera.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),GE().camera.getZoom().toFixed(2),Math.round(GE().camera.getBearing()),Math.round(GE().camera.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
@@ -1197,9 +1197,14 @@ window.IntMapModules.viewHash=function(HOST){
       if(full){
         const lm=/[#&]l=([^&]+)/.exec(location.hash);
         const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
-        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
+        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
-          want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+          /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
+             longer WRITES `.geo-layer-cb` keys into the hash, but a link (or an address bar) saved months
+             ago still CARRIES them — and this loop resolving them by `data-layer` is precisely how the nine
+             geopolitics layers kept switching themselves on («大昔に捨てたはずの地政学レイヤーが勝手にオンに
+             なる»). Only ids are resolved now, so a retired key finds nothing. */
+          want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
           /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
              link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
           document.querySelectorAll(DATASEL).forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });

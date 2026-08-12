@@ -162,7 +162,8 @@ test('R193 startup: the heavy optional payloads are off the boot path', async ({
   expect(before(/preview_(contours|wind|plates|ecoregions|nightlights|basemap)\.png/).length).toBe(0);
 
   /* …and when the Köppen layer IS switched on, the picture that paints is the small one.
-     ⚠ The suite seeds `{"layers":[]}` (playwright.config.js), so the default-on layers are off here —
+     ⚠ The suite seeds the base toggles ON and the THEMATIC layers off (tests/helpers/session-seed.js;
+     (#R225) an empty `layers` now means «the reader switched everything off»), so Köppen is off here —
      asserting on boot traffic alone would pass against a page that simply never drew Köppen. */
   await page.waitForTimeout(3000);
   const enabled = await page.evaluate(() => {
