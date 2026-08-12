@@ -64,6 +64,9 @@ import '../js/locales/ui.jp.js';
 import '../js/locales/ui.de.js';
 import '../js/locales/ui.ru.js';
 import '../js/locales/ui.es.js';
+/* (#R223) the sixth — Traditional Chinese. One row in LANGS, this line, and that file: the whole
+   cost #R221's registry promised, with no call site touched (see the note by the LANGS row). */
+import '../js/locales/ui.zh.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
@@ -116,6 +119,11 @@ import '../js/land-mask.js';
    19.5 km majority («大きなタイルでごまかすな»). It holds nothing: the geometry belongs to
    js/countries-ui.js and this only draws it. */
 import '../js/coast-mask.js';
+/* (#R223) …and "how soft is the ground here", the same shape again (data/vs30.png, 0.25°, 239 kB).
+   The intensity field's site term used to fall back to ONE class wherever the DEM could not reach —
+   the far annulus, and any cell whose tile never arrived — which is what draws concentric rings.
+   Nothing fetches until seismic.js calls warm(). */
+import '../js/vs30-mask.js';
 /* (#R197) …and "how deep is the sea here" — the bundled 0.25° global sea floor (data/bathymetry.png).
    Same shape as the land mask: a fact about the Earth, one owner, and nothing fetched until the one
    thing that needs a whole ocean at once — the global tsunami solver — calls warm(). */

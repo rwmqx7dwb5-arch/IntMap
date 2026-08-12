@@ -182,6 +182,17 @@ window.IntMapModules.oceanCurrents=function(HOST){
     const SPEED_COL=['interpolate',['linear'],['get','s'],
       0.02,'#bcdcf2', 0.15,'#e8f4ff', 0.40,'#ffffff', 0.80,'#ffe08a', 1.40,'#ffb648'];
     const SPEED_SZ=(k)=>['*',k,['interpolate',['linear'],['get','s'],0.02,0.72,0.35,1.0,1.2,1.34]];
+    /* (#R223) the SAME stops as a CSS gradient, for the legend swatch — the expression is
+       [interpolate, [linear], [get,'s'], v0,c0, v1,c1, …], so the pairs start at index 3 and the
+       position of each stop is its own speed scaled onto the ramp's span. */
+    function _speedRamp(){
+      try{
+        const st=[]; for(let i=3;i<SPEED_COL.length;i+=2) st.push([+SPEED_COL[i],String(SPEED_COL[i+1])]);
+        if(st.length<2) return 'linear-gradient(90deg,#bcdcf2,#ffb648)';
+        const v0=st[0][0], v1=st[st.length-1][0], span=(v1-v0)||1;
+        return 'linear-gradient(90deg,'+st.map(s=>s[1]+' '+(((s[0]-v0)/span)*100).toFixed(1)+'%').join(',')+')';
+      }catch(_){ return 'linear-gradient(90deg,#bcdcf2,#ffb648)'; }
+    }
 
     function ensureLayers(){
       if(!_canDraw()) return false;
@@ -448,9 +459,13 @@ window.IntMapModules.oceanCurrents=function(HOST){
         +KEY(COL_WARM,L('Warm current — measurably warmer than the sea at the same latitude','暖流 — 同じ緯度の海より実測で暖かい流れ','Warme Strömung — messbar wärmer als das Meer derselben Breite','Тёплое течение — теплее моря на той же широте','Corriente cálida — más cálida que el mar de su latitud'))
         +KEY(COL_COLD,L('Cold current — measurably colder than the sea at the same latitude','寒流 — 同じ緯度の海より実測で冷たい流れ','Kalte Strömung — messbar kälter','Холодное течение — холоднее','Corriente fría — más fría'))
         +KEY(COL_NEUTRAL,L('Zonal — within ±0.6 K of the sea it flows through','東西流 — 周囲の海と ±0.6 K 以内','Zonal — innerhalb ±0,6 K','Зональное — в пределах ±0,6 K','Zonal — dentro de ±0,6 K'))
+        /* ⚠ (#R223) THE RAMP IS BUILT FROM `SPEED_COL`, NOT WRITTEN OUT AGAIN. #R220 changed the field
+           arrows from blue-on-blue to pale→amber and left this swatch on the OLD blue ramp, so the
+           legend has been showing a gradient the map has not drawn since. Two copies of one number
+           always drift (#R190) — `_speedRamp()` reads the paint expression itself. */
         +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
-        +'<span style="width:22px;height:9px;border-radius:2px;flex:none;background:linear-gradient(90deg,#9fc6e8,#2f7fe0,#0a2f78);"></span>'
-        +esc(L('Field arrows: shading is the measured speed (0 → 1.4 m/s)','流向の矢印：濃さは実測の流速（0 → 1.4 m/s）','Pfeile: Farbe = gemessene Geschwindigkeit','Стрелки: цвет — измеренная скорость','Flechas: el color es la velocidad medida'))+'</div>'
+        +'<span style="width:22px;height:9px;border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,0.3);background:'+_speedRamp()+';"></span>'
+        +esc(L('Field arrows: shading and size are the measured speed (0 → 1.4 m/s)','流向の矢印：濃さと大きさは実測の流速（0 → 1.4 m/s）','Pfeile: Farbe und Größe = gemessene Geschwindigkeit','Стрелки: цвет и размер — измеренная скорость','Flechas: el color y el tamaño son la velocidad medida'))+'</div>'
         /* (#R222) two sentences the reader needs when the spacing changes under them, and when a
            month is chosen: what decides the spacing, and what a month IS. */
         +'<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:3px;">'

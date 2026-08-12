@@ -89,7 +89,11 @@ function inlineStrings() {
   const out = new Map();                    /* English string → [file…] */
   for (const f of readdirSync(JS).filter((n) => n.endsWith('.js'))) {
     const src = readFileSync(join(JS, f), 'utf8');
-    if (src.indexOf('IntMapLang.pick') < 0 && src.indexOf('CTX.L') < 0 && src.indexOf('W.L') < 0 && src.indexOf(' L,') < 0) continue;
+    /* ⚠ (#R223) NO SUBSTRING PRE-FILTER. It used to skip any file that did not contain one of four
+       spellings, and js/ocean-currents.js spells it `const { …, onRestyle, L } = W;` — none of the
+       four. The whole module was therefore invisible to this report AND to the template it writes,
+       so a new language rendered every one of its strings in English while the report said 100 %.
+       Parsing 130 files costs a fraction of a second; guessing costs a silent gap. */
     let ast;
     try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'script' }); }
     catch (e) { try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' }); } catch (e2) { continue; } }

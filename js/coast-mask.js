@@ -63,6 +63,27 @@ window.IntMapCoastMask=(function(){
       polys.forEach(p=>p.forEach(r=>{ if(r&&r.length>2) out.push(r); })); });
     try{ Object.defineProperty(g,'__imRings',{value:out,enumerable:false}); }catch(_){ g.__imRings=out; }
     return out; }
+  /* ══ ⚠ (#R223) EVERY RING'S BOX, ONCE — THIS RASTERISE WAS 3 SECONDS ══════════════════════════════
+     「地震と津波シミュレータの計算速度を爆速にして。ただし品質は一切落とさないように。」
+     MEASURED on the shipped build: `rasterize()` at N=640 over Japan takes **2,966 ms**, and it is
+     the single largest block left in an intensity build after the tile fetch. The reason is that it
+     walks 548,000 vertices of 1:10 m country outline — every ring on Earth — into a canvas path,
+     for a window that usually sees a handful of countries.
+     A ring whose bounding box does not meet the window cannot put ink in it (if the box misses the
+     window, the window is wholly outside the box and therefore wholly outside the ring), so skipping
+     it is EXACT rather than an approximation — the even-odd fill sees the same set of edges over the
+     window either way. The boxes are computed once per geometry object and cached beside the rings,
+     because a field rebuild at a new magnitude asks the same question again. */
+  function boxes(g){
+    if(g.__imRingBox) return g.__imRingBox;
+    const R=rings(g), b=new Float64Array(R.length*4);
+    for(let i=0;i<R.length;i++){ const r=R[i];
+      let w=Infinity,e=-Infinity,s=Infinity,n=-Infinity;
+      for(let k=0;k<r.length;k++){ const c=r[k], x=c[0], y=c[1];
+        if(x<w)w=x; if(x>e)e=x; if(y<s)s=y; if(y>n)n=y; }
+      b[i*4]=w; b[i*4+1]=e; b[i*4+2]=s; b[i*4+3]=n; }
+    try{ Object.defineProperty(g,'__imRingBox',{value:b,enumerable:false}); }catch(_){ g.__imRingBox=b; }
+    return b; }
 
   /* ── the grid answer ──────────────────────────────────────────────────────────────────────────
      west/y0/dx/dy/N describe the caller's grid exactly as it builds it: cell (i,j) is centred at
@@ -84,16 +105,26 @@ window.IntMapCoastMask=(function(){
     const offs=[];
     for(let k=-2;k<=2;k++){ const lo=west-k*360, hi=east-k*360; if(hi>-190&&lo<190) offs.push(k*360); }
     if(!offs.length) offs.push(0);
-    const R=rings(g);
+    const R=rings(g), BB=boxes(g);
+    /* the window in lat/lng, for the box test — y0/dy are mercator-y, so invert the two edges */
+    const latOfY=(y)=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
+    const yA=y0, yB=y0+dy*N;
+    const latN=Math.max(latOfY(yA),latOfY(yB)), latS=Math.min(latOfY(yA),latOfY(yB));
+    const lngW=Math.min(west,east), lngE=Math.max(west,east);
+    let drawn=0;
     ct.fillStyle='#fff';
     ct.beginPath();
     for(let oi=0;oi<offs.length;oi++){ const off=offs[oi];
-      for(let ri=0;ri<R.length;ri++){ const r=R[ri];
+      for(let ri=0;ri<R.length;ri++){
+        /* (#R223) exact cull — see boxes() */
+        if(BB[ri*4]+off>lngE||BB[ri*4+1]+off<lngW||BB[ri*4+2]>latN||BB[ri*4+3]<latS) continue;
+        const r=R[ri];
         let started=false;
         for(let k=0;k<r.length;k++){ const c=r[k];
           const x=((c[0]+off)-west)/dx, y=(mY(c[1])-y0)/dy;
           if(!started){ ct.moveTo(x,y); started=true; } else ct.lineTo(x,y); }
-        if(started) ct.closePath(); } }
+        if(started){ ct.closePath(); drawn++; } } }
+    rasterize._drawn=drawn; rasterize._rings=R.length;
     /* ONE fill for every ring at once (see the ⚠ about holes in the header) */
     ct.fill('evenodd');
     let d; try{ d=ct.getImageData(0,0,N,N).data; }catch(_){ cv.width=cv.height=1; return null; }
@@ -123,5 +154,7 @@ window.IntMapCoastMask=(function(){
   function source(){ return geo()?'countries-10m':(function(){ try{ return (window.IntMapLandMask&&window.IntMapLandMask.ready())?'bundled-19km':null; }catch(_){ return null; } })(); }
 
   return { rasterize, cellKm, isLand, source, ready:()=>!!geo(),
-    state:()=>({ source:source(), rings:(function(){ const g=geo(); return g?rings(g).length:0; })() }) };
+    state:()=>({ source:source(), rings:(function(){ const g=geo(); return g?rings(g).length:0; })(),
+      /* (#R223) how many of them the last rasterise actually had to draw — the cull, measured */
+      lastDrawn:(rasterize._drawn==null?null:rasterize._drawn) }) };
 })();

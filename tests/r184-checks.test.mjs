@@ -128,12 +128,14 @@ test('R184 #5: the new modules parse and keep the CSS rule', () => {
 test('R184 #6: the new layer name exists in all five languages', () => {
   const i18n = rd('js/i18n.js');
   const hits = i18n.match(/lyrSats:/g) || [];
-  assert.equal(hits.length, 5, 'lyrSats is defined once per language (EN/JP/DE/RU/ES)');
+  /* ⚠ (#R223) once per REGISTERED language — a sixth (zh) landed; the claim is coverage, not five. */
+  const NL = (rd('js/lang-registry.js').match(/\{\s*code:\s*'[a-z]+'/g) || []).length;
+  assert.equal(hits.length, NL, 'lyrSats is defined once per language');
   /* and it is a DIFFERENT string in each — a copy-paste of the English into all five would pass a
      count check and fail the actual instruction */
   const vals = [...i18n.matchAll(/lyrSats:"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(vals.length, 5);
-  assert.equal(new Set(vals).size, 5, 'each language has its own wording');
+  assert.equal(vals.length, NL);
+  assert.equal(new Set(vals).size, NL, 'each language has its own wording');
 });
 
 /* ── ⑦ THE NEW LAYER IS WIRED EVERYWHERE A LAYER HAS TO BE ────────────────────────────────── */
