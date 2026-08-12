@@ -79,7 +79,10 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
 test('R205 ③ the light basemap gets its own, much weaker atmosphere — and the other two are untouched', () => {
   const t = rd('js/theme-sky.js');
   assert.match(t, /function _mapIsLight\(\)/, 'the light/dark map rule must exist once, as a function');
-  const blend = /'atmosphere-blend':\(sat[\s\S]{0,700}?\)\}\);/.exec(t);
+  /* (#R227) the three ramps now sit behind `limb?0:` — where the app draws the Earth's edge itself
+     the renderer's own atmosphere pass is switched off so the two do not add. The ramps themselves,
+     which is what this test is about, are unchanged. */
+  const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,700}?\)\}\);/.exec(t);
   assert.ok(blend, "the atmosphere-blend expression was not found");
   assert.match(blend[0], /_mapIsLight\(\)/, 'the map basemap branch must ask which colour it is');
   const ramps = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],([^\]]+)\]/g)]
