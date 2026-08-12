@@ -145,7 +145,12 @@ const want = build();
 if (process.argv.includes('--check')) {
   let have = '';
   try { have = readFileSync(OUT, 'utf8'); } catch (_) {}
-  if (have !== want) { console.error('js/locales/ui.zh-hans.js is out of date — run: node scripts/zh-hans.mjs'); process.exit(1); }
+  /* ⚠ (#R225) COMPARE THE TEXT, NOT THE LINE ENDINGS. Git checks these files out with CRLF on
+     Windows and LF on Linux, and this script writes LF — so a byte comparison called a perfectly
+     current file «out of date» on one platform and not the other. What the check is for is that the
+     two TABLES agree; a carriage return is not a translation. */
+  const norm = (t) => String(t).split(String.fromCharCode(13)).join('');
+  if (norm(have) !== norm(want)) { console.error('js/locales/ui.zh-hans.js is out of date — run: node scripts/zh-hans.mjs'); process.exit(1); }
   console.log('ui.zh-hans.js is in sync with ui.zh.js');
 } else {
   writeFileSync(OUT, want);

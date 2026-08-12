@@ -182,8 +182,15 @@ test('⑥ glass-motion is registered, mobile-only, and releases on moveend', () 
   const css = read('css/intmap.css');
   assert.ok(/body\.im-moving \.im-glass\{[\s\S]{0,140}backdrop-filter: none !important/.test(css),
     'the CSS half of the contract must exist and must be !important (these elements declare their own)');
-  assert.ok(/@media \(max-width: 768px\)\{[\s\S]{0,200}body\.im-moving \.im-glass/.test(css),
-    'and it must be inside the phone media query');
+  /* ⚠ (#R225) THE GATE GREW A SECOND CLAUSE, AND THAT IS THE FIX. `max-width: 768px` is FALSE on a
+     phone held sideways (812 × 375), so rotating the device switched this whole suppression off and
+     put all nineteen backdrop filters back on every frame — 「スマホでの地図スクロール、ズームが
+     壊滅的に遅い」. Whether a device pays for a backdrop filter is a GPU question, not a layout one
+     (Architecture.md §9), so the pointer answers it in either orientation. */
+  assert.ok(/@media \(max-width: 768px\), \(hover: none\) and \(pointer: coarse\)\{[\s\S]{0,200}body\.im-moving \.im-glass/.test(css),
+    'the phone gate must cover a phone in LANDSCAPE too, not only a narrow viewport');
+  assert.ok(/const coarse = \(\) => \{ try \{ return matchMedia\('\(hover: none\) and \(pointer: coarse\)'\)/.test(gm),
+    'and js/glass-motion.js must ask the same question');
 });
 
 /* ── ⑦ THE FLIGHT SIMULATOR ON A PHONE ───────────────────────────────────────────────────── */

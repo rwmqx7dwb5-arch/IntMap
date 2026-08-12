@@ -105,6 +105,10 @@ import '../js/cameras.js';
    What IS imported is the ~30-line loader every caller goes through, so that «Atlas can drive
    everything» keeps meaning what it says while the kernel itself arrives later. */
 import '../js/atlas-loader.js';
+/* (#R225) the ON-DEVICE instrument for 「スマホでの地図スクロール、ズームが壊滅的に遅い」. Dormant
+   unless ?perf=1 is in the URL — one regexp test otherwise — because four rounds of measuring the
+   wrong machine is what this file exists to end. See its header. */
+import '../js/perf-hud.js';
 /* (#R217) "which tile segments are the same river, and where does that river really go" — pure
    set-of-names matching plus the OSM course resolver. Ahead of js/map-ui.js because the river-label
    click is its first caller; it publishes window.IntMapRiverCourse at import and fetches nothing
