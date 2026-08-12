@@ -70,7 +70,12 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   /* (#R222) the ocean-current field decoder — eager, and the failure it guards against is silent in
      the worst way: BOTH ocean-current layers still draw their named lines from the JSON, so the map
      looks right and the entire measured flow field is simply absent. */
-  'IntMapCurrentField'];
+  'IntMapCurrentField',
+  /* (#R224) the fault-plane solver — eager, and its absence is silent in the same way: the seismic
+     panel still takes a drawn rupture, still paints a field and still prints an Mw. It just prints
+     the one computed from the outline's SHADOW with no dip, no width and no depth, which is the
+     defect this round removed. */
+  'IntMapFaultGeom'];
 // js/playground.js publishes no window.* global of its own — its hub is reached through
 // window._openPlayground, which the test below asserts as a function. Neither do js/legal.js,
 // js/feedback.js, js/mobile-ui.js or js/news-timeline.js: they mount DOM instead, so the test

@@ -11,7 +11,25 @@
  *  Only CORS-clean responses are stored, so MapLibre can still render them to WebGL
  *  without tainting the canvas. A soft LRU cap keeps the cache from growing forever.
  * ========================================================================== */
-const CACHE = 'intmap-tiles-v1';
+/* ══ ⚠⚠ (#R224) A CACHE-FIRST STORE WITH NO EXPIRY AND NO VERSION CANNOT HEAL ═══════════════════════
+ *  「キャッシュの残っているブラウザで開くと、地図が全くちゃんと表示されない」——報告は二つの症状で、
+ *  どちらもこの一行の帰結だった：**衛星画像がぼやける**（低解像度のまま）と、**地名・国境・道路の
+ *  ラベルが出ない**。
+ *
+ *  ① ESRI の「まだ画像がありません」タイルは HTTP 200 で返る。約 2,521 バイトの灰色 JPEG で、
+ *     js/sat-proto.js はそれを本文サイズで見分けている（_SAT_PLACEHOLDER_MAX = 3500）。
+ *     ここは cache-first・無期限なので、**一度でも placeholder を掴んだ z/x/y は永久に placeholder**
+ *     になる。そして sat-proto はそれを見て「この近傍は画像がここで終わる」(`_satNoteStop`) と学習し、
+ *     **@2x のステッチをまるごと諦める** — すなわちその区画は半分の解像度で描かれ続ける。これが
+ *     「ぼやけている」の機構であり、Esri が後日その区画を公開しても**そのブラウザにだけは永久に届かない**。
+ *  ② 同じ理由で、`tiles.openfreemap.org` のベクタタイルとグリフも一度壊れた本文を掴めば固定される。
+ *     ラベル・国境・道路はすべてそのソースから来るので、まとめて消える。どちらの症状も
+ *     「キャッシュが残っているブラウザだけ」で起き、リロードでは治らない——報告のとおり。
+ *
+ *  だから三つ直す。**名前のバージョンを上げる**（activate が古いキャッシュを消すので、既存の汚染は
+ *  全端末で次の訪問に自動で流れる）、**placeholder は保存しない**、**保存に時刻を書いて期限を持たせる**
+ *  （期限切れはまず古い方を返してから裏で取り直す＝再訪の速さは一切失わない）。 */
+const CACHE = 'intmap-tiles-v2';
 /* (#R178) 4000 → 12000. The cap is what makes a REVISIT free, and 4000 was set before the DEM
    reached terrarium's native z15 (#R20) and before 3-D became a normal way to use the app: one
    tilted city view at z15 is already several hundred DEM tiles on top of its imagery, so a session
@@ -57,6 +75,66 @@ function isTileRequest(url) {
   return TILE_PATHS.some((p) => u.pathname.indexOf(p) !== -1);
 }
 
+/* ══ (#R224) WHAT MAY GO STALE, AND HOW STALE ═══════════════════════════════════════════════════════
+   A z/x/y of Esri imagery or of the terrarium DEM is the same picture next year; a vector tile of
+   OpenMapTiles is REGENERATED from OSM every few weeks, and a Carto raster style is re-rendered when
+   the style changes. Both were kept for ever, which is why a browser could be left holding a copy of
+   the label tiles that no longer parses against the glyphs it also holds.
+   ⚠ THE TTL IS NOT AN EVICTION. Past it the cached answer is still returned IMMEDIATELY — the revisit
+   stays a zero-latency cache hit, which is this whole file's reason to exist — and the refresh happens
+   behind it (stale-while-revalidate). So the only thing the number changes is how long a poisoned or
+   superseded tile can survive, never how fast the map draws. */
+const DAY = 86400e3;
+const REFRESHABLE = ['tiles.openfreemap.org', 'basemaps.cartocdn.com'];   /* re-rendered upstream */
+function maxAgeFor(url) {
+  try { const h = new URL(url).hostname;
+    if (REFRESHABLE.some((t) => h === t || h.endsWith('.' + t) || h.endsWith(t))) return 7 * DAY;
+  } catch (_) {}
+  return 60 * DAY;                       /* immutable imagery/DEM — long, but never infinite */
+}
+
+/* ⚠ (#R224) THE ONE RESPONSE THIS FILE MUST NOT KEEP. Esri answers "no imagery here yet" with an
+   HTTP 200 grey JPEG of ~2,521 bytes, and js/sat-proto.js identifies it by exactly that: a body at or
+   under _SAT_PLACEHOLDER_MAX (3,500 B). Storing it for ever pins a neighbourhood at half resolution
+   for the life of the browser profile (see the note on CACHE above), so it is the one thing that is
+   fetched fresh every session. It is 2.5 kB and sat-proto already dedupes it in memory for the
+   session, so refusing to store it costs one small request and buys the ability to heal.
+   ⚠ Kept deliberately narrow — ONLY the imagery hosts, and only a body small enough that it cannot be
+   a real tile (real World_Imagery is ≥ ~8 kB). Nothing else in the list has a 200-with-no-content. */
+const SAT_PLACEHOLDER_MAX = 3500;
+function isPlaceholder(url, res) {
+  try {
+    if (!/arcgisonline\.com$/.test(new URL(url).hostname)) return false;
+    const n = +res.headers.get('content-length');
+    return isFinite(n) && n > 0 && n <= SAT_PLACEHOLDER_MAX;
+  } catch (_) { return false; }
+}
+
+/* Store with the time it was stored. The header has to be ADDED, which means rebuilding the response
+   — the body is read either way (cache.put reads it too), and a response rebuilt here is same-origin
+   from then on, so MapLibre can still upload it to WebGL without tainting the canvas. */
+const STAMP = 'x-im-cached';
+async function store(cache, req, res) {
+  if (!res || !res.ok) return;
+  if (!(res.type === 'cors' || res.type === 'basic' || res.type === 'default')) return;
+  if (isPlaceholder(typeof req === 'string' ? req : req.url, res)) return;
+  try {
+    const body = await res.blob();
+    const h = new Headers();
+    const ct = res.headers.get('content-type'); if (ct) h.set('content-type', ct);
+    /* ⚠ NOT `content-encoding`. `res.blob()` hands back the DECODED bytes, so carrying the original
+       encoding header forward would tell the browser to inflate something already inflated. */
+    h.set(STAMP, String(Date.now()));
+    await cache.put(req, new Response(body, { status: 200, statusText: 'OK', headers: h }));
+    trim(cache);
+  } catch (_) {}
+}
+function isStale(hit, url) {
+  const t = +(hit.headers.get(STAMP) || 0);
+  if (!t) return true;                   /* written by an older version of this file — refresh once */
+  return (Date.now() - t) > maxAgeFor(url);
+}
+
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
@@ -92,13 +170,21 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const hit = await cache.match(req);
-    if (hit) return hit;                                          // ZERO network on revisit
+    if (hit) {
+      /* (#R224) still answered from disk with ZERO latency; if it is past its age the fresh copy is
+         fetched behind it and replaces it for next time. A failed refresh changes nothing. */
+      if (isStale(hit, req.url)) {
+        event.waitUntil((async () => {
+          try { const r = await fetch(req.url, { mode: 'cors', credentials: 'omit', cache: 'reload' });
+            if (r && r.ok) await store(cache, req, r); } catch (_) {}
+        })());
+      }
+      return hit;                                                 // ZERO network on revisit
+    }
     try {
       const res = await fetch(req);
       // Store only CORS-clean, OK responses (so MapLibre can render them to WebGL).
-      if (res && res.ok && (res.type === 'cors' || res.type === 'basic' || res.type === 'default')) {
-        cache.put(req, res.clone()).then(() => trim(cache)).catch(() => {});
-      }
+      if (res && res.ok) event.waitUntil(store(cache, req, res.clone()));
       return res;
     } catch (err) {
       const stale = await cache.match(req, { ignoreVary: true });
@@ -118,9 +204,11 @@ self.addEventListener('message', (event) => {
       try {
         if (await cache.match(u)) return;
         const res = await fetch(u, { mode: 'cors' });
-        if (res && res.ok && (res.type === 'cors' || res.type === 'basic')) await cache.put(u, res.clone());
+        /* (#R224) the SAME writer as the fetch path — stamped, and never a placeholder. The prefetch
+           ring warms exactly the tiles sat-proto will ask about, so a placeholder pinned HERE was the
+           other half of the half-resolution defect. */
+        if (res && res.ok) await store(cache, u, res);
       } catch (_) {}
     }));
-    trim(cache);
   })());
 });

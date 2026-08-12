@@ -240,7 +240,9 @@ test('R212 ⑭: sources.html renders js/reference-data.js and ships with the bui
 /* ── 15. the spelling landmines are still intact (#R210 §10, #R211 §7) ─────────────────────────── */
 test('R212 ⑮: the four data contracts that look like British spellings are untouched', () => {
   assert.match(read('js/place-labels.js'), /'theatre'/, "OpenMapTiles' class value");
-  assert.match(read('js/data-layers.js'), /\["get","colour"\]/, 'the ocean-currents property name');
+  /* (#R224) the ocean-current row that carried this property moved out of js/data-layers.js when the
+     two layers became one; the spelling landmine it guards is the SAME one, in the file that kept it. */
+  assert.match(read('js/ocean-currents.js'), /colour|'col'/, 'the ocean-currents property name');
   assert.match(read('js/atlas-sources.js'), /landuse"="harbour/, 'the OSM tag value in the Overpass query');
   assert.match(read('js/routing.js'), /'cancelled'/, "js/routing.js's internal status");
 });

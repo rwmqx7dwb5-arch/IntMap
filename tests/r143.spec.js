@@ -24,6 +24,9 @@ test.beforeAll(async ({ browser }) => {
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  /* ⚠ (#R224) the Atlas kernel is fetched on demand — ask for it, as a reader's first click does */
+  await page.waitForFunction(() => !!window.IntMapAtlas, null, { timeout: 45_000 });
+  await page.evaluate(() => window.IntMapAtlas.ensure());
   await page.waitForFunction(
     (g) => g.every((k) => typeof window[k] !== 'undefined') && !!(window.countryGeo && window.countryGeo.features),
     CRITICAL_GLOBALS, { timeout: 45_000 },

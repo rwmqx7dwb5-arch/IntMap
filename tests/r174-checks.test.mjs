@@ -201,7 +201,7 @@ test('the drone planner is operable from Atlas AND catalogued (#R115)', () => {
 test('the new UI strings exist in every registered language', () => {
   /* ⚠ (#R223) EVERY REGISTERED LANGUAGE, not the number five — a sixth (zh) landed and these
      assertions were about coverage, never about the count. `LANGS` is the one list (js/lang-registry.js). */
-  const NL = (R('js/lang-registry.js').match(/\{\s*code:\s*'[a-z]+'/g) || []).length;
+  const NL = (R('js/lang-registry.js').match(/\{\s*code:\s*'[a-z-]+'/g) || []).length;   /* (#R224) `[a-z-]` — the seventh language is 'zh-hans' and a hyphen-free class counted six */
   const i18n = R('js/i18n.js'), d = R('js/drone-nav.js'), tp = R('js/tool-panel.js');
   assert.equal((i18n.match(/droneBtn:/g) || []).length, NL, 'the launcher label is in every language');
   /* L(en, jp, de, ru, es) — walk to the matching close paren, because the English text contains brackets */

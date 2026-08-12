@@ -76,7 +76,7 @@ window.IntMapModules.workspace=function(HOST){
       {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
       /* (#R84) DEFAULT layout per request = Countries(left) · Map(center) · Layers(top-right) · Atlas(bottom-right).
          News/Information/Community remain on-demand (defHidden). ensure() builds #atlas-panel before it is wrapped. */
-      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
+      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], ensure:()=>{ try{ if(window.IntMapAtlas) window.IntMapAtlas.call('open'); else if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }   /* (#R224) the kernel is on demand */
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -576,7 +576,7 @@ window.IntMapModules.workspace=function(HOST){
         {label:T('Radius','半径','Radius','Радиус','Radio'),run:()=>clk('btn-tool-radius')},'sep',
         {label:T('Screenshot','スクリーンショット','Screenshot','Скриншот','Captura'),run:()=>clk('btn-screenshot')},
         {label:T('Share this view','この表示を共有','Ansicht teilen','Поделиться','Compartir'),run:()=>clk('btn-share')},'sep',
-        {label:T('Atlas (assistant)','Atlas（アシスタント）','Atlas','Atlas','Atlas'),run:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.toggle){ window.IntMapConsole.toggle(); return; } }catch(_){} clk('btn-community'); }},   /* (#R114) top-bar #btn-atlas removed → open the console directly (fallback: sidebar Atlas tab) */
+        {label:T('Atlas (assistant)','Atlas（アシスタント）','Atlas','Atlas','Atlas'),run:()=>{ try{ if(window.IntMapAtlas){ window.IntMapAtlas.call('toggle'); return; } if(window.IntMapConsole&&window.IntMapConsole.toggle){ window.IntMapConsole.toggle(); return; } }catch(_){} clk('btn-community'); }},   /* (#R114) top-bar #btn-atlas removed → open the console directly (fallback: sidebar Atlas tab) */
         {label:T('Grid + labels','グリッド＋ラベル','Gitter','Сетка','Cuadrícula'),run:()=>clk('btn-tool-grid')} ]);
       /* Window — show/hide each window + reset */
       const winItems=DEFS.filter(d=>wraps[d.id]).map(def=>({label:def.t(),win:def.id,stay:1,
@@ -754,6 +754,12 @@ window.IntMapModules.workspace=function(HOST){
        a short poll as a fallback, and a hard cap so we never wait long. */
     function _bootWS(tries){ try{ bind(); }catch(_){}
       if(!(_wantWS()&&!isMob())){ try{ document.documentElement.classList.remove('ws-boot'); }catch(_){} try{ syncModeBtn(); }catch(_){} return; }
+      /* ⚠ (#R224) WORKSPACE MODE IS THE ONE SESSION THAT GENUINELY NEEDS ATLAS AT BOOT — it has an
+         Atlas WINDOW, and that window can only be created through IntMapConsole.open(). The kernel is
+         on demand now, so without this the poll below would spin its full 3 s and then enter without
+         it. Asking for it here is what keeps workspace boot as fast as it was, and it is asked for
+         ONLY here: a normal desktop or phone session still never downloads it. */
+      try{ if(!window.IntMapConsole&&window.IntMapAtlas) window.IntMapAtlas.hint(); }catch(_){}
       if(window.IntMapConsole&&window.IntMapConsole.open){ try{ enable(); }catch(_){ try{ document.documentElement.classList.remove('ws-boot'); }catch(__){} } return; }
       if((tries||0)<120){ setTimeout(()=>_bootWS((tries||0)+1),25); return; }
       try{ enable(); }catch(_){ try{ document.documentElement.classList.remove('ws-boot'); }catch(__){} }   /* give up waiting → enter anyway */

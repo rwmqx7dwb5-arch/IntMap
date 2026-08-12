@@ -31,13 +31,16 @@ test('R223 ① the aerial haze is off on every basemap, from one function', () =
 });
 
 /* ── ② the ocean-current data layer has a legend, and the ramp has one owner ───────────────────── */
-test('R223 ② the Oceans & maritime current row registers a legend and hides it again', () => {
+/* ⚠ (#R224) #R223 gave the SECOND ocean-current row a legend; #R224 deleted that row instead
+   (「二つあるなんていうややこしいことするな」). The report #R223 answered — 「海流レイヤーに凡例がない」 —
+   is answered better by there being one layer, and that layer has had a legend since #R219. What is
+   pinned here now is that the removal is complete and the survivor still carries its legend. */
+test('R223 ② the retired current row is gone and the survivor keeps its legend', () => {
   const s = read('js/data-layers.js');
-  assert.match(s, /function showOceanCurLegend\(\)/);
-  assert.match(s, /showOceanCurLegend\(\);/, 'the toggle-ON branch calls it');
-  assert.match(s, /_hideGenericLegend&&window\._hideGenericLegend\('oceancur'\)/, 'the toggle-OFF branch hides it');
-  /* the three keys read the same constants the paint expression is built from */
-  assert.match(s, /_ocKey\(OC_WARM,/); assert.match(s, /_ocKey\(OC_COLD,/); assert.match(s, /_ocKey\(OC_ZONAL,/);
+  assert.ok(!/showOceanCurLegend/.test(s), 'the second legend went with the second layer');
+  assert.ok(!/OC_WARM|OC_COLD|OC_ZONAL/.test(s), 'and so did its private colour constants');
+  const oc = read('js/ocean-currents.js');
+  assert.match(oc, /_speedRamp\(\)/, 'the surviving plate still builds its own legend ramp');
 });
 test('R223 ② the World-data speed ramp is derived from SPEED_COL, never written twice', () => {
   const s = read('js/ocean-currents.js');
@@ -168,8 +171,13 @@ test('R223 ⑨ the sheet drag writes the property the stylesheet reads', () => {
 /* ── ⑩ the sixth language ─────────────────────────────────────────────────────────────────────── */
 test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the end', () => {
   const reg = read('js/lang-registry.js');
-  const rows = [...reg.matchAll(/\{\s*code:\s*'([a-z]+)'/g)].map((m) => m[1]);
-  assert.deepEqual(rows, ['en', 'jp', 'de', 'ru', 'es', 'zh'], 'order is load-bearing — never reordered');
+  const rows = [...reg.matchAll(/\{\s*code:\s*'([a-z-]+)'/g)].map((m) => m[1]);
+  /* ⚠ (#R224) A PREFIX, NOT AN EXACT LIST. #R221's own lesson — 「『5言語ちょうど』を数えるテストは
+     6言語目で必ず落ちる」 — and #R223 wrote the same shape one language later, so the seventh
+     (zh-hans) failed it. What is load-bearing is that the FIRST FIVE never move (they are the
+     argument order of 2,238 L(…) call sites) and that new languages are APPENDED; the count is not. */
+  assert.deepEqual(rows.slice(0, 6), ['en', 'jp', 'de', 'ru', 'es', 'zh'],
+    'order is load-bearing — never reordered, only appended to');
   assert.match(reg, /label: '繁體中文 \(beta\)'/);
   assert.match(reg, /html: 'zh-Hant'/);
   assert.match(reg, /alias: \['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'\]/, 'the script tags, not a bare zh');

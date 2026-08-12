@@ -187,6 +187,11 @@ export function makeAtlasReply(HOST, CTX) {
         try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>{ _atlFallbackCopy(txt); done(); }); } else { _atlFallbackCopy(txt); done(); } }catch(_){ _atlFallbackCopy(txt); done(); }
       }catch(_){} });
       /* belt-and-suspenders: re-typeset any raw-LaTeX fallbacks once KaTeX is present (covers a slow-CDN edge) */
+      /* (#R224) …and KaTeX is fetched HERE, the first time an answer carries maths, rather than at
+         boot: 258 kB + its stylesheet on every session for a feature most sessions never reach (see
+         src/vendor.js). The retry loop below is unchanged and still covers a slow arrival. */
+      try{ if(!(window.katex&&window.katex.renderToString)&&window.IntMapVendor
+            &&document.querySelector('.atl-math-raw[data-tex]')) window.IntMapVendor.katex().catch(()=>{}); }catch(_){}
       try{ if(window.katex&&window.katex.renderToString){ _atlTypesetMath(document); } else { let _k=0; const _t=setInterval(()=>{ if((window.katex&&window.katex.renderToString)){ clearInterval(_t); _atlTypesetMath(document); } else if(++_k>20){ clearInterval(_t); } },500); } }catch(_){}
     } }catch(_){}
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):

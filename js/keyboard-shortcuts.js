@@ -64,7 +64,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       switch(true){
         case (k==='?'): helpModal(); break;
         case (k==='/'): { const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp){ inp.focus(); try{ inp.select(); }catch(_){} } break; }
-        case (K==='a'): try{ window.IntMapConsole&&window.IntMapConsole.toggle(); }catch(_){} break;
+        case (K==='a'): try{ if(window.IntMapAtlas) window.IntMapAtlas.call('toggle'); else window.IntMapConsole&&window.IntMapConsole.toggle(); }catch(_){} break;   /* (#R224) fetches the kernel on demand */
         case (K==='l'): click('btn-layers'); break;
         case (K==='n'): click('btn-news'); break;
         case (K==='i'): click('btn-info'); break;

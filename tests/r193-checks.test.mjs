@@ -98,7 +98,14 @@ test('R193 ⑧ nothing large is fetched on the boot path that nobody is waiting 
   assert.match(lp, /function kick\(container\)\{ _openQueue\(\);/, 'opening the panel opens it');
   /* katex and html2canvas are deferred, not merely split */
   const v = read('src/vendor.js');
-  assert.match(v, /requestIdleCallback\(load, \{ timeout: 6000 \}\)/, 'the lazy vendors are actually deferred');
+  /* ⚠ (#R224) DEFERRED BECAME ON-DEMAND, which is what #R193 was reaching for. An idle callback with
+     a 6 s ceiling still fetched, parsed and compiled 456 kB on EVERY session (measured this round at
+     t = 1.04 s on a clean phone load) for two features most sessions never touch. They are keyed to
+     their first use now: html2canvas when the shutter is pressed, KaTeX when an answer carries LaTeX. */
+  assert.ok(!/requestIdleCallback\(load/.test(v), 'the vendors are no longer merely delayed');
+  assert.match(v, /window\.IntMapVendor = /, 'they are behind an explicit first-use gate');
+  assert.match(read('js/screenshot.js'), /IntMapVendor\.html2canvas\(\)/, 'the screenshot path fetches its own library');
+  assert.match(read('js/atlas-reply.js'), /IntMapVendor\.katex\(\)/, 'and the maths path fetches KaTeX');
   /* the country file waits for the map's own idle */
   const ab = read('js/app-body.js');
   assert.match(ab, /GE\(\)\.events\.once\('idle',\(\)=>setTimeout\(once,300\)\);[\s\S]{0,80}setTimeout\(once,5000\);/,

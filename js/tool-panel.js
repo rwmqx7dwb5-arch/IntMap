@@ -187,6 +187,8 @@ window.IntMapModules.toolPanel=function(HOST){
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!HOST.aiReady()); sb.title=HOST.aiReady()?'':HOST.t('aiNoKey');
       /* (#R119) the area summary now runs INSIDE the Atlas thread (analyze scope:"drawn-area" = news in the area +
          displayed-layer values + WorldPop population, one conversation surface). The legacy popup stays as fallback. */
+      /* (#R224) Atlas is on demand — warm it as soon as this panel is built, so the press is instant */
+      try{ if(window.IntMapAtlas) window.IntMapAtlas.hint(); }catch(_){}
       sb.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.runDirect){
           const q5=HOST.lang==='jp'?'描画した範囲内の状況を要約・分析して':HOST.lang==='de'?'Fasse die Lage im gezeichneten Gebiet zusammen':HOST.lang==='ru'?'Сводка по нарисованной области':HOST.lang==='es'?'Resume la situación del área dibujada':'Summarize and analyze the situation inside the drawn area';
           window.IntMapConsole.runDirect(q5,[{type:'analyze',question:q5,scope:'drawn-area'}]); return; } }catch(_){}
@@ -476,7 +478,8 @@ window.IntMapModules.toolPanel=function(HOST){
     const items=[
       {coord:`📍 ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`,label2:HOST.t('ctxThisPoint')},
       {h:L('Actions','操作','Aktionen','Действия','Acciones'),head:true},
-      {label:`${L('Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas')}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
+      /* (#R224) on-demand kernel: askHere if it has one, otherwise just open it */
+      {label:`${L('Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas')}`, action:()=>{ try{ if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(C=>{ try{ if(C&&C.askHere) C.askHere(lngLat); else if(C&&C.open) C.open(); }catch(_){} }); } else if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); }catch(_){} }},
       {label:`🧍 ${L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')}`, action:()=>{ window.IntMapLazy.need('streetView').then(()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       {label:`📍 ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
       /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to

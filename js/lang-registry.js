@@ -74,7 +74,20 @@ window.IntMapLang = (function () {
        maps a bare 'zh' here (it falls back to the two-letter prefix), which is what the picker and
        the share link need; nothing auto-detects the app's language from the browser (js/app-body.js
        reads the saved setting only), so no one is switched into it without asking. */
-    { code: 'zh', label: '繁體中文 (beta)', html: 'zh-Hant', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] }
+    { code: 'zh', label: '繁體中文 (beta)', html: 'zh-Hant', pill: '繁', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
+    /* ══ (#R224) THE SEVENTH — 「簡体を追加して。(beta)」 ═══════════════════════════════════════════
+       ⚠ IT IS A DERIVED FILE, NOT A SECOND TRANSLATION. js/locales/ui.zh-hans.js is generated from
+       ui.zh.js by scripts/zh-hans.mjs — the Taiwan→mainland WORD table first (網路→网络, 資訊→信息,
+       螢幕→屏幕, 檔案→文件, 預設→默认, 選單→菜单, 使用者→用户, 解析度→分辨率, 座標→坐标 …), then
+       the character map. Simplified Chinese is not a different translation of these 2,100 strings and
+       a hand-kept second copy would drift; tests/r224-checks re-runs the generator and fails if the
+       committed file is stale. Confirmed with the reader as 「字体変換＋大陸語彙の置換」.
+       ⚠ THE ALIASES ARE THE SIMPLIFIED TAGS ONLY. A bare 'zh' still resolves to Traditional (it is
+       the earlier row and `normalise` falls back to the two-letter prefix) — #R223's argument, which
+       is that handing one script's reader the other because the first two letters match is a guess.
+       zh-CN / zh-SG / zh-MY / zh-Hans land here, zh-TW / zh-HK / zh-MO stay above. */
+    { code: 'zh-hans', label: '简体中文 (beta)', html: 'zh-Hans', pill: '简',
+      alias: ['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'] }
   ];
   var FALLBACK = 'en';
 
@@ -148,7 +161,7 @@ window.IntMapLang = (function () {
   }
 
   /* used by the settings picker and by anything that has to enumerate languages */
-  function list() { return LANGS.map(function (l) { return { code: l.code, label: l.label, html: l.html }; }); }
+  function list() { return LANGS.map(function (l) { return { code: l.code, label: l.label, html: l.html, pill: l.pill || l.code.toUpperCase() }; }); }
   function htmlTag(code) { var l = byCode[normalise(code)]; return l ? l.html : 'en'; }
 
   /* ── THE CHROME, BUILT FROM THIS LIST ────────────────────────────────────────────────────────
@@ -166,7 +179,12 @@ window.IntMapLang = (function () {
         if (bar && !document.getElementById('lang-' + l.code)) {
           var b = document.createElement('button');
           b.className = 'lang-btn'; b.id = 'lang-' + l.code;
-          b.textContent = l.code.toUpperCase(); b.title = l.label;
+          /* ⚠ (#R224) `pill` EXISTS BECAUSE A CODE IS NOT ALWAYS A LABEL. The bar is a row of
+             two-letter pills; 'ZH-HANS'.toUpperCase() is seven characters and would wrap the row on
+             a phone. A language may therefore name its own pill — the two Chinese rows use 繁 / 简,
+             which is what a reader of either script actually looks for — and the full name stays in
+             the tooltip. Everything else keeps the code, so the five shipped pills are unchanged. */
+          b.textContent = l.pill || l.code.toUpperCase(); b.title = l.label;
           b.addEventListener('click', function () { try { onPick(l.code); } catch (e) {} });
           bar.appendChild(b);
         }

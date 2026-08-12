@@ -303,8 +303,14 @@ test('R213 ⑨: the horizon band keeps the measured daylight colour and gains a 
   const sky = read('js/theme-sky.js');
   assert.match(sky, /const _HZ_VIEW_ELEV=0\.6;/, 'the band is sampled just above the horizon');
   assert.match(sky, /skyColour\(e,_eyeAltM\(\),_relAzimuth\(\),_HZ_VIEW_ELEV\)/, 'from the same integral the far end uses');
-  assert.match(sky, /const w=Math\.max\(0,Math\.min\(1,\(6-e\)\/12\)\);\s*if\(w<=0\) return rampHex;/,
-    'and above +6° it returns #R196’s measured ramp unchanged');
+  /* ⚠ (#R224) THE +6° CUT-OFF IS GONE ON PURPOSE. #R213 zeroed the model's hue above a +6° Sun
+     because the model answered OLIVE there; #R224 found that was the march's quadrature and fixed it,
+     so the same integral now gives #b9ceda at noon and the daytime band is no longer a flat grey.
+     The weight rides the model's own LUMINANCE instead — the one case where its hue is meaningless is
+     when it has integrated to black. */
+  assert.match(sky, /const w=Math\.max\(0,Math\.min\(1,lm\/12\)\);/,
+    'the hue weight follows the model’s luminance, not the Sun’s elevation');
+  assert.ok(!/\(6-e\)\/12/.test(sky), 'the elevation cut-off is not still there beside it');
 
   /* re-run the arithmetic: the same weighting the file uses, against the same model */
   const { skyColour } = await import(new URL('../js/sky-model.js', import.meta.url));
@@ -313,15 +319,20 @@ test('R213 ⑨: the horizon band keeps the measured daylight colour and gains a 
   const band = (e) => {
     const t0 = Math.max(0, Math.min(1, (e + 6) / 12)), t = t0 * t0 * (3 - 2 * t0);
     const ramp = [0, 1, 2].map(i => Math.round(NIGHT[i] + (DAY[i] - NIGHT[i]) * t));
-    const w = Math.max(0, Math.min(1, (6 - e) / 12));
-    if (w <= 0) return ramp;
     const m = skyColour(e, 0, 90, 0.6).rgb, lm = lum(m);
     if (!(lm > 1)) return ramp;
+    const w = Math.max(0, Math.min(1, lm / 12));
     const k = lum(ramp) / lm;
     return [0, 1, 2].map(i => Math.max(NIGHT[i], Math.min(255, Math.round(ramp[i] + (Math.min(255, m[i] * k) - ramp[i]) * w))));
   };
-  assert.deepEqual(band(45), DAY, 'a high Sun is exactly the colour #R196 measured');
-  assert.deepEqual(band(6), DAY, 'and so is the moment the weighting starts');
+  /* (#R224) a high Sun keeps #R196's measured BRIGHTNESS — that is what `k` guarantees — and now
+     carries the model's hue on top of it, which is the change. Luminance within a count, and blue. */
+  for (const e of [45, 6]) {
+    const b = band(e);
+    assert.ok(Math.abs(lum(b) - lum(DAY)) <= 1.5, `sun ${e}°: the band's brightness is still #R196's (${b})`);
+  }
+  assert.ok(band(45)[2] > band(45)[0], `a high Sun's band is BLUE where the grey ramp was neutral (${band(45)})`);
+  assert.ok(band(6)[0] > band(6)[2], `and +6° is already gold rather than grey (${band(6)})`);
   const set = band(0), old0 = (() => { const t0 = 0.5, t = t0 * t0 * (3 - 2 * t0); return [0, 1, 2].map(i => Math.round(NIGHT[i] + (DAY[i] - NIGHT[i]) * t)); })();
   assert.ok(set[0] > set[2], `at sunset the band is red-dominant (${set}), which the old grey ramp never was (${old0})`);
   assert.ok(set[0] > old0[0] && set[2] < old0[2], 'redder and less blue than the ramp it replaces');

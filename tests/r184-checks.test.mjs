@@ -129,7 +129,7 @@ test('R184 #6: the new layer name exists in all five languages', () => {
   const i18n = rd('js/i18n.js');
   const hits = i18n.match(/lyrSats:/g) || [];
   /* ⚠ (#R223) once per REGISTERED language — a sixth (zh) landed; the claim is coverage, not five. */
-  const NL = (rd('js/lang-registry.js').match(/\{\s*code:\s*'[a-z]+'/g) || []).length;
+  const NL = (rd('js/lang-registry.js').match(/\{\s*code:\s*'[a-z-]+'/g) || []).length;   /* (#R224) `[a-z-]` — the seventh language is 'zh-hans' and a hyphen-free class counted six */
   assert.equal(hits.length, NL, 'lyrSats is defined once per language');
   /* and it is a DIFFERENT string in each — a copy-paste of the English into all five would pass a
      count check and fail the actual instruction */

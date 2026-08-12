@@ -390,11 +390,30 @@ export function makeThemeSky(HOST, CTX) {
     const t=Math.max(0,Math.min(1,(e+6)/12));
     const rampHex=_mix(_SKY_H_NIGHT,_SKY_H_DAY,t*t*(3-2*t));
     const ramp=[parseInt(rampHex.slice(1,3),16),parseInt(rampHex.slice(3,5),16),parseInt(rampHex.slice(5,7),16)];
-    const w=Math.max(0,Math.min(1,(6-e)/12));
-    if(w<=0) return rampHex;
+    /* ══ ⚠⚠ (#R224) THE +6° CUT-OFF IS GONE, AND WITH IT THE GREY DAYTIME BAND ═════════════════════
+       「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」
+
+       #R213 weighted the model's hue to ZERO above a +6° Sun and said exactly why: at a 0.6° view
+       elevation the model returned [111,112,83] at noon — OLIVE — so above the twilight window the
+       band fell back to #R196's measured constant #c2ccd1, a NEUTRAL GREY, at every hour and every
+       camera. That was the right call for a model that answered olive. It is the wrong call now:
+       #R224 found the olive was the march's quadrature (see js/sky-model.js) and the same integral at
+       the same 0.6° returns, rescaled to #R196's measured luminance,
+
+           Sun 80°  #b9ceda      Sun 20°  #c0cdce      Sun 6°  #d8c9a9      Sun 2°  #fbc193
+
+       — pale blue at noon, going gold and then orange as the Sun sets, which is what a horizon does
+       and what a constant grey never did.
+       ⚠ THE WEIGHT IS NOW ON THE MODEL'S OWN CONFIDENCE, NOT ON THE SUN'S ELEVATION. The one case
+       where its hue is genuinely meaningless is when it has integrated to black (no starlight, no
+       airglow — #R202's floor), so the hue fades out with the model's LUMINANCE rather than at an
+       elevation: full below 12 counts, and the two-hex ramp answers when there is nothing to take a
+       hue from. ⚠ Only the HUE is taken; the brightness is still #R196's measurement (`k` below), so
+       nothing about how bright the band is has moved. */
     try{
       const m=skyColour(e,_eyeAltM(),_relAzimuth(),_HZ_VIEW_ELEV).rgb;
       const lm=_lum(m); if(!(lm>1)) return rampHex;          /* nothing to take a hue from */
+      const w=Math.max(0,Math.min(1,lm/12));
       const k=_lum(ramp)/lm;                                  /* the model's colour at the measured brightness */
       const night=[parseInt(_SKY_H_NIGHT.slice(1,3),16),parseInt(_SKY_H_NIGHT.slice(3,5),16),parseInt(_SKY_H_NIGHT.slice(5,7),16)];
       return '#'+[0,1,2].map(i=>{

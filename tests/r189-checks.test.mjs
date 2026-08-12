@@ -207,8 +207,14 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
 test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-source fronts', () => {
   const src = read('js/seismic.js');
   assert.match(src, /const MU=RHO\*BETA\*BETA, VRUP_KMS=0\.75\*BETA\/1000;/, 'μ=ρβ², Vr=0.75β');
-  assert.match(src, /const M0=MU\*\(areaKm2\*1e6\)\*Math\.max\(0\.01,slipM\);/, 'M0 = μ·A·D̄');
-  assert.match(src, /mw:\(Math\.log10\(M0\)-9\.1\)\/1\.5/, 'Mw back through Hanks & Kanamori');
+  /* ⚠ (#R224) M₀ = μ·A·D̄ MOVED, IT DID NOT GO. The drawn outline is the fault's surface projection
+     now, so the whole chain (dip → width → depth → 3-D area → slip → M₀ → Mw) lives in
+     js/fault-geometry.js, where it can be verified against real earthquakes in Node. This file's job
+     is to prove seismic.js still hands the ring to it and still reads the moment back. */
+  assert.match(src, /const s=faultSolve\(ring,aKm2\)/, 'the ring goes through the fault solver');
+  const fg = read('js/fault-geometry.js');
+  assert.match(fg, /const M0 = mu \* \(areaKm2 \* 1e6\) \* slipM;/, 'M0 = μ·A·D̄');
+  assert.match(fg, /const mw = \(Math\.log10\(M0\) - 9\.1\) \/ 1\.5;/, 'Mw back through Hanks & Kanamori');
   assert.match(src, /function faultDistKm\(lng,lat\)\{/, 'Rrup: zero inside, nearest edge outside');
   assert.match(src, /function faultFrontLines\(radiusAtDelay\)\{/, 'fronts are the delayed-union envelope');
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');

@@ -160,13 +160,31 @@ const LIVE = {
 test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its original spot', () => {
   assert.ok(!html.includes('window.IntMapConsole=(function(){'),
     'index.html must not still define IntMapConsole inline — a leftover in-page copy would win');
-  assert.ok(html.includes("import '../js/atlas-console.js';"), 'src/main.js imports js/atlas-console.js (#R175)');
+  /* ⚠ (#R224) THE KERNEL IS NO LONGER IMPORTED AT BOOT — it is 658 kB of the main chunk and most
+     sessions never open it, so it is the ninth on-demand module (js/lazy-modules.js). What #R165 was
+     defending is that there is ONE kernel, mounted ONCE, with the shared host; all three of those are
+     still checked, at the place that now does it. */
+  assert.ok(!html.includes("import '../js/atlas-console.js';"),
+    'src/main.js must NOT import the kernel eagerly any more (#R224)');
+  assert.ok(html.includes("import '../js/atlas-loader.js';"),
+    '…it imports the loader every caller goes through instead');
+  const lazy = rd('js/lazy-modules.js');
+  assert.ok(lazy.includes("case 'atlasConsole': return import('./atlas-console.js');"),
+    'js/lazy-modules.js fetches the kernel on demand');
+  assert.ok(lazy.includes("window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);"),
+    '…and mounts it with the shared host, exactly as app-body did');
   assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
     'js/atlas-console.js extends IntMapModules without clobbering what earlier files put there');
   assert.ok(mod.includes('window.IntMapModules.atlasConsole=function(HOST){'),
     'js/atlas-console.js declares the atlasConsole factory taking (HOST)');
-  assert.ok(html.includes('window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);'),
-    'index.html instantiates the kernel with the shared host at the original position');
+  /* (#R224) …and js/app-body.js no longer mounts it itself: it wires the entry points to
+     window.IntMapAtlas, which fetches first. A second mount anywhere would be a second kernel. */
+  const ab2 = rd('js/app-body.js');
+  assert.ok(!ab2.includes('window.IntMapModules.atlasConsole(IM_HOST)'),
+    'app-body must not mount the kernel eagerly any more');
+  assert.ok(ab2.includes('window.IntMapAtlas.wire()'), 'app-body wires the entry points through the loader');
+  assert.ok(rd('js/atlas-loader.js').includes("A.call('toggle')"),
+    '…and the ⌘K / button entry points go through the on-demand kernel');
 });
 
 test('R165 #2 THE RW CONTRACT: the setter list is exactly the declared members, each with one writer', () => {
