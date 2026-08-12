@@ -3,7 +3,7 @@
 // Distinguishes a real product outage from a transient upstream API failure (§6.3, §8.5):
 // it lets real network through and only fails on IntMap's own breakage.
 import { test, expect } from '@playwright/test';
-import { collectPageDiagnostics } from './helpers/network.js';
+import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
 
 const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
@@ -92,6 +92,9 @@ let page, diag, response, lazyError;
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
+  /* (#R224) the Atlas kernel is fetched on demand now — reach for it the way a reader's first click
+     does, or `IntMapConsole` is legitimately absent and this reports a healthy deploy as broken. */
+  await ensureAtlasOnDemand(context);
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   response = await page.goto(PROD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
