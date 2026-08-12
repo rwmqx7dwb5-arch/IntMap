@@ -437,7 +437,31 @@ window.IntMapNightSide=(function(){
   function consider(){
     if(!enabled||!engineIsMapLibre()) return;
     if(!satelliteUp()){ if(built) destroy(); return; }
-    if(zoomNow()>ZMAX+0.4){ return; }
+    /* ══ ⚠⚠ (#R228) ABOVE THE RAMP, TEAR IT DOWN — DO NOT MERELY DECLINE TO BUILD IT ════════════════
+       「モバイル版がまだ劇的に遅い…地図のスクロール、ズームが困難」(iPhone / iOS Safari, 5回目)
+
+       This line used to be a bare `return`, and the comment on RAMP_STOPS above it has said
+       「reaching 0 at ZMAX where nothing is built」 since #R201 — the code did the opposite of its own
+       comment (#R212's shape of defect). The guard only ever stopped the layers being BUILT; it never
+       removed ones that already existed. The app opens at z1.7, which is inside the ramp, so on every
+       cold load with the satellite basemap up both layers ARE built — and then the reader zooms in to
+       actually use the map and they are never taken down again.
+
+       So at every working zoom (z5 → z22: a city, a coastline, terrain) the renderer was drawing, on
+       every frame of every pan and every pinch:
+         · `im-night-lights-lyr` — a FULL-SCREEN raster of the Black Marble canvas source, at
+           raster-opacity 0
+         · `im-night-shade`      — a FULL-SCREEN fill of the polar wedges, at fill-opacity 0
+       plus holding the canvas source's mosaic and its GPU texture resident the whole time. Not one
+       pixel of it can ever reach the screen: the ramp is 0 from z4.6 up, by construction.
+
+       ⚠ THIS IS NOT A QUALITY DECISION AND NOTHING VISIBLE CHANGES. Both layers are already fully
+       transparent everywhere this branch is reached; `destroy()` removes exactly what the ramp has
+       already multiplied to nothing. Coming back down under z5.0 rebuilds them through the same
+       `consider()` that built them the first time, on the same `moveend`.
+       ⚠ Symmetric with the build threshold on purpose — one `moveend` can build or destroy, never
+       both, so a camera resting near z5 cannot oscillate. */
+    if(zoomNow()>ZMAX+0.4){ if(built) destroy(); return; }
     if(built){ refresh(false); return; }
     if(_pend) return; _pend=1;
     const go=()=>{ _pend=0;
