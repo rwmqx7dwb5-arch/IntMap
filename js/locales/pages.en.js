@@ -151,7 +151,10 @@ window.IntMapPageI18N.define('en', {
             ['11', '~54 m', 'Long-range downstream trace'],
             ['7', '~860 m', '"Is this the sea or a closed basin?"']
           ]],
-          ['lim', 'Gaps are filled from neighbours and the <b>number of filled cells is always shown</b>. If more than 30 % is missing the sampler steps down a zoom level and retries; only if even the coarsest level fails does it report a failure — and it names the network, not the place.']
+          ['lim', 'Gaps are filled from neighbours and the <b>number of filled cells is always shown</b>. If more than 30 % is missing the sampler steps down a zoom level and retries; only if even the coarsest level fails does it report a failure — and it names the network, not the place.'],
+          ['h3', 'The four samples, and the budget they come from'],
+          ['tex', 'h(x,y) \\;=\\; \\sum_{i,j\\in\\{0,1\\}} h_{ij}\\,\\bigl(1-|x-i|\\bigr)\\bigl(1-|y-j|\\bigr)'],
+          ['p', 'A tile is 256&times;256 samples; a query at zoom 14 therefore costs one HTTP request per 2.4 km square and is cached for the session. A terrain run states its own tile budget before it starts &mdash; an intensity field asks for up to 1,600 tiles and a phone caches 140, so the tiles a run is using are <b>pinned</b> for its duration and released in a <code>finally</code>. Without that a large field evicts its own inputs and re-fetches them, which is what turns a field into concentric circles.']
         ]
       },
       {
@@ -181,7 +184,18 @@ window.IntMapPageI18N.define('en', {
           ['p', 'At each point the DEM is read on the <b>perpendicular</b> out to ±1.8 km, and the water surface is raised until the wetted area matches what has to pass. That requirement comes from continuity:'],
           ['tex', 'A(s) \\;=\\; \\frac{C}{\\sqrt{S(s)}}, \\qquad v \\;=\\; K\\sqrt{S}, \\quad K = 40'],
           ['p', 'Speed going as &radic;slope is the friction-slope term every open-channel formula shares; K = 40 gives 1.3 m/s on a 0.1 % grade, mid-range for a real lowland river. Steep reaches come out narrow and quick, flat reaches broad and slow. <b>The only free number is the volume (or discharge) the user entered.</b>'],
-          ['lim', 'This is a <b>steady-state routing model</b>, not a shallow-water solver: it does not answer arrival time (a separate feature does). "Continuous pour" repeats the same steady solve as the volume grows — a quasi-static filling sequence — and the panel shows simulated time, never wall clock.']
+          ['lim', 'This is a <b>steady-state routing model</b>, not a shallow-water solver: it does not answer arrival time (a separate feature does). "Continuous pour" repeats the same steady solve as the volume grows — a quasi-static filling sequence — and the panel shows simulated time, never wall clock.'],
+          ['h3', 'The size of a run, and what bounds it'],
+          ['tex', '\\text{priority flood: } O(n\\log n),\\qquad \\text{MFD: } w_i = \\frac{(\\Delta z_i/L_i)^{1.1}C_i}{\\sum_j (\\Delta z_j/L_j)^{1.1}C_j}'],
+          ['table', ['Quantity', 'Value', 'Why that value'], [
+              ['Working grid', 'up to 60 km, &le; 512&times;512 cells', 'a phone must hold the heap, the fill and the accumulation at once'],
+              ['Heap operations', 'O(n log n), n = cells', 'every cell is pushed and popped exactly once'],
+              ['Downstream walk', 'windows of 15 km, widening &times;3 &rarr; &times;9 &rarr; &times;27', 'a lake wider than the window has no descending neighbour inside it'],
+              ['Cross-section', '&plusmn;1.8 km, 96 samples', 'wide enough for a lowland river, fine enough for a gorge']
+            ]],
+          ['h3', 'The friction law behind K = 40'],
+          ['tex', 'v \\;=\\; \\frac{1}{n}R_h^{2/3}S^{1/2}\\;\\;(\\text{Manning}), \\qquad K=\\frac{R_h^{2/3}}{n}\\;\\approx\\;40\\ \\text{for } R_h\\sim2\\,\\text{m},\\; n\\sim0.035'],
+          ['p', 'The constant is not free: it is Manning&rsquo;s equation with a hydraulic radius of about 2 m and n = 0.035, i.e. a natural channel with some vegetation. It is stated here so a reader can decide whether it applies to the reach they are looking at.']
         ]
       },
       {
@@ -199,7 +213,10 @@ window.IntMapPageI18N.define('en', {
           ['tex', '\\mathrm{MMI} = 3.78 + 1.47\\log_{10}\\mathrm{PGV}\\;\\;(\\mathrm{PGV}>0.76\\ \\text{cm/s}) \\qquad I_{\\mathrm{JMA}} = 2\\log_{10}a_0 + 0.94'],
           ['p', 'Arrival times are ray-traced through the <b>IASP91</b> velocity structure — the take-off angle is solved for the source depth and epicentral distance and the path is integrated, rather than read from a table. That gives the P and S arrivals.'],
           ['p', 'Amplitude is an empirical distance decay times a <b>frequency-dependent Q</b> (anelastic attenuation), times a <b>site amplification</b>. The site class is not assumed: it comes from the slope measured at the DEM\'s own sample spacing at that point (steep = rock, flat = alluvium).'],
-          ['lim', 'Beyond the bottom of the intensity scale the field is <b>extrapolating</b>, and says so. The epicentre is where the user put it; no AI-guessed coordinate is ever used.']
+          ['lim', 'Beyond the bottom of the intensity scale the field is <b>extrapolating</b>, and says so. The epicentre is where the user put it; no AI-guessed coordinate is ever used.'],
+          ['h3', 'From a spectrum to a number on the screen'],
+          ['p', 'The Fourier amplitude spectrum is evaluated at 64 frequencies logarithmically spaced over 0.1&ndash;20 Hz. Everything after that is the peak-factor integral above, evaluated by the trapezium rule on those 64 points; the path duration is T<sub>d</sub> = T<sub>source</sub> + 0.05&thinsp;r, the standard Boore form.'],
+          ['p', 'The field is solved on a grid whose spacing is chosen from the magnitude &mdash; 512 m for M &lt; 6, 1&ndash;2 km above it &mdash; and then <b>interpolated for display only</b>. Nothing is drawn finer than the grid it was solved on.']
         ]
       },
       {
@@ -215,14 +232,24 @@ window.IntMapPageI18N.define('en', {
             'The arctangent must be the <b>principal value</b> — using <code>atan2</code> produces a false subsidence lobe behind the fault.',
             'Truncating the computation window leaves a step, and the step propagates as a <b>false wave front</b>. The window is widened until the displacement is negligible.'
           ]],
-          ['p', 'Propagation is the <b>linear long-wave</b> equation over measured bathymetry, phase speed <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — about 200 m/s over 4 000 m of water (airliner speed), slowing and steepening as the depth falls. It runs in a Web Worker so the map stays interactive.']
+          ['p', 'Propagation is the <b>linear long-wave</b> equation over measured bathymetry, phase speed <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — about 200 m/s over 4 000 m of water (airliner speed), slowing and steepening as the depth falls. It runs in a Web Worker so the map stays interactive.'],
+          ['h3', 'The discretisation, written out'],
+          ['p', 'Staggered Arakawa C grid, leapfrog in time: the surface &eta; lives at cell centres and the two volume fluxes M, N on the faces between them, half a step apart in time. That is the scheme every operational long-wave code uses, and it is written out here because &ldquo;shallow-water equations&rdquo; alone does not say how they were solved.'],
+          ['tex', '\\eta^{\\,t+1}_{i,j} = \\eta^{\\,t}_{i,j} - \\frac{\\Delta t}{\\Delta x}\\Bigl[(M^{\\,t+\\frac12}_{i+\\frac12,j}-M^{\\,t+\\frac12}_{i-\\frac12,j}) + (N^{\\,t+\\frac12}_{i,j+\\frac12}-N^{\\,t+\\frac12}_{i,j-\\frac12})\\Bigr]'],
+          ['tex', 'M^{\\,t+\\frac12}_{i+\\frac12,j} = M^{\\,t-\\frac12}_{i+\\frac12,j} - g\\,D\\,\\frac{\\Delta t}{\\Delta x}\\bigl(\\eta^{\\,t}_{i+1,j}-\\eta^{\\,t}_{i,j}\\bigr) - \\frac{g\\,n^{2}}{D^{7/3}}\\lVert\\mathbf{M}\\rVert M\\,\\Delta t'],
+          ['h3', 'Stability, edges and dry land'],
+          ['tex', '\\frac{\\partial \\eta}{\\partial t} \\pm c\\,\\frac{\\partial \\eta}{\\partial x} = 0 \\quad\\text{(Sommerfeld, at the open edge)}, \\qquad D = h+\\eta > \\varepsilon_{\\text{dry}} = 0.01\\ \\text{m}'],
+          ['p', 'The time step is taken from the CFL condition on the <b>deepest</b> cell in the domain (0.45 of the limit), so it is a consequence of the bathymetry rather than a setting. The open edges radiate rather than reflect &mdash; a closed edge would send a false wave back into the domain within one crossing time &mdash; and a cell is wet only above a 1 cm depth, which is what stops the friction term from dividing by a vanishing depth at the shoreline.'],
+          ['lim', 'The solver is <b>non-dispersive</b> (long-wave), so it does not reproduce the leading-wave dispersion of a very short source, and it does not model wave breaking or run-up over roughness. Arrival times and the first crest are its answer; the inundation depth on land is a bathtub bound, not a run-up computation.']
         ]
       },
       {
         id: 'sealevel', nav: 'Sea level & inundation', h: 'Sea level &amp; inundation',
         blocks: [
           ['p', 'Ground at or below the chosen level is shaded — a bathtub fill. The shade is the <b>depth itself</b>, and the elevation data\'s resolution is directly the resolution of the flood edge.'],
-          ['lim', 'Levees, gates and drainage are not modelled, and connectivity to the sea is not required by default. The claim is therefore <b>"this ground is below that level"</b>, not "this is what would flood".']
+          ['lim', 'Levees, gates and drainage are not modelled, and connectivity to the sea is not required by default. The claim is therefore <b>"this ground is below that level"</b>, not "this is what would flood".'],
+          ['h3', 'Connectivity, when it is asked for'],
+          ['p', 'The default answer is per cell: is this ground at or below that level. With connectivity switched on, a flood fill runs from the sea over the same grid and only cells reachable from it are shaded &mdash; which removes closed depressions below sea level (the Qattara Depression, Death Valley) that the bathtub answer includes. The two answers differ by exactly those basins, and the panel says which one is being shown.']
         ]
       },
       {
@@ -248,7 +275,19 @@ window.IntMapPageI18N.define('en', {
           ['p', 'A <b>streamline</b> is then integrated through that field from each seed point with a 4th-order Runge–Kutta step, forwards and backwards, so one line is a path the water actually takes rather than an arrow standing on its own. Line width is the speed; arrowheads along the line say which way it goes.'],
           ['eq', 'x<sub>n+1</sub> = x<sub>n</sub> + (h/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>), &nbsp; k<sub>i</sub> = u(x)/|u| &nbsp; (unit-speed, so the step is a distance)'],
           ['p', 'Warm or cold is <b>measured, not assumed</b>. 暖流 / 寒流 is a claim about what the water carries, so each streamline is compared with the sea-surface temperature about 110 km <b>upstream</b> along its own path. Upstream warmer than here means the current is bringing warmth (red); upstream colder means it is bringing cold (blue).'],
-          ['lim', 'Where the difference is under 0.25 K — inside the model\'s own noise — the line is <b>grey</b> and the legend says "neither". A current that is not carrying a temperature contrast must not be coloured as though it were. Names are Wikidata (CC0), drawn at the coordinate published for each current; a name is a point on the map and does not claim that the line beside it is that current.']
+          ['lim', 'Where the difference is under 0.25 K — inside the model\'s own noise — the line is <b>grey</b> and the legend says "neither". A current that is not carrying a temperature contrast must not be coloured as though it were. Names are Wikidata (CC0), drawn at the coordinate published for each current; a name is a point on the map and does not claim that the line beside it is that current.'],
+          ['h3', 'The field: what is averaged, and over what'],
+          ['p', 'The bundled field is a <b>climatology</b>: 36 velocity fields spread evenly over the whole served record (2015&rarr;now) plus 24 wind-stress fields, on the source&rsquo;s own 0.25&deg; grid. A mean over 36 fields reduces mesoscale (eddy) variance by about a factor of six, which is what makes a traced path a current rather than a ring.'],
+          ['tex', '\\mathbf{u}_{\\text{tot}} \\;=\\; \\underbrace{\\frac{g}{f}\\,\\hat{\\mathbf{k}}\\times\\nabla\\eta}_{\\text{geostrophic (altimetry)}} \\;+\\; \\underbrace{\\frac{B}{\\sqrt{|f|}}\\frac{\\boldsymbol{\\tau}}{\\rho_w}\\,\\mathcal{R}\\bigl(-\\operatorname{sgn}\\varphi\\cdot55^{\\circ}\\bigr)}_{\\text{Ekman (wind stress)}}'],
+          ['h3', 'How a named current&rsquo;s line is produced'],
+          ['tex', '\\mathbf{x}_{n+1} = \\mathbf{x}_n + \\Delta s\\;\\hat{\\mathbf{u}}\\!\\left(\\mathbf{x}_n + \\tfrac{\\Delta s}{2}\\,\\hat{\\mathbf{u}}(\\mathbf{x}_n)\\right), \\qquad \\Delta s = 25\\ \\text{km}'],
+          ['p', 'Each of the 108 named currents is integrated forward and backward from one published seed on its core, up to 5,000 km each way, through that measured field. Three rules end a walk: a cell entered twice more than 12 steps apart (a closed eddy), a return within 60 km of the seed after a real journey (a gyre closing), or a budget of 12 consecutive cells below 2.2 cm/s. A trace that closes in under 1,500 km is <b>rejected</b> and the seed is retried from the ring around it &mdash; a published core position can land in a standing recirculation beside the current.'],
+          ['h3', 'The file the browser reads'],
+          ['tex', 's_{\\text{byte}} = \\left\\lfloor 255\\sqrt{\\frac{\\min(s,\\,2.5)}{2.5}} \\right\\rceil, \\qquad b_{\\text{byte}} = \\left\\lfloor \\frac{255\\,\\theta}{360^{\\circ}} \\right\\rceil'],
+          ['tex', '\\text{stride} = \\min\\Bigl\\{\\,2^{k} \\;:\\; \\frac{\\Delta\\lambda_{\\text{view}}}{0.25^{\\circ}2^{k}}\\cdot\\frac{\\Delta\\varphi_{\\text{view}}}{0.25^{\\circ}2^{k}} \\le N_{\\max}\\Bigr\\},\\qquad N_{\\max}=4\\,200\\ (\\text{phone}),\\;9\\,000'],
+          ['p', 'The field ships as a regular grid &mdash; 1,440 &times; 720 cells, one byte of speed and one of bearing &mdash; rather than as a list of arrows, because a list fixes the spacing at build time. The client strides the grid instead, choosing the coarsest stride that still fills the view with at most N<sub>max</sub> marks, and each strided cell is the <b>vector mean</b> of its block (averaging bearings as numbers would turn 350&deg; and 10&deg; into 180&deg;). Speed is stored through a square root so the resolution is 0.05 cm/s at the low end, where the eastern boundary currents are.'],
+          ['h3', 'The twelve months'],
+          ['p', 'A second file carries twelve monthly climatologies at 0.5&deg; &mdash; six years of each calendar month averaged &mdash; and is fetched only if a month is chosen. Each named current also carries its twelve monthly speeds and the mean projection of that month&rsquo;s flow <b>onto its own path</b>; where that projection changes sign between months, the current reverses with the season and the list says so. The paths themselves are not re-traced per month: a 0.5&deg; field cannot support twelve different geometries, and a line that changed shape every month would be a claim about the path the data does not make.']
         ]
       },
       {
@@ -268,20 +307,34 @@ window.IntMapPageI18N.define('en', {
           ['tex', '\\Psi_{ms} \\;=\\; \\frac{L^{(2)}}{1 - f}, \\qquad f = \\frac{1}{4\\pi}\\oint \\sigma_s\\,T\\,d\\omega \\;<\\; 1'],
           ['tex', 'C \\;=\\; \\Bigl[\\,1 - e^{-L\\,\\varepsilon}\\,\\Bigr]^{1/2.2}, \\qquad \\varepsilon = 0.7'],
           ['lim', 'One aerosol profile for the whole planet, no clouds, no airglow and no starlight — so a deep night integrates to black and is floored at a measured night colour rather than shown as the model returns it. The limb seen from space is the renderer\'s own scattering pass, not this integral; this model decides the colour that pass is blended toward.'],
+          ['h3', 'The march, and its cost'],
+          ['tex', 'L=\\sum_{i=1}^{16} T(\\mathbf{x},\\mathbf{p}_i)\\bigl[\\sigma_s^R p_R + \\sigma_s^M p_M\\bigr]T(\\mathbf{p}_i,\\odot)E_\\odot\\,\\Delta t \\;+\\;\\sum_{i}\\sigma_s\\Psi_{ms}\\Delta t,\\quad T \\text{ from } M=8 \\text{ sun steps}'],
+          ['p', 'Sixteen steps along the view ray, eight along the sun ray at each of them, and a 16 &times; 24 table of multiple-scattering values interpolated twice per sample. That is about 300 exponentials per colour, evaluated when the Sun or the camera has actually moved &mdash; a few times a second at the very most, which is why it can be an integral rather than a gradient.'],
+          ['h3', 'Seen from outside: the limb'],
+          ['tex', '\\theta_{\\text{limb}}(h_t) \\;=\\; \\arcsin\\!\\frac{R_\\oplus+h_t}{R_\\oplus+h_{\\text{eye}}} \\;-\\; 90^{\\circ}, \\qquad \\ell(h_t)\\;\\approx\\;2\\sqrt{2R_\\oplus H}\\,e^{-h_t/2H}'],
+          ['p', 'From orbit the atmosphere is not overhead, it is edge-on: a ray whose closest approach is 6 km above the surface crosses roughly 800 km of air, one at 55 km crosses almost none. Both ends of the drawn gradient are those two rays, so the band is blue-white low on the day side, red through the terminator and black on the night side, at whatever altitude the camera is at. Nothing about it is a chosen colour.'],
+          ['lim', 'One aerosol profile for the whole planet, no clouds, no airglow and no starlight, so a deep night integrates to black and is floored at a measured night colour. The halo drawn around the globe is the renderer&rsquo;s own scattering pass; this model decides the colours it is blended toward.']
         ],
       },
       {
         id: 'sun', nav: 'Sun, shadow, viewshed', h: 'Sun, shadow and viewshed',
         blocks: [
           ['p', 'Solar position comes from the standard astronomical algorithm — declination and hour angle to azimuth and altitude. It is verified to give 0° declination at an equinox and the obliquity at a solstice.'],
-          ['p', 'Annual insolation sweeps the surrounding DEM by azimuth to build the point\'s <b>real horizon profile</b>, then integrates the sun\'s track against it. The viewshed answers <b>per raster cell</b> rather than per bearing, because a bearing sweep misses cells at distance.']
+          ['p', 'Annual insolation sweeps the surrounding DEM by azimuth to build the point\'s <b>real horizon profile</b>, then integrates the sun\'s track against it. The viewshed answers <b>per raster cell</b> rather than per bearing, because a bearing sweep misses cells at distance.'],
+          ['h3', 'The horizon, and the year integrated against it'],
+          ['tex', 'H(\\alpha) = \\max_{r\\le R_{\\max}}\\arctan\\frac{z(r,\\alpha)-z_0}{r}, \\qquad E = \\int_{\\text{year}} I_0\\,\\cos\\theta_i\\,\\bigl[\\,\\gamma_s(t)>H(\\alpha_s(t))\\,\\bigr]\\,dt'],
+          ['p', 'The surrounding terrain is swept by azimuth in 1&deg; steps out to 25 km, and the largest elevation angle found along each bearing is that bearing&rsquo;s horizon. The Sun&rsquo;s track for the whole year is then integrated against that profile at 10-minute steps, counting only the moments it stands above it &mdash; which is why a north-facing alpine slope comes out at a fraction of the flat-ground value rather than at the cosine of its latitude.'],
+          ['p', 'The viewshed answers <b>per raster cell</b> rather than per bearing: a bearing sweep leaves gaps that grow with distance, so at 20 km the two differ by whole ridges.']
         ]
       },
       {
         id: 'sats', nav: 'Satellites', h: 'Satellites',
         blocks: [
           ['p', 'Orbits are propagated from TLEs with <b>SGP4/SDP4</b>. A TLE degrades with age and — importantly — <b>diverges silently</b>, so there is a hard limit on element-set age and anything past it is not drawn.'],
-          ['p', 'The catalogue is a bundled snapshot plus a live fetch. A category with no list is <b>omitted, not shown empty</b> — an empty array would be a claim that the category has no satellites.']
+          ['p', 'The catalogue is a bundled snapshot plus a live fetch. A category with no list is <b>omitted, not shown empty</b> — an empty array would be a claim that the category has no satellites.'],
+          ['h3', 'SGP4, and why the age of an element set is a hard limit'],
+          ['tex', 'n\'\' = n_0\\bigl[1 + \\tfrac{3}{2}k_2\\tfrac{(3\\cos^2 i-1)}{a^{2}(1-e^{2})^{3/2}}\\bigr],\\qquad \\sigma_{\\text{pos}} \\sim 1\\text{–}3\\ \\mathrm{km/day}\\ \\text{after epoch}'],
+          ['p', 'A TLE is not a position: it is a set of mean elements fitted to a specific analytic theory, and only SGP4/SDP4 can read it. Its error grows at roughly 1&ndash;3 km per day after the epoch for a low orbit, and it does so <b>silently</b> &mdash; there is no signal in the data that says the answer has gone wrong. So the propagator refuses element sets past a stated age rather than drawing a plausible dot in the wrong place.']
         ]
       },
       {
@@ -290,21 +343,38 @@ window.IntMapPageI18N.define('en', {
           ['p', 'Planet and moon positions are Keplerian, from orbital elements. Bodies are drawn enlarged (at true scale they are sub-pixel), but the <b>magnification ceiling is geometry, not taste</b>: it follows from the requirement that the Moon stay clear of the Earth even at perigee.'],
           ['p', 'The satellites of the other planets come from JPL\'s own mean-element table for 177 moons at a stated epoch, each propagated to the clock. The elements are not all in one plane — a close giant-planet satellite states its planet\'s local <b>Laplace plane</b>, whose pole the table gives as right ascension and declination — and that frame is carried through rather than read as if it were the ecliptic.'],
           ['p', 'At model scale a satellite is placed by the same compression law the Moon is, and then <b>pushed out to clear its primary</b>: compressing a distance and a radius by different powers can otherwise put an inner moon inside the planet it orbits. At true scale nothing is moved, because there is nothing to compress.'],
-          ['p', 'Stars come from a bundled all-sky bright-star catalogue at their real positions and magnitudes; colour is derived from the B&minus;V index, i.e. real colour temperature.']
+          ['p', 'Stars come from a bundled all-sky bright-star catalogue at their real positions and magnitudes; colour is derived from the B&minus;V index, i.e. real colour temperature.'],
+          ['h3', 'Positions'],
+          ['tex', 'M = E - e\\sin E \\;\\Longrightarrow\\; E_{k+1}=E_k-\\frac{E_k-e\\sin E_k-M}{1-e\\cos E_k}, \\qquad \\tan\\frac{\\nu}{2}=\\sqrt{\\tfrac{1+e}{1-e}}\\tan\\frac{E}{2}'],
+          ['p', 'Planets and moons come from mean elements at a stated epoch: the mean anomaly is advanced, Kepler&rsquo;s equation is solved by Newton&ndash;Raphson (four iterations reach 10<sup>&minus;12</sup> for e &lt; 0.9), and the true anomaly follows. A close giant-planet satellite states its planet&rsquo;s local <b>Laplace plane</b> rather than the ecliptic, and that frame is carried through instead of being read as if it were.'],
+          ['h3', 'The two scales, and what is preserved between them'],
+          ['tex', 'r_{\\text{model}} = 26\\,\\mathrm{AU}^{0.42}, \\qquad R_{\\text{model}} = 0.12\\left(\\frac{R}{R_\\oplus}\\right)^{1/3}, \\qquad d\' = \\frac{\\mathcal{P}\'\\bigl(\\mathcal{P}^{-1}(d\\tan\\tfrac{\\phi}{2})\\bigr)}{\\tan\\frac{\\phi}{2}}'],
+          ['p', 'Model scale compresses orbital radii by a power of 0.42 and body radii by a cube root, so it is not one scale but two, and no single conversion of the camera&rsquo;s distance can hold both. What is carried across the switch is therefore the <b>real-space radius at the edge of the frame</b> &mdash; convert it out of the old units through that scale&rsquo;s own law and back in through the new one, and the same planets stay in the same places. Where a body fills the frame the invariant becomes its apparent size instead, blended in log space over the range where the picture stops being about the system and starts being about the body.']
         ]
       },
       {
         id: 'flight', nav: 'Flight model', h: 'Flight model',
         blocks: [
           ['p', 'Thrust and lift fall with air density, so the <b>service ceiling is not a wall</b>: an aircraft started above it descends until the air can hold it, rather than being clamped.'],
-          ['p', 'The camera sits <em>at</em> the aircraft rather than being a chase view corrected after the fact.']
+          ['p', 'The camera sits <em>at</em> the aircraft rather than being a chase view corrected after the fact.'],
+          ['h3', 'The forces'],
+          ['tex', 'L=\\tfrac12\\rho V^{2}S\\,C_L(\\alpha),\\quad D=\\tfrac12\\rho V^{2}S\\bigl(C_{D0}+\\tfrac{C_L^{2}}{\\pi e A\\!R}\\bigr),\\quad T=T_0\\left(\\frac{\\rho}{\\rho_0}\\right)^{0.7}'],
+          ['p', 'Lift is a linear C<sub>L</sub>(&alpha;) up to the stall angle and a modelled post-stall drop after it; induced drag is the standard 1/(&pi;eAR) term, so a wing with a low aspect ratio really does pay for its lift. Thrust falls with density to the 0.7 power, which is what gives a service ceiling without a rule that says &ldquo;stop here&rdquo;: an aircraft started above its ceiling descends until the air can hold it.'],
+          ['h3', 'The air it is flying through'],
+          ['tex', '\\rho(h)=\\rho_0\\left(1-\\frac{Lh}{T_0}\\right)^{\\frac{g}{RL}-1},\\quad L=6.5\\ \\mathrm{K/km};\\qquad \\rho=\\rho_{11}e^{-\\frac{g(h-11\\,\\mathrm{km})}{R\\,T_{11}}}\\ (h>11\\ \\mathrm{km})'],
+          ['p', 'The International Standard Atmosphere, in two pieces: a linear-lapse troposphere and an isothermal stratosphere above 11 km. Airspeed is therefore two different numbers &mdash; true airspeed and the equivalent airspeed the airframe feels &mdash; and the HUD says which is which.'],
+          ['h3', 'The integration'],
+          ['tex', '\\mathbf{y}_{n+1}=\\mathbf{y}_n+\\Delta t\\,\\mathbf{f}(\\mathbf{y}_n),\\quad \\Delta t=\\min\\!\\left(\\tfrac{1}{30}\\ \\mathrm{s},\\,\\Delta t_{\\text{frame}}\\right)\\ \\text{sub-stepped so } \\Delta t\\le \\tfrac{1}{120}\\ \\mathrm{s}'],
+          ['p', 'Explicit sub-stepped integration at a bounded step, so a long frame does not become a long time step and put the aircraft through the ground. The camera sits <em>at</em> the aircraft rather than being a chase view corrected afterwards, and the terrain under it is sampled from the same elevation data as every other terrain feature on this page.']
         ]
       },
       {
         id: 'routing', nav: 'Routing & reachability', h: 'Routing &amp; reachability',
         blocks: [
           ['p', 'Road routes come from OSRM over the OpenStreetMap network, alternatives from the same engine. Rail routing runs on real OSM track and <b>snaps to the largest connected component</b> — snapping to an isolated siding would make the destination unreachable. Public transport uses real timetables via MOTIS/Transitous.'],
-          ['p', 'An isochrone is the set of points a time budget reaches, wrapped in a hull. The hull is for display — <b>reachability itself is decided on the network</b>, not by the hull.']
+          ['p', 'An isochrone is the set of points a time budget reaches, wrapped in a hull. The hull is for display — <b>reachability itself is decided on the network</b>, not by the hull.'],
+          ['h3', 'What an isochrone actually solves'],
+          ['p', 'A time budget is expanded over the road network from the origin &mdash; a many-to-one shortest-path search, not a circle &mdash; and the reached nodes are then wrapped in a concave hull for drawing. <b>Reachability is decided on the network</b>; the hull is a picture of the answer and is never consulted to produce it. Where the network is sparse the hull is conspicuously wrong-looking and the answer underneath it is still right.']
         ]
       },
       {

@@ -230,7 +230,9 @@ test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice
   assert.ok(Number(seisN[2]) >= 448, `the desktop intensity field floor is ${seisN[2]}, coarser than #R202's 448`);
   assert.ok(Number(seisN[1]) >= 192, `the mobile intensity field floor is ${seisN[1]}, coarser than #R202's 192`);
   const th = rd('js/theme-sky.js');
-  assert.match(th, /import \{ skyColour \} from '\.\/sky-model\.js'/, 'theme-sky imports the model by name');
+  /* (#R222) the import list grew by `limbViewElev` — the assertion is that the model is imported BY
+     NAME (not re-implemented, not reached through a global), which a wider list satisfies. */
+  assert.match(th, /import \{ skyColour[^}]*\} from '\.\/sky-model\.js'/, 'theme-sky imports the model by name');
   assert.match(th, /'sky-color':sc/, 'and sky-color comes from it');
   assert.doesNotMatch(th, /'sky-color':_SKY_SPACE/, 'the constant deep-space sky is gone');
 });

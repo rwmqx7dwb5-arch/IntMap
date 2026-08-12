@@ -40,6 +40,28 @@
  *      is shaded by the measured speed; the renderer thins them by collision, so the density follows
  *      the zoom without anything being recomputed.
  *
+ *  ══ ⚠⚠ (#R222) 「海流レイヤーのquality, coverageを増強して」 — THREE THINGS, CONFIRMED ══════════════
+ *  Confirmed with the reader as 「本数増＋格子0.5°＋季節（月別）」, and each of the three changed a
+ *  different part of this file:
+ *
+ *    1. 61 NAMED CURRENTS → 108. The build's seed list grew by the marginal-sea and coastal currents
+ *       an atlas plate has and this one did not (Tsugaru, Sōya, East Korea Warm, Taiwan Warm, Yellow
+ *       Sea Warm, Vietnam Coastal, New Guinea Coastal, Costa Rica Coastal, Davidson, Yucatán, Guiana,
+ *       Cape Horn, West Spitsbergen, Algerian, East African Coastal, the two India coastal currents…).
+ *       Two of the 110 seeds have no measurable flow in the field and are DROPPED by the build rather
+ *       than drawn from their name.
+ *    2. THE FIELD IS NO LONGER A LIST OF ARROWS. `doc.arrows` is gone; the field is
+ *       data/ocean-currents-field.bin.gz — the source's own 0.25° grid, 466,007 cells with flow, one
+ *       byte of speed and one of bearing, ~870 kB gzipped (see js/ocean-currents-field.js). THIS FILE
+ *       chooses the stride from the view, so the renderer is handed a roughly constant number of
+ *       marks at every zoom — 16× the data, FEWER features than #R221 at every zoom, and the finest
+ *       detail the source has when you look closely at a strait.
+ *    3. THE SEASON. A month picker over twelve monthly climatologies at 0.5°
+ *       (data/ocean-currents-months.bin.gz, ~3 MB, fetched ONLY if a month is chosen). The monsoon
+ *       reversal is then something the reader watches happen; each named current also carries its
+ *       twelve monthly speeds and the sign of the flow ALONG its own path, so a current that runs
+ *       backwards in a season says so in the list.
+ *
  *  ⚠ CONSEQUENCES THAT ARE DELIBERATE, so they are written down rather than discovered:
  *    · The picture no longer follows the app clock. It is a MEAN FIELD, and a mean has no instant —
  *      the panel says so. (#R216/#R218's instantaneous field did follow the clock; that is the one
@@ -97,6 +119,10 @@ window.IntMapModules.oceanCurrents=function(HOST){
     const ALL=[FLOWC,FLOW,GLOW,CASE,LINE,HEADC,HEAD,LBL];
 
     let on=false, doc=null, state='idle', err=null, picked=null;
+    /* (#R222) the field, the months, and which plane is being shown. `month` is 0 for the
+       climatological mean and 1…12 for a calendar month. */
+    let field=null, fieldState='idle', months=null, monthState='idle', month=0, lastBox=null, lastStride=0;
+    const FLD=()=>window.IntMapCurrentField;
 
     const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
       { legendId:'wpcurrents', layers:()=>ALL.slice(),
@@ -235,8 +261,97 @@ window.IntMapModules.oceanCurrents=function(HOST){
       state='loading'; err=null; render();
       let url; try{ url=new URL('data/ocean-currents.json',document.baseURI).toString(); }catch(_){ url='data/ocean-currents.json'; }
       return fetch(url).then(r=>{ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
-        .then(d=>{ doc=d; state='ok'; draw(); render(); return d; })
+        .then(d=>{ doc=d; state='ok'; loadField(); draw(); render(); return d; })
         .catch(e=>{ state='error'; err=(e&&e.message)||String(e); render(); return null; }); }
+
+    /* ── (#R222) the gridded field, once ──────────────────────────────────────────────────────────
+       ⚠ IT IS A SEPARATE FETCH FROM THE NAMED CURRENTS, AND THE LAYER WORKS WITHOUT IT. The names
+       and their paths are the plate's skeleton and arrive in 160 kB; the field is 870 kB of grid
+       behind them. If the grid fails — no DecompressionStream, a truncated file — the named currents
+       are still drawn and the panel says the field is missing, rather than the whole layer going
+       dark for a file that is an enrichment of it. */
+    function loadField(){
+      if(field||fieldState==='loading') return Promise.resolve(field);
+      const F=FLD(); if(!F){ fieldState='error'; return Promise.resolve(null); }
+      const rel=(doc&&doc.field&&doc.field.file)||'data/ocean-currents-field.bin.gz';
+      let url; try{ url=new URL(rel,document.baseURI).toString(); }catch(_){ url=rel; }
+      fieldState='loading'; render();
+      return F.fetchField(url).then(f=>{ field=f; fieldState='ok'; drawFlow(true); render(); return f; })
+        .catch(e=>{ fieldState='error'; err=err||((e&&e.message)||String(e)); render(); return null; }); }
+
+    /* the twelve months — ⚠ ONLY when a month is actually chosen (3 MB) */
+    function loadMonths(){
+      if(months||monthState==='loading') return Promise.resolve(months);
+      const F=FLD(); if(!F){ monthState='error'; return Promise.resolve(null); }
+      const rel=(doc&&doc.months&&doc.months.file)||'data/ocean-currents-months.bin.gz';
+      let url; try{ url=new URL(rel,document.baseURI).toString(); }catch(_){ url=rel; }
+      monthState='loading'; render();
+      return F.fetchField(url).then(f=>{ months=f; monthState='ok'; drawFlow(true); render(); return f; })
+        .catch(e=>{ monthState='error'; render(); return null; }); }
+
+    /* ── which grid is on screen, and how much of it ──────────────────────────────────────────────
+       ⚠ THE CAP IS A NUMBER OF MARKS, NOT A ZOOM TABLE, and it is smaller on a phone. What decides
+       whether a field of arrows is readable is how many of them are in front of the eye; the same
+       zoom shows a hemisphere at one pitch and a bay at another, so a zoom→spacing table answers the
+       wrong question. (It is also the whole reason 16× the data costs LESS than #R221's 28,208
+       fixed points: the renderer never holds more than `CAP` of them.) */
+    const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+    function viewBox(){
+      let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
+      if(!b) return { w:-180, e:180, s:-85, n:85 };
+      let w,e,s,n;
+      try{ w=b.getWest(); e=b.getEast(); s=b.getSouth(); n=b.getNorth(); }
+      catch(_){ try{ w=b[0][0]; s=b[0][1]; e=b[1][0]; n=b[1][1]; }catch(__){ return { w:-180, e:180, s:-85, n:85 }; } }
+      if(!isFinite(w)||!isFinite(e)||!isFinite(s)||!isFinite(n)) return { w:-180, e:180, s:-85, n:85 };
+      if(e<w) e+=360;
+      /* a quarter of the span as margin, so a small pan does not have to rebuild anything */
+      const mx=(e-w)*0.28, my=(n-s)*0.28;
+      w-=mx; e+=mx; s=Math.max(-86,s-my); n=Math.min(86,n+my);
+      if(e-w>=356){ w=-180; e=180; }
+      return { w, e, s, n };
+    }
+    function planeIndex(){ return (month>0&&months)?month-1:0; }
+    function planeSource(){ return (month>0&&months)?months:field; }
+    /* has the view moved enough that the marks would be different? */
+    function boxStale(box,st){
+      if(!lastBox||st!==lastStride) return true;
+      const g=(planeSource()?planeSource().grid:0.25)*st;
+      return Math.abs(box.w-lastBox.w)>g||Math.abs(box.e-lastBox.e)>g
+        ||Math.abs(box.s-lastBox.s)>g||Math.abs(box.n-lastBox.n)>g;
+    }
+    function drawFlow(force){
+      const F=FLD(), src=planeSource();
+      if(!F||!src||!on) return;
+      const box=viewBox();
+      const cap=_phone()?4200:9000;
+      const st=F.strideFor(src,box,cap);
+      if(!force&&!boxStale(box,st)) return;
+      lastBox=box; lastStride=st;
+      const r=F.arrows(src,planeIndex(),box,cap);
+      whenDrawable(()=>{ if(!ensureLayers()) return;
+        try{ GE().layers.setSourceData(FSRC,{type:'FeatureCollection',features:r.features}); }catch(_){}
+        setVis(ALL,on); });
+      /* ⚠ the panel's first line QUOTES these two numbers, so it has to be re-rendered when they
+         move — otherwise it keeps reporting the spacing the layer was switched on at while the map
+         has been zoomed three levels since. Only when they actually change: `render()` rebuilds the
+         list of 108 rows and re-running it on every `moveend` would be the expensive kind of honest. */
+      const changed=(_lastCount!==r.features.length||_lastGrid!==r.grid);
+      _lastCount=r.features.length; _lastGrid=r.grid;
+      if(changed&&panel.shown()) render();
+    }
+    let _lastCount=0, _lastGrid=0, _flowT=0;
+    function flowSoon(){ if(!on) return; clearTimeout(_flowT); _flowT=setTimeout(()=>drawFlow(false),120); }
+    try{ GE().events.on('moveend',flowSoon); }catch(_){}
+    try{ GE().events.on('zoomend',flowSoon); }catch(_){}
+
+    /* the month picker — 0 = the climatological mean, 1…12 = a calendar month */
+    function setMonth(m){
+      m=Math.max(0,Math.min(12,+m||0));
+      if(m===month) return month;
+      month=m; picked=picked;
+      if(m>0&&!months){ render(); loadMonths(); return month; }
+      drawFlow(true); render(); return month;
+    }
 
     const nameOf=(c)=>{ const k={jp:'ja',de:'de',ru:'ru',es:'es'}[HOST.lang]; return (k&&c[k])||c.en||''; };
     const colOf=(c)=>(c.kind==='warm')?COL_WARM:(c.kind==='cold')?COL_COLD:COL_NEUTRAL;
@@ -252,14 +367,11 @@ window.IntMapModules.oceanCurrents=function(HOST){
                         an ocean and the plate would be about the ribbons rather than about the sea. */
                      w:Math.max(0.9,Math.min(2.0,0.85+(c.meanSpeed||0)*2.2)),
                      v:c.meanSpeed||0, vmax:c.maxSpeed||0 }}));
-      const flow=(doc.arrows||[]).map(a=>({type:'Feature',
-        geometry:{type:'Point',coordinates:[a[0],a[1]]},
-        properties:{ b:a[2], s:a[3] }}));
       whenDrawable(()=>{ if(!ensureLayers()) return;
         try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:named}); }catch(_){}
-        try{ GE().layers.setSourceData(FSRC,{type:'FeatureCollection',features:flow}); }catch(_){}
         setVis(ALL,on);
-        panel.claim(); }); }
+        panel.claim(); });
+      drawFlow(true); }
 
     /* ── the window ─────────────────────────────────────────────────────────────────────────────── */
     const KEY=(col,txt)=>'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
@@ -268,6 +380,36 @@ window.IntMapModules.oceanCurrents=function(HOST){
     const kindWord=(k)=>k==='warm'?L('warm','暖流','warm','тёплое','cálida')
       :k==='cold'?L('cold','寒流','kalt','холодное','fría')
       :L('zonal','東西流','zonal','зональное','zonal');
+    /* ── (#R222) the season ───────────────────────────────────────────────────────────────────────
+       ⚠ THE MONTH IS A PROPERTY OF THE PICTURE, NOT OF THE APP CLOCK, and that is deliberate. The
+       twelve planes are CLIMATOLOGIES — six years of each calendar month averaged — so "August" here
+       means "an average August", not August of the year the time machine happens to be standing in.
+       Binding it to the clock would be a claim that this is the ocean of that date, which a mean is
+       not (#R219 gave up following the clock for exactly this reason). */
+    const MON=()=>[L('Jan','1月','Jan','янв','ene'),L('Feb','2月','Feb','фев','feb'),L('Mar','3月','Mär','мар','mar'),
+      L('Apr','4月','Apr','апр','abr'),L('May','5月','Mai','май','may'),L('Jun','6月','Jun','июн','jun'),
+      L('Jul','7月','Jul','июл','jul'),L('Aug','8月','Aug','авг','ago'),L('Sep','9月','Sep','сен','sep'),
+      L('Oct','10月','Okt','окт','oct'),L('Nov','11月','Nov','ноя','nov'),L('Dec','12月','Dez','дек','dic')];
+    const _speedOf=(c)=>{ if(month>0&&c.monthSpeed&&c.monthSpeed[month-1]!=null) return c.monthSpeed[month-1];
+      return c.meanSpeed||0; };
+    const _reverses=(c)=>{ const a=c.monthAlong; if(!a) return false;
+      let pos=0,neg=0; for(const v of a){ if(v==null) continue; if(v>0.02) pos++; else if(v<-0.02) neg++; }
+      return pos>=2&&neg>=2; };
+    function _monthBar(){
+      if(!doc||state!=='ok') return '';
+      const chip=(sel)=>'padding:2px 6px;border-radius:7px;font-size:10.5px;cursor:pointer;border:1px solid '
+        +(sel?'rgba(47,127,224,0.9);background:rgba(47,127,224,0.22);color:var(--text-main);'
+             :'var(--glass-border,rgba(128,128,128,0.24));background:transparent;color:var(--text-muted);');
+      let s='<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:5px;align-items:center;">'
+        +'<button class="oc-m" data-m="0" style="'+chip(month===0)+'">'+esc(L('Mean','年平均','Mittel','Средн.','Media'))+'</button>';
+      MON().forEach((n,i)=>{ s+='<button class="oc-m" data-m="'+(i+1)+'" style="'+chip(month===i+1)+'">'+esc(n)+'</button>'; });
+      s+='</div>';
+      if(monthState==='loading') s+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'
+        +esc(L('Loading the twelve monthly fields…','月別の12枚を読み込み中…','Zwölf Monatsfelder werden geladen…','Загрузка двенадцати месячных полей…','Cargando los doce campos mensuales…'))+'</div>';
+      else if(monthState==='error') s+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">⚠ '
+        +esc(L('The monthly fields could not be read — the mean is shown.','月別データを読み込めませんでした（年平均を表示）。','Monatsfelder nicht lesbar — Mittel wird gezeigt.','Месячные поля не прочитаны — показано среднее.','No se pudieron leer los campos mensuales — se muestra la media.'))+'</div>';
+      return s;
+    }
     function render(){
       if(!on&&!panel.shown()) return;
       let head;
@@ -275,7 +417,12 @@ window.IntMapModules.oceanCurrents=function(HOST){
       else if(state==='error') head='⚠ '+L('The bundled current data could not be read.','同梱の海流データを読み込めませんでした。','Mitgelieferte Strömungsdaten nicht lesbar.','Не удалось прочитать данные.','No se pudieron leer los datos incluidos.');
       else if(!doc) head='';
       else head=(doc.named||[]).length+' '+L('named currents · ','本の海流 · ','benannte Strömungen · ','названных течений · ','corrientes con nombre · ')
-        +(doc.arrows||[]).length.toLocaleString()+' '+L('field arrows','点の流向','Feldpfeile','стрелок поля','flechas de campo');
+        +(fieldState==='loading'?L('field loading…','流向の場を読み込み中…','Feld wird geladen…','поле загружается…','cargando el campo…')
+         :fieldState==='error'?L('the field grid could not be read','流向の場を読み込めませんでした','Feldgitter nicht lesbar','поле не прочитано','no se pudo leer el campo')
+         :field?((_lastCount||0).toLocaleString()+' '+L('field arrows at ','点の流向（','Feldpfeile bei ','стрелок поля, ','flechas de campo a ')
+                 +(_lastGrid?(_lastGrid<1?_lastGrid.toFixed(2):_lastGrid.toFixed(0)):'?')+'°'+L('','間隔）','','','')
+                 +' · '+((doc.field&&doc.field.cells)||0).toLocaleString()+' '+L('measured cells','実測セル','gemessene Zellen','измеренных ячеек','celdas medidas'))
+         :'');
       /* (#R221) the row now carries the two numbers the rebuild made real: how LONG the current is
          (the old data's Canary Current was a 369 km stub of a 3,000 km current, and only a length
          shows that) and its measured temperature contrast, which is what warm/cold now means. */
@@ -285,10 +432,15 @@ window.IntMapModules.oceanCurrents=function(HOST){
           +((picked&&picked===c.en)?'background:rgba(47,127,224,0.14);border-radius:5px;':'')+'">'
           +'<span style="color:'+colOf(c)+';white-space:nowrap;">'+esc(kindWord(c.kind))
           +((c.sstAnomK!=null)?('<span style="opacity:0.72;font-size:10px;"> '+(c.sstAnomK>0?'+':'')+c.sstAnomK.toFixed(1)+'K</span>'):'')+'</span>'
-          +'<span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(nameOf(c))+'</span>'
+          +'<span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(nameOf(c))
+          /* (#R222) a current whose flow along its OWN path changes sign between months is one that
+             reverses — the monsoon system, and a fact about the current rather than about the month
+             being shown, so it is marked whichever month is up. */
+          +(_reverses(c)?'<span title="'+esc(L('reverses with the season','季節で流向が反転する','kehrt sich saisonal um','меняет направление по сезону','se invierte con la estación'))+'" style="opacity:.8;"> ⇄</span>':'')+'</span>'
           +((c.lengthKm)?('<span style="white-space:nowrap;color:var(--text-muted);font-size:10.5px;">'+Math.round(c.lengthKm).toLocaleString()+' km</span>'):'')
-          +'<b style="white-space:nowrap;">'+(c.meanSpeed||0).toFixed(2)+' m/s</b></div>').join('');
+          +'<b style="white-space:nowrap;">'+_speedOf(c).toFixed(2)+' m/s</b></div>').join('');
       const b=panel.open('<div style="font-size:11.5px;color:var(--text-main);margin-bottom:4px;">'+esc(head)+'</div>'
+        +_monthBar()
         +'<div style="max-height:34vh;overflow:auto;">'+list+'</div>'
         +'<div style="margin-top:6px;">'
         /* (#R221) the legend says what the colour now MEANS — a measured temperature contrast — and
@@ -299,6 +451,20 @@ window.IntMapModules.oceanCurrents=function(HOST){
         +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
         +'<span style="width:22px;height:9px;border-radius:2px;flex:none;background:linear-gradient(90deg,#9fc6e8,#2f7fe0,#0a2f78);"></span>'
         +esc(L('Field arrows: shading is the measured speed (0 → 1.4 m/s)','流向の矢印：濃さは実測の流速（0 → 1.4 m/s）','Pfeile: Farbe = gemessene Geschwindigkeit','Стрелки: цвет — измеренная скорость','Flechas: el color es la velocidad medida'))+'</div>'
+        /* (#R222) two sentences the reader needs when the spacing changes under them, and when a
+           month is chosen: what decides the spacing, and what a month IS. */
+        +'<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:3px;">'
+        +esc(L('The spacing follows the view — zoom in and the same measured grid is drawn finer, down to its own 0.25° (~28 km).',
+               '矢印の間隔は表示範囲に追随します。拡大すれば同じ実測格子がより細かく描かれ、提供元と同じ 0.25°（約28 km）まで下がります。',
+               'Der Abstand folgt dem Ausschnitt — beim Hineinzoomen wird dasselbe gemessene Gitter feiner gezeichnet, bis 0,25° (~28 km).',
+               'Шаг стрелок следует за видом — при увеличении та же измеренная сетка рисуется мельче, вплоть до 0,25° (~28 км).',
+               'El espaciado sigue a la vista — al acercarse, la misma malla medida se dibuja más fina, hasta 0,25° (~28 km).'))
+        +' '+esc(L('A month is a CLIMATOLOGY of that calendar month (six years averaged), not that month of a particular year.',
+               '「月」は暦月の気候値（6年分の平均）です。特定の年のその月ではありません。',
+               'Ein Monat ist die Klimatologie dieses Kalendermonats (sechs Jahre gemittelt), nicht dieser Monat eines bestimmten Jahres.',
+               '«Месяц» — климатология этого календарного месяца (среднее за шесть лет), а не месяц конкретного года.',
+               'Un mes es la climatología de ese mes natural (media de seis años), no ese mes de un año concreto.'))
+        +'</div>'
         +'</div>'
         +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
         +esc(L('Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.',
@@ -308,6 +474,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
              'Fuentes: NOAA CoastWatch (corrientes geostróficas superficiales por altimetría multimisión, 0.25°), NOAA NCEI (tensión del viento → corriente de Ekman según Ralph y Niiler, 1999) y NOAA OISST v2.1 (temperatura superficial). Dominio público. Conjunto fijo incluido en la app: una media climatológica de todo el registro en la propia malla de 0.25°. Cálida/fría/zonal se MIDE — la temperatura de la corriente frente a la media zonal de su misma latitud. Una media no sigue al reloj.'))
         +'</div>');
       if(b) b.querySelectorAll('.oc-row').forEach(r=>{ r.onclick=()=>flyTo(r.getAttribute('data-en')); });
+      if(b) b.querySelectorAll('.oc-m').forEach(r=>{ r.onclick=()=>setMonth(+r.getAttribute('data-m')||0); });
     }
 
     /* tapping a row (or the line itself) goes to that current — the list is a way INTO the map */
@@ -346,7 +513,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
         try{ toggle(e.target.checked); }catch(err2){ console.warn('oceanCurrents toggle',err2); } }); }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
 
-    return { toggle, flyTo, load,
+    return { toggle, flyTo, load, setMonth, month:()=>month,
       set:(v)=>{ const cb=document.getElementById('wp-dl-currents'); if(cb){ cb.checked=!!v; cb.dispatchEvent(new Event('change',{bubbles:true})); } else toggle(!!v); return !!v; },
       /* ⚠ `points` keeps its #R216 meaning — "how many measurements are on screen" — which for a
          bundled field is the arrow count. `lines` is the named currents. A caller reading either
@@ -354,7 +521,12 @@ window.IntMapModules.oceanCurrents=function(HOST){
       state:()=>({ on, state, err,
         bundled:true, source:doc?doc.source:null, built:doc?doc.built:null,
         lines:doc?(doc.named||[]).length:0,
-        points:doc?(doc.arrows||[]).length:0,
+        /* (#R222) the field is a GRID now, so there are three numbers where there was one:
+           how many cells the file measures, how many marks are on screen, and at what spacing. */
+        field:fieldState, cells:(doc&&doc.field&&doc.field.cells)||0,
+        gridDeg:field?field.grid:null, drawnGridDeg:_lastGrid||null,
+        month, months:monthState, monthsBytes:(doc&&doc.months&&doc.months.bytes)||0,
+        points:_lastCount||0,
         warm:doc?(doc.named||[]).filter(c=>c.kind==='warm').length:0,
         cold:doc?(doc.named||[]).filter(c=>c.kind==='cold').length:0,
         zonal:doc?(doc.named||[]).filter(c=>c.kind==='zonal').length:0,
