@@ -969,8 +969,20 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpOrbit',['sats']],
           ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','nightside','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
+             「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
+             民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
+             #R39/#R40 had promoted eighteen more World-Bank choropleths here on the argument that they
+             were "objective and sourced", which is true and is not the same question as whether the
+             category reads as a curated set. Nothing is deleted and nothing is unreachable: a row that
+             leaves a GROUP falls through the safety sweep below into Others (beta), which is exactly
+             where 'beta に降格' puts it — same row, same data, same legend, one section lower. */
+          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp']],
+          /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
+             It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
+             the other always-there view switches (place names, borders, roads, grid) at the top of the
+             panel. Moved by name into that list below, not duplicated: one row, one owner. */
+          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
           ['lyrGrpIndic',['tz']]   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
         ];
@@ -990,6 +1002,11 @@ window.IntMapModules.dataLayers=function(HOST){
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
         ['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        /* (#R233) …and the day/night shading, which is the same KIND of switch as the nine above (a view
+           of the whole planet that is either on or off) rather than a data layer about a hazard. It is a
+           .lyr-row rather than a bare label, so it is fetched through rowFor() and marked `placed` — the
+           safety sweep below would otherwise find it unplaced and file it under Others (beta). */
+        const nsRow=rowFor('nightside'); if(nsRow){ try{ nsRow.style.display=''; }catch(_){} order.push(nsRow); }
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -1007,6 +1024,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
         const placed=new Set();
+        if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
         GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
           const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
           rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); placed.add(r); }); });

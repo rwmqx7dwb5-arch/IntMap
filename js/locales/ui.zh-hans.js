@@ -14,6 +14,11 @@
 window.IntMapLang.define('zh-hans', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
+    "lnkTerms":"服务条款",
+    "lnkPrivacy":"隐私权政策",
+    "legalTabTerms":"条款",
+    "legalTabPrivacy":"隐私权",
+    "commAddImage":"新增图片",
     "accentCustom":"自定义颜色",
     "accentDefault":"默认",
     "atlasBtn":"Atlas — 用日常语言提问（beta）・Ctrl/⌘+K",
@@ -147,7 +152,7 @@ window.IntMapLang.define('zh-hans', {
     "proModalTitle":"解锁 IntMap Pro",
     "proSection":"进阶功能",
     "reportBugBtn":"🐞 回报错误",
-    "screenshotBtn":"屏幕撷取（隐藏控制项，保留图例）",
+    "screenshotBtn":"地图屏幕撷取（隐藏控制项，保留图例）",
     "screenshotBusy":"撷取中…",
     "screenshotSaved":"已保存屏幕撷取 ✓",
     "sendFeedbackBtn":"⭐ 传送意见回馈",
@@ -198,7 +203,7 @@ window.IntMapLang.define('zh-hans', {
       statPop:"人口", statGdp:"GDP（名目）", statGdpPc:"人均 GDP", statGdpPPP:"GDP（购买力平价）", statGdpPcPPP:"人均 GDP（购买力平价）", statArea:"面积", statDensity:"人口密度", statRegion:"地区", statSub:"次区域", statCapital:"首都", statCurrency:"货币", statLang:"语言", statHDI:"人类发展指数", statDem:"民主指数", statMil:"国防支出", statLife:"平均寿命", statInet:"网络使用人口",
       details:"详细数据 ↗", loadingData:"正在加载国家数据…", dataNA:"无数据", noData:"查无国家数据。", sortGdp:"GDP", sortPop:"人口", sortArea:"面积", sortName:"A–Z", sortHDI:"HDI", sortMil:"军费", elev:"海拔", bearing:"方位", presetNone:"— 请选择 —", presetLbl:"距离默认", opacity:"不透明度", circumference:"圆周长", lblUnits:"度量單位", unitBoth:"公制＋英制", unitMetric:"仅公制", unitImperial:"仅英制", msPh:"搜索地球上任何地点…",
       spRunway:"跑道", spGarrison:"驻军", spOperator:"营运者", spEstd:"设立", spAircraft:"机种", spType:"类型", spCapacity:"容量", spDepth:"深度", spOutput:"产量", spReserves:"蕴藏量",
-      flat:"平面", globe:"地球仪", threeD:"⛰️ 3D", gridBtn:"🌐 经纬格线", gridLayer:"🌐 格线与标注", widgetsBtn:"小工具", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureBtn:"📏 测量", measureMenuBtn:"测量", measureDistBtn:"📏 距离／面积", areaBtn:"📐 面积", drawBtn:"✏️ 绘制", vol3dBtn:"🧊 立体体积", droneBtn:"🛸 无人机", radiusBtn:"⭕ 半径", objectsBtn:"🗂 对象", mScreenshot:"屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
+      flat:"平面", globe:"地球仪", threeD:"⛰️ 3D", gridBtn:"🌐 经纬格线", gridLayer:"🌐 格线与标注", widgetsBtn:"小工具", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureBtn:"📏 测量", measureMenuBtn:"测量", measureDistBtn:"📏 距离／面积", areaBtn:"📐 面积", drawBtn:"✏️ 绘制", vol3dBtn:"🧊 立体体积", droneBtn:"🛸 无人机", radiusBtn:"⭕ 半径", objectsBtn:"🗂 对象", mScreenshot:"地图屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
       ctxDropPin:"放置图钉", ctxMeasureFrom:"从此开始测量", ctxPostHere:"发布到社群", ctxDistFrom:"与前一个图钉的距离", ctxCopy:"复制坐标", ctxClearPins:"移除所有图钉", ctxThisPoint:"此地点", coords:"坐标", depth:"深度", climate:"气候", tlToday:"今天", tlTitle:"时光机", tlMachine:"时光机", tl10y:"−10年", tl5y:"−5年", tlNow:"现在",
       lblPinMode:"新闻图钉位置", pinModeLoc:"事件发生地", pinModePub:"媒体所在地",
       lyrEEZ:"专属经济海域／12海里", lyrShips:"实时船舶动态", lyrPlanes:"实时航班动态", lyrSats:"实时卫星", lyrThermal:"热异常（火点）", planesZoomHint:"放大以加载实时航班", planesAreaHint:"请放大 — 实时航班只涵盖画面中央区域", poiLabels:"地点、商家与设施", shipsZoomHint:"放大以加载实时船舶", aisNoKey:"实时船舶需要免费的 AISstream.io API 金钥 — 请在设置中新增。", aisKeyLabel:"实时船舶动态（AISstream 金钥）", aisKeyHint:"在 aisstream.io 申请免费金钥并贴在此处即可看到实时船舶。金钥仅保存在这个浏览器中。",

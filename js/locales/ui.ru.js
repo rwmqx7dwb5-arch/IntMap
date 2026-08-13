@@ -11,6 +11,7 @@
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
 window.IntMapLang.define('ru', { ui: {
+      lnkTerms:"Условия использования", lnkPrivacy:"Политика конфиденциальности", legalTabTerms:"Условия", legalTabPrivacy:"Конфиденциальность", commAddImage:"Добавить изображение",
       tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
       searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
@@ -40,7 +41,7 @@ window.IntMapLang.define('ru', { ui: {
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
       aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 10 раз в день). Ключ API не нужен.",
       blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
-      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", vol3dBtn:"🧊 3-D объём", droneBtn:"🛸 Дрон", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
+      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", vol3dBtn:"🧊 3-D объём", droneBtn:"🛸 Дрон", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок карты", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"Снимок карты (скрывает элементы управления, оставляет легенды)", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Краткий список в приложении", lblScience:"Наука и логика", viewScience:"Как считает каждая модель ↗", lblSourcesPage:"Источники данных", viewSourcesPage:"Открыть страницу источников данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
       filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",

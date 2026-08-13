@@ -99,7 +99,12 @@ window.IntMapModules.locate=function(HOST){
     /* (#R139) the locate FAB is accent-coloured ONLY when the MAP CENTRE sits on the current-location fix (the
        location dot is at/near the screen centre) — not merely while tracking. Measured in SCREEN PIXELS so it is
        zoom-independent ("地図中心が現在地にあればアクセントカラー"). */
-    const _CENTER_PX=44;
+    /* ⚠ (#R233) 44 px WAS NOT 「ピッタリ」. 「現在地移動ボタン、現在地にピッタリ合ってるときのみ光らせるように。」
+       A 44-pixel radius is a third of a thumb: at z14 it lit the button anywhere within ~80 m of the fix,
+       so a small pan — or simply the fix drifting while you read the map — left it claiming "you are
+       here" while the view was somewhere else. 4 px is the width of the dot's own outline: the badge is
+       on when the marker is UNDER the crosshair and off the moment it is not. */
+    const _CENTER_PX=4;
     function _mapCenterAtFix(){ const E=M(); if(!E||!active||!last) return false;
       try{ const pc=E.coords.project(E.camera.getCenter()), pf=E.coords.project([last.lng,last.lat]); return Math.hypot(pc.x-pf.x,pc.y-pf.y)<=_CENTER_PX; }catch(_){ return false; } }
     function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
