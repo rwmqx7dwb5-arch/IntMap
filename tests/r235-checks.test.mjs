@@ -209,9 +209,21 @@ test('R235 mobile: the layer sheet is the desktop panel, without the compare/ima
   assert.match(m, /if\(isM\)\{ moveTo\(layerDropdown,moMountLayers\);/, 'the dropdown still is — it is the data source');
   assert.match(m, /restoreHome\(satController\)/, 'and widening still restores it, for a session that was narrow before');
   const css = read('css/intmap.css');
-  for (const sel of ['#layer-tools', '#cmp-mount', '#mo-mount-sat']) {
+  for (const sel of ['#cmp-mount', '#mo-mount-sat']) {
     assert.ok(css.includes('body.m-lyr-tiles .m-sheet ' + sel), sel + ' is hidden in the phone sheet');
   }
+  /* ⚠⚠ `#layer-tools` must be hidden by a selector that OUT-SPECIFIES the existing
+     `#mo-mount-layers .layer-dropdown > #layer-tools{display:flex !important}` (2,1,0). A rule of
+     the `body.m-lyr-tiles .m-sheet #layer-tools` shape is (1,2,1) and loses — measured: the strip
+     stayed `display:flex` with the hide rule matching it. Assert the winning shape, not the intent. */
+  assert.ok(css.includes('body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-tools{ display:none !important; }'),
+    'the tools strip is hidden by a rule with at least as many ids as the one that shows it');
+  /* and the losing shape must NOT be what is relied on */
+  assert.ok(!/body\.m-lyr-tiles \.m-sheet #layer-tools\b/.test(css),
+    'the under-specific selector is gone, so nobody re-learns this the hard way');
+  const idCount = (s) => (s.match(/#/g) || []).length;
+  assert.ok(idCount('body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-tools')
+    >= idCount('#mo-mount-layers .layer-dropdown > #layer-tools'), 'specificity is not lower than the rule it overrides');
 });
 
 /* ── 9 · DE / RU / ES, measured rather than assumed ─────────────────────────────────────────── */

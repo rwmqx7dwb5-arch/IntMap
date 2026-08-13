@@ -218,6 +218,23 @@ USGS イベントIDを付けた**。実測（ブラウザ）:
 §9 に明記した。要素は消しておらず、幅を広げれば元の場所に戻る。
 ⚠ CSS のコメントが「TWO COLUMNS, not the desktop's three」と書いたままだった（#R233 が3列にしている）。直した。
 
+#### ⚠⚠ ここでも「書いたルールが効いていない」を実測で2つ見つけた
+
+1. **`#layer-tools` は隠れなかった。** 携帯用スタイルシートに既に
+   `#mo-mount-layers .layer-dropdown > #layer-tools{display:flex !important}` があり、
+   **id 2つ＋クラス1つ (2,1,0)**。こちらが書いたのは
+   `body.m-lyr-tiles .m-sheet #layer-tools` ＝ **id 1つ＋クラス2つ＋要素1つ (1,2,1)**。
+   両方 `!important` なので**詳細度で決まり、古い方が勝つ**。`el.matches()` は true を返すのに
+   `display` は `flex` のまま——**「当たっている」と「効いている」は別**。
+   → #R223 の教訓そのまま:「ルールが効かないときは、その要素に**他に何が当たっているか**を並べて見ろ」。
+2. **運び込むのをやめただけでは足りなかった。** `#sat-controller` の元の親は `#map-container` なので、
+   シートへ移さなくなった結果 **375 px の画面の地図の上に 280×174 のパネルが浮いた**——
+   移す前より悪い。「なくていい」は「携帯には出さない」なので `display:none` を足した。
+
+どちらも**ブラウザで測って初めて分かった**（`getComputedStyle` と `getBoundingClientRect`）。
+実測後: タイル160枚・3列（108.3 px×3）・`#layer-tools` / 比較ビュー / 相関分析 / `#sat-controller` すべて hidden・
+Active バーは表示（デスクトップと同じ）。1280 px に戻すと `#sat-controller` は `display:block` で復帰。
+
 ### 8. ⑤ DE / RU / ES — 「n/a (positional)」を測れるようにした
 
 `scripts/i18n-report.mjs` は en/jp/de/ru/es を **"n/a (positional)"** と印字する（訳が呼び出し位置の

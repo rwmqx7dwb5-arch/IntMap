@@ -1674,9 +1674,22 @@
       body.m-lyr-tiles .m-sheet #layer-dropdown .premium-group-title,
       body.m-lyr-tiles .m-sheet #layer-dropdown > label,
       body.m-lyr-tiles .m-sheet #layer-dropdown > hr,
-      body.m-lyr-tiles .m-sheet #layer-tools,
       body.m-lyr-tiles .m-sheet #cmp-mount,
       body.m-lyr-tiles .m-sheet #mo-mount-sat{ display:none !important; }
+      /* ⚠⚠ (#R235) `#layer-tools` NEEDS ITS OWN RULE, AND THIS IS WHY — the phone stylesheet already
+         carries `#mo-mount-layers .layer-dropdown > #layer-tools{display:flex !important}` a few
+         rules down. That is TWO ids and a class (2,1,0); the line above is one id, two classes and
+         an element (1,2,1), so `!important` on both sides is decided by specificity and the OLD rule
+         wins. Measured: the strip stayed `display:flex` with the hide rule matching it.
+         (#R223's lesson, again: when a rule does not take, list what ELSE is applying to that
+         element before touching the rule you just wrote.) */
+      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-tools{ display:none !important; }
+      /* ⚠⚠ (#R235) …AND `#sat-controller` HAS TO BE HIDDEN, NOT MERELY LEFT BEHIND. js/mobile-ui.js
+         no longer moves it into the sheet, and its desktop home is #map-container — so simply not
+         moving it left a 280 × 174 panel floating ON THE MAP of a 375 px phone, which is worse than
+         either place it had been. Measured before this rule. 「なくていい」 means not there at all on
+         a phone; the element is untouched and widening the window brings it straight back. */
+      #sat-controller{ display:none !important; }
       .m-sheet .lsr-mount{ display:block; margin:0 0 6px; }
       .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:4; background:var(--sidebar-bg); }
       .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:38px; border-radius:19px;
