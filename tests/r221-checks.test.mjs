@@ -64,10 +64,15 @@ test('① the registry is the ONE list, and the first five keep their argument o
   assert.match(boot, /import\.meta\.glob\('\.\.\/js\/locales\/ui\.\*\.js'\)/, 'the locale directory IS the language list');
   assert.doesNotMatch(read('src/main.js'), /locales\/ui\.(?!en\.js)[a-z-]+\.js/,
     'src/main.js imports only the English fallback — every other locale is fetched on demand');
-  for (const f of readdirSync(join(JS, 'locales'))) {
-    const m = /^ui\.([a-z0-9-]+)\.js$/.exec(f);
-    if (m) assert.ok(codes.includes(m[1]) || m[1] === 'en', `js/locales/${f} exists but ${m[1]} is not registered`);
-  }
+  /* ⚠ (#R232) …AND THE DIRECTORY IS CHECKED AGAINST THE GENERATED LIST, NOT AGAINST THE ROWS. The
+     registry names only the five positional languages and the two that carry facts a filename cannot;
+     every other language is DISCOVERED from this directory. So what has to hold is that the directory
+     and js/locales/_langs.js agree exactly — that IS the 「1発で終わる」 promise, checked. */
+  const listed = (read('js/locales/_langs.js').split('IntMapLangBeta')[0].match(/"[a-z0-9-]+"/g) || [])
+    .map((x) => x.replace(/"/g, '')).sort();
+  const onDisk = readdirSync(join(JS, 'locales'))
+    .map((f) => /^ui\.([a-z0-9-]+)\.js$/.exec(f)).filter(Boolean).map((m) => m[1]).sort();
+  assert.deepEqual(listed, onDisk, 'js/locales/_langs.js is stale — run `node scripts/i18n-langs.mjs`');
 });
 
 test('① a language table falls back to English PER KEY, not per table', () => {

@@ -829,7 +829,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
-        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
@@ -853,7 +853,7 @@ window.IntMapModules.dataLayers=function(HOST){
             rg.title=(window.IntMapLang.t(lang,'Opacity','透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
-          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
           x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
           row.appendChild(x); pn.appendChild(row); });
         sec.appendChild(pn); };
@@ -2116,16 +2116,16 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
       const nm=GENERIC_LEG[id][Math.max(0,window.IntMapLang.index(HOST.lang))]||GENERIC_LEG[id][0];
-      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите');
+      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр');
-          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все');
-          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские');
-          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные');
+          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр','Filtro');
+          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todos');
+          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские','Civil');
+          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные','Militar');
           fr.innerHTML=_fL+' <select class="gl-filter" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><option value="all">'+_fAll+'</option><option value="civilian">'+_fCiv+'</option><option value="military">'+_fMil+'</option></select>';
           el.appendChild(fr);
           const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}

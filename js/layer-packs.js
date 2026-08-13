@@ -131,7 +131,7 @@ window.IntMapModules.earthSky=function(HOST){
         try{ if(e.target.checked&&window._registerLayerOpacity){ const _el=window._registerLayerOpacity('l9-'+k,[L9LBL[k][1],L9LBL[k][0],L9LBL[k][2],L9LBL[k][3]],SETS[k],'l9-dl-'+k); if(k==='aurora'&&_el){ _auroraLegEl=_el; _auroraSyncNote(); } } else if(window._hideGenericLegend){ window._hideGenericLegend('l9-'+k); if(k==='aurora') _auroraLegEl=null; } }catch(_){} }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство','Tierra, cielo y espacio aéreo'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>{ setTimeout(relabel,20); setTimeout(_auroraSyncNote,25); });   /* (#R11) relabel on Settings language change; (#R122) re-localize the aurora forecast-time note */
     window.IntMapLayers9={ toggle };
@@ -384,7 +384,7 @@ window.IntMapModules.landCover=function(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле','Cobertura del suelo y ciencias de la Tierra'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };

@@ -271,7 +271,7 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
      when this runs, which is the whole point of the launch screen. It is one word per language, so a
      new language costs one entry here; a language that forgets simply shows English for ~2 s.
      (#R223 added zh and missed this line, so Traditional Chinese booted in English.) */
-  var L={en:'Loading…',jp:'読み込み中…',de:'Wird geladen…',ru:'Загрузка…',es:'Cargando…',
+  var L={en:'Loading…',jp:'読み込み中…',de:'Wird geladen…',ru:'Загрузка…',es:'Cargando…',fr:'Chargement…',ko:'불러오는 중…',
          zh:'載入中…','zh-hans':'加载中…'};
   var lang='en';
   try{ var s=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(s&&L[s.lang]) lang=s.lang; }catch(e){}
@@ -306,7 +306,7 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
   <div class="sidebar" id="sidebar">
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button><button class="lang-btn" id="lang-es" title="Español (beta)">ES</button></div></div>
+      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button><button class="lang-btn" id="lang-es" title="Español">ES</button></div></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
            SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
            Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
@@ -536,7 +536,7 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
     <div class="settings-sec">
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch (Beta)</option><option value="ru">Русский (бета)</option><option value="es">Español (Beta)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="es">Español</option></select></div>
     <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>

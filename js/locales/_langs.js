@@ -3,4 +3,5 @@
  * import.meta.glob. js/lang-registry.js reads this global if it is present; in the app the same list
  * comes from the real module graph (js/locale-boot.js), so neither depends on the other being right.
  * Adding a language means adding js/locales/ui.<code>.js — this file follows on the next build. */
-window.IntMapLangCodes = ["de","en","es","jp","ru","zh","zh-hans"];
+window.IntMapLangCodes = ["de","en","es","fr","jp","ko","ru","zh","zh-hans"];
+window.IntMapLangBeta  = ["fr","ko"];

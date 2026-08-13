@@ -184,6 +184,13 @@ window.IntMapLang = (function () {
       } catch (e) {}
     }
     if (!label) label = code.toUpperCase();
+    /* (#R232) …and the (beta) mark, MEASURED rather than typed. scripts/i18n-langs.mjs computes it
+       from the locale file's own inline coverage, so it appears when a language is young and goes
+       away on its own when the table is filled — 「完了と判断されたものは(beta)表記を撤去してよい」
+       without anyone having to notice. An explicit META/row label always wins.
+       ⚠ In the app the list arrives with the codes (src/locale-boot.js imports js/locales/_langs.js);
+       on the two reading pages the same file is a <script src>. Absent, nothing is marked. */
+    if (!m.label) { try { if ((window.IntMapLangBeta || []).indexOf(code) >= 0) label += ' (beta)'; } catch (e) {} }
     return { code: code, label: label, html: tag,
              pill: m.pill || code.slice(0, 2).toUpperCase(),
              alias: (m.alias || []).slice() };

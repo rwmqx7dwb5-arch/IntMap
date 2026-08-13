@@ -2868,7 +2868,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){} }); }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
-    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）'); };
+    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
     tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
       try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}

@@ -29,6 +29,12 @@
  *  checker read `import` and `meta` as two free identifiers resolving to nothing. src/ is where this
  *  graph's bundler-aware entry points already live (main.js, the two worker clients, vendor.js).
  * ==========================================================================*/
+/* (#R232) the generated list — the codes AND which of them are still (beta), both computed from the
+   locale directory by scripts/i18n-langs.mjs. The glob below is what actually decides the language
+   set in the app; this is imported for the beta marks, and so that the app and the two reading
+   pages (which load the same file as a <script src>) cannot disagree about them. */
+import '../js/locales/_langs.js';
+
 (function () {
   'use strict';
   var LANG = window.IntMapLang;
