@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -132,6 +133,19 @@ test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first
   const order = [...row[1].matchAll(/class="(sq-fdraw|sq-cm-epi|sq-cm-sta)"/g)].map((m) => m[1]);
   assert.deepEqual(order, ['sq-fdraw', 'sq-cm-epi', 'sq-cm-sta'],
     '「やっぱり、震源域を先に」 — the row reads in the order the work is done');
+});
+
+/* ── 4a · the specification is not allowed to drift away from the directory ──────────────────── */
+test('R236 docs: Architecture.md §3 still describes every file in js/', () => {
+  /* 「現状にそぐわない記述が増加しており」 — §3 is the section that rots fastest, because a split or
+     a rename leaves it silently wrong. When this check was written it described 117 modules against
+     139 on disk, and the twenty-three it had never heard of included js/app-body.js (396 kB, the
+     largest file in the project) and js/geo-engine.js (176 kB, the renderer seam). Both were
+     MENTIONED inside other files' entries, which is exactly why nobody noticed they had none.
+     ⚠ It checks membership, not prose: what a file is FOR stays hand-written. */
+  const out = execFileSync(process.execPath, [path.join(ROOT, 'scripts/arch-files-check.mjs'), '--check'],
+    { encoding: 'utf8' });
+  assert.match(out, /§3 is in sync with js\//);
 });
 
 /* ── 4b · the DE/RU/ES gaps the positional audit could not see ───────────────────────────────── */
