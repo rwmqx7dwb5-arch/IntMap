@@ -221,20 +221,63 @@ self.addEventListener('fetch', (event) => {
 });
 
 /* Allow the page's prefetcher to warm the cache directly (postMessage of tile URLs). */
+/* ══ ⚠⚠ (#R230) A PREFETCH IS THE ONE REQUEST NOBODY IS WAITING FOR ══════════════════════════════
+   「衛星先読みの一斉実行を小さなキューに変更」. `Promise.all` over the whole batch started up to 96
+   fetches in one turn of the event loop — every one of them a connection slot, a response body to
+   read, a Blob to build and a Cache API write, all contending with the tiles the map is drawing RIGHT
+   NOW, and all of it triggered 260 ms after the reader stopped moving, i.e. squarely inside the next
+   gesture. Satellite is the app's DEFAULT basemap (js/app-body.js: `currentMapType='sat'`), so this
+   is not an exotic path — it is what a phone does on first load.
+   PREFETCH_LANES at a time instead. ⚠ THE WORK IS NOT REDUCED AND NO TILE IS DROPPED: the same URLs
+   are fetched and the same responses are stored, just never more than a few at once, so the visible
+   tiles keep their share of the connection pool and the main thread. Nothing about the picture
+   changes (「見た目は一切落とすな」) — a prefetch has never had a pixel of its own.
+   ⚠ THE LANES ARE SHARED ACROSS BATCHES, deliberately: a pan is a run of `moveend`s, so per-batch
+   limiting would still let three overlapping batches put 3×N in the air. One module-level cursor over
+   a queue that later batches append to is what actually bounds it. */
+const PREFETCH_LANES = 4;                 /* concurrent prefetch fetches, across every batch */
+const PREFETCH_MAX = 96;                  /* per batch, unchanged — the ceiling that was already here */
+const PREFETCH_BACKLOG = 512;             /* a queue that outgrows this is stale; drop the oldest */
+let _pfQueue = [], _pfLanes = 0, _pfDrained = null, _pfResolve = null;
+/* ⚠ THE WORKER STILL HAS TO BE HELD ALIVE UNTIL THE LAST TILE LANDS. `Promise.all` did that for free
+   — `waitUntil` was given the whole batch. A queue that returns the moment it is *scheduled* would
+   let the browser terminate the worker with lanes still in flight, which is not "smaller batches",
+   it is "silently fewer tiles". So the handler waits on a drain promise instead. */
+function pfDrain() { if (!_pfDrained) _pfDrained = new Promise((res) => { _pfResolve = res; }); return _pfDrained; }
+function pfSettle() {
+  if (_pfLanes === 0 && _pfQueue.length === 0 && _pfResolve) {
+    const r = _pfResolve; _pfResolve = null; _pfDrained = null; r();
+  }
+}
+async function pfLane(cache) {
+  while (_pfQueue.length) {
+    const u = _pfQueue.shift();
+    try {
+      if (await cache.match(u)) continue;
+      const res = await fetch(u, { mode: 'cors' });
+      /* (#R224) the SAME writer as the fetch path — stamped, and never a placeholder. The prefetch
+         ring warms exactly the tiles sat-proto will ask about, so a placeholder pinned HERE was the
+         other half of the half-resolution defect. */
+      if (res && res.ok) await store(cache, u, res);
+    } catch (_) {}
+  }
+}
+function pfPump(cache) {
+  while (_pfLanes < PREFETCH_LANES && _pfQueue.length) {
+    _pfLanes++;
+    pfLane(cache).catch(() => {}).then(() => { _pfLanes--; pfSettle(); });
+  }
+  pfSettle();                              /* nothing to do (empty batch) must resolve, not hang */
+}
 self.addEventListener('message', (event) => {
   const d = event.data;
   if (!d || d.type !== 'prefetch' || !Array.isArray(d.urls)) return;
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await Promise.all(d.urls.slice(0, 96).map(async (u) => {
-      try {
-        if (await cache.match(u)) return;
-        const res = await fetch(u, { mode: 'cors' });
-        /* (#R224) the SAME writer as the fetch path — stamped, and never a placeholder. The prefetch
-           ring warms exactly the tiles sat-proto will ask about, so a placeholder pinned HERE was the
-           other half of the half-resolution defect. */
-        if (res && res.ok) await store(cache, u, res);
-      } catch (_) {}
-    }));
+    for (const u of d.urls.slice(0, PREFETCH_MAX)) _pfQueue.push(u);
+    if (_pfQueue.length > PREFETCH_BACKLOG) _pfQueue = _pfQueue.slice(-PREFETCH_BACKLOG);
+    const done = pfDrain();
+    pfPump(cache);
+    await done;
   })());
 });
