@@ -189,25 +189,63 @@ export const QUAKE_EVENTS = [
    point (Ben-Menahem 1961; Somerville et al. 1997's X·cos θ). A Sumatra that nucleated in the middle
    would be a different earthquake from the one that happened.
 
-   Local equirectangular about the hypocentre — the largest rectangle here is 1,300 km, where the
-   projection error is a few km against a 170 km width, i.e. below the model's own resolution. */
+   ══ ⚠⚠ (#R234) FOUR CORNERS ON A FLAT LOCAL PATCH IS NOT A 1,300 km RUPTURE ═══════════════════
+   「地震シミュレータの過去の地震の震源域の描画が雑すぎる。（現状は単に長方形置くだけ。）」
+   Two separate errors were adding up, and both of them are largest for exactly the events people
+   come here to look at — the megathrusts:
+
+    1. LOCAL EQUIRECTANGULAR. The old code laid a flat km grid on the hypocentre's own latitude and
+       used it out to ±1,300 km. That grid is only right where it is anchored: for Valdivia (850 km
+       along strike, from −38°) the far end of the rupture is at −45°, where a degree of longitude is
+       11 % shorter than the constant it was divided by — tens of kilometres of error in the drawn
+       position of the rupture's own end. Every vertex is a proper great-circle destination now
+       (`_dest`, the standard spherical direct formula), computed from the hypocentre at a real
+       bearing and a real distance, so the shape sits where the numbers on the row say it does.
+    2. FOUR VERTICES. A polygon with four points has four straight edges, and the 1,300 km side of
+       Sumatra–Andaman is not straight on a sphere — nor on the screen once the globe is drawn. The
+       perimeter is now WALKED (24 samples along strike, 6 down-dip), so the drawn edge follows the
+       fault instead of chording it.
+
+   ⚠ THE DIMENSIONS AND THE AREA ARE THE PUBLISHED ONES, UNCHANGED. This does not re-draw the
+   rupture as something else — L, W·cos δ and `nucAlong` are exactly as they were, and the ring is
+   still the surface projection of the same plane. It is the same rectangle, put in the right place
+   on a round Earth and drawn with enough points to be that shape. (`js/fault-geometry.js` measures
+   its area from this ring, so its answer improves with it rather than drifting from it.) */
 export function ruptureRing(ev) {
-  const D = Math.PI / 180;
-  const cosLat = Math.max(0.1, Math.cos(ev.lat * D));
-  const kmPerLng = 111.32 * cosLat, kmPerLat = 110.574;
-  const s = ev.strike * D;
-  /* unit vectors in km: along strike, and down-dip (90° clockwise from strike) */
-  const ax = Math.sin(s), ay = Math.cos(s);
-  const bx = Math.sin(s + Math.PI / 2), by = Math.cos(s + Math.PI / 2);
+  const D = Math.PI / 180, RE = 6371.0088;
+  /* the spherical direct problem: from a point, a bearing and a distance, where do you arrive */
+  const _dest = (lng, lat, brgDeg, distKm) => {
+    const d = distKm / RE, br = brgDeg * D, la1 = lat * D, lo1 = lng * D;
+    const sla = Math.sin(la1) * Math.cos(d) + Math.cos(la1) * Math.sin(d) * Math.cos(br);
+    const la2 = Math.asin(Math.max(-1, Math.min(1, sla)));
+    const lo2 = lo1 + Math.atan2(Math.sin(br) * Math.sin(d) * Math.cos(la1),
+                                 Math.cos(d) - Math.sin(la1) * Math.sin(la2));
+    return [((lo2 / D + 540) % 360) - 180, la2 / D];
+  };
+  /* a point of the fault plane's surface projection, in (along-strike, down-dip) kilometres from
+     the hypocentre. Two great-circle hops — along strike, then down-dip from there — rather than
+     one flat vector sum, because the down-dip direction rotates as you travel along the strike. */
+  const at = (u, v) => {
+    const p = _dest(ev.lng, ev.lat, ev.strike, u);
+    return v === 0 ? p : _dest(p[0], p[1], ev.strike + 90, v);
+  };
   const along = Math.max(1, +ev.lenKm || 1);
   const wProj = Math.max(1, (+ev.widKm || 1) * Math.cos((+ev.dip || 0) * D));
   const f = Math.max(0, Math.min(1, ev.nucAlong == null ? 0.5 : +ev.nucAlong));
   const a0 = -along * f, a1 = along * (1 - f);            /* backward / forward of the hypocentre */
-  const corners = [[a0, 0], [a1, 0], [a1, wProj], [a0, wProj]];
-  return corners.map(([u, v]) => {
-    const dx = ax * u + bx * v, dy = ay * u + by * v;      /* km east, km north */
-    return [ev.lng + dx / kmPerLng, ev.lat + dy / kmPerLat];
-  });
+  /* ⚠ THE SAMPLING IS PROPORTIONATE, because this ring is not only drawn — every cell of the
+     intensity field measures its distance to it (js/seismic.js `faultDistKm`, O(vertices) per cell,
+     up to 82,944 cells). One vertex per ~50 km of fault is below the model's own resolution
+     everywhere and leaves the small crustal events at the four points they always had: Haiti
+     (50 × 5 km projected) stays a quadrilateral, Tōhoku becomes 28 points, Sumatra 54. */
+  const seg = (km) => Math.max(1, Math.min(24, Math.round(km / 50)));
+  const NL = seg(along), NW = Math.min(4, seg(wProj));      /* samples along strike / down dip */
+  const ring = [];
+  for (let i = 0; i <= NL; i++) ring.push(at(a0 + (a1 - a0) * (i / NL), 0));           /* top edge */
+  for (let j = 1; j <= NW; j++) ring.push(at(a1, wProj * (j / NW)));                   /* far end  */
+  for (let i = NL - 1; i >= 0; i--) ring.push(at(a0 + (a1 - a0) * (i / NL), wProj));   /* bottom   */
+  for (let j = NW - 1; j >= 1; j--) ring.push(at(a0, wProj * (j / NW)));               /* near end */
+  return ring;
 }
 
 /* the published seismic moment, in N·m — Hanks & Kanamori (1979), the same relation the simulator

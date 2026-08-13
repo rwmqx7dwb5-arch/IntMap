@@ -1162,8 +1162,14 @@ window.IntMapCesiumEngine=(function(){
                    highlight:S().resolveColor(p['hillshade-highlight-color'],ctx,'#ffffff'),
                    azimuth:335, altitude:45 };
         };
+        /* ⚠ (#R234) 14 WAS A SECOND, LOWER CEILING ON THE SAME DATA. `this._dem.maxzoom()` already
+           carries the device's answer (terrarium's native 15 on desktop, 13 on a phone — #R19/#R20),
+           and then this clamped it to 14 for no reason either file records: the hillshade in the
+           Cesium engine was one zoom level blurrier than the identical layer in MapLibre.
+           「陰影起伏（標高）レイヤーの解像度を上げて」 — the phone's 13 still wins the Math.min, so
+           this raises desktop only, which is what was asked for. */
         return CL().makeCanvasImageryProvider(Cesium,CL().makeHillshadeDraw(this._dem,paintOf),
-          { maxzoom:Math.min(14,this._dem.maxzoom()), attribution:'Elevation: Mapzen / AWS Terrain Tiles' });
+          { maxzoom:Math.min(15,this._dem.maxzoom()), attribution:'Elevation: Mapzen / AWS Terrain Tiles' });
       }
       if(def.type==='color-relief'){
         const rampOf=()=>(def.paint&&def.paint['color-relief-color'])||null;

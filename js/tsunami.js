@@ -732,6 +732,13 @@ window.IntMapModules.tsunami=function(HOST){
       tSim=sim.frames[k].t; paint(); render(); return true; }
 
     /* ---- panel ------------------------------------------------------------------------------------ */
+    /* ══ (#R234) THE SAME TYPE SCALE AND THE SAME TEXT COLOUR AS THE SEISMIC PANEL ═════════════
+       「地震シミュレータポップアップのデザインを整理して。津波のポップアップも同様に整理。」 — this
+       file had drifted the same way its sibling had: 10, 10.5, 11, 11.5 and 12 px all in one
+       column, and --text-muted on labels the reader is meant to read. Two steps, one text colour,
+       and the SAME two numbers js/seismic.js uses, so the two panels are one design rather than two
+       that resemble each other. Grey survives only on the ✕/— window chrome. */
+    const FS='12px', FS_S='11px';
     const BTN='padding:6px 10px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;cursor:pointer;';
     const fmtHM=(s)=>{ const t=Math.max(0,Math.round(s)); const h=Math.floor(t/3600), m=Math.floor((t%3600)/60);
       return h?(h+'h '+String(m).padStart(2,'0')+'m'):(m+'m '+String(t%60).padStart(2,'0')+'s'); };
@@ -766,23 +773,23 @@ window.IntMapModules.tsunami=function(HOST){
         +'<button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>';
       /* (#R215) the same two-declaration bug js/seismic.js carried — see the note there. */
       let body='<div class="tsu-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
-      if(epi) body+='<div style="font-size:11.5px;color:var(--text-main);">M '+mw.toFixed(1)+' · '
+      if(epi) body+='<div style="font-size:'+FS+';color:var(--text-main);">M '+mw.toFixed(1)+' · '
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';
       /* (#R212) a drawn rupture is a different source and the panel says so, with what was taken from it */
-      if(rupture) body+='<div style="font-size:11px;color:#7fd4ff;">✏ '
+      if(rupture) body+='<div style="font-size:'+FS+';color:#7fd4ff;">✏ '
         +L('Rupture area drawn','震源域を描画','Gezeichnete Bruchfläche','Нарисованный очаг','Ruptura dibujada')+' · '
         +Math.round(rupture.areaKm2||0).toLocaleString()+' km² · D̄ '+(+rupture.slipM||0)+' m'
         +(sim&&sim.fault&&sim.fault.drawn?(' · '+L('strike','走向','Streichen','простирание','rumbo')+' '+Math.round(sim.strike||0)+'°'):'')+'</div>';
       /* (#R196) the seismic panel changed the event under us — say so, then recompute (see follow) */
-      if(srcPending) body+='<div class="tsu-follow" style="font-size:11px;color:#ffd23f;">'
+      if(srcPending) body+='<div class="tsu-follow" style="font-size:'+FS+';color:#ffd23f;">'
         +L('The earthquake changed — recomputing the propagation.','地震の条件が変わりました — 伝播を再計算します。',
            'Das Beben hat sich geändert — Ausbreitung wird neu berechnet.','Землетрясение изменилось — пересчёт распространения.',
            'El terremoto cambió — recalculando la propagación.')+'</div>';
       /* (#R204) which domain to solve on — see nearDomain(). The near scope states its own cell size
          and its own horizon, because both are the reason to pick it. */
       { const nd=nearDomain(epi[1]), km=Math.round(111.32/NEAR_CPD());
-        body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
           +L('Domain','計算領域','Gebiet','Область','Dominio')
           +'<select class="tsu-scope" style="flex:1;'+BTN+'">'
           +'<option value="global"'+(scope==='global'?' selected':'')+'>'
@@ -790,14 +797,14 @@ window.IntMapModules.tsunami=function(HOST){
           +'<option value="near"'+(scope==='near'?' selected':'')+'>'
             +L('Near source · '+km+' km','震源近傍 · '+km+' km','Nahe der Quelle · '+km+' km','Вблизи очага · '+km+' км','Cerca del origen · '+km+' km')+'</option>'
           +'</select></label>';
-        if(scope==='near') body+='<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;">'
+        if(scope==='near') body+='<div style="font-size:'+FS_S+';color:var(--text-main);line-height:1.45;">'
           +L('Latitude '+nd.lat0.toFixed(0)+'° to '+nd.lat1.toFixed(0)+'°, all longitudes, at four times the resolution. Capped at '+NEAR_MAX_H+' h — past that the wave reaches the band edge.',
              '緯度 '+nd.lat0.toFixed(0)+'°〜'+nd.lat1.toFixed(0)+'°・全経度を4倍の解像度で。'+NEAR_MAX_H+'時間で打ち切り（それ以降は波が帯の端に達します）。',
              'Breite '+nd.lat0.toFixed(0)+'° bis '+nd.lat1.toFixed(0)+'°, alle Längen, vierfache Auflösung. Auf '+NEAR_MAX_H+' h begrenzt — danach erreicht die Welle den Bandrand.',
              'Широты '+nd.lat0.toFixed(0)+'°…'+nd.lat1.toFixed(0)+'°, все долготы, вчетверо детальнее. Не более '+NEAR_MAX_H+' ч — далее волна доходит до края полосы.',
              'Latitud '+nd.lat0.toFixed(0)+'° a '+nd.lat1.toFixed(0)+'°, todas las longitudes, con cuádruple resolución. Máximo '+NEAR_MAX_H+' h — después la ola alcanza el borde.')
           +'</div>'; }
-      body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+      body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
         +L('Simulate','計算時間','Simulieren','Смоделировать','Simular')
         +'<select class="tsu-hours" style="flex:1;'+BTN+'">'
         /* (#R197) up to 30 h — the far side of the planet and back. Chile→Japan is about 22 h.
@@ -805,74 +812,74 @@ window.IntMapModules.tsunami=function(HOST){
         +hourChoices().map(h=>'<option value="'+h+'"'+(h===effHours()?' selected':'')+'>'+h+' h</option>').join('')
         +'</select></label>';
       if(busy){
-        body+='<div style="font-size:11.5px;color:var(--text-main);">'+L('Computing','計算中','Berechne','Расчёт','Calculando')+'… '+pct+'%'
+        body+='<div style="font-size:'+FS+';color:var(--text-main);">'+L('Computing','計算中','Berechne','Расчёт','Calculando')+'… '+pct+'%'
           +(sim&&sim.frames.length?(' · '+L('playable now','再生できます','abspielbar','можно смотреть','ya reproducible')):'')+'</div>'
           +'<div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.25);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:#0a84ff;transition:width .2s;"></div></div>';
       } else {
         body+='<button class="tsu-run" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">▶ '
           +(sim?L('Recompute','再計算','Neu berechnen','Пересчитать','Recalcular'):L('Compute propagation','伝播を計算','Ausbreitung berechnen','Рассчитать','Calcular propagación'))+'</button>';
       }
-      if(lastErr==='nosea') body+='<div style="font-size:11.5px;color:#ff9f0a;">'
+      if(lastErr==='nosea') body+='<div style="font-size:'+FS+';color:#ff9f0a;">'
         +L('This epicenter is inland — there is no sea to displace here.','この震源は内陸で、動かす海がありません。',
            'Das Epizentrum liegt im Landesinneren.','Эпицентр на суше — моря здесь нет.','El epicentro está tierra adentro.')+'</div>';
       /* (#R197) the bundled sea floor is the model's one hard requirement, and it says so */
-      else if(lastErr==='nobathy') body+='<div style="font-size:11.5px;color:#ff453a;">'
+      else if(lastErr==='nobathy') body+='<div style="font-size:'+FS+';color:#ff453a;">'
         +L('The global sea-floor data could not be loaded, so there is nothing to propagate the wave over.',
            '全球の海底地形データを読み込めなかったため、波を伝播させる海がありません。',
            'Die globalen Meeresboden-Daten konnten nicht geladen werden.',
            'Не удалось загрузить глобальные данные о дне океана.',
            'No se pudieron cargar los datos globales del fondo marino.')+'</div>';
       /* (#R197) the polar filter is an approximation, so the run checks itself — see the worker */
-      else if(lastErr==='diverged') body+='<div style="font-size:11.5px;color:#ff453a;">'
+      else if(lastErr==='diverged') body+='<div style="font-size:'+FS+';color:#ff453a;">'
         +L('The solution left its physical bounds and was stopped — no picture is shown rather than a wrong one.',
            '解が物理的な範囲を外れたため中止しました。誤った絵を出すより何も出しません。',
            'Die Lösung verließ ihre physikalischen Grenzen und wurde gestoppt.',
            'Решение вышло за физические границы и было остановлено.',
            'La solución salió de sus límites físicos y se detuvo.')+'</div>';
-      else if(lastErr==='noworker') body+='<div style="font-size:11.5px;color:#ff453a;">'
+      else if(lastErr==='noworker') body+='<div style="font-size:'+FS+';color:#ff453a;">'
         +L('This browser cannot run the solver in a background thread, so the propagation model is unavailable here.',
            'このブラウザではバックグラウンドスレッドで計算できないため、伝播計算は利用できません。',
            'Dieser Browser kann den Löser nicht in einem Hintergrund-Thread ausführen.',
            'Этот браузер не может выполнить расчёт в фоновом потоке.',
            'Este navegador no puede ejecutar el solucionador en un hilo de fondo.')+'</div>';
-      else if(lastErr) body+='<div style="font-size:11.5px;color:#ff453a;">'+String(lastErr).slice(0,120)+'</div>';
+      else if(lastErr) body+='<div style="font-size:'+FS+';color:#ff453a;">'+String(lastErr).slice(0,120)+'</div>';
       if(sim&&sim.frames.length){
         const end=sim.frames[sim.frames.length-1].t;
         body+='<div style="display:flex;align-items:center;gap:6px;">'
           +'<button class="tsu-play" style="'+BTN+'min-width:34px;">'+(playing?'⏸':'▶')+'</button>'
           +'<input class="tsu-t" type="range" min="0" max="'+Math.round(end)+'" step="1" value="'+Math.round(tSim)+'" style="flex:1;">'
-          +'<span class="tsu-clock" style="font-size:11.5px;color:var(--text-main);min-width:60px;text-align:right;font-variant-numeric:tabular-nums;">'+fmtHM(tSim)+'</span></div>';
-        body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+          +'<span class="tsu-clock" style="font-size:'+FS+';color:var(--text-main);min-width:60px;text-align:right;font-variant-numeric:tabular-nums;">'+fmtHM(tSim)+'</span></div>';
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
           +L('Speed','速度','Tempo','Скорость','Velocidad')
           +'<select class="tsu-speed" style="flex:1;'+BTN+'">'
           +[60,120,180,300,600,1200].map(s=>'<option value="'+s+'"'+(s===speed?' selected':'')+'>×'+s+'</option>').join('')
           +'</select></label>';
-        body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
           +L('Wave scale','波の階調','Wellenskala','Шкала волны','Escala de ola')
           +'<input class="tsu-amp" type="range" min="-2.2" max="1.4" step="0.05" value="'+Math.log10(ampNow()).toFixed(2)+'" style="flex:1;">'
-          +'<span style="font-size:11px;color:var(--text-main);min-width:52px;text-align:right;">±'+(ampNow()<1?(ampNow()*100).toFixed(0)+' cm':ampNow().toFixed(1)+' m')+'</span></label>';
-        body+='<label style="font-size:11.5px;color:var(--text-main);display:flex;align-items:center;gap:7px;">'
+          +'<span style="font-size:'+FS+';color:var(--text-main);min-width:52px;text-align:right;">±'+(ampNow()<1?(ampNow()*100).toFixed(0)+' cm':ampNow().toFixed(1)+' m')+'</span></label>';
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:7px;">'
           +'<input type="checkbox" class="tsu-max"'+(showMax?' checked':'')+'> '
           +L('Maximum wave height instead','最大波高を表示','Maximale Wellenhöhe','Показать максимум','Altura máxima')+'</label>';
-        body+='<label style="font-size:11.5px;color:var(--text-main);display:flex;align-items:center;gap:7px;">'
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:7px;">'
           +'<input type="checkbox" class="tsu-iso"'+(showIso?' checked':'')+'> '
           +L('Travel-time contours (hours)','到達時間の等値線（時間）','Laufzeitlinien (Stunden)','Изохроны добегания (часы)','Isócronas de llegada (horas)')+'</label>';
-        body+='<label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">'
+        body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
           +L('Opacity','不透明度','Deckkraft','Прозрачность','Opacidad')
           +'<input class="tsu-op" type="range" min="10" max="100" step="5" value="'+Math.round(opacity*100)+'" style="flex:1;"></label>';
-        if(probe) body+='<div style="font-size:11.5px;color:var(--text-main);border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
+        if(probe) body+='<div style="font-size:'+FS+';color:var(--text-main);border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
           +probe.lat.toFixed(2)+', '+probe.lng.toFixed(2)+' — '
           +(probe.arrivalS!=null?(L('first arrival','第1波','erste Welle','первая волна','primera ola')+' '+fmtHM(probe.arrivalS)):L('no wave in this run','この計算時間内に到達なし','keine Welle','волна не дошла','sin ola'))
           +(probe.maxM!=null?(' · '+L('max','最大','max','макс','máx')+' '+(probe.maxM<1?(probe.maxM*100).toFixed(0)+' cm':probe.maxM.toFixed(2)+' m')):'')
           +(probe.coastalM!=null?(' · '+L('at the shore','沿岸換算','an der Küste','у берега','en la costa')+' ~'+probe.coastalM.toFixed(1)+' m'):'')
           +'</div>';
-        else body+='<div style="font-size:10.5px;color:var(--text-muted);">'
+        else body+='<div style="font-size:'+FS_S+';color:var(--text-main);">'
           +L('Click anywhere on the sea to read the arrival time there.','海上をクリックすると、その地点の到達時刻を表示します。',
              'Auf das Meer klicken für die Ankunftszeit dort.','Нажмите на море, чтобы узнать время прихода.','Haz clic en el mar para ver la hora de llegada.')+'</div>';
       }
       if(sim&&!sim.running){
         const gm=sim.fault;
-        body+='<div style="font-size:11px;color:var(--text-muted);line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
+        body+='<div style="font-size:'+FS+';color:var(--text-main);line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
           +L('Sea-floor uplift','海底の隆起','Hebung','Поднятие дна','Levantamiento')+' +'+sim.eta0Up.toFixed(2)+' m / '+sim.eta0Down.toFixed(2)+' m<br>'
           +L('Rupture','震源断層','Bruchfläche','Разрыв','Ruptura')+' '+Math.round(gm.L/1000)+' × '+Math.round(gm.W/1000)+' km · '
           +L('mean slip','平均滑り','Versatz','смещение','deslizamiento')+' '+gm.slip.toFixed(1)+' m<br>'
@@ -899,11 +906,11 @@ window.IntMapModules.tsunami=function(HOST){
            する形式に。注意書き等はそのまま残すように。（津波シミュレータも）」 Same change as the
          seismic panel's, for the same reason and with the same rule: the safety line is OUTSIDE the
          fold, because a notice that can be collapsed is a notice that will be missed. */
-      body+='<div style="font-size:10px;color:#ffd23f;line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">⚠ '
+      body+='<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">⚠ '
         +L('Educational model — in a real emergency follow the official authorities.','教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。','Bildungsmodell — im Ernstfall den Behörden folgen.','Учебная модель — в реальной ситуации следуйте указаниям властей.','Modelo educativo — en una emergencia real siga a las autoridades.')
         +'</div>'
-        +'<details class="tsu-meth" style="font-size:10px;color:var(--text-muted);line-height:1.45;">'
-        +'<summary style="cursor:pointer;color:var(--text-main);font-size:10.5px;opacity:0.85;list-style:revert;">'
+        +'<details class="tsu-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.45;">'
+        +'<summary style="cursor:pointer;color:var(--text-main);font-size:'+FS_S+';opacity:0.85;list-style:revert;">'
         +L('Method & sources','計算方法と出典','Methode & Quellen','Метод и источники','Método y fuentes')+'</summary>'
         +'<div style="padding-top:4px;">'
         +L('Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbor resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.',

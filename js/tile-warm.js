@@ -170,8 +170,14 @@ window.IntMapModules.tileWarm=function(HOST){
   /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
      tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
      the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
+  /* ⚠ (#R234) …and it rides the runtime's one camera registration rather than opening a ninth
+     subscription of its own. The 320 ms throttle inside is unchanged, so the prefetch still fires
+     at the same rate on the same cameras; what is gone is one more per-frame dispatch out of the
+     renderer's emitter, on the path 「指に付いてこない」 is about. */
   let _movePfT=0;
-  if(GE().hasRenderer()) GE().events.on('move',()=>{ try{ if(HOST.mapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
+  const _pf=()=>{ try{ if(HOST.mapType!=='sat') return; const now=Date.now(); if((GE().camera.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} };
+  if(GE().hasRenderer()){ const R=window.IntMapRuntime;
+    if(R) R.onCamera('tilewarm.prefetch',_pf,{phase:'read'}); else GE().events.on('move',_pf); }
   /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */

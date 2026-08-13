@@ -86,18 +86,21 @@ test('r220 ③ every mark on the current plate has a casing under it', () => {
 
 /* ══ ④ WORDS ════════════════════════════════════════════════════════════════════════════════ */
 
-test('r220 ④a the seismic idle hint is a label, not a state report', () => {
+test('r220 ④a the seismic idle panel says nothing at all', () => {
   /* the old sentences survive in the NOTE that records why they went; what must be gone is the
      string the panel prints — i.e. the one inside the L(...) call. */
   assert.ok(!SEIS.includes("','地図のクリックは通常どおりです"), 'the #R219 sentence is no longer printed');
   assert.ok(!SEIS.includes("','どちらも選択されていません"), '…and neither is the #R218 one');
-  assert.match(SEIS, /'◎ で震源を配置、◇ で地点を追加します。'/, 'the Japanese says what the buttons do');
-  /* all five languages, and none of them longer than a hint */
-  const m = SEIS.match(/L\('◎ places the epicenter[^)]*\)/);
-  assert.ok(m, 'the hint is one L(...) call');
-  const parts = m[0].slice(3, -2).split("','");
-  assert.equal(parts.length, 5, `five languages, got ${parts.length}`);
-  for (const p of parts) assert.ok(p.length < 60, `short enough to be a hint (${p.length}): ${p}`);
+  /* ⚠⚠ (#R234) …AND NOR IS #R220'S OWN REPLACEMENT — 「『◎ で震源を配置、◇ で地点を追加します。』
+     という文言はいらない」. Three rounds rewrote this sentence (#R218 a fault report, #R219 a state
+     report, #R220 a label) and the answer turned out to be that an idle panel has nothing to say.
+     This assertion is INVERTED rather than deleted, because a check that requires the sentence is a
+     check that stops it being removed — the same shape #R229 found in five of its own tests. */
+  assert.ok(!SEIS.includes('◎ で震源を配置、◇ で地点を追加します。'), 'the idle line is gone, not reworded');
+  assert.ok(!/L\('◎ places the epicenter/.test(SEIS), '…in every language, at the one call site it had');
+  /* what replaced it: an instruction that appears only while a mode is armed, in one shape for all
+     three modes. The three banners and their wording are pinned in tests/r234-checks ④. */
+  assert.match(SEIS, /const BANNER=\(txt\)=>/, 'a mode that IS armed gets a banner instead');
 });
 
 test('r220 ④b the crop layer no longer announces the fetch', () => {
