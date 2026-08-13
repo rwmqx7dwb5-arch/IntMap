@@ -70,7 +70,12 @@ const MODULES = {
   satellite:        { file: 'js/satellite.js', k: 'IM_SAT', exports: ['aiCaptureSatAt', 'satApply', 'satBuildTiles', 'satCaptureLabel', 'satChipHTML', 'satHasKey', 'satProviderById', 'satReady', 'satRefreshReadout', 'satRenderController', 'satRenderKeyInputs', 'satRevertToFallback', 'satSaveKeyInputs', 'satSelectProvider', 'satSetOpacity', 'satSetup', 'satStepDay', 'satToast'] },
   aiCore:           { file: 'js/ai-core.js', k: 'IM_AI', exports: ['aiDev', 'aiEsc', 'aiFetchUsage', 'aiGate', 'aiLimitMsg', 'aiLoginMsg', 'aiParseJSON', 'aiReady', 'aiRenderSettings', 'aiReport', 'aiSaveSettings', 'aiSetBtnBusy', 'aiSyncFeatureButtons', 'aiToast', 'aiToday', 'aiUsesLeft', 'aiVisionReady', 'aiWaitMapIdle', 'askAI', 'askAIJSON', 'askAIJSONEnvelope'] },
   placeLabels:      { file: 'js/place-labels.js', k: 'IM_LABELS', exports: ['applyLabelLang', 'ensurePlaceLabels'] },
-  windowManager:    { file: 'js/window-manager.js', k: 'IM_WINMGR', exports: ['addEdgeResize', 'bringToFront', 'makeDraggable', 'registerWindow'] },
+  /* (#R238) +5: the dock (setDocked/isDocked/dockedCount/dockRefresh) and its app-side glue
+     (wireDock). ⚠ Only `registerWindow` and the three above it are SHIMMED into index.html —
+     the dock's five are called through IM_WINMGR directly, which is why (c) below still finds
+     exactly four shims. That is the contract this table encodes: what the module returns, and
+     separately what the shell forwards. */
+  windowManager:    { file: 'js/window-manager.js', k: 'IM_WINMGR', exports: ['addEdgeResize', 'bringToFront', 'makeDraggable', 'registerWindow'], direct: ['setDocked', 'isDocked', 'dockedCount', 'dockRefresh', 'wireDock'] },
   searchGeocode:    { file: 'js/search-geocode.js', k: 'IM_SEARCH', exports: ['doGeocode', 'localFuzzyPlaces'] },
   newsContext:      { file: 'js/news-context.js', k: 'IM_NEWSCTX', exports: ['analyzeContext', 'rebuildGeoIndex'] },
   newsFeed:         { file: 'js/news-feed.js', k: 'IM_NEWSFEED', exports: ['aiTranslateTitles', 'fetchData', 'loadNewsFromSupabase', 'startNews'] },
@@ -121,14 +126,27 @@ test('R169 #1 all eleven files are loaded and every factory is declared and inst
 
 test('R169 #2 THE SHIM CONTRACT: every exported name is a hoisted forwarding declaration', () => {
   for (const m of NAMES) {
-    const { file, exports } = MODULES[m];
+    const { file, exports, direct = [] } = MODULES[m];
     const src = rd(file);
 
-    // (a) the module returns exactly the declared export list.
+    /* (a) the module returns exactly the declared export list.
+       ⚠ (#R238) `direct` is the second half of that list: names the app calls THROUGH `IM_WINMGR.x()`
+       rather than through a hoisted shim in index.html. The distinction is not cosmetic — a shim is a
+       line in the app SHELL, which tests/r168 #8 budgets, and #R238's dock is 60 lines that were moved
+       OUT of the shell precisely so the budget would hold. Requiring a shim for every export would
+       therefore make this file and r168 #8 pull against each other. So both halves are declared, (a)
+       still demands the return list match EXACTLY, and only the shimmed half is checked for a shim. */
     const retAt = src.lastIndexOf('return {');
     const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
     const returned = ret.replace(/^return \{|\};$/g, '').split(',').map((s) => s.trim()).filter(Boolean);
-    assert.deepEqual(returned, exports, `${file} must return exactly its declared exports`);
+    assert.deepEqual(returned, exports.concat(direct), `${file} must return exactly its declared exports`);
+
+    /* every `direct` name really is declared in the module, and index.html does NOT shim it */
+    for (const n of direct) {
+      assert.match(src, new RegExp(`(?:^|\\n)\\s*(?:(?:async\\s+)?function ${rx(n)}\\(|const ${rx(n)}\\s*=)`),
+        `${file} declares ${n}`);
+      assert.equal(html.split(shimOf(m, n)).length - 1, 0, `${n} is called through IM_WINMGR, so it must NOT be shimmed`);
+    }
 
     for (const n of exports) {
       // (b) each one really is a function declared INSIDE the module — either a function

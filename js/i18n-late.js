@@ -37,6 +37,7 @@ export function makeI18nLate(HOST, CTX) {
     lblDataSources:"Data sources", viewDataSources:"Quick list inside the app", lblScience:"Science & logic", viewScience:"How every simulation works ↗", lblSourcesPage:"Data sources", viewSourcesPage:"Open the data-sources page ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
     lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
+    tabDocked:"Panels", lblDockPanels:"Legends and tool windows", dockPanelsOff:"On the map (default)", dockPanelsOn:"Collected in a sidebar tab", dockPanelsHint:"Every legend, readout and tool window moves into one “Panels” tab in the left sidebar, so the map is left clear. Popups anchored to a place you clicked stay on the map.",
     blueberryBtn:"Support", blueberryTitle:"Support IntMap",
     blueberryBody:"My goal is to build a map where geography, climate, history, ecology, demographics, and world events can be explored in one place.\nIntMap is developed independently and is continuously expanding with new layers, datasets, and features.\nIf you enjoy using IntMap and would like to support its future development, you can contribute below.",
     blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe)." });
@@ -57,6 +58,7 @@ export function makeI18nLate(HOST, CTX) {
     lblDataSources:"データ出典", viewDataSources:"アプリ内で簡易一覧を見る", lblScience:"科学的根拠とロジック", viewScience:"各機能の計算方法を見る ↗", lblSourcesPage:"データ出典", viewSourcesPage:"データ出典ページを開く ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
     screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",
     lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
+    tabDocked:"パネル", lblDockPanels:"凡例・ツール窓の表示", dockPanelsOff:"地図上に表示（既定）", dockPanelsOn:"サイドバーのタブにまとめる", dockPanelsHint:"凡例・読み取り・ツール窓をすべて左サイドバーの「パネル」タブにまとめ、地図を広く使えます。地名をクリックしたときのような、地図上の場所に紐づいたポップアップは地図に残ります。",
     blueberryBtn:"サポート", blueberryTitle:"IntMapを支援する",
     blueberryBody:"IntMapは、地理・気候・歴史・生態・人口・世界の出来事をひとつの画面で探索できる地図を目指しています。\nIntMapは個人で開発しており、新しいレイヤー・データセット・機能を継続的に追加しています。\nIntMapを気に入っていただけて、今後の開発を応援したい方は、下記からご支援いただけます。",
     blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。" });

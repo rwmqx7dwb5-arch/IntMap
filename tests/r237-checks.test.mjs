@@ -83,12 +83,18 @@ test('R237 seismic: the front is densified from the screen, not from a constant'
 test('R237 seismic: every intensity chip is the same box, whatever is written in it', () => {
   const s = code(read('js/seismic.js'));
   const cell = s.slice(s.indexOf('const iCell='), s.indexOf('const rows=nearby()'));
-  assert.match(cell, /min-width:62px/, 'the box has a fixed width');
+  /* ══ ⚠ (#R238) THE CLAIM IS UNCHANGED; THE SPELLING MOVED, AND THAT IS THE POINT ═════════════════
+     This asserted `min-width:62px` — the number #R237 read off one browser at one text size — and
+     `min-width` yields to a wider label, so the column went ragged again wherever the resolved font
+     or the text zoom differed and the report came back. #R238 measures the widest label either scale
+     can print, at run time, and sets `width`. The ASSERTION here is the same one it always was —
+     every chip is one box, and a shorter label is centred in it rather than shrinking it — written
+     against the mechanism instead of against the constant, per #R203. The measurement itself is
+     checked in tests/r238-checks. */
+  assert.match(cell, /width:'\+_chipW\(\)\+'px/, 'the box has one width for every class');
+  assert.doesNotMatch(cell, /min-width:\d+px/, 'and it is not a min-width a longer label can push past');
   assert.match(cell, /text-align:center/, '…and a shorter label is centred in it');
   assert.match(cell, /box-sizing:border-box/, 'so the padding is inside the width, not added to it');
-  /* the width has to clear the longest label EITHER scale can print, or the fix is a truncation.
-     Measured in the browser at FS_H: MMI VIII 61 px, JMA 6+ 57, MMI XII 57. */
-  assert.ok(62 >= 61, 'MMI VIII, the widest label, measures 61 px');
 });
 
 /* ── 5 · the panel is grouped ───────────────────────────────────────────────────────────────────

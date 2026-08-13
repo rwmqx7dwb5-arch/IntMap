@@ -131,11 +131,19 @@ test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first
   /* (#R237) the row is now a segmented TRACK (`.sq-segwrap`) inside a card block — the same three
      controls in the same order, with the accent pill the iOS restyle gave them. The claim is the
      ORDER, which is what 「やっぱり、震源域を先に」 asked for. */
-  const row = s.match(/<div class="sq-blk" style="display:flex;gap:6px;align-items:stretch;">([\s\S]*?)\+'<\/div>'/);
-  assert.ok(row, 'the three controls share one flex row');
-  const order = [...row[1].matchAll(/class="(sq-fdraw|sq-cm-epi|sq-cm-sta)[ "']/g)].map((m) => m[1]);
+  /* ══ ⚠ (#R238) THE ORDER IS THE CLAIM, AND IT SURVIVED THE STEP LIST ═════════════════════════════
+     #R238 replaced the one flex row with a numbered STEP LIST (a segmented track says 「pick one of
+     these」; these are a sequence with state). The three controls, their class names and — the thing
+     this test exists for — their ORDER are untouched, so the assertion follows them out of the row
+     and into the list rather than pinning a `<div>` that no longer exists. */
+  const card = s.slice(s.indexOf("const step=(n,cls,title,value,btn,body)"), s.indexOf("CARD 3"));
+  assert.ok(card.length > 200, 'the three controls share one card');
+  const order = [...card.matchAll(/class="(sq-fdraw|sq-cm-epi|sq-cm-sta)[ "']/g)].map((m) => m[1]);
   assert.deepEqual(order, ['sq-fdraw', 'sq-cm-epi', 'sq-cm-sta'],
-    '「やっぱり、震源域を先に」 — the row reads in the order the work is done');
+    '「やっぱり、震源域を先に」 — the steps read in the order the work is done');
+  /* …and they are numbered 1, 2, 3 in that same order */
+  assert.deepEqual([...card.matchAll(/return step\('(\d)'|\+step\('(\d)'/g)].map((m) => m[1] || m[2]), ['1', '2', '3'],
+    'the numbers on the badges match the order of the work');
 });
 
 /* ── 4a · the specification is not allowed to drift away from the directory ──────────────────── */

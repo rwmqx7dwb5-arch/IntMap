@@ -76,12 +76,20 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   /* (#R236) …and the merged label was renamed when the rupture area came first: with an area drawn,
      the point being placed is the NUCLEATION point on that plane, so the control says hypocenter.
      The claim is unchanged — the control exists and is given in five languages. */
-  for (const en of ['Place the hypocenter', 'Add a place']) {
-    const i = s.indexOf(en);
+  /* ⚠ (#R238) THE CLAIM IS THE CONTROL AND ITS FIVE LANGUAGES, NOT THE SENTENCE ON THE BUTTON.
+     #R238 turned the three controls into a numbered STEP LIST, so what the reader reads is now split
+     between the step's TITLE (「震央」 / 「観測地点」) and a button whose word is the next action for
+     that step (Place / Move / Cancel, Add / Done). 「Place the hypocenter」 as one string no longer
+     exists — nothing was dropped, it was re-cut — so the check follows the titles, which are the
+     names of the two things this test is about, and still demands five languages for each. */
+  for (const en of ['Hypocenter', 'Observation points']) {
+    const i = s.indexOf("L('" + en + "'");
     assert.ok(i > 0, `${en} is missing`);
-    const call = s.slice(i - 3, i + 400);
+    const call = s.slice(i, i + 400);
     assert.equal((call.match(/','/g) || []).length >= 4, true, `${en} must be given in five languages`);
   }
+  /* and both step buttons still carry the class the click handler grabs */
+  for (const cls of ['sq-cm-epi', 'sq-cm-sta']) assert.ok(s.indexOf('class="' + cls) >= 0, cls + ' is emitted');
 });
 
 /* ── ③ 「ライトモードかつMapを選択した場合、昼の箇所がまぶしすぎて何も見えない」 ─────────────── */

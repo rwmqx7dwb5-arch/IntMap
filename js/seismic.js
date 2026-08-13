@@ -172,12 +172,40 @@ window.IntMapModules.seismic=function(HOST){
       if(best==null){ let dmin=Infinity; for(const q of pts){ const dd=Math.abs(q[0]-deltaDeg); if(dd<dmin&&dd<0.6){ dmin=dd; best=q[1]; } } }
       return best;
     }
-    /* …and the inverse, for drawing a wavefront: how far has the phase got by time t? */
+    /* ══ ⚠⚠⚠ (#R238) …AND THE INVERSE, INTERPOLATED — 「動作は離散的ではなくスムーズにして」 ═══════════
+       How far has the phase got by time t? This returned `max { Δᵢ : Tᵢ ≤ t }` over the SAMPLED curve,
+       i.e. it could only ever return one of the 1,042 Δ values `curve()` happened to trace. The front
+       therefore SAT STILL until the clock crossed the next sample's time and then JUMPED to it — a
+       staircase in radius, which is what 「離散的」 names and which neither #R235 (which fixed the
+       TICK RATE, from an 11 Hz interval to the frame loop) nor #R237 (which fixed the VERTEX COUNT,
+       144 → screen-driven) touched: both made a quantised radius smoother to look at without
+       un-quantising it.
+
+       Measured before the change, and this is how big the steps were: `frontDelta('S', 24 km, t)`
+       returns 0.8961573° for t = 30 s AND for t = 60 s — the S front stands still for half a minute
+       at 100 km. Worse, with a rupture drawn the envelope is a max over ~16 source points, each
+       frozen on its OWN curve's samples, so different points take the lead at different bearings and
+       the ring came out NOTCHED — measured at t = 60 s, radius 1.310° at bearing 0 and 0.929° at
+       bearing 90, a step of 42 km between two adjacent parts of one wavefront. That is the second
+       half of 「まだ震央中心の同心円に見える／動きがカクカク・飛ぶ」.
+
+       The samples bracket the answer, so the answer is between them: the last sample reached and the
+       first one not yet reached are consecutive in Δ by construction (anything further out that had
+       already arrived would BE the last one reached), so Δ is interpolated linearly in TIME across
+       that one gap. ⚠ Linear in time, not in Δ: t is the variable the animation moves, so this is
+       what makes dΔ/dt finite everywhere instead of a train of impulses. */
     function frontDelta(phase,srcDepth,t){
       const pts=curve(phase,srcDepth); if(!pts.length) return null;
-      let best=null;
-      for(const q of pts){ if(q[1]<=t&&(best==null||q[0]>best)) best=q[0]; }
-      return best;
+      let best=null, bestT=null, bi=-1;
+      for(let i=0;i<pts.length;i++){ const q=pts[i];
+        if(q[1]<=t&&(best==null||q[0]>best)){ best=q[0]; bestT=q[1]; bi=i; } }
+      if(best==null) return null;
+      /* the first sample further out that this time has NOT reached */
+      let nx=null;
+      for(let i=bi+1;i<pts.length;i++){ if(pts[i][0]>best){ nx=pts[i]; break; } }
+      if(!nx||!(nx[1]>bestT)) return best;
+      const f=(t-bestT)/(nx[1]-bestT);
+      return best+Math.max(0,Math.min(1,f))*(nx[0]-best);
     }
 
     /* ---- source and ground motion --------------------------------------------------------------- */
@@ -745,6 +773,42 @@ window.IntMapModules.seismic=function(HOST){
       if(!(isFinite(r)&&isFinite(g)&&isFinite(b))) return '#fff';
       const lin=(c)=>{ c/=255; return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
       return (0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b))>0.30 ? '#000' : '#fff';
+    }
+    /* ══ ⚠⚠ (#R238) ONE BOX FOR EVERY INTENSITY CHIP, MEASURED RATHER THAN WRITTEN DOWN ═══════════════
+       「各地の表内のJMA 7やMMI IVなどの背景の四角は、震度階級ごとに大きさをそろえるように。」 — sent
+       twice. #R237 answered it with `min-width:62px`, a number read off THIS browser at THIS text
+       size, and a `min-width` yields the moment a label is wider than it: a different resolved font,
+       a different `IntMapLabelScale`, or a browser at 110 % text zoom puts 「MMI VIII」 past 62 px and
+       the column goes ragged again, silently, in exactly the way the report describes.
+
+       So the widest label either scale can print is measured, once, in a detached span carrying the
+       same font-size and weight the chip uses, and the answer is cached against the size and the
+       resolved family — so it is re-measured when either moves and never otherwise. ⚠ THE LIST IS
+       DERIVED, NOT TYPED: the JMA labels come from JMA_CLASSES and the MMI ones from ROMAN, so a
+       class added to either is measured too and nothing here has to be remembered. */
+    let _cwCache=null;
+    function _chipW(){
+      try{
+        const fs=String(FS_H);
+        const probe=document.createElement('span');
+        probe.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;'
+          +'font-size:'+fs+';font-weight:400;line-height:1.35;';
+        document.body.appendChild(probe);
+        const fam=getComputedStyle(probe).fontFamily||'';
+        const key=fs+'|'+fam;
+        if(_cwCache&&_cwCache.key===key){ probe.remove(); return _cwCache.w; }
+        const labels=[];
+        try{ JMA_CLASSES.forEach(c=>labels.push('JMA '+c.id)); }catch(_){}
+        try{ for(let i=1;i<=12;i++) labels.push('MMI '+ROMAN[i]); }catch(_){}
+        if(!labels.length) labels.push('MMI VIII');
+        let w=0;
+        labels.forEach(t=>{ probe.textContent=t; const r=probe.getBoundingClientRect().width; if(r>w) w=r; });
+        probe.remove();
+        /* + the chip's own horizontal padding (3px 6px), and a whole pixel so nothing ever clips */
+        w=Math.ceil(w)+12+1;
+        _cwCache={key,w};
+        return w;
+      }catch(_){ return 62; }                    /* #R237's measurement, as the floor if DOM is absent */
     }
     /* (#R192) each scale's LOWEST class, in the quantity that scale is computed from — inverted from
        the relations above rather than written out again (#R190's lesson: two copies of one number
@@ -1756,6 +1820,15 @@ window.IntMapModules.seismic=function(HOST){
         paint:{'fill-color':'#ff3b30','fill-opacity':0.13}});
       if(!GE().layers.has('seis-fault-line')) GE().layers.add({id:'seis-fault-line',type:'line',source:SRC,filter:['==',['get','kind'],'fault'],
         paint:{'line-color':'#ff3b30','line-width':1.8,'line-dasharray':[2,1.5],'line-opacity':0.9}});
+      /* ══ (#R238) THE BROKEN PART OF THE FAULT, AND THE BREAK'S OWN LEADING EDGE ═══════════════════
+         Under the wavefronts and over the fault outline, so the reader sees the rupture fill the
+         shape they drew and then the rings leave it. The fill is the same red the outline uses (this
+         IS that fault, part-broken) at a weight that reads under the dashed outline; the edge is the
+         bright line, thicker than a wavefront because it is the only front bounded by the drawing. */
+      if(!GE().layers.has('seis-rup-fill')) GE().layers.add({id:'seis-rup-fill',type:'fill',source:SRC,filter:['==',['get','kind'],'rup'],
+        paint:{'fill-color':'#ff3b30','fill-opacity':0.34}});
+      if(!GE().layers.has('seis-rup-edge')) GE().layers.add({id:'seis-rup-edge',type:'line',source:SRC,filter:['==',['get','kind'],'rupedge'],
+        paint:{'line-color':'#ffd60a','line-width':3.2,'line-opacity':0.95}});
       if(!GE().layers.has('seis-ring')) GE().layers.add({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
         paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.92}});
       /* (#R210) 「観測地点の点には番号を振るように。そうじゃないとどれがどの観測地点と対応しているのか
@@ -1841,7 +1914,13 @@ window.IntMapModules.seismic=function(HOST){
        ⚠ AND IT DEGRADES TO THE OLD BEHAVIOUR: with no land mask loaded the table is never built and
        `_pathDeg` is the plain great-circle conversion, i.e. exactly the circles it replaced. */
     let OCEAN_G=1.08;                    /* oceanic vs continental fundamental-mode group velocity */
-    const _PB=72, _PS=1.0;               /* bearings sampled (5°) · step along each, in degrees */
+    /* ══ ⚠ (#R238) 144 BEARINGS AT 0.5°, NOT 72 AT 1° ════════════════════════════════════════════════
+       5° of azimuth is 87 km of arc at Δ=10°, so the path integral itself was faceted at exactly the
+       scale the departure from a circle lives on — the reader saw a polygon and read it as 「同心円」.
+       2.5° halves that, and the step along each ray goes to 0.5° (55 km) so a coastline crossed
+       obliquely lands in the right cell. Built ONCE per epicentre and cached (see `_pKey`); the cost
+       is 144 × 360 = 51,840 mask lookups on the first frame after the epicentre moves, not per frame. */
+    const _PB=144, _PS=0.5;              /* bearings sampled (2.5°) · step along each, in degrees */
     let _pTab=null, _pKey='';
     function _pathBuild(){
       const key=epi?(epi[0].toFixed(3)+','+epi[1].toFixed(3)+','+OCEAN_G):'';
@@ -1856,6 +1935,51 @@ window.IntMapModules.seismic=function(HOST){
           s+=stepKm/g; cum[i]=s; }
         tab[bi]=cum; }
       _pTab=tab; _pKey=key; return _pTab;
+    }
+    /* ══ ⚠⚠ (#R238) THE BODY WAVES CROSS THE SAME CRUST, AND THEY WERE NOT ASKED ══════════════════════
+       「震源域の形状や深さ、地盤なども多角的に考慮した伝播にして。」 — and the reader's answer this
+       round, after #R235 and #R237 both recorded the item as done: 「まだ震央中心の同心円に見える」.
+
+       #R235 gave the SURFACE waves a per-bearing path integral and left P and S with the comment
+       「These do NOT vary with bearing … so a point source is still a circle」. P and S are the two
+       fastest, largest and most-watched fronts on the screen, so two of the four rings were exact
+       circles by construction and the picture as a whole read as circles.
+
+       A body wave does not cross the same rock as a Rayleigh wave, so the surface-wave factor cannot
+       simply be reused: past the Pn/Pg crossover most of the ray is in the MANTLE, which this app has
+       no lateral model for and should not invent one for. What it does have is the crustal legs, and
+       those are the same crust the mask already describes. So the correction is applied to the
+       CRUSTAL SHARE of the path and to nothing else:
+
+           Δ' = Δ · ( 1 − wC + wC · ḡ )      ḡ = harmonic mean of g along this bearing, from the
+                                                 same cumulative table the surface waves invert
+           wC = min(1, Lc / Δkm)             Lc = the crustal path: the up-leg at the receiver (35 km)
+                                                 plus the down-leg at the source when the source is
+                                                 IN the crust — so a 500 km deep event gets half of it
+
+       At regional distance wC = 1 and the whole front follows the crust it is crossing; by Δ = 20°
+       it is 3 %, which is the honest size of the effect there and is what stops this from becoming a
+       decorative wobble. ⚠ WITH NO MASK LOADED ḡ = 1 AND THIS IS THE IDENTITY — the fronts are
+       exactly the circles they were, which is the same degradation `_pathDeg` already had. */
+    const CRUST_KM=35;                   /* continental crustal thickness, the reference this rides on */
+    function _pathHarmonicG(brg,deltaDeg){
+      const tab=_pathBuild(); if(!tab||!(deltaDeg>0)) return 1;
+      const f=((brg%360)+360)%360*_PB/360, b0=Math.floor(f)%_PB, b1=(b0+1)%_PB, w=f-Math.floor(f);
+      const N=tab[0].length-1;
+      const cumAt=(cum)=>{ const x=Math.min(N,Math.max(0,deltaDeg/_PS)); const i=Math.floor(x);
+        if(i>=N) return cum[N];
+        return cum[i]+(cum[i+1]-cum[i])*(x-i); };
+      const reduced=cumAt(tab[b0])*(1-w)+cumAt(tab[b1])*w;
+      const trueKm=deltaDeg*D*RE;
+      return (reduced>1e-6)?(trueKm/reduced):1;
+    }
+    function _bodyStretch(brg,deltaDeg,depKm){
+      if(!(deltaDeg>0)) return deltaDeg;
+      const g=_pathHarmonicG(brg,deltaDeg);
+      if(!(isFinite(g))||Math.abs(g-1)<1e-6) return deltaDeg;
+      const Lc=CRUST_KM+((depKm<CRUST_KM)?(CRUST_KM-depKm):0);
+      const wC=Math.min(1,Lc/Math.max(1e-6,deltaDeg*D*RE));
+      return deltaDeg*(1-wC+wC*g);
     }
     /* invert S(Δ) = reduced, for the bearing asked (linear between the two sampled bearings) */
     function _pathDeg(reducedKm,brg){
@@ -1882,7 +2006,25 @@ window.IntMapModules.seismic=function(HOST){
        this reads the solved plane rather than estimating a second one. With no strike solved (a
        blob), every point keeps the hypocentral depth: an unknown dip direction is not a licence to
        invent one. */
+    /* ══ ⚠ (#R238) CACHED, AND CARRYING ITS OWN TRIG — 「動きがカクカク・飛ぶ」 ═══════════════════════
+       This was rebuilt from scratch ONCE PER FRONT PER FRAME (four times a frame), and `_envR` then
+       took cos(off) and sin(off) for every (bearing, source point) pair — with #R237's screen-driven
+       vertex count that is 4 × 720 × 24 = 69,120 pairs and about 140,000 trig calls per frame, on
+       the main thread, beside a `setData` that re-parses the GeoJSON. That is the stutter: the
+       playback loop was already a clean rAF tick (#R236), so what was jumping was not the clock but
+       the work each tick had to finish. Nothing about the model changes here — the same points with
+       the same depths and delays — they are computed when the SOURCE changes rather than when the
+       clock does, and the two constants that depend only on the point travel with it. */
+    let _spCache=null, _spKey='';
     function _srcPts(){
+      const key=(epi?epi[0].toFixed(4)+','+epi[1].toFixed(4):'-')+'|'+depthKm+'|'
+        +(fault&&fault.ring?(fault.ring.length+':'+(fault.strikeDeg||0).toFixed(2)+':'+(fault.zTopKm||0).toFixed(2)+':'+(fault.zBotKm||0).toFixed(2)+':'+fault.ring[0][0].toFixed(4)+','+fault.ring[0][1].toFixed(4)):'-');
+      if(_spCache&&_spKey===key) return _spCache;
+      const out=_srcPtsBuild();
+      for(let i=0;i<out.length;i++){ const k=out[i]; k.cA=Math.cos(k.off*D); k.sA=Math.sin(k.off*D); }
+      _spCache=out; _spKey=key; return out;
+    }
+    function _srcPtsBuild(){
       const K=[{off:0,phi:0,delay:0,dep:depthKm}];
       if(!(fault&&fault.ring&&fault.ring.length>=3)) return K;
       const R2=fault.ring, step=Math.max(1,Math.floor(R2.length/24));
@@ -1933,10 +2075,12 @@ window.IntMapModules.seismic=function(HOST){
        integral below) was therefore evaluated along the wrong azimuth and came out the same for
        every bearing: measured on Tōhoku at t=400 s, east and west were 1441 km each, ratio 1.000,
        i.e. a perfect circle wearing a path integral's clothes. */
+    /* (#R238) `k.cA` / `k.sA` are cos(off) and sin(off), carried by the point (see `_srcPts`) rather
+       than recomputed for every bearing — the geometry is identical, the trig is not repeated. */
     function _envR(K,rFor,b){
       let R=null;
       for(let i=0;i<K.length;i++){ const k=K[i], r=rFor(k,b); if(r==null) continue;
-        const A=Math.cos(k.off*D), B=Math.sin(k.off*D)*Math.cos((b-k.phi)*D);
+        const A=k.cA, B=k.sA*Math.cos((b-k.phi)*D);
         const C=Math.hypot(A,B); if(!(C>1e-9)) continue;
         const q=Math.cos(r*D)/C; if(q<-1||q>1) continue;
         const cand=(Math.atan2(B,A)+Math.acos(q))/D;
@@ -1978,8 +2122,32 @@ window.IntMapModules.seismic=function(HOST){
       const n=Math.round((2*Math.PI*px)/6);
       return Math.max(144,Math.min(720,n));
     }
+    /* ══ ⚠ (#R238) THE POINTS THAT CANNOT WIN ARE DROPPED BEFORE THE BEARING LOOP ═══════════════════
+       The outer root of a source point's circle obeys the spherical triangle inequality
+       R_k(b) ≤ off_k + r_k(b), and the hypocentre's own is R_0(b) = r_0(b). So a point whose circle
+       cannot reach past the hypocentre's at ANY bearing contributes nothing to the max and can be
+       skipped for this front, at this instant — which, by the collapse proved in `drawFronts`, is
+       every point of the rupture in the ordinary Vr < V case. Measured on a hand-drawn M8.4 outline:
+       25 source points survive to 1 at t = 60 s, so the bearing loop does 1/25 of the work.
+       ⚠ THE 1.15 IS A BOUND, NOT A GUESS. `r` varies with bearing only through the path factor, and
+       that factor is bounded by OCEAN_G (1.08) for the surface waves and by (1−wC+wC·ḡ) ≤ ḡ ≤ 1.08
+       for the body waves. 1.15 clears both with margin, so the prune cannot drop a point that would
+       have won. If a supershear Vr or a per-point depth ever DOES let a rupture point outrun the
+       hypocentre, that point simply survives the test and the exact envelope runs as before — this
+       is a shortcut through work whose answer is already known, not a change of model. */
+    const _PRUNE_SLACK=1.15;
+    function _prune(K,rFor){
+      if(K.length<2) return K;
+      const r0=rFor(K[0],0); if(r0==null) return K;
+      const floor0=r0/_PRUNE_SLACK, out=[K[0]];
+      for(let i=1;i<K.length;i++){ const k=K[i], rk=rFor(k,0);
+        if(rk==null) continue;
+        if(k.off+rk*_PRUNE_SLACK<=floor0) continue;
+        out.push(k); }
+      return out;
+    }
     function faultFrontLines(rFor){
-      const K=_srcPts(); const R0=_envR(K,rFor,0); if(R0==null) return null;
+      const K=_prune(_srcPts(),rFor); const R0=_envR(K,rFor,0); if(R0==null) return null;
       const NB2=_frontSteps(R0), ringPts=[]; let prev=null;
       for(let a2=0;a2<=NB2;a2++){ const b=a2*360/NB2; const R=_envR(K,rFor,b); if(R==null) return null;
         const p=destAng(epi,b,Math.min(179.9,Math.max(0.02,R)));
@@ -1995,6 +2163,63 @@ window.IntMapModules.seismic=function(HOST){
       const feats=[{type:'Feature',geometry:{type:'Point',coordinates:epi},properties:{kind:'epi'}}];
       if(fault&&fault.ring&&fault.ring.length>=3)
         feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[...fault.ring,fault.ring[0]]]},properties:{kind:'fault'}});
+      /* ══ ⚠⚠⚠ (#R238) THE RUPTURE'S OWN FRONT — THE ONE THING THAT CARRIES THE SHAPE ═══════════════
+         「地震波伝播は、震源域に対応させて。単に震央中心から同心円状に広がらせるのではなく…」, sent
+         for the third round running, with the reader's answer this time: 「まだ震央中心の同心円に
+         見える」. #R235 built an exact spherical envelope of the union of the source circles and
+         #R237 recorded the item as already satisfied. Both are describing code that CANNOT draw
+         anything but a circle, and it is provable in one line rather than a matter of degree:
+
+             t(x) = min over rupture points k of ( off_k/Vr + dist(k,x)/V )
+                  ≈ d/V + min_k [ off_k · ( 1/Vr − cos(b−φ_k)/V ) ]
+
+         Every bracket is ≥ 0 as long as Vr ≤ V, so the minimum is ALWAYS at off_k = 0 — the
+         hypocentre — and the first-arrival isochron is EXACTLY its own circle. Shipped Vr is 0.75 β,
+         so min over all bearings of (1/Vr − cos/V) is +2.2e−4 for P, +9.5e−5 for S and for Rayleigh,
+         +1.5e−4 for Love: strictly positive for all four. Drawing a C-shaped rupture and expecting
+         the P front to be C-shaped is asking the physics for something it does not do; the envelope
+         machinery is right and it collapses.
+
+         ⚠ SO WHAT CARRIES THE SHAPE IS THE RUPTURE FRONT ITSELF, AND IT WAS NEVER DRAWN. The break
+         running across the fault at Vr from the nucleation point IS the rupture's geometry in
+         motion — it is bounded by the outline the reader drew, it is not a circle, it stops when the
+         fault has finished breaking, and its direction is the directivity the panel already reports.
+         That is the propagation 「震源域に対応」 asks for, and it is a different object from the
+         wavefronts, so it is drawn as one.
+
+         ⚠ STAR-SHAPED ABOUT THE NUCLEATION POINT, AND SAID SO. The broken region is the rupture
+         outline clipped to the disc of radius Vr·t about the hypocentre. Taking it vertex by vertex
+         — keep the vertex if it has broken, otherwise pull it back to the disc along its own bearing
+         — is exact whenever every point of the outline is reachable in a straight line from the
+         nucleation point, which is the case for a rectangle, an ellipse and every published finite-
+         fault model. For an outline hooked back on itself it is a first-order answer, and the
+         envelope below (which does not make that assumption) is unaffected either way. */
+      if(fault&&fault.ring&&fault.ring.length>=3&&tSec>0){
+        const rB=(VRUP_KMS*tSec)/(D*RE);                     /* how far the break has run, in degrees */
+        const R2=fault.ring, brokePts=[], edge=[]; let done=true, prev=null, run=null;
+        for(let i=0;i<=R2.length;i++){
+          const p=R2[i%R2.length], off=gcDelta(epi,p);
+          const inside=(off<=rB);
+          if(!inside) done=false;
+          const q=inside?p:destAng(epi,bearingTo(epi,p),Math.max(0.0005,rB));
+          let lo=q[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; }
+          brokePts.push([lo,q[1]]); prev=lo;
+          /* the leading edge is the part of that outline that is the DISC and not the fault */
+          if(!inside){ (run||(run=[])).push([lo,q[1]]); }
+          else if(run){ if(run.length>1) edge.push(run); run=null; }
+        }
+        if(run&&run.length>1) edge.push(run);
+        if(brokePts.length>2){
+          const wrap=(pt)=>[((pt[0]+540)%360)-180,pt[1]];
+          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[brokePts.concat([brokePts[0]]).map(wrap)]},
+            properties:{kind:'rup'}});
+          /* once the whole fault has broken there is no front left — the fill stays, the edge goes */
+          if(!done) edge.forEach(seg=>{ let out=null;
+            try{ out=HOST._splitLineToWindows(seg); }catch(_){ out=null; }
+            (out&&out.length?out:[seg.map(wrap)]).forEach(s=>feats.push({type:'Feature',
+              geometry:{type:'LineString',coordinates:s},properties:{kind:'rupedge'}})); });
+        }
+      }
       const emit=(lines,props)=>{ (lines||[]).forEach(seg=>feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:props})); };
       /* (#R232) …and the NAME of the front, on the front. The anchor is the ring's own north-east
          point (bearing 45°, where a label is least likely to sit on the panel or the epicentre
@@ -2018,14 +2243,20 @@ window.IntMapModules.seismic=function(HOST){
         feats.push({type:'Feature',geometry:{type:'Point',coordinates:[((p[0]+540)%360)-180,p[1]]},
           properties:{kind:'frontLabel',col,t:name+(vkm?('  '+vkm.toFixed(1)+' km/s'):'')}}); };
       /* body waves — IASP91, each source point through the curve for ITS OWN depth (#R235 _srcPts).
-         These do NOT vary with bearing (no lateral velocity model for the mantle here), so a point
-         source is still a circle and still goes through the shared seam/pole helper. */
-      PH.forEach(ph=>{ const rad=(k)=>{ const d=frontDelta(ph.k,(k&&k.dep!=null)?k.dep:depthKm,Math.max(0,tSec-((k&&k.delay)||0))); return (d!=null&&d>0.02)?d:null; };
-        const lines=fault?faultFrontLines(rad):((rad(null)!=null)?ringLines(epi,rad(null)):null);
+         ⚠ (#R238) …AND THROUGH THE CRUST THAT BEARING CROSSES — see `_bodyStretch`. These used to be
+         bearing-INDEPENDENT, which made P and S exact circles by construction whatever the reader
+         drew, and P and S are the two fronts the picture is mostly made of. They go through the
+         per-bearing builder now for the same reason the surface waves do: `ringLines` takes ONE
+         radius, so it would draw the bearing-0 answer all the way round and throw the path away. */
+      PH.forEach(ph=>{ const rad=(k,b)=>{ const dep=(k&&k.dep!=null)?k.dep:depthKm;
+          const d=frontDelta(ph.k,dep,Math.max(0,tSec-((k&&k.delay)||0)));
+          if(!(d!=null&&d>0.02)) return null;
+          const s=_bodyStretch(b||0,d,dep); return (s>0.02&&s<179)?s:null; };
+        const lines=faultFrontLines(rad);
         if(lines) emit(lines,{kind:'ring',col:ph.col,w:ph.w});
         /* apparent speed at the edge: the distance the front has covered over the time it took */
-        let v=null; { const r=rad(null); if(r!=null&&tSec>0.5) v=(r*D*RE)/tSec; }
-        label(()=>rad(null),ph.col,ph.name(),v); });
+        let v=null; { const r=rad(null,_viewBearing()); if(r!=null&&tSec>0.5) v=(r*D*RE)/tSec; }
+        label((b)=>rad(null,b),ph.col,ph.name(),v); });
       /* ══ (#R235) SURFACE WAVES TRAVEL THROUGH THE CRUST THEY ARE CROSSING ═══════════════════════
          Group velocity is no longer one constant for the whole planet: `_pathKm` integrates the
          local slowness along each bearing's great circle (see the note there), so the front runs
@@ -2167,6 +2398,37 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-card details[open]>summary{border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
         '.sq-card details>div{padding:9px 11px;display:flex;flex-direction:column;gap:8px;}',
         '.sq-card details+.sq-row,.sq-card details+.sq-blk,.sq-row+details,.sq-blk+details{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        /* ══ ⚠⚠ (#R238) THE STEP LIST — 「震源置いたり震源域描いたりするのにUIが分かりにくすぎる」 ═════
+           #R237 grouped the panel into cards and the reader's answer this round named ALL FOUR of the
+           things it did not fix: the rupture-drawing gesture, the hypocentre gesture, the look, and
+           the sheer amount on screen. The three controls were a SEGMENTED CONTROL — three equal
+           buttons in one track — and a segmented control means 「pick one of these views」. These are
+           not three views: they are three STEPS, done in order, each with a state (not started / in
+           progress / done) and a result. A reader looking at three identical buttons cannot tell
+           which they have already done, which they are in, or which comes next, and that is what
+           「分かりにくすぎる」 is describing.
+
+           So: a numbered grouped list, the iOS shape for a task with steps. Each row is
+           number · what it is · what it came to · one button. The badge FILLS with the accent when
+           the step is done and the row grows an accent rule and its instruction while it is armed —
+           which is #R234's rule (「the accent fill already says it」) applied to state rather than to
+           selection, so no glyph is added to any button. */
+        '.sq-step{display:block;padding:0;}',
+        '.sq-step+.sq-step{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        '.sq-step.on{box-shadow:inset 3px 0 0 var(--primary-color);background:var(--input-bg);}',
+        '.sq-strow{display:flex;align-items:center;gap:10px;min-height:46px;padding:7px 11px;box-sizing:border-box;}',
+        '.sq-stn{flex:0 0 auto;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;'
+          +'font-size:'+FS_S+';font-weight:600;border:1.5px solid var(--glass-border,rgba(128,128,128,0.4));color:var(--text-main);}',
+        '.sq-step.done .sq-stn{background:var(--primary-color);border-color:transparent;color:#fff;}',
+        '.sq-step.on .sq-stn{border-color:var(--primary-color);}',
+        '.sq-stlab{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;}',
+        '.sq-stlab b{font-size:'+FS+';font-weight:600;color:var(--text-main);}',
+        '.sq-stlab span{font-size:'+FS_S+';color:var(--text-main);opacity:.72;}',
+        '.sq-stbtn{flex:0 0 auto;padding:7px 13px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';font-weight:500;cursor:pointer;white-space:nowrap;}',
+        '.sq-stbtn.on{background:var(--primary-color);border-color:transparent;color:#fff;font-weight:600;}',
+        '.sq-stbtn:disabled{opacity:.45;cursor:default;}',
+        '.sq-stbody{padding:0 11px 10px;display:flex;flex-direction:column;gap:8px;}',
       ].join('');
       document.head.appendChild(s);
     }
@@ -2383,46 +2645,79 @@ window.IntMapModules.seismic=function(HOST){
            rows separated by the banner, which put the drawing button BELOW the instruction telling
            you to draw. ⚠ The ✕ is not a fourth step — it only exists once there is a rupture to
            clear, and it stays beside the button that made one. */
-        +'<div class="sq-blk" style="display:flex;gap:6px;align-items:stretch;"><div class="sq-segwrap" style="flex:1;">'
-          /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
-             the stroke closes (see toggleFaultDraw / DrawTool's onFinish).
-             ⚠ (#R234) 「『✏ 震源域をフリーで描く』に✏はいらない」 — and the ✔ went with it for the
-             same reason: the button already says what it does, in words, in seven languages. */
-          +'<button class="sq-fdraw '+SEGC(!!_fDrawing)+'">'+(_fDrawing
-              ?L('Finish drawing','描画を終了','Zeichnen beenden','Закончить рисование','Terminar el dibujo')
-              :L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura'))+'</button>'
-          /* ⚠ (#R234) NO GLYPH ON ANY BUTTON — 「◎ と◇はボタンにいらない」. The mark that says
-             "this is what a map click does now" is the accent fill SEG() already carries; a symbol
-             in front of the words was a second, weaker copy of the same statement. */
-          +'<button class="sq-cm-epi '+SEGC(clickMode==='epi')+'">'+L('Place the hypocenter','震央を配置','Hypozentrum setzen','Указать гипоцентр','Colocar el hipocentro')+'</button>'
-          +'<button class="sq-cm-sta '+SEGC(clickMode==='station')+'">'+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
-        +'</div>'
-          +(fault?('<button class="sq-fclear sq-btn" style="flex:0 0 auto;">✕</button>'):'')
-        +'</div>'
-        /* ══ (#R234) …AND THE INSTRUCTION IS A BANNER, IN ONE PLACE, FOR ALL THREE MODES ═══════════
-           「◎ 震源地を設置・移動、◇ 観測地点を追加ボタンについても、同様のわかりやすい案内（バナー等）を
-             出すように。」 — the same shape the drawing mode gets, so whichever mode is armed the
-           reader looks in the same spot for what to do.
-           ⚠ AND WHEN NOTHING IS ARMED THERE IS NO LINE AT ALL — 「『◎ で震源を配置、◇ で地点を追加
-           します。』という文言はいらない」. #R218/#R219/#R220 each rewrote that idle sentence; the
-           answer was that an idle panel has nothing to say. Deleted rather than reworded a fourth time. */
-        +(_fDrawing
-          ? BANNER('<b>'+L('Draw the rupture area on the map.','地図上で震源域を囲ってください。','Zeichnen Sie die Bruchfläche auf der Karte.','Обведите очаг на карте.','Rodee la ruptura en el mapa.')+'</b><br>'
-              +L('Click to start, click each corner, and click the first point again to finish.','クリックで開始し、続けてクリックして囲み、最初の点をもう一度クリックすると終了です。','Klicken zum Starten, weiter klicken, und den ersten Punkt erneut klicken zum Beenden.','Клик — начать, далее клики по контуру, клик по первой точке — закончить.','Haga clic para empezar, siga marcando el contorno y vuelva a hacer clic en el primer punto para terminar.'))
-          : clickMode==='epi'
-          /* (#R236) with a rupture drawn the instruction is a different one — the hypocentre goes ON
-             the area, and a click that missed it says so instead of doing nothing. */
-          ? BANNER((fault?
-                ('<b>'+L('Tap inside the rupture area to place the hypocenter.','震源域の内側をタップして震央を置いてください。','Tippen Sie in die Bruchfläche, um das Hypozentrum zu setzen.','Нажмите внутри очага, чтобы поставить гипоцентр.','Toque dentro de la ruptura para colocar el hipocentro.')+'</b><br>'
-                 +(_epiOutside
-                   ? '<span style="color:var(--danger-color,#ff453a);">'+L('That point is outside the rupture area — the rupture starts on the plane it happened on.','その地点は震源域の外です。破壊はその面の上から始まります。','Dieser Punkt liegt außerhalb der Bruchfläche — der Bruch beginnt auf der Fläche selbst.','Эта точка вне очага — разрыв начинается на самой плоскости.','Ese punto está fuera de la ruptura — la ruptura empieza en el propio plano.')+'</span>'
-                   : L('This is where the rupture starts, so it sets the direction it runs in.','ここが破壊の開始点になり、破壊が走る向きを決めます。','Hier beginnt der Bruch, das bestimmt seine Laufrichtung.','Отсюда начинается разрыв — это задаёт направление.','Aquí empieza la ruptura, lo que fija su dirección.')))
-              : ('<b>'+L('Tap the map to place the epicenter.','地図をタップして震源地を置いてください。','Tippen Sie auf die Karte, um das Epizentrum zu setzen.','Нажмите на карту, чтобы поставить эпицентр.','Toque el mapa para colocar el epicentro.')+'</b><br>'
-                 +L('If one is already placed, tapping moves it. Press the button again to turn this off.','すでに設置済みの場合はタップした位置へ移動します。もう一度ボタンを押すと解除します。','Ist bereits eines gesetzt, wird es verschoben. Nochmals drücken schaltet es aus.','Если эпицентр уже есть, он переместится. Повторное нажатие выключает режим.','Si ya hay uno, el toque lo mueve. Pulse otra vez para desactivarlo.'))))
-          : clickMode==='station'
-          ? BANNER('<b>'+L('Click the map to add an observation point.','地図をクリックして観測地点を追加してください。','Klicken Sie auf die Karte, um einen Messpunkt hinzuzufügen.','Кликните по карте, чтобы добавить точку наблюдения.','Haga clic en el mapa para añadir un punto de observación.')+'</b><br>'
-              +L('Each point is added to the table below. Press the button again to turn this off.','追加した地点は下の表に並びます。もう一度ボタンを押すと解除します。','Jeder Punkt erscheint in der Tabelle unten. Nochmals drücken schaltet es aus.','Каждая точка попадает в таблицу ниже. Повторное нажатие выключает режим.','Cada punto aparece en la tabla de abajo. Pulse otra vez para desactivarlo.'))
-          : '')
+        /* ══ ⚠⚠⚠ (#R238) THREE STEPS, NOT THREE BUTTONS ═══════════════════════════════════════════════
+           「地震シミュレータで震源置いたり震源域描いたりするのにUIが分かりにくすぎるから全面的に改修し、
+             モダンな実装でiOS風に。」 — and, asked which part, the reader named all four: the drawing
+           gesture, the hypocentre gesture, the look, and the amount on screen.
+
+           #R236 put these three in ONE ROW in the order the work is done, and #R234 stripped their
+           glyphs. Both were right about the ORDER and wrong about the CONTROL: a segmented track says
+           「these are alternatives, pick one」, and these are not alternatives — they are a sequence
+           with state. Nothing on screen said which of the three was already done, what it came to, or
+           which one to press next, and the one instruction banner sat OUTSIDE all three, so the
+           reader had to hold "the banner is talking about the middle button" in their head.
+
+           Now each step is its own row and carries its own three facts: a number, what it produced
+           (「未設定」 or the value), and one button whose word is the next action for THAT step
+           (描く / 描画を終了 / 描き直す). The instruction lives INSIDE the armed row, under the button
+           that armed it. ⚠ The class names the handlers grab are unchanged — `.sq-fdraw`,
+           `.sq-cm-epi`, `.sq-cm-sta`, `.sq-fclear` — so this is a re-shape of the markup and not a
+           rewrite of the wiring (#R237's rule, which is what kept that round's regression list to
+           spelling). */
+        +(function(){
+          const step=(n,cls,title,value,btn,body)=>'<div class="sq-step'+(cls?' '+cls:'')+'">'
+            +'<div class="sq-strow"><span class="sq-stn">'+n+'</span>'
+            +'<span class="sq-stlab"><b>'+title+'</b><span>'+value+'</span></span>'+btn+'</div>'
+            +(body?('<div class="sq-stbody">'+body+'</div>'):'')+'</div>';
+          /* ① the rupture area */
+          const s1btn='<button class="sq-fdraw sq-stbtn'+(_fDrawing?' on':'')+'">'+(_fDrawing
+              ?L('Finish','終了','Fertig','Готово','Terminar')
+              :(fault?L('Redraw','描き直す','Neu zeichnen','Перерисовать','Redibujar')
+                     :L('Draw','描く','Zeichnen','Нарисовать','Dibujar')))+'</button>'
+            +(fault?('<button class="sq-fclear sq-stbtn" title="'+L('Clear','消去','Löschen','Очистить','Borrar')+'">✕</button>'):'');
+          const s1val=fault
+            ?(Math.round(fault.areaKm2).toLocaleString()+' km² · M'+fault.mw.toFixed(1))
+            :L('Not set — optional, a point source works too','未設定（省略可・点震源でも動きます）','Nicht gesetzt — optional','Не задано — необязательно','Sin definir — opcional');
+          /* ② the hypocentre */
+          const s2btn='<button class="sq-cm-epi sq-stbtn'+(clickMode==='epi'?' on':'')+'">'+(clickMode==='epi'
+              ?L('Cancel','解除','Abbrechen','Отмена','Cancelar')
+              :(epi?L('Move','動かす','Verschieben','Переместить','Mover'):L('Place','置く','Setzen','Указать','Colocar')))+'</button>';
+          const s2val=epi
+            ?(epi[1].toFixed(3)+'°, '+epi[0].toFixed(3)+'° · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km')
+            :L('Not set','未設定','Nicht gesetzt','Не задано','Sin definir');
+          /* ③ the places the table answers for */
+          const s3btn='<button class="sq-cm-sta sq-stbtn'+(clickMode==='station'?' on':'')+'">'+(clickMode==='station'
+              ?L('Done','終了','Fertig','Готово','Listo')
+              :L('Add','追加','Hinzufügen','Добавить','Añadir'))+'</button>';
+          const s3val=stations.length
+            ?(stations.length+' '+L('places','地点','Orte','точек','lugares'))
+            :L('Nearby cities only','近隣の都市のみ','Nur Städte in der Nähe','Только ближайшие города','Sólo ciudades cercanas');
+          return step('1',(fault?'done':'')+(_fDrawing?' on':''),
+                L('Rupture area','震源域','Bruchfläche','Очаг','Ruptura'),s1val,s1btn,
+                _fDrawing?BANNER('<b>'+L('Draw the rupture area on the map.','地図上で震源域を囲ってください。','Zeichnen Sie die Bruchfläche auf der Karte.','Обведите очаг на карте.','Rodee la ruptura en el mapa.')+'</b><br>'
+                  +L('Click to start, click each corner, and click the first point again to finish.','クリックで開始し、続けてクリックして囲み、最初の点をもう一度クリックすると終了です。','Klicken zum Starten, weiter klicken, und den ersten Punkt erneut klicken zum Beenden.','Клик — начать, далее клики по контуру, клик по первой точке — закончить.','Haga clic para empezar, siga marcando el contorno y vuelva a hacer clic en el primer punto para terminar.')):'')
+            +step('2',(epi?'done':'')+(clickMode==='epi'?' on':''),
+                L('Hypocenter','震央','Hypozentrum','Гипоцентр','Hipocentro'),s2val,s2btn,
+                clickMode==='epi'?BANNER(fault
+                  ?('<b>'+L('Tap inside the rupture area to place the hypocenter.','震源域の内側をタップして震央を置いてください。','Tippen Sie in die Bruchfläche, um das Hypozentrum zu setzen.','Нажмите внутри очага, чтобы поставить гипоцентр.','Toque dentro de la ruptura para colocar el hipocentro.')+'</b><br>'
+                   +(_epiOutside
+                     ? '<span style="color:var(--danger-color,#ff453a);">'+L('That point is outside the rupture area — the rupture starts on the plane it happened on.','その地点は震源域の外です。破壊はその面の上から始まります。','Dieser Punkt liegt außerhalb der Bruchfläche — der Bruch beginnt auf der Fläche selbst.','Эта точка вне очага — разрыв начинается на самой плоскости.','Ese punto está fuera de la ruptura — la ruptura empieza en el propio plano.')+'</span>'
+                     : L('This is where the rupture starts, so it sets the direction it runs in.','ここが破壊の開始点になり、破壊が走る向きを決めます。','Hier beginnt der Bruch, das bestimmt seine Laufrichtung.','Отсюда начинается разрыв — это задаёт направление.','Aquí empieza la ruptura, lo que fija su dirección.')))
+                  :('<b>'+L('Tap the map to place the epicenter.','地図をタップして震源地を置いてください。','Tippen Sie auf die Karte, um das Epizentrum zu setzen.','Нажмите на карту, чтобы поставить эпицентр.','Toque el mapa para colocar el epicentro.')+'</b><br>'
+                   +L('If one is already placed, tapping moves it.','すでに設置済みの場合はタップした位置へ移動します。','Ist bereits eines gesetzt, wird es verschoben.','Если эпицентр уже есть, он переместится.','Si ya hay uno, el toque lo mueve.'))):'')
+            +step('3',(stations.length?'done':'')+(clickMode==='station'?' on':''),
+                L('Observation points','観測地点','Messpunkte','Точки наблюдения','Puntos de observación'),s3val,s3btn,
+                clickMode==='station'?BANNER('<b>'+L('Click the map to add an observation point.','地図をクリックして観測地点を追加してください。','Klicken Sie auf die Karte, um einen Messpunkt hinzuzufügen.','Кликните по карте, чтобы добавить точку наблюдения.','Haga clic en el mapa para añadir un punto de observación.')+'</b><br>'
+                  +L('Each point is added to the table below.','追加した地点は下の表に並びます。','Jeder Punkt erscheint in der Tabelle unten.','Каждая точка попадает в таблицу ниже.','Cada punto aparece en la tabla de abajo.')):'');
+        })()
+        /* ══ ⚠ (#R238) THE SHARED BANNER IS GONE — EACH STEP CARRIES ITS OWN ════════════════
+           #R234 put ONE banner here for all three modes, under the row of three buttons, so the
+           reader had to work out which button it was talking about. The step list above now shows
+           the instruction INSIDE the armed step, directly under the button that armed it, which is
+           the same words in the place they refer to. Leaving this block as well printed the
+           instruction TWICE — seen in the screenshot of the first build, once inside step 2 and
+           again below step 3. Deleted, not hidden: two copies of one sentence is the #R220 defect
+           («a list in two places») applied to prose. */
         /* (#R189) the free-drawn rupture: draw → capture, slip → Mw.
            (#R236) its BUTTON moved up into the single row above; what stays here is the readout. */
         /* ══ (#R224) THE DRAWN AREA IS THE SHADOW; WHAT IS REPORTED IS THE PLANE ════════════════════
@@ -2549,6 +2844,18 @@ window.IntMapModules.seismic=function(HOST){
            'Die Wellenfronten sind die äußere Einhüllende der Fronten aller abgetasteten Punkte des Bruchs — auf der Kugel gelöst, sodass ein von Hand gezeichneter Umriss seine Konkavität behält statt durch seine konvexe Hülle ersetzt zu werden — und jeder Punkt nutzt die Laufzeitkurve seiner EIGENEN Tiefe auf der einfallenden Fläche. Die Gruppengeschwindigkeit der Oberflächenwellen wird entlang jedes Großkreises integriert statt konstant gehalten, sodass ein ozeanischer Pfad einem kontinentalen vorauseilt; 3,5 / 4,4 km/s sind der kontinentale Bezugswert, das Verhältnis steht in den erweiterten Einstellungen.',
            'Фронты волн — внешняя огибающая фронтов от всех выбранных точек очага, решённая на сфере, поэтому нарисованный от руки контур сохраняет вогнутость и не заменяется выпуклой оболочкой; каждая точка использует годограф для СВОЕЙ глубины на наклонной плоскости. Групповая скорость поверхностных волн интегрируется вдоль каждого большого круга, а не берётся постоянной, поэтому океанический путь опережает континентальный; 3,5 / 4,4 км/с — континентальный эталон, отношение задаётся в расширенных настройках.',
            'Los frentes de onda son la envolvente exterior de los frentes de cada punto muestreado de la ruptura — resuelta sobre la esfera, de modo que un contorno dibujado a mano conserva su concavidad en lugar de ser sustituido por su envolvente convexa — y cada punto usa la curva de tiempos de su PROPIA profundidad en el plano buzante. La velocidad de grupo de las ondas superficiales se integra a lo largo de cada círculo máximo en vez de mantenerse constante, así que un trayecto oceánico se adelanta a uno continental; 3,5 / 4,4 km/s son la referencia continental y la razón está en los ajustes avanzados.')
+        /* ══ ⚠ (#R238) WHAT THE PICTURE IS ACTUALLY SHOWING, SAID OUT LOUD ═══════════════════
+           The reader asked three rounds running why the fronts are circles when they had drawn a
+           shape. They are circles because the first-arrival isochron of a finite source IS the
+           hypocentre's circle whenever the rupture runs slower than the wave (see the proof by
+           `drawFronts`), and a model that quietly draws the right thing while the reader believes it
+           is drawing the wrong thing is worse than one that explains itself. So the panel says it,
+           and says where the shape DOES appear. */
+        +' '+L('A wavefront from a finite rupture is still a circle about the hypocenter whenever the rupture runs slower than the wave — the first arrival always comes from the point where the break started — so the shape you drew appears as the RUPTURE FRONT running across it (the filled area and its bright edge), not as a dent in the rings. What does bend the rings is the crust they cross: the body-wave travel time is corrected over its crustal share and the surface-wave group velocity is integrated along each great circle, so an oceanic path runs ahead of a continental one.',
+           '破壊が波より遅い限り、有限の震源域からの初動の波面は震央を中心とする円になります（最初に届くのは常に破壊の開始点からの波だからです）。描いた形は、リングの歪みではなく、その中を走る**破壊フロント**（塗りつぶされた領域とその先端の明るい線）として現れます。リングを曲げるのは通過する地殻で、実体波は走時のうち地殻分を補正し、表面波は群速度を大円経路に沿って積分しているため、海洋経路は大陸経路より先行します。',
+           'Solange der Bruch langsamer läuft als die Welle, bleibt die Ersteinsatz-Wellenfront eines endlichen Herdes ein Kreis um das Hypozentrum — der erste Einsatz kommt immer vom Startpunkt des Bruchs. Die gezeichnete Form erscheint deshalb als BRUCHFRONT, die darüber läuft (gefüllte Fläche und helle Kante), nicht als Delle in den Ringen. Was die Ringe verbiegt, ist die durchquerte Kruste: die Laufzeit der Raumwellen wird über ihren Krustenanteil korrigiert, die Gruppengeschwindigkeit der Oberflächenwellen entlang jedes Großkreises integriert.',
+           'Пока разрыв идёт медленнее волны, фронт первого вступления от конечного очага остаётся окружностью вокруг гипоцентра — первое вступление всегда приходит из точки начала разрыва. Нарисованная форма появляется как ФРОНТ РАЗРЫВА, бегущий по ней, а не как вмятина в кольцах. Кольца искривляет кора: время пробега объёмных волн корректируется на коровую долю, а групповая скорость поверхностных волн интегрируется вдоль большого круга.',
+           'Mientras la ruptura avance más despacio que la onda, el frente de primera llegada de una fuente finita sigue siendo un círculo en torno al hipocentro: la primera llegada procede siempre del punto donde empezó la rotura. Por eso la forma que ha dibujado aparece como FRENTE DE RUPTURA recorriéndola (área rellena y borde brillante), no como una hendidura en los anillos. Lo que sí curva los anillos es la corteza que atraviesan: el tiempo de viaje de las ondas de cuerpo se corrige según su tramo cortical y la velocidad de grupo de las superficiales se integra a lo largo de cada círculo máximo.')
         +'</div></details></div></div>';
       /* ══ (#R236) THE ONE PICKER: the switch chooses the SOURCE, the list chooses the earthquake ═══
          Each half keeps the handler it already had — `applyEvent` for the curated catalogue,
@@ -2896,17 +3203,18 @@ window.IntMapModules.seismic=function(HOST){
            and the eye read the RUN OF THE EDGE as if it meant something — a wider box for a stronger
            shake — which is not what any of the labels say. A fixed box makes the colour the only
            variable, which is the one that carries the class.
-           ⚠ THE WIDTH IS THE WIDEST LABEL IN EITHER SCALE, MEASURED, not a round number. Rendered in
-           this chip at FS_H in the app's own face and read back:
-
-               MMI VIII  61 px      MMI VII  58     MMI XII  57
-               JMA 6+    57 px      JMA 5−   53     JMA 7    48
-
-           so 62 clears every label either scale can print, by one pixel, and nothing is ever
-           truncated. `white-space:nowrap` plus `text-align:center` centres a shorter label in the
-           same box instead of stretching it. ⚠ If a scale with a longer label is ever added, this
-           number is what has to move — tests/r237 pins the relation rather than the number. */
-        return '<span style="display:inline-block;box-sizing:border-box;min-width:62px;padding:3px 6px;'
+           ⚠⚠ (#R238) …AND THE WIDTH IS NOW MEASURED AT RUN TIME RATHER THAN WRITTEN DOWN. #R237 read
+           the six labels back in this browser, at this font, and wrote 62 into the sheet. That is a
+           measurement of ONE environment: the face actually used depends on which of the stack's
+           fonts resolved, `FS_H` follows the app's own label scale, and a browser at 110 % text zoom
+           makes every one of those numbers wrong at once — at which point the widest label overflows
+           its `min-width` and the column is ragged again, which is the report, sent twice.
+           `_chipW()` renders every label EITHER SCALE CAN PRINT into a detached span carrying this
+           chip's exact font declarations, takes the widest, and caches it against the font and size
+           it measured for. So the boxes are equal by construction rather than by a constant that was
+           true once, a new scale needs no edit here, and tests/r238 checks the RELATION (all chips
+           one width) instead of the number. */
+        return '<span style="display:inline-block;box-sizing:border-box;width:'+_chipW()+'px;padding:3px 6px;'
           +'text-align:center;border-radius:0;background:'+col
           +';color:'+_chipInk(col)+';font-size:'+FS_H+';font-weight:400;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
