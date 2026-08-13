@@ -386,10 +386,10 @@ window.IntMapModules.countriesUi=function(HOST){
     const _cmpSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10M12 20V4M18 20v-7"/></svg>';
     const _aiName=encodeURIComponent(name).replace(/'/g,'%27');
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${HOST.lang==='de'?'Nur dieses Land':HOST.lang==='jp'?'この国だけ':HOST.lang==='ru'?'Только эту страну':'Isolate'}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${HOST.lang==='de'?'Zeitverlauf':HOST.lang==='jp'?'時系列グラフ':HOST.lang==='ru'?'Динамика':'Time-series'}</button>`
-      +`<button onclick="try{var _n=decodeURIComponent('${_aiName}'),_l=(window._cpCurrent&&window._cpCurrent._ll)||null;if(window.IntMapAtlas){window.IntMapAtlas.ensure().then(function(C){try{if(C&&C.brief){C.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e2){}});}else if(window.IntMapConsole&&window.IntMapConsole.brief){window.IntMapConsole.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${HOST.lang==='de'?'KI-Bericht':HOST.lang==='jp'?'AI調査':HOST.lang==='ru'?'ИИ-справка':'AI brief'}</button>`
-      +`<button onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${HOST.lang==='de'?'Vergleichen':HOST.lang==='jp'?'国を比較':HOST.lang==='ru'?'Сравнить':HOST.lang==='es'?'Comparar':'Compare'}</button>`
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${HOST.lang==='de'?'Nur dieses Land':window.IntMapLang.t(HOST.lang,'Isolate','この国だけ',undefined,'Только эту страну')}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${HOST.lang==='de'?'Zeitverlauf':window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ',undefined,'Динамика')}</button>`
+      +`<button onclick="try{var _n=decodeURIComponent('${_aiName}'),_l=(window._cpCurrent&&window._cpCurrent._ll)||null;if(window.IntMapAtlas){window.IntMapAtlas.ensure().then(function(C){try{if(C&&C.brief){C.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e2){}});}else if(window.IntMapConsole&&window.IntMapConsole.brief){window.IntMapConsole.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${HOST.lang==='de'?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査',undefined,'ИИ-справка')}</button>`
+      +`<button onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${HOST.lang==='de'?'Vergleichen':window.IntMapLang.t(HOST.lang,'Compare','国を比較',undefined,'Сравнить','Comparar')}</button>`
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
@@ -466,7 +466,7 @@ window.IntMapModules.countriesUi=function(HOST){
       case 'gdppcPPP': return (s.gdppcPPP&&isFinite(s.gdppcPPP))?('$'+Math.round(s.gdppcPPP).toLocaleString()):'—';
       case 'hdi': return s.hdi?(+s.hdi).toFixed(3):'—';
       case 'milSpend': return s.milSpend?'$'+s.milSpend+'B':'—';
-      case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(HOST.lang==='jp'?'歳':HOST.lang==='de'?' J':HOST.lang==='ru'?' л':HOST.lang==='es'?' a':' yr')):'—';
+      case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(window.IntMapLang.t(HOST.lang,' yr','歳',' J',' л',' a'))):'—';
       case 'tfr': return (s.tfr&&isFinite(s.tfr))?(+s.tfr).toFixed(2):'—';
       default: return HOST.fmtMoney(s.gdp);   /* gdp + name */
     } };
@@ -481,8 +481,8 @@ window.IntMapModules.countriesUi=function(HOST){
       :(key==='tfr')?_L5b('fertility rate','合計特殊出生率','Geburtenrate','рождаемость','fecundidad')
       :_L5b('real GDP (2011 int$)','実質GDP（2011年国際ドル）','reales BIP (int$ 2011)','реальный ВВП (межд.$ 2011)','PIB real (int$ 2011)');
     try{ const _ty=_histY, _pw=window._imTimePreWB;
-      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${HOST.lang==='jp'?'年':''}</b> · ${_bMetric}</div>`; }
-      else if(_pw){ html+=`<div class="stats-timebanner warn"><b>${_pw}</b> · ${HOST.lang==='jp'?'最新の入手可能な値':HOST.lang==='de'?'neueste verfügbare Werte':HOST.lang==='ru'?'последние доступные значения':HOST.lang==='es'?'últimos valores disponibles':'latest available figures'}</div>`; }
+      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${window.IntMapLang.t(HOST.lang,'','年')}</b> · ${_bMetric}</div>`; }
+      else if(_pw){ html+=`<div class="stats-timebanner warn"><b>${_pw}</b> · ${window.IntMapLang.t(HOST.lang,'latest available figures','最新の入手可能な値','neueste verfügbare Werte','последние доступные значения','últimos valores disponibles')}</div>`; }
     }catch(_){}
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
        build the selection and the dock's view button opens the unified comparison. */

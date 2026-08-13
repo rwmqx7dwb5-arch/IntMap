@@ -43,7 +43,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
 
   /* ─── unit helpers. The tooltip has always shown metres AND feet side by side because aviation is
          flown in feet and the rest of IntMap is metric; the card keeps that rather than picking a side. */
-  const n0=(v)=>Math.round(v).toLocaleString(HOST.lang==='jp'?'ja-JP':'en-US');
+  const n0=(v)=>Math.round(v).toLocaleString(window.IntMapLang.locale(HOST.lang));
   const altTxt=(m)=>m==null?'':n0(m)+' m · '+n0(m*FT)+' ft';
   const spdTxt=(ms)=>ms==null?'':n0(ms)+' m/s · '+n0(ms*3.6)+' km/h · '+n0(ms/KT)+' kn';
   const degTxt=(d)=>d==null?'':(Math.round(d*10)/10)+'°';
@@ -268,7 +268,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
 
   function agoStr(sec){ const s=Math.max(0,Math.round(Date.now()/1000-sec));
     const U5=HOST.lang==='jp'?['秒前','分前','時間前']:HOST.lang==='de'?['s her','min her','h her']:HOST.lang==='ru'?['с назад','мин назад','ч назад']:HOST.lang==='es'?['s atrás','min atrás','h atrás']:['s ago','m ago','h ago'];
-    const sep=(HOST.lang==='jp')?'':' ';
+    const sep=window.IntMapLang.t(HOST.lang,' ','');
     if(s<60) return s+sep+U5[0]; if(s<3600) return Math.floor(s/60)+sep+U5[1]; return Math.floor(s/3600)+sep+U5[2]; }
 
   function render(photo,pending){

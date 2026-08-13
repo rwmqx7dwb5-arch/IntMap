@@ -19,7 +19,7 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.timeSeries=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -160,6 +160,26 @@ window.IntMapModules.aiResearch=function(HOST){
         });
       }catch(_){}
       return out.slice(0,8); }
+    /* ══ (#R231) …and the belt to the prompt's braces ═══════════════════════════════════════════
+       Drop a FIRST line that is only the subject's name — `# Tokyo`, `**Tokyo**`, `Tokyo:`, or the
+       bare word — when the panel header directly above it already says it.
+       ⚠ IT ONLY EVER REMOVES A LINE THAT IS THE NAME. The comparison strips markdown, punctuation
+       and case, then requires equality, so "Tokyo Bay in 1905" and "## Background" both survive: a
+       heuristic that trimmed anything CONTAINING the name would eat real content, and losing a
+       sentence is a much worse failure than the duplicated word this removes. */
+    function _dropLeadTitle(text,name){
+      try{
+        const key=(s)=>String(s||'').replace(/[*_#`>\s]/g,'').replace(/[:：・.,、。()（）"'“”「」]/g,'').toLowerCase();
+        const want=key(name); if(!want) return text;
+        const lines=String(text).split(/\r?\n/);
+        let i=0; while(i<lines.length&&!lines[i].trim()) i++;
+        if(i>=lines.length) return text;
+        if(key(lines[i])!==want) return text;
+        lines.splice(0,i+1);
+        while(lines.length&&!lines[0].trim()) lines.shift();
+        return lines.join('\n');
+      }catch(_){ return text; }
+    }
     function ensure(){ if(panel) return panel;
       panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ai-research-panel';
       panel.style.cssText='display:none;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1600;width:min(380px,calc(100vw - 24px));max-height:min(70vh,640px);overflow-y:auto;';
@@ -180,9 +200,19 @@ window.IntMapModules.aiResearch=function(HOST){
          date/figure, and "Recent developments" must prioritise the newest events the model knows +
          the supplied nearby headlines ("できるだけ日付などを記載する等具体的に。最新の動向を意識"). */
       const today=new Date().toISOString().slice(0,10);
+      /* ══ (#R231) THE REPLY DOES NOT OPEN BY NAMING THE PLACE ═════════════════════════════════
+         「AIリサーチをやった時に、返答の最初にその地名だけなぜか出すのが、不自然だからやらなくて
+           いい。」 Nothing in this app was printing that line — the MODEL was. Asked to "write a
+         brief on X", a chat model opens with `# X`, which lands directly under a panel whose header
+         already reads "Research: X". Two lines, one word, twice.
+         ⚠ IT IS FIXED IN BOTH PLACES, because a prompt is a request and not a guarantee: the system
+         message says not to, and `_dropLeadTitle` below removes it if one arrives anyway. */
+      const noTitle=(jp()
+        ? '見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。'
+        : ' Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.');
       const sys=(jp()
-        ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。')
-        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'))+window._aiLangLine();
+        ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。'+noTitle)
+        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'+noTitle))+window._aiLangLine();
       const prompt=(jp()
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
@@ -191,7 +221,7 @@ window.IntMapModules.aiResearch=function(HOST){
          ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
       try{
         const out=await askAI(prompt,sys);
-        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+LL('AI-generated — verify with primary sources for important decisions.','AI生成 — 重要な判断には一次情報の確認を。','KI-generiert — bei wichtigen Entscheidungen mit Primärquellen prüfen.','Сгенерировано ИИ — для важных решений проверяйте по первоисточникам.')+'</div>';
+        body.innerHTML=md(_dropLeadTitle(out||'',name))+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+LL('AI-generated — verify with primary sources for important decisions.','AI生成 — 重要な判断には一次情報の確認を。','KI-generiert — bei wichtigen Entscheidungen mit Primärquellen prüfen.','Сгенерировано ИИ — для важных решений проверяйте по первоисточникам.')+'</div>';
       }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
       const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
       /* (#R21 beta) SUGGESTED QUESTIONS — auto-generated from the countries in the current viewport
@@ -299,7 +329,7 @@ window.IntMapModules.aiResearch=function(HOST){
 };
 
 window.IntMapModules.correlate=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -501,7 +531,7 @@ window.IntMapModules.correlate=function(HOST){
 };
 
 window.IntMapModules.worldEvents=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */

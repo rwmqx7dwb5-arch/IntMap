@@ -25,7 +25,12 @@ test.afterAll(async () => {
   await page?.context()?.close();
 });
 
-test('Monitors module + tab are present and the module exposes its API', async () => {
+/* ⚠ (#R231) MONITORS IS WITHDRAWN FROM THE TAB ROW — 「MonitorsはNews/Companies/Countries/Atlasの
+   並びから一旦撤去。」 The assertions below are INVERTED rather than deleted: 一旦 means the module,
+   its API, its feed element and its Supabase tables are all still here and must keep working, and
+   what must NOT exist is any ROUTE that lands on the tab. A check that simply disappeared would
+   leave both halves of that unguarded. */
+test('Monitors module is present and exposes its API — but the TAB is withdrawn', async () => {
   const info = await page.evaluate(() => ({
     hasModule: !!window.IntMapMonitors,
     fns: window.IntMapMonitors ? Object.keys(window.IntMapMonitors).sort() : [],
@@ -35,8 +40,8 @@ test('Monitors module + tab are present and the module exposes its API', async (
     drawGetter: !!(window.DrawTool && window.DrawTool.currentGeometry),
   }));
   expect(info.hasModule).toBe(true);
-  expect(info.tab).toBe(true);
-  expect(info.feed).toBe(true);
+  expect(info.tab, 'the tab button is withdrawn from the row').toBe(false);
+  expect(info.feed, 'its content area stays — the feature is unreachable, not removed').toBe(true);
   expect(info.atlas).toBe('object');
   expect(info.drawGetter).toBe(true);
   for (const fn of ['render', 'create', 'openCreateDialog', 'openDetail', 'openReport', 'pause', 'resume', 'remove', 'runNow', 'activeArea']) {
@@ -44,17 +49,32 @@ test('Monitors module + tab are present and the module exposes its API', async (
   }
 });
 
-test('tab label localizes across languages (EN + JP)', async () => {
-  const en = await page.evaluate(() => { document.getElementById('lang-en')?.click(); return document.getElementById('btn-monitors').textContent.trim(); });
-  expect(en).toBe('Monitors');
-  const jp = await page.evaluate(() => { document.getElementById('lang-jp')?.click(); return document.getElementById('btn-monitors').textContent.trim(); });
-  expect(jp).toBe('モニター');
-  await page.evaluate(() => document.getElementById('lang-en')?.click());
+/* (#R231) …and this used to assert the tab LABEL in EN + JP. With no tab there is no label; what
+   replaces it is the property that matters now — the kernel command that opened it is not
+   registered, so nothing (Atlas, a share link, a saved session, a keyboard command) can reach it. */
+test('the tab.monitors kernel command is no longer registered', async () => {
+  const r = await page.evaluate(() => {
+    const cmds = (window.IntMapOS && typeof window.IntMapOS.list === 'function') ? window.IntMapOS.list() : null;
+    const names = Array.isArray(cmds) ? cmds.map((c) => (typeof c === 'string' ? c : c && c.id)) : null;
+    let threw = null;
+    try { window.IntMapOS.exec('tab.monitors', { source: 'test' }); } catch (e) { threw = String((e && e.message) || e); }
+    return { names, mode: window.__imHostMode || null, threw };
+  });
+  if (Array.isArray(r.names)) expect(r.names, 'tab.monitors is not a registered command').not.toContain('tab.monitors');
+  /* whether the kernel throws or ignores an unknown id, what must NOT happen is the tab opening */
+  const feedShown = await page.evaluate(() => {
+    const f = document.getElementById('monitors-feed');
+    return !!f && getComputedStyle(f).display !== 'none';
+  });
+  expect(feedShown, 'an unknown command must not reveal the withdrawn feed').toBe(false);
 });
 
-test('opening the Monitors tab (logged out) shows the login prompt, not a fake list', async () => {
+/* (#R231) The tab can no longer be opened at all, so the honest-empty-list property is asserted
+   against the RENDERER directly — js/monitors.js is untouched and must still refuse to fake a list
+   when logged out, which is what makes the feature safe to bring back. */
+test('render() logged out still shows the login prompt, not a fake list', async () => {
   const html = await page.evaluate(async () => {
-    try { window.IntMapOS.exec('tab.monitors', { source: 'test' }); } catch (e) { return 'exec-err:' + e.message; }
+    window.IntMapMonitors.render();
     await new Promise((r) => setTimeout(r, 300));
     return document.getElementById('monitors-feed').innerHTML;
   });
@@ -85,12 +105,14 @@ test('Atlas monitor action is HONEST: never claims success when it cannot', asyn
     out.createLoggedOut = { ok: create1.ok, txt: asText(create1.html) };
     return out;
   });
-  expect(res.createNoArea.ok).toBe(false);
-  expect(res.createNoArea.txt.toLowerCase()).toMatch(/radius|area|region|範囲/);
-  expect(res.listLoggedOut.ok).toBe(false);
-  expect(res.listLoggedOut.txt.toLowerCase()).toMatch(/log in|ログイン/);
-  expect(res.createLoggedOut.ok).toBe(false);
-  expect(res.createLoggedOut.txt.toLowerCase()).toMatch(/log in|ログイン/);
+  /* ⚠ (#R231) THE HONESTY REQUIREMENT IS UNCHANGED, THE HONEST ANSWER IS NOT. The action is out of
+     the catalogue and out of the local plan, so the planner cannot emit it; if one arrives anyway,
+     the dispatch must say the feature is unavailable rather than reply "✓ Your monitors" and open a
+     tab that no longer exists. Every reply must still be ok:false — never a claimed success. */
+  for (const k of ['createNoArea', 'listLoggedOut', 'createLoggedOut']) {
+    expect(res[k].ok, k + ' must never claim success').toBe(false);
+    expect(res[k].txt.toLowerCase()).toMatch(/not available|利用いただけません|nicht verfügbar|недоступны|no están disponibles/);
+  }
 });
 
 test('activeArea() captures a radius circle as a real Polygon geometry', async () => {
@@ -155,41 +177,37 @@ test('the create dialog is login-gated (logged out → auth modal, no create dia
   expect(r.authModalShown).toBe(true);  // it routes to login instead
 });
 
-test('(#R144) Workspace desktop: the Monitors window has a default rect — opening ws-mode does not throw', async () => {
-  // Regression guard for R142: the R141 Monitors window had NO defRects() entry, so
-  // mkWin() got an undefined rect and clampRect(undefined) threw at every desktop
-  // ws-mode boot (silently swallowed). Prove the window is now created cleanly and
-  // that entering/leaving ws-mode raises no page errors.
+/* ⚠ (#R231) …AND THE WORKSPACE WINDOW IS WITHDRAWN WITH IT. This used to assert the opposite —
+   that #R142's missing defRects() entry was fixed and the Monitors ws-window built cleanly. The
+   window is one of the routes 「一旦撤去」 closes (a desktop reader could otherwise open by name the
+   panel the sidebar no longer offers), so the assertion is inverted. What is KEPT verbatim is the
+   #R142 regression it was written for: entering and leaving ws-mode must raise no page errors,
+   which is exactly what a window removed from DEFS but left in defRects() (or vice versa) breaks. */
+test('(#R231) Workspace desktop: no Monitors window, and ws-mode still opens cleanly', async () => {
   const before = diags.pageErrors.length;
   await page.setViewportSize({ width: 1440, height: 900 });   // ws-mode is desktop-only
   const r = await page.evaluate(async () => {
     const out = { hasWs: !!window.IntMapWorkspace };
     try {
-      window.IntMapWorkspace.open();                            // enter ws-mode → builds all windows (incl. hidden Monitors)
+      window.IntMapWorkspace.open();
       await new Promise((res) => setTimeout(res, 400));
       out.wsActive = window.IntMapWorkspace.active();
-      out.monitorsWin = !!document.querySelector('.ws-monitors');  // the window wrapper exists = mkWin succeeded (no clampRect throw)
+      out.monitorsWin = !!document.querySelector('.ws-monitors');
       out.feedStillPresent = !!document.getElementById('monitors-feed');
-      // unhide + render it in ws-mode (mobile tab code path must not run here)
-      try { window.IntMapOS.exec('tab.monitors', { source: 'test' }); } catch (e) { out.execErr = String(e && e.message || e); }
-      await new Promise((res) => setTimeout(res, 250));
-      out.monitorsRendered = !!document.querySelector('.ws-monitors .mon-wrap, .ws-monitors .mon-empty');
     } catch (e) {
-      out.threw = String(e && e.message || e);
+      out.threw = String((e && e.message) || e);
     } finally {
       try { window.IntMapWorkspace.close(); } catch (_) { /* */ }
     }
     return out;
   });
-  await page.setViewportSize({ width: 675, height: 900 });     // restore the mobile-ish default for later assertions
+  await page.setViewportSize({ width: 675, height: 900 });
   const after = diags.pageErrors.length;
   expect(r.hasWs).toBe(true);
   expect(r.wsActive).toBe(true);
-  expect(r.monitorsWin, 'the Monitors ws-window must be created (defRects entry present)').toBe(true);
-  expect(r.feedStillPresent).toBe(true);
+  expect(r.monitorsWin, 'the Monitors ws-window is withdrawn').toBe(false);
+  expect(r.feedStillPresent, 'its content area stays in the document').toBe(true);
   expect(r.threw, `ws-mode threw: ${r.threw}`).toBeUndefined();
-  expect(r.execErr, `tab.monitors exec threw: ${r.execErr}`).toBeUndefined();
-  expect(r.monitorsRendered, 'Monitors content renders inside its ws-window').toBe(true);
   expect(after - before, 'no new page errors during ws-mode open/close').toBe(0);
 });
 

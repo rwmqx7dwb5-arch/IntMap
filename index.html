@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-13-R230';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-13-R231';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -316,7 +316,15 @@ window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a r
       <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
       <button class="mode-btn" id="btn-info" data-i18n="tabCompanies">Companies</button><!-- (#R139) Information tab retired → Companies (id kept to avoid churn; mode string stays 'info') -->
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Countries</button><!-- (#R73) tab renamed Stats→Data→Countries (user picked from 5 candidates) -->
-      <button class="mode-btn" id="btn-monitors" data-i18n="tabMonitors">Monitors</button><!-- (#R141) area-monitoring feature: saved area watches + evidence-backed change reports -->
+      <!-- ══ (#R231) MONITORS IS WITHDRAWN FROM THE TAB ROW ═══════════════════════════════════════
+           「MonitorsはNews/Companies/Countries/Atlasの並びから一旦撤去。」 The button is gone from the
+           row, and with it every ROUTE that used to land on the tab: js/session-tabs.js no longer
+           registers `tab.monitors` with IntMapOS or restores `mode:'monitors'` from a saved session,
+           js/atlas-console.js no longer offers the `monitor` action to the planner, and
+           js/workspace.js no longer opens a Monitors window.
+           ⚠ NOTHING IS DELETED. js/monitors.js, its factory, #monitors-feed below and the Supabase
+           tables are untouched — the feature is unreachable, not removed, because the instruction says
+           一旦 (for now). Putting it back is this button plus the four call sites named above. -->
       <button class="mode-btn mode-atlas" id="btn-community" title="Atlas">Atlas</button><!-- (#R98) Community removed; this sidebar slot now opens the Atlas AI console (id kept to avoid churn). (#R101) no ✨; Atlas-gradient background, News/Countries shape. -->
     </div>
     <div class="search-bar" id="sidebar-search-bar">
@@ -370,7 +378,14 @@ window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a r
     <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Toggle Sidebar"><span class="chev"></span></button>
     <div class="map-search" id="map-search">
       <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
-      <button id="ms-btn" title="Search" data-i18n="searchBtn">Search</button>
+      <!-- (#R231) 「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。」
+           The word is what DESKTOP shows and it stays exactly as it was — `data-i18n` simply moved onto
+           the span that holds it, because a `data-i18n` on the BUTTON writes textContent and would wipe
+           the sibling <svg> on the first language pass. The mark below is the app's own: a 6.6 r ring and
+           one 3.7-long handle at 45°, drawn with the same 2 px round-cap stroke as every other icon in
+           this chrome (the compass, the locate arrow, the map/tools FABs) — so it is OUR line weight and
+           OUR colour (currentColor) instead of a vendor-drawn colour emoji that ignored both. -->
+      <button id="ms-btn" title="Search"><span class="ms-btn-t" data-i18n="searchBtn">Search</span><svg class="ms-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.7 15.7 4.1 4.1"/></svg></button>
       <div class="map-search-results" id="ms-results"></div>
     </div>
     <div class="map-controls-top">
@@ -796,7 +811,12 @@ window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a r
   <!-- (#R137) "Go to my location" FAB — same UI as the three above; sits directly under the compass. Flies to the
        user's position and shows an accent dot + accuracy circle that follow them (see window.IntMapLocate). -->
   <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" title="My location">
-    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
+    <!-- (#R231) 「現在地移動ボタンは現在のアイコンから、現在地表示によくあるシンプルなブーメラン型四角形
+         アイコンに。」 The dart every map app uses for "where I am": four points — the tip, the two wings
+         and the notch between them — pointing north-east. It is FILLED rather than stroked because that
+         is what makes the concave notch read at 23 px; the crosshair it replaces was four ticks and a
+         ring, which is the "centre the view" mark, not the "this is me" one. -->
+    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
   </button>
 </div>
 <div class="m-scrim" id="m-scrim"></div>
@@ -805,17 +825,13 @@ window.__imBuild='R230';/* (#R121) build marker — bump when verifying that a r
   <div class="m-sheet-grip"></div>
   <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title" data-i18n="mTitleMap">Map</span><button class="m-sheet-done" id="mo-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
-    <div class="m-seg-block">
-      <div class="m-seg" id="mseg-type" role="group" aria-label="Base map">
-        <button class="m-seg-btn" type="button" data-proxy="btn-view-map">Map</button>
-        <button class="m-seg-btn" type="button" data-proxy="btn-view-sat">Satellite</button>
-      </div>
-      <div class="m-seg" id="mseg-proj" role="group" aria-label="Projection">
-        <button class="m-seg-btn" type="button" data-proxy="btn-view-globe">Globe</button>
-        <button class="m-seg-btn" type="button" data-proxy="btn-view-flat">Flat</button>
-        <button class="m-seg-btn" type="button" data-proxy="btn-view-3d">3D</button>
-      </div>
-    </div>
+    <!-- ══ (#R231) THE BASE-MAP / PROJECTION SEGMENTS LEFT THIS SHEET ═══════════════════════════
+         「モバイル版ではMap/Satellite/Globe/Flat/⛰️3Dの選択欄をレイヤー選択欄から分離し、画面左上…に
+           四角いものを作り、そこから操作できるように。」 They are now the square button under the
+         place-search FAB and its popover — js/basemap-switch.js builds both, and its five buttons
+         carry the SAME `data-proxy` ids these did, so they still drive the one set of real controls
+         in .map-controls-top and nothing else had to learn a new route. This sheet is the LAYER
+         list now, which is what "分離" means. -->
     <div class="m-mount" id="mo-mount-layers"></div>
     <div class="m-mount" id="mo-mount-sat"></div>
   </div>

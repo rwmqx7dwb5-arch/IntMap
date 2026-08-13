@@ -820,8 +820,8 @@ window.IntMapModules.labelPopup=function(HOST){
       const de=HOST.lang==='de';   /* (#R33) 3-language labels */
       /* (#R122) Isolate is available for ANY outlined place now (not just countries) via the outline geometry;
          Move drags the place (true-size) to a new spot. */
-      const isoLbl=de?'Isolieren':jp?'この地域だけ':HOST.lang==='ru'?'Только это':HOST.lang==='es'?'Aislar':'Isolate';
-      const moveLbl=de?'Verschieben':jp?'移動':HOST.lang==='ru'?'Переместить':HOST.lang==='es'?'Mover':'Move';
+      const isoLbl=de?'Isolieren':jp?'この地域だけ':window.IntMapLang.t(HOST.lang,'Isolate',undefined,undefined,'Только это','Aislar');
+      const moveLbl=de?'Verschieben':jp?'移動':window.IntMapLang.t(HOST.lang,'Move',undefined,undefined,'Переместить','Mover');
       /* (#R123) Isolate/Move are only meaningful for AREA-bearing places (countries, regions, cities with a
          boundary) — NOT for point/line classifications like mountains (ofm-peak), rivers (ofm-river) or seas
          (geo-sea) which have no polygon ("領域のない分類のものはボタンをつけないように"). The terrain/water label

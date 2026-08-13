@@ -60,7 +60,7 @@ window.IntMapModules.newsFeed=function(HOST){
   async function aiTranslateTitles(){
     if(_translateBusy) return;
     if(!HOST.aiGate()) return;
-    const target=HOST.lang==='jp'?'Japanese':HOST.lang==='de'?'German':HOST.lang==='ru'?'Russian':HOST.lang==='es'?'Spanish':'English';
+    const target=window.IntMapLang.t(HOST.lang,'English','Japanese','German','Russian','Spanish');
     const todo=HOST.computeFilteredNews().filter(it=>it.analysis && !it.analysis._titleTried).slice(0,120);
     /* (#R9/#20) Spinner + progress + result toast — mirrors the AI-locate "detecting" UI so it's
        obvious the translation is running and when it finished. */
@@ -174,7 +174,7 @@ window.IntMapModules.newsFeed=function(HOST){
     const subjectLoc=(r.subject_lng!=null&&r.subject_lat!=null)?[r.subject_lng,r.subject_lat]:null;
     const pubLoc=(r.pub_lng!=null&&r.pub_lat!=null)?[r.pub_lng,r.pub_lat]:null;
     const subjectName=HOST.lang==='jp'?(r.subject_name_jp||r.subject_name_en):(r.subject_name_en||r.subject_name_jp);
-    const pubName=r.pub_label?((HOST.lang==='jp'?'発信: ':HOST.lang==='de'?'Quelle: ':HOST.lang==='ru'?'Источник: ':HOST.lang==='es'?'Fuente: ':'Source: ')+r.pub_label):null;
+    const pubName=r.pub_label?((window.IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+r.pub_label):null;
     const short=HOST.lang==='jp'?(r.short_jp||r.short_en||''):(r.short_en||r.short_jp||'');
     const subjectType=r.subject_type||((_isCountrySubject(r.subject_name_en)||_isCountrySubject(subjectName))?'country':'');   /* (#R124) derive country-type from the name when the server omits it */
     const analysis={ subjectLoc, subjectName, subjectType, pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };

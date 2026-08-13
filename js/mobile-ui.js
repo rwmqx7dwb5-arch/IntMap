@@ -54,10 +54,16 @@ window.IntMapModules.mobileUI=function(HOST){
     if(fabTools) fabTools.addEventListener('click',()=>{ openSheetEl===toolsSheet?closeSheet():openSheet(toolsSheet); });
 
     /* ---- proxy buttons drive the real (hidden) desktop controls ---- */
+    /* (#R231) `#bm-pop` joins the two sheets: the base-map / projection segments moved out of
+       #mo-sheet into the square's popover (js/basemap-switch.js) and they are the SAME [data-proxy]
+       buttons, so they must be relabelled and mirrored by the same pass. A selector that still named
+       only the two sheets would have left "Globe/Flat/Satellite" in English on a Japanese phone —
+       which is exactly the #R8 defect this function was written to fix. */
+    const PROXY_SEL='#mo-sheet [data-proxy], #tools-sheet [data-proxy], #bm-pop [data-proxy]';
     function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-tool-/.test(id)) closeSheet(); }
     document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>b.addEventListener('click',()=>proxy(b)));
     function syncControls(){
-      document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>{
+      document.querySelectorAll(PROXY_SEL).forEach(b=>{
         const real=document.getElementById(b.getAttribute('data-proxy')); if(!real) return;
         if(b.classList.contains('m-seg-btn')){ const txt=(real.textContent||'').trim(); if(txt) b.textContent=txt; }
         else if(b.classList.contains('m-tool-btn')){ const m=(real.textContent||'').trim().match(/^(\S+)\s+([\s\S]+)$/); const lbl=b.querySelector('span:last-child'); if(lbl&&m) lbl.textContent=m[2].trim(); }
@@ -67,8 +73,18 @@ window.IntMapModules.mobileUI=function(HOST){
          the satellite basemap). `_imActiveLayerCount` is published by _refreshActiveLayers on every change. */
       if(fabMap) fabMap.classList.toggle('on', (window._imActiveLayerCount||0)>0);
       if(fabTools) fabTools.classList.toggle('on', !!HOST.toolMode || HOST.isGridOn);
+      /* (#R231) the base-map square's own two headings and its caption are not [data-proxy] labels —
+         they are its own words — so they are re-read here, where every other mobile label is. */
+      try{ const B=window.IntMapBasemapSwitch; if(B){ B.relabel(); B.redraw(); } }catch(_){ }
     }
-    ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
+    /* (#R231) THE LANGUAGE BUTTONS COME FROM THE REGISTRY, NOT FROM A LIST WRITTEN HERE.
+       This was `['lang-en','lang-jp','lang-de','lang-ru','lang-es']` — one of the places a sixth and
+       seventh language had to be remembered by hand, and were not: tapping 繁 or 简 in the header did
+       NOT relabel the mobile proxies, so the phone kept Globe/Flat/Satellite in the previous language
+       until something else called syncControls. js/lang-registry.js already knows every code and
+       js/lang-registry.js `syncChrome` already creates every button, so ask it. */
+    (window.IntMapLang ? window.IntMapLang.codes() : ['en','jp','de','ru','es'])
+      .forEach(code=>{ const b=document.getElementById('lang-'+code); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
     /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
        toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
        leave "Globe/Flat/Satellite" in English on the phone ("日本語版で英語が出てくる"). updateI18n() now
@@ -204,16 +220,86 @@ window.IntMapModules.mobileUI=function(HOST){
       grip.addEventListener('pointermove',e=>{ if(dragging) dragMove(e.clientY); });
       grip.addEventListener('pointerup',dragEnd); grip.addEventListener('pointercancel',dragEnd);
     }
-    /* drag-to-collapse from the top of the content, only when fully expanded */
-    ['live-news-feed','info-dashboard','monitors-feed','community-feed','news-reader-pane'].forEach(id=>{   /* (#R141) Monitors feed drags-to-collapse like the others */
-      const sc=document.getElementById(id); if(!sc) return; let active=false,sy=0;
-      sc.addEventListener('touchstart',e=>{ if(!mq.matches||currentDetent!=='full'){active=false;return;} sy=e.touches[0].clientY; active=false; },{passive:true});
-      sc.addEventListener('touchmove',e=>{ if(!mq.matches||currentDetent!=='full') return; const y=e.touches[0].clientY,dy=y-sy;
-        if(!active){ if(sc.scrollTop<=0 && dy>6){ active=true; dragStart(y); } else return; }
-        if(active){ e.preventDefault(); dragMove(y); } },{passive:false});
-      const end=()=>{ if(active){ active=false; dragEnd(); } };
-      sc.addEventListener('touchend',end,{passive:true}); sc.addEventListener('touchcancel',end,{passive:true});
-    });
+    /* ══ (#R231) SCROLL TO THE TOP AND KEEP PULLING → THE SHEET COMES DOWN ═══════════════════════
+       「モバイル版で、ウィジェットを上下スクロールした時に、一番上までスクロールしたら、そこから
+         ボトムシートを下げる動作に自然に移行するように。（Countries、Atlasでも）」
+
+       This existed, and it was a LIST OF FIVE ELEMENT IDS — so the two tabs the report names were the
+       two it did not cover (#countries-feed was split out of the news feed in #R78e and #atlas-feed was
+       added in #R112; neither was added here), and neither was any scroller NESTED inside a tab, which
+       is what an Atlas reply or a Countries card actually is.
+
+       ⚠ SO IT NO LONGER NAMES ELEMENTS. One delegated listener on the sheet finds, at touchstart, the
+       nearest genuinely-scrollable ancestor of whatever was touched, and hands over to the sheet drag
+       when that scroller is at its top (or when there is nothing scrollable under the finger at all).
+       A tab added later is covered for free, which is the property the id list never had.
+
+       ⚠ AND THE `currentDetent==='full'` GATE IS GONE. The instruction is about scrolling a widget to
+       the top, not about the sheet being at its maximum; at 'half' the same pull now lowers it to
+       'peek' instead of doing nothing. `dragStart(y)` is called with the CURRENT finger position, so
+       the sheet picks the gesture up exactly where the scroll ended — that is the 自然に移行. */
+    {
+      let active=false, sy=0, sx=0, sc=null, armed=false;
+      /* computed ONCE per gesture (getComputedStyle in a touchmove would be a per-frame cost) */
+      function scrollerUnder(node){
+        for(let el=node; el && el!==sidebar && el.nodeType===1; el=el.parentElement){
+          let ov=''; try{ ov=getComputedStyle(el).overflowY; }catch(_){ }
+          if((ov==='auto'||ov==='scroll') && el.scrollHeight>el.clientHeight+1) return el;
+        }
+        return null;
+      }
+      sidebar.addEventListener('touchstart',e=>{
+        active=false; armed=false; sc=null;
+        if(!mq.matches || dragging || currentDetent==='peek') return;
+        const t=e.touches[0]; sy=t.clientY; sx=t.clientX;
+        /* the grip has its own drag; anything that takes a horizontal gesture keeps it */
+        if(e.target.closest && (e.target.closest('.sheet-grip')||e.target.closest('input[type=range]')||e.target.closest('.m-sheet'))) return;
+        sc=scrollerUnder(e.target); armed=true;
+      },{passive:true});
+      sidebar.addEventListener('touchmove',e=>{
+        if(!armed || !mq.matches) return;
+        const t=e.touches[0], y=t.clientY, dy=y-sy, dx=t.clientX-sx;
+        if(!active){
+          if(dy<=6 || Math.abs(dx)>Math.abs(dy)) return;      /* an upward or sideways gesture is not ours */
+          if(sc && sc.scrollTop>0) return;                    /* still scrolling content — leave it alone */
+          active=true; dragStart(y);
+        }
+        e.preventDefault(); dragMove(y);
+      },{passive:false});
+      const end=()=>{ armed=false; if(active){ active=false; dragEnd(); } };
+      sidebar.addEventListener('touchend',end,{passive:true});
+      sidebar.addEventListener('touchcancel',end,{passive:true});
+    }
+
+    /* ══ (#R231) A FULLY-RAISED SHEET MAKES THE VISIBLE MAP UNTAPPABLE ══════════════════════════
+       「ボトムシートを最大まで上げた時点では、地図が見えている部分のタップは無効化し、（ホバーは
+         可能）タップすればボトムシートを中の高さまで自動で下げるように。」
+
+       ⚠ IT IS A `click` SWALLOW, NOT A POINTER BLOCK, AND THAT IS THE WHOLE DESIGN. The two obvious
+       implementations — `pointer-events:none` on #map, or a transparent catcher over it — both take
+       the HOVER with them, and hover is explicitly to be kept. Pointer events are therefore never
+       touched: the canvas still gets pointerover/pointermove (hover, the coordinate readout, the
+       feature highlight) and still gets pointerdown/move/up, so the map can still be panned and
+       pinched with the sheet up. Only the tap's `click` (and its long-press `contextmenu`) is caught,
+       in the CAPTURE phase on window — which runs before the renderer's own listeners on #map — and
+       turned into "lower the sheet to the middle detent".
+
+       ⚠ The target test is `#map` and not `.map-container`: the search pill, the time machine, the
+       legends and the readout are siblings inside the container, and they are chrome, not map. */
+    window.addEventListener('click',e=>{
+      if(!mq.matches || currentDetent!=='full') return;
+      const t=e.target;
+      if(!t || !t.closest || !t.closest('#map')) return;
+      e.stopPropagation(); e.preventDefault();
+      setDetent('half');
+    },true);
+    window.addEventListener('contextmenu',e=>{
+      if(!mq.matches || currentDetent!=='full') return;
+      const t=e.target;
+      if(!t || !t.closest || !t.closest('#map')) return;
+      e.stopPropagation(); e.preventDefault();
+      setDetent('half');
+    },true);
     /* tapping a tab while collapsed lifts the sheet; focusing search expands it */
     /* (#R112) The Atlas tab is a chat whose INPUT sits at the bottom of the panel, so 'half' would leave it off-screen —
        it lifts the sheet to FULL (matching how a messaging sheet opens). Other tabs keep the peek→half behaviour. The
@@ -254,6 +340,11 @@ window.IntMapModules.mobileUI=function(HOST){
     window.addEventListener('resize',syncResponsive);                    // dvh / toolbar / rotation changes
     window.addEventListener('orientationchange',()=>setTimeout(syncResponsive,220));
     updateCompass();
+    /* (#R231) the base-map square lives under the search FAB and owns the five view controls that used
+       to sit at the top of the Map & layers sheet. It builds itself only at phone widths and watches
+       the same 768 px query this function does, so it is installed once, here, next to the chrome it
+       belongs with. */
+    try{ window.IntMapBasemapSwitch && window.IntMapBasemapSwitch.install(); }catch(_){ }
   }
   return initMobileUI;
 };

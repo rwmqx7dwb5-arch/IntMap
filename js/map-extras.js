@@ -105,7 +105,7 @@ window.IntMapModules.locate=function(HOST){
     function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
     window._imLocSyncFab=_syncFab;
     function start(opts){ opts=opts||{}; const E=M(); if(!E) return;
-      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(HOST.lang==='jp'?'位置情報が使えません':HOST.lang==='de'?'Standort nicht verfügbar':HOST.lang==='ru'?'Геолокация недоступна':HOST.lang==='es'?'Geolocalización no disponible':'Geolocation unavailable')); }catch(_){} return; }
+      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(window.IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
       active=true; _syncFab();
       let firstFly=(opts.fly!==false);
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
@@ -113,8 +113,8 @@ window.IntMapModules.locate=function(HOST){
         if(firstFly){ firstFly=false; try{ E.camera.flyTo({center:[lng,lat],zoom:Math.max(E.camera.getZoom(),14),duration:1100}); }catch(_){} } };
       const onErr=e=>{ try{ if(typeof imToast==='function'){ const denied=e&&e.code===1;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
         imToast('⚠ '+(denied
-          ? (HOST.lang==='jp'?'位置情報がブロックされています。ブラウザ設定で許可してください。':HOST.lang==='de'?'Standort blockiert — im Browser erlauben.':HOST.lang==='ru'?'Геолокация заблокирована — разрешите в браузере.':HOST.lang==='es'?'Ubicación bloqueada — actívala en el navegador.':'Location blocked — enable it in your browser settings.')
-          : (HOST.lang==='jp'?'位置情報を取得できませんでした':HOST.lang==='de'?'Standort nicht verfügbar':HOST.lang==='ru'?'Не удалось получить геолокацию':HOST.lang==='es'?'No se pudo obtener la ubicación':'Couldn\'t get your location'))); } }catch(_){}
+          ? (window.IntMapLang.t(HOST.lang,'Location blocked — enable it in your browser settings.','位置情報がブロックされています。ブラウザ設定で許可してください。','Standort blockiert — im Browser erlauben.','Геолокация заблокирована — разрешите в браузере.','Ubicación bloqueada — actívala en el navegador.'))
+          : (window.IntMapLang.t(HOST.lang,'Couldn\'t get your location','位置情報を取得できませんでした','Standort nicht verfügbar','Не удалось получить геолокацию','No se pudo obtener la ubicación')))); } }catch(_){}
         if(!last){ active=false; } _syncFab(); };
       /* (#R170) maximumAge 5000/2000 → 0 and a longer first-fix budget: a cached fix is by definition the LAST
          one the device computed (possibly a coarse network fix from another app), so accepting one threw away the

@@ -91,9 +91,9 @@ window.IntMapModules.articleReader=function(HOST){
     const pt=document.getElementById('news-pin-toggle'); if(pt) pt.style.display='none';
     ['live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
     const pane=document.getElementById('news-reader-pane'); pane.style.display='flex';
-    const back=HOST.lang==='jp'?'ニュースへ戻る':HOST.lang==='de'?'Zurück zu den News':HOST.lang==='ru'?'Назад к новостям':HOST.lang==='es'?'Volver a noticias':'Back to news';
+    const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
     pane.innerHTML=`<div class="nrp-bar"><button class="nrp-back" id="nrp-back-btn">‹ ${back}</button><span class="nrp-src">${HOST.escForReader(item.publisher)}</span></div>
-      <div class="nrp-loading"><div class="nrp-spinner"></div>${HOST.lang==='jp'?'記事を読み込み中…':HOST.lang==='de'?'Artikel lädt…':HOST.lang==='ru'?'Загрузка статьи…':HOST.lang==='es'?'Cargando artículo…':'Loading article…'}</div>`;
+      <div class="nrp-loading"><div class="nrp-spinner"></div>${window.IntMapLang.t(HOST.lang,'Loading article…','記事を読み込み中…','Artikel lädt…','Загрузка статьи…','Cargando artículo…')}</div>`;
     pane.querySelector('#nrp-back-btn').onclick=HOST.closeArticleReader;
     pane.scrollTop=0;
     fetchReadable(item).then(res=>{ if(HOST.readerOpen&&HOST.readerCurrent===item) renderReader(item,res);

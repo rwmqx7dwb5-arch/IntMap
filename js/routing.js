@@ -313,7 +313,7 @@ window.IntMapModules.routing=function(HOST){
         if(its&&its.length){ const b=_buildItin(its[0]); return {legs:b.legs,lines:b.lines,stops:b.stops,sec:(b.duration||0),live:true}; } }catch(_){}
       /* no open timetable here (e.g. Nagoya subway) → an honest, clearly-labelled local estimate leg */
       const sec=Math.round((8+d*2.4)*60);
-      const lbl=jpn?'ローカル区間（公開時刻表なし・目安）':(HOST.lang==='de'?'Lokaler Abschnitt (kein offener Fahrplan, Schätzung)':HOST.lang==='ru'?'Местный участок (нет открытого расписания, оценка)':HOST.lang==='es'?'Tramo local (sin horario abierto, estimación)':'Local segment (no open timetable, estimate)');
+      const lbl=jpn?'ローカル区間（公開時刻表なし・目安）':(window.IntMapLang.t(HOST.lang,'Local segment (no open timetable, estimate)',undefined,'Lokaler Abschnitt (kein offener Fahrplan, Schätzung)','Местный участок (нет открытого расписания, оценка)','Tramo local (sin horario abierto, estimación)'));
       return {legs:[{mode:'LOCAL',walk:0,route:'',headsign:lbl,from:toStation?'':stName,to:toStation?stName:'',duration:sec,color:'#9aa0a6',est:1}],
         lines:[{coords:toStation?[[p.lng,p.lat],[st[2],st[3]]]:[[st[2],st[3]],[p.lng,p.lat]],walk:1,col:'#9aa0a6'}],stops:[],sec,est:true}; }
     async function _jrPlan(from,to,opts){
@@ -481,7 +481,7 @@ window.IntMapModules.routing=function(HOST){
     async function geo1(q,refLL){ q=String(q||'').trim(); if(!q) return null;
       const m=q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/); if(m) return {lng:+m[2],lat:+m[1],name:(+m[1]).toFixed(3)+', '+(+m[2]).toFixed(3)};
       try{ const st=stationLL(q); if(st) return st; }catch(_){}
-      try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(HOST.lang==='jp'?'ja':'en')); const j=await r.json();
+      try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(window.IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
         const cs=(j&&j.results||[]).map(g=>({lng:+g.longitude,lat:+g.latitude,pop:+g.population||0,name:g.name+(g.admin1?(', '+g.admin1):'')+(g.country?(', '+g.country):'')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q)); const j=await r.json();
@@ -790,7 +790,7 @@ window.IntMapModules.routing=function(HOST){
     function _opBusy(k){ opsBusy=k;
       if(!panel) return; panel.querySelectorAll('.rp-op').forEach(b=>{ b.style.opacity=(opsBusy&&b.getAttribute('data-op')!==opsBusy)?'0.45':'1'; }); }
     const _m=(v)=>(v==null||!isFinite(v))?'—':(Math.abs(v)>=1000?((v/1000).toFixed(2)+' km'):(Math.round(v)+' m'));
-    const _hhmm=(ms)=>{ try{ return new Date(ms).toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } };
+    const _hhmm=(ms)=>{ try{ return new Date(ms).toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } };
     async function _runOp(k){
       const O=window.IntMapRoutingOps;
       if(!O){ _opOut('<span style="color:#ff9f0a;">⚠</span>'); return; }
@@ -887,7 +887,7 @@ window.IntMapModules.routing=function(HOST){
       }catch(e){ _opOut('<span style="color:#ff9f0a;">⚠ '+escp(String(e&&e.message||e))+'</span>'); }
       _opBusy('');
     }
-    function _hm(iso){ try{ const d=new Date(iso); if(!isFinite(d.getTime())) return ''; return d.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
+    function _hm(iso){ try{ const d=new Date(iso); if(!isFinite(d.getTime())) return ''; return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
     /* (#R85) transit leg list — one row per leg, mode icon + colour bar + line name + endpoints + duration */
     function legRows(legs){ return (legs||[]).map(l=>{ const mn=Math.round((l.duration||0)/60); const ic=_modeIcon(l.mode);
       const head=l.walk?(LL('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+escp(l.to)):'')):((l.route?('<b>'+escp(l.route)+'</b> '):'')+(l.headsign?escp(l.headsign):escp(l.to||'')));

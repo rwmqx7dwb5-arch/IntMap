@@ -64,8 +64,10 @@ window.IntMapModules.authUi=function(HOST){
 
   async function _renderPasskeys(){ const box=document.getElementById('acct-passkeys'); if(!box) return;
     const addBtn=document.getElementById('acct-add-passkey');
-    if(!_passkeysAvailable()||!(HOST.DB.auth.passkey&&typeof HOST.DB.auth.passkey.list==='function')){ box.innerHTML=''; if(addBtn) addBtn.style.display='none'; return; }
-    if(addBtn) addBtn.style.display='block';
+    /* (#R231) `hidden`, not an inline display — the button ships hidden in the markup now, and mixing
+       the two leaves the attribute lying about the element for assistive tech. */
+    if(!_passkeysAvailable()||!(HOST.DB.auth.passkey&&typeof HOST.DB.auth.passkey.list==='function')){ box.innerHTML=''; if(addBtn) addBtn.hidden=true; return; }
+    if(addBtn) addBtn.hidden=false;
     box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('Loading passkeys…','パスキーを読み込み中…','Passkeys werden geladen…','Загрузка паскеев…','Cargando passkeys…'))+'</div>';
     let list=[];
     try{ const r=await HOST.DB.auth.passkey.list(); const d=(r&&r.data)||r; list=Array.isArray(d)?d:(d&&(d.passkeys||d.all||d.factors))||[]; }
@@ -115,13 +117,13 @@ window.IntMapModules.authUi=function(HOST){
   function injectAuthUI(){
     const settingsBtn=document.getElementById('btn-open-settings');
     const acct=document.createElement('button');
-    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent=(HOST.lang==='jp'?'ログイン':HOST.lang==='de'?'Anmelden':HOST.lang==='ru'?'Войти':HOST.lang==='es'?'Iniciar sesión':'Log in');
+    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent=(window.IntMapLang.t(HOST.lang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión'));
     acct.onclick=()=>{ HOST.user ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
     /* (#R122) enter Workspace (floating-window) mode from the Log in / Feedback / Settings row — desktop only. */
     try{ const wsB=document.createElement('button'); wsB.id='btn-ws-enter'; wsB.className='btn-settings'; wsB.style.marginRight='8px';
-      const _wsL=()=>(HOST.lang==='jp'?'ワークスペース':HOST.lang==='de'?'Arbeitsbereich':HOST.lang==='ru'?'Рабочая область':HOST.lang==='es'?'Espacio':'Workspace');
+      const _wsL=()=>(window.IntMapLang.t(HOST.lang,'Workspace','ワークスペース','Arbeitsbereich','Рабочая область','Espacio'));
       wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL());
       wsB.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>';
       window.addEventListener('intmap-lang',()=>{ wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL()); });
@@ -132,8 +134,8 @@ window.IntMapModules.authUi=function(HOST){
     /* (#R20) Feedback button in the header */
     const fb=document.createElement('button');
     fb.id='btn-feedback-hdr'; fb.className='btn-settings'; fb.style.marginRight='8px';
-    fb.textContent=(HOST.lang==='jp'?'フィードバック':HOST.lang==='de'?'Feedback':HOST.lang==='ru'?'Обратная связь':HOST.lang==='es'?'Comentarios':'Feedback');
-    window.addEventListener('intmap-lang',()=>{ fb.textContent=(HOST.lang==='jp'?'フィードバック':HOST.lang==='de'?'Feedback':HOST.lang==='ru'?'Обратная связь':HOST.lang==='es'?'Comentarios':'Feedback'); });
+    fb.textContent=(window.IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios'));
+    window.addEventListener('intmap-lang',()=>{ fb.textContent=(window.IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios')); });
     fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(fb,settingsBtn);
     else document.body.appendChild(fb);
@@ -248,7 +250,7 @@ window.IntMapModules.authUi=function(HOST){
   function openAuthModal(contextMsg){ const m=document.getElementById('auth-modal'); if(!m) return; if(window.__amSetTab) window.__amSetTab('login');
     try{ const sub=document.getElementById('am-sub');
       if(sub){ if(contextMsg){ sub.dataset.ctx='1'; sub.textContent=contextMsg; }
-        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(HOST.lang==='jp'?'ログイン／新規登録で、AI機能・設定/ウィジェット/お気に入り/アイコンの端末間同期が使えます。':HOST.lang==='de'?'Melde dich an oder registriere dich für KI-Funktionen und die Synchronisierung von Einstellungen, Widgets, Favoriten und Avatar über Geräte hinweg.':HOST.lang==='ru'?'Войдите или создайте аккаунт: ИИ-функции и синхронизация настроек, виджетов, избранного и аватара между устройствами.':HOST.lang==='es'?'Inicia sesión o crea una cuenta para usar la IA y sincronizar ajustes, widgets, favoritos y avatar entre dispositivos.':'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.'); } }
+        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(window.IntMapLang.t(HOST.lang,'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.','ログイン／新規登録で、AI機能・設定/ウィジェット/お気に入り/アイコンの端末間同期が使えます。','Melde dich an oder registriere dich für KI-Funktionen und die Synchronisierung von Einstellungen, Widgets, Favoriten und Avatar über Geräte hinweg.','Войдите или создайте аккаунт: ИИ-функции и синхронизация настроек, виджетов, избранного и аватара между устройствами.','Inicia sesión o crea una cuenta para usar la IA y sincronizar ajustes, widgets, favoritos y avatar entre dispositivos.')); } }
     }catch(_){}
     m.style.display='flex'; }
 
@@ -258,33 +260,62 @@ window.IntMapModules.authUi=function(HOST){
     if(!m){
       m=document.createElement('div'); m.id='acct-modal';
       m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
-      const secBtn='width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px;text-align:left;';   /* (#R155) security-section buttons */
-      m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:90vh;overflow-y:auto;">
-        <h2 style="margin:0 0 4px;font-size:19px;">${HOST.lang==='jp'?'プロフィール':HOST.lang==='de'?'Dein Profil':HOST.lang==='ru'?'Ваш профиль':HOST.lang==='es'?'Tu perfil':'Your profile'}</h2>
-        <p id="acct-email" style="margin:0 0 10px;color:var(--text-muted);font-size:13px;"></p>
-        <div class="acct-avatar-wrap"><div class="acct-avatar" id="acct-avatar-preview"></div>
-          <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">${HOST.lang==='jp'?'アイコン':HOST.lang==='de'?'Icon':HOST.lang==='ru'?'Значок':HOST.lang==='es'?'Icono':'Icon'}</div>
-          <div class="acct-avatar-pick" id="acct-avatar-pick"></div>
-          <label class="compose-img-btn" for="acct-avatar-file" style="padding:6px 11px;font-size:12px;margin-top:2px;">🖼 ${HOST.lang==='jp'?'画像をアップロード':HOST.lang==='de'?'Bild hochladen':HOST.lang==='ru'?'Загрузить изображение':HOST.lang==='es'?'Subir imagen':'Upload image'}</label>
-          <input type="file" id="acct-avatar-file" accept="image/*" style="display:none;"></div></div>
-        <div id="acct-pro" style="margin:0 0 16px;font-size:13px;"></div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">${HOST.lang==='jp'?'表示名':HOST.lang==='de'?'Anzeigename':HOST.lang==='ru'?'Отображаемое имя':HOST.lang==='es'?'Nombre visible':'Display name'}</label>
-        <input id="acct-name" type="text" maxlength="40" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 12px;">
-        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">${HOST.lang==='jp'?'自己紹介（他のユーザーに公開）':HOST.lang==='de'?'Bio (öffentlich)':HOST.lang==='ru'?'О себе (публично)':HOST.lang==='es'?'Biografía (pública)':'Bio (public)'}</label>
-        <textarea id="acct-bio" maxlength="280" rows="3" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 14px;resize:vertical;font-family:inherit;font-size:13px;"></textarea>
-        <button id="acct-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">${HOST.lang==='jp'?'保存':HOST.lang==='de'?'Profil speichern':HOST.lang==='ru'?'Сохранить профиль':HOST.lang==='es'?'Guardar perfil':'Save profile'}</button>
-        <p id="acct-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>
-        <div style="margin-top:16px;border-top:1px solid rgba(128,128,128,0.18);padding-top:14px;">
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
-          <div id="acct-passkeys" style="margin-bottom:8px;"></div>
-          <button id="acct-add-passkey" style="${secBtn}display:none;">${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
-          <button id="acct-change-email" style="${secBtn}">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
-          <button id="acct-change-pw" style="${secBtn}">${_authL('Change password','パスワードを変更','Passwort ändern','Изменить пароль','Cambiar contraseña')}</button>
-          <button id="acct-logout-all" style="${secBtn}margin-bottom:0;">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
+      /* ══════════════════════════════════════════════════════════════════════════════════════════
+         (#R231) THE PROFILE SHEET, REBUILT — 「アカウントのプロフィール欄は、UIをモダンな実装で整理
+         して。Display nameとBio設定は廃止。」
+         ─────────────────────────────────────────────────────────────────────────────────────────
+         WHAT WAS WRONG WITH IT. Every element carried its own `style="…"` string — 21 of them, some
+         50 characters long, four of them repeating the same button rule — so the panel had no shared
+         type scale, no shared spacing, and two of its controls (a text field and a textarea) were
+         differently sized versions of the same idea. It also mixed three unrelated jobs in one flat
+         column with a single "Save profile" button at the bottom: identity, security and the two
+         destructive actions.
+         WHAT IT IS NOW. iOS-Settings shape: an identity header (avatar + email), then GROUPED cards
+         with a small caps label each — Icon · Security · Account — and the destructive pair last and
+         visually separated. The look lives in css/intmap.css as `.acct-*` (standing rule 13: styling
+         belongs in the stylesheet, not in 21 attribute strings), which is what makes the type scale
+         and the spacing shared rather than re-typed.
+         ⚠ AND THE SAVE BUTTON IS GONE WITH THE TWO FIELDS IT SAVED. With Display name and Bio
+         withdrawn, the only editable thing left is the icon — and the icon has always applied
+         immediately, both to `imSetAvatar` and to the `profiles` row. A "Save" that saved nothing is
+         worse than no Save at all.
+         ⚠ NOTHING IS DELETED FROM THE DATABASE. `profiles.display_name` and `profiles.bio` still
+         exist and are still read (`HOST.user.name` is what the account button shows); this round
+         removes the SETTINGS, which is what was asked. */
+      m.innerHTML=`<div class="acct-sheet">
+        <div class="acct-id">
+          <div class="acct-avatar" id="acct-avatar-preview"></div>
+          <div class="acct-id-txt">
+            <h2 class="acct-h">${_authL('Your profile','プロフィール','Dein Profil','Ваш профиль','Tu perfil')}</h2>
+            <p class="acct-email" id="acct-email"></p>
+            <div id="acct-pro" class="acct-pro"></div>
+          </div>
         </div>
-        <button id="acct-logout" style="width:100%;background:var(--input-bg);color:var(--info-mil);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-top:12px;">${HOST.lang==='jp'?'ログアウト':HOST.lang==='de'?'Abmelden':HOST.lang==='ru'?'Выйти':HOST.lang==='es'?'Cerrar sesión':'Log out'}</button>
-        <button id="acct-delete" style="width:100%;background:transparent;color:#ff3b30;border:1px solid rgba(255,59,48,0.4);padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-top:8px;">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
-        <button id="acct-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:6px;padding:6px;cursor:pointer;font-size:13px;">${HOST.lang==='jp'?'閉じる':HOST.lang==='de'?'Schließen':HOST.lang==='ru'?'Закрыть':HOST.lang==='es'?'Cerrar':'Close'}</button>
+
+        <div class="acct-grp-t">${_authL('Icon','アイコン','Icon','Значок','Icono')}</div>
+        <div class="acct-card">
+          <div class="acct-avatar-pick" id="acct-avatar-pick"></div>
+          <label class="acct-btn acct-btn-quiet" for="acct-avatar-file">${_authL('Upload image','画像をアップロード','Bild hochladen','Загрузить изображение','Subir imagen')}</label>
+          <input type="file" id="acct-avatar-file" accept="image/*" hidden>
+        </div>
+
+        <div class="acct-grp-t">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
+        <div class="acct-card acct-rows">
+          <div id="acct-passkeys" class="acct-note"></div>
+          <button class="acct-row" id="acct-add-passkey" hidden>${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
+          <button class="acct-row" id="acct-change-email">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
+          <button class="acct-row" id="acct-change-pw">${_authL('Change password','パスワードを変更','Passwort ändern','Изменить пароль','Cambiar contraseña')}</button>
+          <button class="acct-row" id="acct-logout-all">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
+        </div>
+
+        <p id="acct-msg" class="acct-msg"></p>
+
+        <div class="acct-card acct-rows acct-danger">
+          <button class="acct-row" id="acct-logout">${_authL('Log out','ログアウト','Abmelden','Выйти','Cerrar sesión')}</button>
+          <button class="acct-row acct-row-danger" id="acct-delete">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
+        </div>
+
+        <button class="acct-close" id="acct-close">${_authL('Close','閉じる','Schließen','Закрыть','Cerrar')}</button>
       </div>`;
       document.body.appendChild(m);
       /* Avatar picker (#28): emoji + color, stored locally (and used as the account-button icon). */
@@ -300,12 +331,12 @@ window.IntMapModules.authUi=function(HOST){
         window.imSetAvatarImg(data); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=`url('${data}')`; pv.textContent='';
         document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(x=>x.classList.remove('sel'));
         try{ await HOST.DB.from('profiles').update({avatar_url:data}).eq('id',HOST.user.id); }catch(_){}
-      }catch(_){ HOST.imToast(HOST.lang==='jp'?'画像を読み込めませんでした':HOST.lang==='de'?'Bild konnte nicht geladen werden':HOST.lang==='ru'?'Не удалось загрузить изображение':HOST.lang==='es'?'No se pudo cargar la imagen':'Could not load image'); } };
+      }catch(_){ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load image','画像を読み込めませんでした','Bild konnte nicht geladen werden','Не удалось загрузить изображение','No se pudo cargar la imagen')); } };
       m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
       document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
       document.getElementById('acct-logout').onclick=()=>{
         /* (#R33) Confirm before logging out. */
-        if(!window.confirm(HOST.lang==='jp'?'ログアウトしますか？':HOST.lang==='de'?'Vom Konto abmelden?':HOST.lang==='ru'?'Выйти из аккаунта?':HOST.lang==='es'?'¿Cerrar la sesión?':'Log out of your account?')) return;
+        if(!window.confirm(window.IntMapLang.t(HOST.lang,'Log out of your account?','ログアウトしますか？','Vom Konto abmelden?','Выйти из аккаунта?','¿Cerrar la sesión?'))) return;
         /* Instant: clear local state + UI right away, revoke the session in the background. */
         m.style.display='none';
         HOST.user=null; HOST.bookmarks=[];
@@ -313,25 +344,11 @@ window.IntMapModules.authUi=function(HOST){
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
         try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
         try{ HOST.DB.auth.signOut(); }catch(_){}   /* onAuthStateChange will reconcile favorites/community */
-        try{ HOST.imToast(HOST.lang==='jp'?'ログアウトしました':HOST.lang==='de'?'Abgemeldet':HOST.lang==='ru'?'Вы вышли из аккаунта':HOST.lang==='es'?'Sesión cerrada':'Logged out'); }catch(_){}
+        try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Logged out','ログアウトしました','Abgemeldet','Вы вышли из аккаунта','Sesión cerrada')); }catch(_){}
       };
-      document.getElementById('acct-save').onclick=async()=>{
-        const name=document.getElementById('acct-name').value.trim(), msg=document.getElementById('acct-msg');
-        const bio=(document.getElementById('acct-bio')||{}).value||'';
-        if(!name){ msg.textContent=HOST.lang==='jp'?'表示名を入力してください。':HOST.lang==='de'?'Anzeigename darf nicht leer sein.':HOST.lang==='ru'?'Имя не может быть пустым.':HOST.lang==='es'?'El nombre no puede estar vacío.':'Display name cannot be empty.'; return; }
-        const btn=document.getElementById('acct-save'); btn.disabled=true; msg.textContent=HOST.lang==='jp'?'保存中…':HOST.lang==='de'?'Speichere…':HOST.lang==='ru'?'Сохранение…':HOST.lang==='es'?'Guardando…':'Saving…';
-        try{
-          const {error}=await HOST.DB.from('profiles').update({display_name:name}).eq('id',HOST.user.id); if(error) throw error;
-          try{ await HOST.DB.auth.updateUser({data:{display_name:name}}); }catch(_){}
-          /* bio + avatar_url are best-effort (columns may not exist yet — see supabase_profiles_extra.sql) */
-          try{ await HOST.DB.from('profiles').update({bio:bio.trim()}).eq('id',HOST.user.id); }catch(_){}
-          try{ localStorage.setItem('intmap_bio',bio.trim()); }catch(_){}
-          HOST.user.name=name; HOST.user.bio=bio.trim(); HOST.updateAccountButton(); msg.textContent=HOST.lang==='jp'?'保存しました。':HOST.lang==='de'?'Gespeichert.':HOST.lang==='ru'?'Сохранено.':HOST.lang==='es'?'Guardado.':'Saved.';
-          if(HOST.mode==='community') HOST.loadCommunity();
-          setTimeout(()=>{ m.style.display='none'; }, 600);
-        }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
-        finally{ btn.disabled=false; }
-      };
+      /* (#R231) the `acct-save` handler lived here. It wrote display_name + bio; both settings are
+         withdrawn, and the only other thing the sheet edits — the icon — has always saved itself the
+         moment it is picked (see the two handlers above). */
       /* ---- (#R155) Security section: passkeys / change email / change password / logout-all / delete ---- */
       const _addPk=document.getElementById('acct-add-passkey');
       if(_addPk) _addPk.onclick=async()=>{ const msg=document.getElementById('acct-msg');
@@ -379,13 +396,11 @@ window.IntMapModules.authUi=function(HOST){
     }
     document.getElementById('acct-email').textContent=HOST.user.email;
     try{ _renderPasskeys(); }catch(_){}
-    document.getElementById('acct-name').value=HOST.user.name||'';
     document.getElementById('acct-msg').textContent='';
     /* avatar preview + current selection */
     { const av=window.imGetAvatar(), img=window.imGetAvatarImg(); const prev=document.getElementById('acct-avatar-preview');
       if(prev){ if(img){ prev.style.backgroundImage=`url('${img}')`; prev.textContent=''; } else { prev.style.backgroundImage=''; prev.textContent=av; prev.style.background='hsl('+(window.imAvatarHue())+',58%,46%)'; } }
       document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(b=>b.classList.toggle('sel',!img&&b.dataset.e===av)); }
-    { const bioEl=document.getElementById('acct-bio'); if(bioEl){ let b=HOST.user.bio; if(b==null){ try{ b=localStorage.getItem('intmap_bio')||''; }catch(_){ b=''; } } bioEl.value=b||''; } }
     /* (#R10) Pro status / upgrade row removed — the app is fully free, no plan indicator. Admin still
        shown for moderators. */
     const proRow=document.getElementById('acct-pro');

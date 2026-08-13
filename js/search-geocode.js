@@ -123,11 +123,11 @@ window.IntMapModules.searchGeocode=function(HOST){
        **Open-Meteo geocoding** (fast, robust, fuzzy, works where Nominatim doesn't) AND Nominatim (richer
        coverage). Either one alone yields results, so the search practically never comes back empty. */
     const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },5000);
-    const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${HOST.lang==='jp'?'ja':'en'}&format=json`,{signal:ctrl.signal})
+    const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${window.IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
       .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
-    const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${HOST.lang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
+    const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${window.IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
       .then(r=>r.ok?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
@@ -199,8 +199,8 @@ window.IntMapModules.searchGeocode=function(HOST){
         <h4>📍 ${IntMapSafe.html(primary)}</h4>
         <div class="src-sub">${IntMapSafe.html(restAdmin||country||'')}</div>
         <div class="src-row"><span>${HOST.t('coords')}</span><b>${HOST.fmtLL(lng,lat)}</b></div>
-        ${type?`<div class="src-row"><span>${HOST.lang==='jp'?'種別':HOST.lang==='de'?'Typ':HOST.lang==='ru'?'Тип':HOST.lang==='es'?'Tipo':'Type'}</span><b>${IntMapSafe.html(type)}</b></div>`:''}
-        <div class="src-row"><span>${HOST.t('elev')}</span><b id="src-elev">${HOST.lang==='jp'?'取得中...':HOST.lang==='de'?'Lädt…':HOST.lang==='ru'?'Загрузка…':HOST.lang==='es'?'Cargando…':'Loading...'}</b></div>
+        ${type?`<div class="src-row"><span>${window.IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo')}</span><b>${IntMapSafe.html(type)}</b></div>`:''}
+        <div class="src-row"><span>${HOST.t('elev')}</span><b id="src-elev">${window.IntMapLang.t(HOST.lang,'Loading...','取得中...','Lädt…','Загрузка…','Cargando…')}</b></div>
         <div class="src-actions">
           <button class="primary" id="src-copy">📋 ${HOST.t('ctxCopy')}</button>
           <button id="src-pin">📍 ${HOST.t('ctxDropPin')}</button>
@@ -228,7 +228,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       const el=searchCardEl&&searchCardEl.querySelector('#src-elev');
       if(el){
         if(typeof e==='number' && e>0.5){ el.textContent=HOST.fmtElevVal(e); }
-        else { const d=await HOST.fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (HOST.fmtElevVal(Math.abs(d))+' '+(HOST.lang==='jp'?'(水深)':HOST.lang==='de'?'(Tiefe)':HOST.lang==='ru'?'(глубина)':HOST.lang==='es'?'(profundidad)':'(depth)')) : HOST.fmtElevVal(d); } else if(typeof e==='number'){ el.textContent=HOST.fmtElevVal(e); } else el.textContent='—'; }
+        else { const d=await HOST.fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (HOST.fmtElevVal(Math.abs(d))+' '+(window.IntMapLang.t(HOST.lang,'(depth)','(水深)','(Tiefe)','(глубина)','(profundidad)'))) : HOST.fmtElevVal(d); } else if(typeof e==='number'){ el.textContent=HOST.fmtElevVal(e); } else el.textContent='—'; }
       }
     }catch(_){}
   }

@@ -127,7 +127,7 @@ window.IntMapModules.projView=function(HOST){
       sel.onchange=()=>{ cur=sel.value; zoom=1;panx=0;pany=0; if(entry)entry.value=cur; updateTitle(); render(); };
       const zin=document.createElement('button'); zin.textContent='＋'; zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
       const zout=document.createElement('button'); zout.textContent='－'; zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
-      const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(HOST.lang==='jp'?'閉じる':HOST.lang==='de'?'Schließen':HOST.lang==='ru'?'Закрыть':HOST.lang==='es'?'Cerrar':'Close'); cl.onclick=()=>api.close();
+      const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); cl.onclick=()=>api.close();
       bar.appendChild(titleEl); bar.appendChild(sel); bar.appendChild(zout); bar.appendChild(zin); bar.appendChild(cl);
       host.appendChild(bar); mc.appendChild(host); ctx=cv.getContext('2d');
       /* input: drag to pan, wheel to zoom */
@@ -316,7 +316,7 @@ window.IntMapModules.drawTool=function(HOST){
       let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
         box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
         if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
-      const lbl=HOST.lang==='jp'?'WorldPop人口グリッドを集計中…':HOST.lang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':HOST.lang==='ru'?'Суммирование сетки населения WorldPop…':HOST.lang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
+      const lbl=window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
       box.querySelector('.tp-prog-lbl').textContent=lbl; box.classList.remove('indet'); box.style.display='block';
       /* (#R139) HONEST progress (shared window._imProgCtl): indeterminate animated sweep while WorldPop reports no
          real fraction, switching to a real linear fraction the moment the area is large enough to be TILED. No more

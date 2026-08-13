@@ -543,7 +543,7 @@ window.IntMapModules.sun=function(HOST){
         feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r0.map(p=>[p[0]+oL,p[1]+oA])]},properties:{}}); });
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
     }catch(_){} busy=false; }
-    function fmtT(d){ try{ return d.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
+    function fmtT(d){ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
     function updatePanel(sp){ if(!panel) return; const c=GE().camera.getCenter(); const st=sunTimes(when,c.lat,c.lng);
       const rd=panel.querySelector('.sun-read'); if(rd){ const dir=['N','NE','E','SE','S','SW','W','NW'][Math.round(sp.azCompass/45)%8];
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
@@ -644,7 +644,7 @@ window.IntMapModules.sun=function(HOST){
       let a=null;
       try{ a=await ENG().analyse(lng,lat,{});
         const d=await ENG().dayAt(lng,lat,when,{});
-        const hhmm=t=>{ try{ return t?t.toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}):'—'; }catch(_){ return '—'; } };
+        const hhmm=t=>{ try{ return t?t.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):'—'; }catch(_){ return '—'; } };
         engSay('◎ '+lat.toFixed(4)+', '+lng.toFixed(4)+' · '+nf(a.groundM)+' m'
           +'<br><b>'+nf(a.annualHours)+' h</b> '+SN('of sun a year','の年間日照','Sonne pro Jahr','солнца в год','de sol al año')
           +' ('+SN('open horizon would give','遮蔽なしなら','ohne Horizont','без горизонта','sin horizonte')+' '+nf(a.annualOpenHours)+' h · −'+nf(a.lossPct,1)+'%)'
@@ -761,7 +761,7 @@ window.IntMapModules.transitReach=function(HOST){
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
     async function open(from,minutes){ ensure();
-      try{ if(window.satToast) satToast(HOST.lang==='jp'?'鉄道到達圏を計算中…':'Computing rail reach…'); }catch(_){}
+      try{ if(window.satToast) satToast(window.IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…')); }catch(_){}
       const r=await run(from,minutes);
       /* (#R209) the reachable-area hull needs turf's convex+buffer, which are not in the boot bundle
          (see src/vendor.js). Wait for them HERE rather than letting draw() find them missing. */
