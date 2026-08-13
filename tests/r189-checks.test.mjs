@@ -195,7 +195,9 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
      profile, the interpolation and the per-cell multiply are unchanged; only the binary SEARCH for
      the node was replaced by the closed form the geometric table already implies.
      tests/r218-checks ③ runs the old and the new interpolation against each other. */
-  assert.match(src, /const b2=prof\.both\(rM\);/, 'one RVT profile, one index for both quantities');
+  /* (#R232) one index for both quantities still — but the profile is now chosen by azimuth, because
+     rupture directivity makes the source term a function of direction as well as distance. */
+  assert.match(src, /const b2=(?:prof|profAt\(lo,la\))\.both\(rM\);/, 'one RVT profile, one index for both quantities');
   assert.match(src, /const pgv=b2\[0\]\*g, a0=b2\[1\]\*g;/, 'one multiply per cell');
   /* ⚠ (#R212) SEA cells are still not painted — but a cell below zero is no longer assumed to be
      sea. 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ」: the Jordan Rift, a quarter of the

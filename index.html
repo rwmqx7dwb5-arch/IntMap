@@ -685,14 +685,25 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
          "quick list" beside the real thing is offering the reader a worse version of the same answer
          and asking them to choose; the data-sources page IS the answer. The dialog markup below is
          untouched and still opens from Atlas — what is gone is the choice in Settings. -->
+    <!-- ══ ⚠ (#R232) `rel="opener"`, NOT `rel="noopener"` — AND THAT IS THE BACK BUTTON'S FIX ═══════
+         「データ出典ページやロジック解説ページからマップに戻るボタンを押したら、さっきのマップに戻るの
+           ではなく、新たなマップを起動してしまう。元のページに戻るようにして。」 (re-sent from #R231)
+         #R231 made the pages' back link call `history.back()`. It has never once run: these three links
+         open a NEW TAB, and a new tab's history is one entry long, so the guard `history.length <= 1`
+         fell through to the link's own target — which boots a SECOND map in the new tab. The map the
+         reader left is in the OTHER tab, still alive, and the only way back to it is to close this one.
+         `window.close()` needs to know this tab was opened as an auxiliary browsing context; with
+         `noopener` the page cannot see its opener and cannot tell that apart from a bookmarked visit.
+         These three targets are our own same-origin pages, so handing them the opener costs nothing —
+         it is what lets js/page-i18n.js `wireBack()` focus the map tab and close this one. -->
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
-      <a id="link-sources" href="./sources.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
+      <a id="link-sources" href="./sources.html" target="_blank" rel="opener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
          A plain link to a static page, so it costs the app nothing at boot. -->
     <div class="setting-group"><label data-i18n="lblScience">Science &amp; logic</label>
-      <a id="link-science" href="./science.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewScience">How every simulation works ↗</a>
+      <a id="link-science" href="./science.html" target="_blank" rel="opener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewScience">How every simulation works ↗</a>
     </div>
     <!-- (#R72) keyboard-shortcut help was undiscoverable ("ショートカットキーの説明がどこにもない") — the ?-key
          cheat-sheet now has a visible entry point here. -->
@@ -764,7 +775,7 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
     <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>
     <!-- (#R212) the full page: the same registry, grouped, with licences, live-vs-bundled and the
          privacy consequences of a live source. The dialog stays because it is one tap from the map. -->
-    <a id="sources-page-link" href="./sources.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin:0 0 10px;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
+    <a id="sources-page-link" href="./sources.html" target="_blank" rel="opener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin:0 0 10px;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
     <div class="src-list" id="sources-body"></div>
   </div>
 </div>
@@ -813,10 +824,12 @@ window.__imBuild='R231';/* (#R121) build marker — bump when verifying that a r
   <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" title="My location">
     <!-- (#R231) 「現在地移動ボタンは現在のアイコンから、現在地表示によくあるシンプルなブーメラン型四角形
          アイコンに。」 The dart every map app uses for "where I am": four points — the tip, the two wings
-         and the notch between them — pointing north-east. It is FILLED rather than stroked because that
-         is what makes the concave notch read at 23 px; the crosshair it replaces was four ticks and a
-         ring, which is the "centre the view" mark, not the "this is me" one. -->
-    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+         and the notch between them — pointing north-east.
+         ⚠ (#R232) THE FILL IS NOT SET HERE ANY MORE — it is a function of state, and state lives in CSS.
+         「現在地移動ボタンは現在地に合わせてないときは中塗りなしの線アイコンで、現在地に合わせていると
+           きは現状のままで。」 `.m-fab-locate.on` is the class js/map-extras.js already toggles when the
+         map centre sits on the fix, so the outline↔solid pair costs one rule rather than a second icon. -->
+    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
   </button>
 </div>
 <div class="m-scrim" id="m-scrim"></div>

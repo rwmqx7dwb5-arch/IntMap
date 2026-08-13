@@ -34,17 +34,23 @@ const JS = join(ROOT, 'js');
 const LOCALES = join(JS, 'locales');
 
 /* ── the registry, read as source (it is a browser file, not a module) ───────────────────────── */
+/* ⚠ (#R232) THE LANGUAGE LIST IS THE LOCALE DIRECTORY, not a literal in the registry. A language is
+   ONE FILE in js/locales/ now, and the registry derives its label and tag from the code (see
+   src/locale-boot.js). Reading the directory is exactly what the app does, so this report cannot
+   disagree with the app — which is the class of defect #R231 spent a whole round on. Explicit labels
+   are still read out of the registry for the rows that carry one. */
 function langs() {
-  const src = readFileSync(join(JS, 'lang-registry.js'), 'utf8');
-  const m = src.match(/var LANGS = \[([\s\S]*?)\];/);
-  if (!m) throw new Error('LANGS not found in js/lang-registry.js');
-  const out = [];
+  const reg = readFileSync(join(JS, 'lang-registry.js'), 'utf8');
+  const label = {};
   const re = /\{\s*code:\s*'([^']+)'\s*,\s*label:\s*'([^']*)'/g;
-  let g; while ((g = re.exec(m[1]))) out.push({ code: g[1], label: g[2] });
-  return out;
+  let g; while ((g = re.exec(reg))) label[g[1]] = g[2];
+  const CORE = ['en', 'jp', 'de', 'ru', 'es'];
+  const found = readdirSync(LOCALES)
+    .map((f) => /^ui\.([A-Za-z0-9-]+)\.js$/.exec(f)).filter(Boolean).map((m) => m[1].toLowerCase());
+  const rest = found.filter((c) => !CORE.includes(c)).sort();
+  return CORE.filter((c) => found.includes(c)).concat(rest)
+    .map((c) => ({ code: c, label: label[c] || c.toUpperCase() }));
 }
-
-/* ── ① the keyed tables ─────────────────────────────────────────────────────────────────────── */
 function keyedTable(code) {
   const p = join(LOCALES, `ui.${code}.js`);
   if (!existsSync(p)) return null;

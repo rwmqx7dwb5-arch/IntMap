@@ -54,23 +54,20 @@ import '../js/place-framing.js';
    renderer, no app state — so it is verified in Node, and it must precede every module that builds a
    symbol layer, which is all of them. */
 import '../js/label-scale.js';
-/* (#R221) THE LANGUAGE REGISTRY COMES FIRST, and the locale files come before the table they build.
-   ⚠ ADDING A LANGUAGE IS THREE EDITS AND TWO OF THEM ARE HERE: one row in js/lang-registry.js's
-   LANGS, one file js/locales/ui.<code>.js, and one import line below. Nothing else in the app —
-   including the 2,238 inline L(…) call sites — has to be touched; see the registry's header. */
+/* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
+   「今後IntMapの設定言語を追加するのが、1発で終わるように。」
+   ⚠ ADDING A LANGUAGE IS NOW ONE FILE — `js/locales/ui.<code>.js` — AND NOTHING HERE. The seven
+   import lines that used to stand below are gone: src/locale-boot.js globs the locale directory, so
+   the set of languages IS the set of files, and js/lang-registry.js derives each row's label, tag and
+   pill from the code. Nothing else in the app — including the 2,238 inline L(…) call sites — has to
+   be touched; see the registry's header.
+   ⚠ AND THE GLOB IS LAZY, WHICH IS THE OTHER HALF. Those seven eager imports were 492 kB of the boot
+   bundle for six languages nobody in that session reads (ui.zh.js and ui.zh-hans.js are 211 kB each).
+   Only English — the fallback every other table chains onto — is imported here; the reader's own
+   language is fetched as its own chunk and awaited on js/app-body.js's boot barrier. */
 import '../js/lang-registry.js';
+import './locale-boot.js';
 import '../js/locales/ui.en.js';
-import '../js/locales/ui.jp.js';
-import '../js/locales/ui.de.js';
-import '../js/locales/ui.ru.js';
-import '../js/locales/ui.es.js';
-/* (#R223) the sixth — Traditional Chinese. One row in LANGS, this line, and that file: the whole
-   cost #R221's registry promised, with no call site touched (see the note by the LANGS row). */
-import '../js/locales/ui.zh.js';
-/* (#R224) the seventh — Simplified Chinese, GENERATED from the line above by scripts/zh-hans.mjs.
-   Same three edits as every other language (this line, one row in LANGS, one locale file); the only
-   difference is that this locale file is produced rather than written. */
-import '../js/locales/ui.zh-hans.js';
 import '../js/i18n.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';

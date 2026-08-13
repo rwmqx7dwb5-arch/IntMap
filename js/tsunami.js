@@ -894,13 +894,24 @@ window.IntMapModules.tsunami=function(HOST){
               +(111.32/FINE_CPD).toFixed(1)+' km ('+L('measured DEM','実測DEM','gemessenes DEM','измеренный DEM','DEM medido')+')'):'')
           +'</div>';
       }
-      body+='<div style="font-size:10px;color:var(--text-muted);line-height:1.45;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'
+      /* ══ (#R232) THE METHOD AND THE SOURCES FOLD AWAY; THE WARNING DOES NOT ═════════════════════
+         「地震シミュレータのポップアップに書かれた説明や出典等はそのまま書くのではなく折りたたんで記載
+           する形式に。注意書き等はそのまま残すように。（津波シミュレータも）」 Same change as the
+         seismic panel's, for the same reason and with the same rule: the safety line is OUTSIDE the
+         fold, because a notice that can be collapsed is a notice that will be missed. */
+      body+='<div style="font-size:10px;color:#ffd23f;line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">⚠ '
+        +L('Educational model — in a real emergency follow the official authorities.','教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。','Bildungsmodell — im Ernstfall den Behörden folgen.','Учебная модель — в реальной ситуации следуйте указаниям властей.','Modelo educativo — en una emergencia real siga a las autoridades.')
+        +'</div>'
+        +'<details class="tsu-meth" style="font-size:10px;color:var(--text-muted);line-height:1.45;">'
+        +'<summary style="cursor:pointer;color:var(--text-main);font-size:10.5px;opacity:0.85;list-style:revert;">'
+        +L('Method & sources','計算方法と出典','Methode & Quellen','Метод и источники','Método y fuentes')+'</summary>'
+        +'<div style="padding-top:4px;">'
         +L('Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbor resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.',
            '球面のスタッガード格子上で浅水長波（全水深による圧力項＋マニングの底面摩擦）をバックグラウンドスレッドで解いています。水深はterrarium DEM、初期海底変位はOkada (1985) をテーパー付き小断層群で重ね合わせ、断層寸法はWells & Coppersmith (1994)、走向は局所的な海底勾配から求めています。格子は数十kmなので外洋モデルです：到達時刻と沖合の波高は意味を持ちますが、港湾の共振や遡上は表現できません。沿岸波高はグリーンの法則による推定です。教育目的のモデルであり、実際の災害時は公的機関の指示に従ってください。',
            'Flachwasser-Langwellen auf einem sphärischen Versetzungsgitter, mit Gesamttiefen-Druckterm und Manning-Bodenreibung, in einem Hintergrund-Thread gelöst. Tiefe aus dem terrarium-DEM; Anfangsverschiebung nach Okada (1985) über ein Teilbruch-Gitter summiert, Bruchmaße nach Wells & Coppersmith (1994), Streichen aus dem lokalen Tiefengradienten. Zellen sind zig Kilometer groß — ein Modell für die offene See. Küstenhöhe ist eine Green-Abschätzung. Nur Bildungsmodell.',
            'Длинные волны мелкой воды на сферической сетке, с давлением по полной глубине и донным трением Маннинга, расчёт в фоновом потоке. Глубины из terrarium DEM; начальное смещение дна по Okada (1985), просуммированное по сетке подразрывов, размеры разрыва по Wells & Coppersmith (1994), простирание — из локального градиента глубин. Ячейки в десятки километров: модель открытого океана. Высота у берега — оценка по закону Грина. Учебная модель.',
            'Ondas largas en aguas someras sobre malla esférica, con presión de profundidad total y fricción de fondo de Manning, resueltas en un hilo de fondo. Profundidad del DEM terrarium; desplazamiento inicial según Okada (1985) sumado sobre una malla de subfallas, dimensiones de ruptura según Wells & Coppersmith (1994) y rumbo tomado del gradiente batimétrico local. Las celdas miden decenas de kilómetros: es un modelo de mar abierto. La altura costera es una estimación por la ley de Green. Modelo educativo.')
-        +'</div></div>';
+        +'</div></details></div>';
       panel.innerHTML=head+body;
       try{ makeDraggable&&makeDraggable(panel,panel.querySelector('.tsu-head')); }catch(_){}
       const q=(s)=>panel.querySelector(s);
