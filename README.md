@@ -198,6 +198,9 @@ IntMap supports:
   view reopens on the same answer. A reload restores the same session, and falls back to the map
   alone if the previous attempt did not survive
 * An explanation of the method behind every simulation - Settings > Science & logic
+* A **Panels** mode - Settings > Legends and tool windows. Every legend, readout and tool window
+  moves out of the map and into one tab in the left sidebar, leaving the map clear. Popups anchored
+  to a place you clicked stay where they are, because they belong to that point on the map
 * Desktop keyboard shortcuts
 
 Desktop users can also enable **Window Workspace**, which turns the map, Information, News, Countries, Layers, and Atlas into movable and resizable windows. Workspace layouts are saved locally.
@@ -213,8 +216,15 @@ The interface currently supports:
 * Deutsch — beta
 * Русский — beta
 * Español — beta
+* 繁體中文 — beta
+* 简体中文 — beta
+* Français — in progress
+* 한국어 — in progress
 
-Place-name labels support the same languages. Some recent or deeply nested content may still fall back to English or Japanese.
+The first seven are complete. French and Korean are being filled in and currently cover the keyed
+interface in full plus part of the in-line text; anything not yet translated falls back to English
+per string, never per screen. Place-name labels support the same languages. Some recent or deeply
+nested content may still fall back to English or Japanese.
 
 Atlas normally responds in the language used in the request.
 

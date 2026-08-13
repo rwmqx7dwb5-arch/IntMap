@@ -61,8 +61,11 @@ test('R235 wavefronts: the envelope is the spherical outer root, not the convex 
   assert.match(s, /Math\.atan2\(B,A\)\+Math\.acos\(q\)/, 'the outer root of the spherical triangle is used');
   assert.match(s, /function _srcPts\(\)/, 'the source points are sampled with their own depths');
   assert.match(s, /dep=zT\+\(zB-zT\)\*f;/, 'each point takes the plane’s depth at its own across-strike position');
-  assert.match(s, /frontDelta\(ph\.k,\(k&&k\.dep!=null\)\?k\.dep:depthKm/,
-    'and asks the travel-time curve for THAT depth');
+  /* ⚠ (#R238) the depth is READ OUT FIRST now, because the body-wave radius takes the bearing too
+     (the crustal correction — see `_bodyStretch`). The claim is unchanged and is the whole of #R235's
+     finding: the curve is asked for THAT point's depth rather than the hypocentre's. */
+  assert.match(s, /const dep=\(k&&k\.dep!=null\)\?k\.dep:depthKm;/, 'each point’s own depth is taken');
+  assert.match(s, /frontDelta\(ph\.k,dep,/, 'and asks the travel-time curve for THAT depth');
 
   /* the maths, run: the exact root must (a) reduce to the old line for small angles and
      (b) exceed it — i.e. bulge outward where the flat formula under-reaches — at large ones. */
@@ -133,9 +136,18 @@ test('R235 wavefronts: surface-wave group velocity is a path integral over the c
      so routing the no-fault case through it would silently discard the integral again */
   assert.match(s, /const lines=faultFrontLines\(rad\);/,
     'surface fronts always use the per-bearing builder, fault or not');
-  /* the body waves keep the shared circular helper — they have no lateral model, so they ARE circles */
-  assert.match(s, /const lines=fault\?faultFrontLines\(rad\):\(\(rad\(null\)!=null\)\?ringLines\(epi,rad\(null\)\):null\);/,
-    'P/S still draw circles through the shared seam/pole helper');
+  /* ══ ⚠⚠ (#R238) THE BODY WAVES NO LONGER KEEP THE CIRCULAR HELPER, AND THAT IS THE FIX ═══════════
+     This asserted that P and S go through `ringLines` because 「they have no lateral model, so they
+     ARE circles」. They now have one: the crustal legs are corrected over the same land/ocean table
+     the surface waves invert (`_bodyStretch`), weighted by the crustal share of the path. That was
+     the point — P and S are the two biggest rings on the screen, so leaving them bearing-free by
+     construction is most of what 「まだ震央中心の同心円に見える」 was looking at, reported for a
+     third round. The reasoning above is preserved verbatim; only its conclusion has changed, and it
+     changed because the premise did. Same trap as `ringLines` for the surface waves: one radius
+     drawn all the way round would throw the correction away, so both families use the builder. */
+  assert.doesNotMatch(s, /ringLines\(epi,rad\(null\)\)/,
+    'no front is drawn from a single bearing-free radius any more');
+  assert.match(s, /const s=_bodyStretch\(b\|\|0,d,dep\);/, 'the body-wave radius is a function of the bearing too');
   /* the label is placed at the view bearing, so it must read the radius there */
   assert.match(s, /const vb=_viewBearing\(\); const r=rad\(vb\);/, 'the front name reads its own bearing’s radius');
 });

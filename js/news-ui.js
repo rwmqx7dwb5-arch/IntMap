@@ -434,6 +434,7 @@ window.IntMapModules.newsUi=function(HOST){
     try{ HOST.pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
     /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
     feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; if(afeed) afeed.style.display='none'; filterToggle.style.display='none';
+    { const df=document.getElementById('docked-feed'); if(df) df.style.display='none'; }   /* (#R238) */
     { const _mf=document.getElementById('monitors-feed'); if(_mf) _mf.style.display='none'; }   /* (#R141) hide Monitors feed unless its tab is active */
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
@@ -467,6 +468,25 @@ window.IntMapModules.newsUi=function(HOST){
     if(HOST.mode==='atlas'){ if(afeed) afeed.style.display='flex'; if(sb) sb.style.display='none';
       /* (#R224) fetches the kernel if this is the first time Atlas has been reached for */
       try{ if(window.IntMapAtlas) window.IntMapAtlas.call('mountTab'); else if(window.IntMapConsole&&window.IntMapConsole.mountTab) window.IntMapConsole.mountTab(); }catch(_){}
+      try{ HOST.updateOcclusion(); }catch(_){} return; }
+    /* ══ (#R238) THE DOCK TAB — the floating panels, in the sidebar ═══════════════════════════════
+       Nothing is rendered here: js/window-manager.js has already RE-PARENTED the real panels into
+       #docked-feed, so this shows the container and asks for a sweep in case a window opened while
+       another tab was up. The empty line is the one thing this has to say for itself — an empty
+       column with no explanation reads as a broken tab. */
+    if(HOST.mode==='docked'){ const df=document.getElementById('docked-feed');
+      if(df){ df.style.display='flex';
+        let n=0; try{ n=HOST.dockRefresh?HOST.dockRefresh():0; }catch(_){}
+        const old=df.querySelector('.dock-empty'); if(old) old.remove();
+        if(!n){ const e=document.createElement('div'); e.className='empty-msg dock-empty';
+          e.textContent=window.IntMapLang.t(HOST.lang,
+            'Legends and tool windows will appear here instead of over the map.',
+            '凡例やツール窓は、地図の上ではなくここに表示されます。',
+            'Legenden und Werkzeugfenster erscheinen hier statt über der Karte.',
+            'Легенды и окна инструментов появятся здесь, а не поверх карты.',
+            'Las leyendas y ventanas de herramientas aparecerán aquí en vez de sobre el mapa.');
+          df.appendChild(e); } }
+      if(sb) sb.style.display='none';
       try{ HOST.updateOcclusion(); }catch(_){} return; }
     if(HOST.mode==='info'){ dash.style.display='flex'; sb.style.display='flex'; HOST.renderDashboard(); HOST.updateOcclusion(); return; }
     if(HOST.mode==='monitors'){ const mf=document.getElementById('monitors-feed'); if(mf) mf.style.display='flex'; sb.style.display='flex';   /* (#R141) Monitors tab */

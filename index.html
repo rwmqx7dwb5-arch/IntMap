@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R237';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R238';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R237';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-14-R237';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-14-R238';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -326,6 +326,8 @@ window.__imBuild='R237';/* (#R121) build marker — bump when verifying that a r
            tables are untouched — the feature is unreachable, not removed, because the instruction says
            一旦 (for now). Putting it back is this button plus the four call sites named above. -->
       <button class="mode-btn mode-atlas" id="btn-community" title="Atlas">Atlas</button><!-- (#R98) Community removed; this sidebar slot now opens the Atlas AI console (id kept to avoid churn). (#R101) no ✨; Atlas-gradient background, News/Countries shape. -->
+      <!-- (#R238) the dock tab — in the markup so the tab row, the i18n sweep and .mode-btn all reach it; hidden until the setting is on (js/window-manager.js `wireDock`) -->
+      <button class="mode-btn" id="btn-docked" data-i18n="tabDocked" style="display:none;">Panels</button>
     </div>
     <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
@@ -369,6 +371,8 @@ window.__imBuild='R237';/* (#R121) build marker — bump when verifying that a r
          console mounts, in normal flow, INTO this content area below the tab bar — no popup overlay. Workspace mode
          keeps its own Atlas window and never uses this. -->
     <div id="atlas-feed" style="display:none;"></div>
+    <!-- (#R238) where every docked panel lands — re-parented, not re-implemented; see js/window-manager.js -->
+    <div class="content-area" id="docked-feed" style="display:none;"></div>
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
     <div class="stats-compare-fixed" id="stats-compare-fixed"></div>
     <div class="co-compare-fixed" id="co-compare-fixed"></div>
@@ -580,6 +584,9 @@ window.__imBuild='R237';/* (#R121) build marker — bump when verifying that a r
       <div class="sat-keys-hint" data-i18n="engineHint">Cesium renders the Earth as a real ellipsoid at every zoom, with the same satellite imagery and the same elevation data. It is downloaded only when selected, and switching reloads the page. Contour lines and the closed 3-D solid tool stay MapLibre-only.</div>
       <div id="engine-status" class="sat-keys-hint" style="display:none;"></div></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
+    <!-- (#R238) the dock, off by default on every device; the hint states what stays on the map -->
+    <div class="setting-group"><label data-i18n="lblDockPanels">Legends and tool windows</label><select id="setting-dock-panels"><option value="off" data-i18n="dockPanelsOff">On the map (default)</option><option value="on" data-i18n="dockPanelsOn">Collected in a sidebar tab</option></select>
+      <div class="sat-keys-hint" data-i18n="dockPanelsHint">Every legend, readout and tool window moves into one “Panels” tab in the left sidebar, so the map is left clear. Popups anchored to a place you clicked stay on the map.</div></div>
     <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
     <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centerd)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
     <!-- (#R171) Tilt ceiling. Standard is the long-standing 78°; Unlimited hands over the renderer's whole

@@ -19,6 +19,7 @@ window.IntMapLang.define('es', { ui: {
       setSecAppearance:"Apariencia", setSecLayout:"Diseño y paneles", setSecMap:"Comportamiento del mapa", setSecUnits:"Unidades y hora", setSecNews:"Noticias y cinta", setSecAI:"IA", setSecKeys:"Integraciones y claves", setSecAbout:"Información y soporte",
       lblTheme:"Apariencia", optAuto:"Predeterminado del sistema", optLight:"Claro", optDark:"Oscuro", optClassic:"Clásico", optCyber:"Cíber",
       lblMapColor:"Color del mapa", mapColorAuto:"Como la apariencia", mapColorLight:"Claro (blanco)", mapColorDark:"Oscuro (negro)",
+      tabDocked:"Paneles", lblDockPanels:"Leyendas y ventanas de herramientas", dockPanelsOff:"Sobre el mapa (predeterminado)", dockPanelsOn:"Reunidas en una pestaña lateral", dockPanelsHint:"Cada leyenda, lectura y ventana de herramientas pasa a la pestaña «Paneles» de la barra lateral izquierda, dejando el mapa despejado. Los globos anclados a un lugar que ha pulsado siguen en el mapa.",
       lblUnits:"Unidades de medida", unitBoth:"Métrico + imperial", unitMetric:"Solo métrico", unitImperial:"Solo imperial",
       lblTempUnit:"Temperatura", tempBoth:"°C + °F", tempC:"Solo °C", tempF:"Solo °F",
       lblTz:"Zona horaria", tzSearch:"Buscar zona horaria…", optLocal:"Local (predeterminado del sistema)",

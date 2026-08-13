@@ -150,15 +150,22 @@ test('R234 seismic panel: no ✏ / 🌎 / ◎ / ◇, and no idle sentence', () =
 test('R234 seismic panel: one banner shape for all three modes, and the run button has two states', () => {
   const s = read('js/seismic.js');
   assert.match(s, /const BANNER=\(txt\)=>/, 'there is exactly one banner');
-  /* all three modes speak through it — drawing, epicentre, observation point */
-  assert.match(s, /_fDrawing\s*\n\s*\? BANNER\(/, 'the drawing mode gets the instruction the item asks for');
+  /* ══ ⚠⚠ (#R238) ALL THREE MODES STILL GET AN INSTRUCTION — EACH INSIDE ITS OWN STEP ══════════════
+     #R234's shape was one banner under a row of three buttons, and this pinned the ternary CHAIN that
+     chose between them. #R238 made the three controls a numbered step list, because a segmented track
+     says 「pick one of these」 and these are a sequence with state; the instruction moved INSIDE the
+     armed step, directly under the button that armed it. Keeping the old chain as well printed the
+     epicentre instruction TWICE (visible in that build's screenshot), so it was deleted rather than
+     hidden. What this test is FOR — every armed mode says what to do, in one shape, in the reader's
+     language — is unchanged, and is asserted against the step list instead of against the chain. */
+  assert.match(s, /_fDrawing\?BANNER\(/, 'the drawing mode gets the instruction the item asks for');
+  assert.match(s, /clickMode==='epi'\?BANNER\(/, 'the epicentre mode gets one too');
+  assert.match(s, /clickMode==='station'\?BANNER\(/, 'and so does the observation-point mode');
   assert.match(s, /地図上で震源域を囲ってください。/, '…and it says what to do');
   assert.match(s, /クリックで開始し、続けてクリックして囲み、最初の点をもう一度クリックすると終了です。/,
     '…including how the stroke starts and ends');
-  /* (#R236) a comment sits between the test and the banner now (the epicentre mode says a different
-     thing once a rupture is drawn), so the claim is «this mode reaches BANNER», not the line break. */
-  assert.match(s, /: clickMode==='epi'\s*\n(?:\s*\/\*[\s\S]*?\*\/\s*\n)?\s*\? BANNER\(/, 'the epicentre mode gets one too');
-  assert.match(s, /: clickMode==='station'\s*\n\s*\? BANNER\(/, 'and so does the observation-point mode');
+  /* …and exactly one banner per step, so no instruction is printed twice */
+  assert.equal((s.match(/[^=]BANNER\(/g) || []).length, 3, 'one banner per step, with no shared copy below them');
   /* one predicate decides BOTH the colour and the wording */
   assert.match(s, /function _needsRun\(\)\{ return !fld\|\|fldStale; \}/, 'one predicate for "there is something to compute"');
   /* (#R237) the two states are a CLASS now, not a cssText — same predicate, same two states. */

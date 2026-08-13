@@ -2956,3 +2956,34 @@
    てんじゃねーよ」「外せ」. The panels are frosted all the time now, exactly as they were before #R221.
    ⚠ Nothing here should ever again change what the app looks like on its own. The rule is
    「勝手なことを確認せずにやるな」 — ask first, then write it. */
+
+/* ══ ⚠⚠ (#R238) THE DOCK — a floating panel, flattened into the sidebar column ═══════════════════
+   「設定から変更すれば、それまで地図上に表示されていたポップアップや凡例の類を…左サイドバーに新たな
+     タブを作り、そこにすべてまとめて表示というモードを作って。」
+
+   js/window-manager.js re-parents the REAL panels into #docked-feed — nothing is re-implemented, so
+   every button, ✕, slider and live readout keeps working exactly as it did over the map. What that
+   costs is the geometry: those panels are positioned `fixed`/`absolute` with inline left/top/width
+   written by #R47's drag and resize, and a `position:fixed` child of a scrolling column would sit
+   still while the column scrolls. So the dock un-anchors them, exactly the way `atl-tab` (#R130)
+   un-anchors the Atlas panel for its own tab — this is that mechanism, generalised.
+
+   ⚠ EVERY ONE OF THESE IS `!important` BECAUSE IT IS OVERRIDING AN INLINE STYLE. The inline text is
+   preserved and re-applied on the way out (see `__docked` in js/window-manager.js), so switching the
+   mode off puts each panel back exactly where it was dragged to. */
+#docked-feed{ flex-direction:column; gap:10px; overflow-y:auto; overflow-x:hidden; padding:2px 0 14px; }
+.im-docked{
+  position:relative !important; left:auto !important; top:auto !important; right:auto !important;
+  bottom:auto !important; inset:auto !important; transform:none !important;
+  width:100% !important; max-width:100% !important; min-width:0 !important;
+  height:auto !important; max-height:none !important; min-height:0 !important;
+  margin:0 !important; z-index:auto !important; resize:none !important;
+  box-sizing:border-box !important; flex:0 0 auto !important; display:block !important;
+}
+/* a docked panel is inside the sidebar's own surface, so it drops the floating chrome that only
+   made sense over the map — one border stays so two panels in a row are still two panels */
+.im-docked{ box-shadow:none !important; border-radius:12px !important; }
+/* ⚠ the drag handle is still there and still says «this is the title bar»; it simply has nowhere to
+   drag to. `cursor:default` is what stops it claiming otherwise. */
+.im-docked .panel-head, .im-docked [class$="-head"]{ cursor:default !important; }
+#docked-feed .dock-empty{ padding:36px 16px; }

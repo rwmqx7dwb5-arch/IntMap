@@ -238,7 +238,15 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
      still gets an envelope of DELAYED fronts rather than one circle. */
   assert.match(src, /function faultFrontLines\(\w+\)\{/, 'fronts are the delayed-union envelope');
   assert.match(src, /delay:off\*D\*RE\/VRUP_KMS/, '…each source point delayed by the rupture’s own propagation');
-  assert.match(src, /const lines=fault\?faultFrontLines\(rad\):/, '…and it is what a drawn rupture uses');
+  /* ⚠ (#R238) the CLAIM again, not the spelling. This pinned `fault?faultFrontLines(rad):…`,
+     i.e. «a drawn rupture takes the envelope and a point source takes a plain ring». #R238 gave
+     the body waves a per-bearing crustal correction, so a point source can no longer be drawn
+     from ONE radius either — `ringLines` would repeat the bearing-0 answer all the way round and
+     throw the correction away, which is exactly the defect #R235 recorded for the surface waves.
+     Both families go through the envelope builder now, so the property this line protects (a
+     drawn rupture gets the delayed union, never one circle) is STRONGER, not weaker. */
+  assert.match(src, /const lines=faultFrontLines\(rad\)/, '…and it is what a drawn rupture uses');
+  assert.doesNotMatch(src, /ringLines\(epi,rad\(null\)\)/, 'no front is drawn from a single bearing-free radius');
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
   const atlas = read('js/atlas-console.js');
   assert.ok(atlas.includes('"scale"?:"mmi"|"jma"'), 'the SYS catalogue advertises the scale');

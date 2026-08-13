@@ -2716,6 +2716,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        but the MAP's Countries(info) overlay (cb-countries) is now fully manual — it is neither auto-enabled on
        entering the tab nor auto-disabled on leaving it. The checkbox in the Layers panel still works as always. */
     function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
+  /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps this file and the SHELL under tests/r200 ⑤ and tests/r168 #8. */
+  const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };
   function setMode(mode,btnId){
     if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }
     currentMode=mode; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById(btnId).classList.add('active');
@@ -3349,7 +3351,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
-  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
+  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
      lie: the Settings dropdown has said "Off (default)" since #R63 while #R101 actually defaulted desktop to ON.
      A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
@@ -3402,7 +3404,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
     if(s.flatPanSet===true && (s.flatPan==='fixed'||s.flatPan==='free')){ window.imFlatPan=s.flatPan; window.imFlatPanSet=true; }   /* (#R223) only an EXPLICIT choice survives the default flip — `flatPanSet` is written when Settings is applied */
-    if(s.mapColor) window.imMapColor=s.mapColor;
+    if(s.mapColor) window.imMapColor=s.mapColor;   if(s.dockPanels==='on'||s.dockPanels==='off') window.imDockPanels=s.dockPanels;   /* (#R238) */
     /* (#R155) Right sidebar is the default (#R154). Only a saved value the user EXPLICITLY chose
        (layerPanelSet) may override it — a stale 'classic' left over from before the default flipped is
        ignored, so returning users actually get the right sidebar they asked for (re-reported request). */
@@ -3416,12 +3418,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.navPan)  window.imNavPanSens=+s.navPan||1;
     if(s.navInertia!=null) window.imNavInertia=+s.navInertia;   /* (#R23) inertia (0..1.5); 0 allowed */
     try{ window._applyNavSens&&window._applyNavSens(); }catch(_){}
-    applySidebarStyle();
+    applySidebarStyle();   try{ applyDockMode(); }catch(_){}   /* (#R238) a saved dock comes back with its tab and its panels; LAST because it re-parents live DOM */
   }
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, dockPanels:window.imDockPanels, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -3485,7 +3487,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-sidebar-style')) v('setting-sidebar-style').value=window.imSidebarStyle;
       if(v('setting-label-lang'))    v('setting-label-lang').value=window.imLabelLang;
       if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
-      if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;
+      if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;   if(v('setting-dock-panels')) v('setting-dock-panels').value=(window.imDockPanels||'off');   /* (#R238) */
       if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
@@ -3506,7 +3508,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
       if(v('setting-flat-pan')){     window.imFlatPan=v('setting-flat-pan').value; window.imFlatPanSet=true; }   /* (#R223) an explicit choice latches — see the default-flip note above */
-      if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
+      if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;   if(v('setting-dock-panels')){ window.imDockPanels=v('setting-dock-panels').value; try{ applyDockMode(); }catch(_){} }   /* (#R238) */
       if(v('setting-layerpanel')){ const _oldLP=window.imLayerPanel; window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */
         /* (#R160) ROOT CAUSE of "設定を変更すると勝手に右サイドバーが出てくる": apply() ALWAYS re-opens the right
            panel (if(!isMob()) open()), and it ran on EVERY settings save — so changing any unrelated setting
