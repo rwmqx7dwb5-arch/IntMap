@@ -55,11 +55,88 @@ export function attachLightbox(chatEl, closeLabel) {
     /* tapping the PICTURE must not close it — only tapping around it does, which is the convention
        every gallery uses and the reason the backdrop carries the handler rather than the document. */
     img.addEventListener('click', (e) => e.stopPropagation());
+
+    /* ══ (#R233) ZOOM ═════════════════════════════════════════════════════════════════════════
+       「送信した画像をタップした画面で、画像をズーム可能に。」 #R232 gave the picture the screen at
+       its own aspect ratio, which is still ONE size — a screenshot pasted into Atlas is exactly the
+       kind of image you open in order to read something small in it.
+
+       Wheel / pinch / double-tap, and drag to pan once it is bigger than the frame. Pointer events
+       so one implementation covers mouse, touch and pen.
+
+       ⚠ ZOOM IS ABOUT THE POINTER, NOT THE CENTRE. Keeping the pixel under the finger fixed is what
+       makes this feel like a viewer rather than a slider: with local coordinate u = (P−C−T)/S held
+       constant across the scale change, T′ = d − (d−T)·S′/S where d = P − C.
+       ⚠ AND A DRAG MUST NOT CLOSE THE PICTURE. The backdrop's click handler is what closes, and a
+       pan that ends over the backdrop is a click on it — so a gesture that moved is remembered and
+       the next click is swallowed. Without this, panning a zoomed image dismisses it. */
+    let S = 1, TX = 0, TY = 0, moved = false;
+    const pts = new Map();
+    let pinch0 = 0, s0 = 1;
+    const paint = () => {
+      img.style.transform = 'translate(' + TX + 'px,' + TY + 'px) scale(' + S + ')';
+      img.classList.toggle('atl-lb-zoomed', S > 1.001);
+    };
+    /* keep at least a third of the picture reachable, so it cannot be flung out of the window */
+    const clamp = () => {
+      const r = img.getBoundingClientRect(), w = r.width, h = r.height;
+      const mx = Math.max(0, (w - innerWidth) / 2 + w / 3), my = Math.max(0, (h - innerHeight) / 2 + h / 3);
+      TX = Math.max(-mx, Math.min(mx, TX)); TY = Math.max(-my, Math.min(my, TY));
+    };
+    const zoomAt = (px, py, next) => {
+      const s2 = Math.max(1, Math.min(8, next));
+      if (s2 === S) return;
+      const b = img.getBoundingClientRect();
+      const cx = b.left + b.width / 2 - TX, cy = b.top + b.height / 2 - TY;   /* untransformed centre */
+      const dx = px - cx, dy = py - cy;
+      TX = dx - (dx - TX) * (s2 / S); TY = dy - (dy - TY) * (s2 / S);
+      S = s2;
+      if (S === 1) { TX = 0; TY = 0; } else clamp();
+      paint();
+    };
+    el.addEventListener('wheel', (e) => {
+      e.preventDefault(); zoomAt(e.clientX, e.clientY, S * Math.pow(1.0016, -e.deltaY));
+    }, { passive: false });
+    img.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); });
+    img.addEventListener('pointerdown', (e) => {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { img.setPointerCapture(e.pointerId); } catch (_) {}
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        pinch0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; s0 = S;
+      }
+    });
+    img.addEventListener('pointermove', (e) => {
+      const p = pts.get(e.pointerId); if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      if (pts.size >= 2) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        moved = true;
+        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, s0 * (d / pinch0));
+      } else if (S > 1.001) {
+        if (Math.abs(dx) + Math.abs(dy) > 1) moved = true;
+        TX += dx; TY += dy; clamp(); paint();
+      }
+    });
+    const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = 0; };
+    img.addEventListener('pointerup', up); img.addEventListener('pointercancel', up);
+    /* double-TAP on touch, where dblclick is unreliable */
+    let lastTap = 0;
+    img.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'mouse') return;
+      const t = e.timeStamp;
+      if (t - lastTap < 300 && !moved) { zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); lastTap = 0; }
+      else lastTap = t;
+    });
+
     const x = document.createElement('button');
     x.className = 'atl-lb-x'; x.type = 'button';
     x.setAttribute('aria-label', closeLabel || 'Close'); x.textContent = '✕';
     el.appendChild(img); el.appendChild(x);
-    el.addEventListener('click', () => close());
+    x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    el.addEventListener('click', () => { if (moved) { moved = false; return; } close(); });
     el.__esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     document.addEventListener('keydown', el.__esc, true);
     try {
@@ -80,8 +157,15 @@ export function attachLightbox(chatEl, closeLabel) {
 export const LIGHTBOX_CSS =
   '.atl-lightbox{position:fixed;inset:0;z-index:2600;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:atlLbIn .16s ease;padding:24px;box-sizing:border-box;cursor:zoom-out;}'
   + '@keyframes atlLbIn{from{opacity:0}to{opacity:1}}'
-  + '.atl-lightbox img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,0.55);cursor:default;}'
-  + '.atl-lightbox .atl-lb-x{position:absolute;top:max(12px,env(safe-area-inset-top));right:14px;width:40px;height:40px;border:none;border-radius:50%;background:rgba(255,255,255,0.14);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}'
+  /* (#R233) `touch-action:none` is what makes the pinch reach this element instead of the browser's
+     own page zoom, and `will-change:transform` keeps the scaled bitmap on its own layer while it is
+     being dragged. `transform-origin:center` is the frame the zoom arithmetic in _open assumes. */
+  + '.atl-lightbox img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,0.55);cursor:zoom-in;touch-action:none;transform-origin:center center;will-change:transform;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}'
+  + '.atl-lightbox img.atl-lb-zoomed{cursor:grab;}'
+  + '.atl-lightbox img.atl-lb-zoomed:active{cursor:grabbing;}'
+  /* (#R233) 「×ボタンは丸ではなく四角に。」 A rounded SQUARE — the corner radius matches the picture's
+     own 10px so the two shapes belong to the same sheet, and 50% (a circle) is gone. */
+  + '.atl-lightbox .atl-lb-x{position:absolute;top:max(12px,env(safe-area-inset-top));right:14px;width:40px;height:40px;border:none;border-radius:10px;background:rgba(255,255,255,0.14);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}'
   + '.atl-lightbox .atl-lb-x:hover{background:rgba(255,255,255,0.26);}'
   + '@media(max-width:768px){ .atl-lightbox{padding:10px;} }';
 

@@ -12,6 +12,7 @@
  *  SOURCE STRING. A missing entry falls back to English PER STRING — never per screen.
  * ========================================================================== */
 window.IntMapLang.define('ko', { ui: {
+      lnkTerms:"이용약관", lnkPrivacy:"개인정보 처리방침", legalTabTerms:"약관", legalTabPrivacy:"개인정보", commAddImage:"이미지 추가",
       tabNews:"뉴스", tabSaved:"★ 저장됨", tabInfo:"정보", tabCompanies:"기업", tabStats:"국가", tabCommunity:"커뮤니티",
       searchPh:"뉴스 / 장소 검색...", filterCountriesPh:"국가 필터...", filterCompaniesPh:"기업 필터...", pickCountryMap:"지도에서 국가 선택", searchBtn:"검색", searchLoadBtn:"검색 / 불러오기", loading:"기사를 불러오는 중...",
       noMatch:"결과가 없습니다.", networkError:"뉴스를 불러오지 못했습니다. 다시 시도 중…",
@@ -26,7 +27,7 @@ window.IntMapLang.define('ko', { ui: {
       statPop:"인구", statGdp:"GDP (명목)", statGdpPc:"1인당 GDP", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"1인당 GDP (PPP)", statArea:"면적", statDensity:"인구 밀도", statRegion:"지역", statSub:"소지역", statCapital:"수도", statCurrency:"통화", statLang:"언어", statHDI:"HDI", statDem:"민주주의 지수", statMil:"국방비", statLife:"기대 수명", statInet:"인터넷 이용자",
       details:"자세히 ↗", loadingData:"국가 데이터를 불러오는 중...", dataNA:"해당 없음", noData:"국가 데이터를 사용할 수 없습니다.", sortGdp:"GDP", sortPop:"인구", sortArea:"면적", sortName:"가나다", sortHDI:"HDI", sortMil:"국방비", elev:"고도", bearing:"방위", presetNone:"— 선택 —", presetLbl:"범위 프리셋", opacity:"불투명도", circumference:"둘레", lblUnits:"측정 단위", unitBoth:"미터법 + 야드파운드법", unitMetric:"미터법만", unitImperial:"야드파운드법만", msPh:"지구상의 어떤 장소든 검색...",
       spRunway:"활주로", spGarrison:"주둔 부대", spOperator:"운영자", spEstd:"설립", spAircraft:"항공기", spType:"종류", spCapacity:"수용력", spDepth:"수심", spOutput:"생산량", spReserves:"매장량",
-      flat:"평면", globe:"지구본", threeD:"⛰️ 3D", gridBtn:"🌐 격자", gridLayer:"🌐 격자 및 좌표", widgetsBtn:"위젯", lblTempUnit:"온도", tempBoth:"°C + °F", tempC:"°C만", tempF:"°F만", measureBtn:"📏 측정", measureMenuBtn:"측정", measureDistBtn:"📏 거리 / 면적", areaBtn:"📐 면적", drawBtn:"✏️ 그리기", vol3dBtn:"🧊 3D 부피", droneBtn:"🛸 드론", radiusBtn:"⭕ 반경", objectsBtn:"🗂 객체", mScreenshot:"스크린샷", shareMenuBtn:"공유", shareLinkBtn:"공유 / 링크 복사", layersBtn:"레이어 ▾",
+      flat:"평면", globe:"지구본", threeD:"⛰️ 3D", gridBtn:"🌐 격자", gridLayer:"🌐 격자 및 좌표", widgetsBtn:"위젯", lblTempUnit:"온도", tempBoth:"°C + °F", tempC:"°C만", tempF:"°F만", measureBtn:"📏 측정", measureMenuBtn:"측정", measureDistBtn:"📏 거리 / 면적", areaBtn:"📐 면적", drawBtn:"✏️ 그리기", vol3dBtn:"🧊 3D 부피", droneBtn:"🛸 드론", radiusBtn:"⭕ 반경", objectsBtn:"🗂 객체", mScreenshot:"지도 스크린샷", shareMenuBtn:"공유", shareLinkBtn:"공유 / 링크 복사", layersBtn:"레이어 ▾",
       ctxDropPin:"핀 놓기", ctxMeasureFrom:"측정 시작", ctxPostHere:"커뮤니티에 게시", ctxDistFrom:"이전 핀으로부터의 거리", ctxCopy:"좌표 복사", ctxClearPins:"모든 핀 삭제", ctxThisPoint:"이 지점", coords:"좌표", depth:"수심", climate:"기후", tlToday:"오늘", tlTitle:"타임머신", tlMachine:"타임머신", tl10y:"−10년", tl5y:"−5년", tlNow:"현재",
       lblPinMode:"뉴스 핀 위치", pinModeLoc:"사건 발생지", pinModePub:"언론사 소재지",
       lyrEEZ:"배타적 경제수역 / 12해리", lyrShips:"실시간 선박", lyrPlanes:"실시간 항공기", lyrSats:"실시간 위성", lyrThermal:"열 이상 (산불)", planesZoomHint:"확대하면 실시간 항공기를 불러옵니다", planesAreaHint:"확대하세요 — 실시간 항공기는 화면 중앙 영역만 표시됩니다", poiLabels:"장소, 상점 및 시설", shipsZoomHint:"확대하면 실시간 선박을 불러옵니다", aisNoKey:"실시간 선박에는 무료 AISstream.io API 키가 필요합니다 — 설정에서 추가하세요.", aisKeyLabel:"실시간 선박 (AISstream 키)", aisKeyHint:"aisstream.io에서 무료 키를 받아 여기에 붙여넣으면 실시간 선박이 표시됩니다. 이 브라우저에만 저장됩니다.",

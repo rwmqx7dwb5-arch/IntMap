@@ -736,7 +736,12 @@ window.IntMapModules.workspace=function(HOST){
         /* (#R102) close the Settings popup when switching between normal ⇔ workspace mode ("設定のポップアップが消える
            ように") — a mode switch is a whole-app transition, so leaving the modal floating over it felt broken. */
         try{ const m=document.getElementById('settings-modal'); if(m) m.style.display='none'; }catch(_){} });
-      syncModeBtn(); }
+      syncModeBtn();
+      /* ⚠ (#R233) …AND AGAIN WHENEVER THE LANGUAGE CHANGES. This label is written by JS, not by a
+         `data-i18n` attribute, so js/app-body.js's updateI18n() sweep cannot reach it: whatever
+         language was current when bind() ran was frozen into the button. Measured with the UI set to
+         Japanese — 「Switch to workspace →」 was the ONE English string left in Settings. */
+      try{ window.addEventListener('intmap-lang',syncModeBtn); }catch(_){} }
     /* (#R170) DESKTOP DEFAULT = NORMAL mode ("デスクトップ版は通常モードをデフォルトに"), reversing the #R101
        default. Workspace mode is now strictly opt-in: only an explicitly saved on:1 enters it, so a first-time
        desktop visitor lands on the normal sidebar layout with the Countries tab open (see the fresh-boot tab
