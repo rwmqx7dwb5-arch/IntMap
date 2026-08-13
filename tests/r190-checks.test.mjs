@@ -160,7 +160,9 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   assert.match(src, /let fldOpacity=0\.85;/, 'the default fill is opaque enough to read the classes');
   assert.match(src, /function setFieldOpacity\(v\)\{/, 'and it is a control');
   assert.match(src, /class="sq-op"/, 'with a slider in the panel');
-  assert.match(src, /class="sq-run"/, 'the compute button');
+  /* (#R237) the run button's class is now BUILT (`_runBtnClass()`), because its two states are a
+     class rather than a cssText — so the claim is that the class exists, wherever it is written. */
+  assert.match(src, /sq-run/, 'the compute button');
   assert.match(src, /function markStale\(\)\{/, 'parameters mark the field stale instead of rebuilding');
   /* (#R196) …and it now also pushes the changed event to the propagation model next door, which is
      the whole of 「津波シミュレーターも、初期の地震しか対応していない」. The three things this test
@@ -223,7 +225,7 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /let QS0=180, QETA=0\.45;/, 'the published southern-California crustal Q');
   assert.match(src, /QS0\*Math\.pow\(Math\.max\(0\.01,f\),QETA\)/, 'used as a frequency-dependent Q');
   assert.doesNotMatch(src, /QS=300/, 'the constant Q is gone');
-  assert.match(src, /class="sq-q0"/, 'and it is adjustable, like the stress drop');
+  assert.match(src, /class="sq-q0[ "']/, 'and it is adjustable, like the stress drop');   /* (#R237) see .sq-spd */
   /* the Vs30 slope proxy stops inventing a 900 m gradient out of kilometre pixels */
   assert.match(src, /const demSpacingM=40075017\*Math\.max\(0\.05,cosC\)\/\(Math\.pow\(2,z\)\*256\);/,
     'the DEM’s real sample spacing');

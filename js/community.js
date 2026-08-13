@@ -31,12 +31,12 @@ window.IntMapModules.community=function(HOST){
     const jp=HOST.lang==='jp';
     const sortBtn=(k,lbl)=>`<button data-sort="${k}" class="${HOST.communitySort===k?'active':''}">${lbl}</button>`;
     const catChip=(id,lbl,color)=>`<button class="comm-cat-chip ${HOST.commCatFilter===id?'active':''}" data-catf="${id}" style="--cc:${color}">${lbl}</button>`;
-    const loginHint = HOST.user ? '' : `<div class="empty-msg" style="padding:10px 16px;">${jp?'投稿・コメント・投票するにはログインしてください。':'Log in to post, comment and vote.'}</div>`;
+    const loginHint = HOST.user ? '' : `<div class="empty-msg" style="padding:10px 16px;">${window.IntMapLang.t(HOST.lang,'Log in to post, comment and vote.','投稿・コメント・投票するにはログインしてください。','Zum Posten, Kommentieren und Abstimmen anmelden.','Войдите, чтобы публиковать, комментировать и голосовать.','Inicie sesión para publicar, comentar y votar.')}</div>`;
     /* New post + Hot/New/Top are a STICKY BOTTOM bar, always visible while the feed scrolls (#27). */
     cont.innerHTML=`<div class="comm-scroll" id="comm-scroll">
         <div class="comm-filters">
           <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${HOST.t('commSearchPh')}" value="${HOST.escapeHtml(HOST.commSearch)}"></div>
-          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${jp?'地図の表示範囲内の投稿だけ':'Only posts in the current map view'}">🧭 ${HOST.t('commInView')}</button>
+          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${window.IntMapLang.t(HOST.lang,'Only posts in the current map view','地図の表示範囲内の投稿だけ','Nur Beiträge im aktuellen Kartenausschnitt','Только записи в текущей области карты','Sólo publicaciones en la vista actual del mapa')}">🧭 ${HOST.t('commInView')}</button>
         </div>
         <div class="comm-cat-row">
           ${catChip('all',HOST.t('commCatAll'),'var(--primary-color)')}

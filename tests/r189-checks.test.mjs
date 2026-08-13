@@ -163,7 +163,9 @@ test('R189 seismic: real-time playback with a visible, settable rate', () => {
   const src = read('js/seismic.js');
   assert.match(src, /let speed=1; const SPEEDS=\[1,2,5,10,30,60,120,300\];/, '×1 default, a real choice list');
   assert.match(src, /tSec=\(tSec\+\(now-last\)\/1000\*speed\)%MAXT;/, 'wall-clock seconds × rate — not 10 s per 90 ms');
-  assert.match(src, /class="sq-spd"/, 'the rate is on the panel');
+  /* (#R237) the control gained a styling class in the same attribute — `class="sq-spd sq-sel"` —
+     so the claim is «the control is there», not «the attribute is spelled with a closing quote here». */
+  assert.match(src, /class="sq-spd[ "']/, 'the rate is on the panel');
   assert.match(src, /setSpeed\(v\)\{/, 'and callable');
 });
 test('R189 seismic: JMA scale as a labelled conversion, MMI honesty intact', () => {
@@ -174,7 +176,7 @@ test('R189 seismic: JMA scale as a labelled conversion, MMI honesty intact', () 
   assert.match(src, /function jmaOfA0\(a0\)\{ return 2\*Math\.log10\(Math\.max\(1e-6,a0\)\)\+0\.94; \}/,
     '気象庁「計測震度の算出方法」');
   assert.match(src, /\{ min:6\.5, id:'7',  col:'#B40068' \}/, 'the JMA published colours, 震度7 included');
-  assert.match(src, /class="sq-scale"/, 'the scale is switchable on the panel');
+  assert.match(src, /class="sq-scale[ "']/, 'the scale is switchable on the panel');   /* (#R237) see .sq-spd above */
   /* the honesty strings r176 pinned still hold — MMI is still not shindo, and the JMA view says
      what it is */
   assert.ok(/NOT the JMA shindo scale/.test(src) && /気象庁震度階級ではありません/.test(src), 'MMI disclaimer kept');
@@ -244,7 +246,11 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
 });
 test('R189 seismic: rings go through the polar-safe helpers', () => {
   const src = read('js/seismic.js');
-  assert.match(src, /HOST\.diskOutlineLines\(centre,a\*D\*RE,180\)/, 'circular fronts use the shared seam/pole machinery');
+  /* ⚠ (#R237) THE STEP COUNT IS NO LONGER 180 AND MUST NOT BE PINNED — 「動作は離散的ではなく
+     スムーズにして」 made it a function of the front's size on screen (see _frontSteps). The claim
+     this test makes is about WHICH HELPER draws the ring, which is what carries the seam and pole
+     behaviour; the number of vertices was never part of it. */
+  assert.match(src, /HOST\.diskOutlineLines\(centre,a\*D\*RE,/, 'circular fronts use the shared seam/pole machinery');
   assert.match(src, /HOST\._splitLineToWindows\(ringPts\)/, 'and the finite-source envelope is seam-split the same way');
   assert.match(src, /Math\.max\(-89\.99,Math\.min\(89\.99,la2\/D\)\)/, 'destAng clamps the asin pole case');
   assert.match(src, /const h=Math\.sin\(dla\)\*Math\.sin\(dla\)/, 'gcDelta is the haversine now');
