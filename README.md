@@ -108,7 +108,7 @@ Atlas can navigate the map, control layers, select and compare countries, activa
 
 It does not yet operate every feature reliably. Complex multi-step requests, current-information research, and newly added tools may fail or produce incomplete results.
 
-Built-in AI is currently free for logged-in users, with a limit of up to 30 uses per day. Most non-AI map features can be used without an account.
+Built-in AI is currently free for logged-in users, with a limit of up to 10 uses per day. Most non-AI map features can be used without an account.
 
 Atlas may make factual or operational mistakes. Important information should always be checked against its original source.
 
