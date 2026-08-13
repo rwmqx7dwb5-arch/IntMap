@@ -657,6 +657,9 @@ window.IntMapModules.seismic=function(HOST){
        the rest of the panel state rather than next to onClick: #R200 lost a whole boot to a `let` that
        render() could reach before its declaration had been evaluated. */
     let clickMode='epi';
+    /* (#R236) set when a hypocentre click landed outside the drawn rupture — the banner says so, and
+       it is cleared by the next accepted click or by clearing the rupture. */
+    let _epiOutside=0;
     const MAXT=2400;
     /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
        TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
@@ -840,7 +843,7 @@ window.IntMapModules.seismic=function(HOST){
     /* re-run the chain on the SAME ring — every advanced control and every parameter the solve reads
        (depth, stress drop) comes back through here rather than editing `fault` in place */
     function faultResolve(){ return fault?faultSet(fault.ring):false; }
-    function faultClear(){ fault=null; faultOver={}; }
+    function faultClear(){ fault=null; faultOver={}; _epiOutside=0; }   /* (#R236) the warning goes with the area */
     /* the whole solved plane, in one shape, for the panel · the callable API · state() · the tests.
        ⚠ `auto` travels with the numbers: a reader (or Atlas) has to be able to tell an estimate from
        a value that was typed, and that distinction is the difference between the two halves of the
@@ -2229,12 +2232,30 @@ window.IntMapModules.seismic=function(HOST){
            mode), which is the app's internals showing through. Now: one segment, which does both —
            it selects what a plain map click means AND arms the pick, so the panel gets out of the way
            on the screens where it covers the map. Pressing it again re-arms it. */
-        +'<div style="display:flex;gap:5px;">'
-          /* ⚠ (#R234) NO GLYPH ON EITHER BUTTON — 「◎ と◇はボタンにいらない」. The mark that says
+        /* ══ (#R236) ONE ROW, AND THE RUPTURE AREA COMES FIRST ═══════════════════════════════════════
+           「震源地点配置とフリー描画、観測地点追加ボタンは横一列に配置して。」 and, after a first
+           answer that had it the other way round, 「やっぱり、震源域を先にという形に。その後に、
+           震央を震源域の範囲内に配置という形に。」
+
+           So the row reads in the order the work is done: draw the rupture area, put the hypocentre
+           somewhere ON that area, then add the places you want answers for. The three used to be two
+           rows separated by the banner, which put the drawing button BELOW the instruction telling
+           you to draw. ⚠ The ✕ is not a fourth step — it only exists once there is a rupture to
+           clear, and it stays beside the button that made one. */
+        +'<div style="display:flex;gap:5px;align-items:stretch;">'
+          /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
+             the stroke closes (see toggleFaultDraw / DrawTool's onFinish).
+             ⚠ (#R234) 「『✏ 震源域をフリーで描く』に✏はいらない」 — and the ✔ went with it for the
+             same reason: the button already says what it does, in words, in seven languages. */
+          +'<button class="sq-fdraw" style="'+SEG(!!_fDrawing)+'">'+(_fDrawing
+              ?L('Finish drawing','描画を終了','Zeichnen beenden','Закончить рисование','Terminar el dibujo')
+              :L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura'))+'</button>'
+          /* ⚠ (#R234) NO GLYPH ON ANY BUTTON — 「◎ と◇はボタンにいらない」. The mark that says
              "this is what a map click does now" is the accent fill SEG() already carries; a symbol
              in front of the words was a second, weaker copy of the same statement. */
-          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">'+L('Place / move the epicenter','震源地を設置・移動','Epizentrum setzen / bewegen','Указать / двигать эпицентр','Colocar / mover el epicentro')+'</button>'
+          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">'+L('Place the hypocenter','震央を配置','Hypozentrum setzen','Указать гипоцентр','Colocar el hipocentro')+'</button>'
           +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">'+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
+          +(fault?('<button class="sq-fclear" style="'+BTN+'flex:0 0 auto;">✕</button>'):'')
         +'</div>'
         /* ══ (#R234) …AND THE INSTRUCTION IS A BANNER, IN ONE PLACE, FOR ALL THREE MODES ═══════════
            「◎ 震源地を設置・移動、◇ 観測地点を追加ボタンについても、同様のわかりやすい案内（バナー等）を
@@ -2247,23 +2268,21 @@ window.IntMapModules.seismic=function(HOST){
           ? BANNER('<b>'+L('Draw the rupture area on the map.','地図上で震源域を囲ってください。','Zeichnen Sie die Bruchfläche auf der Karte.','Обведите очаг на карте.','Rodee la ruptura en el mapa.')+'</b><br>'
               +L('Click to start, click each corner, and click the first point again to finish.','クリックで開始し、続けてクリックして囲み、最初の点をもう一度クリックすると終了です。','Klicken zum Starten, weiter klicken, und den ersten Punkt erneut klicken zum Beenden.','Клик — начать, далее клики по контуру, клик по первой точке — закончить.','Haga clic para empezar, siga marcando el contorno y vuelva a hacer clic en el primer punto para terminar.'))
           : clickMode==='epi'
-          ? BANNER('<b>'+L('Tap the map to place the epicenter.','地図をタップして震源地を置いてください。','Tippen Sie auf die Karte, um das Epizentrum zu setzen.','Нажмите на карту, чтобы поставить эпицентр.','Toque el mapa para colocar el epicentro.')+'</b><br>'
-              +L('If one is already placed, tapping moves it. Press the button again to turn this off.','すでに設置済みの場合はタップした位置へ移動します。もう一度ボタンを押すと解除します。','Ist bereits eines gesetzt, wird es verschoben. Nochmals drücken schaltet es aus.','Если эпицентр уже есть, он переместится. Повторное нажатие выключает режим.','Si ya hay uno, el toque lo mueve. Pulse otra vez para desactivarlo.'))
+          /* (#R236) with a rupture drawn the instruction is a different one — the hypocentre goes ON
+             the area, and a click that missed it says so instead of doing nothing. */
+          ? BANNER((fault?
+                ('<b>'+L('Tap inside the rupture area to place the hypocenter.','震源域の内側をタップして震央を置いてください。','Tippen Sie in die Bruchfläche, um das Hypozentrum zu setzen.','Нажмите внутри очага, чтобы поставить гипоцентр.','Toque dentro de la ruptura para colocar el hipocentro.')+'</b><br>'
+                 +(_epiOutside
+                   ? '<span style="color:var(--danger-color,#ff453a);">'+L('That point is outside the rupture area — the rupture starts on the plane it happened on.','その地点は震源域の外です。破壊はその面の上から始まります。','Dieser Punkt liegt außerhalb der Bruchfläche — der Bruch beginnt auf der Fläche selbst.','Эта точка вне очага — разрыв начинается на самой плоскости.','Ese punto está fuera de la ruptura — la ruptura empieza en el propio plano.')+'</span>'
+                   : L('This is where the rupture starts, so it sets the direction it runs in.','ここが破壊の開始点になり、破壊が走る向きを決めます。','Hier beginnt der Bruch, das bestimmt seine Laufrichtung.','Отсюда начинается разрыв — это задаёт направление.','Aquí empieza la ruptura, lo que fija su dirección.')))
+              : ('<b>'+L('Tap the map to place the epicenter.','地図をタップして震源地を置いてください。','Tippen Sie auf die Karte, um das Epizentrum zu setzen.','Нажмите на карту, чтобы поставить эпицентр.','Toque el mapa para colocar el epicentro.')+'</b><br>'
+                 +L('If one is already placed, tapping moves it. Press the button again to turn this off.','すでに設置済みの場合はタップした位置へ移動します。もう一度ボタンを押すと解除します。','Ist bereits eines gesetzt, wird es verschoben. Nochmals drücken schaltet es aus.','Если эпицентр уже есть, он переместится. Повторное нажатие выключает режим.','Si ya hay uno, el toque lo mueve. Pulse otra vez para desactivarlo.'))))
           : clickMode==='station'
           ? BANNER('<b>'+L('Click the map to add an observation point.','地図をクリックして観測地点を追加してください。','Klicken Sie auf die Karte, um einen Messpunkt hinzuzufügen.','Кликните по карте, чтобы добавить точку наблюдения.','Haga clic en el mapa para añadir un punto de observación.')+'</b><br>'
               +L('Each point is added to the table below. Press the button again to turn this off.','追加した地点は下の表に並びます。もう一度ボタンを押すと解除します。','Jeder Punkt erscheint in der Tabelle unten. Nochmals drücken schaltet es aus.','Каждая точка попадает в таблицу ниже. Повторное нажатие выключает режим.','Cada punto aparece en la tabla de abajo. Pulse otra vez para desactivarlo.'))
           : '')
-        /* (#R189) the free-drawn rupture: draw → capture, slip → Mw */
-        +'<div style="display:flex;gap:5px;">'
-          /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
-             the stroke closes (see toggleFaultDraw / DrawTool's onFinish).
-             ⚠ (#R234) 「『✏ 震源域をフリーで描く』に✏はいらない」 — and the ✔ went with it for the
-             same reason: the button already says what it does, in words, in seven languages. */
-          +'<button class="sq-fdraw" style="'+BTN+'flex:1;'+(_fDrawing?'background:var(--primary-color);color:#fff;border-color:transparent;font-weight:700;':'')+'">'+(_fDrawing
-              ?L('Finish drawing','描画を終了','Zeichnen beenden','Закончить рисование','Terminar el dibujo')
-              :L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura'))+'</button>'
-          +(fault?('<button class="sq-fclear" style="'+BTN+'">✕</button>'):'')
-        +'</div>'
+        /* (#R189) the free-drawn rupture: draw → capture, slip → Mw.
+           (#R236) its BUTTON moved up into the single row above; what stays here is the readout. */
         /* ══ (#R224) THE DRAWN AREA IS THE SHADOW; WHAT IS REPORTED IS THE PLANE ════════════════════
            Both numbers are shown, because 「断層面積」 is now genuinely two numbers and leaving the
            reader to guess which one is on screen would be the same defect in a new place. The slip is
@@ -3038,7 +3057,28 @@ window.IntMapModules.seismic=function(HOST){
       if(clickMode==='station'){ if(!epi) return;
         stations.push({ lng:e.lngLat.lng, lat:e.lngLat.lat, name:e.lngLat.lat.toFixed(2)+', '+e.lngLat.lng.toFixed(2) });
         if(stations.length>6) stations.shift(); draw(); report(); return; }
-      setEpi([e.lngLat.lng,e.lngLat.lat]); refresh(); }
+      /* ══ ⚠ (#R236) WITH A RUPTURE DRAWN, THE HYPOCENTRE BELONGS **ON** IT ═════════════════════════
+         「その後に、震央を震源域の範囲内に配置という形に。」 The hypocentre is where the rupture
+         NUCLEATES — `_srcPts` measures every sampled point's delay as its distance from `epi` at
+         Vr — so a point outside the drawn area describes a rupture that starts somewhere it does
+         not exist, and the directivity computed from it is not about this earthquake.
+         ⚠ A REJECTED CLICK IS TOLD, NOT SWALLOWED. Silently ignoring the tap would read as the
+         same defect the reader reported before ("nothing happens"), so the panel says why. */
+      const p=[e.lngLat.lng,e.lngLat.lat];
+      if(fault&&fault.ring&&fault.ring.length>=3&&!_inRing(p,fault.ring)){ _epiOutside=1; render(); return; }
+      _epiOutside=0;
+      setEpi(p); refresh(); }
+    /* ray casting in the ring's own longitude frame — the ring is stored as drawn, so a stroke that
+       crossed the antimeridian keeps its continuous longitudes and the test has to be asked in the
+       same frame rather than in wrapped degrees (#R189's seam rule, applied to a point query). */
+    function _inRing(pt,ring){
+      let x=pt[0]; const x0=ring[0][0];
+      while(x-x0>180) x-=360; while(x-x0<-180) x+=360;
+      const y=pt[1]; let inside=false;
+      for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+        const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+        if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; }
+      return inside; }
     /* ══ (#R210) A NEW EARTHQUAKE STARTS WITH AN EMPTY TABLE ══════════════════════════════════════
        「地震が変われば観測地点はリセットされるように。」 The table used to accumulate across events, so
        rows placed around a Tokyo epicentre were still listed — with freshly computed arrival times —

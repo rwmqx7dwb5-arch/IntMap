@@ -58,7 +58,7 @@ export function makeRuntime(HOST) {
        registration order is run order and it is stable across frames. */
     const READ = new Map();      /* key → {fn, cap} — sample the camera / measure the DOM */
     const WRITE = new Map();     /* key → {fn, cap} — place things */
-    const ONCE = new Map();      /* key → {fn, cap} — frame(), cleared after it runs */
+    const ONCE = new Map();      /* key → {fn, cap} — frame(), DRAINED before it runs (see _run) */
     const CAM = new Set();       /* keys in READ/WRITE that are camera-driven */
     const SUSPENDED = new Set(); /* capability names whose entries are skipped */
 
@@ -68,15 +68,39 @@ export function makeRuntime(HOST) {
 
     function _skip(e) { return !e || (e.cap && SUSPENDED.has(e.cap)); }
 
+    /* ══ ⚠⚠ (#R236) A ONE-SHOT QUEUE IS **DRAINED** BEFORE IT RUNS, NOT CLEARED AFTER ══════════════
+       「地震波伝播は…点でもフリー描画震源域でも波が出ない。」
+
+       #R235 moved the seismic playback off `setInterval` and onto `frame()`, and the fronts stopped
+       moving the same round. The geometry was never the problem — measured live, the ring features
+       are built correctly and DO render. The playback died in this function.
+
+       An animation driven by `frame()` re-arms itself from inside its own callback, which is the
+       only way a one-shot queue can express "again next frame":
+
+           const step = () => { …advance…; RT.frame('seismic:play', step); };
+
+       `ONCE.set(key,…)` during the `for…of` above REPLACES the entry being iterated, and then
+       `map.clear()` below deleted it. So the task ran exactly ONCE and the loop was over — the
+       ▶ button latched to ⏸, `tSec` advanced by a single frame (~0.016 s of model time at 1×,
+       far too little to see) and nothing ever moved again. Measured, not reasoned: a probe task
+       that re-registers itself 50 times ran **1** time.
+
+       Draining first is also the correct semantic independently of the bug. `frame()` means "run
+       this on the next frame"; work enqueued WHILE that frame is running belongs to the NEXT one,
+       not to this one. Clearing afterwards conflated the two and silently threw the second away.
+       ⚠ The entries are snapshotted too, so a task that enqueues a DIFFERENT key does not extend
+       the loop it is already inside — that is how one task could starve the frame it runs in. */
     function _run(map, transient) {
-      for (const [k, e] of map) {
+      const entries = transient ? Array.from(map) : map;
+      if (transient) map.clear();
+      for (const [k, e] of entries) {
         if (_skip(e)) continue;
         /* ⚠ one task's throw must not cost every later task its frame — that is how a scheduler
            turns one bug into a frozen map. Report and carry on. */
         try { e.fn(); } catch (err) { _oops(k, err); }
         _stats.tasks++;
       }
-      if (transient) map.clear();
     }
 
     function _tick() {

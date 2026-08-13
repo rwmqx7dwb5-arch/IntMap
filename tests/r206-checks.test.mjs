@@ -73,8 +73,12 @@ test('R206 ② every accent-filled control in the seismic panel has an on state'
   /* the empty ones are the prose in the comments above the helper ("SEG()"), not calls */
   const segUses = [...s.matchAll(/SEG\(([^)]*)\)/g)].map((m) => m[1].trim()).filter(Boolean);
   assert.ok(segUses.length >= 2, 'the panel still has a segmented control');
+  /* (#R236) the drawing button joined the same row and the same helper, so «the mode» is now one of
+     two state variables — `clickMode` for the two click modes, `_fDrawing` for the stroke. The claim
+     is unchanged: the fill is READ OFF STATE, never written as a literal true/false. */
   for (const u of segUses)
-    assert.match(u, /^clickMode===/, 'a segment’s fill must come from the mode, not from a literal: ' + u);
+    assert.match(u, /^(?:clickMode===|!!_fDrawing$)/,
+      'a segment’s fill must come from the mode, not from a literal: ' + u);
   /* and every path that moves the pick flag redraws, or the panel comes back showing the old state */
   assert.match(s, /function setPicking\(v\)\{[^}]*if\(opened&&panel\) render\(\)/,
     'changing the pick state re-renders the panel');
