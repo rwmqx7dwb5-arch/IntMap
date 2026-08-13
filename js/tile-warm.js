@@ -46,6 +46,20 @@ window.IntMapModules.tileWarm=function(HOST){
      below the function that reads it is a temporal dead zone waiting for the one call that arrives
      early, and every call site here is inside a `try`/`catch` that would swallow it silently. */
   const _pfSeen=new Set();   /* every tile URL this prefetch has already asked for */
+  /* ⚠ (#R230) …AND SO IS THE PREFETCH QUEUE, FOR THE SAME REASON THE COMMENT ABOVE GIVES. These three
+     are read by predictivePrefetch, which every call site reaches from inside a `try`/`catch`, so a
+     TDZ here would not throw — it would silently stop warming tiles, which is the shape of defect
+     #R196 wrote that warning about. `_warmPump` is a DECLARATION (hoisted); the state it walks is not.
+     ONE cursor for every batch, for the reason sw.js states beside its own lanes: a pan is a run of
+     `moveend`s, so a per-batch limit still lets three overlapping batches put 3×N in the air. */
+  const WARM_LANES=4; let _warmQueued=[], _warmLanes=0;
+  function _warmPump(){
+    while(_warmLanes<WARM_LANES && _warmQueued.length){
+      const u=_warmQueued.shift(); _warmLanes++;
+      let p=null; try{ p=fetch(u,{mode:'cors',cache:'force-cache'}); }catch(_){}
+      Promise.resolve(p).catch(()=>{}).then(()=>{ _warmLanes--; _warmPump(); });
+    }
+  }
   function predictivePrefetch(aggressive){
     if(!GE().hasRenderer() || HOST.mapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
     const p=satProviderById(HOST.satState.providerId); if(!p) return;
@@ -134,7 +148,13 @@ window.IntMapModules.tileWarm=function(HOST){
     while(_pfSeen.size>_pfMax){ const f=_pfSeen.values().next().value; _pfSeen.delete(f); }
     try{ predictivePrefetch.lastIssued={ n:uniq.length, seen:_pfSeen.size }; }catch(_){}
     if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
-    uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
+    /* ⚠ (#R230) …AND THE NO-SERVICE-WORKER PATH GETS THE SAME LANES. sw.js's batch was changed from
+       `Promise.all` to a four-lane queue this round («衛星先読みの一斉実行を小さなキューに変更»); this
+       branch is what runs when there is no controller yet — the FIRST load, which is exactly the load
+       the reader is complaining about — and it was firing all sixty (110 in flight) at once into the
+       same connection pool as the tiles being drawn. Same URLs, same order, same count: only the
+       number in the air at one time changes, so no tile is dropped and no pixel differs. */
+    _warmQueued.push(...uniq); _warmPump();
   }
   registerTileSW();
   /* ⚠ (#R206) …AND NOT WHILE THE ZOOM IS STILL MOVING. A wheel sweep is a run of moveend events a few

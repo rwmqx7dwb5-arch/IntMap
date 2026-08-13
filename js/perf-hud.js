@@ -67,24 +67,43 @@ window.IntMapPerfHud = (function () {
   } catch (_) { }
 
   /* ── the backdrop-filter census (#R221's measurement, made live) ───────────────────────────── */
-  let census = { n: 0, cov: 0, at: 0 };
+  /* ⚠⚠ (#R230) THIS FUNCTION WAS STILL REPORTING THE NUMBER ITS OWN HEADER CALLS WRONG. #R228 found
+     that «nineteen elements over 383 % of the viewport» counted rects that sit OFF SCREEN, wrote
+     «Measure the intersection, not the rect» at the top of this file — and then summed `r.width *
+     r.height` here anyway. Measured on the phone profile this round: 382 % raw against 135 % clipped,
+     so the instrument was overstating its headline by 2.8×, on the one screen that matters.
+     It now reports the intersection with the viewport, and names the single biggest contributor —
+     because #R230's actual finding was one element (#m-scrim: full-viewport blur at opacity 0) and a
+     percentage alone could never have pointed at it. */
+  let census = { n: 0, cov: 0, at: 0, top: '' };
   function takeCensus() {
     const now = performance.now();
     if (now - census.at < 2000) return census;          /* a document walk is not a per-frame job */
-    let n = 0, area = 0;
+    let n = 0, area = 0, topA = 0, top = '';
+    const VW = innerWidth, VH = innerHeight;
     try {
       const all = document.querySelectorAll('*');
       for (let i = 0; i < all.length; i++) {
         const e = all[i], c = getComputedStyle(e);
         const v = c.backdropFilter || c.webkitBackdropFilter;
         if (!v || v === 'none') continue;
+        /* ⚠ `visibility:hidden` IS NOT PAINTED, SO IT IS NOT A COST — and #R230 made the mobile scrim
+           exactly that, so a census that kept counting it would report a bill that no longer exists.
+           ⚠⚠ `opacity:0` IS STILL COUNTED, DELIBERATELY. That is the state the scrim was in for every
+           frame of every gesture on a phone: invisible, painted, blurring the whole viewport. Skipping
+           it here would blind this instrument to the one defect it just found. */
+        if (c.visibility === 'hidden') continue;
         const r = e.getBoundingClientRect();
         if (r.width <= 0 || r.height <= 0) continue;
-        n++; area += r.width * r.height;
+        const w = Math.max(0, Math.min(r.right, VW) - Math.max(r.left, 0));
+        const h = Math.max(0, Math.min(r.bottom, VH) - Math.max(r.top, 0));
+        if (w <= 0 || h <= 0) continue;                 /* parked off screen — it blurs nothing */
+        n++; area += w * h;
+        if (w * h > topA) { topA = w * h; top = e.id ? '#' + e.id : '.' + String(e.className).split(' ')[0]; }
       }
     } catch (_) { }
-    const vp = Math.max(1, innerWidth * innerHeight);
-    census = { n, cov: Math.round(area / vp * 100), at: now };
+    const vp = Math.max(1, VW * VH);
+    census = { n, cov: Math.round(area / vp * 100), at: now, top: top + ' ' + Math.round(topA / vp * 100) + '%' };
     return census;
   }
 
@@ -96,9 +115,28 @@ window.IntMapPerfHud = (function () {
      ?perf=1 that answers «what does the frosting cost here», and it changes nothing for a reader who
      has not opened the HUD. What #R221 did — take the frosting off by itself, during every gesture,
      for everyone — is what is gone. */
-  const sw = { glass: true, layers: true };
+  const sw = { glass: true, layers: true, imgHi: false };
   const runs = {};                                       /* "glass:off" → median map._render */
-  function key() { return (sw.glass ? 'G' : 'g') + (sw.layers ? 'L' : 'l'); }
+  function key() { return (sw.glass ? 'G' : 'g') + (sw.layers ? 'L' : 'l') + (sw.imgHi ? 'I' : 'i'); }
+
+  /* ── the image-concurrency A/B (#R230) ─────────────────────────────────────────────────────────
+     「48並列を撤回し、MapLibre標準の16／移動中8を基準に実機調整」— and 実機調整 is the half no
+     environment this project can automate is able to do: none of them is an iPhone. So the tuning
+     knob is here, on the device, beside the numbers it moves.
+     ⚠ WHAT SHIPS IS `window.__imImgConcurrency` (js/app-body.js), and this reads it rather than
+     naming 16 again — #R178's rule: the moment a value has two owners one of them silently wins.
+     `off` is the shipped baseline; `ON` is the withdrawn 48, so the reader can prove on their own
+     phone whether the withdrawal was the right call instead of taking this round's word for it.
+     ⚠ READ LAZILY, NOT AT IMPORT. This file starts itself the moment it is imported, and
+     js/app-body.js publishes the value later, inside map init — so a captured copy would be the
+     fallback for the whole session, and pressing the button twice on a DESKTOP would leave it at 16
+     instead of 256. Same reason every IM_HOST member is a getter (#R163). */
+  const IMG_BASE = () => (typeof window.__imImgConcurrency === 'number' ? window.__imImgConcurrency : 16);
+  const IMG_HIGH = 48;
+  function setImgHi(on) {
+    sw.imgHi = on;
+    try { GE().scene.setImageConcurrency(on ? IMG_HIGH : IMG_BASE()); } catch (_) { }
+  }
 
   let glassStyle = null;
   function setGlassOn(on) {
@@ -153,6 +191,7 @@ window.IntMapPerfHud = (function () {
   const syncs = [
     mk('glass', () => sw.glass, setGlassOn),
     mk('app layers', () => sw.layers, setLayersOn),
+    mk('img ' + IMG_HIGH, () => sw.imgHi, setImgHi),    /* (#R230) off = the shipped IMG_BASE */
   ];
   const copy = document.createElement('button');
   copy.textContent = 'copy';
@@ -189,7 +228,8 @@ window.IntMapPerfHud = (function () {
       + 'frame gap    med ' + N(med(frames), 1) + ' ms   longtask ' + N(long, 0) + ' ms/s\n'
       + 'buffer ratio ' + N(ratio, 2) + '   dpr ' + N(devicePixelRatio, 2) + '   ' + innerWidth + 'x' + innerHeight + '\n'
       + 'layers vis ' + vis + '   sources ' + srcs + '   tiles ' + tiles + '\n'
-      + 'backdrop-filter ' + c.n + ' el, ' + c.cov + '% of viewport\n'
+      + 'backdrop-filter ' + c.n + ' el, ' + c.cov + '% of viewport (on screen)\n'
+      + '  biggest ' + c.top + '   img conc ' + (sw.imgHi ? IMG_HIGH : IMG_BASE()) + '\n'
       + 'device mem ' + (navigator.deviceMemory || '?') + 'GB  cores ' + (navigator.hardwareConcurrency || '?') + '\n'
       + 'A/B medians ' + JSON.stringify(runs);
     syncs.forEach((f) => f());

@@ -1574,8 +1574,28 @@
       body.sheet-full .map-search{ opacity:0; pointer-events:none; transform:translateX(-14px) !important; }
 
       /* ---------- Slide-up option sheets (Map / Tools) ---------- */
-      .m-scrim{ display:block; position:fixed; inset:0; background:rgba(0,0,0,0.3); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); z-index:1690; opacity:0; pointer-events:none; transition:opacity 0.32s; }
-      .m-scrim.show{ opacity:1; pointer-events:auto; }
+      /* ══ ⚠⚠ (#R230) A FULL-VIEWPORT BLUR THAT NOBODY HAS EVER SEEN ═══════════════════════════════
+         「モバイル版がまだ劇的に遅い…地図のスクロール、ズームが困難」 and this is the #R228 shape of
+         defect again, one layer up: the rule below is inside the mobile media query, so on a phone the
+         scrim is `display:block` from the first paint — 100 % of the viewport, carrying
+         `backdrop-filter:blur(2px)` — and `opacity:0` is the ONLY thing keeping it off screen.
+         An `opacity:0` box is still PAINTED: the compositor builds a backdrop root for it and blurs
+         the whole viewport behind it, every frame, over a moving map. Measured on the phone profile
+         (375×812, first paint, nothing opened): eleven frosted elements on screen covering 135 % of
+         the viewport, and this one element is 100 % of that on its own — the largest single item, and
+         the only one of the eleven that is never visible.
+         `visibility:hidden` is not painted at all, so the blur costs nothing while the sheet is shut.
+         ⚠ IT IS PIXEL-IDENTICAL, WHICH IS THE WHOLE POINT (「見た目は一切落とすな」):
+           · shut      — opacity 0 already drew nothing; now it also costs nothing
+           · opening   — `.show` sets visibility:visible with NO delay, so the 0.32 s opacity fade is
+                         exactly the fade it was before
+           · closing   — the delay holds visibility through the full 0.32 s fade-out, so the scrim is
+                         still painted while it fades. Removing the delay here would make it vanish.
+         ⚠ The delay is a TRANSITION-DELAY, and the reduced-motion block below overrides
+         transition-DURATION — two different properties — so that block gets an explicit delay
+         override too, or a reduced-motion reader keeps the blur for 320 ms after an instant close. */
+      .m-scrim{ display:block; position:fixed; inset:0; background:rgba(0,0,0,0.3); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); z-index:1690; opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.32s, visibility 0s linear 0.32s; }
+      .m-scrim.show{ opacity:1; visibility:visible; pointer-events:auto; transition:opacity 0.32s, visibility 0s linear 0s; }
       .m-sheet{ display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:1700;
         background:var(--popup-bg); backdrop-filter:saturate(180%) blur(30px); -webkit-backdrop-filter:saturate(180%) blur(30px);
         border-radius:16px 16px 0 0; box-shadow:0 -8px 36px rgba(0,0,0,0.26);
@@ -1846,6 +1866,10 @@
     }
     @media (prefers-reduced-motion: reduce){
       .sidebar, .m-sheet, .m-scrim, .map-search{ transition-duration:0.01ms !important; }
+      /* (#R230) …and the scrim's hold-visible delay with it. Without this the fade is instant but the
+         element stays painted (and blurring) for the 0.32 s the delay was written for. The other three
+         declare no delay, so naming them here would be a no-op — this rule is the scrim's alone. */
+      .m-scrim{ transition-delay:0s !important; }
       .modal-content, .compose-content, .country-popup{ animation:none !important; }
     }
 

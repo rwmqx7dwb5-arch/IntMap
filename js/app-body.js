@@ -737,7 +737,29 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
-  try{ GE().scene.setImageConcurrency(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
+  /* ══ ⚠⚠ (#R230) THE PHONE'S 48 IS WITHDRAWN — MAPLIBRE'S OWN 16 IS THE BASELINE ═════════════════
+     「48並列を撤回し、MapLibre標準の16／移動中8を基準に実機調整」. What the number does, read in
+     maplibre-gl 5.24.0 rather than assumed: `config.MAX_PARALLEL_IMAGE_REQUESTS` (default 16) is the
+     ceiling `processQueue` starts requests up to, and `MAX_PARALLEL_IMAGE_REQUESTS_PER_FRAME` (8) is
+     the ceiling it uses instead WHILE THROTTLED — and Map registers the throttle itself
+     (`ImageRequest.addThrottleControl(() => this.isMoving())`). So the 8 is already in force during
+     every gesture and is not ours to set; 48 only ever applied to the STILL map.
+     ⚠ WHICH IS EXACTLY WHY IT COSTS THE GESTURE. Starting a request is throttled, FINISHING one is
+     not: up to 48 decodes begin while the map is still, and each one lands — decode plus GPU upload —
+     whenever it lands, including in the middle of the pinch that follows. Sixteen in flight is
+     sixteen landings; forty-eight is forty-eight, into the same frames.
+     ⚠ NOTHING ABOUT THE PICTURE CHANGES. Same tile URLs, same zoom levels, same resolution, same
+     source — only how many of them are in the air at once (「見た目は一切落とすな」).
+     ⚠ THE TEST IS THE UA AND STAYS THE UA. Unlike isMobile() (a 768 px media query) this reads the
+     user agent, so it is already true for an iPhone in BOTH orientations — the one device-class test
+     in this file that landscape does not fall out of. Desktop keeps 256 (#R22): it is not the machine
+     the instruction is about, and no measurement here says otherwise.
+     ⚠ 「実機調整」 CANNOT BE DONE FROM HERE. No environment this project can automate is an iPhone, so
+     the value is published for js/perf-hud.js to A/B against on the phone itself (`?perf=1`), which
+     is where the four previous rounds' numbers should have come from. */
+  const _imgConcurrency=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?16:256;
+  try{ window.__imImgConcurrency=_imgConcurrency; }catch(_){}
+  try{ GE().scene.setImageConcurrency(_imgConcurrency); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
   /* ══ (#R195) THE SATELLITE TILE PROTOCOL LIVES IN js/sat-proto.js ═══════════════════════════
      259 lines of Esri fetching, placeholder detection, ancestor cropping, the imagery-depth memo
      and the @2x stitch, moved out whole. Called from exactly here because the style object below
