@@ -1684,6 +1684,26 @@
          (#R223's lesson, again: when a rule does not take, list what ELSE is applying to that
          element before touching the rule you just wrote.) */
       body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-tools{ display:none !important; }
+      /* ══ (#R236) THE PHONE'S SECOND SEARCH BOX, AND THE FAVOURITES BESIDE IT ══════════════════════
+         「モバイル版のレイヤー選択欄は下部にあるお気に入りレイヤーと、検索欄は削除して。
+           （上部にすでに検索欄はあるため）」
+
+         Measured on a 375 px viewport with the sheet open: `.lsr-search` (the tile grid's own box)
+         sits at y = 87, the grid runs to y = 2 797, and then the classic panel begins with
+         `#layer-search-wrap` at y = 2 803 — a second search box 2.7 k pixels below the first, with
+         `#layer-fav-section` immediately after it. Both belong to the classic list, which on a phone
+         in tile mode is only present as the CHECKBOX STORE the tiles read from; the reader never
+         scrolls that far to search, they use the box at the top.
+
+         ⚠ SCOPED TO `body.m-lyr-tiles` ON PURPOSE. In list mode there is no `.lsr-search`, so the
+         classic box is the ONLY search on the panel and removing it would leave the phone with none.
+         ⚠ Specificity, per the note above: this is (2 ids, 2 classes, 1 element), which clears the
+         hide/show rules `.layer-fav-section{display:none}` / `.has-favs{display:block}` and the
+         inline `style.display` that js/map-extras.js's filter() writes (author !important beats an
+         inline declaration — #R223). The elements are NOT removed: the tiles still read their
+         checkboxes, and a wider window brings the classic panel straight back. */
+      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-search-wrap,
+      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-fav-section{ display:none !important; }
       /* ⚠⚠ (#R235) …AND `#sat-controller` HAS TO BE HIDDEN, NOT MERELY LEFT BEHIND. js/mobile-ui.js
          no longer moves it into the sheet, and its desktop home is #map-container — so simply not
          moving it left a 280 × 174 panel floating ON THE MAP of a 375 px phone, which is worse than

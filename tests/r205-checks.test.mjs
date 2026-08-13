@@ -57,7 +57,13 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   /* ⚠ (#R210) the CLAIM is "the default branch moves the epicentre", not the assignment's spelling.
      It goes through setEpi() now, because moving the epicentre also has to clear the observation
      points («地震が変われば観測地点はリセットされるように»). Both forms are accepted. */
-  assert.match(oc[0], /(?:epi=|setEpi\(\s*)\[e\.lngLat\.lng,e\.lngLat\.lat\]/, 'the default branch must move the epicentre');
+  /* (#R236) …and it goes through a named point now, because with a rupture drawn the click is
+     first tested for containment («震央を震源域の範囲内に配置»). Still the same claim: the default
+     branch is the one that moves the epicentre. */
+  assert.match(oc[0], /(?:epi=|setEpi\(\s*)(?:\[e\.lngLat\.lng,e\.lngLat\.lat\]|p\))/,
+    'the default branch must move the epicentre');
+  assert.match(oc[0], /const p=\[e\.lngLat\.lng,e\.lngLat\.lat\];|\[e\.lngLat\.lng,e\.lngLat\.lat\]/,
+    '…from the clicked position');
   /* the station table is NOT removed — the white circle layer and the push are both still there */
   assert.match(oc[0], /stations\.push/);
   assert.match(s, /id:'seis-sta'/);
@@ -67,7 +73,10 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   /* five languages for both new labels and the hint under them */
   /* (#R210) American English: epicentre -> epicenter across every user-facing string. */
   /* (#R212) the two ◎ controls were merged, so the segment's label is now the merged one */
-  for (const en of ['Place / move the epicenter', 'Add a place']) {
+  /* (#R236) …and the merged label was renamed when the rupture area came first: with an area drawn,
+     the point being placed is the NUCLEATION point on that plane, so the control says hypocenter.
+     The claim is unchanged — the control exists and is given in five languages. */
+  for (const en of ['Place the hypocenter', 'Add a place']) {
     const i = s.indexOf(en);
     assert.ok(i > 0, `${en} is missing`);
     const call = s.slice(i - 3, i + 400);

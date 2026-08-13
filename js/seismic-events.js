@@ -175,6 +175,38 @@ export const QUAKE_EVENTS = [
       deaths: '100,000 – 316,000 (published estimates differ by a factor of three)',
       note: ['Most of the slip was on a blind thrust beside the Enriquillo fault, not on the fault itself.', 'すべりの大半はエンリキヨ断層そのものではなく、隣接する伏在逆断層で起きた。', 'Der Großteil des Versatzes lag auf einer blinden Aufschiebung neben der Enriquillo-Störung.', 'Основная подвижка произошла на скрытом взбросе рядом с разломом Энрикильо.', 'La mayor parte del desplazamiento ocurrió en un cabalgamiento ciego junto a la falla de Enriquillo.']
     }
+  },
+  /* ══ (#R236) 「また、能登半島地震も追加して。」 ═══════════════════════════════════════════════════
+     Every number on the first three lines is read off the USGS ShakeMap sheet the reader supplied
+     (`USGS.能登.pdf` in the repo root — «43 km NE of Anamizu, Ishikawa, JP · Jan 01, 2024 07:10:09
+     UTC · M7.5 · N37.49 E137.27 · Depth: 10.0km · ID:us6000m0xl», Version 10, processed
+     2024-03-09T18:30:39Z), so the catalogue agrees with the sheet rather than with a memory of it.
+     ⚠ That sheet's own intensity scale is Worden et al. (2012) — the same GMICE this simulator
+     converts with, which is why its macroseismic map and this one are comparable at all.
+
+     ⚠ THE SHAPE ON THE MAP IS NOT THE RECTANGLE BELOW. `usgs` makes fetchRuptureRing pull the
+     published finite-fault outline for us6000m0xl at run time (#R235); L/W/strike/dip/rake are the
+     FALLBACK for when that fetch fails, and they are the USGS Mww nodal plane plus the rupture
+     extent the aftershock distribution and the GNSS/GSI coseismic field define — a ~150 km
+     NE–SW rupture along the peninsula's north coast, which is why a peninsula that is 100 km long
+     shook the way it did. `nucAlong` is 0.5 because the rupture was BILATERAL from a hypocentre
+     near the middle of that trace; a unilateral value here would invent a directivity that the
+     records do not show. */
+  {
+    id: 'noto2024', usgs: 'us6000m0xl',   /* ShakeMap rupture.json — the published finite-fault outline */
+    name: ['2024 Noto Peninsula', '2024年 能登半島地震', '2024 Noto-Halbinsel', 'Полуостров Ното, 2024', 'Península de Noto 2024'],
+    when: '2024-01-01T07:10:09Z',
+    lat: 37.49, lng: 137.27, depthKm: 10, mw: 7.5,
+    strike: 55, dip: 28, rake: 102,
+    lenKm: 150, widKm: 40, zTopKm: 1, nucAlong: 0.5,
+    src: 'USGS ShakeMap us6000m0xl v10 (M7.5, 37.49°N 137.27°E, 10.0 km, 2024-01-01 07:10:09 UTC); JMA Mj 7.6, 最大震度7; rupture extent after the JMA aftershock distribution and the GSI GNSS/InSAR coseismic field',
+    obs: {
+      intensity: ['JMA 7 (Shika, Ishikawa); MMI IX', 'JMA震度7（石川県志賀町）／改正メルカリ IX', 'JMA 7 (Shika); MMI IX', 'JMA 7 (Сика); MMI IX', 'JMA 7 (Shika); MMI IX'],
+      slipM: 'peak ≈ 4–6 m on the shallow part of the plane; coastal uplift to ≈ 4 m near Wajima (GSI)',
+      tsunamiM: 'run-up to ≈ 4–5 m on the peninsula (Suzu · Noto); ~80 cm at Toyama',
+      deaths: '504 dead incl. disaster-related, 3 missing (Ishikawa Pref., 2024)',
+      note: ['A reverse-fault rupture on the peninsula’s north coast that lifted the coastline out of the sea — the ground itself rose, so several fishing harbours were left dry.', '半島北岸の逆断層による破壊で、海岸線そのものが隆起した——地盤が持ち上がったため、いくつもの漁港が干上がった。', 'Ein Aufschiebungsbruch an der Nordküste hob die Küstenlinie aus dem Meer — mehrere Fischereihäfen fielen trocken.', 'Взбросовый разрыв у северного побережья поднял береговую линию из моря — несколько рыбацких портов осушились.', 'Una ruptura inversa en la costa norte levantó la línea de costa fuera del mar — varios puertos pesqueros quedaron en seco.']
+    }
   }
 ];
 

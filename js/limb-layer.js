@@ -263,7 +263,7 @@ window.IntMapModules.limbLayer=function(){
    * @param {object} model js/sky-model.js's tables + `sunOpticalDepth`
    */
   function makeLayer(id, uniforms, model){
-    let prog=null, buf=null, loc={}, tSun=null, tMs=null, tables=null, dead=false;
+    let prog=null, buf=null, loc={}, tSun=null, tMs=null, tables=null, dead=false, drawn=0;
     return {
       id, type:'custom', renderingMode:'2d',
       onAdd(_map, gl){
@@ -288,6 +288,22 @@ window.IntMapModules.limbLayer=function(){
           loc.a_pos=gl.getAttribLocation(prog,'a_pos');
         }catch(e){ dead=true; try{ console.warn('[IntMap] limb layer disabled:',e&&e.message); }catch(_){} }
       },
+      /* ══ ⚠⚠ (#R236) WHETHER THIS LAYER CAN DRAW AT ALL, ASKED OF THE LAYER ═════════════════════
+         「MapLibreの地球周辺の大気は…（追記：そもそも消えてしまっている）」
+
+         #R227's rule is that a refusal is told by RESULT, not by intent — but it was only ever
+         applied to whether the layer could be ADDED. `onAdd` above can fail on its own (a shader
+         that will not compile or link on this particular driver) and set `dead`, and the layer is
+         still in the style: `hasLimb()` says true, `_applySkyAtmosphere` writes
+         `atmosphere-blend: 0` to hand the rim over, and the thing it handed it to draws nothing.
+         The result is a globe with no air on it in EVERY state, which is the report.
+         ⚠ `onAdd` runs synchronously inside `map.addLayer`, so this is answerable the instant the
+         layer is added — see the caller in js/geo-engine.js. */
+      imAlive(){ return !dead && !!prog; },
+      /* …and how many frames it has actually painted, for the watchdog in js/theme-sky.js: a layer
+         can be alive and still never draw (uniforms that never resolve). Nothing reads this to
+         decide colour — only to decide WHO owns the rim. */
+      imDrawn(){ return drawn; },
       onRemove(_map, gl){
         try{ if(prog) gl.deleteProgram(prog); if(buf) gl.deleteBuffer(buf);
           if(tSun) gl.deleteTexture(tSun); if(tMs) gl.deleteTexture(tMs); }catch(_){}
@@ -323,6 +339,7 @@ window.IntMapModules.limbLayer=function(){
         gl.disable(gl.CULL_FACE);
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
         gl.drawArrays(gl.TRIANGLES,0,3);
+        drawn++;                       /* (#R236) counted only where the draw call actually issued */
         gl.activeTexture(gl.TEXTURE0);
       },
     };

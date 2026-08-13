@@ -1607,7 +1607,25 @@ function _m(){ return window.__imap||null; }
         const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
         const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
         const L=(_limbs[id]||(_limbs[id]=window.IntMapModules.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
-        m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+        m.addLayer(L,(before&&m.getLayer(before))?before:undefined);
+        /* ══ ⚠⚠ (#R236) …AND THE LAST REFUSAL IS THE LAYER'S OWN ═══════════════════════════════════
+           Every refusal above is about the CONTEXT (no WebGL2, a software rasteriser, a phone) and
+           each one returns false before the layer is added, so `_applyLimb` leaves maplibre's own
+           atmosphere alone. But `onAdd` — which maplibre runs synchronously inside `addLayer`, so
+           its verdict is already in by the line below — can fail on its own: a driver that will not
+           compile or link this shader marks the layer dead and draws nothing for the rest of the
+           session. Until now that layer STAYED in the style, `hasLimb()` answered true, and
+           `atmosphere-blend` was set to 0 to hand the rim to something incapable of drawing it —
+           a globe with no air on it at every zoom, which is exactly the report this fixes.
+           So: a layer that cannot draw is removed and reported as a refusal, like every other one. */
+        if(L.imAlive && !L.imAlive()){
+          try{ m.removeLayer(id); }catch(_){}
+          delete _limbs[id]; delete _limbOn[id]; delete _limbStrength[id];
+          return false; }
+        return true; }catch(_){ return false; } },
+    /* (#R236) has the limb painted a frame yet? — the watchdog in js/theme-sky.js asks, so that a
+       layer which is alive but never resolves its uniforms still hands the rim back. */
+    limbDrawn(id){ try{ const L=_limbs[id]; return (L&&L.imDrawn)?L.imDrawn():0; }catch(_){ return 0; } },
     setLimb(id,o){ if(!_limbs[id]) return false; _limbOn[id]=!!(o&&o.on); _limbStrength[id]=(o&&o.strength!=null)?o.strength:1; return true; },
     removeLimb(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _limbs[id]; delete _limbOn[id]; return true; },
     /* ⚠ THE QUESTION IS "IS IT IN THE STYLE", NOT "HAVE WE EVER BUILT ONE". `_limbs[id]` is the
@@ -2034,6 +2052,8 @@ function _m(){ return window.__imap||null; }
          on the globe — see the adapter's addLimb */
       addLimb:(id,b)=>A().addLimb?A().addLimb(id,b):false, setLimb:(id,o)=>A().setLimb?A().setLimb(id,o):false,
       removeLimb:id=>A().removeLimb?A().removeLimb(id):false, hasLimb:id=>A().hasLimb?A().hasLimb(id):false,
+      /* (#R236) frames the limb has actually painted — 0 means "it is there and it is not drawing" */
+      limbDrawn:id=>A().limbDrawn?A().limbDrawn(id):0,
       removeSolid:id=>A().removeSolid?A().removeSolid(id):false,
       /* (#R202) objects at their own altitudes, and the batched projection that makes them clickable */
       addOrbit:(id,b)=>A().addOrbit?A().addOrbit(id,b):false, setOrbit:(id,o)=>A().setOrbit?A().setOrbit(id,o):false,

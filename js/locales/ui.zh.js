@@ -2336,5 +2336,13 @@ window.IntMapLang.define('zh', {
   "Rupture outline": "震源域輪廓",
   "segments": "段",
   "The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.": "波前是震源域各取樣點所發出波前的外包絡線，並在球面上求解，因此手繪的凹形輪廓會被保留，而不會被其凸包取代；每個取樣點都使用其在傾斜斷層面上「自身深度」所對應的走時曲線。表面波的群速度是沿各大圓路徑積分而得，而非固定值，因此行經海洋地殼的路徑會領先大陸地殼的路徑；3.5 / 4.4 km/s 為大陸地殼的參考值，其比值可在進階設定中調整。",
+  "Place the hypocenter": "設置震央",
+  "Tap inside the rupture area to place the hypocenter.": "請點擊震源域內部以設置震央。",
+  "That point is outside the rupture area — the rupture starts on the plane it happened on.": "該地點位於震源域之外——破裂是從其發生的斷層面上開始的。",
+  "This is where the rupture starts, so it sets the direction it runs in.": "這裡是破裂的起點，因此決定了破裂傳播的方向。",
+  "Past earthquakes": "過去的地震",
+  "Recent earthquakes": "最近的地震",
+  "No list yet — press to load": "尚無列表——請按此載入",
+  "Loading the recent earthquakes…": "正在載入最近的地震…",
   }
 });

@@ -913,6 +913,43 @@ _koppen_convert.py              ケッペンTIFF→PNG 変換スクリプト（�
 _rail_convert.py                鉄道データ変換スクリプト（同上）
 
 js/
+  ── (#R236) 中核と、これまでこの節に自分の項目を持っていなかった23本 ──────────────────────────────
+  ⚠ この一覧は `node scripts/arch-files-check.mjs --check` が js/ の実体と突き合わせる（#R236）。
+    書き始めた時点で §3 は 117本を説明し js/ には 139本あった——**アプリ最大の2ファイルを含む23本**が
+    仕様書に一度も現れていなかった。ファイルを足す・改名する・分割するときは、ここも直すこと。
+  app-body.js                       (#R175) **アプリ本体（396 KB・最大のファイル）**。index.html 分割（#R162〜#R199）
+                                    のあとに残った「実際に走る文」——状態宣言・ブート・地図構築・DOM配線・
+                                    `map.on()` ハンドラ・IntMapOS・セッション永続化・`IM_HOST`。
+                                    ⚠ 新規機能はここに足さない（標準指示13）。§3.1 の手順で別ファイルへ。
+  geo-engine.js                     (#R178) **レンダラの継ぎ目そのもの `window.IntMapGeoEngine`**（176 KB）。
+                                    MapLibre / Cesium のどちらかを裏に持ち、アプリは**契約**（`layers` /
+                                    `camera` / `scene` / `events` / `render`）だけを見る。
+                                    ⚠ 契約に無い関数名は「2つ目以降」だけ静かに落ちる（#R216）——
+                                    アダプタに足したメソッドは必ず契約側にも出すこと。
+  lazy-modules.js                   (#R209) **押されてから取りに行く8モジュール `window.IntMapLazy`**
+                                    （flightSim / playground / seismic / tsunami / terrainWater / los /
+                                    streetView / nightSky / atlasConsole）。⚠ 指定子はすべてリテラル。
+  world-base.js                     (#R186) 全球衛星ベース `window.IntMapWorldBase`。
+  world-packs.js                    (#R211) 世界データ層（貿易・エネルギー・警報・潮汐・作物）。160 KB。
+  space.js                          (#R197) 宇宙エクスプローラ `window.IntMapSpace`（220 KB）。
+  space-bodies.js                   (#R213) 探査機・小惑星・太陽系外 `window.IntMapSpaceBodies`。
+  space-events.js                   (#R212) 天文現象 `window.IntMapSpaceEvents`。
+  space-sky.js                      (#R186) 地球の背後の実際の星空 `window.IntMapSky`。
+  ephemeris.js                      (#R197) 惑星の実位置 `window.IntMapEphemeris`。
+  atlas-loader.js                   (#R224) Atlas に手を伸ばすと Atlas を取りに行く `window.IntMapAtlas`。
+  atlas-attach.js                   (#R232) Atlas の添付（ファイルの正体判定と全画面ビューア）。
+  basemap-switch.js                 (#R231) 携帯のベースマップ切替 `window.IntMapBasemapSwitch`。
+  bathymetry.js                     (#R197) 同梱の海底地形 `window.IntMapBathymetry`。
+  border-style.js                   (#R212) 国境線を1本にまとめるスタイル層。
+  grid-style.js                     (#R210) 経緯線のスタイル層。
+  dem-source.js                     (#R234) DEM の出所と深さ（terrarium の native max = z15）。
+  fault-geometry.js                 (#R224) 描かれた輪郭は断層面の**投影**である `window.IntMapFaultGeom`。
+  industry-web.js                   (#R213) 産業の相関 `window.IntMapIndustry`。
+  lang-switch.js                    (#R233) **言語変更は「待てるイベント」**——文字列が届く前に描き直さない。
+  perf-hud.js                       (#R225) 実機の計器 `?perf=1`。
+  place-framing.js                  (#R183) どこまで寄るか `window.IntMapPlaceFraming`。
+  proxy-fetch.js                    (#R212) CORS プロキシ経由の取得（相手先ごとに効くものが違う）。
+  ─────────────────────────────────────────────────────────────────────────────────────────────
   lang-registry.js                  (#R221) **言語の唯一のリスト `window.IntMapLang`**——`LANGS`（code / label / html / alias）と、
                                     可変長になった `pick(getLang)`。⚠ **最初の5言語の順序は全 L(…) 呼び出しの引数順そのもの**
                                     なので、追加は末尾のみ・並べ替え禁止。現在の言語の**位置**で引数を選ぶので既存5言語の挙動は不変。

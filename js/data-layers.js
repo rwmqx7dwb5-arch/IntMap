@@ -2049,27 +2049,46 @@ window.IntMapModules.dataLayers=function(HOST){
     window._fitKoppenLegend=_fitKoppenLegend;
     (function(){ let _klRz=null; window.addEventListener('resize',()=>{ if(_klRz) return; _klRz=setTimeout(()=>{ _klRz=null; try{ const lg=document.getElementById('koppen-legend'); if(!lg||getComputedStyle(lg).display==='none') return; if(window.innerWidth<=768) lg.style.maxHeight=''; else _fitKoppenLegend(lg); }catch(_){} },200); }); })();
     /* Decode a Köppen code into its defining criteria (#25) — letter by letter, EN + JP. */
+    /* ══ ⚠ (#R236) THE KÖPPEN CRITERIA WERE ENGLISH AND JAPANESE ONLY ══════════════════════════════
+       「ドイツ語、ロシア語、スペイン語について、すべての面において対応が完璧かどうか最終点検し、
+         未了点があれば修正して。」
+
+       This table returned `{en, jp}` and the caller picked with `HOST.lang==='jp'?info.jp:info.en`,
+       so a German, Russian or Spanish reader who clicked a climate cell got the criteria in English
+       — nineteen strings, on a layer whose whole purpose is explaining what the letters mean.
+       ⚠ INVISIBLE TO BOTH INSTRUMENTS, which is why it survived seven rounds of "100 % translated":
+       scripts/i18n-positional-audit.mjs reads `L(…)` call sites and this was neither `L(…)` nor a
+       five-language ternary, just a two-column table. Through the registry now, so the five slots
+       are positional and a missing one shows up. */
     function koppenCriteria(code){
-      const g=code[0], rest=code.slice(1), en=[], jp=[];
-      const main={A:['Tropical — coldest month ≥ 18 °C','熱帯 — 最寒月も18°C以上'],
-        B:['Arid — annual precipitation below the Köppen dryness threshold','乾燥帯 — 年降水量が乾燥限界未満'],
-        C:['Temperate — coldest month 0–18 °C','温帯 — 最寒月0〜18°C'],
-        D:['Continental — coldest month < 0 °C, warmest > 10 °C','冷帯（亜寒帯）— 最寒月0°C未満・最暖月10°C超'],
-        E:['Polar — warmest month < 10 °C','寒帯 — 最暖月10°C未満']}[g];
-      if(main){ en.push(main[0]); jp.push(main[1]); }
-      const seg={ f:['No dry season (rain year-round)','年中湿潤（乾季なし）'], m:['Monsoonal — brief dry season, very wet overall','モンスーン（短い乾季・多雨）'],
-        w:['Dry winter','冬季乾燥'], s:['Dry summer','夏季乾燥'],
-        W:['Desert (true arid)','砂漠'], S:['Steppe (semi-arid)','ステップ（半乾燥）'],
-        h:['Hot — mean annual ≥ 18 °C','高温（年平均18°C以上）'], k:['Cold — mean annual < 18 °C','寒冷（年平均18°C未満）'],
-        a:['Hot summer — warmest ≥ 22 °C','高温の夏（最暖月22°C以上）'], b:['Warm summer — warmest < 22 °C, ≥4 months > 10 °C','温暖な夏（最暖月22°C未満、10°C超が4か月以上）'],
-        c:['Cool short summer — 1–3 months > 10 °C','冷涼で短い夏（10°C超が1〜3か月）'], d:['Severe winter — coldest < −38 °C','厳寒の冬（最寒月−38°C未満）'],
-        T:['Tundra — warmest month 0–10 °C','ツンドラ（最暖月0〜10°C）'], F:['Ice cap — every month < 0 °C','氷雪（全月0°C未満）'] };
-      for(const ch of rest){ if(seg[ch]){ en.push(seg[ch][0]); jp.push(seg[ch][1]); } }
-      return {en,jp};
+      const T5=(a)=>window.IntMapLang.t(HOST.lang,a[0],a[1],a[2],a[3],a[4]);
+      const g=code[0], rest=code.slice(1), out=[];
+      const main={A:['Tropical — coldest month ≥ 18 °C','熱帯 — 最寒月も18°C以上','Tropisch — kältester Monat ≥ 18 °C','Тропический — самый холодный месяц ≥ 18 °C','Tropical — mes más frío ≥ 18 °C'],
+        B:['Arid — annual precipitation below the Köppen dryness threshold','乾燥帯 — 年降水量が乾燥限界未満','Arid — Jahresniederschlag unter der Köppen-Trockengrenze','Аридный — годовые осадки ниже порога сухости Кёппена','Árido — precipitación anual por debajo del umbral de aridez de Köppen'],
+        C:['Temperate — coldest month 0–18 °C','温帯 — 最寒月0〜18°C','Gemäßigt — kältester Monat 0–18 °C','Умеренный — самый холодный месяц 0–18 °C','Templado — mes más frío 0–18 °C'],
+        D:['Continental — coldest month < 0 °C, warmest > 10 °C','冷帯（亜寒帯）— 最寒月0°C未満・最暖月10°C超','Kontinental — kältester Monat < 0 °C, wärmster > 10 °C','Континентальный — самый холодный месяц < 0 °C, самый тёплый > 10 °C','Continental — mes más frío < 0 °C, más cálido > 10 °C'],
+        E:['Polar — warmest month < 10 °C','寒帯 — 最暖月10°C未満','Polar — wärmster Monat < 10 °C','Полярный — самый тёплый месяц < 10 °C','Polar — mes más cálido < 10 °C']}[g];
+      if(main) out.push(T5(main));
+      const seg={ f:['No dry season (rain year-round)','年中湿潤（乾季なし）','Keine Trockenzeit (ganzjährig Regen)','Без сухого сезона (осадки круглый год)','Sin estación seca (lluvia todo el año)'],
+        m:['Monsoonal — brief dry season, very wet overall','モンスーン（短い乾季・多雨）','Monsunal — kurze Trockenzeit, insgesamt sehr feucht','Муссонный — короткий сухой сезон, очень влажно','Monzónico — estación seca breve, muy húmedo en conjunto'],
+        w:['Dry winter','冬季乾燥','Trockener Winter','Сухая зима','Invierno seco'],
+        s:['Dry summer','夏季乾燥','Trockener Sommer','Сухое лето','Verano seco'],
+        W:['Desert (true arid)','砂漠','Wüste (vollarid)','Пустыня (полностью аридная)','Desierto (árido pleno)'],
+        S:['Steppe (semi-arid)','ステップ（半乾燥）','Steppe (semiarid)','Степь (полуаридная)','Estepa (semiárida)'],
+        h:['Hot — mean annual ≥ 18 °C','高温（年平均18°C以上）','Heiß — Jahresmittel ≥ 18 °C','Жаркий — среднегодовая ≥ 18 °C','Cálido — media anual ≥ 18 °C'],
+        k:['Cold — mean annual < 18 °C','寒冷（年平均18°C未満）','Kalt — Jahresmittel < 18 °C','Холодный — среднегодовая < 18 °C','Frío — media anual < 18 °C'],
+        a:['Hot summer — warmest ≥ 22 °C','高温の夏（最暖月22°C以上）','Heißer Sommer — wärmster ≥ 22 °C','Жаркое лето — самый тёплый ≥ 22 °C','Verano cálido — más cálido ≥ 22 °C'],
+        b:['Warm summer — warmest < 22 °C, ≥4 months > 10 °C','温暖な夏（最暖月22°C未満、10°C超が4か月以上）','Warmer Sommer — wärmster < 22 °C, ≥ 4 Monate > 10 °C','Тёплое лето — самый тёплый < 22 °C, ≥ 4 месяцев > 10 °C','Verano templado — más cálido < 22 °C, ≥ 4 meses > 10 °C'],
+        c:['Cool short summer — 1–3 months > 10 °C','冷涼で短い夏（10°C超が1〜3か月）','Kühler kurzer Sommer — 1–3 Monate > 10 °C','Прохладное короткое лето — 1–3 месяца > 10 °C','Verano corto y fresco — 1–3 meses > 10 °C'],
+        d:['Severe winter — coldest < −38 °C','厳寒の冬（最寒月−38°C未満）','Strenger Winter — kältester < −38 °C','Суровая зима — самый холодный < −38 °C','Invierno riguroso — más frío < −38 °C'],
+        T:['Tundra — warmest month 0–10 °C','ツンドラ（最暖月0〜10°C）','Tundra — wärmster Monat 0–10 °C','Тундра — самый тёплый месяц 0–10 °C','Tundra — mes más cálido 0–10 °C'],
+        F:['Ice cap — every month < 0 °C','氷雪（全月0°C未満）','Eiskappe — jeder Monat < 0 °C','Ледниковый — каждый месяц < 0 °C','Casquete glaciar — todos los meses < 0 °C'] };
+      for(const ch of rest){ if(seg[ch]) out.push(T5(seg[ch])); }
+      return out;
     }
     function showKoppenInfo(code,x,y){
       const info=koppenCriteria(code), nm=KNAME[code]?(KNAME[code][HOST.lang]||KNAME[code].en):code;
-      const lines=(HOST.lang==='jp'?info.jp:info.en).map(s=>`<li>${convTempText(s)}</li>`).join('');
+      const lines=info.map(s=>`<li>${convTempText(s)}</li>`).join('');   /* (#R236) already in the reader's language */
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
       if(!pop){ pop=document.createElement('div'); pop.id='koppen-info-pop'; pop.className='koppen-info-pop'; mc.appendChild(pop); }
