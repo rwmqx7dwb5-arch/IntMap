@@ -9,7 +9,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.communityBoard=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
   const _GE=()=>window.IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
@@ -123,7 +124,7 @@ window.IntMapModules.communityBoard=function(HOST){
         <span class="comm-author-link" data-uid="${post.userId||''}" data-author="${HOST.escapeHtml(post.author||'')}" style="display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;flex:1;">
         ${commAvatar(post.author)}
         <div class="comm-post-idn">
-          <div class="comm-post-author">${HOST.escapeHtml(post.author||(jp?'匿名':'Anonymous'))}</div>
+          <div class="comm-post-author">${HOST.escapeHtml(post.author||(window.IntMapLang.t(HOST.lang,'Anonymous','匿名','Anonym','Анонимно','Anónimo')))}</div>
           <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
         </div></span>
         <span class="comm-cat-tag" style="--cc:${cat.color}">${cat.emoji} ${commCatLabel(post.category||'general')}</span>
@@ -132,11 +133,11 @@ window.IntMapModules.communityBoard=function(HOST){
       ${imgHtml}
       ${post.body?`<div class="comm-post-body">${linkify(post.body)}</div>`:''}
       <div class="comm-post-actions">
-        <button class="vote-btn ${post.voted?'voted':''}" data-id="${post.id}" title="${jp?'役に立った':'Upvote'}">▲ ${post.votes||0}</button>
+        <button class="vote-btn ${post.voted?'voted':''}" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
         <button class="cmt-toggle" data-id="${post.id}">💬 ${cmts.length}</button>
         <button class="locate-btn" data-id="${post.id}">🌐 ${HOST.t('commLocate')}</button>
         ${mine?`<button class="edit-btn" data-id="${post.id}">${HOST.t('commEdit')}</button>`:''}
-        <button class="report-btn" data-id="${post.id}" title="${jp?'通報':'Report'}">⚑</button>
+        <button class="report-btn" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
         ${canDel?`<button class="del-btn" data-id="${post.id}">${HOST.t('commDelete')}</button>`:''}
       </div>
       <div class="comm-comments ${HOST.commCollapsed[post.id]?'collapsed':''}" data-cwrap="${post.id}">
@@ -191,7 +192,7 @@ window.IntMapModules.communityBoard=function(HOST){
     document.getElementById('compose-submit').textContent = editPost ? HOST.t('commSaveEdit') : HOST.t('commPost');
     HOST.pendingImg = editPost ? (editPost.img||'') : ''; HOST.showComposeImgPreview(HOST.pendingImg);
     document.getElementById('compose-img-label').textContent=HOST.t('commAddImage');   /* (#R233) was a jp/en ternary — English in the other seven languages */
-    document.getElementById('compose-place-label').textContent=jp?'地図でピンを移動':'Move pin on map';
+    document.getElementById('compose-place-label').textContent=window.IntMapLang.t(HOST.lang,'Move pin on map','地図でピンを移動','Pin auf der Karte verschieben','Переместить метку на карте','Mover el pin en el mapa');
     /* Category picker — shown unless schema-detection proved the column is missing. */
     const showCat = !HOST.commCaps || HOST.commCaps.category;
     const catLabel=document.getElementById('compose-cat-label'), catWrap=document.getElementById('compose-cats');
@@ -202,7 +203,7 @@ window.IntMapModules.communityBoard=function(HOST){
         `${HOST.t('commPlacedAt')}: ${HOST.pendingPostLoc[1].toFixed(3)}°, ${HOST.pendingPostLoc[0].toFixed(3)}°`;
     } else {
       document.getElementById('compose-coord-hint').textContent=
-        jp?'地図をクリックして位置を指定してください。':'Click on the map to place a location.';
+        window.IntMapLang.t(HOST.lang,'Click on the map to place a location.','地図をクリックして位置を指定してください。','Klicken Sie auf die Karte, um einen Ort zu setzen.','Кликните по карте, чтобы указать место.','Haga clic en el mapa para indicar un lugar.');
     }
     m.classList.add('active');
   }

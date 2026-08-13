@@ -68,10 +68,13 @@ test('R206 ② every accent-filled control in the seismic panel has an on state'
   const s = rd('js/seismic.js');
   assert.ok(!/class="sq-pick"/.test(s), 'the separate ◎ action button is gone (#R212)');
   /* the only helper that paints the accent fill is the segmented one, and it is driven by a state */
-  assert.match(s, /const SEG=\(on\)=>BTN\+'flex:1;'\+\(on\?'background:var\(--primary-color\)/,
+  /* (#R237) SEG became SEGC and the accent moved from an inline declaration into `.sq-seg.on` in
+     the panel's own sheet. The claim is unchanged and is the one that matters: the accent fill is
+     produced BY THE PREDICATE, so a control with no on-state cannot wear it. */
+  assert.match(s, /const SEGC=\(on\)=>'sq-seg'\+\(on\?' on':''\)/,
     'SEG paints the accent only when it is given true');
   /* the empty ones are the prose in the comments above the helper ("SEG()"), not calls */
-  const segUses = [...s.matchAll(/SEG\(([^)]*)\)/g)].map((m) => m[1].trim()).filter(Boolean);
+  const segUses = [...s.matchAll(/SEGC\(([^)]*)\)/g)].map((m) => m[1].trim()).filter(Boolean);
   assert.ok(segUses.length >= 2, 'the panel still has a segmented control');
   /* (#R236) the panel has three segmented controls now — the click modes (`clickMode`), the rupture
      stroke (`_fDrawing`) and the earthquake picker's source (`evSrc`). The claim is unchanged and is

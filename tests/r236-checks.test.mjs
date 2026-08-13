@@ -128,9 +128,12 @@ test('R236 limb: the watchdog revokes on EVIDENCE (map frames), never on a timeo
 /* ── 4 · the rupture area comes first, and the hypocentre goes on it ─────────────────────────── */
 test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first', () => {
   const s = code(read('js/seismic.js'));
-  const row = s.match(/<div style="display:flex;gap:5px;align-items:stretch;">([\s\S]*?)\+'<\/div>'/);
+  /* (#R237) the row is now a segmented TRACK (`.sq-segwrap`) inside a card block — the same three
+     controls in the same order, with the accent pill the iOS restyle gave them. The claim is the
+     ORDER, which is what 「やっぱり、震源域を先に」 asked for. */
+  const row = s.match(/<div class="sq-blk" style="display:flex;gap:6px;align-items:stretch;">([\s\S]*?)\+'<\/div>'/);
   assert.ok(row, 'the three controls share one flex row');
-  const order = [...row[1].matchAll(/class="(sq-fdraw|sq-cm-epi|sq-cm-sta)"/g)].map((m) => m[1]);
+  const order = [...row[1].matchAll(/class="(sq-fdraw|sq-cm-epi|sq-cm-sta)[ "']/g)].map((m) => m[1]);
   assert.deepEqual(order, ['sq-fdraw', 'sq-cm-epi', 'sq-cm-sta'],
     '「やっぱり、震源域を先に」 — the row reads in the order the work is done');
 });
@@ -185,8 +188,13 @@ test('R236 i18n: the Köppen criteria are given in all five languages', () => {
 /* ── 5 · one picker, two sources ─────────────────────────────────────────────────────────────── */
 test('R236 seismic: past and recent earthquakes are ONE control, switch above the shared list', () => {
   const s = code(read('js/seismic.js'));
-  assert.match(s, /class="sq-src-past"/, 'the switch has a past side');
-  assert.match(s, /class="sq-src-recent"/, '…and a recent side');
+  /* ⚠ (#R237) THE CLAIM IS «BOTH SIDES EXIST», NOT «THE ATTRIBUTE IS SPELLED THIS WAY». These read
+     `class="sq-src-past"` exactly, and #R237's iOS restyle put the segment class in the same
+     attribute — `class="sq-src-past '+SEGC(…)+'"` — which is the same control with a second class on
+     it. The test failed on the QUOTE MARK. Pinning a spelling is #R203's defect (「値のピン留め」):
+     it costs a round every time the markup is touched and it never once caught a real fault. */
+  assert.match(s, /class="sq-src-past[ "']/, 'the switch has a past side');
+  assert.match(s, /class="sq-src-recent[ "']/, '…and a recent side');
   /* the list is a single <select>, filled from whichever source is showing */
   assert.match(s, /evSrc==='recent'\s*\?\s*\('<option value=""/, 'one list, two fillings');
   assert.match(s, /QUAKE_EVENTS\.map\(e=>'<option/, 'the catalogue fills it on the past side');

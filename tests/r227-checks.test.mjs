@@ -42,7 +42,22 @@ test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off
   assert.match(sky, /'atmosphere-blend':\(limb\?0:/,
     'atmosphere-blend is 0 exactly when the limb layer is the one drawing');
   assert.match(sky, /function _limbOwnsRim\(\)/, 'one predicate decides it');
-  assert.match(sky, /_eyeAltM\(\)>_ATM_TOP_M/, 'and it is the eye above the shell — where a limb IS a limb');
+  /* ══ ⚠⚠ (#R237) THIS ASSERTION'S CLAIM IS REVERSED ON PURPOSE, AND THAT IS THE ROUND ═════════════
+     #R227 wrote «the eye above the shell — where a limb IS a limb», and it was right about the RING:
+     you cannot see a limb from inside it. But the layer now draws the air IN FRONT of the planet too
+     (js/limb-layer.js), and that is visible from anywhere — so the shell stopped being the boundary
+     of what the layer has to say. Leaving the gate there is what produced
+     「ある程度までズームインすると途端に見えなくなってしまう」: measured on a zoom sweep, ownership
+     flipped between z9 (eye 183 km) and z10 (eye 92 km), and what it flipped TO was maplibre's own
+     pass, which measures 2 px wide at luminance 14. The air went out in one frame at a fixed zoom.
+     The gate is `globeness` now — the SAME quantity maplibre multiplies its own atmosphere by — so
+     the two owners cannot disagree about when there is a globe, and there is no zoom at which the
+     air switches off in a step. #R227's real requirement, «only claim the rim where the layer can
+     actually draw», is unchanged and is what this now checks. */
+  assert.doesNotMatch(sky, /_eyeAltM\(\)>_ATM_TOP_M[\s\S]{0,40}return false/,
+    'the 100 km cliff is gone from the ownership test');
+  assert.match(sky, /if\(!\(_globeness\(\)>0\)\) return false/,
+    'and what decides it is whether there is a globe, which is maplibre’s own gate');
   assert.match(sky, /_sunElevAtCentre\(\)==null\) return false/,
     'with the day/night display off or on the vector map the Sun is unknown, and #R221\'s gate still wins');
   /* …and the rim owner has to be part of what makes the sky block worth re-parsing, or a camera

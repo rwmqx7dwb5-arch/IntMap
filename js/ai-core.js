@@ -212,7 +212,7 @@ window.IntMapModules.aiCore=function(HOST){
       wrap.innerHTML=
         /* (#R101) the "✨ Built-in AI is ready…" line duplicated the section hint above — removed (de-dup + no ✨). */
         `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
-          aiEsc(jp?'開発者アカウント — AI利用は無制限です。':'Developer account — unlimited AI usage.')+
+          aiEsc(window.IntMapLang.t(HOST.lang,'Developer account — unlimited AI usage.','開発者アカウント — AI利用は無制限です。','Entwicklerkonto — unbegrenzte KI-Nutzung.','Аккаунт разработчика — использование ИИ без ограничений.','Cuenta de desarrollador — uso de IA ilimitado.'))+
           `<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;background:linear-gradient(90deg,#34c759,#0a84ff);"></div></div>`+
         `</div>`;
       return;

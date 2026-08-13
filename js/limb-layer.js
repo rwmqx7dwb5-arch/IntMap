@@ -41,14 +41,38 @@
  *  Both come from js/sky-model.js at run time, so a constant changed there reaches this shader on the
  *  next build of the texture. #R226's rule: a value that must not drift is held by STRUCTURE.
  *
- *  ⚠ IT DRAWS ONLY OUTSIDE THE DISC. A ray that meets the planet is discarded, so the imagery keeps
- *  its own contrast — #R187 and #R205 both measured that a scattering term blended OVER the globe
- *  clips to white and reads as 「質感がチープ」. The band this draws is the air the ray crosses beside
- *  the planet, which is what a photograph of the limb is.
+ *  ⚠⚠ (#R237) IT DRAWS OVER THE DISC TOO, AND THAT IS WHAT WAS MISSING ═══════════════════════════
+ *  「ズームインしたら見えなくなるって話…そもそも前まであったものがない」 — MEASURED, one camera,
+ *  same layers, the pixel column up from the map centre, at 1,2,…,16 px inside the outer edge:
  *
- *  ⚠ AND ONLY WHERE THERE IS A LIMB. The uniforms come back null unless the projection is the globe
- *  and the eye is above the shell, so nothing about the flat map, the ground-level sky or the flight
- *  simulator moves — and on a phone this costs nothing at the zooms a phone is panned at.
+ *      px inside edge        this layer (as #R227 shipped it)     maplibre's own pass at 0.55
+ *      −16                        33,103,118                          88,166,186
+ *      −10                        19, 72, 86                          88,151,171
+ *       −6                       102,146,175                         183,207,223
+ *
+ *  maplibre's atmosphere lights THE WHOLE DISC — roughly double the luminance right across the
+ *  globe — because it is blended over the imagery. #R227 switched it off (`atmosphere-blend: 0`)
+ *  and put in its place a band that draws ONLY outside the planet, 4 px wide (100 km on 6,371 km is
+ *  1.57 % of the radius, and 1.57 % of a 236 px radius is 3.7 px). Nothing was faint or dead: the
+ *  air over the daylight side of the Earth had simply stopped being drawn. That is the report.
+ *
+ *  So the ray that meets the planet is marched now, from the eye down to the surface, and #R227's
+ *  reason for not doing it is answered rather than repeated. Its note said compositing
+ *  L_bg·T + L_inscatter needs "a linear off-screen target rather than a better constant", because
+ *  adding a tone-mapped in-scatter into a gamma-encoded framebuffer over-brightens (it measured open
+ *  ocean #013a4c arriving as #588bc1). The linear target is not needed — the TONE MAP IS INVERTIBLE.
+ *  The background is read back with `copyTexSubImage2D`, run back through
+ *  `L = −ln(1 − c^γ)/exposure` into radiance, composited THERE, and tone-mapped once on the sum.
+ *  With no air in the way that round-trip is the identity, so this layer is a no-op wherever it has
+ *  nothing to say, and there is no constant to tune.
+ *
+ *  ⚠ AND ONLY WHERE THERE IS A LIMB. The uniforms come back null unless the projection is the globe,
+ *  so nothing about the flat map, the ground-level sky or the flight simulator moves. (#R237) The
+ *  eye no longer has to be ABOVE the shell: that test is what made the air vanish at z ≈ 9.5 —
+ *  measured, the handover fell between z9, eye 183 km, and z10, eye 92 km — and what it handed to
+ *  was maplibre's own pass, which the table above shows is a 2 px sliver. Strength rides `globeness`
+ *  instead, the same gate maplibre's own atmosphere uses, so the two can never disagree and there is
+ *  no zoom at which the air switches off in one frame.
  *
  *  ⚠ THIS FILE NEVER NAMES THE RENDERER. Its geometry arrives as uniforms from the one file allowed
  *  to ask for them (js/geo-engine.js, `layers.addLimb`), which takes them from the same transform
@@ -62,6 +86,16 @@ window.IntMapModules.limbLayer=function(){
      N = 256 is exact. 128 is what ships here — the error it carries is a third of a colour step,
      and it is the only place a GPU budget touches the physics. */
   const MARCH_N=128, KWARP=7.0;
+  /* (#R237) …and how finely it marches a ray that MEETS THE PLANET. That path has no tangent point —
+     the height falls monotonically from the eye to the ground, so the integrand has no interior peak
+     for #R224's warp to resolve — and it is short: the ray leaves the shell after at most 100 km of
+     air rather than the ~1,100 km a grazing ray crosses. Both of the reasons N is 128 are about the
+     limb ray, so the disc gets its own count, and it is the count that decides the cost of this
+     change, because the disc is most of the screen where the ring is a few pixels of it.
+     ⚠ 24 is a REASONED number, not a measured one: unlike #R226's N = 32 → 128 sweep at the limb,
+     no reference march has been run against it on the disc. If the disc's air ever bands, this is
+     the first place to look. */
+  const DISC_N=24;
   /* the sun-ray table. 128 elevations × 64 heights, both on warps that put the samples where the
      integral actually moves: near the horizon in elevation (where the air mass runs away) and near
      the ground in height (where the density is). */
@@ -90,8 +124,17 @@ window.IntMapModules.limbLayer=function(){
     uniform float u_msE0, u_msE1, u_msN;
     uniform float u_o3Peak, u_o3Half;
     uniform float u_strength;
+    /* (#R237) the frame as it stands before this pass, and its size — see the header. The air in
+       front of the planet MULTIPLIES what is behind it, so this layer has to know what that is. */
+    uniform sampler2D u_bg;
+    uniform vec2 u_res;
+    /* (#R237) how much of the disc's own air to draw: globeness × #R187/#R205's per-basemap ramp.
+       0 restores #R227's behaviour exactly (the ring alone), and it is 0 the moment the globe has
+       finished turning into a plane. */
+    uniform float u_disc;
 
     const int N=${MARCH_N};
+    const int ND=${DISC_N};
     const float KW=${KWARP.toFixed(1)};
     const float SUN_TOP=${(M.RT-M.RG).toFixed(1)};
     const float MS_TOP=${(M.ms.h[M.ms.h.length-1]).toFixed(1)};
@@ -124,21 +167,26 @@ window.IntMapModules.limbLayer=function(){
       float rt = sqrt(discT);
       float tIn = max(0.0, -b - rt), tMax = -b + rt;
       if (tMax <= tIn) discard;
-      /* ══ ⚠⚠ A RAY THAT MEETS THE PLANET IS NOT DRAWN, AND THAT IS A MEASURED DECISION ═══════════
-         The air IN FRONT of the disc is real, and marching it here was tried and rejected this round
-         with numbers. Compositing a scattering term over imagery is L_bg·T + L_inscatter — a product
-         and a sum in LINEAR radiance — and a custom layer draws into the renderer's own
-         gamma-encoded framebuffer, where the only tool is one alpha. Measured on this build at
-         33,919 km, open ocean that reads #013a4c bare came out #588bc1 with the term added: the
-         tone-map's 1/2.2 turns a small path integral into a fifth of full brightness before it is
-         ever blended, so the veil arrives far heavier than the air it stands for. That is the same
-         milky wash #R187 and #R205 measured on the renderer's own halo (「質感がチープ」), and doing
-         it properly needs a linear off-screen target rather than a better constant — recorded for
-         the next round rather than shipped as a fudge. So: the band this layer draws is the air the
-         ray crosses BESIDE the planet, and the imagery keeps its own contrast exactly. */
+      /* ══ ⚠⚠ (#R237) A RAY THAT MEETS THE PLANET IS MARCHED TOO — THAT IS THE AIR THAT WENT MISSING
+         #R227 discarded it and recorded why: compositing L_bg·T + L_inscatter is a product and a sum
+         in LINEAR radiance, and a custom layer draws into a gamma-encoded framebuffer where the only
+         tool is one alpha — measured, open ocean reading #013a4c came out #588bc1, because the
+         tone-map's 1/2.2 turns a small path integral into a fifth of full brightness BEFORE it is
+         blended. Its own note says the fix is "a linear off-screen target rather than a better
+         constant". It is neither: the tone-map is a bijection on [0,1), so the background can simply
+         be run BACKWARDS through it into radiance (see the composite below), composited there, and
+         tone-mapped once on the sum. Nothing is tuned, and with no air in the way the round trip is
+         the identity to within a count — which is what makes this safe to run over the whole disc. */
       float cG = dot(o,o) - u_RG*u_RG;
       float discG = b*b - cG;
-      if (discG >= 0.0 && (-b - sqrt(discG)) > 0.0) discard;
+      float tHit = -1.0;
+      if (discG >= 0.0){ float tg = -b - sqrt(discG); if (tg > 0.0) tHit = tg; }
+      bool onDisc = (tHit > 0.0);
+      /* the ray stops at the ground; beyond it there is rock, not air */
+      if (onDisc) tMax = min(tMax, tHit);
+      if (tMax <= tIn) discard;
+      float strength = onDisc ? (u_strength * u_disc) : u_strength;
+      if (strength <= 0.0005) discard;         /* the disc's air switched off: #R227's picture exactly */
 
       /* #R224's warp: samples densest at the ray's lowest point, split there when it descends first */
       float tLow = clamp(-b, tIn, tMax);
@@ -146,8 +194,11 @@ window.IntMapModules.limbLayer=function(){
       float odR=0.0, odM=0.0, odO=0.0;
       vec3 sumR=vec3(0.0), sumM=vec3(0.0), ms=vec3(0.0);
       float lenA = tLow - tIn, lenB = tMax - tLow;
-      int nA = (lenA > 0.0 && lenB > 0.0) ? int(float(N)*0.35) : (lenA > 0.0 ? N : 0);
-      int nB = N - nA;
+      /* (#R237) a ray that meets the planet descends the whole way — no tangent point, no peak in
+         the middle for the warp to resolve — so it gets ND steps instead of N. See DISC_N. */
+      int NT = onDisc ? ND : N;
+      int nA = (lenA > 0.0 && lenB > 0.0) ? int(float(NT)*0.35) : (lenA > 0.0 ? NT : 0);
+      int nB = NT - nA;
 
       /* ⚠ THE SAMPLES ARE PLACED FROM THE LOWEST POINT OUTWARD AND WALKED IN INCREASING t. That is
          #R224's rule and it is not a detail: the optical depth accumulated so far is what attenuates
@@ -188,21 +239,32 @@ window.IntMapModules.limbLayer=function(){
       float pR = 3.0/(16.0*3.14159265)*(1.0+mumu);
       float pM = 3.0/(8.0*3.14159265)*((1.0-gg)*(1.0+mumu))/((2.0+gg)*pow(max(1e-6, 1.0+gg-2.0*u_g*mu), 1.5));
       vec3 L = u_sunI*(sumR*u_BR*pR + sumM*u_BM*pM + ms);
-      vec3 c = pow(max(vec3(0.0), 1.0 - exp(-L*u_exposure)), vec3(1.0/u_gamma)) * u_strength;
-      /* ⚠⚠ THE ALPHA IS THE EXTINCTION, NOT THE BRIGHTNESS. A scattering term composites as
-         L_out = L_background·T + L_inscatter, so what dims the imagery underneath is the
+      /* ⚠⚠ THE EXTINCTION IS PER CHANNEL, AND IT IS WHAT MULTIPLIES WHAT IS BEHIND. A scattering
+         term composites as L_out = L_background·T + L_inscatter, so what dims what is behind is the
          TRANSMITTANCE of the air the ray crossed — exp(−τ) over the whole path — and not how bright
-         the in-scattered light happens to be. Using the colour's own magnitude (the obvious thing,
-         and what the first version of this shader did) charges a bright blue veil 80 % opacity over
-         open ocean at the centre of the disc, where the real vertical optical depth is about a tenth
-         of that. It is what keeps the ring solid where the path is long
-         and lets the stars through where it is thin.
-         At the limb τ runs to tens and the ring goes fully opaque, which is what makes the arc read
-         as a body of air rather than as a tint over the black. */
+         the in-scattered light happens to be. #R227 had to squeeze that into ONE alpha (a luminance
+         average of T) because there was no background to multiply; there is one now, so the three
+         channels keep their own τ, which is the whole reason the air is BLUE: it takes the red out
+         of what is behind it at the same time as it adds blue of its own. */
       vec3 T = exp(-(u_BR*odR + u_BM*u_mieExt*odM + u_BO*odO));
-      float a = clamp(1.0 - dot(T, vec3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
-      if (max(a, max(c.r, max(c.g, c.b))) <= 0.002) discard;
-      fragColor = vec4(c, a);
+      /* ══ ⚠⚠ (#R237) THE COMPOSITE, IN RADIANCE ════════════════════════════════════════════════
+         bgDisp is the frame as it stands, tone-mapped and gamma-encoded. 1 − exp(−L·E) then
+         ^(1/γ) is a bijection from radiance onto [0,1), so running it backwards recovers the
+         radiance the renderer would have had to hold — and every term below is then a real product
+         and a real sum, tone-mapped ONCE at the end. With T = 1 and L = 0 this returns bgDisp
+         bit-for-bit, which is why the pass can be run over the whole screen. */
+      vec2 uv = gl_FragCoord.xy / u_res;
+      vec3 bgDisp = texture(u_bg, uv).rgb;
+      vec3 bgL = -log(max(vec3(1e-6), 1.0 - pow(clamp(bgDisp, 0.0, 1.0), vec3(u_gamma)))) / u_exposure;
+      /* ⚠ STRENGTH INTERPOLATES THE WHOLE EFFECT, IT DOES NOT SCALE THE COLOUR. #R187 (0.55 over
+         satellite) and #R205 (0.15 over the light basemap) are answers to "how much atmosphere",
+         and scaling only the in-scatter would darken the imagery at full strength while lighting it
+         at a fraction of one — the two halves of one physical quantity pulling apart. Mixing the
+         RESULT keeps them together, and 0 is exactly "no air". */
+      vec3 outL = mix(bgL, bgL*T + L, strength);
+      vec3 c = pow(max(vec3(0.0), 1.0 - exp(-outL*u_exposure)), vec3(1.0/u_gamma));
+      if (dot(abs(c - bgDisp), vec3(1.0)) <= 0.004) discard;   /* nothing to say here */
+      fragColor = vec4(c, 1.0);
     }`;
 
   function compile(gl,type,src){
@@ -259,11 +321,15 @@ window.IntMapModules.limbLayer=function(){
   /**
    * @param {string} id layer id
    * @param {function} uniforms called every frame; returns null when there is no limb to draw, or
-   *        { invProj:Float32Array(16), camPos:number[3], sunDir:number[3], strength:number }
+   *        { invProj:Float32Array(16), camPos:number[3], sunDir:number[3], strength:number,
+   *          disc:number }   — `disc` (#R237) is how much of the air IN FRONT of the planet to draw
    * @param {object} model js/sky-model.js's tables + `sunOpticalDepth`
    */
   function makeLayer(id, uniforms, model){
     let prog=null, buf=null, loc={}, tSun=null, tMs=null, tables=null, dead=false, drawn=0;
+    /* (#R237) the frame as it stands before this pass. Allocated on first draw and re-allocated
+       only when the drawing buffer changes size — a copy is a GPU-side blit, an allocation is not. */
+    let tBg=null, bgW=0, bgH=0;
     return {
       id, type:'custom', renderingMode:'2d',
       onAdd(_map, gl){
@@ -283,7 +349,8 @@ window.IntMapModules.limbLayer=function(){
           tSun=makeTex(gl,SUN_W,SUN_H,tables.sun);
           tMs=makeTex(gl,tables.msW,tables.msH,tables.ms);
           ['u_invProj','u_camPos','u_sunDir','u_tSun','u_tMs','u_BR','u_BO','u_BM','u_mieExt','u_HR','u_HM',
-           'u_RG','u_RT','u_sunI','u_exposure','u_gamma','u_g','u_msE0','u_msE1','u_msN','u_o3Peak','u_o3Half','u_strength']
+           'u_RG','u_RT','u_sunI','u_exposure','u_gamma','u_g','u_msE0','u_msE1','u_msN','u_o3Peak','u_o3Half','u_strength',
+           'u_bg','u_res','u_disc']
             .forEach(n=>{ loc[n]=gl.getUniformLocation(prog,n); });
           loc.a_pos=gl.getAttribLocation(prog,'a_pos');
         }catch(e){ dead=true; try{ console.warn('[IntMap] limb layer disabled:',e&&e.message); }catch(_){} }
@@ -306,14 +373,37 @@ window.IntMapModules.limbLayer=function(){
       imDrawn(){ return drawn; },
       onRemove(_map, gl){
         try{ if(prog) gl.deleteProgram(prog); if(buf) gl.deleteBuffer(buf);
-          if(tSun) gl.deleteTexture(tSun); if(tMs) gl.deleteTexture(tMs); }catch(_){}
-        prog=buf=tSun=tMs=null;
+          if(tSun) gl.deleteTexture(tSun); if(tMs) gl.deleteTexture(tMs);
+          if(tBg) gl.deleteTexture(tBg); }catch(_){}
+        prog=buf=tSun=tMs=tBg=null; bgW=bgH=0;
       },
       render(gl){
         if(dead||!prog) return;
         let u=null; try{ u=uniforms(); }catch(_){ u=null; }
         if(!u) return;
         const M=model;
+        /* ══ ⚠⚠ (#R237) THE FRAME SO FAR, COPIED SO THE AIR CAN MULTIPLY IT ═══════════════════════
+           A custom layer cannot READ the framebuffer it draws into, and the air in front of the
+           planet has to (L_bg·T + L_in). `copyTexSubImage2D` from the bound READ framebuffer is the
+           whole answer: it is a GPU-side blit of the frame as it stands — every style layer below
+           this one, which is all of them, since this layer is added on top — into a texture the
+           shader then samples. No feedback loop: the copy happens before the draw.
+           ⚠ ALLOCATE ONLY ON A SIZE CHANGE. copyTexImage2D re-allocates; copyTexSubImage2D does not,
+           and this runs every frame. */
+        const W=gl.drawingBufferWidth, H=gl.drawingBufferHeight;
+        if(!(W>0&&H>0)) return;
+        gl.activeTexture(gl.TEXTURE2);
+        if(!tBg){ tBg=gl.createTexture(); bgW=bgH=0; }
+        gl.bindTexture(gl.TEXTURE_2D,tBg);
+        if(W!==bgW||H!==bgH){
+          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+          bgW=W; bgH=H;
+        }
+        gl.copyTexSubImage2D(gl.TEXTURE_2D,0,0,0,0,0,W,H);
         gl.useProgram(prog);
         gl.bindBuffer(gl.ARRAY_BUFFER,buf);
         gl.enableVertexAttribArray(loc.a_pos);
@@ -331,13 +421,19 @@ window.IntMapModules.limbLayer=function(){
         gl.uniform1f(loc.u_msE0,M.ms.e0); gl.uniform1f(loc.u_msE1,M.ms.e1); gl.uniform1f(loc.u_msN,tables.msW);
         gl.uniform1f(loc.u_o3Peak,M.O3_PEAK); gl.uniform1f(loc.u_o3Half,M.O3_HALF);
         gl.uniform1f(loc.u_strength,(u.strength==null?1:u.strength));
+        gl.uniform1f(loc.u_disc,(u.disc==null?0:u.disc));
+        gl.uniform2f(loc.u_res,W,H);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tSun); gl.uniform1i(loc.u_tSun,0);
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,tMs); gl.uniform1i(loc.u_tMs,1);
-        /* the air over black space ADDS light; there is nothing behind it to see through, and the
-           globe's own pixels were discarded above, so premultiplied source-over IS the addition */
+        gl.uniform1i(loc.u_bg,2);
+        /* ⚠⚠ (#R237) NO BLENDING. The shader emits the COMPOSITE — what is behind, attenuated, plus
+           what the air scatters in — so the framebuffer is replaced where the air has something to
+           say and `discard`ed where it does not. Source-over was #R227's only option while the
+           background was unreadable, and it is what forced the three-channel extinction into one
+           luminance alpha; both go away with the copy above. */
         gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
         gl.disable(gl.CULL_FACE);
-        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+        gl.disable(gl.BLEND);
         gl.drawArrays(gl.TRIANGLES,0,3);
         drawn++;                       /* (#R236) counted only where the draw call actually issued */
         gl.activeTexture(gl.TEXTURE0);
