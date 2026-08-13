@@ -143,15 +143,27 @@ window.IntMapAbout = (function () {
     EN = { text: Object.create(null), alt: Object.create(null), title: document.title, desc: '' };
     var md = document.querySelector('meta[name="description"]');
     if (md) EN.desc = md.getAttribute('content') || '';
-    var n = document.querySelectorAll('[data-i]');
-    for (var i = 0; i < n.length; i++) {
-      var k = n[i].getAttribute('data-i');
-      if (!(k in EN.text)) EN.text[k] = n[i].textContent;
-    }
-    var a = document.querySelectorAll('[data-i-alt]');
-    for (var j = 0; j < a.length; j++) {
-      var ka = a[j].getAttribute('data-i-alt');
-      if (!(ka in EN.alt)) EN.alt[ka] = a[j].getAttribute('alt') || '';
+
+    /* ⚠ THE <template> IS READ TOO, AND IT HAS TO BE. The two deferred hero frames are not in the
+       document at boot, so a walk of `document` alone would never record their English alt text —
+       and then a reader who switched to Japanese and back would be left with Japanese alts on the
+       two frames that had been cloned in meanwhile. Template contents are queryable without being
+       adopted, so this costs nothing and no fetch. */
+    var roots = [document];
+    var tpl = document.getElementById('hp-frames-rest');
+    if (tpl && tpl.content) roots.push(tpl.content);
+
+    for (var r = 0; r < roots.length; r++) {
+      var n = roots[r].querySelectorAll('[data-i]');
+      for (var i = 0; i < n.length; i++) {
+        var k = n[i].getAttribute('data-i');
+        if (!(k in EN.text)) EN.text[k] = n[i].textContent;
+      }
+      var a = roots[r].querySelectorAll('[data-i-alt]');
+      for (var j = 0; j < a.length; j++) {
+        var ka = a[j].getAttribute('data-i-alt');
+        if (!(ka in EN.alt)) EN.alt[ka] = a[j].getAttribute('alt') || '';
+      }
     }
   }
 
@@ -308,32 +320,39 @@ window.IntMapAbout = (function () {
     var host = document.getElementById('hp-frames');
     var dots = document.getElementById('hp-dots');
     if (!host) return;
-    var imgs = host.querySelectorAll('img');
-    if (imgs.length < 2) return;
-    var at = 0, timer = 0;
 
+    /* ⚠ FRAMES 2 AND 3 ARE CLONED IN AFTER THE LOAD EVENT, NOT PARSED WITH THE PAGE.
+       `loading="lazy"` does not defer an image inside the hero, so all three used to arrive on the
+       first connection — measured 649 KB before a scroll, 367 KB of it two pictures nothing shows
+       for 5.6 s. They sit in a <template>, whose contents belong to an inert document and are
+       therefore never fetched, and this clones them in once the load event has passed.
+
+       ⚠ IT IS A TEMPLATE AND NOT `data-src` BECAUSE COPYING AN ATTRIBUTE INTO `src` IS A DOM
+       STRING BECOMING A URL. CodeQL failed the pull request that first shipped this
+       (js/xss-through-dom, high) and it was right to: the value is our own literal today, and the
+       SHAPE is the thing worth not having — the same ruling js/page-i18n.js records about building
+       a script src from `?lang=`. `cloneNode` moves nodes, not strings, so there is no sink left
+       to reason about. */
+    var tpl = document.getElementById('hp-frames-rest');
+    var rest = (tpl && tpl.content) ? tpl.content.querySelectorAll('picture').length : 0;
+    var total = host.querySelectorAll('picture').length + rest;
+    if (total < 2) return;
+
+    var imgs = host.querySelectorAll('img');
+    if (!imgs.length) return;
+    var at = 0, timer = 0;
     imgs[0].classList.add('hp-fr-on');
 
-    /* ⚠ FRAMES 2 AND 3 ARE FETCHED AFTER THE PAGE HAS LOADED, NOT WITH IT. `loading="lazy"` does
-       not defer an image inside the hero, so all three used to arrive on the first connection —
-       measured 649 KB before a scroll, of which 367 KB was these two. They are promoted from
-       `data-src`/`data-srcset` once the load event has passed (and at the latest when the rotation
-       is about to need them), which takes the first view to ~280 KB without changing what the
-       visitor eventually sees. */
     var promoted = false;
     function promote() {
-      if (promoted) return;
+      if (promoted || !tpl || !tpl.content) return;
       promoted = true;
-      var srcs = host.querySelectorAll('source[data-srcset]');
-      for (var i = 0; i < srcs.length; i++) {
-        srcs[i].setAttribute('srcset', srcs[i].getAttribute('data-srcset'));
-        srcs[i].removeAttribute('data-srcset');
-      }
-      var lazy = host.querySelectorAll('img[data-src]');
-      for (var j = 0; j < lazy.length; j++) {
-        lazy[j].setAttribute('src', lazy[j].getAttribute('data-src'));
-        lazy[j].removeAttribute('data-src');
-      }
+      host.appendChild(tpl.content.cloneNode(true));
+      imgs = host.querySelectorAll('img');
+      /* the frames that just arrived carry English alt text; if the reader is in another
+         language they have to be re-labelled, and captureEnglish() already read them out of
+         the template so switching back to English restores the original. */
+      applyLang(current);
     }
     function schedulePromote() {
       var run = function () {
@@ -347,7 +366,7 @@ window.IntMapAbout = (function () {
 
     var btns = [];
     if (dots) {
-      for (var i = 0; i < imgs.length; i++) {
+      for (var i = 0; i < total; i++) {
         (function (n) {
           var b = document.createElement('button');
           b.type = 'button';
@@ -364,12 +383,13 @@ window.IntMapAbout = (function () {
     function show(n) {
       if (n === at) return;
       promote();                          /* a dot clicked before the idle callback still works */
+      if (n >= imgs.length) return;       /* …and if the clone failed, the frame simply does not change */
       imgs[at].classList.remove('hp-fr-on');
       at = n;
       imgs[at].classList.add('hp-fr-on');
       btns.forEach(function (b, i) { b.setAttribute('aria-current', i === at ? 'true' : 'false'); });
     }
-    function tick() { show((at + 1) % imgs.length); }
+    function tick() { show((at + 1) % total); }
     function restart() { stop(); if (!reduce) timer = setInterval(tick, 5600); }
     function stop() { if (timer) { clearInterval(timer); timer = 0; } }
 
