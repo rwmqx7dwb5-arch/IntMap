@@ -134,6 +134,39 @@ test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first
     '「やっぱり、震源域を先に」 — the row reads in the order the work is done');
 });
 
+/* ── 5 · one picker, two sources ─────────────────────────────────────────────────────────────── */
+test('R236 seismic: past and recent earthquakes are ONE control, switch above the shared list', () => {
+  const s = code(read('js/seismic.js'));
+  assert.match(s, /class="sq-src-past"/, 'the switch has a past side');
+  assert.match(s, /class="sq-src-recent"/, '…and a recent side');
+  /* the list is a single <select>, filled from whichever source is showing */
+  assert.match(s, /evSrc==='recent'\s*\?\s*\('<option value=""/, 'one list, two fillings');
+  assert.match(s, /QUAKE_EVENTS\.map\(e=>'<option/, 'the catalogue fills it on the past side');
+  assert.match(s, /_realFeats\.map\(\(f,i\)=>'<option/, 'the USGS feed fills it on the recent side');
+  /* ⚠ the old pair is gone, and gone rather than merely unused: an unguarded
+     `querySelector('.sq-real').onclick` throws inside render() and takes the whole panel down. */
+  assert.doesNotMatch(s, /class="sq-real"/, 'the separate recent button is gone');
+  assert.doesNotMatch(s, /class="sq-real-sel"/, 'and so is its separate list');
+  assert.doesNotMatch(s, /querySelector\('\.sq-real'\)\.onclick/, 'nothing still binds to the removed button');
+  /* the query runs once, and the list says so while it is running */
+  assert.match(s, /if\(_realBusy\) return;/, 'pressing the switch repeatedly does not re-query');
+  assert.match(s, /Loading the recent earthquakes…/, 'the list reports the fetch instead of looking empty');
+});
+
+test('R236 seismic: the 2024 Noto Peninsula earthquake is in the catalogue, from the USGS sheet', () => {
+  const s = read('js/seismic-events.js');
+  const m = /id: 'noto2024', usgs: '([^']+)'/.exec(s);
+  assert.ok(m, 'the event is present with a ShakeMap id to fetch its published outline from');
+  assert.equal(m[1], 'us6000m0xl', 'the id is the one on the sheet the reader supplied');
+  /* every number on the row is the sheet's: M7.5 · N37.49 E137.27 · 10.0 km · 2024-01-01 07:10:09 UTC */
+  const row = s.slice(s.indexOf("id: 'noto2024'"), s.indexOf("id: 'noto2024'") + 1800);
+  assert.match(row, /when: '2024-01-01T07:10:09Z'/);
+  assert.match(row, /lat: 37\.49, lng: 137\.27, depthKm: 10, mw: 7\.5/);
+  assert.match(row, /name: \[[^\]]*'2024年 能登半島地震'/, 'named in five languages, positionally');
+  assert.match(row, /obs: \{/, 'and it carries what was observed at the time');
+  assert.match(row, /JMA 7 \(Shika, Ishikawa\)/, 'including the peak intensity');
+});
+
 test('R236 seismic: with a rupture drawn, a hypocentre outside it is refused', () => {
   const s = code(read('js/seismic.js'));
   assert.match(s, /if\(fault&&fault\.ring&&fault\.ring\.length>=3&&!_inRing\(p,fault\.ring\)\)\{\s*_epiOutside=1;/,

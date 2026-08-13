@@ -97,4 +97,8 @@ window.IntMapLang.define('ko', { ui: {
   "Place the hypocenter": "진원 배치",
   "Tap inside the rupture area to place the hypocenter.": "진원역 안쪽을 탭하여 진원을 배치하세요.",
   "That point is outside the rupture area — the rupture starts on the plane it happened on.": "해당 지점은 진원역 밖입니다 — 파열은 그것이 일어난 단층면 위에서 시작됩니다.",
-  "This is where the rupture starts, so it sets the direction it runs in.": "여기가 파열의 시작점이며, 파열이 진행하는 방향을 결정합니다.",} });
+  "This is where the rupture starts, so it sets the direction it runs in.": "여기가 파열의 시작점이며, 파열이 진행하는 방향을 결정합니다.",
+  "Past earthquakes": "과거의 지진",
+  "Recent earthquakes": "최근의 지진",
+  "No list yet — press to load": "목록이 아직 없습니다 — 눌러서 불러오기",
+  "Loading the recent earthquakes…": "최근 지진을 불러오는 중…",} });

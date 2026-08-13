@@ -2343,5 +2343,9 @@ window.IntMapLang.define('zh-hans', {
   "Tap inside the rupture area to place the hypocenter.": "请点击震源域内部以设置震央。",
   "That point is outside the rupture area — the rupture starts on the plane it happened on.": "该地点位于震源域之外——破裂是从其发生的断层面上开始的。",
   "This is where the rupture starts, so it sets the direction it runs in.": "这里是破裂的起点，因此决定了破裂传播的方向。",
+  "Past earthquakes": "过去的地震",
+  "Recent earthquakes": "最近的地震",
+  "No list yet — press to load": "尚无列表——请按此加载",
+  "Loading the recent earthquakes…": "正在加载最近的地震…",
   }
 });

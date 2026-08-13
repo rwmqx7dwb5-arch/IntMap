@@ -107,4 +107,8 @@ window.IntMapLang.define('fr', { ui: {
   "Place the hypocenter": "Placer l'hypocentre",
   "Tap inside the rupture area to place the hypocenter.": "Touchez l'intérieur de la zone de rupture pour placer l'hypocentre.",
   "That point is outside the rupture area — the rupture starts on the plane it happened on.": "Ce point est en dehors de la zone de rupture — la rupture commence sur le plan où elle s'est produite.",
-  "This is where the rupture starts, so it sets the direction it runs in.": "C'est là que la rupture commence, ce qui détermine la direction dans laquelle elle se propage.",} });
+  "This is where the rupture starts, so it sets the direction it runs in.": "C'est là que la rupture commence, ce qui détermine la direction dans laquelle elle se propage.",
+  "Past earthquakes": "Séismes passés",
+  "Recent earthquakes": "Séismes récents",
+  "No list yet — press to load": "Pas encore de liste — appuyez pour charger",
+  "Loading the recent earthquakes…": "Chargement des séismes récents…",} });

@@ -660,6 +660,10 @@ window.IntMapModules.seismic=function(HOST){
     /* (#R236) set when a hypocentre click landed outside the drawn rupture — the banner says so, and
        it is cleared by the next accepted click or by clearing the rupture. */
     let _epiOutside=0;
+    /* (#R236) which side of the one earthquake picker is showing: the curated catalogue or the USGS
+       feed. ⚠ Declared up here with the rest of the panel state, above render() — #R200 lost a whole
+       boot to a `let` a function could reach before its declaration had been evaluated. */
+    let evSrc='past';
     const MAXT=2400;
     /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
        TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
@@ -2218,10 +2222,33 @@ window.IntMapModules.seismic=function(HOST){
               come from the row (js/seismic-events.js) and the panel then computes the result the same
               way it computes anything the reader drew by hand. Nothing about the model is special-cased
               for a preset: that is what makes the answer comparable. */
-        +'<div class="sq-ev-wrap" style="display:flex;gap:6px;align-items:center;">'
-        +'<select class="sq-ev" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
-        +'<option value="">'+L('Load a past earthquake…','過去の地震を読み込む…','Vergangenes Beben laden…','Загрузить прошлое землетрясение…','Cargar un terremoto pasado…')+'</option>'
-        +QUAKE_EVENTS.map(e=>'<option value="'+e.id+'"'+(evId===e.id?' selected':'')+'>'+HOST.escapeHtml(L.apply(null,e.name))+' · M'+e.mw.toFixed(1)+'</option>').join('')
+        /* ══ (#R236) ONE PLACE TO LOAD AN EARTHQUAKE, WITH TWO SOURCES ═══════════════════════════════
+           「過去の地震を読み込む、最近の地震を読み込むは同じUIに統一し、そのなかで両方から選べるように。」
+           and, on the shape: 「上部に切替、下に共通の一覧」.
+
+           They had been two unrelated controls at opposite ends of the panel — a `<select>` of the
+           curated catalogue at the top and a button-plus-`<select>` for the USGS feed at the bottom —
+           which made "load an earthquake" a thing you did in two different places depending on which
+           kind you wanted. Now: one segmented switch, one list under it. The switch chooses where the
+           rows COME FROM; everything below the list is unchanged, because both paths already ended
+           in the same place (applyEvent / applyReal each set up the panel the same way a hand-drawn
+           event is set up). ⚠ The recent list is fetched on demand and only once — switching to it
+           with nothing loaded starts the query, and the list says so while it runs. */
+        +'<div class="sq-ev-wrap" style="display:flex;flex-direction:column;gap:6px;">'
+        +'<div style="display:flex;gap:5px;">'
+          +'<button class="sq-src-past" style="'+SEG(evSrc!=='recent')+'">'+L('Past earthquakes','過去の地震','Vergangene Beben','Прошлые землетрясения','Terremotos pasados')+'</button>'
+          +'<button class="sq-src-recent" style="'+SEG(evSrc==='recent')+'">'+L('Recent earthquakes','最近の地震','Aktuelle Beben','Недавние землетрясения','Terremotos recientes')+'</button>'
+        +'</div>'
+        +'<select class="sq-ev" style="width:100%;box-sizing:border-box;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
+        +(evSrc==='recent'
+          ? ('<option value="">'+(_realBusy
+                ? L('Loading the recent earthquakes…','最近の地震を読み込み中…','Aktuelle Beben werden geladen…','Загрузка недавних землетрясений…','Cargando terremotos recientes…')
+                : (_realFeats.length
+                   ? L('Choose an earthquake…','地震を選んでください…','Beben auswählen…','Выберите землетрясение…','Elija un terremoto…')
+                   : L('No list yet — press to load','一覧はまだありません（押すと読み込みます）','Noch keine Liste — zum Laden drücken','Списка ещё нет — нажмите для загрузки','Aún no hay lista — pulse para cargar')))+'</option>'
+             +_realFeats.map((f,i)=>'<option value="'+i+'">'+HOST.escapeHtml(_realLabel(f))+'</option>').join(''))
+          : ('<option value="">'+L('Choose an earthquake…','地震を選んでください…','Beben auswählen…','Выберите землетрясение…','Elija un terremoto…')+'</option>'
+             +QUAKE_EVENTS.map(e=>'<option value="'+e.id+'"'+(evId===e.id?' selected':'')+'>'+HOST.escapeHtml(L.apply(null,e.name))+' · M'+e.mw.toFixed(1)+'</option>').join('')))
         +'</select></div>'
         +(evNow?('<div class="sq-ev-obs" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);padding:2px 0 2px 8px;">'+evObsHtml(evNow)+'</div>'):'')
         /* ══ (#R212) ONE CONTROL FOR ONE THING ═══════════════════════════════════════════════════════
@@ -2344,16 +2371,10 @@ window.IntMapModules.seismic=function(HOST){
         /* ══ (#R234) A LIST, NOT WHICHEVER ONE HAPPENED TO BE BIGGEST ═════════════════════════════
            「🌎 最近の実際の地震を読み込むに、絵文字はいらない。また、地震は一つだけでなく、直近の地震
              一覧から選べるように。」 — the old button fetched the month's summary feed and took
-           `sort(mag)[0]`, i.e. exactly one earthquake, chosen by the code. Pressing it now fills the
-           picker beside it from the USGS event query (worldwide, M ≥ 6.0, the last year) and the
-           reader chooses. `applyReal` is the old body, unchanged, taking a feature instead of finding
-           one — so a chosen event is set up byte-for-byte the way the single one used to be. */
-        +'<div style="display:flex;flex-direction:column;gap:6px;">'
-        +'<button class="sq-real" style="'+BTN+'width:100%;">'+L('Load a recent real earthquake','最近の実際の地震を読み込む','Echtes Beben laden','Загрузить реальное землетрясение','Cargar un sismo real')+'</button>'
-        +'<select class="sq-real-sel" style="display:'+(_realFeats.length?'block':'none')+';width:100%;padding:6px 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
-        +'<option value="">'+L('Choose an earthquake…','地震を選んでください…','Beben auswählen…','Выберите землетрясение…','Elija un terremoto…')+'</option>'
-        +_realFeats.map((f,i)=>'<option value="'+i+'">'+HOST.escapeHtml(_realLabel(f))+'</option>').join('')
-        +'</select></div>'
+           `sort(mag)[0]`, i.e. exactly one earthquake, chosen by the code. The picker is filled from
+           the USGS event query (worldwide, M ≥ 6.0, the last year) and the reader chooses.
+           (#R236) …and BOTH pickers are the one control at the top of the panel now — see there.
+           `applyReal` is unchanged, so a chosen event is still set up exactly as it was. */
         /* ══ (#R190) 「津波が発生するとされるような地震だった場合、津波シミュレーターも使えるように。」
            Shown only when THIS event meets the tsunamigenic conditions (see tsunamiCase). It hands the
            epicentre, the magnitude and the focal depth to the ONE tsunami model this app has — the
@@ -2398,7 +2419,20 @@ window.IntMapModules.seismic=function(HOST){
            'Фронты волн — внешняя огибающая фронтов от всех выбранных точек очага, решённая на сфере, поэтому нарисованный от руки контур сохраняет вогнутость и не заменяется выпуклой оболочкой; каждая точка использует годограф для СВОЕЙ глубины на наклонной плоскости. Групповая скорость поверхностных волн интегрируется вдоль каждого большого круга, а не берётся постоянной, поэтому океанический путь опережает континентальный; 3,5 / 4,4 км/с — континентальный эталон, отношение задаётся в расширенных настройках.',
            'Los frentes de onda son la envolvente exterior de los frentes de cada punto muestreado de la ruptura — resuelta sobre la esfera, de modo que un contorno dibujado a mano conserva su concavidad en lugar de ser sustituido por su envolvente convexa — y cada punto usa la curva de tiempos de su PROPIA profundidad en el plano buzante. La velocidad de grupo de las ondas superficiales se integra a lo largo de cada círculo máximo en vez de mantenerse constante, así que un trayecto oceánico se adelanta a uno continental; 3,5 / 4,4 km/s son la referencia continental y la razón está en los ajustes avanzados.')
         +'</div></details></div>';
-      { const ev=panel.querySelector('.sq-ev'); if(ev) ev.onchange=()=>{ applyEvent(ev.value); }; }   /* (#R232) */
+      /* ══ (#R236) THE ONE PICKER: the switch chooses the SOURCE, the list chooses the earthquake ═══
+         Each half keeps the handler it already had — `applyEvent` for the curated catalogue,
+         `applyReal` for a USGS feature — so neither path changed, only where you reach it from. */
+      { const ev=panel.querySelector('.sq-ev');
+        if(ev) ev.onchange=()=>{ const v=ev.value; if(v==='') return;
+          if(evSrc==='recent'){ const i=+v; if(_realFeats[i]) applyReal(_realFeats[i]); }
+          else applyEvent(v); }; }   /* (#R232) */
+      { const past=panel.querySelector('.sq-src-past'), rec=panel.querySelector('.sq-src-recent');
+        if(past) past.onclick=()=>{ if(evSrc==='past') return; evSrc='past'; render(); };
+        /* switching to the feed with nothing loaded is what starts the query — the reader should not
+           have to find a separate button to make the list they just asked for appear (#R234's list
+           button is gone, its body is loadReal()). */
+        if(rec) rec.onclick=()=>{ if(evSrc!=='recent'){ evSrc='recent'; render(); }
+          if(!_realFeats.length&&!_realBusy) loadReal(); }; }
       panel.querySelector('.sq-close').onclick=()=>close();
       { const mb=panel.querySelector('.sq-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
       { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
@@ -2474,10 +2508,11 @@ window.IntMapModules.seismic=function(HOST){
             tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts();
             const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } };
           const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } } };
-      panel.querySelector('.sq-real').onclick=()=>loadReal();
-      /* (#R234) …and choosing from the list is what loads one — see loadReal / applyReal */
-      { const rs=panel.querySelector('.sq-real-sel');
-        if(rs) rs.onchange=(e)=>{ const i=+e.target.value; if(_realFeats[i]) applyReal(_realFeats[i]); }; }
+      /* (#R236) `.sq-real` / `.sq-real-sel` are gone — both halves are the one picker at the top of
+         the panel now, wired beside `.sq-ev` above. ⚠ The old lines were an unguarded
+         `querySelector('.sq-real').onclick`, which on a panel without that button throws inside
+         render() and takes the WHOLE panel with it; that is why they are deleted rather than left
+         to find nothing. */
       try{ makeDraggable(panel,panel.querySelector('.sq-head')); }catch(_){}
       /* (#R190) whatever this render just decided about the tsunami button IS the shown state —
          recording it here is what stops syncTsunami re-rendering in a loop */
@@ -3108,19 +3143,25 @@ window.IntMapModules.seismic=function(HOST){
        page, and this host is proven by the feed this replaces). Newest first, because "recent" is
        the reader's ordering; the magnitude is in the label, so a big one is still easy to find. */
     let _realFeats=[];
+    /* (#R236) …and whether that query is in flight, so the one shared picker can say so rather than
+       looking like an empty list. */
+    let _realBusy=0;
     function _realLabel(f){
       const p=f.properties||{}, t=new Date(+p.time||0);
       const d=isFinite(t) ? t.toISOString().slice(0,10) : '';
       return 'M'+(+p.mag).toFixed(1)+' · '+d+' · '+String(p.place||'').replace(/\s+/g,' ').trim();
     }
     async function loadReal(){
+      if(_realBusy) return;                        /* (#R236) one query, however often the switch is pressed */
       const o=panel&&panel.querySelector('.sq-out'); if(o) o.innerHTML=L('Fetching USGS…','USGSから取得中…','USGS wird abgefragt…','Запрос к USGS…','Consultando USGS…');
+      _realBusy=1; if(opened) render();
       try{
         const since=new Date(Date.now()-365*24*3600*1000).toISOString().slice(0,10);
         const r=await fetch('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmagnitude=6&starttime='+since);
         const j=await r.json();
         _realFeats=(j.features||[]).filter(x=>x&&x.properties&&isFinite(x.properties.mag)&&x.geometry&&x.geometry.coordinates);
         if(!_realFeats.length) throw new Error('the query returned no events');
+        _realBusy=0;
         render();
         if(o) o.insertAdjacentHTML('afterbegin','<div style="margin-bottom:5px;">'
           +L(_realFeats.length+' earthquakes of M6.0+ in the last year — choose one below.',
@@ -3128,7 +3169,8 @@ window.IntMapModules.seismic=function(HOST){
              _realFeats.length+' Beben ab M6,0 im letzten Jahr — unten auswählen.',
              _realFeats.length+' землетрясений M6,0+ за год — выберите ниже.',
              _realFeats.length+' terremotos de M6,0+ en el último año — elija abajo.')+'</div>');
-      }catch(_){ if(o) o.innerHTML=L('Could not reach the USGS feed.','USGSのフィードに接続できませんでした。','USGS-Feed nicht erreichbar.','Не удалось получить данные USGS.','No se pudo acceder al feed del USGS.'); }
+      }catch(_){ _realBusy=0; if(opened) render();
+        if(o) o.innerHTML=L('Could not reach the USGS feed.','USGSのフィードに接続できませんでした。','USGS-Feed nicht erreichbar.','Не удалось получить данные USGS.','No se pudo acceder al feed del USGS.'); }
     }
     /* the old body of loadReal, given the chosen feature rather than finding one itself */
     function applyReal(f){
