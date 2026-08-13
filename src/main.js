@@ -189,6 +189,9 @@ import '../js/legal.js';
 import '../js/feedback.js';
 import '../js/onboarding.js';
 import '../js/mobile-ui.js';
+/* (#R231) the phone's base-map square + its popover — the five view controls, lifted out of the Map &
+   layers sheet ("レイヤー選択欄から分離"). After js/mobile-ui.js because initMobileUI() installs it. */
+import '../js/basemap-switch.js';
 import '../js/news-timeline.js';
 import '../js/dash-extended.js';
 import '../js/map-extras.js';

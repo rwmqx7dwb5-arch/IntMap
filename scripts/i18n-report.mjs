@@ -112,8 +112,17 @@ function inlineStrings() {
     });
     walk.simple(ast, {
       CallExpression(n) {
-        if (!n.callee || n.callee.type !== 'Identifier' || !names.has(n.callee.name)) return;
-        const a = n.arguments[0];
+        /* ⚠ (#R231) TWO SHAPES, NOT ONE. `L(en, …)` is the helper bound to IntMapLang.pick(); the
+           second is `IntMapLang.t(lang, en, …)`, which scripts/lang-ternary-codemod.mjs wrote at 268
+           sites that used to be hand-written `lang==='jp'?…` chains. Those chains were invisible to
+           this report, which is why it printed 100 % for seven rounds while Chinese screens still
+           carried English — see the header of `t()` in js/lang-registry.js. A report that could not
+           see the new shape either would simply move the blind spot. */
+        let a = null;
+        if (n.callee && n.callee.type === 'Identifier' && names.has(n.callee.name)) a = n.arguments[0];
+        else if (n.callee && n.callee.type === 'MemberExpression' && !n.callee.computed
+          && n.callee.property && n.callee.property.name === 't'
+          && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) a = n.arguments[1];
         if (!a || a.type !== 'Literal' || typeof a.value !== 'string' || !a.value.trim()) return;
         if (!out.has(a.value)) out.set(a.value, []);
         const arr = out.get(a.value); if (arr.indexOf(f) < 0) arr.push(f);
@@ -165,6 +174,19 @@ function main() {
     return;
   }
 
+  /* (#R231) `--missing <code>` prints exactly the inline strings that language has no entry for, as
+     ready-to-paste table rows. Without it, closing a gap means diffing 2,000 keys by eye — which is
+     why #R223/#R224's tables were never topped up as new strings landed. */
+  const wantMissing = process.argv.indexOf('--missing');
+  if (wantMissing >= 0) {
+    const code = process.argv[wantMissing + 1];
+    const have = inlineTable(code);
+    const gaps = [...inline.keys()].filter((s) => !have.has(s)).sort((a, b) => a.localeCompare(b));
+    console.error(`${code}: ${gaps.length} of ${inline.size} inline strings have no entry`);
+    for (const s of gaps) console.log(`    ${ESC(s)}: ${ESC(s)},   /* ${inline.get(s).slice(0, 2).join(' ')} */`);
+    return;
+  }
+
   console.log(`Inline L(…) strings in js/: ${inline.size}`);
   console.log(`Keyed UI strings (English): ${en.size}\n`);
   console.log('code   keyed          inline');
@@ -173,7 +195,15 @@ function main() {
     const i = inlineTable(r.code);
     const kn = r.code === 'en' ? en.size : (k ? [...k].filter((x) => en.has(x)).length : 0);
     const positional = rows.findIndex((x) => x.code === r.code) < 5;
-    const inTxt = positional ? 'n/a (positional)' : `${i.size}/${inline.size}  ${(100 * i.size / Math.max(1, inline.size)).toFixed(0)}%`;
+    /* ⚠⚠ (#R231) COVERAGE IS MEMBERSHIP, NOT A SIZE RATIO. This printed `i.size / inline.size`, so a
+       table holding 2,068 entries against 2,038 live strings read "100 %" while five of those live
+       strings had no entry at all — and thirty stale ones (for call sites since edited or deleted)
+       padded the number that hid them. That is this round's own headline defect, one level down: an
+       instrument reporting green for something it is not looking at. It counts the intersection now,
+       which is the only number that answers "will a reader of this language see their own words". */
+    const covered = [...inline.keys()].filter((s) => i.has(s)).length;
+    const inTxt = positional ? 'n/a (positional)'
+      : `${covered}/${inline.size}  ${(100 * covered / Math.max(1, inline.size)).toFixed(1)}%`;
     console.log(`${r.code.padEnd(6)} ${String(kn).padStart(4)}/${en.size}  ${((100 * kn) / en.size).toFixed(0).padStart(3)}%   ${inTxt}`);
   }
   console.log('\n"positional" = one of the first five languages, whose translations live as arguments');

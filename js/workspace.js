@@ -68,8 +68,12 @@ window.IntMapModules.workspace=function(HOST){
         onShow:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} },
         onHide:()=>{ try{ window._clearCompare&&window._clearCompare(); }catch(_){} try{ const p=document.getElementById('country-popup'); if(p) p.style.display='none'; }catch(_){} } },
       {id:'info',     sels:['#info-search-bar','#info-dashboard','#co-compare-fixed'],  t:()=>T('Companies','企業','Unternehmen','Компании','Empresas'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }, onShow:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }},   /* (#R153) Companies window now carries its OWN search bar + compare dock (Countries parity) so filtering & comparison work in workspace mode */
-      /* (#R141) Monitors window — area watches + evidence-backed reports. Adopts the #monitors-feed content area. */
-      {id:'monitors', sels:['#monitors-feed'],   t:()=>T('Monitors','モニター','Monitore','Мониторы','Monitores'), min:[300,300], defHidden:true, onWrap:()=>{ try{ if(window.IntMapMonitors&&IntMapMonitors.render) IntMapMonitors.render(); }catch(_){} }, onShow:()=>{ try{ if(window.IntMapMonitors&&IntMapMonitors.render) IntMapMonitors.render(); }catch(_){} }},
+      /* (#R231) THE MONITORS WINDOW IS WITHDRAWN with the sidebar tab it mirrors — 「MonitorsはNews/
+         Companies/Countries/Atlasの並びから一旦撤去。」 Workspace mode listed it in its window menu,
+         which is one of the 導線 the withdrawal has to close; leaving it would let a desktop reader
+         open by name exactly the panel the phone and the sidebar no longer offer.
+         ⚠ #monitors-feed still exists in index.html and js/monitors.js still builds it — nothing is
+         deleted, this row is. Its default rect below (`monitors:flo(3)`) goes with it. */
       /* (#R101) Community window removed from workspace mode ("まだコミュニティ機能が残っている") — the community
          feature was already retired from the sidebar (R98); this leftover window/menu entry is gone too. */
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
@@ -403,7 +407,7 @@ window.IntMapModules.workspace=function(HOST){
       const flo=(i)=>[Math.round(W*0.30)+i*28,top+40+i*32,Math.round(W*0.32),Math.round(B*0.62)];   /* hidden windows' fallback when opened from the menu */
       return { countries:[0,top,sideW,B], map:[sideW,top,rightX-sideW,B],
         layers:[rightX,top,rightW,layersH], atlas:[rightX,top+layersH,rightW,B-layersH],
-        news:flo(0), info:flo(1), community:flo(2), monitors:flo(3) }; }   /* (#R142) the R141 Monitors window had NO default rect → mkWin got undefined → clampRect threw at every desktop ws-mode boot (silently swallowed) */
+        news:flo(0), info:flo(1), community:flo(2) }; }   /* (#R142) a window with NO default rect gave mkWin undefined → clampRect threw at every desktop ws-mode boot (silently swallowed); (#R231) `monitors:flo(3)` left with its window above */
     function clampRect(r,min){ const b=wsBounds(); r=r||[];   /* (#R142) never throw on a missing default rect — fall back to a sensible box instead */
       /* (#R79d) clamp to the usable rect — full width, from the menu bottom down to the TICKER TOP (so a window
          can fill the real area edge-to-edge but never overlaps the menu bar or hides behind the ticker). */

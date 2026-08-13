@@ -74,12 +74,17 @@ test('R191 UI: the desktop chrome carries no magnifier emoji', () => {
   for (const f of ['js/i18n.js', 'js/data-layers.js', 'js/map-extras.js']) {
     assert.ok(!read(f).includes('\u{1F50D}'), `${f} has no \u{1F50D}`);
   }
-  /* …and the mobile-only round FAB keeps its glyph: it has no room for a word */
+  /* ⚠ (#R231) …AND THE PHONE NO LONGER KEEPS ONE EITHER. This block used to REQUIRE the magnifier
+     inside the mobile media query. 「地名検索ボタンの絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して」
+     reverses that, so the requirement is INVERTED rather than deleted — a check that merely
+     disappears is a hole, and the app must not grow the glyph back on either breakpoint. What
+     replaces it (the drawn <svg>, the word/mark swap, the two display rules) is asserted in
+     tests/r231-checks.test.mjs ②. */
   const css = read('css/intmap.css');
-  assert.match(css, /#ms-btn::after\{ content:'\u{1F50D}'/u, 'the mobile place-search FAB keeps its glyph');
-  const i = css.indexOf("#ms-btn::after{ content:'\u{1F50D}'");
-  assert.ok(css.lastIndexOf('@media', i) > css.lastIndexOf('}\n', i) - 20000 && /max-width:768px/.test(css.slice(Math.max(0, i - 4000), i)),
-    'and it is inside the mobile media block');
+  /* ⚠ COMMENTS STRIPPED FIRST. The notes that record the removal quote the glyph, and a negative
+     check that reads prose fails on a correct tree — #R208's and #R229's recurring defect. */
+  const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(!cssCode.includes('\u{1F50D}'), 'no magnifier in any rule, the mobile block included');
 });
 
 /* ── 4 · the layer sidebar follows the appearance setting ────────────────────────────────────── */

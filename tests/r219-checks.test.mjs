@@ -169,12 +169,18 @@ test('R219 ⑤ no i18n key is declared twice inside one Object.assign literal', 
 test('R219 ⑥ js/locales/pages.*.js and IntMapPageI18N.LANGS are the same set', () => {
   const files = readdirSync(join(ROOT, 'js', 'locales'))
     .map((f) => /^pages\.([a-z-]+)\.js$/.exec(f)).filter(Boolean).map((m) => m[1]).sort();
-  const src = read('js/page-i18n.js');
-  const block = /var LANGS = \[([\s\S]*?)\];/.exec(src);
-  assert.ok(block, 'LANGS table not found in js/page-i18n.js');
-  const listed = [...block[1].matchAll(/code:\s*'([a-z-]+)'/g)].map((m) => m[1]).sort();
+  /* ⚠ (#R231) THE LIST MOVED, SO THIS READS IT WHERE IT NOW LIVES. js/page-i18n.js used to hold a
+     literal five-row LANGS of its OWN — which is precisely why #R223's 繁體中文 and #R224's 简体中文
+     never reached these two pages. It derives from js/lang-registry.js now (one list for the whole
+     app), and the file suffix is each row's BCP-47 `html` tag, so the gate compares the locale
+     files on disk against THAT. The property being enforced is unchanged: a file without its row,
+     or a row without its file, fails the build instead of shipping a language that never loads. */
+  const reg = read('js/lang-registry.js');
+  const listed = [...reg.matchAll(/\{ code: '[^']+',[^}]*html: '([^']+)'/g)]
+    .map((m) => m[1].toLowerCase()).sort();
+  assert.ok(listed.length >= 5, 'the registry has its languages');
   assert.deepEqual(files, listed,
-    'every locale file needs its LANGS row and vice versa — on disk: ' + files.join(',') + ' / listed: ' + listed.join(','));
+    'every locale file needs its registry row and vice versa — on disk: ' + files.join(',') + ' / listed: ' + listed.join(','));
   /* and each file must actually define the two documents the two pages render */
   for (const code of files) {
     const t = read('js/locales/pages.' + code + '.js');

@@ -50,16 +50,39 @@
 window.IntMapPageI18N = (function () {
   'use strict';
 
-  /* ── the languages. ONE row per language, and this is the only list. ────────────────────────
-     `code` is the file suffix AND the <html lang>; `label` is the language's own name, because
-     a language picker that names languages in a language you cannot read is not a picker. */
-  var LANGS = [
-    { code: 'en', label: 'English' },
-    { code: 'ja', label: '日本語' },
-    { code: 'de', label: 'Deutsch' },
-    { code: 'ru', label: 'Русский' },
-    { code: 'es', label: 'Español' }
-  ];
+  /* ══ ⚠⚠ (#R231) THIS WAS THE APP'S SECOND LANGUAGE REGISTRY, AND IT IS WHY THE READING PAGES
+     HAD NO CHINESE AT ALL ══════════════════════════════════════════════════════════════════════
+     「まだ簡体・繁体中文に不十分な箇所があるから詰めて。また、それと同時に今後IntMapの設定言語を
+       追加するのが、1発で終わるようにさらに柔軟な言語システムに。」
+
+     The five rows below were a LITERAL LIST, written here in #R218 — and js/lang-registry.js, added
+     three rounds later, was written believing it was "the only one in the app". So when #R223 added
+     繁體中文 and #R224 added 简体中文, both landed in that registry and neither reached this one: a
+     reader who set the app to Chinese opened Data sources and got an English page whose picker did
+     not even offer Chinese. Two lists is one list too many, and the second one is always the one
+     nobody remembers.
+
+     ⚠ THE SUFFIX IS THE BCP-47 TAG, WHICH IS WHAT THIS FILE ALREADY USED. A row's `html` is 'en',
+     'ja', 'de', 'ru', 'es' for the five that ship — byte-identical to the list this replaces, so no
+     locale file is renamed and no saved `intmap_science_lang` value stops resolving — and 'zh-Hant'
+     / 'zh-Hans' for the two new ones, which is also the correct <html lang> for them.
+
+     ⚠ AND IT STILL FALLS BACK TO A LITERAL. sources.html and science.html load js/lang-registry.js
+     ahead of this file, but a page that failed to (or a future consumer that embeds only this one)
+     must not lose its languages — so the five are kept as the answer of last resort. */
+  var LANGS = (function () {
+    try {
+      var rows = window.IntMapLang && window.IntMapLang.list ? window.IntMapLang.list() : null;
+      if (rows && rows.length) return rows.map(function (l) { return { code: String(l.html).toLowerCase(), label: l.label }; });
+    } catch (e) {}
+    return [
+      { code: 'en', label: 'English' },
+      { code: 'ja', label: '日本語' },
+      { code: 'de', label: 'Deutsch' },
+      { code: 'ru', label: 'Русский' },
+      { code: 'es', label: 'Español' }
+    ];
+  })();
   var FALLBACK = 'en';
   var STORE = 'intmap_science_lang';   /* the key the two pages have used since #R211 */
 
@@ -126,8 +149,19 @@ window.IntMapPageI18N = (function () {
     }
     return FALLBACK;
   }
-  /* the app writes Japanese as 'jp'; every page and every <html lang> writes it as 'ja' */
-  function normalise(c) { c = String(c || '').toLowerCase(); return (c === 'jp') ? 'ja' : c; }
+  /* The app writes Japanese as 'jp'; every page and every <html lang> writes it as 'ja'.
+     (#R231) …and the app writes Traditional/Simplified Chinese as 'zh' / 'zh-hans' while this file's
+     suffixes are their BCP-47 tags, so the registry — which owns every alias either spelling has —
+     does the mapping when it is present. The 'jp' special case stays as the answer of last resort,
+     for the same reason LANGS keeps its literal fallback above. */
+  function normalise(c) {
+    c = String(c || '').toLowerCase();
+    try {
+      var LR = window.IntMapLang;
+      if (LR && LR.has && LR.has(c)) return String(LR.htmlTag(c)).toLowerCase();
+    } catch (e) {}
+    return (c === 'jp') ? 'ja' : c;
+  }
 
   /* ── the app's own theme, so this page opens in the mode the map was in ─────────────────── */
   function applyTheme() {
@@ -152,14 +186,33 @@ window.IntMapPageI18N = (function () {
     if (v == null || v === '') v = at(docs[FALLBACK] || {}, [page, key]);
     return (v == null) ? '' : v;
   }
-  /* sections merge by id: a translation that is missing §7 still shows §7, in English. */
+  /* Sections merge by id: a translation that is missing §7 still shows §7, in English.
+     ⚠ (#R231) …AND NOW PER FIELD WITHIN A SECTION, WHICH IS WHAT THE HEADER ALWAYS CLAIMED.
+     「AND THE FALLBACK IS PER KEY, NOT PER PAGE」 was true of `pick()` and false here: a translated
+     section REPLACED the English one wholesale, so a locale file that gave §7 a heading and no
+     `blocks` deleted seven paragraphs of prose rather than leaving them in English. That made a
+     partial translation impossible to deliver — the only safe locale file was a complete one, which
+     is exactly the wall 「1発で終わる」 is about, and the reason the two Chinese page files could not
+     simply be started. Each field now falls back on its own: heading and nav from the translation,
+     prose from English until the translation reaches it. */
   function sectionsOf(page) {
     var mine = at(docs[current] || {}, [page, 'sections']) || [];
     var base = at(docs[FALLBACK] || {}, [page, 'sections']) || [];
     if (!base.length) return mine;
     var byId = Object.create(null);
     mine.forEach(function (s) { if (s && s.id) byId[s.id] = s; });
-    return base.map(function (s) { return (s && s.id && byId[s.id]) || s; });
+    return base.map(function (s) {
+      var t = (s && s.id) ? byId[s.id] : null;
+      if (!t) return s;
+      var out = {};
+      Object.keys(s).forEach(function (k) { out[k] = s[k]; });
+      Object.keys(t).forEach(function (k) {
+        var v = t[k];
+        if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;   /* an empty field is not a translation */
+        out[k] = v;
+      });
+      return out;
+    });
   }
 
   /* ── rendering ────────────────────────────────────────────────────────────────────────────
@@ -305,6 +358,7 @@ window.IntMapPageI18N = (function () {
     var back = el('p');
     var a2 = el('a', null, '← ' + pick('common', 'backToMap'));
     a2.href = './index.html';
+    wireBack(a2);
     back.appendChild(a2); foot.appendChild(back);
     root.appendChild(foot);
 
@@ -312,11 +366,40 @@ window.IntMapPageI18N = (function () {
     return slots;
   }
 
+  /* ══ (#R231) "BACK TO THE MAP" MEANS THE MAP YOU LEFT, NOT A NEW ONE ═════════════════════════
+     「データ出典ページやロジック解説ページからマップに戻るボタンを押したら、さっきのマップに戻る
+       のではなく、新たなマップを起動してしまう。元のページに戻るようにして。」
+
+     `href="./index.html"` is a fresh navigation: the app boots from zero and the reader loses the
+     camera, the layers, the time slider and every panel they had open — which on a phone is a
+     ten-second cold start to get back to a view they were already looking at.
+
+     ⚠ `history.back()` IS THE FIX, AND THE HREF STAYS. The <a> keeps pointing at ./index.html so
+     that middle-click, ⌘-click, "open in new tab" and a reader who arrived here from a bookmark or a
+     search engine all still work — this only intercepts the plain left-click, and only when going
+     back provably lands on this site's own map:
+       · an unmodified primary click (no ⌘/ctrl/shift/alt, no middle button), and
+       · document.referrer is a SAME-ORIGIN page — so a visitor who came from Google gets the map
+         rather than being sent back to Google, which would be the same defect mirrored.
+     Everything else falls through to the href untouched. */
+  function wireBack(a) {
+    if (!a || a.__back) return; a.__back = true;
+    a.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var sameSite = false;
+      try { sameSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (_) {}
+      if (!sameSite || history.length <= 1) return;
+      e.preventDefault();
+      history.back();
+    });
+  }
+
   function renderChrome(page) {
     var b = document.querySelector('.pg-back');
     if (b) {
       b.innerHTML = '← <span class="pg-back-t"></span>';
       b.querySelector('.pg-back-t').textContent = pick('common', 'backToMap');
+      wireBack(b);                                  /* (#R231) the header arrow, same rule as the footer's */
     }
     var sib = document.querySelector('.pg-sibling');
     if (sib) {

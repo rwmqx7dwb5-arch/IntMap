@@ -29,8 +29,20 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = resolve(ROOT, 'js/locales/ui.zh.js');
-const OUT = resolve(ROOT, 'js/locales/ui.zh-hans.js');
+/* ══ (#R231) TWO FILES NOW, NOT ONE ═══════════════════════════════════════════════════════════════
+   The reading pages (sources.html / science.html) got their Chinese this round, and they are a
+   SECOND body of text with the same property #R224 identified for the first: Simplified is not a
+   different translation of it, it is the same sentences in a different orthography. So the same
+   derivation runs over both, and `--check` covers both — a Traditional string fixed by hand in
+   either file is fixed in its Simplified twin, or the build says so.
+   ⚠ The page files are keyed by BCP-47 tag (js/page-i18n.js takes each language's `html` value as
+   the file suffix), which is why they are `zh-hant`/`zh-hans` while the app's UI table is `zh`. */
+const JOBS = [
+  { src: 'js/locales/ui.zh.js', out: 'js/locales/ui.zh-hans.js', what: 'UI STRINGS',
+    from: "window.IntMapLang.define('zh'", to: "window.IntMapLang.define('zh-hans'" },
+  { src: 'js/locales/pages.zh-hant.js', out: 'js/locales/pages.zh-hans.js', what: 'READING PAGES',
+    from: "window.IntMapPageI18N.define('zh-hant'", to: "window.IntMapPageI18N.define('zh-hans'" },
+];
 
 /* ── ① WORDS THAT ARE PINNED BEFORE ANYTHING ELSE ────────────────────────────────────────────────
    Traditional spellings whose characters must NOT take the blanket rule below. Written as a
@@ -132,17 +144,37 @@ const HEAD = `/* ===============================================================
  * ==========================================================================*/
 `;
 
-function build() {
-  const src = readFileSync(SRC, 'utf8');
-  /* the body starts at the define() call — the header above replaces ui.zh.js's own */
-  const at = src.indexOf("window.IntMapLang.define('zh'");
-  if (at < 0) throw new Error('ui.zh.js does not start its table with define(\'zh\')');
-  const body = toHans(src.slice(at)).replace("window.IntMapLang.define('zh'", "window.IntMapLang.define('zh-hans'");
-  return HEAD + body;
+function build(job) {
+  const src = readFileSync(resolve(ROOT, job.src), 'utf8');
+  /* the body starts at the define() call — the header above replaces the source file's own */
+  const at = src.indexOf(job.from);
+  if (at < 0) throw new Error(job.src + ' does not start its table with ' + job.from + ')');
+  /* ⚠⚠ (#R231) THE `inline` TABLE'S KEYS ARE ENGLISH SOURCE STRINGS AND MUST NOT BE CONVERTED.
+     Two of them quote Japanese inside otherwise-English prose (the seismic method note cites
+     気象庁「計測震度の算出方法」; the routing hint gives a Japanese example). The character map
+     rewrote those quotes, so the Simplified file's key no longer equalled the string at the call
+     site and both entries were dead — a translation present in the file and never used. Keys are
+     therefore lifted out before the conversion and put back after. Measured: 2 of 2,068 keys, which
+     is exactly the kind of small silent hole this project keeps paying for. */
+  let body = src.slice(at);
+  const keys = [];
+  body = body.replace(/\n(\s{4})('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")(\s*:)/g, (m, ind, key, tail) => {
+    keys.push(key);
+    return '\n' + ind + ' K' + (keys.length - 1) + ' ' + tail;
+  });
+  body = toHans(body).replace(/ K(\d+) /g, (m, i) => keys[+i]);
+  body = body.replace(job.from, job.to);
+  return HEAD.split('UI STRINGS').join(job.what)
+    .split('js/locales/ui.zh.js').join(job.src)
+    .split('ui.zh.js').join(job.src.split('/').pop()) + body;
 }
 
-const want = build();
-if (process.argv.includes('--check')) {
+const CHECK = process.argv.includes('--check');
+let stale = 0;
+for (const job of JOBS) {
+const OUT = resolve(ROOT, job.out);
+const want = build(job);
+if (CHECK) {
   let have = '';
   try { have = readFileSync(OUT, 'utf8'); } catch (_) {}
   /* ⚠ (#R225) COMPARE THE TEXT, NOT THE LINE ENDINGS. Git checks these files out with CRLF on
@@ -150,9 +182,11 @@ if (process.argv.includes('--check')) {
      current file «out of date» on one platform and not the other. What the check is for is that the
      two TABLES agree; a carriage return is not a translation. */
   const norm = (t) => String(t).split(String.fromCharCode(13)).join('');
-  if (norm(have) !== norm(want)) { console.error('js/locales/ui.zh-hans.js is out of date — run: node scripts/zh-hans.mjs'); process.exit(1); }
-  console.log('ui.zh-hans.js is in sync with ui.zh.js');
+  if (norm(have) !== norm(want)) { console.error(job.out + ' is out of date — run: node scripts/zh-hans.mjs'); stale++; }
+  else console.log(job.out + ' is in sync with ' + job.src);
 } else {
   writeFileSync(OUT, want);
-  console.log('wrote js/locales/ui.zh-hans.js (' + want.length + ' chars)');
+  console.log('wrote ' + job.out + ' (' + want.length + ' chars)');
 }
+}
+if (CHECK && stale) process.exit(1);

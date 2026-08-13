@@ -638,9 +638,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
     return {imgA,imgB}; };
   window._imSatAnalyze=async function(va,vb,imgA,imgB){
-    const sys=(currentLang==='jp'
-      ? "あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"
-      : "You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.")+window._aiLangLine();
+    const sys=(window.IntMapLang.t(currentLang,"You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.","あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"))+window._aiLangLine();
     const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
     return askAI(prompt,sys,[imgA,imgB]); };
   /* (#R169) moved verbatim to js/satellite.js — see Architecture.md §3.1. */
@@ -1410,7 +1408,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let b=document.getElementById('area-news-banner');
     if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
       const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
-    b.innerHTML='<span>📍 '+(currentLang==='jp'?'選択範囲のニュースのみ表示中':currentLang==='de'?'Nur News im gewählten Bereich':currentLang==='ru'?'Показаны новости выбранной области':currentLang==='es'?'Mostrando noticias del área seleccionada':'Showing news in the selected area')+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">✕ '+(currentLang==='jp'?'解除':currentLang==='de'?'Aufheben':currentLang==='ru'?'Сбросить':currentLang==='es'?'Quitar':'Clear')+'</button>';
+    b.innerHTML='<span>📍 '+(window.IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">✕ '+(window.IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
   }
 
   /* ===== AI FEATURE 3: spatial news summarization (radius / area) =====
@@ -1423,9 +1421,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       rep.setLoading(t('aiThinking'));
       try{
         const lines=uniq.map((p,i)=>`${i+1}. [${p.name||'?'}] ${p.title||''}${p.publisher?' ('+p.publisher+')':''}`).join('\n');
-        const sys = (currentLang==='jp'
-          ? "あなたは地政学アナリストです。以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"
-          : "You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.")+window._aiLangLine();
+        const sys = (window.IntMapLang.t(currentLang,"You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.","あなたは地政学アナリストです。以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"))+window._aiLangLine();
         const out=await askAI('Headlines:\n'+lines, sys);
         rep.setBody(out||'');
       }catch(e){ rep.setError((e&&e.message)||t('aiError'), run); }
@@ -2127,10 +2123,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          An unresolved origin is now shown as unresolved. The reason it was rare enough to be worth
          faking is fixed where it belongs — js/news-context.js now resolves the outlet by its DOMAIN
          as well as its display name, which is the form Google News gives for a large part of the feed. */
-      else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(currentLang==='jp'?'発信元不明':currentLang==='de'?'Herausgeber unbekannt':currentLang==='ru'?'Издатель неизвестен':currentLang==='es'?'Editor desconocido':'Publisher unknown'); a.mapped=false; a.ptype=''; }
+      else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(window.IntMapLang.t(currentLang,'Publisher unknown','発信元不明','Herausgeber unbekannt','Издатель неизвестен','Editor desconocido')); a.mapped=false; a.ptype=''; }
     } else {
       if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
-      else { a.loc=hashLocFromString('sub:'+title); a.name=(currentLang==='jp'?'場所不明':currentLang==='de'?'Ort unbekannt':currentLang==='ru'?'Место неизвестно':currentLang==='es'?'Ubicación desconocida':'Location unknown'); a.mapped=false; a.ptype=''; }
+      else { a.loc=hashLocFromString('sub:'+title); a.name=(window.IntMapLang.t(currentLang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida')); a.mapped=false; a.ptype=''; }
     }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
@@ -2151,7 +2147,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (Current-language-only, or Multi with only the UI language ticked) there is nothing to translate, so
      the Translate-titles button is hidden entirely. UI 'jp' maps to news code 'ja'. */
   function _newsHasForeignLang(){
-    try{ const ui = currentLang==='jp' ? 'ja' : 'en';
+    try{ const ui = window.IntMapLang.locale(currentLang,"en");
       if(newsLangMode!=='multi') return false;
       const sel = (Array.isArray(newsLangs)&&newsLangs.length) ? newsLangs : [];
       return sel.some(c=>c!==ui);
@@ -2695,7 +2691,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const b3=document.getElementById('btn-view-3d');
     const syncBtns=()=>{ if(b3) b3.classList.toggle('active',terrain3D); document.querySelectorAll('[data-proxy="btn-view-3d"]').forEach(b=>b.classList.toggle('active',terrain3D)); };
     if(on){
-      if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':currentLang==='de'?'3D-Gelände konnte nicht geladen werden':currentLang==='ru'?'Не удалось загрузить 3D-рельеф':currentLang==='es'?'No se pudo cargar el terreno 3D':'Could not load 3D terrain'); }catch(_){} return; }
+      if(!ensureTerrainSource()){ try{ imToast(window.IntMapLang.t(currentLang,'Could not load 3D terrain','3D地形を読み込めませんでした','3D-Gelände konnte nicht geladen werden','Не удалось загрузить 3D-рельеф','No se pudo cargar el terreno 3D')); }catch(_){} return; }
       terrain3D=true; syncBtns();
       try{ GE().scene.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
       /* ⚠ (#R196) THIS NO LONGER SETS THE SKY. It used to install a mercator-only block — a blue dome
@@ -2751,7 +2747,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
   function newsLangNameOf(c){ return (NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; }
   function updateNewsLangLabel(){ const lbl=document.getElementById('newslang-dd-label'); if(!lbl) return;
-    const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (currentLang==='jp'?'未選択':currentLang==='de'?'Nichts ausgewählt':currentLang==='ru'?'Не выбрано':currentLang==='es'?'Nada seleccionado':'None selected'); }
+    const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (window.IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado')); }
   function renderNewsLangChecks(){
     const wrap=document.getElementById('newslang-multi'), hint=document.getElementById('newslang-hint'), sel=document.getElementById('setting-newslang'), dd=document.getElementById('newslang-dd');
     if(!wrap||!sel) return;
@@ -2765,7 +2761,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          languages appeared checked / a tap didn't stick). */
       wrap.addEventListener('change',(e)=>{ if(e.target&&e.target.type==='checkbox'){ newsLangs=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value);
           try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} }
-        const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(newsLangs.length?newsLangs.map(newsLangNameOf).join(', '):(currentLang==='jp'?'未選択':currentLang==='de'?'Nichts ausgewählt':currentLang==='ru'?'Не выбрано':currentLang==='es'?'Nada seleccionado':'None selected')); });
+        const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(newsLangs.length?newsLangs.map(newsLangNameOf).join(', '):(window.IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado'))); });
     }
     wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=newsLangs.includes(cb.value); });
     wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=newsLangNameOf(c); });
@@ -2838,7 +2834,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
     rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option');
       d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
-    if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(currentLang==='jp'?'該当なし':currentLang==='de'?'Kein Treffer':currentLang==='ru'?'Нет совпадений':currentLang==='es'?'Sin coincidencias':'No match'); res.appendChild(d); }
+    if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(window.IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
   }
   (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'), res=document.getElementById('tz-results'); if(!inp||!res) return;
     const open=()=>{ populateTimezones(inp.value); res.classList.add('show'); };
@@ -2853,7 +2849,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
   let settingsDirty=false;
   function closeSettings(){
-    if(settingsDirty && !confirm(currentLang==='jp'?'変更を保存していません。破棄して閉じますか？':currentLang==='de'?'Ungespeicherte Änderungen verwerfen?':currentLang==='ru'?'Изменения не сохранены. Отменить их?':currentLang==='es'?'Hay cambios sin guardar. ¿Descartarlos?':'You have unsaved changes. Discard them?')) return;
+    if(settingsDirty && !confirm(window.IntMapLang.t(currentLang,'You have unsaved changes. Discard them?','変更を保存していません。破棄して閉じますか？','Ungespeicherte Änderungen verwerfen?','Изменения не сохранены. Отменить их?','Hay cambios sin guardar. ¿Descartarlos?'))) return;
     settingsDirty=false; modal.style.display='none';
     try{ window._accentPending=window.imAccent; applyAccent(); }catch(_){}   /* (#R114) discard any live accent preview → back to the committed colour */
   }
@@ -2870,7 +2866,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} }); }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
-    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=(currentLang==='jp')?'チュートリアル（レイヤー紹介ツアー）':'Tutorial — layer showcase'; };
+    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
     tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
       try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
@@ -3053,7 +3049,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const el=document.getElementById('pin-popup'); el.style.display='block';
     let elevHTML='—';
     if(pin.elev!=null){
-      if(pin.elev<0) elevHTML=`<b style="color:var(--info-maritime)">${Math.abs(Math.round(pin.elev))} m ${currentLang==='jp'?'(海中)':currentLang==='de'?'(unter Meeresspiegel)':currentLang==='ru'?'(ниже уровня моря)':currentLang==='es'?'(bajo el nivel del mar)':'(below sea)'}</b>`;
+      if(pin.elev<0) elevHTML=`<b style="color:var(--info-maritime)">${Math.abs(Math.round(pin.elev))} m ${window.IntMapLang.t(currentLang,'(below sea)','(海中)','(unter Meeresspiegel)','(ниже уровня моря)','(bajo el nivel del mar)')}</b>`;
       else elevHTML=`<b>${Math.round(pin.elev)} m</b>`;
     }
     let distHTML2='';
@@ -3065,7 +3061,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
     el.innerHTML=`<button class="pin-popup-close" onclick="window._closePinPopup()">✕</button>
-      <div style="font-weight:600; margin-bottom:6px;">📍 ${currentLang==='jp'?'ピン':currentLang==='de'?'Pin':currentLang==='ru'?'Метка':currentLang==='es'?'Pin':'Pin'} #${idx+1}</div>
+      <div style="font-weight:600; margin-bottom:6px;">📍 ${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}</div>
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
@@ -3137,10 +3133,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const url=URL.createObjectURL(file); const SIZE=260;
       const ov=document.createElement('div'); ov.className='crop-overlay';
       ov.innerHTML=`<div class="crop-card">
-        <div class="crop-title">${currentLang==='jp'?'画像をトリミング':currentLang==='de'?'Bild zuschneiden':currentLang==='ru'?'Обрезать изображение':currentLang==='es'?'Recortar imagen':'Crop image'}</div>
+        <div class="crop-title">${window.IntMapLang.t(currentLang,'Crop image','画像をトリミング','Bild zuschneiden','Обрезать изображение','Recortar imagen')}</div>
         <div class="crop-stage" id="crop-stage"><img id="crop-img" alt="" draggable="false"><div class="crop-ring"></div></div>
         <div class="crop-zoom"><span>－</span><input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1"><span>＋</span></div>
-        <div class="crop-actions"><button id="crop-cancel">${currentLang==='jp'?'キャンセル':currentLang==='de'?'Abbrechen':currentLang==='ru'?'Отмена':currentLang==='es'?'Cancelar':'Cancel'}</button><button id="crop-ok" class="crop-ok">${currentLang==='jp'?'適用':currentLang==='de'?'Anwenden':currentLang==='ru'?'Применить':currentLang==='es'?'Aplicar':'Apply'}</button></div>
+        <div class="crop-actions"><button id="crop-cancel">${window.IntMapLang.t(currentLang,'Cancel','キャンセル','Abbrechen','Отмена','Cancelar')}</button><button id="crop-ok" class="crop-ok">${window.IntMapLang.t(currentLang,'Apply','適用','Anwenden','Применить','Aplicar')}</button></div>
       </div>`;
       document.body.appendChild(ov);
       const stage=ov.querySelector('#crop-stage'), img=ov.querySelector('#crop-img'), zoom=ov.querySelector('#crop-zoom');
@@ -3208,7 +3204,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   document.getElementById('compose-place').onclick=()=>{
     document.getElementById('compose-modal').classList.remove('active');
     communityAddArmed=true;
-    imToast(currentLang==='jp'?'地図をタップしてピンを移動':currentLang==='de'?'Karte antippen, um den Pin zu verschieben':currentLang==='ru'?'Коснитесь карты, чтобы переместить метку':currentLang==='es'?'Toca el mapa para mover el pin':'Tap the map to move the pin');
+    imToast(window.IntMapLang.t(currentLang,'Tap the map to move the pin','地図をタップしてピンを移動','Karte antippen, um den Pin zu verschieben','Коснитесь карты, чтобы переместить метку','Toca el mapa para mover el pin'));
   };
   document.getElementById('compose-submit').onclick=async()=>{
     if(!requireLogin()) return;
@@ -3220,16 +3216,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }
     const title=document.getElementById('compose-post-title').value.trim();
     const body=document.getElementById('compose-post-body').value.trim();
-    if(!title && !body){ imToast(currentLang==='jp'?'タイトルか本文を入力してください。':currentLang==='de'?'Titel oder Text eingeben.':currentLang==='ru'?'Введите заголовок или текст.':currentLang==='es'?'Escribe un título o texto.':'Enter a title or some text.'); return; }
+    if(!title && !body){ imToast(window.IntMapLang.t(currentLang,'Enter a title or some text.','タイトルか本文を入力してください。','Titel oder Text eingeben.','Введите заголовок или текст.','Escribe un título o texto.')); return; }
     /* never dead-end on a missing location: fall back to the current map center */
-    if(!pendingPostLoc){ if(GE().hasRenderer()){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':currentLang==='de'?'Kein Ort festgelegt.':currentLang==='ru'?'Местоположение не задано.':currentLang==='es'?'Ubicación no establecida.':'Location not set.'); return; } }
+    if(!pendingPostLoc){ if(GE().hasRenderer()){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(window.IntMapLang.t(currentLang,'Location not set.','位置が設定されていません。','Kein Ort festgelegt.','Местоположение не задано.','Ubicación no establecida.')); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
     try{
       if(composeEditId) await cmEditPost(composeEditId,{ title, body, img, category:composeCat, lat:loc[1], lng:loc[0] });
       else { await cmAddPost(title, body, img, loc[1], loc[0], composeCat); try{ localStorage.setItem('intmap_last_post',Date.now()); }catch(_){} }
     }
-    catch(e){ btn.disabled=false; alert(((composeEditId?(currentLang==='jp'?'更新に失敗しました: ':currentLang==='de'?'Aktualisierung fehlgeschlagen: ':currentLang==='ru'?'Не удалось обновить: ':currentLang==='es'?'Error al actualizar: ':'Update failed: '):(currentLang==='jp'?'投稿に失敗しました: ':currentLang==='de'?'Beitrag fehlgeschlagen: ':currentLang==='ru'?'Не удалось опубликовать: ':currentLang==='es'?'Error al publicar: ':'Post failed: ')))+((e&&e.message)||e)); return; }
+    catch(e){ btn.disabled=false; alert(((composeEditId?(window.IntMapLang.t(currentLang,'Update failed: ','更新に失敗しました: ','Aktualisierung fehlgeschlagen: ','Не удалось обновить: ','Error al actualizar: ')):(window.IntMapLang.t(currentLang,'Post failed: ','投稿に失敗しました: ','Beitrag fehlgeschlagen: ','Не удалось опубликовать: ','Error al publicar: '))))+((e&&e.message)||e)); return; }
     btn.disabled=false;
     document.getElementById('compose-modal').classList.remove('active');
     const wasEdit=!!composeEditId; composeEditId=null;
@@ -3244,7 +3240,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(inp){
       inp.addEventListener('change', async (e)=>{
         const f=e.target.files&&e.target.files[0]; if(!f) return;
-        if(!/^image\//.test(f.type||'')){ alert(currentLang==='jp'?'画像ファイルを選択してください':currentLang==='de'?'Bitte eine Bilddatei wählen':currentLang==='ru'?'Выберите файл изображения':currentLang==='es'?'Elige un archivo de imagen':'Please choose an image file'); e.target.value=''; return; }
+        if(!/^image\//.test(f.type||'')){ alert(window.IntMapLang.t(currentLang,'Please choose an image file','画像ファイルを選択してください','Bitte eine Bilddatei wählen','Выберите файл изображения','Elige un archivo de imagen')); e.target.value=''; return; }
         try{ pendingImg=await compressImage(f); showComposeImgPreview(pendingImg); }catch(_){ }
         e.target.value='';
       });
@@ -3310,7 +3306,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.imAvatarHue=function(){ const s=(currentUser&&(currentUser.name||currentUser.email))||'?'; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h)%360; };
   window.imSetAvatar=function(e){ try{ localStorage.setItem('intmap_avatar',e); }catch(_){} try{ updateAccountButton(); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
   function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b){
-      if(!currentUser){ b.textContent=(currentLang==='jp'?'ログイン':currentLang==='de'?'Anmelden':currentLang==='ru'?'Войти':currentLang==='es'?'Iniciar sesión':'Log in'); }
+      if(!currentUser){ b.textContent=(window.IntMapLang.t(currentLang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión')); }
       else { const nm=(currentUser.name||currentUser.email.split('@')[0]), img=window.imGetAvatarImg();
         /* (#R30) name wrapped in .acct-name so mobile can show the avatar ONLY (the full name made the
            account / feedback / settings row wrap = "横一列に並ばず改行されてしまう"). */
@@ -3762,9 +3758,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     return out; }
   window._finalizeMeasurement=function(){
     try{
-      if(toolMode==='measure' && measurePoints.length>=2){ const v=hasTurf()?distHTML(totalDistance(measurePoints)):''; window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(currentLang==='jp'?'計測線':currentLang==='de'?'Messlinie':currentLang==='ru'?'Измеренная линия':currentLang==='es'?'Línea medida':'Measured line'),value:v}); }
-      else if(toolMode==='area' && measurePoints.length>=3){ const v=hasTurf()?areaHTML(ringArea(measurePoints)):''; window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(currentLang==='jp'?'計測範囲':currentLang==='de'?'Gemessene Fläche':currentLang==='ru'?'Измеренная площадь':currentLang==='es'?'Área medida':'Measured area'),value:v}); }
-      else if(toolMode==='radius' && radiusItems.length){ radiusItems.forEach(c=>{ try{ const v=hasTurf()?(distHTML(c.radiusKm)+' ('+areaHTML(Math.PI*c.radiusKm*c.radiusKm)+')'):''; diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(currentLang==='jp'?'半径 ':currentLang==='de'?'Radius ':currentLang==='ru'?'Радиус ':currentLang==='es'?'Radio ':'Radius ')+c.radiusKm+' km',value:v}); }); }catch(_){} }); }
+      if(toolMode==='measure' && measurePoints.length>=2){ const v=hasTurf()?distHTML(totalDistance(measurePoints)):''; window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(window.IntMapLang.t(currentLang,'Measured line','計測線','Messlinie','Измеренная линия','Línea medida')),value:v}); }
+      else if(toolMode==='area' && measurePoints.length>=3){ const v=hasTurf()?areaHTML(ringArea(measurePoints)):''; window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(window.IntMapLang.t(currentLang,'Measured area','計測範囲','Gemessene Fläche','Измеренная площадь','Área medida')),value:v}); }
+      else if(toolMode==='radius' && radiusItems.length){ radiusItems.forEach(c=>{ try{ const v=hasTurf()?(distHTML(c.radiusKm)+' ('+areaHTML(Math.PI*c.radiusKm*c.radiusKm)+')'):''; diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(window.IntMapLang.t(currentLang,'Radius ','半径 ','Radius ','Радиус ','Radio '))+c.radiusKm+' km',value:v}); }); }catch(_){} }); }
       else return;
       exitTool();
     }catch(_){}
@@ -4066,7 +4062,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     document.head.appendChild(st);
     const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
     const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
-    function setLabel(){ btn.textContent=(currentLang==='jp'?'＋ 地点を追加':currentLang==='de'?'＋ Punkt hinzufügen':currentLang==='ru'?'＋ Добавить точку':currentLang==='es'?'＋ Añadir punto':'＋ Add point'); }
+    function setLabel(){ btn.textContent=(window.IntMapLang.t(currentLang,'＋ Add point','＋ 地点を追加','＋ Punkt hinzufügen','＋ Добавить точку','＋ Añadir punto')); }
     setLabel(); window.addEventListener('intmap-lang',setLabel);
     /* (#R12) The crosshair sits at the GEOMETRIC center of the map (50%/50%). map.getCenter() returns the
        PADDED center (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair

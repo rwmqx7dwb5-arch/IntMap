@@ -56,7 +56,7 @@ window.IntMapModules.community=function(HOST){
          mobile collapse the sheet so the map is reachable, and guide with a toast. */
       HOST.pendingPostLoc=null; HOST.communityAddArmed=true;
       try{ if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
-      HOST.imToast(HOST.lang==='jp'?'📍 地図をタップして投稿する場所を選んでください':HOST.lang==='de'?'📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen':HOST.lang==='ru'?'📍 Коснитесь карты, чтобы выбрать место публикации':HOST.lang==='es'?'📍 Toca el mapa para elegir dónde publicar':'📍 Tap the map to choose where to post');
+      HOST.imToast(window.IntMapLang.t(HOST.lang,'📍 Tap the map to choose where to post','📍 地図をタップして投稿する場所を選んでください','📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen','📍 Коснитесь карты, чтобы выбрать место публикации','📍 Toca el mapa para elegir dónde publicar'));
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ HOST.communitySort=b.dataset.sort; renderCommunity(); });
     cont.querySelectorAll('.comm-cat-chip').forEach(b=>b.onclick=()=>{ HOST.commCatFilter=b.dataset.catf; renderCommunity(); });
@@ -82,13 +82,13 @@ window.IntMapModules.community=function(HOST){
     });
     cont.querySelectorAll('.edit-btn').forEach(b=>b.onclick=()=>{ const p=HOST.communityPosts.find(p=>p.id===b.dataset.id); if(p) HOST.openComposeModal(p); });
     cont.querySelectorAll('.del-btn').forEach(b=>b.onclick=async()=>{
-      if(!confirm(HOST.lang==='jp'?'この投稿を削除しますか？':HOST.lang==='de'?'Diesen Beitrag löschen?':HOST.lang==='ru'?'Удалить эту публикацию?':HOST.lang==='es'?'¿Eliminar esta publicación?':'Delete this post?')) return;
+      if(!confirm(window.IntMapLang.t(HOST.lang,'Delete this post?','この投稿を削除しますか？','Diesen Beitrag löschen?','Удалить эту публикацию?','¿Eliminar esta publicación?'))) return;
       try{ await cmDelete(b.dataset.id); }catch(e){ HOST.imToast((e&&e.message)||'Delete failed'); return; } await HOST.loadCommunity();
     });
     cont.querySelectorAll('.report-btn').forEach(b=>b.onclick=async()=>{
       if(!HOST.requireLogin()) return;
-      if(!confirm(HOST.lang==='jp'?'この投稿を不適切として通報しますか？':HOST.lang==='de'?'Diesen Beitrag als unangemessen melden?':HOST.lang==='ru'?'Пожаловаться на эту публикацию?':HOST.lang==='es'?'¿Denunciar esta publicación como inapropiada?':'Report this post as inappropriate?')) return;
-      try{ await cmReport(b.dataset.id); HOST.imToast(HOST.lang==='jp'?'通報しました。ご協力ありがとうございます。':HOST.lang==='de'?'Gemeldet. Danke.':HOST.lang==='ru'?'Жалоба отправлена. Спасибо.':HOST.lang==='es'?'Denunciado. Gracias.':'Reported. Thank you.'); }catch(e){ HOST.imToast((e&&e.message)||'Report failed'); }
+      if(!confirm(window.IntMapLang.t(HOST.lang,'Report this post as inappropriate?','この投稿を不適切として通報しますか？','Diesen Beitrag als unangemessen melden?','Пожаловаться на эту публикацию?','¿Denunciar esta publicación como inapropiada?'))) return;
+      try{ await cmReport(b.dataset.id); HOST.imToast(window.IntMapLang.t(HOST.lang,'Reported. Thank you.','通報しました。ご協力ありがとうございます。','Gemeldet. Danke.','Жалоба отправлена. Спасибо.','Denunciado. Gracias.')); }catch(e){ HOST.imToast((e&&e.message)||'Report failed'); }
     });
     /* Add comment / reply */
     const submitComment=async(b)=>{
@@ -104,7 +104,7 @@ window.IntMapModules.community=function(HOST){
       const pid=b.dataset.pid, cid=b.dataset.cid, c=_findComment(cid);
       HOST.replyingTo={pid,cid};
       const box=cont.querySelector(`.comm-comment-add input[data-pid="${pid}"]`);
-      if(box){ box.placeholder=(HOST.lang==='jp'?'返信: ':HOST.lang==='de'?'Antwort an ':HOST.lang==='ru'?'Ответ: ':HOST.lang==='es'?'Responder a ':'Reply to ')+(c?c.author:'')+' …'; box.focus(); }
+      if(box){ box.placeholder=(window.IntMapLang.t(HOST.lang,'Reply to ','返信: ','Antwort an ','Ответ: ','Responder a '))+(c?c.author:'')+' …'; box.focus(); }
     });
     /* Comment upvote */
     cont.querySelectorAll('.cvote-btn').forEach(b=>b.onclick=async()=>{
@@ -114,13 +114,13 @@ window.IntMapModules.community=function(HOST){
     /* Comment edit (inline prompt) */
     cont.querySelectorAll('.cedit-btn').forEach(b=>b.onclick=async()=>{
       const c=_findComment(b.dataset.cid); if(!c) return;
-      const v=prompt(HOST.lang==='jp'?'コメントを編集':HOST.lang==='de'?'Kommentar bearbeiten':HOST.lang==='ru'?'Изменить комментарий':HOST.lang==='es'?'Editar comentario':'Edit comment',c.text); if(v==null) return;
+      const v=prompt(window.IntMapLang.t(HOST.lang,'Edit comment','コメントを編集','Kommentar bearbeiten','Изменить комментарий','Editar comentario'),c.text); if(v==null) return;
       const nv=v.trim(); if(!nv||nv===c.text) return;
       try{ await cmEditComment(c.id,nv); }catch(e){ HOST.imToast((e&&e.message)||'Edit failed'); return; } await HOST.loadCommunity();
     });
     /* Comment delete */
     cont.querySelectorAll('.cdel-btn').forEach(b=>b.onclick=async()=>{
-      if(!confirm(HOST.lang==='jp'?'このコメントを削除しますか？':HOST.lang==='de'?'Diesen Kommentar löschen?':HOST.lang==='ru'?'Удалить этот комментарий?':HOST.lang==='es'?'¿Eliminar este comentario?':'Delete this comment?')) return;
+      if(!confirm(window.IntMapLang.t(HOST.lang,'Delete this comment?','このコメントを削除しますか？','Diesen Kommentar löschen?','Удалить этот комментарий?','¿Eliminar este comentario?'))) return;
       try{ await cmDeleteComment(b.dataset.cid); }catch(e){ HOST.imToast((e&&e.message)||'Delete failed'); return; } await HOST.loadCommunity();
     });
   }

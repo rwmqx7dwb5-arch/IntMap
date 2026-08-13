@@ -32,11 +32,41 @@ export function makeScreenshot(HOST, CTX) {
         try{ const wb=document.getElementById('wind-bg-canvas'); if(wb && wb.style.display!=='none' && wb.width) cx.drawImage(wb,0,0,o.width,o.height); }catch(_){}
         try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
         res(o); }catch(_){ res(null); } }; try{ GE().events.once('render',grab); GE().render.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
+      /* ══ ⚠⚠ (#R231) TWO LAYERS, TWO COORDINATE SYSTEMS, AND NOTHING MADE THEM AGREE ═════════════
+         「モバイル版でのスクショ機能がクソ。UIが壊れる」
+
+         The output canvas was sized from the RENDERER'S BACKING STORE and the overlay pass was
+         scaled from the CONTAINER'S CSS BOX, on the unstated assumption that
+         `canvas.height / canvas.width === clientHeight / clientWidth`. On a desktop that holds. On a
+         phone it routinely does not, and iOS is where it does not hardest:
+
+           · `.map-container` is `height:100dvh`, and 100dvh CHANGES the moment Safari's URL bar
+             collapses or expands — which is what happens while you are panning the map right before
+             you press the button;
+           · the renderer resizes its drawing buffer on its own schedule (a resize observer, then a
+             frame), so between the change and the next resize the two boxes have DIFFERENT ASPECT
+             RATIOS;
+           · and `drawImage(ov, 0, 0, out.width, out.height)` then stretches the whole overlay layer
+             — every legend, every label, every scale bar — to an aspect ratio that is not its own.
+
+         That is the report, precisely: the map looks right and the UI on top of it is stretched.
+
+         ⚠ THE FIX IS ONE COORDINATE SYSTEM, TAKEN FROM THE BOX BOTH LAYERS ACTUALLY OCCUPY. The
+         container's CSS box is what the user is looking at, so the output is that box at the
+         renderer's own pixel density, and BOTH layers are drawn into it — the map explicitly mapped
+         from its full backing store onto the box, the overlays at the same density. When the two
+         agree (every desktop, and a phone that is not mid-resize) this is byte-for-byte the old
+         behaviour: `scale` comes out as the same number and the map's source rect is the whole
+         canvas. When they disagree, nothing is stretched any more. */
       const out=document.createElement('canvas');
       const cont=document.getElementById('map-container');
-      out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
-      const ctx=out.getContext('2d'); if(mapCv) ctx.drawImage(mapCv,0,0);
-      const scale=out.width/cont.clientWidth;
+      const cw=Math.max(1,cont.clientWidth), ch=Math.max(1,cont.clientHeight);
+      /* the renderer's density — from the canvas when there is one, so a @2x / MSAA buffer is not
+         thrown away, and never below 1 */
+      const scale=Math.max(1, mapCv ? (mapCv.width/cw) : (window.devicePixelRatio||1));
+      out.width=Math.round(cw*scale); out.height=Math.round(ch*scale);
+      const ctx=out.getContext('2d');
+      if(mapCv) ctx.drawImage(mapCv,0,0,mapCv.width,mapCv.height,0,0,out.width,out.height);
       /* 2 — DOM overlays (legends, markers, timebar) via html2canvas, skipping the WebGL canvases */
       /* (#R224) FETCHED HERE, NOT AT BOOT. html2canvas is 198 kB that only a screenshot needs, and
          this is the only place that needs it — see src/vendor.js. The overlay pass is skipped if it
@@ -49,13 +79,18 @@ export function makeScreenshot(HOST, CTX) {
           ctx.drawImage(ov,0,0,out.width,out.height);
         }catch(_){}
       }
-      document.body.classList.remove('capture-mode');
       const flash=document.createElement('div'); flash.className='screenshot-flash'; document.body.appendChild(flash);
       requestAnimationFrame(()=>{ flash.classList.add('go'); setTimeout(()=>flash.remove(),520); });
       out.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='IntMap_'+ymdISO(new Date())+'_'+Date.now().toString().slice(-5)+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),6000); }, 'image/png');
       try{ imToast(t('screenshotSaved')); }catch(_){}
-    }catch(e){ document.body.classList.remove('capture-mode'); console.warn('screenshot',e); }
-    finally{ if(btn) btn.disabled=false; }
+    }catch(e){ console.warn('screenshot',e); }
+    /* ⚠ (#R231) `capture-mode` COMES OFF IN `finally`, NOT ON THE TWO HAPPY-ISH PATHS. It used to be
+       removed once at the end of the try and once in the catch — which covers a throw, but not a
+       RETURN and not the case that actually bites on a phone: iOS Safari discarding the tab's
+       JavaScript context mid-capture (`aiWaitMapIdle` waits up to 2.5 s, html2canvas allocates a
+       full-viewport raster) leaves the class on, and with it every control on the map hidden. A
+       screenshot feature that can leave the UI invisible is worse than one that fails. */
+    finally{ document.body.classList.remove('capture-mode'); if(btn) btn.disabled=false; }
   }
   { const b=document.getElementById('btn-screenshot'); if(b) b.onclick=takeScreenshot; }
 }

@@ -430,6 +430,14 @@ window.IntMapWorldBase=(function(){
 
   return {
     url, bitmapUrl, install, apply, registerProtocol, polarColour, applyCap,
+    /* (#R231) `tile` IS PART OF THE API NOW. It was internal — reachable only through the registered
+       protocol, i.e. only by the renderer — and js/basemap-switch.js needs exactly what it already
+       does: one Mercator tile of the bundled picture, no network. Leaving it private meant the
+       base-map square's satellite face called a function that did not exist and fell back to its
+       map face without a word, which is this project's most expensive recurring defect (a feature
+       that silently stops existing). It is a pure function of the shipped image; publishing it adds
+       no state and no request. */
+    tile,
     /* pre-decode the picture so the first tile request is a canvas copy and not a download */
     warm:()=>source().catch(()=>null),
     state:()=>({ ready:!!img, failed, tilesMade:made, protocol:protoOn, toned:!!(img&&img.getContext),
