@@ -189,9 +189,9 @@ window.IntMapModules.aiResearch=function(HOST){
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure();
       p.style.display='block';
-      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+LL('Research: ','調査: ','Recherche: ','Исследование: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
-        '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;"><span style="color:var(--text-muted);">'+LL('Researching… (background, history, economy, military, recent developments)','調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)','Recherche… (Hintergrund, Geschichte, Wirtschaft, Militär, jüngste Entwicklungen)','Анализ… (история, экономика, военная и стратегическая значимость, последние события)')+'</span></div>'+
-        '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+LL('Regenerate','再生成','Neu generieren','Сгенерировать заново')+'</button>';
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+LL('Research: ','調査: ','Recherche: ','Исследование: ','Investigación: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;"><span style="color:var(--text-muted);">'+LL('Researching… (background, history, economy, military, recent developments)','調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)','Recherche… (Hintergrund, Geschichte, Wirtschaft, Militär, jüngste Entwicklungen)','Анализ… (история, экономика, военная и стратегическая значимость, последние события)','Investigando… (contexto, historia, economía, militar, novedades recientes)')+'</span></div>'+
+        '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+LL('Regenerate','再生成','Neu generieren','Сгенерировать заново','Regenerar')+'</button>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const body=p.querySelector('#air-body');
@@ -221,7 +221,7 @@ window.IntMapModules.aiResearch=function(HOST){
          ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
       try{
         const out=await askAI(prompt,sys);
-        body.innerHTML=md(_dropLeadTitle(out||'',name))+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+LL('AI-generated — verify with primary sources for important decisions.','AI生成 — 重要な判断には一次情報の確認を。','KI-generiert — bei wichtigen Entscheidungen mit Primärquellen prüfen.','Сгенерировано ИИ — для важных решений проверяйте по первоисточникам.')+'</div>';
+        body.innerHTML=md(_dropLeadTitle(out||'',name))+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+LL('AI-generated — verify with primary sources for important decisions.','AI生成 — 重要な判断には一次情報の確認を。','KI-generiert — bei wichtigen Entscheidungen mit Primärquellen prüfen.','Сгенерировано ИИ — для важных решений проверяйте по первоисточникам.','Generado por IA — verifique con fuentes primarias para decisiones importantes.')+'</div>';
       }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
       const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
       /* (#R21 beta) SUGGESTED QUESTIONS — auto-generated from the countries in the current viewport
@@ -230,7 +230,7 @@ window.IntMapModules.aiResearch=function(HOST){
         let sug=p.querySelector('#air-sugg'); if(sug) sug.remove();
         sug=document.createElement('div'); sug.id='air-sugg'; sug.style.cssText='margin-top:10px;border-top:1px solid rgba(128,128,128,0.2);padding-top:8px;';
         const qs=suggestQs(name);
-        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+LL('Suggested questions','おすすめの質問','Vorgeschlagene Fragen','Предлагаемые вопросы')+'</div>'+
+        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+LL('Suggested questions','おすすめの質問','Vorgeschlagene Fragen','Предлагаемые вопросы','Preguntas sugeridas')+'</div>'+
           qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(s)+'</button>').join('')+
           '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>'+
           '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask a follow-up…','続けて質問…','Nachfrage stellen…','Задать уточняющий вопрос…','Haz una pregunta de seguimiento…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></svg></button></div>';
@@ -243,7 +243,7 @@ window.IntMapModules.aiResearch=function(HOST){
           :'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
         const ask=async(qq)=>{
           bubble('user',esc(qq));
-          const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…')+'</span>');
+          const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…','Pensando…')+'</span>');
           convo.push('User: '+qq);
           try{ const ctx=(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(jp()?'これまでの会話:\n':'Conversation so far:\n')+convo.slice(-6).join('\n')):'');
             const out2=await askAI(qq+ctx,sys);
@@ -296,7 +296,7 @@ window.IntMapModules.aiResearch=function(HOST){
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure(); p.style.display='block';
       const coordStr=lngLat.lat.toFixed(3)+', '+lngLat.lng.toFixed(3);
-      const title=LL('Ask AI about here','ここをAIに聞く','KI zu diesem Ort fragen','Спросить ИИ об этом месте');
+      const title=LL('Ask AI about here','ここをAIに聞く','KI zu diesem Ort fragen','Спросить ИИ об этом месте','Preguntar a la IA sobre este lugar');
       const examples=LL(
         ['Why is this area so sparsely populated?','Why is the border here shaped this way?','Why is this place strategically important?'],
         ['なぜこの辺りは人口が少ないの？','この国境はなぜこの形なの？','この場所が重要な理由は？'],
@@ -305,7 +305,7 @@ window.IntMapModules.aiResearch=function(HOST){
       p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+esc(title)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div style="font-size:11px;color:var(--text-muted);margin:0 2px 8px;">📍 '+coordStr+'</div>'+
         '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;"></div>'+
-        '<div style="font-size:10.5px;color:var(--text-muted);margin:10px 2px 4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;">'+LL('Try asking','質問の例','Beispiele','Примеры вопросов')+'</div>'+
+        '<div style="font-size:10.5px;color:var(--text-muted);margin:10px 2px 4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;">'+LL('Try asking','質問の例','Beispiele','Примеры вопросов','Ejemplos de preguntas')+'</div>'+
         examples.map(e=>'<button class="ai-test-btn air-q" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(e)+'</button>').join('')+
         '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask anything about this spot…','この地点について質問…','Frage zu diesem Ort…','Спросите об этом месте…','Pregunta lo que sea sobre este lugar…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></svg></button></div>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
@@ -314,7 +314,7 @@ window.IntMapModules.aiResearch=function(HOST){
       const sys='You are a world-geography, history and geopolitics expert. The user is asking about a SPECIFIC point on the map at latitude '+lngLat.lat.toFixed(4)+', longitude '+lngLat.lng.toFixed(4)+'. Today is '+today+'. First work out what is at or near that exact location (country, region, city, terrain, sea), then answer concisely and factually with concrete facts, figures and dates. If the point is ocean or uninhabited, say so plainly. Flag anything uncertain.'+window._aiLangLine();
       const bubble=(who,html)=>{ const d=document.createElement('div'); d.style.cssText=(who==='user'?'align-self:flex-end;max-width:88%;background:var(--primary-color);color:#fff;border-radius:14px 14px 5px 14px;':'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
       const ask=async(qq)=>{ bubble('user',esc(qq));
-        const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…')+'</span>'); convo.push('User: '+qq);
+        const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…','Pensando…')+'</span>'); convo.push('User: '+qq);
         try{ const ctx='\n\nMap point: '+lngLat.lat.toFixed(4)+', '+lngLat.lng.toFixed(4)+(news.length?('\nNearby recent headlines:\n'+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\nConversation so far:\n'+convo.slice(-6).join('\n')):'');
           const out=await askAI(qq+ctx,sys); ai.innerHTML=md(out||''); convo.push('Assistant: '+String(out||'').slice(0,600));
         }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
@@ -451,11 +451,11 @@ window.IntMapModules.correlate=function(HOST){
     function hide(){ if(ov) ov.classList.remove('show'); }
     function pairs(mx,my){ const out=[]; for(const c in countryStats){ const s=countryStats[c]; if(!s)continue; let x=mx.get(s,c),y=my.get(s,c); if(x==null||y==null||!isFinite(x)||!isFinite(y))continue; if(mx.log&&x<=0)continue; if(my.log&&y<=0)continue; out.push({c,nm:(L()==='jp'?(s.nameJp||s.nameEn):s.nameEn)||c,x:+x,y:+y}); } return out; }
     function render(){ if(!ov)return; const mx=METRICS.find(m=>m.id===xId), my=METRICS.find(m=>m.id===yId);
-      ov.querySelector('.corr-head h3').textContent=tr('Correlation','相関分析','Korrelation','Корреляция');
-      ov.querySelector('.lx span').textContent=tr('X axis','横軸 (X)','X-Achse','Ось X');
-      ov.querySelector('.ly span').textContent=tr('Y axis','縦軸 (Y)','Y-Achse','Ось Y');
+      ov.querySelector('.corr-head h3').textContent=tr('Correlation','相関分析','Korrelation','Корреляция','Correlación');
+      ov.querySelector('.lx span').textContent=tr('X axis','横軸 (X)','X-Achse','Ось X','Eje X');
+      ov.querySelector('.ly span').textContent=tr('Y axis','縦軸 (Y)','Y-Achse','Ось Y','Eje Y');
       const ps=pairs(mx,my), wrap=ov.querySelector('.corr-svg-wrap'), rEl=ov.querySelector('.corr-r'), nEl=ov.querySelector('.corr-note');
-      if(ps.length<3){ wrap.innerHTML=''; rEl.innerHTML=''; nEl.textContent=tr('Not enough countries have both values.','両方の値を持つ国が不足しています。','Zu wenige Länder haben beide Werte.','Недостаточно стран с обоими значениями.'); return; }
+      if(ps.length<3){ wrap.innerHTML=''; rEl.innerHTML=''; nEl.textContent=tr('Not enough countries have both values.','両方の値を持つ国が不足しています。','Zu wenige Länder haben beide Werte.','Недостаточно стран с обоими значениями.','No hay suficientes países con ambos valores.'); return; }
       const tx=ps.map(p=>mx.log?Math.log10(p.x):p.x), ty=ps.map(p=>my.log?Math.log10(p.y):p.y);
       const r=pear(tx,ty), rho=pear(ranks(ps.map(p=>p.x)),ranks(ps.map(p=>p.y)));
       const W=560,H=360,pl=54,prr=16,ptt=14,pb=44, iw=W-pl-prr, ih=H-ptt-pb;
@@ -473,14 +473,14 @@ window.IntMapModules.correlate=function(HOST){
       const titles='<text x="'+(pl+iw/2)+'" y="'+(H-6)+'" font-size="11" style="fill:var(--text-main)" text-anchor="middle">'+esc(ml(mx))+(mx.log?' (log)':'')+'</text>'
         +'<text x="14" y="'+(ptt+ih/2)+'" font-size="11" style="fill:var(--text-main)" text-anchor="middle" transform="rotate(-90 14 '+(ptt+ih/2)+')">'+esc(ml(my))+(my.log?' (log)':'')+'</text>';
       wrap.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;">'+axis+line+dots+ticks+titles+'</svg>';
-      const str=Math.abs(r||0), d= str<0.2?tr('very weak','ごく弱い','sehr schwach','очень слабая'):str<0.4?tr('weak','弱い','schwach','слабая'):str<0.6?tr('moderate','中程度の','mäßig','умеренная'):str<0.8?tr('strong','強い','stark','сильная'):tr('very strong','非常に強い','sehr stark','очень сильная');
-      const sg= r>0?tr('positive','正の','positive','положительная'):tr('negative','負の','negative','отрицательная');
-      rEl.innerHTML='<div><span class="lab">'+tr('Pearson r','ピアソン r','Pearson r','Пирсон r')+(mx.log||my.log?' ('+tr('log','対数','log','лог')+')':'')+'</span><b style="color:'+(r>0?'#34c759':'#ff453a')+'">'+(r!=null?r.toFixed(3):'—')+'</b></div>'
-        +'<div><span class="lab">'+tr('Spearman ρ (rank)','スピアマン ρ (順位)','Spearman ρ (Rang)','Спирмен ρ (ранг)')+'</span><b>'+(rho!=null?rho.toFixed(3):'—')+'</b></div>'
-        +'<div><span class="lab">'+tr('Countries','国数','Länder','Стран')+'</span><b>'+ps.length+'</b></div>'
+      const str=Math.abs(r||0), d= str<0.2?tr('very weak','ごく弱い','sehr schwach','очень слабая','muy débil'):str<0.4?tr('weak','弱い','schwach','слабая','débil'):str<0.6?tr('moderate','中程度の','mäßig','умеренная','moderada'):str<0.8?tr('strong','強い','stark','сильная','fuerte'):tr('very strong','非常に強い','sehr stark','очень сильная','muy fuerte');
+      const sg= r>0?tr('positive','正の','positive','положительная','positiva'):tr('negative','負の','negative','отрицательная','negativa');
+      rEl.innerHTML='<div><span class="lab">'+tr('Pearson r','ピアソン r','Pearson r','Пирсон r','r de Pearson')+(mx.log||my.log?' ('+tr('log','対数','log','лог','log')+')':'')+'</span><b style="color:'+(r>0?'#34c759':'#ff453a')+'">'+(r!=null?r.toFixed(3):'—')+'</b></div>'
+        +'<div><span class="lab">'+tr('Spearman ρ (rank)','スピアマン ρ (順位)','Spearman ρ (Rang)','Спирмен ρ (ранг)','ρ de Spearman (rango)')+'</span><b>'+(rho!=null?rho.toFixed(3):'—')+'</b></div>'
+        +'<div><span class="lab">'+tr('Countries','国数','Länder','Стран','Países')+'</span><b>'+ps.length+'</b></div>'
         +(mb?'<div style="flex:1 1 100%;margin-top:2px;"><button id="corr-resid-btn" class="ai-test-btn" style="width:100%;">🗺 '+tr('Color map by residual (blue = above, red = below)','残差で地図を塗る（青=上振れ / 赤=下振れ）','Karte nach Residuen färben (blau = über, rot = unter)','Закрасить карту по остаткам (синий = выше, красный = ниже)','Colorear el mapa por residuo (azul = por encima, rojo = por debajo)')+'</button></div>':'');
       try{ const rb=ov.querySelector('#corr-resid-btn'); if(rb) rb.onclick=()=>{ try{ residualMap(); }catch(_){} }; }catch(_){}
-      nEl.textContent=d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция')+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.');
+      nEl.textContent=d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция','correlación')+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.','Correlación no es causalidad; atención a valores atípicos y factores de confusión.');
     }
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
@@ -524,7 +524,7 @@ window.IntMapModules.correlate=function(HOST){
       else if(typeof loadCountryData==='function'){ ov.querySelector('.corr-svg-wrap').innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; loadCountryData().then(go); }
       else go(); }
     window.IntMapCorrelate={open};
-    const btnLbl=()=>tr('Correlation / scatter','相関・散布図','Korrelation / Streudiagramm','Корреляция / диаграмма');
+    const btnLbl=()=>tr('Correlation / scatter','相関・散布図','Korrelation / Streudiagramm','Корреляция / диаграмма','Correlación / dispersión');
     (function mkBtn(){ if(document.getElementById('btn-correlate'))return; const b=document.createElement('button'); b.id='btn-correlate'; b.type='button'; b.className='ai-test-btn'; b.style.cssText='width:100%;text-align:center;'; b.innerHTML='📊 <span>'+esc(btnLbl())+'</span>'; b.onclick=open; (document.getElementById('layer-tools')||document.body).appendChild(b); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} })();
     window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-correlate'); if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=btnLbl(); } if(ov){ const sx=ov.querySelector('.corr-sel-x'),sy=ov.querySelector('.corr-sel-y'); if(sx&&sy){ [sx,sy].forEach(sel=>{ [].forEach.call(sel.options,(o,i)=>{ if(METRICS[i]) o.textContent=ml(METRICS[i]); }); }); if(ov.classList.contains('show')) render(); } } });
   })();

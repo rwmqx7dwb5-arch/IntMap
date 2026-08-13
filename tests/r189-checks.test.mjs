@@ -229,7 +229,14 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
   assert.match(fg, /const M0 = mu \* \(areaKm2 \* 1e6\) \* slipM;/, 'M0 = μ·A·D̄');
   assert.match(fg, /const mw = \(Math\.log10\(M0\) - 9\.1\) \/ 1\.5;/, 'Mw back through Hanks & Kanamori');
   assert.match(src, /function faultDistKm\(lng,lat\)\{/, 'Rrup: zero inside, nearest edge outside');
-  assert.match(src, /function faultFrontLines\(radiusAtDelay\)\{/, 'fronts are the delayed-union envelope');
+  /* ⚠ (#R235) the CONTRACT, not the parameter name. This used to pin `faultFrontLines(radiusAtDelay)`;
+     #R235 changed the callback to take the whole source point (it now carries that point's own depth
+     as well as its rupture delay), so a signature match would fail on a change that strengthens
+     exactly the property this line is here to protect. What must stay true is that a drawn rupture
+     still gets an envelope of DELAYED fronts rather than one circle. */
+  assert.match(src, /function faultFrontLines\(\w+\)\{/, 'fronts are the delayed-union envelope');
+  assert.match(src, /delay:off\*D\*RE\/VRUP_KMS/, '…each source point delayed by the rupture’s own propagation');
+  assert.match(src, /const lines=fault\?faultFrontLines\(rad\):/, '…and it is what a drawn rupture uses');
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
   const atlas = read('js/atlas-console.js');
   assert.ok(atlas.includes('"scale"?:"mmi"|"jma"'), 'the SYS catalogue advertises the scale');

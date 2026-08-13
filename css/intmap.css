@@ -1659,17 +1659,24 @@
 
          ⚠ THE CLASSIC ROWS ARE HIDDEN, NOT REMOVED. #layer-dropdown stays mounted right below as the
          source of truth: a tile click toggles its REAL checkbox and dispatches the change event, which
-         is what every layer engine, legend, Active-layers chip and Atlas action listens to. Its
-         non-row furniture (the Active-layers bar, favourites, tools) stays VISIBLE — those are not
-         layer rows and the tile builder deliberately skips them.
-         ⚠ TWO COLUMNS, not the desktop's three: at 360-430 px a third column puts the caption below
-         ~90 px, where two-line layer names («Sea-surface temperature») stop being readable. */
+         is what every layer engine, legend, Active-layers chip and Atlas action listens to.
+         ⚠ (#R235) …and the FURNITURE under the tiles goes with them — 「下部の比較ビューや衛星画像
+         プロバイダ等のやつはなくていい。」 `#layer-tools` is what reorganizeLayerPanel fills with the
+         比較ビュー and 相関分析 buttons, and the desktop layer sidebar has neither: it is search +
+         tiles + the Active-layers bar, full stop. The Active-layers bar and favourites STAY, because
+         the desktop sidebar has them too and 「デスクトップ版とおなじUI」 is the whole instruction.
+         (`#sat-controller` is not listed here — js/mobile-ui.js simply stops moving it in.)
+         ⚠ (#R235) THREE COLUMNS, matching the desktop — #R233 「携帯のレイヤー欄は横3タイル」 changed
+         the grid and left this note claiming two. */
       body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-row,
       body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-head,
       body.m-lyr-tiles .m-sheet #layer-dropdown .layer-group-title,
       body.m-lyr-tiles .m-sheet #layer-dropdown .premium-group-title,
       body.m-lyr-tiles .m-sheet #layer-dropdown > label,
-      body.m-lyr-tiles .m-sheet #layer-dropdown > hr{ display:none !important; }
+      body.m-lyr-tiles .m-sheet #layer-dropdown > hr,
+      body.m-lyr-tiles .m-sheet #layer-tools,
+      body.m-lyr-tiles .m-sheet #cmp-mount,
+      body.m-lyr-tiles .m-sheet #mo-mount-sat{ display:none !important; }
       .m-sheet .lsr-mount{ display:block; margin:0 0 6px; }
       .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:4; background:var(--sidebar-bg); }
       .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:38px; border-radius:19px;
