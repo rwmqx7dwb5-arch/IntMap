@@ -2229,7 +2229,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const a=item.analysis||{};
     if(a.titleTranslated && a.titleTranslated!==item.title){
       const lang=a.titleOrigLangLabel||a.titleOrigLang||'';
-      const note=lang?(currentLang==='jp'?('（原文: '+lang+'）'):currentLang==='ru'?('(ориг.: '+lang+')'):('(orig: '+lang+')')):'';
+      /* ⚠ (#R236) German and Spanish fell through to English here — the chain handled jp and ru and
+         nothing else, so 「原文」 read '(orig: …)' in two of the five languages. Through the registry
+         now, where the five slots are positional and a missing one is visible. */
+      const note=lang?window.IntMapLang.t(currentLang,'(orig: '+lang+')','（原文: '+lang+'）','(Original: '+lang+')','(ориг.: '+lang+')','(orig.: '+lang+')'):'';
       return IntMapSafe.html(a.titleTranslated) + (note?`<div class="news-origlang">${IntMapSafe.html(note)}</div>`:'');   /* (#R138 SEC) titleTranslated/lang are AI output → escape */
     }
     return IntMapSafe.html(item.title);   /* (#R138 SEC) news title comes from external RSS → escape (this string is written to innerHTML by the card + rerenderNewsFeedTitles) */

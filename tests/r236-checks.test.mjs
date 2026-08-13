@@ -134,6 +134,40 @@ test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first
     '「やっぱり、震源域を先に」 — the row reads in the order the work is done');
 });
 
+/* ── 4b · the DE/RU/ES gaps the positional audit could not see ───────────────────────────────── */
+test('R236 i18n: t(…) call sites do not leave a language slot empty', () => {
+  /* ⚠ THIS IS THE SHAPE THAT HID THE GAPS, so the check is for the shape, not for the strings.
+     `HOST.lang==='de' ? '…' : t(HOST.lang, en, jp, undefined, ru)` put German in FRONT of the call
+     and left the German slot undefined — and, because the argument list then ended, Spanish was
+     absent entirely and fell through to English. scripts/i18n-positional-audit.mjs reads `L(…)`
+     sites, so it reported 100 % throughout. */
+  const s = code(read('js/countries-ui.js'));
+  assert.doesNotMatch(s, /IntMapLang\.t\([^)]*,\s*undefined\s*,/,
+    'no t(…) site passes undefined for a language slot');
+  assert.doesNotMatch(s, /HOST\.lang==='de'\?'[^']*':window\.IntMapLang\.t\(/,
+    'no language is hoisted in front of the call it belongs inside');
+  for (const es of ['Solo este país', 'Series temporales', 'Informe de IA', 'Comparar'])
+    assert.ok(s.includes(es), 'the country panel button has Spanish: ' + es);
+
+  /* the news "(orig: …)" note handled jp and ru only — German and Spanish read English */
+  const ab = code(read('js/app-body.js'));
+  assert.doesNotMatch(ab, /currentLang==='jp'\?\('（原文: '\+lang\+'）'\):currentLang==='ru'\?/,
+    'the original-language note no longer skips German and Spanish');
+  assert.match(ab, /'\(Original: '\+lang\+'\)'/, 'German is supplied');
+});
+
+test('R236 i18n: the Köppen criteria are given in all five languages', () => {
+  const s = code(read('js/data-layers.js'));
+  /* it used to be a two-column {en, jp} table picked with a ternary — neither instrument saw it */
+  assert.doesNotMatch(s, /HOST\.lang==='jp'\?info\.jp:info\.en/, 'the two-language pick is gone');
+  assert.match(s, /function koppenCriteria\(code\)\{[\s\S]*?const T5=\(a\)=>window\.IntMapLang\.t\(/,
+    'the criteria go through the registry');
+  /* all nineteen rows carry five columns */
+  const body = s.slice(s.indexOf('function koppenCriteria'), s.indexOf('function showKoppenInfo'));
+  const rows = [...body.matchAll(/\[('(?:[^'\\]|\\.)*'\s*,\s*){4}'(?:[^'\\]|\\.)*'\]/g)];
+  assert.equal(rows.length, 19, 'five main classes and fourteen sub-codes, five languages each');
+});
+
 /* ── 5 · one picker, two sources ─────────────────────────────────────────────────────────────── */
 test('R236 seismic: past and recent earthquakes are ONE control, switch above the shared list', () => {
   const s = code(read('js/seismic.js'));
