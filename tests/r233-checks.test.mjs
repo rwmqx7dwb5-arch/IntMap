@@ -127,6 +127,28 @@ test('R233 the day/night shading sits in the basic-display block, exactly once',
   assert.ok(hz && !/nightside/.test(hz[1]), 'it is no longer a hazard overlay — one row, one owner');
 });
 
+/* ── ⑧ the Atlas picture viewer ──────────────────────────────────────────────────────────────── */
+test('R233 Atlas: the full-screen picture zooms, and its ✕ is a square', () => {
+  const a = read('js/atlas-attach.js');
+  /* every input a viewer is expected to answer */
+  assert.match(a, /addEventListener\('wheel'/, 'wheel zooms');
+  assert.match(a, /addEventListener\('dblclick'/, 'double-click toggles');
+  assert.match(a, /pts\.size >= 2/, 'two fingers pinch');
+  assert.match(a, /pointermove/, '…and one finger pans');
+  /* zoom is about the POINTER — the arithmetic that keeps the pixel under the finger fixed */
+  assert.match(a, /TX = dx - \(dx - TX\) \* \(s2 \/ S\)/, 'the point under the cursor stays put');
+  /* a pan that ends over the backdrop must not be read as "close" */
+  assert.match(a, /if \(moved\) \{ moved = false; return; \}/, 'dragging a zoomed picture cannot dismiss it');
+  /* the pinch has to reach the element rather than the browser's page zoom */
+  assert.match(a, /touch-action:none/, 'the image owns its own touch gestures');
+
+  /* 「×ボタンは丸ではなく四角に。」 — the circle is gone from the ✕ rule specifically */
+  const xRule = /\.atl-lightbox \.atl-lb-x\{([^}]*)\}/.exec(a);
+  assert.ok(xRule, 'the close button still has a rule');
+  assert.doesNotMatch(xRule[1], /border-radius:50%/, 'the ✕ is not a circle any more');
+  assert.match(xRule[1], /border-radius:\d+px/, '…it is a rounded square');
+});
+
 /* ── ⑦ the two small ones ────────────────────────────────────────────────────────────────────── */
 test('R233 the locate badge is ピッタリ, and the satellite globe has space around it in light mode', () => {
   const mx = read('js/map-extras.js');
