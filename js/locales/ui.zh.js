@@ -2293,5 +2293,17 @@ window.IntMapLang.define('zh', {
     'You have unsaved changes. Discard them?': "你有尚未儲存的變更，要捨棄嗎？",
     'Your profile': "你的個人資料",
     'mmi': "mmi",
+    /* == (#R231) THE STRINGS THIS TABLE COULD NOT SEE ====================================
+       268 hand-written `lang==='jp'?...` chains became IntMapLang.t(...) calls this round
+       (scripts/lang-ternary-codemod.mjs), which is what made them visible to
+       scripts/i18n-report.mjs at all - the report had been printing 100 % while these
+       rendered in English. Coverage went 100 % -> 91 % the moment they could be counted,
+       and these are that gap closed. WARNING: ui.zh-hans.js is REGENERATED from this file,
+       never edited by hand: `node scripts/zh-hans.mjs`. */
+    ')': "）",
+    'Area monitors are not available right now.': "區域監視目前無法使用。",
+    'You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with \'- \'. Stay grounded in the given headlines and avoid over-speculation.': "你是地緣政治分析師。以下是在同一個地理範圍內報導的新聞標題。請以地緣政治的角度，用大約三行簡潔的中文摘要這個地區正在發生的事。每一行以「- 」開頭。只根據所給的標題陳述，避免過度推測。",
+    'You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.': "你是衛星影像分析師，正在比對同一地區的兩張影像（第一張＝較早，第二張＝較晚）。請報告：軍事設施的興建與擴張，船艦、航空器、車輛等裝備的移動，土地整地與伐除，自然災害（洪水、火災、山崩等），以及都市與基礎設施的變化。以條列方式呈現，每一項標註信心水準（高／中／低）。若沒有變化就直接說明，並注意雲量、影像品質或季節差異造成的誤判。",
+    'The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.': "所繪的輪廓是斷層的地表投影。傾角、寬度與深度由其長度和形狀推估（Wells & Coppersmith 1994，並消去規模項）；平均滑移量則由上方的應力降導出（Eshelby）。欄位留空即維持推估值。",
   }
 });

@@ -149,7 +149,21 @@ function build(job) {
   /* the body starts at the define() call — the header above replaces the source file's own */
   const at = src.indexOf(job.from);
   if (at < 0) throw new Error(job.src + ' does not start its table with ' + job.from + ')');
-  const body = toHans(src.slice(at)).replace(job.from, job.to);
+  /* ⚠⚠ (#R231) THE `inline` TABLE'S KEYS ARE ENGLISH SOURCE STRINGS AND MUST NOT BE CONVERTED.
+     Two of them quote Japanese inside otherwise-English prose (the seismic method note cites
+     気象庁「計測震度の算出方法」; the routing hint gives a Japanese example). The character map
+     rewrote those quotes, so the Simplified file's key no longer equalled the string at the call
+     site and both entries were dead — a translation present in the file and never used. Keys are
+     therefore lifted out before the conversion and put back after. Measured: 2 of 2,068 keys, which
+     is exactly the kind of small silent hole this project keeps paying for. */
+  let body = src.slice(at);
+  const keys = [];
+  body = body.replace(/\n(\s{4})('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")(\s*:)/g, (m, ind, key, tail) => {
+    keys.push(key);
+    return '\n' + ind + ' K' + (keys.length - 1) + ' ' + tail;
+  });
+  body = toHans(body).replace(/ K(\d+) /g, (m, i) => keys[+i]);
+  body = body.replace(job.from, job.to);
   return HEAD.split('UI STRINGS').join(job.what)
     .split('js/locales/ui.zh.js').join(job.src)
     .split('ui.zh.js').join(job.src.split('/').pop()) + body;

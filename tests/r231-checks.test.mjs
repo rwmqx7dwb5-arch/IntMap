@@ -258,6 +258,33 @@ test('R231 i18n: the Simplified files are generated, never hand-written', () => 
   const out = execFileSync(process.execPath, [join(ROOT, 'scripts/zh-hans.mjs'), '--check'], { encoding: 'utf8' });
   assert.match(out, /ui\.zh-hans\.js is in sync/);
   assert.match(out, /pages\.zh-hans\.js is in sync/);
+  /* ⚠⚠ AND THE ENGLISH KEYS SURVIVE THE CONVERSION. The `inline` table is keyed by the English
+     source string, and two of those strings quote Japanese inside otherwise-English prose (the
+     seismic method note cites 気象庁「計測震度の算出方法」). The character map rewrote the quote, so
+     the Simplified key no longer equalled the string at the call site and the entry was dead — a
+     translation sitting in the file, never used. */
+  assert.match(read('scripts/zh-hans.mjs'), /keys are therefore lifted out before the conversion|Keys are\s+therefore lifted out/i,
+    'the generator preserves keys');
+  const hans = read('js/locales/ui.zh-hans.js');
+  assert.ok(hans.includes('気象庁「計測震度の算出方法」'), 'the Japanese quoted INSIDE an English key is untouched');
+});
+
+test('R231 i18n: coverage is MEMBERSHIP, and Chinese is actually complete', () => {
+  /* ⚠⚠ THE REPORT USED TO DIVIDE TWO SIZES. A table of 2,068 entries against 2,038 live strings
+     printed "100 %" while five of those live strings had no entry at all — thirty stale keys, left
+     over from call sites since edited, padded the number that hid them. That is this round's own
+     headline defect one level down: an instrument reporting green for something it is not looking
+     at. It counts the intersection now. */
+  const rep = read('scripts/i18n-report.mjs');
+  assert.match(rep, /const covered = \[\.\.\.inline\.keys\(\)\]\.filter\(\(s\) => i\.has\(s\)\)\.length;/,
+    'coverage counts the intersection');
+  assert.ok(!/i\.size \/ Math\.max\(1, inline\.size\)/.test(rep), 'not a size ratio');
+  const out = execFileSync(process.execPath, [join(ROOT, 'scripts/i18n-report.mjs')], { encoding: 'utf8' });
+  for (const code of ['zh', 'zh-hans']) {
+    const line = out.split('\n').find((l) => l.startsWith(code + ' ') || l.startsWith(code.padEnd(6) + ' '));
+    assert.ok(line, `the report has a row for ${code}`);
+    assert.match(line, /100\.0%/, `${code} inline coverage is complete: ${line}`);
+  }
 });
 
 test('R231 i18n: the launch screen names every registered language', () => {
