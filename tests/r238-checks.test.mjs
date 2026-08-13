@@ -18,19 +18,35 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    hit nine times across #R208…#R237. */
 const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
-/* ── 1 · ⑤ the air over the disc is drawn at full strength ──────────────────────────────────────
-   「いやだからなんで前まであった大気が消えとんねんって言ってんねん」. Measured this round on one
-   page load, one camera: at #R237's 0.20 the globe was 25–27 % darker than maplibre's own pass on
-   every ring of the disc and the limb-ward gradient was 1.083 against maplibre's 1.103 — i.e. the
-   brightening toward the edge, which is the thing the eye reads as air, had been flattened out.
-   ⚠ THE CHECK IS THAT THERE IS NO CONSTANT LEFT, not that the constant is 1. A later round that
-   wants a different picture has to change the MODEL or the MARCH, which is where the physics is. */
-test('R238 sky: the disc air is the composite itself, with no strength constant to tune', () => {
+/* ── 1 · ⑤ the band that was removed is back, and nothing else was moved to compensate ───────────
+   「ちげーよ Maplibre固有の大気じゃねーよ だからふざけんな 一度つけてんのに勝手に外すな」
+
+   ⚠⚠⚠ THE FIRST CUT OF THIS ROUND GOT THE CAUSE WRONG AND THIS TEST RECORDED THE WRONG FIX.
+   It measured the globe as 25–27 % darker than it used to be, concluded the custom layer's disc air
+   was too weak, and raised `_discStrength` 0.20 → 1. The darkness was real; the cause was not.
+   Diffing R226 (the last round before #R227) against HEAD settled it: `_horizonColour`, `_skyColour`,
+   `_limbHex`, `_horizonBlend` and `_eyeAltM` — every function that produces the band #R213–#R222
+   built — are BYTE-FOR-BYTE IDENTICAL. Nothing about the band was rewritten. #R227 zeroed
+   `atmosphere-blend`, the one property that carried it to the screen, so that its new layer would
+   not add to it. That is the removal, and it was never asked for.
+
+   So this test now checks the two halves of putting it back:
+     · the zero is gone and the #R187/#R205 ramps are what is written;
+     · `_discStrength` is #R237's 0.20 — the value the reader actually had — because raising it was
+       a compensation for a wrong diagnosis, and with the band restored the two add up to 5 % of the
+       disc past L235 (#R187's 「質感がチープ」 measure). Measured after: 2.7 %. */
+test('R238b sky: the removed band is restored, and nothing was inflated to compensate', () => {
   const s = code(read('js/theme-sky.js'));
+  assert.doesNotMatch(s, /'atmosphere-blend':\(limb\?0:/,
+    'the band is not switched off to make room for the custom layer');
+  assert.match(s, /'atmosphere-blend':\(sat/, 'the ramps are written in their pre-#R227 shape');
   const m = s.match(/function\s+_discStrength\s*\(\)\s*\{\s*return\s+([\d.]+)\s*;\s*\}/);
   assert.ok(m, '_discStrength is still a single-expression function');
-  assert.equal(Number(m[1]), 1,
-    'the air in front of the planet is drawn as it is; 0.20 was a quarter of what had been there');
+  assert.equal(Number(m[1]), 0.20,
+    'the custom layer keeps #R237\'s disc strength — restoring the band is the fix, not doubling the air');
+  /* and the layer itself is untouched: this restores a removal, it does not undo #R227's own work */
+  assert.match(s, /function _limbOwnsRim\(\)/, 'the app still draws its own limb');
+  assert.match(s, /limb===_applySkyAtmosphere\._limb/, 'and the camera follow still tracks who owns it');
 });
 
 test('R238 sky: the rim is still gated on globeness, not on the eye height', () => {
