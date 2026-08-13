@@ -113,7 +113,7 @@ window.IntMapModules.betaOverlays=function(HOST){
          the view we just HINT (once) that the user can pan there. */
       if(on){ try{ const c=GE().camera.getCenter();
         if((c.lng<18||c.lng>46||c.lat<40||c.lat>57||GE().camera.getZoom()<3.4) && !window._ukrHinted){ window._ukrHinted=true;
-          const t=(HOST.lang==='jp'?'ウクライナ前線を表示中（ウクライナ周辺へ移動すると見えます）':HOST.lang==='de'?'Ukraine-Frontlinie aktiv — zur Ukraine schwenken, um sie zu sehen':HOST.lang==='ru'?'Линия фронта включена — переместитесь к Украине, чтобы увидеть её':HOST.lang==='es'?'Línea del frente de Ucrania activada — desplázate a Ucrania para verla':'Ukraine frontline on — pan to Ukraine to see it');
+          const t=(window.IntMapLang.t(HOST.lang,'Ukraine frontline on — pan to Ukraine to see it','ウクライナ前線を表示中（ウクライナ周辺へ移動すると見えます）','Ukraine-Frontlinie aktiv — zur Ukraine schwenken, um sie zu sehen','Линия фронта включена — переместитесь к Украине, чтобы увидеть её','Línea del frente de Ucrania activada — desplázate a Ucrania para verla'));
           try{ if(typeof imToast==='function') imToast(t); else if(typeof satToast==='function') satToast(t); }catch(_){} } }catch(_){} }
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }

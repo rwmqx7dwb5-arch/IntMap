@@ -112,8 +112,17 @@ function inlineStrings() {
     });
     walk.simple(ast, {
       CallExpression(n) {
-        if (!n.callee || n.callee.type !== 'Identifier' || !names.has(n.callee.name)) return;
-        const a = n.arguments[0];
+        /* ⚠ (#R231) TWO SHAPES, NOT ONE. `L(en, …)` is the helper bound to IntMapLang.pick(); the
+           second is `IntMapLang.t(lang, en, …)`, which scripts/lang-ternary-codemod.mjs wrote at 268
+           sites that used to be hand-written `lang==='jp'?…` chains. Those chains were invisible to
+           this report, which is why it printed 100 % for seven rounds while Chinese screens still
+           carried English — see the header of `t()` in js/lang-registry.js. A report that could not
+           see the new shape either would simply move the blind spot. */
+        let a = null;
+        if (n.callee && n.callee.type === 'Identifier' && names.has(n.callee.name)) a = n.arguments[0];
+        else if (n.callee && n.callee.type === 'MemberExpression' && !n.callee.computed
+          && n.callee.property && n.callee.property.name === 't'
+          && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) a = n.arguments[1];
         if (!a || a.type !== 'Literal' || typeof a.value !== 'string' || !a.value.trim()) return;
         if (!out.has(a.value)) out.set(a.value, []);
         const arr = out.get(a.value); if (arr.indexOf(f) < 0) arr.push(f);
@@ -162,6 +171,19 @@ function main() {
     lines.push('});');
     writeFileSync(p, lines.join('\n') + '\n');
     console.log(`wrote ${p} — ${en.size} keyed strings + ${inline.size} inline strings to translate`);
+    return;
+  }
+
+  /* (#R231) `--missing <code>` prints exactly the inline strings that language has no entry for, as
+     ready-to-paste table rows. Without it, closing a gap means diffing 2,000 keys by eye — which is
+     why #R223/#R224's tables were never topped up as new strings landed. */
+  const wantMissing = process.argv.indexOf('--missing');
+  if (wantMissing >= 0) {
+    const code = process.argv[wantMissing + 1];
+    const have = inlineTable(code);
+    const gaps = [...inline.keys()].filter((s) => !have.has(s)).sort((a, b) => a.localeCompare(b));
+    console.error(`${code}: ${gaps.length} of ${inline.size} inline strings have no entry`);
+    for (const s of gaps) console.log(`    ${ESC(s)}: ${ESC(s)},   /* ${inline.get(s).slice(0, 2).join(' ')} */`);
     return;
   }
 

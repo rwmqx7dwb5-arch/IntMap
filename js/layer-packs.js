@@ -103,7 +103,7 @@ window.IntMapModules.earthSky=function(HOST){
     function _auroraSyncNote(){ try{ if(!_auroraLegEl) return; let n=_auroraLegEl.querySelector('.l9-aur-note');
       if(!_auroraTime){ if(n) n.remove(); return; }
       if(!n){ n=document.createElement('div'); n.className='l9-aur-note'; n.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; _auroraLegEl.appendChild(n); }
-      n.textContent=(HOST.lang==='jp'?'予測時刻: ':HOST.lang==='de'?'Vorhersagezeit: ':HOST.lang==='ru'?'Время прогноза: ':HOST.lang==='es'?'Hora del pronóstico: ':'Forecast time: ')+_fmtAuroraTime(_auroraTime); }catch(_){} }
+      n.textContent=(window.IntMapLang.t(HOST.lang,'Forecast time: ','予測時刻: ','Vorhersagezeit: ','Время прогноза: ','Hora del pronóstico: '))+_fmtAuroraTime(_auroraTime); }catch(_){} }
     async function loadAurora(){ try{
       const r=await fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json'); const j=await r.json();
       try{ const ft=j['Forecast Time']||j['Observation Time']; if(ft){ _auroraTime=ft; _auroraSyncNote(); } }catch(_){}
@@ -131,7 +131,7 @@ window.IntMapModules.earthSky=function(HOST){
         try{ if(e.target.checked&&window._registerLayerOpacity){ const _el=window._registerLayerOpacity('l9-'+k,[L9LBL[k][1],L9LBL[k][0],L9LBL[k][2],L9LBL[k][3]],SETS[k],'l9-dl-'+k); if(k==='aurora'&&_el){ _auroraLegEl=_el; _auroraSyncNote(); } } else if(window._hideGenericLegend){ window._hideGenericLegend('l9-'+k); if(k==='aurora') _auroraLegEl=null; } }catch(_){} }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=HOST.lang==='jp'?'地球・大気・空域':HOST.lang==='de'?'Erde, Himmel & Luftraum':HOST.lang==='ru'?'Земля, небо и воздушное пространство':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>{ setTimeout(relabel,20); setTimeout(_auroraSyncNote,25); });   /* (#R11) relabel on Settings language change; (#R122) re-localize the aurora forecast-time note */
     window.IntMapLayers9={ toggle };
@@ -384,7 +384,7 @@ window.IntMapModules.landCover=function(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=HOST.lang==='jp'?'土地被覆・地球科学':HOST.lang==='de'?'Bodenbedeckung & Geowissenschaft':HOST.lang==='ru'?'Земной покров и науки о Земле':'Land cover & earth science'; Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };

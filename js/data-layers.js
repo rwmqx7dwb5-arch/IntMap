@@ -305,8 +305,8 @@ window.IntMapModules.dataLayers=function(HOST){
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
-      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${HOST.lang==='jp'?'データなし':HOST.lang==='de'?'Keine Daten':HOST.lang==='ru'?'Нет данных':HOST.lang==='es'?'Sin datos':'No data'}</div>`:'';
-      el.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
+      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${window.IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
+      el.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
       /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
@@ -322,20 +322,20 @@ window.IntMapModules.dataLayers=function(HOST){
     let lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdWind;
     function buildCoreLegends(){
       CORE_LEGEND_IDS.forEach(id=>{ const e=document.getElementById('data-legend-'+id); if(e) e.remove(); });   /* drop the old-language elements before rebuilding (no duplicate ids) */
-    lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], HOST.lang==='jp'?'2022 国連UNDP':HOST.lang==='de'?'2022 UNDP':HOST.lang==='ru'?'2022 ПРООН':HOST.lang==='es'?'2022 PNUD':'2022 UNDP');
-    lgdDem=makeLegend('dem',140,(HOST.lang==='jp'?'民主主義指数':HOST.lang==='de'?'Demokratieindex':HOST.lang==='ru'?'Индекс демократии':HOST.lang==='es'?'Índice de democracia':'Democracy Index'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], HOST.lang==='jp'?'2023 EIU':'2023 EIU');
-    lgdPop=makeLegend('pop',140,(HOST.lang==='jp'?'人口密度':HOST.lang==='de'?'Bevölkerungsdichte':HOST.lang==='ru'?'Плотность населения':HOST.lang==='es'?'Densidad de población':'Pop. density'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], HOST.lang==='jp'?'per km²':'per km²');
-    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[HOST.lang==='jp'?'加盟国':HOST.lang==='de'?'Mitglied':HOST.lang==='ru'?'Член':HOST.lang==='es'?'Miembro':'Member',''],HOST.lang==='jp'?'32か国':HOST.lang==='de'?'32 Mitglieder':HOST.lang==='ru'?'32 членов':HOST.lang==='es'?'32 miembros':'32 members');
+    lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], window.IntMapLang.t(HOST.lang,'2022 UNDP','2022 国連UNDP','2022 UNDP','2022 ПРООН','2022 PNUD'));
+    lgdDem=makeLegend('dem',140,(window.IntMapLang.t(HOST.lang,'Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia')),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], HOST.lang==='jp'?'2023 EIU':'2023 EIU');
+    lgdPop=makeLegend('pop',140,(window.IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], HOST.lang==='jp'?'per km²':'per km²');
+    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[window.IntMapLang.t(HOST.lang,'Member','加盟国','Mitglied','Член','Miembro'),''],window.IntMapLang.t(HOST.lang,'32 members','32か国','32 Mitglieder','32 членов','32 miembros'));
     /* (#R15b / #38) Legends the value-scale layers were missing — choropleths (GDP pc, fertility, military
        spend $B & %GDP) and the snow / aerosol / night-lights rasters. They auto-gain an opacity slider via
        ensureLegendOpacity (their ids exist in `opacities`), moving that control onto the legend too. */
-    lgdGdppc=makeLegend('gdppc',140,(HOST.lang==='jp'?'1人当たりGDP':HOST.lang==='de'?'BIP pro Kopf':HOST.lang==='ru'?'ВВП на душу населения':HOST.lang==='es'?'PIB per cápita':'GDP per capita'),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], HOST.lang==='jp'?'名目・米ドル':HOST.lang==='de'?'USD, nominal':HOST.lang==='ru'?'долл. США, номинал':HOST.lang==='es'?'USD, nominal':'USD, nominal');
-    lgdTfr=makeLegend('tfr',140,(HOST.lang==='jp'?'合計特殊出生率':HOST.lang==='de'?'Geburtenrate (TFR)':HOST.lang==='ru'?'Суммарный коэффициент рождаемости':HOST.lang==='es'?'Tasa de fecundidad total':'Total fertility rate'),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], HOST.lang==='jp'?'2022 世界銀行':HOST.lang==='de'?'2022 Weltbank':HOST.lang==='ru'?'2022 Всемирный банк':HOST.lang==='es'?'2022 Banco Mundial':'2022 World Bank');
-    lgdMil=makeLegend('milSpend',140,(HOST.lang==='jp'?'国防費（$B）':HOST.lang==='de'?'Militärausgaben ($ Mrd.)':HOST.lang==='ru'?'Военные расходы ($ млрд)':HOST.lang==='es'?'Gasto militar ($ mil M)':'Mil. spending ($B)'),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
-    lgdMilGDP=makeLegend('milSpendGDP',140,(HOST.lang==='jp'?'国防費（対GDP）':HOST.lang==='de'?'Militärausgaben (% BIP)':HOST.lang==='ru'?'Военные расходы (% ВВП)':HOST.lang==='es'?'Gasto militar (% PIB)':'Mil. spending (% GDP)'),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
-    lgdSnow=makeLegend('snow',140,(HOST.lang==='jp'?'積雪・海氷':HOST.lang==='de'?'Schnee & Eis':HOST.lang==='ru'?'Снег и лёд':HOST.lang==='es'?'Nieve y hielo':'Snow & ice'),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[HOST.lang==='jp'?'少':HOST.lang==='de'?'Wenig':HOST.lang==='ru'?'Мало':HOST.lang==='es'?'Bajo':'Low',HOST.lang==='jp'?'多':HOST.lang==='de'?'Viel':HOST.lang==='ru'?'Много':HOST.lang==='es'?'Alto':'High'], 'MODIS NDSI');
-    lgdAod=makeLegend('aod',140,(HOST.lang==='jp'?'エアロゾル / 煙霧':HOST.lang==='de'?'Aerosol / Dunst':HOST.lang==='ru'?'Аэрозоль / дымка':HOST.lang==='es'?'Aerosol / bruma':'Aerosol / haze'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[HOST.lang==='jp'?'清浄':HOST.lang==='de'?'Klar':HOST.lang==='ru'?'Чисто':HOST.lang==='es'?'Limpio':'Clear',HOST.lang==='jp'?'濃い':HOST.lang==='de'?'Trüb':HOST.lang==='ru'?'Мутно':HOST.lang==='es'?'Brumoso':'Hazy'], 'MODIS AOD');
-    lgdNightsat=makeLegend('nightsat',140,(HOST.lang==='jp'?'夜間光（衛星）':HOST.lang==='de'?'Nachtlichter':HOST.lang==='ru'?'Ночные огни':HOST.lang==='es'?'Luces nocturnas':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[HOST.lang==='jp'?'暗':HOST.lang==='de'?'Dunkel':HOST.lang==='ru'?'Темно':HOST.lang==='es'?'Oscuro':'Dark',HOST.lang==='jp'?'明':HOST.lang==='de'?'Hell':HOST.lang==='ru'?'Ярко':HOST.lang==='es'?'Brillante':'Bright'], 'VIIRS Black Marble');
+    lgdGdppc=makeLegend('gdppc',140,(window.IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita')),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], window.IntMapLang.t(HOST.lang,'USD, nominal','名目・米ドル','USD, nominal','долл. США, номинал','USD, nominal'));
+    lgdTfr=makeLegend('tfr',140,(window.IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total')),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], window.IntMapLang.t(HOST.lang,'2022 World Bank','2022 世界銀行','2022 Weltbank','2022 Всемирный банк','2022 Banco Mundial'));
+    lgdMil=makeLegend('milSpend',140,(window.IntMapLang.t(HOST.lang,'Mil. spending ($B)','国防費（$B）','Militärausgaben ($ Mrd.)','Военные расходы ($ млрд)','Gasto militar ($ mil M)')),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
+    lgdMilGDP=makeLegend('milSpendGDP',140,(window.IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費（対GDP）','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)')),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
+    lgdSnow=makeLegend('snow',140,(window.IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[window.IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),window.IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
+    lgdAod=makeLegend('aod',140,(window.IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[window.IntMapLang.t(HOST.lang,'Clear','清浄','Klar','Чисто','Limpio'),window.IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
+    lgdNightsat=makeLegend('nightsat',140,(window.IntMapLang.t(HOST.lang,'Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[window.IntMapLang.t(HOST.lang,'Dark','暗','Dunkel','Темно','Oscuro'),window.IntMapLang.t(HOST.lang,'Bright','明','Hell','Ярко','Brillante')], 'VIIRS Black Marble');
     /* EEZ legend — one row per boundary TYPE (kept distinct), swatches match the BRIGHT SLD colours in addEEZ */
     lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
     /* (#R79g) restored per-type colour coding (flattening it to one colour was wrong) — but now each type is a
@@ -354,70 +354,70 @@ window.IntMapModules.dataLayers=function(HOST){
       {c:'#C8D0D8',n:{en:'Connection line',jp:'接続線',de:'Verbindungslinie',ru:'Соединительная линия',es:'Línea de conexión'}}
     ];
     const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${cat.n[HOST.lang]||cat.n.en}</span></div>`).join('');
-    lgdEEZ.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'海洋管轄区域':HOST.lang==='de'?'Meereszonen':HOST.lang==='ru'?'Морские зоны':HOST.lang==='es'?'Zonas marítimas':'Maritime zones'}</h4>
+    lgdEEZ.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${HOST.lang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。':HOST.lang==='de'?'AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.':HOST.lang==='ru'?'ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.':HOST.lang==='es'?'ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.':'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.'}</div>
-      <div class="dl-hint">${HOST.lang==='jp'?'出典: MarineRegions WMS':HOST.lang==='de'?'Quelle: MarineRegions WMS':HOST.lang==='ru'?'Источник: MarineRegions WMS':HOST.lang==='es'?'Fuente: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${window.IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Temperature legend (MODIS LST color ramp ≈ Kelvin) */
     lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
-    lgdTemp.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
+    lgdTemp.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
       <div class="dl-scale"><span>${fmtTemp(-40)}</span><span>${fmtTemp(40)}</span></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。':HOST.lang==='de'?'MERRA-2-Reanalyse, monatlich — weltweit lückenlos. Monat per Schieberegler wählen.':HOST.lang==='ru'?'Реанализ MERRA-2, помесячно — без пропусков по всему миру. Месяц выбирается ползунком.':HOST.lang==='es'?'Reanálisis MERRA-2, mensual — sin huecos en todo el mundo. Elige el mes con el deslizador.':'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.'}</div>`;
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.','MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。','MERRA-2-Reanalyse, monatlich — weltweit lückenlos. Monat per Schieberegler wählen.','Реанализ MERRA-2, помесячно — без пропусков по всему миру. Месяц выбирается ползунком.','Reanálisis MERRA-2, mensual — sin huecos en todo el mundo. Elige el mes con el deslizador.')}</div>`;
     mc.appendChild(lgdTemp);
     lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
     lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
-    lgdThermal.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'熱異常(火災)':HOST.lang==='de'?'Thermische Anomalien':HOST.lang==='ru'?'Тепловые аномалии':HOST.lang==='es'?'Anomalías térmicas':'Thermal anomalies'}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${HOST.lang==='jp'?'検知された火災・熱源':HOST.lang==='de'?'Erkannte Brände / Wärmequellen':HOST.lang==='ru'?'Обнаруженные пожары / тепловые источники':HOST.lang==='es'?'Fuegos activos / fuentes de calor detectados':'Detected active fire / heat source'}</div>
-      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${HOST.lang==='jp'?'期間':HOST.lang==='de'?'Zeitfenster':HOST.lang==='ru'?'Окно':HOST.lang==='es'?'Ventana':'Window'}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
-      <div class="dl-hint">${HOST.lang==='jp'?'NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）':HOST.lang==='de'?'NASA FIRMS · MODIS + VIIRS (echt, nahezu Echtzeit)':HOST.lang==='ru'?'NASA FIRMS · MODIS + VIIRS (реальные данные, почти в реальном времени)':HOST.lang==='es'?'NASA FIRMS · MODIS + VIIRS (real, casi en tiempo real)':'NASA FIRMS · MODIS + VIIRS (real, near-real-time)'}</div>`;
+    lgdThermal.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${window.IntMapLang.t(HOST.lang,'Detected active fire / heat source','検知された火災・熱源','Erkannte Brände / Wärmequellen','Обнаруженные пожары / тепловые источники','Fuegos activos / fuentes de calor detectados')}</div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${window.IntMapLang.t(HOST.lang,'Window','期間','Zeitfenster','Окно','Ventana')}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA FIRMS · MODIS + VIIRS (real, near-real-time)','NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）','NASA FIRMS · MODIS + VIIRS (echt, nahezu Echtzeit)','NASA FIRMS · MODIS + VIIRS (реальные данные, почти в реальном времени)','NASA FIRMS · MODIS + VIIRS (real, casi en tiempo real)')}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); try{ window._refreshLegendDates&&window._refreshLegendDates(); }catch(_){} }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
     lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
-    lgdRadar.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
+    lgdRadar.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
-      <div class="dl-scale"><span>${HOST.lang==='jp'?'弱い':HOST.lang==='de'?'Leicht':HOST.lang==='ru'?'Слабый':HOST.lang==='es'?'Ligero':'Light'}</span><span>${HOST.lang==='jp'?'激しい':HOST.lang==='de'?'Stark':HOST.lang==='ru'?'Сильный':HOST.lang==='es'?'Fuerte':'Heavy'}</span></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'RainViewer 実時間レーダー（最新フレーム）':HOST.lang==='de'?'RainViewer-Echtzeitradar (neuester Frame)':HOST.lang==='ru'?'Радар RainViewer в реальном времени (последний кадр)':HOST.lang==='es'?'Radar en vivo RainViewer (último fotograma)':'RainViewer live radar (latest frame)'}</div>`;
+      <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${window.IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'RainViewer live radar (latest frame)','RainViewer 実時間レーダー（最新フレーム）','RainViewer-Echtzeitradar (neuester Frame)','Радар RainViewer в реальном времени (последний кадр)','Radar en vivo RainViewer (último fotograma)')}</div>`;
     mc.appendChild(lgdRadar);
     lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-surface-temperature legend (GHRSST MUR L4) */
     lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
-    lgdSST.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
+    lgdSST.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
       <div class="dl-scale"><span>${fmtTemp(-2)}</span><span>${fmtTemp(32)}</span></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'GHRSST MUR L4（海域のみ）':HOST.lang==='de'?'GHRSST MUR L4 (nur Ozeane)':HOST.lang==='ru'?'GHRSST MUR L4 (только океаны)':HOST.lang==='es'?'GHRSST MUR L4 (solo océanos)':'GHRSST MUR L4 (oceans only)'}</div>`;
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'GHRSST MUR L4 (oceans only)','GHRSST MUR L4（海域のみ）','GHRSST MUR L4 (nur Ozeane)','GHRSST MUR L4 (только океаны)','GHRSST MUR L4 (solo océanos)')}</div>`;
     mc.appendChild(lgdSST);
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Gridded population-density legend (NASA SEDAC GPW v4) */
     lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
-    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'人口密度（グリッド）':HOST.lang==='de'?'Bevölkerungsdichte (Raster)':HOST.lang==='ru'?'Плотность населения (сетка)':HOST.lang==='es'?'Densidad de población (malla)':'Pop. density (grid)'}</h4>
+    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Pop. density (grid)','人口密度（グリッド）','Bevölkerungsdichte (Raster)','Плотность населения (сетка)','Densidad de población (malla)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#ffffd4,#fee391,#fec44f,#fe9929,#ec7014,#cc4c02,#8c2d04);"></div>
       <div class="dl-scale"><span>0</span><span>1000+ /km²</span></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。':HOST.lang==='de'?'NASA SEDAC GPW v4 (2020, ~1 km). Reale Verteilung, unabhängig von Grenzen.':HOST.lang==='ru'?'NASA SEDAC GPW v4 (2020, ~1 км). Реальное распределение, независимое от границ.':HOST.lang==='es'?'NASA SEDAC GPW v4 (2020, ~1 km). Distribución real, independiente de fronteras.':'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.'}</div>`;
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.','NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。','NASA SEDAC GPW v4 (2020, ~1 km). Reale Verteilung, unabhängig von Grenzen.','NASA SEDAC GPW v4 (2020, ~1 км). Реальное распределение, независимое от границ.','NASA SEDAC GPW v4 (2020, ~1 km). Distribución real, independiente de fronteras.')}</div>`;
     mc.appendChild(lgdPopGrid);
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Color-relief elevation legend (#5) */
     lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
-    lgdRelief.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'標高（カラー段彩）':HOST.lang==='de'?'Höhe (farbig)':HOST.lang==='ru'?'Высота (цвет)':HOST.lang==='es'?'Elevación (color)':'Elevation (color)'}</h4>
+    lgdRelief.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
-      <div class="dl-scale"><span>${HOST.lang==='jp'?'深海':HOST.lang==='de'?'Tiefsee':HOST.lang==='ru'?'Глубоководье':HOST.lang==='es'?'Mar profundo':'Deep sea'}</span><span>${HOST.lang==='jp'?'高峰':HOST.lang==='de'?'Gipfel':HOST.lang==='ru'?'Вершины':HOST.lang==='es'?'Cumbres':'Peaks'}</span></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'AWS Terrain（terrarium DEM）':'AWS Terrain (terrarium DEM)'}</div>`;
+      <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Deep sea','深海','Tiefsee','Глубоководье','Mar profundo')}</span><span>${window.IntMapLang.t(HOST.lang,'Peaks','高峰','Gipfel','Вершины','Cumbres')}</span></div>
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'AWS Terrain (terrarium DEM)','AWS Terrain（terrarium DEM）')}</div>`;
     mc.appendChild(lgdRelief);
     lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level-rise legend (#24) */
     lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     const slL=window._seaLevelM||0;
-    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'海面変動':HOST.lang==='de'?'Meeresspiegel-Änderung':HOST.lang==='ru'?'Изменение уровня моря':HOST.lang==='es'?'Cambio del nivel del mar':'Sea-level change'}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${HOST.lang==='jp'?'浸水域 (≤ 現海面 ':HOST.lang==='de'?'Überflutet (≤ heute ':HOST.lang==='ru'?'Затоплено (≤ текущего ':HOST.lang==='es'?'Inundado (≤ hoy ':'Flooded (≤ today '}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
+    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${window.IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
-      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${HOST.lang==='jp'?'設定':HOST.lang==='de'?'Festlegen':HOST.lang==='ru'?'Задать':HOST.lang==='es'?'Fijar':'Set'}</button></div>
+      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
       <div class="sl-err" style="display:none; color:var(--info-mil); font-size:10px; margin:0 0 2px;"></div>
-      <div class="dl-hint">${HOST.lang==='jp'?'スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。':HOST.lang==='de'?'Schieberegler oder Zahl (-11000–9000 m; negativ = Meeresspiegel-Abfall). Einfache „Badewannen“-Flutung aus dem AWS-Terrain-DEM — ohne Gezeiten & Deiche.':HOST.lang==='ru'?'Ползунок или число (-11000–9000 м; минус = падение уровня). Простое «наполнение ванны» по DEM AWS Terrain — без приливов и дамб.':HOST.lang==='es'?'Deslizador o número (-11000–9000 m; negativo = descenso del nivel). Inundación simple («bañera») según el DEM de AWS Terrain — sin mareas ni defensas.':'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.'}</div>`;
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.','スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。','Schieberegler oder Zahl (-11000–9000 m; negativ = Meeresspiegel-Abfall). Einfache „Badewannen“-Flutung aus dem AWS-Terrain-DEM — ohne Gezeiten & Deiche.','Ползунок или число (-11000–9000 м; минус = падение уровня). Простое «наполнение ванны» по DEM AWS Terrain — без приливов и дамб.','Deslizador o número (-11000–9000 m; negativo = descenso del nivel). Inundación simple («bañera») según el DEM de AWS Terrain — sin mareas ni defensas.')}</div>`;
     mc.appendChild(lgdSeaLevel);
     lgdSeaLevel.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sealevel'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level slider lives in the legend too (#11) — control the simulation straight from the legend. */
@@ -434,7 +434,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const apply=(quiet)=>{ const raw=String(num.value||'').trim();
         if(quiet && (raw===''||raw==='-'||raw==='+')){ if(err) err.style.display='none'; return; }   /* mid-typing, not an error */
         const v=parseInt(raw,10);
-        if(isNaN(v)||v<-11000||v>9000){ if(err){ err.textContent=HOST.lang==='jp'?'-11000〜9000 の数値を入力してください':HOST.lang==='de'?'Zahl zwischen -11000 und 9000 eingeben':HOST.lang==='ru'?'Введите число от -11000 до 9000':HOST.lang==='es'?'Introduce un número entre -11000 y 9000':'Enter a number between -11000 and 9000'; err.style.display='block'; } return; }
+        if(isNaN(v)||v<-11000||v>9000){ if(err){ err.textContent=window.IntMapLang.t(HOST.lang,'Enter a number between -11000 and 9000','-11000〜9000 の数値を入力してください','Zahl zwischen -11000 und 9000 eingeben','Введите число от -11000 до 9000','Introduce un número entre -11000 y 9000'); err.style.display='block'; } return; }
         if(err) err.style.display='none'; window._seaLevelM=v; if(window._refreshSeaLevel) window._refreshSeaLevel(); };
       if(setb) setb.onclick=()=>apply(false);
       if(num){ let _slT=0;
@@ -455,17 +455,17 @@ window.IntMapModules.dataLayers=function(HOST){
     window.fmtWindSpeed=(ms)=>{ const v=(ms||0)*window.windUnitFactor(); return v.toFixed(v<10?1:0)+' '+window.windUnitLabel(); };
     const _windGrad='linear-gradient(to right,rgb(16,32,92) 0%,rgb(28,108,184) 7.5%,rgb(40,168,170) 17.5%,rgb(90,205,120) 27.5%,rgb(225,215,75) 40%,rgb(242,150,52) 55%,rgb(232,70,70) 72.5%,rgb(198,55,176) 100%)';
     lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
-    lgdWind.innerHTML=`<span class="dl-drag" title="${HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">✕</button><h4>${HOST.lang==='jp'?'風（10m）':HOST.lang==='de'?'Wind 10 m':HOST.lang==='ru'?'Ветер 10 м':HOST.lang==='es'?'Viento 10 m':'Wind 10 m'}</h4>
+    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4>
       <div class="dl-bar" style="background:${_windGrad};"></div>
       <div class="dl-scale"><span>0</span><span class="wind-scale-max"></span></div>
-      <div class="kl-period" style="margin:7px 0 2px;"><label>${HOST.lang==='jp'?'単位':HOST.lang==='de'?'Einheiten':HOST.lang==='ru'?'Единицы':HOST.lang==='es'?'Unidades':'Units'}</label><select id="wind-unit-sel">${window.WIND_UNITS.map(u=>`<option value="${u[0]}"${u[0]===window.windUnit?' selected':''}>${u[1]}</option>`).join('')}</select></div>
-      <div class="dl-hint" id="wind-valid">${HOST.lang==='jp'?'Open-Meteo GFS（10m風）':HOST.lang==='de'?'Open-Meteo GFS (10-m-Wind)':HOST.lang==='ru'?'Open-Meteo GFS (ветер 10 м)':HOST.lang==='es'?'Open-Meteo GFS (viento a 10 m)':'Open-Meteo GFS (10 m wind)'}</div>`;
+      <div class="kl-period" style="margin:7px 0 2px;"><label>${window.IntMapLang.t(HOST.lang,'Units','単位','Einheiten','Единицы','Unidades')}</label><select id="wind-unit-sel">${window.WIND_UNITS.map(u=>`<option value="${u[0]}"${u[0]===window.windUnit?' selected':''}>${u[1]}</option>`).join('')}</select></div>
+      <div class="dl-hint" id="wind-valid">${window.IntMapLang.t(HOST.lang,'Open-Meteo GFS (10 m wind)','Open-Meteo GFS（10m風）','Open-Meteo GFS (10-m-Wind)','Open-Meteo GFS (ветер 10 м)','Open-Meteo GFS (viento a 10 m)')}</div>`;
     mc.appendChild(lgdWind);
     lgdWind.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Refresh the max-speed scale label + valid-time line; called on unit change + when new data lands. */
     window._updateWindLegend=function(){
       try{ const mx=lgdWind.querySelector('.wind-scale-max'); if(mx) mx.textContent=(40*window.windUnitFactor()).toFixed(0)+' '+window.windUnitLabel(); }catch(_){}
-      try{ const vt=document.getElementById('wind-valid'); const gt=(window.Wind&&window.Wind.dataTime&&window.Wind.dataTime()); if(vt){ if(gt&&window._fmtWindTime){ vt.textContent=(HOST.lang==='jp'?'🌬 ':'🌬 ')+window._fmtWindTime(gt); } else { vt.textContent=HOST.lang==='jp'?'Open-Meteo GFS（10m風）':HOST.lang==='de'?'Open-Meteo GFS (10-m-Wind)':HOST.lang==='ru'?'Open-Meteo GFS (ветер 10 м)':HOST.lang==='es'?'Open-Meteo GFS (viento a 10 m)':'Open-Meteo GFS (10 m wind)'; } } }catch(_){}
+      try{ const vt=document.getElementById('wind-valid'); const gt=(window.Wind&&window.Wind.dataTime&&window.Wind.dataTime()); if(vt){ if(gt&&window._fmtWindTime){ vt.textContent=(HOST.lang==='jp'?'🌬 ':'🌬 ')+window._fmtWindTime(gt); } else { vt.textContent=window.IntMapLang.t(HOST.lang,'Open-Meteo GFS (10 m wind)','Open-Meteo GFS（10m風）','Open-Meteo GFS (10-m-Wind)','Open-Meteo GFS (ветер 10 м)','Open-Meteo GFS (viento a 10 m)'); } } }catch(_){}
     };
     { const sel=lgdWind.querySelector('#wind-unit-sel'); if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){} window._updateWindLegend(); try{ renderCoordReadout(); }catch(_){} }; }
     window._updateWindLegend();
@@ -576,7 +576,7 @@ window.IntMapModules.dataLayers=function(HOST){
           w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
           const inSty='padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;';
           if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
-          else if(id==='thermal'){ w.innerHTML='🕒 <span>'+(HOST.lang==='jp'?'期間':HOST.lang==='de'?'Zeitfenster':HOST.lang==='ru'?'Окно':HOST.lang==='es'?'Ventana':'Window')+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select>';
+          else if(id==='thermal'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select>';
             const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
           else if(id==='temp'){ w.innerHTML='🕒 <input type="month" class="dl-date" style="'+inSty+'">';
             const d=w.querySelector('.dl-date'); d.value=(layerDates[id]||'').slice(0,7); d.addEventListener('change',()=>{ if(!d.value)return; layerDates[id]=d.value+'-01'; if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
@@ -701,7 +701,7 @@ window.IntMapModules.dataLayers=function(HOST){
            becomes a NUMBER before it is ever spliced into markup — Number() is the barrier here, and
            it is also the only thing that makes the clamp below mean anything */
         const _sl=Number(window._seaLevelM)||0;
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${HOST.lang==='jp'?'海面変動':HOST.lang==='de'?'Meeresspiegel':HOST.lang==='ru'?'Уровень моря':HOST.lang==='es'?'Nivel del mar':'Sea-level'}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${window.IntMapLang.t(HOST.lang,'Sea-level','海面変動','Meeresspiegel','Уровень моря','Nivel del mar')}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
       }
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
@@ -794,9 +794,9 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R64) the bar is ALWAYS rendered (with "(0)" when empty) — if it appeared/disappeared with the first
          toggle, the rows below would shift by its height (the original R32 complaint). Constant height, always. */
       sec.style.display='';
-      const title=(lang==='jp'?'表示中のレイヤー':lang==='de'?'Aktive Ebenen':lang==='ru'?'Активные слои':lang==='es'?'Capas activas':'Active layers');
-      const clearTxt=(lang==='jp'?'すべて解除':lang==='de'?'Alle aus':lang==='ru'?'Сбросить все':lang==='es'?'Quitar todo':'Clear all');
-      const listTxt=(lang==='jp'?'一覧':lang==='de'?'Liste':lang==='ru'?'Список':lang==='es'?'Lista':'List');
+      const title=(window.IntMapLang.t(lang,'Active layers','表示中のレイヤー','Aktive Ebenen','Активные слои','Capas activas'));
+      const clearTxt=(window.IntMapLang.t(lang,'Clear all','すべて解除','Alle aus','Сбросить все','Quitar todo'));
+      const listTxt=(window.IntMapLang.t(lang,'List','一覧','Liste','Список','Lista'));
       /* (#R19) One-tap deselect-ALL ("すべてのレイヤーを選択解除できるボタン") in the section header.
          (#R69) + a "List" expander (see .alc-panel CSS note) — better UI, same constant bar height. */
       /* (#R72) icon List button (SVG list glyph; title carries the localized label) */
@@ -813,7 +813,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
-        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(lang==='jp'?'非表示':'Hide');
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
@@ -826,7 +826,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const buildPanel=()=>{
         const old=sec.querySelector('.alc-panel'); if(old) old.remove();
         const pn=document.createElement('div'); pn.className='alc-panel';
-        if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(lang==='jp'?'表示中のレイヤーはありません':lang==='de'?'Keine aktiven Ebenen':lang==='ru'?'Нет активных слоёв':lang==='es'?'Sin capas activas':'No layers are on'); pn.appendChild(em); }
+        if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(window.IntMapLang.t(lang,'No layers are on','表示中のレイヤーはありません','Keine aktiven Ebenen','Нет активных слоёв','Sin capas activas')); pn.appendChild(em); }
         chips.forEach(c=>{ const row=document.createElement('div'); row.className='alc-row';
           const nm=document.createElement('span'); nm.className='alcr-name'; nm.textContent=c.name; nm.title=c.name;
           nm.onclick=()=>{ const r2=c.el.closest('.lyr-row')||c.el.closest('label'); if(r2&&r2.scrollIntoView) try{ r2.scrollIntoView({block:'nearest'}); }catch(_){} };
@@ -834,10 +834,10 @@ window.IntMapModules.dataLayers=function(HOST){
           const src=findOp(c.el);
           if(src){ const rg=document.createElement('input'); rg.type='range';
             rg.min=src.min||0; rg.max=src.max||1; rg.step=src.step||'any'; rg.value=src.value;
-            rg.title=(lang==='jp'?'透明度':lang==='de'?'Deckkraft':lang==='ru'?'Непрозрачность':lang==='es'?'Opacidad':'Opacity');
+            rg.title=(window.IntMapLang.t(lang,'Opacity','透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
-          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(lang==='jp'?'非表示':'Hide');
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
           x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
           row.appendChild(x); pn.appendChild(row); });
         sec.appendChild(pn); };
@@ -1010,7 +1010,7 @@ window.IntMapModules.dataLayers=function(HOST){
         });
         if(otherRows.length){
           const oh=document.createElement('div'); oh.className='lyr-head'; oh.setAttribute('data-i18n','lyrGrpOthers'); oh.textContent=T('lyrGrpOthers'); order.push(oh);
-          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(lang==='jp'?'動作しない場合や不完全な場合があります。':lang==='de'?'Kann unvollständig sein oder nicht voll funktionieren.':lang==='ru'?'Может быть неполным или работать не полностью.':lang==='es'?'Puede estar incompleto o no funcionar del todo.':'May be incomplete or not fully working.'); order.push(note);
+          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(window.IntMapLang.t(lang,'May be incomplete or not fully working.','動作しない場合や不完全な場合があります。','Kann unvollständig sein oder nicht voll funktionieren.','Может быть неполным или работать не полностью.','Puede estar incompleto o no funcionar del todo.')); order.push(note);
           otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); });
         }
         /* Tools section (compare + upload) pinned to the very bottom */
@@ -1021,7 +1021,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
         tools.innerHTML='';
-        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':lang==='de'?'Werkzeuge':lang==='ru'?'Инструменты':lang==='es'?'Herramientas':'Tools'); tools.appendChild(th);
+        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(window.IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
            left over from an earlier collapse so the Tools section always shows (#R13c). */
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
@@ -1113,15 +1113,15 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* Hover a choropleth country → tooltip with its name + the metric value. */
     const CHORO_META={
-      pop:{label:()=>HOST.lang==='jp'?'人口密度':HOST.lang==='de'?'Bevölkerungsdichte':HOST.lang==='ru'?'Плотность населения':HOST.lang==='es'?'Densidad de población':'Pop. density', fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
+      pop:{label:()=>window.IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población'), fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
       hdi:{label:()=>'HDI (2022)', fmt:s=>s.hdi!=null?s.hdi.toFixed(3):'—'},
-      dem:{label:()=>HOST.lang==='jp'?'民主主義指数 (2023)':HOST.lang==='de'?'Demokratieindex (2023)':HOST.lang==='ru'?'Индекс демократии (2023)':HOST.lang==='es'?'Índice de democracia (2023)':'Democracy Index (2023)', fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'},
+      dem:{label:()=>window.IntMapLang.t(HOST.lang,'Democracy Index (2023)','民主主義指数 (2023)','Demokratieindex (2023)','Индекс демократии (2023)','Índice de democracia (2023)'), fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'},
       /* Military spending choropleths (#26) — absolute (SIPRI 2023, $B) and as a share of GDP. */
-      milSpend:{label:()=>HOST.lang==='jp'?'国防費 (2023)':HOST.lang==='de'?'Militärausgaben (2023)':HOST.lang==='ru'?'Военные расходы (2023)':HOST.lang==='es'?'Gasto militar (2023)':'Mil. spending (2023)', fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
-      milSpendGDP:{label:()=>HOST.lang==='jp'?'国防費 (対GDP)':HOST.lang==='de'?'Militärausgaben (% BIP)':HOST.lang==='ru'?'Военные расходы (% ВВП)':HOST.lang==='es'?'Gasto militar (% PIB)':'Mil. spending (% GDP)', fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
+      milSpend:{label:()=>window.IntMapLang.t(HOST.lang,'Mil. spending (2023)','国防費 (2023)','Militärausgaben (2023)','Военные расходы (2023)','Gasto militar (2023)'), fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
+      milSpendGDP:{label:()=>window.IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費 (対GDP)','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)'), fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
       /* GDP per capita (#R9) — nominal USD; (#R22) the readout also shows the PPP figure when loaded. */
-      gdppc:{label:()=>HOST.lang==='jp'?'1人当たりGDP':HOST.lang==='de'?'BIP pro Kopf':HOST.lang==='ru'?'ВВП на душу населения':HOST.lang==='es'?'PIB per cápita':'GDP per capita', fmt:s=>s.gdppc!=null?(fmtPc(s.gdppc)+(s.gdppcPPP!=null?' · PPP '+fmtPc(s.gdppcPPP):'')):'—'},
-      tfr:{label:()=>HOST.lang==='jp'?'合計特殊出生率':HOST.lang==='de'?'Geburtenrate (TFR)':HOST.lang==='ru'?'Суммарный коэффициент рождаемости':HOST.lang==='es'?'Tasa de fecundidad total':'Total fertility rate', fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
+      gdppc:{label:()=>window.IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:s=>s.gdppc!=null?(fmtPc(s.gdppc)+(s.gdppcPPP!=null?' · PPP '+fmtPc(s.gdppcPPP):'')):'—'},
+      tfr:{label:()=>window.IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total'), fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
     };
     /* (#R13c) Value of the active choropleth under the cursor, for the bottom-left coord readout —
        so EVERY numeric layer (not just Köppen/temp/SST) shows its value at the cursor. One
@@ -1244,7 +1244,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!GE().layers.has('nato-line')) GE().layers.add({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
       if(!GE().layers.hasSource('src-tropic')) GE().layers.addSource('src-tropic',{type:'geojson',data:tropicFC()});
       if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
-      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(HOST.lang==='jp'?'北回帰線 (北緯23.4°)':HOST.lang==='de'?'Wendekreis des Krebses (23,4°N)':HOST.lang==='ru'?'Северный тропик (23,4° с.ш.)':HOST.lang==='es'?'Trópico de Cáncer (23,4°N)':'Tropic of Cancer (23.4°N)'),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
+      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(window.IntMapLang.t(HOST.lang,'Tropic of Cancer (23.4°N)','北回帰線 (北緯23.4°)','Wendekreis des Krebses (23,4°N)','Северный тропик (23,4° с.ш.)','Trópico de Cáncer (23,4°N)')),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
     }
     function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){} }
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
@@ -1286,9 +1286,9 @@ window.IntMapModules.dataLayers=function(HOST){
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); el.style.display='block';
         el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${HOST.lang==='jp'?'NATO加盟年':HOST.lang==='de'?'NATO-Beitritt':HOST.lang==='ru'?'Вступление в НАТО':HOST.lang==='es'?'Ingreso en la OTAN':'Joined NATO'}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${HOST.lang==='jp'?'国防費':HOST.lang==='de'?'Verteidigungsausgaben':HOST.lang==='ru'?'Расходы на оборону':HOST.lang==='es'?'Gasto en defensa':'Defense spending'}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${HOST.lang==='jp'?'国防費 (対GDP)':HOST.lang==='de'?'Verteidigung (% BIP)':HOST.lang==='ru'?'Оборона (% ВВП)':HOST.lang==='es'?'Defensa (% PIB)':'Defense (% GDP)'}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
@@ -1337,7 +1337,7 @@ window.IntMapModules.dataLayers=function(HOST){
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); el.style.display='block';
         el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${HOST.lang==='jp'?'EU加盟年':HOST.lang==='de'?'EU-Beitritt':HOST.lang==='ru'?'Вступление в ЕС':HOST.lang==='es'?'Ingreso en la UE':'Joined EU'}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(HOST.lang==='jp'?' 離脱':HOST.lang==='de'?' ausgetreten':HOST.lang==='ru'?' вышла':HOST.lang==='es'?' salió':' left')):''}</b></div>`;
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`;
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
@@ -1925,17 +1925,17 @@ window.IntMapModules.dataLayers=function(HOST){
          legend element is not in the DOM at that moment (measured: tests/r151 removes it between
          ticks), this wrote innerHTML on null and the whole change handler died uncaught */
       if(!lg) return;
-      const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${HOST.lang==='jp'?'選択解除':HOST.lang==='de'?'Auswahl aufheben':HOST.lang==='ru'?'Снять выделение':HOST.lang==='es'?'Quitar selección':'Clear selection'}</button>`:'';
-      const dragTitle=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите для перемещения':HOST.lang==='es'?'Arrastra para mover':'Drag to move';
+      const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${window.IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
+      const dragTitle=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover');
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
          old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
          moved" (#22). */
       /* (#R12) Period pulldown — default present-day, switch to historical eras. */
-      const perLabel=HOST.lang==='jp'?'期間':HOST.lang==='de'?'Zeitraum':HOST.lang==='ru'?'Период':HOST.lang==='es'?'Período':'Period';
+      const perLabel=window.IntMapLang.t(HOST.lang,'Period','期間','Zeitraum','Период','Período');
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _knm=KNAME[code]?(KNAME[code][HOST.lang]||KNAME[code].en):''; return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(HOST.lang==='jp'?'タップでその気候だけ強調 / 長押しで定義':HOST.lang==='de'?'Tippen: Klima hervorheben • lange drücken: Kriterien':HOST.lang==='ru'?'Касание — выделить климат • долгое нажатие — критерии':HOST.lang==='es'?'Toca para resaltar el clima • mantén pulsado para criterios':'Tap to highlight • long-press for criteria'):(HOST.lang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':HOST.lang==='de'?'Klick: Klima hervorheben • Rechtsklick: Kriterien':HOST.lang==='ru'?'Клик — выделить климат • правый клик — критерии':HOST.lang==='es'?'Clic: resaltar clima • clic derecho: criterios':'Click to highlight • right-click for criteria')}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _knm=KNAME[code]?(KNAME[code][HOST.lang]||KNAME[code].en):''; return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -2050,7 +2050,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const id=legendIdOf(el); if(!id||opacities[id]==null) return;
       if(el.querySelector('.dl-op-row')) return;
       const row=document.createElement('div'); row.className='dl-op-row';
-      row.innerHTML=`${HOST.lang==='jp'?'透明度':HOST.lang==='de'?'Deckkraft':HOST.lang==='ru'?'Прозрачность':HOST.lang==='es'?'Opacidad':'Opacity'}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
+      row.innerHTML=`${window.IntMapLang.t(HOST.lang,'Opacity','透明度','Deckkraft','Прозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
       const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
@@ -2063,7 +2063,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(el.querySelector('.dl-cd-row')) return;
       const d=Math.max(0.25,Math.min(4,+window._contourDensity||1));
       const row=document.createElement('div'); row.className='dl-op-row dl-cd-row';
-      row.innerHTML=`${HOST.lang==='jp'?'細かさ':HOST.lang==='de'?'Dichte':HOST.lang==='ru'?'Детализация':HOST.lang==='es'?'Detalle':'Detail'}<input type="range" min="0.5" max="3" step="0.25" value="${d}"><span class="dl-op-val">${d}×</span>`;
+      row.innerHTML=`${window.IntMapLang.t(HOST.lang,'Detail','細かさ','Dichte','Детализация','Detalle')}<input type="range" min="0.5" max="3" step="0.25" value="${d}"><span class="dl-op-val">${d}×</span>`;
       const op=el.querySelector('.dl-op-row:not(.dl-cd-row)');
       if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
       else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); }
@@ -2099,16 +2099,16 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
       const nm=GENERIC_LEG[id][Math.max(0,window.IntMapLang.index(HOST.lang))]||GENERIC_LEG[id][0];
-      const _dragT=HOST.lang==='jp'?'ドラッグして移動':HOST.lang==='de'?'Zum Verschieben ziehen':HOST.lang==='ru'?'Перетащите':'Drag to move';
+      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите');
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _fL=HOST.lang==='jp'?'絞り込み':HOST.lang==='de'?'Filter':HOST.lang==='ru'?'Фильтр':'Filter';
-          const _fAll=HOST.lang==='jp'?'すべて':HOST.lang==='de'?'Alle':HOST.lang==='ru'?'Все':'All';
-          const _fCiv=HOST.lang==='jp'?'民間':HOST.lang==='de'?'Zivil':HOST.lang==='ru'?'Гражданские':'Civilian';
-          const _fMil=HOST.lang==='jp'?'軍用':HOST.lang==='de'?'Militär':HOST.lang==='ru'?'Военные':'Military';
+          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр');
+          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все');
+          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские');
+          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные');
           fr.innerHTML=_fL+' <select class="gl-filter" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><option value="all">'+_fAll+'</option><option value="civilian">'+_fCiv+'</option><option value="military">'+_fMil+'</option></select>';
           el.appendChild(fr);
           const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}
@@ -2117,7 +2117,7 @@ window.IntMapModules.dataLayers=function(HOST){
              anyone who wants a plain top-down picture. Lives next to the filter, same row, same legend. */
           if(id==='planes'){
             const a3=document.createElement('label'); a3.style.cssText='display:flex;align-items:center;gap:5px;cursor:pointer;';
-            const _aL=HOST.lang==='jp'?'実際の高度で表示':HOST.lang==='de'?'In echter Höhe':HOST.lang==='ru'?'На реальной высоте':HOST.lang==='es'?'A su altitud real':'At real altitude';
+            const _aL=window.IntMapLang.t(HOST.lang,'At real altitude','実際の高度で表示','In echter Höhe','На реальной высоте','A su altitud real');
             a3.innerHTML='<input type="checkbox" class="gl-alt3d" style="accent-color:var(--primary-color);">'+_aL;
             fr.appendChild(a3);
             const c3=a3.querySelector('.gl-alt3d'); try{ c3.checked=planes3DOn(); }catch(_){}
@@ -2131,8 +2131,8 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='sats'){
           const A=()=>window.IntMapSatellites;
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _gL=HOST.lang==='jp'?'カタログ':HOST.lang==='de'?'Katalog':HOST.lang==='ru'?'Каталог':HOST.lang==='es'?'Catálogo':'Catalog';
-          const _vL=HOST.lang==='jp'?'ここから見えるものだけ':HOST.lang==='de'?'Nur von hier sichtbare':HOST.lang==='ru'?'Только видимые отсюда':HOST.lang==='es'?'Solo los visibles desde aquí':'Only visible from here';
+          const _gL=window.IntMapLang.t(HOST.lang,'Catalog','カタログ','Katalog','Каталог','Catálogo');
+          const _vL=window.IntMapLang.t(HOST.lang,'Only visible from here','ここから見えるものだけ','Nur von hier sichtbare','Только видимые отсюда','Solo los visibles desde aquí');
           let opts='';
           try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
           fr.innerHTML=_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;">'+opts+'</select>';
@@ -2163,14 +2163,14 @@ window.IntMapModules.dataLayers=function(HOST){
     function toggleLegendMin(el){
       const collapsed=el.classList.toggle('legend-collapsed');
       Array.from(el.children).forEach(ch=>{ if(ch.tagName==='H4'||ch.classList.contains('dl-drag')||ch.classList.contains('kl-drag')||ch.classList.contains('legend-min')||ch.classList.contains('layer-popup-x')) return; ch.style.display = collapsed?'none':''; });
-      const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(HOST.lang==='jp'?'展開':HOST.lang==='de'?'Ausklappen':HOST.lang==='ru'?'Развернуть':HOST.lang==='es'?'Expandir':'Expand'):(HOST.lang==='jp'?'最小化':HOST.lang==='de'?'Minimieren':HOST.lang==='ru'?'Свернуть':HOST.lang==='es'?'Minimizar':'Minimize'); }
+      const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }
     }
     function ensureLegendMinimize(el){
       if(!el) return;
       let b=el.querySelector('.legend-min');
       if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el); }; el.appendChild(b); }
       const collapsed=el.classList.contains('legend-collapsed');
-      b.textContent=collapsed?'▢':'–'; b.title=collapsed?(HOST.lang==='jp'?'展開':HOST.lang==='de'?'Ausklappen':HOST.lang==='ru'?'Развернуть':HOST.lang==='es'?'Expandir':'Expand'):(HOST.lang==='jp'?'最小化':HOST.lang==='de'?'Minimieren':HOST.lang==='ru'?'Свернуть':HOST.lang==='es'?'Minimizar':'Minimize');
+      b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar'));
       /* On phones, start minimized so the legend never covers the map on open. */
       if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
     }
@@ -2727,7 +2727,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function connectAIS(){
       if(!aisKey||!GE().hasRenderer()) return;
       stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships');
-      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); }catch(e){ imToast((HOST.lang==='jp'?'AIS接続失敗: ':HOST.lang==='de'?'AIS-Verbindung fehlgeschlagen: ':HOST.lang==='ru'?'Сбой подключения AIS: ':HOST.lang==='es'?'Fallo de conexión AIS: ':'AIS connect failed: ')+((e&&e.message)||e)); return; }
+      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); }catch(e){ imToast((window.IntMapLang.t(HOST.lang,'AIS connect failed: ','AIS接続失敗: ','AIS-Verbindung fehlgeschlagen: ','Сбой подключения AIS: ','Fallo de conexión AIS: '))+((e&&e.message)||e)); return; }
       aisWS=ws;
       ws.onopen=()=>{ try{ ws.send(JSON.stringify({APIKey:aisKey, BoundingBoxes:aisBBox(), FilterMessageTypes:['PositionReport','ShipStaticData']})); }catch(_){} };
       ws.onmessage=(ev)=>{ if(ws!==aisWS) return; try{ handleAIS(JSON.parse(ev.data)); scheduleShipRefresh(); }catch(_){} };
@@ -3331,10 +3331,10 @@ window.IntMapModules.dataLayers=function(HOST){
       add('plane-mil','#ff3b30');
       add('plane-sel','#ffd23f');   /* (#R173) the clicked aircraft */
     }
-    function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(HOST.lang==='jp'?'ja-JP':'en-US'); }catch(_){ return ''; } }
+    function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(window.IntMapLang.locale(HOST.lang)); }catch(_){ return ''; } }
     function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec));
       const U=HOST.lang==='jp'?['秒前','分前','時間前']:HOST.lang==='de'?['s her','min her','h her']:HOST.lang==='ru'?['с назад','мин назад','ч назад']:HOST.lang==='es'?['s atrás','min atrás','h atrás']:['s ago','m ago','h ago'];
-      const sep=(HOST.lang==='jp')?'':' ';
+      const sep=window.IntMapLang.t(HOST.lang,' ','');
       if(s<60) return s+sep+U[0]; if(s<3600) return Math.floor(s/60)+sep+U[1]; return Math.floor(s/3600)+sep+U[2]; }
     function trafficTooltipHTML(id,p){
       const jp=HOST.lang==='jp';
@@ -3383,8 +3383,8 @@ window.IntMapModules.dataLayers=function(HOST){
           const es=`Traza observada: ${st.fixes} puntos · ${st.minutes} min`;
           const lbl=HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
           const tip=k===selectedPlane
-            ? (HOST.lang==='jp'?'クリックで軌跡を消す':HOST.lang==='de'?'Klicken zum Ausblenden':HOST.lang==='ru'?'Нажмите, чтобы скрыть':HOST.lang==='es'?'Clic para ocultar':'Click to hide')
-            : (HOST.lang==='jp'?'クリックで軌跡を表示':HOST.lang==='de'?'Klicken für die Spur':HOST.lang==='ru'?'Нажмите, чтобы показать':HOST.lang==='es'?'Clic para mostrar':'Click to show');
+            ? (window.IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
+            : (window.IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
           return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
         `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ（実データ取得不可）':'Simulated placeholder (live feed unavailable)'):(jp?'最終受信':'Last seen')+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
     }
@@ -3588,7 +3588,7 @@ window.IntMapModules.dataLayers=function(HOST){
       let s=null; try{ s=window.IntMapSatellites&&window.IntMapSatellites.state(); }catch(_){}
       if(!s){ box.textContent=''; return; }
       const jp=HOST.lang==='jp';
-      if(s.loading){ box.textContent=jp?'カタログを取得中…':HOST.lang==='de'?'Katalog wird geladen…':HOST.lang==='ru'?'Загрузка каталога…':HOST.lang==='es'?'Cargando el catálogo…':'Loading the catalog…'; return; }
+      if(s.loading){ box.textContent=jp?'カタログを取得中…':window.IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
       if(s.err&&!s.catalogue){ box.textContent=(jp?'取得できませんでした: ':'Could not load: ')+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
@@ -3598,7 +3598,7 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function startSats(){
       const A=window.IntMapSatellites;
-      if(!A){ try{ satToast(HOST.lang==='jp'?'人工衛星レイヤーを読み込めませんでした':HOST.lang==='de'?'Satellitenebene nicht verfügbar':HOST.lang==='ru'?'Слой спутников недоступен':HOST.lang==='es'?'La capa de satélites no está disponible':'The satellite layer is unavailable'); }catch(_){}
+      if(!A){ try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
       whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
       if(_satCountT) clearInterval(_satCountT);
@@ -3743,7 +3743,7 @@ window.IntMapModules.dataLayers=function(HOST){
           if(cb&&cb.checked&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
             setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); },wait); return; }
           _subcableTries=0; autoUncheck('dl-subcables');
-          try{ satToast(HOST.lang==='jp'?'海底ケーブルデータを取得できませんでした':HOST.lang==='de'?'Seekabel-Daten nicht verfügbar':HOST.lang==='ru'?'Данные о подводных кабелях недоступны':HOST.lang==='es'?'Datos de cables submarinos no disponibles':'Submarine cable data unavailable'); }catch(_){} return; }
+          try{ satToast(window.IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
         _subcableTries=0;
         /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
            「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
@@ -3778,13 +3778,13 @@ window.IntMapModules.dataLayers=function(HOST){
                absent. Say so the same way the download path does — imAutoOff, so the session still
                wants the layer, and a toast, so the screen is not silently missing what the row claims. */
             console.warn('addSubcables',e); autoUncheck('dl-subcables');
-            try{ satToast(HOST.lang==='jp'?'海底ケーブルレイヤーを追加できませんでした':HOST.lang==='de'?'Seekabel-Ebene konnte nicht hinzugefügt werden':HOST.lang==='ru'?'Не удалось добавить слой подводных кабелей':HOST.lang==='es'?'No se pudo añadir la capa de cables submarinos':'Could not add the submarine-cable layer'); }catch(_){} return;
+            try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
             const cb=document.getElementById('dl-subcables');
             if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
             console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables');
-            try{ satToast(HOST.lang==='jp'?'海底ケーブルレイヤーを追加できませんでした':HOST.lang==='de'?'Seekabel-Ebene konnte nicht hinzugefügt werden':HOST.lang==='ru'?'Не удалось добавить слой подводных кабелей':HOST.lang==='es'?'No se pudo añadir la capa de cables submarinos':'Could not add the submarine-cable layer'); }catch(_){} return;
+            try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
           /* the layer is up — whatever an earlier failure recorded is settled (#R188) */
@@ -3906,13 +3906,13 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setThermalVis(true); }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(HOST.lang==='jp'?'火災データを取得できませんでした':HOST.lang==='de'?'Branddaten nicht verfügbar':HOST.lang==='ru'?'Данные о пожарах недоступны':HOST.lang==='es'?'Datos de incendios no disponibles':'Active-fire data unavailable'); }catch(_){} } });
+          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setThermalVis(true); }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
         }
         else if(id==='radar'||id==='clouds'){
           if(id==='radar'){ lgdRadar.style.display='block'; tileLegends(); }
           whenStyleReady().then(()=>rvFetch()).then(()=>{
             if(!addRainViewer(id)){
-              try{ satToast(HOST.lang==='jp'?'気象データを取得できませんでした':HOST.lang==='de'?'Wetterdaten nicht verfügbar':HOST.lang==='ru'?'Данные о погоде недоступны':HOST.lang==='es'?'Datos meteorológicos no disponibles':'Live weather data unavailable'); }catch(_){}
+              try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
               const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
               if(id==='radar'){ lgdRadar.style.display='none'; tileLegends(); }
               return;
@@ -3944,7 +3944,7 @@ window.IntMapModules.dataLayers=function(HOST){
                   0,'#1a7a3c',150,'#4fae5b',500,'#a6d96a',1000,'#e6e08b',1800,'#d9a066',2800,'#a87b52',3800,'#9b6b4a',4800,'#cdbfb4',6000,'#ffffff']}},beforeId);
             }
             setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
-          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(HOST.lang==='jp'?'カラー標高を初期化できませんでした':HOST.lang==='de'?'Farbrelief nicht verfügbar':HOST.lang==='ru'?'Цветной рельеф недоступен':HOST.lang==='es'?'Relieve en color no disponible':'Color relief unavailable'); }catch(_){} } });
+          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Color relief unavailable','カラー標高を初期化できませんでした','Farbrelief nicht verfügbar','Цветной рельеф недоступен','Relieve en color no disponible')); }catch(_){} } });
         }
         else if(id==='sealevel'){
           lgdSeaLevel.style.display='block'; tileLegends();
@@ -3959,7 +3959,7 @@ window.IntMapModules.dataLayers=function(HOST){
           }catch(e){ console.warn('hillshade fail',e); } });
         }
         else if(id==='contours'){
-          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(HOST.lang==='jp'?'等高線を初期化できませんでした':HOST.lang==='de'?'Höhenlinien konnten nicht initialisiert werden':HOST.lang==='ru'?'Не удалось инициализировать изолинии':HOST.lang==='es'?'No se pudieron iniciar las curvas de nivel':'Could not initialize contours'); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
         }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
@@ -4001,7 +4001,7 @@ window.IntMapModules.dataLayers=function(HOST){
           withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
             if(window._tfrData){ apply(); }
-            else { fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(HOST.lang==='jp'?'出生率データを取得できませんでした':HOST.lang==='de'?'Fruchtbarkeitsdaten nicht verfügbar':HOST.lang==='ru'?'Не удалось загрузить данные о рождаемости':HOST.lang==='es'?'No se pudieron cargar los datos de fecundidad':'Could not load fertility data'); }catch(_){} }); }
+            else { fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){

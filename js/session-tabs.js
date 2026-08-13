@@ -133,7 +133,10 @@ export function makeSessionTabs(HOST, CTX) {
         want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
         if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
       /* open the saved tab */
-      try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',monitors:'tab.monitors',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!HOST.mode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
+      /* (#R231) `monitors:'tab.monitors'` was here. A saved session that last had the Monitors tab open
+         would have re-opened a tab that no longer exists in the row — so the mapping is gone with the
+         button, and such a session simply restores no tab (the app's own default takes over). */
+      try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!HOST.mode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
       /* set the time-machine year */
       try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
@@ -144,7 +147,14 @@ export function makeSessionTabs(HOST, CTX) {
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
   IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Companies tab', btn:'btn-info', group:'tab'});   /* (#R139) Information → Companies (command id kept) */
   IntMapOS.register('tab.stats', ()=>setMode('stats','btn-stats'), {label:'Countries tab', btn:'btn-stats', group:'tab'});
-  IntMapOS.register('tab.monitors', ()=>setMode('monitors','btn-monitors'), {label:'Monitors tab', btn:'btn-monitors', group:'tab'});   /* (#R141) area monitors */
+  /* ══ (#R231) `tab.monitors` IS NOT REGISTERED ══════════════════════════════════════════════════
+     「MonitorsはNews/Companies/Countries/Atlasの並びから一旦撤去。」 The tab button is gone from
+     index.html, and a command that still switched to it would be the worse half of a withdrawal: the
+     sidebar would show the Monitors feed with no tab lit and no way back except another command.
+     Not registering it means IntMapOS.exec('tab.monitors') is an unknown command — which is the
+     honest answer — and js/atlas-console.js no longer offers the planner an action that calls it.
+     ⚠ js/monitors.js, its factory and #monitors-feed are untouched: restoring the feature is this
+     line, the button in index.html, the restore mapping above, and the Atlas action. */
   /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
      #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
   /* (#R224) the kernel is on demand — open() has to be reached through window.IntMapAtlas, or a
@@ -158,7 +168,6 @@ export function makeSessionTabs(HOST, CTX) {
   document.getElementById('newsfilter-saved').onclick=()=>{ if(HOST.mode!=='saved') setMode('saved','btn-news'); };
   document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
   document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
-  document.getElementById('btn-monitors').onclick=()=>IntMapOS.exec('tab.monitors',{source:'ui'});   /* (#R141) */
   /* (#R98) Community feature removed — this sidebar button is the Atlas tab. (#R112) It now behaves like the other
      tabs (News/Info/Countries): a true kernel tab command that renders Atlas INSIDE the sidebar/bottom-sheet. */
   document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.atlas',{source:'ui'});

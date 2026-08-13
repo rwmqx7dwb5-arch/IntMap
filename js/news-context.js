@@ -77,19 +77,74 @@ window.IntMapModules.newsContext=function(HOST){
   function registerSlices(rows){
     if(_sliceRunning||_sliceDone) return;
     _sliceRunning=true;
-    const NG=window.IntMapNewsGeo, SLICE=4000;
-    /* ⚠ (#R208) THE YIELD IS `requestIdleCallback`, NOT A BARE MACROTASK. The first version used
-       `scheduler.yield()` / `setTimeout(0)`, which hands the thread back at the SAME priority — so
-       37 slices of registration interleaved with the app's own start-up timers and won some of the
-       races. MEASURED: tests/r168.spec.js ②, which clicks Countries 1.2 s after boot and reads the
-       feed, got the live list where its stub should have been. Idle time is what this work deserves:
-       it is a background index for a feature nobody has asked for yet, and nothing waits on it.
-       The 2 s timeout keeps it from starving on a busy page; a browser without rIC gets a
-       macrotask, which is still not a microtask (that would run all 148,083 in one task). */
+    const NG=window.IntMapNewsGeo;
+
+    /* ══ ⚠⚠ (#R231) A FIXED SLICE IS NOT A BUDGET, AND AN IDLE TIMEOUT IS NOT A PROMISE ═══════════
+       「モバイル版がまだ劇的に遅い。もっと爆速に。地図のスクロール、ズームが困難」
+
+       #R208 got the two hard parts right — this waits for the first idle AFTER the app can draw, and
+       it yields with `requestIdleCallback` rather than a same-priority macrotask. What it did not
+       have was a bound on the work done INSIDE one callback, and that is what the phone feels:
+
+         · SLICE was 4,000 rows. RE-MEASURED on the current build: 107–121 ms per slice, ~338 ms in
+           total for the phone gazetteer's 12,000 — every one of them a long task, three to five
+           dropped frames each, on a thread the map is drawing on.
+         · `{timeout:2000}` says "run me anyway after 2 s". A page that is busy for two seconds is a
+           page the user is TOUCHING, so the timeout fired precisely into pinches and drags: the one
+           moment the callback was written to stay out of.
+
+       ⚠ THIS CHANGES NOTHING ANYONE CAN SEE. Not one pixel, not one string, not one setting — the
+       same 12,000 rows are registered, in the same order, into the same index, for the same feature.
+       All that changes is WHEN the thread is taken and for HOW LONG at a stretch. (The instruction
+       for this round was 「見た目ゼロ変更のみ」; that is the whole reason the scheduling is where the
+       work went.)
+
+       Three things replace the two above:
+         ① THE DEADLINE DECIDES THE BATCH, not a constant. `requestIdleCallback` hands the callback
+            an IdleDeadline; rows go in 250 at a time (≈7 ms at the measured 27 µs/row) and the loop
+            stops as soon as `timeRemaining()` is spent. A fast phone with a quiet frame does several
+            batches in one callback; a slow one does one. Neither produces a long task.
+         ② IT NEVER RUNS WHILE THE CAMERA IS MOVING. `movestart`/`moveend` are the renderer's own
+            statement about that (js/geo-engine.js publishes both for either engine), and a callback
+            that arrives mid-gesture now re-schedules itself instead of spending its budget.
+         ③ THE TIMEOUT IS 20 s, NOT 2 s. A background index nobody has asked for should starve on a
+            busy page — that is the correct outcome, not a failure. The ceiling only exists so a page
+            that is somehow never idle still finishes eventually. */
+    const BATCH=250;                     /* ≈7 ms of registration at the measured 27 µs/row */
+    const SLACK=4;                       /* ms of the idle deadline to leave unspent */
+    let moving=false;
+    try{ const E=window.IntMapGeoEngine;
+      E.events.on('movestart',()=>{ moving=true; }); E.events.on('moveend',()=>{ moving=false; });
+    }catch(_){}
+    const rIC=(typeof requestIdleCallback==='function')?requestIdleCallback:null;
     const yieldToBrowser=()=>new Promise(res=>{
-      try{ if(typeof requestIdleCallback==='function'){ requestIdleCallback(()=>res(),{timeout:2000}); return; } }catch(_){}
+      if(rIC){ rIC(()=>res(),{timeout:20000}); return; }
       setTimeout(res,0);
     });
+
+    let at=0;
+    function pump(deadline){
+      if(moving){ schedule(); return; }                       /* the gesture owns the thread */
+      const t0=(performance&&performance.now)?performance.now():0;
+      const left=()=>{
+        if(deadline&&typeof deadline.timeRemaining==='function') return deadline.timeRemaining()>SLACK;
+        return (((performance&&performance.now)?performance.now():0)-t0)<8;   /* no rIC: one frame */
+      };
+      do{
+        const end=Math.min(at+BATCH,rows.length);
+        try{ NG.register(rows.slice(at,end).map(([type,terms,lng,lat,en,jp])=>
+          ({ terms, lng, lat, type, name_en:en, name_jp:jp }))); }catch(_){}
+        at=end;
+      } while(at<rows.length && !moving && left());
+      if(at<rows.length){ schedule(); return; }
+      _sliceRunning=false; _sliceDone=true;
+      try{ window.dispatchEvent(new CustomEvent('intmap-newsgeo-world-ready',{detail:{rows:rows.length}})); }catch(_){}
+    }
+    function schedule(){
+      if(rIC){ rIC(pump,{timeout:20000}); return; }
+      setTimeout(()=>pump(null),50);
+    }
+
     (async()=>{
       /* ⚠ (#R208) AND IT DOES NOT START DURING THE BOOT. Measured on an iPhone 13 profile, the boot
          spends 1,017 ms in seven long tasks; this is a background index for a pass that has not been
@@ -102,13 +157,7 @@ window.IntMapModules.newsContext=function(HOST){
         try{ window.IntMapGeoEngine.events.once('idle',go); }catch(_){ go(); return; }
         setTimeout(go,6000);                                  /* …and never wait for ever */
       });
-      for(let i=0;i<rows.length;i+=SLICE){
-        try{ NG.register(rows.slice(i,i+SLICE).map(([type,terms,lng,lat,en,jp])=>
-          ({ terms, lng, lat, type, name_en:en, name_jp:jp }))); }catch(_){}
-        if(i+SLICE<rows.length) await yieldToBrowser();
-      }
-      _sliceRunning=false; _sliceDone=true;
-      try{ window.dispatchEvent(new CustomEvent('intmap-newsgeo-world-ready',{detail:{rows:rows.length}})); }catch(_){}
+      schedule();
     })();
   }
 
@@ -298,7 +347,7 @@ window.IntMapModules.newsContext=function(HOST){
     if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; subjectType='country'; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
     const pm=matchPublisher(publisher,seed);   /* `seed` IS the article link (#R212) */
-    const pubLoc=pm?pm.loc:null, pubName=pm?((HOST.lang==='jp'?'発信: ':HOST.lang==='de'?'Quelle: ':HOST.lang==='ru'?'Источник: ':HOST.lang==='es'?'Fuente: ':'Source: ')+pm.label):null;
+    const pubLoc=pm?pm.loc:null, pubName=pm?((window.IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+pm.label):null;
     /* Remember title/publisher so the toggle/AI passes can re-seed fallbacks later */
     const res={ subjectLoc, subjectName, subjectType, subjectConf, pubLoc, pubName, short, _title:title, _pub:publisher };
     HOST.applyPinMode(res);

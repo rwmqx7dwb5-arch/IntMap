@@ -79,8 +79,20 @@
     /* (#R210) "開始時のローディング画面はもう少し大きく" — the mark, the bar and the note all
        scale together (124→156, 184→232, 12.5→13.5px) so the proportions of the launch screen are
        unchanged; only its size is. The corner radius keeps Apple's 22.4 % ratio: 34.9 / 156. */
+    /* ══ (#R231) …AND THE DARK HALF OF THE SAME REPORT, TWO ROUNDS LATER ═══════════════════════
+       「ダークモード時に、ローディング画面のIntMapのアイコンの背景が、ローディング画面の背景の黒に
+         微妙に合っていないから、アイコン背景を画面背景の色に合わせて。」
+       #R206 above did this for LIGHT and left DARK on a hand-picked `#0a0a0c` while the dark launch
+       screen is `--bg-color` #000000 — and the FILE underneath it was a mark on a measured (2,2,6)
+       field, so the tile was lighter than the screen from two directions at once. Both halves are
+       made to agree the same way #R206 did:
+         · the FILE was re-flattened onto #000000 by scripts/boot-icon-flatten.mjs (measured field
+           (2,2,6) → (0,0,0); the brand blue and the word-mark come out byte-identical, and 89.7 % of
+           the picture is now EXACTLY the screen colour, which is the same share the old field had);
+         · the CSS colour underneath it is the screen's own variable, so the tile is already right in
+           the frame before the PNG has decoded — the frame a launch screen exists for. */
     .boot-icon{ width:156px; height:156px; border-radius:34.9px; overflow:hidden;
-      background:#0a0a0c url("../IntMap.Icon.png") center/cover no-repeat; }
+      background:var(--bg-color) url("../IntMap.Icon.png") center/cover no-repeat; }
     :root[data-theme="light"] .boot-icon{ background-color:var(--bg-color); background-image:url("../IntMap.Icon_BW-inverted.png"); }
     .boot-icon img{ width:100%; height:100%; display:block; object-fit:cover; }
     .boot-bar{ width:232px; height:5px; border-radius:2.5px; overflow:hidden; background:rgba(128,128,128,0.22); }
@@ -1113,6 +1125,8 @@
     .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:999px; padding:8px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
     .map-search.has-text>button{ background:var(--primary-color); color:#fff; }
     .map-search>button:hover{ filter:brightness(1.08); }
+    /* (#R231) the desktop pill shows the WORD; the phone shows the glyph (see the mobile block). */
+    #ms-btn .ms-ico{ display:none; }
     .map-search-results{ display:none; position:absolute; top:48px; left:0; right:0; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); max-height:280px; overflow-y:auto; }
     .ms-item{ padding:10px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); line-height:1.4; }
     .ms-item:hover{ background:var(--input-bg); }
@@ -1430,7 +1444,9 @@
        option sheets. All behavior lives in initMobileUI() (see script).
        ===================================================================== */
     .sheet-grip{ display:none; }                       /* shown only on phones */
-    .m-fab-stack, .m-sheet, .m-scrim{ display:none; }  /* mobile-only chrome   */
+    /* (#R231) .bm-square / .bm-pop join the mobile-only list: js/basemap-switch.js only builds them on a
+       phone, but a stale node left behind by a resize must not appear over the desktop toolbar either. */
+    .m-fab-stack, .m-sheet, .m-scrim, .bm-square, .bm-pop{ display:none; }  /* mobile-only chrome */
 
     @media(max-width:768px){
       :root{ --sidebar-w:100vw; --sheet-ease:cubic-bezier(0.32,0.72,0,1); --peek-h:196px; }
@@ -1530,7 +1546,8 @@
       .map-search > button, .map-search #ms-btn{ width:46px; height:46px; flex:0 0 auto; border-radius:23px; }
       /* (#R108) the mobile search button is NOT blue — the old mobile search FAB was a FROSTED icon button matching the
          other FABs (Layers/Tools/Compass), not a solid blue circle. Keep it transparent so the frosted .map-search shell
-         shows through; the 🔍 glyph marks the action. (Overrides both the R106 desktop base and the R107 blue attempt.) */
+         shows through; the drawn mark inside it carries the meaning (#R231 replaced the emoji).
+         (Overrides both the R106 desktop base and the R107 blue attempt.) */
       .map-search > button, .map-search.has-text > button, .map-search #ms-btn{ background:transparent !important; color:var(--text-main) !important; }
       /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen.
          Keeps a fixed 46px height + full pill radius so it morphs cleanly from the circle (no vertical squish). */
@@ -1856,6 +1873,85 @@
       /* touch devices: no sticky :hover lift, use a subtle press instead */
       .news-item:hover, .news-item.hovered, .wiki-card:hover, .wiki-card.hovered{ transform:none; }
       .news-item:active, .wiki-card:active{ transform:scale(0.985); }
+
+      /* ══════════════════════════════════════════════════════════════════════════════════════════
+         (#R231) THE PHONE'S OWN MARKS, THE BASE-MAP SQUARE, AND THE FULL-SHEET TAP
+         ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+      /* ── ① the place-search FAB carries the app's own glyph, not a vendor emoji ────────────────
+         「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。デザインは
+           ほぼ同じで、シンプルでミニマルなものに。」 The #R109 rule below used `font-size:0` on the
+         button to hide the word "Search" and then drew the emoji back with `::after`. The word is
+         still hidden the same way — but by hiding its OWN span, so the <svg> beside it keeps a real
+         font size and inherits `currentColor` like every other icon in this chrome. */
+      #ms-btn .ms-btn-t{ display:none; }
+      #ms-btn .ms-ico{ display:block; }
+      .map-search.ms-open #ms-btn .ms-ico{ width:16px; height:16px; }
+
+      /* ── ② the base-map square, tucked under the search FAB ────────────────────────────────────
+         「Map/Satellite/Globe/Flat/⛰️3Dの選択欄を…画面左上（モバイルの地名検索ボタンの真下に、左上
+           方向に詰めて配置）…その四角（正方形）は白枠で、内部はマップの画像。大きさはモバイル版の
+           地名検索ボタンや方位磁針の一回り大きいぐらいに。」
+         46 px is the search FAB and every m-fab; 54 px is "一回り大きい". `left:14px` and the search
+         FAB's own `top` + 46 + 10 put it directly underneath, hard into the corner. The frame is a
+         literal white border, as asked, on both themes — it is what separates the picture from the
+         map behind it. The picture itself is drawn by js/basemap-switch.js from data the app already
+         ships (data/world-basemap.jpg for the satellite face, data/land-mask.png for the map face). */
+      .bm-square{ position:fixed; z-index:1150; left:14px;
+        top:calc(max(12px,(env(safe-area-inset-top) + 4px)) + 56px);
+        width:54px; height:54px; padding:0; border-radius:11px; overflow:hidden;
+        border:2px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,0.3);
+        background:var(--sidebar-bg); display:flex; align-items:center; justify-content:center;
+        transition:transform 0.14s, opacity 0.3s; }
+      .bm-square:active{ transform:scale(0.92); }
+      .bm-square canvas{ display:block; width:100%; height:100%; }
+      /* the one word that says which face you are looking AT — the same treatment Maps gives it */
+      .bm-square .bm-cap{ position:absolute; left:0; right:0; bottom:0; padding:1px 0 2px;
+        font-size:8.5px; font-weight:700; letter-spacing:0.02em; text-align:center; color:#fff;
+        background:linear-gradient(transparent,rgba(0,0,0,0.62)); text-shadow:0 1px 2px rgba(0,0,0,0.8);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      body.sheet-full .bm-square{ opacity:0; pointer-events:none; transform:translateX(-14px); }
+
+      /* the popover the square opens: the five controls, in the two groups they belong to */
+      .bm-pop{ position:fixed; z-index:1660; left:14px;
+        top:calc(max(12px,(env(safe-area-inset-top) + 4px)) + 56px);
+        width:min(232px, calc(100vw - 28px)); box-sizing:border-box;
+        background:var(--popup-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
+        border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:16px;
+        box-shadow:0 12px 40px rgba(0,0,0,0.34); padding:10px; display:none;
+        transform-origin:0 0; }
+      .bm-pop.show{ display:block; animation:bmPopIn 0.2s cubic-bezier(0.2,0.7,0.2,1); }
+      @keyframes bmPopIn{ from{ opacity:0; transform:scale(0.9) translate(-4px,-4px); } to{ opacity:1; transform:none; } }
+      .bm-pop-h{ font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:2px 2px 5px; }
+      .bm-pop-h + .bm-seg{ margin-bottom:10px; }
+      .bm-seg{ display:flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; }
+      .bm-seg button{ flex:1; min-height:38px; border:none; background:transparent; color:var(--text-muted);
+        font-size:13px; font-weight:600; border-radius:8px; transition:0.2s; white-space:nowrap; }
+      .bm-seg button.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,0.16); }
+
+      /* ── ③ "See the past world" becomes a round clock ──────────────────────────────────────────
+         「See the past worldボタンを丸い時計アイコンに。…大きさは他のモバイルの丸ボタンより一回り
+           大きいぐらいに。」 Only the COLLAPSED pill changes: opened, the time machine is the same
+         panel it has always been. 54 px matches the base-map square — both are the "一回り大きい"
+         size against the 46 px FABs. The label is not deleted, it becomes the accessible name. */
+      .news-timeline.collapsed{ width:54px; height:54px; padding:0 !important; border-radius:27px !important;
+        display:flex; align-items:center; justify-content:center; overflow:hidden; }
+      .news-timeline.collapsed .ntl-open{ width:54px; height:54px; padding:0; gap:0; justify-content:center; }
+      .news-timeline.collapsed .ntl-open-txt{ display:none; }
+      .news-timeline.collapsed .ntl-open-ico{ width:27px; height:27px; }
+      .news-timeline.collapsed .ntl-open-ico svg{ width:26px; height:26px; }
+      /* travelling: the pill used to turn blue and print the year; a 54 px circle has no room for the
+         year, so the circle itself carries the state and the year moves into the tooltip/aria-label. */
+      .news-timeline.collapsed.active{ background:var(--primary-color) !important; }
+
+      /* ── ④ the map is not tappable under a fully-raised sheet — see js/mobile-ui.js ────────────
+         「ボトムシートを最大まで上げた時点では、地図が見えている部分のタップは無効化し、（ホバーは
+           可能）タップすればボトムシートを中の高さまで自動で下げるように。」
+         ⚠ THERE IS DELIBERATELY NO RULE HERE. Both of the CSS answers take the hover with them:
+         `pointer-events:none` on #map stops `pointerover`/`pointermove` reaching the canvas, and a
+         transparent catcher element over the map receives those same events instead of the canvas.
+         The instruction keeps hover, so the block is a CAPTURE-PHASE `click`/`contextmenu` swallow in
+         js/mobile-ui.js — pointer events, and therefore hover and panning, are never touched. */
     }
 
     @keyframes mSheetUp{ from{ transform:translateY(7%); opacity:0.5; } to{ transform:translateY(0); opacity:1; } }
@@ -2063,6 +2159,13 @@
     body.capture-mode .btn-toggle-sidebar,
     body.capture-mode .map-search,
     body.capture-mode .m-fab-stack,
+    /* ⚠ (#R231) THE PHONE'S CONTROLS ARE CONTROLS TOO — and every one of them added since #R18 had to
+       be remembered here by hand, which is how the base-map square would otherwise have appeared in
+       the middle of every mobile screenshot the day it shipped. The button reads "Screenshot (hides
+       controls, keeps legends)"; these are controls. */
+    body.capture-mode .bm-square,
+    body.capture-mode .bm-pop,
+    body.capture-mode .m-scrim,
     body.capture-mode .ai-view-summary-btn,
     body.capture-mode .news-timeline .ntl-toggle,
     body.capture-mode .layer-fav-bar,
@@ -2225,6 +2328,51 @@
     .acct-avatar-pick{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
     .acct-emoji{ width:34px; height:34px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .acct-emoji.sel{ outline:2px solid var(--primary-color); }
+
+    /* ══ (#R231) THE PROFILE SHEET ══════════════════════════════════════════════════════════════
+       「アカウントのプロフィール欄は、UIをモダンな実装で整理して。Display nameとBio設定は廃止。」
+       The panel used to be 21 inline `style="…"` strings inside one template literal in
+       js/auth-ui.js — no shared type scale, no shared spacing, and the same button rule typed four
+       times. It is now iOS-Settings shaped: an identity header, then labelled CARDS (Icon ·
+       Security · Account), the destructive pair last. Everything below is the whole look; the module
+       carries no styling of its own any more, which is standing rule 13 applied to a panel. */
+    .acct-sheet{ background:var(--card-bg); color:var(--text-main); border-radius:20px; box-shadow:var(--shadow);
+      padding:22px 20px 18px; width:100%; max-width:390px; box-sizing:border-box; max-height:90vh; overflow-y:auto;
+      -webkit-overflow-scrolling:touch; }
+    .acct-id{ display:flex; align-items:center; gap:14px; margin:0 0 20px; }
+    .acct-id .acct-avatar{ width:62px; height:62px; }
+    .acct-id-txt{ min-width:0; flex:1; }
+    .acct-h{ margin:0; font-size:20px; font-weight:700; letter-spacing:-0.3px; }
+    .acct-email{ margin:2px 0 0; font-size:13px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .acct-pro{ font-size:12px; margin-top:2px; }
+    .acct-grp-t{ font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 6px 4px; }
+    .acct-card{ background:var(--input-bg); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
+    .acct-card .acct-avatar-pick{ margin:0 0 10px; }
+    /* one rule for every row in the sheet — the four security buttons and the two account ones */
+    .acct-rows{ padding:4px 0; }
+    .acct-row{ display:block; width:100%; text-align:left; background:transparent; border:none;
+      color:var(--text-main); font-size:14px; font-weight:500; padding:12px 14px; border-radius:0; cursor:pointer; }
+    .acct-row + .acct-row{ box-shadow:inset 0 0.5px 0 rgba(128,128,128,0.22); }
+    .acct-row:hover{ background:rgba(128,128,128,0.10); }
+    .acct-row:active{ background:rgba(128,128,128,0.18); }
+    .acct-row-danger{ color:#ff3b30; }
+    .acct-btn{ display:inline-block; background:var(--card-bg); border:1px solid rgba(128,128,128,0.22); color:var(--text-main);
+      font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:10px; cursor:pointer; }
+    .acct-btn-quiet:hover{ background:rgba(128,128,128,0.10); }
+    .acct-note{ font-size:12px; color:var(--text-muted); padding:0 14px; }
+    .acct-note:empty{ display:none; }
+    .acct-msg{ margin:0 0 14px; font-size:12.5px; color:var(--text-muted); min-height:1em; padding:0 4px; }
+    .acct-msg:empty{ margin:0; min-height:0; }
+    .acct-close{ display:block; width:100%; background:transparent; border:none; color:var(--text-muted);
+      font-size:14px; padding:10px; margin-top:2px; cursor:pointer; }
+    @media(max-width:768px){
+      /* ⚠ It stays a CENTRED CARD on a phone rather than becoming a bottom sheet: #acct-modal sets
+         `align-items:center` inline (js/auth-ui.js), and an inline declaration beats anything here —
+         a border-radius that assumed the sheet position would have rounded only the top of a card
+         floating in the middle of the screen. Wider, taller rows; same shape. */
+      .acct-sheet{ max-width:100%; padding-bottom:max(18px,env(safe-area-inset-bottom)); }
+      .acct-row{ font-size:15px; padding:14px; }
+    }
     .acct-color{ width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
     .acct-color.sel{ border-color:var(--text-main); }
 
@@ -2292,11 +2440,14 @@
       .tool-panel .tp-select, .tool-panel .radius-list{ font-size:11px; }
       .tool-panel .tp-hint{ display:none !important; }   /* compact: drop the help line on phones */
       .news-timeline{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; }
-      /* Mobile-only: restore the 🔍 glyph in the round place-search FAB (text "Search" doesn't fit). */
-      /* (#R109) centre the 🔍 in the round button — flex-centre + zero padding (the desktop base padding pushed it off-centre). */
-      #ms-btn{ font-size:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; padding:0 !important; line-height:1 !important; }
-      #ms-btn::after{ content:'🔍'; font-size:18px; line-height:1; }
-      .map-search.ms-open #ms-btn::after{ font-size:15px; }
+      /* (#R109) centre the mark in the round button — flex-centre + zero padding (the desktop base
+         padding pushed it off-centre).
+         (#R231) the mark is now the app's own <svg> inside the button (index.html) instead of a
+         `content:'🔍'` pseudo-element: 「絵文字ではなく独自のシンプルなアイコンに」. `font-size:0` is
+         gone with it — it existed only to hide the word, and the word now hides itself
+         (`#ms-btn .ms-btn-t{display:none}` in the (#R231) block further down). Keeping it would have
+         collapsed the <svg>'s own em-based box. */
+      #ms-btn{ display:flex !important; align-items:center !important; justify-content:center !important; padding:0 !important; line-height:1 !important; }
       /* Mobile layer list: balanced full-width rows (was left-skewed). */
       .m-sheet .layer-dropdown .layer-option{ width:100%; box-sizing:border-box; justify-content:flex-start; }
       .m-sheet .layer-dropdown .layer-option > span[data-i18n], .m-sheet .layer-dropdown .geo-label{ flex:1 1 auto; min-width:0; }

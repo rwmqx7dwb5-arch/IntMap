@@ -89,7 +89,7 @@ window.IntMapModules.wind=function(HOST){
         try{ gridTime=results[0][0].current.time; updateTimePill(); }catch(_){}
       } else if(!grid){
         const ok=coarseP?await coarseP:await fetchCoarse();     /* (#R212) already in flight — do not ask twice */
-        if(!ok){ try{ satToast(HOST.lang==='jp'?'風データを取得できませんでした':HOST.lang==='de'?'Winddaten nicht verfügbar':HOST.lang==='ru'?'Данные о ветре недоступны':HOST.lang==='es'?'Datos de viento no disponibles':'Wind data unavailable'); }catch(_){}
+        if(!ok){ try{ satToast(window.IntMapLang.t(HOST.lang,'Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')); }catch(_){}
           const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } stop(); }
       }
       fetching=false; fetchT=Date.now();
@@ -167,7 +167,7 @@ window.IntMapModules.wind=function(HOST){
        valid time). Open-Meteo returns the analysis time in GMT; show it in the user's timezone. */
     function fmtWindTime(iso){ if(!iso) return ''; try{ const d=new Date(/[zZ]|[+\-]\d\d:?\d\d$/.test(iso)?iso:iso+'Z');
       let tz; try{ if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; }catch(_){}
-      return d.toLocaleString(HOST.lang==='jp'?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
+      return d.toLocaleString(window.IntMapLang.locale(HOST.lang,"en-GB"),{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
     window._fmtWindTime=fmtWindTime;
     /* (#R12) The valid time now lives in the draggable Wind legend (data-legend-wind), like every other
        layer — the old floating top-center pill overlapped the search box. Just refresh the legend. */
@@ -378,7 +378,7 @@ window.IntMapModules.weatherEC=function(HOST){
        variable is injected as a normal lyr-row (checkbox + opacity) into the Layers dropdown, plus one
        shared "valid time" row driving the hourly time slider. The taxonomy reorganizer then files these
        rows into the Climate & weather / Oceans groups alongside the other weather layers. */
-    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(HOST.lang==='jp'?'時刻（1時間毎）':HOST.lang==='de'?'Gültigkeitszeit (stündlich)':HOST.lang==='ru'?'Время (почасово)':'Valid time (hourly)'); const eh=document.querySelector('#data-legend-ecmwf h4'); if(eh) eh.textContent=(HOST.lang==='jp'?'ECMWF 気象':HOST.lang==='de'?'ECMWF-Wetter':HOST.lang==='ru'?'Погода ECMWF':HOST.lang==='es'?'Meteo ECMWF':'ECMWF weather'); updateTimeLabel(); }   /* (#R111) the legend TITLE also re-localizes (it was baked at creation and relabelRows only touched the rows) */
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(window.IntMapLang.t(HOST.lang,'Valid time (hourly)','時刻（1時間毎）','Gültigkeitszeit (stündlich)','Время (почасово)')); const eh=document.querySelector('#data-legend-ecmwf h4'); if(eh) eh.textContent=(window.IntMapLang.t(HOST.lang,'ECMWF weather','ECMWF 気象','ECMWF-Wetter','Погода ECMWF','Meteo ECMWF')); updateTimeLabel(); }   /* (#R111) the legend TITLE also re-localizes (it was baked at creation and relabelRows only touched the rows) */
     function mountRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('lyrrow-ec-temp')) return;
       LAYERS.forEach(l=>{
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;

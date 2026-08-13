@@ -817,7 +817,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   function tooltipHTML(f){
     const obs=observer(), la=lookFrom(obs,f);
     const up=!!(la&&la.elDeg>0);
-    const n0=(v)=>Math.round(v).toLocaleString(HOST.lang==='jp'?'ja-JP':'en-US');
+    const n0=(v)=>Math.round(v).toLocaleString(window.IntMapLang.locale(HOST.lang));
     return '<div style="font-weight:700;margin-bottom:2px;">🛰 '+S(f.name||('#'+f.id))+'</div>'
       +'<div>'+S(L('Altitude','高度','Höhe','Высота','Altitud'))+': '+n0(f.altKm)+' km'
       +(f.velKmS?(' · '+f.velKmS.toFixed(2)+' km/s'):'')+'</div>'

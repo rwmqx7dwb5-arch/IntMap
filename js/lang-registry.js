@@ -20,10 +20,20 @@
  *      1. one row in LANGS below;
  *      2. one file js/locales/ui.<code>.js  (copy ui.en.js, translate, and — optionally — fill the
  *         `inline` table, which `node scripts/i18n-report.mjs --template <code>` writes for you);
- *      3. one import line in src/main.js.
+ *      3. one file js/locales/pages.<code>.js for the two reading pages (copy pages.en.js);
+ *      4. one import line in src/main.js.
  *  Nothing else in the app has to know, and NOTHING has to be touched at a call site. A language
  *  with an empty `inline` table renders every inline string in English and every keyed string in
  *  its own language — a partial translation degrades per string, never per screen.
+ *
+ *  ⚠ (#R231) AND THAT LIST IS NOW TRUE, WHICH IT WAS NOT. Three other places had to be edited by
+ *  hand for a new language and none of them was documented here, so #R223's 繁體中文 and #R224's
+ *  简体中文 shipped with all three unfilled:
+ *      · 281 hand-written `lang==='jp'?…:'…'` chains in js/ — see `t()` below;
+ *      · js/page-i18n.js kept a SECOND five-row LANGS list of its own, so the reading pages had no
+ *        Chinese at all — it now reads this one;
+ *      · index.html's launch-screen word list, which still cannot import (it runs before any module)
+ *        but is now VERIFIED against this list by tests/r231-checks.test.mjs instead of remembered.
  *
  *  ══ HOW `L(…)` KEEPS WORKING WHILE BECOMING VARIADIC ════════════════════════════════════════
  *  `pick(getLang)` returns the same function the 64 hand-written ones were, with one addition:
@@ -147,6 +157,61 @@ window.IntMapLang = (function () {
     };
   }
 
+  /* ══ (#R231) `t(lang, …)` — pick(), FOR THE 281 PLACES THAT NEVER HAD A HELPER ════════════════
+     「まだ簡体・繁体中文に不十分な箇所があるから詰めて。また、それと同時に今後IntMapの設定言語を
+       追加するのが、1発で終わるようにさらに柔軟な言語システムに。」
+
+     #R221 made `L(…)` variadic and the coverage report said 100 % — and Chinese was still wrong on
+     screen, because 281 call sites in js/ never went through `L(…)` at all. They are hand-written
+     conditional chains:
+
+         HOST.lang==='jp'?'データなし':HOST.lang==='de'?'Keine Daten':…:'No data'
+
+     A chain like that does not degrade to English for a NEW language — it degrades to English for
+     every language past the five it names, which is the same thing said in a way that hides it: the
+     report cannot see these, so seven rounds of "100 % translated" were measuring the wrong body of
+     text. And a chain is not extensible: a language added to LANGS above still has to be typed into
+     281 expressions by hand, which is exactly what "1発で終わる" says must stop being true.
+
+     ⚠ WHY `t(lang, …)` AND NOT A LOCAL `L`. Converting them needed a rewrite that is purely LOCAL —
+     the chains live in factory closures, in template literals, in object literals and inside other
+     conditionals, and inserting a `const L = …` per file would have needed scope analysis, a name
+     that collides with nothing (js/data-layers.js already binds `L` four times to other things), and
+     a decision about WHICH `lang` accessor each closure can see. Taking the language as the first
+     argument removes all three questions: the chain's own `HOST.lang` expression is carried straight
+     across, so scripts/lang-ternary-codemod.mjs rewrites an expression into an expression and
+     touches nothing else. Behaviour is `pick()`'s, exactly — positional for the first five, the
+     `inline` table for the rest, English underneath both. */
+  function t(lang) {
+    var n = arguments.length;
+    if (n < 2) return '';
+    var code; try { code = normalise(typeof lang === 'function' ? lang() : lang); } catch (e) { code = FALLBACK; }
+    var i = idx[code];
+    if (i == null) return arguments[1];
+    if (i > 0 && i + 1 < n) { var v = arguments[i + 1]; if (v != null && v !== '') return v; }
+    if (i !== 0) { var tb = inline[code]; if (tb) { var s = tb[arguments[1]]; if (s != null && s !== '') return s; } }
+    return arguments[1];
+  }
+
+  /* ══ (#R231) THE BCP-47 TAG FOR `Intl`, FROM THE SAME ONE LIST ════════════════════════════════
+     `toLocaleDateString(HOST.lang==='jp'?'ja-JP':…:'en-US')` appears at 18 call sites, and it is the
+     same defect one level down: a Chinese reader got US-formatted dates inside an otherwise Chinese
+     panel. The registry already carries each language's real tag (`html`), so nothing new has to be
+     maintained — `locale()` is that tag, with a region where one is conventional for dates.
+
+     ⚠ `enTag` EXISTS SO THIS CHANGES NOTHING FOR A READER OF ENGLISH. Half of those sites wrote
+     'en-GB' and half 'en-US' — 24-hour vs 12-hour clocks, D MMM vs MMM D — and which one each panel
+     chose is a decision this round was not asked to revisit. The call site keeps its own answer by
+     passing it; only the languages that were falling through to it are affected. */
+  var REGION = { en: 'en-US', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' };
+  function locale(code, enTag) {
+    var c = normalise(code);
+    if (c === FALLBACK) return enTag || REGION.en;
+    if (REGION[c]) return REGION[c];
+    var l = byCode[c];
+    return l ? l.html : (enTag || REGION.en);
+  }
+
   /* the keyed table for one language, with English underneath it PER KEY. `Object.create` rather
      than `Object.assign` so a key added to English later (js/i18n-late.js does this a dozen times)
      is immediately available in every language without a second merge. */
@@ -198,7 +263,7 @@ window.IntMapLang = (function () {
   function codes() { return LANGS.map(function (l) { return l.code; }); }
 
   return { LANGS: LANGS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
-           define: define, pick: pick, keyed: keyed,
+           define: define, pick: pick, keyed: keyed, t: t, locale: locale,
            normalise: normalise, has: has, index: index, htmlTag: htmlTag,
            /* for the coverage report and the tests */
            _ui: ui, _inline: inline };

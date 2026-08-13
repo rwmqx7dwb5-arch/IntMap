@@ -51,6 +51,13 @@ export const STATIC_ASSETS = [
      shells now (see the note at the top of sources.html). `js/locales` is a DIRECTORY on purpose —
      adding a language must not also mean editing this list, which is the whole promise of #R218. */
   'css/pages.css',
+  /* ⚠ (#R231) js/lang-registry.js IS PART OF THOSE TWO PAGES NOW, and this line is the reason the
+     round nearly shipped without it: js/page-i18n.js no longer carries its own five-row language
+     list — it reads the app's ONE registry — and the two shells load it with a plain <script src>.
+     Missing from this list it is simply absent from dist/, `window.IntMapLang` is undefined on the
+     page, and page-i18n falls back to its five literals: the picker silently loses Chinese again,
+     which is the exact defect this round set out to fix. Caught by opening the built page. */
+  'js/lang-registry.js',
   'js/page-i18n.js',
   'js/sources-list.js',
   'js/locales',

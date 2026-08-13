@@ -51,7 +51,7 @@ window.IntMapModules.widgets=function(HOST){
        Seeded ONCE (flagged) so the new defaults also appear for existing users; after that the
        user's own add/remove choices win. */
     try{ if(!localStorage.getItem('intmap_widgets_def21')){
-      ['clock','fx','featured','country','otd'].forEach(tp=>{ if(!active.some(e=>e.t===tp)) active.push({u:'w'+Math.random().toString(36).slice(2,8),t:tp,cfg:(tp==='fx'?{base:'USD',quote:(HOST.lang==='jp'?'JPY':'EUR')}:{})}); });
+      ['clock','fx','featured','country','otd'].forEach(tp=>{ if(!active.some(e=>e.t===tp)) active.push({u:'w'+Math.random().toString(36).slice(2,8),t:tp,cfg:(tp==='fx'?{base:'USD',quote:(window.IntMapLang.t(HOST.lang,'EUR','JPY'))}:{})}); });
       localStorage.setItem('intmap_widgets_def21','1'); save();
     }}catch(_){}
     const FX_CCY=['USD','JPY','EUR','GBP','CNY','KRW','CHF','AUD','CAD','NZD','SGD','HKD','TWD','INR','BRL','MXN','RUB','TRY','ZAR','SEK','NOK','PLN','THB','IDR','PHP','VND','SAR','AED','ILS','EGP'];
