@@ -37,6 +37,8 @@ import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLazyModules } from './lazy-modules.js';
+import { makeRuntime } from './runtime.js';
+import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
 import { fetchViaProxy } from './proxy-fetch.js';
@@ -137,6 +139,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const isMobile=()=>MOBILE_MQ.matches;
   /* ⚠⚠ (#R232) 「携帯か」IS A GPU QUESTION AND WIDTH ANSWERS IT WRONG IN LANDSCAPE: an iPhone turned sideways is 844 px, so isMobile() flips false and the renderer gets the DESKTOP settings (MSAA, DPR 3) on the same phone GPU. 「横向きを縦向きと同じ品質設定に揃えてよい」 — asked first. QUALITY asks the device; LAYOUT still asks isMobile(). See DEV-NOTES #R232. */
   const _imPhoneGPU=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  /* (#R234) the elevation source — hosts, encoding and DEPTH — in one place three files can ask. */
+  const _IM_DEM=makeDemSource();
   /* (#R25) Touch-vs-mouse for WORDING (e.g. Köppen "tap/long-press" vs "click/right-click"). isMobile()
      is width-only, so a desktop with a narrow window wrongly got the touch wording. A machine that has a
      fine pointer (a mouse/trackpad) — even a touchscreen laptop — should read as a "click" device. */
@@ -770,6 +774,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      because every entry point below reaches it through window.IntMapLazy rather than through a
      parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
   makeLazyModules(IM_HOST);
+  /* (#R234) …and the RUNTIME: one camera subscription, one animation frame, one timer for the whole
+     program (js/runtime.js — its header has the why, Architecture §9.0 the shape). Built beside the
+     lazy loader for the same reason: a caller that registers before it exists is #R205's no-op. */
+  makeRuntime(IM_HOST);
+  const RT=()=>window.IntMapRuntime;
   /* (#R203) …and the centre is COMPUTED ONCE AND PUBLISHED. A test cannot re-derive it — it moves
      0.25° a minute, so "boot, then compute what the centre should be" is off by however long the
      boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
@@ -1524,11 +1533,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     });
     GE().events.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
     /* Coalesce occlusion updates to one per animation frame so dragging/spinning the globe stays smooth. */
-    let _occRAF=0; const occOnMove=()=>{ if(_occRAF) return; _occRAF=requestAnimationFrame(()=>{ _occRAF=0; updateOcclusion(); }); };
     /* (#R33) Smoother MOBILE pan/zoom ("カクツク"): skip the per-frame occlusion recompute during a gesture on
-       phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move. */
-    const _occMob=()=>{ try{ return isMobile(); }catch(_){ return false; } };
-    GE().events.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
+       phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move.
+       ⚠ (#R234) THE GATE IS UNCHANGED — only WHERE the frame comes from (js/runtime.js's one rAF). */
+    GE().events.on('move',()=>{ if(window.__fsCamActive) return;
+      try{ if(isMobile()) return; }catch(_){ } RT().frame('shell.occlusion',updateOcclusion); });
+    GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
     GE().events.on('rotate',updateCompass); GE().events.on('pitch',updateCompass);
     GE().events.on('moveend',refreshGrid); GE().events.on('zoomend',refreshGrid);
     GE().events.on('load',()=>{
@@ -2667,21 +2677,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let terrain3D=false;
   function ensureTerrainSource(){
     if(GE().layers.hasSource('terrain-dem')) return true;
-    /* (#R233) the #2/#18 note that stood here said "Three host aliases" and was superseded by the
-       five-host list #R7 wrote directly below it — two comments, one of them wrong about the count. */
-    try{ GE().layers.addSource('terrain-dem',{type:'raster-dem',tiles:[
-        /* (#R7) Five host aliases for the SAME AWS terrarium DEM bucket. Each distinct hostname gets its
-           own browser connection pool, so round-robining ~5× the concurrent DEM fetches over HTTP/1.1
-           S3 — the DEM tiles were the 3D under-fetch bottleneck the user measured (<10 Mbps). */
-        'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
-        'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png',
-        'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
-        'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
-        'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-      /* DEM depth (#R19 13→14, #R20 14→15 = terrarium's NATIVE max): desktop loads the finest mesh
-         that exists, with no downscale anywhere. Phones stay at 13 — the extra tile set is real RAM
-         that risks the tab — which is also the ceiling on how sharp the hillshade layer can be there. */
-      ],encoding:'terrarium',tileSize:256,maxzoom:(_imPhoneGPU()?13:15)}); return true; }   /* (#R232) DEM depth follows the device too */
+    /* (#R234) the hosts, the encoding and the DEPTH all come from js/dem-source.js now — three files
+       stream this same bucket and two of them had capped themselves below this one. See that file. */
+    try{ GE().layers.addSource('terrain-dem',_IM_DEM.spec()); return true; }
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
@@ -4091,17 +4089,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(dem!=null) lastElev=elevText(dem);
       try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
       renderCoordReadout(c.lng,c.lat); }catch(_){} }
-    let _roT=0,_updRAF=0,_roRAF=0;
+    let _roT=0;
     GE().events.on('moveend',()=>{ readout(); update(); });
-    /* (#R25) Smoother pan/zoom ("動きがカクツク"): coalesce the per-move DOM work to ONE frame, and run the
-       heavier readout (DEM + queryRenderedFeatures) at most ~every 110ms during motion (the precise final
-       value still lands on moveend). The crosshair stays live without sampling on every single move event. */
-    GE().events.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
-      /* (#R37) Mobile pan/zoom smoothness ("抜本的に滑らかに"): during motion render ONLY the cheap coordinate
-         text. The heavy crosshair readout — DEM elevation lookup + queryRenderedFeatures for the active-layer
-         value — no longer runs every ~110ms mid-gesture (which spiked the main thread when a data layer was on);
-         it settles once on moveend below. Pure per-frame-work reduction, zero render-quality change. */
-      if(mob()&&!_roRAF){ _roRAF=requestAnimationFrame(()=>{ _roRAF=0; try{ const c=centerLL(); renderCoordReadout(c.lng,c.lat); }catch(_){} }); } });
+    /* (#R25/#R37) Smoother pan/zoom ("動きがカクツク" / "抜本的に滑らかに"): during motion render only the
+       cheap coordinate text. The heavy crosshair readout — DEM lookup + queryRenderedFeatures for the
+       active-layer value — settles once on moveend above instead of spiking the main thread mid-gesture.
+       ⚠ (#R234) the private rAF is gone, not the work: same frames, same inputs, now through
+       js/runtime.js's single WRITE phase so this cannot invalidate another follower's read. */
+    RT().onCamera('shell.crosshair',()=>{ update();
+      if(mob()){ try{ const c=centerLL(); renderCoordReadout(c.lng,c.lat); }catch(_){} } });
     window.addEventListener('resize',update);
     btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);

@@ -924,7 +924,17 @@ window.IntMapModules.arc3d=function(HOST){
     function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
       cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
       const cont=document.getElementById('map-container'); (cont||document.body).appendChild(cv); ctx=cv.getContext('2d');
-      if(!bound){ bound=true; const rd=()=>{ if(window.__fsCamActive) return; if(data) draw(); }; GE().events.on('move',rd); GE().events.on('zoom',rd); GE().events.on('rotate',rd); GE().events.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }   /* (#R95) graticule redraw paused while the flight sim drives the camera */
+      /* (#R95) arc redraw paused while the flight sim drives the camera.
+         ⚠⚠ (#R234) AND IT USED TO REDRAW UP TO FOUR TIMES A FRAME. `move`, `zoom`, `rotate` and
+         `pitch` are not four different moments — MapLibre fires all of them within a single frame of
+         a pinch-rotate, and this subscribed to each with NO coalescing, so the whole arc was
+         re-rasterised once per event. One camera registration in js/runtime.js is one draw per frame,
+         with the same picture at the end of it. */
+      if(!bound){ bound=true; const rd=()=>{ if(window.__fsCamActive) return; if(data) draw(); };
+        const R=window.IntMapRuntime;
+        if(R) R.onCamera('arc3d.draw',rd);
+        else { GE().events.on('move',rd); GE().events.on('zoom',rd); GE().events.on('rotate',rd); GE().events.on('pitch',rd); }
+        window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }
     function resize(){ if(!cv) return; const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); const w=cont.clientWidth,h=cont.clientHeight; cv.width=w*dpr; cv.height=h*dpr; cv.style.width=w+'px'; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
     function lerp(a,b,t){ return a+(b-a)*t; }
     function hx(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }

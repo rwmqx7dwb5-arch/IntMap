@@ -141,9 +141,20 @@ window.IntMapModules.viewControls=function(HOST){
     /* The readout is redrawn on cursor movement, which is not enough on its own: zooming or tilting
        with the pointer still changes the eye altitude. Coalesce to one repaint per frame (the same
        shape as the occlusion updater in index.html) so dragging the globe stays smooth. */
-    function refresh(){ if(!on||_raf) return;
+    /* ⚠ (#R234) …through js/runtime.js's one frame, not a private rAF of this file's own. Same
+       coalescing (one repaint per frame, keyed), same rate, same picture — see that file's header
+       for why N private rAFs cost more than N×one. The fallback path is kept for the case the
+       runtime has not been built yet: a reader whose altitude readout silently stopped following
+       the camera is #R205's defect, and «the module is not there yet» is how it happens. */
+    function refresh(){ if(!on) return;
+      const R=window.IntMapRuntime;
+      if(R){ R.frame('viewctl.altitude',()=>{ try{ HOST.renderCoordReadout(); }catch(_){} }); return; }
+      if(_raf) return;
       _raf=requestAnimationFrame(()=>{ _raf=0; try{ HOST.renderCoordReadout(); }catch(_){} }); }
-    function wire(){ if(_wired) return; const E=GE(); if(!E||!E.events) return; _wired=true;
+    function wire(){ if(_wired) return;
+      const R=window.IntMapRuntime;
+      if(R){ _wired=true; R.onCamera('viewctl.altitude',()=>{ if(on){ try{ HOST.renderCoordReadout(); }catch(_){} } }); return; }
+      const E=GE(); if(!E||!E.events) return; _wired=true;
       E.events.on('move',refresh); E.events.on('zoom',refresh); E.events.on('pitch',refresh); }
 
     function set(v){ on=!!v; try{ localStorage.setItem(KEY,on?'1':'0'); }catch(_){}

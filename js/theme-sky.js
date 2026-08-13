@@ -612,6 +612,7 @@ export function makeThemeSky(HOST, CTX) {
     _followClock();
     try{
       _applySkyAtmosphere._on=true;
+      _wireSkyFollow();   /* (#R234) the rim handover follows the camera, not the settle — see there */
       /* ══ (#R187) THINNER. THE HALO WAS THE "CHEAP" PART ═════════════════════════════════════════
          「（追記：質感がチープかつ、読み込み時の動作が不安定で視覚的に美しくない。）」 and
          「SatelliteのGlobeの地球の日光当たってる側が、ちょっと明るくしすぎ。」
@@ -708,6 +709,33 @@ export function makeThemeSky(HOST, CTX) {
          &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb) return;
       _applySkyAtmosphere(HOST.mapType==='sat');
     }catch(_){}
+  }
+  /* ══ ⚠⚠ (#R234) …AND IT HAD TO BE ASKED WHILE THE CAMERA IS STILL MOVING ═══════════════════════
+     「MapLibreの地球周辺の大気は、ある程度までズームインすると途端に見えなくなってしまう。」
+     Reported for PC + satellite imagery, which is the ONE combination where `_limbOwnsRim()` is
+     true: desktop GPU, the globe, and a Sun position (js/limb-layer.js). In that state the app
+     writes `atmosphere-blend: 0` and hands the rim to its own layer — and that layer draws a LIMB,
+     which is a thing you can only see from OUTSIDE the shell. So the moment the eye descends
+     through `_ATM_TOP_M` (100 km, ≈ z8.3) there is nothing for it to draw…
+
+     …and the only thing that noticed was `moveend` (js/app-body.js) and a 60-second interval below.
+     A zoom from space to the ground is ONE gesture, so for the whole of it the custom limb has
+     nothing to show and maplibre's own halo is switched off waiting for the gesture to end: an
+     Earth with no air on it, appearing abruptly at a particular zoom. That is the report.
+
+     ⚠ THE FIX IS THE QUESTION'S TIMING, NOT ITS ANSWER. #R227's own note says ownership "is a
+     function of the eye's height alone" — and the eye's height changes continuously, so the
+     handover has to be continuous too. It rides js/runtime.js's single camera registration (one
+     `_limbOwnsRim()` per frame, all booleans and one altitude), and `_skyFollowCamera` already
+     compares before it re-parses, so `setSky` still runs only on the frame the answer flips.
+     ⚠ THE RAMPS ARE NOT TOUCHED. #R187 and #R205 measured 0.55 / 0.80 / 0.15 and their zoom taper
+     against real screenshots; this round has no pixels to argue with them (#R227/#R230: this
+     environment cannot photograph the atmosphere) and does not try. */
+  function _wireSkyFollow(){
+    if(_wireSkyFollow._done) return;
+    const R=window.IntMapRuntime; if(!R||!R.onCamera) return;
+    _wireSkyFollow._done=true;
+    R.onCamera('themesky.follow',_skyFollowCamera,{phase:'read'});
   }
   /* The sub-solar point moves 15° an hour, and the time machine can move it by years in one step, so
      re-aim the light on the master clock as well as on the basemap switch.

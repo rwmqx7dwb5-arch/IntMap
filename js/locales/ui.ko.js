@@ -49,6 +49,16 @@ window.IntMapLang.define('ko', { ui: {
 }, inline: {
     /* ⚠ KEYED BY THE ENGLISH SOURCE STRING — see the header. `node scripts/i18n-report.mjs --template ko`
        regenerates the full skeleton; anything absent renders in English, per string. */
+    /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
+       two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
+    "Advanced — model assumptions":"고급 설정 — 모델 가정",
+    "Choose an earthquake…":"지진을 선택하세요…",
+    "Click the map to add an observation point.":"지도를 클릭해 관측 지점을 추가하세요.",
+    "Click to start, click each corner, and click the first point again to finish.":"클릭해서 시작하고 모서리를 차례로 클릭한 뒤, 첫 점을 다시 클릭하면 끝납니다.",
+    "Draw the rupture area on the map.":"지도 위에 진원역을 그려 주세요.",
+    "Each point is added to the table below. Press the button again to turn this off.":"추가한 지점은 아래 표에 나타납니다. 버튼을 다시 누르면 해제됩니다.",
+    "If one is already placed, tapping moves it. Press the button again to turn this off.":"이미 설정되어 있으면 탭한 위치로 이동합니다. 버튼을 다시 누르면 해제됩니다.",
+    "Recompute the intensity map":"진도 분포 다시 계산",
     "Close":"닫기", "Cancel":"취소", "Save":"저장", "Delete":"삭제", "Remove":"제거",
     "Apply":"적용", "Reset":"초기화", "Search":"검색", "Loading…":"불러오는 중…",
     "Layers":"레이어", "Settings":"설정", "Map":"지도", "Satellite":"위성", "Globe":"지구본",

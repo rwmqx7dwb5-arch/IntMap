@@ -576,8 +576,14 @@ window.IntMapModules.toolPanel=function(HOST){
     m._ctxPlace=place;
     if(!m._ctxFollow){
       m._ctxFollow=()=>{ try{ if(m.style.display==='block'&&m._ctxPlace) m._ctxPlace(); }catch(_){} };
-      try{ const E=window.IntMapGeoEngine;
-        ['move','zoom','rotate','pitch','resize'].forEach(ev=>{ try{ E.events.on(ev,m._ctxFollow); }catch(_){} });
+      /* ⚠ (#R234) ONE camera subscription for the whole program (js/runtime.js), not a fifth pair of
+         `events.on` here — and it is registered in the WRITE phase because `place()` measures the menu
+         (`getBoundingClientRect`) and then sets `left`/`top`. The guard inside means the hidden menu
+         costs a function call and nothing else, which is what it cost before. */
+      try{ const R=window.IntMapRuntime;
+        if(R) R.onCamera('toolpanel.ctxmenu',m._ctxFollow);
+        else { const E=window.IntMapGeoEngine;
+          ['move','zoom','rotate','pitch','resize'].forEach(ev=>{ try{ E.events.on(ev,m._ctxFollow); }catch(_){} }); }
       }catch(_){}
       try{ window.addEventListener('resize',m._ctxFollow); }catch(_){}
     }

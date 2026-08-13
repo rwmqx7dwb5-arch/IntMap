@@ -310,7 +310,11 @@ window.IntMapModules.compare=function(HOST){
           cmap.layers.add({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
           cmap.layers.add({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
-      {k:'hillshade', n:()=>jp()?'陰影起伏':'Hillshade', ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13});
+      /* (#R234) the comparison map's DEM was pinned at 13 for every device — two zoom levels below
+         what the main map has streamed on desktop since #R20, so the same hillshade was visibly
+         coarser here than beside it. It asks the shell for the depth now (window.__imDemMaxZoom),
+         so desktop gets terrarium's native 15 and a phone keeps its 13. */
+      {k:'hillshade', n:()=>jp()?'陰影起伏':'Hillshade', ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:(window.__imDemMaxZoom?window.__imDemMaxZoom():13)});
         if(!cmap.layers.has('cmpx-hill')) cmap.layers.add({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
       {k:'nightsat', n:()=>jp()?'夜の光（衛星）':'Night lights (satellite)', ids:['cmpx-nightsat'], add(){ addR('nightsat',cmpGibsStatic('VIIRS_Black_Marble',8,'png').map(u=>u.replace('/default/','/default/2016-01-01/')),8,0.95); }},
       {k:'snow', n:()=>jp()?'積雪':'Snow cover', ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},

@@ -59,6 +59,16 @@ window.IntMapLang.define('fr', { ui: {
        header. `node scripts/i18n-report.mjs --template fr` regenerates the full skeleton, and
        `node scripts/i18n-report.mjs` prints how much of it is done. Anything absent renders in
        English, per string. */
+    /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
+       two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
+    "Advanced — model assumptions":"Avancé — hypothèses du modèle",
+    "Choose an earthquake…":"Choisissez un séisme…",
+    "Click the map to add an observation point.":"Cliquez sur la carte pour ajouter un point d’observation.",
+    "Click to start, click each corner, and click the first point again to finish.":"Cliquez pour commencer, cliquez chaque sommet, puis cliquez à nouveau sur le premier point pour terminer.",
+    "Draw the rupture area on the map.":"Tracez la zone de rupture sur la carte.",
+    "Each point is added to the table below. Press the button again to turn this off.":"Chaque point s’ajoute au tableau ci-dessous. Appuyez de nouveau sur le bouton pour désactiver.",
+    "If one is already placed, tapping moves it. Press the button again to turn this off.":"Si un épicentre existe déjà, le toucher le déplace. Appuyez de nouveau sur le bouton pour désactiver.",
+    "Recompute the intensity map":"Recalculer la carte d’intensité",
     "Close":"Fermer", "Cancel":"Annuler", "Save":"Enregistrer", "Delete":"Supprimer", "Remove":"Retirer",
     "Apply":"Appliquer", "Reset":"Réinitialiser", "Search":"Rechercher", "Loading…":"Chargement…",
     "Layers":"Calques", "Settings":"Paramètres", "Map":"Carte", "Satellite":"Satellite", "Globe":"Globe",

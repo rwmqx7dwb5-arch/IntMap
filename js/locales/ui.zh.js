@@ -300,6 +300,7 @@ window.IntMapLang.define('zh', {
     'Add on map': "在地圖上新增",   /* drone-nav.js */
     'Adjusted to the terrain': "已貼合地形",   /* atlas-console.js */
     'admin borders': "行政區界",   /* atlas-console.js */
+    'Advanced — model assumptions': "進階 — 模型假設",   /* seismic.js */
     'Advisory': "注意",   /* world-packs.js */
     'Age of the elements': "元素的年齡",   /* satellite-detail.js */
     'AGL': "離地高度",   /* flight-sim.js */
@@ -490,6 +491,7 @@ window.IntMapLang.define('zh', {
     'Check other routes': "查看其他路線",   /* drone-nav.js */
     'checks run': "項檢查",   /* atlas-console.js */
     'Chernobyl': "車諾比",   /* atlas-console.js */
+    'Choose an earthquake…': "選擇一次地震…",   /* seismic.js */
     'Choose destination': "選擇目的地",   /* routing.js */
     'Choose start (or click the map)': "選擇起點（或點擊地圖）",   /* routing.js */
     'Circle': "圓形",   /* tool-panel.js */
@@ -521,9 +523,11 @@ window.IntMapLang.define('zh', {
     'Click on a country (land)': "請點擊國家（陸地）",   /* app-body.js stats-compare.js */
     'Click the map': "點擊地圖",   /* drone-nav.js */
     'Click the map to add a place to this table.': "點擊地圖即可把地點加入此表。",   /* seismic.js */
+    'Click the map to add an observation point.': "點擊地圖以新增觀測地點。",   /* seismic.js */
     'Click the map to drop a waypoint.': "點擊地圖以放置航點。",   /* drone-nav.js */
     'Click the map to start drawing': "點擊地圖開始繪製",   /* map-tools.js */
     'Click the point to analyze.': "點擊要分析的地點。",   /* sims.js */
+    'Click to start, click each corner, and click the first point again to finish.': "點擊開始，沿輪廓逐點點擊，再次點擊起點即可結束。",   /* seismic.js */
     'Click two corners': "點擊兩個角",   /* routing.js */
     'Clicking the map adds a place to the table below. Press the button again to turn this off.': "點擊地圖會把地點加入下方表格。再按一次按鈕即可關閉。",   /* seismic.js */
     'Close': "關閉",   /* aircraft-detail.js map-tools.js map-ui.js */
@@ -706,6 +710,7 @@ window.IntMapLang.define('zh', {
     'Draw an area': "畫出範圍",   /* routing.js */
     'Draw an area / place a circle first, or name a place.': "請先畫出範圍或放置圓形，或指定一個地點。",   /* atlas-console.js */
     'Draw the rupture area': "繪製震源域",   /* seismic.js */
+    'Draw the rupture area on the map.': "請在地圖上圈出震源域。",   /* seismic.js */
     'Drawing': "繪製中",   /* map-tools.js */
     'drawings': "個繪製圖形",   /* atlas-console.js */
     'Drawings': "繪製圖形",   /* map-tools.js */
@@ -720,6 +725,7 @@ window.IntMapLang.define('zh', {
     'due now': "現已到期",   /* monitors.js */
     'Duration': "持續時間",   /* satellite-detail.js */
     'each indicator’s value for this year, by its own source': "各指標當年的數值，依其各自來源",   /* stats-compare.js */
+    'Each point is added to the table below. Press the button again to turn this off.': "新增的地點會列在下方表格中。再次按下按鈕即可關閉。",   /* seismic.js */
     'earth horizon': "地球地平線",   /* viewshed.js */
     'Earth Replay': "地球回放",   /* atlas-console.js sims.js */
     'earthquakes': "地震",   /* atlas-console.js */
@@ -941,6 +947,7 @@ window.IntMapLang.define('zh', {
     'How often': "頻率",   /* monitors.js */
     'Humidity': "濕度",   /* weather.js */
     'Identity': "識別",   /* aircraft-detail.js */
+    'If one is already placed, tapping moves it. Press the button again to turn this off.': "若已設置震源，點擊會將其移動。再次按下按鈕即可關閉。",   /* seismic.js */
     'IMF unavailable — World Bank used': "IMF 資料無法取得 — 改用世界銀行",   /* stats-compare.js */
     'impact': "衝擊",   /* atlas-sims.js */
     'impact analysis within ': "衝擊分析範圍 ",   /* atlas-console.js */
@@ -1511,6 +1518,7 @@ window.IntMapLang.define('zh', {
     'Reception': "接收",   /* aircraft-detail.js */
     'Recolored the current highlights': "已重新著色目前的標示",   /* atlas-console.js */
     'Recompute': "重新計算",   /* tsunami.js */
+    'Recompute the intensity map': "重新計算震度分布",   /* seismic.js */
     'Rectangle': "矩形",   /* tool-panel.js */
     'Red = reachable': "紅色＝可到達",   /* viewshed.js */
     'Red alert': "紅色警戒",   /* world-packs.js */
