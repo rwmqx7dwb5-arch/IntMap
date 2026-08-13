@@ -386,10 +386,20 @@ window.IntMapModules.countriesUi=function(HOST){
     const _cmpSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10M12 20V4M18 20v-7"/></svg>';
     const _aiName=encodeURIComponent(name).replace(/'/g,'%27');
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${HOST.lang==='de'?'Nur dieses Land':window.IntMapLang.t(HOST.lang,'Isolate','この国だけ',undefined,'Только эту страну')}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${HOST.lang==='de'?'Zeitverlauf':window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ',undefined,'Динамика')}</button>`
-      +`<button onclick="try{var _n=decodeURIComponent('${_aiName}'),_l=(window._cpCurrent&&window._cpCurrent._ll)||null;if(window.IntMapAtlas){window.IntMapAtlas.ensure().then(function(C){try{if(C&&C.brief){C.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e2){}});}else if(window.IntMapConsole&&window.IntMapConsole.brief){window.IntMapConsole.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${HOST.lang==='de'?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査',undefined,'ИИ-справка')}</button>`
-      +`<button onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${HOST.lang==='de'?'Vergleichen':window.IntMapLang.t(HOST.lang,'Compare','国を比較',undefined,'Сравнить','Comparar')}</button>`
+      /* ══ ⚠ (#R236) THREE OF THESE FOUR HAD NO SPANISH AT ALL ═══════════════════════════════════════
+         「ドイツ語、ロシア語、スペイン語について、すべての面において対応が完璧かどうか最終点検し」
+
+         `t(lang, en, jp, de, ru, es)` is POSITIONAL, and these were written as
+         `HOST.lang==='de' ? '…' : t(HOST.lang, en, jp, undefined, ru)` — German hoisted out in front
+         of the call and the German SLOT left undefined, with the Spanish slot simply absent. German
+         was therefore fine and Spanish fell through to English on Isolate / Time-series / AI brief,
+         which is invisible to the positional audit (scripts/i18n-positional-audit.mjs reads `L(…)`
+         call sites, and these are `t(…)` with a ternary in front — #R231's blind spot, one level
+         further in). Folded back into the call so every language is one argument in one place. */
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${window.IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
+      +`<button onclick="try{var _n=decodeURIComponent('${_aiName}'),_l=(window._cpCurrent&&window._cpCurrent._ll)||null;if(window.IntMapAtlas){window.IntMapAtlas.ensure().then(function(C){try{if(C&&C.brief){C.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e2){}});}else if(window.IntMapConsole&&window.IntMapConsole.brief){window.IntMapConsole.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
+      +`<button onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${window.IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);

@@ -595,8 +595,62 @@ export function makeThemeSky(HOST, CTX) {
      strength of an intention would then leave those contexts with NO atmosphere at all, which is
      worse than either answer. Measured while writing this: `?rafshim=1` alone gave
      `hasLimb:false, atmosphere-blend:0` — a globe with no air on it. */
+  /* ══ ⚠⚠ (#R236) THE RIM IS HANDED OVER ONLY TO SOMETHING THAT IS ACTUALLY DRAWING ══════════════
+     「（追記：そもそも消えてしまっている）」 — not "it disappears when you zoom in" (#R234's
+     reading) but gone in EVERY state, which is a different defect with a different cause.
+
+     #R227's rule was already the right one — a refusal is told by RESULT, not by intent — but it
+     was only ever asked of ONE step: could the layer be added. Two ways past that, both of which
+     end with `atmosphere-blend: 0` handed to something that paints nothing:
+       · `onAdd` fails on this driver (shader compile/link) — now caught in geo-engine's addLimb,
+         which removes the layer and reports the refusal;
+       · the layer is alive but its uniforms never resolve, so `render()` returns before the draw
+         call every frame. Nothing downstream could tell that from a limb that simply looks faint.
+
+     So ownership is now REVOKED on evidence: once we have claimed the rim, if the layer has still
+     painted zero frames after a grace period, the claim is dropped for the session and maplibre's
+     own atmosphere pass comes back. ⚠ It is one-way and remembered — a rim that flickered between
+     two owners every settle would be worse than either of them, and the reason is a property of
+     the GL context rather than of this camera. */
+  function _limbPainting(){
+    try{ return (GE().layers.limbDrawn?GE().layers.limbDrawn(_LIMB_ID):1)>0; }catch(_){ return true; }
+  }
+  /* ⚠ THE TEST IS «THE MAP PAINTED AND THE LIMB DID NOT», NOT «TIME PASSED». maplibre only redraws
+     when something asks it to, so a rim claimed over a map that then sits still would show zero
+     limb frames for any timeout you choose — and revoking on that would take the good limb away
+     from every reader whose map happens to be idle. So the map's OWN frames are counted as the
+     control: with no frames there is no evidence either way and the watchdog simply waits (nudging
+     the renderer so evidence can arrive); it only revokes once the map has demonstrably painted
+     frames that the limb was absent from. ⚠ One-way and remembered, for the reason above. */
+  function _armLimbWatch(){
+    if(_applyLimb._watch) return;
+    _applyLimb._watch=1;
+    let mapFrames=0, tries=0;
+    const onRender=()=>{ mapFrames++; };
+    const stop=()=>{ try{ GE().events.off('render',onRender); }catch(_){} };
+    try{ GE().events.on('render',onRender); }catch(_){}
+    const nudge=()=>{ try{ GE().render.triggerRepaint(); }catch(_){} };
+    const check=()=>{
+      try{
+        if(_limbPainting()){ stop(); return; }              /* it drew — settled, for the session */
+        if(mapFrames<8){                                    /* no evidence yet */
+          if(++tries<6){ nudge(); setTimeout(check,700); return; }
+          stop(); _applyLimb._watch=0; return;              /* never got evidence: change nothing */
+        }
+        /* the map painted and this layer was not in any of those frames */
+        stop();
+        _applyLimb._refused=true;
+        try{ GE().layers.setLimb(_LIMB_ID,{on:false}); }catch(_){}
+        try{ GE().layers.removeLimb(_LIMB_ID); }catch(_){}
+        try{ console.warn('[IntMap] limb painted none of '+mapFrames+' frames — atmosphere handed back to the renderer'); }catch(_){}
+        _applySkyAtmosphere(HOST.mapType==='sat');          /* re-write the sky block, ramp restored */
+      }catch(_){ stop(); }
+    };
+    nudge(); try{ setTimeout(check,900); }catch(_){}
+  }
   function _applyLimb(want){
     try{
+      if(_applyLimb._refused) want=false;
       if(want&&!GE().layers.hasLimb(_LIMB_ID)) GE().layers.addLimb(_LIMB_ID);
       const there=!!GE().layers.hasLimb(_LIMB_ID);
       /* ⚠ AND THE REFUSAL IS REMEMBERED. It is a property of the GL context, not of this camera, so
@@ -604,6 +658,7 @@ export function makeThemeSky(HOST, CTX) {
          yes, the answer would say no, and `_skyFollowCamera`'s comparison would never match. */
       if(want&&!there) _applyLimb._refused=true;
       GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there)});
+      if(want&&there) _armLimbWatch();
       return !!(want&&there);
     }catch(_){ return false; }
   }

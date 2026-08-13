@@ -335,7 +335,9 @@ test('⑧ both seismic click modes turn off when pressed again, and an unarmed m
   const s = code('js/seismic.js');
   assert.match(s, /if\(clickMode==='epi'\) setClickMode\('none'\)/, 'the epicentre segment has no off state');
   assert.match(s, /setClickMode\(clickMode==='station'\?'none':'station'\)/, 'the place segment has no off state');
-  const oc = /function onClick\(e\)\{[\s\S]*?setEpi\(\[e\.lngLat\.lng,e\.lngLat\.lat\]\); refresh\(\); \}/.exec(s)[0];
+  /* (#R236) the slice ends at the epicentre branch, whose spelling changed when the containment
+     test went in front of it — take it to `setEpi(...)` either way. */
+  const oc = /function onClick\(e\)\{[\s\S]*?setEpi\((?:\[e\.lngLat\.lng,e\.lngLat\.lat\]|p)\); refresh\(\); \}/.exec(s)[0];
   assert.ok(oc.indexOf("clickMode==='none'") < oc.indexOf('claimClick'),
     'the panel claims the tap before deciding whether it wants it');
 });

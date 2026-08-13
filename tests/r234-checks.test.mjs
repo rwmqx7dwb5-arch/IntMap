@@ -155,7 +155,9 @@ test('R234 seismic panel: one banner shape for all three modes, and the run butt
   assert.match(s, /地図上で震源域を囲ってください。/, '…and it says what to do');
   assert.match(s, /クリックで開始し、続けてクリックして囲み、最初の点をもう一度クリックすると終了です。/,
     '…including how the stroke starts and ends');
-  assert.match(s, /: clickMode==='epi'\s*\n\s*\? BANNER\(/, 'the epicentre mode gets one too');
+  /* (#R236) a comment sits between the test and the banner now (the epicentre mode says a different
+     thing once a rupture is drawn), so the claim is «this mode reaches BANNER», not the line break. */
+  assert.match(s, /: clickMode==='epi'\s*\n(?:\s*\/\*[\s\S]*?\*\/\s*\n)?\s*\? BANNER\(/, 'the epicentre mode gets one too');
   assert.match(s, /: clickMode==='station'\s*\n\s*\? BANNER\(/, 'and so does the observation-point mode');
   /* one predicate decides BOTH the colour and the wording */
   assert.match(s, /function _needsRun\(\)\{ return !fld\|\|fldStale; \}/, 'one predicate for "there is something to compute"');
