@@ -168,26 +168,36 @@
                alt="IntMap showing the Earth as a globe with satellite imagery, climate zones and submarine cables."
                data-i-alt="shotAlt1">
         </picture>
-        <!-- ⚠ FRAMES 2 AND 3 CARRY `data-src`, NOT `src`, AND THAT IS A MEASUREMENT NOT A STYLE.
+        <!-- ⚠ FRAMES 2 AND 3 LIVE IN A <template>, AND THAT IS A MEASUREMENT NOT A STYLE.
              They are `loading="lazy"`, but lazy only defers images BELOW the fold and these sit in
              the hero — so Chrome fetched all three at once and the first view cost 649 KB before
-             the visitor had scrolled a pixel, 367 KB of it for two pictures that are not shown for
-             another 5.6 seconds. js/about.js promotes them after the load event, so the rotation
-             still works and nothing competes with the LCP image for the first connection.
-             Frame 1 keeps a real `src`: without JavaScript it is the hero, and these two are its
-             alternates. -->
-        <picture>
-          <source media="(max-width:700px)" data-srcset="./about/m-hero-2.webp" width="430" height="930">
-          <img data-src="./about/hero-2.webp" width="1600" height="1000" loading="lazy" decoding="async"
-               alt="IntMap tilted into 3-D terrain over the Everest massif, with satellite imagery draped on measured elevation and the peaks labelled."
-               data-i-alt="shotAlt2">
-        </picture>
-        <picture>
-          <source media="(max-width:700px)" data-srcset="./about/m-hero-3.webp" width="430" height="930">
-          <img data-src="./about/hero-3.webp" width="1600" height="1000" loading="lazy" decoding="async"
-               alt="IntMap showing animated wind and pressure isobars over Europe."
-               data-i-alt="shotAlt3">
-        </picture>
+             the visitor had scrolled a pixel, 367 KB of it for two pictures nothing shows for
+             another 5.6 seconds. A template's contents belong to an inert document: the browser
+             parses them and fetches nothing. js/about.js clones them in after the load event.
+
+             ⚠ AND A TEMPLATE RATHER THAN `data-src`, WHICH IS WHAT THIS WAS FIRST. Copying an
+             attribute into `src` is a DOM string becoming a URL, and CodeQL failed the pull request
+             for it (js/xss-through-dom) — correctly, even though the string is our own literal:
+             js/page-i18n.js already carries the same ruling about a `?lang=`-derived script src
+             («a shape worth not having at all»). Cloning a node moves no string at all, so the
+             sink is gone rather than argued about.
+
+             Frame 1 stays outside the template with a real `src`: without JavaScript it IS the
+             hero, and these two are its alternates. -->
+        <template id="hp-frames-rest">
+          <picture>
+            <source media="(max-width:700px)" srcset="./about/m-hero-2.webp" width="430" height="930">
+            <img src="./about/hero-2.webp" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="IntMap tilted into 3-D terrain over the Everest massif, with satellite imagery draped on measured elevation and the peaks labelled."
+                 data-i-alt="shotAlt2">
+          </picture>
+          <picture>
+            <source media="(max-width:700px)" srcset="./about/m-hero-3.webp" width="430" height="930">
+            <img src="./about/hero-3.webp" width="1600" height="1000" loading="lazy" decoding="async"
+                 alt="IntMap showing animated wind and pressure isobars over Europe."
+                 data-i-alt="shotAlt3">
+          </picture>
+        </template>
       </div>
     </div>
     <div class="hp-shot-dots" id="hp-dots" role="tablist" aria-label="Screenshot"></div>

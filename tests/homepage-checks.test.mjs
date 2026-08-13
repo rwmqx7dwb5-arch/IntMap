@@ -27,10 +27,22 @@ const js = read('js/about.js');
 /* ⚠ THE CHECKS BELOW READ THE PAGE WITHOUT ITS COMMENTS, and that is not a convenience.
    about.html carries long <!-- --> notes explaining WHY each decision is what it is — including a
    note that names the stale "30 uses per day" figure it exists to prevent, and one that says the
-   parser "reaches the <img> a hundred lines down". Both tripped their own guard on the first run.
+   parser "reaches the <img> six hundred lines down". Both tripped their own guard on the first run.
    A note about a defect must not read as the defect; §5 and §6 therefore ask their questions of the
-   markup that ships. (§3 does the same for js/about.js's comments.) */
-const pageOnly = page.replace(/<!--[\s\S]*?-->/g, '');
+   markup that ships. (§3 does the same for js/about.js's comments.)
+
+   ⚠ AND IT LOOPS TO A FIXED POINT. A single `.replace(/<!--[\s\S]*?-->/g, '')` is the classic
+   incomplete multi-character sanitisation — `<!-- <!-- --> -->` leaves a `<!--` behind — and CodeQL
+   failed the pull request for it (js/incomplete-multi-character-sanitization). It is a test helper
+   rather than a security boundary, but "it is only a test" is exactly the argument that puts the
+   pattern in the codebase for somebody to copy later, and js/page-i18n.js already carries this
+   project's ruling on regex "sanitisers". Repeating until nothing changes has no such edge. */
+function stripHtmlComments(s) {
+  var prev;
+  do { prev = s; s = s.replace(/<!--[\s\S]*?-->/g, ''); } while (s !== prev);
+  return s;
+}
+const pageOnly = stripHtmlComments(page);
 
 /* ── ① the page ships: every asset it names is in the tree AND in the Vite copy list ───────── */
 test('homepage ①: every local asset about.html references exists', () => {
@@ -136,23 +148,31 @@ test('homepage ⑤: every image has an alt attribute and intrinsic dimensions', 
 
 test('homepage ⑤: the hero rotation frames are fetched after load, not with it', () => {
   /* ⚠ MEASURED, AND THE REASON THIS TEST EXISTS. `loading="lazy"` does not defer an image inside
-     the hero, so with a plain `src` all three frames arrived on the first connection: 649 KB before
-     a scroll, 367 KB of it for two pictures nothing shows for 5.6 s. Frames 2 and 3 therefore carry
-     `data-src`, and js/about.js promotes them on the load event. Putting a `src` back on them is a
-     one-character change that silently doubles the first view, which is exactly the kind of
-     regression a source-level guard is for. */
-  const frames = /<div class="hp-shot-frames"[\s\S]*?<\/div>/.exec(pageOnly);
+     the hero, so with all three frames in the document they arrived on the first connection:
+     649 KB before a scroll, 367 KB of it two pictures nothing shows for 5.6 s. Frames 2 and 3 are
+     therefore inside a <template>, whose contents a browser parses and never fetches, and
+     js/about.js clones them in on the load event. Moving either picture out of the template is a
+     two-line change that silently doubles the first view. */
+  const frames = /<div class="hp-shot-frames"[\s\S]*?\n      <\/div>/.exec(pageOnly);
   assert.ok(frames, 'the hero frame block is gone');
-  const pics = frames[0].split('<picture>').slice(1);
-  assert.equal(pics.length, 3, `expected three hero frames, found ${pics.length}`);
-  assert.match(pics[0], /\ssrc="\.\/about\//, 'frame 1 must carry a real src — it is the LCP image and the no-JS hero');
-  for (let i = 1; i < pics.length; i++) {
-    assert.equal(/\ssrc="/.test(pics[i]), false, `hero frame ${i + 1} has a src — it would load with the first view`);
-    assert.match(pics[i], /\sdata-src="\.\/about\//, `hero frame ${i + 1} has no data-src to be promoted from`);
-    assert.equal(/\ssrcset="/.test(pics[i]), false, `hero frame ${i + 1}'s <source> has a srcset — same problem, on phones`);
-  }
-  assert.match(js, /lazy\[j\]\.setAttribute\('src', lazy\[j\]\.getAttribute\('data-src'\)\)/,
-    'js/about.js no longer promotes the deferred frames — they would never appear');
+  const tpl = /<template id="hp-frames-rest">([\s\S]*?)<\/template>/.exec(frames[0]);
+  assert.ok(tpl, 'the deferred hero frames are no longer in a <template> — they would load with the first view');
+
+  const eagerPart = frames[0].replace(tpl[0], '');
+  assert.equal((eagerPart.match(/<picture>/g) || []).length, 1,
+    'exactly one hero frame may be outside the template — it is the LCP image and the no-JS hero');
+  assert.match(eagerPart, /\ssrc="\.\/about\//, 'frame 1 must carry a real src');
+  assert.equal((tpl[1].match(/<picture>/g) || []).length, 2, 'expected the other two frames inside the template');
+
+  /* ⚠ AND NO STRING MAY BECOME A URL. The first version of this used `data-src` + setAttribute,
+     which CodeQL failed as js/xss-through-dom (high). Cloning a node moves no string at all, so
+     the guard is that the promotion is a cloneNode and that no data-src has crept back. */
+  assert.equal(/data-src(set)?=/.test(pageOnly), false,
+    'about.html carries a data-src again — copying it into src is a DOM string becoming a URL');
+  assert.match(js, /host\.appendChild\(tpl\.content\.cloneNode\(true\)\)/,
+    'js/about.js no longer clones the deferred frames in — they would never appear');
+  assert.equal(/setAttribute\(\s*'src'/.test(js), false,
+    "js/about.js assigns an element's src from JavaScript again — use the template");
 });
 
 test('homepage ⑤: motion is opt-out-able and nothing hides itself without JavaScript', () => {
