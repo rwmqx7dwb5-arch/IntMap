@@ -19,6 +19,7 @@ window.IntMapLang.define('ru', { ui: {
       setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
       lblTheme:"Оформление", optAuto:"Как в системе", optLight:"Светлая", optDark:"Тёмная", optClassic:"Классика", optCyber:"Кибер",
       lblMapColor:"Цвет карты", mapColorAuto:"Как оформление", mapColorLight:"Светлый (белый)", mapColorDark:"Тёмный (чёрный)",
+      tabDocked:"Панели", lblDockPanels:"Легенды и окна инструментов", dockPanelsOff:"На карте (по умолчанию)", dockPanelsOn:"Собраны во вкладке боковой панели", dockPanelsHint:"Все легенды, показания и окна инструментов переезжают во вкладку «Панели» слева, чтобы карта оставалась свободной. Всплывающие окна, привязанные к точке на карте, остаются на карте.",
       lblUnits:"Единицы измерения", unitBoth:"Метрические + имперские", unitMetric:"Только метрические", unitImperial:"Только имперские",
       lblTempUnit:"Температура", tempBoth:"°C + °F", tempC:"Только °C", tempF:"Только °F",
       lblTz:"Часовой пояс", tzSearch:"Поиск часового пояса…", optLocal:"Локальное (как в системе)",

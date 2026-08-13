@@ -56,7 +56,126 @@ window.IntMapModules.windowManager=function(HOST){
   const __winReg=new Set();
 let __winZ=4300;
   function bringToFront(el){ if(!el) return; try{ let mx=4300; __winReg.forEach(w=>{ if(w===el||!w.isConnected) return; const z=parseInt(w.style.zIndex,10)||0; if(z>mx&&z<6000) mx=z; }); __winZ=Math.min(5999,Math.max(__winZ,mx)+1); el.style.zIndex=String(__winZ); }catch(_){} }
-  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ el.addEventListener('pointerdown',()=>bringToFront(el),true); }catch(_){ try{ el.addEventListener('mousedown',()=>bringToFront(el),true); }catch(__){} } }
+  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ el.addEventListener('pointerdown',()=>bringToFront(el),true); }catch(_){ try{ el.addEventListener('mousedown',()=>bringToFront(el),true); }catch(__){} }
+    /* (#R238) a window that appears while the dock is on goes straight into it — see below */
+    if(__dockOn) try{ _dockOne(el); }catch(_){} }
+  /* ══ ⚠⚠ (#R238) THE DOCK — every floating thing in one sidebar tab ═══════════════════════════════
+     「設定から変更すれば、それまで地図上に表示されていたポップアップや凡例の類を、地名クリック時の
+       ポップアップのような地図と直接結びついたもの以外すべて、左サイドバーに新たなタブを作り、
+       そこにすべてまとめて表示というモードを作って。」 — asked for in #R236, #R237 and again now.
+     Scope confirmed with the reader in #R237: tool windows are included, the tab exists only while
+     the mode is on, desktop AND mobile, off by default.
+
+     ⚠ WHY THIS FILE. `__winReg` above is ALREADY the set of every floating window the app makes —
+     `makeDraggable` and `addEdgeResize` both register into it, which is 33 call sites across 22
+     files. So «everything that floats» is a set that exists, is maintained by the two functions that
+     create floating things, and needs no list for a new panel to join. ⚠ And it draws the reader's
+     boundary exactly: a place-click popup is a RENDERER popup anchored to a coordinate inside the
+     map container, it never goes through makeDraggable, so it is outside `__winReg` and stays on the
+     map without a single exception being written down. `data-nodock` is for the two windows that
+     have their own home in the sidebar already (Atlas has `atl-tab`) — see the caller.
+
+     ⚠ WHAT IS REMEMBERED, AND WHY IT IS THE WHOLE INLINE STYLE. A docked panel is re-parented and
+     then forced flat by CSS, so switching the mode off has to put back BOTH where it was in the DOM
+     and the geometry it was dragged/resized to. `cssText` is that geometry — #R47's drag and resize
+     write `left/top/width/height` as inline `!important` — so the string is stored and re-applied
+     rather than re-derived, which is the only way a window comes back exactly where it was left. */
+  const __docked=new Map();      /* el -> { parent, next, css } */
+  let __dockOn=false, __dockObs=null;
+  function _dockHost(){ try{ return document.getElementById('docked-feed'); }catch(_){ return null; } }
+  /* ══ ⚠⚠ (#R238) …AND THE LEGENDS, WHICH ARE NOT WINDOWS ═══════════════════════════════════════════
+     Measured on the first build of this feature: with the dock on, `iol-panel` and `sq-panel` moved
+     and `koppen-legend` and `data-legend-subcables` DID NOT — because a legend is not draggable, so
+     it never goes through makeDraggable and `__winReg` has never heard of it. The instruction names
+     legends FIRST (「ポップアップや凡例の類」), so a dock that collects only the draggable things is
+     the wrong half of the feature.
+
+     ⚠ A SELECTOR, NOT A LIST OF IDs. js/data-layers.js alone creates fifteen of these
+     (`data-legend-eez`, `-temp`, `-thermal`, `-radar`, `-sst`, `-popgrid`, `-relief`, …) and the next
+     round will add more; an enumeration here would be a second list that has to be kept in step with
+     the first, which is #R220's defect exactly ("a list in two places means one of them is stale").
+     What every one of them shares is the WORD — the class or the id says `legend` — so that is what
+     is matched, inside the map container only.
+     ⚠ AND MAP CONTROLS ARE NOT LEGENDS. The search box, the compass, the zoom buttons and the
+     basemap switch are how the reader drives the map; they are not 「ポップアップや凡例の類」 and
+     they stay. That is why this is a narrow selector rather than "every absolutely-positioned child
+     of the map container".
+
+     ⚠⚠ AND IT IS A DIRECT CHILD, WHICH IS THE WHOLE DIFFERENCE BETWEEN «a legend» AND «the word
+     legend». Measured on the first build of this rule: a descendant match pulled in 58 elements —
+     the twelve `lyrrow-*` rows of the LAYERS PANEL among them, because each row carries a legend
+     swatch inside it. Ripping rows out of the layer panel is not docking a legend, it is dismantling
+     a control. A legend that floats over the map is appended to the map container itself
+     (js/data-layers.js: `mc.appendChild(legend)`), so `:scope >` is exactly the set that floats, and
+     anything nested inside another panel belongs to that panel and travels with it. */
+  const DOCK_SEL=':scope > [class*="legend"], :scope > [id*="legend"]';
+  function _dockables(){
+    const out=[];
+    try{ __winReg.forEach(el=>{ if(el&&el.isConnected) out.push(el); }); }catch(_){}
+    try{
+      const mc=document.getElementById('map-container');
+      if(mc) mc.querySelectorAll(DOCK_SEL).forEach(el=>{ if(out.indexOf(el)<0) out.push(el); });
+    }catch(_){}
+    return out;
+  }
+  /* a legend created while the dock is on has to land in it without anything asking */
+  function _dockWatch(on){
+    try{
+      if(!on){ if(__dockObs){ __dockObs.disconnect(); __dockObs=null; } return; }
+      if(__dockObs) return;
+      const mc=document.getElementById('map-container'); if(!mc||!window.MutationObserver) return;
+      /* ⚠ childList on the CONTAINER ONLY (no subtree): the set this watches is «direct children of
+         the map container», which is exactly what `_dockables` matches, and a subtree observer would
+         fire on every tile, marker and popup the renderer creates. */
+      __dockObs=new MutationObserver((recs)=>{ if(!__dockOn) return;
+        for(const r of recs) for(const n of r.addedNodes){
+          if(!n||n.nodeType!==1||n.parentNode!==mc) continue;
+          try{ if(n.matches&&n.matches('[class*="legend"],[id*="legend"]')) _dockOne(n); }catch(_){}
+        } });
+      __dockObs.observe(mc,{childList:true});
+    }catch(_){}
+  }
+  function _dockOne(el){
+    if(!el||__docked.has(el)) return false;
+    if(!el.isConnected) return false;
+    try{ if(el.dataset&&el.dataset.nodock==='1') return false; }catch(_){}
+    /* workspace mode gives every panel its own window frame; docking would fight it */
+    try{ if(document.body.classList.contains('ws-mode')) return false; }catch(_){}
+    const host=_dockHost(); if(!host) return false;
+    try{
+      __docked.set(el,{ parent:el.parentNode, next:el.nextSibling, css:el.getAttribute('style')||'' });
+      el.classList.add('im-docked');
+      el.removeAttribute('style');
+      host.appendChild(el);
+      return true;
+    }catch(_){ __docked.delete(el); return false; }
+  }
+  function _undockOne(el){
+    const s=__docked.get(el); if(!s) return false;
+    __docked.delete(el);
+    try{
+      el.classList.remove('im-docked');
+      if(s.css) el.setAttribute('style',s.css); else el.removeAttribute('style');
+      if(s.parent&&s.parent.isConnected){ s.parent.insertBefore(el,(s.next&&s.next.parentNode===s.parent)?s.next:null); }
+      return true;
+    }catch(_){ return false; }
+  }
+  /* the panels that are gone (closed while docked) drop out on their own */
+  function _sweep(){ __docked.forEach((_,el)=>{ if(!el.isConnected) __docked.delete(el); }); }
+  function setDocked(on){
+    on=!!on; __dockOn=on;
+    if(on){ _dockables().forEach(_dockOne); }
+    else { Array.from(__docked.keys()).forEach(_undockOne); }
+    _dockWatch(on);
+    _sweep();
+    try{ document.body.classList.toggle('im-dock-mode',on); }catch(_){}
+    return __docked.size;
+  }
+  function dockedCount(){ _sweep(); return __docked.size; }
+  function isDocked(){ return __dockOn; }
+  /* (#R238) …and re-run the sweep when the mode is on and the tab is shown, so a window opened while
+     another tab was up is in the list the moment the reader looks at it. */
+  function dockRefresh(){ if(!__dockOn) return 0; _dockables().forEach(_dockOne); return dockedCount(); }
   function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
@@ -89,5 +208,47 @@ let __winZ=4300;
       const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; };
       document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     registerWindow(panel); }
-  return { addEdgeResize, bringToFront, makeDraggable, registerWindow };
+  /* ══ ⚠⚠ (#R238) THE APP-SIDE GLUE, HERE RATHER THAN IN THE SHELL ═════════════════════════════════
+     Three things, and only three: the tab exists while the setting is on, the panels are re-parented
+     above, and leaving the mode while the dock tab is open has to leave the reader somewhere. It
+     lives in this file — beside the mechanism it drives — rather than in js/app-body.js, and that is
+     not only tidiness: tests/r168 #8 budgets the app SHELL (index.html + src/main.js + src/vendor.js
+     + js/app-body.js + js/geo-engine.js) at 8,200 lines and the first cut of this feature put it at
+     8,232. ⚠ The rule that test states is that THE CEILING FOLLOWS THE FLOOR DOWN, never the other
+     way, so the answer to a shell over its budget is to move a feature out of the shell — which is
+     standing rule 13's direction anyway — and never to raise the number.
+     `ops` carries the four things only app-body's closure has: setMode, renderUI, saveSettings, and
+     read/write access to the live `currentMode`.
+     ⚠ THE ATLAS PANEL OPTS OUT — it already has a sidebar home (`atl-tab`, #R112/#R130), so docking
+     it would put a tab inside a tab. */
+  function wireDock(ops){
+    ops=ops||{};
+    const applyDockMode=()=>{
+      const on=(window.imDockPanels==='on');
+      try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.dataset.nodock='1'; }catch(_){}
+      let n=0; try{ n=setDocked(on); }catch(_){}
+      try{ const b=document.getElementById('btn-docked'); if(b) b.style.display=on?'':'none'; }catch(_){}
+      /* ⚠ the tab row is FIVE buttons wide now, and #R122's auto-fit only ran on load, on resize and
+         on a language change — so the first build shipped 「Companies」 clipped to 「Compani」, which
+         is visible in that build's screenshot. A tab appearing IS the row changing width. */
+      try{ window._fitTabFont&&window._fitTabFont(); }catch(_){}
+      /* switching it off with the dock tab open would leave a tab selected that no longer exists */
+      if(!on&&ops.mode&&ops.mode()==='docked'){ try{ ops.clearMode&&ops.clearMode();
+        document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); }catch(_){} }
+      try{ ops.renderUI&&ops.renderUI(); }catch(_){}
+      return n;
+    };
+    try{
+      const OS=window.IntMapOS;
+      OS.register('tab.docked', ()=>{ if(window.imDockPanels!=='on'){ window.imDockPanels='on'; applyDockMode(); }
+        ops.setMode&&ops.setMode('docked','btn-docked'); }, {label:'Docked panels tab', btn:'btn-docked', group:'tab'});
+      OS.register('view.dock.on',  ()=>{ window.imDockPanels='on';  applyDockMode(); try{ ops.saveSettings&&ops.saveSettings(); }catch(_){} }, {label:'Collect panels in the sidebar', group:'view'});
+      OS.register('view.dock.off', ()=>{ window.imDockPanels='off'; applyDockMode(); try{ ops.saveSettings&&ops.saveSettings(); }catch(_){} }, {label:'Put panels back on the map', group:'view'});
+      const b=document.getElementById('btn-docked');
+      if(b) b.addEventListener('click',()=>OS.exec('tab.docked',{source:'ui'}));
+    }catch(_){}
+    return applyDockMode;
+  }
+  return { addEdgeResize, bringToFront, makeDraggable, registerWindow,
+           setDocked, isDocked, dockedCount, dockRefresh, wireDock };
 };

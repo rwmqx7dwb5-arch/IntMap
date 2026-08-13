@@ -586,29 +586,52 @@ export function makeThemeSky(HOST, CTX) {
      the DISC, which is what maplibre's own pass had been drawing all along (measured: at 16 px inside
      the edge, 88,166,186 with maplibre against 33,103,118 with #R227's ring alone).
 
-     ⚠⚠ AND #R187's AND #R205's NUMBERS DO NOT CARRY OVER, WHICH IS WHY THIS WAS SWEPT AGAIN. 0.55 /
-     0.80 / 0.15 are strengths for maplibre's `atmosphere-blend`, which is an ADDITIVE term with its
-     own five-step integral — not for a composite that multiplies what is behind it by a per-channel
-     transmittance. The first build of this round reused them, and the screenshot is #R187's own
-     complaint back again: at 0.80 the globe went milky, Africa's reds turned pink and the ocean lost
-     its depth. Swept at 0.10 / 0.20 / 0.35 and screenshotted at z1.4 over the Atlantic:
+     ⚠⚠ AND #R187's AND #R205's NUMBERS DO NOT CARRY OVER. 0.55 / 0.80 / 0.15 are strengths for
+     maplibre's `atmosphere-blend`, which is an ADDITIVE term with its own five-step integral — not
+     for a composite that multiplies what is behind it by a per-channel transmittance.
 
-       0.35   a visible halo, but the reds have started to wash toward pink
-       0.20   the halo is there, the limb is soft, and the imagery keeps its own contrast   ← shipped
-       0.10   barely separable from no air at all
+     ══ ⚠⚠⚠ (#R238) …AND 0.20 WAS STILL A QUARTER OF WHAT HAD BEEN THERE. MEASURED. ═══════════════
+     「いやだからなんで前まであった大気が消えとんねんって言ってんねん」 — the third round on this
+     line, and #R237's answer (this constant, at 0.20) was swept BY EYE against screenshots of
+     itself. It was never measured against the thing it was restoring. Done properly this round:
+     one page load, one camera (globe, z1.2, sub-solar longitude centred, satellite), the SAME
+     tiles and the same overlays throughout, mean colour over three concentric rings of the disc at
+     0.30 R / 0.75 R / 0.97 R, read inside the `render` event. Luminance, 0.2126R+0.7152G+0.0722B:
 
-     ⚠ ONE NUMBER FOR ALL THREE BASEMAPS, and that is a PROPERTY OF THE COMPOSITE rather than a
+         disc strength        0.30 R    0.75 R    0.97 R    rim ÷ inner
+         maplibre's own        137.1     138.7     151.2      1.103      ← 「前まであった大気」
+         0.20  (#R237)         103.9     101.2     112.5      1.083      ← the report
+         0.40                  113.5     114.2     131.0      1.154
+         0.60                  121.0     124.4     144.6      1.195
+         0.80                  127.6     132.8     155.5      1.219
+         1.00                  133.4     140.1     164.2      1.231      ← shipped
+
+     0.20 leaves the globe 25–27 % DARKER than it was before #R227 on every ring, and — the part the
+     eye actually reads as air — it flattens the limb-ward gradient to 1.083, i.e. almost no
+     brightening toward the edge at all. That is what 「消えた」 names. Nothing about it is a matter
+     of taste: the picture at 0.20 has less light in it than the picture the reader is asking to
+     have back.
+
+     ⚠ SO THE CONSTANT IS GONE, RATHER THAN RETUNED. 1 is not "the value that measured best" — it is
+     `mix(bgL, bgL·T + L, 1)` = `bgL·T + L`, the composite itself, i.e. the air that is actually
+     there, drawn. There is no longer a number here for a later round to sweep, and the two ways this
+     could be wrong are both structural and both testable: the model (js/sky-model.js) and the march
+     (js/limb-layer.js). ⚠ tests/r238 pins the RELATION — that the rim is brighter than the inner
+     disc by more than maplibre's own pass managed — not the number.
+
+     ⚠ ONE ANSWER FOR ALL THREE BASEMAPS, and that is a PROPERTY OF THE COMPOSITE rather than a
      shortcut. #R187 and #R205 needed three because an additive term clips over a bright surface —
      Positron measures mean luminance 243, so anything added to it lands on white. Here a bright
      background inverts to a LARGE radiance, which is the flat top of the tone map, so the same
-     in-scatter moves it by almost nothing. The clipping the two rounds were tuning against is
-     structural now, not a constant.
+     in-scatter moves it by almost nothing. Measured this round on all three (see #R238 in
+     DEV-NOTES): the light basemap moves least of the three, which is the opposite of the direction
+     #R205's report feared. The clipping those rounds were tuning against is structural now.
 
      ⚠ AND THERE IS NO ZOOM TAPER. The old ramps fell to 0 by z15 because maplibre's pass covers the
      whole screen and had to get out of the way of a street. This term is bounded by the PLANET — it
      stops at the ground — and by `globeness`, which reaches 0 while the globe is still a globe.
-     Re-applying a zoom taper would put back a softer version of the cliff this round removed. */
-  function _discStrength(){ return 0.20; }
+     Re-applying a zoom taper would put back a softer version of the cliff #R237 removed. */
+  function _discStrength(){ return 1; }
   function _limbOwnsRim(){
     try{
       if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
