@@ -2408,5 +2408,6 @@ window.IntMapLang.define('zh', {
   "If one is already placed, tapping moves it.": "若已放置，點按即可移動。",
   "Observation points": "觀測地點",
   "Each point is added to the table below.": "每個地點都會加入下方表格。",
+  "A wavefront from a finite rupture is still a circle about the hypocenter whenever the rupture runs slower than the wave — the first arrival always comes from the point where the break started — so the shape you drew appears as the RUPTURE FRONT running across it (the filled area and its bright edge), not as a dent in the rings. What does bend the rings is the crust they cross: the body-wave travel time is corrected over its crustal share and the surface-wave group velocity is integrated along each great circle, so an oceanic path runs ahead of a continental one.": "只要破裂的傳播速度慢於波速，有限震源的初動波面仍是以震央為中心的圓——最早抵達的永遠是破裂起點發出的波。因此您所畫的形狀會以「破裂前緣」的方式出現（填色區域與其明亮的邊緣），而不是讓波環凹陷。真正讓波環變形的是它們所穿越的地殼：實體波的走時會依其地殼路徑比例修正，表面波的群速度則沿各大圓路徑積分，因此海洋路徑會領先大陸路徑。",
   }
 });
