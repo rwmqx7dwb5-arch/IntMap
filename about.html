@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<title>IntMap — Explore the world across place, data, and time</title>
+<meta name="description" content="IntMap is a free browser map that puts world news, weather, terrain, satellites, history and more than a hundred data layers on one Earth — and lets you ask it questions in plain language.">
+
+<!-- ══ WHY THE ENGLISH COPY IS IN THE MARKUP AND THE TRANSLATION IS NOT ═══════════════════════
+     sources.html and science.html render their prose from js/locales/pages.<lang>.js, because they
+     are documents a reader arrives at with intent and every one of their sentences is equal.
+     A LANDING PAGE is not that. Its first job is to be found and its second is to be legible in
+     the first 400 ms, and both are lost if the words only exist after a script runs: a crawler
+     that does not execute JavaScript indexes an empty <body>, and a phone on a slow link paints
+     an empty page and then re-lays it out.
+
+     So English — the default language — IS the markup, and js/about.js swaps [data-i] nodes into
+     another language when one is asked for. English costs zero JavaScript; every other language
+     costs one small file. Adding one is: copy js/locales/about.ja.js, translate, add its row to
+     LANGS in js/about.js. Nothing in this file changes. -->
+
+<link rel="canonical" href="https://rwmqx7dwb5-arch.github.io/IntMap/about.html">
+<link rel="alternate" hreflang="en" href="https://rwmqx7dwb5-arch.github.io/IntMap/about.html">
+<link rel="alternate" hreflang="ja" href="https://rwmqx7dwb5-arch.github.io/IntMap/about.html?lang=ja">
+<link rel="alternate" hreflang="x-default" href="https://rwmqx7dwb5-arch.github.io/IntMap/about.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="IntMap">
+<meta property="og:title" content="IntMap — Explore the world across place, data, and time">
+<meta property="og:description" content="A free browser map that puts world news, weather, terrain, satellites, history and 100+ data layers on one Earth — and answers in plain language.">
+<meta property="og:url" content="https://rwmqx7dwb5-arch.github.io/IntMap/about.html">
+<meta property="og:image" content="https://rwmqx7dwb5-arch.github.io/IntMap/about/og-home.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The IntMap globe with climate, day-and-night shading and submarine cables on it.">
+<meta property="og:locale" content="en">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="IntMap — Explore the world across place, data, and time">
+<meta name="twitter:description" content="A free browser map that puts world news, weather, terrain, satellites, history and 100+ data layers on one Earth.">
+<meta name="twitter:image" content="https://rwmqx7dwb5-arch.github.io/IntMap/about/og-home.jpg">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+<link rel="icon" href="./IntMap.Icon.png">
+<link rel="apple-touch-icon" href="./IntMap.Icon.png">
+<link rel="stylesheet" href="./css/about.css">
+<!-- The one image above the fold — it is the page's Largest Contentful Paint, so it is asked for
+     in the <head> rather than discovered when the parser reaches the <img> six hundred lines down.
+     The other two frames of the hero rotation are promoted from data-src after the load event.
+     ⚠ AND THE PRELOAD IS MEDIA-SCOPED, BECAUSE OTHERWISE IT DEFEATS THE <picture> BELOW IT. Without
+     these `media` attributes a phone fetched the 127 KB desktop capture from here AND the 57 KB
+     phone capture the <source> chose — measured 232 KB on the phone critical path against 162 KB
+     with them. A preload that is not scoped the same way the <picture> is scoped is not a
+     preload, it is a second download. -->
+<link rel="preload" as="image" href="./about/hero-1.webp" fetchpriority="high" media="(min-width: 701px)">
+<link rel="preload" as="image" href="./about/m-hero-1.webp" fetchpriority="high" media="(max-width: 700px)">
+
+<!-- The theme is decided BEFORE first paint, from the same setting the app writes (see the header
+     of css/about.css). Doing it in a <script> in <head> is what stops a reader who chose Light in
+     IntMap on a dark-mode OS from getting a black flash on the way here. -->
+<script>
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('intmap_settings') || '{}');
+      if (s && (s.theme === 'light' || s.theme === 'dark')) document.documentElement.setAttribute('data-theme', s.theme);
+    } catch (e) {}
+    document.documentElement.className += ' hp-js';   /* reveal animations may hide things only now */
+  })();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "IntMap",
+  "applicationCategory": "https://schema.org/BrowserApplication",
+  "operatingSystem": "Any modern web browser",
+  "url": "https://rwmqx7dwb5-arch.github.io/IntMap/",
+  "description": "A browser-based geospatial platform that brings geography, climate, infrastructure, history, statistics, current events and interactive tools together on one map.",
+  "inLanguage": ["en", "ja", "de", "ru", "es", "zh-Hant", "zh-Hans", "fr", "ko"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "Over a hundred combinable geographic and statistical map layers",
+    "World news placed at the location of the reported event",
+    "Live weather, precipitation radar and official disaster warnings",
+    "Earthquakes, volcanoes, tectonic plates and thermal anomalies",
+    "Real elevation, 3-D terrain, contours and bathymetry",
+    "Live aircraft, ships and satellites",
+    "A Time Machine covering 1900 to the present",
+    "Country profiles, rankings, comparison, correlation and regression",
+    "Atlas, a natural-language interface to the whole application"
+  ]
+}
+</script>
+</head>
+
+<body>
+
+<a class="hp-skip" href="#main" data-i="skip">Skip to content</a>
+
+<!-- Shown only when js/about.js finds an existing IntMap session in this browser (see its note on
+     why a returning visitor is offered the map rather than redirected into it). -->
+<div class="hp-welcome" id="hp-welcome" role="status">
+  <span data-i="welcomeBack">You are already signed in to IntMap.</span>
+  <a href="./index.html" data-i="welcomeGo">Continue to the map →</a>
+</div>
+
+<header class="hp-nav" id="hp-nav">
+  <div class="hp-nav-in">
+    <a class="hp-brand" href="./about.html">
+      <img src="./about/mark.webp" alt="" width="26" height="26" decoding="async">
+      <span>IntMap</span>
+    </a>
+    <nav class="hp-navlinks" aria-label="Sections">
+      <a href="#what" data-i="navWhat">What it is</a>
+      <a href="#features" data-i="navFeatures">Features</a>
+      <a href="#atlas" data-i="navAtlas">Atlas</a>
+      <a href="#space" data-i="navSpace">Beyond the map</a>
+      <a href="#science" data-i="navScience">Method</a>
+    </nav>
+    <div class="hp-nav-right">
+      <span class="hp-lang" id="hp-lang"></span>
+      <a class="hp-btn hp-btn-primary hp-btn-sm" href="./index.html" id="hp-nav-cta" data-i="ctaOpen">Open IntMap</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ══ HERO ══════════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-hero">
+  <div class="hp-hero-grid" aria-hidden="true"></div>
+  <div class="hp-wrap hp-hero-in">
+    <h1 data-i="heroH1">Explore the world across place, data, and time.</h1>
+    <p class="hp-lede" data-i="heroSub">
+      IntMap is a free browser map that brings world news, weather, terrain, satellites, history and
+      more than a hundred data layers onto one Earth — and lets you ask it questions in plain language.
+    </p>
+    <div class="hp-cta">
+      <a class="hp-btn hp-btn-primary hp-btn-lg" href="./index.html" id="hp-hero-cta">
+        <span data-i="ctaOpen">Open IntMap</span> <span class="hp-arw" aria-hidden="true">→</span>
+      </a>
+      <a class="hp-btn hp-btn-ghost hp-btn-lg" href="#what" data-i="ctaSee">See what it does</a>
+    </div>
+    <p class="hp-hero-note">
+      <span data-i="badgeFree">Free to use</span>
+      <span data-i="badgeAds">No ads</span>
+      <span data-i="badgeInstall">No installation</span>
+      <span data-i="badgeAccount">No account for most features</span>
+    </p>
+  </div>
+
+  <div class="hp-stage hp-wrap">
+    <div class="hp-shot" id="hp-shot">
+      <!-- ⚠ A PHONE GETS THE PHONE SCREENSHOT. 「単なるデスクトップ版の縮小は禁止」 applies to what
+           the page SHOWS as much as to how it is laid out: a 1600-px-wide desktop capture scaled
+           into a 350-px column is a grey smear that proves nothing, and it makes IntMap look like a
+           desktop product. Each frame therefore has a real capture of IntMap on a 390 × 844 phone,
+           and the frame itself becomes a phone-shaped plate below 700 px (see css/about.css). The
+           <source> also means the phone never downloads the 1600-px file. -->
+      <div class="hp-shot-frames" id="hp-frames">
+        <picture>
+          <source media="(max-width:700px)" srcset="./about/m-hero-1.webp" width="430" height="930">
+          <img src="./about/hero-1.webp" width="1600" height="1000" fetchpriority="high" decoding="async"
+               alt="IntMap showing the Earth as a globe with satellite imagery, climate zones and submarine cables."
+               data-i-alt="shotAlt1">
+        </picture>
+        <!-- ⚠ FRAMES 2 AND 3 CARRY `data-src`, NOT `src`, AND THAT IS A MEASUREMENT NOT A STYLE.
+             They are `loading="lazy"`, but lazy only defers images BELOW the fold and these sit in
+             the hero — so Chrome fetched all three at once and the first view cost 649 KB before
+             the visitor had scrolled a pixel, 367 KB of it for two pictures that are not shown for
+             another 5.6 seconds. js/about.js promotes them after the load event, so the rotation
+             still works and nothing competes with the LCP image for the first connection.
+             Frame 1 keeps a real `src`: without JavaScript it is the hero, and these two are its
+             alternates. -->
+        <picture>
+          <source media="(max-width:700px)" data-srcset="./about/m-hero-2.webp" width="430" height="930">
+          <img data-src="./about/hero-2.webp" width="1600" height="1000" loading="lazy" decoding="async"
+               alt="IntMap tilted into 3-D terrain over the Everest massif, with satellite imagery draped on measured elevation and the peaks labelled."
+               data-i-alt="shotAlt2">
+        </picture>
+        <picture>
+          <source media="(max-width:700px)" data-srcset="./about/m-hero-3.webp" width="430" height="930">
+          <img data-src="./about/hero-3.webp" width="1600" height="1000" loading="lazy" decoding="async"
+               alt="IntMap showing animated wind and pressure isobars over Europe."
+               data-i-alt="shotAlt3">
+        </picture>
+      </div>
+    </div>
+    <div class="hp-shot-dots" id="hp-dots" role="tablist" aria-label="Screenshot"></div>
+  </div>
+
+  <a class="hp-scroll-cue" href="#what" aria-label="Scroll to content"></a>
+</section>
+
+<!-- ══ PROOF ═════════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec-tight hp-proof">
+  <div class="hp-wrap">
+    <div class="hp-proof-grid">
+      <div class="hp-rv">
+        <div class="hp-proof-n">100+</div>
+        <div class="hp-proof-t" data-i="proof1">map layers that combine, not replace each other</div>
+      </div>
+      <div class="hp-rv hp-rv-d1">
+        <div class="hp-proof-n">1900 →</div>
+        <div class="hp-proof-t" data-i="proof2">borders, economies and climate, year by year</div>
+      </div>
+      <div class="hp-rv hp-rv-d2">
+        <div class="hp-proof-n">9</div>
+        <div class="hp-proof-t" data-i="proof3">interface languages, place labels included</div>
+      </div>
+      <div class="hp-rv hp-rv-d3">
+        <div class="hp-proof-n">0</div>
+        <div class="hp-proof-t" data-i="proof4">ads, installs, and things to configure first</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHAT IT IS ════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec" id="what">
+  <div class="hp-wrap">
+    <div class="hp-head hp-head-c hp-rv">
+      <p class="hp-eyebrow" data-i="whatEyebrow">One map, three axes</p>
+      <h2 data-i="whatH2">Most tools show you one thing at a time.</h2>
+      <p class="hp-lede" data-i="whatSub">
+        A weather site, an atlas, a news map, a statistics portal — each answers its own question and
+        forgets the others. IntMap puts them on the same Earth, so a question that crosses two of them
+        does not have to cross two websites.
+      </p>
+    </div>
+
+    <div class="hp-axes">
+      <div class="hp-axis hp-rv">
+        <div class="hp-axis-k" data-i="axis1K">Place</div>
+        <h3 data-i="axis1H">From a street to the whole planet</h3>
+        <p data-i="axis1P">
+          Flat map, globe, satellite imagery and real 3-D terrain, in one continuous zoom. Tilt into a
+          mountain range and the relief is the measured elevation, not a picture of one.
+        </p>
+      </div>
+      <div class="hp-axis hp-rv hp-rv-d1">
+        <div class="hp-axis-k" data-i="axis2K">Data</div>
+        <h3 data-i="axis2H">Layers that stack</h3>
+        <p data-i="axis2P">
+          Climate, population, energy, trade, railways, cables, hazards, satellites. Put population
+          density over terrain, or a live storm over the infrastructure beneath it — the layers combine
+          instead of replacing one another.
+        </p>
+      </div>
+      <div class="hp-axis hp-rv hp-rv-d2">
+        <div class="hp-axis-k" data-i="axis3K">Time</div>
+        <h3 data-i="axis3H">1900 to right now</h3>
+        <p data-i="axis3P">
+          Move the year and the map moves with it: borders, historical states, population and GDP,
+          bilateral trade, alliance membership and climate periods all follow the same clock.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FEATURES ══════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-alt" id="features">
+  <div class="hp-wrap">
+    <div class="hp-head hp-rv">
+      <p class="hp-eyebrow" data-i="featEyebrow">What you can do</p>
+      <h2 data-i="featH2">Nine ways into the same world.</h2>
+      <p class="hp-lede" data-i="featSub">
+        Every picture below is a screenshot of IntMap running — nothing here is a mock-up.
+      </p>
+    </div>
+
+    <article class="hp-feat hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">01</div>
+        <h3 data-i="f1H">World news, on the spot where it happened</h3>
+        <p data-i="f1P">
+          Recent headlines are placed at the location of the event rather than the newsroom — and you
+          can switch to the newsroom when that is the question. Search it, save articles, read across
+          languages, and see the geography and infrastructure around a story instead of beside it.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f1T1">Subject or publisher</li>
+          <li data-i="f1T2">Multiple news languages</li>
+          <li data-i="f1T3">Saved articles</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-news.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap's News panel beside a world map with headline pins placed at the locations of the events."
+               data-i-alt="f1Alt">
+          <div class="hp-plate-cap" data-i="f1Cap">News, placed by subject location</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-feat-flip hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">02</div>
+        <h3 data-i="f2H">Weather you can watch, and warnings that were actually issued</h3>
+        <p data-i="f2P">
+          Animated wind, precipitation radar, ECMWF temperature, pressure, dew point and instability —
+          and, separately, the warnings an agency really published, drawn for the unit it published
+          them for rather than smeared over a country.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f2T1">Live radar</li>
+          <li data-i="f2T2">ECMWF fields</li>
+          <li data-i="f2T3">Official warnings</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-weather.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap showing live precipitation radar and animated wind over Japan."
+               data-i-alt="f2Alt">
+          <div class="hp-plate-cap" data-i="f2Cap">Live radar and animated wind</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">03</div>
+        <h3 data-i="f3H">The restless Earth</h3>
+        <p data-i="f3P">
+          Earthquakes, volcanoes, tectonic plates, fires and thermal anomalies — over the terrain that
+          produces them. Open an earthquake and IntMap will show you what it computed and from which
+          published source parameters.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f3T1">Earthquakes</li>
+          <li data-i="f3T2">1,215 Holocene volcanoes</li>
+          <li data-i="f3T3">Plate boundaries</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-hazard.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap showing earthquakes, volcanoes and tectonic plate boundaries around Japan."
+               data-i-alt="f3Alt">
+          <div class="hp-plate-cap" data-i="f3Cap">Earthquakes, volcanoes and plate boundaries</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-feat-flip hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">04</div>
+        <h3 data-i="f4H">Where people are</h3>
+        <p data-i="f4P">
+          Population at one-kilometre resolution, GDP per capita, fertility, life expectancy, HDI and
+          more — as a surface over the land, not a colour per country. Put it under a railway network
+          or over terrain and the shape of a region explains itself.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f4T1">1 km population grid</li>
+          <li data-i="f4T2">Economic indicators</li>
+          <li data-i="f4T3">Land cover and ecoregions</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-population.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap showing a one-kilometre population density grid across Southeast Asia."
+               data-i-alt="f4Alt">
+          <div class="hp-plate-cap" data-i="f4Cap">Population density, 1 km grid</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">05</div>
+        <h3 data-i="f5H">Everything that is moving right now</h3>
+        <p data-i="f5P">
+          Aircraft with their full ADS-B readout and a photograph of that airframe, optional ship
+          traffic, live satellites overhead, and ocean surface currents drawn as arrows sized by
+          measured speed rather than by assumption.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f5T1">Live aircraft</li>
+          <li data-i="f5T2">Satellites</li>
+          <li data-i="f5T3">Ocean currents</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-satellites.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap's globe with live satellite positions plotted above the Earth."
+               data-i-alt="f5Alt">
+          <div class="hp-plate-cap" data-i="f5Cap">Live satellites over the globe</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-feat-flip hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">06</div>
+        <h3 data-i="f6H">Real terrain, in three dimensions</h3>
+        <p data-i="f6P">
+          Tilt into measured elevation, with contour lines, hillshade and bathymetry. It is the same
+          terrain the rest of IntMap uses, which is why a horizon computed from it hides exactly the
+          stars a mountain really hides.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f6T1">3-D terrain</li>
+          <li data-i="f6T2">Contours and hillshade</li>
+          <li data-i="f6T3">Bathymetry</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-terrain.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap tilted into 3-D terrain over the Everest massif, with the peaks labelled."
+               data-i-alt="f6Alt">
+          <div class="hp-plate-cap" data-i="f6Cap">3-D terrain over the Everest massif</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">07</div>
+        <h3 data-i="f7H">The Time Machine</h3>
+        <p data-i="f7P">
+          Move the year and the world moves. Countries and political borders, historical states,
+          population and GDP, bilateral trade from 1995, NATO and EU membership, and the climate of the
+          period you are standing in.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f7T1">Historical borders</li>
+          <li data-i="f7T2">Trade 1995–2024</li>
+          <li data-i="f7T3">Climate periods</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-time.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap's Time Machine showing Europe with the borders of an earlier year."
+               data-i-alt="f7Alt">
+          <div class="hp-plate-cap" data-i="f7Cap">Europe, at an earlier point on the same map</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-feat-flip hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">08</div>
+        <h3 data-i="f8H">Countries, compared properly</h3>
+        <p data-i="f8P">
+          Profiles, global rankings, numeric filters, historical time series, multi-country comparison,
+          charts and tables, CSV export — and, when a comparison deserves it, Pearson and Spearman
+          correlation with regression and residual maps.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f8T1">Rankings and filters</li>
+          <li data-i="f8T2">Correlation and regression</li>
+          <li data-i="f8T3">CSV export</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-countries.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap's Countries panel showing a global ranking beside the map."
+               data-i-alt="f8Alt">
+          <div class="hp-plate-cap" data-i="f8Cap">Global rankings, beside the map they describe</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="hp-feat hp-rv">
+      <div class="hp-feat-txt">
+        <div class="hp-feat-n">09</div>
+        <h3 data-i="f9H">A hundred layers you can actually find</h3>
+        <p data-i="f9P">
+          The layer panel has search, visual previews of what each layer looks like, favourites, and an
+          active-layer list that always agrees with the map. Everything you switch on goes into the
+          link — share it and the other person opens your exact view.
+        </p>
+        <ul class="hp-feat-tags">
+          <li data-i="f9T1">Layer search and previews</li>
+          <li data-i="f9T2">Favourites</li>
+          <li data-i="f9T3">Shareable views</li>
+        </ul>
+      </div>
+      <div class="hp-feat-img">
+        <div class="hp-plate">
+          <img src="./about/f-layers.webp" width="1280" height="800" loading="lazy" decoding="async"
+               alt="IntMap's layer panel open, showing grouped layers with visual previews."
+               data-i-alt="f9Alt">
+          <div class="hp-plate-cap" data-i="f9Cap">The layer panel, with a preview of every layer</div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ══ AND MORE ══════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec">
+  <div class="hp-wrap">
+    <div class="hp-head hp-rv">
+      <h2 data-i="moreH2">And a good deal more.</h2>
+      <p class="hp-lede" data-i="moreSub">
+        IntMap keeps growing sideways. A few of the things that did not need their own section:
+      </p>
+    </div>
+    <div class="hp-more">
+      <div class="hp-rv"><b data-i="m1H">Trade, partner by partner</b><span data-i="m1P">Follow a country's goods trade by commodity and by year.</span></div>
+      <div class="hp-rv hp-rv-d1"><b data-i="m2H">Energy as a mix</b><span data-i="m2P">Electricity and primary energy read as a composition, not one colour.</span></div>
+      <div class="hp-rv hp-rv-d2"><b data-i="m3H">Tides and coastal reach</b><span data-i="m3P">High and low water anywhere on a coast, over real terrain.</span></div>
+      <div class="hp-rv hp-rv-d3"><b data-i="m4H">Cables and grids</b><span data-i="m4P">Submarine cables, pipelines, railways by gauge, ports and airports.</span></div>
+      <div class="hp-rv"><b data-i="m5H">Measure and draw</b><span data-i="m5P">Distances, areas, regions, elevation profiles and inspection tools.</span></div>
+      <div class="hp-rv hp-rv-d1"><b data-i="m6H">Window Workspace</b><span data-i="m6P">On desktop, turn the panels into movable, resizable windows.</span></div>
+      <div class="hp-rv hp-rv-d2"><b data-i="m7H">Flight Simulator</b><span data-i="m7P">Fly the same globe — or take off from a real aircraft's position.</span></div>
+      <div class="hp-rv hp-rv-d3"><b data-i="m8H">World Explorer &amp; Quiz</b><span data-i="m8P">Guess where you are from satellite imagery, or test your geography.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ATLAS ═════════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-alt hp-atlas" id="atlas">
+  <div class="hp-wrap">
+    <div class="hp-head hp-head-c hp-rv">
+      <p class="hp-eyebrow" data-i="atlasEyebrow">Atlas</p>
+      <h2><span class="hp-grad-text" data-i="atlasH2">Describe it. The map does it.</span></h2>
+      <p class="hp-lede" data-i="atlasSub">
+        A hundred layers is a lot of menu. Atlas is IntMap's built-in assistant: say what you want to
+        look at and it moves the camera, switches layers on, selects countries, changes the year and
+        opens the tool you would have gone looking for.
+      </p>
+    </div>
+
+    <div class="hp-atlas-demo hp-rv" aria-hidden="true">
+      <div class="hp-atlas-bar"><i></i><span data-i="atlasBar">Atlas</span></div>
+      <p class="hp-atlas-line"><span id="hp-type"></span><span class="hp-caret"></span></p>
+    </div>
+    <!-- ⚠ THE DAILY FIGURE IS THE APP'S, NOT THE README'S. README.md still says "30 uses per day";
+         the app's own limit is HOST.AI_FREE_DAILY, which tests/r147-checks.test.mjs pins at 10 — and
+         that suite failed this page for saying 30, which is exactly what it is there for. If the
+         limit ever moves, that test moves with it and this sentence has to follow. -->
+    <p class="hp-atlas-foot hp-rv" style="max-width:660px;margin:14px auto 0;text-align:center" data-i="atlasNote">
+      Atlas is free once you sign in, up to ten requests a day. It does not yet operate every feature
+      reliably, and complex multi-step requests can fail — so anything that matters is worth checking
+      against its source.
+    </p>
+
+    <div class="hp-stage" style="margin-top:clamp(34px,4vw,54px)">
+      <div class="hp-plate hp-rv" style="max-width:960px;margin:0 auto">
+        <img src="./about/f-atlas.webp" width="1280" height="800" loading="lazy" decoding="async"
+             alt="IntMap's Atlas panel open beside the map, with a natural-language request and the map responding."
+             data-i-alt="atlasAlt">
+        <div class="hp-plate-cap" data-i="atlasCap">Atlas, working the map for you</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BEYOND THE MAP ════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-space" id="space">
+  <div class="hp-stars" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="hp-wrap">
+    <div class="hp-head hp-head-c hp-rv" style="margin-bottom:0">
+      <p class="hp-eyebrow" data-i="spaceEyebrow">Beyond the map</p>
+      <h2 data-i="spaceH2">Keep zooming out. It does not stop at the edge of the world.</h2>
+      <p class="hp-lede" data-i="spaceSub">
+        There is no button. The same gesture that was zooming the map carries the Earth you were
+        looking at out into the solar system — the same size, the same face, the same instant — and
+        brings it back the same way.
+      </p>
+    </div>
+    <div class="hp-space-facts">
+      <div class="hp-rv">
+        <b data-i="sp1H">Positions, not decorations</b>
+        <span data-i="sp1P">The Sun, the eight planets, Pluto and the Moon are placed from published orbital elements, and 177 moons are each propagated in the reference plane their own elements declare.</span>
+      </div>
+      <div class="hp-rv hp-rv-d1">
+        <b data-i="sp2H">Stars at their real distances</b>
+        <span data-i="sp2P">Placed from Hipparcos parallaxes, so pulling far enough away actually changes the constellations. Where a parallax is unusable, the star is reported as a lower bound rather than invented.</span>
+      </div>
+      <div class="hp-rv hp-rv-d2">
+        <b data-i="sp3H">The sky from a real place</b>
+        <span data-i="sp3P">Right-click anywhere for the view from that spot at any date and time, with the horizon computed from the terrain — so mountains hide the stars they actually hide.</span>
+      </div>
+    </div>
+
+    <div class="hp-plate hp-rv" style="max-width:900px;margin:clamp(36px,5vw,56px) auto 0">
+      <img src="./about/f-space.webp" width="1280" height="800" loading="lazy" decoding="async"
+           alt="IntMap after zooming out past the Earth, showing the planet in its place in the solar system."
+           data-i-alt="spaceAlt">
+      <div class="hp-plate-cap" data-i="spaceCap">The same session, a few zoom-outs later</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ METHOD / TRANSPARENCY ═════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec" id="science">
+  <div class="hp-wrap">
+    <div class="hp-head hp-rv">
+      <p class="hp-eyebrow" data-i="sciEyebrow">Method</p>
+      <h2 data-i="sciH2">A map is only as good as what it admits.</h2>
+      <p class="hp-lede" data-i="sciSub">
+        IntMap will tell you what every simulation computes, by which equations and under which
+        assumptions — and where every number came from, under whose licence, and what fetching it means
+        for your privacy. Both are ordinary pages you can read right now, without opening the app.
+      </p>
+    </div>
+    <div class="hp-two">
+      <a class="hp-card hp-rv" href="./science.html">
+        <h3 data-i="sci1H">Science &amp; logic</h3>
+        <p data-i="sci1P">Which data each feature uses, the equations it puts them through, and the limits of the answer it gives back.</p>
+        <span class="hp-card-go" data-i="sci1Go">Read the method <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="hp-card hp-rv hp-rv-d1" href="./sources.html">
+        <h3 data-i="sci2H">Data sources</h3>
+        <p data-i="sci2P">Every organisation whose data IntMap shows, where it is used, how it is fetched, its licence, and what that means for you.</p>
+        <span class="hp-card-go" data-i="sci2Go">See the sources <span aria-hidden="true">→</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DEVICES ═══════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec hp-sec-alt">
+  <div class="hp-wrap">
+    <div class="hp-head hp-head-c hp-rv">
+      <h2 data-i="devH2">Built for the screen you have.</h2>
+      <p class="hp-lede" data-i="devSub">
+        The phone interface is its own design, not a shrunken desktop: iOS-style sheets, one-tap layer
+        rows, and controls placed so the map stays visible. Complex tools and the experimental modes
+        are better on a large screen, and say so.
+      </p>
+    </div>
+    <div class="hp-devices hp-rv">
+      <div class="hp-dev hp-dev-desktop">
+        <img src="./about/hero-1.webp" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="IntMap on a desktop browser." data-i-alt="devAlt1">
+        <div class="hp-dev-lab" data-i="devLab1">Desktop</div>
+      </div>
+      <div class="hp-dev hp-dev-tablet">
+        <img src="./about/d-tablet.webp" width="620" height="826" loading="lazy" decoding="async"
+             alt="IntMap on a tablet." data-i-alt="devAlt2">
+        <div class="hp-dev-lab" data-i="devLab2">Tablet</div>
+      </div>
+      <div class="hp-dev hp-dev-phone">
+        <img src="./about/d-phone.webp" width="430" height="930" loading="lazy" decoding="async"
+             alt="IntMap on a phone." data-i-alt="devAlt3">
+        <div class="hp-dev-lab" data-i="devLab3">Phone</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ WHO IT IS FOR ═════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec">
+  <div class="hp-wrap">
+    <div class="hp-head hp-rv">
+      <h2 data-i="whoH2">Who ends up using it.</h2>
+    </div>
+    <div class="hp-who">
+      <div class="hp-rv"><b data-i="who1H">People who like geography</b><span data-i="who1P">The reason it exists. Follow whatever you are curious about, wherever it goes.</span></div>
+      <div class="hp-rv hp-rv-d1"><b data-i="who2H">News and international affairs</b><span data-i="who2P">See an event with the terrain, borders, infrastructure and history around it.</span></div>
+      <div class="hp-rv hp-rv-d2"><b data-i="who3H">Disaster preparedness</b><span data-i="who3P">Warnings as issued, live weather, seismicity, tides and reachable-area tools.</span></div>
+      <div class="hp-rv hp-rv-d3"><b data-i="who4H">OSINT and research</b><span data-i="who4P">Open data, stated sources, exportable numbers and a link that reproduces a view.</span></div>
+      <div class="hp-rv"><b data-i="who5H">Government and media</b><span data-i="who5P">A fast way to get a defensible picture of somewhere, with the method written down.</span></div>
+      <div class="hp-rv hp-rv-d1"><b data-i="who6H">Teaching and study</b><span data-i="who6P">Free, no install, and licensed for personal, educational and non-commercial research use.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FINAL CTA ═════════════════════════════════════════════════════════════════════════════ -->
+<section class="hp-sec hp-final">
+  <div class="hp-wrap hp-narrow">
+    <h2 class="hp-rv" data-i="endH2">The fastest way to understand it is to open it.</h2>
+    <p class="hp-lede hp-rv hp-rv-d1" style="margin-top:20px" data-i="endSub">
+      No account, no install, no setup. It opens on a map of the world and you take it from there.
+    </p>
+    <div class="hp-cta hp-rv hp-rv-d2">
+      <a class="hp-btn hp-btn-primary hp-btn-lg" href="./index.html" id="hp-end-cta">
+        <span data-i="ctaOpen">Open IntMap</span> <span class="hp-arw" aria-hidden="true">→</span>
+      </a>
+      <a class="hp-btn hp-btn-ghost hp-btn-lg" href="https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en" rel="noopener" data-i="ctaSupport">Support the project</a>
+    </div>
+    <p class="hp-final-note hp-rv hp-rv-d3" data-i="endNote">
+      IntMap is built and maintained by one university student, and stays free of advertising by
+      intention.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="hp-foot">
+  <div class="hp-wrap">
+    <div class="hp-foot-top">
+      <div class="hp-foot-brand">
+        <a class="hp-brand" href="./about.html">
+          <img src="./about/mark.webp" alt="" width="26" height="26" loading="lazy" decoding="async">
+          <span>IntMap</span>
+        </a>
+        <p data-i="footBlurb">Explore the world across place, data, and time. Free, ad-free, and running in your browser.</p>
+      </div>
+      <div>
+        <h4 data-i="footProduct">Product</h4>
+        <ul>
+          <li><a href="./index.html" data-i="ctaOpen">Open IntMap</a></li>
+          <li><a href="#features" data-i="navFeatures">Features</a></li>
+          <li><a href="#atlas" data-i="navAtlas">Atlas</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i="footTransparency">Transparency</h4>
+        <ul>
+          <li><a href="./science.html" data-i="sci1H">Science &amp; logic</a></li>
+          <li><a href="./sources.html" data-i="sci2H">Data sources</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i="footProject">Project</h4>
+        <ul>
+          <li><a href="https://github.com/rwmqx7dwb5-arch/IntMap" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/rwmqx7dwb5-arch/IntMap/issues" rel="noopener" data-i="footIssues">Report an issue</a></li>
+          <li><a href="https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en" rel="noopener" data-i="ctaSupport">Support the project</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="hp-foot-bot">
+      <p data-i="footStatus">
+        IntMap is under active development. Some datasets, news features, Atlas actions, live
+        integrations and experimental modes remain incomplete or unstable, and external services can
+        change or become unavailable without notice.
+      </p>
+      <p data-i="footDisclaimer">
+        Intended for exploration, general information and education — not for emergency response,
+        navigation, or any other safety-critical use. Historical borders and territorial
+        classifications are technical representations derived from external datasets and do not
+        express a political position.
+      </p>
+      <p data-i="footLicense">
+        Source code is publicly visible under the IntMap Personal &amp; Research Use License. Third-party
+        data, imagery and APIs remain governed by their own terms.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ⚠ THE LANGUAGE LIST, AHEAD OF THE PAGE MACHINE — the same arrangement sources.html and
+     science.html use, and for the same reason (see the note in either of them). This page only
+     ships English and Japanese today, but it takes its language CODES from the app's one registry
+     so that a language which exists in IntMap and has an about-locale file cannot be missing from
+     the picker here. -->
+<script src="./js/locales/_langs.js"></script>
+<script src="./js/lang-registry.js"></script>
+<script src="./js/about.js"></script>
+</body>
+</html>

@@ -176,8 +176,11 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
      index.html is not the only entry point this repo ships — sources.html and science.html are
      their own documents, and since #R218 they pull two js/ modules directly. Reading the pages
      rather than exempting two filenames keeps the question the same one: is this module dead code?
-     Delete the <script> tag and the module goes back to failing, here and in static-checks.mjs. */
-  for (const page of ['sources.html', 'science.html', 'admin.html']) {
+     Delete the <script> tag and the module goes back to failing, here and in static-checks.mjs.
+     …and about.html, the public homepage, is the fourth such document: it loads js/about.js the
+     same way. Same list as scripts/static-checks.mjs §8 — the two are the same question asked of
+     the same pages, and tests/r218-checks asserts the scan there still reads them. */
+  for (const page of ['sources.html', 'science.html', 'admin.html', 'about.html']) {
     const p = join(ROOT, page);
     if (!existsSync(p)) continue;
     for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);

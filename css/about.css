@@ -1,0 +1,643 @@
+/* ============================================================================
+ *  IntMap · about.html — the public homepage
+ * ----------------------------------------------------------------------------
+ *  「IntMapを初見の人に理解してもらう、IntMapを実際に開いてもらう、
+ *    プロダクトのすごさを伝える」
+ *
+ *  ══ WHY A THIRD STYLESHEET AND NOT A FOURTH COPY OF THE PALETTE ═════════════════════════════
+ *  css/intmap.css dresses an APPLICATION (panels, sheets, legends, a map underneath everything);
+ *  css/pages.css dresses two READING pages (one column of prose, 820 px, no imagery). A landing
+ *  page is neither: it is full-bleed, it is mostly pictures, and its job is the first ten seconds.
+ *  Borrowing either sheet would mean overriding most of it, which is how a fourth palette gets
+ *  invented by accident.
+ *
+ *  So this is its own sheet — but NOT its own palette. Every colour below is one of IntMap's:
+ *    · the app's own tokens          (--bg-color #f5f5f7/#000, --primary-color #007aff/#0a84ff,
+ *                                     --text-main, --text-muted, --card-bg) — css/intmap.css
+ *    · the Atlas gradient            linear-gradient(135deg, accent, #5e5ce6 56%, #bf5af2)
+ *                                     — the app's --atlas-grad, unchanged. It is IntMap's one
+ *                                     signature and it is used here for exactly the same thing
+ *                                     it means in the app: Atlas, and the primary action.
+ *  Nothing here invents a hue. A visitor who clicks "Open IntMap" must not feel they changed site.
+ *
+ *  ══ THE THEME IS THE OS'S, AND THEN THE APP'S ═══════════════════════════════════════════════
+ *  Same ladder css/pages.css uses, for the same reason: the default is `prefers-color-scheme`,
+ *  and an explicit choice the reader already made in IntMap (localStorage `intmap_settings.theme`)
+ *  wins over it in BOTH directions — so arriving from a map the reader set to dark does not flash
+ *  white, and arriving from a light one does not open black. js/about.js stamps `data-theme`.
+ *
+ *  ══ MOTION IS EXPENSIVE AND IS SPENT ON PURPOSE ═════════════════════════════════════════════
+ *  「装飾のために初期表示やスクロール性能を犠牲にしない」. Every animation in this file is a
+ *  `transform` or an `opacity` — the two properties a compositor can run without the main thread —
+ *  and NOTHING animates `top/left/width/height/box-shadow/filter` on scroll. The parallax and the
+ *  3-D tilt are driven by ONE rAF-batched scroll reader in js/about.js writing two custom
+ *  properties; they are switched off entirely below 900 px and on coarse pointers (see
+ *  `html:not(.hp-fx)`), because a phone should spend its frame budget on scrolling.
+ *  `prefers-reduced-motion` removes all of it and leaves every element in its final state.
+ * ==========================================================================*/
+
+/* ══ 1. TOKENS ═══════════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* light — the app's own light palette (css/intmap.css :root) */
+  --hp-bg:#f5f5f7;
+  --hp-bg-2:#ffffff;
+  --hp-surface:#ffffff;
+  --hp-surface-2:#fbfbfd;
+  --hp-ink:#1d1d1f;
+  --hp-ink-2:#3a3a3e;
+  --hp-mut:#6e6e73;
+  --hp-line:rgba(0,0,0,0.10);
+  --hp-line-soft:rgba(0,0,0,0.06);
+  --hp-accent:#007aff;
+  --hp-accent-ink:#ffffff;
+  --hp-accent-soft:rgba(0,122,255,0.09);
+  --hp-grad:linear-gradient(135deg,#007aff,#5e5ce6 56%,#bf5af2);
+  --hp-glass:rgba(255,255,255,0.72);
+  --hp-glass-line:rgba(0,0,0,0.08);
+  --hp-shadow-s:0 1px 2px rgba(0,0,0,0.05),0 6px 20px rgba(0,0,0,0.06);
+  --hp-shadow-l:0 2px 6px rgba(0,0,0,0.06),0 24px 70px rgba(0,0,0,0.13);
+  --hp-shot-line:rgba(0,0,0,0.14);
+  --hp-hero-veil:radial-gradient(120% 90% at 50% 0%,rgba(0,122,255,0.10),transparent 62%);
+  --hp-grid:rgba(0,0,0,0.045);
+
+  --hp-radius:20px;
+  --hp-radius-l:26px;
+  --hp-maxw:1160px;
+  --hp-gut:24px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --hp-bg:#000000;
+    --hp-bg-2:#08080a;
+    --hp-surface:#131316;
+    --hp-surface-2:#0d0d10;
+    --hp-ink:#f5f5f7;
+    --hp-ink-2:#dcdce2;
+    --hp-mut:#9a9aa2;
+    --hp-line:rgba(255,255,255,0.12);
+    --hp-line-soft:rgba(255,255,255,0.06);
+    --hp-accent:#0a84ff;
+    --hp-accent-ink:#ffffff;
+    --hp-accent-soft:rgba(10,132,255,0.14);
+    --hp-grad:linear-gradient(135deg,#0a84ff,#5e5ce6 56%,#bf5af2);
+    --hp-glass:rgba(14,14,17,0.66);
+    --hp-glass-line:rgba(255,255,255,0.10);
+    --hp-shadow-s:0 1px 2px rgba(0,0,0,0.6),0 6px 20px rgba(0,0,0,0.45);
+    --hp-shadow-l:0 2px 6px rgba(0,0,0,0.6),0 30px 80px rgba(0,0,0,0.62);
+    --hp-shot-line:rgba(255,255,255,0.14);
+    --hp-hero-veil:radial-gradient(120% 90% at 50% 0%,rgba(10,132,255,0.20),transparent 62%);
+    --hp-grid:rgba(255,255,255,0.05);
+    color-scheme:dark;
+  }
+}
+/* …and the app's own setting wins over the OS, in both directions (see the header note). */
+:root[data-theme="dark"]{
+  --hp-bg:#000000; --hp-bg-2:#08080a; --hp-surface:#131316; --hp-surface-2:#0d0d10;
+  --hp-ink:#f5f5f7; --hp-ink-2:#dcdce2; --hp-mut:#9a9aa2;
+  --hp-line:rgba(255,255,255,0.12); --hp-line-soft:rgba(255,255,255,0.06);
+  --hp-accent:#0a84ff; --hp-accent-ink:#ffffff; --hp-accent-soft:rgba(10,132,255,0.14);
+  --hp-grad:linear-gradient(135deg,#0a84ff,#5e5ce6 56%,#bf5af2);
+  --hp-glass:rgba(14,14,17,0.66); --hp-glass-line:rgba(255,255,255,0.10);
+  --hp-shadow-s:0 1px 2px rgba(0,0,0,0.6),0 6px 20px rgba(0,0,0,0.45);
+  --hp-shadow-l:0 2px 6px rgba(0,0,0,0.6),0 30px 80px rgba(0,0,0,0.62);
+  --hp-shot-line:rgba(255,255,255,0.14);
+  --hp-hero-veil:radial-gradient(120% 90% at 50% 0%,rgba(10,132,255,0.20),transparent 62%);
+  --hp-grid:rgba(255,255,255,0.05);
+  color-scheme:dark;
+}
+:root[data-theme="light"]{ color-scheme:light; }
+
+/* ══ 2. BASE ═════════════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--hp-bg);
+  color:var(--hp-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",
+              "Hiragino Sans","Noto Sans JP","Yu Gothic UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;
+  line-height:1.6;
+  letter-spacing:-0.003em;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+img{ max-width:100%; height:auto; display:block; }
+a{ color:var(--hp-accent); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+:focus-visible{ outline:2px solid var(--hp-accent); outline-offset:3px; border-radius:6px; }
+
+/* the one skip link — keyboard users should not tab through a 12-section landing page to reach it */
+.hp-skip{
+  position:absolute; left:-9999px; top:0; z-index:1000;
+  background:var(--hp-surface); color:var(--hp-ink); padding:12px 18px;
+  border-radius:0 0 12px 0; box-shadow:var(--hp-shadow-s); font-weight:600;
+}
+.hp-skip:focus{ left:0; }
+
+.hp-wrap{ width:100%; max-width:var(--hp-maxw); margin:0 auto; padding:0 var(--hp-gut); }
+.hp-narrow{ max-width:760px; }
+
+/* display type — Apple's ratio: big, tight, and never more than ~13 words a line */
+h1,h2,h3{ margin:0; font-weight:700; letter-spacing:-0.022em; line-height:1.08; }
+h1{ font-size:clamp(2.35rem,6.0vw,4.35rem); letter-spacing:-0.032em; }
+h2{ font-size:clamp(1.85rem,4.1vw,3.05rem); letter-spacing:-0.028em; }
+h3{ font-size:clamp(1.1rem,2.1vw,1.35rem); letter-spacing:-0.016em; line-height:1.25; }
+p{ margin:0; }
+
+.hp-eyebrow{
+  font-size:0.78rem; font-weight:700; letter-spacing:0.10em; text-transform:uppercase;
+  color:var(--hp-accent); margin-bottom:18px;
+}
+.hp-lede{
+  font-size:clamp(1.05rem,1.9vw,1.32rem); line-height:1.55; color:var(--hp-mut);
+  letter-spacing:-0.008em;
+}
+.hp-grad-text{
+  background:var(--hp-grad); -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+}
+
+/* ══ 3. HEADER — the only glass on the page, plus the hero frame's edge ══════════════════════ */
+.hp-nav{
+  position:sticky; top:0; z-index:90;
+  border-bottom:1px solid transparent;
+  transition:background .28s ease,border-color .28s ease,backdrop-filter .28s ease;
+}
+.hp-nav.hp-nav-on{
+  background:var(--hp-glass);
+  border-bottom-color:var(--hp-glass-line);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+}
+.hp-nav-in{
+  display:flex; align-items:center; gap:18px;
+  height:58px; max-width:var(--hp-maxw); margin:0 auto; padding:0 var(--hp-gut);
+}
+.hp-brand{ display:flex; align-items:center; gap:9px; color:var(--hp-ink); font-weight:700;
+  font-size:1.02rem; letter-spacing:-0.02em; text-decoration:none; flex:0 0 auto; }
+.hp-brand:hover{ text-decoration:none; }
+/* ⚠ IntMap.Icon.png IS A LIGHT MARK ON NEAR-BLACK, so on a black header it disappears into the
+   page and on a white one it is a black tile. The app solves this with a second inverted file
+   (#R205); a 26-px header mark does not need a second download — an Apple-radius squircle in the
+   card colour gives it an edge in both themes and reads as the app-icon it is. */
+.hp-brand img{
+  width:26px; height:26px; border-radius:6px; background:#000;
+  box-shadow:0 0 0 1px var(--hp-line);
+}
+.hp-navlinks{ display:flex; gap:4px; margin-left:8px; flex:1 1 auto; min-width:0; }
+.hp-navlinks a{
+  color:var(--hp-ink-2); font-size:0.88rem; font-weight:500; padding:7px 11px; border-radius:9px;
+  white-space:nowrap; transition:background .16s ease,color .16s ease;
+}
+.hp-navlinks a:hover{ background:var(--hp-accent-soft); color:var(--hp-ink); text-decoration:none; }
+.hp-nav-right{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+
+/* language picker — a native <select>, exactly as the two reading pages do it */
+.hp-lang{ position:relative; display:inline-flex; align-items:center; }
+.hp-lang select{
+  appearance:none; -webkit-appearance:none;
+  background:transparent; border:1px solid var(--hp-line); border-radius:10px;
+  color:var(--hp-ink-2); font:inherit; font-size:0.83rem; font-weight:500;
+  padding:6px 26px 6px 30px; cursor:pointer;
+}
+.hp-lang select:hover{ border-color:var(--hp-accent); color:var(--hp-ink); }
+.hp-lang-globe{ position:absolute; left:9px; font-size:0.85rem; pointer-events:none; line-height:1; }
+.hp-lang-chev{ position:absolute; right:9px; font-size:0.62rem; color:var(--hp-mut); pointer-events:none; }
+
+/* ══ 4. BUTTONS ══════════════════════════════════════════════════════════════════════════════ */
+.hp-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:50px; padding:0 26px; border-radius:15px;
+  font-size:1rem; font-weight:600; letter-spacing:-0.01em;
+  border:1px solid transparent; cursor:pointer; text-decoration:none; white-space:nowrap;
+  transition:transform .14s cubic-bezier(.2,.7,.2,1),filter .18s ease,background .18s ease,border-color .18s ease;
+}
+.hp-btn:hover{ text-decoration:none; }
+.hp-btn:active{ transform:scale(0.972); }
+.hp-btn-primary{ background:var(--hp-grad); color:#fff; box-shadow:0 6px 24px rgba(10,132,255,0.30); }
+.hp-btn-primary:hover{ filter:brightness(1.08); }
+.hp-btn-ghost{ background:transparent; color:var(--hp-ink); border-color:var(--hp-line); }
+.hp-btn-ghost:hover{ background:var(--hp-accent-soft); border-color:var(--hp-accent); }
+.hp-btn-sm{ height:38px; padding:0 17px; font-size:0.88rem; border-radius:11px; }
+.hp-btn-lg{ height:56px; padding:0 34px; font-size:1.06rem; border-radius:17px; }
+.hp-btn .hp-arw{ transition:transform .18s cubic-bezier(.2,.7,.2,1); }
+.hp-btn:hover .hp-arw{ transform:translateX(3px); }
+
+/* ══ 5. SECTION RHYTHM ═══════════════════════════════════════════════════════════════════════ */
+.hp-sec{ padding:clamp(72px,10vw,132px) 0; position:relative; }
+/* an anchor must land BELOW the sticky header, not behind it — 58 px of chrome plus a little air */
+section[id],main[id]{ scroll-margin-top:72px; }
+.hp-sec-tight{ padding:clamp(48px,6vw,80px) 0; }
+.hp-sec-alt{ background:var(--hp-bg-2); }
+.hp-head{ max-width:740px; margin-bottom:clamp(38px,5vw,62px); }
+.hp-head p{ margin-top:20px; }
+.hp-head-c{ margin-left:auto; margin-right:auto; text-align:center; }
+
+/* ══ 6. HERO ═════════════════════════════════════════════════════════════════════════════════ */
+.hp-hero{
+  position:relative; overflow:hidden;
+  padding:clamp(52px,8vw,96px) 0 clamp(60px,7vw,88px);
+}
+/* the ambient field behind the hero. Two static paints and one *very* slow transform — it is a
+   background, so it must never compete with the screenshot or cost a scroll frame. */
+.hp-hero::before{
+  content:''; position:absolute; inset:-20% -10% auto -10%; height:150%;
+  background:var(--hp-hero-veil); pointer-events:none; z-index:0;
+}
+.hp-hero-grid{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:linear-gradient(var(--hp-grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--hp-grid) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(110% 70% at 50% 8%,#000 0%,transparent 72%);
+  mask-image:radial-gradient(110% 70% at 50% 8%,#000 0%,transparent 72%);
+  transform:translate3d(0,calc(var(--hp-scroll,0) * -34px),0);
+}
+.hp-hero-in{ position:relative; z-index:1; text-align:center; }
+.hp-hero h1{ margin:0 auto; max-width:15ch; }
+.hp-hero .hp-lede{ margin:26px auto 0; max-width:60ch; }
+.hp-cta{ display:flex; flex-wrap:wrap; gap:13px; justify-content:center; margin-top:34px; }
+.hp-hero-note{
+  margin-top:22px; font-size:0.86rem; color:var(--hp-mut);
+  display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center;
+}
+.hp-hero-note span{ display:inline-flex; align-items:center; gap:6px; }
+.hp-hero-note span::before{ content:''; width:5px; height:5px; border-radius:50%; background:var(--hp-accent); opacity:.75; }
+
+/* the returning-visitor bar. Hidden until js/about.js finds an IntMap session in this browser. */
+.hp-welcome{
+  display:none; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+  padding:11px 18px; text-align:center;
+  background:var(--hp-accent-soft); border-bottom:1px solid var(--hp-line-soft);
+  font-size:0.9rem; color:var(--hp-ink-2);
+}
+.hp-welcome.hp-on{ display:flex; }
+.hp-welcome a{ font-weight:600; }
+
+/* ── the hero screenshot: a real 3-D plate, tilted by scroll and by the pointer ─────────────
+   The perspective lives on the WRAPPER so the tilt does not distort the caption under it, and
+   the rotation is written by js/about.js into --hp-rx/--hp-ry/--hp-scroll. Both are plain
+   transforms, so the whole thing is one composited layer. */
+.hp-stage{ perspective:1800px; perspective-origin:50% 22%; margin-top:clamp(44px,6vw,72px); position:relative; z-index:1; }
+.hp-shot{
+  position:relative; margin:0 auto; max-width:1120px;
+  border-radius:var(--hp-radius-l);
+  border:1px solid var(--hp-shot-line);
+  background:var(--hp-surface-2);
+  box-shadow:var(--hp-shadow-l);
+  overflow:hidden;
+  transform:
+    rotateX(calc(var(--hp-rx,7deg))) rotateY(calc(var(--hp-ry,0deg)))
+    translate3d(0,calc(var(--hp-scroll,0) * -26px),0)
+    scale(calc(1 - var(--hp-scroll,0) * 0.035));
+  transform-origin:50% 0%;
+  will-change:transform;
+}
+/* the glass rim — the one place "ガラス表現" earns its keep: it reads as a screen edge, not a
+   decoration, and it is a static inset shadow rather than a blur, so it costs nothing. */
+.hp-shot::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.hp-shot-frames{ position:relative; aspect-ratio:1440/900; background:#000; }
+.hp-shot-frames picture{ position:absolute; inset:0; display:block; }
+.hp-shot-frames img{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:0; transition:opacity 1.1s ease;
+}
+/* ⚠ WITHOUT JAVASCRIPT THE FIRST FRAME IS THE PICTURE. `html.hp-js` is stamped in about.html's
+   <head>, before first paint, so js/about.js taking ownership of which frame is on never flashes;
+   a browser that never runs it still sees a hero image rather than a black rectangle.
+   ⚠ AND ALL THREE RULES MATCH THROUGH `picture`, DELIBERATELY. The <picture> wrapper (added so a
+   phone downloads the phone capture) made `picture:first-child img` more specific than a bare
+   `img.hp-fr-on` — so the "no-JS floor" out-ranked the class the script actually toggles and the
+   hero rendered as an empty black plate. Every rule in this ladder now carries the same `picture`
+   step, which puts them back in the order they are written in. */
+.hp-shot-frames picture:first-child img{ opacity:1; }
+.hp-js .hp-shot-frames picture img{ opacity:0; }
+.hp-js .hp-shot-frames picture img.hp-fr-on{ opacity:1; }
+
+.hp-shot-dots{ display:flex; gap:7px; justify-content:center; margin-top:20px; }
+.hp-shot-dots button{
+  width:7px; height:7px; padding:0; border:none; border-radius:50%;
+  background:var(--hp-line); cursor:pointer; transition:background .2s ease,transform .2s ease;
+}
+.hp-shot-dots button[aria-current="true"]{ background:var(--hp-accent); transform:scale(1.35); }
+
+.hp-scroll-cue{
+  display:block; width:22px; height:36px; margin:clamp(30px,4vw,48px) auto 0;
+  border:1.5px solid var(--hp-line); border-radius:12px; position:relative;
+}
+.hp-scroll-cue::after{
+  content:''; position:absolute; left:50%; top:7px; width:3px; height:7px; margin-left:-1.5px;
+  border-radius:2px; background:var(--hp-mut); animation:hpCue 1.9s cubic-bezier(.4,0,.2,1) infinite;
+}
+@keyframes hpCue{ 0%{ transform:translateY(0); opacity:0 } 22%{ opacity:1 } 70%{ transform:translateY(12px); opacity:0 } 100%{ opacity:0 } }
+
+/* ══ 7. PROOF STRIP ══════════════════════════════════════════════════════════════════════════ */
+.hp-proof{ border-top:1px solid var(--hp-line-soft); border-bottom:1px solid var(--hp-line-soft); }
+.hp-proof-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--hp-line-soft); }
+.hp-proof-grid div{ background:var(--hp-bg); padding:26px 20px; text-align:center; }
+.hp-proof-n{ font-size:clamp(1.6rem,3.2vw,2.15rem); font-weight:700; letter-spacing:-0.03em; line-height:1.1; }
+.hp-proof-t{ margin-top:7px; font-size:0.85rem; color:var(--hp-mut); line-height:1.4; }
+
+/* ══ 8. THE THREE AXES ═══════════════════════════════════════════════════════════════════════ */
+.hp-axes{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.hp-axis{
+  padding:32px 28px 34px; border-radius:var(--hp-radius);
+  background:var(--hp-surface); border:1px solid var(--hp-line-soft); box-shadow:var(--hp-shadow-s);
+  position:relative; overflow:hidden;
+}
+.hp-axis::before{
+  content:''; position:absolute; left:0; right:0; top:0; height:2px; background:var(--hp-grad); opacity:.85;
+}
+.hp-axis-k{ font-size:0.74rem; font-weight:700; letter-spacing:0.11em; text-transform:uppercase; color:var(--hp-accent); }
+.hp-axis h3{ margin:13px 0 11px; }
+.hp-axis p{ color:var(--hp-mut); font-size:0.97rem; line-height:1.58; }
+
+/* ══ 9. FEATURES — alternating full-width rows, each with a real screenshot ══════════════════ */
+.hp-feat{
+  display:grid; grid-template-columns:1fr 1.22fr; gap:clamp(34px,5vw,74px); align-items:center;
+  padding:clamp(46px,6vw,74px) 0;
+}
+.hp-feat + .hp-feat{ border-top:1px solid var(--hp-line-soft); }
+.hp-feat-flip .hp-feat-txt{ order:2; }
+.hp-feat-flip .hp-feat-img{ order:1; }
+.hp-feat-n{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:9px; margin-bottom:18px;
+  background:var(--hp-accent-soft); color:var(--hp-accent);
+  font-size:0.82rem; font-weight:700; font-variant-numeric:tabular-nums;
+}
+.hp-feat h3{ font-size:clamp(1.42rem,2.9vw,2.05rem); letter-spacing:-0.024em; line-height:1.14; }
+.hp-feat-txt p{ margin-top:16px; color:var(--hp-mut); font-size:1.02rem; line-height:1.62; }
+.hp-feat-tags{ display:flex; flex-wrap:wrap; gap:7px; margin-top:22px; list-style:none; padding:0; }
+.hp-feat-tags li{
+  font-size:0.79rem; font-weight:500; color:var(--hp-ink-2);
+  padding:5px 11px; border-radius:8px; background:var(--hp-accent-soft);
+}
+/* the picture plate. `translateZ` under a perspective is what makes the lift read as depth
+   rather than as a scale — and it is still one transform. */
+.hp-feat-img{ perspective:1400px; }
+.hp-plate{
+  border-radius:var(--hp-radius); overflow:hidden;
+  border:1px solid var(--hp-shot-line); background:var(--hp-surface-2);
+  box-shadow:var(--hp-shadow-l);
+  transform:translate3d(0,0,0);
+  transition:transform .55s cubic-bezier(.2,.7,.2,1),box-shadow .55s ease;
+}
+.hp-feat-img:hover .hp-plate{ transform:perspective(1400px) rotateX(1.6deg) translate3d(0,-7px,26px); }
+.hp-plate img{ width:100%; aspect-ratio:1440/900; object-fit:cover; }
+.hp-plate-cap{
+  padding:11px 15px; font-size:0.76rem; color:var(--hp-mut);
+  border-top:1px solid var(--hp-line-soft); background:var(--hp-surface);
+  display:flex; align-items:center; gap:7px;
+}
+.hp-plate-cap::before{ content:''; width:6px; height:6px; border-radius:50%; background:#34c759; flex:0 0 auto; }
+
+/* ══ 10. THE "AND MORE" GRID ═════════════════════════════════════════════════════════════════ */
+.hp-more{ display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:14px; }
+.hp-more div{
+  padding:20px 20px 22px; border-radius:15px;
+  background:var(--hp-surface); border:1px solid var(--hp-line-soft);
+  transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .25s ease;
+}
+.hp-more div:hover{ transform:translateY(-3px); border-color:var(--hp-accent); }
+.hp-more b{ display:block; font-size:0.97rem; font-weight:600; letter-spacing:-0.012em; }
+.hp-more span{ display:block; margin-top:6px; font-size:0.85rem; color:var(--hp-mut); line-height:1.5; }
+
+/* ══ 11. ATLAS ═══════════════════════════════════════════════════════════════════════════════ */
+.hp-atlas{ position:relative; overflow:hidden; }
+.hp-atlas::before{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(80% 60% at 50% 50%,rgba(94,92,230,0.16),transparent 68%);
+}
+.hp-atlas .hp-wrap{ position:relative; z-index:1; }
+.hp-atlas-demo{
+  max-width:660px; margin:clamp(34px,4vw,52px) auto 0;
+  border-radius:var(--hp-radius); border:1px solid var(--hp-line);
+  background:var(--hp-surface); box-shadow:var(--hp-shadow-l); overflow:hidden;
+}
+.hp-atlas-bar{
+  display:flex; align-items:center; gap:9px; padding:12px 16px;
+  border-bottom:1px solid var(--hp-line-soft); font-size:0.83rem; font-weight:600; color:var(--hp-mut);
+}
+.hp-atlas-bar i{
+  width:9px; height:9px; border-radius:50%; background:var(--hp-grad); flex:0 0 auto;
+}
+.hp-atlas-line{
+  display:flex; align-items:flex-start; gap:11px; padding:26px 20px; min-height:104px;
+  font-size:clamp(1.02rem,2.1vw,1.24rem); line-height:1.45; letter-spacing:-0.014em;
+}
+.hp-atlas-line::before{ content:'›'; color:var(--hp-accent); font-weight:700; line-height:1.35; }
+.hp-caret{
+  display:inline-block; width:2px; height:1.05em; margin-left:2px; vertical-align:-0.16em;
+  background:var(--hp-accent); animation:hpBlink 1.05s steps(1) infinite;
+}
+@keyframes hpBlink{ 0%,49%{ opacity:1 } 50%,100%{ opacity:0 } }
+.hp-atlas-foot{ padding:0 20px 22px; font-size:0.84rem; color:var(--hp-mut); line-height:1.55; }
+
+/* ══ 12. BEYOND THE MAP — the one full-bleed, dark-always band ═══════════════════════════════ */
+.hp-space{
+  position:relative; overflow:hidden; color:#f5f5f7;
+  background:#000;
+  padding:clamp(84px,11vw,150px) 0;
+}
+.hp-space::before{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(75% 55% at 50% 106%,rgba(10,132,255,0.30),transparent 62%),
+             radial-gradient(45% 40% at 82% 12%,rgba(191,90,242,0.18),transparent 68%);
+}
+/* the starfield: three static radial-gradient sheets translated by scroll at different rates.
+   No canvas, no rAF loop of its own, no per-star DOM node. */
+.hp-stars{ position:absolute; inset:-15% 0; pointer-events:none; opacity:.9; }
+.hp-stars i{
+  position:absolute; inset:0; display:block;
+  background-repeat:repeat;
+  transform:translate3d(0,calc(var(--hp-space,0) * var(--hp-k,20px)),0);
+}
+.hp-stars i:nth-child(1){
+  --hp-k:-30px;
+  background-image:radial-gradient(1.4px 1.4px at 18% 22%,#fff,transparent),
+    radial-gradient(1.2px 1.2px at 62% 14%,#cfe4ff,transparent),
+    radial-gradient(1.6px 1.6px at 84% 61%,#fff,transparent),
+    radial-gradient(1.1px 1.1px at 33% 74%,#e6eeff,transparent),
+    radial-gradient(1.3px 1.3px at 8% 55%,#fff,transparent);
+  background-size:420px 420px;
+}
+.hp-stars i:nth-child(2){
+  --hp-k:-62px; opacity:.62;
+  background-image:radial-gradient(1px 1px at 45% 38%,#fff,transparent),
+    radial-gradient(1px 1px at 12% 82%,#bcd6ff,transparent),
+    radial-gradient(1px 1px at 74% 27%,#fff,transparent);
+  background-size:280px 280px;
+}
+.hp-stars i:nth-child(3){
+  --hp-k:-96px; opacity:.38;
+  background-image:radial-gradient(0.9px 0.9px at 28% 46%,#fff,transparent),
+    radial-gradient(0.9px 0.9px at 88% 78%,#fff,transparent);
+  background-size:180px 180px;
+}
+.hp-space .hp-wrap{ position:relative; z-index:1; }
+.hp-space h2{ color:#f5f5f7; }
+.hp-space .hp-lede{ color:#b9b9c2; }
+.hp-space-facts{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:clamp(36px,5vw,54px); }
+.hp-space-facts div{
+  padding:24px 22px; border-radius:var(--hp-radius);
+  background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.10);
+  -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
+}
+.hp-space-facts b{ display:block; font-size:1.02rem; letter-spacing:-0.015em; }
+.hp-space-facts span{ display:block; margin-top:9px; font-size:0.9rem; color:#a8a8b4; line-height:1.55; }
+
+/* ══ 13. SCIENCE / TRANSPARENCY ══════════════════════════════════════════════════════════════ */
+.hp-two{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.hp-card{
+  display:block; padding:30px 28px 32px; border-radius:var(--hp-radius);
+  background:var(--hp-surface); border:1px solid var(--hp-line-soft); box-shadow:var(--hp-shadow-s);
+  color:inherit; transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .25s ease,box-shadow .25s ease;
+}
+.hp-card:hover{ transform:translateY(-4px); border-color:var(--hp-accent); box-shadow:var(--hp-shadow-l); text-decoration:none; }
+.hp-card h3{ margin-bottom:11px; }
+.hp-card p{ color:var(--hp-mut); font-size:0.96rem; line-height:1.58; }
+.hp-card-go{ display:inline-flex; align-items:center; gap:6px; margin-top:18px; color:var(--hp-accent); font-weight:600; font-size:0.92rem; }
+
+/* ══ 14. DEVICES ═════════════════════════════════════════════════════════════════════════════ */
+.hp-devices{
+  display:grid; grid-template-columns:1.5fr 0.72fr 0.46fr; gap:clamp(16px,2.4vw,30px);
+  align-items:end;
+}
+.hp-dev{ position:relative; }
+.hp-dev img{
+  width:100%; border-radius:14px; border:1px solid var(--hp-shot-line);
+  box-shadow:var(--hp-shadow-l); background:#000;
+}
+.hp-dev-phone img{ border-radius:26px; }
+.hp-dev-lab{ margin-top:12px; text-align:center; font-size:0.8rem; color:var(--hp-mut); }
+
+/* ══ 15. AUDIENCES ═══════════════════════════════════════════════════════════════════════════ */
+.hp-who{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+.hp-who div{ padding:24px 24px 26px; border-radius:var(--hp-radius); border:1px solid var(--hp-line-soft); background:var(--hp-surface); }
+.hp-who b{ display:block; font-size:1rem; letter-spacing:-0.014em; }
+.hp-who span{ display:block; margin-top:8px; font-size:0.9rem; color:var(--hp-mut); line-height:1.55; }
+
+/* ══ 16. FINAL CTA ═══════════════════════════════════════════════════════════════════════════ */
+.hp-final{ text-align:center; position:relative; overflow:hidden; }
+.hp-final::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(60% 70% at 50% 100%,var(--hp-accent-soft),transparent 70%);
+}
+.hp-final .hp-wrap{ position:relative; z-index:1; }
+.hp-final .hp-cta{ margin-top:32px; }
+.hp-final-note{ margin-top:22px; font-size:0.87rem; color:var(--hp-mut); }
+
+/* ══ 17. FOOTER ══════════════════════════════════════════════════════════════════════════════ */
+.hp-foot{ border-top:1px solid var(--hp-line-soft); padding:52px 0 60px; font-size:0.89rem; }
+.hp-foot-top{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; }
+.hp-foot h4{ margin:0 0 14px; font-size:0.78rem; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; color:var(--hp-mut); }
+.hp-foot ul{ list-style:none; margin:0; padding:0; display:grid; gap:9px; }
+.hp-foot a{ color:var(--hp-ink-2); }
+.hp-foot a:hover{ color:var(--hp-accent); }
+.hp-foot-brand p{ margin-top:14px; color:var(--hp-mut); line-height:1.6; max-width:34ch; }
+.hp-foot-bot{
+  margin-top:44px; padding-top:24px; border-top:1px solid var(--hp-line-soft);
+  color:var(--hp-mut); line-height:1.65; font-size:0.83rem;
+}
+.hp-foot-bot p + p{ margin-top:10px; }
+
+/* ══ 18. REVEAL — the one entrance animation, granted by IntersectionObserver ════════════════
+   ⚠ THE INITIAL STATE IS ONLY APPLIED WHEN JS IS THERE TO REMOVE IT. `html.hp-js` is set by
+   js/about.js as its first statement; without it (script blocked, an old browser, a crawler)
+   every element below is simply visible. A page that hides its own content behind an observer
+   that never runs is a blank page, and that is not a trade a landing page may make. */
+.hp-js .hp-rv{ opacity:0; transform:translate3d(0,22px,0); }
+.hp-js .hp-rv{ transition:opacity .72s cubic-bezier(.2,.7,.2,1),transform .72s cubic-bezier(.2,.7,.2,1); }
+.hp-js .hp-rv.hp-in{ opacity:1; transform:none; }
+.hp-js .hp-rv-d1{ transition-delay:.08s } .hp-js .hp-rv-d2{ transition-delay:.16s }
+.hp-js .hp-rv-d3{ transition-delay:.24s } .hp-js .hp-rv-d4{ transition-delay:.32s }
+
+/* ══ 19. RESPONSIVE ══════════════════════════════════════════════════════════════════════════
+   ⚠ NOT A SCALED-DOWN DESKTOP. What changes below is the SHAPE — every two-and-three-column
+   grid becomes one column, the alternating feature rows stop alternating (a picture that
+   flips side on a phone just reads as a mistake), the nav sheds its section links for the one
+   control that matters on a phone, and the hero's 3-D tilt is switched off entirely. */
+@media (max-width:1040px){
+  .hp-devices{ grid-template-columns:1fr 0.55fr; }
+  .hp-dev-tablet{ display:none; }
+  .hp-foot-top{ grid-template-columns:1fr 1fr; gap:28px 24px; }
+}
+@media (max-width:900px){
+  :root{ --hp-gut:20px; }
+  body{ font-size:16px; }
+  .hp-navlinks{ display:none; }
+  .hp-axes,.hp-two,.hp-space-facts{ grid-template-columns:1fr; }
+  .hp-proof-grid{ grid-template-columns:1fr 1fr; }
+  .hp-feat{ grid-template-columns:1fr; gap:26px; padding:clamp(38px,7vw,54px) 0; }
+  .hp-feat-flip .hp-feat-txt{ order:1; }
+  .hp-feat-flip .hp-feat-img{ order:2; }
+  .hp-feat-img:hover .hp-plate{ transform:none; }   /* there is no hover on a finger */
+  .hp-stage{ perspective:none; }
+  .hp-shot{ transform:none !important; will-change:auto; }
+  .hp-hero-grid{ transform:none; }
+  .hp-hero{ padding-top:26px; }
+  .hp-cta{ flex-direction:column; align-items:stretch; }
+  .hp-cta .hp-btn{ width:100%; }
+  .hp-atlas-line{ min-height:132px; padding:22px 17px; }
+}
+/* ⚠ THE PHONE HERO IS A PHONE, NOT A SMALL DESKTOP. Below 700 px the <picture> in about.html
+   has already swapped in a capture of IntMap running on a 390 × 844 screen; this turns the plate
+   into the shape that capture actually is, so the mobile visitor sees the mobile product at a
+   size where its buttons and text are legible. */
+@media (max-width:700px){
+  .hp-shot{ max-width:270px; border-radius:30px; }
+  .hp-shot-frames{ aspect-ratio:430/930; }
+  .hp-shot::after{ box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08); }
+}
+@media (max-width:560px){
+  h1{ font-size:clamp(2.0rem,8.6vw,2.6rem); }
+  .hp-proof-grid{ grid-template-columns:1fr 1fr; }
+  .hp-hero-note{ font-size:0.8rem; gap:5px 12px; }
+  .hp-more{ grid-template-columns:1fr; }
+  .hp-devices{ grid-template-columns:1fr; }
+  .hp-dev-desktop{ display:none; }
+  .hp-foot-top{ grid-template-columns:1fr; }
+}
+
+/* ══ 19b. JAPANESE LINE BREAKING ═════════════════════════════════════════════════════════════
+   Japanese has no spaces, so a browser breaks CJK display type wherever the box runs out —
+   「またい / で、」 splits a word in half, and at a phone width a five-line headline does it
+   several times. `auto-phrase` breaks at phrase boundaries instead (Chromium; other engines
+   ignore it and fall back to today's behaviour), and `line-break:strict` stops a line from
+   starting with 、 。 」 or a small kana. Scoped to :lang(ja) so the Latin type is untouched. */
+:lang(ja) h1, :lang(ja) h2, :lang(ja) h3, :lang(ja) .hp-lede{
+  word-break:auto-phrase;
+  line-break:strict;
+}
+:lang(ja) h1{ letter-spacing:-0.012em; }
+:lang(ja) h2{ letter-spacing:-0.010em; }
+:lang(ja) body, :lang(ja) p{ letter-spacing:0.005em; }
+
+/* ══ 20. REDUCED MOTION — everything arrives, nothing moves ══════════════════════════════════ */
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto; }
+  *,*::before,*::after{
+    animation-duration:0.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:0.001ms !important; scroll-behavior:auto !important;
+  }
+  .hp-js .hp-rv{ opacity:1 !important; transform:none !important; }
+  .hp-shot{ transform:none !important; }
+  .hp-hero-grid,.hp-stars i{ transform:none !important; }
+  .hp-scroll-cue{ display:none; }
+  .hp-caret{ animation:none; opacity:1; }
+  .hp-shot-frames img{ transition:none; }
+}
+
+/* Printing a landing page is not a use case, but a broken one is a bug. */
+@media print{
+  .hp-nav,.hp-scroll-cue,.hp-shot-dots,.hp-welcome{ display:none !important; }
+  .hp-js .hp-rv{ opacity:1 !important; transform:none !important; }
+  body{ background:#fff; color:#000; }
+}

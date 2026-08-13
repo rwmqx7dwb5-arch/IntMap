@@ -6,7 +6,7 @@
 
 A browser-based geospatial platform that brings geography, climate, infrastructure, history, statistics, current events, and interactive tools together on one map.
 
-[**Open IntMap**](https://rwmqx7dwb5-arch.github.io/IntMap/) · [**Support IntMap**](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en) · [Report an issue](https://github.com/rwmqx7dwb5-arch/IntMap/issues)
+[**Open IntMap**](https://rwmqx7dwb5-arch.github.io/IntMap/) · [What IntMap is](https://rwmqx7dwb5-arch.github.io/IntMap/about.html) · [**Support IntMap**](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en) · [Report an issue](https://github.com/rwmqx7dwb5-arch/IntMap/issues)
 
 **Free to use · No ads · No installation required**
 
@@ -15,6 +15,8 @@ A browser-based geospatial platform that brings geography, climate, infrastructu
 ---
 
 ## What is IntMap?
+
+> If you would rather see it than read about it, the [**overview page**](https://rwmqx7dwb5-arch.github.io/IntMap/about.html) covers the same ground in a few minutes of screenshots of the running app — in English or 日本語.
 
 IntMap is the map I wanted but could not find: one place where I could explore the world through whatever location, period, or type of data interested me.
 
@@ -314,6 +316,6 @@ Historical borders and territorial classifications are technical representations
 
 **Explore the world freely—without having to know which tool to open first.**
 
-[Open IntMap](https://rwmqx7dwb5-arch.github.io/IntMap/) · [Support IntMap](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en)
+[Open IntMap](https://rwmqx7dwb5-arch.github.io/IntMap/) · [What IntMap is](https://rwmqx7dwb5-arch.github.io/IntMap/about.html) · [Support IntMap](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en)
 
 </div>
