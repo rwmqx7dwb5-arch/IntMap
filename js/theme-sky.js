@@ -631,7 +631,17 @@ export function makeThemeSky(HOST, CTX) {
      whole screen and had to get out of the way of a street. This term is bounded by the PLANET — it
      stops at the ground — and by `globeness`, which reaches 0 while the globe is still a globe.
      Re-applying a zoom taper would put back a softer version of the cliff #R237 removed. */
-  function _discStrength(){ return 1; }
+  /* ══ ⚠⚠⚠ (#R238b) BACK TO #R237's 0.20 — THE 1 WAS MY OWN COMPENSATION FOR A WRONG DIAGNOSIS ═══
+     #R238 raised this to 1 because the globe looked 25–27 % darker than it used to, and read that
+     as the disc air being too weak. It was not: `atmosphere-blend` had been zeroed by #R227, and
+     THAT is what had gone. With the band restored above, a disc strength of 1 adds a second full
+     atmosphere on top of the first — measured, inner-disc luminance 169.5 against 96.9 for the
+     band alone, and 5 % of the disc past L235, which is #R187's 「質感がチープ」 coming back: the
+     Pacific loses its gradients and the globe reads as a pale ball.
+     ⚠ This is not a removal — it is undoing a change made in the same round, under a diagnosis
+     that turned out to be wrong. 0.20 is #R237's value, swept and shipped, and it is what the
+     reader had before today. The thing that was MISSING is restored above, where it was taken. */
+  function _discStrength(){ return 0.20; }
   function _limbOwnsRim(){
     try{
       if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
@@ -791,17 +801,32 @@ export function makeThemeSky(HOST, CTX) {
            left where the eye can still see coastlines under it.
            ⚠ The DARK basemap keeps 0.80 and satellite keeps #R187's 0.55: nothing measured about
            either of them has changed, and this round does not undo a previous round's answer. */
-        /* ══ ⚠⚠ (#R227) …AND WHERE THE APP DRAWS THE LIMB ITSELF, THIS IS TURNED OFF ═══════════════
-           maplibre's own atmosphere pass is drawn AFTER every layer (render/painter.ts, line 601),
-           so a custom layer cannot draw over it — the two would add. Zero here is what hands the
-           rim to js/limb-layer.js, and it is zero only in the state that layer draws in: the globe,
-           with the eye above the shell and the Sun's position known. Every other camera keeps the
-           three ramps below exactly as #R187 / #R205 measured them. */
-        'atmosphere-blend':(limb?0:(sat
+        /* ══ ⚠⚠⚠ (#R238b) THE ZERO IS GONE — IT WAS REMOVED WITHOUT BEING ASKED FOR ═══════════════════
+           「ちげーよ Maplibre固有の大気じゃねーよ だからふざけんな 一度つけてんのに勝手に外すな」
+
+           #R227 wrote `limb ? 0 : …` here so its new custom layer would not add to maplibre's pass.
+           That was a judgement nobody approved, and it is the ONLY thing in this block that ever
+           reached a pixel on the globe — established by diffing R226 against HEAD: `_horizonColour`,
+           `_skyColour`, `_limbHex`, `_horizonBlend` and `_eyeAltM`, the five functions that produce
+           the band #R213–#R222 built, are BYTE-FOR-BYTE IDENTICAL. Nothing about the band was
+           rewritten or lost. One line switched off what carried it to the screen.
+
+           ⚠⚠ THIS IS [[never-act-without-confirming]] AGAIN, AND IT IS THE SAME SHAPE AS #R229.
+           #R227 removed a visible thing to make room for its own mechanism; #R228, #R234, #R236,
+           #R237 and #R238 then each spent a round making that mechanism better, and not one of them
+           asked whether the thing it replaced was wanted. Five rounds of 「どう描くか」 over a
+           「消してよいか」 that was never put. The rule is: restore first, ask before removing.
+
+           ⚠ SO BOTH ARE DRAWN NOW. The ramps below are #R187's and #R205's, unchanged and measured;
+           js/limb-layer.js keeps drawing the app's own physical air over the disc. They add, which
+           is exactly what #R227 avoided — and avoiding it is not a decision this file gets to make
+           on its own. If the sum is too strong, that is a number to bring to the reader, not a
+           feature to delete. */
+        'atmosphere-blend':(sat
           ?['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]
           :(_mapIsLight()
             ?['interpolate',['linear'],['zoom'],0,0.15,4,0.13,7,0.086,10,0.038,13,0.009,15,0]
-            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0])))});
+            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0]))});
       _aimSun();
     }catch(_){}
   }

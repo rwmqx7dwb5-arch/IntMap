@@ -37,10 +37,19 @@ test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off
     'a software rasteriser keeps maplibre\'s own halo rather than a per-pixel march');
   assert.match(eng, /limb=1/, 'and `?limb=1` forces it on, so the drawn band can be tested at all');
 
-  /* the two halves of the same switch: while our layer owns the rim, maplibre's pass is zero */
+  /* ══ ⚠⚠⚠ (#R238b) THIS ASSERTION IS DELETED, NOT RELAXED — IT PINNED AN UNASKED REMOVAL ═══════════
+     「一度つけてんのに勝手に外すな」. #R227 zeroed `atmosphere-blend` so its new layer would not add
+     to maplibre's pass, and wrote this line to hold the zero in place. Diffing R226 against HEAD
+     showed that zero was the ONLY thing in the sky block that ever reached a pixel on the globe —
+     the five functions that produce #R213–#R222's band are byte-for-byte identical, so nothing about
+     the band was lost except what carried it. A test that pins a removal nobody approved is a test
+     that makes the removal permanent, which is exactly what happened here across five rounds.
+     What #R227 was really FOR — the app draws the Earth's edge itself, on a context that can afford
+     it — is asserted above and is untouched. The two now draw together. */
   const sky = code('js/theme-sky.js');
-  assert.match(sky, /'atmosphere-blend':\(limb\?0:/,
-    'atmosphere-blend is 0 exactly when the limb layer is the one drawing');
+  assert.doesNotMatch(sky, /'atmosphere-blend':\(limb\?0:/,
+    'the app\'s own band is not switched off to make room for the custom layer');
+  assert.match(sky, /'atmosphere-blend':\(sat/, 'the #R187/#R205 ramps are what is written, in their pre-#R227 shape');
   assert.match(sky, /function _limbOwnsRim\(\)/, 'one predicate decides it');
   /* ══ ⚠⚠ (#R237) THIS ASSERTION'S CLAIM IS REVERSED ON PURPOSE, AND THAT IS THE ROUND ═════════════
      #R227 wrote «the eye above the shell — where a limb IS a limb», and it was right about the RING:
