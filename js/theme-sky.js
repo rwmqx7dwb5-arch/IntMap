@@ -579,11 +579,50 @@ export function makeThemeSky(HOST, CTX) {
      with the day/night display off, or on the vector basemap, `_sunElevAtCentre()` is null, this is
      false, and the renderer's own halo stays exactly as it was. `_limbHex` keeps answering for the
      `sky` block because that block IS drawn once the projection leaves the globe. */
+  /* (#R237) 0 = a plane, 1 = a sphere. The renderer's own answer, not the projection's NAME. */
+  function _globeness(){ try{ const g=GE().camera.globeness; return g?(g()||0):0; }catch(_){ return 0; } }
+  /* ══ (#R237) HOW MUCH AIR IS DRAWN IN FRONT OF THE PLANET ════════════════════════════════════════
+     「そもそも前まであったものがない」 — what went missing when #R227 took the rim is the air over
+     the DISC, which is what maplibre's own pass had been drawing all along (measured: at 16 px inside
+     the edge, 88,166,186 with maplibre against 33,103,118 with #R227's ring alone).
+
+     ⚠⚠ AND #R187's AND #R205's NUMBERS DO NOT CARRY OVER, WHICH IS WHY THIS WAS SWEPT AGAIN. 0.55 /
+     0.80 / 0.15 are strengths for maplibre's `atmosphere-blend`, which is an ADDITIVE term with its
+     own five-step integral — not for a composite that multiplies what is behind it by a per-channel
+     transmittance. The first build of this round reused them, and the screenshot is #R187's own
+     complaint back again: at 0.80 the globe went milky, Africa's reds turned pink and the ocean lost
+     its depth. Swept at 0.10 / 0.20 / 0.35 and screenshotted at z1.4 over the Atlantic:
+
+       0.35   a visible halo, but the reds have started to wash toward pink
+       0.20   the halo is there, the limb is soft, and the imagery keeps its own contrast   ← shipped
+       0.10   barely separable from no air at all
+
+     ⚠ ONE NUMBER FOR ALL THREE BASEMAPS, and that is a PROPERTY OF THE COMPOSITE rather than a
+     shortcut. #R187 and #R205 needed three because an additive term clips over a bright surface —
+     Positron measures mean luminance 243, so anything added to it lands on white. Here a bright
+     background inverts to a LARGE radiance, which is the flat top of the tone map, so the same
+     in-scatter moves it by almost nothing. The clipping the two rounds were tuning against is
+     structural now, not a constant.
+
+     ⚠ AND THERE IS NO ZOOM TAPER. The old ramps fell to 0 by z15 because maplibre's pass covers the
+     whole screen and had to get out of the way of a street. This term is bounded by the PLANET — it
+     stops at the ground — and by `globeness`, which reaches 0 while the globe is still a globe.
+     Re-applying a zoom taper would put back a softer version of the cliff this round removed. */
+  function _discStrength(){ return 0.20; }
   function _limbOwnsRim(){
     try{
       if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
       if(_skyIsOwnedElsewhere()||_sunSimOwnsLight()) return false;
-      if(!(_eyeAltM()>_ATM_TOP_M)) return false;
+      /* ══ ⚠⚠ (#R237) «IS THERE A GLOBE», NOT «IS THE EYE ABOVE 100 km» ═════════════════════════════
+         `_eyeAltM()>_ATM_TOP_M` stood here. It is the cliff in 「ある程度までズームインすると途端に
+         見えなくなってしまう」: measured on the zoom sweep, ownership flips between z9 (eye 183 km)
+         and z10 (eye 92 km), and what it flips TO is maplibre's own pass, which is a 2 px sliver —
+         so the air went out in one frame at a fixed zoom. Below the shell the ray starts INSIDE the
+         air, which the layer now marches (see js/limb-layer.js and _limbUniforms), so the height of
+         the eye is no longer a reason to stop drawing. The gate is the one maplibre uses for its own
+         atmosphere — `globeness` — and the strength rides it continuously, so there is no zoom at
+         which the two owners disagree and none at which the air disappears in a step. */
+      if(!(_globeness()>0)) return false;
       if(_sunElevAtCentre()==null) return false;
       return !!(GE().layers&&GE().layers.addLimb);
     }catch(_){ return false; }
@@ -657,7 +696,7 @@ export function makeThemeSky(HOST, CTX) {
          asking again on every settle would re-run the whole sky block for ever — the wish would say
          yes, the answer would say no, and `_skyFollowCamera`'s comparison would never match. */
       if(want&&!there) _applyLimb._refused=true;
-      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there)});
+      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there), disc:_discStrength()});
       if(want&&there) _armLimbWatch();
       return !!(want&&there);
     }catch(_){ return false; }

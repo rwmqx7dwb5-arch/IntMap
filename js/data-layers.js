@@ -558,11 +558,11 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
        "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
     function _legendWhenText(id){ const jp=HOST.lang==='jp';
-      if(id==='radar') return (jp?'最新フレーム（実時間）':'Latest frame (live)');
+      if(id==='radar') return (window.IntMapLang.t(HOST.lang,'Latest frame (live)','最新フレーム（実時間）','Neuestes Bild (live)','Последний кадр (в реальном времени)','Último fotograma (en vivo)'));
       if(id==='thermal'){ const w=window._thermalWindow||'24'; return (jp?('直近'+w+'時間'):('Last '+w+' h')); }
       const d=layerDates[id]; if(!d) return '';
-      if(id==='temp') return (jp?'対象月: ':'Month: ')+String(d).slice(0,7);
-      return (jp?'データ: ':'Data: ')+d;
+      if(id==='temp') return (window.IntMapLang.t(HOST.lang,'Month: ','対象月: ','Monat: ','месяц: ','mes: '))+String(d).slice(0,7);
+      return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d;
     }
     /* (#R15d) The date/window control now lives IN the legend (not the Layers panel). For radar (live) we
        just show the as-of text; temp gets a month picker; sst/snow/aod a date picker; thermal a 24/48/72 h
@@ -1303,7 +1303,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML=(jp?'加盟年':'Year')+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+          row.innerHTML=(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
             NATO_YEARS.map(y=>'<option value="'+y+'"'+(y===_natoYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
           row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
         } else {
@@ -1311,7 +1311,7 @@ window.IntMapModules.dataLayers=function(HOST){
              accession year — the dense per-year ticks collided (1999/2004/2009/2017/2020/2023/2024 all
              bunched at the right) which was the "範囲のテキストが重なるクソUI". The selected year shows in
              the <b> readout, so no information is lost. */
-          row.innerHTML=(jp?'加盟年':'Year')+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
+          row.innerHTML=(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(NATO_YEARS.length-1)+'" step="1" value="'+NATO_YEARS.indexOf(_natoYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
             '<span style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+NATO_YEARS[0]+'</span><span>'+NATO_YEARS[NATO_YEARS.length-1]+'</span></span>'+
             '</span> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
@@ -1358,13 +1358,13 @@ window.IntMapModules.dataLayers=function(HOST){
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='eu-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML=(jp?'加盟年':'Year')+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+          row.innerHTML=(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
             EU_YEARS.map(y=>'<option value="'+y+'"'+(y===_euYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
           row.querySelector('.eu-year-sel').addEventListener('change',(e)=>{ _euYear=+e.target.value||_euYear; applyEu(); const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; });
         } else {
           /* (#R27) Same fix as NATO: label only the first/last year (space-between), not every dense
              enlargement year, so the range text no longer overlaps. */
-          row.innerHTML=(jp?'加盟年':'Year')+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
+          row.innerHTML=(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(EU_YEARS.length-1)+'" step="1" value="'+EU_YEARS.indexOf(_euYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
             '<span style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+EU_YEARS[0]+'</span><span>'+EU_YEARS[EU_YEARS.length-1]+'</span></span>'+
             '</span> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
@@ -2802,10 +2802,10 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* AIS ship-type code → label */
     function shipTypeLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
-      if(c===35) return jp?'軍用':'Military'; if(c===30) return jp?'漁船':'Fishing'; if(c===36) return jp?'帆船':'Sailing'; if(c===37) return jp?'プレジャー':'Pleasure craft';
-      if(c>=60&&c<=69) return jp?'旅客船':'Passenger'; if(c>=70&&c<=79) return jp?'貨物船':'Cargo'; if(c>=80&&c<=89) return jp?'タンカー':'Tanker';
-      if(c>=40&&c<=49) return jp?'高速船':'High-speed craft'; if(c===50) return jp?'パイロット':'Pilot'; if(c===51) return 'SAR'; if(c===52) return jp?'タグ':'Tug'; if(c===55) return jp?'法執行':'Law enforcement';
-      return jp?'その他':'Other'; }
+      if(c===35) return window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar'); if(c===30) return window.IntMapLang.t(HOST.lang,'Fishing','漁船','Fischerei','Рыболовное','Pesca'); if(c===36) return window.IntMapLang.t(HOST.lang,'Sailing','帆船','Segelschiff','Парусное','Vela'); if(c===37) return window.IntMapLang.t(HOST.lang,'Pleasure craft','プレジャー','Sportboot','Прогулочное судно','Embarcación de recreo');
+      if(c>=60&&c<=69) return window.IntMapLang.t(HOST.lang,'Passenger','旅客船','Passagierschiff','Пассажирское','Pasaje'); if(c>=70&&c<=79) return window.IntMapLang.t(HOST.lang,'Cargo','貨物船','Frachtschiff','Грузовое','Carga'); if(c>=80&&c<=89) return window.IntMapLang.t(HOST.lang,'Tanker','タンカー','Tanker','Танкер','Petrolero');
+      if(c>=40&&c<=49) return window.IntMapLang.t(HOST.lang,'High-speed craft','高速船','Schnellboot','Скоростное судно','Nave rápida'); if(c===50) return window.IntMapLang.t(HOST.lang,'Pilot','パイロット','Lotsenboot','Лоцманское','Práctico'); if(c===51) return 'SAR'; if(c===52) return window.IntMapLang.t(HOST.lang,'Tug','タグ','Schlepper','Буксир','Remolcador'); if(c===55) return window.IntMapLang.t(HOST.lang,'Law enforcement','法執行','Behördenschiff','Правоохранительное','Autoridad');
+      return window.IntMapLang.t(HOST.lang,'Other','その他','Sonstige','Прочее','Otro'); }
     /* AIS navigational-status code → label */
     function navStatusLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
       const en=['Under way (engine)','At anchor','Not under command','Restricted maneuverability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
@@ -3400,39 +3400,39 @@ window.IntMapModules.dataLayers=function(HOST){
     function trafficTooltipHTML(id,p){
       const jp=HOST.lang==='jp';
       const row=(label,val)=>val!==''&&val!=null?`<div style="font-size:11px;margin-top:2px;"><span style="color:var(--text-muted);">${label}:</span> ${val}</div>`:'';
-      const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(jp?'軍用':'Military'):(jp?'民間':'Civilian')}</div>`;
+      const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar')):(window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданское','Civil'))}</div>`;
       if(id==='ships'){
         const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi||'—'));
         const spd=p.vel!=null?(Math.round(p.vel*10)/10)+' kn'+(p.vel?` · ${Math.round(p.vel*1.852)} km/h`:''):'';
         return `<div style="font-weight:700;font-size:13px;">🚢 ${nm}</div>`+
-          row(jp?'種別':'Type',shipTypeLabel(p.shipType))+
+          row(window.IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo'),shipTypeLabel(p.shipType))+
           row('MMSI',p.mmsi)+
-          row(jp?'呼出符号':'Call sign',escapeHtml(p.callsign||''))+
+          row(window.IntMapLang.t(HOST.lang,'Call sign','呼出符号','Rufzeichen','Позывной','Indicativo'),escapeHtml(p.callsign||''))+
           (p.imo?row('IMO',p.imo):'')+
-          row(jp?'速力':'Speed',spd)+
-          row(jp?'針路(COG)':'Course',p.cog!=null?Math.round(p.cog)+'°':'')+
-          row(jp?'船首方位':'Heading',p.heading!=null?Math.round(p.heading)+'°':'')+
-          row(jp?'状態':'Status',navStatusLabel(p.navStatus))+
-          row(jp?'喫水':'Draught',p.draught?p.draught+' m':'')+
-          row(jp?'仕向地':'Destination',escapeHtml(p.dest||''))+
+          row(window.IntMapLang.t(HOST.lang,'Speed','速力','Geschwindigkeit','Скорость','Velocidad'),spd)+
+          row(window.IntMapLang.t(HOST.lang,'Course','針路(COG)','Kurs (COG)','Курс (COG)','Rumbo (COG)'),p.cog!=null?Math.round(p.cog)+'°':'')+
+          row(window.IntMapLang.t(HOST.lang,'Heading','船首方位','Steuerkurs','Курс носа','Proa'),p.heading!=null?Math.round(p.heading)+'°':'')+
+          row(window.IntMapLang.t(HOST.lang,'Status','状態','Status','Состояние','Estado'),navStatusLabel(p.navStatus))+
+          row(window.IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?p.draught+' m':'')+
+          row(window.IntMapLang.t(HOST.lang,'Destination','仕向地','Ziel','Пункт назначения','Destino'),escapeHtml(p.dest||''))+
           typeChip+
-          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(jp?'最終受信':'Last seen')+' '+agoStr(Math.floor((p.t||0)/1000))}<br>aisstream.io · AIS</div>`;
+          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>aisstream.io · AIS</div>`;
       }
       /* planes — every available ADS-B field (airplanes.live) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
       const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
-      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(jp?'水平飛行':'level'):'');
+      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(window.IntMapLang.t(HOST.lang,'level','水平飛行','Reiseflug','горизонтальный полёт','nivelado')):'');
       const acName=p.desc||p.acType||'';
       return `<div style="font-weight:700;font-size:13px;">✈️ ${p.callsign||p.reg||p.icao24||'—'}</div>`+
-        row(jp?'機体':'Aircraft',acName)+
-        row(jp?'登録記号':'Reg.',p.reg)+
+        row(window.IntMapLang.t(HOST.lang,'Aircraft','機体','Luftfahrzeug','Воздушное судно','Aeronave'),acName)+
+        row(window.IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),p.reg)+
         row('ICAO24',p.icao24?p.icao24.toUpperCase():'')+
-        row(jp?'高度(気圧)':'Altitude',p.onGround?(jp?'地上':'on ground'):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
-        row(jp?'高度(GPS)':'Geo alt',p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
-        row(jp?'対地速度':'Speed',p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
-        row(jp?'針路':'Track',p.heading!=null?Math.round(p.heading)+'°':'')+
-        row(jp?'昇降率':'Vert. rate',vr)+
-        row(jp?'スコーク':'Squawk',p.squawk)+
+        row(window.IntMapLang.t(HOST.lang,'Altitude','高度(気圧)','Höhe (baro)','Высота (баро)','Altitud (baro)'),p.onGround?(window.IntMapLang.t(HOST.lang,'on ground','地上','am Boden','на земле','en tierra')):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
+        row(window.IntMapLang.t(HOST.lang,'Geo alt','高度(GPS)','Höhe (GPS)','Высота (GPS)','Altitud (GPS)'),p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
+        row(window.IntMapLang.t(HOST.lang,'Speed','対地速度','Geschwindigkeit','Путевая скорость','Velocidad'),p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
+        row(window.IntMapLang.t(HOST.lang,'Track','針路','Kurs über Grund','Путевой угол','Derrota'),p.heading!=null?Math.round(p.heading)+'°':'')+
+        row(window.IntMapLang.t(HOST.lang,'Vert. rate','昇降率','Steig-/Sinkrate','Верт. скорость','Régimen vertical'),vr)+
+        row(window.IntMapLang.t(HOST.lang,'Squawk','スコーク','Squawk','Сквок','Squawk'),p.squawk)+
         typeChip+
         /* (#R173) what a click will draw, and how much of it there is. Named "observed" because that is
            exactly what it is — the fixes this browser has received, not a history we do not have. */
@@ -3447,7 +3447,7 @@ window.IntMapModules.dataLayers=function(HOST){
             ? (window.IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
             : (window.IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
           return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
-        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ（実データ取得不可）':'Simulated placeholder (live feed unavailable)'):(jp?'最終受信':'Last seen')+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(window.IntMapLang.t(HOST.lang,'Simulated placeholder (live feed unavailable)','※デモ用合成データ（実データ取得不可）','Simulierte Platzhalterdaten (kein Live-Feed)','Демонстрационные данные (живой поток недоступен)','Datos simulados de muestra (sin flujo en vivo)')):(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
     }
     function setupTrafficLayer(id){
       if(GE().layers.hasSource('src-'+id)) return;
@@ -3650,7 +3650,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!s){ box.textContent=''; return; }
       const jp=HOST.lang==='jp';
       if(s.loading){ box.textContent=jp?'カタログを取得中…':window.IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
-      if(s.err&&!s.catalogue){ box.textContent=(jp?'取得できませんでした: ':'Could not load: ')+s.err; return; }
+      if(s.err&&!s.catalogue){ box.textContent=(window.IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;

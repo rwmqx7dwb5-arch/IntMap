@@ -70,24 +70,24 @@ export function makeAtlasControls(HOST, CTX) {
       const sp=row.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label')||row.querySelector('span');
       return String((sp?sp.textContent:row.textContent)||'').replace(/\s+/g,' ').trim().slice(0,40); }catch(_){ return ''; } }
     function _uiNameSweep(){ try{ const jp=HOST.lang==='jp';
-      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) b.setAttribute('aria-label',(jp?'お気に入り: ':'favorite: ')+l2); });
-      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(jp?'透明度: ':'opacity: ')+l2); });
+      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
+      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'opacity: ','透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
       document.querySelectorAll('input.dl-date:not([aria-label])').forEach(i2=>{ let l2=_rowLbl(i2);
         if(!l2){ const lg=i2.closest('[id^="data-legend-"]'); if(lg) l2=lg.id.replace(/^data-legend-/,''); }   /* date inputs live in the layer's LEGEND, not its row */
-        if(l2) i2.setAttribute('aria-label',(jp?'日付: ':'date: ')+l2); });
+        if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });
       document.querySelectorAll('#layer-dropdown input[type=checkbox]:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); });
       document.querySelectorAll('button.layer-popup-x:not([aria-label])').forEach(b=>{ let nm2='';
         const box=b.closest('[id^="data-legend-"]')||b.closest('[id$="-legend"]')||b.closest('[id^="legend"]')||b.closest('.layer-popup')||b.closest('.data-legend');
         if(box){ /* first heading candidate that contains REAL text (skip the ⋮⋮ drag handle) */
           let t3=''; try{ [].slice.call(box.querySelectorAll('b, strong, .lgd-t, span')).some(h=>{ const x2=String(h.textContent||'').replace(/\s+/g,' ').trim(); if(/\p{L}/u.test(x2)&&x2.length>=2){ t3=x2; return true; } return false; }); }catch(_){}
           nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
-        b.setAttribute('aria-label',(jp?'凡例を閉じる: ':'close legend: ')+(nm2||'legend')); });
-      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',jp?'海面上昇 (m)':'sea level rise (m)'); });
+        b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
+      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
       /* generic: an unnamed ×/✕ button is a CLOSE button for its nearest identified container */
       document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label])').forEach(b=>{ try{
         const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[×✕✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
-        b.setAttribute('aria-label',(jp?'閉じる: ':'close: ')+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
+        b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
       document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label','file: '+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
       /* unnamed generic checkboxes/radios outside the layer panel: take the row text they sit in */
       document.querySelectorAll('input[type=checkbox]:not([aria-label]), input[type=radio]:not([aria-label])').forEach(i2=>{ try{

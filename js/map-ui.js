@@ -880,7 +880,7 @@ window.IntMapModules.labelPopup=function(HOST){
          popup shows it too — previously the flag only appeared in the full country card, never here ("国旗…まだ詰め
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
       const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
-      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
+      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':window.IntMapLang.t(HOST.lang,'Copy','コピー','Kopieren','Копировать','Copiar')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
@@ -896,7 +896,7 @@ window.IntMapModules.labelPopup=function(HOST){
             for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ window.IntMapOutline&&window.IntMapOutline.show&&window.IntMapOutline.show(name,{geojson:f.geometry,lng:lngLat.lng,lat:lngLat.lat,fit:false}); break; } }catch(_){} } } }catch(_){} }
         }
         setTimeout(()=>{ try{ const xb=document.querySelector('.plc-popup .maplibregl-popup-close-button'); if(xb) xb.addEventListener('click',()=>{ try{ clearHL(); }catch(_){} }); }catch(_){}
-          const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
+          const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=window.IntMapLang.t(HOST.lang,'✓ Copied','✓ コピーしました','✓ Kopiert','✓ Скопировано','✓ Copiado'); };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
              (REST summary probe, CORS*). Opens the article in a new tab. */
           const w=document.querySelector('.plc-wiki');
@@ -935,7 +935,7 @@ window.IntMapModules.labelPopup=function(HOST){
             try{ if(g&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(g,name); }
               else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} }); };
           const mv=document.querySelector('.plc-move');
-          if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(jp?'この場所の範囲が取得できませんでした':'No boundary available for this place'); }catch(_){} return; }
+          if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,'No boundary available for this place','この場所の範囲が取得できませんでした','Für diesen Ort ist keine Grenze verfügbar','Для этого места нет границы','No hay límite disponible para este lugar')); }catch(_){} return; }
             try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
             try{ window.IntMapMoveShape&&window.IntMapMoveShape.start(g,name); }catch(_){} }); };
         },0);

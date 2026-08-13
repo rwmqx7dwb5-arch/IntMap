@@ -643,10 +643,15 @@ window.IntMapModules.seismic=function(HOST){
        The app already owns the machinery that solves all three — HOST.diskOutlineLines splits at the
        seam with boundary points inserted (#R176, the radius tool's rings) — and seismic.js was the
        ONE consumer that re-derived rings by hand instead of using it. */
+    /* (#R237) …and the point-source ring is densified by the same rule as the rupture envelope, so
+       「離散的ではなくスムーズに」 is one answer and not two. `_frontSteps` is declared later in this
+       closure but only ever CALLED from here at draw time, which is long after the whole factory body
+       has run — the #R200 trap is a `let` read during evaluation, not a function read during a draw. */
     function ringLines(centre,angDeg){
       const a=Math.min(179.9,Math.max(0.02,angDeg));
-      try{ const w=HOST.diskOutlineLines(centre,a*D*RE,180); if(w&&w.length) return w; }catch(_){}
-      const out=[]; for(let i=0;i<=180;i++) out.push(destAng(centre,i*2,a));   /* renderer-less fallback */
+      let n=180; try{ n=Math.max(180,Math.round(_frontSteps(a)/2)*2); }catch(_){}
+      try{ const w=HOST.diskOutlineLines(centre,a*D*RE,n); if(w&&w.length) return w; }catch(_){}
+      const out=[]; for(let i=0;i<=n;i++) out.push(destAng(centre,i*360/n,a));   /* renderer-less fallback */
       return [out];
     }
 
@@ -1247,13 +1252,14 @@ window.IntMapModules.seismic=function(HOST){
        would take the focus out of the box the reader is typing in (which is why #R190 made touch()
        call report() and not render() in the first place). */
     function _needsRun(){ return !fld||fldStale; }
-    function _runBtnStyle(){ return BTN+'width:100%;font-weight:700;'
-      +(_needsRun()?'background:var(--primary-color);color:#fff;border-color:transparent;':''); }
+    /* (#R237) a CLASS, not a cssText — the two states are 「やることがある」 and 「答えを見ている」
+       (#R234), and both are now one word in the sheet rather than a string of declarations. */
+    function _runBtnClass(){ return 'sq-run sq-btn sq-btn-wide'+(_needsRun()?' sq-btn-accent':''); }
     function _runBtnLabel(){ return '▶ '+(_needsRun()
       ?L('Compute the intensity map','震度分布を計算','Intensitätskarte berechnen','Рассчитать поле интенсивности','Calcular el mapa de intensidad')
       :L('Recompute the intensity map','震度分布を再計算','Intensitätskarte neu berechnen','Пересчитать поле интенсивности','Recalcular el mapa de intensidad')); }
     function _paintRunBtn(){ try{ const b=panel&&panel.querySelector('.sq-run'); if(!b) return;
-      b.style.cssText=_runBtnStyle(); b.innerHTML=_runBtnLabel(); }catch(_){} }
+      b.className=_runBtnClass(); b.innerHTML=_runBtnLabel(); }catch(_){} }
     function markStale(){ fldStale=true; if(opened){ report(); _paintRunBtn(); } }
     function schedField(){ clearTimeout(fldT); fldT=setTimeout(()=>{ buildField(); },260); }
     async function buildField(){
@@ -1939,9 +1945,42 @@ window.IntMapModules.seismic=function(HOST){
     }
     /* the ring is built in CONTINUOUS longitude and split at the seam by the same helper every other
        ring uses, so the polar/antimeridian behaviour is identical to ringLines(). */
+    /* ══ ⚠ (#R237) HOW MANY BEARINGS A FRONT IS DRAWN FROM — 「動作は離散的ではなくスムーズにして」 ═══
+       144 was a constant, i.e. 2.5° of arc between vertices whatever the front's size and whatever
+       the camera is doing. That is invisible on a whole-Earth view and a visible polygon the moment
+       the reader zooms in on the coast the front is about to reach, which is the one thing this
+       animation exists to be watched doing: at z6 a front 300 km out has its vertices about 13 km
+       apart, and 13 km is ~40 screen pixels there, so the arc is drawn as a chain of straight lines
+       long enough to see.
+
+       The count is chosen from the arc the front actually subtends ON SCREEN — the front's radius in
+       pixels at the current zoom — so a vertex lands about every 6 px whatever the combination of
+       radius and zoom. That is the same rule the app already uses for great-circle densification and
+       it is bounded at both ends: never coarser than the old 144 (so nothing regresses), never finer
+       than 720 (2 vertices per degree, past which the GeoJSON costs more than the smoothness is
+       worth on a phone).
+
+       ⚠ IT IS BOUNDED BY THE SCREEN, NOT BY THE FRONT'S SIZE IN KILOMETRES. A front the size of the
+       Pacific viewed from space needs FEWER vertices than a 50 km front viewed from a city, and a
+       rule written on the kilometre would get both backwards. */
+    function _frontSteps(Rdeg){
+      let px=null;
+      try{
+        const z=GE().camera.getZoom(), c=GE().camera.getCenter();
+        if(isFinite(z)&&c){
+          /* metres per pixel at this latitude and zoom — the renderer's own scale */
+          const mpp=156543.03392*Math.cos(c.lat*D)/Math.pow(2,z);
+          if(mpp>0) px=(Rdeg*D*RE*1000)/mpp;         /* the front's radius, in screen pixels */
+        }
+      }catch(_){}
+      if(!(px>0)) return 144;
+      /* one vertex per ~6 px of the circumference */
+      const n=Math.round((2*Math.PI*px)/6);
+      return Math.max(144,Math.min(720,n));
+    }
     function faultFrontLines(rFor){
-      const K=_srcPts(); if(_envR(K,rFor,0)==null) return null;
-      const NB2=144, ringPts=[]; let prev=null;
+      const K=_srcPts(); const R0=_envR(K,rFor,0); if(R0==null) return null;
+      const NB2=_frontSteps(R0), ringPts=[]; let prev=null;
       for(let a2=0;a2<=NB2;a2++){ const b=a2*360/NB2; const R=_envR(K,rFor,b); if(R==null) return null;
         const p=destAng(epi,b,Math.min(179.9,Math.max(0.02,R)));
         let lo=p[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; }
@@ -2060,12 +2099,83 @@ window.IntMapModules.seismic=function(HOST){
        reading by having no chip behind it — (#R235) 「太字禁止」 took the chip's weight to 400 too,
        so the two are told apart by the coloured background alone, which is the thing that carries
        the meaning anyway. */
+    /* ══ ⚠⚠ (#R237) 「地震シミュレータのUIが分かりにくすぎるから全面的に改修し、モダンな実装でiOS風に」
+       ═══════════════════════════════════════════════════════════════════════════════════════════════
+       WHAT WAS ACTUALLY HARD TO READ. #R234 gave the panel one type scale and one text colour, and
+       that fixed the drift it was asked about — but it left the SHAPE alone, and the shape is the
+       report: fifteen controls in one flat column, `gap:9px` between every pair of them, so
+       「どの地震を読み込むか」, 「震源をどう作るか」, 「モデルの仮定」, 「再生」 and 「結果」 all sit at
+       the same level with nothing saying where one ends and the next begins. Reading it means
+       reading all of it. Grouping is the change; the type scale is #R234's, unchanged.
+
+       WHAT iOS ACTUALLY IS, and what it is not. It is not rounder corners: it is the grouped inset
+       list — a titled card per topic, hairline separators inside a card and none between cards, one
+       row per control with its label on the left and its value on the right, and a 44 px touch row.
+       The panel is now six of those cards, in the order the work is done:
+
+           地震を選ぶ → 震源を作る → パラメータ → 表示 → 計算と再生 → 結果 → 注意と出典
+
+       ⚠ EVERY CLASS NAME THE HANDLERS BIND TO IS UNCHANGED. `.sq-d`, `.sq-m`, `.sq-run`, `.sq-t` …
+       all forty of them keep their selectors, so this is a re-grouping of the same markup and not a
+       rewrite of the panel's behaviour — which is what makes it reviewable. #R236's lesson applies
+       in reverse here: a control that is MOVED is safe, a control that is DELETED takes its handler
+       with it or the panel throws inside render().
+
+       ⚠ THE SHEET IS INJECTED BY THIS MODULE, NOT ADDED TO css/intmap.css. That file is a
+       render-blocking <link> on every page load; this panel is behind a button and behind
+       js/lazy-modules.js. Putting its styling in the boot path would pay for it on every visit that
+       never opens the simulator, and this round is also asked to make the boot smaller. */
     const FS='12px', FS_S='11px', FS_H='13px';
-    const NUM='width:84px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:'+FS+';padding:0 6px;box-sizing:border-box;';
-    const ROW='font-size:'+FS+';color:var(--text-main);display:flex;justify-content:space-between;align-items:center;gap:8px;';
-    const BTN='padding:7px 9px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:'+FS+';cursor:pointer;';
+    function _ensureCss(){
+      if(document.getElementById('sq-ios-css')) return;
+      const s=document.createElement('style'); s.id='sq-ios-css';
+      s.textContent=[
+        /* the card: one topic, hairlines inside it, nothing between it and the next but space */
+        '.sq-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
+        /* ⚠ FS_S, not a literal 11px. #R234 replaced NINE drifting sizes with three constants and
+           tests/r234 checks that no fourth one appears — a sheet that writes its own number is how
+           the drift starts again, and the check caught exactly that in the first cut of this round. */
+        '.sq-cap{font-size:'+FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 3px 5px;}',
+        /* ⚠ NOT --text-muted. #R234: 「必須ではない限り灰色を使わないように」 — a caption is text the
+           reader is meant to read, so it is full contrast and separates itself by size and weight. */
+        '.sq-sec{display:flex;flex-direction:column;}',
+        '.sq-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;'
+          +'padding:7px 11px;font-size:'+FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.sq-row+.sq-row,.sq-row+.sq-blk,.sq-blk+.sq-row,.sq-blk+.sq-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        '.sq-blk{padding:9px 11px;font-size:'+FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.sq-row>span:first-child,.sq-row>label:first-child{flex:0 1 auto;min-width:0;}',
+        /* the value side of a row: right-aligned, the way a grouped list puts it */
+        '.sq-val{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto;}',
+        '.sq-num{width:78px;height:28px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';padding:0 7px;box-sizing:border-box;text-align:right;}',
+        '.sq-num:disabled{opacity:.55;}',
+        '.sq-sel{height:28px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';padding:0 6px;box-sizing:border-box;max-width:100%;}',
+        /* the segmented control: one track, the chosen segment carries the accent (#R206's rule) */
+        '.sq-segwrap{display:flex;gap:3px;background:var(--input-bg);border-radius:10px;padding:3px;}',
+        '.sq-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+FS+';'
+          +'font-weight:500;padding:7px 6px;border-radius:8px;cursor:pointer;line-height:1.25;}',
+        '.sq-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        '.sq-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';cursor:pointer;}',
+        '.sq-btn-wide{width:100%;min-height:40px;border-radius:12px;font-weight:600;}',
+        '.sq-btn-accent{background:var(--primary-color);color:#fff;border-color:transparent;}',
+        /* the instruction banner keeps #R234's shape and moves inside the card it belongs to */
+        '.sq-banner{padding:8px 10px;border-radius:9px;background:var(--input-bg);'
+          +'border-left:3px solid var(--primary-color);color:var(--text-main);font-size:'+FS_S+';line-height:1.6;}',
+        '.sq-card details>summary{cursor:pointer;font-size:'+FS+';color:var(--text-main);padding:9px 11px;list-style:revert;}',
+        '.sq-card details[open]>summary{border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        '.sq-card details>div{padding:9px 11px;display:flex;flex-direction:column;gap:8px;}',
+        '.sq-card details+.sq-row,.sq-card details+.sq-blk,.sq-row+details,.sq-blk+details{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+      ].join('');
+      document.head.appendChild(s);
+    }
+    /* the three inline constants #R234 left behind, now naming the classes above. They are kept as
+       constants rather than inlined so the ~40 call sites below did not all have to be touched. */
+    const NUM='', ROW='', BTN='';
+    const CNUM='class="sq-num sq-row sq-btn"', CROW='', CBTN='';
     /* (#R205) the two halves of the map-click switch — the selected one wears the accent */
-    const SEG=(on)=>BTN+'flex:1;'+(on?'background:var(--primary-color);color:#fff;border-color:transparent;font-weight:700;':'');
+    const SEGC=(on)=>'sq-seg'+(on?' on':'');
     /* ══ (#R234) THE ONE PLACE THIS PANEL GIVES AN INSTRUCTION ════════════════════════════════════
        「このボタンをクリックしたら、何をすればいいかの指示が出るように。」 and 「◎ 震源地を設置・移動、
          ◇ 観測地点を追加ボタンについても、同様のわかりやすい案内（バナー等）を出すように。」
@@ -2074,9 +2184,7 @@ window.IntMapModules.seismic=function(HOST){
        #R220's rule that a hint has one job and an idle panel should not narrate its own idleness.
        ⚠ It is NOT `--text-muted`: an instruction the reader is being asked to follow is the last
        thing that should be the faintest text on screen. */
-    const BANNER=(txt)=>'<div class="sq-banner" style="padding:8px 10px;border-radius:8px;background:var(--input-bg);'
-      +'border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-left:3px solid var(--primary-color);'
-      +'color:var(--text-main);font-size:'+FS_S+';line-height:1.6;">'+txt+'</div>';
+    const BANNER=(txt)=>'<div class="sq-banner">'+txt+'</div>';
     /* ══ (#R224) 詳細設定 — the five numbers the reader may take off auto ═══════════════════════════
        A <details>, closed by default, because the instruction is explicit that the normal path is
        「自動推定だけで自然な結果」 — the overrides must be reachable without being in the way.
@@ -2086,11 +2194,11 @@ window.IntMapModules.seismic=function(HOST){
     let _fadvOpen=false;
     function _fadvRow(k,label,val,step,min,max,unit){
       const pinned=(faultOver[k]!=null);
-      return '<label style="'+ROW+'">'+label+(unit?(' <span style="opacity:.6;">'+unit+'</span>'):'')
-        +'<input class="sq-fadv" data-k="'+k+'" type="number" step="'+step+'" min="'+min+'" max="'+max+'"'
+      return '<label class="sq-row">'+label+(unit?(' <span style="opacity:.6;">'+unit+'</span>'):'')
+        +'<input class="sq-fadv sq-num" data-k="'+k+'" type="number" step="'+step+'" min="'+min+'" max="'+max+'"'
         +' value="'+(pinned?faultOver[k]:'')+'" placeholder="'+val+'"'
         +' title="'+L('Leave empty to estimate it','空欄で自動推定','Leer lassen = geschätzt','Пусто — оценивается','Vacío = estimado')+'"'
-        +' style="'+NUM+(pinned?'border-color:var(--primary-color);':'')+'"></label>';
+        +''+(pinned?' style="border-color:var(--primary-color);"':'')+'></label>';
     }
     /* ══ (#R234) 詳細設定 — the model's own assumptions (#R233 item ⑲) ════════════════════════════
        Three controls that were on the panel's front page and describe the MODEL rather than the
@@ -2104,23 +2212,23 @@ window.IntMapModules.seismic=function(HOST){
         +'<summary style="cursor:pointer;font-size:'+FS+';color:var(--text-main);padding:2px 0;">'
         +L('Advanced — model assumptions','詳細設定 — モデルの仮定','Erweitert — Modellannahmen','Подробно — допущения модели','Avanzado — supuestos del modelo')
         +'</summary><div style="display:flex;flex-direction:column;gap:8px;padding:7px 0 2px;">'
-        +'<label style="'+ROW+'">'+L('Stress drop (MPa)','応力降下量 (MPa)','Spannungsabfall (MPa)','Сброс напряжений (МПа)','Caída de esfuerzo (MPa)')+'<input class="sq-sd" type="number" min="0.3" max="30" step="0.5" value="'+stressDropMPa+'" style="'+NUM+'"></label>'
-        +'<label style="'+ROW+'">'+L('Ground (no-DEM fallback)','地盤（DEM欠損時）','Untergrund (ohne DEM)','Грунт (без DEM)','Terreno (sin DEM)')
-          +'<select class="sq-site" style="'+NUM+'width:132px;">'
+        +'<label class="sq-row">'+L('Stress drop (MPa)','応力降下量 (MPa)','Spannungsabfall (MPa)','Сброс напряжений (МПа)','Caída de esfuerzo (MPa)')+'<input class="sq-sd sq-num" type="number" min="0.3" max="30" step="0.5" value="'+stressDropMPa+'"></label>'
+        +'<label class="sq-row">'+L('Ground (no-DEM fallback)','地盤（DEM欠損時）','Untergrund (ohne DEM)','Грунт (без DEM)','Terreno (sin DEM)')
+          +'<select class="sq-site sq-sel" style="width:132px;">'
           +'<option value="hard">'+L('hard rock (Vs30 1500)','固い岩盤 (Vs30 1500)','Festgestein (Vs30 1500)','скала (Vs30 1500)','roca dura (Vs30 1500)')+'</option>'
           +'<option value="rock">'+L('rock (Vs30 760)','岩盤 (Vs30 760)','Fels (Vs30 760)','порода (Vs30 760)','roca (Vs30 760)')+'</option>'
           +'<option value="stiff">'+L('stiff soil (Vs30 360)','硬い地盤 (Vs30 360)','steifer Boden (Vs30 360)','плотный грунт (Vs30 360)','suelo firme (Vs30 360)')+'</option>'
           +'<option value="soft">'+L('soft soil (Vs30 180)','軟弱地盤 (Vs30 180)','weicher Boden (Vs30 180)','мягкий грунт (Vs30 180)','suelo blando (Vs30 180)')+'</option>'
           +'</select></label>'
         /* (#R190) the crustal Q — the assumption the far field is most sensitive to */
-        +'<label style="'+ROW+'">'+L('Crustal Q = Q₀·f^η','地殻の Q = Q₀·f^η','Krusten-Q = Q₀·f^η','Q коры = Q₀·f^η','Q cortical = Q₀·f^η')
-          +'<span style="display:flex;gap:5px;"><input class="sq-q0" type="number" min="30" max="2000" step="10" value="'+QS0+'" title="Q₀" style="'+NUM+'width:62px;">'
-          +'<input class="sq-qe" type="number" min="0" max="1" step="0.05" value="'+QETA+'" title="η" style="'+NUM+'width:62px;"></span></label>'
+        +'<label class="sq-row">'+L('Crustal Q = Q₀·f^η','地殻の Q = Q₀·f^η','Krusten-Q = Q₀·f^η','Q коры = Q₀·f^η','Q cortical = Q₀·f^η')
+          +'<span style="display:flex;gap:5px;"><input class="sq-q0 sq-num" type="number" min="30" max="2000" step="10" value="'+QS0+'" title="Q₀" style="width:62px;">'
+          +'<input class="sq-qe sq-num" type="number" min="0" max="1" step="0.05" value="'+QETA+'" title="η" style="width:62px;"></span></label>'
         /* (#R235) the surface-wave path term — the one lateral-heterogeneity assumption the fronts
            carry, filed beside the other priors-on-the-model rather than on the event's side of the
            panel (#R234 ⑪). 1.00 restores the constant-velocity circles exactly. */
-        +'<label style="'+ROW+'">'+L('Oceanic path, surface waves (×)','海洋地殻を通る表面波 (×)','Ozeanischer Pfad, Oberflächenwellen (×)','Океанический путь, поверхностные волны (×)','Trayecto oceánico, ondas superficiales (×)')
-          +'<input class="sq-og" type="number" min="1" max="1.3" step="0.01" value="'+OCEAN_G+'" style="'+NUM+'"></label>'
+        +'<label class="sq-row">'+L('Oceanic path, surface waves (×)','海洋地殻を通る表面波 (×)','Ozeanischer Pfad, Oberflächenwellen (×)','Океанический путь, поверхностные волны (×)','Trayecto oceánico, ondas superficiales (×)')
+          +'<input class="sq-og sq-num" type="number" min="1" max="1.3" step="0.01" value="'+OCEAN_G+'"></label>'
         +'</div></details>';
     }
     function _faultAdvHTML(){
@@ -2143,7 +2251,7 @@ window.IntMapModules.seismic=function(HOST){
         +_fadvRow('zTopKm',L('Top depth','上端深さ','Obere Tiefe','Верх','Prof. superior'),fault.zTopKm.toFixed(1),0.5,0,700,'km')
         +_fadvRow('zBotKm',L('Bottom depth','下端深さ','Untere Tiefe','Низ','Prof. inferior'),fault.zBotKm.toFixed(1),0.5,0,700,'km')
         +_fadvRow('slipM',L('Average slip','平均すべり量','Mittlerer Versatz','Средняя подвижка','Deslizamiento medio'),fault.slipM.toFixed(2),0.1,0.01,80,'m')
-        +'<button class="sq-fauto" style="'+BTN+'width:100%;">'
+        +'<button class="sq-fauto sq-btn sq-btn-wide">'
         +L('Back to automatic','すべて自動推定に戻す','Zurück zu automatisch','Вернуть к авто','Volver a automático')+'</button>'
         +'</div></details>';
     }
@@ -2198,7 +2306,7 @@ window.IntMapModules.seismic=function(HOST){
     }
     function refresh(){ draw(); warmEpi(); schedField(); syncTsunamiSource(); }
     function touch(){ draw(); warmEpi(); markStale(); syncTsunamiSource(); }
-    function render(){ if(!panel) return;
+    function render(){ if(!panel) return; _ensureCss();
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         /* (#R232) 「地震シミュレータから🌐の絵文字を削除。」 A globe glyph in front of a panel that is
            already the earthquake panel said nothing, and the standing rule is no decorative emoji. */
@@ -2215,7 +2323,9 @@ window.IntMapModules.seismic=function(HOST){
            `…;display:flex;…`, so CSS's last-declaration-wins put the body straight back. MEASURED: the
            glyph flipped to ▢ and `getComputedStyle(.sq-body).display` stayed `flex`. One property, one
            declaration. */
-        +'<div class="sq-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:9px;max-height:min(72vh,640px);overflow-y:auto;">'
+        +'<div class="sq-body" style="padding:11px 12px 13px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:13px;max-height:min(72vh,640px);overflow-y:auto;">'
+        /* CARD 1 — 地震を選ぶ */
+        +'<div><div class="sq-cap">'+L('Load an earthquake','地震を読み込む','Beben laden','Загрузить землетрясение','Cargar un terremoto')+'</div><div class="sq-card">'
         /* ══ (#R232) 「過去の地震を選べる機能を付け、選んだら当時と同じ条件や震源域を精密に入力し、その
               結果を出すように。」 One control, at the top, because it REPLACES every input below it —
               hypocentre, depth, magnitude, focal mechanism, rupture rectangle and nucleation point all
@@ -2234,10 +2344,10 @@ window.IntMapModules.seismic=function(HOST){
            in the same place (applyEvent / applyReal each set up the panel the same way a hand-drawn
            event is set up). ⚠ The recent list is fetched on demand and only once — switching to it
            with nothing loaded starts the query, and the list says so while it runs. */
-        +'<div class="sq-ev-wrap" style="display:flex;flex-direction:column;gap:6px;">'
-        +'<div style="display:flex;gap:5px;">'
-          +'<button class="sq-src-past" style="'+SEG(evSrc!=='recent')+'">'+L('Past earthquakes','過去の地震','Vergangene Beben','Прошлые землетрясения','Terremotos pasados')+'</button>'
-          +'<button class="sq-src-recent" style="'+SEG(evSrc==='recent')+'">'+L('Recent earthquakes','最近の地震','Aktuelle Beben','Недавние землетрясения','Terremotos recientes')+'</button>'
+        +'<div class="sq-ev-wrap sq-blk" style="display:flex;flex-direction:column;gap:7px;">'
+        +'<div class="sq-segwrap">'
+          +'<button class="sq-src-past '+SEGC(evSrc!=='recent')+'">'+L('Past earthquakes','過去の地震','Vergangene Beben','Прошлые землетрясения','Terremotos pasados')+'</button>'
+          +'<button class="sq-src-recent '+SEGC(evSrc==='recent')+'">'+L('Recent earthquakes','最近の地震','Aktuelle Beben','Недавние землетрясения','Terremotos recientes')+'</button>'
         +'</div>'
         +'<select class="sq-ev" style="width:100%;box-sizing:border-box;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
         +(evSrc==='recent'
@@ -2250,7 +2360,11 @@ window.IntMapModules.seismic=function(HOST){
           : ('<option value="">'+L('Choose an earthquake…','地震を選んでください…','Beben auswählen…','Выберите землетрясение…','Elija un terremoto…')+'</option>'
              +QUAKE_EVENTS.map(e=>'<option value="'+e.id+'"'+(evId===e.id?' selected':'')+'>'+HOST.escapeHtml(L.apply(null,e.name))+' · M'+e.mw.toFixed(1)+'</option>').join('')))
         +'</select></div>'
-        +(evNow?('<div class="sq-ev-obs" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);padding:2px 0 2px 8px;">'+evObsHtml(evNow)+'</div>'):'')
+        +(evNow?('<div class="sq-ev-obs sq-blk" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);">'+evObsHtml(evNow)+'</div>'):'')
+        +'</div></div>'
+        /* CARD 2 — 震源を作る: the three steps, the instruction for whichever is armed, and what the
+           drawn rupture turned out to be. One card because they are one task. */
+        +'<div><div class="sq-cap">'+L('Build the source','震源を作る','Herd aufbauen','Задать очаг','Definir la fuente')+'</div><div class="sq-card">'
         /* ══ (#R212) ONE CONTROL FOR ONE THING ═══════════════════════════════════════════════════════
            「震源地を設置と震源地を移動と、二つのボタンに分ける意味が全く分からない。」 There is no
            difference between the two — an epicentre that exists is moved and one that does not is
@@ -2269,20 +2383,21 @@ window.IntMapModules.seismic=function(HOST){
            rows separated by the banner, which put the drawing button BELOW the instruction telling
            you to draw. ⚠ The ✕ is not a fourth step — it only exists once there is a rupture to
            clear, and it stays beside the button that made one. */
-        +'<div style="display:flex;gap:5px;align-items:stretch;">'
+        +'<div class="sq-blk" style="display:flex;gap:6px;align-items:stretch;"><div class="sq-segwrap" style="flex:1;">'
           /* (#R207) the second state is an EXIT, not a capture — the capture happens by itself when
              the stroke closes (see toggleFaultDraw / DrawTool's onFinish).
              ⚠ (#R234) 「『✏ 震源域をフリーで描く』に✏はいらない」 — and the ✔ went with it for the
              same reason: the button already says what it does, in words, in seven languages. */
-          +'<button class="sq-fdraw" style="'+SEG(!!_fDrawing)+'">'+(_fDrawing
+          +'<button class="sq-fdraw '+SEGC(!!_fDrawing)+'">'+(_fDrawing
               ?L('Finish drawing','描画を終了','Zeichnen beenden','Закончить рисование','Terminar el dibujo')
               :L('Draw the rupture area','震源域をフリーで描く','Bruchfläche zeichnen','Нарисовать очаг','Dibujar la ruptura'))+'</button>'
           /* ⚠ (#R234) NO GLYPH ON ANY BUTTON — 「◎ と◇はボタンにいらない」. The mark that says
              "this is what a map click does now" is the accent fill SEG() already carries; a symbol
              in front of the words was a second, weaker copy of the same statement. */
-          +'<button class="sq-cm-epi" style="'+SEG(clickMode==='epi')+'">'+L('Place the hypocenter','震央を配置','Hypozentrum setzen','Указать гипоцентр','Colocar el hipocentro')+'</button>'
-          +'<button class="sq-cm-sta" style="'+SEG(clickMode==='station')+'">'+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
-          +(fault?('<button class="sq-fclear" style="'+BTN+'flex:0 0 auto;">✕</button>'):'')
+          +'<button class="sq-cm-epi '+SEGC(clickMode==='epi')+'">'+L('Place the hypocenter','震央を配置','Hypozentrum setzen','Указать гипоцентр','Colocar el hipocentro')+'</button>'
+          +'<button class="sq-cm-sta '+SEGC(clickMode==='station')+'">'+L('Add a place','観測地点を追加','Ort hinzufügen','Добавить место','Añadir un lugar')+'</button>'
+        +'</div>'
+          +(fault?('<button class="sq-fclear sq-btn" style="flex:0 0 auto;">✕</button>'):'')
         +'</div>'
         /* ══ (#R234) …AND THE INSTRUCTION IS A BANNER, IN ONE PLACE, FOR ALL THREE MODES ═══════════
            「◎ 震源地を設置・移動、◇ 観測地点を追加ボタンについても、同様のわかりやすい案内（バナー等）を
@@ -2315,7 +2430,7 @@ window.IntMapModules.seismic=function(HOST){
            reader to guess which one is on screen would be the same defect in a new place. The slip is
            an estimate until it is typed — the row says which, so 「自動推定」 is visible rather than
            implied. */
-        +(fault?('<div class="sq-finfo" style="font-size:'+FS+';color:var(--text-main);line-height:1.65;">'
+        +(fault?('<div class="sq-finfo sq-blk" style="line-height:1.65;">'
           +L('Rupture','震源域','Bruchfläche','Очаг','Ruptura')+' <b style="color:var(--text-main);">'+Math.round(fault.areaKm2).toLocaleString()+' km²</b> '
           +L('(3-D fault plane)','（3D断層面）','(3-D-Bruchfläche)','(3-D плоскость)','(plano 3-D)')
           +' · '+L('surface projection','地表投影','Projektion','проекция','proyección')+' '+Math.round(fault.areaProjKm2).toLocaleString()+' km²<br>'
@@ -2324,11 +2439,16 @@ window.IntMapModules.seismic=function(HOST){
           +'D̄ '+fault.slipM.toFixed(2)+' m'+(fault.auto.slip?(' <span style="opacity:.7;">'+L('(auto)','（自動）','(auto)','(авто)','(auto)')+'</span>'):'')
           +' → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'
           +_faultAdvHTML()):'')
-        +'<label style="'+ROW+'">'+L('Depth (km)','深さ (km)','Tiefe (km)','Глубина (км)','Profundidad (km)')+'<input class="sq-d" type="number" min="0" max="700" step="5" value="'+depthKm+'" style="'+NUM+'"></label>'
-        +'<label style="'+ROW+'">'+L('Magnitude (Mw)','規模 (Mw)','Magnitude (Mw)','Магнитуда (Mw)','Magnitud (Mw)')+'<input class="sq-m" type="number" min="3" max="9.6" step="0.1" value="'+mw.toFixed(1)+'"'+(fault?' disabled title="'+L('Set by the drawn rupture — remove it to edit','描いた震源域から決まります（解除で編集可）','Durch die Bruchfläche bestimmt','Задана нарисованным очагом','Fijada por la ruptura dibujada')+'"':'')+' style="'+NUM+'"></label>'
+        +'</div></div>'
+        /* CARD 3 — パラメータ: what this earthquake IS, plus (folded) what the MODEL assumes.
+           #R234 moved the three model priors behind 詳細設定 for exactly this reason; the card now
+           says out loud which of the two kinds of number the reader is looking at. */
+        +'<div><div class="sq-cap">'+L('Parameters','パラメータ','Parameter','Параметры','Parámetros')+'</div><div class="sq-card">'
+        +'<label class="sq-row">'+L('Depth (km)','深さ (km)','Tiefe (km)','Глубина (км)','Profundidad (km)')+'<input class="sq-d sq-num" type="number" min="0" max="700" step="5" value="'+depthKm+'"></label>'
+        +'<label class="sq-row">'+L('Magnitude (Mw)','規模 (Mw)','Magnitude (Mw)','Магнитуда (Mw)','Magnitud (Mw)')+'<input class="sq-m sq-num" type="number" min="3" max="9.6" step="0.1" value="'+mw.toFixed(1)+'"'+(fault?' disabled title="'+L('Set by the drawn rupture — remove it to edit','描いた震源域から決まります（解除で編集可）','Durch die Bruchfläche bestimmt','Задана нарисованным очагом','Fijada por la ruptura dibujada')+'"':'')+'></label>'
         /* (#R189) which intensity scale is spoken — MMI, or the JMA scale via the PGV conversion */
-        +'<label style="'+ROW+'">'+L('Intensity scale','震度階級','Intensitätsskala','Шкала интенсивности','Escala de intensidad')
-          +'<select class="sq-scale" style="'+NUM+'width:132px;">'
+        +'<label class="sq-row">'+L('Intensity scale','震度階級','Intensitätsskala','Шкала интенсивности','Escala de intensidad')
+          +'<select class="sq-scale sq-sel" style="width:132px;">'
           +'<option value="mmi"'+(scale==='mmi'?' selected':'')+'>MMI</option>'
           +'<option value="jma"'+(scale==='jma'?' selected':'')+'>'+L('JMA (shindo)','気象庁震度','JMA (Shindo)','JMA (синдо)','JMA (shindo)')+'</option>'
           +'</select></label>'
@@ -2339,8 +2459,12 @@ window.IntMapModules.seismic=function(HOST){
            <details> shape as 詳細設定 — 断層形状 above it (#R224), closed by default, so nothing is
            lost and nothing is in the way. */
         +_modelAdvHTML()
+        +'</div></div>'
+        /* CARD 4 — 計算と再生: the one button that computes, the bar that says how far it got, and
+           the transport that moves time. They are one card because they are one loop. */
+        +'<div><div class="sq-cap">'+L('Run and playback','計算と再生','Rechnen und Wiedergabe','Расчёт и воспроизведение','Cálculo y reproducción')+'</div><div class="sq-card">'
         /* ══ (#R190) 「震度の塗は透明度選択を可能に」 ═══════════════════════════════════════════════ */
-        +'<label style="'+ROW+'">'+L('Intensity fill opacity','震度分布の不透明度','Deckkraft der Fläche','Непрозрачность заливки','Opacidad del relleno')
+        +'<label class="sq-row">'+L('Intensity fill opacity','震度分布の不透明度','Deckkraft der Fläche','Непрозрачность заливки','Opacidad del relleno')
           +'<span style="display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;">'
           +'<input type="range" class="sq-op" min="5" max="100" step="5" value="'+Math.round(fldOpacity*100)+'" style="width:112px;">'
           +'<b class="sq-opv" style="min-width:34px;text-align:right;color:var(--text-main);">'+Math.round(fldOpacity*100)+'%</b></span></label>'
@@ -2358,16 +2482,19 @@ window.IntMapModules.seismic=function(HOST){
 
            ⚠ ONE PREDICATE, READ IN TWO PLACES. The wording and the colour come from the same
            `_needsRun` so they cannot disagree — which is the defect #R206 wrote up for this panel. */
-        +'<button class="sq-run" style="'+_runBtnStyle()+'">'+_runBtnLabel()+'</button>'
-        +'<div class="sq-prog" style="display:none;">'
+        +'<div class="sq-blk"><button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button></div>'
+        +'<div class="sq-prog sq-blk" style="display:none;">'
           +'<div class="sq-progl" style="margin-bottom:4px;font-size:'+FS+';color:var(--text-main);"></div>'
           +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
           +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>'
         /* (#R189) real-time playback with a visible rate */
-        +'<div style="display:flex;align-items:center;gap:8px;"><button class="sq-play" style="'+BTN+'width:36px;">▶</button>'
+        +'<div class="sq-blk" style="display:flex;align-items:center;gap:8px;"><button class="sq-play sq-btn" style="width:36px;flex:0 0 auto;">▶</button>'
           +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" style="flex:1;">'
-          +'<select class="sq-spd" style="'+NUM+'width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
+          +'<select class="sq-spd sq-sel" style="width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
           +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
+        +'</div></div>'
+        /* CARD 5 — 結果 */
+        +'<div><div class="sq-cap">'+L('Result','結果','Ergebnis','Результат','Resultado')+'</div><div class="sq-card">'
         /* ══ (#R234) A LIST, NOT WHICHEVER ONE HAPPENED TO BE BIGGEST ═════════════════════════════
            「🌎 最近の実際の地震を読み込むに、絵文字はいらない。また、地震は一つだけでなく、直近の地震
              一覧から選べるように。」 — the old button fetched the month's summary feed and took
@@ -2381,12 +2508,16 @@ window.IntMapModules.seismic=function(HOST){
            propagation simulator (js/tsunami.js). ⚠ (#R197) it no longer has an alternative to fall back
            on: js/sims.js's `tsunami` hazard has been removed. The estimated wave height shown on the
            button is from the screening (Abe's tsunami-magnitude relation), not from the model. */
-        +(function(){ const t=tsunamiCase(); return t?('<button class="sq-tsu" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">🌊 '
+        +(function(){ const t=tsunamiCase(); return t?('<div class="sq-blk"><button class="sq-tsu sq-btn sq-btn-wide" style="background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">🌊 '
           +L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')
           +' <span style="opacity:0.75;">('+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m)</span></button>'
-          +'<div style="font-size:'+FS_S+';color:var(--text-main);margin-top:-3px;">'+t.why+'</div>'):''; })()
-        +'<div class="sq-leg" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:'+FS_S+';color:var(--text-main);"></div>'
-        +'<div class="sq-out" style="font-size:'+FS+';color:var(--text-main);line-height:1.6;"></div>'
+          +'<div style="font-size:'+FS_S+';color:var(--text-main);margin-top:5px;">'+t.why+'</div></div>'):''; })()
+        +'<div class="sq-leg sq-blk" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:'+FS_S+';color:var(--text-main);"></div>'
+        +'<div class="sq-out sq-blk" style="line-height:1.6;"></div>'
+        +'</div></div>'
+        /* CARD 6 — 注意と出典. ⚠ the safety line is OUTSIDE the fold (#R232) and outside the card,
+           because a notice inside a container the eye reads as "settings" is a notice that is
+           skipped. It is the only sentence here that matters in a real emergency. */
         /* ══ (#R232) THE METHOD AND THE SOURCES FOLD AWAY; THE WARNING DOES NOT ═════════════════════
            「地震シミュレータのポップアップに書かれた説明や出典等はそのまま書くのではなく折りたたんで
              記載する形式に。注意書き等はそのまま残すように。（津波シミュレータも）」
@@ -2400,7 +2531,7 @@ window.IntMapModules.seismic=function(HOST){
         +'<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;">⚠ '
         +L('Educational model — in a real emergency follow the official authorities.','教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。','Bildungsmodell — im Ernstfall den Behörden folgen.','Учебная модель — в реальной ситуации следуйте указаниям властей.','Modelo educativo — en una emergencia real siga a las autoridades.')
         +'</div>'
-        +'<details class="sq-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.5;">'
+        +'<div class="sq-card"><details class="sq-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.5;">'
         +'<summary style="cursor:pointer;color:var(--text-main);font-size:'+FS_S+';list-style:revert;">'
         +L('Method & sources','計算方法と出典','Methode & Quellen','Метод и источники','Método y fuentes')+'</summary>'
         +'<div style="padding-top:4px;">'
@@ -2418,7 +2549,7 @@ window.IntMapModules.seismic=function(HOST){
            'Die Wellenfronten sind die äußere Einhüllende der Fronten aller abgetasteten Punkte des Bruchs — auf der Kugel gelöst, sodass ein von Hand gezeichneter Umriss seine Konkavität behält statt durch seine konvexe Hülle ersetzt zu werden — und jeder Punkt nutzt die Laufzeitkurve seiner EIGENEN Tiefe auf der einfallenden Fläche. Die Gruppengeschwindigkeit der Oberflächenwellen wird entlang jedes Großkreises integriert statt konstant gehalten, sodass ein ozeanischer Pfad einem kontinentalen vorauseilt; 3,5 / 4,4 km/s sind der kontinentale Bezugswert, das Verhältnis steht in den erweiterten Einstellungen.',
            'Фронты волн — внешняя огибающая фронтов от всех выбранных точек очага, решённая на сфере, поэтому нарисованный от руки контур сохраняет вогнутость и не заменяется выпуклой оболочкой; каждая точка использует годограф для СВОЕЙ глубины на наклонной плоскости. Групповая скорость поверхностных волн интегрируется вдоль каждого большого круга, а не берётся постоянной, поэтому океанический путь опережает континентальный; 3,5 / 4,4 км/с — континентальный эталон, отношение задаётся в расширенных настройках.',
            'Los frentes de onda son la envolvente exterior de los frentes de cada punto muestreado de la ruptura — resuelta sobre la esfera, de modo que un contorno dibujado a mano conserva su concavidad en lugar de ser sustituido por su envolvente convexa — y cada punto usa la curva de tiempos de su PROPIA profundidad en el plano buzante. La velocidad de grupo de las ondas superficiales se integra a lo largo de cada círculo máximo en vez de mantenerse constante, así que un trayecto oceánico se adelanta a uno continental; 3,5 / 4,4 km/s son la referencia continental y la razón está en los ajustes avanzados.')
-        +'</div></details></div>';
+        +'</div></details></div></div>';
       /* ══ (#R236) THE ONE PICKER: the switch chooses the SOURCE, the list chooses the earthquake ═══
          Each half keeps the handler it already had — `applyEvent` for the curated catalogue,
          `applyReal` for a USGS feature — so neither path changed, only where you reach it from. */
@@ -2758,7 +2889,25 @@ window.IntMapModules.seismic=function(HOST){
         else { txt='MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; col=_mmiHex(a.mmi); }
         /* 「四角背景で、太字禁止」 — square corners (was border-radius:6px) and weight 400 (was 800).
            Background is the class colour itself; only the ink moves (see _chipInk). */
-        return '<span style="display:inline-block;padding:3px 9px;border-radius:0;background:'+col
+        /* ══ ⚠ (#R237) EVERY CHIP IS THE SAME BOX, WHATEVER IS WRITTEN IN IT ═══════════════════════
+           「各地の表内のJMA 7やMMI IVなどの背景の四角は、震度階級ごとに大きさをそろえるように。」
+           The box was `padding:3px 9px` around the TEXT, so its width was the width of the numeral:
+           「MMI VIII」 is eight characters and 「MMI IV」 is six, so a column of chips came out ragged
+           and the eye read the RUN OF THE EDGE as if it meant something — a wider box for a stronger
+           shake — which is not what any of the labels say. A fixed box makes the colour the only
+           variable, which is the one that carries the class.
+           ⚠ THE WIDTH IS THE WIDEST LABEL IN EITHER SCALE, MEASURED, not a round number. Rendered in
+           this chip at FS_H in the app's own face and read back:
+
+               MMI VIII  61 px      MMI VII  58     MMI XII  57
+               JMA 6+    57 px      JMA 5−   53     JMA 7    48
+
+           so 62 clears every label either scale can print, by one pixel, and nothing is ever
+           truncated. `white-space:nowrap` plus `text-align:center` centres a shorter label in the
+           same box instead of stretching it. ⚠ If a scale with a longer label is ever added, this
+           number is what has to move — tests/r237 pins the relation rather than the number. */
+        return '<span style="display:inline-block;box-sizing:border-box;min-width:62px;padding:3px 6px;'
+          +'text-align:center;border-radius:0;background:'+col
           +';color:'+_chipInk(col)+';font-size:'+FS_H+';font-weight:400;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
         /* (#R210) a user-placed point carries the same numeral its marker does; the nearest

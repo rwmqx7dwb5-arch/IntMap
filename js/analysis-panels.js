@@ -693,11 +693,11 @@ window.IntMapModules.worldEvents=function(HOST){
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:(jp?e.jp:e.en)+' ('+e.y+')',body:jp?e.djp:e.den,layerRef:''}}));
         if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
       }catch(_){}
-      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(jp?'📍 場所':'📍 Places')+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(jp?'🗓 出来事':'🗓 Events')+'</button></div>';
-      const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(jp?'年代':'Years')+
+      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(window.IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares'))+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(window.IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Sucesos'))+'</button></div>';
+      const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(window.IntMapLang.t(HOST.lang,'Years','年代','Jahre','Годы','Años'))+
         ' <input type="number" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
         ' <input type="number" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
-        ' <span>'+list.length+(jp?'件':' events')+'</span></div>';
+        ' <span>'+list.length+(window.IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
       const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       const cards=list.map(e=>{
         const nm=jp?e.jp:e.en, d=jp?e.djp:e.den, tl=EV_LBL[e.tp]?(jp?EV_LBL[e.tp][1]:EV_LBL[e.tp][0]):e.tp;

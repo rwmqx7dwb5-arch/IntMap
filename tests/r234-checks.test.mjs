@@ -161,7 +161,8 @@ test('R234 seismic panel: one banner shape for all three modes, and the run butt
   assert.match(s, /: clickMode==='station'\s*\n\s*\? BANNER\(/, 'and so does the observation-point mode');
   /* one predicate decides BOTH the colour and the wording */
   assert.match(s, /function _needsRun\(\)\{ return !fld\|\|fldStale; \}/, 'one predicate for "there is something to compute"');
-  assert.match(s, /function _runBtnStyle\(\)\{[^}]*_needsRun\(\)\?'background:var\(--primary-color\)/s,
+  /* (#R237) the two states are a CLASS now, not a cssText — same predicate, same two states. */
+  assert.match(s, /function _runBtnClass\(\)\{[^}]*_needsRun\(\)\?' sq-btn-accent':''/s,
     'the accent fill is that predicate');
   assert.match(s, /function _runBtnLabel\(\)\{ return '▶ '\+\(_needsRun\(\)/, 'and so is the wording');
   assert.doesNotMatch(s, /"sq-run" style="'\+BTN\+'width:100%;background:var\(--primary-color\);color:#fff;border:none;font-weight:700;">▶ /,
@@ -213,7 +214,9 @@ test('R234 seismic panel: the three model assumptions moved behind 詳細設定'
   const adv = s.slice(s.indexOf('function _modelAdvHTML(){'), s.indexOf('function _faultAdvHTML(){'));
   for (const cls of ['sq-sd', 'sq-site', 'sq-q0', 'sq-qe']) {
     assert.ok(adv.includes(cls), cls + ' is inside the disclosure');
-    assert.equal(s.split('class="' + cls + '"').length - 1, 1, cls + ' exists exactly once');
+    /* (#R237) the control gained a styling class in the SAME attribute (`class="sq-q0 sq-num"`), so
+       counting `class="sq-q0"` counts zero. The claim is «exactly one of these controls exists». */
+    assert.equal(s.split(new RegExp('class="' + cls + '[ "]')).length - 1, 1, cls + ' exists exactly once');
   }
   assert.match(s, /_madvOpen=d\.open/, 'and it stays open across a re-render');
 });
@@ -224,8 +227,11 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
     assert.ok(!s.includes('font-size:' + px), 'font-size:' + px + ' is gone — see FS / FS_S / FS_H');
   }
   /* --text-muted survives ONLY where grey is the meaning: the ✕ / — chrome and 「無感」 */
+  /* ⚠ (#R237) THE CLAIM IS «GREY ONLY ON THE CHROME», WHICH IS A CEILING, NOT AN EXACT COUNT. The
+     iOS restyle moved declarations out of inline strings into the panel's sheet, so an exact 2 is a
+     count of a spelling. What must stay true is that grey never lands on content. */
   const muted = s.split('color:var(--text-muted)').length - 1;
-  assert.equal(muted, 2, 'grey is left on the two window-chrome glyphs and nowhere else');
+  assert.ok(muted <= 2, 'grey is left on the window-chrome glyphs and nowhere else (found ' + muted + ')');
   const t = read('js/tsunami.js');
   for (const px of ['9.5px', '10px', '10.5px', '11px', '11.5px']) {
     assert.ok(!t.includes('font-size:' + px), 'the tsunami panel shares the scale (' + px + ')');

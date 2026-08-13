@@ -564,8 +564,10 @@ function _m(){ return window.__imap||null; }
   const _solids={};
   /* (#R202) …and the same, for layers.addOrbit (js/orbit-points.js) */
   const _orbits={};
-  /* (#R227) …and for layers.addLimb (js/limb-layer.js), plus whether each is switched on */
-  const _limbs={}, _limbOn={}, _limbStrength={};
+  /* (#R227) …and for layers.addLimb (js/limb-layer.js), plus whether each is switched on.
+     (#R237) `_limbDisc` is the second strength — the air in FRONT of the planet, which is a separate
+     question from the ring beside it and carries #R187/#R205's per-basemap numbers. */
+  const _limbs={}, _limbOn={}, _limbStrength={}, _limbDisc={};
   /* ⚠ (#R227) THE ONE PLACE THAT TOUCHES THE TRANSFORM FOR THE LIMB. Everything the shader needs is
      derived here, in the adapter, exactly as maplibre's own atmosphere pass derives it — so the two
      can never be registered differently. Returns null when there is no limb to draw, which is what
@@ -599,10 +601,27 @@ function _m(){ return window.__imap||null; }
     const k=RG/wr;
     const camPos=[-gx*k,-gy*k,-gz*k];
     const eyeR=Math.sqrt(camPos[0]*camPos[0]+camPos[1]*camPos[1]+camPos[2]*camPos[2]);
-    if(!(eyeR>RT)) return null;                    /* inside the air: this is not a limb */
+    /* ══ ⚠⚠ (#R237) THE EYE NO LONGER HAS TO BE OUTSIDE THE SHELL ══════════════════════════════════
+       `if(!(eyeR>RT)) return null;` stood here, and it is the mechanism behind 「ある程度まで
+       ズームインすると途端に見えなくなってしまう」. Measured on the sweep: the layer owns the rim at
+       z9 (eye 183 km) and hands it back at z10 (eye 92 km) — the 100 km shell — and what it hands to
+       is maplibre's own pass, which is a 2 px sliver. So the air disappeared in one frame at a
+       particular zoom, which is exactly what was reported, twice (#R234 read it as a timing problem
+       and made the QUESTION continuous; the ANSWER was still a cliff).
+       Below the shell the ray simply starts inside the air: `tIn` comes out 0 from the same
+       ray-sphere solve and the march runs from the eye, which is the correct integral and not a
+       special case. What tapers the effect off is `globeness` (below), the same gate maplibre's own
+       atmosphere is multiplied by — so the two can never disagree about when there is a globe. */
+    if(!(eyeR>0)) return null;
     const sun=_lightVector(m); if(!sun) return null;
     const inv=new Float32Array(16); for(let i=0;i<16;i++) inv[i]=t.inverseProjectionMatrix[i];
-    return { invProj:inv, camPos, sunDir:sun, strength:(_limbStrength[id]==null?1:_limbStrength[id]) };
+    let gness=1; try{ const v=m.style&&m.style.projection&&m.style.projection.transitionState;
+      if(typeof v==='number'&&isFinite(v)) gness=Math.max(0,Math.min(1,v)); }catch(_){}
+    return { invProj:inv, camPos, sunDir:sun,
+      strength:(_limbStrength[id]==null?1:_limbStrength[id])*gness,
+      /* (#R237) how much of the air IN FRONT of the planet to draw — the caller's number, tapered by
+         the same globeness, so the disc's air fades out exactly as the globe becomes a plane. */
+      disc:(_limbDisc[id]==null?0:_limbDisc[id])*gness };
   }
   /* ⚠ (#R227) THE SUN, AS THE RENDERER ITSELF COMPUTES IT. This is maplibre's `getSunPos`
      (webgl/draw/draw_sky.ts) plus its `sphericalToCartesian` (util/util.ts): the app aims
@@ -1620,14 +1639,15 @@ function _m(){ return window.__imap||null; }
            So: a layer that cannot draw is removed and reported as a refusal, like every other one. */
         if(L.imAlive && !L.imAlive()){
           try{ m.removeLayer(id); }catch(_){}
-          delete _limbs[id]; delete _limbOn[id]; delete _limbStrength[id];
+          delete _limbs[id]; delete _limbOn[id]; delete _limbStrength[id]; delete _limbDisc[id];
           return false; }
         return true; }catch(_){ return false; } },
     /* (#R236) has the limb painted a frame yet? — the watchdog in js/theme-sky.js asks, so that a
        layer which is alive but never resolves its uniforms still hands the rim back. */
     limbDrawn(id){ try{ const L=_limbs[id]; return (L&&L.imDrawn)?L.imDrawn():0; }catch(_){ return 0; } },
-    setLimb(id,o){ if(!_limbs[id]) return false; _limbOn[id]=!!(o&&o.on); _limbStrength[id]=(o&&o.strength!=null)?o.strength:1; return true; },
-    removeLimb(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _limbs[id]; delete _limbOn[id]; return true; },
+    setLimb(id,o){ if(!_limbs[id]) return false; _limbOn[id]=!!(o&&o.on); _limbStrength[id]=(o&&o.strength!=null)?o.strength:1;
+      if(o&&o.disc!=null) _limbDisc[id]=o.disc; return true; },
+    removeLimb(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _limbs[id]; delete _limbOn[id]; delete _limbDisc[id]; return true; },
     /* ⚠ THE QUESTION IS "IS IT IN THE STYLE", NOT "HAVE WE EVER BUILT ONE". `_limbs[id]` is the
        cached layer OBJECT and it outlives a style reload; the layer does not. Answering from the
        cache would mean that after any setStyle the caller would see `true`, never re-add, and the
