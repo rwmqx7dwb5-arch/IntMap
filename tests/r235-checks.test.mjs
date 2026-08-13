@@ -120,6 +120,24 @@ test('R235 wavefronts: surface-wave group velocity is a path integral over the c
   const RE = 6371.0, D = Math.PI / 180, PS = 1.0, stepKm = PS * D * RE;
   let cum = 0; const N = 40; for (let i = 1; i <= N; i++) cum += stepKm / 1;
   assert.ok(Math.abs(cum - N * stepKm) < 1e-9, 'g = 1 integrates to the plain distance');
+
+  /* ══ ⚠⚠ AND IT HAS TO BE *WIRED* PER BEARING, which is where the first cut of this round failed.
+     `rFor` originally took only the source point, so the surface-wave radius was evaluated at
+     `k.phi` — the bearing OF THE SOURCE POINT, not of the ray — and came out identical for every
+     direction: measured on Tōhoku at t = 400 s, east and west were both 1441 km, ratio 1.000.
+     A circle wearing a path integral's clothes. Both halves of the wiring are asserted. */
+  assert.match(s, /const k=K\[i\], r=rFor\(k,b\);/, '_envR passes the RAY bearing into the radius function');
+  assert.match(s, /const rad=\(k,b\)=>\{ const d=_pathDeg\(sw\.v\*Math\.max\(0,tSec-\(\(k&&k\.delay\)\|\|0\)\),b\|\|0\);/,
+    'the surface-wave radius is a function of that bearing');
+  /* ⚠ and a POINT source must go through the per-bearing builder too — `ringLines` takes one radius,
+     so routing the no-fault case through it would silently discard the integral again */
+  assert.match(s, /const lines=faultFrontLines\(rad\);/,
+    'surface fronts always use the per-bearing builder, fault or not');
+  /* the body waves keep the shared circular helper — they have no lateral model, so they ARE circles */
+  assert.match(s, /const lines=fault\?faultFrontLines\(rad\):\(\(rad\(null\)!=null\)\?ringLines\(epi,rad\(null\)\):null\);/,
+    'P/S still draw circles through the shared seam/pole helper');
+  /* the label is placed at the view bearing, so it must read the radius there */
+  assert.match(s, /const vb=_viewBearing\(\); const r=rad\(vb\);/, 'the front name reads its own bearing’s radius');
 });
 
 /* ── 5 · the playback is a frame, not an 11 Hz timer ────────────────────────────────────────── */

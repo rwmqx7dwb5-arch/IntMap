@@ -235,7 +235,12 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
 test('R234 seismic: the front labels are placed toward the map centre, not at a fixed 45°', () => {
   const s = read('js/seismic.js');
   assert.doesNotMatch(s, /const p=destAng\(epi,45,/, 'the fixed bearing is gone');
-  assert.match(s, /const p=destAng\(epi,_viewBearing\(\),/, 'the label sits on the arc that is in view');
+  /* ⚠ (#R235) the CONTRACT, not the expression. The bearing is now hoisted into `vb` so the RADIUS
+     can be read at the same bearing the label is placed at — with a laterally varying surface-wave
+     path those became two different numbers, and a name taken from bearing 0 floats off its ring.
+     What this line protects is unchanged: the placement follows the map centre. */
+  assert.match(s, /const vb=_viewBearing\(\); const r=rad\(vb\);/, 'the label reads the radius at the bearing it will sit on');
+  assert.match(s, /const p=destAng\(epi,vb,/, 'the label sits on the arc that is in view');
   assert.match(s, /function _viewBearing\(\)\{[^}]*const b=bearingTo\(epi,\[c\.lng,c\.lat\]\);/s,
     '…which is the bearing from the epicentre to the camera centre');
   assert.match(s, /GE\(\)\.events\.on\('moveend',\(\)=>\{ try\{ if\(opened&&epi\) drawFronts\(\); \}catch\(_\)\{\} \}\);/,

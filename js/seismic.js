@@ -1914,9 +1914,15 @@ window.IntMapModules.seismic=function(HOST){
        and diverge most across it; at Δb = 90° the old form returns `off·0 + r` for a point whose
        circle the ray reaches at √(r² − off²). So this is a correction at every scale, and the
        spherical form is checked against the planar union — not against the old line — in tests/r235. */
+    /* ⚠ `rFor(k, b)` TAKES THE RAY BEARING AS WELL AS THE SOURCE POINT. The first cut passed only
+       `k`, and `k.phi` is the bearing OF THAT SOURCE POINT from the hypocentre — not the direction
+       the front is travelling in. Any radius that depends on direction (the surface-wave path
+       integral below) was therefore evaluated along the wrong azimuth and came out the same for
+       every bearing: measured on Tōhoku at t=400 s, east and west were 1441 km each, ratio 1.000,
+       i.e. a perfect circle wearing a path integral's clothes. */
     function _envR(K,rFor,b){
       let R=null;
-      for(let i=0;i<K.length;i++){ const k=K[i], r=rFor(k); if(r==null) continue;
+      for(let i=0;i<K.length;i++){ const k=K[i], r=rFor(k,b); if(r==null) continue;
         const A=Math.cos(k.off*D), B=Math.sin(k.off*D)*Math.cos((b-k.phi)*D);
         const C=Math.hypot(A,B); if(!(C>1e-9)) continue;
         const q=Math.cos(r*D)/C; if(q<-1||q>1) continue;
@@ -1958,11 +1964,16 @@ window.IntMapModules.seismic=function(HOST){
          so each name sits on the arc that is actually in view, and it follows a pan (see the
          `moveend` subscription by onClick: it redraws the fronts, not the field). 45° remains the
          answer for the one case that has no direction — the camera sitting on the epicentre. */
-      const label=(rad,col,name,vkm)=>{ const r=rad(0); if(r==null) return;
-        const p=destAng(epi,_viewBearing(),Math.min(179.9,Math.max(0.02,r)));
+      /* ⚠ (#R235) the label is placed at `_viewBearing()`, so it must ask for the radius AT THAT
+         BEARING — with a laterally varying path the two are no longer the same number, and a name
+         taken from bearing 0 would float off its own ring. */
+      const label=(rad,col,name,vkm)=>{ const vb=_viewBearing(); const r=rad(vb); if(r==null) return;
+        const p=destAng(epi,vb,Math.min(179.9,Math.max(0.02,r)));
         feats.push({type:'Feature',geometry:{type:'Point',coordinates:[((p[0]+540)%360)-180,p[1]]},
           properties:{kind:'frontLabel',col,t:name+(vkm?('  '+vkm.toFixed(1)+' km/s'):'')}}); };
-      /* body waves — IASP91, each source point through the curve for ITS OWN depth (#R235 _srcPts) */
+      /* body waves — IASP91, each source point through the curve for ITS OWN depth (#R235 _srcPts).
+         These do NOT vary with bearing (no lateral velocity model for the mantle here), so a point
+         source is still a circle and still goes through the shared seam/pole helper. */
       PH.forEach(ph=>{ const rad=(k)=>{ const d=frontDelta(ph.k,(k&&k.dep!=null)?k.dep:depthKm,Math.max(0,tSec-((k&&k.delay)||0))); return (d!=null&&d>0.02)?d:null; };
         const lines=fault?faultFrontLines(rad):((rad(null)!=null)?ringLines(epi,rad(null)):null);
         if(lines) emit(lines,{kind:'ring',col:ph.col,w:ph.w});
@@ -1976,10 +1987,15 @@ window.IntMapModules.seismic=function(HOST){
          was — the 3.5 / 4.4 km/s reference values are unchanged and are what an all-continental
          path still gives. */
       SURF.forEach(sw=>{
-        const rad=(k)=>{ const d=_pathDeg(sw.v*Math.max(0,tSec-((k&&k.delay)||0)),(k&&k.phi)||0); return (d>0.02&&d<179)?d:null; };
-        const lines=fault?faultFrontLines(rad):((rad(null)!=null)?ringLines(epi,rad(null)):null);
+        const rad=(k,b)=>{ const d=_pathDeg(sw.v*Math.max(0,tSec-((k&&k.delay)||0)),b||0); return (d>0.02&&d<179)?d:null; };
+        /* ⚠ ALWAYS THE PER-BEARING BUILDER, fault or no fault. `ringLines` takes ONE radius, so with
+           a point source it would draw the bearing-0 answer all the way round and quietly throw the
+           path integral away — which is exactly the defect measured above. With no rupture `_srcPts`
+           is just the hypocentre, so the ring is the same construction with one source point. */
+        const lines=faultFrontLines(rad);
         if(lines) emit(lines,{kind:'ring',col:sw.col,w:1.8});
-        label(()=>rad(null),sw.col,sw.name(),sw.v); });
+        /* the name sits on the arc in view, so it reads the radius for THAT bearing */
+        label((b)=>rad(null,b),sw.col,sw.name(),sw.v); });
       stations.forEach((s,i)=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station',n:String(i+1)}}));   /* (#R210) the marker carries its row number */
       setData(feats);
     }
