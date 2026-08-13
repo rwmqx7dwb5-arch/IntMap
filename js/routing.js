@@ -567,7 +567,7 @@ window.IntMapModules.routing=function(HOST){
              transit modes, so a chip that is off simply leaves its mode out of the list. */
           +'<div class="rp-tmodes" style="display:none;gap:5px;align-items:center;flex-wrap:wrap;">'
             +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Use:','利用:','Nutzen:','Использовать:','Usar:'))+'</span>'
-            +[['RAIL',LL('Rail','鉄道','Bahn','Ж/д','Tren')],['SUBWAY',LL('Subway','地下鉄','U-Bahn','Метро','Metro')],['TRAM',LL('Tram','路面電車','Tram','Трамвай','Tranvía')],['BUS',LL('Bus','バス','Bus','Автобус','Autobús')],['FERRY',LL('Ferry','フェリー','Fähre','Паром','Ferri')]]
+            +[['RAIL',LL('Rail','鉄道','Bahn','Ж/д','Tren')],['SUBWAY',LL('Subway','地下鉄','U-Bahn','Метро','Metro')],['TRAM',LL('Tram','路面電車','Straßenbahn','Трамвай','Tranvía')],['BUS',LL('Bus','バス','Bus','Автобус','Autobús')],['FERRY',LL('Ferry','フェリー','Fähre','Паром','Ferri')]]
               .map(([k,lb])=>'<button class="rp-tm" data-tm="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp(lb)+'</button>').join('')
             +'<label style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted);">'+escp(LL('Max walk','徒歩上限','Max. Fußweg','Макс. пешком','Máx. a pie'))
               +'<input type="number" class="rp-maxwalk" min="0" max="5000" step="100" placeholder="—" style="width:64px;height:24px;padding:0 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;"> m</label></div>'

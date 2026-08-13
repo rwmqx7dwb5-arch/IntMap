@@ -773,7 +773,14 @@ window.IntMapModules.dataLayers=function(HOST){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const sec=document.getElementById('layer-active-section'); if(!sec) return;
       const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
-      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+      /* ⚠ (#R235) 「昼夜の表示は他の基本表示と同様に、レイヤーとして扱うな。基本表示です。」
+         #R233 moved the day/night row into the 基本表示 block, which put it in the right PLACE and
+         left it a LAYER everywhere else: it was the one member of that block still counted here, so
+         it took a chip in "Active layers", and — through `_imActiveLayerCount` two lines down — it
+         accented the mobile FAB as though a thematic overlay were on. The other nine basics are
+         skipped precisely because they are views of the map rather than data on top of it, and which
+         half of the planet the Sun is lighting is the same kind of statement. */
+      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2','dl-nightside']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */

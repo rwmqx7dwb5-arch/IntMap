@@ -714,7 +714,7 @@ window.IntMapModules.statsCompare=function(HOST){
         +'<select id="scp-tsfrom"><option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'')+'</select>'
         +'<span class="scp-tsdash">–</span>'
         +'<select id="scp-tsto"><option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+_yoptsAvail(tsTo!=null?tsTo:'')+'</select>'
-        +((tsFrom!=null||tsTo!=null)?'<button id="scp-tsreset" type="button">'+LL('Reset','リセット','Reset','Сброс','Reiniciar')+'</button>':''); }
+        +((tsFrom!=null||tsTo!=null)?'<button id="scp-tsreset" type="button">'+LL('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>':''); }
     function _wireTsRange(bar){ if(!bar) return;
       const f=bar.querySelector('#scp-tsfrom'); if(f) f.onchange=e=>{ tsFrom=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsFrom>tsTo) tsTo=null; render(); };
       const t2=bar.querySelector('#scp-tsto'); if(t2) t2.onchange=e=>{ tsTo=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsTo<tsFrom) tsFrom=null; render(); };

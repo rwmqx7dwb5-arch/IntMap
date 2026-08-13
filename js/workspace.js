@@ -549,7 +549,7 @@ window.IntMapModules.workspace=function(HOST){
         else { if(w.style.display==='none'){ w.style.display='flex'; try{ if(def.onShow) def.onShow(); }catch(_){} } delete w.dataset.userHid; } });
       retile(); syncDock(); }
     function mkDock(){ if(dock) return; dock=document.createElement('div'); dock.id='ws-menu';
-      const brand=document.createElement('div'); brand.className='ws-brand'; brand.innerHTML='IntMap <span>— '+T('Workspace','ワークスペース','Workspace','Рабочая область','Espacio de trabajo')+'</span>'; dock.appendChild(brand);
+      const brand=document.createElement('div'); brand.className='ws-brand'; brand.innerHTML='IntMap <span>— '+T('Workspace','ワークスペース','Arbeitsbereich','Рабочая область','Espacio de trabajo')+'</span>'; dock.appendChild(brand);
       const clk=id=>{ const b=document.getElementById(id); if(b) b.click(); };
       const opens=[];   /* remember every menu so opening one closes the rest + outside-click closes all */
       /* generic dropdown builder: items = {label, run, check?} | 'sep' */

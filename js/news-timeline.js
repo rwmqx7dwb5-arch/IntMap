@@ -133,7 +133,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       chips+=chip('ok', L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+bY+'</b>');
       /* (#R104) News chip TEXT is now constant ("News") — the ok/amber dot (+ tooltip) conveys in/out of range, so the
          label width never changes as the slider crosses the news-range boundary → no re-flow ("スライダーを操作しても改行しない"). */
-      chips+=chip(within?'ok':'warn', L5('News','ニュース','News','Новости','Noticias'), within?'':L5('Out of the news range (about the last 10 years)','ニュースの対象期間外（約10年以内）','Außerhalb des News-Zeitraums (ca. 10 Jahre)','Вне диапазона новостей (последние ~10 лет)','Fuera del rango de noticias (últimos ~10 años)'));
+      chips+=chip(within?'ok':'warn', L5('News','ニュース','Nachrichten','Новости','Noticias'), within?'':L5('Out of the news range (about the last 10 years)','ニュースの対象期間外（約10年以内）','Außerhalb des News-Zeitraums (ca. 10 Jahre)','Вне диапазона новостей (последние ~10 лет)','Fuera del rango de noticias (últimos ~10 años)'));
       if(on('dl-climate')) chips+=chip('ok','Köppen <b>'+kEra(y)+'</b>');
       if(on('dl-nato')) chips+=chip('ok','NATO <b>'+y+'</b>');
       if(on('dl-eu')) chips+=chip('ok','EU <b>'+y+'</b>');

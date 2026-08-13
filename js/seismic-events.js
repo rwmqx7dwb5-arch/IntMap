@@ -31,7 +31,7 @@
  * ==========================================================================*/
 export const QUAKE_EVENTS = [
   {
-    id: 'tohoku2011',
+    id: 'tohoku2011', usgs: 'official20110311054624120_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     /* the name is a proper noun in every language that has one for it; L() takes the first five
        positionally and the registry's inline table answers for the rest (js/lang-registry.js). */
     name: ['2011 Tōhoku (Great East Japan)', '東日本大震災（2011 東北地方太平洋沖地震）', '2011 Tōhoku (Großes Ostjapan-Beben)', 'Тохоку 2011 (Великое восточнояпонское)', 'Tōhoku 2011 (Gran terremoto del este de Japón)'],
@@ -49,7 +49,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'valdivia1960',
+    id: 'valdivia1960', usgs: 'official19600522191120_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['1960 Valdivia (Great Chilean)', '1960年 チリ地震（バルディビア地震）', '1960 Valdivia (Großes Chile-Beben)', 'Вальдивия 1960 (Великое чилийское)', 'Valdivia 1960 (Gran terremoto de Chile)'],
     when: '1960-05-22T19:11:14Z',
     lat: -38.29, lng: -73.05, depthKm: 25, mw: 9.5,
@@ -65,7 +65,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'alaska1964',
+    id: 'alaska1964', usgs: 'official19640328033616_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['1964 Great Alaska (Prince William Sound)', '1964年 アラスカ地震（プリンスウィリアム湾）', '1964 Alaska (Prince-William-Sund)', 'Аляска 1964 (залив Принца Уильяма)', 'Alaska 1964 (Estrecho del Príncipe Guillermo)'],
     when: '1964-03-28T03:36:14Z',
     lat: 60.908, lng: -147.339, depthKm: 25, mw: 9.2,
@@ -81,7 +81,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'sumatra2004',
+    id: 'sumatra2004', usgs: 'official20041226005853450_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['2004 Sumatra–Andaman (Indian Ocean)', '2004年 スマトラ島沖地震（インド洋大津波）', '2004 Sumatra–Andamanen', 'Суматра–Андаманы 2004', 'Sumatra–Andamán 2004'],
     when: '2004-12-26T00:58:53Z',
     lat: 3.316, lng: 95.854, depthKm: 30, mw: 9.1,
@@ -113,7 +113,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'kanto1923',
+    id: 'kanto1923', usgs: 'iscgem911526',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['1923 Great Kantō', '関東大震災（1923 関東地震）', '1923 Großes Kantō-Beben', 'Великое землетрясение Канто 1923', 'Gran terremoto de Kantō de 1923'],
     when: '1923-09-01T11:58:32+09:00',
     lat: 35.33, lng: 139.13, depthKm: 23, mw: 7.9,
@@ -129,7 +129,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'turkiye2023',
+    id: 'turkiye2023', usgs: 'us6000jllz',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['2023 Kahramanmaraş (Türkiye–Syria)', '2023年 トルコ・シリア地震（カフラマンマラシュ）', '2023 Kahramanmaraş (Türkei–Syrien)', 'Кахраманмараш 2023 (Турция–Сирия)', 'Kahramanmaraş 2023 (Turquía–Siria)'],
     when: '2023-02-06T01:17:35Z',
     lat: 37.226, lng: 37.014, depthKm: 10, mw: 7.8,
@@ -145,7 +145,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'wenchuan2008',
+    id: 'wenchuan2008', usgs: 'usp000g650',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['2008 Wenchuan (Sichuan)', '四川大地震（2008 汶川地震）', '2008 Wenchuan (Sichuan)', 'Вэньчуань 2008 (Сычуань)', 'Wenchuan 2008 (Sichuan)'],
     when: '2008-05-12T06:28:01Z',
     lat: 31.002, lng: 103.322, depthKm: 19, mw: 7.9,
@@ -161,7 +161,7 @@ export const QUAKE_EVENTS = [
     }
   },
   {
-    id: 'haiti2010',
+    id: 'haiti2010', usgs: 'usp000h60h',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     name: ['2010 Haiti (Léogâne)', '2010年 ハイチ地震（レオガン）', '2010 Haiti (Léogâne)', 'Гаити 2010 (Леоган)', 'Haití 2010 (Léogâne)'],
     when: '2010-01-12T21:53:10Z',
     lat: 18.443, lng: -72.571, depthKm: 13, mw: 7.0,
@@ -251,3 +251,84 @@ export function ruptureRing(ev) {
 /* the published seismic moment, in N·m — Hanks & Kanamori (1979), the same relation the simulator
    inverts. Used to derive a mean slip that is consistent with the rupture area on the row. */
 export function momentOf(mw) { return Math.pow(10, 1.5 * mw + 9.1); }
+
+/* ══ ⚠⚠ (#R235) THE PUBLISHED RUPTURE, INSTEAD OF A RECTANGLE STANDING IN FOR IT ═══════════════
+   「地震シミュレータの過去の地震の震源域の描画が雑すぎる。（現状は単に長方形置くだけ。）」
+   That is exactly what it was, and `ruptureRing()` above says so in its own header — #R234 put the
+   rectangle on a round Earth and walked its perimeter, which fixed the GEODESY and left the SHAPE
+   a rectangle. Real ruptures are not rectangles: the 2023 Kahramanmaraş rupture is a bent
+   multi-segment surface trace, Sumatra–Andaman follows the aftershock distribution up the Andaman
+   arc, and Wenchuan and Alaska are 15-vertex outlines.
+
+   So the outline is FETCHED, from the model the seismological community published for that event:
+   USGS ShakeMap's `rupture.json`, which is the finite-fault surface projection ShakeMap itself ran
+   on. Every row below carries the USGS event id; the reference string inside each file names the
+   study (Suzuki et al. 2011 for Tōhoku, Wald & Somerville 1994 for Kantō, Barrientos for Valdivia,
+   Hartzell for Wenchuan, Hayes 2011 for Haiti, NEIC's aftershock distribution for Sumatra) and is
+   carried back so the panel can attribute what it drew.
+
+   ⚠ THE FALLBACK IS THE OLD RECTANGLE, UNCHANGED. No network, an event with no published model
+   (Kobe 1995 has no ShakeMap rupture) or a malformed file all end at `ruptureRing(ev)`, so this is
+   additive: nothing that worked before can stop working because a fetch failed.
+   ⚠ CORS WAS MEASURED FROM THE PAGE, NOT FROM NODE (#R212/#R216). earthquake.usgs.gov answers
+   `Access-Control-Allow-Origin: *`; it is the same host the event picker already queries (#R234).
+   ⚠ THE THIRD ORDINATE IS DEPTH, IN KILOMETRES, and it is the best part: the published corners
+   carry the plane's own top and bottom, so `zTopKm`/`zBotKm` come off the model instead of being
+   estimated from the outline. */
+export function fetchRuptureRing(ev, fetchImpl) {
+  /* ⚠ the memo hangs off the function, not off a module-level `const`: tests/r175 ③ forbids an
+     UNEXPORTED top-level declaration in js/, and exporting a cache would be exporting an internal. */
+  const cache = fetchRuptureRing._cache || (fetchRuptureRing._cache = Object.create(null));
+  const id = ev && ev.usgs;
+  if (!id) return Promise.resolve(null);
+  if (cache[id]) return cache[id];
+  const F = fetchImpl || ((typeof fetch === 'function') ? fetch : null);
+  if (!F) return Promise.resolve(null);
+  const J = (u) => F(u).then((r) => { if (!r || !r.ok) throw new Error('http ' + (r && r.status)); return r.json(); });
+  const p = J('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventid=' + encodeURIComponent(id))
+    .then((j) => {
+      const prods = (j && j.properties && j.properties.products) || {};
+      const sm = (prods.shakemap || [])[0];
+      const url = sm && sm.contents && sm.contents['download/rupture.json'] && sm.contents['download/rupture.json'].url;
+      if (!url) throw new Error('no rupture.json');
+      return J(url);
+    })
+    .then((g) => {
+      /* every Polygon / MultiPolygon ring in the file, flattened to a list of candidate rings */
+      const rings = [];
+      ((g && g.features) || []).forEach((f) => {
+        const gm = f && f.geometry; if (!gm) return;
+        const cs = gm.coordinates;
+        if (gm.type === 'Polygon') rings.push(cs[0]);
+        else if (gm.type === 'MultiPolygon') cs.forEach((poly) => rings.push(poly[0]));
+      });
+      if (!rings.length) throw new Error('no polygon');
+      /* ⚠ ONE ring is what the model takes (js/seismic.js faultSet), so where a published model has
+         several segments the LARGEST is used and the count is reported rather than silently dropped
+         — a picture that quietly shows half a rupture is worse than one that says it did. */
+      const area = (r) => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++)
+        a += (r[j][0] - r[i][0]) * (r[j][1] + r[i][1]); return Math.abs(a); };
+      rings.sort((a, b) => area(b) - area(a));
+      const best = rings[0];
+      let zTop = Infinity, zBot = -Infinity;
+      const ring = [];
+      for (const c of best) {
+        const lo = +c[0], la = +c[1];
+        if (!(isFinite(lo) && isFinite(la))) continue;
+        const dz = +c[2];
+        if (isFinite(dz)) { if (dz < zTop) zTop = dz; if (dz > zBot) zBot = dz; }
+        /* the file closes the ring; faultSet does its own closing, so drop the repeat */
+        if (ring.length && Math.abs(ring[ring.length - 1][0] - lo) < 1e-9 && Math.abs(ring[ring.length - 1][1] - la) < 1e-9) continue;
+        ring.push([lo, la]);
+      }
+      if (ring.length > 2 && Math.abs(ring[0][0] - ring[ring.length - 1][0]) < 1e-9
+          && Math.abs(ring[0][1] - ring[ring.length - 1][1]) < 1e-9) ring.pop();
+      if (ring.length < 3) throw new Error('degenerate ring');
+      return { ring, segments: rings.length,
+        zTopKm: isFinite(zTop) ? zTop : null, zBotKm: isFinite(zBot) ? zBot : null,
+        ref: (g && g.metadata && g.metadata.reference) ? String(g.metadata.reference) : null };
+    })
+    .catch(() => null);
+  cache[id] = p;
+  return p;
+}

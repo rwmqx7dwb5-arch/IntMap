@@ -45,7 +45,7 @@
    geometry that turns a published rectangle into the ring this simulator draws. Its own file
    because it is DATA with citations rather than model code (standing instruction 13), and because
    a catalogue that must be checkable should be readable without wading through the physics. */
-import { QUAKE_EVENTS, ruptureRing, momentOf } from './seismic-events.js';
+import { QUAKE_EVENTS, ruptureRing, momentOf, fetchRuptureRing } from './seismic-events.js';
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.seismic=function(HOST){
@@ -717,16 +717,22 @@ window.IntMapModules.seismic=function(HOST){
       { min:5.5, id:'6-', col:'#FF2800' }, { min:6.0, id:'6+', col:'#A50021' },
       { min:6.5, id:'7',  col:'#B40068' } ];
     function jmaClass(I){ let c=null; for(const k of JMA_CLASSES){ if(I>=k.min) c=k; } return c; }
-    /* (#R234) the same hue, darkened only as far as white needs to read on it (WCAG 3:1 for large
-       text ⇒ relative luminance ≤ 0.30). Used by the table's intensity chip; the map paint uses the
-       class colour itself. Bounded loop — no colour survives 24 steps of ×0.9. */
-    function _onDark(hex){
-      let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
-      if(!(isFinite(r)&&isFinite(g)&&isFinite(b))) return '#444';
+    /* ══ ⚠ (#R235) THE BACKGROUND IS THE CLASS COLOUR — THE *TEXT* IS WHAT MOVES ══════════════════
+       「それぞれの震度色（そのままの色）背景と白文字に。」 #R234 read the same instruction and
+       DARKENED the swatch until white could sit on it, because three JMA classes are nearly white by
+       design (震度1 #F2F2FF, 4 #FAE696, 5- #FFE600). That made the chip legible and made it the
+       wrong colour, which is what 「そのままの色」 answers: the background is now the class colour
+       itself, byte for byte, exactly as the map paints it.
+       ⚠ …so the readable-white problem moves to the only other variable there is, and the answer
+       given was 「明るい階級だけ文字を黒にする」. `_chipInk` returns white, and black only where
+       white would fail WCAG 3:1 for large text (relative luminance > 0.30 ⇒ 1.05/(L+0.05) < 3).
+       Black clears the same 3:1 on every colour that trips it, since (L+0.05)/0.05 ≥ 3 from L ≥ 0.10.
+       ⚠ NOTHING chooses a colour here — the swatch is the input, not the output. */
+    function _chipInk(hex){
+      const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+      if(!(isFinite(r)&&isFinite(g)&&isFinite(b))) return '#fff';
       const lin=(c)=>{ c/=255; return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
-      const lum=()=>0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
-      for(let i=0;i<24&&lum()>0.30;i++){ r=Math.round(r*0.9); g=Math.round(g*0.9); b=Math.round(b*0.9); }
-      return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+      return (0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b))>0.30 ? '#000' : '#fff';
     }
     /* (#R192) each scale's LOWEST class, in the quantity that scale is computed from — inverted from
        the relations above rather than written out again (#R190's lesson: two copies of one number
@@ -1801,25 +1807,135 @@ window.IntMapModules.seismic=function(HOST){
     /* (#R189) initial great-circle bearing — for the finite-source front envelope below */
     function bearingTo(a,b){ const la1=a[1]*D, la2=b[1]*D, dl=(b[0]-a[0])*D;
       return (Math.atan2(Math.sin(dl)*Math.cos(la2),Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dl))/D+360)%360; }
-    /* ══ (#R189) A FINITE SOURCE HAS A FINITE FRONT ══════════════════════════════════════════════
-       With a drawn rupture the front at time t is the ENVELOPE of the fronts from every point of
-       the rupture, each delayed by the rupture's own propagation from the hypocentre (Vr = 0.75β).
-       The envelope of a union of circles is evaluated as its support function per bearing —
-       exact for the convex hull of the union, which is what a wavefront looks like within the
-       sampling of the ring — and the hypocentre's own circle keeps every bearing defined. The ring
-       is built in CONTINUOUS longitude and split at the seam by the same helper every other ring
-       uses, so the polar/antimeridian behaviour is identical to ringLines(). */
-    function faultFrontLines(radiusAtDelay){
-      const r0=radiusAtDelay(0); if(r0==null) return null;
-      const K=[{off:0,phi:0,delay:0}];
-      if(fault&&fault.ring&&fault.ring.length>=3){
-        const R2=fault.ring, step=Math.max(1,Math.floor(R2.length/20));
+
+    /* ══ ⚠ (#R235) 「地盤なども多角的に考慮した伝播にして」 — THE SURFACE-WAVE PATH ═══════════════
+       The two group velocities above were CONSTANTS for the whole planet, so those two fronts were
+       exact circles about the epicentre no matter what they were crossing. They are not: the
+       fundamental-mode group velocity at the periods these carry (roughly 20–60 s) is set by the
+       thickness and the velocity of the crust the wave is running through, and a thin oceanic crust
+       over mantle is measurably faster than 35–40 km of continental crust with a slow granitic top.
+
+       ⚠ THIS IS A PATH INTEGRAL, NOT A DESTINATION LOOKUP. Surface-wave tomography works with the
+       average of the slowness ALONG the great circle, so that is what is integrated here: with a
+       local multiplier g(s) on the reference velocity, the time to reach Δ is (1/U₀)·∫₀^Δ ds/g(s),
+       and the quantity that does not depend on which of the two waves is asking is
+             S(Δ) = ∫₀^Δ ds/g(s)      [km]           front at time t  ⇔  S(Δ) = U₀·t
+       so ONE table per epicentre serves Rayleigh and Love both, and each keeps its own U₀.
+
+       ⚠ THE REFERENCE VALUES ARE UNCHANGED. g = 1 over continental crust, so an all-land path is
+       3.5 / 4.4 km/s exactly as before; only an oceanic leg departs from it. `OCEAN_G` is a stated
+       first-order assumption, like Q₀/η and the stress drop, and it is in 詳細設定 beside them.
+       ⚠ AND IT DEGRADES TO THE OLD BEHAVIOUR: with no land mask loaded the table is never built and
+       `_pathDeg` is the plain great-circle conversion, i.e. exactly the circles it replaced. */
+    let OCEAN_G=1.08;                    /* oceanic vs continental fundamental-mode group velocity */
+    const _PB=72, _PS=1.0;               /* bearings sampled (5°) · step along each, in degrees */
+    let _pTab=null, _pKey='';
+    function _pathBuild(){
+      const key=epi?(epi[0].toFixed(3)+','+epi[1].toFixed(3)+','+OCEAN_G):'';
+      if(_pTab&&_pKey===key) return _pTab;
+      const LM=window.IntMapLandMask;
+      if(!epi||!LM||!LM.ready||!LM.ready()){ try{ LM&&LM.warm&&LM.warm(); }catch(_){} _pTab=null; _pKey=''; return null; }
+      const N=Math.round(180/_PS), stepKm=_PS*D*RE, tab=new Array(_PB);
+      for(let bi=0;bi<_PB;bi++){ const b=bi*360/_PB, cum=new Float32Array(N+1); let s=0;
+        for(let i=1;i<=N;i++){
+          const p=destAng(epi,b,(i-0.5)*_PS);                 /* midpoint of this step */
+          let g=1; try{ if(!LM.isLand(p[0],p[1])) g=OCEAN_G; }catch(_){}
+          s+=stepKm/g; cum[i]=s; }
+        tab[bi]=cum; }
+      _pTab=tab; _pKey=key; return _pTab;
+    }
+    /* invert S(Δ) = reduced, for the bearing asked (linear between the two sampled bearings) */
+    function _pathDeg(reducedKm,brg){
+      if(!(reducedKm>0)) return 0;
+      const tab=_pathBuild();
+      if(!tab) return reducedKm/(D*RE);                        /* no mask — the old constant-velocity ring */
+      const f=((brg%360)+360)%360*_PB/360, b0=Math.floor(f)%_PB, b1=(b0+1)%_PB, w=f-Math.floor(f);
+      const inv=(cum)=>{ const N=cum.length-1;
+        if(reducedKm>=cum[N]) return 180;
+        let lo=1,hi=N; while(lo<hi){ const m=(lo+hi)>>1; if(cum[m]<reducedKm) lo=m+1; else hi=m; }
+        const a=cum[lo-1], c=cum[lo];
+        return ((lo-1)+((c>a)?(reducedKm-a)/(c-a):0))*_PS; };
+      return inv(tab[b0])*(1-w)+inv(tab[b1])*w;
+    }
+    /* ══ ⚠⚠ (#R235) THE SOURCE POINTS CARRY THEIR OWN DEPTH ══════════════════════════════════════
+       「震源域の形状や深さ、地盤なども多角的に考慮した伝播にして。」
+       #R189/#R234 delayed every point of the rupture by its distance from the hypocentre and then
+       asked ONE travel-time curve — the hypocentre's — how far the phase had got. A rupture plane
+       DIPS: Tōhoku's down-dip edge is ~45 km deep against a 29 km hypocentre, and a 45 km source
+       reaches Δ=10° some seconds before a 29 km one does. So each sampled point gets the depth of
+       the plane AT that point, and its own curve.
+       Depth is linear in the across-strike coordinate between `zTopKm` (the up-dip edge) and
+       `zBotKm` (the down-dip edge) — which is exactly the plane the geometry solver returned, so
+       this reads the solved plane rather than estimating a second one. With no strike solved (a
+       blob), every point keeps the hypocentral depth: an unknown dip direction is not a licence to
+       invent one. */
+    function _srcPts(){
+      const K=[{off:0,phi:0,delay:0,dep:depthKm}];
+      if(!(fault&&fault.ring&&fault.ring.length>=3)) return K;
+      const R2=fault.ring, step=Math.max(1,Math.floor(R2.length/24));
+      const zT=(fault.zTopKm!=null)?+fault.zTopKm:depthKm, zB=(fault.zBotKm!=null)?+fault.zBotKm:depthKm;
+      const st=(fault.strikeDeg!=null&&isFinite(fault.strikeDeg))?+fault.strikeDeg:null;
+      /* across-strike coordinate of every ring point, so the two edges can be told apart */
+      let lo2=Infinity, hi2=-Infinity; const xs=[];
+      if(st!=null){ const c0=fault.centroid||epi;
         for(let i=0;i<R2.length;i+=step){ const p=R2[i];
-          K.push({ off:gcDelta(epi,p), phi:bearingTo(epi,p), delay:gcDelta(epi,p)*D*RE/VRUP_KMS }); } }
+          const dd=gcDelta(c0,p)*D*RE, br=bearingTo(c0,p);
+          const x=dd*Math.cos((br-(st+90))*D);          /* +x = down-dip side of the centroid */
+          xs.push(x); if(x<lo2) lo2=x; if(x>hi2) hi2=x; } }
+      let n=0;
+      for(let i=0;i<R2.length;i+=step,n++){ const p=R2[i];
+        const off=gcDelta(epi,p);
+        let dep=depthKm;
+        if(st!=null&&hi2>lo2){ const f=Math.max(0,Math.min(1,(xs[n]-lo2)/(hi2-lo2))); dep=zT+(zB-zT)*f; }
+        K.push({ off, phi:bearingTo(epi,p), delay:off*D*RE/VRUP_KMS, dep:Math.max(0.5,dep) }); }
+      return K;
+    }
+    /* ══ ⚠⚠ (#R235) THE ENVELOPE WAS THE CONVEX HULL, AND A HAND-DRAWN RUPTURE IS NOT CONVEX ══════
+       #R189 evaluated the union of the source circles through its SUPPORT FUNCTION,
+       `R = off·cos(b−φ) + r`, and said so: 「exact for the convex hull of the union」. That is the
+       first-order expansion of the real thing, and it has two consequences the instruction names:
+         · a free-drawn rupture that is bent, hooked or C-shaped has its concavity FILLED IN — the
+           front leaves the shape the user drew and becomes its hull;
+         · `off` and `r` are angles on a sphere, and adding them as if they were flat over-reaches
+           by ~1% at 10° and much more beyond, on exactly the giant ruptures that need it.
+       The exact outer root is a spherical triangle, not an expansion. Along the great circle from
+       the epicentre at bearing b, a point at angular distance R sits on the circle of radius r
+       about a source point at (off, φ) when
+             cos r = cos(off)·cos R + sin(off)·sin R·cos(b−φ)
+       ⇒ with A = cos(off), B = sin(off)·cos(b−φ), C = √(A²+B²), δ = atan2(B, A):
+             C·cos(R − δ) = cos r  ⇒  R = δ + acos(cos r / C)      (the outer of the two roots)
+       and |cos r / C| > 1 simply means this ray never reaches that source point's circle, so it
+       contributes nothing to this bearing. Taking the max over the sampled points is then the outer
+       boundary of the union itself — concave where the union is concave.
+       ⚠ IT DOES **NOT** REDUCE TO THE OLD LINE AT SMALL ANGLES, and it should not. Flattening the
+       sphere gives `R = off·cos Δb + √(r² − off²·sin²Δb)`, and the old expression is that with the
+       square root replaced by `r` — i.e. the TANGENT, which is where the convex hull comes from, not
+       a small-angle approximation of the union. The two agree only along the strike (Δb = 0 or 180°)
+       and diverge most across it; at Δb = 90° the old form returns `off·0 + r` for a point whose
+       circle the ray reaches at √(r² − off²). So this is a correction at every scale, and the
+       spherical form is checked against the planar union — not against the old line — in tests/r235. */
+    /* ⚠ `rFor(k, b)` TAKES THE RAY BEARING AS WELL AS THE SOURCE POINT. The first cut passed only
+       `k`, and `k.phi` is the bearing OF THAT SOURCE POINT from the hypocentre — not the direction
+       the front is travelling in. Any radius that depends on direction (the surface-wave path
+       integral below) was therefore evaluated along the wrong azimuth and came out the same for
+       every bearing: measured on Tōhoku at t=400 s, east and west were 1441 km each, ratio 1.000,
+       i.e. a perfect circle wearing a path integral's clothes. */
+    function _envR(K,rFor,b){
+      let R=null;
+      for(let i=0;i<K.length;i++){ const k=K[i], r=rFor(k,b); if(r==null) continue;
+        const A=Math.cos(k.off*D), B=Math.sin(k.off*D)*Math.cos((b-k.phi)*D);
+        const C=Math.hypot(A,B); if(!(C>1e-9)) continue;
+        const q=Math.cos(r*D)/C; if(q<-1||q>1) continue;
+        const cand=(Math.atan2(B,A)+Math.acos(q))/D;
+        if(R==null||cand>R) R=cand; }
+      return R;
+    }
+    /* the ring is built in CONTINUOUS longitude and split at the seam by the same helper every other
+       ring uses, so the polar/antimeridian behaviour is identical to ringLines(). */
+    function faultFrontLines(rFor){
+      const K=_srcPts(); if(_envR(K,rFor,0)==null) return null;
       const NB2=144, ringPts=[]; let prev=null;
-      for(let a2=0;a2<=NB2;a2++){ const b=a2*360/NB2; let R=r0;
-        for(let k2=1;k2<K.length;k2++){ const k=K[k2], r=radiusAtDelay(k.delay); if(r==null) continue;
-          const cand=k.off*Math.cos((b-k.phi)*D)+r; if(cand>R) R=cand; }
+      for(let a2=0;a2<=NB2;a2++){ const b=a2*360/NB2; const R=_envR(K,rFor,b); if(R==null) return null;
         const p=destAng(epi,b,Math.min(179.9,Math.max(0.02,R)));
         let lo=p[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; }
         ringPts.push([lo,p[1]]); prev=lo; }
@@ -1848,22 +1964,38 @@ window.IntMapModules.seismic=function(HOST){
          so each name sits on the arc that is actually in view, and it follows a pan (see the
          `moveend` subscription by onClick: it redraws the fronts, not the field). 45° remains the
          answer for the one case that has no direction — the camera sitting on the epicentre. */
-      const label=(rad,col,name,vkm)=>{ const r=rad(0); if(r==null) return;
-        const p=destAng(epi,_viewBearing(),Math.min(179.9,Math.max(0.02,r)));
+      /* ⚠ (#R235) the label is placed at `_viewBearing()`, so it must ask for the radius AT THAT
+         BEARING — with a laterally varying path the two are no longer the same number, and a name
+         taken from bearing 0 would float off its own ring. */
+      const label=(rad,col,name,vkm)=>{ const vb=_viewBearing(); const r=rad(vb); if(r==null) return;
+        const p=destAng(epi,vb,Math.min(179.9,Math.max(0.02,r)));
         feats.push({type:'Feature',geometry:{type:'Point',coordinates:[((p[0]+540)%360)-180,p[1]]},
           properties:{kind:'frontLabel',col,t:name+(vkm?('  '+vkm.toFixed(1)+' km/s'):'')}}); };
-      PH.forEach(ph=>{ const rad=(delay)=>{ const d=frontDelta(ph.k,depthKm,Math.max(0,tSec-delay)); return (d!=null&&d>0.02)?d:null; };
-        const lines=fault?faultFrontLines(rad):((rad(0)!=null)?ringLines(epi,rad(0)):null);
+      /* body waves — IASP91, each source point through the curve for ITS OWN depth (#R235 _srcPts).
+         These do NOT vary with bearing (no lateral velocity model for the mantle here), so a point
+         source is still a circle and still goes through the shared seam/pole helper. */
+      PH.forEach(ph=>{ const rad=(k)=>{ const d=frontDelta(ph.k,(k&&k.dep!=null)?k.dep:depthKm,Math.max(0,tSec-((k&&k.delay)||0))); return (d!=null&&d>0.02)?d:null; };
+        const lines=fault?faultFrontLines(rad):((rad(null)!=null)?ringLines(epi,rad(null)):null);
         if(lines) emit(lines,{kind:'ring',col:ph.col,w:ph.w});
         /* apparent speed at the edge: the distance the front has covered over the time it took */
-        let v=null; { const r=rad(0); if(r!=null&&tSec>0.5) v=(r*D*RE)/tSec; }
-        label(rad,ph.col,ph.name(),v); });
-      /* surface waves — group velocity along the great circle, not ray theory */
+        let v=null; { const r=rad(null); if(r!=null&&tSec>0.5) v=(r*D*RE)/tSec; }
+        label(()=>rad(null),ph.col,ph.name(),v); });
+      /* ══ (#R235) SURFACE WAVES TRAVEL THROUGH THE CRUST THEY ARE CROSSING ═══════════════════════
+         Group velocity is no longer one constant for the whole planet: `_pathKm` integrates the
+         local slowness along each bearing's great circle (see the note there), so the front runs
+         ahead over oceanic path and lags over thick continental crust. Everything else is as it
+         was — the 3.5 / 4.4 km/s reference values are unchanged and are what an all-continental
+         path still gives. */
       SURF.forEach(sw=>{
-        const rad=(delay)=>{ const d=(sw.v*Math.max(0,tSec-delay))/(RE*D); return (d>0.02&&d<179)?d:null; };
-        const lines=fault?faultFrontLines(rad):((rad(0)!=null)?ringLines(epi,rad(0)):null);
+        const rad=(k,b)=>{ const d=_pathDeg(sw.v*Math.max(0,tSec-((k&&k.delay)||0)),b||0); return (d>0.02&&d<179)?d:null; };
+        /* ⚠ ALWAYS THE PER-BEARING BUILDER, fault or no fault. `ringLines` takes ONE radius, so with
+           a point source it would draw the bearing-0 answer all the way round and quietly throw the
+           path integral away — which is exactly the defect measured above. With no rupture `_srcPts`
+           is just the hypocentre, so the ring is the same construction with one source point. */
+        const lines=faultFrontLines(rad);
         if(lines) emit(lines,{kind:'ring',col:sw.col,w:1.8});
-        label(rad,sw.col,sw.name(),sw.v); });
+        /* the name sits on the arc in view, so it reads the radius for THAT bearing */
+        label((b)=>rad(null,b),sw.col,sw.name(),sw.v); });
       stations.forEach((s,i)=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station',n:String(i+1)}}));   /* (#R210) the marker carries its row number */
       setData(feats);
     }
@@ -1918,7 +2050,9 @@ window.IntMapModules.seismic=function(HOST){
        both are the case where grey is the MEANING rather than the decoration: the window's own ✕
        and — glyphs, which are chrome and not content. Everything a reader is meant to READ is
        `--text-main`, including the 「無感」 placeholder, which stays distinguishable from a real
-       reading by its weight (400 against the intensity chip's 800) rather than by being faint. */
+       reading by having no chip behind it — (#R235) 「太字禁止」 took the chip's weight to 400 too,
+       so the two are told apart by the coloured background alone, which is the thing that carries
+       the meaning anyway. */
     const FS='12px', FS_S='11px', FS_H='13px';
     const NUM='width:84px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:'+FS+';padding:0 6px;box-sizing:border-box;';
     const ROW='font-size:'+FS+';color:var(--text-main);display:flex;justify-content:space-between;align-items:center;gap:8px;';
@@ -1975,6 +2109,11 @@ window.IntMapModules.seismic=function(HOST){
         +'<label style="'+ROW+'">'+L('Crustal Q = Q₀·f^η','地殻の Q = Q₀·f^η','Krusten-Q = Q₀·f^η','Q коры = Q₀·f^η','Q cortical = Q₀·f^η')
           +'<span style="display:flex;gap:5px;"><input class="sq-q0" type="number" min="30" max="2000" step="10" value="'+QS0+'" title="Q₀" style="'+NUM+'width:62px;">'
           +'<input class="sq-qe" type="number" min="0" max="1" step="0.05" value="'+QETA+'" title="η" style="'+NUM+'width:62px;"></span></label>'
+        /* (#R235) the surface-wave path term — the one lateral-heterogeneity assumption the fronts
+           carry, filed beside the other priors-on-the-model rather than on the event's side of the
+           panel (#R234 ⑪). 1.00 restores the constant-velocity circles exactly. */
+        +'<label style="'+ROW+'">'+L('Oceanic path, surface waves (×)','海洋地殻を通る表面波 (×)','Ozeanischer Pfad, Oberflächenwellen (×)','Океанический путь, поверхностные волны (×)','Trayecto oceánico, ondas superficiales (×)')
+          +'<input class="sq-og" type="number" min="1" max="1.3" step="0.01" value="'+OCEAN_G+'" style="'+NUM+'"></label>'
         +'</div></details>';
     }
     function _faultAdvHTML(){
@@ -2180,7 +2319,7 @@ window.IntMapModules.seismic=function(HOST){
           +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>'
         /* (#R189) real-time playback with a visible rate */
         +'<div style="display:flex;align-items:center;gap:8px;"><button class="sq-play" style="'+BTN+'width:36px;">▶</button>'
-          +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="1" value="'+Math.round(tSec)+'" style="flex:1;">'
+          +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" style="flex:1;">'
           +'<select class="sq-spd" style="'+NUM+'width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
           +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
         /* ══ (#R234) A LIST, NOT WHICHEVER ONE HAPPENED TO BE BIGGEST ═════════════════════════════
@@ -2230,6 +2369,15 @@ window.IntMapModules.seismic=function(HOST){
            'Laufzeiten per Strahlverfolgung durch IASP91; Oberflächenwellen 3,5/4,4 km/s. Bodenbewegung: stochastische Methode (Brune-Quelle; trilineare Abnahme UND Pfaddauer nach Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; Peakfaktor nach Cartwright & Longuet-Higgins 1956). Punktquelle und gezeichnete Bruchfläche sind DIESELBE endliche Quelle: eine Punktquelle steht für die Bruchfläche, die ihre Magnitude impliziert (Wells & Coppersmith 1994, log₁₀ A = −3,49 + 0,91·M), also gilt die Distanz zu dieser Fläche zusammen mit der Herdtiefe; eine gezeichnete Bruchfläche nutzt ihren eigenen Umriss (M₀=μAD̄), und die Fronten tragen die Bruchausbreitung. Keine Zusatztiefe bei beiden — bei gleicher Magnitude stimmen sie überein. Untergrund aus dem realen Gelände: Vs30 aus der Hangneigung (Wald & Allen 2007). MMI aus PGV nach Worden et al. 2012 (die ShakeMap-Relation), PGV im nutzbaren Band eines Starkbebenschriebs (Hochpass 0,1 Hz) — NICHT die JMA-Skala. Die JMA-Shindo folgt hier ihrer eigenen Definition (気象庁): Periodenfilter, 10-Hz-Hochschnitt, 0,5-Hz-Tiefschnitt, dann der insgesamt 0,3 s überschrittene Pegel, I = 2·log₁₀ a₀ + 0,94. Die Fläche reicht bis zum Ende der untersten Klasse: bis 1.500 km folgt sie dem Gelände, darüber hinaus nur noch der Distanz. Jenseits 1.000 km ist das Abklinggesetz extrapoliert. Nur Bildungsmodell.',
            'Времена — по IASP91; поверхностные волны 3,5/4,4 км/с. Движение грунта — стохастический метод (источник Бруна; геометрическое расхождение И длительность пути по Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 с; пик-фактор Cartwright & Longuet-Higgins 1956). Точечный источник и нарисованный очаг — ОДИН И ТОТ ЖЕ конечный источник: точка представляет разрыв, который подразумевает её магнитуда (Wells & Coppersmith 1994, log₁₀ A = −3,49 + 0,91·M), поэтому расстояние берётся до этой площадки вместе с глубиной очага; нарисованный очаг использует собственный контур (M₀=μAD̄), а фронты несут распространение разрыва. Псевдоглубина не добавляется ни в одном случае, поэтому при одной магнитуде результаты совпадают. Грунт — из реального рельефа: Vs30 по уклону (Wald & Allen 2007). MMI — по PGV по Worden et al. 2012 (реляция ShakeMap), PGV берётся в полосе, которую даёт запись сильных движений (ФВЧ 0,1 Гц); это не шкала JMA. Синдо JMA вычисляется по её собственному определению (気象庁): фильтры периода, 10 Гц и 0,5 Гц, затем уровень, превышаемый суммарно 0,3 с, I = 2·log₁₀ a₀ + 0,94. Поле рисуется до конца низшего класса: до 1 500 км — по рельефу, дальше — только по расстоянию. Дальше 1 000 км — экстраполяция. Учебная модель.',
            'Llegadas por IASP91; ondas superficiales a 3,5/4,4 km/s. Movimiento: método estocástico (fuente de Brune; atenuación geométrica Y duración de trayecto según Atkinson & Boore 1995; Q = Q₀·f^η (Raoof et al. 1999); κ = 0,035 s; factor de pico de Cartwright & Longuet-Higgins 1956). Una fuente puntual y una ruptura dibujada son LA MISMA fuente finita: un punto representa la ruptura que implica su magnitud (Wells & Coppersmith 1994, log₁₀ A = −3,49 + 0,91·M), así que la distancia es a esa superficie combinada con la profundidad focal; una ruptura dibujada usa su propio contorno (M₀=μAD̄) y sus frentes llevan la propagación. No se añade profundidad equivalente en ninguno de los dos casos, por lo que con la misma magnitud coinciden. Terreno real: Vs30 por pendiente (Wald & Allen 2007). MMI desde PGV según Worden et al. 2012 (la relación de ShakeMap), con PGV en la banda que entrega un registro de movimiento fuerte (paso alto 0,1 Hz); NO es la escala JMA. El shindo JMA sigue aquí su propia definición (気象庁): filtros de periodo, corte alto de 10 Hz y corte bajo de 0,5 Hz, y el nivel superado durante 0,3 s en total, I = 2·log₁₀ a₀ + 0,94. El campo se pinta hasta el final de la clase más baja: hasta 1.500 km sigue el terreno, más allá sólo la distancia. Más allá de 1.000 km la ley regional está extrapolada. Modelo educativo.')
+        /* ⚠ (#R235) THE FRONTS CHANGED, SO THE DISCLAIMER HAS TO SAY SO — and it is a SEPARATE
+           sentence rather than an edit to the paragraph above. That paragraph is the key its own
+           translations are stored under (js/locales/ui.*.js `inline`), so rewording it would silently
+           drop nine languages back to English; appending is the only change that keeps them. */
+        +' '+L('The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.',
+           '波面は震源域の各標本点から広がる波の外側の包絡線で、球面上で解いているため手描きの凹んだ形もそのまま保たれます（凸包に置き換わりません）。各標本点は傾斜した断層面上の自分自身の深さに対応する走時曲線を使います。表面波の群速度は大円経路に沿って積分しており一定ではないため、海洋地殻を通る経路は大陸地殻より先行します。3.5 / 4.4 km/s は大陸の基準値で、比率は詳細設定にあります。',
+           'Die Wellenfronten sind die äußere Einhüllende der Fronten aller abgetasteten Punkte des Bruchs — auf der Kugel gelöst, sodass ein von Hand gezeichneter Umriss seine Konkavität behält statt durch seine konvexe Hülle ersetzt zu werden — und jeder Punkt nutzt die Laufzeitkurve seiner EIGENEN Tiefe auf der einfallenden Fläche. Die Gruppengeschwindigkeit der Oberflächenwellen wird entlang jedes Großkreises integriert statt konstant gehalten, sodass ein ozeanischer Pfad einem kontinentalen vorauseilt; 3,5 / 4,4 km/s sind der kontinentale Bezugswert, das Verhältnis steht in den erweiterten Einstellungen.',
+           'Фронты волн — внешняя огибающая фронтов от всех выбранных точек очага, решённая на сфере, поэтому нарисованный от руки контур сохраняет вогнутость и не заменяется выпуклой оболочкой; каждая точка использует годограф для СВОЕЙ глубины на наклонной плоскости. Групповая скорость поверхностных волн интегрируется вдоль каждого большого круга, а не берётся постоянной, поэтому океанический путь опережает континентальный; 3,5 / 4,4 км/с — континентальный эталон, отношение задаётся в расширенных настройках.',
+           'Los frentes de onda son la envolvente exterior de los frentes de cada punto muestreado de la ruptura — resuelta sobre la esfera, de modo que un contorno dibujado a mano conserva su concavidad en lugar de ser sustituido por su envolvente convexa — y cada punto usa la curva de tiempos de su PROPIA profundidad en el plano buzante. La velocidad de grupo de las ondas superficiales se integra a lo largo de cada círculo máximo en vez de mantenerse constante, así que un trayecto oceánico se adelanta a uno continental; 3,5 / 4,4 km/s son la referencia continental y la razón está en los ajustes avanzados.')
         +'</div></details></div>';
       { const ev=panel.querySelector('.sq-ev'); if(ev) ev.onchange=()=>{ applyEvent(ev.value); }; }   /* (#R232) */
       panel.querySelector('.sq-close').onclick=()=>close();
@@ -2271,6 +2419,9 @@ window.IntMapModules.seismic=function(HOST){
       panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); };
       const q0=panel.querySelector('.sq-q0'); if(q0) q0.onchange=e=>{ QS0=Math.max(30,Math.min(2000,+e.target.value||180)); touch(); };
       const qe=panel.querySelector('.sq-qe'); if(qe) qe.onchange=e=>{ QETA=Math.max(0,Math.min(1,+e.target.value)); touch(); };
+      /* (#R235) …and this one invalidates the PATH TABLE rather than the intensity field: the fronts
+         read it every frame, the ground-motion chain never does — so `touch()` would be a lie. */
+      const og=panel.querySelector('.sq-og'); if(og) og.onchange=e=>{ OCEAN_G=Math.max(1,Math.min(1.3,+e.target.value||1.08)); _pTab=null; _pKey=''; drawFronts(); };
       const op=panel.querySelector('.sq-op');
       if(op) op.oninput=e=>{ const v=setFieldOpacity((+e.target.value||85)/100);
         const b=panel.querySelector('.sq-opv'); if(b) b.textContent=Math.round(v*100)+'%'; };
@@ -2282,11 +2433,28 @@ window.IntMapModules.seismic=function(HOST){
       const sp=panel.querySelector('.sq-spd'); if(sp){ sp.onchange=e=>{ speed=Math.max(1,+e.target.value||1); }; }
       /* (#R189) REAL time by default: the front advances by wall-clock seconds × the chosen rate.
          The old loop hard-coded 10 s of simulation every 90 ms ≈ 111× and nothing on screen said so. */
-      const pb=panel.querySelector('.sq-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; }
-        else { pb.textContent='⏸'; let last=performance.now();
-          playing=setInterval(()=>{ const now=performance.now();
+      /* ══ ⚠ (#R235) 「動作は離散的ではなくスムーズにして」 ═══════════════════════════════════════
+         The playback was `setInterval(…, 90)` — 11 steps a second on a 60 Hz display, so the fronts
+         JUMPED five frames at a time. And the slider was written back as `Math.round(tSec)`, which
+         quantised the model's own clock to whole seconds: at 1× the ring moved 3.5 km, stopped for
+         most of a second, then moved 3.5 km again. Both are gone:
+           · the tick is the animation frame, through the ONE frame loop (#R234 js/runtime.js) — so
+             this shares the map's rAF instead of opening a competing timer, and it is skipped while
+             the tab is hidden rather than accumulating;
+           · `tSec` keeps its fractional part. The slider is a `step` of 0.01 now (see the markup),
+             so writing the real value no longer snaps it.
+         ⚠ The advance is still WALL-CLOCK × speed, so the playback rate is unchanged — this is the
+         same motion sampled at the display's rate instead of at 11 Hz. */
+      const RT=()=>window.IntMapRuntime;
+      const _stop=()=>{ playing=0; try{ const R=RT(); R&&R.frame&&R.frame('seismic:play',()=>{}); }catch(_){} };
+      const pb=panel.querySelector('.sq-play'); pb.onclick=()=>{ if(playing){ _stop(); pb.textContent='▶'; }
+        else { pb.textContent='⏸'; let last=performance.now(); playing=1;
+          const step=()=>{ if(!playing||!opened) return;
+            const now=performance.now();
             tSec=(tSec+(now-last)/1000*speed)%MAXT; last=now;
-            tl.value=Math.round(tSec); panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); },90); } };
+            tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts();
+            const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } };
+          const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } } };
       panel.querySelector('.sq-real').onclick=()=>loadReal();
       /* (#R234) …and choosing from the list is what loads one — see loadReal / applyReal */
       { const rs=panel.querySelector('.sq-real-sel');
@@ -2494,7 +2662,13 @@ window.IntMapModules.seismic=function(HOST){
       _setProg();
       if(!epi){ o.innerHTML=L('Place an epicenter to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
       const s=source(mw);
-      const notFelt=L('not felt','無感','—','—','—');
+      /* ⚠ (#R235) DE/RU/ES said 「—」 here — an em-dash is not a translation of "not felt", it is the
+         absence of one, and it collided with the 「—」 this table already prints for a missing number
+         (see fmtT). Part of the DE/RU/ES sweep this round. */
+      const notFelt=L('not felt','無感','nicht spürbar','не ощущается','no sentido');
+      /* ⚠ (#R235) …and this is a DIFFERENT statement, which is the whole bug below: past the
+         calibrated range the model declines to answer. "No answer" is not "no shaking". */
+      const noAnswer=L('out of range','範囲外','außerhalb','вне диапазона','fuera de rango');
       const jp=scale==='jma';
       /* ══ (#R234) THE INTENSITY IS THE ANSWER, SO IT IS THE BIGGEST THING IN THE ROW ═══════════════
          「各地の表は、震度を大きめに表示し、かつそれぞれの震度色背景と白文字に。MMIならMMI X、
@@ -2506,13 +2680,32 @@ window.IntMapModules.seismic=function(HOST){
          not 「白文字」, it is no text. `_onDark` keeps the class's own hue and darkens it only until
          white clears a 3:1 contrast ratio, so the colour still identifies the class and the label is
          still legible. The map's own paint is untouched; this is the table's chip. */
-      const iCell=(a)=>{ const none='<span style="color:var(--text-main);font-weight:400;">'+notFelt+'</span>';
-        if(!a.calibrated) return none;
+      /* ══ ⚠⚠ (#R235) 「どう考えても揺れているにもかかわらず無感とかかれた都市が混じっている」 ═════════
+         THE CELL WAS TESTING `calibrated`, AND `calibrated` GOES FALSE THREE WAYS:
+           1. `pgv < PGV_FELT`  — the ground is not moving.        ← the ONLY one that means 無感
+           2. `!inRange`        — past 1,000 km the regional spreading law is extrapolated and the
+                                  model declines to print a number. That is "no answer", not "no
+                                  shaking", and it was being reported as the latter.
+           3. `mmi > 9.5`       — the GMICE runs out at the TOP. ⚠⚠ THIS IS THE REPORTED DEFECT: the
+                                  worst-hit city in the table — the one at Rrup 0 of an M9 — printed
+                                  「無感」. `obsCut()` twelve lines down already documents this exact
+                                  trap ("cutting on it threw away the worst-hit city… Sendai, at
+                                  Rrup 0, was the one place excluded") and works around it; the cell
+                                  never got the same fix, so the row now survives the cut and then
+                                  says the opposite of what the map beside it is painting.
+         ⚠ AND (3) IS NOT EVEN A JMA STATEMENT. 震度 comes off the JMA level `a0` through the scale's
+         own definition (#R192) — the MMI conversion's ceiling has no authority over it at all, yet a
+         JMA-scale table was being blanked by it. Each scale is now bounded by its own top class. */
+      const iCell=(a)=>{ const plain=(t)=>'<span style="color:var(--text-main);font-weight:400;">'+t+'</span>';
+        if(!(a.pgv>=PGV_FELT)) return plain(notFelt);
+        if(!a.inRange) return plain(noAnswer);
         let txt,col;
-        if(jp){ const c=jmaClass(a.jma); if(!c) return none; txt='JMA '+c.id; col=c.col; }
+        if(jp){ const c=jmaClass(a.jma); if(!c) return plain(notFelt); txt='JMA '+c.id; col=c.col; }
         else { txt='MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; col=_mmiHex(a.mmi); }
-        return '<span style="display:inline-block;padding:3px 9px;border-radius:6px;background:'+_onDark(col)
-          +';color:#fff;font-size:'+FS_H+';font-weight:800;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
+        /* 「四角背景で、太字禁止」 — square corners (was border-radius:6px) and weight 400 (was 800).
+           Background is the class colour itself; only the ink moves (see _chipInk). */
+        return '<span style="display:inline-block;padding:3px 9px;border-radius:0;background:'+col
+          +';color:'+_chipInk(col)+';font-size:'+FS_H+';font-weight:400;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
         /* (#R210) a user-placed point carries the same numeral its marker does; the nearest
            well-known cities the table adds for context are not numbered because they are not
@@ -2601,10 +2794,33 @@ window.IntMapModules.seismic=function(HOST){
        disagree by more than 0.05 the slip is corrected once — the geometry solver may clamp a width
        or a depth, and an answer that quietly stops being the earthquake it claims to be is worse
        than one that says so. */
-    let evId='', evNow=null;
+    let evId='', evNow=null, evPub=null;
+    /* the plane + slip chain, run on whichever outline we have. Factored out by (#R235) because it
+       now runs TWICE for the same event: once on the published rectangle so the panel is never
+       empty, and again on the fetched finite-fault outline when it lands. */
+    function _evBuild(ev,ring,over){
+      faultOver=Object.assign({},over);
+      if(!faultSet(ring)) return false;
+      /* D̄ that reproduces the published moment over the plane the solver actually built */
+      const A3=Math.max(1,(fault&&fault.areaKm2)||0)*1e6;      /* m² */
+      let slip=momentOf(ev.mw)/(MU*A3);
+      faultOver=Object.assign({},over,{slipM:slip});
+      faultSet(ring);
+      if(Math.abs(mw-ev.mw)>0.05){                            /* one correction, then stop */
+        slip*=Math.pow(10,1.5*(ev.mw-mw));
+        faultOver=Object.assign({},over,{slipM:slip});
+        faultSet(ring);
+      }
+      return true;
+    }
+    function _evFrame(ring){
+      /* the camera goes where the earthquake is — the whole rupture, not just its hypocentre */
+      try{ const b=ring.reduce((a,p)=>[Math.min(a[0],p[0]),Math.min(a[1],p[1]),Math.max(a[2],p[0]),Math.max(a[3],p[1])],[180,90,-180,-90]);
+        GE().camera.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:80,duration:900}); }catch(_){}
+    }
     function applyEvent(id){
       const ev=QUAKE_EVENTS.find(e=>e.id===id)||null;
-      evId=ev?ev.id:''; evNow=ev;
+      evId=ev?ev.id:''; evNow=ev; evPub=null;
       if(!ev){ render(); return; }
       try{
         depthKm=ev.depthKm;
@@ -2612,23 +2828,33 @@ window.IntMapModules.seismic=function(HOST){
         const ring=ruptureRing(ev);
         /* the published plane, pinned: dip / down-dip width / top depth are facts about this
            earthquake, not things to estimate from a rectangle. */
-        faultOver={ dip:ev.dip, widthKm:ev.widKm, zTopKm:ev.zTopKm };
-        if(!faultSet(ring)) { render(); return; }
-        /* D̄ that reproduces the published moment over the plane the solver actually built */
-        const A3=Math.max(1,(fault&&fault.areaKm2)||0)*1e6;      /* m² */
-        let slip=momentOf(ev.mw)/(MU*A3);
-        faultOver={ dip:ev.dip, widthKm:ev.widKm, zTopKm:ev.zTopKm, slipM:slip };
-        faultSet(ring);
-        if(Math.abs(mw-ev.mw)>0.05){                            /* one correction, then stop */
-          slip*=Math.pow(10,1.5*(ev.mw-mw));
-          faultOver={ dip:ev.dip, widthKm:ev.widKm, zTopKm:ev.zTopKm, slipM:slip };
-          faultSet(ring);
-        }
-        /* the camera goes where the earthquake is — the whole rupture, not just its hypocentre */
-        try{ const b=ring.reduce((a,p)=>[Math.min(a[0],p[0]),Math.min(a[1],p[1]),Math.max(a[2],p[0]),Math.max(a[3],p[1])],[180,90,-180,-90]);
-          GE().camera.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:80,duration:900}); }catch(_){}
+        if(!_evBuild(ev,ring,{ dip:ev.dip, widthKm:ev.widKm, zTopKm:ev.zTopKm })){ render(); return; }
+        _evFrame(ring);
       }catch(_){}
       refresh(); render();
+      /* ══ ⚠ (#R235) …AND THEN THE REAL OUTLINE REPLACES THE RECTANGLE ═══════════════════════════
+         「震源域の描画が雑すぎる。（現状は単に長方形置くだけ。）」 The rectangle above is what the
+         catalogue can state offline, and it stays the answer if the fetch fails — so this is a
+         REFINEMENT, not a dependency. When the published finite-fault outline arrives:
+           · the ring becomes the model's own (Türkiye's bent multi-segment trace, Sumatra's
+             1,300 km arc, Wenchuan's 15-vertex outline — none of them a rectangle);
+           · `zTopKm` / `zBotKm` come off the polygon's OWN depth ordinates, so the plane is pinned
+             to the published geometry instead of to the catalogue's estimate, and the dip is left
+             for the solver to read from a shape that now actually has one;
+           · the reference string is kept for the panel's attribution (CONSTITUTION 4).
+         ⚠ Guarded on `evId` so a reader who changes the selection while a fetch is in flight does
+         not get the previous earthquake's rupture painted over the new one. */
+      try{
+        const want=ev.id;
+        fetchRuptureRing(ev).then((pub)=>{
+          if(!pub||evId!==want||!opened) return;
+          const over={ dip:ev.dip, widthKm:ev.widKm, zTopKm:ev.zTopKm };
+          if(pub.zTopKm!=null&&pub.zBotKm!=null&&pub.zBotKm>pub.zTopKm){
+            over.zTopKm=pub.zTopKm; over.zBotKm=pub.zBotKm; delete over.dip; delete over.widthKm; }
+          if(!_evBuild(ev,pub.ring,over)) return;
+          evPub=pub; _evFrame(pub.ring); refresh(); render();
+        });
+      }catch(_){}
     }
     /* what was actually MEASURED, beside what the model says — 「実測値も併記する」. Quoted with its
        source and never mixed into the computed numbers above it. */
@@ -2647,7 +2873,15 @@ window.IntMapModules.seismic=function(HOST){
         +row(L('Tsunami','津波','Tsunami','Цунами','Tsunami')+':', o.tsunamiM)
         +row(L('Casualties','人的被害','Opfer','Жертвы','Víctimas')+':', o.deaths)
         +(o.note?('<div style="margin-top:2px;">'+esc(pick(o.note))+'</div>'):'')
-        +'<div style="margin-top:2px;opacity:0.7;">'+L('Source','出典','Quelle','Источник','Fuente')+': '+esc(ev.src)+'</div>';
+        +'<div style="margin-top:2px;opacity:0.7;">'+L('Source','出典','Quelle','Источник','Fuente')+': '+esc(ev.src)+'</div>'
+        /* ⚠ (#R235) THE DRAWN OUTLINE GETS ITS OWN LINE, because it is a different claim from the row
+           above it: `ev.src` says where the catalogue's NUMBERS come from, this says whose model the
+           SHAPE on the map is. It appears only when the published outline actually arrived — when
+           the fetch fails the panel is showing the rectangle and says nothing it cannot support. */
+        +(evPub?('<div style="margin-top:2px;opacity:0.7;">'
+          +L('Rupture outline','震源域の輪郭','Bruchfläche','Контур очага','Contorno de ruptura')+': USGS ShakeMap'
+          +(evPub.segments>1?(' ('+evPub.segments+' '+L('segments','セグメント','Segmente','сегментов','segmentos')+')'):'')
+          +(evPub.ref?(' — '+esc(evPub.ref.replace(/https?:\/\/\S+/g,'').trim().slice(0,180))):'')+'</div>'):'');
     }
 
     /* ══ (#R232) THE OBSERVATION POINTS ARE THE MAJOR CITIES AROUND IT, AND ONLY THE ONES THAT SHAKE ══
@@ -2881,7 +3115,7 @@ window.IntMapModules.seismic=function(HOST){
       if(o&&o.lng!=null){ setEpi([o.lng,o.lat]); if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
       else refresh();
       return true; }
-    function close(){ opened=false; endPick(); if(playing){ clearInterval(playing); playing=0; }
+    function close(){ opened=false; endPick(); if(playing){ playing=0; }
       if(_fDrawing){ try{ window.DrawTool&&window.DrawTool.exit&&window.DrawTool.exit(); }catch(_){} _fDrawing=false; }
       fldSeq++; _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; try{ paintField(); paintFar(); }catch(_){}
       if(panel) panel.style.display='none'; setData([]); return true; }

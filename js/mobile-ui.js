@@ -118,7 +118,19 @@ window.IntMapModules.mobileUI=function(HOST){
 
     /* ---- responsive: relocate config panels in/out of the sheets ---- */
     function applyLayout(isM){
-      if(isM){ moveTo(layerDropdown,moMountLayers); moveTo(satController,moMountSat);
+      /* ══ ⚠ (#R235) 「モバイル版のレイヤー選択欄は、デスクトップ版とおなじUIに。下部の比較ビューや
+             衛星画像プロバイダ等のやつはなくていい。」 ════════════════════════════════════════════════
+         #R232 mounted the desktop's tile grid at the TOP of this sheet, which made the layer list
+         itself identical. What was still different was everything UNDER it: the satellite-imagery
+         provider panel (`#sat-controller`, moved in here by the line below since #R12) and the
+         `#layer-tools` strip that `reorganizeLayerPanel` fills with 比較ビュー / 相関分析. Neither is
+         in the desktop layer sidebar — that is search + tiles + the Active-layers bar and nothing
+         else — so they are what the two panels still had to stop differing by.
+         ⚠ `#sat-controller` IS NO LONGER REACHABLE ON A PHONE. That is the instruction 「なくていい」
+         and it is a real reduction, so it is called out in the round's notes rather than left to be
+         discovered. Nothing is deleted: the element keeps its desktop home and the phone simply
+         stops borrowing it, so widening the window brings it straight back. */
+      if(isM){ moveTo(layerDropdown,moMountLayers);
         /* Mobile shows every layer group expanded (the carets are hidden there, #12) so nothing stays
            hidden behind a collapsed header the user can no longer toggle. */
         try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
@@ -134,6 +146,8 @@ window.IntMapModules.mobileUI=function(HOST){
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); document.body.classList.add('m-lyr-tiles'); }catch(_){}
       }
       else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full');
+        /* ⚠ restoreHome(satController) STAYS: a session that was narrow when #R234 shipped may still
+           have the element parked in #mo-mount-sat, and widening has to bring it back either way. */
         /* (#R232) back to the desktop: drop the phone's grid so it cannot go stale behind the real one */
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.unmountFrom&&window.IntMapLayerSidebar.unmountFrom(moMountLayers); }catch(_){}
         document.body.classList.remove('m-lyr-tiles'); }
