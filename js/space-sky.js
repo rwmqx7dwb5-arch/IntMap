@@ -42,8 +42,10 @@
  *  ── SCOPE ───────────────────────────────────────────────────────────────────────────────────────
  *  Dark theme + globe projection + an engine that does not draw its own sky. Cesium is excluded on
  *  the third test: it has a real Tycho-2 SkyBox and a real Sun of its own (js/cesium-engine.js), and
- *  two skies would be one too many. In light mode the surround is deliberately white and is left
- *  alone — the request is about the black one.
+ *  two skies would be one too many.
+ *  ⚠ (#R233) …AND THE SATELLITE BASEMAP IN LIGHT MODE, which used to be excluded here. A photographed
+ *  Earth is surrounded by space whatever colour the app's chrome is; the vector basemap keeps its
+ *  white surround, because that map is a diagram and not a photograph.
  * ==========================================================================*/
 window.IntMapSky=(function(){
   'use strict';
@@ -254,13 +256,25 @@ window.IntMapSky=(function(){
   }
   /* Dark theme + a globe + an engine with no sky of its own. `forced` is the manual override the
      console/Atlas can set; null means "decide from the conditions". */
+  /* (#R233) is the SATELLITE basemap the one being drawn? Asked of the renderer rather than of the
+     app's `currentMapType`, because this file has no HOST — and this is the SAME predicate
+     js/night-side.js already uses for the same question, so the two cannot disagree about it. */
+  function _satBase(){ try{ return GE().layers.getLayout('layer-sat','visibility')==='visible'; }catch(_){ return false; } }
   function shouldDraw(){
     if(forced===false) return false;
     try{ if(!GE().hasRenderer()) return false; }catch(_){ return false; }
     let F=null; try{ F=GE().camera.viewFrame(); }catch(_){}
     if(!F||!F.width||!F.height) return false;                      /* null = the engine draws its own sky */
     if(forced===true) return true;
-    if(document.documentElement.getAttribute('data-theme')!=='dark') return false;
+    /* ⚠ (#R233) …OR THE SATELLITE BASEMAP, WHATEVER THE UI THEME IS.
+       「ライトモードでも、Satelliteを選択時はダークモードと同様に地球の背景を宇宙に。」
+       The theme test alone was the whole gate, and it is the wrong question for this picture: a photo
+       of the Earth from orbit is surrounded by space no matter what colour the app's chrome is. On the
+       VECTOR basemap the light surround stays white on purpose (that map is a diagram, not a
+       photograph), so the exception is exactly the satellite case and nothing else.
+       ⚠ `body.space-sky-on .map-container{background:#000}` already carries the surround colour, so
+       the black arrives with the stars rather than needing a second rule in the light palette. */
+    if(document.documentElement.getAttribute('data-theme')!=='dark' && !_satBase()) return false;
     if(!(F.globeness>0.5)) return false;                           /* flat map: the surround is not space */
     return true;
   }

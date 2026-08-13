@@ -11,6 +11,7 @@
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
 window.IntMapLang.define('de', { ui: {
+      lnkTerms:"Nutzungsbedingungen", lnkPrivacy:"Datenschutzerklärung", legalTabTerms:"Bedingungen", legalTabPrivacy:"Datenschutz", commAddImage:"Bild hinzufügen",
       tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabCompanies:"Unternehmen", tabStats:"Länder", tabCommunity:"Community",
       searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", filterCompaniesPh:"Unternehmen filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
@@ -40,7 +41,7 @@ window.IntMapLang.define('de', { ui: {
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
       aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 10×/Tag). Kein API-Schlüssel erforderlich.",
       blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
-      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", vol3dBtn:"🧊 3-D-Volumen", droneBtn:"🛸 Drohne", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Screenshot", shareMenuBtn:"Teilen", shareLinkBtn:"Teilen / Link", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
+      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", vol3dBtn:"🧊 3-D-Volumen", droneBtn:"🛸 Drohne", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Karten-Screenshot", shareMenuBtn:"Teilen", shareLinkBtn:"Teilen / Link", screenshotBtn:"Karten-Screenshot (blendet Bedienelemente aus, behält Legenden)", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Kurzliste in der App", lblScience:"Wissenschaft & Logik", viewScience:"Wie jede Simulation rechnet ↗", lblSourcesPage:"Datenquellen", viewSourcesPage:"Datenquellen-Seite öffnen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
       filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",

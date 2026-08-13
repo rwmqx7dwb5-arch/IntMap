@@ -11,6 +11,11 @@
 window.IntMapLang.define('zh', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
+    "lnkTerms":"服務條款",
+    "lnkPrivacy":"隱私權政策",
+    "legalTabTerms":"條款",
+    "legalTabPrivacy":"隱私權",
+    "commAddImage":"新增圖片",
     "accentCustom":"自訂顏色",
     "accentDefault":"預設",
     "atlasBtn":"Atlas — 用日常語言提問（beta）・Ctrl/⌘+K",
@@ -144,7 +149,7 @@ window.IntMapLang.define('zh', {
     "proModalTitle":"解鎖 IntMap Pro",
     "proSection":"進階功能",
     "reportBugBtn":"🐞 回報錯誤",
-    "screenshotBtn":"螢幕擷取（隱藏控制項，保留圖例）",
+    "screenshotBtn":"地圖螢幕擷取（隱藏控制項，保留圖例）",
     "screenshotBusy":"擷取中…",
     "screenshotSaved":"已儲存螢幕擷取 ✓",
     "sendFeedbackBtn":"⭐ 傳送意見回饋",
@@ -195,7 +200,7 @@ window.IntMapLang.define('zh', {
       statPop:"人口", statGdp:"GDP（名目）", statGdpPc:"人均 GDP", statGdpPPP:"GDP（購買力平價）", statGdpPcPPP:"人均 GDP（購買力平價）", statArea:"面積", statDensity:"人口密度", statRegion:"地區", statSub:"次區域", statCapital:"首都", statCurrency:"貨幣", statLang:"語言", statHDI:"人類發展指數", statDem:"民主指數", statMil:"國防支出", statLife:"平均壽命", statInet:"網路使用人口",
       details:"詳細資料 ↗", loadingData:"正在載入國家資料…", dataNA:"無資料", noData:"查無國家資料。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"A–Z", sortHDI:"HDI", sortMil:"軍費", elev:"海拔", bearing:"方位", presetNone:"— 請選擇 —", presetLbl:"距離預設", opacity:"不透明度", circumference:"圓周長", lblUnits:"度量單位", unitBoth:"公制＋英制", unitMetric:"僅公制", unitImperial:"僅英制", msPh:"搜尋地球上任何地點…",
       spRunway:"跑道", spGarrison:"駐軍", spOperator:"營運者", spEstd:"設立", spAircraft:"機種", spType:"類型", spCapacity:"容量", spDepth:"深度", spOutput:"產量", spReserves:"蘊藏量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 經緯格線", gridLayer:"🌐 格線與標註", widgetsBtn:"小工具", lblTempUnit:"溫度", tempBoth:"°C＋°F", tempC:"僅 °C", tempF:"僅 °F", measureBtn:"📏 測量", measureMenuBtn:"測量", measureDistBtn:"📏 距離／面積", areaBtn:"📐 面積", drawBtn:"✏️ 繪製", vol3dBtn:"🧊 立體體積", droneBtn:"🛸 無人機", radiusBtn:"⭕ 半徑", objectsBtn:"🗂 物件", mScreenshot:"螢幕擷取", shareMenuBtn:"分享", shareLinkBtn:"分享／複製連結", layersBtn:"圖層 ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 經緯格線", gridLayer:"🌐 格線與標註", widgetsBtn:"小工具", lblTempUnit:"溫度", tempBoth:"°C＋°F", tempC:"僅 °C", tempF:"僅 °F", measureBtn:"📏 測量", measureMenuBtn:"測量", measureDistBtn:"📏 距離／面積", areaBtn:"📐 面積", drawBtn:"✏️ 繪製", vol3dBtn:"🧊 立體體積", droneBtn:"🛸 無人機", radiusBtn:"⭕ 半徑", objectsBtn:"🗂 物件", mScreenshot:"地圖螢幕擷取", shareMenuBtn:"分享", shareLinkBtn:"分享／複製連結", layersBtn:"圖層 ▾",
       ctxDropPin:"放置圖釘", ctxMeasureFrom:"從此開始測量", ctxPostHere:"發佈到社群", ctxDistFrom:"與前一個圖釘的距離", ctxCopy:"複製座標", ctxClearPins:"移除所有圖釘", ctxThisPoint:"此地點", coords:"座標", depth:"深度", climate:"氣候", tlToday:"今天", tlTitle:"時光機", tlMachine:"時光機", tl10y:"−10年", tl5y:"−5年", tlNow:"現在",
       lblPinMode:"新聞圖釘位置", pinModeLoc:"事件發生地", pinModePub:"媒體所在地",
       lyrEEZ:"專屬經濟海域／12浬", lyrShips:"即時船舶動態", lyrPlanes:"即時航班動態", lyrSats:"即時衛星", lyrThermal:"熱異常（火點）", planesZoomHint:"放大以載入即時航班", planesAreaHint:"請放大 — 即時航班只涵蓋畫面中央區域", poiLabels:"地點、商家與設施", shipsZoomHint:"放大以載入即時船舶", aisNoKey:"即時船舶需要免費的 AISstream.io API 金鑰 — 請在設定中新增。", aisKeyLabel:"即時船舶動態（AISstream 金鑰）", aisKeyHint:"在 aisstream.io 申請免費金鑰並貼在此處即可看到即時船舶。金鑰僅儲存在這個瀏覽器中。",

@@ -20,7 +20,7 @@ export function makeI18nLate(HOST, CTX) {
    *  animated wind layer, and assorted polish. Self-contained; runs after
    *  every other declaration so all helpers above are available.
    * ===================================================================== */
-  Object.assign(i18n.en,{ favLayers:"Favorite layers", uploadGeoJSON:"Upload GeoJSON", screenshotBtn:"Screenshot (hides controls, keeps legends)",
+  Object.assign(i18n.en,{ favLayers:"Favorite layers", uploadGeoJSON:"Upload GeoJSON", screenshotBtn:"Map screenshot (hides controls, keeps legends)",
     lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
     lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
     lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centerd)", flatPanFree:"Free pan (wrap around the world)",
@@ -40,7 +40,7 @@ export function makeI18nLate(HOST, CTX) {
     blueberryBtn:"Support", blueberryTitle:"Support IntMap",
     blueberryBody:"My goal is to build a map where geography, climate, history, ecology, demographics, and world events can be explored in one place.\nIntMap is developed independently and is continuously expanding with new layers, datasets, and features.\nIf you enjoy using IntMap and would like to support its future development, you can contribute below.",
     blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe)." });
-  Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", uploadGeoJSON:"GeoJSONを読み込む", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
+  Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", uploadGeoJSON:"GeoJSONを読み込む", screenshotBtn:"地図のスクリーンショット（操作ボタンを隠し凡例は残す）",
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
     lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",

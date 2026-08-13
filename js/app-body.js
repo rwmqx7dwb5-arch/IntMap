@@ -2667,9 +2667,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let terrain3D=false;
   function ensureTerrainSource(){
     if(GE().layers.hasSource('terrain-dem')) return true;
-    /* Three host aliases for the SAME AWS terrarium DEM tiles. The browser opens a separate connection
-       pool per hostname, so round-robining across them ~triples concurrent DEM throughput while tilted
-       in 3D — the elevation tiles were the under-fetch bottleneck (user saw <10 Mbps) (#2,#18). */
+    /* (#R233) the #2/#18 note that stood here said "Three host aliases" and was superseded by the
+       five-host list #R7 wrote directly below it — two comments, one of them wrong about the count. */
     try{ GE().layers.addSource('terrain-dem',{type:'raster-dem',tiles:[
         /* (#R7) Five host aliases for the SAME AWS terrarium DEM bucket. Each distinct hostname gets its
            own browser connection pool, so round-robining ~5× the concurrent DEM fetches over HTTP/1.1
@@ -2679,12 +2678,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
         'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
         'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-      /* (#R19) Desktop DEM maxzoom 13→14: terrarium serves up to z15, so tilted close-ups get ~2× finer
-         relief geometry (sharper ridgelines/valleys = the "画質を高めて" half) while the multi-host pool +
-         SW cache keep it fast (the "表示速度" half — neither sacrificed). Phones stay at 13: the extra
-         DEM tile set is real RAM that risks the tab. */
-      /* (#R20) desktop 14→15 = terrarium's NATIVE max: tilted close-ups now load the finest mesh that
-         exists, a straight quality win with no downscale anywhere; phones stay at 13 for RAM safety. */
+      /* DEM depth (#R19 13→14, #R20 14→15 = terrarium's NATIVE max): desktop loads the finest mesh
+         that exists, with no downscale anywhere. Phones stay at 13 — the extra tile set is real RAM
+         that risks the tab — which is also the ceiling on how sharp the hillshade layer can be there. */
       ],encoding:'terrarium',tileSize:256,maxzoom:(_imPhoneGPU()?13:15)}); return true; }   /* (#R232) DEM depth follows the device too */
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
@@ -2730,16 +2726,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   makeSessionTabs(IM_HOST, { GE, isMobile, setMode });
 
   /* ===== Language ===== */
+  /* ⚠ (#R233) THE SWITCH WAITS FOR ITS STRINGS — js/lang-switch.js holds the whole rule and the
+     measurement (168 own keys against English's 452 = 「基本的なUIですら言語が混在」). */
   function setLang(lang){
     if(!window.IntMapLang.codes().includes(lang) || currentLang===lang) return;
-    currentLang=lang;
     try{ window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
-    try{ document.documentElement.setAttribute('lang', window.IntMapLang.htmlTag(lang)); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
-    globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
-    try{ applyLabelLang(); }catch(_){}   /* (#R40) re-apply map place-label language immediately on pill switch (was only on Settings-Apply → RU/ES labels stayed English until Apply) */
-    try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}   /* modules that relabel on language change */
+    window.IntMapLangSwitch.when(lang,()=>{ currentLang=lang;
+      try{ document.documentElement.setAttribute('lang', window.IntMapLang.htmlTag(lang)); }catch(_){}
+      globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
+      try{ applyLabelLang(); }catch(_){}   /* (#R40) re-apply map place-label language immediately on pill switch (was only on Settings-Apply → RU/ES labels stayed English until Apply) */
+      try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){} });   /* modules that relabel on language change */
   }
+  try{ window.IntMapLangSwitch.bind(()=>currentLang, updateI18n); }catch(_){}   /* a locale landing by any other route repaints too */
   document.getElementById('lang-en').onclick=()=>setLang('en');
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
   { const ld=document.getElementById('lang-de'); if(ld) ld.onclick=()=>setLang('de'); }

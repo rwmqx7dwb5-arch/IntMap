@@ -1686,7 +1686,9 @@
       .m-sheet .lsr-mount .lst-sech .lst-cnt{ font-weight:500; font-size:10.5px; color:var(--text-muted);
         background:var(--input-bg); border-radius:999px; padding:1px 7px; }
       .m-sheet .lsr-mount .lst-sech::after{ content:""; flex:1; height:1px; background:rgba(128,128,128,0.14); }
-      .m-sheet .lsr-mount .lst-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+      /* (#R233) 「モバイル版のレイヤー選択欄は、横に3つタイルを置く形式に。」 Three across, and the gap
+         tightens with them so the tiles keep a usable width on a 360 px phone (3×~104 px + 2×7 px). */
+      .m-sheet .lsr-mount .lst-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
       .m-sheet .lsr-mount .lst-grid.closed{ display:none; }
       .m-sheet .lsr-mount .lst-tile{ position:relative; border-radius:12px; overflow:hidden;
         border:1px solid rgba(128,128,128,0.18); cursor:pointer; background:var(--card-bg);

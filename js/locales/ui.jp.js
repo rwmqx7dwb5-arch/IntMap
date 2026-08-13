@@ -11,6 +11,7 @@
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
 window.IntMapLang.define('jp', { ui: {
+      lnkTerms:"利用規約", lnkPrivacy:"プライバシーポリシー", legalTabTerms:"規約", legalTabPrivacy:"プライバシー", commAddImage:"画像を追加",
       tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabCompanies:"企業", tabStats:"国別統計",
       searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", filterCompaniesPh:"企業を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
@@ -25,7 +26,7 @@ window.IntMapLang.define('jp', { ui: {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", vol3dBtn:"🧊 3D立体", droneBtn:"🛸 ドローン", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"スクショ", shareMenuBtn:"共有", shareLinkBtn:"共有・リンク", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", vol3dBtn:"🧊 3D立体", droneBtn:"🛸 ドローン", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"地図のスクリーンショット", shareMenuBtn:"共有", shareLinkBtn:"共有・リンク", layersBtn:"レイヤー ▾",
       ctxDropPin:"ピンを刺す", ctxMeasureFrom:"計測を開始", ctxPostHere:"コミュニティに投稿", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"タイムマシン", tlMachine:"タイムマシン", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrSats:"人工衛星(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"ズームインで航空機を表示", planesAreaHint:"ズームインで全域表示（現在は中央部のみ取得）", poiLabels:"施設・店舗・企業名", shipsZoomHint:"ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",

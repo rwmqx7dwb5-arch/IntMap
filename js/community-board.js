@@ -190,7 +190,7 @@ window.IntMapModules.communityBoard=function(HOST){
     document.getElementById('compose-cancel').textContent=HOST.t('commCancel');
     document.getElementById('compose-submit').textContent = editPost ? HOST.t('commSaveEdit') : HOST.t('commPost');
     HOST.pendingImg = editPost ? (editPost.img||'') : ''; HOST.showComposeImgPreview(HOST.pendingImg);
-    document.getElementById('compose-img-label').textContent=jp?'画像を追加':'Add image';
+    document.getElementById('compose-img-label').textContent=HOST.t('commAddImage');   /* (#R233) was a jp/en ternary — English in the other seven languages */
     document.getElementById('compose-place-label').textContent=jp?'地図でピンを移動':'Move pin on map';
     /* Category picker — shown unless schema-detection proved the column is missing. */
     const showCat = !HOST.commCaps || HOST.commCaps.category;

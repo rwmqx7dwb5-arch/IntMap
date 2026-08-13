@@ -69,6 +69,11 @@ import '../js/lang-registry.js';
 import './locale-boot.js';
 import '../js/locales/ui.en.js';
 import '../js/i18n.js';
+/* (#R233) …and the door #R232 left unguarded: `setLang()` repainted the whole UI from a table whose
+   own chunk had not been fetched yet, so switching language at RUNTIME left Settings and the sidebar
+   tabs in English while everything carried inline turned Japanese (「基本的なUIですら言語が混在」).
+   One registered repaint, awaited before the switch and re-run if a locale lands by any other route. */
+import '../js/lang-switch.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
 import '../js/layer-previews.js';

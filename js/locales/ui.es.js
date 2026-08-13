@@ -11,6 +11,7 @@
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
 window.IntMapLang.define('es', { ui: {
+      lnkTerms:"Términos del servicio", lnkPrivacy:"Política de privacidad", legalTabTerms:"Términos", legalTabPrivacy:"Privacidad", commAddImage:"Añadir imagen",
       tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabCompanies:"Empresas", tabStats:"Países", tabCommunity:"Comunidad",
       searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", filterCompaniesPh:"Filtrar empresas...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
@@ -40,7 +41,7 @@ window.IntMapLang.define('es', { ui: {
       aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
       aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 10 usos al día). No se necesita clave API.",
       blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
-      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", vol3dBtn:"🧊 Volumen 3-D", droneBtn:"🛸 Dron", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura", shareMenuBtn:"Compartir", shareLinkBtn:"Compartir / enlace", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
+      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", vol3dBtn:"🧊 Volumen 3-D", droneBtn:"🛸 Dron", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura del mapa", shareMenuBtn:"Compartir", shareLinkBtn:"Compartir / enlace", screenshotBtn:"Captura del mapa (oculta los controles, mantiene las leyendas)", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
       lblDataSources:"Fuentes de datos", viewDataSources:"Lista rápida dentro de la app", lblScience:"Ciencia y lógica", viewScience:"Cómo calcula cada simulación ↗", lblSourcesPage:"Fuentes de datos", viewSourcesPage:"Abrir la página de fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
       lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
       filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",

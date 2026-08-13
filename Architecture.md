@@ -2610,6 +2610,15 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 
 - **地図初期化**：`map = new maplibregl.Map(...)`。`renderWorldCopies` は投影/自由パンに応じて切替。基盤は CARTO/Esri ラスタ＋OpenFreeMap ベクタ(`ofm`)。
 - **基盤切替**：`btn-view-map/sat` と `applyTheme()`＋`_reassertBase()`（スタイルロード競合に強いポーリング再適用）。
+- **レイヤー欄の分類**（`reorganizeLayerPanel()` の `GROUPS`。`GROUPS` に無い行は末尾の
+  「その他（beta）」へ**自動的に**掃かれる＝betaは削除ではなく1段下の節）:
+  - ⚠ (#R233) **基本表示カテゴリ**（地名・国境・州県境・道路・鉄道・グリッド・国情報）に
+    **昼夜の表示（`dl-nightside`）が入る**。災害カテゴリの1レイヤーではなく「地球のどちら側に
+    太陽があるか」という常設のビュー切替だから。⚠ 行は1つ（`rowFor('nightside')` を `placed` に
+    入れないと、掃き出しで beta にも現れて二重になる）。
+  - ⚠ (#R233) **人口・経済は7つだけ**: `popgrid`（人口密度1kmグリッド）/ `gdppc` / `tfr` / `hdi` /
+    `dem`（民主主義指数）/ `cpi`（汚職・腐敗）/ `lifeexp`（平均寿命）。#R39/#R40 が「客観的で出典がある」
+    という理由で昇格させた世界銀行の18指標と国別 `pop` は **beta へ降格**（行・データ・凡例は不変）。
 - **投影**：Flat(mercator)/Globe。3D地形は terrarium DEM（複数ホストで並列フェッチ、モバイルは maxzoom 13 でRAM安全）。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country/city/other` を生成（冪等）。`cb-names`(既定ON)で表示。
 - **地方行政区分ラベル (#R198)**：同じ `place` レイヤの **`state` / `province`** クラスから `ofm-admin1`。
@@ -2854,6 +2863,24 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 
 - `i18n.en` / `i18n.jp` の辞書 ＋ `t(key)`。`data-i18n` / `data-i18n-ph` 属性を `updateI18n()` が一括適用。
 - `currentLang`（`intmap_settings` に保存）。設定で切替。
+- ⚠⚠ (#R233) **言語の切替は「その言語の文字列が届いてから」行う**（`js/lang-switch.js`）。
+  #R232 が locale を遅延チャンク化したとき、**コールド起動のバリアだけ**が待つようになり、
+  実行中の切替（ヘッダのピル／設定のプルダウン）は待たないままだった。実測（ビルド済みサイト・
+  英語で起動 → JP を押す）: `isLoaded('jp')=false` / `i18n.jp` の自前キー **168**（英語は 452）/
+  `i18n.jp.modalTitle==="Settings"` ——**設定ダイアログの題・節見出し・Apply・法務リンク・
+  サイドバーのタブ名が英語のまま**で、app-body と i18n-late が eager に持つ文字列だけ日本語になる。
+  これが 「基本的なUIですら言語が混在」 の正体。
+  - `IntMapLangSwitch.when(code, apply)` — 既に読み込み済みなら同期（＝5言語と2回目以降は従来通り）、
+    未読なら `ensure()` の解決を待って**まとめて**適用。中間状態が存在しないので混ざりようがない。
+    ⚠ **失敗しても apply する**（届かない locale は英語へ落ちるのが設計。ピルが無反応になってはいけない）。
+  - `IntMapLangSwitch.bind(getLang, repaint)` ＋ `IntMapLang.onDefine` — locale が**別の経路**で
+    後から届いたとき（コールドブート・先読み・再試行）、**画面を描き直す**。`js/i18n.js` の
+    onDefine は表を in-place マージするだけで、**表を混ぜることは文書を描くことではない**（実測:
+    手で `ensure('jp')` を呼ぶと表は 452 キーになり `#modal-title` は "Settings" のままだった）。
+  - ⚠ **JS が自分で書くラベルは `updateI18n()` の走査が届かない** → `intmap-lang` を購読すること。
+    実測で残っていた最後の1件が `#setting-wsmode-btn`（`js/workspace.js` の `syncModeBtn`）。
+  - (#R233) 表に一度も無かった5文字列を追加: `lnkTerms` / `lnkPrivacy` / `legalTabTerms` /
+    `legalTabPrivacy` / `commAddImage`（最後のものは `jp?…:…` の2言語ターナリだった）。
 - **UI言語は en/jp/de/ru/es の5言語＋ zh（繁體中文・beta、#R223）＋ zh-hans（简体中文・beta、#R224）**。
   ⚠ (#R224) **簡体は「翻訳」ではなく `scripts/zh-hans.mjs` の生成物**。繁體の全訳（keyed 284＋inline 1,882）に
   ①大陸語彙の置換（網路→网络・資訊→信息・螢幕→屏幕・檔案→文件・預設→默认・選單→菜单・使用者→用户・

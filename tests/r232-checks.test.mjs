@@ -231,8 +231,11 @@ test('R232 mobile: the layer sheet is the SAME tile grid the desktop browses wit
   assert.match(read('js/mobile-ui.js'), /classList\.add\('m-lyr-tiles'\)/, 'the classic rows become the data source');
   const css = noCss(read('css/intmap.css'));
   assert.match(css, /body\.m-lyr-tiles \.m-sheet #layer-dropdown \.lyr-row/, 'the rows are hidden, not removed');
-  assert.match(css, /\.m-sheet \.lsr-mount \.lst-grid\{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\); /,
-    'two columns on a phone — three puts the caption below readable width');
+  /* (#R233) 「モバイル版のレイヤー選択欄は、横に3つタイルを置く形式に。」 — #R232 pinned TWO here and
+     argued three would put the caption below readable width. Three is what was asked for, so the pin
+     follows the instruction; the gap tightens with it (9px → 7px) to buy the tiles back some width. */
+  assert.match(css, /\.m-sheet \.lsr-mount \.lst-grid\{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\); /,
+    'three columns on a phone, per #R233');
 });
 
 /* ── ⑦ the three small ones ──────────────────────────────────────────────────────────────────── */

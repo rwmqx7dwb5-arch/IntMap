@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R232';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R233';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R232';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-13-R232';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-13-R233';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -732,8 +732,8 @@ window.__imBuild='R232';/* (#R121) build marker — bump when verifying that a r
     <div class="settings-foot">
       <button class="modal-close-btn" id="btn-close-settings">Apply</button>
       <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--text-muted);">
-        <a href="#" id="link-terms" style="color:var(--text-muted);">Terms of Service</a> ·
-        <a href="#" id="link-privacy" style="color:var(--text-muted);">Privacy Policy</a>
+        <a href="#" id="link-terms" data-i18n="lnkTerms" style="color:var(--text-muted);">Terms of Service</a> ·
+        <a href="#" id="link-privacy" data-i18n="lnkPrivacy" style="color:var(--text-muted);">Privacy Policy</a>
       </div>
     </div>
   </div>
@@ -756,8 +756,8 @@ window.__imBuild='R232';/* (#R121) build marker — bump when verifying that a r
   <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
     <button id="legal-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <div style="display:flex;gap:6px;margin:0 0 14px;">
-      <button id="legal-tab-terms" class="ios-segment-btn" style="flex:1;">Terms</button>
-      <button id="legal-tab-privacy" class="ios-segment-btn" style="flex:1;">Privacy</button>
+      <button id="legal-tab-terms" class="ios-segment-btn" data-i18n="legalTabTerms" style="flex:1;">Terms</button>
+      <button id="legal-tab-privacy" class="ios-segment-btn" data-i18n="legalTabPrivacy" style="flex:1;">Privacy</button>
     </div>
     <div id="legal-body" style="font-size:13px;line-height:1.6;color:var(--text-main);"></div>
   </div>
@@ -795,7 +795,7 @@ window.__imBuild='R232';/* (#R121) build marker — bump when verifying that a r
     <div class="compose-cat-label" id="compose-cat-label">Category</div>
     <div class="comm-cat-row compose-cats" id="compose-cats"></div>
     <div class="compose-img-row">
-      <label class="compose-img-btn" for="compose-img">🖼 <span id="compose-img-label">Add image</span></label>
+      <label class="compose-img-btn" for="compose-img">🖼 <span id="compose-img-label" data-i18n="commAddImage">Add image</span></label>
       <input type="file" id="compose-img" accept="image/*" style="display:none;">
       <div class="compose-img-preview" id="compose-img-preview"><img id="compose-img-thumb" alt=""><button type="button" class="compose-img-remove" id="compose-img-remove" title="Remove">×</button></div>
     </div>
