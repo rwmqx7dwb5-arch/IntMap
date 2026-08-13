@@ -320,7 +320,12 @@ try {
        asks («is this module dead code whose feature silently never exists?») is answered by the page
        that loads them. Reading the pages rather than exempting the two filenames keeps the check
        honest: delete the <script> tag and the module goes back to failing. */
-    for (const page of ['sources.html', 'science.html', 'admin.html']) {
+    /* …and about.html, the public homepage, which is the same kind of document: a standalone
+       shell that pulls js/about.js (and, through it, js/locales/about.<lang>.js) with a plain
+       <script src>. Without it in this list js/about.js is "defined but never called" — the
+       exact false positive the note above says reading the pages rather than exempting the
+       filenames is meant to avoid. */
+    for (const page of ['sources.html', 'science.html', 'admin.html', 'about.html']) {
       const p = join(ROOT, page);
       if (!existsSync(p)) continue;
       for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);

@@ -385,8 +385,17 @@ test('⑧ …and the name closure itself is the same for every segment of one ri
 /* ── ⑨ the split gate learned about the standalone pages ────────────────────────────────── */
 test('⑨ a module reached only by a page <script src> counts as reachable, and only that way', () => {
   const s = read('scripts/static-checks.mjs');
-  assert.match(s, /for \(const page of \['sources\.html', 'science\.html', 'admin\.html'\]\)/,
-    'the reachability scan does not read the standalone pages');
+  /* ⚠ THE LIST IS ASSERTED BY MEMBERSHIP, NOT AS A FROZEN LITERAL. The exact-array pin this
+     replaces failed the moment a FOURTH standalone page shipped (about.html, the public homepage)
+     — which is a page being added, not the guard being weakened, and a test that goes red for
+     that is testing the punctuation rather than the property. What matters, and what is still
+     asserted, is that the scan reads the pages it ships and that the two modules below are found
+     through them rather than exempted by name. */
+  const list = /for \(const page of \[([^\]]+)\]\)/.exec(s);
+  assert.ok(list, 'the reachability scan does not read the standalone pages');
+  for (const page of ['sources.html', 'science.html', 'admin.html']) {
+    assert.ok(list[1].includes(`'${page}'`), `the reachability scan no longer reads ${page}`);
+  }
   /* ⚠ read the check WITHOUT its comments: the two file names appear in the note that explains why
      the scan reads the pages, and that note is the thing this test is here to protect (#R216). */
   assert.equal(/page-i18n|sources-list/.test(s.replace(/\/\*[\s\S]*?\*\//g, '')), false,

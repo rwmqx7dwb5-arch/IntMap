@@ -61,6 +61,22 @@ export const STATIC_ASSETS = [
   'js/page-i18n.js',
   'js/sources-list.js',
   'js/locales',
+  /* ── THE PUBLIC HOMEPAGE ──────────────────────────────────────────────────────────────────
+     「/ = IntMap本体、別URL/パスにホームページ」. index.html stays the application; this is the
+     page a first-time visitor is sent to, and it is a THIRD standalone document in exactly the
+     mould of the two above — static markup, one stylesheet, one script, no imports, no bundler
+     input. Passing it through Rollup would produce a byte-identical file behind an extra entry
+     point, so it is copied.
+     ⚠ `about` is a DIRECTORY: it holds the screenshots of the running product that the page is
+     mostly made of. Naming the directory (rather than each file) is what stops "add a picture"
+     from also meaning "edit the build config" — the same reasoning `js/locales` above is on.
+     ⚠ AND js/about.js IS REACHED ONLY FROM about.html. scripts/static-checks.mjs §8 reads the
+     standalone pages for their <script src> tags precisely so that a module loaded this way is
+     not reported as dead code; about.html is in that list beside sources.html and science.html. */
+  'about.html',
+  'css/about.css',
+  'js/about.js',
+  'about',
   'google0266d9db8efbc48c.html',        // Google Search Console site verification
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)
   'og-image.jpg',                       // social preview
