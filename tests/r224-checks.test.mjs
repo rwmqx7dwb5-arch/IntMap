@@ -133,7 +133,8 @@ test('R224 ④ Simplified Chinese is registered and regenerates byte-for-byte', 
   assert.match(reg, /alias: \['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'\]/, 'the Simplified tags only');
   assert.ok(!/'zh-tw'[^\]]*zh-hans/.test(reg), 'zh-TW must stay with Traditional');
   assert.match(reg, /b\.textContent = l\.pill \|\| l\.code\.toUpperCase\(\);/, 'a code is not always a pill');
-  assert.match(read('src/main.js'), /locales\/ui\.zh-hans\.js/);
+  /* (#R232) …the generated list, not an import line — see the matching note in tests/r223-checks. */
+  assert.match(read('js/locales/_langs.js'), /"zh-hans"/, 'zh-hans is in the generated language list');
   const hansFull = read('js/locales/ui.zh-hans.js');
   /* ⚠ the STRINGS, not the header — that comment names the Traditional spellings it replaces */
   const hans = hansFull.slice(hansFull.indexOf("window.IntMapLang.define('zh-hans'"));
@@ -185,7 +186,9 @@ test('R224 ⑥ the second ocean-current layer is gone and saved sessions migrate
   for (const re of [/\['oceancur','lyrOceanCur'\]/, /function addOceanCurrents/, /lyr-oceancur/, /OC_WARM/])
     assert.ok(!re.test(dl), `data-layers still carries ${re}`);
   const st = read('js/session-tabs.js');
-  assert.match(st, /const RETIRED=\{ 'dl-oceancur':'wp-dl-currents' \};/, 'the retired id is translated, once');
+  /* (#R232) the table gained a second row ('dl-night' → 'dl-nightside'), which is the point of its
+     being a table. What is pinned is that the ocean-current translation is IN it, once. */
+  assert.match(st, /const RETIRED=\{[^}]*'dl-oceancur':'wp-dl-currents'[^}]*\};/, 'the retired id is translated, once');
   assert.match(read('js/ocean-currents.js'), /wp-dl-currents/, 'and the survivor owns that row');
 });
 

@@ -16,13 +16,14 @@
  *       language under that scheme is a sixth argument at 2,238 places — which is not "difficult",
  *       it is not possible, and it is why this instruction has now been sent three rounds running.
  *
- *  ══ WHAT A LANGUAGE COSTS NOW ═══════════════════════════════════════════════════════════════
- *      1. one row in LANGS below;
- *      2. one file js/locales/ui.<code>.js  (copy ui.en.js, translate, and — optionally — fill the
- *         `inline` table, which `node scripts/i18n-report.mjs --template <code>` writes for you);
- *      3. one file js/locales/pages.<code>.js for the two reading pages (copy pages.en.js);
- *      4. one import line in src/main.js.
- *  Nothing else in the app has to know, and NOTHING has to be touched at a call site. A language
+ *  ══ WHAT A LANGUAGE COSTS NOW (#R232) ═══════════════════════════════════════════════════════
+ *      ONE FILE: js/locales/ui.<code>.js  (copy ui.en.js, translate, and fill the `inline` table, which
+ *      `node scripts/i18n-report.mjs --template <code>` writes for you). Optionally a second,
+ *      js/locales/pages.<code>.js, if the two reading pages should speak it too.
+ *  THAT IS THE WHOLE COST. There is no row to add here, no import line in src/main.js, no picker to edit
+ *  and no launch-screen table to remember: js/locale-boot.js globs the directory, so the set of languages
+ *  IS the set of files, and `derive()` below works out the label, the BCP-47 tag and the pill from the
+ *  code. Nothing else in the app has to know, and NOTHING has to be touched at a call site. A language
  *  with an empty `inline` table renders every inline string in English and every keyed string in
  *  its own language — a partial translation degrades per string, never per screen.
  *
@@ -64,7 +65,11 @@ window.IntMapLang = (function () {
      `html`  the BCP-47 tag for <html lang> and for the reading pages.
      ⚠ ORDER IS LOAD-BEARING for the first five: it is the argument order of every L(…) call site
      in the app. Append new languages at the END; never reorder. */
-  var LANGS = [
+  /* ⚠ (#R232) THE LOCAL IS `LANG_ROWS`, THE EXPORTED KEY IS STILL `LANGS`. js/tables.js also has a
+     table called LANGS, and tests/r167 #3 forbids mutating a name that names a table there — a rule
+     worth keeping, since a pure-data table that someone pushes onto is no longer pure data. This array
+     is a different thing that happened to share the name, and `declare()` appends to it. */
+  var LANG_ROWS = [
     { code: 'en', label: 'English',  html: 'en' },
     { code: 'jp', label: '日本語',    html: 'ja', alias: ['ja'] },
     { code: 'de', label: 'Deutsch',  html: 'de' },
@@ -84,6 +89,25 @@ window.IntMapLang = (function () {
        maps a bare 'zh' here (it falls back to the two-letter prefix), which is what the picker and
        the share link need; nothing auto-detects the app's language from the browser (js/app-body.js
        reads the saved setting only), so no one is switched into it without asking. */
+    /* ⚠⚠ (#R232) THIS LIST STOPS GROWING HERE — A NEW LANGUAGE IS ONE FILE AND NOTHING ELSE.
+       「今後IntMapの設定言語を追加するのが、1発で終わるように。」 (re-sent from #R231, which got the
+       cost down to «one row here, one locale file, one page file, one import line» — four edits in
+       four files, which is not one shot; and #R231 then found three MORE places that had to be edited
+       by hand and had not been, which is the real argument: a list a human must remember to update is
+       a list that will be wrong.)
+       ⚠ THE FILENAME IS THE DECLARATION. js/locale-boot.js globs js/locales/ui.*.js, so the set of
+       languages IS the set of files on disk. `declare()` appends every code this list does not already
+       name, and `derive()` works out the three facts a row needs:
+         · html  — the BCP-47 tag: the code itself, unless META below says otherwise;
+         · label — the language's OWN name, via Intl.DisplayNames (a picker that names languages in a
+                   language you cannot read is not a picker), unless META says otherwise;
+         · pill  — the code's first two letters, unless META says otherwise.
+       ⚠ THE ROWS BELOW STAY LITERAL BECAUSE THEY CARRY FACTS A FILENAME CANNOT. The two Chinese rows
+       need script-specific aliases, single-character pills, a (beta) mark and — critically — an ORDER,
+       because `normalise` resolves a bare 'zh' to whichever row comes first. Anything with that kind
+       of fact goes in META; everything else needs no entry anywhere.
+       ⚠ AND THE FIRST FIVE STAY IN THIS ORDER FOREVER — it is the ARGUMENT ORDER of every L(…) /
+       t(…) call site in the app (see pick() below). Discovery only ever APPENDS. */
     { code: 'zh', label: '繁體中文 (beta)', html: 'zh-Hant', pill: '繁', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
     /* ══ (#R224) THE SEVENTH — 「簡体を追加して。(beta)」 ═══════════════════════════════════════════
        ⚠ IT IS A DERIVED FILE, NOT A SECOND TRANSLATION. js/locales/ui.zh-hans.js is generated from
@@ -101,12 +125,20 @@ window.IntMapLang = (function () {
   ];
   var FALLBACK = 'en';
 
+  /* (#R232) facts a filename cannot carry, for codes that are NOT rows above. Empty today — every
+     language added from here on is expected to need nothing — and this is where the exception goes
+     when one does (a script variant, a non-obvious tag, a pill that is not the first two letters). */
+  var META = Object.create(null);
+  /* (#R232) …and the tag, when the app's code and the BCP-47 tag disagree. 'jp' is the historical one
+     and it is a row above; anything else that disagrees belongs here rather than in a call site. */
+  var TAGS = { jp: 'ja' };
+
   var idx = Object.create(null);          /* code (and alias) → positional index */
   var byCode = Object.create(null);
   function reindex() {
     idx = Object.create(null); byCode = Object.create(null);
-    for (var i = 0; i < LANGS.length; i++) {
-      var l = LANGS[i];
+    for (var i = 0; i < LANG_ROWS.length; i++) {
+      var l = LANG_ROWS[i];
       idx[l.code] = i; byCode[l.code] = l;
       (l.alias || []).forEach(function (a) { idx[a] = i; byCode[a] = l; });
     }
@@ -118,18 +150,84 @@ window.IntMapLang = (function () {
 
   /* the locale files call this. `ui` is the keyed dictionary; `inline` is optional and only a NEW
      language (index ≥ 5) ever needs it. */
+  var defineHooks = [];
+  function onDefine(fn) { if (typeof fn === 'function') defineHooks.push(fn); }
   function define(code, tables) {
     if (!code || !tables) return;
     if (tables.ui) ui[code] = tables.ui;
     if (tables.inline) inline[code] = tables.inline;
+    /* ⚠ (#R232) A LOCALE CAN NOW ARRIVE AFTER THE TABLES WERE ASSEMBLED. js/i18n.js used to run
+       strictly after all seven locale files, because src/main.js imported them all eagerly — 422 kB
+       of translations on every load, of which a session reads at most one. They are dynamic imports
+       now, so the active one lands a tick or two later and whoever built a table from it has to be
+       told. js/i18n.js is the one listener; the hook exists so it does not have to poll. */
+    for (var h = 0; h < defineHooks.length; h++) { try { defineHooks[h](code); } catch (e) {} }
   }
+
+  /* ══ (#R232) DISCOVERY — the language list is the LOCALE DIRECTORY ═══════════════════════════
+     `declare` is called twice, from two places that know the directory in two different ways, and
+     both are idempotent:
+       · js/locale-boot.js, in the app, from `import.meta.glob` — authoritative, and it also hands
+         over the per-language LOADERS, which is what makes a locale lazy;
+       · window.IntMapLangCodes (js/locales/_langs.js, generated by scripts/i18n-langs.mjs), for the
+         two reading pages, which are plain <script src> shells with no bundler and therefore no glob.
+     Neither can add a language the other does not have without the test in tests/r232-checks noticing. */
+  function derive(code) {
+    var m = META[code] || {};
+    var tag = m.html || TAGS[code] || code;
+    var label = m.label;
+    if (!label) {
+      try {
+        var dn = new Intl.DisplayNames([tag], { type: 'language' });
+        var got = dn.of(tag);
+        if (got && got.toLowerCase() !== tag.toLowerCase()) label = got.charAt(0).toUpperCase() + got.slice(1);
+      } catch (e) {}
+    }
+    if (!label) label = code.toUpperCase();
+    /* (#R232) …and the (beta) mark, MEASURED rather than typed. scripts/i18n-langs.mjs computes it
+       from the locale file's own inline coverage, so it appears when a language is young and goes
+       away on its own when the table is filled — 「完了と判断されたものは(beta)表記を撤去してよい」
+       without anyone having to notice. An explicit META/row label always wins.
+       ⚠ In the app the list arrives with the codes (src/locale-boot.js imports js/locales/_langs.js);
+       on the two reading pages the same file is a <script src>. Absent, nothing is marked. */
+    if (!m.label) { try { if ((window.IntMapLangBeta || []).indexOf(code) >= 0) label += ' (beta)'; } catch (e) {} }
+    return { code: code, label: label, html: tag,
+             pill: m.pill || code.slice(0, 2).toUpperCase(),
+             alias: (m.alias || []).slice() };
+  }
+  var loaders = Object.create(null);
+  var pendingLoad = Object.create(null);
+  function declare(codes, load) {
+    var added = false;
+    (codes || []).forEach(function (raw) {
+      var c = String(raw == null ? '' : raw).toLowerCase().trim();
+      if (!c) return;
+      if (load && load[c]) loaders[c] = load[c];
+      if (idx[c] != null) return;
+      LANG_ROWS.push(derive(c)); added = true;
+    });
+    if (added) reindex();
+    return LANG_ROWS.length;
+  }
+  /* Load one language's strings. Idempotent and cached; resolves (with null) rather than rejecting,
+     because a locale that fails to arrive must leave the reader with English, not with no app. */
+  function ensure(code) {
+    var c = normalise(code);
+    if (pendingLoad[c]) return pendingLoad[c];
+    var f = loaders[c];
+    pendingLoad[c] = f
+      ? Promise.resolve().then(f).catch(function (e) { try { console.warn('[IntMap] locale ' + c + ' failed to load', e); } catch (_) {} return null; })
+      : Promise.resolve(null);
+    return pendingLoad[c];
+  }
+  function isLoaded(code) { return !!ui[normalise(code)]; }
 
   /* 'ja' → 'jp', 'EN-gb' → 'en'; anything unknown is returned lower-cased so `has()` can reject it */
   function normalise(c) {
     c = String(c == null ? '' : c).toLowerCase();
-    if (idx[c] != null) return LANGS[idx[c]].code;
+    if (idx[c] != null) return LANG_ROWS[idx[c]].code;
     var two = c.slice(0, 2);
-    return (idx[two] != null) ? LANGS[idx[two]].code : c;
+    return (idx[two] != null) ? LANG_ROWS[idx[two]].code : c;
   }
   function has(c) { return idx[normalise(c)] != null; }
   function index(c) { var i = idx[normalise(c)]; return (i == null) ? -1 : i; }
@@ -226,7 +324,7 @@ window.IntMapLang = (function () {
   }
 
   /* used by the settings picker and by anything that has to enumerate languages */
-  function list() { return LANGS.map(function (l) { return { code: l.code, label: l.label, html: l.html, pill: l.pill || l.code.toUpperCase() }; }); }
+  function list() { return LANG_ROWS.map(function (l) { return { code: l.code, label: l.label, html: l.html, pill: l.pill || l.code.toUpperCase() }; }); }
   function htmlTag(code) { var l = byCode[normalise(code)]; return l ? l.html : 'en'; }
 
   /* ── THE CHROME, BUILT FROM THIS LIST ────────────────────────────────────────────────────────
@@ -237,10 +335,19 @@ window.IntMapLang = (function () {
      ⚠ It lives here rather than in js/app-body.js because that file has a line ceiling whose whole
      point is that new subjects go to their own file (#R199/#R200), and this is the language subject. */
   function syncChrome(onPick) {
+    /* ⚠ (#R232) …AND THE DOCUMENT'S OWN LANGUAGE, which never followed a SAVED one. js/app-body.js
+       sets it in setLang(), and setLang() returns early when the language is already current — which it
+       always is on a cold load, because currentLang is seeded from the saved settings before any of this
+       runs. So every DE/RU/ES/中文 reader has been served `<html lang="en"`: the wrong hyphenation and
+       line-breaking rules, the wrong voice in a screen reader, the wrong `:lang()` matching, and English
+       labels in js/night-sky.js, which falls back to this attribute. Here because this file is the one
+       that knows the tag, and syncChrome is already the boot-time «build the chrome from the list» pass. */
+    try { var _cur = (window.IntMapI18N && window.IntMapI18N.lang) ? window.IntMapI18N.lang() : FALLBACK;
+      document.documentElement.setAttribute('lang', htmlTag(_cur)); } catch (e) {}
     try {
       var bar = document.querySelector('.lang-toggle');
       var sel = document.getElementById('setting-lang');
-      LANGS.forEach(function (l) {
+      LANG_ROWS.forEach(function (l) {
         if (bar && !document.getElementById('lang-' + l.code)) {
           var b = document.createElement('button');
           b.className = 'lang-btn'; b.id = 'lang-' + l.code;
@@ -260,11 +367,18 @@ window.IntMapLang = (function () {
       });
     } catch (e) {}
   }
-  function codes() { return LANGS.map(function (l) { return l.code; }); }
+  function codes() { return LANG_ROWS.map(function (l) { return l.code; }); }
 
-  return { LANGS: LANGS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
+  /* (#R232) the reading pages have no bundler, so their language list arrives as a plain global that
+     scripts/i18n-langs.mjs regenerates from the locale directory on every build. In the app this is
+     absent and js/locale-boot.js does the same job from the real module graph. */
+  try { if (typeof window !== 'undefined' && window.IntMapLangCodes) declare(window.IntMapLangCodes); } catch (e) {}
+
+  return { LANGS: LANG_ROWS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
            define: define, pick: pick, keyed: keyed, t: t, locale: locale,
            normalise: normalise, has: has, index: index, htmlTag: htmlTag,
+           /* (#R232) discovery + lazy loading */
+           declare: declare, ensure: ensure, isLoaded: isLoaded, onDefine: onDefine,
            /* for the coverage report and the tests */
-           _ui: ui, _inline: inline };
+           _ui: ui, _inline: inline, _derive: derive };
 })();

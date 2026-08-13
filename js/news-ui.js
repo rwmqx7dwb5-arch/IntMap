@@ -248,8 +248,8 @@ window.IntMapModules.newsUi=function(HOST){
       if(!back){ back=document.createElement('div'); back.id='m-news-pop-back'; back.className='m-news-pop-back'; back.innerHTML='<div class="m-news-pop"></div>'; document.body.appendChild(back);
         back.addEventListener('click',(ev)=>{ if(ev.target===back) back.classList.remove('show'); }); }
       const pop=back.querySelector('.m-news-pop'), link=pr.link||'';
-      const readLbl=window.IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью');
-      const closeLbl=window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть');
+      const readLbl=window.IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью','Leer el artículo');
+      const closeLbl=window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar');
       pop.innerHTML=`<div class="mnp-head"><span class="mnp-loc">${pr.name?('['+IntMapSafe.html(pr.name)+']'):''}</span><span class="mnp-date">${formatCustomDate(pr.pubDate)}</span></div><div class="mnp-title">${IntMapSafe.html(pr.title||'')}</div><div class="mnp-pub">${IntMapSafe.html(pr.publisher||'')}</div><div class="mnp-actions">${link?`<button class="mnp-read" type="button">${readLbl}</button>`:''}<button class="mnp-close" type="button">${closeLbl}</button></div>`;   /* (#R138 SEC) escape external news fields */
       const rb=pop.querySelector('.mnp-read'); if(rb) rb.onclick=()=>{ try{ const _u=IntMapSafe.url(link); if(_u) window.open(_u,'_blank','noopener'); }catch(_){} back.classList.remove('show'); };   /* (#R138 SEC) http(s) only — never open a javascript: link */
       const cb=pop.querySelector('.mnp-close'); if(cb) cb.onclick=()=>back.classList.remove('show');
@@ -302,7 +302,7 @@ window.IntMapModules.newsUi=function(HOST){
           _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
         _xhrLink=pr.link||null; _xhrProps=pr;
         const el=HOST.ensureMapTooltip(); el.style.display='block'; el.style.pointerEvents='auto'; el.style.cursor='pointer';
-        el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей'))}</div>`;
+        el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`;
         try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
       } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ HOST.mapTooltipEl.style.display='none'; HOST.mapTooltipEl.style.pointerEvents='none'; } }
     }catch(_){} }

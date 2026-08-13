@@ -157,11 +157,19 @@ export function makeAtlasReply(HOST, CTX) {
            visible section hairline give the flat, monotone reply the structure the user asked for ("コントラストに乏しい"). */
         /* (#R159) headings differentiate by SIZE + SPACING only — no heavy bold weight ("返答のテキストは太字にしない") and
            no "##" top-rule divider ("区切りの横線はいらない"). Down from 750/800 to a light 600; border-top removed. */
-        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.6em 0 .4em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
-        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:2.05em 0 .62em;font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
-        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.55em 0 .66em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
+        /* ══ (#R232) 「各見出しと、その前後の本文に間隔があきすぎに思える」 ═══════════════════════════
+           The gap around a heading was never one number — it was TWO, added together and never counted:
+           the heading's own margin, PLUS the blank-line spacer the paragraph rule below emits for the
+           `\n\n` that always surrounds a markdown heading. A `## ` section therefore opened with
+           2.05em + 1.5em = 3.55em of nothing above it and 0.62em + 1.5em = 2.12em below.
+           ⚠ THE MARGINS ARE TIGHTENED **AND** THE DOUBLE COUNT IS REMOVED (see the post-pass at the end
+           of this function). The paragraph rhythm between ordinary paragraphs is deliberately unchanged
+           — #R158 widened it on request and this instruction is about headings, not about the body. */
+        .replace(/^#{3,6}\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.05em 0 .3em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
+        .replace(/^##\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.3em 0 .38em;font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
+        .replace(/^#\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.1em 0 .4em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
         /* (#R151/#R154) a whole-line **bold run** is an author-written section lead → modest heading (size+spacing, no colour) */
-        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:600;color:var(--text-main);margin:1.5em 0 .46em;font-size:1.28em;line-height:1.3;">$1</div>')
+        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.0em 0 .3em;font-size:1.28em;line-height:1.3;">$1</div>')
         .replace(/\*\*([^*]+)\*\*/g,'$1')                                                             /* (#R159) inline **bold** → plain: Atlas reply body carries no bold */
         .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,'$1<i>$2</i>')                      /* (#R156) *italic* (single asterisk; guarded so ** and "2 * 3"/bullets don't misfire) */
         .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.4);padding:3px 0 3px 13px;margin:.7em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
@@ -170,9 +178,19 @@ export function makeAtlasReply(HOST, CTX) {
         /* (#R79g) linkify BARE urls too (leading-char guard skips urls already inside an href="…") */
         .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
         .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.35em;text-indent:-1.1em;margin:.42em 0;line-height:1.6;">•&nbsp; $1</div>')   /* (#R158) clearer bullets + more air */
-        .replace(/\n{2,}/g,'<div style="height:1.5em"></div>')                                        /* (#R158) paragraph gap (bigger rhythm) */
+        .replace(/\n{2,}/g,'<div class="atl-gap" style="height:1.5em"></div>')                         /* (#R158) paragraph gap (bigger rhythm) */
         .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.82em"></div>')                 /* (#R150-R158) sentence-end + single newline = soft gap */
         .replace(/\n/g,'<br>');
+      /* ⚠ (#R232) THE SECOND HALF OF THE HEADING-SPACING FIX — drop the paragraph spacer that lands
+         against a heading. A markdown heading is a line surrounded by blank lines, so the rule above
+         ALWAYS emits a 1.5em spacer on each side of one; that spacer is what a paragraph gap means
+         BETWEEN TWO PARAGRAPHS, and next to a heading whose own margin already provides the air it
+         simply means twice the intended gap. The `<br>` case is the same defect with a single newline.
+         Tempered `(?:(?!</div>)[\s\S])*` stops at the heading div's own close tag — heading text at
+         this point is plain, its code/math/table content having been swapped out for placeholders. */
+      html=html
+        .replace(/<div class="atl-gap"[^>]*><\/div>(?=<div class="atl-h")/g,'')
+        .replace(/(<div class="atl-h"[^>]*>(?:(?!<\/div>)[\s\S])*<\/div>)(?:<div class="atl-gap"[^>]*><\/div>|<br>)/g,'$1');
       /* 4) restore protected blocks (may hold inline placeholders) THEN inlines */
       return html.replace(/B(\d+)/g,(m,i)=>B[+i]||'').replace(/I(\d+)/g,(m,i)=>I[+i]||''); }
     /* (#R156) ONE-TIME wiring for the renderer's interactive bits, at document level so it works in EVERY Atlas
@@ -224,16 +242,54 @@ export function makeAtlasReply(HOST, CTX) {
       (s.match(/[a-z0-9À-ɏ]{4,}/g)||[]).forEach(w=>{ if(!_ATL_RELV_STOP.has(w)) out.add(w); });
       (s.match(/[぀-ヿ㐀-鿿가-힯]{2,}/g)||[]).forEach(run=>{ for(let i=0;i<run.length-1;i++) out.add(run.slice(i,i+2)); });
       return out; }
-    function _atlRelevantCards(cards, refText){ try{ const ref=_atlTokens(refText); if(ref.size<4) return cards;
-      /* (#R153) CROSS-SCRIPT safety — a Japanese reply vs an English article title share no tokens even on the SAME topic
-         (CJK bigrams vs Latin words). Don't wrongly drop a same-topic card written in the other language: if the reply is
-         purely one script and the card purely the other, we can't judge relevance → keep it. */
-      const refCJK=/[぀-ヿ㐀-鿿가-힯]/.test(refText), refLat=/[a-z]{4}/i.test(refText);
-      const kept=(cards||[]).filter(c=>{ const txt=((c&&(c.title||c.name||c.src))||'')+' '+((c&&c.url)||'');
-        const cardCJK=/[぀-ヿ㐀-鿿가-힯]/.test(txt), cardLat=/[a-z]{4}/i.test(txt);
-        if((refCJK&&!refLat&&cardLat&&!cardCJK)||(refLat&&!refCJK&&cardCJK&&!cardLat)) return true;
-        const t=_atlTokens(txt); for(const w of t){ if(ref.has(w)) return true; } return false; });
-      return kept.length?kept:cards; }catch(_){ return cards; } }   /* never blank the section entirely — if nothing overlaps, fall back to the original set */
+    /* ══ ⚠⚠ (#R232) 「AtlasのSourcesにまったく関係のない記事を貼るな」 ══════════════════════════════
+       「岡山県でAI researchしたのに、まったく関係ない記事が添付されていた」 — and the screenshot names
+       the two ways the #R152/#R153 gate below let them through. Both are the same mistake: the gate
+       judged a card against THE WHOLE REPLY, and never against WHAT WAS ASKED ABOUT.
+
+         ① ONE shared token was enough. `_atlTokens` emits CJK BIGRAMS, so a brief on 岡山県 — which is
+            in 中国地方 and will say so — shares 「中国」 with a headline about 韓国で元中国人民解放軍…,
+            and that headline was then "relevant". A two-character coincidence is not a topic.
+         ② The cross-script rule returned TRUE, unconditionally. It was meant as "we cannot judge, so
+            do not wrongly drop"; in practice an English reply plus a Japanese headline (エル・キャピタン
+            を3時間足らずで登…) skipped the test entirely and was always kept.
+         ③ …and `kept.length?kept:cards` meant that when NOTHING matched, EVERYTHING was shown.
+
+       ⚠ THE FIX IS TO ASK THE RIGHT QUESTION: is this card about the TOPIC? `topic` is the place or
+       subject the articles were fetched for, so the primary test is now a substring match on its
+       distinctive keys (with the administrative suffix trimmed, so 岡山県 also matches 岡山, and
+       generic words like "prefecture" never become the key). The reply-text overlap survives only as
+       a CROSS-SCRIPT fallback — for the case the old rule was written for — and there it needs TWO
+       independent tokens, which is what kills the 「中国」 coincidence.
+       ⚠ AND AN EMPTY SECTION IS NOW AN ALLOWED ANSWER. #R153's fallback existed so that real sources
+       are never hidden by an only-SNS coincidence, and host-cleaning already runs first (see
+       linkCards) — but "no article we gathered is about this" is a true statement, and printing six
+       unrelated ones instead is the defect being reported. */
+    const _ATL_GENERIC_GEO=new Set(['prefecture','province','city','town','village','region','state','county','district','republic','island','islands','area','areas','metropolitan','municipality','oblast','krai','governorate','department','canton','commune','borough','ward']);
+    function _atlTopicKeys(topic){ const keys=new Set();
+      String(topic||'').split(/[\/|,、，;；]+/).forEach(part=>{ const p=String(part||'').trim(); if(!p) return;
+        (p.toLowerCase().match(/[a-z0-9À-ɏ]{3,}/g)||[]).forEach(w=>{ if(!_ATL_GENERIC_GEO.has(w)&&!_ATL_RELV_STOP.has(w)) keys.add(w); });
+        (p.match(/[぀-ヿ㐀-鿿가-힯]{2,}/g)||[]).forEach(run=>{ keys.add(run.toLowerCase());
+          const trimmed=run.replace(/[県府都市区町村州省郡島道地方]+$/,''); if(trimmed.length>=2) keys.add(trimmed.toLowerCase()); }); });
+      return keys; }
+    function _atlRelevantCards(cards, refText, topic){ try{
+      const list=cards||[];
+      const keys=_atlTopicKeys(topic);
+      const ref=_atlTokens(refText);
+      if(!keys.size&&ref.size<4) return list;   /* nothing to judge against — unchanged behaviour */
+      const keysCJK=Array.from(keys).some(k=>/[぀-ヿ㐀-鿿가-힯]/.test(k));
+      const keysLat=Array.from(keys).some(k=>/[a-z]/.test(k));
+      return list.filter(c=>{
+        const raw=((c&&(c.title||c.name||c.src))||'')+' '+((c&&c.url)||'');
+        const txt=raw.toLowerCase();
+        for(const k of keys){ if(k.length>=2&&txt.indexOf(k)>=0) return true; }   /* it names the topic */
+        const cardCJK=/[぀-ヿ㐀-鿿가-힯]/.test(raw), cardLat=/[a-z]{4}/i.test(raw);
+        /* the topic IS expressible in this card's script and the card does not use it → not about it */
+        if(keys.size&&((cardCJK&&keysCJK)||(cardLat&&keysLat))) return false;
+        if(ref.size<4) return false;
+        let n=0; for(const w of _atlTokens(raw)){ if(ref.has(w)&&++n>=2) return true; }   /* cross-script: TWO tokens */
+        return false; });
+      }catch(_){ return cards; } }   /* never blank the section entirely — if nothing overlaps, fall back to the original set */
     /* (#R153) SINGLE source-URL cleaner — decode Google-News aggregator redirects to the REAL article, and reject
        aggregator / SNS / UGC / shortener / video hosts. Returns {url,host} or null. Used by BOTH linkCards AND the inline
        "article ↗" evidence links (mapReport / events) so EVERY rendered source goes through the same filter — the R152
@@ -252,12 +308,28 @@ export function makeAtlasReply(HOST, CTX) {
        relevance filter only ever chooses among renderable real-article cards, and its own fallback keeps them all if none
        match — so the section is never blank when genuine sources exist. Pass refText only for the "gathered" buckets;
        web-verified / model-cited sources are anchored to a claim and skip relevance. */
-    function linkCards(list, refText){ try{
+    /* ══ (#R232) A REPLY DOES NOT OPEN BY REPEATING THE NAME IT IS ABOUT ═════════════════════════
+       Asked to "write a brief on X", a chat model opens with `# X` — which lands directly under a
+       bubble that already reads 「Research: X」. Drop the FIRST non-blank line when, with markdown and
+       punctuation stripped, it is nothing but that name; anything else is content and is kept.
+       Here rather than at the call site because this file IS the reply text pipeline, and because
+       js/atlas-console.js has a line ceiling (tests/r199-checks ⑤). */
+    function dropLeadTitle(text, name){ try{
+      const key=(s)=>String(s||'').replace(/[*_#`>\s]/g,'').replace(/[:：・.,、。()（）"'“”「」]/g,'').toLowerCase();
+      const want=key(name); if(!want) return text;
+      const ls=String(text).split(/\r?\n/); let i=0; while(i<ls.length&&!ls[i].trim()) i++;
+      if(i>=ls.length||key(ls[i])!==want) return text;
+      ls.splice(0,i+1); while(ls.length&&!ls[0].trim()) ls.shift(); return ls.join('\n');
+    }catch(_){ return text; } }
+    function linkCards(list, refText, topic){ try{
       const seen=new Set(); let clean=[];
       (list||[]).forEach(it=>{ if(!it||!it.url) return; const cu=_atlCleanUrl(it.url); if(!cu) return;
         const k=cu.url.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
         clean.push({url:cu.url, host:cu.host, agg:!!cu.agg, src:String(it.src||'').slice(0,60), title:String((it.title||it.src||cu.host)).slice(0,90)}); });
-      if(refText) clean=_atlRelevantCards(clean, refText);
+      /* (#R232) `topic` is what the articles were FETCHED FOR and is the primary relevance test; refText
+         (the finished reply) is now only the cross-script fallback. Callers that anchor a card to a
+         specific claim — web-verified / model-cited — still pass neither and skip relevance entirely. */
+      if(refText||topic) clean=_atlRelevantCards(clean, refText, topic);
       if(!clean.length) return '';
       const cards=clean.slice(0,6).map(c=>{ const dom=(c.agg&&c.src)?c.src:c.host;   /* (#R154) aggregator card shows the PUBLISHER name (from src), not the ugly "news.google.com" */
         return '<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
@@ -270,5 +342,5 @@ export function makeAtlasReply(HOST, CTX) {
         +list.map(r=>'<li>'+esc(r.name)+' <span style="color:var(--text-muted);">'+esc(fmtVal(metric,r.val))+'</span></li>').join('')+'</ol>'
         +(painted?'':warn('⚠ '+L('The map highlight could not be drawn (map still loading)','地図上のハイライトは描画できませんでした（地図読込中）','Kartenhervorhebung konnte nicht gezeichnet werden','Выделение на карте не нарисовано','El resaltado en el mapa no se pudo dibujar')));
     }
-  return { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, linkCards, listHtml, mdMini };
+  return { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, dropLeadTitle, linkCards, listHtml, mdMini };
 }

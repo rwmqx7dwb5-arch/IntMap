@@ -241,7 +241,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
         for(let la=-40;la<=60;la+=20){ ctx.beginPath(); ctx.moveTo(0,Y(la)); ctx.lineTo(W,Y(la)); ctx.stroke(); }
         return c.toDataURL('image/png'); },
       'cb-countries':()=>{ const b=base(cd=>cd==='FRA'?'#0a84ff':'#22344c'); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#fff'; ctx.font='700 12px serif'; ctx.fillText('ⓘ',X(2.3),Y(46.5)); return c.toDataURL('image/png'); },
-      'dl-night':terminator,
+      'dl-nightside':terminator,
       'dl-tz':()=>{ /* (#R74) real offset bands with UTC labels — the 🕒-stamp version read as a placeholder */
         const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#0d1725');
         for(let i=0;i<24;i++){ ctx.fillStyle=i%2?'rgba(96,148,226,0.18)':'rgba(22,44,76,0.20)'; ctx.fillRect(i*W/24,0,W/24,H); }

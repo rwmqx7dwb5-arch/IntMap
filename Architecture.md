@@ -202,7 +202,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   以下は経緯：**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。**#R161 で第3段階＝ニュースピン・オーバーレイを丸ごと engine 経由へ移行**（生 `map` 非参照のサブシステム第1号）。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
-- 対応UI言語は **英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es, ベータ)** の5つ（R40でDE/RU復活＋ES追加。`i18n.es` は静的UIを網羅、深層の動的文字列はEN/JPフォールバック）。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
+- **対応UI言語は9つ**: 英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es) / 繁體中文 (zh) / 简体中文 (zh-hans) / フランス語 (fr) / 韓国語 (ko)。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
+- **言語を1つ増やすコストは「ファイル1本」**（#R232）。`js/locales/ui.<code>.js` を置くだけでよく、登録簿の行も `src/main.js` の import 行もピッカーの項目も launch screen の語も要らない：
+    - `src/locale-boot.js` が `import.meta.glob('../js/locales/ui.*.js')`（**lazy**）でディレクトリを読む＝**言語の集合はファイルの集合**。⚠ `src/` に置くのは、`js/` を `scripts/static-checks.mjs` がプレーンなスクリプトとして解析するため（`import.meta` が自由識別子になり検査が落ちる）。
+    - `js/lang-registry.js` の `derive(code)` が label（`Intl.DisplayNames` ＝その言語自身の名前）・BCP-47 タグ・2文字 pill を code だけから作る。登録簿に literal 行として残るのは**ファイル名では運べない事実を持つ言語だけ**——最初の5言語（＝`L(…)` の引数順で、順序が load-bearing）と中文2行（スクリプト別 alias・1文字 pill・`normalise` の解決順）。
+    - 読み物2ページ（`sources.html` / `science.html`）は bundler が無いので、`scripts/i18n-langs.mjs` が `js/locales/_langs.js`（`window.IntMapLangCodes` と `window.IntMapLangBeta`）を生成し、`prebuild` で毎ビルド更新する。`tests/r232-checks` が「ディレクトリと生成物が一致すること」を検査する。
+    - **(beta) 表記は測って付く**：同スクリプトが inline テーブルの被覆率を計算し、98% 未満なら beta。埋まれば誰も気づかなくても自動で外れる。明示 label（中文2行）は常に優先。
+- **locale は遅延読み込み**（#R232）。eager なのは英語（＝全テーブルが `Object.create` で繋がるプロトタイプ）だけで、利用者の言語は独立チャンクとして取得し、`js/app-body.js` の起動バリア（エンジン選択と同じ `then(go,go)`）で待つ。7言語 eager だった頃の **492 kB が起動から消えた**（実測 eager JS 4,325 kB → 3,993 kB）。`js/i18n.js` はテーブルを**差し替えず in-place マージ**する（`i18n.de` を参照で掴んでいる読者が多数いるため）。
+- **2つの翻訳テーブル**: `ui`（284 のキー付き文字列）と `inline`（2,051 の呼び出し側インライン文字列を**英語原文をキーに**引く）。最初の5言語は inline を持たず、翻訳が `L(en,jp,de,ru,es)` の**引数**として call site にある。⚠ **「n/a (positional)」は「完了」の意味ではない**——引数を5つ渡していない呼び出しは、その先の言語で英語になる（#R232 が AST で数え、1,731 か所中 40 か所を発見・修正。現在 99.0%。残りは空文字・記号・製品名・モデルへのプロンプト）。
 
 ---
 
@@ -1099,6 +1106,13 @@ js/
                                     （A=Q/(K√S)、K=40；未設定は#R188の体積連続）。DEM が3割超欠損なら**造らずに断る**
                                     （fail-closed）、seaCheck 不能は「未確認」と明記。トレース例外は end='error' として
                                     描画・報告（握り潰さない）。パネルは不透過（--card-bg）。
+  seismic-events.js                 (#R232) **過去の地震の公表震源パラメータ**（東日本2011・チリ1960・アラスカ1964・
+                                    スマトラ2004・阪神淡路1995・関東1923・トルコ/シリア2023・四川2008・ハイチ2010）。
+                                    各行は hypocentre・Mw・走向/傾斜/すべり角・断層長×幅・**核形成位置 `nucAlong`**・
+                                    出典、そして **`obs`＝当時の実測値**（最大震度・すべり量・津波高・人的被害）を持つ。
+                                    ⚠ **入力と結果を分ける**：モデルが計算するのは結果だけで、`obs` は引用であり計算値と
+                                    混ぜない。⚠ すべり量は**公表モーメントから逆算**する（M₀=μAD̄ の鎖と矛盾させないため）。
+                                    `ruptureRing(ev)` が公表矩形を傾斜で地表投影へ。
   seismic.js                        (#R176) **地震波シミュレーター `IntMapSeismic`**。到達時刻は **IASP91**
                                     （Kennett & Engdahl 1991）の**レイトレーシング**——速度分布の多項式がこの
                                     ファイル内のデータで、走時はそこから計算する（表引きではない）。地球を 1 km の
@@ -1538,6 +1552,13 @@ js/
                                     （平らな地平線を描くと計測に見える）。⚠ Terrarium は水深も返すので
                                     **目の高さは0 mでクランプ**（さもないと外洋で海底に立つ）。
                                     「山の陰で隠れた星」と「昼光で飛んだ星」は**別々に数える**。
+  night-side.js                     ⚠ (#R232) **昼夜の on/off は3つの面から操作できるが、値の持ち主はこのモジュールだけ**：
+                                    レイヤー欄の行 `dl-nightside`（#R232 で追加。旧「昼/夜」＝turf の平円盤レイヤーは**削除**）・
+                                    設定の `#setting-night-side`・Atlas の `nightSide` アクション。3面とも
+                                    `js/data-layers.js` の `_setNightSide()` を通り、そこが `IntMapNightSide.setEnabled()` の
+                                    返り値で他の2面を貼り直す（`window._imSyncNightSideRow`）。永続化は localStorage
+                                    `intmap_night_side`（#R210）＝**同じ量を二か所に持たない**。保存済みセッションの
+                                    `dl-night` は `js/session-tabs.js` の `RETIRED` 表で `dl-nightside` へ翻訳される。
   night-side.js                     (#R196 → #R201 で作り直し／#R220 で**衛星画像専用**に) **地球の夜側 `IntMapNightSide`**。
                                     ⚠⚠ **#R220: 効くのは Satellite のときだけ**（「昼夜で夜間光にしたり明るく
                                     したり暗くしたりするやつはSatellite時のみに。Mapではなにも無し。」）。

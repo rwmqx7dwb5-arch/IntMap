@@ -101,7 +101,11 @@ export function makeSessionTabs(HOST, CTX) {
          ⚠ A MAP, not an `if`: this is where any future retirement is recorded, and keeping it a table
          is what stops the next one being written somewhere else. ⚠ De-duplicated, because a session
          could legitimately hold BOTH ids (someone who had turned on the World-data plate as well). */
-      const RETIRED={ 'dl-oceancur':'wp-dl-currents' };
+      /* (#R232) …and the second entry, for the same reason: 「昼/夜レイヤーは削除」. `dl-night` was the
+         flat turf disc; `dl-nightside` is the day/night shading that replaced it. A session that had
+         the old row on wants the night side on, which is what it now gets — and since the shading is
+         on by default anyway, the translation is usually a no-op rather than a surprise. */
+      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside' };
       for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
         if(!to) continue;
         if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }

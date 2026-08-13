@@ -181,7 +181,9 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
   assert.match(reg, /label: '繁體中文 \(beta\)'/);
   assert.match(reg, /html: 'zh-Hant'/);
   assert.match(reg, /alias: \['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'\]/, 'the script tags, not a bare zh');
-  assert.match(read('src/main.js'), /locales\/ui\.zh\.js/);
+  /* (#R232) src/main.js no longer names any locale but English — src/locale-boot.js globs the
+     directory and loads the reader's own on demand. The list to check against is the generated one. */
+  assert.match(read('js/locales/_langs.js'), /"zh"/, 'zh is in the generated language list');
   /* the file itself: both tables, and no call site was touched to get them */
   const zh = read('js/locales/ui.zh.js');
   const ast = parse(zh, { ecmaVersion: 2022 });

@@ -20,9 +20,11 @@ test('R159 #1 Atlas replies carry NO bold and NO divider lines', () => {
   ok(".replace(/\\*\\*([^*]+)\\*\\*/g,'$1')                                                             /* (#R159) inline **bold** → plain", 'mdMini inline **bold** → plain');
   ok("function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\\*\\*([^*]+)\\*\\*/g,'$1');", 'table-cell **bold** → plain');
   // headings differentiate by SIZE + SPACING only — semibold 600, never the heavy 750/800 bold weight
-  ok('.replace(/^#{3,6}\\s*(.+)$/gm,\'<div style="font-weight:600;color:var(--text-main)', '### heading is semibold, not bold');
-  ok('.replace(/^##\\s*(.+)$/gm,\'<div style="font-weight:600;color:var(--text-main)', '## heading is semibold, not bold');
-  ok('.replace(/^#\\s*(.+)$/gm,\'<div style="font-weight:600;color:var(--text-main)', '# heading is semibold, not bold');
+  /* (#R232) …now carrying class="atl-h", which is what lets mdMini drop the paragraph spacer that
+     lands against a heading. Weight and colour — the property these three lines exist for — stand. */
+  ok('.replace(/^#{3,6}\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '### heading is semibold, not bold');
+  ok('.replace(/^##\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '## heading is semibold, not bold');
+  ok('.replace(/^#\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '# heading is semibold, not bold');
   assert.ok(!/mdMini[\s\S]{0,4000}font-weight:(750|800)/.test(html), 'no mdMini heading keeps the heavy 750/800 bold weight');
   // the "## " section top-rule divider is removed ("区切りの横線はいらない")
   gone('padding-top:.78em;border-top:1.5px solid rgba(128,128,128,.34)', 'the ## hairline divider is gone');
@@ -33,7 +35,9 @@ test('R159 #1 Atlas replies carry NO bold and NO divider lines', () => {
 test('R159 #2 redundant "その他の収集記事" source pile removed; never-zero fallback kept', () => {
   gone("L('Other gathered articles','その他の収集記事'", 'the "Other gathered articles"/その他の収集記事 label is gone');
   // the rest-links block now renders ONLY as the never-zero "Related articles" fallback when nothing was cited/verified
-  ok("if(rest.length && !haveBasis){ const rc=linkCards(rest,txt);", 'rest links show only when there is no cited/web-verified source');
+  /* (#R232) linkCards gained a `topic` argument — the relevance gate now judges against what the
+     articles were FETCHED FOR, not only against the finished reply. The guard is unchanged. */
+  ok("if(rest.length && !haveBasis){ const rc=linkCards(rest,txt,placeStr);", 'rest links show only when there is no cited/web-verified source');
   ok("L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')", 'never-zero "Related articles" fallback kept');
 });
 

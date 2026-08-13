@@ -99,7 +99,9 @@ test('R192 seismic: 震度 is the JMA definition, MMI is fed the band an instrum
   assert.match(s, /const velF=f=>velS\(f\)\*feltHP\(f\);/, 'applied to the velocity spectrum');
   assert.match(s, /const pgvMs=rvt\(velF,Td\), pgaMs2=rvt\(accS,Td\);/, 'and NOT to PGA, which is carried above it');
   /* the two-corner source — the published fix for a single corner at great magnitude */
-  assert.match(s, /const fa=Math\.pow\(10,2\.181-0\.496\*mw\), fb=Math\.pow\(10,2\.41-0\.408\*mw\);/, 'Atkinson & Silva 2000');
+  /* (#R232) …divided by the directivity factor, because the two source corners move with the
+     apparent duration exactly as fc does. The published coefficients are what is pinned. */
+  assert.match(s, /const fa=Math\.pow\(10,2\.181-0\.496\*mw\)(?:\/f)?, fb=Math\.pow\(10,2\.41-0\.408\*mw\)(?:\/f)?;/, 'Atkinson & Silva 2000');
   assert.match(s, /const disp=f=>omega0\*s\.shape\(f\)\*path\(f\);/, 'and the chain uses it');
   /* the field carries BOTH quantities, so switching scale still needs no rebuild (#R190) */
   assert.match(s, /pgvArr=new Float32Array\(N\*N\), a0Arr=new Float32Array\(N\*N\)/, 'both are stored per cell');

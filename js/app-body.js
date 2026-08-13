@@ -135,6 +135,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      script and CSS can never disagree by a scrollbar width or a rounding pixel. */
   const MOBILE_MQ=window.matchMedia('(max-width:768px)');
   const isMobile=()=>MOBILE_MQ.matches;
+  /* ⚠⚠ (#R232) 「携帯か」IS A GPU QUESTION AND WIDTH ANSWERS IT WRONG IN LANDSCAPE: an iPhone turned sideways is 844 px, so isMobile() flips false and the renderer gets the DESKTOP settings (MSAA, DPR 3) on the same phone GPU. 「横向きを縦向きと同じ品質設定に揃えてよい」 — asked first. QUALITY asks the device; LAYOUT still asks isMobile(). See DEV-NOTES #R232. */
+  const _imPhoneGPU=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
   /* (#R25) Touch-vs-mouse for WORDING (e.g. Köppen "tap/long-press" vs "click/right-click"). isMobile()
      is width-only, so a desktop with a narrow window wrongly got the touch wording. A machine that has a
      fine pointer (a mouse/trackpad) — even a touchscreen laptop — should read as a "click" device. */
@@ -433,7 +435,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (layer names, legend titles, theme options, feedback/playground/pro/sources labels), so they fell back to
      English ("英語の箇所がまだ大量にある"). Now all five languages cover every UI key. */
   try{ Object.assign(i18n.ru,{
-    lblNavInertia:"Инерция", lyrEU:"Страны ЕС", lyrClimate:"Климат Кёппена", lyrTemp:"Температура воздуха (2 м)", lyrPrecip:"Осадки (IMERG)", lyrPop:"Плотность населения", lyrHDI:"ИЧР (2022)", lyrDem:"Индекс демократии (2023)", lyrNATO:"Страны НАТО", lyrNight:"День / ночь", lgdTitle:"Кёппен–Гейгер", climAt:"Климат", lyrSection:"Слои данных", lyrGrpWeather:"Погода и среда",
+    lblNavInertia:"Инерция", lyrEU:"Страны ЕС", lyrClimate:"Климат Кёппена", lyrTemp:"Температура воздуха (2 м)", lyrPrecip:"Осадки (IMERG)", lyrPop:"Плотность населения", lyrHDI:"ИЧР (2022)", lyrDem:"Индекс демократии (2023)", lyrNATO:"Страны НАТО", lyrNightSide:"Затенение дня и ночи", lgdTitle:"Кёппен–Гейгер", climAt:"Климат", lyrSection:"Слои данных", lyrGrpWeather:"Погода и среда",
     optPsychedelic:"Психоделический", optMilitary:"Военный", optMedical:"Медицинский", optBaroque:"Барокко (европейский)", optTaisho:"Япония Тайсё", lyrRadar:"Радар осадков (в реальном времени)", lyrClouds:"Облака · инфракрасный (live)", lyrSST:"Температура поверхности моря", lyrSnow:"Снег и лёд", lyrAOD:"Аэрозоль / дымка", lyrNightSat:"Ночные огни (спутник)", lyrWind:"Ветер (анимация)",
     lgdRadarTitle:"Интенсивность дождя", lgdSSTTitle:"Температура моря", lgdWindTitle:"Скорость ветра", lblFeedback:"Отзыв и сообщение об ошибке", sendFeedbackBtn:"⭐ Оставить отзыв", reportBugBtn:"🐞 Сообщить об ошибке", lblPlayground:"Площадка (бета)", playgroundBtn:"🎮 Открыть площадку", worldExplorerBtn:"🌍 Satellite Drop",
     lyrHillshade:"Рельеф (отмывка)", lyrContours:"Изолинии высот", lyrPopGrid:"Плотность населения (сетка 1 км)", lgdTempTitle:"Темп. воздуха (2 м)", lyrTimeMonth:"Месяц", lyrRelief:"Высота (цветной рельеф)", lyrSubcables:"Подводные кабели", lgdReliefTitle:"Высота", lgdSubcablesTitle:"Подводные кабели",
@@ -442,7 +444,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     screenshotSaved:"Снимок сохранён ✓", screenshotBusy:"Съёмка…", measureClickClose:"Нажмите на первую точку, чтобы замкнуть",
     blueberryTitle:"Поддержать IntMap", blueberryBody:"Моя цель — создать карту, где географию, климат, историю, экологию, демографию и мировые события можно исследовать в одном месте.\nIntMap разрабатывается независимо и постоянно расширяется новыми слоями, наборами данных и функциями.\nЕсли вам нравится IntMap и вы хотите поддержать его дальнейшее развитие, вы можете внести вклад ниже.", blueberryGo:"Выбрать сумму ↗", blueberryNote:"Откроется внешняя страница (Stripe)." });
     Object.assign(i18n.es,{
-    lblNavInertia:"Inercia", lyrEU:"Miembros de la UE", lyrClimate:"Clima de Köppen", lyrTemp:"Temperatura del aire (2 m)", lyrPrecip:"Precipitación (IMERG)", lyrPop:"Densidad de población", lyrHDI:"IDH (2022)", lyrDem:"Índice de democracia (2023)", lyrNATO:"Miembros de la OTAN", lyrNight:"Día / noche", lgdTitle:"Köppen–Geiger", climAt:"Clima", lyrSection:"Capas de datos", lyrGrpWeather:"Clima y medio ambiente",
+    lblNavInertia:"Inercia", lyrEU:"Miembros de la UE", lyrClimate:"Clima de Köppen", lyrTemp:"Temperatura del aire (2 m)", lyrPrecip:"Precipitación (IMERG)", lyrPop:"Densidad de población", lyrHDI:"IDH (2022)", lyrDem:"Índice de democracia (2023)", lyrNATO:"Miembros de la OTAN", lyrNightSide:"Sombreado de día y noche", lgdTitle:"Köppen–Geiger", climAt:"Clima", lyrSection:"Capas de datos", lyrGrpWeather:"Clima y medio ambiente",
     optPsychedelic:"Psicodélico", optMilitary:"Militar", optMedical:"Médico", optBaroque:"Barroco (europeo)", optTaisho:"Japón Taishō", lyrRadar:"Radar de precipitación (en vivo)", lyrClouds:"Nubes · infrarrojo (en vivo)", lyrSST:"Temperatura de la superficie del mar", lyrSnow:"Nieve y hielo", lyrAOD:"Aerosol / calima", lyrNightSat:"Luces nocturnas (satélite)", lyrWind:"Viento (animado)",
     lgdRadarTitle:"Intensidad de lluvia", lgdSSTTitle:"Temp. del mar", lgdWindTitle:"Velocidad del viento", lblFeedback:"Comentarios y errores", sendFeedbackBtn:"⭐ Enviar comentarios", reportBugBtn:"🐞 Informar de un error", lblPlayground:"Zona de juego (beta)", playgroundBtn:"🎮 Abrir la zona de juego", worldExplorerBtn:"🌍 Satellite Drop",
     lyrHillshade:"Relieve (sombreado)", lyrContours:"Curvas de nivel", lyrPopGrid:"Densidad de población (malla 1 km)", lgdTempTitle:"Temp. aire (2 m)", lyrTimeMonth:"Mes", lyrRelief:"Elevación (relieve en color)", lyrSubcables:"Cables submarinos", lgdReliefTitle:"Elevación", lgdSubcablesTitle:"Cables submarinos",
@@ -785,7 +787,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
          画質を高めて。どちらか一方犠牲はNG"). It's left OFF on phones, where the extra sample buffers are a
          real GPU/VRAM cost that risks the tab ("ブラウザが落ちることがないように"). */
-      antialias:!isMobile(),
+      antialias:!_imPhoneGPU(),   /* (#R232) the DEVICE, not the viewport width — see _imPhoneGPU */
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
          works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
@@ -800,11 +802,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          「ブラウザが落ちることがないように」. 2048 double-density tiles hold the same bytes 8192 single-
          density ones did, which is the cap #R21 actually decided on. Phones do not take @2x at all
          (see _hiDPITiles), so their numbers are untouched. */
-      fadeDuration:0, maxTileCacheSize:(isMobile()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
+      fadeDuration:0, maxTileCacheSize:(_imPhoneGPU()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
-      pixelRatio:(isMobile()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),
+      pixelRatio:(_imPhoneGPU()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),   /* (#R232) …and landscape is the same phone */
       /* ══ (#R180) TWO CEILINGS INSIDE THE RENDERER THAT WERE THROWING PIXELS AWAY ═══════════
          #R178 and #R179 found the satellite layer and then the base map running at half the
          resolution the display can show. Both were OUR arithmetic. These two are MapLibre's
@@ -2683,7 +2685,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          DEM tile set is real RAM that risks the tab. */
       /* (#R20) desktop 14→15 = terrarium's NATIVE max: tilted close-ups now load the finest mesh that
          exists, a straight quality win with no downscale anywhere; phones stay at 13 for RAM safety. */
-      ],encoding:'terrarium',tileSize:256,maxzoom:(isMobile()?13:15)}); return true; }
+      ],encoding:'terrarium',tileSize:256,maxzoom:(_imPhoneGPU()?13:15)}); return true; }   /* (#R232) DEM depth follows the device too */
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
@@ -2863,10 +2865,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      reversible, and it persists itself (js/night-side.js writes the key). So it applies on `change`
      as well — the Apply path still runs and is now a no-op for this control. */
   { const ns=document.getElementById('setting-night-side');
-    if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} }); }
+    if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){} }); }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
-    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）'); };
+    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
     tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
       try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
@@ -4389,5 +4391,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      which is still the installed adapter because js/cesium-engine.js only calls
      IntMapGeoEngine.use() after the widget is actually up. */
   let _p=null; try{ _p=window.IntMapEnginePending; }catch(_){}
-  if(_p&&typeof _p.then==='function') _p.then(_imAppBoot,_imAppBoot); else _imAppBoot();
+  /* ⚠ (#R232) …AND THE LOCALE IS THE SECOND HALF: locale files are dynamic imports now and the text below bakes at construction time (#R38). Awaited, not raced. */
+  let _l=null; try{ _l=window.IntMapLocalePending; }catch(_){}
+  const _afterLocale=()=>{ if(_p&&typeof _p.then==='function') _p.then(_imAppBoot,_imAppBoot); else _imAppBoot(); };
+  if(_l&&typeof _l.then==='function') _l.then(_afterLocale,_afterLocale); else _afterLocale();
 });

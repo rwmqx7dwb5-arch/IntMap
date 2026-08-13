@@ -48,8 +48,8 @@ window.IntMapModules.dataLayers=function(HOST){
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
   (function(){
     if(!GE().hasRenderer()) return;
-    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 Satellite Drop" });
-    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 サテライトドロップ" });
+    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNightSide:"Day & night shading", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 Satellite Drop" });
+    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNightSide:"昼夜の表示", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 サテライトドロップ" });
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
@@ -77,7 +77,7 @@ window.IntMapModules.dataLayers=function(HOST){
        rule it is here to state is not, and every `Object.assign` around it still obeys it. */
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
-    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 Satellite Drop",
+    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNightSide:"Tag-/Nachtschattierung", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 Satellite Drop",
       lyrGrpClimate:"Klima & Wetter", lyrGrpHazard:"Gefahren & Nachthimmel", lyrGrpDemo:"Bevölkerung & Wirtschaft", lyrGrpGeoPol:"Geopolitik & Verteidigung", lyrGrpOthers:"Weitere (Beta)",
       lyrGrpMaritime:"Ozeane & Seefahrt", lyrGrpIndic:"Indikatoren & Overlays", lyrGrpTerrain:"Gelände & Höhe", lyrHillshade:"Reliefschattierung", lyrContours:"Höhenlinien", lyrPopGrid:"Bevölkerungsdichte (1-km-Raster)", lgdTempTitle:"Lufttemp. (2 m)", lyrTimeMonth:"Monat", mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig", lyrRelief:"Höhe (Farbrelief)", lyrSubcables:"Seekabel", lgdReliefTitle:"Höhe", lgdSubcablesTitle:"Seekabel", lyrMilSpend:"Militärausgaben ($ Mrd.)", lyrMilSpendGDP:"Militärausgaben (% BIP)", lyrGDPpc:"BIP pro Kopf", lyrTFR:"Geburtenrate", lyrSeaLevel:"Meeresspiegeländerung", lgdSeaLevelTitle:"Meeresspiegeländerung" });
     /* (#R33) German country-stat + common labels so the country panel/stats aren't English in DE mode. */
@@ -543,7 +543,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -665,7 +665,19 @@ window.IntMapModules.dataLayers=function(HOST){
          `wp-dl-currents` once, in js/session-tabs.js. */
       ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],['sats','lyrSats'],
       ['__grp','lyrGrpHazard'],
-      ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['night','lyrNight'],
+      /* ══ (#R232) 「昼/夜レイヤーは削除。（新たな昼夜機能がすでにあるため不要。）」 ════════════════════
+         ⚠ THERE IS NO 'night' ROW HERE ANY MORE, AND THE ROW THAT REPLACED IT IS NOT A LAYER. The old
+         one was #R0-era: one flat #00112a disc from turf.circle, 10,001 km across, redrawn every 60 s.
+         js/night-side.js (#R196/#R201) has since done the same job properly — a real twilight ramp and
+         NASA's VIIRS city lights, fading in as the camera pulls back — so the app carried TWO day/night
+         shadings that drew over each other, which is the same 「二つあるなんていうややこしいことするな」
+         defect the ocean currents had one group above.
+         ⚠ AND THE NEW ROW IS THE SECOND HALF OF THE SAME INSTRUCTION: 「昼夜の表示は、設定だけでなく
+         レイヤー選択欄の基本表示からもオンオフできるように。」 It drives window.IntMapNightSide, which
+         owns its own on/off state and its own persistence (localStorage 'intmap_night_side', #R210) —
+         so this row READS that state rather than keeping a second copy of it, and Settings' own
+         `#setting-night-side` picker is mirrored both ways. One quantity, one owner. */
+      ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['nightside','lyrNightSide'],
       ['__grp','lyrGrpDemo'],
       ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],
       ['__grp','lyrGrpGeoPol'],
@@ -707,14 +719,18 @@ window.IntMapModules.dataLayers=function(HOST){
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
-        'precip','clouds','ships','planes','sats','hillshade','contours','night','subcables','nato','eu']);
+        'precip','clouds','ships','planes','sats','hillshade','contours','subcables','nato','eu']);   /* (#R232) 'night' removed with its row */
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       /* (#R186) 「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」 — these two rows ship
          CHECKED. window.IntMapDefaultLayers is the single list; app-body dispatches the change event for
          each of them once the style can accept layers (a checked box alone paints nothing), and the
          session restore consults the same list so a user who switches one OFF is not overruled on the
          next load. Declared as a window value rather than a local const so both readers see one list. */
-      const defOn=(window.IntMapDefaultLayers||[]).indexOf('dl-'+id)>=0;
+      /* (#R232) …and the day/night row's own answer comes from the module that owns it, not from this
+         list: js/night-side.js is on unless the reader turned it off, and it remembers that itself. */
+      const defOn=(id==='nightside')
+        ? (function(){ try{ return !window.IntMapNightSide||window.IntMapNightSide.isOn(); }catch(_){ return true; } })()
+        : (window.IntMapDefaultLayers||[]).indexOf('dl-'+id)>=0;
       w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       if(defOn){ w.classList.add('on'); const ex0=w.querySelector('.lyr-extras'); if(ex0) ex0.style.display='block'; }
       dd.appendChild(w);
@@ -813,7 +829,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
-        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
@@ -837,7 +853,7 @@ window.IntMapModules.dataLayers=function(HOST){
             rg.title=(window.IntMapLang.t(lang,'Opacity','透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
-          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示'));
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
           x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
           row.appendChild(x); pn.appendChild(row); });
         sec.appendChild(pn); };
@@ -954,7 +970,7 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
+          ['lyrGrpHazard',['thermal','aurora','nightsat','nightside','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
           ['lyrGrpIndic',['tz']]   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
         ];
@@ -1425,8 +1441,9 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ const dd=document.getElementById('sl-sealevel'); if(dd){ if(+dd.value!==clamp) dd.value=clamp; const lbl=document.getElementById('sllbl-sealevel'); if(lbl) lbl.textContent=sgn; } }catch(_){}
     };
 
-    let nightTimer=null;
-    function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} if(GE().layers.hasSource('src-night')) GE().layers.setSourceData('src-night',poly); else GE().layers.add({id:'lyr-night',type:'fill',source:(GE().layers.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
+    /* (#R232) buildNight() and its 60-second interval were DELETED here. It drew one flat #00112a
+       turf.circle 10,001 km across and re-made it every minute; js/night-side.js draws the real
+       twilight ramp and the city lights, and two of them over each other was the defect. */
 
     /* Köppen-Geiger climate (#13): rendered locally from the native 1 km GeoTIFFs in
        "Köppen-Geiger climate classification data/<period>.tif" (Beck et al. 2018, 30 classes) and
@@ -2099,16 +2116,16 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
       const nm=GENERIC_LEG[id][Math.max(0,window.IntMapLang.index(HOST.lang))]||GENERIC_LEG[id][0];
-      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите');
+      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр');
-          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все');
-          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские');
-          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные');
+          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр','Filtro');
+          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todos');
+          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские','Civil');
+          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные','Militar');
           fr.innerHTML=_fL+' <select class="gl-filter" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><option value="all">'+_fAll+'</option><option value="civilian">'+_fCiv+'</option><option value="military">'+_fMil+'</option></select>';
           el.appendChild(fr);
           const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}
@@ -4013,7 +4030,8 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
           withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend(); }catch(e){ console.warn('eu fail',e); } });
         }
-        else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
+        /* (#R232) the day/night SHADING — one call to its owner, and the Settings picker follows. */
+        else if(id==='nightside'){ _setNightSide(true); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
         { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
         /* (#R30) ASYNC-RACE ORPHAN GUARD — root cause of "オンになっているのにactive layersに表示されず、消せない" /
@@ -4067,9 +4085,34 @@ window.IntMapModules.dataLayers=function(HOST){
           const otherVis=GE().layers.get('lyr-'+other)&&GE().layers.getLayout('lyr-'+other,'visibility')==='visible';
           if(!otherVis){ clearInterval(_rvTimer); _rvTimer=null; } }
         tileLegends();
-        if(id==='night'&&nightTimer){ clearInterval(nightTimer); nightTimer=null; }
+        if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
     }
+    /* ══ (#R232) THE ONE PLACE THE DAY/NIGHT SWITCH IS WRITTEN ═══════════════════════════════════
+       There are now THREE surfaces for one boolean — this layer row, the Settings picker
+       (`#setting-night-side`) and Atlas's `nightSide` action — and this project's recurring defect is
+       exactly that shape: 「同じ量の設定が二か所にあると片方は永久に届かない」. So none of them owns
+       the value. js/night-side.js does (it persists it); every surface calls through here, and here
+       re-points the OTHER surfaces at the answer it just got back. */
+    function _setNightSide(on){
+      let now=!!on;
+      try{ if(window.IntMapNightSide) now=!!window.IntMapNightSide.setEnabled(!!on); }catch(_){}
+      try{ const sel=document.getElementById('setting-night-side'); if(sel) sel.value=now?'on':'off'; }catch(_){}
+      try{ const cb=document.getElementById('dl-nightside'); if(cb&&cb.checked!==now){ cb.checked=now;
+        const row=document.getElementById('lyrrow-nightside'); if(row) row.classList.toggle('on',now); } }catch(_){}
+      try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
+      return now;
+    }
+    /* …and the reverse direction: Settings and Atlas both go through window.IntMapNightSide directly,
+       so this is what lets the row notice. Published rather than local because js/app-body.js's
+       Settings handler and js/atlas-console.js's action both need it. */
+    window._imSyncNightSideRow=function(){ try{
+      const on=!window.IntMapNightSide||window.IntMapNightSide.isOn();
+      const cb=document.getElementById('dl-nightside'); if(cb&&cb.checked!==on){ cb.checked=on;
+        const row=document.getElementById('lyrrow-nightside'); if(row) row.classList.toggle('on',on); }
+      const sel=document.getElementById('setting-night-side'); if(sel) sel.value=on?'on':'off';
+      window._refreshActiveLayers&&window._refreshActiveLayers();
+    }catch(_){} };
     /* (#R34) GENERIC ORPHAN SWEEP — the definitive fix for "オンになっているのにactive layersに表示されず、消すこと
        もできない" / "消したレイヤーが表示されっぱなし". Any data layer whose checkbox is OFF but whose map layer is
        still VISIBLE is an orphan: the active-layers list reads the checkbox, so it never lists it → the user
@@ -4170,7 +4213,7 @@ window.IntMapModules.dataLayers=function(HOST){
       }
       else if(id==='nato'){ if(GE().layers.has('nato-fill'))GE().layers.setPaint('nato-fill','fill-opacity',v); }
       else if(id==='eu'){ if(GE().layers.has('eu-fill'))GE().layers.setPaint('eu-fill','fill-opacity',v); }
-      else if(id==='night'){ if(GE().layers.has('lyr-night'))GE().layers.setPaint('lyr-night','fill-opacity',v); }
+      /* (#R232) the 'night' opacity branch went with the layer — the day/night shading has no opacity knob. */
       else if(id==='planes'){ if(GE().layers.has('lyr-planes'))GE().layers.setPaint('lyr-planes','icon-opacity',v);
         /* (#R172) the lifted bodies follow the same opacity slider; the posts stay fainter than the aircraft */
         try{ if(GE().layers.has(PLANE3D_LYR))GE().layers.setPaint(PLANE3D_LYR,'fill-extrusion-opacity',v);
@@ -4293,7 +4336,7 @@ window.IntMapModules.dataLayers=function(HOST){
         'dl-climate':['lyr-climate'],'dl-temp':['lyr-temp'],'dl-precip':['lyr-precip'],'dl-sst':['lyr-sst'],
         'dl-snow':['lyr-snow'],'dl-aod':['lyr-aod'],'dl-nightsat':['lyr-nightsat'],'dl-popgrid':['lyr-popgrid'],
         'dl-relief':['lyr-relief'],'dl-hillshade':['lyr-hillshade'],'dl-sealevel':['lyr-sealevel'],
-        'dl-eez':['lyr-eez'],'dl-night':['lyr-night'],'dl-radar':['lyr-radar'],
+        'dl-eez':['lyr-eez'],'dl-radar':['lyr-radar'],   /* (#R232) dl-night deleted with its layer */
         'dl-contours':['contour-lines','contour-labels'],
         'dl-subcables':['lyr-subcables','lyr-subcables-glow','lyr-subcables-pts'],
         'dl-thermal':['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'],

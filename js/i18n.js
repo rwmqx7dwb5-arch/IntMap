@@ -45,5 +45,32 @@
   }, enumerable: false });
   Object.defineProperty(out, 'list', { value: LANG.list, enumerable: false });
 
+  /* ══ ⚠ (#R232) A LOCALE CAN NOW ARRIVE AFTER THIS RAN ═════════════════════════════════════════
+     Until this round src/main.js imported all seven locale files EAGERLY, so by the time this file
+     evaluated every table was complete and `keyed()` could be read once. They are dynamic imports
+     now (js/locale-boot.js — 492 kB of the boot bundle for six languages the session never reads),
+     which means the reader's own language lands a tick or two later.
+
+     ⚠ MERGE IN PLACE, NEVER REPLACE. `i18n.de` and friends are captured by reference all over the
+     app — js/app-body.js keeps its own `i18n` alias, js/i18n-late.js does `Object.assign(i18n.de,…)`
+     a dozen times — so swapping the object would leave every one of those holders pointing at the
+     empty table this file created. Copying the fresh table's OWN properties onto the existing object
+     keeps identity, keeps the English prototype underneath, and (because js/i18n-late.js runs inside
+     app-body's boot, i.e. after the barrier that waits for this) cannot clobber a late key. */
+  LANG.onDefine(function (code) {
+    try {
+      var fresh = LANG.keyed(code);
+      var row = null;
+      for (var i = 0; i < LANG.LANGS.length; i++) if (LANG.LANGS[i].code === code) { row = LANG.LANGS[i]; break; }
+      if (!out[code]) {
+        out[code] = fresh;
+        if (row) (row.alias || []).forEach(function (a) { out[a] = fresh; });
+        return;
+      }
+      var dst = out[code];
+      for (var k in fresh) if (Object.prototype.hasOwnProperty.call(fresh, k)) dst[k] = fresh[k];
+    } catch (e) {}
+  });
+
   window.IntMapI18N = out;
 })();

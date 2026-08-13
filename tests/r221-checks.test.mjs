@@ -54,8 +54,25 @@ test('① the registry is the ONE list, and the first five keep their argument o
   /* every registered language must have a locale file, or the table it builds is empty */
   for (const c of codes) {
     assert.ok(existsSync(join(JS, 'locales', `ui.${c}.js`)), `js/locales/ui.${c}.js is missing`);
-    assert.ok(read('src/main.js').includes(`js/locales/ui.${c}.js`), `src/main.js does not import ui.${c}.js`);
   }
+  /* ⚠ (#R232) …AND THE LIST NO LONGER RUNS THE OTHER WAY. src/main.js used to import every locale by
+     name, which is what this line checked; it now imports NONE of them but English, because
+     src/locale-boot.js globs the directory and loads the reader's own language on demand (492 kB off
+     the boot bundle). The property that replaced it is the one that matters: adding a locale FILE is
+     all it takes, so the directory is checked against the registry, not against an import list. */
+  const boot = read('src/locale-boot.js');
+  assert.match(boot, /import\.meta\.glob\('\.\.\/js\/locales\/ui\.\*\.js'\)/, 'the locale directory IS the language list');
+  assert.doesNotMatch(read('src/main.js'), /locales\/ui\.(?!en\.js)[a-z-]+\.js/,
+    'src/main.js imports only the English fallback — every other locale is fetched on demand');
+  /* ⚠ (#R232) …AND THE DIRECTORY IS CHECKED AGAINST THE GENERATED LIST, NOT AGAINST THE ROWS. The
+     registry names only the five positional languages and the two that carry facts a filename cannot;
+     every other language is DISCOVERED from this directory. So what has to hold is that the directory
+     and js/locales/_langs.js agree exactly — that IS the 「1発で終わる」 promise, checked. */
+  const listed = (read('js/locales/_langs.js').split('IntMapLangBeta')[0].match(/"[a-z0-9-]+"/g) || [])
+    .map((x) => x.replace(/"/g, '')).sort();
+  const onDisk = readdirSync(join(JS, 'locales'))
+    .map((f) => /^ui\.([a-z0-9-]+)\.js$/.exec(f)).filter(Boolean).map((m) => m[1]).sort();
+  assert.deepEqual(listed, onDisk, 'js/locales/_langs.js is stale — run `node scripts/i18n-langs.mjs`');
 });
 
 test('① a language table falls back to English PER KEY, not per table', () => {
