@@ -292,12 +292,14 @@ window.IntMapModules.layerSidebar=function(HOST){
         rh.addEventListener('pointerup',end); rh.addEventListener('pointercancel',end);
       })();
       sb.querySelector('.lsr-x').onclick=close;
-      sb.querySelector('#lsr-q').addEventListener('input',filterTiles);
+      _hosts.push(sb);   /* (#R232) the sidebar is simply the FIRST host */
+      sb.querySelector('#lsr-q').addEventListener('input',()=>filterTiles(sb));   /* ⚠ (#R232) not `filterTiles` bare — it takes a host now, and an Event is not one */
       sb.addEventListener('click',e=>e.stopPropagation());
       /* keep every tile's ✓ in sync with its real checkbox, whoever toggles it (classic panel, Atlas, legends) */
-      document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox'||!sb) return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
+      document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox') return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
         const id=t2.id||t2.getAttribute('data-layer'); if(!id) return;
-        const tile=sb.querySelector('.lst-tile[data-lid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'); if(tile) tile.classList.toggle('on',t2.checked); }catch(_){} });
+        const sel='.lst-tile[data-lid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]';
+        _liveHosts().forEach(h=>{ const tile=h.querySelector(sel); if(tile) tile.classList.toggle('on',t2.checked); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
       /* (#R63) left-style edge toggle button (open AND close, like the left sidebar's chevron) */
       const tg=document.createElement('button'); tg.id='lsr-toggle'; tg.title='Layers'; tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
@@ -353,9 +355,21 @@ window.IntMapModules.layerSidebar=function(HOST){
     const _secClosed={};
     /* (#R101) match the beta group across ALL languages (was English-only, so JP/DE/RU/ES showed it EXPANDED) */
     const _isBeta=(t2)=>/others?\s*\(?\s*beta|ベータ|бета/i.test(String(t2||''));
-    function buildTiles(){ if(!sb) return; const bodyEl=sb.querySelector('.lsr-body'); if(!bodyEl) return;
+    /* ══ (#R232) THE TILE GRID IS NO LONGER WELDED TO THE DESKTOP SIDEBAR ═════════════════════════
+       「モバイル版のレイヤー選択欄についても、タイル形式のものに。」 Everything below already builds a
+       tile browser; it just built it into ONE element — the module-level `sb` (#layer-sidebar-r), which
+       the stylesheet at the end of css() hides outright below 768 px. The phone therefore kept the
+       classic checkbox list that #R70 replaced on the desktop three dozen rounds ago.
+       ⚠ THE FIX IS A HOST PARAMETER, NOT A SECOND IMPLEMENTATION. `_hosts` is every element currently
+       showing a grid (the sidebar, and the mobile sheet's mount); build/sync/filter take the one they
+       are working on, and the live-sync listener walks them all. There is still ONE tile builder, ONE
+       data source (#layer-dropdown, untouched) and ONE click path, so the phone cannot drift from the
+       desktop the way a copied panel would. */
+    const _hosts=[];
+    const _liveHosts=()=>_hosts.filter(h=>h&&h.isConnected);
+    function buildTiles(host){ host=host||sb; if(!host) return; const bodyEl=host.querySelector('.lsr-body'); if(!bodyEl) return;
       const rows=rowsFromDropdown(); if(!rows.length) return;
-      const root=document.createElement('div'); root.id='lst-root';
+      const root=document.createElement('div'); root.className='lst-root';
       const basics=T('Base map & labels','基本表示','Grundkarte & Labels','Основа и подписи','Base y etiquetas');
       let curSec=null,curGrid=null;
       rows.forEach(r=>{ const secName=r.sec||basics;
@@ -378,13 +392,18 @@ window.IntMapModules.layerSidebar=function(HOST){
             _secClosed[secName]=now; }); }
         curGrid.appendChild(tileFor(r)); });
       root.querySelectorAll('.lst-grid').forEach(g=>{ const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.children.length; h.appendChild(c); } });
-      const old=sb.querySelector('#lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
-      filterTiles(); }
+      /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
+         root is found by CLASS within its own host. The id is kept on the sidebar's copy because
+         tests and older selectors name it. */
+      const old=host.querySelector('.lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
+      if(host===sb) root.id='lst-root';
+      filterTiles(host); }
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
-    function syncTiles(){ try{ if(!sb) return; sb.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
-      const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); }); }catch(_){} }
-    function filterTiles(){ if(!sb) return; const q=(((sb.querySelector('#lsr-q')||{}).value)||'').toLowerCase().trim();
-      const root=sb.querySelector('#lst-root'); if(!root) return;
+    function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
+      const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
+    function filterTiles(host){ host=host||sb; if(!host) return; const qi=host.querySelector('.lsr-search input');
+      const q=((qi&&qi.value)||'').toLowerCase().trim();
+      const root=host.querySelector('.lst-root'); if(!root) return;
       root.querySelectorAll('.lst-grid').forEach(g=>{ let vis=0;
         g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
         /* while searching, a collapsed section with matches is forced open (inline display beats .closed) */
@@ -470,12 +489,40 @@ window.IntMapModules.layerSidebar=function(HOST){
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was
        the biggest "ワークスペースで言語を変えてもすぐ変わらない（再読み込みが必要）" offender (dozens of layer names). */
-    window.addEventListener('intmap-lang',()=>{ if(!sb) return;
+    window.addEventListener('intmap-lang',()=>{ if(!_liveHosts().length) return;
       /* (#R106) the "Search layers…" placeholder was set once at build and never re-localized ("言語設定を変えても
-         すぐ変わらない" in ws mode — the layers window search stayed English). Update it live on a language change. */
-      try{ const q=sb.querySelector('#lsr-q'); if(q) q.placeholder=T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…'); }catch(_){}
-      setTimeout(()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){} },40); });
-    return { open, close, toggle, apply };
+         すぐ変わらない" in ws mode — the layers window search stayed English). Update it live on a language change.
+         (#R232) …for every mounted grid, not only the sidebar's. */
+      try{ _liveHosts().forEach(h=>{ const q=h.querySelector('.lsr-search input'); if(q) q.placeholder=T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…'); }); }catch(_){}
+      setTimeout(()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ _liveHosts().forEach(h=>buildTiles(h)); }catch(_){} },40); });
+    /* ══ (#R232) MOUNT THE SAME GRID SOMEWHERE ELSE — the phone's Map & layers sheet ═══════════════
+       Idempotent: called on every layout change and every sheet open. It creates its own search pill
+       and body once, registers the host, and thereafter only rebuilds when the row set has actually
+       changed (rows arrive late — the eco / l9 / beta modules build theirs ~1.5 s in), which is the
+       same cheap-resync rule open() uses so that opening the sheet is not a full rebuild. */
+    function mountInto(container){
+      if(!container) return null;
+      build();                       /* ensures css() has run — the .lst-* rules are shared */
+      let host=container.querySelector('.lsr-mount');
+      if(!host){
+        host=document.createElement('div'); host.className='lsr-mount';
+        host.innerHTML='<div class="lsr-search"><input class="lsr-q" type="text" placeholder="'+T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…')+'"></div><div class="lsr-body"></div>';
+        container.insertBefore(host, container.firstChild);
+        host.querySelector('.lsr-q').addEventListener('input',()=>filterTiles(host));
+        _hosts.push(host);
+      }
+      try{
+        const have=host.querySelectorAll('.lst-tile').length;
+        if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(host); }
+        else { const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(host); else syncTiles(); }
+      }catch(_){ try{ buildTiles(host); }catch(__){} }
+      setTimeout(()=>{ try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(host); }catch(_){} },300);
+      setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
+      return host;
+    }
+    function unmountFrom(container){ try{ const host=container&&container.querySelector('.lsr-mount');
+      if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
+    return { open, close, toggle, apply, mountInto, unmountFrom };
   })();
 };
 

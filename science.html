@@ -29,6 +29,13 @@
 
 <!-- (#R231) the app's ONE language list, ahead of the page machine that now reads it — see the
      matching note in sources.html and the header of js/page-i18n.js. -->
+<!-- ⚠ (#R232) THE GENERATED LANGUAGE LIST, AHEAD OF THE REGISTRY. In the app the set of languages
+     IS the set of files in js/locales/ (js/locale-boot.js globs them), which is what makes adding a
+     language one file and nothing else. These two pages are static shells with no bundler and no
+     glob, so scripts/i18n-langs.mjs writes the same list here on every build and js/lang-registry.js
+     reads it. Without this line a new language reaches the app and never reaches these pages —
+     exactly the defect #R231 found and fixed once already, by hand. -->
+<script src="./js/locales/_langs.js"></script>
 <script src="./js/lang-registry.js"></script>
 <script src="./js/page-i18n.js"></script>
 <script>

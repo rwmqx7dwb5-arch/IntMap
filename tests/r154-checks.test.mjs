@@ -33,7 +33,7 @@ test('R154 #2 Atlas typography — size/spacing only, no colour, no fabricated h
   // none of the four heading rules may carry --primary-color
   assert.ok(!/margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em;line-height:1\.3\d*;">\$1<\/div>'\)\s*$/m.test(html) || true, 'sanity');
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d/.test(html), 'no heading rule uses --primary-color');
-  assert.match(html, /\.replace\(\/\^#\{3,6\}\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:600;color:var\(--text-main\)/, 'h3 heading is text-main (R159 weight 600 — no bold, no colour)');
+  assert.match(html, /\.replace\(\/\^#\{3,6\}\\s\*\(\.\+\)\$\/gm,'<div class="atl-h" style="font-weight:600;color:var\(--text-main\)/, 'h3 heading is text-main (R159 weight 600 — no bold, no colour)');
   assert.ok(!/out\.push\('## '\+label\)/.test(html), 'no "Label:"→## fabrication');
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'no opening-sentence→bold-lead fabrication');
   assert.match(html, /NO MORE HEADING FABRICATION/, '_atlStanza documents the removal of guesswork');

@@ -49,15 +49,17 @@ test('R152 #3 Atlas typography — size + spacing hierarchy, NO fabricated headi
   // (#R158) hierarchy strengthened (bigger jumps + stronger neutral divider) — still no colour, no fabricated headings
   assert.match(html, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 (1.9em, R158)');
   assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 (1.56em, R158)');
-  assert.match(html, /<div style="height:1\.5em"><\/div>/, 'generous paragraph gap (1.5em, R158)');
+  assert.match(html, /<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>/, 'generous paragraph gap (1.5em, R158)');
 });
 
 test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {
   assert.match(html, /const _SNS_RE=\/[^\n]*blogspot\\\.\[a-z\.\]\+/, 'blog platforms added to the bad-host blocklist');
   assert.match(html, /note\\\.com\|fc2\\\.com/, 'note.com / fc2 added');
   assert.ok(!/medium\\\.com/.test(html.slice(html.indexOf('const _SNS_RE='), html.indexOf('const _SNS_RE=') + 900)), 'medium NOT banned (can be legit journalism)');
-  assert.match(html, /function _atlRelevantCards\(cards, refText\)\{/, 'relevance gate exists');
-  assert.match(html, /linkCards\(rest,txt\)/, 'analyze rest bucket relevance-filtered (R153: relevance runs inside linkCards after host-clean)');
+  /* (#R232) the gate gained a `topic` argument — pin that it EXISTS and that the analyze bucket runs
+     through it, not how many parameters it happens to take this round. */
+  assert.match(html, /function _atlRelevantCards\(cards, refText(?:, topic)?\)\{/, 'relevance gate exists');
+  assert.match(html, /linkCards\(rest,txt(?:,\s*[A-Za-z_$][\w$]*)?\)/, 'analyze rest bucket relevance-filtered (R153: relevance runs inside linkCards after host-clean)');
   assert.match(html, /L\('Related articles','関連記事'/, 'no-basis links honestly labelled "Related articles" (not "Sources")');
 });
 

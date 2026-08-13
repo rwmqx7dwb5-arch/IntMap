@@ -43,7 +43,11 @@ test('R231 build: index.html names the same round in both stamps', () => {
   const b = h.match(/window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-(R\d+)'/);
   assert.ok(a && b, 'both stamps present');
   assert.equal(a[1], b[1], 'the two stamps name the same round');
-  assert.equal(a[1], 'R231', 'and it is this round');
+  /* ⚠ (#R232) THE ROUND NUMBER IS NOT THE PROPERTY — this line pinned R231 and would fail on every
+     round after it, which is the shape #R203 warned about (「前回のpinを値で書くと同じ方向の指示で自分が
+     落ちる」). What #R231 was protecting is that the two stamps AGREE and that they MOVE: they sat at
+     R171 through three rounds. Both are checked above and below, without naming a round. */
+  assert.ok(+a[1].slice(1) >= 231, 'the stamp must not go backwards: ' + a[1]);
 });
 
 /* ── ① the launch mark's field IS the launch screen ─────────────────────────────────────────── */

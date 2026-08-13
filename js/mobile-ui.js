@@ -45,7 +45,11 @@ window.IntMapModules.mobileUI=function(HOST){
     let openSheetEl=null;
     function openSheet(el){ if(!el) return; if(openSheetEl && openSheetEl!==el) openSheetEl.classList.remove('show'); openSheetEl=el; syncControls(); if(scrim) scrim.classList.add('show'); el.classList.add('show');
       /* (#R18) The Layers list inside the Map sheet must never carry desktop collapse state. */
-      if(el===moSheet){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
+      if(el===moSheet){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
+        /* (#R232) …and the tile grid re-reads the row set on every open, because rows are still being
+           built for ~1.5 s after boot (eco / l9 / beta) and because Atlas or a legend may have toggled
+           something while the sheet was shut. mountInto() is idempotent and only rebuilds on a change. */
+        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); }catch(_){} } }
     function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } if(scrim) scrim.classList.remove('show'); }
     if(scrim) scrim.addEventListener('click',closeSheet);
     const moDone=document.getElementById('mo-done'); if(moDone) moDone.addEventListener('click',closeSheet);
@@ -120,8 +124,19 @@ window.IntMapModules.mobileUI=function(HOST){
         try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
         /* (#R28) every group (incl. Others(beta)) shows fully expanded on mobile — no pulldown. */
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
+        /* ══ (#R232) 「モバイル版のレイヤー選択欄についても、タイル形式のものに。」 ═══════════════════
+           The classic dropdown stays mounted here and stays the source of truth — every tile toggles a
+           REAL checkbox in it — but on a phone it is now the hidden data source rather than the UI
+           (`body.m-lyr-tiles` hides its rows; see css/intmap.css). Nothing is lost by hiding them: the
+           per-row sliders and date pickers have been `display:none !important` app-wide since #R16
+           (every such control lives in that layer's legend), so a row was only ever a checkbox and a
+           name — which is exactly what a tile is, plus the picture. */
+        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); document.body.classList.add('m-lyr-tiles'); }catch(_){}
       }
-      else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full'); }
+      else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full');
+        /* (#R232) back to the desktop: drop the phone's grid so it cannot go stale behind the real one */
+        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.unmountFrom&&window.IntMapLayerSidebar.unmountFrom(moMountLayers); }catch(_){}
+        document.body.classList.remove('m-lyr-tiles'); }
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) re-home the Active-layers bar for the new layout */
     }
 

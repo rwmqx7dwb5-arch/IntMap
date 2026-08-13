@@ -94,7 +94,9 @@ test('R158 #10 → R160 sidebar open/close — per-frame/anchor machinery delete
 test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', () => {
   ok("L('Attach a file (image or text)','ファイルを添付（画像・テキスト）'", 'button relabelled Attach a file (5 languages)');
   ok('let _atlFiles=[];', 'pending non-image file attachments');
-  ok('function _atlFileKind(f){', 'image / text / unsupported classifier');
+  /* (#R232) moved to js/atlas-attach.js with the rest of the attachment subject (js/atlas-console.js
+     has a line ceiling). The property is that ONE classifier decides image / text / unsupported. */
+  ok('export function atlFileKind(f){', 'image / text / unsupported classifier');
   ok("const _fileBlock=files.length?('\\n\\n[ATTACHED FILE'", 'attached file text is given to the model at the API boundary');
   gone("fi.type='file'; fi.accept='image/*'; fi.multiple=true;", 'the image-only picker restriction is removed');
   ok('function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'files are sent with the message');
@@ -105,7 +107,7 @@ test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + 
   ok("font-size:14px;line-height:1.68", 'desktop reply body lifted from 12.5px to 14px');
   ok("style*=\"font-size:14px\"]{font-size:15.5px !important;}", 'mobile still lifts the (now 14px) body');
   // still monochrome — every mdMini heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight
-  ok('.replace(/^##\\s*(.+)$/gm,\'<div style="font-weight:600;color:var(--text-main)', 'H2 heading is semibold (R159 no bold), still --text-main');
+  ok('.replace(/^##\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', 'H2 heading is semibold (R159 no bold), still --text-main');
 });
 
 test('R158 #2 Atlas sources — informational answers gather sources (use:[web] forces the search)', () => {

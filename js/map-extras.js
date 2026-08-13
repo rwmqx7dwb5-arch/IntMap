@@ -104,6 +104,14 @@ window.IntMapModules.locate=function(HOST){
       try{ const pc=E.coords.project(E.camera.getCenter()), pf=E.coords.project([last.lng,last.lat]); return Math.hypot(pc.x-pf.x,pc.y-pf.y)<=_CENTER_PX; }catch(_){ return false; } }
     function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
     window._imLocSyncFab=_syncFab;
+    /* ⚠ (#R232) …AND IT HAS TO RUN WHEN THE *CAMERA* MOVES, NOT ONLY WHEN THE *FIX* DOES.
+       「現在地に合わせてないときは中塗りなしの線アイコンで」 — the predicate above is about the distance
+       between the map centre and the fix, and the map centre changes far more often than the fix does.
+       Every call site was a geolocation callback (start/stop/onPos/onErr), so panning away from your own
+       position left the button solid-and-accent until the next GPS sample arrived — i.e. the "I am
+       following you" state was shown while the app was not following anything. `moveend` is the same
+       event the compass FAB already updates on, so the two badges now answer at the same moment. */
+    try{ const E0=M(); if(E0) E0.events.on('moveend',_syncFab); }catch(_){}
     function start(opts){ opts=opts||{}; const E=M(); if(!E) return;
       if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(window.IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
       active=true; _syncFab();

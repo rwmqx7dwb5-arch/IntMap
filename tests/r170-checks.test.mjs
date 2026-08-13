@@ -237,7 +237,7 @@ test('Atlas can drive the 3-D volume, and the action is in the SYS catalogue', (
 test('the 3-D volume tool is localized in every registered language', () => {
   /* ⚠ (#R223) EVERY REGISTERED LANGUAGE, not the number five — a sixth (zh) landed and these
      assertions were about coverage, never about the count. `LANGS` is the one list (js/lang-registry.js). */
-  const NL = (R('js/lang-registry.js').match(/\{\s*code:\s*'[a-z-]+'/g) || []).length;   /* (#R224) `[a-z-]` — the seventh language is 'zh-hans' and a hyphen-free class counted six */
+  const NL = (R('js/locales/_langs.js').split('IntMapLangBeta')[0].match(/"[a-z-]+"/g) || []).length;   /* (#R232) the GENERATED language list — the registry's rows stopped being the list when a language became one file */
   const i18n = R('js/i18n.js');
   for (const key of ['vol3dBtn', 'vol3dTool']) {
     const n = (i18n.match(new RegExp(key + ':', 'g')) || []).length;

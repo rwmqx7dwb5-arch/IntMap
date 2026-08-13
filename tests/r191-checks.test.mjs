@@ -109,7 +109,11 @@ test('R191 seismic: the ground-motion chain names its models and uses their numb
   /* (#R192) the JMA side is no longer a PGV regression at all — see tests/r192-checks. The inverse
      that bounds the painted edge is now the one for the level 計測震度 is defined on. */
   assert.match(s, /function a0AtJMA\(I\)/, 'the JMA inverse, in the quantity the scale is computed from');
-  assert.match(s, /const arr=jmaScale\?prof\.a0s:prof\.out, floor=jmaScale\?A0_FLOOR_JMA:PGV_FLOOR_MMI;/,
+  /* (#R232) …of whichever profile reaches furthest, which with rupture directivity is the forward
+     lobe rather than the azimuth average — taking the edge from the average would clip the one
+     direction the directivity term exists to draw. The scale-picks-its-own-quantity rule is what is
+     being pinned, and it stands. */
+  assert.match(s, /const arr=jmaScale\?prof(?:Edge)?\.a0s:prof(?:Edge)?\.out, floor=jmaScale\?A0_FLOOR_JMA:PGV_FLOOR_MMI;/,
     'and the paint edge walks whichever profile the active scale reads');
   /* ⚠ (#R223) THE NEAR-FIELD SATURATION MOVED FROM A PSEUDO-DEPTH TO THE GEOMETRY, and the
      assertion moved with it. #R191's point was that a POINT source must not report ground motion
@@ -139,7 +143,9 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
   assert.match(s, /const MMI_TERRAIN_KM=1500;/, 'how far the terrain-driven fine field goes');
   assert.match(s, /const MMI_MAX_KM=8000;/, 'and where the lowest class finally ends');
   assert.match(s, /const rFine=Math\.min\(rEdge,MMI_TERRAIN_KM\);/, 'the fine box is bounded by the terrain');
-  assert.match(s, /async function buildFar\(prof,box,rFine,rEdge,seq\)/, 'the annulus has its own pass');
+  /* (#R232) it takes the azimuth-indexed profile PICKER now, not a single profile — see the
+     directivity note in js/seismic.js. Its own pass is what is being pinned. */
+  assert.match(s, /async function buildFar\(prof(?:At)?,box,rFine,rEdge,seq\)/, 'the annulus has its own pass');
   assert.match(s, /coords:\[\[-180,85\],\[180,85\],\[180,-85\],\[-180,-85\]\]/,
     'drawn as a WHOLE-WORLD raster, so no box can wrap the antimeridian or degenerate at a pole');
   /* (#R192) …and the land test is no longer a DEM read at all — a mask that half-arrives is what

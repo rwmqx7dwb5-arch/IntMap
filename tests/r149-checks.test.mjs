@@ -52,7 +52,7 @@ test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 ~1.56em (R158)');
   assert.match(html, /font-size:1\.3em;line-height:1\.3;letter-spacing:\.004em/, 'h3 ~1.3em (R158)');
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em/.test(html), 'R154: heading rules no longer use --primary-color (size/spacing only)');
-  assert.match(html, /'<div style="height:1\.5em"><\/div>'/, 'paragraph gap ~1.5em (R158)');
+  assert.match(html, /'<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>'/, 'paragraph gap ~1.5em (R158)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });

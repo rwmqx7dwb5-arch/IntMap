@@ -52,8 +52,8 @@ const VERBOSE = process.argv.includes('--verbose');
 /* the ONE list, read from the registry source (it is a browser file, not a module) */
 function langCodes() {
   const src = readFileSync(join(JS, 'lang-registry.js'), 'utf8');
-  const m = src.match(/var LANGS = \[([\s\S]*?)\n  \];/);
-  if (!m) throw new Error('LANGS not found in js/lang-registry.js');
+  const m = src.match(/var LANG_ROWS = \[([\s\S]*?)\n  \];/);   /* (#R232) renamed — see the note by it */
+  if (!m) throw new Error('LANG_ROWS not found in js/lang-registry.js');
   const out = [];
   const re = /\{\s*code:\s*'([^']+)'/g;
   let g; while ((g = re.exec(m[1]))) out.push(g[1]);

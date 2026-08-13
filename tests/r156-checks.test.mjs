@@ -47,7 +47,9 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
   assert.match(html, /class="atl-tablewrap"><table class="atl-md-table">/, 'tables render into a scrollable wrapper');
   assert.match(html, /'`\(\[\^`\\n\]\+\)`'|`\(\[\^`\\n\]\+\)`/, 'sanity: inline-code source present');
   // the EXISTING R154/R155 heading/bullet/paragraph HTML is preserved verbatim
-  assert.match(html, /\.replace\(\/\^##\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:600;color:var\(--text-main\);margin:2\.05em 0 \.62em;font-size:1\.56em/, 'R159 "## " heading style (semibold, no divider, still --text-main)');
+  /* (#R232) the MARGIN is not the property — it came down because the paragraph spacer beside a
+     heading was being counted twice. Weight, colour and size are what this line protects. */
+  assert.match(html, /\.replace\(\/\^##\\s\*\(\.\+\)\$\/gm,'<div class="atl-h" style="font-weight:600;color:var\(--text-main\);margin:[\d.]+em 0 \.?\d+em;font-size:1\.56em/, 'R159 "## " heading style (semibold, no divider, still --text-main)');
   assert.match(html, /\.replace\(\/\\\*\\\*\(\[\^\*\]\+\)\\\*\\\*\/g,'\$1'\)/, 'R159 inline **bold** stripped to plain (no bold in Atlas replies)');
   // interactive wiring at document level (works in panel + sidebar tab + workspace)
   assert.match(html, /if\(!window\.__atlRenderWired\)\{ window\.__atlRenderWired=true;/, 'one-time document-level wiring for the Copy button');

@@ -186,7 +186,9 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
   assert.match(quake, /const DR=1;/, 'through 1 km homogeneous shells (no singular turning-point integral)');
   /* the ground-motion chain, each step attributable */
   assert.match(quake, /Math\.pow\(10,1\.5\*mw\+9\.1\)/, 'Hanks & Kanamori for the moment');
-  assert.match(quake, /const fc=0\.49\*BETA\*Math\.pow\(dSigma\/M0,1\/3\);/, 'Brune for the corner frequency');
+  /* (#R232) the Brune corner is now `fc0`, the OMNIDIRECTIONAL corner, because rupture directivity
+     shifts the apparent one: fc(θ) = fc0/Fd. The relation being pinned is the formula. */
+  assert.match(quake, /const fc0?=0\.49\*BETA\*Math\.pow\(dSigma\/M0,1\/3\);/, 'Brune for the corner frequency');
   assert.match(quake, /function rvt\(spec,Td\)\{/, 'random-vibration theory for the peak values');
   assert.match(quake, /function spread\(rKm\)\{/, 'trilinear geometrical spreading');
   assert.match(quake, /function siteAmp\(\)\{/, 'and quarter-wavelength site amplification');
@@ -272,8 +274,13 @@ test('R176: the build stamp was bumped', () => {
 test('R176: the new files are modules, with no top-level declarations', () => {
   for (const f of ['js/viewshed.js', 'js/terrain-water.js', 'js/seismic.js', 'js/insolation.js']) {
     const src = R(f);
-    const ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script' });
-    const decls = ast.body.filter((n) => /Declaration$/.test(n.type) && n.type !== 'ExpressionStatement');
+    /* (#R232) parsed as a MODULE, because js/seismic.js now imports js/seismic-events.js — the
+       published source parameters of the past earthquakes it can load. An ImportDeclaration is the
+       one top-level form that cannot leak a global (it is module-private by definition, which is the
+       whole mechanism #R175 rests on), so it is excluded rather than counted. */
+    const ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module' });
+    const decls = ast.body.filter((n) => /Declaration$/.test(n.type) && n.type !== 'ExpressionStatement'
+      && n.type !== 'ImportDeclaration');
     assert.equal(decls.length, 0,
       `${f} must declare nothing at top level (module scope is private; ${decls.map((d) => d.type).join(',')})`);
     /* …and it must be reachable from the single entry point, or it simply does not run */

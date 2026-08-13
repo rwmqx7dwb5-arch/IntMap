@@ -20,6 +20,7 @@
    order: the bundler resolves each binding by name, so a missing or renamed export is a BUILD error
    instead of a silent undefined at runtime. See DEV-NOTES #R199. */
 import { makeAtlasReply } from './atlas-reply.js';
+import { attachLightbox, atlFileKind, atlFmtBytes, atlReadText, LIGHTBOX_CSS } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
 import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
@@ -1002,7 +1003,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const R=(ok,html,extra)=>Object.assign({ok:!!ok,html:html||''},extra||null);   /* (#R119) extra e.g. {objectIds:[…]} — creating actions expose what they made */
     /* (#R199) ↳ js/atlas-reply.js — reply rendering — safe markdown, code/math, GFM tables, source cards.
        Moved whole; the 7 names below are what the rest of this file still calls. */
-    const { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, linkCards, listHtml, mdMini } = makeAtlasReply(HOST, { L, esc, fitTo, fmtVal, highlight, note, warn });
+    const { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, dropLeadTitle, linkCards, listHtml, mdMini } = makeAtlasReply(HOST, { L, esc, fitTo, fmtVal, highlight, note, warn });
     /* ---- (#R43) PRECISE layer resolution. The user reported "レイヤーによっては混同している" — the old matcher
        fuzzy-matched loosely AND the model never saw the real layer names, so it guessed a name and the matcher
        guessed a layer (double-guess). Now: (a) the LIVE layer list is injected into the prompt (layerCatalogText)
@@ -1058,7 +1059,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       'thermal':'dl-thermal','fires':'dl-thermal','wildfires':'dl-thermal','fire':'dl-thermal','火災':'dl-thermal','山火事':'dl-thermal',
       'aurora':'l9-dl-aurora','northern lights':'l9-dl-aurora','オーロラ':'l9-dl-aurora',
       'night lights':'dl-nightsat','nightlights':'dl-nightsat','city lights':'dl-nightsat','夜間光':'dl-nightsat','夜景':'dl-nightsat',
-      'day night':'dl-night','day/night':'dl-night','昼夜':'dl-night','terminator':'dl-night',
+      'day night':'dl-nightside','day/night':'dl-nightside','昼夜':'dl-nightside','terminator':'dl-nightside','night side':'dl-nightside','夜側':'dl-nightside',
       'volcano':'beta-dl-volc2','volcanoes':'beta-dl-volc2','火山':'beta-dl-volc2',
       'nato':'dl-nato','eu':'dl-eu','european union':'dl-eu','military spending':'dl-milSpend','defense spending':'dl-milSpend','国防費':'dl-milSpend','軍事費':'dl-milSpend',
       'former soviet union':'fsu','ussr':'fsu','soviet':'fsu','旧ソ連':'fsu',
@@ -1966,19 +1967,21 @@ window.IntMapModules.atlasConsole=function(HOST){
              attached the tool (webMode) yet ordered the model "do NOT call any tool" — a Gemini-era contradiction
              that left 0 web searches run. Prompt is now tool-CONDITIONAL (use search if attached; else the supplied
              headlines) and the call is webMode:'required' so the proxy forces the search. */
-          const sysB='You are a geopolitical and area-studies research assistant. The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Respond in '+langB+'.';
+          const sysB='You are a geopolitical and area-studies research assistant. The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB=''; try{ txtB=await askAI(pB,sysB,null,{task:'brief',webMode:'required'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
-          /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
-             "AI briefってワードをわざわざAtlasで出すな"). */
-          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink,txtB); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152/#R153) relevance now runs INSIDE linkCards (after host-clean) so the section is never blanked by an only-SNS coincidence */
+          /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
+          /* (#R232) …and the TOPIC with it — resolved name AND typed string (often different scripts). */
+          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink,txtB,nm3+' / '+String(a.place||'')); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152/#R153) relevance now runs INSIDE linkCards (after host-clean) so the section is never blanked by an only-SNS coincidence */
           /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
              now carries that disclaimer (毎メッセージに書くな). */
           /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
              (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
           let asofB=''; try{ const _m=window._aiLastMeta||{}; asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:14px;line-height:1.68;">'+mdMini(txtB)+'</div>'+asofB+srcCardsB); }
+          /* (#R232) …and the model's own version of it — dropLeadTitle is in js/atlas-reply.js. */
+          const bodyB=dropLeadTitle(txtB,nm3);
+          return R(true,'<div style="font-size:14px;line-height:1.68;">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
@@ -2570,7 +2573,8 @@ window.IntMapModules.atlasConsole=function(HOST){
             ok=true; } }catch(_){}
           let extra=''; try{ const c=GE().camera.getCenter(); const at=window.IntMapSeismic.at(c.lng,c.lat);
             if(at&&at.tP!=null) extra=' · '+L('P here in','ここへP波','P hier in','P здесь через','P aquí en')+' '+Math.round(at.tP)+' s, S '+Math.round(at.tS)+' s'; }catch(_){}
-          return R(ok, ok?note('🌐 '+L('Seismic waves','地震波','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+' — '
+          /* (#R232) 🌐 removed with the panel header's — same feature, same instruction. */
+          return R(ok, ok?note(L('Seismic waves','地震波','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+' — '
             +L('P, S and surface wavefronts ray-traced through the IASP91 Earth model, with arrival time, shaking duration and Modified-Mercalli intensity for the places around it.','P波・S波・表面波の波面をIASP91地球モデルでレイトレーシングし、周辺地点への到達時刻・揺れの継続時間・改正メルカリ震度を表示します。','P-, S- und Oberflächenwellen durch IASP91.','волны P, S и поверхностные по модели IASP91.','frentes P, S y superficiales por IASP91.')+extra):warn('⚠')); }
         /* (#R176) terrain shade + the annual sunlight budget (the Sun panel owns the controls) */
         case 'sunHours': case 'shadeHours': case 'terrainShadow': case 'solarHours': case 'insolationYear': {
@@ -3511,7 +3515,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
             /* (#R159) "その他の収集記事" 欄は完全に不要 — 実出典（Web検証済み/引用）が既にあるときの重複した収集記事の山は出さない。
                ただし出典が一つも無いときの never-zero フォールバック（関連記事）は保持する。 */
-            if(rest.length && !haveBasis){ const rc=linkCards(rest,txt); if(rc) html+='<div class="atl-src-h">'+L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')+'</div>'+rc; }
+            if(rest.length && !haveBasis){ const rc=linkCards(rest,txt,placeStr); if(rc) html+='<div class="atl-src-h">'+L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')+'</div>'+rc; }   /* (#R232) topic-first relevance */
           }catch(_){}
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
@@ -3556,6 +3560,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         /* (#R196) the day/night side of the planet, and the city lights on it */
         case 'nightSide': { const want=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let ok=false, st=null;
           try{ if(window.IntMapNightSide){ window.IntMapNightSide.setEnabled(want); st=window.IntMapNightSide.state(); ok=true; } }catch(_){}
+          try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){}   /* (#R232) the Layers row + the Settings picker follow */
           const detail=(want&&st)?(' — '+(st.built?L('drawn','描画中','gezeichnet','нарисовано','dibujado'):L('appears as you zoom out','ズームアウトすると現れます','erscheint beim Herauszoomen','появится при отдалении','aparece al alejar'))
             +(st.lights?(' · '+L('city lights loaded','夜間光を読み込み済み','Nachtlichter geladen','ночные огни загружены','luces nocturnas cargadas')):'')):'';
           return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('⚠')); }
@@ -3969,13 +3974,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R158) which files Atlas accepts. Images → the vision channel (OpenAI input_image). Text-extractable files
        (text/*, code, data) → their content is read client-side and given to the model. Binary types we can't decode
        (pdf/docx/zip) are declined honestly (the vision channel is image-only; no document parser is loaded). */
-    const _ATL_TEXT_EXT=/\.(txt|text|md|markdown|rst|csv|tsv|json|jsonl|geojson|ndjson|js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|swift|dart|c|cc|cpp|cxx|h|hpp|cs|php|scala|lua|pl|sh|bash|zsh|fish|ps1|yaml|yml|xml|svg|html|htm|css|scss|sass|less|sql|graphql|log|ini|toml|conf|cfg|env|properties|gradle|tex|bib|r|jl|vue|svelte|astro|srt|vtt|diff|patch|gitignore|dockerfile|makefile)$/i;
-    const _ATL_FILE_MAX=60000;   /* per-file text cap (chars) so one attachment can't blow the token budget; larger files are truncated with a note */
-    function _atlFileKind(f){ try{ const ty=String(f&&f.type||'').toLowerCase(); const nm=String(f&&f.name||'');
-      if(/^image\//.test(ty)) return 'image';
-      if(/^text\//.test(ty)||ty==='application/json'||ty==='application/xml'||ty==='application/javascript'||ty==='application/x-yaml'||_ATL_TEXT_EXT.test(nm)) return 'text';
-      return 'unsupported'; }catch(_){ return 'unsupported'; } }
-    function _atlReadText(f){ return new Promise(res=>{ try{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result||'')); fr.onerror=()=>res(''); fr.readAsText(f); }catch(_){ res(''); } }); }
+    const _ATL_FILE_MAX=60000;   /* per-file text cap; larger files are truncated with a note. (#R232) atlFileKind / atlReadText / atlFmtBytes moved to js/atlas-attach.js. */
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
          tall LEFT column ("初回起動時に、画面左側にサイドバーのように縦長の形で展開"). Dragging/resizing still
@@ -4003,8 +4002,9 @@ window.IntMapModules.atlasConsole=function(HOST){
         /* (#R231) the attached-picture row: the user's own column, without the bubble around it */
         +'#atlas-panel .atl-b.u.atl-imgrow{background:none;box-shadow:none;padding:0;border-radius:0;max-width:92%;white-space:normal;}'
         +'#atlas-panel .atl-imgrow-in{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}'
-        +'#atlas-panel .atl-imgrow-in img{display:block;max-width:100%;max-height:230px;width:auto;height:auto;border-radius:12px;}'
+        +'#atlas-panel .atl-imgrow-in img{display:block;max-width:100%;max-height:230px;width:auto;height:auto;border-radius:12px;cursor:zoom-in;}'
         +'#atlas-panel .atl-imgrow-in img:only-child{max-height:280px;}'
+        +LIGHTBOX_CSS
         /* (#R156) UNIFIED RENDERER — code blocks, inline code, display/inline math, tables, blockquotes. NOT scoped to
            #atlas-panel so the same classes render identically in the sidebar-tab and workspace-window Atlas surfaces.
            Every wide element (code, math, table) is INDEPENDENTLY horizontally scrollable so the reply column never
@@ -4212,6 +4212,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
+      try{ attachLightbox(chatEl,()=>L('Close','閉じる','Schließen','Закрыть','Cerrar')); }catch(_){}   /* (#R232) */
       /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば
          返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every reply-setting path. It only
          scrolls when the user is already near the bottom — so a SHORT reply drops fully into view, while a LONG
@@ -4386,22 +4387,21 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(!_atlImgs.length&&!_atlFiles.length){ row.style.display='none'; row.innerHTML=''; return; }
       const rm=L('Remove','削除','Entfernen','Удалить','Quitar');
       const imgH=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(u)+'" alt=""><button class="atl-thumb-x" data-kind="img" data-i="'+i+'" title="'+rm+'">✕</button></div>').join('');
-      const fileH=_atlFiles.map((f,i)=>'<div class="atl-fchip" title="'+esc(f.name)+((f.size)?(' · '+_fmtBytes(f.size)):'')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span><button class="atl-thumb-x atl-fchip-x" data-kind="file" data-i="'+i+'" title="'+rm+'">✕</button></div>').join('');
+      const fileH=_atlFiles.map((f,i)=>'<div class="atl-fchip" title="'+esc(f.name)+((f.size)?(' · '+atlFmtBytes(f.size)):'')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span><button class="atl-thumb-x atl-fchip-x" data-kind="file" data-i="'+i+'" title="'+rm+'">✕</button></div>').join('');
       row.style.display='flex'; row.innerHTML=imgH+fileH;
       row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const k=b.getAttribute('data-kind'), i=+b.getAttribute('data-i');
         if(k==='file'){ if(i>=0&&i<_atlFiles.length) _atlFiles.splice(i,1); } else { if(i>=0&&i<_atlImgs.length) _atlImgs.splice(i,1); }
         _atlRenderImgs(); _atlSyncGo(); }; });
     }catch(_){} }
-    function _fmtBytes(n){ n=+n||0; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(n<10240?1:0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
     function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length||_atlFiles.length)); }catch(_){} }
     async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(Boolean); if(!files.length) return; let unsupported=0;
-      for(const f of files){ const kind=_atlFileKind(f);
+      for(const f of files){ const kind=atlFileKind(f);
         if(kind==='image'){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} continue; }
           /* (#R156) HI-FIDELITY encode for OCR/math: the old 1100px / q0.72 JPEG dissolved small text, fraction bars and
              subscripts. 2000px / q0.9 preserves fine detail; combined with detail:"high" server-side it reads dense docs. */
           try{ const u=await compressImage(f,2000,0.9); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){}
         } else if(kind==='text'){ if(_atlFiles.length>=4){ try{ aiToast(L('Up to 4 files per message','1メッセージにつきファイルは4件まで','Bis zu 4 Dateien pro Nachricht','До 4 файлов на сообщение','Hasta 4 archivos por mensaje')); }catch(_){} continue; }
-          let txt=await _atlReadText(f); const truncated=txt.length>_ATL_FILE_MAX; if(truncated) txt=txt.slice(0,_ATL_FILE_MAX);
+          let txt=await atlReadText(f); const truncated=txt.length>_ATL_FILE_MAX; if(truncated) txt=txt.slice(0,_ATL_FILE_MAX);
           _atlFiles.push({name:String((f&&f.name)||'file'),text:txt,size:(f&&f.size)||txt.length,truncated});
         } else { unsupported++; } }
       if(unsupported){ try{ aiToast(L('Only images and text-based files can be attached','添付できるのは画像とテキスト系ファイルのみです','Nur Bilder und textbasierte Dateien können angehängt werden','Прикреплять можно только изображения и текстовые файлы','Solo se pueden adjuntar imágenes y archivos de texto')); }catch(_){} }

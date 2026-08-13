@@ -454,7 +454,12 @@ window.IntMapGazetteer=(function(){
       if(!en||!isFinite(lng)||!isFinite(lat)) continue;
       const terms=[en]; if(ja) terms.push(ja);
       for(const a of alt){ if(a&&terms.indexOf(a)<0) terms.push(a); }
-      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en]);
+      /* ⚠ (#R232) THE POPULATION IS KEPT NOW, AS A SEVENTH FIELD. It was read on the line above and
+         thrown away after deciding city-vs-town, so every consumer downstream could only ask "is this
+         at least 250,000 people" — and the seismic simulator's observation points needed 「周囲の主要
+         都市」, which is a RANKING and not a threshold. Appending rather than inserting is deliberate:
+         every existing reader destructures `[type, terms, lng, lat, en, ja]` and is unaffected. */
+      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en, pop]);
     }
     return out;
   }

@@ -761,7 +761,7 @@ window.IntMapModules.transitReach=function(HOST){
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
     async function open(from,minutes){ ensure();
-      try{ if(window.satToast) satToast(window.IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…')); }catch(_){}
+      try{ if(window.satToast) satToast(window.IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…','Bahn-Erreichbarkeit wird berechnet…','Расчёт зоны доступности по железной дороге…','Calculando el alcance ferroviario…')); }catch(_){}
       const r=await run(from,minutes);
       /* (#R209) the reachable-area hull needs turf's convex+buffer, which are not in the boot bundle
          (see src/vendor.js). Wait for them HERE rather than letting draw() find them missing. */

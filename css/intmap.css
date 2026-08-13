@@ -194,6 +194,19 @@
     .csearch-pickbtn.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
     .content-area{ overflow-y:auto; flex:1; min-height:0; margin-right:-10px; padding-right:10px; padding-top:4px; padding-bottom:4px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
     .content-area::-webkit-scrollbar{ width:4px; } .content-area::-webkit-scrollbar-thumb{ background:rgba(128,128,128,0.2); border-radius:10px; }
+    /* ══ (#R232) 「Companies, Countriesで、上下スクロール時に左右方向にも微妙に動いてしまう」 ═══════════
+       `.content-area` above declares `overflow-y:auto` and nothing for the other axis. That is NOT
+       "no horizontal scrolling": CSS computes a `visible` overflow-x to `auto` the moment the other
+       axis is scrollable, so the pane has ALWAYS had a horizontal scroller — it just usually had a
+       range of zero. These two panes are the ones that give it a range: `margin-right:-10px` makes the
+       box 10 px wider than its parent, and one card, sort toolbar or long unbroken company name that
+       reaches the full width then leaves a few pixels of slack. A two-finger scroll (or a tilt wheel)
+       spends that slack sideways, which is exactly the "微妙に動く" being reported.
+       ⚠ SCOPED TO THE TWO PANES NAMED, not to `.content-area` — the news and community feeds were not
+       reported and are not touched. Anything inside that genuinely needs to scroll sideways carries its
+       own `overflow-x:auto` (the compare tables, the sort toolbar), and those keep working: clipping a
+       parent does not disable a child's own scroller. */
+    #countries-feed, #info-dashboard{ overflow-x:hidden; overscroll-behavior-x:contain; }
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
     .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
     #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
@@ -1581,6 +1594,12 @@
          glass FAB (invisible in light mode → "レイヤーアイコンが真っ白になる"). */
       .m-fab.on{ background:var(--primary-color) !important; color:#fff; border-color:transparent; }
       .m-fab svg{ display:block; }
+      /* (#R232) 「現在地に合わせてないときは中塗りなしの線アイコン、合わせているときは現状のまま」 —
+         the dart is stroked-only until the map centre is ON the fix, and solid once it is. The `.on`
+         rule above already turns the FAB accent-blue and the glyph white, so "現状のまま" is exactly
+         what the second rule restores. One shape, two states; no second icon to keep in step. */
+      .m-fab-locate svg polygon{ fill:none; transition:fill 0.2s; }
+      .m-fab-locate.on svg polygon{ fill:currentColor; }
       /* compass is always available on mobile (like desktop); it simply counter-rotates */
       .m-fab-compass{ display:flex; }
       .m-compass-svg{ transition:transform 0.1s linear; }
@@ -1631,6 +1650,59 @@
       /* (#R35) overflow-x:hidden kills the "レイヤー選択欄が左右にスクロールできてしまう" — a stray few-px of
          content width let the sheet pan sideways. The list is single-column; it must never scroll horizontally. */
       .m-sheet-scroll{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; padding-bottom:max(6px,env(safe-area-inset-bottom,0px)); }
+
+      /* ══ (#R232) 「モバイル版のレイヤー選択欄についても、タイル形式のものに。」 ═════════════════════
+         The desktop has browsed layers as a picture grid since #R70; the phone kept the checkbox list
+         that grid replaced. js/map-ui.js can now mount the SAME builder anywhere, and js/mobile-ui.js
+         mounts it at the top of the Map & layers sheet — so there is one tile implementation, one data
+         source and one click path, and the phone cannot drift from the desktop.
+
+         ⚠ THE CLASSIC ROWS ARE HIDDEN, NOT REMOVED. #layer-dropdown stays mounted right below as the
+         source of truth: a tile click toggles its REAL checkbox and dispatches the change event, which
+         is what every layer engine, legend, Active-layers chip and Atlas action listens to. Its
+         non-row furniture (the Active-layers bar, favourites, tools) stays VISIBLE — those are not
+         layer rows and the tile builder deliberately skips them.
+         ⚠ TWO COLUMNS, not the desktop's three: at 360-430 px a third column puts the caption below
+         ~90 px, where two-line layer names («Sea-surface temperature») stop being readable. */
+      body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-row,
+      body.m-lyr-tiles .m-sheet #layer-dropdown .lyr-head,
+      body.m-lyr-tiles .m-sheet #layer-dropdown .layer-group-title,
+      body.m-lyr-tiles .m-sheet #layer-dropdown .premium-group-title,
+      body.m-lyr-tiles .m-sheet #layer-dropdown > label,
+      body.m-lyr-tiles .m-sheet #layer-dropdown > hr{ display:none !important; }
+      .m-sheet .lsr-mount{ display:block; margin:0 0 6px; }
+      .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:4; background:var(--sidebar-bg); }
+      .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:38px; border-radius:19px;
+        border:1px solid rgba(128,128,128,0.28); background:var(--card-bg); color:var(--text-main);
+        font-size:13px; padding:0 15px; outline:none; }
+      .m-sheet .lsr-mount .lsr-search input:focus{ border-color:var(--primary-color); }
+      .m-sheet .lsr-mount .lsr-body{ padding:0; }
+      .m-sheet .lsr-mount .lst-sech{ font-size:13.5px; font-weight:500; color:var(--text-main); margin:12px 0 7px;
+        display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none; padding:3px 2px; border-radius:8px; }
+      .m-sheet .lsr-mount .lst-sech .lst-chev{ flex:0 0 auto; width:7px; height:7px;
+        border-right:1.8px solid var(--text-muted); border-bottom:1.8px solid var(--text-muted);
+        transform:rotate(45deg); transition:transform .18s ease; position:relative; top:-1px; }
+      .m-sheet .lsr-mount .lst-sech.closed .lst-chev{ transform:rotate(-45deg); top:0; }
+      .m-sheet .lsr-mount .lst-sech .lst-cnt{ font-weight:500; font-size:10.5px; color:var(--text-muted);
+        background:var(--input-bg); border-radius:999px; padding:1px 7px; }
+      .m-sheet .lsr-mount .lst-sech::after{ content:""; flex:1; height:1px; background:rgba(128,128,128,0.14); }
+      .m-sheet .lsr-mount .lst-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+      .m-sheet .lsr-mount .lst-grid.closed{ display:none; }
+      .m-sheet .lsr-mount .lst-tile{ position:relative; border-radius:12px; overflow:hidden;
+        border:1px solid rgba(128,128,128,0.18); cursor:pointer; background:var(--card-bg);
+        transition:border-color .13s ease, box-shadow .13s ease; -webkit-tap-highlight-color:transparent; }
+      .m-sheet .lsr-mount .lst-tile:active{ transform:scale(0.97); }
+      .m-sheet .lsr-mount .lst-tile.on{ border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
+      .m-sheet .lsr-mount .lst-prev{ aspect-ratio:240/104; background-size:cover; background-position:center;
+        background-color:#14212f; border-bottom:1px solid rgba(128,128,128,0.14); }
+      .m-sheet .lsr-mount .lst-nm{ padding:6px 9px; font-size:12px; font-weight:500; line-height:1.32;
+        color:var(--text-main); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+        overflow:hidden; min-height:32px; box-sizing:content-box; text-align:left; overflow-wrap:break-word; }
+      /* the ★ is hover-only on the desktop, and a phone has no hover — show it always, dimmed until set */
+      .m-sheet .lsr-mount .lst-star{ position:absolute; top:4px; right:4px; width:24px; height:24px; border:none;
+        border-radius:50%; background:rgba(10,14,22,0.5); color:rgba(255,255,255,0.55); font-size:12px;
+        line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+      .m-sheet .lsr-mount .lst-star.on{ color:#ffd60a; }
 
       .m-seg-block{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
       .m-seg{ display:flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; }
@@ -2178,7 +2250,13 @@
     body.capture-mode .measure-tooltip,
     body.capture-mode .tp-header .tp-close,
     body.capture-mode .layer-popup-x,
-    body.capture-mode .dl-drag, body.capture-mode .kl-drag{ visibility:hidden !important; }
+    body.capture-mode .dl-drag, body.capture-mode .kl-drag,
+    /* (#R232) 「スクショ機能は、座標標高常時表示欄をスクショに見せないように。」 #coord-readout is the
+       always-on lon/lat (+ elevation, + camera altitude) strip in the bottom-left corner. It is a
+       READOUT OF THE CURSOR, not part of the picture — it names wherever the pointer happened to rest
+       when the button was pressed, which is never what the screenshot is of. Everything else in this
+       list is a control; this is the one piece of live telemetry that was being baked in. */
+    body.capture-mode .coord-readout{ visibility:hidden !important; }
     body.capture-mode .maplibregl-ctrl{ display:none !important; }
     /* (#R9/#44, #R12) The timebar's shadows baked into screenshots. Flatten EVERY shadow on it incl.
        text-shadow and the slider-thumb / sync-dot pseudo-elements (which `*` doesn't reach). */

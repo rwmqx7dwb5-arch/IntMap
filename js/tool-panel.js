@@ -501,7 +501,8 @@ window.IntMapModules.toolPanel=function(HOST){
       /* (#R176) The three simulators this round added. They live HERE and in Atlas — not in the Measure
          menu, which is where the drone planner was and which the user rejected outright. */
       {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ window.IntMapLazy.need('terrainWater').then(()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
-      {label:`🌐 ${L('Seismic waves (set as epicentre)','地震波シミュレーション（震源に設定）','Seismische Wellen (als Epizentrum)','Сейсмические волны (как эпицентр)','Ondas sísmicas (como epicentro)')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      /* (#R232) 🌐 removed with the panel header's — same feature, same instruction. */
+      {label:`${L('Seismic waves (set as epicentre)','地震波シミュレーション（震源に設定）','Seismische Wellen (als Epizentrum)','Сейсмические волны (как эпицентр)','Ondas sísmicas (como epicentro)')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */

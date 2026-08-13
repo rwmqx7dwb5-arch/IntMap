@@ -374,21 +374,45 @@ window.IntMapPageI18N = (function () {
      camera, the layers, the time slider and every panel they had open — which on a phone is a
      ten-second cold start to get back to a view they were already looking at.
 
-     ⚠ `history.back()` IS THE FIX, AND THE HREF STAYS. The <a> keeps pointing at ./index.html so
-     that middle-click, ⌘-click, "open in new tab" and a reader who arrived here from a bookmark or a
-     search engine all still work — this only intercepts the plain left-click, and only when going
-     back provably lands on this site's own map:
-       · an unmodified primary click (no ⌘/ctrl/shift/alt, no middle button), and
-       · document.referrer is a SAME-ORIGIN page — so a visitor who came from Google gets the map
-         rather than being sent back to Google, which would be the same defect mirrored.
-     Everything else falls through to the href untouched. */
+     ⚠⚠ (#R232) …AND `history.back()` NEVER RAN, WHICH IS WHY THE INSTRUCTION CAME BACK. The app opens
+     both pages with `target="_blank"`. A brand-new tab has ONE session-history entry, so the guard
+     `history.length <= 1` below was true every single time and every click fell through to the href —
+     booting a SECOND map in this tab, which is precisely the reported symptom. The map the reader left
+     was never in this tab's history at all; it is in the tab that opened this one.
+
+     ⚠ SO THE LADDER IS THREE RUNGS, WIDEST FIRST, AND THE HREF IS STILL THE FLOOR:
+       ① this tab was opened BY the map (window.opener is a live same-origin window) → focus that tab
+          and close this one. That is "元のページに戻る" exactly: the reader's camera, layers, time
+          slider and open panels are all still sitting there, untouched, with nothing to re-boot.
+          index.html hands us the opener on purpose (`rel="opener"` — see the note beside those links).
+          ⚠ close() can be refused (an extension, a policy, a tab the user re-used); the fallback runs
+          on a timer if we are still here, so a refusal degrades to the old behaviour instead of a
+          dead button.
+       ② otherwise, if we were navigated to IN this tab from a same-origin page → history.back().
+       ③ otherwise (bookmark, search engine, a shared link) → the href, a fresh map, unchanged. A
+          visitor who came from Google is NOT sent back to Google, which would be the same defect
+          mirrored.
+     Only an unmodified primary click is intercepted, so middle-click, ⌘/ctrl-click and "open in new
+     tab" keep meaning what they mean. */
   function wireBack(a) {
     if (!a || a.__back) return; a.__back = true;
     a.addEventListener('click', function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      /* ① the tab that opened us is the map */
+      var op = null;
+      try { op = (window.opener && !window.opener.closed) ? window.opener : null; } catch (_) { op = null; }
+      if (op) {
+        e.preventDefault();
+        try { op.focus(); } catch (_) {}
+        var href = a.href;
+        setTimeout(function () { try { if (!window.closed) location.href = href; } catch (_) {} }, 350);
+        try { window.close(); } catch (_) {}
+        return;
+      }
+      /* ② we were navigated to inside this tab, from this site */
       var sameSite = false;
       try { sameSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (_) {}
-      if (!sameSite || history.length <= 1) return;
+      if (!sameSite || history.length <= 1) return;   /* ③ falls through to the href */
       e.preventDefault();
       history.back();
     });

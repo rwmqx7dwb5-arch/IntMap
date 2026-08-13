@@ -43,7 +43,7 @@ test('R153/R154 #3 Atlas typography — safe reflow only, NO fabricated headings
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: the opening sentence is NOT promoted to a bold lead');
   assert.match(html, /model emitted real headings already → respect verbatim/, 'model-authored ## structure is respected as-is');
   assert.match(html, /long run-on → ~2-sentence stanzas \(spacing only, no enlargement\)/, 'the only reflow is stanza-splitting (spacing, not enlargement)');
-  assert.match(html, /<div style="height:1\.5em"><\/div>/, 'paragraph gap 1.5em (R158)');
+  assert.match(html, /<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>/, 'paragraph gap 1.5em (R158)');
   // headings are colourless now
   assert.match(html, /HEADINGS DIFFERENTIATE BY SIZE \+ SPACING ONLY — NO COLOUR/, 'headings size/spacing only, no colour');
 });
@@ -60,12 +60,19 @@ test('R153 #5 Companies Time-series defaults to a deeper 20-year window; picker 
 
 test('R153 #6 Atlas sources — one cleaner, relevance-after-host-clean, answer path shows sources', () => {
   assert.match(html, /function _atlCleanUrl\(u\)\{/, 'single URL cleaner (decode aggregator + drop SNS)');
-  assert.match(html, /function linkCards\(list, refText\)\{/, 'linkCards takes optional refText');
-  assert.match(html, /if\(refText\) clean=_atlRelevantCards\(clean, refText\)/, 'relevance runs on the HOST-CLEANED set (never blanks to only-SNS)');
+  /* (#R232) the ARGUMENT LIST was never the property being protected — the gate gained a `topic`
+     parameter this round. What has to stay true is that linkCards accepts something to judge
+     relevance against and applies it AFTER the host clean. */
+  assert.match(html, /function linkCards\(list, refText(?:, topic)?\)\{/, 'linkCards takes a reference to judge relevance against');
+  assert.match(html, /if\(refText(?:\|\|topic)?\) clean=_atlRelevantCards\(clean, refText(?:, topic)?\)/, 'relevance runs on the HOST-CLEANED set (never blanks to only-SNS)');
   assert.match(html, /const pu=_atlCleanUrl\(p\.url\)/, 'mapReport inline evidence link is cleaned');
   assert.match(html, /const eu=_atlCleanUrl\(latest\.it\.link\)/, 'events inline evidence link is cleaned');
   assert.match(html, /const sc=linkCards\(_acit\.map/, 'the planner `answer` path now renders web-verified sources (was zero)');
-  assert.match(html, /if\(\(refCJK&&!refLat&&cardLat&&!cardCJK\)/, 'relevance is cross-script safe (keeps a same-topic card in the other language)');
+  /* ⚠ (#R232) THIS LINE PINNED THE DEFECT ITSELF. The old cross-script rule was an unconditional
+     `return true`, which is exactly how Japanese headlines about El Capitan survived an English brief
+     on Okayama (「まったく関係のない記事を貼るな」). Cross-script safety is still required — it is now
+     the FALLBACK, and it needs two independent shared tokens rather than none. */
+  assert.match(html, /cross-script: TWO tokens/, 'relevance is cross-script safe via a two-token fallback, not an unconditional keep');
 });
 
 test('R153 #7 Companies compare Time-series metric picker DRIVES the chart', () => {

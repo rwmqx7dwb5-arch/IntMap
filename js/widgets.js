@@ -687,7 +687,7 @@ window.IntMapModules.widgets=function(HOST){
         const ev=document.getElementById('wgtv-'+e.u); if(ev){ ev.style.cursor='pointer'; ev.onclick=()=>refreshOtd(e); }
       }catch(_){ setV(e.u,'—', una()); } }
     /* Featured layer — random pick from the REGULAR layer rows; tap turns it on (#R20). */
-    const FEAT_IDS=['dl-climate','dl-wind','dl-radar','dl-snow','dl-aod','dl-sst','dl-eez','dl-subcables','dl-planes','dl-sats','eco-dl-worldcover','eco-dl-ecoregions','eco-dl-plates','dl-relief','dl-hillshade','dl-contours','dl-sealevel','dl-pop','dl-popgrid','dl-gdppc','dl-tfr','dl-hdi','dl-dem','dl-thermal','l9-dl-aurora','dl-nightsat','dl-night','dl-fsu','dl-milSpend','dl-milSpendGDP','dl-nato','dl-eu','beta-dl-histb','beta-dl-ukrfront','dl-nuclear'];
+    const FEAT_IDS=['dl-climate','dl-wind','dl-radar','dl-snow','dl-aod','dl-sst','dl-eez','dl-subcables','dl-planes','dl-sats','eco-dl-worldcover','eco-dl-ecoregions','eco-dl-plates','dl-relief','dl-hillshade','dl-contours','dl-sealevel','dl-pop','dl-popgrid','dl-gdppc','dl-tfr','dl-hdi','dl-dem','dl-thermal','l9-dl-aurora','dl-nightsat','dl-nightside','dl-fsu','dl-milSpend','dl-milSpendGDP','dl-nato','dl-eu','beta-dl-histb','beta-dl-ukrfront','dl-nuclear'];
     function refreshFeatured(e){ try{
         const avail=FEAT_IDS.map(id=>document.getElementById(id)).filter(Boolean);
         if(!avail.length){ setV(e.u,'—',''); return; }
