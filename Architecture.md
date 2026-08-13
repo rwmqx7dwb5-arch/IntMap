@@ -1043,6 +1043,12 @@ js/
                                     ⚠ これがあることで #R208 の規則「カメラは**この場面が実際に描く**いちばん遠いもので
                                     止まる」を**変えずに**、観測可能な宇宙まで引けるようになった（`reachAu()`）。
                                     純データ＋純関数なので `tests/r219-checks ③` が Node で走らせる。
+  runtime.js                        (#R234) **IntMap Runtime** `window.IntMapRuntime`。全体で1本の camera 購読・
+                                    1つの rAF（READ フェーズ→WRITE フェーズ）・1本のタイマー・idle キュー、そして
+                                    capability の `define/load/activate/suspend/dispose`。**カメラを追う仕事は全部ここ**
+                                    （#R234 以前は7ファイルに8つの購読があり、各自が自前 rAF で読んで書いていた＝
+                                    強制同期レイアウトが毎フレームN回）。⚠ 誰の仕事も間引かない——消すのは重複だけ。
+                                    詳細は §9.0。
   river-course.js                   (#R217) 「どのタイル区間が同じ河川か」と「その河川はどこまで流れているか」。
                                     `window.IntMapRiverCourse`。`nameSet(props)` が `name` / `name:xx` / `name_xx` /
                                     `int_name` / `alt_name` を正規化した**名前の集合**にし、`sameRiver(clicked,feats)` が
@@ -2724,6 +2730,41 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 ---
 
 ## 9. モバイル対応の構造
+
+### 9.0 IntMap Runtime — 1つのフレーム・1つの camera 購読・1つのタイマー (#R234)
+
+`js/runtime.js` / `window.IntMapRuntime`。**カメラを追う仕事は全部ここを通る。**
+`js/app-body.js` が `js/lazy-modules.js` の隣で `makeRuntime(IM_HOST)` を作る——
+**何かが登録するより前に存在していなければならない**（#R205 の無言no-op）。
+
+| 登録簿 | 呼び方 | 何をするか |
+|---|---|---|
+| camera | `onCamera(key, fn, {phase, capability})` | カメラが動いた。**エンジンへの購読は全体で1本**。`phase:'read'` は**すべての** `phase:'write'` より前に走る |
+| frame | `frame(key, fn)` | 次のフレームで1回。key で合流 |
+| timer | `every(key, ms, fn, {whenHidden})` | **1本の timeout**が全周期を回す。`document.hidden` の間は動かさない（戻ったとき**取り戻しはしない**） |
+| idle | `idle(key, fn, {timeout})` | フレームのあと、暇なとき |
+
+**ライフサイクル**: `define(name,{load,activate,suspend,dispose})` → `load` / `activate` / `suspend` /
+`dispose`。上の登録は capability 名でタグ付けされるので、**`suspend(name)` はその機能の毎フレーム仕事を
+一括で外し**、`dispose(name)` は登録ごと消す。各自の解除忘れに依らずに
+「機能数が数倍になっても地図操作経路の処理量が増えない」を保つための機構。
+⚠ **ローダーではない**。「取ってきて・factory を回して・publish を検証する」は
+`js/lazy-modules.js` が9本ぶん持っている（#R209）。`load` はそこを**呼ぶ**場所。
+
+⚠⚠ **なぜ「読みを全部終えてから書く」なのか**（このファイルが在る理由）:
+#R234 以前は7ファイルに8つの camera 購読があり、**そのそれぞれが自前で rAF を持っていた**。
+8つの private rAF は「1つの8倍」ではない——どれも `project()` / `getBoundingClientRect()` で
+幾何を**読み**、同じコールバックで style を**書く**ので、**1つの書き込みが次の読み取りのレイアウトを
+無効化する**＝強制同期レイアウトが毎フレームN回、指が触れている経路の上で。
+
+⚠⚠ **誰の仕事も間引かない。** 全員が今までと同じフレームで同じ入力で走り、動いている最中の絵も
+変わらない（#R229「速くするために見た目を勝手に落とすな」）。消してよいのは**重複だけ**。
+`gesturing()` / `window.__imGesture` は**公開されているが、このファイル自身は使わない**——
+「これは止まってからでいい」は、その判断が見える呼び出し側で書く。
+
+今ここを通っているもの: `shell.crosshair`(app-body) / `shell.occlusion`(app-body) /
+`viewctl.altitude` / `toolpanel.ctxmenu` / `arc3d.draw`(map-tools) / `search.card` /
+`tilewarm.prefetch` / `themesky.follow`。
 
 **(#R231) 携帯の地図クローム（左上・右上・右下）**
 

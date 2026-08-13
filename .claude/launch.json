@@ -533,6 +533,19 @@
       ],
       "port": 4233,
       "url": "http://127.0.0.1:4233"
+    },
+    {
+      "name": "intmap-preview-r234",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4234"
+      ],
+      "port": 4234,
+      "url": "http://127.0.0.1:4234"
     }
   ]
 }

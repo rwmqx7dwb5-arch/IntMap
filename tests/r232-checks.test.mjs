@@ -152,7 +152,16 @@ test('R232 seismic: rupture directivity is kinematic, and the field is not a cir
   assert.match(s, /1-VR_BETA\*X\*cosT/, 'Fd = 1 − (Vr/β)·X·cos θ — Ben-Menahem / Somerville');
   assert.match(s, /function rupAxis\(\)/, 'the axis is the rupture, not a corner of its outline');
   assert.match(s, /function fdAt\(lng,lat\)/, 'every receiver has its own Fd');
-  assert.match(s, /const fc=fc0\/f;/, 'the apparent corner frequency moves with it');
+  /* ⚠⚠ (#R234) THIS ASSERTION WAS INVERTED, AND THAT IS THE POINT OF IT NOW.
+     #R232 pinned `const fc=fc0/f;` as the proof that "the apparent corner frequency moves with it" —
+     and that division is precisely the defect the reader reported as 「震度計算に大幅な誤差」. It
+     slides the whole ω⁻² spectrum, so the high-frequency acceleration plateau (∝ M₀·f_c²) is
+     multiplied by 1/Fd² — a factor of 11 at the floor, and the RADIATED ENERGY ∫A²df by a hundred.
+     A test that requires the bug is a test that stops the fix (#R229's five «negative» checks), so
+     it is reversed rather than deleted: the corner must NOT move, and Fd must live in the apparent
+     DURATION that random-vibration theory divides the energy by. See tests/r234-checks ②. */
+  assert.doesNotMatch(s, /const fc=fc0\/f;/, 'the source spectrum is the same earthquake from every side');
+  assert.match(s, /durS:f\/fc0/, '…and Fd is the apparent source duration instead');
   assert.match(s, /profBank/, 'the painted field carries one profile per azimuth');
   assert.match(s, /const profAt=profBank/, '…and a cell reads its own');
 });

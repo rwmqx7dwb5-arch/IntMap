@@ -219,7 +219,12 @@ window.IntMapModules.searchGeocode=function(HOST){
     /* (#R36) rAF-coalesce the per-move reposition (mobile pan/zoom smoothness #13): `move` can fire several
        times per frame during inertia, and positionSearchCard does layout (getBoundingClientRect + style writes);
        collapse it to at most once per frame so it never piles up work mid-gesture. */
-    let _scRAF=0; searchCardOnMove=()=>{ if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); }; GEO.events.on('move',searchCardOnMove);
+    /* ⚠ (#R234) one frame for the whole program — js/runtime.js — instead of this card's own rAF.
+       Same coalescing and the same per-frame placement; the card still tracks its point exactly. */
+    let _scRAF=0; searchCardOnMove=()=>{ const R=window.IntMapRuntime;
+      if(R){ R.frame('search.card',()=>{ try{ positionSearchCard(); }catch(_){} }); return; }
+      if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); };
+    GEO.events.on('move',searchCardOnMove);
     positionSearchCard();
     /* Async elevation / depth */
     try{
