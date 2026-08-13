@@ -170,24 +170,39 @@ test('R234 seismic panel: one banner shape for all three modes, and the run butt
   assert.match(s, /report\(\); _paintRunBtn\(\); \} \} \}/, 'and so does the build finishing');
 });
 
-test('R234 seismic panel: the intensity chip names its scale, is bigger, and white reads on it', () => {
+/* ⚠⚠ REVERSED BY #R235, NOT DELETED — the same move #R234 §6b had to make on two of #R232's checks.
+   This test used to REQUIRE `background:'+_onDark(col)+';color:#fff` and `font-weight:800`, which is
+   the state the next instruction forbade: 「四角背景で、太字禁止、かつそれぞれの震度色（そのままの色）
+   背景と白文字に。」 The parenthetical 「そのままの色」 is the operative word — #R234 had DARKENED the
+   swatch so white could sit on it, and that made the chip legible and the wrong colour.
+   What survives unchanged is the CLAIM the old test was really making: the label must be readable on
+   every class of both scales. The variable is now the ink, not the background (see `_chipInk`). */
+test('R234→R235 seismic panel: the intensity chip names its scale, and its label reads on every class', () => {
   const s = read('js/seismic.js');
   assert.match(s, /txt='JMA '\+c\.id;/, 'the JMA cell says JMA 6+');
   assert.match(s, /txt='MMI '\+ROMAN\[/, 'the MMI cell says MMI X');
-  assert.match(s, /background:'\+_onDark\(col\)\s*\n?\s*\+';color:#fff;font-size:'\+FS_H/,
-    'coloured background, white text, and the largest step of the type scale');
-  /* ⚠ and the contrast is computed, because three JMA swatches are nearly white by design */
-  assert.match(s, /function _onDark\(hex\)\{/, 'there is a contrast-aware darkener');
-  /* run it: every class of both scales must clear 3:1 against white */
-  const onDark = (hex) => { let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  /* the background is the class colour ITSELF, square-cornered and not bold */
+  assert.match(s, /border-radius:0;background:'\+col\s*\n?\s*\+';color:'\+_chipInk\(col\)/,
+    'the raw class colour is the background and the ink is what adapts');
+  assert.match(s, /\+';font-size:'\+FS_H\+';font-weight:400;/, 'the chip is not bold');
+  assert.doesNotMatch(s, /function _onDark\(/, 'the darkener is gone — the colour is used as published');
+  /* run _chipInk over every class of both scales: whichever ink it picks must clear 3:1 */
+  const chipInk = (hex) => { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-    const lum = () => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-    for (let i = 0; i < 24 && lum() > 0.30; i++) { r = Math.round(r * 0.9); g = Math.round(g * 0.9); b = Math.round(b * 0.9); }
-    return lum(); };
-  for (const hex of ['#F2F2FF', '#00AAFF', '#0041FF', '#FAE696', '#FFE600', '#FF9900', '#FF2800', '#A50021', '#B40068']) {
-    const contrast = 1.05 / (onDark(hex) + 0.05);
-    assert.ok(contrast >= 3, hex + ': white clears 3:1 on the chip (got ' + contrast.toFixed(2) + ')');
+    const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    return { L, ink: L > 0.30 ? '#000' : '#fff' }; };
+  const JMA = ['#F2F2FF', '#00AAFF', '#0041FF', '#FAE696', '#FFE600', '#FF9900', '#FF2800', '#A50021', '#B40068'];
+  /* the MMI ramp's own anchors (js/seismic.js mmiRGB) — the far ends are the hard cases */
+  const MMI = ['#FFFFFF', '#BFCCFF', '#A0E6FF', '#80FFA0', '#FFFF00', '#FFC800', '#FF9100', '#FF0000', '#C80000', '#800000'];
+  let black = 0, white = 0;
+  for (const hex of JMA.concat(MMI)) {
+    const { L, ink } = chipInk(hex);
+    const contrast = ink === '#fff' ? 1.05 / (L + 0.05) : (L + 0.05) / 0.05;
+    assert.ok(contrast >= 3, hex + ': the chosen ink (' + ink + ') clears 3:1 (got ' + contrast.toFixed(2) + ')');
+    if (ink === '#000') black++; else white++;
   }
+  /* ⚠ both inks have to actually occur, or the rule is a constant wearing a function's clothes */
+  assert.ok(black > 0 && white > 0, 'the rule picks black on the light classes and white on the dark ones');
 });
 
 test('R234 seismic panel: the three model assumptions moved behind 詳細設定', () => {
@@ -220,7 +235,12 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
 test('R234 seismic: the front labels are placed toward the map centre, not at a fixed 45°', () => {
   const s = read('js/seismic.js');
   assert.doesNotMatch(s, /const p=destAng\(epi,45,/, 'the fixed bearing is gone');
-  assert.match(s, /const p=destAng\(epi,_viewBearing\(\),/, 'the label sits on the arc that is in view');
+  /* ⚠ (#R235) the CONTRACT, not the expression. The bearing is now hoisted into `vb` so the RADIUS
+     can be read at the same bearing the label is placed at — with a laterally varying surface-wave
+     path those became two different numbers, and a name taken from bearing 0 floats off its ring.
+     What this line protects is unchanged: the placement follows the map centre. */
+  assert.match(s, /const vb=_viewBearing\(\); const r=rad\(vb\);/, 'the label reads the radius at the bearing it will sit on');
+  assert.match(s, /const p=destAng\(epi,vb,/, 'the label sits on the arc that is in view');
   assert.match(s, /function _viewBearing\(\)\{[^}]*const b=bearingTo\(epi,\[c\.lng,c\.lat\]\);/s,
     '…which is the bearing from the epicentre to the camera centre');
   assert.match(s, /GE\(\)\.events\.on\('moveend',\(\)=>\{ try\{ if\(opened&&epi\) drawFronts\(\); \}catch\(_\)\{\} \}\);/,

@@ -97,4 +97,10 @@ window.IntMapLang.define('fr', { ui: {
     "Others (beta)":"Autres (bêta)", "No data":"Aucune donnée", "Unavailable":"Indisponible",
     "Retry":"Réessayer", "Failed":"Échec", "Done":"Terminé", "km":"km", "Distance":"Distance",
     "Back to the map":"Retour à la carte", "Data sources":"Sources des données"
-} });
+,
+  "not felt": "non ressenti",
+  "out of range": "hors de portée",
+  "Oceanic path, surface waves (×)": "Trajet océanique, ondes de surface (×)",
+  "Rupture outline": "Contour de la rupture",
+  "segments": "segments",
+  "The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.": "Les fronts d'onde sont l'enveloppe extérieure des fronts issus de chaque point échantillonné de la rupture — résolue sur la sphère, de sorte qu'un contour tracé à la main conserve sa concavité au lieu d'être remplacé par son enveloppe convexe — et chaque point utilise l'hodochrone correspondant à SA PROPRE profondeur sur le plan incliné. La vitesse de groupe des ondes de surface est intégrée le long de chaque grand cercle plutôt que maintenue constante : un trajet océanique devance donc un trajet continental. Les valeurs 3,5 / 4,4 km/s sont la référence continentale et le rapport se règle dans les paramètres avancés.",} });

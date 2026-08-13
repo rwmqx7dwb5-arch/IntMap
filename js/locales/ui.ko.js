@@ -87,4 +87,10 @@ window.IntMapLang.define('ko', { ui: {
     "Others (beta)":"기타 (베타)", "No data":"데이터 없음", "Unavailable":"사용할 수 없음",
     "Retry":"다시 시도", "Failed":"실패", "Done":"완료", "km":"km", "Distance":"거리",
     "Back to the map":"지도로 돌아가기", "Data sources":"데이터 출처"
-} });
+,
+  "not felt": "무감",
+  "out of range": "범위 밖",
+  "Oceanic path, surface waves (×)": "해양지각 경로, 표면파 (×)",
+  "Rupture outline": "진원역 윤곽",
+  "segments": "구간",
+  "The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.": "파면은 진원역의 각 표본점에서 퍼지는 파면들의 바깥 포락선이며 구면 위에서 풀기 때문에, 손으로 그린 오목한 윤곽도 볼록껍질로 대체되지 않고 그대로 유지됩니다. 각 표본점은 경사진 단층면 위 자신의 깊이에 해당하는 주시곡선을 사용합니다. 표면파 군속도는 일정한 값이 아니라 각 대권 경로를 따라 적분하므로, 해양지각을 지나는 경로가 대륙지각 경로보다 앞서 나갑니다. 3.5 / 4.4 km/s 는 대륙지각 기준값이며 그 비율은 고급 설정에서 조정할 수 있습니다.",} });
