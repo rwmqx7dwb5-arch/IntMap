@@ -257,8 +257,11 @@ test('#16 the engine contract grew and the news overlay runs through it', () => 
   assert.ok(html.includes("GE.layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');
   assert.ok(html.includes("GE.layers.add({id:'news-labels'"), 'news-labels layer not created through the engine');
   assert.ok(html.includes("GE.layers.setSourceData('news-points'"), 'news data not pushed through the engine');
-  assert.ok(html.includes("GE.coords.project(g.coordinates)"), 'declutter still projects on the raw map');
-  assert.ok(html.includes("GE.layers.setFeatureState({source:'news-points',id:it.fid}"), 'declutter still writes feature-state on the raw map');
+  /* (#R242) the de-clutter moved to js/map-typography.js with the band measurement it depends on —
+     same invariant, read where the code now lives. */
+  const mt = readFileSync(join(ROOT, 'js/map-typography.js'), 'utf8');
+  assert.ok(mt.includes("GE.coords.project(g.coordinates)"), 'declutter still projects on the raw map');
+  assert.ok(mt.includes("GE.layers.setFeatureState({source:'news-points',id:it.fid}"), 'declutter still writes feature-state on the raw map');
   assert.ok(html.includes("_GEp.layers.setPaint('news-labels','text-color'"), 'news band theming not through the engine');
   assert.equal((html.match(/GE\.events\.onLayer\(/g) || []).length, 6, 'expected all six news pointer handlers on the engine');
   /* and none of the news handlers may be bound on the raw map any more */

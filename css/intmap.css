@@ -102,8 +102,11 @@
     body.booting{ overflow:hidden; }
     @media (prefers-reduced-motion:reduce){ .boot-inner{ animation:none; } .boot-splash,.boot-bar > i{ transition:none; } }
 
-    body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
-    button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
+    /* (#R242) the ONE font declaration for prose in this app — css/fonts.css owns `--im-font` and
+       sets it per language. 「すべての文字をこうしろ」: nothing else here may name a face for text. */
+    body,input,select,textarea,button{ font-family:var(--im-font); }
+    body,input,select{ margin:0; padding:0; background-color:var(--bg-color); color:var(--text-main); -webkit-font-smoothing:antialiased; }
+    button{ margin:0; padding:0; cursor:pointer; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
     .operation-room{ display:flex; width:100vw; height:100vh; height:100dvh; overflow:hidden; }
     .sidebar{ width:var(--sidebar-w); max-width:100vw; flex-shrink:0; background-color:var(--sidebar-bg); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); border-right:1px solid rgba(128,128,128,0.15); padding:24px; padding-top:max(24px,env(safe-area-inset-top)); display:flex; flex-direction:column; box-sizing:border-box; z-index:1000; transition:margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1); min-height:0; }
@@ -309,7 +312,7 @@
        digits so flags/names stay aligned regardless of 1–3 digit ranks. */
     /* (#R139) iOS-style rank numeral: SF Pro Rounded rounded digits, tabular so ranks stay column-aligned, iOS
        semibold weight. Falls back cleanly to system-ui on non-Apple platforms. */
-    .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded","SF Pro Display",system-ui,-apple-system,"Segoe UI",sans-serif; font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
+    .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded",var(--im-font); font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
     /* (#R139) honest population-progress bar: INDETERMINATE animated sweep (no fake %) whenever WorldPop reports no
        real fraction (a single-request sum). Determinate mode just uses the inline fill width set by _imProgCtl.set. */
     .tp-prog.indet .tp-prog-fill{ width:100% !important; background:var(--prog-sweep) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
@@ -3033,8 +3036,12 @@
    below moves down and the reader scrolls ONE thing — the column — instead of hunting for the
    inner rail. A panel that writes its cap inline (js/map-tools.js writes `max-height:74vh` on the
    element) is covered by `.im-docked` itself, whose geometry the dock already strips. */
+/* ⚠⚠⚠ (#R242) …AND `.atl-chat` / `.atl-ex` WERE IN THIS LIST BECAUSE ATLAS WAS BEING DOCKED AT ALL.
+   Atlas has had its own sidebar tab since #R112 and must never arrive here (js/atlas-console.js writes
+   `data-nodock` on the panel as it is created). Naming its scrollers here made the wrong state look
+   catered for; the two selectors are gone with the state that produced them. */
 .im-docked .iol-body, .im-docked .kl-scroll, .im-docked .lsr-body,
-.im-docked .wgt-board, .im-docked .atl-chat, .im-docked .atl-ex, .im-docked .ppm-card,
+.im-docked .wgt-board, .im-docked .ppm-card,
 .im-docked [class$="-scroll"], .im-docked [class$="-body"], .im-docked [class$="-list"]{
   max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
 .im-docked{ overflow-y:visible !important; }
@@ -3055,8 +3062,16 @@
    app's own thin auto-hiding scrollbar (`html.custom-scrollbars`), not a second design.
    ⚠ `overflow-y:auto` + `overscroll-behavior:contain` so a flick inside the column does not drag
    the sheet itself away underneath it. */
+/* ══ ⚠⚠ (#R242) …AND THE RAIL NEEDS ITS OWN 10 px, OR IT IS DRAWN ON THE PANEL ═══════════════════
+   「サイドバーのパネル内モバイル版で、左にあるスクロールバー分の隙間をあけていないから右側が
+     スクロールバーと被りかけている。」
+   MEASURED on the shipped build (390 px viewport, quake panel docked): #docked-feed spans 0…390 with
+   `clientWidth` 390 — a phone's scrollbar is an OVERLAY and takes no layout space — `scrollHeight`
+   1396 > `clientHeight` 579, so the 10 px rail is painted over x 380…390 and the panel underneath
+   runs to 390 as well. #R241 restored the rail; nothing gave it room. The feed keeps its full-bleed
+   LEFT edge (that is #R240's report) and reserves the rail's width on the right. */
 @media(max-width:768px){
-  #docked-feed{ margin-left:-16px; margin-right:-16px; padding-left:0; padding-right:0;
+  #docked-feed{ margin-left:-16px; margin-right:-16px; padding-left:0; padding-right:10px;
     scrollbar-width:thin; scrollbar-color:rgba(140,142,150,0.5) transparent; overscroll-behavior:contain; }
   #docked-feed::-webkit-scrollbar{ width:10px; }
   #docked-feed::-webkit-scrollbar-track{ background:transparent; }

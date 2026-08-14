@@ -54,6 +54,9 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
  */
 export function appShell(root) {
   const parts = [];
+  /* ⚠ (#R242) js/map-typography.js is NOT in this list, and that is deliberate: this text is also what
+     tests/r168 #8 budgets as «the shell», so adding a module here would make the shell look 185 lines
+     bigger for having moved code OUT of it. #R161's news-overlay invariants read that file directly. */
   for (const rel of ['index.html', 'src/main.js', 'src/vendor.js', 'js/app-body.js', 'js/geo-engine.js', 'js/lazy-modules.js']) {
     const u = new URL(rel, root);
     if (existsSync(u)) parts.push(readFileSync(u, 'utf8'));

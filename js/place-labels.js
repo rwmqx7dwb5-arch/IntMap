@@ -197,8 +197,7 @@ window.IntMapModules.placeLabels=function(HOST){
          named water body worldwide gets a stable label, not just the curated majors. */
       if(!GE().layers.has('ofm-water2')) GE().layers.add({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':LS.sub(1)},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
       try{ if(!GE().layers.hasSource('geo-sea-src')){
-        const S=window.SEA_LABELS||[];
-        GE().layers.addSource('geo-sea-src',{type:'geojson',data:{type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7]}}))}});
+        GE().layers.addSource('geo-sea-src',{type:'geojson',data:_seaFC()});
       }
       /* (#R73) ROOT CAUSE of "主要な海や湖の名前が表示されない" (and the earlier 東シナ海 report): this layer's
          text-size was `case(big, interpolate(zoom), interpolate(zoom))` — a zoom interpolation NESTED inside
@@ -349,17 +348,49 @@ window.IntMapModules.placeLabels=function(HOST){
     ['water'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
       try{ GE().layers.setSourceData('stab-'+kind+'-src',{type:'FeatureCollection',features:Array.from(HOST._stabIdx[kind].values())}); }catch(_){} });
   }
+  /* ══ ⚠⚠⚠ (#R242) THE PLACE-LABEL LANGUAGE WAS AN `else if` CHAIN OF FIVE ═══════════════════════
+     「設定言語を変えれば地名ラベルもその言語になるはずだが、繁体、簡体、韓国語、フランス語では
+       そうならない。」
+     jp/de/ru/es each got a branch when they were added (#R32, #R40) and everything else fell through
+     to the English `else` — so fr/ko/zh/zh-Hans, added in #R232 and #R239 with a locale file each,
+     have been reading English place names ever since. It is [[intmap-recurring-lessons]] B again: a
+     list of languages written down somewhere other than js/lang-registry.js.
+     ⚠ SO IT IS A TABLE, KEYED BY THE APP'S OWN CODE, AND NOTHING ELSE NAMES A LANGUAGE. The value is
+     the ordered list of OpenMapTiles `name:*` fields to try (OpenFreeMap serves the full
+     OpenMapTiles schema); a `coalesce` over a key the tile does not carry simply moves on, so listing
+     both `name:zh-Hant` and `name:zh` costs nothing and catches whichever the extract has. A code
+     with no entry falls back to the international name, which is what the old `else` did — but now it
+     is the DEFAULT of a lookup rather than the fate of every language after the fifth.
+     ⚠ A NEW LANGUAGE ADDS ONE ROW HERE, and tests/r242 fails if the registry knows a code this table
+     does not. */
+  const OSM_LANG={ en:['name:en'], jp:['name:ja'], de:['name:de'], ru:['name:ru'], es:['name:es'],
+                   fr:['name:fr'], ko:['name:ko'], zh:['name:zh-Hant','name:zh'], 'zh-hans':['name:zh-Hans','name:zh'] };
+  function OSM_NAME_KEYS(code){
+    const own=OSM_LANG[String(code||'').toLowerCase()]||[];
+    /* Latin is the useful second try for a Latin-script language and a poor one for the others; the
+       international name is the last resort for everybody, and `name` (local) is added by the caller. */
+    return own.concat(['name:en','name:latin','name_int']);
+  }
+
+  /* (#R242) the curated sea/ocean rows, resolved for the CURRENT language through `pick()` — one
+     answer per feature (`lbl`), so the style needs no language expression and a language past the
+     five columns falls to its inline table rather than to English. `mode==='en'|'local'` are the
+     reader's explicit 「英語で」/「現地表記で」 choices and stay English here (the gazetteer has no
+     endonym column). */
+  let _seaL=null;   /* ⚠ built on first use: tests/r169 #4 requires this file to only DECLARE while it runs */
+  function _seaFC(mode){
+    if(!_seaL){ _seaL=window.IntMapLang.pick(()=>HOST.lang); window.IntMapOsmNameKeys=OSM_NAME_KEYS; }
+    const S=window.SEA_LABELS||[]; const raw=(mode==='en'||mode==='local');
+    return {type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},
+      properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7],lbl:raw?r[3]:_seaL.arr([r[3],r[4],r[5],r[6],r[7]])}}))};
+  }
   function applyLabelLang(){
     if(!GE().hasRenderer()) return;
     const mode=window.imLabelLang||'ui';
     let nameExpr;
     if(mode==='en') nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name_int'],['get','name']];
     else if(mode==='local') nameExpr=['get','name'];
-    else if(HOST.lang==='jp') nameExpr=['coalesce',['get','name:ja'],['get','name']];
-    else if(HOST.lang==='de') nameExpr=['coalesce',['get','name:de'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R32) German place labels */
-    else if(HOST.lang==='ru') nameExpr=['coalesce',['get','name:ru'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R40) Russian place labels — RU previously fell into the English branch (item: 地名ラベルが英語のまま) */
-    else if(HOST.lang==='es') nameExpr=['coalesce',['get','name:es'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R40) Spanish place labels */
-    else nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name']];
+    else nameExpr=['coalesce'].concat(OSM_NAME_KEYS(HOST.lang).map(k=>['get',k]),[['get','name']]);
     const sat=(HOST.mapType==='sat');
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
     const show = HOST.namesOn && (sat || HOST.mapLabelsViaVector());
@@ -370,9 +401,15 @@ window.IntMapModules.placeLabels=function(HOST){
     const showGeo = HOST.geoLabelsOn && (sat || HOST.mapLabelsViaVector());
     try{ ['ofm-river','ofm-water','ofm-water2'].forEach(id=>{ if(!GE().layers.has(id)) return; GE().layers.setLayout(id,'visibility',showGeo?'visible':'none'); GE().layers.setLayout(id,'text-field',nameExpr); });
       if(GE().layers.has('ofm-peak')){ GE().layers.setLayout('ofm-peak','visibility',showGeo?'visible':'none'); GE().layers.setLayout('ofm-peak','text-field',['concat','▲ ',nameExpr]); }
-      /* (#R62) fixed sea labels follow the same toggle; language from the gazetteer's own 5 name fields. */
-      if(GE().layers.has('geo-sea')){ const gl=(mode==='en')?'en':(mode==='local')?'en':(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang]||'en');
-        GE().layers.setLayout('geo-sea','visibility',showGeo?'visible':'none'); GE().layers.setLayout('geo-sea','text-field',['get',gl]); }
+      /* ⚠ (#R242) the curated sea gazetteer carries FIVE name columns and used to be read with a
+         second five-language map (`{jp:'jp',de:'de',…}[HOST.lang]||'en'`) — the same defect as the
+         `else if` chain above, one layer down. The row is now resolved through `pick()` itself, so a
+         language past the fifth gets its inline-table entry keyed by the English name instead of
+         English, and the feature carries the ANSWER (`lbl`) rather than five candidates. The source
+         is rebuilt here because this function is what a language change calls. */
+      if(GE().layers.has('geo-sea')){
+        GE().layers.setLayout('geo-sea','visibility',showGeo?'visible':'none'); GE().layers.setLayout('geo-sea','text-field',['get','lbl']);
+        try{ GE().layers.setSourceData('geo-sea-src',_seaFC(mode)); }catch(_){} }
       /* (#R64) populate the pinned lake/peak anchors immediately when the toggle turns on */
       if(showGeo) setTimeout(()=>{ try{ harvestStableLabels(); }catch(_){} },250); }catch(_){}
     /* (#R186) shop / facility names: their own toggle, the same language expression as every other

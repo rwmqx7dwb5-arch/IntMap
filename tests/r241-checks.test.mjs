@@ -224,18 +224,32 @@ test('R241 ⑥ the places table scrolls sideways inside its own card', () => {
   assert.match(s, /overscroll-behavior-x:contain/, 'and a flick in it does not drag the sheet away');
   /* auto layout takes the larger of the two: full width when the columns fit, natural width when
      they do not. `max-content` was measured first and parks the table short of a wide panel. */
-  assert.match(s, /<table style="font-size:'\+FS\+';border-collapse:collapse;width:100%;">/,
-    'the table is width:100%, not max-content');
+  /* ⚠ (#R242) THE SCROLLER IS THE FALLBACK, NOT THE ANSWER. The report came back — 「各地の表が横
+     スクロールできない」 — after this scroller shipped, and a reader looking at a table whose last
+     column is sliced does not want to learn a gesture. The table is made to FIT (measured: 312 px of
+     card, 312 px of table), so the width lives in `.sq-sites` and the place name is the one elastic
+     column. The scroller above stays for a 260 px docked column. */
+  assert.match(s, /'\.sq-sites\{border-collapse:collapse;width:100%/, 'the table is width:100%, not max-content');
+  assert.match(s, /'\.sq-st-nm\{[^']*max-width:0/, 'and the place name is the only column that gives way');
   /* …and the numeric columns cannot wrap, or the overflow hides itself by breaking the reading */
   const rows = s.slice(s.indexOf('const rows=seats.map'), s.indexOf('const rows=seats.map') + 1400);
-  assert.equal((rows.match(/white-space:nowrap/g) || []).length, 6,
-    'every cell except the chip is nowrap');
+  assert.equal((rows.match(/white-space:nowrap/g) || []).length, 5,
+    'every NUMERIC cell is nowrap (#R242: the place name wraps instead of being cut)');
 });
 
 /* ══ THE BUILD STAMPS — two of them, and they only ever fail after DEV-NOTES is written ════════ */
 
 test('R241 the build stamps moved together', () => {
+  /* ⚠ (#R242) THIS WAS TWO LITERALS AND IT ASKED THE WRONG QUESTION. Pinned to `R241`, it fails on
+     the next round for a reason that is not a defect — and every previous round's copy of it would
+     fail with it, so the only way to keep the suite green is to edit them all. What the round
+     actually wants held is a RELATION: the two stamps name the same round, and that round is the
+     newest one in DEV-NOTES (#R207 ⑬ and #R219 ⑪ state the second half; this states the first).
+     Same rule as every other pin that broke on a change that kept its meaning (#R205, #R207). */
   const html = R('index.html');
-  assert.match(html, /__imBuild='R241'/, 'the boot stamp');
-  assert.match(html, /INTMAP_BUILD='2026-08-14-R241'/, 'and the release stamp');
+  const boot = /__imBuild='(R\d+[a-z]?)'/.exec(html);
+  const rel = /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-(R\d+[a-z]?)'/.exec(html);
+  assert.ok(boot, 'the boot stamp');
+  assert.ok(rel, 'and the release stamp');
+  assert.equal(boot[1], rel[1], 'both stamps name the same round');
 });

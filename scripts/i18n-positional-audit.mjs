@@ -45,7 +45,7 @@ const ALL = process.argv.includes('--all');
 const NEUTRAL = new Set([
   /* units, symbols and scale names */
   'Mw', 'MMI', 'PGV', 'PGA', 'km', 'm', 's', 'Hz', 'h', 'd', ' d', 'min', 'max', 'max ', 'log',
-  'k m³', 'az.', 'incl.', 'elev.', 'Magnitude (Mw)', 'Pearson r', 'radio 4/3', 'Precip.',
+  'k m³', 'az.', 'incl.', 'elev.', 'Magnitude (Mw)', 'Magnitude', 'Pearson r', 'radio 4/3', 'Precip.',   /* (#R242) «Magnitude» IS the German seismological term (DWD/GFZ use it); the row label added this round is the bare word */
   /* proper nouns: missions, products, places, people */
   'JMA', 'USGS', 'NASA', 'ESA', 'GPS', 'UTC', 'Atlas', 'IntMap', 'Galileo', 'Starlink', 'Fukushima',
   'Street View', 'Earth Replay', 'Fresnel', 'Shindo', 'JMA (shindo)', 'IASP91', 'Vs30', 'Rayleigh',

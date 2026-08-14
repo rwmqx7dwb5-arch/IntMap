@@ -2644,5 +2644,18 @@ window.IntMapLang.define('zh-hans', {
   "Wheat": "小麦",
   "Yams and other roots": "山藥与其他根莖作物",
   "Yield": "單位产量",
+  "Advanced settings": "进阶设置",
+  "Clear the loaded earthquake": "清除已加载的地震",
+  "Depth": "深度",
+  "Fault geometry": "断层形状",
+  "Magnitude": "规模",
+  "Model assumptions": "模型假设",
+  "Play": "播放",
+  "Playback speed": "播放速度",
+  "Rupture size": "震源域大小",
+  "Seismic wave simulator": "地震波模拟器",
+  "Strike / dip / rake": "走向／倾角／滑移角",
+  "Time since the rupture began": "自破裂开始经过的时间",
+  "When": "发生时间",
   }
 });

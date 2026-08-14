@@ -2555,4 +2555,17 @@ window.IntMapLang.define('fr', { ui: {
   "Wetland rice": "Riz irrigué",
   "Wheat": "Blé",
   "Yams and other roots": "Ignames et autres racines",
-  "Yield": "Rendement",} });
+  "Yield": "Rendement",
+  "Advanced settings": "Réglages avancés",
+  "Clear the loaded earthquake": "Effacer le séisme chargé",
+  "Depth": "Profondeur",
+  "Fault geometry": "Géométrie de la faille",
+  "Magnitude": "Magnitude (Mw)",
+  "Model assumptions": "Hypothèses du modèle",
+  "Play": "Lecture",
+  "Playback speed": "Vitesse de lecture",
+  "Rupture size": "Dimensions de la rupture",
+  "Seismic wave simulator": "Simulateur d’ondes sismiques",
+  "Strike / dip / rake": "Azimut / pendage / glissement",
+  "Time since the rupture began": "Temps écoulé depuis le début de la rupture",
+  "When": "Date et heure",} });

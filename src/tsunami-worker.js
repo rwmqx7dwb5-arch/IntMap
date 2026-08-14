@@ -372,6 +372,20 @@ function run(m) {
   const hours = Math.max(0.25, Math.min(30, m.hours));
   const wantFrames = Math.max(24, Math.min(240, m.frames | 0));
   const dec = Math.max(1, m.dec | 0);
+  /* ══ ⚠⚠⚠ (#R242) THE PICTURE MAY BE A WINDOW ON THE GRID, NOT THE WHOLE CIRCLE ═══════════════════
+   *  「津波シミュレータの波伝播のアニメーションの解像度を爆発的に上げろ。全部が無理なら半径1000km
+   *    以内のみ。」
+   *  The near-source scope already solves a 4,320-wide band — the whole circle, because longitude is
+   *  wraps and #R204 would not change the solver. The PICTURE never needed the whole
+   *  circle: a 1,000 km radius is ±9° of longitude, i.e. a fortieth of it, and the other 39/40 of
+   *  every frame is exactly zero for the entire run. Sending the window instead of the circle is what
+   *  buys `dec:1` — the animation stops being decimated at all and the frame is SMALLER than the
+   *  decimated whole-circle one it replaces (measured below in js/tsunami.js).
+   *  ⚠ `wi0` is a GRID column and `wnx` a count of them; both are multiples of `dec` so the block
+   *  average below stays aligned, and the read wraps at nx. */
+  const wnxReq = Math.max(0, m.winNx | 0);
+  const winNx = (wnxReq && wnxReq < nx) ? Math.floor(wnxReq / dec) * dec : nx;
+  const winI0 = winNx === nx ? 0 : ((((m.winI0 | 0) % nx) + nx) % nx);
   const filtLat = (m.filtLat != null ? m.filtLat : 60);
 
   /* ── 1. the sea floor ─────────────────────────────────────────────────────────────────────── */
@@ -553,16 +567,20 @@ function run(m) {
   const nFrames = Math.floor((steps - 1) / everyN) + 1;
   const cellKm = Math.round(RE * Math.cos(srcLat * DEG) * dLam / 1000);
 
-  const fx = Math.floor(nx / dec), fy = Math.floor(ny / dec);
+  const fx = Math.floor(winNx / dec), fy = Math.floor(ny / dec);
+  const wcol = (i, a) => { const c = winI0 + i * dec + a; return c < nx ? c : c - nx; };   /* (#R242) the read wraps at nx */
   const landD = new Uint8Array(fx * fy);
   for (let j = 0; j < fy; j++) for (let i = 0; i < fx; i++) {
     let wet = 0;
-    for (let b = 0; b < dec; b++) for (let a = 0; a < dec; a++) if (!land[(j * dec + b) * nx + i * dec + a]) wet++;
+    for (let b = 0; b < dec; b++) for (let a = 0; a < dec; a++) if (!land[(j * dec + b) * nx + wcol(i, a)]) wet++;
     landD[j * fx + i] = wet ? 0 : 1;
   }
+  /* the window's own longitude extent, so the client can place the image without re-deriving it */
+  const winLng0 = -180 + (winI0 * 360) / nx, winLng1 = winLng0 + (winNx * 360) / nx;
 
   post({
     id, type: 'model', nx, ny, fx, fy, dec, lat0, lat1, dt, steps, total, nFrames, cellKm,
+    winI0, winNx, lng0: winLng0, lng1: winLng1,   /* (#R242) the picture's longitude window */
     strike, dipDeg, faultL: g.L, faultW: g.W, slip: g.slip, M0: g.M0, drawnFault: !!drawn,
     eta0Up: upMax, eta0Down: downMax, seaCells: sf.seaCells, fineCells: sf.fineCells, hMax: Math.round(hMax), cMax: Math.round(cMax),
     sourceMs: _srcMs, okadaCalls: _okCalls,
@@ -769,7 +787,17 @@ function run(m) {
 
     if (s % everyN === 0 || s === steps - 1) {
       /* the picture: an AREA AVERAGE over dec×dec, then companded */
-      if (dec === 1) fbufD.set(eta);
+      if (dec === 1 && winNx === nx) fbufD.set(eta);
+      else if (dec === 1) {
+        /* (#R242) a full-resolution WINDOW: one row copy per row, wrapping at the antimeridian */
+        for (let j = 0; j < fy; j++) {
+          const row = j * nx, out = j * fx;
+          if (winI0 + fx <= nx) fbufD.set(eta.subarray(row + winI0, row + winI0 + fx), out);
+          else { const head = nx - winI0;
+            fbufD.set(eta.subarray(row + winI0, row + nx), out);
+            fbufD.set(eta.subarray(row, row + (fx - head)), out + head); }
+        }
+      }
       else {
         /* ⚠ (#R223) ONLY THE ROWS INSIDE THE LIGHT CONE. Outside it η is exactly zero — that is what
            the cone means — so those output rows are zero, and `fbufD` is zeroed once at the start
@@ -780,7 +808,7 @@ function run(m) {
         for (let j = fj0; j <= fj1; j++) {
           for (let i = 0; i < fx; i++) {
             let acc = 0;
-            for (let b = 0; b < dec; b++) { const r = (j * dec + b) * nx + i * dec; for (let a = 0; a < dec; a++) acc += eta[r + a]; }
+            for (let b = 0; b < dec; b++) { const r = (j * dec + b) * nx; for (let a = 0; a < dec; a++) acc += eta[r + wcol(i, a)]; }
             fbufD[j * fx + i] = acc * invD;
           }
         }
