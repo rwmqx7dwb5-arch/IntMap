@@ -129,7 +129,18 @@ const VERBATIM = new Set(['slot', 'tex', 'eq']);
    as the NEUTRAL list in scripts/i18n-positional-audit.mjs: every entry here was READ once and is a
    claim that the word is right, not a way to quiet the gate. `z` is a zoom symbol, `~10 m` is a
    measurement, and «Tsunami» is the German and Spanish word as well as the English one. */
-export const NEUTRAL = new Set(['z', '~10 m', '~54 m', '~860 m', 'Tsunami']);
+export const NEUTRAL = new Set(['z', '~10 m', '~54 m', '~860 m']);
+
+/* ⚠⚠ AND THE ONES THAT ARE THE SAME WORD IN ONE PARTICULAR LANGUAGE. «Tsunami» is German and
+   Spanish as well as English; «Satellites» and «Positions» are French as well as English. Those are
+   claims about one language, so they are recorded PER LANGUAGE — a global list would let the same
+   English word through for Korean and Chinese, where it certainly is not right, which is the shape
+   of hole this whole file exists to close. Each entry was read once before it was written here. */
+export const SAME_AS_EN = {
+  de: new Set(['Tsunami']),
+  es: new Set(['Tsunami']),
+  fr: new Set(['Satellites', 'Positions', 'Tsunami']),
+};
 export function isStructural(path, value, doc) {
   if (/\.sections\[\d+\]\.(id|count)$/.test(path)) return true;
   const m = /^(.*\.blocks\[\d+\])\[(\d+)\]$/.exec(path);
@@ -151,7 +162,9 @@ function main() {
   if (wantMissing >= 0) {
     const html = process.argv[wantMissing + 1];
     const doc = pageDoc(html) || new Map();
-    const needsWork = (v) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim());
+    const code = (pageCodes().find((r) => r.html === html) || {}).code;
+    const needsWork = (v) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim())
+      && !((SAME_AS_EN[code] || new Set()).has(String(v).trim()));
     const gaps = work.filter((k) => !doc.has(k) || (needsWork(en.get(k)) && doc.get(k) === en.get(k)));
     console.error(`${html}: ${gaps.length} of ${work.length} translatable strings have no entry`);
     for (const k of gaps) console.log(k + '\t' + JSON.stringify(en.get(k)));
@@ -195,11 +208,12 @@ function main() {
      ⚠ SO THE TEST IS «DIFFERENT FROM ENGLISH», with one narrow exemption: a string with no letters
      in it at all (a number, a symbol, a bare year range) is the same in every language and is
      counted as done. Formulas and slot ids never reach here — they are structural, above. */
-  const needsWork = (v) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim());
+  const needsWork = (v, code) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim())
+    && !((SAME_AS_EN[code] || new Set()).has(String(v).trim()));
   const rows = pageCodes().map(({ code, html }) => {
     const doc = pageDoc(html);
     const have = doc ? work.filter((k) => doc.has(k)
-      && (code === 'en' || !needsWork(en.get(k)) || doc.get(k) !== en.get(k))).length : 0;
+      && (code === 'en' || !needsWork(en.get(k), code) || doc.get(k) !== en.get(k))).length : 0;
     return { code, html, file: !!doc, have, want: work.length };
   });
   if (process.argv.includes('--json')) {
