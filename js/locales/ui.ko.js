@@ -2545,4 +2545,17 @@ window.IntMapLang.define('ko', { ui: {
   "Wetland rice": "논벼",
   "Wheat": "밀",
   "Yams and other roots": "얌·기타 뿌리작물",
-  "Yield": "단수",} });
+  "Yield": "단수",
+  "Advanced settings": "고급 설정",
+  "Clear the loaded earthquake": "불러온 지진 해제",
+  "Depth": "깊이",
+  "Fault geometry": "단층 형상",
+  "Magnitude": "규모",
+  "Model assumptions": "모델 가정",
+  "Play": "재생",
+  "Playback speed": "재생 속도",
+  "Rupture size": "진원역 크기",
+  "Seismic wave simulator": "지진파 시뮬레이터",
+  "Strike / dip / rake": "주향 / 경사 / 슬립각",
+  "Time since the rupture began": "파열 시작 이후 경과 시간",
+  "When": "발생 시각",} });

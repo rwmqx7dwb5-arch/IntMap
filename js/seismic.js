@@ -708,6 +708,10 @@ window.IntMapModules.seismic=function(HOST){
        feed. ⚠ Declared up here with the rest of the panel state, above render() — #R200 lost a whole
        boot to a `let` a function could reach before its declaration had been evaluated. */
     let evSrc='past';
+    /* (#R242) the player's two glyphs — SVG, so they scale with the button and inherit its colour
+       (a text ▶/⏸ renders at a different baseline in every font, which is what the old row did). */
+    const SVG_PLAY='<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" style="margin-left:2px;"><path d="M7 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
+    const SVG_PAUSE='<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" rx="1.4"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.4"/></svg>';
     const MAXT=2400;
     /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
        TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
@@ -1895,6 +1899,14 @@ window.IntMapModules.seismic=function(HOST){
       if(!GE().layers.has('seis-sta-n')) GE().layers.add({id:'seis-sta-n',type:'symbol',source:SRC,filter:['==',['get','kind'],'station'],
         layout:{'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':true,'text-ignore-placement':true},
         paint:{'text-color':'#111111'}});
+      /* (#R242) the cities the panel picked: a smaller ringed dot and the name, under the numbered
+         markers above so a placed point always wins the overlap. */
+      if(!GE().layers.has('seis-city')) GE().layers.add({id:'seis-city',type:'circle',source:SRC,filter:['==',['get','kind'],'city'],
+        paint:{'circle-radius':4.5,'circle-color':'#ffffff','circle-stroke-color':'#1c1c1e','circle-stroke-width':1.6,'circle-opacity':0.95}});
+      if(!GE().layers.has('seis-city-n')) GE().layers.add({id:'seis-city-n',type:'symbol',source:SRC,filter:['==',['get','kind'],'city'],
+        layout:{'text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.82),'text-font':['literal',['Noto Sans Regular']],
+          'text-anchor':'top','text-offset':[0,0.62],'text-optional':true,'text-max-width':9},
+        paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.85)','text-halo-width':1.5}});
       if(!GE().layers.has('seis-epi')) GE().layers.add({id:'seis-epi',type:'circle',source:SRC,filter:['==',['get','kind'],'epi'],
         paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.4}});
       /* ══ (#R232) 「地震波伝播は、波がどの波かわからないから名称を記載して。」 ═══════════════════════
@@ -2550,6 +2562,16 @@ window.IntMapModules.seismic=function(HOST){
         /* the name sits on the arc in view, so it reads the radius for THAT bearing */
         label((b)=>rad(null,b),sw.col,sw.name(),sw.v); });
       stations.forEach((s,i)=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{kind:'station',n:String(i+1)}}));   /* (#R210) the marker carries its row number */
+      /* ══ ⚠⚠ (#R242) THE OBSERVATION CITIES GO ON THE MAP TOO ═══════════════════════════════════════
+         「地震シミュレータで観測都市に関してはマッピングするように。」 The table's rows come from
+         `nearby()` = the points the reader PLACED plus the major cities `obsCities()` picks around the
+         epicentre — and only the placed half was ever drawn. So the panel named ten cities and the map
+         showed none of them: nothing tied a row to a place, and 「近隣の都市のみ」 was a claim the
+         picture could not back. They are drawn as a smaller marker WITH THE CITY'S NAME beside it, so
+         a reader can tell at a glance which is a point they chose (numbered disc) and which the panel
+         chose for them. ⚠ Same source, same `nearby()`, so the map and the table cannot disagree. */
+      try{ obsCities().forEach(c=>{ if(stations.some(s=>s.name===c.name)) return;
+        feats.push({type:'Feature',geometry:{type:'Point',coordinates:[c.lng,c.lat]},properties:{kind:'city',name:String(c.name||'')}}); }); }catch(_){}
       setData(feats);
     }
     /* (#R234) which way the reader is looking, from the epicentre — see `label` in drawFronts. */
@@ -2680,16 +2702,83 @@ window.IntMapModules.seismic=function(HOST){
            that the button which produces the answer was the fifth control in the fourth card. */
         '.sq-foot{flex:0 0 auto;padding:9px 12px calc(11px + env(safe-area-inset-bottom,0px));'
           +'border-top:1px solid var(--glass-border,rgba(128,128,128,0.22));background:var(--input-bg);}',
-        '.sq-track{display:flex;align-items:center;gap:4px;margin-bottom:7px;}',
-        '.sq-tk{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;'
-          +'font-size:'+FS_S+';font-weight:600;color:var(--text-main);opacity:0.5;white-space:nowrap;overflow:hidden;'
-          +'text-overflow:ellipsis;padding:4px 2px;border-radius:8px;}',
-        '.sq-tk.done{opacity:1;}',
-        '.sq-tk.now{opacity:1;background:var(--primary-color);color:#fff;}',
-        '.sq-fkdot{flex:0 0 auto;width:13px;height:13px;border-radius:50%;border:1.5px solid currentColor;'
-          +'background:transparent;font-size:9px;line-height:10px;text-align:center;font-style:normal;opacity:0.75;}',
-        '.sq-fkdot.on{background:var(--primary-color);border-color:transparent;color:#fff;opacity:1;}',
-        '.sq-tk.now .sq-fkdot{border-color:#fff;}',
+        /* (#R242) the tick track that used to be here is gone — 「チェック画面？はいらない」. */
+        /* ══ (#R242) THE PLAYER — 「時刻バーとか再生機構はもっと…洗練されたiOS風のUIに」 ═══════════════
+           A round accent play/pause, a scrubber whose elapsed half is filled, the two times under its
+           ends, and the rate as a segmented pill. `accent-color` paints the native range's fill in
+           Chromium/Safari/Firefox alike; the thumb is styled for the two engines that need it. */
+        '.sq-player{display:flex;flex-direction:column;gap:10px;}',
+        '.sq-pl-top{display:flex;align-items:center;gap:12px;}',
+        '.sq-play{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;'
+          +'background:var(--primary-color);color:#fff;display:flex;align-items:center;justify-content:center;'
+          +'box-shadow:0 2px 8px rgba(0,0,0,0.16);transition:transform .12s ease,filter .12s ease;padding:0;}',
+        '.sq-play:active{transform:scale(0.94);}',
+        '.sq-play:hover{filter:brightness(1.06);}',
+        '.sq-pl-bar{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}',
+        '.sq-pl-bar input[type=range]{width:100%;margin:0;height:22px;background:transparent;'
+          +'accent-color:var(--primary-color);cursor:pointer;-webkit-appearance:none;appearance:none;}',
+        '.sq-pl-bar input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;'
+          +'background:rgba(128,128,128,0.28);}',
+        '.sq-pl-bar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;'
+          +'width:15px;height:15px;border-radius:50%;background:#fff;border:none;margin-top:-5px;'
+          +'box-shadow:0 1px 4px rgba(0,0,0,0.32);}',
+        '.sq-pl-bar input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:rgba(128,128,128,0.28);}',
+        '.sq-pl-bar input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;'
+          +'background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.32);}',
+        '.sq-pl-times{display:flex;justify-content:space-between;font-size:'+FS_S+';'
+          +'font-variant-numeric:tabular-nums;color:var(--text-muted);}',
+        '.sq-pl-times .sq-tv{color:var(--text-main);font-weight:600;}',
+        '.sq-sites{border-collapse:collapse;width:100%;table-layout:auto;}',
+        '.sq-sites th,.sq-sites td{padding:1px 3px;}',
+        '.sq-sites th:first-child,.sq-sites td:first-child{padding-left:0;}',
+        /* the classic auto-layout squeeze: `width:100%;max-width:0` makes THIS the only elastic
+           column, so the six numeric columns keep their natural width and the name truncates. */
+        '.sq-st-nm{padding:2px 5px 2px 0 !important;width:100%;max-width:0;'
+          +'overflow-wrap:anywhere;line-height:1.3;}',
+        '.sq-tbl{position:relative;}',
+        '.sq-ev-row{display:flex;align-items:center;gap:6px;}',
+        '.sq-ev-x{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.24));'
+          +'background:var(--input-bg);color:var(--text-muted);font-size:13px;line-height:1;cursor:pointer;padding:0;}',
+        '.sq-ev-x:hover{color:var(--text-main);}',
+        '.sq-obs-h{font-weight:600;color:var(--text-main);margin-bottom:5px;}',
+        '.sq-obs{width:100%;border-collapse:collapse;table-layout:fixed;}',
+        '.sq-obs th,.sq-obs td{text-align:left;vertical-align:top;padding:4px 0;'
+          +'border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));font-weight:400;'
+          +'overflow-wrap:anywhere;line-height:1.5;}',
+        '.sq-obs tr:first-child th,.sq-obs tr:first-child td{border-top:none;}',
+        '.sq-obs th{width:38%;padding-right:8px;color:var(--text-muted);}',
+        '.sq-obs td{color:var(--text-main);}',
+        '.sq-obs-w th{width:auto;color:var(--text-muted);}',
+        '.sq-obs-w th span{display:block;color:var(--text-main);margin-top:1px;}',
+        '.sq-leg{display:flex;flex-wrap:wrap;gap:5px;}',
+        '.sq-lgc{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;'
+          +'padding:0 7px;border-radius:7px;font-size:'+FS_S+';font-weight:700;line-height:1;'
+          +'font-variant-numeric:tabular-nums;box-sizing:border-box;}',
+        '.sq-pl-spd{display:flex;align-items:center;gap:8px;}',
+        '.sq-pl-spdl{flex:0 0 auto;font-size:'+FS_S+';color:var(--text-muted);}',
+        '.sq-pl-chips{flex:1;min-width:0;display:flex;gap:3px;background:var(--input-bg);border-radius:9px;'
+          +'padding:3px;overflow-x:auto;scrollbar-width:none;}',
+        '.sq-pl-chips::-webkit-scrollbar{display:none;}',
+        '.sq-spdc{flex:1 0 auto;border:none;background:transparent;color:var(--text-main);cursor:pointer;'
+          +'font-size:'+FS_S+';font-variant-numeric:tabular-nums;padding:5px 8px;border-radius:7px;line-height:1.2;}',
+        '.sq-spdc.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        /* ══ (#R242) 「Open the tsunami simulatorを（洗練されたボタンを保ちながら）もっと目立たせろ」 ═════
+           It was a tinted outline among five other tinted rows. Now it is the only FILLED element in
+           the result card — the ocean gradient, a 48 px target, its own glyph in a translucent disc,
+           and the estimate as a second line rather than a parenthesis. Still one button, still the
+           same handler. */
+        '.sq-tsu{width:100%;min-height:52px;display:flex;align-items:center;gap:11px;text-align:left;'
+          +'padding:9px 13px;border:none;border-radius:14px;cursor:pointer;color:#fff;'
+          +'background:linear-gradient(135deg,#0a84ff 0%,#00b8d4 100%);'
+          +'box-shadow:0 4px 14px rgba(10,132,255,0.34);transition:transform .12s ease,box-shadow .12s ease;}',
+        '.sq-tsu:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(10,132,255,0.42);}',
+        '.sq-tsu:active{transform:translateY(0);}',
+        '.sq-tsu-ic{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.22);'
+          +'display:flex;align-items:center;justify-content:center;font-size:16px;}',
+        '.sq-tsu-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}',
+        '.sq-tsu-t b{font-size:'+FS+';font-weight:600;line-height:1.3;}',
+        '.sq-tsu-t span{font-size:'+FS_S+';opacity:0.9;line-height:1.3;}',
+        '.sq-tsu-go{flex:0 0 auto;font-size:17px;opacity:0.85;}',
         '.sq-fhint{font-size:'+FS_S+';color:var(--text-main);line-height:1.45;margin-bottom:8px;}',
         /* the instruction banner keeps #R234's shape and moves inside the card it belongs to */
         '.sq-banner{padding:8px 10px;border-radius:9px;background:var(--input-bg);'
@@ -2753,7 +2842,7 @@ window.IntMapModules.seismic=function(HOST){
        ⚠ EVERY BOX IS EMPTY WHEN IT IS ON AUTO, with the estimate as its PLACEHOLDER. That is the one
        arrangement in which the same control says "the model chose 52°" and "I choose 60°" without a
        second widget per row, and clearing a box is how a value goes back to being estimated. */
-    let _fadvOpen=false;
+    let _advOpen=false;   /* (#R242) ONE fold now — see _advHTML() */
     function _fadvRow(k,label,val,step,min,max,unit){
       const pinned=(faultOver[k]!=null);
       return '<label class="sq-row">'+label+(unit?(' <span style="opacity:.6;">'+unit+'</span>'):'')
@@ -2767,13 +2856,29 @@ window.IntMapModules.seismic=function(HOST){
        earthquake: the stress drop Brune's corner frequency is built from, the site class used only
        where the DEM cannot reach, and the crustal Q the far field is most sensitive to. Each keeps
        its own units, range and step exactly as it had them — this moves them, it does not change
-       what any of them does. `_madvOpen` survives a re-render the same way `_fadvOpen` does. */
-    let _madvOpen=false;
-    function _modelAdvHTML(){
-      return '<details class="sq-madv-box"'+(_madvOpen?' open':'')+' style="margin-top:-2px;">'
+       what any of them does. `_advOpen` survives a re-render. */
+    /* ══ ⚠⚠ (#R242) ONE 詳細設定, NOT TWO ═══════════════════════════════════════════════════════════
+       「Advanced設定はひとつにまとめろ。」 The panel had 「詳細設定 — 断層形状」 in card 2 and
+       「詳細設定 — モデルの仮定」 in card 3, so a reader looking for "the advanced settings" had to
+       know there were two of them and which card each lived in. `_advHTML()` is one <details> with
+       both groups inside it, under the Parameters card — the fault group appears only while there IS
+       a drawn rupture, exactly as before, and it is a sub-heading now rather than a second fold.
+       ⚠ Every control keeps its class, so nothing about the handlers below changes. */
+    function _advHTML(){
+      const f=_faultAdvHTML();
+      return '<details class="sq-adv-box"'+(_advOpen?' open':'')+' style="margin-top:-2px;">'
         +'<summary style="cursor:pointer;font-size:'+FS+';color:var(--text-main);padding:2px 0;">'
-        +L('Advanced — model assumptions','詳細設定 — モデルの仮定','Erweitert — Modellannahmen','Подробно — допущения модели','Avanzado — supuestos del modelo')
+        +L('Advanced settings','詳細設定','Erweiterte Einstellungen','Расширенные настройки','Ajustes avanzados')
         +'</summary><div style="display:flex;flex-direction:column;gap:8px;padding:7px 0 2px;">'
+        +f+(f?'<hr style="border:0;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));margin:2px 0;">':'')
+        +'<div class="sq-advh" style="font-size:'+FS_S+';font-weight:600;color:var(--text-muted);">'
+        +L('Model assumptions','モデルの仮定','Modellannahmen','Допущения модели','Supuestos del modelo')+'</div>'
+        +_modelAdvHTML()
+        +'</div></details>';
+    }
+    function _modelAdvHTML(){
+      return ''
+        +'<div style="display:flex;flex-direction:column;gap:8px;">'
         +'<label class="sq-row">'+L('Stress drop (MPa)','応力降下量 (MPa)','Spannungsabfall (MPa)','Сброс напряжений (МПа)','Caída de esfuerzo (MPa)')+'<input class="sq-sd sq-num" type="number" min="0.3" max="30" step="0.5" value="'+stressDropMPa+'"></label>'
         +'<label class="sq-row">'+L('Ground (no-DEM fallback)','地盤（DEM欠損時）','Untergrund (ohne DEM)','Грунт (без DEM)','Terreno (sin DEM)')
           +'<select class="sq-site sq-sel" style="width:132px;">'
@@ -2791,16 +2896,15 @@ window.IntMapModules.seismic=function(HOST){
            panel (#R234 ⑪). 1.00 restores the constant-velocity circles exactly. */
         +'<label class="sq-row">'+L('Oceanic path, surface waves (×)','海洋地殻を通る表面波 (×)','Ozeanischer Pfad, Oberflächenwellen (×)','Океанический путь, поверхностные волны (×)','Trayecto oceánico, ondas superficiales (×)')
           +'<input class="sq-og sq-num" type="number" min="1" max="1.3" step="0.01" value="'+OCEAN_G+'"></label>'
-        +'</div></details>';
+        +'</div>';
     }
     function _faultAdvHTML(){
       if(!fault) return '';
       const pinned=Object.keys(faultOver).length;
-      return '<details class="sq-fadv-box"'+(_fadvOpen?' open':'')+' style="margin-top:-2px;">'
-        +'<summary style="font-size:'+FS+';color:var(--text-main);cursor:pointer;">'
-        +L('Advanced — fault geometry','詳細設定 — 断層形状','Erweitert — Bruchgeometrie','Подробно — геометрия разрыва','Avanzado — geometría de falla')
-        +(pinned?(' <b style="color:var(--primary-color);">'+pinned+'</b>'):'')+'</summary>'
-        +'<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;">'
+      return '<div class="sq-advh" style="font-size:'+FS_S+';font-weight:600;color:var(--text-muted);">'
+        +L('Fault geometry','断層形状','Bruchgeometrie','Геометрия разрыва','Geometría de falla')
+        +(pinned?(' <b style="color:var(--primary-color);">'+pinned+'</b>'):'')+'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:5px;">'
         +'<div style="font-size:'+FS_S+';color:var(--text-main);line-height:1.5;">'
         +L('The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.',
            '描いた輪郭は断層面の地表投影です。傾斜・幅・深さは長さと形状から推定します（Wells & Coppersmith 1994 からマグニチュードを消去した関係）。平均すべり量は上の応力降下量から決まります（Eshelby の円形クラック）。空欄のままなら自動推定です。',
@@ -2815,7 +2919,7 @@ window.IntMapModules.seismic=function(HOST){
         +_fadvRow('slipM',L('Average slip','平均すべり量','Mittlerer Versatz','Средняя подвижка','Deslizamiento medio'),fault.slipM.toFixed(2),0.1,0.01,80,'m')
         +'<button class="sq-fauto sq-btn sq-btn-wide">'
         +L('Back to automatic','すべて自動推定に戻す','Zurück zu automatisch','Вернуть к авто','Volver a automático')+'</button>'
-        +'</div></details>';
+        +'</div>';
     }
     /* ══ (#R206) THE ACCENT FILL MEANS "ON", SO A BUTTON THAT IS NEVER ON MUST NOT WEAR IT ═════════
        「地震シミュレータで震源地を設置ボタンがずっと選択中になっているというUIがくそ。」
@@ -2900,14 +3004,11 @@ window.IntMapModules.seismic=function(HOST){
       if(_needsRun()||fldBusy) return 'run';
       return 'done';
     }
+    /* ⚠ (#R242) 「✓Rupture area✓HypocenterIntensityのチェック画面？はいらない。」 — the tick track
+       #R240 put in this footer is gone. What the footer is FOR stays: the one line naming the next
+       action, and the primary button, still pinned outside the scroller so it is always reachable. */
     function _flowFoot(){
       const st=_flowStep();
-      const tick=(on)=>on?'<i class="sq-fkdot on">✓</i>':'<i class="sq-fkdot"></i>';
-      const track='<div class="sq-track">'
-        +'<span class="sq-tk'+(fault?' done':'')+'">'+tick(!!fault)+L('Rupture area','震源域','Bruchfläche','Очаг','Ruptura')+'</span>'
-        +'<span class="sq-tk'+(epi?' done':(st==='epi'?' now':''))+'">'+tick(!!epi)+L('Hypocenter','震央','Hypozentrum','Гипоцентр','Hipocentro')+'</span>'
-        +'<span class="sq-tk'+(st==='done'?' done':(st==='run'?' now':''))+'">'+tick(st==='done')+L('Intensity','震度分布','Intensität','Интенсивность','Intensidad')+'</span>'
-        +'</div>';
       const hint=st==='epi'
         ? L('Tap the map to place the hypocenter. Drawing a rupture area first is optional.','地図をタップして震央を置いてください。先に震源域を描くこともできます（任意）。','Tippen Sie auf die Karte, um das Hypozentrum zu setzen. Eine Bruchfläche vorher zu zeichnen ist optional.','Нажмите на карту, чтобы поставить гипоцентр. Очаг можно обвести заранее — это необязательно.','Toque el mapa para colocar el hipocentro. Dibujar antes la ruptura es opcional.')
         : (st==='run'
@@ -2916,7 +3017,7 @@ window.IntMapModules.seismic=function(HOST){
       const btn=(st==='epi')
         ? '<button class="sq-go-epi sq-btn sq-btn-wide sq-btn-accent">② '+L('Place the hypocenter','震央を置く','Hypozentrum setzen','Поставить гипоцентр','Colocar el hipocentro')+'</button>'
         : '<button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button>';
-      return '<div class="sq-foot"'+(minimised?' style="display:none;"':'')+'>'+track
+      return '<div class="sq-foot"'+(minimised?' style="display:none;"':'')+'>'
         +'<div class="sq-fhint">'+hint+'</div>'+btn+'</div>';
     }
     function render(){ if(!panel) return; _ensureCss();
@@ -2967,7 +3068,7 @@ window.IntMapModules.seismic=function(HOST){
           +'<button class="sq-src-past '+SEGC(evSrc!=='recent')+'">'+L('Past earthquakes','過去の地震','Vergangene Beben','Прошлые землетрясения','Terremotos pasados')+'</button>'
           +'<button class="sq-src-recent '+SEGC(evSrc==='recent')+'">'+L('Recent earthquakes','最近の地震','Aktuelle Beben','Недавние землетрясения','Terremotos recientes')+'</button>'
         +'</div>'
-        +'<select class="sq-ev" style="width:100%;box-sizing:border-box;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
+        +'<div class="sq-ev-row"><select class="sq-ev" style="flex:1;min-width:0;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
         +(evSrc==='recent'
           ? ('<option value="">'+(_realBusy
                 ? L('Loading the recent earthquakes…','最近の地震を読み込み中…','Aktuelle Beben werden geladen…','Загрузка недавних землетрясений…','Cargando terremotos recientes…')
@@ -2976,8 +3077,16 @@ window.IntMapModules.seismic=function(HOST){
                    : L('No list yet — press to load','一覧はまだありません（押すと読み込みます）','Noch keine Liste — zum Laden drücken','Списка ещё нет — нажмите для загрузки','Aún no hay lista — pulse para cargar')))+'</option>'
              +_realFeats.map((f,i)=>'<option value="'+i+'">'+HOST.escapeHtml(_realLabel(f))+'</option>').join(''))
           : ('<option value="">'+L('Choose an earthquake…','地震を選んでください…','Beben auswählen…','Выберите землетрясение…','Elija un terremoto…')+'</option>'
-             +QUAKE_EVENTS.map(e=>'<option value="'+e.id+'"'+(evId===e.id?' selected':'')+'>'+HOST.escapeHtml(L.apply(null,e.name))+' · M'+e.mw.toFixed(1)+'</option>').join('')))
-        +'</select></div>'
+             +QUAKE_EVENTS.map(e=>'<option value="'+e.id+'"'+(evId===e.id?' selected':'')+'>'+HOST.escapeHtml(L.arr(e.name))+' · M'+e.mw.toFixed(1)+'</option>').join('')))
+        +'</select>'
+        /* ══ ⚠ (#R242) A LOADED EARTHQUAKE HAS TO BE UNLOADABLE ═════════════════════════════════════
+           「過去の地震から選んだ後、それを選択解除して戻す方法がない。」 The list's first option is
+           「地震を選んでください…」 and choosing it did nothing — `onchange` returned early on the empty
+           value — so once a preset was in, the panel had no way back to the state it opens in. Now that
+           option CLEARS, and there is a visible ✕ beside the list while something is loaded, because a
+           way back that is only reachable by re-opening a dropdown is not a way back. */
+        +(evNow?('<button class="sq-ev-x" title="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'" aria-label="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'">✕</button>'):'')
+        +'</div>'
         +(evNow?('<div class="sq-ev-obs sq-blk" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);">'+evObsHtml(evNow)+'</div>'):'')
         +'</div></div>'
         /* CARD 2 — 震源を作る: the three steps, the instruction for whichever is armed, and what the
@@ -3088,8 +3197,7 @@ window.IntMapModules.seismic=function(HOST){
           +Math.round(fault.lengthKm)+' × '+Math.round(fault.widthKm)+' km · '+L('dip','傾斜','Einfallen','падение','buzamiento')+' '+Math.round(fault.dipDeg)+'° · '
           +L('depth','深さ','Tiefe','глубина','prof.')+' '+fault.zTopKm.toFixed(1)+'–'+fault.zBotKm.toFixed(1)+' km<br>'
           +'D̄ '+fault.slipM.toFixed(2)+' m'+(fault.auto.slip?(' <span style="opacity:.7;">'+L('(auto)','（自動）','(auto)','(авто)','(auto)')+'</span>'):'')
-          +' → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'
-          +_faultAdvHTML()):'')
+          +' → <b style="color:var(--text-main);">M'+fault.mw.toFixed(1)+'</b> (M₀ '+fault.M0.toExponential(2)+' N·m)</div>'):'')   /* (#R242) the fault's own controls moved into the ONE 詳細設定 in card 3 */
         +'</div></div>'
         /* CARD 3 — パラメータ: what this earthquake IS, plus (folded) what the MODEL assumes.
            #R234 moved the three model priors behind 詳細設定 for exactly this reason; the card now
@@ -3109,7 +3217,7 @@ window.IntMapModules.seismic=function(HOST){
            a description of an earthquake — and the panel's front page is for the event. Same
            <details> shape as 詳細設定 — 断層形状 above it (#R224), closed by default, so nothing is
            lost and nothing is in the way. */
-        +_modelAdvHTML()
+        +_advHTML()
         +'</div></div>'
         /* CARD 4 — 計算と再生: the one button that computes, the bar that says how far it got, and
            the transport that moves time. They are one card because they are one loop. */
@@ -3139,11 +3247,31 @@ window.IntMapModules.seismic=function(HOST){
           +'<div class="sq-progl" style="margin-bottom:4px;font-size:'+FS+';color:var(--text-main);"></div>'
           +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
           +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>'
-        /* (#R189) real-time playback with a visible rate */
-        +'<div class="sq-blk" style="display:flex;align-items:center;gap:8px;"><button class="sq-play sq-btn" style="width:36px;flex:0 0 auto;">▶</button>'
-          +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" style="flex:1;">'
-          +'<select class="sq-spd sq-sel" style="width:70px;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
-          +'<span class="sq-tv" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">'+fmtT(tSec)+'</span></div>'
+        /* ══ ⚠⚠ (#R242) THE TRANSPORT IS A PLAYER, NOT FOUR CONTROLS IN A ROW ═══════════════════════
+           「時刻バーとか再生機構はもっとわかりやすい洗練されたiOS風のUIにしろ。」
+           It was a 36 px ▶, a bare `input[type=range]`, a `<select>` reading ×1 and a right-aligned
+           number — four widgets of four different kinds, none of which said what the number under
+           them meant. Now it reads like the transport in Music: one round accent play/pause, a full
+           width scrubber with a filled elapsed track and a real knob, the elapsed time under its
+           LEFT end and the total under its right, and the rate as a segmented pill whose选択 is a
+           chip rather than a dropdown. ⚠ SAME classes, same events, same `MAXT`/`SPEEDS`/`fmtT` —
+           `.sq-t` is still the range the playback loop writes to, `.sq-spd` is still what the speed
+           handler reads. This is a re-dress of the same mechanism, not a second one. */
+        +'<div class="sq-player sq-blk">'
+          +'<div class="sq-pl-top">'
+            +'<button class="sq-play" aria-label="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'" title="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'">'+SVG_PLAY+'</button>'
+            +'<div class="sq-pl-bar">'
+              +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" aria-label="'+L('Time since the rupture began','破壊開始からの経過時間','Zeit seit Bruchbeginn','Время от начала разрыва','Tiempo desde el inicio de la ruptura')+'">'
+              +'<div class="sq-pl-times"><span class="sq-tv">'+fmtT(tSec)+'</span><span class="sq-pl-tot">'+fmtT(MAXT)+'</span></div>'
+            +'</div>'
+          +'</div>'
+          +'<div class="sq-pl-spd" role="group" aria-label="'+L('Playback speed','再生速度','Wiedergabegeschwindigkeit','Скорость воспроизведения','Velocidad de reproducción')+'">'
+            +'<span class="sq-pl-spdl">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
+            +'<div class="sq-pl-chips">'+SPEEDS.map(v=>'<button class="sq-spdc'+(v===speed?' on':'')+'" data-spd="'+v+'">×'+v+'</button>').join('')+'</div>'
+          +'</div>'
+          /* the <select> the handler below reads stays, hidden — one source of truth for the rate */
+          +'<select class="sq-spd" style="display:none;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
+        +'</div>'
         +'</div></div>'
         /* CARD 5 — 結果 */
         +'<div><div class="sq-cap">'+L('Result','結果','Ergebnis','Результат','Resultado')+'</div><div class="sq-card">'
@@ -3160,11 +3288,13 @@ window.IntMapModules.seismic=function(HOST){
            propagation simulator (js/tsunami.js). ⚠ (#R197) it no longer has an alternative to fall back
            on: js/sims.js's `tsunami` hazard has been removed. The estimated wave height shown on the
            button is from the screening (Abe's tsunami-magnitude relation), not from the model. */
-        +(function(){ const t=tsunamiCase(); return t?('<div class="sq-blk"><button class="sq-tsu sq-btn sq-btn-wide" style="background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">🌊 '
-          +L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')
-          +' <span style="opacity:0.75;">('+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m)</span></button>'
-          +'<div style="font-size:'+FS_S+';color:var(--text-main);margin-top:5px;">'+t.why+'</div></div>'):''; })()
-        +'<div class="sq-leg sq-blk" style="display:flex;flex-wrap:wrap;gap:4px 8px;font-size:'+FS_S+';color:var(--text-main);"></div>'
+        +(function(){ const t=tsunamiCase(); return t?('<div class="sq-blk"><button class="sq-tsu">'
+          +'<span class="sq-tsu-ic" aria-hidden="true">🌊</span>'
+          +'<span class="sq-tsu-t"><b>'+L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')+'</b>'
+          +'<span>'+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m</span></span>'
+          +'<span class="sq-tsu-go" aria-hidden="true">›</span></button>'
+          +'<div style="font-size:'+FS_S+';color:var(--text-main);margin-top:7px;">'+t.why+'</div></div>'):''; })()
+        +'<div class="sq-leg sq-blk"></div>'
         +'<div class="sq-out sq-blk" style="line-height:1.6;"></div>'
         +'</div></div>'
         /* CARD 6 — 注意と出典. ⚠ the safety line is OUTSIDE the fold (#R232) and outside the card,
@@ -3219,9 +3349,11 @@ window.IntMapModules.seismic=function(HOST){
          Each half keeps the handler it already had — `applyEvent` for the curated catalogue,
          `applyReal` for a USGS feature — so neither path changed, only where you reach it from. */
       { const ev=panel.querySelector('.sq-ev');
-        if(ev) ev.onchange=()=>{ const v=ev.value; if(v==='') return;
+        if(ev) ev.onchange=()=>{ const v=ev.value;
+          if(v===''){ clearEvent(); return; }   /* (#R242) 「選択解除して戻す方法がない」 */
           if(evSrc==='recent'){ const i=+v; if(_realFeats[i]) applyReal(_realFeats[i]); }
           else applyEvent(v); }; }   /* (#R232) */
+      { const x=panel.querySelector('.sq-ev-x'); if(x) x.onclick=()=>clearEvent(); }   /* (#R242) */
       { const past=panel.querySelector('.sq-src-past'), rec=panel.querySelector('.sq-src-recent');
         if(past) past.onclick=()=>{ if(evSrc==='past') return; evSrc='past'; render(); };
         /* switching to the feed with nothing loaded is what starts the query — the reader should not
@@ -3259,10 +3391,10 @@ window.IntMapModules.seismic=function(HOST){
           if(faultResolve()){ render(); refresh(); } touch(); }; }
       /* the panel re-renders on every solve, so the disclosure has to remember it was open — or
          typing one number would close the box the number was typed into */
-      { const d=panel.querySelector('.sq-fadv-box'); if(d) d.addEventListener('toggle',()=>{ _fadvOpen=d.open; }); }
+      { const d=panel.querySelector('.sq-adv-box'); if(d) d.addEventListener('toggle',()=>{ _advOpen=d.open; }); }   /* (#R242) one fold */
       /* (#R234) …and the same for the model-assumption box, or opening it and touching a spinner
          (which re-renders) would close it under the reader's hand. */
-      { const d=panel.querySelector('.sq-madv-box'); if(d) d.addEventListener('toggle',()=>{ _madvOpen=d.open; }); }
+      
       panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); };
       panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } };
       panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); };
@@ -3283,6 +3415,11 @@ window.IntMapModules.seismic=function(HOST){
       const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; touch(); }; }
       const tl=panel.querySelector('.sq-t'); tl.oninput=()=>{ tSec=+tl.value; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); };
       const sp=panel.querySelector('.sq-spd'); if(sp){ sp.onchange=e=>{ speed=Math.max(1,+e.target.value||1); }; }
+      /* (#R242) the segmented rate writes to that same <select> and fires its change — the chips are
+         a skin over the control, never a second place the speed is stored. */
+      panel.querySelectorAll('.sq-spdc').forEach(b=>{ b.onclick=()=>{ const v=+b.getAttribute('data-spd')||1;
+        panel.querySelectorAll('.sq-spdc').forEach(o=>o.classList.toggle('on',o===b));
+        if(sp){ sp.value=String(v); sp.dispatchEvent(new Event('change',{bubbles:true})); } else speed=v; }; });
       /* (#R189) REAL time by default: the front advances by wall-clock seconds × the chosen rate.
          The old loop hard-coded 10 s of simulation every 90 ms ≈ 111× and nothing on screen said so. */
       /* ══ ⚠ (#R235) 「動作は離散的ではなくスムーズにして」 ═══════════════════════════════════════
@@ -3299,14 +3436,15 @@ window.IntMapModules.seismic=function(HOST){
          same motion sampled at the display's rate instead of at 11 Hz. */
       const RT=()=>window.IntMapRuntime;
       const _stop=()=>{ playing=0; try{ const R=RT(); R&&R.frame&&R.frame('seismic:play',()=>{}); }catch(_){} };
-      const pb=panel.querySelector('.sq-play'); pb.onclick=()=>{ if(playing){ _stop(); pb.textContent='▶'; }
-        else { pb.textContent='⏸'; let last=performance.now(); playing=1;
+      const pb=panel.querySelector('.sq-play'); const _pbIcon=(on)=>{ try{ pb.innerHTML=on?SVG_PAUSE:SVG_PLAY; pb.classList.toggle('on',!!on); }catch(_){} };
+      pb.onclick=()=>{ if(playing){ _stop(); _pbIcon(0); }
+        else { _pbIcon(1); let last=performance.now(); playing=1;
           const step=()=>{ if(!playing||!opened) return;
             const now=performance.now();
             tSec=(tSec+(now-last)/1000*speed)%MAXT; last=now;
             tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts();
-            const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } };
-          const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; pb.textContent='▶'; } } };
+            const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } };
+          const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } } };
       /* (#R236) `.sq-real` / `.sq-real-sel` are gone — both halves are the one picker at the top of
          the panel now, wired beside `.sq-ev` above. ⚠ The old lines were an unguarded
          `querySelector('.sq-real').onclick`, which on a panel without that button throws inside
@@ -3457,9 +3595,24 @@ window.IntMapModules.seismic=function(HOST){
           zTopKm:fault.zTopKm, strikeDeg:fault.strikeDeg }:null }); }catch(_){ return false; }
       return true; }
     /* (#R189) the painted field's own legend — the class colours of the ACTIVE scale */
+    /* ══ ⚠ (#R242) THE LEGEND IS THE NUMBER, PAINTED ══════════════════════════════════════════════
+       「震度の凡例は、🟥 X のようにするのではなく、数字の背景をその色で塗るという形に。」
+       A swatch beside a numeral makes the reader match two things; the map paints a colour and the
+       table prints a class, and the legend is the one place both are said at once. So the CLASS
+       ITSELF wears its colour — the same chip the table's intensity column already uses — and the
+       text colour is chosen from the fill's luminance so IX on dark red and IV on pale cyan are both
+       legible. */
     function legend(){ const el=panel&&panel.querySelector('.sq-leg'); if(!el) return;
       const cls=(scale==='jma')?JMA_CLASSES:MMI_CLASSES;
-      el.innerHTML=cls.map(k=>'<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2.5px;background:'+k.col+';display:inline-block;border:1px solid rgba(128,128,128,0.35);"></span>'+((scale==='jma')?jmaLabel(k.id):k.id)+'</span>').join('');
+      el.innerHTML=cls.map(k=>'<span class="sq-lgc" style="background:'+k.col+';color:'+_onCol(k.col)+';">'+((scale==='jma')?jmaLabel(k.id):k.id)+'</span>').join('');
+    }
+    /* black or white, whichever the fill can carry (sRGB relative luminance, the WCAG split point) */
+    function _onCol(hex){
+      try{
+        const h=String(hex||'').replace('#',''); if(h.length<6) return '#fff';
+        const f=(i)=>{ const c=parseInt(h.slice(i,i+2),16)/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
+        return (0.2126*f(0)+0.7152*f(2)+0.0722*f(4))>0.42 ? '#101014' : '#ffffff';
+      }catch(_){ return '#ffffff'; }
     }
     /* (#R189) the rupture draw flow: press once → the shared free-draw tool is live; press again →
        its loop becomes the rupture (area → M₀ → Mw). The tool is the SAME free-draw every other
@@ -3596,13 +3749,13 @@ window.IntMapModules.seismic=function(HOST){
            well-known cities the table adds for context are not numbered because they are not
            placed and there is nothing on the map to match them to. */
         const badge=c.n?('<span style="display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--text-main);color:var(--bg-color);font-size:'+FS_S+';font-weight:700;margin-right:5px;">'+c.n+'</span>'):'';
-        return '<tr><td style="padding:1px 6px 1px 0;white-space:nowrap;">'+badge+c.name+'</td>'
-          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+Math.round(a.km).toLocaleString()+' km</td>'
-          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
-          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;color:#ffb020;">'+fmtT(a.tS)+'</td>'
-          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+fmtT(a.durS)+'</td>'
-          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
-          +'<td style="padding:3px 0 3px 6px;text-align:right;">'+iCell(a,CW)+'</td></tr>'; }).join('');
+        return '<tr><td class="sq-st-nm" title="'+HOST.escapeHtml(String(c.name||''))+'">'+badge+c.name+'</td>'
+          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+Math.round(a.km).toLocaleString()+'</td>'   /* (#R242) the unit is in the header — six characters of every row back for the place name */
+          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
+          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;color:#ffb020;">'+fmtT(a.tS)+'</td>'
+          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+fmtT(a.durS)+'</td>'
+          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
+          +'<td style="padding:3px 0 3px 4px;text-align:right;">'+iCell(a,CW)+'</td></tr>'; }).join('');
       o.innerHTML='<div><b>M'+mw.toFixed(1)+'</b> · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km · M<sub>0</sub> '+s.M0.toExponential(2)+' N·m'
         +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+(fault
           ?(L('rupture','震源域','Bruch','очаг','ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km²')
@@ -3666,10 +3819,23 @@ window.IntMapModules.seismic=function(HOST){
            ⚠ EVERY NUMERIC CELL IS `white-space:nowrap`, which is what gives the table a real minimum
            to overflow WITH. Without it a squeezed column wraps 「13m 59s」 onto two lines instead,
            i.e. the overflow is hidden by breaking the reading rather than by scrolling it. */
+        /* ══ ⚠⚠⚠ (#R242) THE TABLE FITS. A SCROLLER IS THE FALLBACK, NOT THE ANSWER ═══════════════════
+           「過去の地震から選択した場合、各地の表が横スクロールできない。」 — reported again after
+           #R241 gave this box `overflow-x:auto`. MEASURED on the shipped build (panel 362 px): the
+           scroller works (clientWidth 312, scrollWidth 356) — and that is not what was asked for. A
+           reader looking at a table whose last column is sliced in half does not want to learn a
+           gesture; they want to see the column. Seven columns in 312 px is 44 px too many, so the
+           table is made to FIT: the place name is the only elastic column (it truncates with an
+           ellipsis and keeps its `title`), the six numeric columns lose 2 px of padding each, and
+           `width:100%;max-width:0` on that one cell is what makes the six numeric columns keep their
+           natural width instead of being squeezed — and the name WRAPS there rather than being cut,
+           because an ellipsis hides the very thing the row is about.
+           The scroller stays for the case that still overflows — a 260 px docked column — and now
+           says so with a fade at the edge it is scrollable from. */
         +'<div class="sq-tbl" style="margin-top:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;">'
-        +'<table style="font-size:'+FS+';border-collapse:collapse;width:100%;"><thead><tr style="color:var(--text-main);">'
+        +'<table class="sq-sites" style="font-size:'+FS+';"><thead><tr style="color:var(--text-main);">'
         +'<th style="text-align:left;font-weight:600;">'+L('Place','地点','Ort','Место','Lugar')+'</th>'
-        +'<th style="text-align:right;font-weight:600;">Δ</th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
+        +'<th style="text-align:right;font-weight:600;white-space:nowrap;">Δ <span style="opacity:.65;font-weight:400;">km</span></th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
         +'<th style="text-align:right;font-weight:600;color:#ffb020;">S</th>'
         +'<th style="text-align:right;font-weight:600;">'+L('shaking','継続','Dauer','длит.','durac.')+'</th>'
         +'<th style="text-align:right;font-weight:600;">PGV</th>'
@@ -3724,6 +3890,24 @@ window.IntMapModules.seismic=function(HOST){
       try{ const b=ring.reduce((a,p)=>[Math.min(a[0],p[0]),Math.min(a[1],p[1]),Math.max(a[2],p[0]),Math.max(a[3],p[1])],[180,90,-180,-90]);
         GE().camera.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:80,duration:900}); }catch(_){}
     }
+    /* ══ ⚠⚠ (#R242) UNLOADING IS THE EXACT INVERSE OF LOADING ══════════════════════════════════════
+       「過去の地震から選んだ後、それを選択解除して戻す方法がない。」 `applyEvent` sets five things —
+       the catalogue row, the depth, the epicentre, the rupture plane and the published outline — so
+       unloading puts all five back rather than only forgetting the row (which would leave the map
+       showing an earthquake the panel no longer names: exactly the 「出たまま」 defect one item
+       below). The panel returns to the state `open()` starts in, and a rupture or an epicentre the
+       reader placed BY HAND is not touched — only what a preset put there is removed. */
+    function clearEvent(){
+      const had=!!(evNow||evPub);
+      evId=''; evNow=null; evPub=null;
+      if(!had){ render(); return; }
+      try{ faultClear(); }catch(_){}
+      epi=null; stations.length=0; depthKm=10; mw=7.0; tSec=0; playing=0;
+      try{ setClickMode('epi'); }catch(_){}   /* back to the state open() leaves an empty panel in */
+      /* the painted field belonged to the earthquake that has just been unloaded; `buildField`
+         itself drops it when there is no epicentre, and `refresh()` below is what asks it to. */
+      refresh(); render();
+    }
     function applyEvent(id){
       const ev=QUAKE_EVENTS.find(e=>e.id===id)||null;
       evId=ev?ev.id:''; evNow=ev; evPub=null;
@@ -3764,30 +3948,42 @@ window.IntMapModules.seismic=function(HOST){
     }
     /* what was actually MEASURED, beside what the model says — 「実測値も併記する」. Quoted with its
        source and never mixed into the computed numbers above it. */
+    /* ══ ⚠⚠ (#R242) WHAT WAS OBSERVED IS A TABLE, NOT A PARAGRAPH ═══════════════════════════════════
+       「…というようにテキストべったりではなく、ちゃんと表形式でまとめろ。」
+       Every line in this block is a NAME and a VALUE — the time, the magnitude, the depth, the focal
+       mechanism, the rupture size, the peak intensity, the slip, the tsunami, the casualties, the
+       source. #R232 wrote them as one run of sentences with the names in a lighter grey, so the
+       values did not line up and the whole thing read as prose you skim past. Two columns, one row
+       per fact, the value column carrying the numbers — and the two long free-text rows (the note and
+       the citations) keep a full-width row of their own, because forcing a paragraph into a value
+       column is how a table becomes unreadable again. */
     function evObsHtml(ev){
       const esc=(x)=>HOST.escapeHtml(String(x==null?'':x));
       const o=ev.obs||{};
-      const row=(k,v)=>v?('<div><span style="opacity:0.8;">'+k+'</span> '+esc(v)+'</div>'):'';
-      const pick=(a)=>Array.isArray(a)?L.apply(null,a):a;
-      return '<div style="font-weight:600;color:var(--text-main);">'+L('Observed at the time','当時の実測値','Damals gemessen','Наблюдалось тогда','Observado entonces')+'</div>'
-        +'<div style="opacity:0.85;">'+esc(String(ev.when||'').replace('T',' '))+' · Mw '+ev.mw.toFixed(1)
-        +' · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+ev.depthKm+' km'
-        +' · '+L('strike/dip/rake','走向/傾斜/すべり角','Streichen/Fallen/Rake','простир./падение/подвижка','rumbo/buz./cabeceo')+' '+ev.strike+'°/'+ev.dip+'°/'+ev.rake+'°'
-        +' · '+ev.lenKm+'×'+ev.widKm+' km</div>'
-        +row(L('Peak intensity','最大震度','Max. Intensität','Макс. интенсивность','Intensidad máx.')+':', pick(o.intensity))
-        +row(L('Slip','すべり量','Versatz','Подвижка','Deslizamiento')+':', o.slipM)
-        +row(L('Tsunami','津波','Tsunami','Цунами','Tsunami')+':', o.tsunamiM)
-        +row(L('Casualties','人的被害','Opfer','Жертвы','Víctimas')+':', o.deaths)
-        +(o.note?('<div style="margin-top:2px;">'+esc(pick(o.note))+'</div>'):'')
-        +'<div style="margin-top:2px;opacity:0.7;">'+L('Source','出典','Quelle','Источник','Fuente')+': '+esc(ev.src)+'</div>'
-        /* ⚠ (#R235) THE DRAWN OUTLINE GETS ITS OWN LINE, because it is a different claim from the row
-           above it: `ev.src` says where the catalogue's NUMBERS come from, this says whose model the
-           SHAPE on the map is. It appears only when the published outline actually arrived — when
-           the fetch fails the panel is showing the rectangle and says nothing it cannot support. */
-        +(evPub?('<div style="margin-top:2px;opacity:0.7;">'
-          +L('Rupture outline','震源域の輪郭','Bruchfläche','Контур очага','Contorno de ruptura')+': USGS ShakeMap'
-          +(evPub.segments>1?(' ('+evPub.segments+' '+L('segments','セグメント','Segmente','сегментов','segmentos')+')'):'')
-          +(evPub.ref?(' — '+esc(evPub.ref.replace(/https?:\/\/\S+/g,'').trim().slice(0,180))):'')+'</div>'):'');
+      const rows=[];
+      const row=(k,v)=>{ if(v==null||v==='') return; rows.push('<tr><th>'+k+'</th><td>'+esc(v)+'</td></tr>'); };
+      const wide=(k,v)=>{ if(v==null||v==='') return; rows.push('<tr class="sq-obs-w"><th colspan="2">'+k+'<span>'+esc(v)+'</span></th></tr>'); };
+      const pick=(a)=>Array.isArray(a)?L.arr(a):a;   /* (#R242) through pick() itself — see js/lang-registry.js */
+      row(L('When','発生時刻','Zeitpunkt','Время','Cuándo'), String(ev.when||'').replace('T',' '));
+      row(L('Magnitude','規模','Magnitude','Магнитуда','Magnitud'), 'Mw '+ev.mw.toFixed(1));
+      row(L('Depth','深さ','Tiefe','Глубина','Profundidad'), ev.depthKm+' km');
+      row(L('Strike / dip / rake','走向／傾斜／すべり角','Streichen / Fallen / Rake','Простир. / падение / подвижка','Rumbo / buz. / cabeceo'), ev.strike+'° / '+ev.dip+'° / '+ev.rake+'°');
+      row(L('Rupture size','震源域の大きさ','Bruchfläche','Размер очага','Tamaño de la ruptura'), ev.lenKm+' × '+ev.widKm+' km');
+      row(L('Peak intensity','最大震度','Max. Intensität','Макс. интенсивность','Intensidad máx.'), pick(o.intensity));
+      row(L('Slip','すべり量','Versatz','Подвижка','Deslizamiento'), o.slipM);
+      row(L('Tsunami','津波','Tsunami','Цунами','Tsunami'), o.tsunamiM);
+      row(L('Casualties','人的被害','Opfer','Жертвы','Víctimas'), o.deaths);
+      wide(L('Note','注記','Hinweis','Примечание','Nota'), pick(o.note));
+      wide(L('Source','出典','Quelle','Источник','Fuente'), ev.src);
+      /* ⚠ (#R235) THE DRAWN OUTLINE GETS ITS OWN ROW, because it is a different claim from the one
+         above it: `ev.src` says where the catalogue's NUMBERS come from, this says whose model the
+         SHAPE on the map is. It appears only when the published outline actually arrived — when the
+         fetch fails the panel is showing the rectangle and says nothing it cannot support. */
+      if(evPub) wide(L('Rupture outline','震源域の輪郭','Bruchfläche','Контур очага','Contorno de ruptura'),
+        'USGS ShakeMap'+(evPub.segments>1?(' ('+evPub.segments+' '+L('segments','セグメント','Segmente','сегментов','segmentos')+')'):'')
+        +(evPub.ref?(' — '+evPub.ref.replace(/https?:\/\/\S+/g,'').trim().slice(0,180)):''));
+      return '<div class="sq-obs-h">'+L('Observed at the time','当時の実測値','Damals gemessen','Наблюдалось тогда','Observado entonces')+'</div>'
+        +'<table class="sq-obs">'+rows.join('')+'</table>';
     }
 
     /* ══ (#R232) THE OBSERVATION POINTS ARE THE MAJOR CITIES AROUND IT, AND ONLY THE ONES THAT SHAKE ══
@@ -4113,7 +4309,12 @@ window.IntMapModules.seismic=function(HOST){
         if(o) o.innerHTML=L('Could not reach the USGS feed.','USGSのフィードに接続できませんでした。','USGS-Feed nicht erreichbar.','Не удалось получить данные USGS.','No se pudo acceder al feed del USGS.'); }
     }
     /* the old body of loadReal, given the chosen feature rather than finding one itself */
+    /* ⚠ (#R242) 「Past earthquakes の情報表示が、recent earthquakes で新たな地震を選択しても出たまま。」
+       The 「当時の実測値」 table belongs to a row of the CURATED catalogue, and this is the other
+       source — so loading from the feed clears it, exactly as loading from the catalogue replaces it.
+       Same three variables `applyEvent` sets, set to nothing. */
     function applyReal(f){
+      evId=''; evNow=null; evPub=null;
       if(!f||!f.geometry) return;
       const o=panel&&panel.querySelector('.sq-out');
       setEpi([f.geometry.coordinates[0],f.geometry.coordinates[1]]);   /* (#R210) a real USGS event is a different earthquake — the placed points go */

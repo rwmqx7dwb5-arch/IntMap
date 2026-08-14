@@ -54,6 +54,11 @@ import '../js/place-framing.js';
    renderer, no app state — so it is verified in Node, and it must precede every module that builds a
    symbol layer, which is all of them. */
 import '../js/label-scale.js';
+/* (#R242) …and the OTHER two «how is text drawn on the map» decisions, in one module beside it: which
+   FACE the renderer uses for a label (the app ships its own Inter SDF atlases and hands MapLibre the
+   UI's CJK family for the ideographic blocks) and how wide a news band comes out. It must precede the
+   map's construction, which reads `cjkFamily()` and `glyphRewrite` out of it. */
+import '../js/map-typography.js';
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
    ⚠ ADDING A LANGUAGE IS NOW ONE FILE — `js/locales/ui.<code>.js` — AND NOTHING HERE. The seven

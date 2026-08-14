@@ -422,7 +422,37 @@ window.IntMapModules.newsUi=function(HOST){
     });
     return feats; }catch(_){ return feats; } }
 
+  /* ══ ⚠⚠ (#R242) THE EMPTY LINE IS A READOUT OF THE COUNT, NOT A ONE-SHOT ═══════════════════════
+     「Legends and tool windows will appear here instead of over the map. は全部凡例やポップアップを
+       消した後も出せ。凡例やポップアップは一番上に詰めてパネルに表示しろ。（最初のうちは上に詰め
+       られていないことがある）」
+     #R238 wrote this line once, from renderUI, when the tab was opened with nothing in it — so
+     closing the last panel left an empty column with no explanation, and a panel that arrived while
+     the tab was already open landed UNDERNEATH the line (the 「上に詰められていない」 case: 114 px of
+     padding above the first legend). js/window-manager.js owns the count and calls this on every
+     membership change; this function owns the words, because the language lives here. It is
+     idempotent — one element, added or removed to match `n`, always as the LAST child so the panels
+     stay packed at the top. */
+  function _dockEmptyRender(n){
+    try{
+      const df=document.getElementById('docked-feed'); if(!df) return;
+      if(n==null){ try{ n=HOST.dockedCount?HOST.dockedCount():df.querySelectorAll('.im-docked').length; }catch(_){ n=df.querySelectorAll('.im-docked').length; } }
+      const old=df.querySelector('.dock-empty');
+      if(n){ if(old) old.remove(); return; }
+      const txt=window.IntMapLang.t(HOST.lang,
+        'Legends and tool windows will appear here instead of over the map.',
+        '凡例やツール窓は、地図の上ではなくここに表示されます。',
+        'Legenden und Werkzeugfenster erscheinen hier statt über der Karte.',
+        'Легенды и окна инструментов появятся здесь, а не поверх карты.',
+        'Las leyendas y ventanas de herramientas aparecerán aquí en vez de sobre el mapa.');
+      if(old){ if(old.textContent!==txt) old.textContent=txt; return; }   /* a language change re-words it */
+      const e=document.createElement('div'); e.className='empty-msg dock-empty'; e.textContent=txt; df.appendChild(e);
+    }catch(_){}
+  }
   function renderUI(){ publishSaved();
+    /* (#R242) ⚠ published from HERE, not at factory level: tests/r168 #4 requires this file to only
+       DECLARE while it runs. js/window-manager.js calls it whenever the docked count changes. */
+    window._dockEmptyRender=_dockEmptyRender;
     const feed=document.getElementById('live-news-feed'),
           cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
@@ -476,16 +506,9 @@ window.IntMapModules.newsUi=function(HOST){
        column with no explanation reads as a broken tab. */
     if(HOST.mode==='docked'){ const df=document.getElementById('docked-feed');
       if(df){ df.style.display='flex';
-        let n=0; try{ n=HOST.dockRefresh?HOST.dockRefresh():0; }catch(_){}
-        const old=df.querySelector('.dock-empty'); if(old) old.remove();
-        if(!n){ const e=document.createElement('div'); e.className='empty-msg dock-empty';
-          e.textContent=window.IntMapLang.t(HOST.lang,
-            'Legends and tool windows will appear here instead of over the map.',
-            '凡例やツール窓は、地図の上ではなくここに表示されます。',
-            'Legenden und Werkzeugfenster erscheinen hier statt über der Karte.',
-            'Легенды и окна инструментов появятся здесь, а не поверх карты.',
-            'Las leyendas y ventanas de herramientas aparecerán aquí en vez de sobre el mapa.');
-          df.appendChild(e); } }
+        try{ HOST.dockRefresh&&HOST.dockRefresh(); }catch(_){}   /* (#R242) it calls _dockEmptyRender itself */
+        _dockEmptyRender();
+      }
       if(sb) sb.style.display='none';
       try{ HOST.updateOcclusion(); }catch(_){} return; }
     if(HOST.mode==='info'){ dash.style.display='flex'; sb.style.display='flex'; HOST.renderDashboard(); HOST.updateOcclusion(); return; }

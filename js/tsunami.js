@@ -179,8 +179,8 @@ window.IntMapModules.tsunami=function(HOST){
        SOURCE, the numerics and the arrival field — not the bathymetry, and not the coastline, which
        stays a 0.25° staircase. Refining that means a finer bundled floor; it is written down in
        DEV-NOTES as the next step rather than implied by a finer grid. */
-    const NEAR_BAND=()=>((typeof isMobile==='function'&&isMobile())?8:10);
-    const NEAR_CPD=()=>((typeof isMobile==='function'&&isMobile())?8:12);   /* cells per degree */
+    const NEAR_BAND=()=>((typeof isMobile==='function'&&isMobile())?8:9);
+    const NEAR_CPD=()=>((typeof isMobile==='function'&&isMobile())?12:20);   /* cells per degree (#R242) */
     const NEAR_MAX_H=3;
     function nearDomain(lat){
       const cpd=NEAR_CPD(), band=NEAR_BAND();
@@ -195,7 +195,29 @@ window.IntMapModules.tsunami=function(HOST){
        model was drawn into a COARSER picture. The band is a fortieth of the globe's area, so the same
        byte budget buys far more detail: dec 3 gives 1440 × 80, which is 4 px a degree in both
        directions (twice the global picture) at 115 KB a frame against the global run's 230 KB. */
-    function nearDec(){ return (typeof isMobile==='function'&&isMobile())?4:3; }
+    /* ══ ⚠⚠⚠ (#R242) THE NEAR PICTURE IS NOT DECIMATED AT ALL, BECAUSE IT IS A WINDOW ═══════════════
+       「津波シミュレータの波伝播のアニメーションの解像度を爆発的に上げろ。全部が無理なら半径1000km
+         以内のみ。」
+       The near scope solves a full-circle band (longitude wraps; #R204 would not change the solver,
+       and that is still the right call). The PICTURE never needed the circle: a
+       1,000 km radius is ±9° of longitude, so 39/40 of every frame was ocean the wave will not reach
+       inside the near scope's own 3-hour cap — sent, companded and drawn, every frame.
+       So the worker now crops the frame to a longitude window (src/tsunami-worker.js `winI0/winNx`),
+       and the bytes that buys go into resolution instead:
+
+           before   4,320 × 240 grid, dec 3  →  1,440 × 80 picture   4.0 px/°   115 KB a frame
+           after    7,200 × 360 grid, dec 1  →    480 × 360 picture  20.0 px/°   173 KB a frame
+
+       — five times the linear detail in longitude and 4.5× in latitude (20× the pixels over the area
+       that matters) for one and a half times the bytes. The model grid goes 1/12° → 1/20° (9.3 km →
+       5.6 km cells) with the band tightened to ±9° so the memory the solver holds grows by 1.7×
+       rather than by 4×. ⚠ The phone keeps a smaller one (1/12°, ±8°, dec 1 → 12 px/°), which is
+       still three times its old picture.
+       ⚠ WHAT IS UNCHANGED: the global scope, the physics, the sea floor (still the bundled 0.25°
+       image plus #R205's measured patch), and the analysis fields, which have always come back at
+       full grid resolution. */
+    function nearDec(){ return 1; }
+    const NEAR_WIN_DEG=()=>((typeof isMobile==='function'&&isMobile())?10:12);   /* half-width of the picture window */
     /* ══ (#R205) THE SEA FLOOR AROUND THE SOURCE, MEASURED RATHER THAN AVERAGED ═══════════════════
        「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
 
@@ -318,6 +340,7 @@ window.IntMapModules.tsunami=function(HOST){
         const onModel=(m)=>{
           if(my!==seq||!sim) return;
           sim.fx=m.fx; sim.fy=m.fy; sim.dec=m.dec;
+          sim.winI0=m.winI0|0; sim.winNx=m.winNx|0; sim.lng0=m.lng0; sim.lng1=m.lng1;   /* (#R242) the picture's window */
           sim.land=new Uint8Array(m.land); sim.landD=new Uint8Array(m.landD); sim.depth=new Int16Array(m.depth);
           sim.dt=m.dt; sim.steps=m.steps; sim.total=m.total; sim.nFrames=m.nFrames; sim.cellKm=m.cellKm;
           sim.strike=m.strike; sim.dipDeg=m.dipDeg; sim.seaCells=m.seaCells; sim.hMax=m.hMax; sim.cMax=m.cMax;
@@ -352,7 +375,12 @@ window.IntMapModules.tsunami=function(HOST){
         try{ fine=await fineFloor(my); }catch(_){ fine=null; }
         if(my!==seq) return;
         pct=Math.max(pct,10); render();
-        const job=W.run({ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec,
+        /* (#R242) the picture's longitude window: the source ±NEAR_WIN_DEG, snapped to grid columns.
+           A global run sends nothing and gets the whole circle, exactly as before. */
+        let winI0=0, winNx=0;
+        if(near){ const w=NEAR_WIN_DEG(); winNx=Math.round(2*w*D.nx/360);
+          winI0=Math.round((wrapLng(epi[0])-w+180)/360*D.nx); }
+        const job=W.run({ nx:D.nx, ny:D.ny, lat0:D.lat0, lat1:D.lat1, dec, winI0, winNx,
                           bathy:B.slice(), src:{ lng:wrapLng(epi[0]), lat:epi[1], mw, depthKm,
                             rupture:rupture?{ ring:rupture.ring, areaKm2:+rupture.areaKm2||0, slipM:+rupture.slipM||0 }:null },
                           fine:fine?{ w:fine.w, h:fine.h, lat0:fine.lat0, lat1:fine.lat1, lng0:fine.lng0, lng1:fine.lng1,
@@ -517,10 +545,13 @@ window.IntMapModules.tsunami=function(HOST){
     function maxDecim(){
       if(maxD||!sim||!sim.emax) return maxD;
       const nx=sim.nx, dec=sim.dec, fx=sim.fx, fy=sim.fy, e=sim.emax;
+      /* (#R242) the picture may be a WINDOW on the grid (see nearDec) — the same periodic column
+         mapping the worker uses, so the crest field lands on the same pixels the frames do. */
+      const i0=sim.winI0|0, col=(i,a)=>{ const c=i0+i*dec+a; return c<nx?c:c-nx; };
       const out=new Float32Array(fx*fy);
       for(let j=0;j<fy;j++) for(let i=0;i<fx;i++){
         let m=0;
-        for(let b=0;b<dec;b++){ const r=(j*dec+b)*nx+i*dec; for(let a=0;a<dec;a++){ const v=e[r+a]; if(v>m) m=v; } }
+        for(let b=0;b<dec;b++){ const r=(j*dec+b)*nx; for(let a=0;a<dec;a++){ const v=e[r+col(i,a)]; if(v>m) m=v; } }
         out[j*fx+i]=m;
       }
       maxD=out; return out;
@@ -569,7 +600,9 @@ window.IntMapModules.tsunami=function(HOST){
 
     /* ⚠ (#R197) THE WHOLE WORLD, AND THE FOUR CORNERS SAY SO. A dynamic image is placed by its four
        corners; −180…180 is a full turn, which is exactly what the periodic solver produces. */
-    function coords(){ return sim?[[-180,sim.lat1],[180,sim.lat1],[180,sim.lat0],[-180,sim.lat0]]:null; }
+    /* (#R242) …and the corners are the WINDOW's, which for a global run is still the full turn. */
+    function coords(){ if(!sim) return null; const a=(sim.lng0==null?-180:sim.lng0), b=(sim.lng1==null?180:sim.lng1);
+      return [[a,sim.lat1],[b,sim.lat1],[b,sim.lat0],[a,sim.lat0]]; }
     function installPaint(){
       if(!sim||!sim.fx||!_imCanDraw()) return false;
       buildLUT();
@@ -797,13 +830,17 @@ window.IntMapModules.tsunami=function(HOST){
           +'<option value="near"'+(scope==='near'?' selected':'')+'>'
             +L('Near source · '+km+' km','震源近傍 · '+km+' km','Nahe der Quelle · '+km+' km','Вблизи очага · '+km+' км','Cerca del origen · '+km+' km')+'</option>'
           +'</select></label>';
-        if(scope==='near') body+='<div style="font-size:'+FS_S+';color:var(--text-main);line-height:1.45;">'
-          +L('Latitude '+nd.lat0.toFixed(0)+'° to '+nd.lat1.toFixed(0)+'°, all longitudes, at four times the resolution. Capped at '+NEAR_MAX_H+' h — past that the wave reaches the band edge.',
-             '緯度 '+nd.lat0.toFixed(0)+'°〜'+nd.lat1.toFixed(0)+'°・全経度を4倍の解像度で。'+NEAR_MAX_H+'時間で打ち切り（それ以降は波が帯の端に達します）。',
-             'Breite '+nd.lat0.toFixed(0)+'° bis '+nd.lat1.toFixed(0)+'°, alle Längen, vierfache Auflösung. Auf '+NEAR_MAX_H+' h begrenzt — danach erreicht die Welle den Bandrand.',
-             'Широты '+nd.lat0.toFixed(0)+'°…'+nd.lat1.toFixed(0)+'°, все долготы, вчетверо детальнее. Не более '+NEAR_MAX_H+' ч — далее волна доходит до края полосы.',
-             'Latitud '+nd.lat0.toFixed(0)+'° a '+nd.lat1.toFixed(0)+'°, todas las longitudes, con cuádruple resolución. Máximo '+NEAR_MAX_H+' h — después la ola alcanza el borde.')
-          +'</div>'; }
+        /* (#R242) …and it says what the PICTURE is now, not only what the grid is: the animation is
+           drawn undecimated over a window around the source, which is the resolution the reader can
+           actually see. */
+        if(scope==='near'){ const w=NEAR_WIN_DEG(), pxd=NEAR_CPD();
+          body+='<div style="font-size:'+FS_S+';color:var(--text-main);line-height:1.45;">'
+          +L('Latitude '+nd.lat0.toFixed(0)+'° to '+nd.lat1.toFixed(0)+'° at '+km+' km cells; the animation is drawn undecimated over ±'+w+'° of the source (about '+Math.round(w*111)+' km), at '+pxd+' pixels per degree. Capped at '+NEAR_MAX_H+' h — past that the wave reaches the band edge.',
+             '緯度 '+nd.lat0.toFixed(0)+'°〜'+nd.lat1.toFixed(0)+'° を '+km+' km セルで計算し、震源から±'+w+'°（約'+Math.round(w*111)+' km）の範囲は間引きなし・1度あたり'+pxd+'画素で描画します。'+NEAR_MAX_H+'時間で打ち切り（それ以降は波が帯の端に達します）。',
+             'Breite '+nd.lat0.toFixed(0)+'° bis '+nd.lat1.toFixed(0)+'° mit '+km+'-km-Zellen; die Animation wird ±'+w+'° um die Quelle unreduziert gezeichnet ('+pxd+' Pixel pro Grad). Auf '+NEAR_MAX_H+' h begrenzt — danach erreicht die Welle den Bandrand.',
+             'Широты '+nd.lat0.toFixed(0)+'°…'+nd.lat1.toFixed(0)+'°, ячейки '+km+' км; анимация рисуется без прореживания в пределах ±'+w+'° от очага ('+pxd+' пикселей на градус). Не более '+NEAR_MAX_H+' ч — далее волна доходит до края полосы.',
+             'Latitud '+nd.lat0.toFixed(0)+'° a '+nd.lat1.toFixed(0)+'° con celdas de '+km+' km; la animación se dibuja sin diezmar en ±'+w+'° del origen ('+pxd+' píxeles por grado). Máximo '+NEAR_MAX_H+' h — después la ola alcanza el borde.')
+          +'</div>'; } }
       body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
         +L('Simulate','計算時間','Simulieren','Смоделировать','Simular')
         +'<select class="tsu-hours" style="flex:1;'+BTN+'">'

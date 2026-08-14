@@ -88,8 +88,8 @@ body{
   margin:0;
   background:var(--pg-bg);
   color:var(--pg-ink);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",
-              "Hiragino Sans","Noto Sans JP","Yu Gothic UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  /* (#R242) 「IntMap内のすべての文字は…」 — css/fonts.css owns the stack and sets it per <html lang> */
+  font-family:var(--im-font);
   font-size:17px;
   line-height:1.62;
   letter-spacing:-0.003em;

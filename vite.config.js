@@ -65,7 +65,16 @@ export const STATIC_ASSETS = [
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)
   'og-image.jpg',                       // social preview
   'data',                               // basins / ecoregions / maddison / railways / volcanoes
+  /* ⚠ (#R242) THE TYPEFACE, AND IT IS TWO KINDS OF FILE IN ONE DIRECTORY. 「IntMap内のすべての文字は
+     …地名ラベルも例外ではない。（恒久的に）」 — `fonts/*.woff2` are the bundled Inter and Pretendard
+     that css/fonts.css declares, and `fonts/Inter Regular/*.pbf` are the SDF glyph atlases the map's
+     symbol layers are redirected to (js/app-body.js `transformRequest`). Both are plain static files
+     served from this origin; `fonts/src/Inter.ttf` is the SOURCE the atlases are generated from
+     (scripts/build-glyphs.mjs) and is excluded below so a 876 KB desktop font is not deployed. */
+  'fonts',
 ];
+/* (#R242) …minus the generator's input: it belongs in the repo, not in dist/. */
+export const STATIC_EXCLUDE = ['fonts/src'];
 /* …plus every root-level PNG (the four Köppen periods × two resolutions, and the layer previews). */
 const ROOT_PNG = () => readdirSync(ROOT).filter((f) => f.endsWith('.png'));
 
@@ -78,7 +87,8 @@ function copyStatic() {
       for (const rel of [...STATIC_ASSETS, ...ROOT_PNG()]) {
         const from = join(ROOT, rel);
         if (!existsSync(from)) { this.warn(`static asset missing, not copied: ${rel}`); continue; }
-        cpSync(from, join(out, rel), { recursive: statSync(from).isDirectory() });
+        cpSync(from, join(out, rel), { recursive: statSync(from).isDirectory(),
+          filter: (src) => !STATIC_EXCLUDE.some((ex) => src.replace(/\\/g, '/').endsWith('/' + ex)) });
       }
     },
   };

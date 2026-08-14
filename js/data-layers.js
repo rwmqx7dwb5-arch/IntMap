@@ -1037,6 +1037,19 @@ window.IntMapModules.dataLayers=function(HOST){
            (see end of this fn + the #layer-active-section CSS) so adding/removing chips never reflows the
            rows above → a layer toggle moves the panel 0px on desktop AND mobile, while it stays pinned visible. */
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
+        /* (#R242) one button, created once and re-used on every rebuild — the same shape `_edu` and
+           `btn-correlate` have, so `reorganizeLayerPanel` moves it rather than duplicating it. */
+        const _seisBtn=()=>{
+          let b=document.getElementById('btn-seismic-sim');
+          const lbl=window.IntMapLang.t(lang,'Seismic wave simulator','地震波シミュレーター','Seismische-Wellen-Simulator','Симулятор сейсмических волн','Simulador de ondas sísmicas');
+          if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
+          b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn';
+          b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
+          b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
+          b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.seismic')){ OS.exec('sim.seismic',{source:'ui'}); return; } }catch(_){}
+            try{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({}); }catch(_){} }); }catch(_){} };
+          return b;
+        };
         order.push(mkHr());
         const placed=new Set();
         if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
@@ -1062,6 +1075,13 @@ window.IntMapModules.dataLayers=function(HOST){
           const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(window.IntMapLang.t(lang,'May be incomplete or not fully working.','動作しない場合や不完全な場合があります。','Kann unvollständig sein oder nicht voll funktionieren.','Может быть неполным или работать не полностью.','Puede estar incompleto o no funcionar del todo.')); order.push(note);
           otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); });
         }
+        /* ══ ⚠ (#R242) THE SEISMIC SIMULATOR IS REACHABLE FROM THE LAYERS PANEL ═════════════════════
+           「地震シミュレータはレイヤー欄からも開けるようにしろ。」 It could be opened from Atlas, from
+           a right-click on the map (js/tool-panel.js) and from the command palette — none of which is
+           where a reader looking for it goes. It joins the Tools strip beside 比較ビュー / 相関分析 /
+           プレイグラウンド. ⚠ It is NOT a layer toggle: the module is lazy (js/lazy-modules.js), so
+           the button fetches it on press exactly like every other on-demand feature (#R209), and the
+           OPEN itself goes through the OS action so the palette and this button are one path. */
         /* Tools section (compare + upload) pinned to the very bottom */
         const upBtn=document.getElementById('btn-upload-geojson');
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
@@ -1069,6 +1089,7 @@ window.IntMapModules.dataLayers=function(HOST){
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
         const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
+        const _seis=_seisBtn();   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 */
         tools.innerHTML='';
         const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(window.IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
@@ -1077,9 +1098,10 @@ window.IntMapModules.dataLayers=function(HOST){
         if(corrBtn){ corrBtn.style.display=''; corrBtn.style.width='100%'; corrBtn.style.margin='6px 0 0'; tools.appendChild(corrBtn); }   /* (#R39) two-layer scatter/correlation */
         if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
+        if(_seis) tools.appendChild(_seis);   /* (#R242) the seismic simulator, beside the other tools */
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
         if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
-        if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
+        if(cmpBtn||upBtn||_seis){ order.push(mkHr()); order.push(tools); }
         order.forEach(n=>dd.appendChild(n));
         /* (#R64) Active layers is now the sticky-TOP bar ("一番下にあったら意味ない"); its fixed-height chip row
            preserves the R32 zero-movement guarantee. _placeActiveSection (called below) prepends it. */
