@@ -47,6 +47,13 @@ jobs:
       # duration cannot buy headroom. See scripts/test-budget.mjs.
       - name: Test-time budget (the ceiling only goes down)
         run: npm run check:testbudget
+      # (#R239) 「今後言語を追加するのが完璧に100%にできるような仕組みを作っておいて。今回のように、
+      # いつまでたっても言語対応の漏れが見つかることは許されない。」 One gate for every translatable
+      # surface — the keyed table wherever it is declared, the inline L() table, the five positional
+      # arguments, the two reading pages, and the data-i18n keys the markup asks for. A 漏れ is found
+      # by a reader only when nothing between the edit and the deploy asks; this asks, every push.
+      - name: Translation gate (every language, every surface)
+        run: npm run check:i18n
       # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
       # which is exactly the kind of guard that must not be optional. `npm run test:checks` is the
