@@ -393,7 +393,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdRelief.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
       <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Deep sea','深海','Tiefsee','Глубоководье','Mar profundo')}</span><span>${window.IntMapLang.t(HOST.lang,'Peaks','高峰','Gipfel','Вершины','Cumbres')}</span></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'AWS Terrain (terrarium DEM)','AWS Terrain（terrarium DEM）')}</div>`;
+      <div class="dl-hint">AWS Terrain (terrarium DEM)</div>`;
     mc.appendChild(lgdRelief);
     lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level-rise legend (#24) */
@@ -998,7 +998,7 @@ window.IntMapModules.dataLayers=function(HOST){
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
           ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
-          ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
+          ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail','uselect']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
           ['lyrGrpIndic',['tz']]   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */

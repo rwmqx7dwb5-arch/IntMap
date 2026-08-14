@@ -255,6 +255,30 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-tile:hover .lst-star,#layer-sidebar-r .lst-star.on{display:flex;}'
         +'#layer-sidebar-r .lst-star.on{color:#ffd60a;}'
         +'#layer-sidebar-r .lst-empty{color:var(--text-muted);font-size:12px;padding:18px 4px;text-align:center;}'
+        /* ══ ⚠⚠⚠ (#R243) THE TOOL ROW — 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 ══════
+           #R242 answered this by appending a button to `#layer-tools`, which lives inside
+           `#layer-dropdown` — the CLASSIC dropdown, and `imLayerPanel` has defaulted to `'right'`
+           since #R154. MEASURED on the shipped build: the button exists, `display:block`, and its
+           bounding rect is 0×0, because its ancestor `#layer-dropdown` is `display:none` for every
+           reader on the default setting. So the instruction was re-sent, and correctly.
+           ⚠ THE PANEL A READER OPENS IS THIS ONE, so the row is drawn here, at the end of the tile
+           browser, in the two places the browser is mounted (the right sidebar and the phone's
+           「地図とレイヤー」 sheet — see `mountInto`). It is NOT a tile: a tile toggles a layer, and this
+           opens a simulator, so it gets the full-width inset shape the rest of the app uses for a
+           verb. ⚠ AND THE OPEN GOES THROUGH THE OS ACTION (`sim.seismic`), which is what the classic
+           dropdown's button, the map's right-click menu and the command palette all call — one path,
+           three doors ([[intmap-recurring-lessons]] G). */
+        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;}'
+        +'#layer-sidebar-r .lst-toolrow,.lsr-mount .lst-toolrow{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;'
+          +'min-height:46px;padding:9px 12px;border-radius:12px;border:1px solid rgba(128,128,128,0.18);'
+          +'background:var(--card-bg);color:var(--text-main);font-size:12.5px;font-weight:500;cursor:pointer;text-align:left;'
+          +'transition:background .13s ease,border-color .13s ease;-webkit-tap-highlight-color:transparent;}'
+        +'#layer-sidebar-r .lst-toolrow:hover,.lsr-mount .lst-toolrow:hover{border-color:rgba(128,128,128,0.38);background:var(--input-bg);}'
+        +'#layer-sidebar-r .lst-toolrow:active,.lsr-mount .lst-toolrow:active{transform:scale(0.995);}'
+        +'#layer-sidebar-r .lst-toolic,.lsr-mount .lst-toolic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
+          +'background:color-mix(in srgb, var(--primary-color) 16%, transparent);color:var(--primary-color);}'
+        +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;}'
+        +'#layer-sidebar-r .lst-toolgo,.lsr-mount .lst-toolgo{flex:0 0 auto;color:var(--text-muted);font-size:15px;}'
         /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
            overlay + Clear-all carry the same functions in one constant-height row. */
@@ -392,12 +416,42 @@ window.IntMapModules.layerSidebar=function(HOST){
             _secClosed[secName]=now; }); }
         curGrid.appendChild(tileFor(r)); });
       root.querySelectorAll('.lst-grid').forEach(g=>{ const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.children.length; h.appendChild(c); } });
+      root.appendChild(toolsBlock());   /* (#R243) 「地震シミュレータはレイヤー欄からも」 — see the CSS note */
       /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
          root is found by CLASS within its own host. The id is kept on the sidebar's copy because
          tests and older selectors name it. */
       const old=host.querySelector('.lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
       if(host===sb) root.id='lst-root';
       filterTiles(host); }
+    /* ══ (#R243) THE TOOLS BLOCK AT THE FOOT OF THE TILE BROWSER ═════════════════════════════════
+       One entry today — the seismic-wave simulator — declared as data so a second one is a row in
+       this array and nothing else. The glyph is inline SVG rather than an emoji (standing rule: no
+       decorative emoji), and the press goes through `IntMapOS` so the palette, the map's right-click
+       menu, the classic dropdown's button and this row are ONE path. */
+    const SVG_QUAKE='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h3.2l2.1-6.4 3 12.2 2.6-9.1 1.9 3.3H22"/></svg>';
+    const TOOLS=[{ id:'sim.seismic', ic:SVG_QUAKE,
+      label:()=>T('Seismic wave simulator','地震波シミュレーター','Seismische-Wellen-Simulator','Симулятор сейсмических волн','Simulador de ondas sísmicas'),
+      hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') }];
+    function toolsBlock(){
+      const wrap=document.createElement('div'); wrap.className='lst-tools';
+      const h=document.createElement('div'); h.className='lst-sech';
+      const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt);
+      wrap.appendChild(h);
+      TOOLS.forEach(t=>{
+        const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'; b.dataset.act=t.id;
+        const ic=document.createElement('span'); ic.className='lst-toolic'; ic.innerHTML=t.ic;
+        const tx=document.createElement('span'); tx.className='lst-toolt';
+        const nm=document.createElement('b'); nm.style.cssText='display:block;font-weight:600;'; nm.textContent=t.label();
+        const hn=document.createElement('span'); hn.style.cssText='display:block;font-size:11px;color:var(--text-muted);line-height:1.35;margin-top:1px;'; hn.textContent=t.hint();
+        tx.appendChild(nm); tx.appendChild(hn);
+        const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
+        b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
+        b.addEventListener('click',()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec) OS.exec(t.id,{source:'ui'}); }catch(_){}
+          try{ if(isMob()) close(); }catch(_){} });   /* on a phone the panel covers the map the tool needs */
+        wrap.appendChild(b);
+      });
+      return wrap;
+    }
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
       const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
@@ -657,16 +711,16 @@ window.IntMapModules.layerPresets=function(HOST){
         setTimeout(()=>{ try{ if(p.ops) Object.keys(p.ops).forEach(k=>{ try{ setLayerOpacity(k,p.ops[k]); }catch(_){} }); }catch(_){} },900);
       },60); }
     function render(){ const host=document.getElementById('lyr-presets'); if(!host) return;
-      host.innerHTML='<button id="lp-save" class="ai-test-btn" style="width:100%;">💾 <span>'+(jp()?'現在のレイヤー構成を保存':'Save current layers as preset')+'</span></button>'+
+      host.innerHTML='<button id="lp-save" class="ai-test-btn" style="width:100%;">💾 <span>'+(window.IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
         (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
           '<div style="display:flex;align-items:center;gap:6px;">'+
           '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+String(p.name).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
-          '<button data-del="'+i+'" title="'+(jp()?'削除':'Delete')+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">✕</button></div>').join('')+'</div>'):'');
+          '<button data-del="'+i+'" title="'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">✕</button></div>').join('')+'</div>'):'');
       const sv=host.querySelector('#lp-save');
-      if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(jp()?'表示中のレイヤーがありません':'No layers are on'); }catch(_){} return; }
-        const name=prompt(jp()?'プリセット名:':'Preset name:', jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
+      if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
+        const name=prompt(window.IntMapLang.t(HOST.lang,"Preset name:","プリセット名:","Name der Voreinstellung:","Название пресета:","Nombre del preajuste:"), jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
         if(!name) return; presets.push({name:String(name).slice(0,40), ids:snap.ids, ops:snap.ops}); save(); render(); };
-      host.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{ apply(presets[+b.getAttribute('data-ap')]); try{ imToast(jp()?'プリセットを適用しました':'Preset applied'); }catch(_){} });
+      host.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{ apply(presets[+b.getAttribute('data-ap')]); try{ imToast(window.IntMapLang.t(HOST.lang,"Preset applied","プリセットを適用しました","Voreinstellung angewendet","Пресет применён","Preajuste aplicado")); }catch(_){} });
       host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ presets.splice(+b.getAttribute('data-del'),1); save(); render(); });
     }
     function mount(){ if(document.getElementById('lyr-presets')) { render(); return; }
@@ -1080,7 +1134,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
     function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }
     function addFC(fc,name){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
-      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(jp()?'読み込みに失敗しました':'Failed to add layer'); return; }
+      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
       try{
         GE().layers.add({id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},before);
@@ -1089,18 +1143,18 @@ window.IntMapModules.geojsonUpload=function(HOST){
       }catch(_){}
       items.push({n,sid,name,col}); renderList(); fit(fc);
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
-      toast((jp()?'GeoJSONを表示: ':'GeoJSON added: ')+name);
+      toast((window.IntMapLang.t(HOST.lang,"GeoJSON added: ","GeoJSONを表示: ","GeoJSON hinzugefügt: ","GeoJSON добавлен: ","GeoJSON añadido: "))+name);
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
       [it.sid+'-fill',it.sid+'-line',it.sid+'-pt'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
     function renderList(){ if(!listEl) return;
-      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${jp()?'削除':'Remove'}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">✕</button></div>`).join('');
+      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">✕</button></div>`).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
     function handleFiles(files){ Array.from(files||[]).forEach(f=>{ const r=new FileReader();
-      r.onload=()=>{ let g=null; try{ g=JSON.parse(r.result); }catch(_){ toast(jp()?'JSONの解析に失敗しました':'Could not parse JSON'); return; }
-        const fc=toFC(g); if(!fc||!fc.features||!fc.features.length){ toast(jp()?'有効なGeoJSONではありません':'Not valid GeoJSON'); return; }
+      r.onload=()=>{ let g=null; try{ g=JSON.parse(r.result); }catch(_){ toast(window.IntMapLang.t(HOST.lang,"Could not parse JSON","JSONの解析に失敗しました","JSON konnte nicht gelesen werden","Не удалось разобрать JSON","No se pudo analizar el JSON")); return; }
+        const fc=toFC(g); if(!fc||!fc.features||!fc.features.length){ toast(window.IntMapLang.t(HOST.lang,"Not valid GeoJSON","有効なGeoJSONではありません","Kein gültiges GeoJSON","Некорректный GeoJSON","GeoJSON no válido")); return; }
         addFC(fc, f.name||'GeoJSON'); };
       r.readAsText(f); }); }
     fileInput.addEventListener('change',()=>{ handleFiles(fileInput.files); fileInput.value=''; });

@@ -82,6 +82,10 @@ window.IntMapModules.dashExtended=function(HOST){
 
     /* ---------- (E) New intelligence overlays ---------- */
     const jp=()=>HOST.lang==='jp';
+    /* (#R243) …and the tuples this file holds AS DATA go through the same resolver — see pickArgs()
+       in js/lang-registry.js. A {en,jp} object is the seventh shape #R241 named and is invisible to
+       every instrument; written as a call it is measured like any other call site. */
+    const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
     /* Sovereignty disputes — international lines whose recognition is split. */
     /* (#R8c) FAITHFUL real-geography traces — NOT mathematically smoothed. The user clarified that
        "smooth" must mean true-to-real-data, not a Catmull-Rom curve (which invents shape). So these are
@@ -89,13 +93,13 @@ window.IntMapModules.dashExtended=function(HOST){
        segments). Authoritative geometry would come from a bundled GeoJSON — same drop-in path as the
        languages layer — left as documented future work. */
     const DISPUTES=[
-      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[120.6,21.0],[119.8,19.8],[119.1,18.0],[118.3,16.2],[117.6,14.4],[116.7,12.6],[115.6,10.9],[114.3,9.3],[113.0,7.9],[111.6,6.5],[110.2,5.2],[109.6,4.2],[110.4,3.8],[111.8,3.9],[113.4,4.3],[114.9,5.4],[116.2,7.0],[117.2,8.9],[118.0,11.0],[118.6,13.2],[119.0,15.4],[119.4,17.6],[119.9,19.6],[120.5,21.2]] },
-      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.4,50.05],[37.7,49.6],[38.0,49.2],[38.2,48.8],[38.3,48.5],[38.25,48.2],[38.0,48.0],[37.75,47.9],[37.6,47.65],[37.1,47.4],[36.4,47.3],[35.8,47.45],[35.3,47.55],[34.5,47.2],[33.7,46.8],[32.9,46.6],[32.5,46.55]] },
-      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[77.0,35.5],[76.8,35.25],[76.5,35.0],[76.2,34.75],[75.8,34.55],[75.4,34.45],[75.0,34.35],[74.6,34.25],[74.25,34.1],[74.05,33.85],[73.95,33.5],[74.1,33.25],[74.3,32.95],[74.5,32.75],[74.65,32.66]] },
-      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.78],[126.85,37.88],[127.05,37.98],[127.28,38.12],[127.5,38.22],[127.72,38.28],[127.95,38.32],[128.18,38.45],[128.36,38.62]] },
-      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.4,26.8],[120.0,25.7],[119.5,24.5],[119.0,23.3],[118.6,22.4],[118.4,21.6]] }
+      { name:LA('Nine-dash line (S. China Sea)','九段線（南シナ海）','Neun-Striche-Linie (Südchinesisches Meer)','Линия из девяти пунктиров (Южно-Китайское море)','Línea de nueve puntos (mar de China Meridional)'), c:[[120.6,21.0],[119.8,19.8],[119.1,18.0],[118.3,16.2],[117.6,14.4],[116.7,12.6],[115.6,10.9],[114.3,9.3],[113.0,7.9],[111.6,6.5],[110.2,5.2],[109.6,4.2],[110.4,3.8],[111.8,3.9],[113.4,4.3],[114.9,5.4],[116.2,7.0],[117.2,8.9],[118.0,11.0],[118.6,13.2],[119.0,15.4],[119.4,17.6],[119.9,19.6],[120.5,21.2]] },
+      { name:LA('Ukraine front line (approx.)','ウクライナ前線（概略）','Frontlinie Ukraine (ungefähr)','Линия фронта в Украине (примерно)','Frente de Ucrania (aprox.)'), c:[[37.4,50.05],[37.7,49.6],[38.0,49.2],[38.2,48.8],[38.3,48.5],[38.25,48.2],[38.0,48.0],[37.75,47.9],[37.6,47.65],[37.1,47.4],[36.4,47.3],[35.8,47.45],[35.3,47.55],[34.5,47.2],[33.7,46.8],[32.9,46.6],[32.5,46.55]] },
+      { name:LA('Kashmir Line of Control','カシミール管理線','Kaschmir-Kontrolllinie','Линия контроля в Кашмире','Línea de Control de Cachemira'), c:[[77.0,35.5],[76.8,35.25],[76.5,35.0],[76.2,34.75],[75.8,34.55],[75.4,34.45],[75.0,34.35],[74.6,34.25],[74.25,34.1],[74.05,33.85],[73.95,33.5],[74.1,33.25],[74.3,32.95],[74.5,32.75],[74.65,32.66]] },
+      { name:LA('Korean DMZ','朝鮮半島軍事境界線','Koreanische DMZ','Корейская ДМЗ','Zona desmilitarizada de Corea'), c:[[126.68,37.78],[126.85,37.88],[127.05,37.98],[127.28,38.12],[127.5,38.22],[127.72,38.28],[127.95,38.32],[128.18,38.45],[128.36,38.62]] },
+      { name:LA('Taiwan Strait median line','台湾海峡中間線','Mittellinie der Taiwanstraße','Срединная линия Тайваньского пролива','Línea media del estrecho de Taiwán'), c:[[120.4,26.8],[120.0,25.7],[119.5,24.5],[119.0,23.3],[118.6,22.4],[118.4,21.6]] }
     ];
-    function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
+    function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:L.arr(d.name)}}))}; }
     /* Geodesic air-defense coverage "domes" — reuse the radius tool's geodesic-disk builders. */
     const AD_SITES=[
       {n:'Moscow · S-400',at:[37.6,55.75],r:400,c:'#e0312e'},{n:'St Petersburg · S-400',at:[30.3,59.95],r:400,c:'#e0312e'},
@@ -162,14 +166,14 @@ window.IntMapModules.dashExtended=function(HOST){
         try{ (gj.features||[]).forEach(f=>{ const p=f.properties||(f.properties={}); const fam=_langProp(p,['family','Family','FAMILY','fam','Fam','classification']); const hue=_langHash(fam||_langProp(p,['name','Language','language']))%360; p.__col='hsl('+hue+',58%,56%)'; }); }catch(_){}
         langData=gj; langFetching=false;
         try{ GE().layers.addSource(LANG_SRC,{type:'geojson',data:gj,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); }catch(_){ cb&&cb(false); }
-      }).catch(()=>{ langFetching=false; try{ satToast(jp()?'言語データが見つかりません（data/asher_languages.geojson を配置）':'Language data not found — add data/asher_languages.geojson'); }catch(_){}
+      }).catch(()=>{ langFetching=false; try{ satToast(window.IntMapLang.t(HOST.lang,"Language data not found — add data/asher_languages.geojson","言語データが見つかりません（data/asher_languages.geojson を配置）","Sprachdaten nicht gefunden — data/asher_languages.geojson hinzufügen","Языковые данные не найдены — добавьте data/asher_languages.geojson","No se encontraron los datos de idiomas: añada data/asher_languages.geojson")); }catch(_){}
         const x=document.getElementById('r7-dl-langs'); if(x){ x.checked=false; const r=x.closest('.lyr-row'); if(r) r.classList.remove('on'); } cb&&cb(false); });
     }
     function wireLangHover(){ if(langHoverWired) return; langHoverWired=true;
       langTip=document.createElement('div'); langTip.className='map-tooltip'; (document.getElementById('map-container')||document.body).appendChild(langTip);
       GE().events.onLayer('mousemove',LANG_FILL,(e)=>{ const f=e.features&&e.features[0]; if(!f){ langTip.style.display='none'; return; } const p=f.properties||{};
         const lang=_langProp(p,['Language','language','name','NAME','Name','PRNAME','label'])||'—', fam=_langProp(p,['Family','family','FAMILY','fam','classification'])||'—';
-        langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(jp()?'語族: ':'Family: ')+_esc(fam)+'</div>';
+        langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(window.IntMapLang.t(HOST.lang,"Family: ","語族: ","Sprachfamilie: ","Семья: ","Familia: "))+_esc(fam)+'</div>';
         langTip.style.display='block'; langTip.style.left=e.point.x+'px'; langTip.style.top=e.point.y+'px'; });
       GE().events.onLayer('mouseenter',LANG_FILL,()=>{ GE().render.canvas().style.cursor='pointer'; });
       GE().events.onLayer('mouseleave',LANG_FILL,()=>{ if(langTip) langTip.style.display='none'; GE().render.canvas().style.cursor=''; });
@@ -188,7 +192,7 @@ window.IntMapModules.dashExtended=function(HOST){
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
-    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defense coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
+    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,"Intelligence (advanced)","インテリジェンス（高度）","Aufklärung (erweitert)","Разведка (расширенно)","Inteligencia (avanzado)"); const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=window.IntMapLang.t(HOST.lang,"Disputed boundaries","係争境界線","Umstrittene Grenzen","Спорные границы","Fronteras en disputa"); if(a) a.textContent=window.IntMapLang.t(HOST.lang,"Air-defense coverage","防空カバレッジ（射程ドーム）","Luftverteidigungsabdeckung","Зоны ПВО","Cobertura de defensa aérea"); if(l) l.textContent=window.IntMapLang.t(HOST.lang,"World languages","世界の言語分布","Sprachen der Welt","Языки мира","Idiomas del mundo"); refreshDisputeLabels(); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();

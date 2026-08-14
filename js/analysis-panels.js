@@ -37,7 +37,7 @@ window.IntMapModules.timeSeries=function(HOST){
       {id:'NY.GDP.MKTP.CD', label:LA('GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл. США)','PIB (US$)'), fmt:v=>'$'+short(v)},
       {id:'NY.GDP.PCAP.CD', label:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:v=>'$'+Math.round(v).toLocaleString()},
       {id:'SP.POP.TOTL', label:LA('Population','人口','Bevölkerung','Население','Población'), fmt:v=>short(v)},
-      {id:'SP.DYN.LE00.IN', label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожидаемая продолжительность жизни','Esperanza de vida'), fmt:v=>v.toFixed(1)+(jp()?' 歳':' yr')},
+      {id:'SP.DYN.LE00.IN', label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожидаемая продолжительность жизни','Esperanza de vida'), fmt:v=>v.toFixed(1)+(window.IntMapLang.t(HOST.lang," yr"," 歳"," J."," лет"," años"))},
       {id:'MS.MIL.XPND.GD.ZS', label:LA('Military (% GDP)','軍事費（対GDP）','Militär (% BIP)','Военные расходы (% ВВП)','Militar (% PIB)'), fmt:v=>v.toFixed(2)+'%'},
       {id:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], label:LA('CO₂ per capita (t)','1人当たりCO₂ (t)','CO₂ pro Kopf (t)','CO₂ на душу населения (т)','CO₂ per cápita (t)'), fmt:v=>v.toFixed(2)}   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values → "データなし") — successor first, old code as fallback */
     ];
@@ -75,7 +75,7 @@ window.IntMapModules.timeSeries=function(HOST){
        wireCharts() can drive the crosshair after the HTML is injected. */
     const TS_W=500, TS_H=92;
     function chart(series,label,fmt){
-      if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(jp()?'データなし':'no data')+'</div>';
+      if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(window.IntMapLang.t(HOST.lang,"no data","データなし","Keine Daten","Нет данных","Sin datos"))+'</div>';
       const W=TS_W,H=TS_H,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v); let minV=Math.min(...ys), maxV=Math.max(...ys); const y0=series[0].y, y1=series[series.length-1].y;
       /* (#R110) 0-baseline guide line ("CountriesのTime-seriesには、0の場所に補助線を引いて…プラスマイナス系指標のように"):
          extend the axis down to 0 so the zero line is visible whenever the data crosses zero, or is all-positive but
@@ -130,12 +130,12 @@ window.IntMapModules.timeSeries=function(HOST){
     }); }
     async function open(){ const cur=window._cpCurrent||{}; const code=cur.code; if(!code) return;
       const m=ensureModal(); m.style.display='flex';
-      m.querySelector('#ts-title').textContent=(jp()?'時系列グラフ — ':'Time-series — ')+(cur.name||code);
-      m.querySelector('#ts-sub').textContent=jp()?'出典: 世界銀行オープンデータ':'Source: World Bank Open Data';
-      const body=m.querySelector('#ts-body'); body.innerHTML=jp()?'読み込み中…':'Loading…';
+      m.querySelector('#ts-title').textContent=(window.IntMapLang.t(HOST.lang,"Time-series — ","時系列グラフ — ","Zeitreihe — ","Временной ряд — ","Serie temporal — "))+(cur.name||code);
+      m.querySelector('#ts-sub').textContent=window.IntMapLang.t(HOST.lang,"Source: World Bank Open Data","出典: 世界銀行オープンデータ","Quelle: World Bank Open Data","Источник: World Bank Open Data","Fuente: World Bank Open Data");
+      const body=m.querySelector('#ts-body'); body.innerHTML=window.IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
       const results=await Promise.all(IND.map(ind=>fetchInd(code,ind.id)));
       const html=IND.map((ind,i)=>chart(results[i],LP.arr(ind.label),ind.fmt)).join('');
-      body.innerHTML=html || (jp()?'データがありません':'No data available');
+      body.innerHTML=html || (window.IntMapLang.t(HOST.lang,"No data available","データがありません","Keine Daten verfügbar","Данные недоступны","No hay datos disponibles"));
       try{ wireCharts(body); }catch(_){}
     }
     return { open };
@@ -213,16 +213,14 @@ window.IntMapModules.aiResearch=function(HOST){
          already reads "Research: X". Two lines, one word, twice.
          ⚠ IT IS FIXED IN BOTH PLACES, because a prompt is a request and not a guarantee: the system
          message says not to, and `_dropLeadTitle` below removes it if one arrives anyway. */
-      const noTitle=(jp()
-        ? '見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。'
-        : ' Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.');
+      const noTitle=(window.IntMapLang.t(HOST.lang," Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.","見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。"," Beginnen Sie NICHT mit einer Überschrift oder Fettzeile, die nur den Ortsnamen wiederholt — er steht bereits über Ihrer Antwort auf dem Bildschirm. Fangen Sie direkt mit dem Inhalt an."," НЕ начинайте с заголовка или жирной строки, которая лишь повторяет название места — оно уже показано над вашим ответом. Сразу переходите к содержанию."," NO empiece con un título ni una línea en negrita que sólo repita el nombre del lugar: ya aparece en pantalla encima de su respuesta. Empiece directamente con el contenido."));
       const sys=(jp()
         ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。'+noTitle)
         :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'+noTitle))+window._aiLangLine();
       const prompt=(jp()
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
-        +(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n':'Recent nearby news headlines — reflect these in "Recent developments":\n')+news.map(s=>'- '+s).join('\n')):'');
+        +(news.length?('\n\n'+(window.IntMapLang.t(HOST.lang,"Recent nearby news headlines — reflect these in \"Recent developments\":\n","参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n","Aktuelle Schlagzeilen aus der Umgebung — in „Aktuelle Entwicklungen“ berücksichtigen:\n","Недавние заголовки новостей поблизости — учтите их в разделе «Последние события»:\n","Titulares recientes de la zona — reflejarlos en «Novedades recientes»:\n"))+news.map(s=>'- '+s).join('\n')):'');
       /* (#R22) The brief runs FIRST; the suggested-questions block is appended only AFTER it finishes
          ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
       try{
@@ -251,7 +249,7 @@ window.IntMapModules.aiResearch=function(HOST){
           bubble('user',esc(qq));
           const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…','Pensando…')+'</span>');
           convo.push('User: '+qq);
-          try{ const ctx=(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(jp()?'これまでの会話:\n':'Conversation so far:\n')+convo.slice(-6).join('\n')):'');
+          try{ const ctx=(news.length?('\n\n'+(window.IntMapLang.t(HOST.lang,"Context — recent nearby headlines:\n","参考: 周辺の最近のニュース見出し:\n","Kontext — aktuelle Schlagzeilen aus der Umgebung:\n","Контекст — недавние заголовки поблизости:\n","Contexto — titulares recientes de la zona:\n"))+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(window.IntMapLang.t(HOST.lang,"Conversation so far:\n","これまでの会話:\n","Bisheriges Gespräch:\n","Разговор до этого момента:\n","Conversación hasta ahora:\n"))+convo.slice(-6).join('\n')):'');
             const out2=await askAI(qq+ctx,sys);
             ai.innerHTML=md(out2||''); convo.push('Assistant: '+String(out2||'').slice(0,600));
           }catch(e2){ ai.innerHTML='<span style="color:#ff453a;">'+esc(e2&&e2.message||'AI error')+'</span>'; }
@@ -745,20 +743,20 @@ window.IntMapModules.edu=function(HOST){
        bare letters like "DE"); 4 new quiz types: country→capital, population duel, area duel,
        country silhouette. */
     const flagH=(s,h)=>window.imFlagHTML?window.imFlagHTML(s&&s.flag,h||20):((s&&s.flag)||'');
-    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(jp()?'クイズモード':'Quiz mode')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
-      '<div style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">'+(jp()?'スコア ':'Score ')+score+'/'+total+' · '+(jp()?'連続正解 ':'streak ')+streak+'</div>'; }
+    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(window.IntMapLang.t(HOST.lang,"Quiz mode","クイズモード","Quizmodus","Режим викторины","Modo cuestionario"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      '<div style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">'+(window.IntMapLang.t(HOST.lang,"Score ","スコア ","Punkte ","Счёт ","Puntuación "))+score+'/'+total+' · '+(window.IntMapLang.t(HOST.lang,"streak ","連続正解 ","Serie ","серия ","racha "))+streak+'</div>'; }
     function wire(){ panel.querySelector('.tp-close').onclick=closeP; try{ makeDraggable(panel,panel.querySelector('.tp-header')); }catch(_){} }
     function menu(){ const p=ensure(); mapQuizArmed=false; p.style.display='block';
       p.innerHTML=header()+
         '<div style="display:flex;flex-direction:column;gap:7px;">'+
-        '<button class="ai-test-btn" data-q="flag" style="width:100%;">🚩 '+(jp()?'国旗クイズ（国旗→国名）':'Flag quiz (flag → country)')+'</button>'+
-        '<button class="ai-test-btn" data-q="capital" style="width:100%;">🏛 '+(jp()?'首都クイズ（首都→国名）':'Capital quiz (capital → country)')+'</button>'+
-        '<button class="ai-test-btn" data-q="capital2" style="width:100%;">🏙 '+(jp()?'首都クイズ（国名→首都）':'Capital quiz (country → capital)')+'</button>'+
-        '<button class="ai-test-btn" data-q="map" style="width:100%;">🗺 '+(jp()?'地図クイズ（国を地図でクリック）':'Map quiz (click the country)')+'</button>'+
-        '<button class="ai-test-btn" data-q="shape" style="width:100%;">⬛ '+(jp()?'シルエットクイズ（国の形→国名）':'Silhouette quiz (shape → country)')+'</button>'+
-        '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">👥 '+(jp()?'人口対決（どちらが多い?）':'Population duel (which is bigger?)')+'</button>'+
-        '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">📐 '+(jp()?'面積対決（どちらが広い?）':'Area duel (which is larger?)')+'</button>'+
-        '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(jp()?'正解すると、その国の解説カードが表示されます。':'Each answer shows a learning card about the country.')+'</div></div>';
+        '<button class="ai-test-btn" data-q="flag" style="width:100%;">🚩 '+(window.IntMapLang.t(HOST.lang,"Flag quiz (flag → country)","国旗クイズ（国旗→国名）","Flaggenquiz (Flagge → Land)","Викторина по флагам (флаг → страна)","Cuestionario de banderas (bandera → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="capital" style="width:100%;">🏛 '+(window.IntMapLang.t(HOST.lang,"Capital quiz (capital → country)","首都クイズ（首都→国名）","Hauptstadtquiz (Hauptstadt → Land)","Викторина о столицах (столица → страна)","Cuestionario de capitales (capital → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="capital2" style="width:100%;">🏙 '+(window.IntMapLang.t(HOST.lang,"Capital quiz (country → capital)","首都クイズ（国名→首都）","Hauptstadtquiz (Land → Hauptstadt)","Викторина о столицах (страна → столица)","Cuestionario de capitales (país → capital)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="map" style="width:100%;">🗺 '+(window.IntMapLang.t(HOST.lang,"Map quiz (click the country)","地図クイズ（国を地図でクリック）","Kartenquiz (Land anklicken)","Викторина по карте (кликните по стране)","Cuestionario de mapa (haga clic en el país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="shape" style="width:100%;">⬛ '+(window.IntMapLang.t(HOST.lang,"Silhouette quiz (shape → country)","シルエットクイズ（国の形→国名）","Umrissquiz (Form → Land)","Викторина по силуэтам (форма → страна)","Cuestionario de siluetas (forma → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">👥 '+(window.IntMapLang.t(HOST.lang,"Population duel (which is bigger?)","人口対決（どちらが多い?）","Bevölkerungsduell (welches ist größer?)","Дуэль по населению (где больше?)","Duelo de población (¿cuál es mayor?)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">📐 '+(window.IntMapLang.t(HOST.lang,"Area duel (which is larger?)","面積対決（どちらが広い?）","Flächenduell (welches ist größer?)","Дуэль по площади (что больше?)","Duelo de superficie (¿cuál es mayor?)"))+'</button>'+
+        '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(window.IntMapLang.t(HOST.lang,"Each answer shows a learning card about the country.","正解すると、その国の解説カードが表示されます。","Nach jeder Antwort erscheint eine Lernkarte zum Land.","После каждого ответа показывается карточка с фактами о стране.","Cada respuesta muestra una ficha didáctica sobre el país."))+'</div></div>';
       wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); }); }
     /* country silhouette → compact SVG (equirectangular, cos-lat corrected; antimeridian spanners skipped) */
     function shapeSVG(code){ try{
@@ -785,17 +783,17 @@ window.IntMapModules.edu=function(HOST){
     function card(s,ok,extra){ const f=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
       return '<div style="border:1px solid '+(ok?'rgba(52,199,89,0.5)':'rgba(255,69,58,0.5)')+';border-radius:12px;padding:10px 12px;margin-top:8px;background:'+(ok?'rgba(52,199,89,0.08)':'rgba(255,69,58,0.07)')+';font-size:12px;line-height:1.6;">'+
         '<div style="font-weight:700;font-size:14px;">'+(ok?'⭕':'❌')+' '+flagH(s,18)+' '+esc(cname(s))+'</div>'+(extra||'')+
-        '<div style="color:var(--text-muted);margin-top:3px;">'+(jp()?'首都':'Capital')+': '+esc(s.capital||'—')+' · '+(jp()?'人口':'Pop')+': '+f(s.pop)+(s.gdp!=null?' · GDP: '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+f(s.area)+' km²':'')+'</div></div>'; }
+        '<div style="color:var(--text-muted);margin-top:3px;">'+(window.IntMapLang.t(HOST.lang,"Capital","首都","Hauptstadt","Столица","Capital"))+': '+esc(s.capital||'—')+' · '+(window.IntMapLang.t(HOST.lang,"Pop","人口","Bev.","Нас.","Pobl."))+': '+f(s.pop)+(s.gdp!=null?' · GDP: '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+f(s.area)+' km²':'')+'</div></div>'; }
     function next(){ const p=ensure(); const all=pool();
-      if(all.length<8){ p.innerHTML=header()+'<div style="font-size:12px;color:var(--text-muted);">'+(jp()?'国データを読み込み中です。少し待ってから開いてください。':'Country data is still loading — try again in a moment.')+'</div>'; wire(); return; }
+      if(all.length<8){ p.innerHTML=header()+'<div style="font-size:12px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Country data is still loading — try again in a moment.","国データを読み込み中です。少し待ってから開いてください。","Länderdaten werden noch geladen — bitte gleich erneut versuchen.","Данные по странам ещё загружаются — попробуйте через мгновение.","Los datos de países aún se están cargando; inténtelo en un momento."))+'</div>'; wire(); return; }
       let answer=pick(all);
       q={answer};
       if(mode==='map'){
         mapQuizArmed=true;
-        p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🗺 '+(jp()?'地図上でクリック:':'Click on the map:')+'</div>'+
+        p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🗺 '+(window.IntMapLang.t(HOST.lang,"Click on the map:","地図上でクリック:","Auf die Karte klicken:","Кликните по карте:","Haga clic en el mapa:"))+'</div>'+
           '<div style="font-size:17px;font-weight:800;color:var(--primary-color);margin-bottom:8px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'+
-          '<div id="edu-map-res" style="font-size:12px;color:var(--text-muted);">'+(jp()?'地図のその国をクリックしてください…':'Click that country on the map…')+'</div>'+
-          '<button class="ai-test-btn" id="edu-skip" style="width:100%;margin-top:8px;">'+(jp()?'スキップ':'Skip')+'</button>';
+          '<div id="edu-map-res" style="font-size:12px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Click that country on the map…","地図のその国をクリックしてください…","Dieses Land auf der Karte anklicken…","Кликните по этой стране на карте…","Haga clic en ese país en el mapa…"))+'</div>'+
+          '<button class="ai-test-btn" id="edu-skip" style="width:100%;margin-top:8px;">'+(window.IntMapLang.t(HOST.lang,"Skip","スキップ","Überspringen","Пропустить","Omitir"))+'</button>';
         wire(); p.querySelector('#edu-skip').onclick=()=>{ total++; streak=0; next(); };
         return;
       }
@@ -811,13 +809,13 @@ window.IntMapModules.edu=function(HOST){
         const win=metric(a)>=metric(b)?a:b;
         const fmt=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
         const unit=mode==='duelarea'?' km²':'';
-        p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">'+(mode==='duelpop'?(jp()?'👥 人口が多いのはどっち?':'👥 Which has the larger population?'):(jp()?'📐 面積が広いのはどっち?':'📐 Which is larger by area?'))+'</div>'+
+        p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">'+(mode==='duelpop'?(window.IntMapLang.t(HOST.lang,"👥 Which has the larger population?","👥 人口が多いのはどっち?","👥 Welches Land hat mehr Einwohner?","👥 Где население больше?","👥 ¿Cuál tiene más población?")):(window.IntMapLang.t(HOST.lang,"📐 Which is larger by area?","📐 面積が広いのはどっち?","📐 Welches Land ist flächenmäßig größer?","📐 Что больше по площади?","📐 ¿Cuál es mayor en superficie?")))+'</div>'+
           '<div style="display:flex;flex-direction:column;gap:6px;">'+[a,b].map((o,i)=>'<button class="ai-test-btn" data-d="'+i+'" style="width:100%;text-align:left;">'+flagH(o,16)+' '+esc(cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
         wire();
         p.querySelectorAll('[data-d]').forEach(btn=>btn.onclick=()=>{
           const chosen=[a,b][+btn.getAttribute('data-d')]; const ok=chosen===win; total++; if(ok){ score++; streak++; } else streak=0;
           const both='<div style="font-size:11px;margin-top:3px;">'+esc(cname(a))+': <b>'+fmt(metric(a))+unit+'</b> · '+esc(cname(b))+': <b>'+fmt(metric(b))+unit+'</b></div>';
-          const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(win,ok,both)+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+          const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(win,ok,both)+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(window.IntMapLang.t(HOST.lang,"Next →","次の問題 →","Weiter →","Далее →","Siguiente →"))+'</button>';
           const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
           p.querySelectorAll('[data-d]').forEach(x=>x.disabled=true);
         });
@@ -839,16 +837,16 @@ window.IntMapModules.edu=function(HOST){
         :(mode==='shape')?shape
         :cap2?'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'
         :'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">🏛 '+esc(answer.capital||'?')+'</div>';
-      const title=(mode==='flag')?(jp()?'この国旗はどこの国?':'Which country is this flag?')
-        :(mode==='shape')?(jp()?'この形はどこの国?':'Which country is this shape?')
-        :cap2?(jp()?'この国の首都は?':'What is this country’s capital?')
-        :(jp()?'この首都はどこの国?':'Which country has this capital?');
+      const title=(mode==='flag')?(window.IntMapLang.t(HOST.lang,"Which country is this flag?","この国旗はどこの国?","Zu welchem Land gehört diese Flagge?","Флаг какой страны это?","¿De qué país es esta bandera?"))
+        :(mode==='shape')?(window.IntMapLang.t(HOST.lang,"Which country is this shape?","この形はどこの国?","Welches Land hat diese Form?","Какая страна имеет такую форму?","¿Qué país tiene esta forma?"))
+        :cap2?(window.IntMapLang.t(HOST.lang,"What is this country’s capital?","この国の首都は?","Wie heißt die Hauptstadt dieses Landes?","Какая столица у этой страны?","¿Cuál es la capital de este país?"))
+        :(window.IntMapLang.t(HOST.lang,"Which country has this capital?","この首都はどこの国?","Zu welchem Land gehört diese Hauptstadt?","У какой страны такая столица?","¿De qué país es esta capital?"));
       p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;">'+title+'</div>'+qhtml+
         '<div style="display:flex;flex-direction:column;gap:6px;">'+opts.map((o,i)=>'<button class="ai-test-btn" data-o="'+i+'" style="width:100%;text-align:left;">'+esc(cap2?(o.capital||'—'):cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
       wire();
       p.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
         const chosen=opts[+b.getAttribute('data-o')]; const ok=chosen===q.answer; total++; if(ok){ score++; streak++; } else streak=0;
-        const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cap2?(chosen.capital||'—'):cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+        const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(window.IntMapLang.t(HOST.lang,"You picked: ","あなたの回答: ","Ihre Wahl: ","Ваш ответ: ","Ha elegido: "))+esc(cap2?(chosen.capital||'—'):cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(window.IntMapLang.t(HOST.lang,"Next →","次の問題 →","Weiter →","Далее →","Siguiente →"))+'</button>';
         const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
         p.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
         try{ if(q.answer.latlng&&ok) GE().camera.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
@@ -862,12 +860,12 @@ window.IntMapModules.edu=function(HOST){
     function onMapClick(e){ if(!mapQuizArmed||!q||!panel||panel.style.display==='none') return;
       if(typeof HOST.toolMode!=='undefined'&&HOST.toolMode) return;
       const f=countryAt(e.lngLat); const res=panel.querySelector('#edu-map-res'); if(!res) return;
-      if(!f){ res.innerHTML='<span style="color:var(--text-muted);">'+(jp()?'陸地（国）をクリックしてください':'Click on a country')+'</span>'; return; }
+      if(!f){ res.innerHTML='<span style="color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Click on a country","陸地（国）をクリックしてください","Auf ein Land klicken","Кликните по стране","Haga clic en un país"))+'</span>'; return; }
       let id=null; try{ id=resolveCountryId(f); }catch(_){ }
       const ok=id&&q.answer.code===id; total++; if(ok){ score++; streak++; } else streak=0;
       mapQuizArmed=false;
       const got=(id&&countryStats[id])?countryStats[id]:null;
-      res.innerHTML=card(q.answer,ok,(got&&!ok?'<div style="font-size:11px;">'+(jp()?'クリックした国: ':'You clicked: ')+esc(cname(got))+'</div>':''))+'<button class="ai-test-btn" id="edu-next2" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+      res.innerHTML=card(q.answer,ok,(got&&!ok?'<div style="font-size:11px;">'+(window.IntMapLang.t(HOST.lang,"You clicked: ","クリックした国: ","Angeklickt: ","Вы кликнули: ","Ha hecho clic en: "))+esc(cname(got))+'</div>':''))+'<button class="ai-test-btn" id="edu-next2" style="width:100%;margin-top:8px;">'+(window.IntMapLang.t(HOST.lang,"Next →","次の問題 →","Weiter →","Далее →","Siguiente →"))+'</button>';
       const nx=panel.querySelector('#edu-next2'); if(nx) nx.onclick=next;
     }
     function closeP(){ if(panel) panel.style.display='none'; mapQuizArmed=false; }
@@ -876,14 +874,14 @@ window.IntMapModules.edu=function(HOST){
        Playground hub) — "Playground自体は…旧quiz modeの場所に / Quiz modeをplaygroundに移動". */
     function mount(){ if(document.getElementById('edu-mount')) return;
       const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
-      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(jp()?'プレイグラウンド':'Playground')+'</span></button>';
+      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(window.IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span></button>';
       const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
       (tools||dd||document.body).appendChild(host);
       host.querySelector('#btn-edu').onclick=()=>{ window.IntMapLazy.need('playground').then(()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }); };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(GE().hasRenderer()) GE().events.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(jp()?'プレイグラウンド':'Playground')+'</span>'; });
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(window.IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
     return { open:openP, close:closeP };
   })();
 };

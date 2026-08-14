@@ -104,6 +104,7 @@ import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';
 import '../js/wb-layers.js';
+import '../js/us-elections.js';
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
@@ -329,7 +330,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents',
+  'oceanCurrents', 'usElections',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These eight files are not in the import list above: they are fetched by js/lazy-modules.js the

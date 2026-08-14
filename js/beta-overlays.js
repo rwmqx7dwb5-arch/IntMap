@@ -65,12 +65,12 @@ window.IntMapModules.betaOverlays=function(HOST){
         if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
           /* DeepState's datetime is a non-ISO string ("11.06 o 13:56") — show it verbatim if unparsable */
           let ws=new Date().toLocaleString(); if(when){ const dt=new Date(when); ws=isNaN(dt.getTime())?String(when):dt.toLocaleString(); }
-          d.textContent=(jp()?'更新: ':'As of: ')+ws+' · DeepState'; }
+          d.textContent=(window.IntMapLang.t(HOST.lang,"As of: ","更新: ","Stand: ","По состоянию на: ","Actualizado: "))+ws+' · DeepState'; }
         return true;
       }catch(_){} }
       const el=document.getElementById('data-legend-ukrfront');
       if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
-        d.textContent=jp()?'取得できませんでした — 後でもう一度オンにしてください。':'Could not load — toggle again later.'; }
+        d.textContent=window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."); }
       return false;
     }
     /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the color key is rebuilt FROM the
@@ -95,11 +95,11 @@ window.IntMapModules.betaOverlays=function(HOST){
       polys.forEach(f=>{ const p=f.properties||{}; const s=ukrStatusOf(p); const c=String(p.fill||'#a52714').toLowerCase();
         const g=groups.get(s)||{n:0,colors:{}}; g.n++; g.colors[c]=(g.colors[c]||0)+1; groups.set(s,g); });
       groups.forEach(g=>{ g.color=Object.entries(g.colors).sort((a,b)=>b[1]-a[1])[0][0]; });
-      const label=(s)=>({ occupied:jp()?'ロシア占領地域':'Russian-occupied',
-                          crimea:jp()?'クリミア・ドンバス（2022年以前）':'Crimea / Donbas (pre-2022)',
-                          liberated:jp()?'解放地域':'Liberated',
-                          unknown:jp()?'状況不明の区域':'Unknown status',
-                          other:jp()?'その他の主張地域':'Other claimed area' }[s]||s);
+      const label=(s)=>({ occupied:window.IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"),
+                          crimea:window.IntMapLang.t(HOST.lang,"Crimea / Donbas (pre-2022)","クリミア・ドンバス（2022年以前）","Krim / Donbas (vor 2022)","Крым / Донбасс (до 2022)","Crimea / Dombás (antes de 2022)"),
+                          liberated:window.IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"),
+                          unknown:window.IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"),
+                          other:window.IntMapLang.t(HOST.lang,"Other claimed area","その他の主張地域","Sonstiges beanspruchtes Gebiet","Прочие спорные территории","Otra zona reclamada") }[s]||s);
       const order=['occupied','crimea','liberated','unknown','other'];
       const rows=order.filter(s=>groups.has(s)).map(s=>{ const g=groups.get(s);
         return '<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:10px;border-radius:2px;flex:none;background:'+g.color+';opacity:0.6;"></span>'+label(s)+' <span style="opacity:0.5;font-size:10px;">('+g.n+')</span></div>'; });
@@ -124,9 +124,9 @@ window.IntMapModules.betaOverlays=function(HOST){
               const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const sw=(c,solid)=>'<span style="width:14px;height:'+(solid?'10px':'3px')+';border-radius:2px;flex:none;background:'+c+';'+(solid?'opacity:0.55;':'')+'"></span>';
               key.innerHTML=
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#a52714',true)+(jp()?'ロシア占領地域':'Russian-occupied')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#0f9d58',true)+(jp()?'解放地域':'Liberated')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#bcaaa4',true)+(jp()?'状況不明の区域':'Unknown status')+'</div>';
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#a52714',true)+(window.IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#0f9d58',true)+(window.IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#bcaaa4',true)+(window.IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"))+'</div>';
               const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
             }
           }
@@ -149,7 +149,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       const a=()=>{ if(!bldgEnsure()){ GE().events.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',['3D buildings (cities)','3D建物（都市）'],['ofm-bldg-3d'],'beta-dl-bldg3d');
-             if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。':'Shows from zoom 14. Tilt (3D button / right-drag) to see depth.'; el.appendChild(d); } }
+             if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Shows from zoom 14. Tilt (3D button / right-drag) to see depth.","ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。","Ab Zoomstufe 14 sichtbar. Neigen (3D-Schaltfläche / Rechtsziehen) zeigt die Tiefe.","Показывается с 14-го зума. Наклоните (кнопка 3D / перетаскивание правой кнопкой), чтобы увидеть объём.","Se muestra a partir del zoom 14. Incline (botón 3D / arrastrar con el botón derecho) para ver el relieve."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('bldg3d'); }catch(_){}
     }
 
@@ -191,10 +191,10 @@ window.IntMapModules.betaOverlays=function(HOST){
           break;
         }catch(_){} }
         const note2=document.querySelector('#data-legend-histb .hb-note');
-        if(note2) note2.textContent=fc?(jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)'):(jp()?'取得できませんでした。':'Could not load.');
+        if(note2) note2.textContent=fc?(window.IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)")):(window.IntMapLang.t(HOST.lang,"Could not load.","取得できませんでした。","Laden fehlgeschlagen.","Не удалось загрузить.","No se pudo cargar."));
       } else {
         const note=document.querySelector('#data-legend-histb .hb-note');
-        if(note) note.textContent=jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)';
+        if(note) note.textContent=window.IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)");
       }
       if(fc&&hbYear===year){ try{ GE().layers.setSourceData('hb-src',fc); }catch(_){} }
       /* warm the neighboring years in the background so slider scrubbing is instant */
@@ -225,7 +225,7 @@ window.IntMapModules.betaOverlays=function(HOST){
             if(isMob){
               /* (#R22) MOBILE: a native iOS pulldown of the available years instead of the fiddly slider
                  ("Historic bordersの凡例は、モバイル版ではiOS対応のプルダウンに"). */
-              row.innerHTML=(jp()?'年代':'Year')+' <select class="hb-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+              row.innerHTML=(window.IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <select class="hb-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
                 HB_YEARS.map(y=>'<option value="'+y+'"'+(y===hbYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
               el.appendChild(row); el.appendChild(note);
               row.querySelector('.hb-year-sel').addEventListener('change',(e)=>{ hbYear=+e.target.value||1920; hbLoad(hbYear); });
@@ -233,7 +233,7 @@ window.IntMapModules.betaOverlays=function(HOST){
               /* (#R21) Tick alignment fix: ticks live INSIDE the same flex cell as the range input,
                  each positioned at the exact center of its thumb stop. */
               row.style.alignItems='flex-start';
-              row.innerHTML=(jp()?'年代':'Year')+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
+              row.innerHTML=(window.IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
                 '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
                 '<span class="hb-ticks" style="display:block;position:relative;height:15px;">'+
                 HB_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(HB_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8.5px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
@@ -271,7 +271,7 @@ window.IntMapModules.betaOverlays=function(HOST){
           'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
         GE().layers.add({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
         GE().events.onLayer('click','volc2-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          const yr=(p.y==null||p.y==='null')?(jp()?'噴火記録なし':'No dated eruption'):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(jp()?'年に最終噴火':' last eruption'));
+          const yr=(p.y==null||p.y==='null')?(window.IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(window.IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
           const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
           try{ if(popup) popup.remove(); }catch(_){}
           try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
@@ -285,7 +285,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(volcLoading) return; volcLoading=true;
       try{ const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
         if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} }
-      }catch(_){ try{ imToast(jp()?'火山データを読み込めませんでした':'Could not load volcano data'); }catch(_){} }
+      }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load volcano data","火山データを読み込めませんでした","Vulkandaten konnten nicht geladen werden","Не удалось загрузить данные о вулканах","No se pudieron cargar los datos de volcanes")); }catch(_){} }
       volcLoading=false; }
     function volcToggle(on){ state.volc=on;
       const a=()=>{ if(!volcEnsure()){ GE().events.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
@@ -295,9 +295,9 @@ window.IntMapModules.betaOverlays=function(HOST){
             if(el&&!el.querySelector('.volc-key')){
               const key=document.createElement('div'); key.className='volc-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const dot=(c)=>'<span style="width:11px;height:11px;border-radius:50%;flex:none;background:'+c+';border:1px solid rgba(255,255,255,0.5);"></span>';
-              key.innerHTML='<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff3b30')+(jp()?'1950年以降に噴火':'Erupted since 1950')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff8a3d')+(jp()?'1500年以降に噴火':'Erupted since 1500')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#c98f6b')+(jp()?'それ以前・記録なし':'Older / undated')+'</div>'+
+              key.innerHTML='<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff3b30')+(window.IntMapLang.t(HOST.lang,"Erupted since 1950","1950年以降に噴火","Ausbruch seit 1950","Извергался с 1950 года","Con erupción desde 1950"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff8a3d')+(window.IntMapLang.t(HOST.lang,"Erupted since 1500","1500年以降に噴火","Ausbruch seit 1500","Извергался с 1500 года","Con erupción desde 1500"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#c98f6b')+(window.IntMapLang.t(HOST.lang,"Older / undated","それ以前・記録なし","Älter / undatiert","Раньше / без даты","Anterior / sin fecha"))+'</div>'+
                 '<div style="font-size:10px;color:var(--text-muted);">Smithsonian GVP · 1,215 Holocene volcanoes</div>';
               const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
             }

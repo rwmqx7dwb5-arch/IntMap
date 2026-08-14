@@ -250,8 +250,12 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
      sub-headings inside the one 詳細設定), `.sq-pl-times` (the total duration, beside an elapsed time
      that is not grey), `.sq-pl-spdl` (the speed caption) and `.sq-ev-x` (the ✕ that unloads an
      earthquake — chrome in exactly the #R239 sense). An eleventh site still fails this. */
+  /* ⚠ (#R243) THE CEILING IS 11, AND THE NEW SITE IS `.sq-pl-cap` — the line above the transport that
+     names what it plays (「波の伝播」). It is the same category as `.sq-pl-spdl` one line below it: a
+     CAPTION for a control, not a measurement, an intensity or a place name. The rule is unchanged and
+     still catches a twelfth site. */
   const muted = s.split('color:var(--text-muted)').length - 1;
-  assert.ok(muted <= 10, 'grey is left on the window-chrome glyphs and nowhere else (found ' + muted + ')');
+  assert.ok(muted <= 11, 'grey is left on the window-chrome glyphs and nowhere else (found ' + muted + ')');
   assert.ok(s.includes("#sq-hud .sqh-s{display:block;font-size:'+FS_S+';color:var(--text-muted)"),
     'the third is the HUD instruction line');
   const t = read('js/tsunami.js');
