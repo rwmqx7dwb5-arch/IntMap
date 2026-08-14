@@ -61,6 +61,16 @@ const two = run('i18n-two-branch-audit.mjs');
    percentages read 100 %. That is 「まだある」, and it is a different question, so it is a new
    surface HERE rather than a sixth free-standing instrument. */
 const attrs = run('i18n-attr-audit.mjs');
+/* ══ ⚠⚠⚠ (#R241) THE SEVENTH SURFACE — «is this tuple of translations a CALL» ═══════════════════
+   #R240 asked whether a string is in the system at all. This asks whether a tuple of translations
+   is written in a shape any of the instruments above can READ. Six tables in js/ held theirs as a
+   bare array subscripted by the language's position — 188 user-visible strings that every one of
+   the audits counted as zero while printing 100 %, and that fr/ko/zh saw in English for ever
+   because an `arr[i]||arr[0]` has no inline-table fallback. `IntMapLang.pickArgs()` makes the tuple
+   a call site, at which point the report and the positional audit pick it up with no edit; this
+   surface is what stops the shape coming back. Like the one above it is a NEW QUESTION, so it is a
+   line in this gate rather than a seventh free-standing instrument (#R239's rule). */
+const arrays = run('i18n-positional-array-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -91,7 +101,7 @@ const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r
   || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length }));
   process.exit(0);
 }
 
@@ -127,7 +137,11 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   /* (#R240) the sixth surface — see the note by `attrs` above */
   + `\ntitle / aria-label / placeholder / alt with NO key at all: ${attrs.total}`
   + (attrs.total ? '\n    ' + [...new Set(attrs.findings.map((f) => f.text))].slice(0, 20).join('\n    ')
-      + '\n    (node scripts/i18n-attr-audit.mjs lists every one, with its line)' : ''));
+      + '\n    (node scripts/i18n-attr-audit.mjs lists every one, with its line)' : '')
+  /* (#R241) the seventh surface — see the note by `arrays` above */
+  + `\ntranslation tuples held as data instead of as a call: ${arrays.hits.length}`
+  + (arrays.hits.length ? '\n    ' + arrays.hits.slice(0, 20).map((h) => `${h.file}:${h.line}  ${h.text}`).join('\n    ')
+      + '\n    (node scripts/i18n-positional-array-audit.mjs lists every one)' : ''));
 
 if (process.argv.includes('--gate')) {
   const bad = rows.filter(shortOf).map((r) => r.code);
@@ -137,6 +151,7 @@ if (process.argv.includes('--gate')) {
   if ((pos.short ?? 0) > 0) problems.push(`${pos.short} L(…) site(s) with fewer than five arguments`);
   if (orphanKeys.length) problems.push(`${orphanKeys.length} data-i18n key(s) with no English entry`);
   if (attrs.total) problems.push(`${attrs.total} user-visible attribute(s) with no translation key — run scripts/i18n-attr-audit.mjs`);
+  if (arrays.hits.length) problems.push(`${arrays.hits.length} translation tuple(s) held as data — run scripts/i18n-positional-array-audit.mjs`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');

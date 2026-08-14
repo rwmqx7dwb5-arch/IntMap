@@ -82,7 +82,10 @@ test('R237 seismic: the front is densified from the screen, not from a constant'
    「各地の表内のJMA 7やMMI IVなどの背景の四角は、震度階級ごとに大きさをそろえるように。」 */
 test('R237 seismic: every intensity chip is the same box, whatever is written in it', () => {
   const s = code(read('js/seismic.js'));
-  const cell = s.slice(s.indexOf('const iCell='), s.indexOf('const rows=nearby()'));
+  /* ⚠ (#R241) the slice ends at `const seats=` — the row builder moved out from under `iCell` when
+     the width became a per-render measurement, and letting the slice run into it would put the
+     numeral badge's own `min-width:15px` inside the box this test is about. */
+  const cell = s.slice(s.indexOf('const iCell='), s.indexOf('const seats=nearby()'));
   /* ══ ⚠ (#R238) THE CLAIM IS UNCHANGED; THE SPELLING MOVED, AND THAT IS THE POINT ═════════════════
      This asserted `min-width:62px` — the number #R237 read off one browser at one text size — and
      `min-width` yields to a wider label, so the column went ragged again wherever the resolved font
@@ -97,7 +100,14 @@ test('R237 seismic: every intensity chip is the same box, whatever is written in
      震度 table is no longer padded out to the width of 「MMI VIII」. Every chip in a column is still
      exactly one box — which is what this test has always asserted — and `_chipW(jp)` is where that
      one box comes from. */
-  assert.match(cell, /width:'\+_chipW\(jp\)\+'px/, 'the box has one width for every class of the scale in use');
+  /* ══ ⚠ (#R241) …AND ONCE MORE, STILL THE SAME CLAIM ══════════════════════════════════════════
+     「左右に大きすぎに見えただけ。（テキストがとっている幅の割に）」 The maximum is now taken over the
+     labels THIS RENDER prints, which cannot be known while the first row is being built — so the
+     width is resolved once for the table and handed to the cell as `cw`. What this test asserts is
+     unchanged: ONE width for the whole column, and it comes from the run-time measurement rather
+     than from a constant. Both halves are checked, so `cw` cannot quietly become a literal. */
+  assert.match(cell, /width:'\+cw\+'px/, 'the box has one width for every class of the scale in use');
+  assert.match(code(read('js/seismic.js')), /const CW=_chipW\(jp,/, '…and that width is the measurement');
   assert.doesNotMatch(cell, /min-width:\d+px/, 'and it is not a min-width a longer label can push past');
   assert.match(cell, /text-align:center/, '…and a shorter label is centred in it');
   assert.match(cell, /box-sizing:border-box/, 'so the padding is inside the width, not added to it');

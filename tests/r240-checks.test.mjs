@@ -33,36 +33,26 @@ test('R240 ① with the day/night side off the Sun is aimed at the camera, never
   assert.match(code(aim), /camera\.getCenter\(\)/, 'off aims at the sub-camera point');
   assert.match(code(aim), /setSunDirection\(\{lng:c\.lng,lat:c\.lat\}\)/, 'so no terminator is on screen');
   /* …and a pan must re-aim it, or the terminator walks back into view */
-  const foll = t.slice(t.indexOf('function _skyFollowCamera()'), t.indexOf('function _skyFollowCamera()') + 1800);
+  /* (#R241) the slice is longer because the follow gained the limb's zoom re-push above this block
+     — the assertion is the same one. */
+  const foll = t.slice(t.indexOf('function _skyFollowCamera()'), t.indexOf('function _skyFollowCamera()') + 4200);
   assert.match(code(foll), /_nightSideOff\(\)/, 'the follow knows about the un-aimed case');
   assert.match(code(foll), /_aimSun\._at/, 'and re-aims when the centre has moved');
 });
 
-test('R240 ① the blend ramp keeps its measured z0 strengths and stops tapering in the middle', () => {
-  const t = code(R('js/theme-sky.js'));
-  const blend = /'atmosphere-blend':\(sat[\s\S]{0,700}?\)\}\);/.exec(t);
-  assert.ok(blend, 'the atmosphere-blend expression was not found');
-  const ramps = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],([^\]]+)\]/g)]
-    .map((m) => m[1].split(',').map(Number));
-  assert.equal(ramps.length, 3, 'three ramps: satellite, light map, dark map');
-  const stops = (a) => { const o = {}; for (let i = 0; i + 1 < a.length; i += 2) o[a[i]] = a[i + 1]; return o; };
-  const [sat, light, dark] = ramps.map(stops);
-  assert.equal(sat[0], 0.55, "#R187's satellite strength must not move");
-  assert.equal(dark[0], 0.80, "the dark basemap's strength must not move");
-  assert.ok(light[0] <= 0.16, "#R205's light-map ceiling must hold");
-  /* ⚠ THE CLAIM: the air does not thin out while the reader zooms IN on the globe. maplibre already
-     multiplies this by globeness (0 by z12), so a second taper before then is what made the air fade
-     from z4 onward. Measured before: 43.7 → 23.9 between z4 and z11. */
-  for (const [name, r] of [['satellite', sat], ['light', light], ['dark', dark]]) {
-    const z = Object.keys(r).map(Number).sort((a, b) => a - b);
-    const mid = z.filter((v) => v > 0 && v <= 11);
-    assert.ok(mid.length, `${name}: no stop between z0 and z11`);
-    const last = mid[mid.length - 1];
-    assert.ok(r[last] >= r[0] * 0.7,
-      `${name}: the ramp falls to ${r[last]} by z${last}, from ${r[0]} — that is the second taper`);
-    assert.equal(r[z[z.length - 1]], 0, `${name}: the tail still reaches zero`);
-  }
-});
+/* ══ ⚠⚠⚠ (#R241) THE BLEND-RAMP TEST THAT STOOD HERE WAS OVERTURNED BY THE READER ════════════════
+   It pinned #R240's answer to 「ある程度までズームインすると途端に見えなくなってしまう」: hold the
+   ramp FLAT to z11 and keep 0.55 satellite / 0.80 dark map / 0.15 light map. The next round's report
+   was the same complaint, sharper — 「ある程度までズームしたらいきなりもやが消えるものさらに不自然」
+   — with 「大気にもやがかかりすぎ。地図をちゃんと見せろ」 and 「衛生写真ではあっても、標準マップでは
+   大気はなし」 beside it. Measured with real screenshots (x/r241-atm-sat-z11.png vs -z12.png): the
+   z11 frame is milk over the Sahara and z12 is raw imagery, ONE zoom apart, because maplibre 5.24's
+   `case 'globe'` interpolates vertical-perspective→mercator across z11→z12 and multiplies
+   `atmosphere-blend` by that transition. Holding the ramp up made the step BIGGER, not smaller.
+   ⚠ THE ASSERTIONS ARE NOT DELETED, THEY MOVED AND REVERSED — tests/r241-checks ④ pins the new
+   contract (map basemap: no air at all, both owners; satellite: one curve, zero BY z11). A test
+   whose subject a reader has overruled has to say so where it used to stand, or the next round
+   reads its absence as an oversight. */
 
 /* ══ ② THE WAVEFRONTS — a drawn rupture reaches the picture from t = 0 ═════════════════════════
    Measured on the shipped build with a 500 km rupture: band and ringBack were 0 until t = 400 s,
@@ -110,11 +100,14 @@ test('R240 ③ the simulator opens with nothing armed, and the verb is pinned be
 
 test('R240 ③ the intensity chip is one width PER SCALE', () => {
   const s = code(R('js/seismic.js'));
-  assert.match(s, /function _chipW\(jma\)/, 'the measurement takes the scale');
-  assert.match(s, /width:'\+_chipW\(jp\)\+'px/, 'and the cell passes the one it is printing');
+  /* (#R241) the scale is still the first argument; the second is the set of labels this render
+     actually prints, which is what took the box from «as wide as MMI VIII» to «as wide as this
+     table» — 「左右に大きすぎに見えただけ」. tests/r241 ⑤ pins that half. */
+  assert.match(s, /function _chipW\(jma,labels\)/, 'the measurement takes the scale');
+  assert.match(s, /const CW=_chipW\(jp,/, 'and the table passes the one it is printing');
   const fn = s.slice(s.indexOf('function _chipW'), s.indexOf('function _chipW') + 1400);
   assert.match(fn, /if\(jma\)\{ try\{ JMA_CLASSES/, 'JMA measures JMA labels');
-  assert.match(fn, /else \{ try\{ for\(let i=1;i<=12;i\+\+\) labels\.push\('MMI '/, 'and MMI measures MMI labels');
+  assert.match(fn, /else \{ try\{ for\(let i=1;i<=12;i\+\+\) list\.push\('MMI '/, 'and MMI measures MMI labels');
 });
 
 /* ══ ④ THE DOCK ════════════════════════════════════════════════════════════════════════════════ */
@@ -123,7 +116,13 @@ test('R240 ④ a docked panel expands, arrives open, and runs edge to edge on a 
   assert.match(css, /\.im-docked \[class\$="-scroll"\]/, 'every inner scroller, not two named ones');
   assert.match(css, /\.im-docked \[class\$="-body"\]/);
   assert.match(css, /#docked-feed\{ margin-left:-16px; margin-right:-16px;/, 'the feed cancels the sheet padding');
-  assert.match(css, /#docked-feed::-webkit-scrollbar\{ width:0/, 'and the rail that sat over the panels is gone');
+  /* ⚠ (#R241) THE RAIL IS BACK, AND IT IS THE HALF OF THIS TEST THE READER OVERRULED.
+     「サイドバーのパネル内モバイル版で、左に合ったスクロールバーが消えているから、つけて。」
+     Cancelling the sheet's 16 px inset (the line above) is what stopped the rail being drawn over a
+     legend; deleting the rail as well was a second change with no report behind it. What this test
+     keeps asserting is the part that was asked for — the feed runs edge to edge — and tests/r241 ③
+     pins the rail's return. */
+  assert.match(css, /#docked-feed::-webkit-scrollbar\{ width:10px/, 'and the column still has a rail');
   assert.match(css, /--sheet-h:86dvh/, 'the sheet is shorter, and its height has one owner');
   assert.match(css, /height:var\(--sheet-h\)/);
   assert.match(css, /translateY\(var\(--sheet-ty,calc\(var\(--sheet-h\) - 196px\)\)\)/, 'the default detent follows it');

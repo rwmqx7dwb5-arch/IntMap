@@ -126,6 +126,14 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
      the whole sky block on the globe, so its own atmosphere pass was the only thing drawing the
      Earth's edge), this property is 0 so the two do not add. Everywhere else the ramps below are
      what #R187 and #R205 measured, unchanged, and that is what is read here. */
+  /* ══ ⚠⚠ (#R241) THERE IS ONE RAMP AGAIN, AND IT IS THIS TEST'S ONE ═══════════════════════════════
+     「衛生写真ではあっても、標準マップでは大気はなし」 — the map basemap's ramps (#R196's 0.80 and
+     #R205's 0.15) are not weakened, they are gone, so `map` below has nothing to read. This test's
+     own finding is about SATELLITE and it is untouched: an optically-correct scattering term
+     multiplied until it clips is what read as 「質感がチープ」, so the peak stays well under 1.0 —
+     it is 0.45 now (was 0.55), which is further from the clipping range, not closer. The peak is
+     handed to `_airRamp()` rather than written into the expression (tests/r241-checks ④ pins the
+     curve itself), so it is read from there. */
   const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,800}?\)\}\);/.exec(src);
   assert.ok(blend, 'the atmosphere-blend expression must still be there');
   /* ⚠ (#R240) THE SECOND STOP IS NO LONGER z4. maplibre multiplies this property by globeness, which
@@ -134,15 +142,15 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
      途端に見えなくなってしまう」. The middle of the curve is flat now and the tail past z13 remains.
      What this test is about is the z0 STRENGTH of each ramp — #R187's and #R205's measured values —
      so it reads the first stop and stops caring which zoom the second one is at. */
-  const all = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),/g)].map((x) => +x[1]);
-  assert.ok(all.length >= 2, 'both atmosphere ramps must still be there');
+  const peak = /_airRamp\(([0-9.]+)\)/.exec(src);
+  assert.ok(peak, 'the satellite peak must still be a number this file owns');
   assert.match(src, /'atmosphere-blend':\((?:limb\?0:\()?sat/, 'the strength is chosen by basemap');
-  const sat = all[0], map = Math.max(...all.slice(1));
+  const sat = +peak[1];
   /* 1.0 clipped the channels — an optically correct scattering term multiplied until it saturates
      is what read as a cheap white collar, and as an over-bright sunlit limb. */
   assert.ok(sat < 0.8, `the satellite atmosphere-blend at z0 is ${sat} — that is back in the clipping range`);
   assert.ok(sat > 0.2, `the satellite atmosphere-blend at z0 is ${sat} — the atmosphere would be invisible`);
-  assert.ok(map <= 1.0 && map > sat, `the map ramp is ${map} — stronger than satellite, never past full`);
+  assert.match(blend[0], /:0\)\}\);/, 'and the map basemap gets none at all (#R241)');
   /* the SUN's own contribution to the shading came down with it */
   assert.match(read('js/geo-engine.js'), /o\.intensity==null\?0\.3:o\.intensity/, 'light intensity 0.5 → 0.3');
 });

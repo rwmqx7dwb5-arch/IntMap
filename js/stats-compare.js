@@ -25,43 +25,48 @@ window.IntMapModules.statsCompare=function(HOST){
   const cName=HOST.cName, countryStats=HOST.countryStats, imToast=HOST.imToast, renderCompareFixed=HOST.renderCompareFixed, renderStats=HOST.renderStats, resolveCountryId=HOST.resolveCountryId, searchVal=HOST.searchVal;
   return (function(){
     const LL=window.IntMapLang.pick(()=>HOST.lang);
+    /* (#R241) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js.
+       These tables held their translations as a bare array indexed by the language's position:
+       no inline-table fallback (so fr/ko/zh got element 0 for ever) and invisible to every
+       translation instrument. Written as a call, they are ordinary L(…) sites to the audits. */
+    const LA=window.IntMapLang.pickArgs();
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
     const pct=v=>(Math.round(v*100)/100)+'%', usd=v=>'$'+short(v), num=v=>short(v);
     /* wb: World Bank indicator id · imf: IMF WEO datamapper code (null = WB only) · sc: scale factor for IMF values */
     const IND=[
-      {k:'gdp',    wb:'NY.GDP.MKTP.CD', imf:'NGDPD',      imfScale:1e9, fmt:usd, l:['GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл.)','PIB (US$)'], def:1},
-      {k:'gdppc',  wb:'NY.GDP.PCAP.CD', imf:'NGDPDPC',    imfScale:1,   fmt:usd, l:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'], def:1},
-      {k:'growth', wb:'NY.GDP.MKTP.KD.ZG', imf:'NGDP_RPCH', imfScale:1, fmt:pct, l:['GDP growth','GDP成長率','BIP-Wachstum','Рост ВВП','Crecimiento del PIB'], def:1, signed:1},
-      {k:'infl',   wb:'FP.CPI.TOTL.ZG', imf:'PCPIPCH',    imfScale:1,   fmt:pct, l:['Inflation (CPI)','インフレ率','Inflation','Инфляция','Inflación'], def:0, signed:1},
-      {k:'unemp',  wb:'SL.UEM.TOTL.ZS', imf:'LUR',        imfScale:1,   fmt:pct, l:['Unemployment','失業率','Arbeitslosigkeit','Безработица','Desempleo'], def:0},
-      {k:'debt',   wb:'GC.DOD.TOTL.GD.ZS', imf:'GGXWDG_NGDP', imfScale:1, fmt:pct, l:['Govt debt (% GDP)','政府債務(対GDP)','Staatsschulden (% BIP)','Госдолг (% ВВП)','Deuda pública (% PIB)'], def:0},
-      {k:'cab',    wb:'BN.CAB.XOKA.GD.ZS', imf:'BCA_NGDPD', imfScale:1, fmt:pct, l:['Current account (% GDP)','経常収支(対GDP)','Leistungsbilanz (% BIP)','Текущий счёт (% ВВП)','Cuenta corriente (% PIB)'], def:0, signed:1},
-      {k:'pop',    wb:'SP.POP.TOTL',    imf:'LP',         imfScale:1e6, fmt:num, l:['Population','人口','Bevölkerung','Население','Población'], def:1},
-      {k:'life',   wb:'SP.DYN.LE00.IN', imf:null, fmt:v=>v.toFixed(1), l:['Life expectancy','平均寿命','Lebenserwartung','Продолж. жизни','Esperanza de vida'], def:1},
-      {k:'tfr',    wb:'SP.DYN.TFRT.IN', imf:null, fmt:v=>v.toFixed(2), l:['Fertility rate','出生率','Geburtenrate','Рождаемость','Fecundidad'], def:0},
-      {k:'mil',    wb:'MS.MIL.XPND.GD.ZS', imf:null, fmt:pct, l:['Military (% GDP)','軍事費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'], def:0},
-      {k:'co2',    wb:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], imf:null, fmt:v=>v.toFixed(2)+' t', l:['CO₂ per capita','1人当たりCO₂','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'], def:0},   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values) — successor series first, old code as fallback */
-      {k:'net',    wb:'IT.NET.USER.ZS', imf:null, fmt:pct, l:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de internet'], def:0},
-      {k:'urban',  wb:'SP.URB.TOTL.IN.ZS', imf:null, fmt:pct, l:['Urban population','都市人口率','Stadtbevölkerung','Городское население','Población urbana'], def:0},
-      {k:'exp',    wb:'NE.EXP.GNFS.ZS', imf:null, fmt:pct, l:['Exports (% GDP)','輸出(対GDP)','Exporte (% BIP)','Экспорт (% ВВП)','Exportaciones (% PIB)'], def:0},
-      {k:'fdi',    wb:'BX.KLT.DINV.WD.GD.ZS', imf:null, fmt:pct, l:['FDI inflows (% GDP)','対内直接投資(対GDP)','ADI-Zuflüsse (% BIP)','ПИИ (% ВВП)','IED (% PIB)'], def:0, signed:1},
-      {k:'health', wb:'SH.XPD.CHEX.GD.ZS', imf:null, fmt:pct, l:['Health spending (% GDP)','医療支出(対GDP)','Gesundheitsausgaben','Здравоохранение (% ВВП)','Gasto en salud (% PIB)'], def:0},
-      {k:'edu',    wb:'SE.XPD.TOTL.GD.ZS', imf:null, fmt:pct, l:['Education spending (% GDP)','教育支出(対GDP)','Bildungsausgaben','Образование (% ВВП)','Gasto en educación (% PIB)'], def:0},
-      {k:'rnd',    wb:'GB.XPD.RSDV.GD.ZS', imf:null, fmt:pct, l:['R&D (% GDP)','研究開発費(対GDP)','F&E (% BIP)','НИОКР (% ВВП)','I+D (% PIB)'], def:0},
-      {k:'renew',  wb:'EG.FEC.RNEW.ZS', imf:null, fmt:pct, l:['Renewable energy','再エネ比率','Erneuerbare Energie','Возобновляемая энергия','Energía renovable'], def:0},
-      {k:'forest', wb:'AG.LND.FRST.ZS', imf:null, fmt:pct, l:['Forest area','森林率','Waldfläche','Лесистость','Superficie forestal'], def:0},
-      {k:'hom',    wb:'VC.IHR.PSRC.P5', imf:null, fmt:v=>v.toFixed(1), l:['Homicide rate (/100k)','殺人率(10万人当り)','Mordrate (/100k)','Убийства (/100 тыс.)','Homicidios (/100k)'], def:0},
+      {k:'gdp',    wb:'NY.GDP.MKTP.CD', imf:'NGDPD',      imfScale:1e9, fmt:usd, l:LA('GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл.)','PIB (US$)'), def:1},
+      {k:'gdppc',  wb:'NY.GDP.PCAP.CD', imf:'NGDPDPC',    imfScale:1,   fmt:usd, l:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'), def:1},
+      {k:'growth', wb:'NY.GDP.MKTP.KD.ZG', imf:'NGDP_RPCH', imfScale:1, fmt:pct, l:LA('GDP growth','GDP成長率','BIP-Wachstum','Рост ВВП','Crecimiento del PIB'), def:1, signed:1},
+      {k:'infl',   wb:'FP.CPI.TOTL.ZG', imf:'PCPIPCH',    imfScale:1,   fmt:pct, l:LA('Inflation (CPI)','インフレ率','Inflation','Инфляция','Inflación'), def:0, signed:1},
+      {k:'unemp',  wb:'SL.UEM.TOTL.ZS', imf:'LUR',        imfScale:1,   fmt:pct, l:LA('Unemployment','失業率','Arbeitslosigkeit','Безработица','Desempleo'), def:0},
+      {k:'debt',   wb:'GC.DOD.TOTL.GD.ZS', imf:'GGXWDG_NGDP', imfScale:1, fmt:pct, l:LA('Govt debt (% GDP)','政府債務(対GDP)','Staatsschulden (% BIP)','Госдолг (% ВВП)','Deuda pública (% PIB)'), def:0},
+      {k:'cab',    wb:'BN.CAB.XOKA.GD.ZS', imf:'BCA_NGDPD', imfScale:1, fmt:pct, l:LA('Current account (% GDP)','経常収支(対GDP)','Leistungsbilanz (% BIP)','Текущий счёт (% ВВП)','Cuenta corriente (% PIB)'), def:0, signed:1},
+      {k:'pop',    wb:'SP.POP.TOTL',    imf:'LP',         imfScale:1e6, fmt:num, l:LA('Population','人口','Bevölkerung','Население','Población'), def:1},
+      {k:'life',   wb:'SP.DYN.LE00.IN', imf:null, fmt:v=>v.toFixed(1), l:LA('Life expectancy','平均寿命','Lebenserwartung','Продолж. жизни','Esperanza de vida'), def:1},
+      {k:'tfr',    wb:'SP.DYN.TFRT.IN', imf:null, fmt:v=>v.toFixed(2), l:LA('Fertility rate','出生率','Geburtenrate','Рождаемость','Fecundidad'), def:0},
+      {k:'mil',    wb:'MS.MIL.XPND.GD.ZS', imf:null, fmt:pct, l:LA('Military (% GDP)','軍事費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'), def:0},
+      {k:'co2',    wb:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], imf:null, fmt:v=>v.toFixed(2)+' t', l:LA('CO₂ per capita','1人当たりCO₂','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), def:0},   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values) — successor series first, old code as fallback */
+      {k:'net',    wb:'IT.NET.USER.ZS', imf:null, fmt:pct, l:LA('Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de internet'), def:0},
+      {k:'urban',  wb:'SP.URB.TOTL.IN.ZS', imf:null, fmt:pct, l:LA('Urban population','都市人口率','Stadtbevölkerung','Городское население','Población urbana'), def:0},
+      {k:'exp',    wb:'NE.EXP.GNFS.ZS', imf:null, fmt:pct, l:LA('Exports (% GDP)','輸出(対GDP)','Exporte (% BIP)','Экспорт (% ВВП)','Exportaciones (% PIB)'), def:0},
+      {k:'fdi',    wb:'BX.KLT.DINV.WD.GD.ZS', imf:null, fmt:pct, l:LA('FDI inflows (% GDP)','対内直接投資(対GDP)','ADI-Zuflüsse (% BIP)','ПИИ (% ВВП)','IED (% PIB)'), def:0, signed:1},
+      {k:'health', wb:'SH.XPD.CHEX.GD.ZS', imf:null, fmt:pct, l:LA('Health spending (% GDP)','医療支出(対GDP)','Gesundheitsausgaben','Здравоохранение (% ВВП)','Gasto en salud (% PIB)'), def:0},
+      {k:'edu',    wb:'SE.XPD.TOTL.GD.ZS', imf:null, fmt:pct, l:LA('Education spending (% GDP)','教育支出(対GDP)','Bildungsausgaben','Образование (% ВВП)','Gasto en educación (% PIB)'), def:0},
+      {k:'rnd',    wb:'GB.XPD.RSDV.GD.ZS', imf:null, fmt:pct, l:LA('R&D (% GDP)','研究開発費(対GDP)','F&E (% BIP)','НИОКР (% ВВП)','I+D (% PIB)'), def:0},
+      {k:'renew',  wb:'EG.FEC.RNEW.ZS', imf:null, fmt:pct, l:LA('Renewable energy','再エネ比率','Erneuerbare Energie','Возобновляемая энергия','Energía renovable'), def:0},
+      {k:'forest', wb:'AG.LND.FRST.ZS', imf:null, fmt:pct, l:LA('Forest area','森林率','Waldfläche','Лесистость','Superficie forestal'), def:0},
+      {k:'hom',    wb:'VC.IHR.PSRC.P5', imf:null, fmt:v=>v.toFixed(1), l:LA('Homicide rate (/100k)','殺人率(10万人当り)','Mordrate (/100k)','Убийства (/100 тыс.)','Homicidios (/100k)'), def:0},
       /* (#R70) 機能拡充: the bundled per-country reference values (the old bar-compare's data) become
          first-class indicators — instantly available (no fetch), bars/table always work, time-series shows the
          honest single point. `stat` reads countryStats; `src` is the real underlying source. */
-      {k:'area',     stat:s=>s.area,      yr:0, fmt:v=>short(v)+' km²', l:['Area','面積','Fläche','Площадь','Superficie'], def:0, src:'Natural Earth'},
-      {k:'hdi',      stat:s=>s.hdi,       yr:2022, fmt:v=>(+v).toFixed(3), l:['HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'], def:0, src:'UNDP'},
-      {k:'demi',     stat:s=>s.dem,       yr:2023, fmt:v=>(+v).toFixed(2), l:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'], def:0, src:'EIU'},
-      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:['GDP (PPP)','GDP（PPP）','BIP (KKP)','ВВП (ППС)','PIB (PPA)'], def:0, src:'IMF/WB (PPP)'},
-      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:['GDP per capita (PPP)','1人当たりGDP（PPP）','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)'], def:0, src:'IMF/WB (PPP)'},
-      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:['Military spending ($)','軍事費（米ドル）','Militärausgaben ($)','Военные расходы ($)','Gasto militar ($)'], def:0, src:'SIPRI'}
+      {k:'area',     stat:s=>s.area,      yr:0, fmt:v=>short(v)+' km²', l:LA('Area','面積','Fläche','Площадь','Superficie'), def:0, src:'Natural Earth'},
+      {k:'hdi',      stat:s=>s.hdi,       yr:2022, fmt:v=>(+v).toFixed(3), l:LA('HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'), def:0, src:'UNDP'},
+      {k:'demi',     stat:s=>s.dem,       yr:2023, fmt:v=>(+v).toFixed(2), l:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'), def:0, src:'EIU'},
+      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:LA('GDP (PPP)','GDP（PPP）','BIP (KKP)','ВВП (ППС)','PIB (PPA)'), def:0, src:'IMF/WB (PPP)'},
+      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:LA('GDP per capita (PPP)','1人当たりGDP（PPP）','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)'), def:0, src:'IMF/WB (PPP)'},
+      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:LA('Military spending ($)','軍事費（米ドル）','Militärausgaben ($)','Военные расходы ($)','Gasto militar ($)'), def:0, src:'SIPRI'}
     ];
     /* (#R71) indicator metadata: category (the picker is grouped — "指標選択画面が煩雑"), sign-carrying
        indicators (green/red ± in bars & table — "増減指標は…緑赤"), and bundled-reference fallbacks used to
@@ -970,7 +975,7 @@ window.IntMapModules.statsCompare=function(HOST){
       return true; }
     /* (#R115) Atlas needs the indicator vocabulary to honour "compare … — GDP, defense and population":
        expose the valid metric keys + a localized label so the compareStats action can resolve & report them. */
-    function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; const li=Math.max(0,window.IntMapLang.index(HOST.lang)); return (i2.l&&(i2.l[li]||i2.l[0]))||k; }catch(_){ return k; } }
+    function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; return (i2.l&&LL.arr(i2.l))||k; }catch(_){ return k; } }
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }

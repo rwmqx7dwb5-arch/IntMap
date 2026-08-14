@@ -39,6 +39,9 @@ window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admi
   .concat(window.IntMapDefaultLayers);
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.dataLayers=function(HOST){
+  const LDL=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. */
+  const LA=window.IntMapLang.pickArgs();
   /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
      were properties hung on the map object itself (map.__choroHover / __natoHover / __euHover), which
      is both invisible to anyone reading this file and something no other engine would carry. */
@@ -2143,12 +2146,22 @@ window.IntMapModules.dataLayers=function(HOST){
        Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
        + minimise button are added automatically by tileLegends()/ensureLegendOpacity() (id matches
        data-legend-<id> → opacities[<id>]). */
+    /* ══ ⚠⚠ (#R241) THE LEGEND TITLES WERE A TWO-ELEMENT ARRAY ═══════════════════════════════════
+       `['Precipitation (IMERG)','降水量 (IMERG)']` read at `IntMapLang.index(lang)` — so DE, RU, ES,
+       FR, KO and both Chinese scripts all fell to element 0, English, and no instrument could see it
+       (an array literal is not a call). Written as `LA(…)` these are ordinary L(…) sites: the
+       positional audit checks the five slots and the inline table carries the rest. */
     const GENERIC_LEG={
-      precip:['Precipitation (IMERG)','降水量 (IMERG)'], clouds:['Clouds (infrared)','雲（赤外）'],
-      ships:['Live ship traffic','船舶（リアルタイム）'], planes:['Live aircraft traffic','航空機（リアルタイム）'],
-      sats:['Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники в реальном времени'],
-      hillshade:['Elevation relief (hillshade)','陰影起伏'], contours:['Contour lines','等高線'],
-      night:['Day / night','昼/夜'], subcables:['Submarine cables','海底ケーブル'], nato:['NATO members','NATO加盟国']
+      precip:LA('Precipitation (IMERG)','降水量 (IMERG)','Niederschlag (IMERG)','Осадки (IMERG)','Precipitación (IMERG)'),
+      clouds:LA('Clouds (infrared)','雲（赤外）','Wolken (Infrarot)','Облака (инфракрасный)','Nubes (infrarrojo)'),
+      ships:LA('Live ship traffic','船舶（リアルタイム）','Schiffsverkehr (live)','Суда (в реальном времени)','Tráfico marítimo en vivo'),
+      planes:LA('Live aircraft traffic','航空機（リアルタイム）','Flugverkehr (live)','Самолёты (в реальном времени)','Tráfico aéreo en vivo'),
+      sats:LA('Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники в реальном времени','Satélites en vivo'),
+      hillshade:LA('Elevation relief (hillshade)','陰影起伏','Schummerung (Relief)','Отмывка рельефа','Relieve sombreado'),
+      contours:LA('Contour lines','等高線','Höhenlinien','Изолинии высот','Curvas de nivel'),
+      night:LA('Day / night','昼/夜','Tag / Nacht','День / ночь','Día / noche'),
+      subcables:LA('Submarine cables','海底ケーブル','Seekabel','Подводные кабели','Cables submarinos'),
+      nato:LA('NATO members','NATO加盟国','NATO-Mitglieder','Страны НАТО','Miembros de la OTAN')
     };
     /* (#R19) `names`/`cbId` make this usable for ANY layer ("どのレイヤーも透明度選択ができるように"):
        a caller can register a legend (with auto opacity row) for a layer that has none — geo/strategic
@@ -2164,7 +2177,9 @@ window.IntMapModules.dataLayers=function(HOST){
         (document.getElementById('map-container')||document.body).appendChild(el);
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
       if(cbId) el.dataset.cbId=cbId;
-      const nm=GENERIC_LEG[id][Math.max(0,window.IntMapLang.index(HOST.lang))]||GENERIC_LEG[id][0];
+      /* (#R241) resolved through `pick()` itself, so a language past the five positional slots
+         gets its inline-table entry rather than English at index 0. */
+      const nm=LDL.arr(GENERIC_LEG[id]);
       const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };

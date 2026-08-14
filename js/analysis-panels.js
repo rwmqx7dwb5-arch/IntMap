@@ -26,14 +26,20 @@ window.IntMapModules.timeSeries=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapTimeSeries=(function(){
     const jp=()=>HOST.lang==='jp';
+    const LP=window.IntMapLang.pick(()=>HOST.lang);
+    /* (#R241) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js.
+       These tables held their translations as a bare array indexed by the language's position:
+       no inline-table fallback (so fr/ko/zh got element 0 for ever) and invisible to every
+       translation instrument. Written as a call, they are ordinary L(…) sites to the audits. */
+    const LA=window.IntMapLang.pickArgs();
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const IND=[
-      {id:'NY.GDP.MKTP.CD', label:['GDP (US$)','GDP（米ドル）'], fmt:v=>'$'+short(v)},
-      {id:'NY.GDP.PCAP.CD', label:['GDP per capita','1人当たりGDP'], fmt:v=>'$'+Math.round(v).toLocaleString()},
-      {id:'SP.POP.TOTL', label:['Population','人口'], fmt:v=>short(v)},
-      {id:'SP.DYN.LE00.IN', label:['Life expectancy','平均寿命'], fmt:v=>v.toFixed(1)+(jp()?' 歳':' yr')},
-      {id:'MS.MIL.XPND.GD.ZS', label:['Military (% GDP)','軍事費（対GDP）'], fmt:v=>v.toFixed(2)+'%'},
-      {id:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], label:['CO₂ per capita (t)','1人当たりCO₂ (t)'], fmt:v=>v.toFixed(2)}   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values → "データなし") — successor first, old code as fallback */
+      {id:'NY.GDP.MKTP.CD', label:LA('GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл. США)','PIB (US$)'), fmt:v=>'$'+short(v)},
+      {id:'NY.GDP.PCAP.CD', label:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:v=>'$'+Math.round(v).toLocaleString()},
+      {id:'SP.POP.TOTL', label:LA('Population','人口','Bevölkerung','Население','Población'), fmt:v=>short(v)},
+      {id:'SP.DYN.LE00.IN', label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожидаемая продолжительность жизни','Esperanza de vida'), fmt:v=>v.toFixed(1)+(jp()?' 歳':' yr')},
+      {id:'MS.MIL.XPND.GD.ZS', label:LA('Military (% GDP)','軍事費（対GDP）','Militär (% BIP)','Военные расходы (% ВВП)','Militar (% PIB)'), fmt:v=>v.toFixed(2)+'%'},
+      {id:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], label:LA('CO₂ per capita (t)','1人当たりCO₂ (t)','CO₂ pro Kopf (t)','CO₂ на душу населения (т)','CO₂ per cápita (t)'), fmt:v=>v.toFixed(2)}   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values → "データなし") — successor first, old code as fallback */
     ];
     let modal=null;
     function ensureModal(){ if(modal) return modal; modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='timeseries-modal';
@@ -128,7 +134,7 @@ window.IntMapModules.timeSeries=function(HOST){
       m.querySelector('#ts-sub').textContent=jp()?'出典: 世界銀行オープンデータ':'Source: World Bank Open Data';
       const body=m.querySelector('#ts-body'); body.innerHTML=jp()?'読み込み中…':'Loading…';
       const results=await Promise.all(IND.map(ind=>fetchInd(code,ind.id)));
-      const html=IND.map((ind,i)=>chart(results[i],jp()?ind.label[1]:ind.label[0],ind.fmt)).join('');
+      const html=IND.map((ind,i)=>chart(results[i],LP.arr(ind.label),ind.fmt)).join('');
       body.innerHTML=html || (jp()?'データがありません':'No data available');
       try{ wireCharts(body); }catch(_){}
     }
@@ -531,6 +537,11 @@ window.IntMapModules.correlate=function(HOST){
 };
 
 window.IntMapModules.worldEvents=function(HOST){
+  const LWE=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. `EV_LBL` was `['War','戦争']`
+     read as `jp?[1]:[0]`, i.e. English on every language but Japanese, and invisible to every
+     instrument because an array literal is not a call. */
+  const LA=window.IntMapLang.pickArgs();
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -678,7 +689,7 @@ window.IntMapModules.worldEvents=function(HOST){
       E(2023,32.53,15.50,'war','Sudan civil war','スーダン内戦','Fighting erupts between the army and the RSF.','国軍とRSFの戦闘が勃発。','Sudanese_civil_war_(2023%E2%80%93present)')
     ];
     const EV_COLORS={war:'#ff3b30',disaster:'#ff9500',revolution:'#af52de',assassination:'#8e8e93',space:'#5856d6',economic:'#34c759',geo:'#007aff'};
-    const EV_LBL={war:['War','戦争'],disaster:['Disaster','災害'],revolution:['Revolution','革命・政変'],assassination:['Assassination','暗殺'],space:['Space & science','宇宙・科学'],economic:['Economy','経済危機・転換点'],geo:['Geopolitics','地政学・条約']};
+    const EV_LBL={war:LA('War','戦争','Krieg','Война','Guerra'),disaster:LA('Disaster','災害','Katastrophe','Катастрофа','Desastre'),revolution:LA('Revolution','革命・政変','Revolution','Революция','Revolución'),assassination:LA('Assassination','暗殺','Attentat','Убийство','Asesinato'),space:LA('Space & science','宇宙・科学','Raumfahrt & Wissenschaft','Космос и наука','Espacio y ciencia'),economic:LA('Economy','経済危機・転換点','Wirtschaft','Экономика','Economía'),geo:LA('Geopolitics','地政学・条約','Geopolitik','Геополитика','Geopolítica')};
     window._dashView=window._dashView||'places';
     let yMin=1490, yMax=2026;
     window._setDashView=function(v){ window._dashView=v; try{ renderDashboard(); }catch(_){} };
@@ -700,7 +711,7 @@ window.IntMapModules.worldEvents=function(HOST){
         ' <span>'+list.length+(window.IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
       const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       const cards=list.map(e=>{
-        const nm=jp?e.jp:e.en, d=jp?e.djp:e.den, tl=EV_LBL[e.tp]?(jp?EV_LBL[e.tp][1]:EV_LBL[e.tp][0]):e.tp;
+        const nm=jp?e.jp:e.en, d=jp?e.djp:e.den, tl=EV_LBL[e.tp]?LWE.arr(EV_LBL[e.tp]):e.tp;
         const wiki='https://'+(jp?'ja':'en')+'.wikipedia.org/wiki/'+e.wiki;
         return '<div class="wiki-card" onclick="flyToLoc('+e.loc[0]+','+e.loc[1]+')" style="cursor:pointer;">'+
           '<div class="wiki-card-content"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+

@@ -19,6 +19,12 @@
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
+  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Four tables in this file held
+     their translations JP-first and indexed them with a private `{jp:0,en:1,…}` map, i.e. a second
+     copy of the language order that named four languages: every one of these layer names was
+     English on es/fr/ko/zh and invisible to every instrument. */
+  const LA=window.IntMapLang.pickArgs();
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -119,8 +125,8 @@ window.IntMapModules.earthSky=function(HOST){
       apply(); }
     GE().events.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
     /* (#R38) [JP, EN, DE, RU]; l9Lbl() picks the active language. */
-    const L9LBL={dams:['主要ダム・水インフラ','Major dams','Große Talsperren','Крупные плотины'],volcanoes:['活火山','Active volcanoes','Aktive Vulkane','Действующие вулканы'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)'],seaice:['海氷（北極・南極）','Sea ice (Arctic/Antarctic)','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defense zones (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)']};
-    const l9Lbl=(k)=>L9LBL[k][{jp:0,en:1,de:2,ru:3}[HOST.lang]]||L9LBL[k][1];
+    const L9LBL={dams:LA('Major dams','主要ダム・水インフラ','Große Talsperren','Крупные плотины','Grandes presas'),volcanoes:LA('Active volcanoes','活火山','Aktive Vulkane','Действующие вулканы','Volcanes activos'),aurora:LA('Aurora forecast (NOAA)','オーロラ予測（NOAA）','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)','Pronóstico de auroras (NOAA)'),seaice:LA('Sea ice (Arctic/Antarctic)','海氷（北極・南極）','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)','Hielo marino (Ártico/Antártico)'),adiz:LA('Air-defense zones (ADIZ ≈)','防空識別圏 (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)','Zonas de defensa aérea (ADIZ ≈)')};
+    const l9Lbl=(k)=>LPK.arr(L9LBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
@@ -128,7 +134,7 @@ window.IntMapModules.earthSky=function(HOST){
          replaced by the full Smithsonian GVP Holocene layer (1,215 volcanoes) in the beta module below. */
       [['dams','#34c7ff'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, l9Lbl(k), sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked);
         /* (#R19) opacity-in-legend for these point/heat layers too */
-        try{ if(e.target.checked&&window._registerLayerOpacity){ const _el=window._registerLayerOpacity('l9-'+k,[L9LBL[k][1],L9LBL[k][0],L9LBL[k][2],L9LBL[k][3]],SETS[k],'l9-dl-'+k); if(k==='aurora'&&_el){ _auroraLegEl=_el; _auroraSyncNote(); } } else if(window._hideGenericLegend){ window._hideGenericLegend('l9-'+k); if(k==='aurora') _auroraLegEl=null; } }catch(_){} }); });
+        try{ if(e.target.checked&&window._registerLayerOpacity){ const _el=window._registerLayerOpacity('l9-'+k,L9LBL[k],SETS[k],'l9-dl-'+k); if(k==='aurora'&&_el){ _auroraLegEl=_el; _auroraSyncNote(); } } else if(window._hideGenericLegend){ window._hideGenericLegend('l9-'+k); if(k==='aurora') _auroraLegEl=null; } }catch(_){} }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство','Tierra, cielo y espacio aéreo'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
@@ -139,6 +145,11 @@ window.IntMapModules.earthSky=function(HOST){
 };
 
 window.IntMapModules.landCover=function(HOST){
+  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The label table below held
+     its translations JP-first and subscripted them with a private `{jp:0,en:1,…}` map: a second
+     copy of the language order, naming four languages, invisible to every instrument. */
+  const LA=window.IntMapLang.pickArgs();
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -375,8 +386,8 @@ window.IntMapModules.landCover=function(HOST){
     }
     GE().events.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!GE().layers.hasSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
     /* (#R38) [JP, EN, DE, RU]; ecoLbl() picks the active language. */
-    const ECLBL={worldcover:['土地被覆 (ESA 2021)','Land cover (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)'],ecoregions:['生態地域 (WWF/RESOLVE)','Ecoregions (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)'],plates:['プレート境界','Tectonic plates','Tektonische Platten','Тектонические плиты']};
-    const ecoLbl=(k)=>ECLBL[k][{jp:0,en:1,de:2,ru:3}[HOST.lang]]||ECLBL[k][1];
+    const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
+    const ecoLbl=(k)=>LPK.arr(ECLBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
@@ -392,6 +403,11 @@ window.IntMapModules.landCover=function(HOST){
 };
 
 window.IntMapModules.betaPack2=function(HOST){
+  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The label table below held
+     its translations JP-first and subscripted them with a private `{jp:0,en:1,…}` map: a second
+     copy of the language order, naming four languages, invisible to every instrument. */
+  const LA=window.IntMapLang.pickArgs();
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -579,8 +595,8 @@ window.IntMapModules.betaPack2=function(HOST){
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
     /* (#R38) [JP, EN, DE, RU] — b2Lbl() picks the active UI language (was JP/EN only → English in DE/RU). */
-    const B2LBL={dc:['データセンター・AIインフラ','Data centers & AI infra','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs','Pharma-Produktionszentren','Центры фармпроизводства'],lifeexp:['平均寿命','Life expectancy','Lebenserwartung','Продолжительность жизни'],cpi:['汚職・腐敗指標','Corruption indicator','Korruptionsindex','Индекс коррупции'],rail:['世界の鉄道（軌間別）','World railways (by gauge)','Welt-Eisenbahnen (nach Spurweite)','Железные дороги мира (по колее)'],unemp:['失業率','Unemployment rate','Arbeitslosenquote','Уровень безработицы'],internet:['インターネット普及率','Internet penetration','Internetverbreitung','Проникновение интернета'],precip:['年降水量','Annual precipitation','Jahresniederschlag','Годовое количество осадков'],spin:['地球をゆっくり回す','Globe tour (slow spin)','Globus-Tour (langsame Drehung)','Тур по глобусу (медленное вращение)']};
-    const b2Lbl=(k)=>B2LBL[k][{jp:0,en:1,de:2,ru:3}[HOST.lang]]||B2LBL[k][1];
+    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways (by gauge)','世界の鉄道（軌間別）','Welt-Eisenbahnen (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation','年降水量','Jahresniederschlag','Годовое количество осадков','Precipitación anual'),spin:LA('Globe tour (slow spin)','地球をゆっくり回す','Globus-Tour (langsame Drehung)','Тур по глобусу (медленное вращение)','Recorrido del globo (giro lento)')};
+    const b2Lbl=(k)=>LPK.arr(B2LBL[k]);
     const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',unemp:'#f46d43',internet:'#1a9850',precip:'#35978f',spin:'#ffd166'};
     const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,unemp:(on)=>wbToggle('unemp',on),internet:(on)=>wbToggle('internet',on),precip:(on)=>wbToggle('precip',on),spin:spinToggle};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-dc')) return;
@@ -824,60 +840,68 @@ window.IntMapModules.gibsScience=function(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     const GDATE=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-    /* label/note order = [JP, EN, DE, RU] */
+    const LGX=window.IntMapLang.pick(()=>HOST.lang);
+    /* ⚠ (#R241) THE ORDER USED TO BE [JP, EN, DE, RU] — the registry's is [EN, JP, DE, RU, ES], and a
+       table with its own order needs its own index map, which is a second copy of the language list.
+       This file had one (`{jp:0,en:1,de:2,ru:3,es:4}`), it named five languages, and every GIBS layer
+       name was therefore English on fr/ko/zh — while every translation instrument reported 100 %,
+       because an array literal is not a call. Written as `LA(en, jp, de, ru, es)` these are ordinary
+       L(…) sites: same order as the rest of the app, seen by the audits, and resolved through
+       `pick()` so a language past the arguments gets its inline-table entry. */
+    const LA=window.IntMapLang.pickArgs();
     const LIST=[
       {id:'gxtruecolor', gibs:'MODIS_Terra_CorrectedReflectance_TrueColor', max:9, ext:'jpg', sw:'#9ec7ff',
-        label:['当日の衛星画像（自然色）','Daily satellite (true color)','Satellit (Echtfarben, täglich)','Спутник (естеств. цвет, ежедн.)'],
-        note:['MODIS Terra 当日のトゥルーカラー合成','MODIS Terra daily true-color mosaic','MODIS Terra Echtfarben-Mosaik (täglich)','MODIS Terra естеств. цвет (ежедневно)']},
+        label:LA('Daily satellite (true color)','当日の衛星画像（自然色）','Satellit (Echtfarben, täglich)','Спутник (естеств. цвет, ежедн.)','Satélite diario (color natural)'),
+        note:LA('MODIS Terra daily true-color mosaic','MODIS Terra 当日のトゥルーカラー合成','MODIS Terra Echtfarben-Mosaik (täglich)','MODIS Terra естеств. цвет (ежедневно)','Mosaico diario en color natural de MODIS Terra')},
       {id:'gxlst', gibs:'MODIS_Terra_Land_Surface_Temp_Day', max:7, ext:'png', sw:'#f0651b',
-        label:['地表面温度（昼）','Land surface temp (day)','Bodentemperatur (Tag)','Темп. поверхности (день)'],
-        note:['MODIS 地表面温度（日中）','MODIS land-surface temperature, daytime','MODIS Landoberflächentemperatur (Tag)','MODIS темп. поверхности суши (день)']},
+        label:LA('Land surface temp (day)','地表面温度（昼）','Bodentemperatur (Tag)','Темп. поверхности (день)','Temp. de superficie (día)'),
+        note:LA('MODIS land-surface temperature, daytime','MODIS 地表面温度（日中）','MODIS Landoberflächentemperatur (Tag)','MODIS темп. поверхности суши (день)','Temperatura de la superficie terrestre (MODIS), de día')},
       {id:'gxndvi', gibs:'MODIS_Terra_NDVI_8Day', max:9, ext:'png', sw:'#2e7d32',
-        label:['植生指数 (NDVI)','Vegetation index (NDVI)','Vegetationsindex (NDVI)','Индекс растительности (NDVI)'],
-        note:['MODIS 植生指数（8日合成）','MODIS vegetation index (8-day)','MODIS Vegetationsindex (8 Tage)','MODIS индекс растительности (8 дней)']},
+        label:LA('Vegetation index (NDVI)','植生指数 (NDVI)','Vegetationsindex (NDVI)','Индекс растительности (NDVI)','Índice de vegetación (NDVI)'),
+        note:LA('MODIS vegetation index (8-day)','MODIS 植生指数（8日合成）','MODIS Vegetationsindex (8 Tage)','MODIS индекс растительности (8 дней)','Índice de vegetación MODIS (8 días)')},
       {id:'gxwvapor', gibs:'MODIS_Terra_Water_Vapor_5km_Day', max:6, ext:'png', sw:'#4fc3f7',
-        label:['可降水量（水蒸気）','Water vapor','Wasserdampf','Водяной пар'],
-        note:['MODIS 大気可降水量','MODIS atmospheric water vapor','MODIS atmosphärischer Wasserdampf','MODIS атмосферный водяной пар']},
+        label:LA('Water vapor','可降水量（水蒸気）','Wasserdampf','Водяной пар','Vapor de agua'),
+        note:LA('MODIS atmospheric water vapor','MODIS 大気可降水量','MODIS atmosphärischer Wasserdampf','MODIS атмосферный водяной пар','Vapor de agua atmosférico (MODIS)')},
       {id:'gxcloud', gibs:'MODIS_Terra_Cloud_Fraction_Day', max:6, ext:'png', sw:'#e2e2e2',
-        label:['雲量割合（昼）','Cloud fraction (day)','Wolkenanteil (Tag)','Доля облачности (день)'],
-        note:['MODIS 雲量割合（日中）','MODIS cloud fraction, daytime','MODIS Wolkenanteil (Tag)','MODIS доля облачности (день)']},
+        label:LA('Cloud fraction (day)','雲量割合（昼）','Wolkenanteil (Tag)','Доля облачности (день)','Fracción de nubes (día)'),
+        note:LA('MODIS cloud fraction, daytime','MODIS 雲量割合（日中）','MODIS Wolkenanteil (Tag)','MODIS доля облачности (день)','Fracción de nubes MODIS, de día')},
       {id:'gxseaice', gibs:'GHRSST_L4_MUR_Sea_Ice_Concentration', max:7, ext:'png', sw:'#cfe8ff',
-        label:['海氷密接度','Sea-ice concentration','Meereiskonzentration','Концентрация морского льда'],
-        note:['GHRSST MUR 海氷密接度','GHRSST MUR sea-ice concentration','GHRSST MUR Meereiskonzentration','GHRSST MUR концентрация льда']},
+        label:LA('Sea-ice concentration','海氷密接度','Meereiskonzentration','Концентрация морского льда','Concentración de hielo marino'),
+        note:LA('GHRSST MUR sea-ice concentration','GHRSST MUR 海氷密接度','GHRSST MUR Meereiskonzentration','GHRSST MUR концентрация льда','Concentración de hielo marino GHRSST MUR')},
       {id:'gxsstanom', gibs:'GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies', max:7, ext:'png', sw:'#ef5350',
-        label:['海面水温 偏差','Sea-surface temp anomaly','Meeresoberflächentemp.-Anomalie','Аномалия темп. поверхности моря'],
-        note:['平年差（エルニーニョ等の指標）','Anomaly vs climatology (ENSO signal)','Abweichung vom Mittel (ENSO)','Аномалия к норме (сигнал Эль-Ниньо)']},
+        label:LA('Sea-surface temp anomaly','海面水温 偏差','Meeresoberflächentemp.-Anomalie','Аномалия темп. поверхности моря','Anomalía de temp. superficial del mar'),
+        note:LA('Anomaly vs climatology (ENSO signal)','平年差（エルニーニョ等の指標）','Abweichung vom Mittel (ENSO)','Аномалия к норме (сигнал Эль-Ниньо)','Anomalía respecto a la climatología (señal ENSO)')},
       /* (#R40) Blue Marble (relief + bathymetry) was DELETED per request. */
       /* (#R39) +4 more curl-verified GIBS rasters (HTTP 200 / image/*). */
       {id:'gxcloudtop', gibs:'MODIS_Terra_Cloud_Top_Temp_Day', max:6, ext:'png', sw:'#b3d4fc',
-        label:['雲頂温度（昼）','Cloud-top temperature','Wolkenobergrenzentemperatur','Температура вершин облаков'],
-        note:['MODIS 雲頂温度。低いほど高く発達した雲（積乱雲など）','MODIS cloud-top temperature; colder = taller storm clouds','MODIS Wolkenobergrenzentemperatur; kälter = höhere Gewitterwolken','MODIS температура вершин облаков; холоднее = выше грозовые облака']},
+        label:LA('Cloud-top temperature','雲頂温度（昼）','Wolkenobergrenzentemperatur','Температура вершин облаков','Temperatura del tope de nubes'),
+        note:LA('MODIS cloud-top temperature; colder = taller storm clouds','MODIS 雲頂温度。低いほど高く発達した雲（積乱雲など）','MODIS Wolkenobergrenzentemperatur; kälter = höhere Gewitterwolken','MODIS температура вершин облаков; холоднее = выше грозовые облака','Temperatura del tope de nubes (MODIS); más frío = nubes de tormenta más altas')},
       {id:'gxlstnight', gibs:'MODIS_Terra_Land_Surface_Temp_Night', max:7, ext:'png', sw:'#5c6bc0',
-        label:['地表面温度（夜）','Land surface temp (night)','Bodentemperatur (Nacht)','Темп. поверхности (ночь)'],
-        note:['MODIS 夜間の地表面温度','MODIS land-surface temperature, nighttime','MODIS Landoberflächentemperatur (Nacht)','MODIS темп. поверхности суши (ночь)']},
+        label:LA('Land surface temp (night)','地表面温度（夜）','Bodentemperatur (Nacht)','Темп. поверхности (ночь)','Temp. de superficie (noche)'),
+        note:LA('MODIS land-surface temperature, nighttime','MODIS 夜間の地表面温度','MODIS Landoberflächentemperatur (Nacht)','MODIS темп. поверхности суши (ночь)','Temperatura de la superficie terrestre (MODIS), de noche')},
       {id:'gxbtday', gibs:'MODIS_Terra_Brightness_Temp_Band31_Day', max:7, ext:'png', sw:'#ff8a65',
-        label:['輝度温度（熱赤外・昼）','Brightness temp (thermal IR)','Strahlungstemperatur (Thermal-IR)','Яркостная температура (ИК)'],
-        note:['MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS band-31 thermal-IR brightness temperature','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)']},
+        label:LA('Brightness temp (thermal IR)','輝度温度（熱赤外・昼）','Strahlungstemperatur (Thermal-IR)','Яркостная температура (ИК)','Temperatura de brillo (IR térmico)'),
+        note:LA('MODIS band-31 thermal-IR brightness temperature','MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)','Temperatura de brillo en IR térmico (banda 31) de MODIS')},
       {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
-        label:['カラー段彩・陰影（ASTER）','Color relief (ASTER GDEM)','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)'],
-        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM color + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']},
+        label:LA('Color relief (ASTER GDEM)','カラー段彩・陰影（ASTER）','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)','Relieve en color (ASTER GDEM)'),
+        note:LA('ASTER global DEM color + shaded relief (static)','ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)','MDE global ASTER: color + relieve sombreado (estático)')},
       /* (#R41) +OMPS UV Aerosol Index — endpoint curl-verified (HTTP 200/png). Highlights UV-absorbing aerosols
          (smoke, dust, volcanic ash); distinct from the existing AOD layer. */
       {id:'gxaero', gibs:'OMPS_Aerosol_Index', max:6, ext:'png', sw:'#c97b3c',
-        label:['紫外線エアロゾル指数','UV Aerosol Index','UV-Aerosolindex','УФ-индекс аэрозолей','Índice UV de aerosoles'],
-        note:['煙・砂じん・火山灰など紫外線を吸収するエアロゾルを検出（OMPS）','OMPS UV-absorbing aerosols — smoke, dust, volcanic ash','OMPS UV-absorbierende Aerosole — Rauch, Staub, Vulkanasche','OMPS поглощающие УФ аэрозоли — дым, пыль, пепел','OMPS aerosoles que absorben UV — humo, polvo, ceniza']},
+        label:LA('UV Aerosol Index','紫外線エアロゾル指数','UV-Aerosolindex','УФ-индекс аэрозолей','Índice UV de aerosoles'),
+        note:LA('OMPS UV-absorbing aerosols — smoke, dust, volcanic ash','煙・砂じん・火山灰など紫外線を吸収するエアロゾルを検出（OMPS）','OMPS UV-absorbierende Aerosole — Rauch, Staub, Vulkanasche','OMPS поглощающие УФ аэрозоли — дым, пыль, пепел','OMPS aerosoles que absorben UV — humo, polvo, ceniza')},
       /* (#R42) THREE new objective NASA GIBS science rasters (endpoints + colormaps curl-verified). Distinct new
          categories — ocean biology / air pollution / soil — placed straight into REAL groups (same objective+
          sourced+legend bar as gxaero/gxndvi). Daily products at −2 d via the shared GDATE(). */
       {id:'gxchlor', gibs:'VIIRS_NOAA20_Chlorophyll_a', max:7, ext:'png', sw:'#1bb37a',
-        label:['クロロフィルa（海色）','Chlorophyll-a (ocean color)','Chlorophyll a (Ozeanfarbe)','Хлорофилл-а (цвет океана)','Clorofila-a (color del océano)'],
-        note:['海洋表層のクロロフィルa濃度 — 植物プランクトン＝海の生産性（VIIRS）','Ocean-surface chlorophyll-a — phytoplankton / marine productivity (VIIRS)','Chlorophyll a an der Meeresoberfläche — Phytoplankton/Produktivität (VIIRS)','Хлорофилл-а у поверхности океана — фитопланктон/продуктивность (VIIRS)','Clorofila-a superficial — fitoplancton/productividad marina (VIIRS)']},
+        label:LA('Chlorophyll-a (ocean color)','クロロフィルa（海色）','Chlorophyll a (Ozeanfarbe)','Хлорофилл-а (цвет океана)','Clorofila-a (color del océano)'),
+        note:LA('Ocean-surface chlorophyll-a — phytoplankton / marine productivity (VIIRS)','海洋表層のクロロフィルa濃度 — 植物プランクトン＝海の生産性（VIIRS）','Chlorophyll a an der Meeresoberfläche — Phytoplankton/Produktivität (VIIRS)','Хлорофилл-а у поверхности океана — фитопланктон/продуктивность (VIIRS)','Clorofila-a superficial — fitoplancton/productividad marina (VIIRS)')},
       {id:'gxco', gibs:'AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day', max:6, ext:'png', sw:'#cb3220',
-        label:['一酸化炭素 (CO)','Carbon monoxide (CO)','Kohlenmonoxid (CO)','Угарный газ (CO)','Monóxido de carbono (CO)'],
-        note:['対流圏中層のCO濃度 — 山火事の煙・燃焼・大気汚染の指標（AIRS）','Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)','CO in der mittleren Troposphäre — Rauch, Verbrennung, Luftverschmutzung (AIRS)','CO в средней тропосфере — дым пожаров, горение, загрязнение (AIRS)','CO en la troposfera media — humo, combustión y contaminación (AIRS)']},
+        label:LA('Carbon monoxide (CO)','一酸化炭素 (CO)','Kohlenmonoxid (CO)','Угарный газ (CO)','Monóxido de carbono (CO)'),
+        note:LA('Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)','対流圏中層のCO濃度 — 山火事の煙・燃焼・大気汚染の指標（AIRS）','CO in der mittleren Troposphäre — Rauch, Verbrennung, Luftverschmutzung (AIRS)','CO в средней тропосфере — дым пожаров, горение, загрязнение (AIRS)','CO en la troposfera media — humo, combustión y contaminación (AIRS)')},
       {id:'gxsoil', gibs:'AMSRU2_Soil_Moisture_SCA_Day', max:6, ext:'png', sw:'#1bf74d',
-        label:['土壌水分','Soil moisture','Bodenfeuchte','Влажность почвы','Humedad del suelo'],
-        note:['表層土壌の水分量 — 干ばつ・農業の指標（AMSR2）','Surface soil moisture — drought & agriculture (AMSR2)','Oberflächen-Bodenfeuchte — Dürre & Landwirtschaft (AMSR2)','Влажность поверхностного слоя почвы — засуха и сельское хозяйство (AMSR2)','Humedad superficial del suelo — sequía y agricultura (AMSR2)']}
+        label:LA('Soil moisture','土壌水分','Bodenfeuchte','Влажность почвы','Humedad del suelo'),
+        note:LA('Surface soil moisture — drought & agriculture (AMSR2)','表層土壌の水分量 — 干ばつ・農業の指標（AMSR2）','Oberflächen-Bodenfeuchte — Dürre & Landwirtschaft (AMSR2)','Влажность поверхностного слоя почвы — засуха и сельское хозяйство (AMSR2)','Humedad superficial del suelo — sequía y agricultura (AMSR2)')}
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
     /* (#R41) Color-SCALE legends for the GIBS rasters ("Sea-ice / SST anomaly に凡例がない！" + "凡例が必要な
@@ -896,21 +920,20 @@ window.IntMapModules.gibsScience=function(HOST){
       gxlstnight:{temp:[-73,77],grad:'#c900ff,#3900ff,#0075ff,#24ffab,#a4ff00,#ffdc00,#ff6d00,#ff0100'},
       gxseaice:{lo:'0%',hi:'100%',grad:'#111111,#950095,#b100ff,#0700ff,#00bdff,#00d98e,#1eb400,#d2f000,#ff7f00,#ff3333,#ffffff'},
       gxsstanom:{anom:[-3,3],grad:'#6b00db,#7f1ad1,#0094ff,#18fce5,#88ff84,#bff4a3,#cacab7,#fff679,#ffb601,#ff7100,#f90113,#d30085,#800000'},
-      gxndvi:{loK:['まばら','sparse','spärlich','редкая','escasa'],hiK:['密','dense','dicht','густая','densa'],grad:'#f1ecec,#ddc9bc,#b19883,#bfde77,#78ad01,#3e8a01,#086701,#001801'},
-      gxwvapor:{loK:['乾燥','dry','trocken','сухо','seco'],hiK:['湿潤','humid','feucht','влажно','húmedo'],grad:'#a900ab,#2c02de,#0064ee,#00c64f,#e5fc00,#ffb800,#ff5900,#b40000'},
+      gxndvi:{loK:LA('sparse','まばら','spärlich','редкая','escasa'),hiK:LA('dense','密','dicht','густая','densa'),grad:'#f1ecec,#ddc9bc,#b19883,#bfde77,#78ad01,#3e8a01,#086701,#001801'},
+      gxwvapor:{loK:LA('dry','乾燥','trocken','сухо','seco'),hiK:LA('humid','湿潤','feucht','влажно','húmedo'),grad:'#a900ab,#2c02de,#0064ee,#00c64f,#e5fc00,#ffb800,#ff5900,#b40000'},
       gxcloud:{lo:'0%',hi:'100%',grad:'#660077,#000264,#0004ff,#055000,#ffff00,#bb8802,#6e0004,#ff0005'},
       gxcloudtop:{temp:[-123,77],grad:'#660077,#010264,#0203ff,#045004,#ffff01,#bb8804,#6e0303,#ff0405'},
       gxbtday:{temp:[-93,67],grad:'#000016,#2e347e,#684f92,#a16995,#c68289,#ebc7b0,#fffadf,#ffffff'},
-      gxrelief:{loK:['低い','low','niedrig','низко','bajo'],hiK:['高い','high','hoch','высоко','alto'],grad:'#1a7a3c,#a6d96a,#e6e08b,#a87b52,#ffffff'},
+      gxrelief:{loK:LA('low','低い','niedrig','низко','bajo'),hiK:LA('high','高い','hoch','высоко','alto'),grad:'#1a7a3c,#a6d96a,#e6e08b,#a87b52,#ffffff'},
       gxaero:{lo:'0',hi:'≥5',grad:'#ffffff,#dddd8d,#f1f12a,#e5e300,#de8800,#f30f00,#c60001,#730019'},
-      gxchlor:{loK:['低い','low','niedrig','низкая','baja'],hiK:['高い','high','hoch','высокая','alta'],grad:'#93006c,#2700d8,#0080ff,#00ff9f,#88ff00,#ffab00,#ff1700,#690000'},
-      gxco:{loK:['低い','low','niedrig','низкий','bajo'],hiK:['高い','high','hoch','высокий','alto'],grad:'#fffdda,#fffcbb,#fcd76e,#fd704e,#cb3220,#a12259,#8a34f0,#2f054a'},
-      gxsoil:{loK:['乾燥','dry','trocken','сухо','seco'],hiK:['湿潤','wet','feucht','влажно','húmedo'],grad:'#cc8029,#cadb25,#65eb21,#1bf74d,#16f7cc,#0e97e8,#0714d9,#6600cc'}
+      gxchlor:{loK:LA('low','低い','niedrig','низкая','baja'),hiK:LA('high','高い','hoch','высокая','alta'),grad:'#93006c,#2700d8,#0080ff,#00ff9f,#88ff00,#ffab00,#ff1700,#690000'},
+      gxco:{loK:LA('low','低い','niedrig','низкий','bajo'),hiK:LA('high','高い','hoch','высокий','alto'),grad:'#fffdda,#fffcbb,#fcd76e,#fd704e,#cb3220,#a12259,#8a34f0,#2f054a'},
+      gxsoil:{loK:LA('dry','乾燥','trocken','сухо','seco'),hiK:LA('wet','湿潤','feucht','влажно','húmedo'),grad:'#cc8029,#cadb25,#65eb21,#1bf74d,#16f7cc,#0e97e8,#0714d9,#6600cc'}
     };
-    const _lx=(arr)=>arr[({jp:0,en:1,de:2,ru:3,es:4})[HOST.lang]]||arr[1];
-    const idx=()=>({jp:0,en:1,de:2,ru:3,es:4})[HOST.lang];
-    const gxLbl=(L)=>L.label[idx()]!==undefined?L.label[idx()]:L.label[1];
-    const gxNote=(L)=>L.note[idx()]!==undefined?L.note[idx()]:L.note[1];
+    const _lx=(arr)=>LGX.arr(arr);
+    const gxLbl=(L)=>LGX.arr(L.label);
+    const gxNote=(L)=>LGX.arr(L.note);
     const srcId=(L)=>'gxsrc-'+L.id, layId=(L)=>'gxlyr-'+L.id;
     const beforeLabels=()=>['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
@@ -918,7 +941,7 @@ window.IntMapModules.gibsScience=function(HOST){
       if(!GE().layers.hasSource(srcId(L))) GE().layers.addSource(srcId(L),{type:'raster',tiles:[urlFor(L)],tileSize:256,maxzoom:L.max,attribution:'NASA EOSDIS GIBS'});
       if(!GE().layers.has(layId(L))) GE().layers.add({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(e){ return false; } }
-    function legendNote(L){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('gx-'+L.id,[L.label[1],L.label[0],L.label[2],L.label[3]],[layId(L)],'gx-'+L.id);
+    function legendNote(L){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('gx-'+L.id,L.label,[layId(L)],'gx-'+L.id);
       if(el){
         /* (#R41) color-scale bar (above the note) for the rasters that encode a measurable quantity */
         const sc=SCALES[L.id];

@@ -274,6 +274,12 @@ window.IntMapModules.weatherEC=function(HOST){
   window.IntMapWeatherEC=(function(){
     if(!GE().hasRenderer()) return { open(){}, toggle(){} };
     const jp=()=>HOST.lang==='jp';
+    const L=window.IntMapLang.pick(()=>HOST.lang);
+    /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The layer names below were a
+       bare four-element array indexed by language position: no inline-table fallback (so fr/ko/zh
+       got English for ever) and invisible to every translation instrument (so all of them printed
+       100 %). Written as a call, they are ordinary L(…) sites to the audits. */
+    const LA=window.IntMapLang.pickArgs();
     const BASE='https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json';
     const SDK_URL='https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js';
     /* Variable names + types validated LIVE against what ecmwf_ifs actually serves (probed the om://
@@ -288,17 +294,19 @@ window.IntMapModules.weatherEC=function(HOST){
        moisture field. All carry the hourly valid_times time-slider. */
     /* (#R38) label arrays carry all four languages [EN, JP, DE, RU]; ecLbl() picks the active one. */
     const LAYERS=[
-      {id:'ec-temp',    variable:'temperature_2m',          type:'raster', op:0.72, label:['Temperature 2 m (ECMWF)','気温 2m（ECMWF）','Temperatur 2 m (ECMWF)','Температура 2 м (ECMWF)']},
-      {id:'ec-precip',  variable:'precipitation',           type:'raster', op:0.72, label:['Precipitation (ECMWF)','降水量（ECMWF）','Niederschlag (ECMWF)','Осадки (ECMWF)']},
-      {id:'ec-wind',    variable:'wind_u_component_10m',     type:'arrows', op:0.85, label:['Wind 10 m arrows (ECMWF)','風 10m 矢羽根（ECMWF）','Wind 10 m, Pfeile (ECMWF)','Ветер 10 м, стрелки (ECMWF)']},
-      {id:'ec-cloud',   variable:'cloud_cover',             type:'raster', op:0.70, label:['Cloud cover (ECMWF)','雲量（ECMWF）','Bewölkung (ECMWF)','Облачность (ECMWF)']},
-      {id:'ec-dew',     variable:'dew_point_2m',            type:'raster', op:0.65, label:['Dew point / humidity (ECMWF)','露点・湿度（ECMWF）','Taupunkt / Feuchte (ECMWF)','Точка росы / влажность (ECMWF)']},
-      {id:'ec-isobars', variable:'pressure_msl',            type:'isobars',op:0.9,  label:['Isobars (ECMWF)','等圧線（ECMWF）','Isobaren (ECMWF)','Изобары (ECMWF)']},
-      {id:'ec-slp',     variable:'pressure_msl',            type:'raster', op:0.60, label:['Sea-level pressure (ECMWF)','海面気圧（ECMWF）','Luftdruck (Meereshöhe) (ECMWF)','Давление на уровне моря (ECMWF)']},
-      {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:['CAPE instability (ECMWF)','CAPE 不安定度（ECMWF）','CAPE-Instabilität (ECMWF)','Неустойчивость CAPE (ECMWF)']},
-      {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature (ECMWF)','海水温（ECMWF）','Meerestemperatur (ECMWF)','Температура океана (ECMWF)']}
+      {id:'ec-temp',    variable:'temperature_2m',          type:'raster', op:0.72, label:LA('Temperature 2 m (ECMWF)','気温 2m（ECMWF）','Temperatur 2 m (ECMWF)','Температура 2 м (ECMWF)','Temperatura 2 m (ECMWF)')},
+      {id:'ec-precip',  variable:'precipitation',           type:'raster', op:0.72, label:LA('Precipitation (ECMWF)','降水量（ECMWF）','Niederschlag (ECMWF)','Осадки (ECMWF)','Precipitación (ECMWF)')},
+      {id:'ec-wind',    variable:'wind_u_component_10m',     type:'arrows', op:0.85, label:LA('Wind 10 m arrows (ECMWF)','風 10m 矢羽根（ECMWF）','Wind 10 m, Pfeile (ECMWF)','Ветер 10 м, стрелки (ECMWF)','Viento 10 m, flechas (ECMWF)')},
+      {id:'ec-cloud',   variable:'cloud_cover',             type:'raster', op:0.70, label:LA('Cloud cover (ECMWF)','雲量（ECMWF）','Bewölkung (ECMWF)','Облачность (ECMWF)','Nubosidad (ECMWF)')},
+      {id:'ec-dew',     variable:'dew_point_2m',            type:'raster', op:0.65, label:LA('Dew point / humidity (ECMWF)','露点・湿度（ECMWF）','Taupunkt / Feuchte (ECMWF)','Точка росы / влажность (ECMWF)','Punto de rocío / humedad (ECMWF)')},
+      {id:'ec-isobars', variable:'pressure_msl',            type:'isobars',op:0.9,  label:LA('Isobars (ECMWF)','等圧線（ECMWF）','Isobaren (ECMWF)','Изобары (ECMWF)','Isobaras (ECMWF)')},
+      {id:'ec-slp',     variable:'pressure_msl',            type:'raster', op:0.60, label:LA('Sea-level pressure (ECMWF)','海面気圧（ECMWF）','Luftdruck (Meereshöhe) (ECMWF)','Давление на уровне моря (ECMWF)','Presión al nivel del mar (ECMWF)')},
+      {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:LA('CAPE instability (ECMWF)','CAPE 不安定度（ECMWF）','CAPE-Instabilität (ECMWF)','Неустойчивость CAPE (ECMWF)','Inestabilidad CAPE (ECMWF)')},
+      {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:LA('Ocean temperature (ECMWF)','海水温（ECMWF）','Meerestemperatur (ECMWF)','Температура океана (ECMWF)','Temperatura del océano (ECMWF)')}
     ];
-    const ecLbl=(l)=>l.label[Math.max(0,window.IntMapLang.index(HOST.lang))]||l.label[0];
+    /* (#R241) …and resolved through `pick()` itself, so a language past the arguments given gets
+       its inline-table entry instead of falling to English at index 0. */
+    const ecLbl=(l)=>L.arr(l.label);
     let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
     const state={};   /* id → {on, op} */
     LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
@@ -423,18 +431,26 @@ window.IntMapModules.weatherPanel=function(HOST){
   window.IntMapWeather=(function(){
     if(!GE().hasRenderer()) return { open(){} };
     const L=window.IntMapLang.pick(()=>HOST.lang);
+    /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Written as a call so the
+       inline report and the positional audit can see these strings; resolved with `L.arr()`. */
+    const LA=window.IntMapLang.pickArgs();
     function wx(code){ const M={
-      0:['☀️','Clear sky','快晴','Klarer Himmel','Ясно','Despejado'],1:['🌤','Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado'],
-      2:['⛅','Partly cloudy','一部曇り','Teilweise bewölkt','Переменная облачность','Parcialmente nublado'],3:['☁️','Overcast','曇り','Bedeckt','Пасмурно','Nublado'],
-      45:['🌫','Fog','霧','Nebel','Туман','Niebla'],48:['🌫','Rime fog','着氷霧','Reifnebel','Изморозь','Niebla helada'],
-      51:['🌦','Light drizzle','弱い霧雨','Leichter Niesel','Слабая морось','Llovizna débil'],53:['🌦','Drizzle','霧雨','Niesel','Морось','Llovizna'],55:['🌧','Heavy drizzle','強い霧雨','Starker Niesel','Сильная морось','Llovizna intensa'],
-      61:['🌧','Light rain','弱い雨','Leichter Regen','Небольшой дождь','Lluvia débil'],63:['🌧','Rain','雨','Regen','Дождь','Lluvia'],65:['🌧','Heavy rain','強い雨','Starker Regen','Сильный дождь','Lluvia intensa'],
-      66:['🌧','Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada'],67:['🌧','Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada'],
-      71:['🌨','Light snow','弱い雪','Leichter Schnee','Небольшой снег','Nieve débil'],73:['🌨','Snow','雪','Schnee','Снег','Nieve'],75:['❄️','Heavy snow','大雪','Starker Schnee','Сильный снег','Nieve intensa'],77:['❄️','Snow grains','霧雪','Schneegriesel','Снежные зёрна','Granos de nieve'],
-      80:['🌦','Light showers','弱いにわか雨','Leichte Schauer','Слабый ливень','Chubascos débiles'],81:['🌦','Showers','にわか雨','Schauer','Ливни','Chubascos'],82:['⛈','Heavy showers','激しいにわか雨','Starke Schauer','Сильные ливни','Chubascos intensos'],
-      85:['🌨','Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve'],86:['🌨','Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve'],
-      95:['⛈','Thunderstorm','雷雨','Gewitter','Гроза','Tormenta'],96:['⛈','Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo'],99:['⛈','Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo'] };
-      const idx={en:1,jp:2,de:3,ru:4,es:5}[HOST.lang]||1; const e=M[code]; return e?{icon:e[0],desc:e[idx]}:{icon:'🌡',desc:'—'}; }
+      0:{i:'☀️',d:LA('Clear sky','快晴','Klarer Himmel','Ясно','Despejado')},1:{i:'🌤',d:LA('Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado')},
+      2:{i:'⛅',d:LA('Partly cloudy','一部曇り','Teilweise bewölkt','Переменная облачность','Parcialmente nublado')},3:{i:'☁️',d:LA('Overcast','曇り','Bedeckt','Пасмурно','Nublado')},
+      45:{i:'🌫',d:LA('Fog','霧','Nebel','Туман','Niebla')},48:{i:'🌫',d:LA('Rime fog','着氷霧','Reifnebel','Изморозь','Niebla helada')},
+      51:{i:'🌦',d:LA('Light drizzle','弱い霧雨','Leichter Niesel','Слабая морось','Llovizna débil')},53:{i:'🌦',d:LA('Drizzle','霧雨','Niesel','Морось','Llovizna')},55:{i:'🌧',d:LA('Heavy drizzle','強い霧雨','Starker Niesel','Сильная морось','Llovizna intensa')},
+      61:{i:'🌧',d:LA('Light rain','弱い雨','Leichter Regen','Небольшой дождь','Lluvia débil')},63:{i:'🌧',d:LA('Rain','雨','Regen','Дождь','Lluvia')},65:{i:'🌧',d:LA('Heavy rain','強い雨','Starker Regen','Сильный дождь','Lluvia intensa')},
+      66:{i:'🌧',d:LA('Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada')},67:{i:'🌧',d:LA('Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada')},
+      71:{i:'🌨',d:LA('Light snow','弱い雪','Leichter Schnee','Небольшой снег','Nieve débil')},73:{i:'🌨',d:LA('Snow','雪','Schnee','Снег','Nieve')},75:{i:'❄️',d:LA('Heavy snow','大雪','Starker Schnee','Сильный снег','Nieve intensa')},77:{i:'❄️',d:LA('Snow grains','霧雪','Schneegriesel','Снежные зёрна','Granos de nieve')},
+      80:{i:'🌦',d:LA('Light showers','弱いにわか雨','Leichte Schauer','Слабый ливень','Chubascos débiles')},81:{i:'🌦',d:LA('Showers','にわか雨','Schauer','Ливни','Chubascos')},82:{i:'⛈',d:LA('Heavy showers','激しいにわか雨','Starke Schauer','Сильные ливни','Chubascos intensos')},
+      85:{i:'🌨',d:LA('Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve')},86:{i:'🌨',d:LA('Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve')},
+      95:{i:'⛈',d:LA('Thunderstorm','雷雨','Gewitter','Гроза','Tormenta')},96:{i:'⛈',d:LA('Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo')},99:{i:'⛈',d:LA('Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo')} };
+      /* ⚠ (#R241) THE ICON IS NOT A TRANSLATION, so it is no longer element 0 of a language array.
+         That shape needed its own index map (`{en:1,jp:2,…}`) beside the registry's, which is a
+         second copy of the language ORDER — it named five languages, so every WMO description was
+         English on fr/ko/zh, and no instrument could see it. The words go through `L.arr` like
+         every other string in the app; the emoji stays data. */
+      const e=M[code]; return e?{icon:e.i,desc:L.arr(e.d)}:{icon:'🌡',desc:'—'}; }
     const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
     const dir=(d)=>(d==null||isNaN(d))?'':COMPASS[Math.round(d/22.5)%16];
     const wind=(kmh)=>{ if(kmh==null||isNaN(kmh)) return '—'; const m=window.imUnitMode||window.unitMode||'both'; const k=Math.round(kmh), mph=Math.round(kmh*0.621371); return m==='imperial'?(mph+' mph'):m==='metric'?(k+' km/h'):(k+' km/h ('+mph+' mph)'); };

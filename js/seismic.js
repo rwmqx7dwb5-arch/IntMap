@@ -805,8 +805,15 @@ window.IntMapModules.seismic=function(HOST){
        table only ever prints one scale at a time, so the box is measured against the labels THAT
        scale can print: every JMA chip equals every other JMA chip, every MMI chip equals every other
        MMI chip, and the two are different numbers. The invariant #R238 pinned — a column of chips is
-       one width — is unchanged; what changed is which set the maximum is taken over. */
-    function _chipW(jma){
+       one width — is unchanged; what changed is which set the maximum is taken over.
+       ══ ⚠⚠ (#R241) …AND THE SET IS THE LABELS THIS TABLE ACTUALLY PRINTS ══════════════════════════
+       「左右に大きすぎに見えただけ。（テキストがとっている幅の割に）」 — measured: every chip was
+       62 px on MMI and 58 px on JMA because the maximum ran over EVERY class the scale can print,
+       so a table whose strongest row says 「MMI V」 (35 px of text) still carried the box that
+       「MMI VIII」 needs. The invariant is «a column of chips is one width», not «one width for all
+       time», so the maximum is taken over the labels IN THIS RENDER and the box is as tight as an
+       equal-width column can be. Padding is 4 px a side rather than 6. */
+    function _chipW(jma,labels){
       try{
         const fs=String(FS_H);
         const probe=document.createElement('span');
@@ -814,20 +821,24 @@ window.IntMapModules.seismic=function(HOST){
           +'font-size:'+fs+';font-weight:400;line-height:1.35;';
         document.body.appendChild(probe);
         const fam=getComputedStyle(probe).fontFamily||'';
-        const key=(jma?'jma|':'mmi|')+fs+'|'+fam;
+        const set=(labels&&labels.length)?labels.slice().sort():null;
+        const key=(jma?'jma|':'mmi|')+fs+'|'+fam+'|'+(set?set.join('|'):'*');
         if(_cwCache&&_cwCache[key]!=null){ probe.remove(); return _cwCache[key]; }
-        const labels=[];
-        if(jma){ try{ JMA_CLASSES.forEach(c=>labels.push('JMA '+c.id)); }catch(_){} }
-        else { try{ for(let i=1;i<=12;i++) labels.push('MMI '+ROMAN[i]); }catch(_){} }
-        if(!labels.length) labels.push(jma?'JMA 5-':'MMI VIII');
+        /* ⚠ THE LIST IS DERIVED, NOT TYPED — the fallback (no row printed a chip yet) is still every
+           class the scale defines, so JMA_CLASSES / ROMAN stay the single source. */
+        let list=set;
+        if(!list){ list=[];
+          if(jma){ try{ JMA_CLASSES.forEach(c=>list.push('JMA '+c.id)); }catch(_){} }
+          else { try{ for(let i=1;i<=12;i++) list.push('MMI '+ROMAN[i]); }catch(_){} } }
+        if(!list.length) list=[jma?'JMA 5-':'MMI VIII'];
         let w=0;
-        labels.forEach(t=>{ probe.textContent=t; const r=probe.getBoundingClientRect().width; if(r>w) w=r; });
+        list.forEach(t=>{ probe.textContent=t; const r=probe.getBoundingClientRect().width; if(r>w) w=r; });
         probe.remove();
-        /* + the chip's own horizontal padding (3px 6px), and a whole pixel so nothing ever clips */
-        w=Math.ceil(w)+12+1;
+        /* + the chip's own horizontal padding (3px 4px), and a whole pixel so nothing ever clips */
+        w=Math.ceil(w)+8+1;
         (_cwCache||(_cwCache={}))[key]=w;
         return w;
-      }catch(_){ return jma?52:62; }              /* #R237's measurement, as the floor if DOM is absent */
+      }catch(_){ return jma?48:58; }              /* the floor if the DOM is absent */
     }
     /* (#R192) each scale's LOWEST class, in the quantity that scale is computed from — inverted from
        the relations above rather than written out again (#R190's lesson: two copies of one number
@@ -2068,10 +2079,38 @@ window.IntMapModules.seismic=function(HOST){
       for(let i=0;i<out.length;i++){ const k=out[i]; k.cA=Math.cos(k.off*D); k.sA=Math.sin(k.off*D); }
       _spCache=out; _spKey=key; return out;
     }
+    /* ══ ⚠⚠⚠ (#R241) THE OUTLINE IS WALKED, NOT SAMPLED AT ITS VERTICES ═══════════════════════════════
+       `fault.ring` is whatever the reader drew, and for the shape this panel is most often asked
+       about — a rupture rectangle, hand-drawn or loaded from a published finite-fault model — that
+       is FOUR POINTS. Sampling "every ring.length/24-th vertex" then samples the four corners and
+       nothing along the 500 km edges between them, so the source the whole envelope is built from is
+       four dots. MEASURED before this change, M9.1 with a 500 × 180 km rupture: at t = 30 s the front
+       was byte-identical to the point-source front (the nearest corner is 90 km away and breaks at
+       t = 34 s, so NOTHING had radiated), and at t = 120 s the front was 10 % out of round instead of
+       the ~50 % the fault's own length implies. The fault was in the model and could not reach the
+       picture — [[intmap-recurring-lessons]] A, one more time.
+       So the outline is WALKED at a spacing set by its own size (~1/28th of its perimeter, floored at
+       one sample per 6 km so a small rupture is not over-sampled), and the vertices are kept. */
+    function _walkRing(R2,n){
+      const out=[]; if(!(R2&&R2.length>=3)) return out;
+      let per=0; for(let i=0;i<R2.length;i++) per+=gcDelta(R2[i],R2[(i+1)%R2.length]);
+      const perKm=per*D*RE;
+      const stepKm=Math.max(6,perKm/Math.max(8,n));
+      for(let i=0;i<R2.length;i++){
+        const a=R2[i], b=R2[(i+1)%R2.length];
+        out.push(a);
+        const segKm=gcDelta(a,b)*D*RE;
+        const m=Math.floor(segKm/stepKm);
+        if(m<1) continue;
+        const brg=bearingTo(a,b);
+        for(let j=1;j<=m;j++){ const d=(segKm*j)/(m+1); out.push(destAng(a,brg,d/(D*RE))); }
+      }
+      return out;
+    }
     function _srcPtsBuild(){
       const K=[{off:0,phi:0,delay:0,dep:depthKm}];
       if(!(fault&&fault.ring&&fault.ring.length>=3)) return K;
-      const R2=fault.ring, step=Math.max(1,Math.floor(R2.length/24));
+      const R2=_walkRing(fault.ring,28), step=1;
       const zT=(fault.zTopKm!=null)?+fault.zTopKm:depthKm, zB=(fault.zBotKm!=null)?+fault.zBotKm:depthKm;
       const st=(fault.strikeDeg!=null&&isFinite(fault.strikeDeg))?+fault.strikeDeg:null;
       /* across-strike coordinate of every ring point, so the two edges can be told apart */
@@ -2270,6 +2309,40 @@ window.IntMapModules.seismic=function(HOST){
        t = 0, and it is the same quantity the table's 継続時間 column and the painted field are using.
        ⚠ WITH NO RUPTURE DRAWN `fdAt` returns 1 at every azimuth, so every arc gets weight 1 and the
        ring is byte-for-byte the circle it was. */
+    /* ══ ⚠⚠⚠ (#R241) THE FRONT LEAVES THE RUPTURE, NOT THE HYPOCENTRE ═══════════════════════════════
+       「地震シミュレータの地震波伝播は断層破壊を考慮していない。震央からほぼ同心円状に広がるだけ。」
+       — the FIFTH round of this report, and this time the previous rounds' answer was rejected by
+       name: 「いや破壊速度 Vr ≤ 波速 Vだから同心円でオッケーですってどんな理屈やねんアホ」.
+
+       ⚠ THE THEOREM IS STILL TRUE AND IT WAS NEVER AN ANSWER. #R238 proved that
+           T_first(x) = min over k of ( off_k/Vr + dist(k,x)/V )
+       is minimised at off_k = 0 whenever Vr ≤ V, i.e. the FIRST ARRIVAL is exactly a circle about
+       the hypocentre. Three rounds quoted that proof and shipped a circle. A proof that the picture
+       cannot be drawn from the definition being used is a reason to change the definition, not a
+       reason to keep drawing the circle — the reader is not asking for the first infinitesimal
+       tremor, they are asking to see the earthquake come off the fault they drew.
+
+       SO THE FRONT IS THE OTHER STATEMENT, WHICH IS THE ONE 「その時々の破壊中の断層を考慮した
+       やつにしろ」 (#R239) actually describes:
+
+           the wave spreads at V from EVERY PART OF THE FAULT THAT HAS BROKEN,
+           and a part breaks when the rupture front reaches it — off_k/Vr ≤ t.
+
+       Written out, the drawn front is the outer boundary of ∪{ k : τ_k ≤ t } of the discs of radius
+       V·t about k — the OFFSET CURVE of the broken region, which is a circle while the break is
+       still near the nucleation point and grows into the fault's own shape as the rupture runs. The
+       rupture's progress is visible IN the wavefront, over time, which is what has been asked for
+       five times.
+
+       ⚠ WHAT THIS COSTS, STATED PLAINLY: a sub-fault that broke at τ has really been radiating for
+       (t − τ), not for t, so this front runs ahead of the true first arrival by at most V·L/Vr in
+       the along-strike direction. That is the ONE approximation, it is bounded, it is documented in
+       the panel's own methodology paragraph, and the table is measured the same way (`at()` reads
+       the distance to the rupture, which is also the distance its ground-motion model has always
+       used) so the picture and the numbers cannot disagree.
+       ⚠ WITH NO RUPTURE DRAWN `_srcPts()` is the hypocentre alone and τ = 0, so `_frontT` returns
+       `tSec` and every front is byte-for-byte the circle it was. */
+    function _frontT(k){ return (k&&k.delay>tSec)?0:Math.max(0,tSec); }
     const _FRONT_ARCS=36;
     function emitFrontArcs(feats,r,col,w){
       const ring=r.ring, n=ring.length-1;                 /* last point repeats the first */
@@ -2336,7 +2409,10 @@ window.IntMapModules.seismic=function(HOST){
       let brokeRing=null;
       if(fault&&fault.ring&&fault.ring.length>=3&&tSec>0){
         const rB=(VRUP_KMS*tSec)/(D*RE);                     /* how far the break has run, in degrees */
-        const R2=fault.ring, brokePts=[], edge=[]; let done=true, prev=null, run=null;
+        /* (#R241) walked, not sampled — a four-corner rectangle has nothing between its corners for
+           the break to advance along, so the broken outline jumped a whole edge at a time. Same
+           helper the source points use, so the two can never disagree about where the fault is. */
+        const R2=_walkRing(fault.ring,48), brokePts=[], edge=[]; let done=true, prev=null, run=null;
         for(let i=0;i<=R2.length;i++){
           const p=R2[i%R2.length], off=gcDelta(epi,p);
           const inside=(off<=rB);
@@ -2449,7 +2525,8 @@ window.IntMapModules.seismic=function(HOST){
          per-bearing builder now for the same reason the surface waves do: `ringLines` takes ONE
          radius, so it would draw the bearing-0 answer all the way round and throw the path away. */
       PH.forEach(ph=>{ const rad=(k,b)=>{ const dep=(k&&k.dep!=null)?k.dep:depthKm;
-          const d=frontDelta(ph.k,dep,Math.max(0,tSec-((k&&k.delay)||0)));
+          if(k&&k.delay>tSec) return null;                 /* (#R241) this piece has not broken yet */
+          const d=frontDelta(ph.k,dep,_frontT(k));
           if(!(d!=null&&d>0.02)) return null;
           const s=_bodyStretch(b||0,d,dep); return (s>0.02&&s<179)?s:null; };
         train(rad,ph.col,ph.w);
@@ -2463,7 +2540,8 @@ window.IntMapModules.seismic=function(HOST){
          was — the 3.5 / 4.4 km/s reference values are unchanged and are what an all-continental
          path still gives. */
       SURF.forEach(sw=>{
-        const rad=(k,b)=>{ const d=_pathDeg(sw.v*Math.max(0,tSec-((k&&k.delay)||0)),b||0); return (d>0.02&&d<179)?d:null; };
+        const rad=(k,b)=>{ if(k&&k.delay>tSec) return null;
+          const d=_pathDeg(sw.v*_frontT(k),b||0); return (d>0.02&&d<179)?d:null; };
         /* ⚠ ALWAYS THE PER-BEARING BUILDER, fault or no fault. `ringLines` takes ONE radius, so with
            a point source it would draw the bearing-0 answer all the way round and quietly throw the
            path integral away — which is exactly the defect measured above. With no rupture `_srcPts`
@@ -2484,10 +2562,18 @@ window.IntMapModules.seismic=function(HOST){
     /* ---- the answer for one place ----------------------------------------------------------------- */
     function at(lng,lat){
       if(!epi) return null;
-      /* travel times run from the HYPOCENTRE (where the rupture starts); the shaking runs from the
-         RUPTURE (Rrup — zero over the drawn fault), which is what a finite source means (#R189) */
-      const deg=gcDelta(epi,[lng,lat]), kmEpi=deg*D*RE;
+      /* ══ ⚠⚠ (#R241) ONE DISTANCE FOR THE WHOLE PANEL, AND IT IS THE DISTANCE TO THE RUPTURE ═══════
+         This read `gcDelta(epi, …)` for the TIMES and `distKmTo` (Rrup) for the SHAKING, and said so
+         — 「travel times run from the HYPOCENTRE; the shaking runs from the RUPTURE」. That split was
+         defensible while the drawn wavefronts were circles about the hypocentre, because the picture
+         and the numbers then agreed with each other. They no longer would: the fronts leave the
+         BROKEN FAULT now (see `_frontT`), so a ring drawn from the rupture would sweep over a city
+         while this column still printed a time measured from a point up to 500 km away. Two answers
+         to 「いつ揺れ始めるか」 in one panel is the defect #R136 records, and the one the picture uses
+         is the one the ground-motion model has used since #R189. So the panel has ONE distance.
+         ⚠ With no rupture drawn `distKmTo` IS the epicentral distance, so nothing moves. */
       const km=distKmTo(lng,lat);
+      const deg=km/(D*RE), kmEpi=km;
       const rM=srcDistM(km);   /* (#R223) the one conversion — see srcDistM */
       const tP=arrival('P',depthKm,deg), tS=arrival('S',depthKm,deg);
       const tR=kmEpi/3.5, tL=kmEpi/4.4;
@@ -3463,12 +3549,23 @@ window.IntMapModules.seismic=function(HOST){
          ⚠ AND (3) IS NOT EVEN A JMA STATEMENT. 震度 comes off the JMA level `a0` through the scale's
          own definition (#R192) — the MMI conversion's ceiling has no authority over it at all, yet a
          JMA-scale table was being blanked by it. Each scale is now bounded by its own top class. */
-      const iCell=(a)=>{ const plain=(t)=>'<span style="color:var(--text-main);font-weight:400;">'+t+'</span>';
+      /* ⚠ (#R241) SPLIT IN TWO: what the cell SAYS, and how wide the box is. The width is the widest
+         label THIS table prints (see `_chipW`), which cannot be known while the first row is being
+         built — so every row's answer is resolved first, the set of labels is handed to `_chipW`
+         once, and only then is the HTML written. */
+      const iTxt=(a)=>{
+        if(!(a.pgv>=PGV_FELT)) return null;
+        if(!a.inRange) return null;
+        let txt,col;
+        if(jp){ const c=jmaClass(a.jma); if(!c) return null; txt='JMA '+c.id; col=c.col; }
+        else { txt='MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; col=_mmiHex(a.mmi); }
+        return { txt, col };
+      };
+      const iCell=(a,cw)=>{ const plain=(t)=>'<span style="color:var(--text-main);font-weight:400;">'+t+'</span>';
         if(!(a.pgv>=PGV_FELT)) return plain(notFelt);
         if(!a.inRange) return plain(noAnswer);
-        let txt,col;
-        if(jp){ const c=jmaClass(a.jma); if(!c) return plain(notFelt); txt='JMA '+c.id; col=c.col; }
-        else { txt='MMI '+ROMAN[Math.max(1,Math.min(12,Math.round(a.mmi)))]; col=_mmiHex(a.mmi); }
+        const k=iTxt(a); if(!k) return plain(notFelt);
+        const txt=k.txt, col=k.col;
         /* 「四角背景で、太字禁止」 — square corners (was border-radius:6px) and weight 400 (was 800).
            Background is the class colour itself; only the ink moves (see _chipInk). */
         /* ══ ⚠ (#R237) EVERY CHIP IS THE SAME BOX, WHATEVER IS WRITTEN IN IT ═══════════════════════
@@ -3489,21 +3586,23 @@ window.IntMapModules.seismic=function(HOST){
            it measured for. So the boxes are equal by construction rather than by a constant that was
            true once, a new scale needs no edit here, and tests/r238 checks the RELATION (all chips
            one width) instead of the number. */
-        return '<span style="display:inline-block;box-sizing:border-box;width:'+_chipW(jp)+'px;padding:3px 6px;'
+        return '<span style="display:inline-block;box-sizing:border-box;width:'+cw+'px;padding:3px 4px;'
           +'text-align:center;border-radius:0;background:'+col
           +';color:'+_chipInk(col)+';font-size:'+FS_H+';font-weight:400;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
-      const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
+      const seats=nearby().map(c=>({c,a:at(c.lng,c.lat)})).filter(x=>!!x.a);
+      const CW=_chipW(jp, seats.map(x=>iTxt(x.a)).filter(Boolean).map(k=>k.txt));
+      const rows=seats.map(({c,a})=>{
         /* (#R210) a user-placed point carries the same numeral its marker does; the nearest
            well-known cities the table adds for context are not numbered because they are not
            placed and there is nothing on the map to match them to. */
         const badge=c.n?('<span style="display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--text-main);color:var(--bg-color);font-size:'+FS_S+';font-weight:700;margin-right:5px;">'+c.n+'</span>'):'';
         return '<tr><td style="padding:1px 6px 1px 0;white-space:nowrap;">'+badge+c.name+'</td>'
-          +'<td style="padding:1px 6px;text-align:right;">'+Math.round(a.km).toLocaleString()+' km</td>'
-          +'<td style="padding:1px 6px;text-align:right;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
-          +'<td style="padding:1px 6px;text-align:right;color:#ffb020;">'+fmtT(a.tS)+'</td>'
-          +'<td style="padding:1px 6px;text-align:right;">'+fmtT(a.durS)+'</td>'
-          +'<td style="padding:1px 6px;text-align:right;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
-          +'<td style="padding:3px 0 3px 8px;text-align:right;">'+iCell(a)+'</td></tr>'; }).join('');
+          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+Math.round(a.km).toLocaleString()+' km</td>'
+          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
+          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;color:#ffb020;">'+fmtT(a.tS)+'</td>'
+          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+fmtT(a.durS)+'</td>'
+          +'<td style="padding:1px 5px;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
+          +'<td style="padding:3px 0 3px 6px;text-align:right;">'+iCell(a,CW)+'</td></tr>'; }).join('');
       o.innerHTML='<div><b>M'+mw.toFixed(1)+'</b> · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km · M<sub>0</sub> '+s.M0.toExponential(2)+' N·m'
         +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+(fault
           ?(L('rupture','震源域','Bruch','очаг','ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km²')
@@ -3547,13 +3646,34 @@ window.IntMapModules.seismic=function(HOST){
             +(fld.stats.coarse?(' · '+fld.stats.coarse.toLocaleString()+' '+L('unresolved slope','勾配不明','Neigung unbestimmt','уклон не определён','pendiente sin resolver')):'')
             +' · '+fld.stats.ms+' ms</div>'):'')))
         /* (#R234) one size for the table, and the head is not grey — see the note by FS / ROW. */
-        +'<table style="margin-top:8px;font-size:'+FS+';border-collapse:collapse;width:100%;"><thead><tr style="color:var(--text-main);">'
+        /* ══ ⚠⚠⚠ (#R241) THE TABLE GETS ITS OWN HORIZONTAL SCROLLER ═══════════════════════════════════
+           「地震シミュレータの地点表が左右方向にスクロールできなくなっている。」
+
+           MEASURED, panel at 260 px: the table wants 316 px, `.sq-out` offers 224, and the whole
+           intensity column (right edge at x=346 against a card edge at x=255) is BEYOND THE CARD AND
+           UNREACHABLE. Nothing scrolls: `.sq-card{overflow:hidden}` (#R237, and it is what gives the
+           grouped-inset list its rounded corners) clips the row before the panel's own body ever
+           sees the overflow, so `.sq-body`'s `overflow-y:auto` — which computes `overflow-x:auto` —
+           has nothing to scroll. Before #R237 there was no card and the body took the overflow, which
+           is the horizontal scroll the report says has gone.
+           ⚠ THE SCROLLER GOES ROUND THE TABLE, NOT ON THE CARD. Making the card scroll would put a
+           rail under every block in it and let the head of the panel slide out of its own border.
+           ⚠ AND THE TABLE KEEPS `width:100%`, NOT `max-content`. Auto table layout takes the larger
+           of the two: it spreads to the full width when the columns fit (no rail, nothing to reach)
+           and grows past it when they do not, which is the frame the scroller is for. `max-content`
+           was measured first and is wrong in the other direction — it parks the table at its natural
+           width and leaves a gap inside a panel wider than the data.
+           ⚠ EVERY NUMERIC CELL IS `white-space:nowrap`, which is what gives the table a real minimum
+           to overflow WITH. Without it a squeezed column wraps 「13m 59s」 onto two lines instead,
+           i.e. the overflow is hidden by breaking the reading rather than by scrolling it. */
+        +'<div class="sq-tbl" style="margin-top:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;">'
+        +'<table style="font-size:'+FS+';border-collapse:collapse;width:100%;"><thead><tr style="color:var(--text-main);">'
         +'<th style="text-align:left;font-weight:600;">'+L('Place','地点','Ort','Место','Lugar')+'</th>'
         +'<th style="text-align:right;font-weight:600;">Δ</th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
         +'<th style="text-align:right;font-weight:600;color:#ffb020;">S</th>'
         +'<th style="text-align:right;font-weight:600;">'+L('shaking','継続','Dauer','длит.','durac.')+'</th>'
         +'<th style="text-align:right;font-weight:600;">PGV</th>'
-        +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
         /* (#R205) …and this line no longer claims the click unconditionally: it says so only while the
            switch at the top of the panel is on 観測地点, and names the switch when it is not. */
         +'<div style="margin-top:5px;opacity:0.75;">'+(clickMode==='station'

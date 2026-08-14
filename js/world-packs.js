@@ -35,6 +35,13 @@ window.IntMapModules.worldPacks=function(HOST){
   window.IntMapWorld=(function(){
     if(!GE().hasRenderer()) return { state:()=>({}) };
     const L=window.IntMapLang.pick(()=>HOST.lang);
+    /* ⚠ (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Five tables in this file
+       held their translations as a bare tuple and subscripted it with a PRIVATE language→position
+       map (`{jp:1,de:2,ru:3,es:4}`). That map is a second copy of the language order, it names a
+       fixed set of languages, and an array literal is not a call — so every trade section, crop,
+       GAEZ variable and panel title here was English on fr/ko/zh while every instrument read
+       100 %. scripts/i18n-positional-array-audit.mjs found them and fails if the shape returns. */
+    const LA=window.IntMapLang.pickArgs();
     const D=Math.PI/180;
     const esc=(s)=>{ try{ return HOST.escapeHtml(String(s==null?'':s)); }catch(_){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } };
 
@@ -324,21 +331,21 @@ window.IntMapModules.worldPacks=function(HOST){
       /* BACI HS revisions, newest first — one cube covers 1995‑2024 and the newer ones are finer */
       const CUBE=(y)=>(y>=2022?'trade_i_baci_a_22':y>=2018?'trade_i_baci_a_17':y>=2012?'trade_i_baci_a_12':y>=2008?'trade_i_baci_a_07':y>=2003?'trade_i_baci_a_02':'trade_i_baci_a_92');
       const YMIN=1995, YMAX=2024;
-      const SECTIONS=[['','All goods','すべての品目','Alle Waren','Все товары','Todos los bienes'],
-        ['01','Animal products','動物性生産品','Tierische Erzeugnisse','Продукция животноводства','Productos animales'],
-        ['02','Vegetable products','植物性生産品','Pflanzliche Erzeugnisse','Продукция растениеводства','Productos vegetales'],
-        ['04','Foodstuffs','調製食料品','Lebensmittel','Пищевые продукты','Alimentos'],
-        ['05','Mineral products','鉱物性生産品','Mineralische Stoffe','Минеральные продукты','Productos minerales'],
-        ['06','Chemicals','化学工業生産品','Chemische Erzeugnisse','Химическая продукция','Productos químicos'],
-        ['07','Plastics & rubber','プラスチック・ゴム','Kunststoffe & Gummi','Пластмассы и каучук','Plásticos y caucho'],
-        ['11','Textiles','紡織用繊維','Textilien','Текстиль','Textiles'],
-        ['14','Precious metals','貴金属','Edelmetalle','Драгоценные металлы','Metales preciosos'],
-        ['15','Metals','卑金属','Unedle Metalle','Металлы','Metales'],
-        ['16','Machines','機械類','Maschinen','Машины','Máquinas'],
-        ['17','Transportation','輸送機器','Fahrzeuge','Транспорт','Transporte'],
-        ['18','Instruments','光学・精密機器','Instrumente','Приборы','Instrumentos'],
-        ['19','Arms','武器','Waffen','Оружие','Armas']];
-      const secLabel=(s)=>{ const i={jp:2,de:3,ru:4,es:5}[HOST.lang]||1; const r=SECTIONS.find(x=>x[0]===s); return r?r[i]:s; };
+      const SECTIONS=[['',LA('All goods','すべての品目','Alle Waren','Все товары','Todos los bienes')],
+        ['01',LA('Animal products','動物性生産品','Tierische Erzeugnisse','Продукция животноводства','Productos animales')],
+        ['02',LA('Vegetable products','植物性生産品','Pflanzliche Erzeugnisse','Продукция растениеводства','Productos vegetales')],
+        ['04',LA('Foodstuffs','調製食料品','Lebensmittel','Пищевые продукты','Alimentos')],
+        ['05',LA('Mineral products','鉱物性生産品','Mineralische Stoffe','Минеральные продукты','Productos minerales')],
+        ['06',LA('Chemicals','化学工業生産品','Chemische Erzeugnisse','Химическая продукция','Productos químicos')],
+        ['07',LA('Plastics & rubber','プラスチック・ゴム','Kunststoffe & Gummi','Пластмассы и каучук','Plásticos y caucho')],
+        ['11',LA('Textiles','紡織用繊維','Textilien','Текстиль','Textiles')],
+        ['14',LA('Precious metals','貴金属','Edelmetalle','Драгоценные металлы','Metales preciosos')],
+        ['15',LA('Metals','卑金属','Unedle Metalle','Металлы','Metales')],
+        ['16',LA('Machines','機械類','Maschinen','Машины','Máquinas')],
+        ['17',LA('Transportation','輸送機器','Fahrzeuge','Транспорт','Transporte')],
+        ['18',LA('Instruments','光学・精密機器','Instrumente','Приборы','Instrumentos')],
+        ['19',LA('Arms','武器','Waffen','Оружие','Armas')]];
+      const secLabel=(s)=>{ const r=SECTIONS.find(x=>x[0]===s); return r?L.arr(r[1]):s; };
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
       const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
@@ -1487,27 +1494,30 @@ window.IntMapModules.worldPacks=function(HOST){
       const IMG='wp-crop-src', LYR='wp-crop-img';
       const GAEZ='https://gaez-services.fao.org/server/rest/services/res06/ImageServer';
       /* GAEZ's own crop names, with the app's five languages for the ones people ask for by name */
-      const CROPS=[['Wheat','小麦'],['Wetland rice','稲（水田）'],['Maize','とうもろこし'],['Soybean','大豆'],
-        ['Barley','大麦'],['Sorghum','ソルガム'],['Millet','雑穀（ミレット）'],['Other cereals','その他の穀物'],
-        ['Potato and sweet potato','ばれいしょ・かんしょ'],['Cassava','キャッサバ'],['Yams and other roots','ヤム・その他いも類'],
-        ['Sugarcane','さとうきび'],['Sugarbeet','てんさい'],['Pulses','豆類'],['Groundnut','落花生'],
-        ['Rapeseed','なたね'],['Sunflower','ひまわり'],['Oil palm','アブラヤシ'],['Olive','オリーブ'],
-        ['Cotton','綿'],['Banana','バナナ'],['Citrus','柑橘'],['Fruits and nuts','果実・ナッツ'],
-        ['Vegetables','野菜'],['Stimulants','嗜好作物（コーヒー・茶・カカオ）'],['Tobacco','たばこ'],
-        ['Fodder crops','飼料作物'],['Cereals','穀物（合計）'],['Oil seeds','油糧種子（合計）'],
-        ['Root crops','いも類（合計）'],['Main crops','主要作物（合計）']];
-      const VARS=[['Harvested area','作付面積','Anbaufläche','Убранная площадь','Superficie cosechada'],
-        ['Yield','収量','Ertrag','Урожайность','Rendimiento'],
-        ['Production','生産量','Produktion','Производство','Producción']];
-      const SUPPLY=[['Total','合計','Gesamt','Всего','Total'],['Rainfed','天水','Regenfeld','Богарное','Secano'],
-        ['Irrigated','灌漑','Bewässert','Орошаемое','Regadío']];
+      const CROPS=[LA('Wheat','小麦','Weizen','Пшеница','Trigo'),LA('Wetland rice','稲（水田）','Nassreis','Рис (заливной)','Arroz de regadío'),LA('Maize','とうもろこし','Mais','Кукуруза','Maíz'),LA('Soybean','大豆','Sojabohne','Соя','Soja'),
+        LA('Barley','大麦','Gerste','Ячмень','Cebada'),LA('Sorghum','ソルガム','Sorghum','Сорго','Sorgo'),LA('Millet','雑穀（ミレット）','Hirse','Просо','Mijo'),LA('Other cereals','その他の穀物','Andere Getreide','Прочие зерновые','Otros cereales'),
+        LA('Potato and sweet potato','ばれいしょ・かんしょ','Kartoffel und Süßkartoffel','Картофель и батат','Patata y batata'),LA('Cassava','キャッサバ','Maniok','Маниок','Yuca'),LA('Yams and other roots','ヤム・その他いも類','Yams und andere Wurzeln','Ямс и другие корнеплоды','Ñame y otras raíces'),
+        LA('Sugarcane','さとうきび','Zuckerrohr','Сахарный тростник','Caña de azúcar'),LA('Sugarbeet','てんさい','Zuckerrübe','Сахарная свёкла','Remolacha azucarera'),LA('Pulses','豆類','Hülsenfrüchte','Зернобобовые','Legumbres'),LA('Groundnut','落花生','Erdnuss','Арахис','Cacahuete'),
+        LA('Rapeseed','なたね','Raps','Рапс','Colza'),LA('Sunflower','ひまわり','Sonnenblume','Подсолнечник','Girasol'),LA('Oil palm','アブラヤシ','Ölpalme','Масличная пальма','Palma aceitera'),LA('Olive','オリーブ','Olive','Олива','Olivo'),
+        LA('Cotton','綿','Baumwolle','Хлопок','Algodón'),LA('Banana','バナナ','Banane','Банан','Plátano'),LA('Citrus','柑橘','Zitrusfrüchte','Цитрусовые','Cítricos'),LA('Fruits and nuts','果実・ナッツ','Obst und Nüsse','Фрукты и орехи','Frutas y frutos secos'),
+        LA('Vegetables','野菜','Gemüse','Овощи','Hortalizas'),LA('Stimulants','嗜好作物（コーヒー・茶・カカオ）','Genussmittel (Kaffee, Tee, Kakao)','Тонизирующие культуры (кофе, чай, какао)','Cultivos estimulantes (café, té, cacao)'),LA('Tobacco','たばこ','Tabak','Табак','Tabaco'),
+        LA('Fodder crops','飼料作物','Futterpflanzen','Кормовые культуры','Cultivos forrajeros'),LA('Cereals','穀物（合計）','Getreide (gesamt)','Зерновые (всего)','Cereales (total)'),LA('Oil seeds','油糧種子（合計）','Ölsaaten (gesamt)','Масличные (всего)','Oleaginosas (total)'),
+        LA('Root crops','いも類（合計）','Wurzelfrüchte (gesamt)','Корнеплоды (всего)','Raíces y tubérculos (total)'),LA('Main crops','主要作物（合計）','Hauptkulturen (gesamt)','Основные культуры (всего)','Cultivos principales (total)')];
+      const VARS=[LA('Harvested area','作付面積','Anbaufläche','Убранная площадь','Superficie cosechada'),
+        LA('Yield','収量','Ertrag','Урожайность','Rendimiento'),
+        LA('Production','生産量','Produktion','Производство','Producción')];
+      const SUPPLY=[LA('Total','合計','Gesamt','Всего','Total'),LA('Rainfed','天水','Regenfeld','Богарное','Secano'),
+        LA('Irrigated','灌漑','Bewässert','Орошаемое','Regadío')];
       let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null;
       const panel=makePanel('wp-crop-panel',()=>'🌾 '+L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
         { legendId:'wpcrop', layers:()=>[LYR],
           names:()=>({en:'🌾 Crop cultivation',jp:'🌾 作物の栽培',de:'🌾 Feldfrüchte',ru:'🌾 Сельхозкультуры',es:'🌾 Cultivos'}) });
-      const cropName=(k)=>{ const r=CROPS.find(c=>c[0]===k); return (r&&HOST.lang==='jp')?r[1]:k; };
-      const varName=(v)=>{ const r=VARS.find(x=>x[0]===v); const i={jp:1,de:2,ru:3,es:4}[HOST.lang]||0; return r?r[i]:v; };
-      const supName=(s)=>{ const r=SUPPLY.find(x=>x[0]===s); const i={jp:1,de:2,ru:3,es:4}[HOST.lang]||0; return r?r[i]:s; };
+      /* ⚠ (#R241) this was `HOST.lang==='jp' ? r[1] : k` — thirty-one crop names in English on
+         every language but Japanese, in a shape no instrument reads (the two-branch audit sees
+         `jp ? 'literal' : 'literal'`, and both arms here are variables). */
+      const cropName=(k)=>{ const r=CROPS.find(c=>c[0]===k); return r?L.arr(r):k; };
+      const varName=(v)=>{ const r=VARS.find(x=>x[0]===v); return r?L.arr(r):v; };
+      const supName=(s)=>{ const r=SUPPLY.find(x=>x[0]===s); return r?L.arr(r):s; };
       /* the reference years GAEZ publishes; the clock picks the nearer one and the panel says which */
       const gaezYear=()=>(nowYear()<2005?'2000':'2010');
 
@@ -1749,13 +1759,13 @@ window.IntMapModules.worldPacks=function(HOST){
 
     /* ── the six rows ──────────────────────────────────────────────────────────────────────────── */
     const LBL={
-      trade:['Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'],
+      trade:LA('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),
       /* (#R212) one row for both questions — the switch is inside the window (see §2) */
-      energy:['Energy mix (electricity / primary)','エネルギー構成（電力・一次）','Energiemix (Strom / primär)','Энергобаланс (электро / первичная)','Mezcla energética (eléctrica / primaria)'],
-      alerts:['Weather & disaster warnings','気象・災害警報','Wetter- und Katastrophenwarnungen','Метеопредупреждения','Avisos meteorológicos'],
-      tides:['Tides','潮汐（満潮・干潮）','Gezeiten','Приливы','Mareas'],
-      crops:['Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos']};
-    const lbl=(k)=>LBL[k][{jp:1,de:2,ru:3,es:4}[HOST.lang]||0];
+      energy:LA('Energy mix (electricity / primary)','エネルギー構成（電力・一次）','Energiemix (Strom / primär)','Энергобаланс (электро / первичная)','Mezcla energética (eléctrica / primaria)'),
+      alerts:LA('Weather & disaster warnings','気象・災害警報','Wetter- und Katastrophenwarnungen','Метеопредупреждения','Avisos meteorológicos'),
+      tides:LA('Tides','潮汐（満潮・干潮）','Gezeiten','Приливы','Mareas'),
+      crops:LA('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos')};
+    const lbl=(k)=>L.arr(LBL[k]);
     function buildUI(){ const dd=ensureHead(); if(!dd) return;
       const H=[['trade','#ff9f0a',v=>window.__wpTrade.toggle(v)],
                ['energy','#b455ff',v=>window.__wpEnergy.toggle(v)],
