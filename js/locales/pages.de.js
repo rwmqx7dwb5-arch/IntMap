@@ -138,7 +138,6 @@ window.IntMapPageI18N.define('de', {
         id: 'elevation', nav: 'Höhendaten', h: 'Höhendaten — die Grundlage jeder Geländeberechnung',
         blocks: [
           ['p', 'Alle Geländefunktionen teilen sich einen Höhen-Sampler. Die Daten sind Terrarium-codierte RGB-Höhenkacheln, in denen die Pixelfarbe <em>die</em> Höhe ist.'],
-          ['eq', 'Höhe (m) = (R &times; 256 + G + B / 256) &minus; 32768'],
           ['p', 'Die Höhe eines Punktes wird aus den vier umliegenden Stichproben <b>bilinear interpoliert</b> — der nächste Nachbar würde Kachelpixel in falsche Stufen verwandeln und Neigungs- und Abflussantworten verderben. Der Bodenabstand einer Stichprobe im Zoom z ist:'],
           ['tex', 'h \\;=\\; \\bigl(R \\cdot 256 + G + B/256\\bigr) - 32768 \\quad [\\mathrm{m}]'],
           ['tex', '\\Delta(z) \\;=\\; \\frac{40\\,075\\,017 \\, \\cos\\varphi}{2^{z} \\cdot 256} \\quad [\\mathrm{m\\;per\\;pixel}]'],

@@ -114,15 +114,27 @@ export function pageDoc(html) {
    in every language or the page renders the wrong thing, so it is required to be PRESENT (a
    missing tag is a broken document) but it is never counted as a string somebody has to translate.
    The same is true of `sections[i].id`, which is the anchor in the URL. */
-const TAGS = new Set(['tagline', 'p', 'h3', 'ul', 'eq', 'lim', 'note', 'table', 'slot']);
-export const isStructural = (path, value) =>
-  /\.blocks\[\d+\]\[0\]$/.test(path) ? TAGS.has(value) : /\.sections\[\d+\]\.id$/.test(path);
+/* ⚠ AND A `slot` CARRIES AN ID, NOT PROSE. `['slot', 'src-panel']` names a hole the page fills in
+   itself (js/page-i18n.js), and `sections[i].count` names another one; translating either would
+   leave the page looking for an element that no longer exists. They are identifiers in a string's
+   clothing, so they are structural — which is why this function needs the whole document rather
+   than one string to answer. */
+const TAGS = new Set(['tagline', 'p', 'h3', 'ul', 'eq', 'tex', 'lim', 'note', 'table', 'slot']);
+export function isStructural(path, value, doc) {
+  if (/\.sections\[\d+\]\.(id|count)$/.test(path)) return true;
+  const m = /^(.*\.blocks\[\d+\])\[(\d+)\]$/.exec(path);
+  if (!m) return false;
+  if (m[2] === '0') return TAGS.has(value);
+  /* element 1 of a slot block is the slot's id */
+  if (m[2] === '1' && doc && doc.get && doc.get(m[1] + '[0]') === 'slot') return true;
+  return false;
+}
 
 function main() {
   const en = pageDoc('en');
   if (!en) { console.error('js/locales/pages.en.js is missing or unparsable'); process.exit(2); }
   const enPaths = [...en.keys()];
-  const work = enPaths.filter((k) => !isStructural(k, en.get(k)));
+  const work = enPaths.filter((k) => !isStructural(k, en.get(k), en));
 
   const wantMissing = process.argv.indexOf('--missing');
   if (wantMissing >= 0) {

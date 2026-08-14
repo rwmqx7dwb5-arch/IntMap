@@ -220,7 +220,9 @@ window.IntMapLang.define('zh', {
       aiSumBtn:"以 AI 摘要這個區域", popInArea:"此區域人口", popCalcing:"正在計算人口…", popFail:"人口查詢失敗 — 請再試一次。", newsInArea:"此區域的新聞", elevProfile:"高程剖面", finalizeMeas:"保留在地圖上", aiSumTitle:"區域簡報", aiSumSub:"所選區域內有 {n} 個新聞圖釘", aiSumNoArea:"請先畫出範圍或放置圓形。", aiSumNoNews:"此區域內沒有新聞圖釘。",
       aiViewSumBtn:"摘要目前畫面", aiViewSumTitle:"畫面上正在發生什麼",
       aiVisHead:"AI 變化偵測", aiVisBtn:"偵測變化", aiVisTitle:"衛星影像變化報告", aiVisSub:"比較 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之後", aiVisCapturing:"正在擷取影像…", aiVisPickDates:"請選擇兩個日期進行比較。", aiVisNeedsDated:"請在衛星模式中改用可選日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"無法擷取地圖影像。" 
-},
+,
+      tabMonitors:"監控",
+    },
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
@@ -2409,5 +2411,10 @@ window.IntMapLang.define('zh', {
   "Observation points": "觀測地點",
   "Each point is added to the table below.": "每個地點都會加入下方表格。",
   "A wavefront from a finite rupture is still a circle about the hypocenter whenever the rupture runs slower than the wave — the first arrival always comes from the point where the break started — so the shape you drew appears as the RUPTURE FRONT running across it (the filled area and its bright edge), not as a dent in the rings. What does bend the rings is the crust they cross: the body-wave travel time is corrected over its crustal share and the surface-wave group velocity is integrated along each great circle, so an oceanic path runs ahead of a continental one.": "只要破裂的傳播速度慢於波速，有限震源的初動波面仍是以震央為中心的圓——最早抵達的永遠是破裂起點發出的波。因此您所畫的形狀會以「破裂前緣」的方式出現（填色區域與其明亮的邊緣），而不是讓波環凹陷。真正讓波環變形的是它們所穿越的地殼：實體波的走時會依其地殼路徑比例修正，表面波的群速度則沿各大圓路徑積分，因此海洋路徑會領先大陸路徑。",
+  "Add observation points": "新增觀測地點",
+  "Every point you tap is added to the table.": "每點選一處，都會加入下方表格。",
+  "Tap each corner on the map, then press Done.": "在地圖上依序點選各個角，然後按「完成」。",
+  "Tap inside the rupture area — this is where the rupture starts.": "請點選震源域內側——這裡就是破裂的起點。",
+  "Tap the map. Tapping again moves it.": "點一下地圖即可放置；再點一下會移到新位置。",
   }
 });
