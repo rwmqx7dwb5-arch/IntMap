@@ -438,24 +438,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R84) COMPLETE Russian & Spanish coverage — DE was already 100%, but RU/ES were each missing these 64 keys
      (layer names, legend titles, theme options, feedback/playground/pro/sources labels), so they fell back to
      English ("英語の箇所がまだ大量にある"). Now all five languages cover every UI key. */
-  try{ Object.assign(i18n.ru,{
-    lblNavInertia:"Инерция", lyrEU:"Страны ЕС", lyrClimate:"Климат Кёппена", lyrTemp:"Температура воздуха (2 м)", lyrPrecip:"Осадки (IMERG)", lyrPop:"Плотность населения", lyrHDI:"ИЧР (2022)", lyrDem:"Индекс демократии (2023)", lyrNATO:"Страны НАТО", lyrNightSide:"Затенение дня и ночи", lgdTitle:"Кёппен–Гейгер", climAt:"Климат", lyrSection:"Слои данных", lyrGrpWeather:"Погода и среда",
-    optPsychedelic:"Психоделический", optMilitary:"Военный", optMedical:"Медицинский", optBaroque:"Барокко (европейский)", optTaisho:"Япония Тайсё", lyrRadar:"Радар осадков (в реальном времени)", lyrClouds:"Облака · инфракрасный (live)", lyrSST:"Температура поверхности моря", lyrSnow:"Снег и лёд", lyrAOD:"Аэрозоль / дымка", lyrNightSat:"Ночные огни (спутник)", lyrWind:"Ветер (анимация)",
-    lgdRadarTitle:"Интенсивность дождя", lgdSSTTitle:"Температура моря", lgdWindTitle:"Скорость ветра", lblFeedback:"Отзыв и сообщение об ошибке", sendFeedbackBtn:"⭐ Оставить отзыв", reportBugBtn:"🐞 Сообщить об ошибке", lblPlayground:"Площадка (бета)", playgroundBtn:"🎮 Открыть площадку", worldExplorerBtn:"🌍 Satellite Drop",
-    lyrHillshade:"Рельеф (отмывка)", lyrContours:"Изолинии высот", lyrPopGrid:"Плотность населения (сетка 1 км)", lgdTempTitle:"Темп. воздуха (2 м)", lyrTimeMonth:"Месяц", lyrRelief:"Высота (цветной рельеф)", lyrSubcables:"Подводные кабели", lgdReliefTitle:"Высота", lgdSubcablesTitle:"Подводные кабели",
-    lyrMilSpend:"Военные расходы ($ млрд)", lyrMilSpendGDP:"Военные расходы (% ВВП)", lyrGDPpc:"ВВП на душу населения", lyrTFR:"Суммарный коэффициент рождаемости", lyrSeaLevel:"Изменение уровня моря", lgdSeaLevelTitle:"Изменение уровня моря",
-    proSection:"Премиум-функции", proArchive:"🔒 Архив путешествий во времени (10 лет)", proIntel:"🔒 Местные первоисточники RU·CN", proModalTitle:"Разблокировать IntMap Pro", proModalSub:"Больше, чем живая карта — глубокие исторические архивы и разведданные из первоисточников.", srcModalTitle:"Источники данных и атрибуция", srcModalSub:"IntMap использует следующие сторонние данные, изображения и API. Все товарные знаки принадлежат их владельцам.",
-    screenshotSaved:"Снимок сохранён ✓", screenshotBusy:"Съёмка…", measureClickClose:"Нажмите на первую точку, чтобы замкнуть",
-    blueberryTitle:"Поддержать IntMap", blueberryBody:"Моя цель — создать карту, где географию, климат, историю, экологию, демографию и мировые события можно исследовать в одном месте.\nIntMap разрабатывается независимо и постоянно расширяется новыми слоями, наборами данных и функциями.\nЕсли вам нравится IntMap и вы хотите поддержать его дальнейшее развитие, вы можете внести вклад ниже.", blueberryGo:"Выбрать сумму ↗", blueberryNote:"Откроется внешняя страница (Stripe)." });
-    Object.assign(i18n.es,{
-    lblNavInertia:"Inercia", lyrEU:"Miembros de la UE", lyrClimate:"Clima de Köppen", lyrTemp:"Temperatura del aire (2 m)", lyrPrecip:"Precipitación (IMERG)", lyrPop:"Densidad de población", lyrHDI:"IDH (2022)", lyrDem:"Índice de democracia (2023)", lyrNATO:"Miembros de la OTAN", lyrNightSide:"Sombreado de día y noche", lgdTitle:"Köppen–Geiger", climAt:"Clima", lyrSection:"Capas de datos", lyrGrpWeather:"Clima y medio ambiente",
-    optPsychedelic:"Psicodélico", optMilitary:"Militar", optMedical:"Médico", optBaroque:"Barroco (europeo)", optTaisho:"Japón Taishō", lyrRadar:"Radar de precipitación (en vivo)", lyrClouds:"Nubes · infrarrojo (en vivo)", lyrSST:"Temperatura de la superficie del mar", lyrSnow:"Nieve y hielo", lyrAOD:"Aerosol / calima", lyrNightSat:"Luces nocturnas (satélite)", lyrWind:"Viento (animado)",
-    lgdRadarTitle:"Intensidad de lluvia", lgdSSTTitle:"Temp. del mar", lgdWindTitle:"Velocidad del viento", lblFeedback:"Comentarios y errores", sendFeedbackBtn:"⭐ Enviar comentarios", reportBugBtn:"🐞 Informar de un error", lblPlayground:"Zona de juego (beta)", playgroundBtn:"🎮 Abrir la zona de juego", worldExplorerBtn:"🌍 Satellite Drop",
-    lyrHillshade:"Relieve (sombreado)", lyrContours:"Curvas de nivel", lyrPopGrid:"Densidad de población (malla 1 km)", lgdTempTitle:"Temp. aire (2 m)", lyrTimeMonth:"Mes", lyrRelief:"Elevación (relieve en color)", lyrSubcables:"Cables submarinos", lgdReliefTitle:"Elevación", lgdSubcablesTitle:"Cables submarinos",
-    lyrMilSpend:"Gasto militar ($ mil M)", lyrMilSpendGDP:"Gasto militar (% PIB)", lyrGDPpc:"PIB per cápita", lyrTFR:"Tasa de fecundidad total", lyrSeaLevel:"Cambio del nivel del mar", lgdSeaLevelTitle:"Cambio del nivel del mar",
-    proSection:"Funciones premium", proArchive:"🔒 Archivo de viaje en el tiempo (10 años)", proIntel:"🔒 Fuentes primarias locales RU·CN", proModalTitle:"Desbloquear IntMap Pro", proModalSub:"Más allá del mapa en vivo: archivos históricos profundos e inteligencia de fuentes primarias.", srcModalTitle:"Fuentes de datos y atribución", srcModalSub:"IntMap agrega los siguientes datos, imágenes y API de terceros. Todas las marcas pertenecen a sus propietarios.",
-    screenshotSaved:"Captura guardada ✓", screenshotBusy:"Capturando…", measureClickClose:"Haz clic en el primer punto para cerrar",
-    blueberryTitle:"Apoya IntMap", blueberryBody:"Mi objetivo es crear un mapa donde la geografía, el clima, la historia, la ecología, la demografía y los acontecimientos mundiales puedan explorarse en un solo lugar.\nIntMap se desarrolla de forma independiente y se amplía continuamente con nuevas capas, conjuntos de datos y funciones.\nSi te gusta usar IntMap y quieres apoyar su desarrollo futuro, puedes contribuir a continuación.", blueberryGo:"Elige un importe ↗", blueberryNote:"Abre una página externa (Stripe)." });
+  try{
+
   }catch(_){}
 
   function updateI18n(){
@@ -4265,12 +4249,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      currentUser / requireLogin / DrawTool / IntMapRegionResolver / IntMapOutline. Data + auth via window.sb (RLS
      scopes every read to the owner). The server-side runner is the monitor-run Edge Function; this module only
      CREATES/EDITS monitors and DISPLAYS runs/evidence/reports — it never fabricates a run or a report. */
-  (function(){
-    const I18=(o)=>{ try{ Object.assign(i18n.en,o.en); Object.assign(i18n.jp,o.jp); Object.assign(i18n.de,o.de); Object.assign(i18n.ru,o.ru); Object.assign(i18n.es,o.es); }catch(_){} };
-    I18({
-      en:{ tabMonitors:'Monitors' }, jp:{ tabMonitors:'モニター' }, de:{ tabMonitors:'Monitore' }, ru:{ tabMonitors:'Мониторы' }, es:{ tabMonitors:'Monitores' }
-    });
-  })();
+  /* (#R239) `tabMonitors` moved to js/locales/ui.*.js with every other keyed string — the `I18({en,jp,
+     de,ru,es})` helper that used to sit here was five languages by construction, which is the defect
+     scripts/i18n-keyed-audit.mjs exists to make impossible. */
   /* (#R162) moved to js/monitors.js — see Architecture.md §3.1.
      (#R163) its private host object became the shared IM_HOST, which is a superset of the ten values
      this module reads (lang/user/mode/radiusItems live, plus the six helpers). */

@@ -16,6 +16,8 @@
     "check:static": "node scripts/static-checks.mjs",
     "//check:engine": "(#R178) the renderer-decoupling gate: only js/geo-engine.js may name MapLibre. Parses, so a comment mentioning `map.` never trips it.",
     "check:engine": "node scripts/engine-coupling.mjs --gate",
+  "//check:i18n": "(#R239) the ONE translation gate — every language against every surface it can be translated on (keyed table wherever it is declared, the inline L() table, the five positional arguments, the two reading pages, and the data-i18n keys the markup asks for). `--todo <code>` prints the commands that close a gap. Runs inside `npm test`.",
+  "check:i18n": "node scripts/i18n-audit.mjs --gate",
     "test:smoke": "playwright test tests/smoke.spec.js",
     "test:qa": "playwright test tests/internal-qa.spec.js",
     "test:e2e": "playwright test",

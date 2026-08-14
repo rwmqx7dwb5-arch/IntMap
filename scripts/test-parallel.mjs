@@ -40,6 +40,12 @@ const HALVES = [
     tag: 'checks', steps: [
       ['node', ['scripts/static-checks.mjs']],
       ['node', ['scripts/engine-coupling.mjs', '--gate']],
+      /* ⚠ (#R239) THE TRANSLATION GATE RUNS HERE, WITH THE OTHER ACORN GATES. 「いつまでたっても
+         言語対応の漏れが見つかることは許されない」 — a漏れ is found by a reader only when nothing
+         between the edit and the deploy asks. This asks, on every run, for every language, across
+         every surface any of them lives on (see the header of scripts/i18n-audit.mjs). It is one
+         second of parsing, and it is the difference between a rule and a hope. */
+      ['node', ['scripts/i18n-audit.mjs', '--gate']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
