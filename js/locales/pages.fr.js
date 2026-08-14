@@ -92,346 +92,346 @@ window.IntMapPageI18N.define('fr', {
         ]
       }
     ],
-    filterPh: 'Filter — earthquakes, tides, NASA…',
-    entries: 'entries',
-    loading: 'Loading…',
-    loadFail: 'The list could not be loaded — please reload the page.',
-    noMatch: 'No source matches that filter.',
+    filterPh: "Filtrer — séismes, marées, NASA…",
+    entries: "entrées",
+    loading: "Chargement…",
+    loadFail: "La liste n'a pas pu être chargée — veuillez recharger la page.",
+    noMatch: "Aucune source ne correspond à ce filtre.",
     groups: {
-      base: 'Basemap, terrain, elevation',
-      imagery: 'Imagery & remote sensing',
-      weather: 'Weather, ocean, climate',
-      hazard: 'Earthquakes, hazards, warnings',
-      space: 'Space & astronomy',
-      econ: 'Economy, statistics, energy',
-      geo: 'Countries, boundaries, place names',
-      transit: 'Transport, routing, aircraft, ships',
-      news: 'News & reference',
-      other: 'Other'
+      base: "Fond de carte, relief, altitude",
+      imagery: "Imagerie et télédétection",
+      weather: "Météo, océan, climat",
+      hazard: "Séismes, risques, alertes",
+      space: "Espace et astronomie",
+      econ: "Économie, statistiques, énergie",
+      geo: "Pays, limites, noms de lieux",
+      transit: "Transport, itinéraires, aéronefs, navires",
+      news: "Actualités et références",
+      other: "Autres"
     }
   },
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════ */
   science: {
-    title: 'Science &amp; logic',
-    meta: 'Which data each IntMap feature and simulation uses, by which equations, and under which assumptions.',
-    sub: 'What each IntMap feature actually computes, from which data, under which assumptions. Separate from the data-source list: this page is about the <b>method</b>.',
+    title: "Science &amp; logique",
+    meta: "Quelles données chaque fonction et chaque simulation d'IntMap utilise, selon quelles équations et sous quelles hypothèses.",
+    sub: "Ce que chaque fonction d'IntMap calcule réellement, à partir de quelles données et sous quelles hypothèses. Distinct de la liste des sources : cette page traite de la <b>méthode</b>.",
     footer: [
-      'This page documents <b>method</b>. The list of data providers is on the <a href="./sources.html">Data sources</a> page.<br>If you find an error here, please use the in-app feedback.'
+      "Cette page documente la <b>méthode</b>. La liste des fournisseurs de données se trouve sur la page <a href=\"./sources.html\">Sources des données</a>.<br>Si vous y trouvez une erreur, utilisez le formulaire de retour intégré à l'application."
     ],
     sections: [
       {
-        id: 'principles', nav: 'Principles', h: 'Principles',
+        id: 'principles', nav: "Principes", h: "Principes",
         blocks: [
-          ['tagline', 'Four promises that hold across every feature below.'],
-          ['h3', '① No placeholder data'],
-          ['p', 'Every number is measured, observed or published. Nothing is generated to look plausible. When a fetch fails the app <b>says it failed</b> rather than substituting something that looks reasonable.'],
-          ['h3', '② Every cap is declared'],
-          ['p', 'Computations have budgets — path length, tile count, grid size. Hitting a budget and reporting the truncated result silently would be a claim that the phenomenon ended there, so a bitten budget is always stated in the answer.'],
-          ['h3', '③ No claim finer than the data'],
-          ['p', 'A channel narrower than one elevation sample, or a flood finer than one solver cell, is drawn at the data\'s own resolution and the number of such cases is <b>reported</b>, not hidden.'],
-          ['h3', '④ Each model states what it does not answer'],
-          ['p', 'The water model answers "where does it stand and which way does it leave", not "how fast does the front travel". Each panel says which question it is not answering.']
+          ['tagline', "Quatre engagements valables pour toutes les fonctions ci-dessous."],
+          ['h3', "① Aucune donnée de remplissage"],
+          ['p', "Chaque chiffre est mesuré, observé ou publié. Rien n'est fabriqué pour paraître plausible. Lorsqu'une récupération échoue, l'application <b>dit qu'elle a échoué</b> au lieu de substituer quelque chose de vraisemblable."],
+          ['h3', "② Toute limite est annoncée"],
+          ['p', "Les calculs ont des budgets — longueur de trajet, nombre de tuiles, taille de grille. Atteindre un budget et présenter le résultat tronqué en silence reviendrait à affirmer que le phénomène s'arrête là : un budget entamé est donc toujours mentionné dans la réponse."],
+          ['h3', "③ Aucune affirmation plus fine que la donnée"],
+          ['p', "Un chenal plus étroit qu'un échantillon d'altitude, ou une inondation plus fine qu'une maille du solveur, est dessiné à la résolution propre de la donnée, et le nombre de tels cas est <b>indiqué</b>, pas dissimulé."],
+          ['h3', "④ Chaque modèle dit ce à quoi il ne répond pas"],
+          ['p', "Le modèle hydraulique répond à « où l'eau stagne-t-elle et par où repart-elle », pas à « à quelle vitesse le front avance-t-il ». Chaque panneau précise la question à laquelle il ne répond pas."]
         ]
       },
       {
-        id: 'elevation', nav: 'Elevation data', h: 'Elevation data — the base of every terrain computation',
+        id: 'elevation', nav: "Données d'altitude", h: "Données d'altitude — la base de tout calcul de relief",
         blocks: [
-          ['p', 'Every terrain feature shares one elevation sampler. The data is Terrarium-encoded RGB elevation tiles, where the pixel colour <em>is</em> the height.'],
+          ['p', "Toutes les fonctions de relief partagent un même échantillonneur d'altitude. Les données sont des tuiles d'altitude RGB au codage Terrarium, où la couleur du pixel <em>est</em> la hauteur."],
           ['tex', 'h \\;=\\; \\bigl(R \\cdot 256 + G + B/256\\bigr) - 32768 \\quad [\\mathrm{m}]'],
-          ['p', 'A point\'s elevation is <b>bilinearly interpolated</b> from the four surrounding samples — nearest-neighbour would turn tile pixels into false steps and corrupt slope and flow answers. The ground spacing of one sample at zoom z is:'],
+          ['p', "L'altitude d'un point est <b>interpolée bilinéairement</b> à partir des quatre échantillons qui l'entourent — le plus proche voisin transformerait les pixels des tuiles en fausses marches et fausserait les réponses de pente et d'écoulement. L'espacement au sol d'un échantillon au zoom z vaut :"],
           ['tex', '\\Delta(z) \\;=\\; \\frac{40\\,075\\,017 \\, \\cos\\varphi}{2^{z} \\cdot 256} \\quad [\\mathrm{m\\;per\\;pixel}]'],
-          ['table', ['z', 'Spacing at mid-latitude', 'Used for'], [
-            ['14', '~10 m', 'Channel head, cross-sections'],
-            ['11', '~54 m', 'Long-range downstream trace'],
-            ['7', '~860 m', '"Is this the sea or a closed basin?"']
+          ['table', ["z", "Espacement aux latitudes moyennes", "Utilisé pour"], [
+            ["14", "~10 m", "Tête de chenal, profils en travers"],
+            ["11", "~54 m", "Suivi vers l'aval sur de longues distances"],
+            ["7", "~860 m", "« Est-ce la mer ou un bassin endoréique ? »"]
           ]],
-          ['lim', 'Gaps are filled from neighbours and the <b>number of filled cells is always shown</b>. If more than 30 % is missing the sampler steps down a zoom level and retries; only if even the coarsest level fails does it report a failure — and it names the network, not the place.'],
-          ['h3', 'The four samples, and the budget they come from'],
+          ['lim', "Les lacunes sont comblées à partir des voisins, et le <b>nombre de mailles ainsi comblées est toujours affiché</b>. Si plus de 30 % manquent, l'échantillonneur descend d'un niveau de zoom et réessaie ; ce n'est que si le niveau le plus grossier échoue lui aussi qu'il signale un échec — en nommant alors le réseau, pas le lieu."],
+          ['h3', "Les quatre échantillons, et le budget dont ils viennent"],
           ['tex', 'h(x,y) \\;=\\; \\sum_{i,j\\in\\{0,1\\}} h_{ij}\\,\\bigl(1-|x-i|\\bigr)\\bigl(1-|y-j|\\bigr)'],
-          ['p', 'A tile is 256&times;256 samples; a query at zoom 14 therefore costs one HTTP request per 2.4 km square and is cached for the session. A terrain run states its own tile budget before it starts &mdash; an intensity field asks for up to 1,600 tiles and a phone caches 140, so the tiles a run is using are <b>pinned</b> for its duration and released in a <code>finally</code>. Without that a large field evicts its own inputs and re-fetches them, which is what turns a field into concentric circles.']
+          ['p', "Une tuile fait 256&times;256 échantillons ; une requête au zoom 14 coûte donc une requête HTTP par carré de 2,4 km et est mise en cache pour la session. Un calcul de relief annonce son propre budget de tuiles avant de démarrer &mdash; un champ d'intensité en demande jusqu'à 1 600 et un téléphone en garde 140 &mdash; aussi les tuiles qu'un calcul utilise sont-elles <b>épinglées</b> pour sa durée et libérées dans un <code>finally</code>. Sans cela, un grand champ évince ses propres entrées et les redemande, ce qui est précisément ce qui transforme un champ en cercles concentriques."]
         ]
       },
       {
-        id: 'water', nav: 'Terrain & water routing', h: 'Terrain sculpting &amp; water routing',
+        id: 'water', nav: "Relief et écoulement de l'eau", h: "Modelage du relief &amp; écoulement de l'eau",
         blocks: [
-          ['tagline', 'Where the water stands, which way it leaves, and where it overtops — solved on the real DEM.'],
-          ['h3', '① Depression filling — priority flood'],
-          ['p', 'Barnes, Lehman &amp; Mulla (2014) — the modern form of Planchon–Darboux. A min-heap grows inward from the grid border, always taking the lowest cell reached so far. The pop order is a topological order of the drainage network, so there is no separate flow-direction pass, no special case for sinks, and flats drain instead of stalling. Every cell comes out with:'],
+          ['tagline', "Où l'eau stagne, par où elle repart et où elle déborde — résolu sur le MNT réel."],
+          ['h3', "① Remplissage des dépressions — priority flood"],
+          ['p', "Barnes, Lehman &amp; Mulla (2014) — la forme moderne de Planchon–Darboux. Un tas-min progresse vers l'intérieur depuis le bord de la grille, en prenant toujours la maille la plus basse atteinte jusque-là. L'ordre de dépilement est un ordre topologique du réseau de drainage : il n'y a donc pas de passe séparée pour les directions d'écoulement, pas de cas particulier pour les cuvettes, et les zones plates s'écoulent au lieu de bloquer. Chaque maille en ressort avec :"],
           ['ul', [
-            '<b>filled</b> — the level a depression containing it fills to before it spills',
-            '<b>parent</b> — the neighbour it was reached from, i.e. its way out'
+            "<b>filled</b> — le niveau auquel se remplit la dépression qui la contient avant de déborder",
+            "<b>parent</b> — le voisin depuis lequel elle a été atteinte, c'est-à-dire son exutoire"
           ]],
-          ['h3', '② Volume routing — multiple flow direction'],
-          ['p', 'D8 collapses flow into single-cell lines on an open hillside — its signature artefact. Instead each cell splits its water between <b>every lower neighbour</b>, weighted by slope and contour width (Freeman 1991 / Quinn 1991):'],
+          ['h3', "② Routage du volume — directions d'écoulement multiples"],
+          ['p', "D8 réduit l'écoulement à des lignes d'une maille de large sur un versant ouvert — son artefact caractéristique. Ici, chaque maille répartit son eau entre <b>tous ses voisins plus bas</b>, pondérés par la pente et la largeur de contour (Freeman 1991 / Quinn 1991) :"],
           ['tex', 'w_i \\;\\propto\\; \\left(\\frac{\\Delta z_i}{L_i}\\right)^{1.1} \\! \\cdot C_i, \\qquad C = \\tfrac{1}{2}\\Delta \\ (\\text{face}), \\;\\; 0.354\\,\\Delta \\ (\\text{corner})'],
-          ['p', 'The weighting is super-linear in slope, so hillslopes disperse and valleys converge on their own. A share only ever moves to a strictly lower <code>filled</code>, so cycles are impossible.'],
-          ['h3', '③ Lakes hold, then cascade'],
-          ['p', 'Sorting a depression\'s cells by elevation once makes stored volume a prefix sum and the level for a given volume a binary search. If the inflow does not fill it, the water stops there; only the <b>overflow</b> is injected at the outlet the priority flood already identified. An empty reservoir therefore does not deliver its full inflow downstream.'],
-          ['h3', '④ Beyond the grid — walking the raw DEM'],
-          ['p', 'The working grid is at most 60 km; a river is not. Outside it, the trace floods a window, follows that window\'s <b>talweg</b> (the descending branch with the largest accumulated catchment), moves the window to where it left off, and repeats. There are exactly two endings:'],
+          ['p', "La pondération est super-linéaire en pente : les versants dispersent et les vallées convergent d'elles-mêmes. Une part ne se déplace que vers un <code>filled</code> strictement inférieur, si bien que les cycles sont impossibles."],
+          ['h3', "③ Les lacs retiennent, puis débordent en cascade"],
+          ['p', "Trier une fois les mailles d'une dépression par altitude fait du volume stocké une somme préfixe, et du niveau correspondant à un volume donné une recherche dichotomique. Si l'apport ne la remplit pas, l'eau s'y arrête ; seul le <b>débordement</b> est injecté à l'exutoire que le priority flood a déjà identifié. Un réservoir vide ne transmet donc pas la totalité de son apport vers l'aval."],
+          ['h3', "④ Au-delà de la grille — parcourir le MNT brut"],
+          ['p', "La grille de travail fait au plus 60 km ; un fleuve, non. Au-delà, le tracé inonde une fenêtre, suit le <b>talweg</b> de cette fenêtre (la branche descendante au bassin versant cumulé le plus grand), déplace la fenêtre là où il s'est arrêté, et recommence. Il n'y a exactement que deux fins possibles :"],
           ['ul', [
-            '<b>The sea</b> — 1.5 km of continuous ground at or below 0 m. Elevation alone cannot tell the ocean from the Dead Sea or Death Valley, so the last step tests whether the ≤ 0 m region is connected to the edge of a ~240 km window <em>and</em> covers ≥ 15 % of it (open Pacific 100 %, Dead Sea 7 %).',
-            '<b>It stops</b> — a basin that would have to fill by more than 25 m to leave. That is a lake, not DEM noise.'
+            "<b>La mer</b> — 1,5 km de terrain continu à 0 m ou au-dessous. L'altitude seule ne distingue pas l'océan de la mer Morte ou de la Vallée de la Mort : la dernière étape vérifie donc que la région ≤ 0 m est connectée au bord d'une fenêtre d'environ 240 km <em>et</em> qu'elle en couvre ≥ 15 % (Pacifique ouvert 100 %, mer Morte 7 %).",
+            "<b>Elle s'arrête</b> — un bassin qui devrait se remplir de plus de 25 m pour repartir. C'est un lac, pas du bruit de MNT."
           ]],
-          ['p', 'When the lake is wider than the window (Lake Biwa is 63 km; the window is 15 km) there is no descending neighbour anywhere inside it. The look-ahead then widens to <b>3&times; → 9&times; → 27&times;</b>, each asking the DEM at the level whose own spacing matches that window. At 9&times; (~135 km) Biwa fits with room to spare and the Seta — the only way the level drops — is visible. <b>The threshold does not grow with the ladder</b>: a coarser sample can only over-estimate the fill required, so holding the number fixed makes the test stricter as the window widens, which is the safe direction.'],
-          ['h3', '⑤ The width and depth that get drawn'],
-          ['p', 'At each point the DEM is read on the <b>perpendicular</b> out to ±1.8 km, and the water surface is raised until the wetted area matches what has to pass. That requirement comes from continuity:'],
+          ['p', "Lorsque le lac est plus large que la fenêtre (le lac Biwa fait 63 km ; la fenêtre, 15 km), il n'existe nulle part à l'intérieur de voisin descendant. La visée s'élargit alors à <b>3&times; → 9&times; → 27&times;</b>, chacune interrogeant le MNT au niveau dont l'espacement propre correspond à cette fenêtre. À 9&times; (~135 km), Biwa tient largement et la Seta — le seul endroit par où le niveau baisse — devient visible. <b>Le seuil ne grandit pas avec l'échelle</b> : un échantillon plus grossier ne peut que surestimer le remplissage nécessaire, si bien que garder le nombre fixe rend le test plus strict à mesure que la fenêtre s'élargit, ce qui est le sens prudent."],
+          ['h3', "⑤ La largeur et la profondeur effectivement dessinées"],
+          ['p', "En chaque point, le MNT est lu sur la <b>perpendiculaire</b> jusqu'à ±1,8 km, et la surface de l'eau est relevée jusqu'à ce que la section mouillée corresponde à ce qui doit passer. Cette exigence vient de la continuité :"],
           ['tex', 'A(s) \\;=\\; \\frac{C}{\\sqrt{S(s)}}, \\qquad v \\;=\\; K\\sqrt{S}, \\quad K = 40'],
-          ['p', 'Speed going as &radic;slope is the friction-slope term every open-channel formula shares; K = 40 gives 1.3 m/s on a 0.1 % grade, mid-range for a real lowland river. Steep reaches come out narrow and quick, flat reaches broad and slow. <b>The only free number is the volume (or discharge) the user entered.</b>'],
-          ['lim', 'This is a <b>steady-state routing model</b>, not a shallow-water solver: it does not answer arrival time (a separate feature does). "Continuous pour" repeats the same steady solve as the volume grows — a quasi-static filling sequence — and the panel shows simulated time, never wall clock.'],
-          ['h3', 'The size of a run, and what bounds it'],
+          ['p', "Une vitesse en &radic;pente est le terme de pente de frottement commun à toutes les formules d'écoulement à surface libre ; K = 40 donne 1,3 m/s sur une pente de 0,1 %, valeur médiane pour une vraie rivière de plaine. Les tronçons raides ressortent étroits et rapides, les tronçons plats larges et lents. <b>Le seul nombre libre est le volume (ou le débit) saisi par l'utilisateur.</b>"],
+          ['lim', "Il s'agit d'un <b>modèle de routage en régime permanent</b>, pas d'un solveur en eau peu profonde : il ne répond pas au temps d'arrivée (une autre fonction s'en charge). Le « versement continu » répète la même résolution permanente à mesure que le volume croît — une séquence de remplissage quasi statique — et le panneau affiche un temps simulé, jamais l'heure réelle."],
+          ['h3', "La taille d'un calcul, et ce qui la borne"],
           ['tex', '\\text{priority flood: } O(n\\log n),\\qquad \\text{MFD: } w_i = \\frac{(\\Delta z_i/L_i)^{1.1}C_i}{\\sum_j (\\Delta z_j/L_j)^{1.1}C_j}'],
-          ['table', ['Quantity', 'Value', 'Why that value'], [
-              ['Working grid', 'up to 60 km, &le; 512&times;512 cells', 'a phone must hold the heap, the fill and the accumulation at once'],
-              ['Heap operations', 'O(n log n), n = cells', 'every cell is pushed and popped exactly once'],
-              ['Downstream walk', 'windows of 15 km, widening &times;3 &rarr; &times;9 &rarr; &times;27', 'a lake wider than the window has no descending neighbour inside it'],
-              ['Cross-section', '&plusmn;1.8 km, 96 samples', 'wide enough for a lowland river, fine enough for a gorge']
+          ['table', ["Grandeur", "Valeur", "Pourquoi cette valeur"], [
+              ["Grille de travail", "jusqu'à 60 km, &le; 512&times;512 mailles", "un téléphone doit contenir en même temps le tas, le remplissage et l'accumulation"],
+              ["Opérations sur le tas", "O(n log n), n = mailles", "chaque maille est empilée et dépilée exactement une fois"],
+              ["Parcours vers l'aval", "fenêtres de 15 km, élargies &times;3 &rarr; &times;9 &rarr; &times;27", "un lac plus large que la fenêtre n'a aucun voisin descendant à l'intérieur"],
+              ["Profil en travers", "&plusmn;1,8 km, 96 échantillons", "assez large pour une rivière de plaine, assez fin pour des gorges"]
             ]],
-          ['h3', 'The friction law behind K = 40'],
+          ['h3', "La loi de frottement derrière K = 40"],
           ['tex', 'v \\;=\\; \\frac{1}{n}R_h^{2/3}S^{1/2}\\;\\;(\\text{Manning}), \\qquad K=\\frac{R_h^{2/3}}{n}\\;\\approx\\;40\\ \\text{for } R_h\\sim2\\,\\text{m},\\; n\\sim0.035'],
-          ['p', 'The constant is not free: it is Manning&rsquo;s equation with a hydraulic radius of about 2 m and n = 0.035, i.e. a natural channel with some vegetation. It is stated here so a reader can decide whether it applies to the reach they are looking at.']
+          ['p', "La constante n'est pas libre : c'est l'équation de Manning avec un rayon hydraulique d'environ 2 m et n = 0,035, c'est-à-dire un chenal naturel un peu végétalisé. Elle est indiquée ici pour qu'un lecteur puisse juger si elle s'applique au tronçon qu'il regarde."]
         ]
       },
       {
-        id: 'seismic', nav: 'Seismic shaking', h: 'Seismic shaking',
+        id: 'seismic', nav: "Secousses sismiques", h: "Secousses sismiques",
         blocks: [
-          ['p', 'The source is a Brune ω<sup>−2</sup> spectrum; everything between it and the ground is a product of three attenuations, each with a published form and a published constant.'],
+          ['p', "La source est un spectre de Brune en ω<sup>−2</sup> ; tout ce qui la sépare du sol est un produit de trois atténuations, chacune de forme publiée et de constante publiée."],
           ['tex', '\\dot{M}(f) = \\dfrac{M_0}{1+(f/f_c)^2}, \\qquad f_c = 4.906\\times10^{6}\\,\\beta\\left(\\dfrac{\\Delta\\sigma}{M_0}\\right)^{1/3}'],
           ['tex', 'A(f) = \\underbrace{\\dfrac{R_{\\theta\\phi}\\,F\\,V}{4\\pi\\rho\\beta^{3}}}_{\\text{source}}\\; \\dot{M}(f)\\; \\underbrace{G(r)}_{\\text{spreading}}\\; \\underbrace{e^{-\\pi f r/(Q(f)\\beta)}}_{\\text{anelastic}}\\; \\underbrace{e^{-\\pi\\kappa f}}_{\\text{near-surface}}'],
           ['tex', 'G(r) = \\begin{cases} r^{-1.3} & r \\le 70\\ \\text{km}\\\\ r^{+0.2} & 70 < r \\le 140\\ \\text{km}\\\\ r^{-0.5} & r > 140\\ \\text{km}\\end{cases} \\qquad Q(f) = Q_0 f^{\\eta},\\;\\; \\kappa = 0.035\\ \\text{s}'],
           ['tex', '\\log_{10} h_{\\text{eff}} = -0.405 + 0.235\\,M'],
-          ['p', 'A spectrum is not a peak. The peak of a random process with this spectrum comes from the Cartwright &amp; Longuet-Higgins peak factor, with N<sub>z</sub> the number of zero crossings in the path duration T<sub>d</sub> — which is why the same spectrum gives a smaller peak for a long, scattered path than for a short one.'],
+          ['p', "Un spectre n'est pas un pic. Le pic d'un processus aléatoire ayant ce spectre découle du facteur de crête de Cartwright &amp; Longuet-Higgins, avec N<sub>z</sub> le nombre de passages par zéro pendant la durée de trajet T<sub>d</sub> — c'est pourquoi un même spectre donne un pic plus faible pour un trajet long et diffusant que pour un trajet court."],
           ['tex', 'y_{\\max} = \\sqrt{2\\ln N_z}\\left(1+\\dfrac{0.5772}{2\\ln N_z}\\right)\\sqrt{\\dfrac{1}{T_d}\\int_0^{\\infty}\\!\\!|Y(f)|^{2}df}'],
-          ['p', 'The site term is the terrain: V<sub>S30</sub> from topographic slope, measured over the DEM&rsquo;s own sample spacing rather than at a fictional 900 m, then quarter-wavelength amplification. Where the elevation tiles do not arrive the field falls back to one site class everywhere, and the panel says so — an intensity with a single amplification is a function of distance alone, which is drawn as concentric circles.'],
+          ['p', "Le terme de site, c'est le relief : V<sub>S30</sub> déduit de la pente topographique, mesurée au pas d'échantillonnage propre du MNT plutôt qu'à un fictif 900 m, puis amplification en quart d'onde. Là où les tuiles d'altitude n'arrivent pas, le champ retombe sur une classe de site unique partout, et le panneau le dit — une intensité calculée avec une seule amplification n'est fonction que de la distance, ce qui se dessine en cercles concentriques."],
           ['tex', '\\text{slope} = \\dfrac{\\lVert\\nabla h\\rVert}{\\Delta s},\\quad \\Delta s = \\max\\!\\bigl(900\\,\\text{m},\\,1.25\\,\\Delta(z)\\bigr) \\;\\longrightarrow\\; V_{S30} \\;\\longrightarrow\\; A_{qwl} = \\sqrt{\\dfrac{\\rho_r\\beta_r}{\\overline{\\rho\\beta}(\\lambda/4)}}'],
           ['tex', '\\mathrm{MMI} = 3.78 + 1.47\\log_{10}\\mathrm{PGV}\\;\\;(\\mathrm{PGV}>0.76\\ \\text{cm/s}) \\qquad I_{\\mathrm{JMA}} = 2\\log_{10}a_0 + 0.94'],
-          ['p', 'Arrival times are ray-traced through the <b>IASP91</b> velocity structure — the take-off angle is solved for the source depth and epicentral distance and the path is integrated, rather than read from a table. That gives the P and S arrivals.'],
-          ['p', 'Amplitude is an empirical distance decay times a <b>frequency-dependent Q</b> (anelastic attenuation), times a <b>site amplification</b>. The site class is not assumed: it comes from the slope measured at the DEM\'s own sample spacing at that point (steep = rock, flat = alluvium).'],
-          ['lim', 'Beyond the bottom of the intensity scale the field is <b>extrapolating</b>, and says so. The epicentre is where the user put it; no AI-guessed coordinate is ever used.'],
-          ['h3', 'From a spectrum to a number on the screen'],
-          ['p', 'The Fourier amplitude spectrum is evaluated at 64 frequencies logarithmically spaced over 0.1&ndash;20 Hz. Everything after that is the peak-factor integral above, evaluated by the trapezium rule on those 64 points; the path duration is T<sub>d</sub> = T<sub>source</sub> + 0.05&thinsp;r, the standard Boore form.'],
-          ['p', 'The field is solved on a grid whose spacing is chosen from the magnitude &mdash; 512 m for M &lt; 6, 1&ndash;2 km above it &mdash; and then <b>interpolated for display only</b>. Nothing is drawn finer than the grid it was solved on.']
+          ['p', "Les temps d'arrivée sont obtenus par tracé de rais dans la structure de vitesses <b>IASP91</b> — l'angle de départ est résolu pour la profondeur du foyer et la distance épicentrale, puis le trajet est intégré, au lieu d'être lu dans une table. Cela donne les arrivées P et S."],
+          ['p', "L'amplitude est une décroissance empirique avec la distance, multipliée par un <b>Q dépendant de la fréquence</b> (atténuation anélastique) et par une <b>amplification de site</b>. La classe de site n'est pas supposée : elle vient de la pente mesurée au pas d'échantillonnage propre du MNT en ce point (raide = rocher, plat = alluvions)."],
+          ['lim', "Au-delà du bas de l'échelle d'intensité, le champ <b>extrapole</b>, et le dit. L'épicentre est là où l'utilisateur l'a placé ; aucune coordonnée devinée par une IA n'est jamais utilisée."],
+          ['h3', "D'un spectre à un nombre à l'écran"],
+          ['p', "Le spectre d'amplitude de Fourier est évalué en 64 fréquences réparties logarithmiquement entre 0,1 et 20 Hz. Tout le reste est l'intégrale du facteur de crête ci-dessus, évaluée par la méthode des trapèzes sur ces 64 points ; la durée de trajet vaut T<sub>d</sub> = T<sub>source</sub> + 0,05&thinsp;r, la forme standard de Boore."],
+          ['p', "Le champ est résolu sur une grille dont le pas est choisi d'après la magnitude &mdash; 512 m pour M &lt; 6, 1 à 2 km au-dessus &mdash; puis <b>interpolé pour l'affichage seulement</b>. Rien n'est dessiné plus fin que la grille sur laquelle il a été résolu."]
         ]
       },
       {
-        id: 'tsunami', nav: 'Tsunami', h: 'Tsunami',
+        id: 'tsunami', nav: "Tsunami", h: "Tsunami",
         blocks: [
-          ['p', 'The propagation is the non-linear shallow-water equations with Manning bottom friction, solved explicitly on a staggered grid. The time step is bounded by the fastest cell, not chosen.'],
+          ['p', "La propagation suit les équations non linéaires en eau peu profonde avec frottement de fond de Manning, résolues explicitement sur une grille décalée. Le pas de temps est borné par la maille la plus rapide ; il n'est pas choisi."],
           ['tex', '\\dfrac{\\partial\\eta}{\\partial t} + \\nabla\\!\\cdot\\!\\bigl[(h+\\eta)\\mathbf{u}\\bigr] = 0, \\qquad \\dfrac{\\partial\\mathbf{u}}{\\partial t} + g\\nabla\\eta + \\dfrac{g\\,n^{2}\\lVert\\mathbf{u}\\rVert\\mathbf{u}}{(h+\\eta)^{4/3}} = 0'],
           ['tex', 'c = \\sqrt{g\\,h}, \\qquad \\Delta t \\le \\dfrac{\\mathrm{CFL}\\,\\Delta x}{\\max\\sqrt{g\\,h}}, \\qquad \\dfrac{H_2}{H_1} = \\left(\\dfrac{h_1}{h_2}\\right)^{1/4}'],
-          ['p', 'The initial surface is the Okada (1985) elastic half-space displacement of the drawn rupture — so the wave starts from a fault with a length, a width, a depth, a dip and a slip, not from a bump.'],
+          ['p', "La surface initiale est le déplacement d'Okada (1985) en demi-espace élastique produit par la rupture dessinée — l'onde part donc d'une faille ayant une longueur, une largeur, une profondeur, un pendage et un glissement, pas d'une bosse."],
           ['tex', '\\eta_0(x,y) = u_z^{\\,\\text{Okada}}\\bigl(x,y;\\,L,\\,W,\\,d,\\,\\delta,\\,\\lambda,\\,\\bar{D}\\bigr), \\qquad M_0 = \\mu\\,L\\,W\\,\\bar{D}'],
-          ['p', 'The initial sea-surface displacement is the <b>Okada (1985)</b> elastic half-space solution for a rectangular fault. Two implementation points matter:'],
+          ['p', "Le déplacement initial de la surface de la mer est la solution d'<b>Okada (1985)</b> en demi-espace élastique pour une faille rectangulaire. Deux points d'implémentation comptent :"],
           ['ul', [
-            'The arctangent must be the <b>principal value</b> — using <code>atan2</code> produces a false subsidence lobe behind the fault.',
-            'Truncating the computation window leaves a step, and the step propagates as a <b>false wave front</b>. The window is widened until the displacement is negligible.'
+            "L'arc tangente doit être la <b>valeur principale</b> — utiliser <code>atan2</code> produit un faux lobe de subsidence derrière la faille.",
+            "Tronquer la fenêtre de calcul laisse une marche, et cette marche se propage comme un <b>faux front d'onde</b>. La fenêtre est élargie jusqu'à ce que le déplacement y soit négligeable."
           ]],
-          ['p', 'Propagation is the <b>linear long-wave</b> equation over measured bathymetry, phase speed <span class="pg-eq pg-eq-inline">c = &radic;(gh)</span> — about 200 m/s over 4 000 m of water (airliner speed), slowing and steepening as the depth falls. It runs in a Web Worker so the map stays interactive.'],
-          ['h3', 'The discretisation, written out'],
-          ['p', 'Staggered Arakawa C grid, leapfrog in time: the surface &eta; lives at cell centres and the two volume fluxes M, N on the faces between them, half a step apart in time. That is the scheme every operational long-wave code uses, and it is written out here because &ldquo;shallow-water equations&rdquo; alone does not say how they were solved.'],
+          ['p', "La propagation est l'équation des <b>ondes longues linéaires</b> sur une bathymétrie mesurée, avec une célérité <span class=\"pg-eq pg-eq-inline\">c = &radic;(gh)</span> — environ 200 m/s sous 4 000 m d'eau (la vitesse d'un avion de ligne), qui ralentit et se raidit à mesure que la profondeur diminue. Elle s'exécute dans un Web Worker pour que la carte reste réactive."],
+          ['h3', "La discrétisation, écrite en toutes lettres"],
+          ['p', "Grille décalée d'Arakawa C, saute-mouton en temps : la surface &eta; vit au centre des mailles et les deux flux volumiques M, N sur les faces qui les séparent, décalés d'un demi-pas dans le temps. C'est le schéma qu'utilise tout code opérationnel d'ondes longues, et il est écrit ici parce que « équations en eau peu profonde » ne dit pas à soi seul comment elles ont été résolues."],
           ['tex', '\\eta^{\\,t+1}_{i,j} = \\eta^{\\,t}_{i,j} - \\frac{\\Delta t}{\\Delta x}\\Bigl[(M^{\\,t+\\frac12}_{i+\\frac12,j}-M^{\\,t+\\frac12}_{i-\\frac12,j}) + (N^{\\,t+\\frac12}_{i,j+\\frac12}-N^{\\,t+\\frac12}_{i,j-\\frac12})\\Bigr]'],
           ['tex', 'M^{\\,t+\\frac12}_{i+\\frac12,j} = M^{\\,t-\\frac12}_{i+\\frac12,j} - g\\,D\\,\\frac{\\Delta t}{\\Delta x}\\bigl(\\eta^{\\,t}_{i+1,j}-\\eta^{\\,t}_{i,j}\\bigr) - \\frac{g\\,n^{2}}{D^{7/3}}\\lVert\\mathbf{M}\\rVert M\\,\\Delta t'],
-          ['h3', 'Stability, edges and dry land'],
+          ['h3', "Stabilité, bords et terre émergée"],
           ['tex', '\\frac{\\partial \\eta}{\\partial t} \\pm c\\,\\frac{\\partial \\eta}{\\partial x} = 0 \\quad\\text{(Sommerfeld, at the open edge)}, \\qquad D = h+\\eta > \\varepsilon_{\\text{dry}} = 0.01\\ \\text{m}'],
-          ['p', 'The time step is taken from the CFL condition on the <b>deepest</b> cell in the domain (0.45 of the limit), so it is a consequence of the bathymetry rather than a setting. The open edges radiate rather than reflect &mdash; a closed edge would send a false wave back into the domain within one crossing time &mdash; and a cell is wet only above a 1 cm depth, which is what stops the friction term from dividing by a vanishing depth at the shoreline.'],
-          ['lim', 'The solver is <b>non-dispersive</b> (long-wave), so it does not reproduce the leading-wave dispersion of a very short source, and it does not model wave breaking or run-up over roughness. Arrival times and the first crest are its answer; the inundation depth on land is a bathtub bound, not a run-up computation.']
+          ['p', "Le pas de temps est tiré de la condition CFL sur la maille la <b>plus profonde</b> du domaine (0,45 de la limite) : c'est donc une conséquence de la bathymétrie, pas un réglage. Les bords ouverts rayonnent au lieu de réfléchir &mdash; un bord fermé renverrait une fausse onde dans le domaine en un seul temps de traversée &mdash; et une maille n'est mouillée qu'au-dessus d'une profondeur de 1 cm, ce qui empêche le terme de frottement de diviser par une profondeur qui s'annule au trait de côte."],
+          ['lim', "Le solveur est <b>non dispersif</b> (ondes longues) : il ne reproduit donc pas la dispersion de l'onde de tête d'une source très courte, et il ne modélise ni le déferlement ni le jet de rive sur une rugosité. Les temps d'arrivée et la première crête sont sa réponse ; la hauteur d'eau à terre est une borne « en baignoire », pas un calcul de jet de rive."]
         ]
       },
       {
-        id: 'sealevel', nav: 'Sea level & inundation', h: 'Sea level &amp; inundation',
+        id: 'sealevel', nav: "Niveau de la mer et submersion", h: "Niveau de la mer &amp; submersion",
         blocks: [
-          ['p', 'Ground at or below the chosen level is shaded — a bathtub fill. The shade is the <b>depth itself</b>, and the elevation data\'s resolution is directly the resolution of the flood edge.'],
-          ['lim', 'Levees, gates and drainage are not modelled, and connectivity to the sea is not required by default. The claim is therefore <b>"this ground is below that level"</b>, not "this is what would flood".'],
-          ['h3', 'Connectivity, when it is asked for'],
-          ['p', 'The default answer is per cell: is this ground at or below that level. With connectivity switched on, a flood fill runs from the sea over the same grid and only cells reachable from it are shaded &mdash; which removes closed depressions below sea level (the Qattara Depression, Death Valley) that the bathtub answer includes. The two answers differ by exactly those basins, and the panel says which one is being shown.']
+          ['p', "Le sol situé au niveau choisi ou en dessous est ombré — un remplissage en baignoire. La teinte représente la <b>hauteur d'eau elle-même</b>, et la résolution des données d'altitude est directement la résolution du trait de submersion."],
+          ['lim', "Les digues, vannes et réseaux de drainage ne sont pas modélisés, et la connectivité à la mer n'est pas exigée par défaut. L'affirmation est donc <b>« ce sol est sous ce niveau »</b>, et non « voici ce qui serait inondé »."],
+          ['h3', "La connectivité, quand elle est demandée"],
+          ['p', "La réponse par défaut est maille par maille : ce sol est-il au niveau indiqué ou en dessous. Avec la connectivité activée, un remplissage par diffusion part de la mer sur la même grille et seules les mailles qu'il atteint sont ombrées &mdash; ce qui retire les dépressions fermées sous le niveau de la mer (la dépression de Qattara, la Vallée de la Mort) que la réponse en baignoire inclut. Les deux réponses ne diffèrent que par ces bassins, et le panneau indique laquelle est affichée."]
         ]
       },
       {
-        id: 'tides', nav: 'Tides', h: 'Tides',
+        id: 'tides', nav: "Marées", h: "Marées",
         blocks: [
-          ['p', 'The series is Open-Meteo Marine\'s global tide model — hourly sea level above MSL. Highs and lows are its <b>local extrema</b>, with the time refined by fitting a parabola through the three samples around each turn, so the answer is not pinned to the hour the model is sampled at.'],
+          ['p', "La série provient du modèle de marée mondial d'Open-Meteo Marine — niveau de la mer horaire au-dessus du niveau moyen. Les pleines et basses mers en sont les <b>extrema locaux</b>, l'heure étant affinée en ajustant une parabole sur les trois échantillons entourant chaque renverse, si bien que la réponse n'est pas calée sur l'heure ronde à laquelle le modèle est échantillonné."],
           ['tex', 't^{*} \\;=\\; t_i + \\tfrac{1}{2}\\,\\frac{a-c}{a-2b+c}\\,\\Delta t'],
-          ['p', 'Switching the layer on samples the coastline in view and asks the model for all of those points at once, so the whole visible coast carries its level, its phase and its next turn before anything is tapped — and the ground at or below that level is shaded from the same elevation data as §6. Tapping a coast replaces the overview with that point\'s own table, asked for on its own coordinates.'],
-          ['p', '"How far the water comes" uses exactly the construction in §6, with the current tide level as the water level. Over minutes to hours a still-water fill is a fair approximation — but it is not a run-up model.']
+          ['p', "Activer le calque échantillonne le trait de côte visible et interroge le modèle pour tous ces points d'un coup : toute la côte à l'écran porte donc son niveau, sa phase et sa prochaine renverse avant même qu'on touche quoi que ce soit — et le sol situé à ce niveau ou en dessous est ombré à partir des mêmes données d'altitude qu'au §6. Toucher une côte remplace la vue d'ensemble par le tableau propre à ce point, demandé sur ses propres coordonnées."],
+          ['p', "« Jusqu'où monte l'eau » utilise exactement la construction du §6, avec le niveau de marée courant comme niveau d'eau. À l'échelle de quelques minutes à quelques heures, un remplissage en eau calme est une approximation honnête — mais ce n'est pas un modèle de jet de rive."]
         ]
       },
       {
-        id: 'currents', nav: 'Ocean currents', h: 'Ocean currents',
+        id: 'currents', nav: "Courants marins", h: "Courants marins",
         blocks: [
-          ['p', 'The bundled field is geostrophic flow from satellite altimetry plus the wind-driven Ekman part; each named current is then integrated through that measured field from a published seed on its core.'],
+          ['p', "Le champ embarqué est l'écoulement géostrophique déduit de l'altimétrie satellitaire, augmenté de la composante d'Ekman entraînée par le vent ; chaque courant nommé est ensuite intégré dans ce champ mesuré à partir d'un point d'amorce publié sur son axe."],
           ['tex', 'u_g = -\\dfrac{g}{f}\\dfrac{\\partial\\eta}{\\partial y}, \\qquad v_g = \\dfrac{g}{f}\\dfrac{\\partial\\eta}{\\partial x}, \\qquad f = 2\\Omega\\sin\\varphi'],
           ['tex', '\\lVert\\mathbf{u}_{ek}\\rVert = \\dfrac{B}{\\sqrt{|f|}}\\dfrac{\\lVert\\boldsymbol{\\tau}\\rVert}{\\rho_w},\\quad B = 0.065\\ \\text{s}^{-1/2}, \\qquad \\theta = \\theta_{\\tau} - \\operatorname{sgn}(\\varphi)\\,55^{\\circ}'],
           ['tex', '\\mathbf{x}_{n+1} = \\mathbf{x}_n + \\Delta s\\,\\hat{\\mathbf{u}}\\!\\left(\\mathbf{x}_n + \\tfrac{\\Delta s}{2}\\hat{\\mathbf{u}}(\\mathbf{x}_n)\\right), \\qquad \\Delta s = 25\\ \\text{km}'],
-          ['p', 'Warm or cold is <b>measured</b>, not inferred from the direction of the flow: it is the current&rsquo;s own sea-surface temperature against the zonal mean at the same latitude. Within ±0.6 K the current is drawn grey, because the equatorial and circumpolar currents genuinely run along their own isotherms.'],
+          ['p', "Chaud ou froid est <b>mesuré</b>, et non déduit de la direction de l'écoulement : c'est la température de surface propre au courant comparée à la moyenne zonale à la même latitude. À ±0,6 K près, le courant est dessiné en gris, car les courants équatoriaux et circumpolaires suivent réellement leurs propres isothermes."],
           ['tex', '\\overline{\\Delta T} = \\dfrac{1}{N}\\sum_{i=1}^{N}\\Bigl[T(\\mathbf{x}_i)-\\langle T\\rangle_{\\varphi_i}\\Bigr] \\quad \\begin{cases}>+0.6\\ \\text{K} & \\text{warm}\\\\ <-0.6\\ \\text{K} & \\text{cold}\\\\ \\text{otherwise} & \\text{zonal}\\end{cases}'],
-          ['tagline', 'A flow field, drawn as the streamlines of the water that is actually moving.'],
-          ['p', 'The velocity field is Open-Meteo Marine\'s <code>ocean_current_velocity</code> and <code>ocean_current_direction</code> — the same keyless model the tides use. A grid covering the view is asked for in one request, land cells are skipped from the bundled land mask, and the answers are bilinearly interpolated into a continuous field.'],
-          ['p', 'A <b>streamline</b> is then integrated through that field from each seed point with a 4th-order Runge–Kutta step, forwards and backwards, so one line is a path the water actually takes rather than an arrow standing on its own. Line width is the speed; arrowheads along the line say which way it goes.'],
+          ['tagline', "Un champ d'écoulement, dessiné comme les lignes de courant de l'eau qui bouge réellement."],
+          ['p', "Le champ de vitesse provient de <code>ocean_current_velocity</code> et <code>ocean_current_direction</code> d'Open-Meteo Marine — le même modèle sans clé que celui des marées. Une grille couvrant la vue est demandée en une seule requête, les mailles terrestres sont écartées grâce au masque de terres embarqué, et les réponses sont interpolées bilinéairement en un champ continu."],
+          ['p', "Une <b>ligne de courant</b> est ensuite intégrée dans ce champ depuis chaque point d'amorce par un pas de Runge–Kutta d'ordre 4, vers l'avant et vers l'arrière : une ligne est donc un chemin que l'eau emprunte réellement, et non une flèche isolée. L'épaisseur du trait donne la vitesse ; les pointes le long de la ligne indiquent le sens."],
           ['eq', 'x<sub>n+1</sub> = x<sub>n</sub> + (h/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>), &nbsp; k<sub>i</sub> = u(x)/|u| &nbsp; (unit-speed, so the step is a distance)'],
-          ['p', 'Warm or cold is <b>measured, not assumed</b>. 暖流 / 寒流 is a claim about what the water carries, so each streamline is compared with the sea-surface temperature about 110 km <b>upstream</b> along its own path. Upstream warmer than here means the current is bringing warmth (red); upstream colder means it is bringing cold (blue).'],
-          ['lim', 'Where the difference is under 0.25 K — inside the model\'s own noise — the line is <b>grey</b> and the legend says "neither". A current that is not carrying a temperature contrast must not be coloured as though it were. Names are Wikidata (CC0), drawn at the coordinate published for each current; a name is a point on the map and does not claim that the line beside it is that current.'],
-          ['h3', 'The field: what is averaged, and over what'],
-          ['p', 'The bundled field is a <b>climatology</b>: 36 velocity fields spread evenly over the whole served record (2015&rarr;now) plus 24 wind-stress fields, on the source&rsquo;s own 0.25&deg; grid. A mean over 36 fields reduces mesoscale (eddy) variance by about a factor of six, which is what makes a traced path a current rather than a ring.'],
+          ['p', "Chaud ou froid est <b>mesuré, pas supposé</b>. 暖流 / 寒流 est une affirmation sur ce que l'eau transporte : chaque ligne de courant est donc comparée à la température de surface relevée environ 110 km <b>en amont</b> le long de son propre chemin. Un amont plus chaud qu'ici signifie que le courant apporte de la chaleur (rouge) ; un amont plus froid, qu'il apporte du froid (bleu)."],
+          ['lim', "Là où l'écart est inférieur à 0,25 K — dans le bruit propre du modèle — la ligne est <b>grise</b> et la légende indique « ni l'un ni l'autre ». Un courant qui ne transporte pas de contraste thermique ne doit pas être coloré comme s'il le faisait. Les noms viennent de Wikidata (CC0) et sont placés à la coordonnée publiée pour chaque courant ; un nom est un point sur la carte et n'affirme pas que la ligne voisine est ce courant."],
+          ['h3', "Le champ : ce qui est moyenné, et sur quoi"],
+          ['p', "Le champ embarqué est une <b>climatologie</b> : 36 champs de vitesse répartis uniformément sur tout l'enregistrement servi (2015&rarr;aujourd'hui) plus 24 champs de tension du vent, sur la grille 0,25&deg; de la source. Une moyenne sur 36 champs réduit la variance mésoéchelle (les tourbillons) d'environ un facteur six, et c'est ce qui fait d'un chemin tracé un courant plutôt qu'un anneau."],
           ['tex', '\\mathbf{u}_{\\text{tot}} \\;=\\; \\underbrace{\\frac{g}{f}\\,\\hat{\\mathbf{k}}\\times\\nabla\\eta}_{\\text{geostrophic (altimetry)}} \\;+\\; \\underbrace{\\frac{B}{\\sqrt{|f|}}\\frac{\\boldsymbol{\\tau}}{\\rho_w}\\,\\mathcal{R}\\bigl(-\\operatorname{sgn}\\varphi\\cdot55^{\\circ}\\bigr)}_{\\text{Ekman (wind stress)}}'],
-          ['h3', 'How a named current&rsquo;s line is produced'],
+          ['h3', "Comment est produite la ligne d'un courant nommé"],
           ['tex', '\\mathbf{x}_{n+1} = \\mathbf{x}_n + \\Delta s\\;\\hat{\\mathbf{u}}\\!\\left(\\mathbf{x}_n + \\tfrac{\\Delta s}{2}\\,\\hat{\\mathbf{u}}(\\mathbf{x}_n)\\right), \\qquad \\Delta s = 25\\ \\text{km}'],
-          ['p', 'Each of the 108 named currents is integrated forward and backward from one published seed on its core, up to 5,000 km each way, through that measured field. Three rules end a walk: a cell entered twice more than 12 steps apart (a closed eddy), a return within 60 km of the seed after a real journey (a gyre closing), or a budget of 12 consecutive cells below 2.2 cm/s. A trace that closes in under 1,500 km is <b>rejected</b> and the seed is retried from the ring around it &mdash; a published core position can land in a standing recirculation beside the current.'],
-          ['h3', 'The file the browser reads'],
+          ['p', "Chacun des 108 courants nommés est intégré vers l'avant et vers l'arrière depuis un point d'amorce publié sur son axe, jusqu'à 5 000 km de chaque côté, à travers ce champ mesuré. Trois règles arrêtent un parcours : une maille traversée deux fois à plus de 12 pas d'écart (un tourbillon fermé), un retour à moins de 60 km de l'amorce après un vrai trajet (un gyre qui se referme), ou un budget de 12 mailles consécutives sous 2,2 cm/s. Un tracé qui se referme en moins de 1 500 km est <b>rejeté</b> et l'amorce est réessayée depuis l'anneau qui l'entoure &mdash; une position d'axe publiée peut tomber dans une recirculation stationnaire à côté du courant."],
+          ['h3', "Le fichier que lit le navigateur"],
           ['tex', 's_{\\text{byte}} = \\left\\lfloor 255\\sqrt{\\frac{\\min(s,\\,2.5)}{2.5}} \\right\\rceil, \\qquad b_{\\text{byte}} = \\left\\lfloor \\frac{255\\,\\theta}{360^{\\circ}} \\right\\rceil'],
           ['tex', '\\text{stride} = \\min\\Bigl\\{\\,2^{k} \\;:\\; \\frac{\\Delta\\lambda_{\\text{view}}}{0.25^{\\circ}2^{k}}\\cdot\\frac{\\Delta\\varphi_{\\text{view}}}{0.25^{\\circ}2^{k}} \\le N_{\\max}\\Bigr\\},\\qquad N_{\\max}=4\\,200\\ (\\text{phone}),\\;9\\,000'],
-          ['p', 'The field ships as a regular grid &mdash; 1,440 &times; 720 cells, one byte of speed and one of bearing &mdash; rather than as a list of arrows, because a list fixes the spacing at build time. The client strides the grid instead, choosing the coarsest stride that still fills the view with at most N<sub>max</sub> marks, and each strided cell is the <b>vector mean</b> of its block (averaging bearings as numbers would turn 350&deg; and 10&deg; into 180&deg;). Speed is stored through a square root so the resolution is 0.05 cm/s at the low end, where the eastern boundary currents are.'],
-          ['h3', 'The twelve months'],
-          ['p', 'A second file carries twelve monthly climatologies at 0.5&deg; &mdash; six years of each calendar month averaged &mdash; and is fetched only if a month is chosen. Each named current also carries its twelve monthly speeds and the mean projection of that month&rsquo;s flow <b>onto its own path</b>; where that projection changes sign between months, the current reverses with the season and the list says so. The paths themselves are not re-traced per month: a 0.5&deg; field cannot support twelve different geometries, and a line that changed shape every month would be a claim about the path the data does not make.']
+          ['p', "Le champ est livré comme une grille régulière &mdash; 1 440 &times; 720 mailles, un octet de vitesse et un de cap &mdash; plutôt que comme une liste de flèches, car une liste fige l'espacement au moment de la construction. Le client parcourt la grille par pas, en choisissant le pas le plus grossier qui remplisse encore la vue avec au plus N<sub>max</sub> marques, et chaque maille ainsi échantillonnée est la <b>moyenne vectorielle</b> de son bloc (moyenner des caps comme des nombres transformerait 350&deg; et 10&deg; en 180&deg;). La vitesse est stockée via une racine carrée, si bien que la résolution est de 0,05 cm/s dans le bas de l'échelle, là où se trouvent les courants de bord est."],
+          ['h3', "Les douze mois"],
+          ['p', "Un second fichier porte douze climatologies mensuelles à 0,5&deg; &mdash; six années de chaque mois civil moyennées &mdash; et n'est récupéré que si un mois est choisi. Chaque courant nommé porte aussi ses douze vitesses mensuelles et la projection moyenne de l'écoulement de ce mois <b>sur son propre chemin</b> ; là où cette projection change de signe d'un mois à l'autre, le courant s'inverse avec la saison et la liste le signale. Les chemins eux-mêmes ne sont pas retracés chaque mois : un champ à 0,5&deg; ne peut pas soutenir douze géométries différentes, et une ligne qui changerait de forme tous les mois serait une affirmation sur le tracé que la donnée ne fait pas."]
         ]
       },
       {
-        id: 'atmosphere', nav: 'Atmosphere & sky', h: 'Atmosphere & sky colour',
+        id: 'atmosphere', nav: "Atmosphère et ciel", h: "Atmosphère et couleur du ciel",
         blocks: [
-          ['tagline', 'What colour the sky is, from this height, at this Sun angle, looking this way — integrated rather than chosen.'],
-          ['p', 'A renderer that picks two hex colours and interpolates them agrees with the sky at exactly one Sun elevation and one camera height. This app flies from a street to low orbit and travels in time, so the sky is <b>marched</b>: the view ray is integrated to the top of the atmosphere, and at every step the ray back to the Sun is integrated too. A step whose Sun ray is blocked by the Earth contributes nothing — which is what makes dusk fall from the ground upward, and gives twilight without any twilight term.'],
-          ['h3', 'The radiative transfer that is actually marched'],
+          ['tagline', "De quelle couleur est le ciel, depuis cette hauteur, sous cet angle solaire, en regardant dans cette direction — intégré plutôt que choisi."],
+          ['p', "Un moteur de rendu qui choisit deux couleurs hexadécimales et les interpole ne coïncide avec le vrai ciel que pour une seule élévation solaire et une seule hauteur de caméra. Ici, on vole d'une rue à l'orbite basse et on voyage dans le temps : le ciel est donc <b>marché pas à pas</b> — le rayon de vue est intégré jusqu'au sommet de l'atmosphère et, à chaque pas, le rayon vers le Soleil est intégré lui aussi. Un pas dont le rayon solaire est masqué par la Terre ne contribue à rien — c'est ce qui fait tomber le crépuscule du sol vers le haut, et qui donne le crépuscule sans aucun terme de crépuscule."],
+          ['h3', "Le transfert radiatif réellement intégré"],
           ['tex', 'L(\\mathbf{x},\\boldsymbol{\\omega}) \\;=\\; \\int_{0}^{t_{\\max}} T(\\mathbf{x},\\mathbf{p})\\,\\Bigl[\\, \\sigma_s^{R}(\\mathbf{p})\\,p_R(\\mu)\\,T(\\mathbf{p},\\mathbf{p}_{\\odot})\\,E_\\odot \\;+\\; \\sigma_s^{M}(\\mathbf{p})\\,p_M(\\mu)\\,T(\\mathbf{p},\\mathbf{p}_{\\odot})\\,E_\\odot \\;+\\; \\sigma_s(\\mathbf{p})\\,\\Psi_{ms}(h,\\theta_\\odot) \\Bigr]\\,dt'],
           ['tex', 'T(\\mathbf{a},\\mathbf{b}) \\;=\\; \\exp\\!\\left[-\\!\\int_{\\mathbf{a}}^{\\mathbf{b}}\\!\\bigl(\\beta_R\\,e^{-h/H_R} + 1.1\\,\\beta_M\\,e^{-h/H_M} + \\beta_{O_3}\\,\\Lambda(h)\\bigr)ds\\right]'],
           ['tex', 'p_R(\\mu) = \\frac{3}{16\\pi}\\bigl(1+\\mu^{2}\\bigr), \\qquad p_M(\\mu) = \\frac{3}{8\\pi}\\,\\frac{(1-g^{2})(1+\\mu^{2})}{(2+g^{2})\\,(1+g^{2}-2g\\mu)^{3/2}}, \\quad g = 0.76'],
-          ['h3', 'Ozone, and why twilight is blue'],
-          ['p', 'Ozone <b>absorbs and does not scatter</b>, so it appears in the optical depth on both rays and in no phase function. It is what makes the blue hour blue: with the Sun below the horizon the sight-line passes through 10–40 km, where Rayleigh scattering has little left to remove, and what takes the residual yellow-red out is the Chappuis band near 600 nm.'],
+          ['h3', "L'ozone, et pourquoi le crépuscule est bleu"],
+          ['p', "L'ozone <b>absorbe et ne diffuse pas</b> : il apparaît donc dans l'épaisseur optique des deux rayons et dans aucune fonction de phase. C'est lui qui rend l'heure bleue bleue : le Soleil sous l'horizon, la ligne de visée traverse 10 à 40 km d'altitude, où la diffusion Rayleigh n'a plus grand-chose à retirer, et ce qui ôte le jaune-rouge résiduel est la bande de Chappuis vers 600 nm."],
           ['tex', '\\Lambda(h) \\;=\\; \\max\\!\\left(0,\\; 1 - \\frac{|h - 25\\,\\mathrm{km}|}{15\\,\\mathrm{km}}\\right), \\qquad \\beta_{O_3} = (0.650,\\,1.881,\\,0.085)\\times10^{-6}\\ \\mathrm{m^{-1}}'],
-          ['h3', 'Multiple scattering'],
-          ['p', 'Single scattering counts a photon once. In the blue, air is optically thick enough that most of what reaches the eye has bounced several times, and every bounce erases direction — so the multiply-scattered part is <b>isotropic</b> and appears with no phase function at all. Closing the geometric series gives a term that depends only on height and Sun elevation, so it is tabulated (16 heights × 24 Sun elevations) and interpolated twice per sample.'],
+          ['h3', "La diffusion multiple"],
+          ['p', "La diffusion simple ne compte un photon qu'une fois. Dans le bleu, l'air est assez épais optiquement pour que l'essentiel de ce qui atteint l'œil ait rebondi plusieurs fois, et chaque rebond efface la direction — la part diffusée plusieurs fois est donc <b>isotrope</b> et apparaît sans aucune fonction de phase. La sommation de la série géométrique donne un terme qui ne dépend que de la hauteur et de l'élévation solaire : il est donc tabulé (16 hauteurs × 24 élévations) et interpolé deux fois par échantillon."],
           ['tex', '\\Psi_{ms} \\;=\\; \\frac{L^{(2)}}{1 - f}, \\qquad f = \\frac{1}{4\\pi}\\oint \\sigma_s\\,T\\,d\\omega \\;<\\; 1'],
           ['tex', 'C \\;=\\; \\Bigl[\\,1 - e^{-L\\,\\varepsilon}\\,\\Bigr]^{1/2.2}, \\qquad \\varepsilon = 0.7'],
-          ['lim', 'One aerosol profile for the whole planet, no clouds, no airglow and no starlight — so a deep night integrates to black and is floored at a measured night colour rather than shown as the model returns it. The limb seen from space is the renderer\'s own scattering pass, not this integral; this model decides the colour that pass is blended toward.'],
-          ['h3', 'The march, and its cost'],
+          ['lim', "Un seul profil d'aérosols pour toute la planète, aucun nuage, aucune luminescence nocturne et aucune lumière stellaire — une nuit profonde s'intègre donc à du noir et est plancher-née à une couleur de nuit mesurée plutôt qu'affichée telle que le modèle la renvoie. Le limbe vu de l'espace est la passe de diffusion propre au moteur de rendu, pas cette intégrale ; ce modèle décide de la couleur vers laquelle cette passe est mélangée."],
+          ['h3', "La marche, et son coût"],
           ['tex', 'L=\\sum_{i=1}^{16} T(\\mathbf{x},\\mathbf{p}_i)\\bigl[\\sigma_s^R p_R + \\sigma_s^M p_M\\bigr]T(\\mathbf{p}_i,\\odot)E_\\odot\\,\\Delta t \\;+\\;\\sum_{i}\\sigma_s\\Psi_{ms}\\Delta t,\\quad T \\text{ from } M=8 \\text{ sun steps}'],
-          ['p', 'Sixteen steps along the view ray, eight along the sun ray at each of them, and a 16 &times; 24 table of multiple-scattering values interpolated twice per sample. That is about 300 exponentials per colour, evaluated when the Sun or the camera has actually moved &mdash; a few times a second at the very most, which is why it can be an integral rather than a gradient.'],
-          ['h3', 'Seen from outside: the limb'],
+          ['p', "Seize pas le long du rayon de vue, huit le long du rayon solaire à chacun d'eux, et une table 16 &times; 24 de valeurs de diffusion multiple interpolée deux fois par échantillon. Cela fait environ 300 exponentielles par couleur, évaluées quand le Soleil ou la caméra a réellement bougé &mdash; quelques fois par seconde tout au plus, ce qui permet d'en faire une intégrale plutôt qu'un dégradé."],
+          ['h3', "Vu de l'extérieur : le limbe"],
           ['tex', '\\theta_{\\text{limb}}(h_t) \\;=\\; \\arcsin\\!\\frac{R_\\oplus+h_t}{R_\\oplus+h_{\\text{eye}}} \\;-\\; 90^{\\circ}, \\qquad \\ell(h_t)\\;\\approx\\;2\\sqrt{2R_\\oplus H}\\,e^{-h_t/2H}'],
-          ['p', 'From orbit the atmosphere is not overhead, it is edge-on: a ray whose closest approach is 6 km above the surface crosses roughly 800 km of air, one at 55 km crosses almost none. Both ends of the drawn gradient are those two rays, so the band is blue-white low on the day side, red through the terminator and black on the night side, at whatever altitude the camera is at. Nothing about it is a chosen colour.'],
-          ['lim', 'One aerosol profile for the whole planet, no clouds, no airglow and no starlight, so a deep night integrates to black and is floored at a measured night colour. The halo drawn around the globe is the renderer&rsquo;s own scattering pass; this model decides the colours it is blended toward.']
+          ['p', "Depuis l'orbite, l'atmosphère n'est pas au-dessus de la tête, elle est vue par la tranche : un rayon dont l'approche minimale passe à 6 km au-dessus de la surface traverse environ 800 km d'air, un autre à 55 km n'en traverse presque pas. Les deux extrémités du dégradé dessiné sont ces deux rayons : la bande est donc blanc-bleu en bas côté jour, rouge à travers le terminateur et noire côté nuit, quelle que soit l'altitude de la caméra. Rien là-dedans n'est une couleur choisie."],
+          ['lim', "Un seul profil d'aérosols pour toute la planète, aucun nuage, aucune luminescence nocturne et aucune lumière stellaire : une nuit profonde s'intègre donc à du noir et est plancher-née à une couleur de nuit mesurée. Le halo dessiné autour du globe est la passe de diffusion propre au moteur de rendu ; ce modèle décide des couleurs vers lesquelles elle est mélangée."]
         ],
       },
       {
-        id: 'sun', nav: 'Sun, shadow, viewshed', h: 'Sun, shadow and viewshed',
+        id: 'sun', nav: "Soleil, ombre, visibilité", h: "Soleil, ombre et bassin de visibilité",
         blocks: [
-          ['p', 'Solar position comes from the standard astronomical algorithm — declination and hour angle to azimuth and altitude. It is verified to give 0° declination at an equinox and the obliquity at a solstice.'],
-          ['p', 'Annual insolation sweeps the surrounding DEM by azimuth to build the point\'s <b>real horizon profile</b>, then integrates the sun\'s track against it. The viewshed answers <b>per raster cell</b> rather than per bearing, because a bearing sweep misses cells at distance.'],
-          ['h3', 'The horizon, and the year integrated against it'],
+          ['p', "La position du Soleil vient de l'algorithme astronomique standard — déclinaison et angle horaire convertis en azimut et hauteur. Il est vérifié qu'il donne une déclinaison de 0° à un équinoxe et l'obliquité à un solstice."],
+          ['p', "L'insolation annuelle balaie le MNT environnant par azimut pour construire le <b>profil d'horizon réel</b> du point, puis intègre la course du Soleil face à lui. Le bassin de visibilité répond <b>maille par maille</b> plutôt que par azimut, car un balayage par azimut manque des mailles à distance."],
+          ['h3', "L'horizon, et l'année intégrée face à lui"],
           ['tex', 'H(\\alpha) = \\max_{r\\le R_{\\max}}\\arctan\\frac{z(r,\\alpha)-z_0}{r}, \\qquad E = \\int_{\\text{year}} I_0\\,\\cos\\theta_i\\,\\bigl[\\,\\gamma_s(t)>H(\\alpha_s(t))\\,\\bigr]\\,dt'],
-          ['p', 'The surrounding terrain is swept by azimuth in 1&deg; steps out to 25 km, and the largest elevation angle found along each bearing is that bearing&rsquo;s horizon. The Sun&rsquo;s track for the whole year is then integrated against that profile at 10-minute steps, counting only the moments it stands above it &mdash; which is why a north-facing alpine slope comes out at a fraction of the flat-ground value rather than at the cosine of its latitude.'],
-          ['p', 'The viewshed answers <b>per raster cell</b> rather than per bearing: a bearing sweep leaves gaps that grow with distance, so at 20 km the two differ by whole ridges.']
+          ['p', "Le relief environnant est balayé par azimut par pas de 1&deg; jusqu'à 25 km, et le plus grand angle d'élévation trouvé le long de chaque direction constitue l'horizon de cette direction. La course du Soleil pour l'année entière est ensuite intégrée face à ce profil par pas de 10 minutes, en ne comptant que les instants où il se tient au-dessus &mdash; c'est pourquoi un versant alpin exposé au nord ressort à une fraction de la valeur en terrain plat, et non au cosinus de sa latitude."],
+          ['p', "Le bassin de visibilité répond <b>maille par maille</b> plutôt que par azimut : un balayage par azimut laisse des trous qui grandissent avec la distance, si bien qu'à 20 km les deux méthodes diffèrent de crêtes entières."]
         ]
       },
       {
-        id: 'sats', nav: 'Satellites', h: 'Satellites',
+        id: 'sats', nav: "Satellites", h: "Satellites",
         blocks: [
-          ['p', 'Orbits are propagated from TLEs with <b>SGP4/SDP4</b>. A TLE degrades with age and — importantly — <b>diverges silently</b>, so there is a hard limit on element-set age and anything past it is not drawn.'],
-          ['p', 'The catalogue is a bundled snapshot plus a live fetch. A category with no list is <b>omitted, not shown empty</b> — an empty array would be a claim that the category has no satellites.'],
-          ['h3', 'SGP4, and why the age of an element set is a hard limit'],
+          ['p', "Les orbites sont propagées à partir des TLE avec <b>SGP4/SDP4</b>. Un TLE se dégrade en vieillissant et — c'est important — <b>diverge en silence</b> : il y a donc une limite stricte sur l'âge du jeu d'éléments, et tout ce qui la dépasse n'est pas dessiné."],
+          ['p', "Le catalogue est un instantané embarqué complété par une récupération en direct. Une catégorie sans liste est <b>omise, pas affichée vide</b> — un tableau vide affirmerait que la catégorie ne contient aucun satellite."],
+          ['h3', "SGP4, et pourquoi l'âge d'un jeu d'éléments est une limite stricte"],
           ['tex', 'n\'\' = n_0\\bigl[1 + \\tfrac{3}{2}k_2\\tfrac{(3\\cos^2 i-1)}{a^{2}(1-e^{2})^{3/2}}\\bigr],\\qquad \\sigma_{\\text{pos}} \\sim 1\\text{–}3\\ \\mathrm{km/day}\\ \\text{after epoch}'],
-          ['p', 'A TLE is not a position: it is a set of mean elements fitted to a specific analytic theory, and only SGP4/SDP4 can read it. Its error grows at roughly 1&ndash;3 km per day after the epoch for a low orbit, and it does so <b>silently</b> &mdash; there is no signal in the data that says the answer has gone wrong. So the propagator refuses element sets past a stated age rather than drawing a plausible dot in the wrong place.']
+          ['p', "Un TLE n'est pas une position : c'est un jeu d'éléments moyens ajustés à une théorie analytique précise, et seul SGP4/SDP4 sait le lire. Son erreur croît d'environ 1 à 3 km par jour après l'époque pour une orbite basse, et elle le fait <b>en silence</b> &mdash; rien dans la donnée ne signale que la réponse est devenue fausse. Le propagateur refuse donc les jeux d'éléments au-delà d'un âge annoncé plutôt que de dessiner un point plausible au mauvais endroit."]
         ]
       },
       {
-        id: 'space', nav: 'Space & bodies', h: 'Space &amp; bodies',
+        id: 'space', nav: "Espace et corps célestes", h: "Espace &amp; corps célestes",
         blocks: [
-          ['p', 'Planet and moon positions are Keplerian, from orbital elements. Bodies are drawn enlarged (at true scale they are sub-pixel), but the <b>magnification ceiling is geometry, not taste</b>: it follows from the requirement that the Moon stay clear of the Earth even at perigee.'],
-          ['p', 'The satellites of the other planets come from JPL\'s own mean-element table for 177 moons at a stated epoch, each propagated to the clock. The elements are not all in one plane — a close giant-planet satellite states its planet\'s local <b>Laplace plane</b>, whose pole the table gives as right ascension and declination — and that frame is carried through rather than read as if it were the ecliptic.'],
-          ['p', 'At model scale a satellite is placed by the same compression law the Moon is, and then <b>pushed out to clear its primary</b>: compressing a distance and a radius by different powers can otherwise put an inner moon inside the planet it orbits. At true scale nothing is moved, because there is nothing to compress.'],
-          ['p', 'Stars come from a bundled all-sky bright-star catalogue at their real positions and magnitudes; colour is derived from the B&minus;V index, i.e. real colour temperature.'],
-          ['h3', 'Positions'],
+          ['p', "Les positions des planètes et des lunes sont képlériennes, calculées à partir d'éléments orbitaux. Les corps sont dessinés grossis (à l'échelle réelle ils font moins d'un pixel), mais le <b>plafond de grossissement relève de la géométrie, pas du goût</b> : il découle de l'exigence que la Lune reste dégagée de la Terre même au périgée."],
+          ['p', "Les satellites des autres planètes viennent de la table d'éléments moyens du JPL pour 177 lunes à une époque donnée, chacune propagée jusqu'à l'horloge. Les éléments ne sont pas tous dans un même plan &mdash; un satellite proche d'une planète géante se réfère au <b>plan de Laplace</b> local de sa planète, dont la table donne le pôle en ascension droite et déclinaison &mdash; et ce repère est propagé tel quel plutôt que lu comme s'il s'agissait de l'écliptique."],
+          ['p', "À l'échelle du modèle, un satellite est placé par la même loi de compression que la Lune, puis <b>écarté pour dégager sa primaire</b> : comprimer une distance et un rayon par des puissances différentes peut sinon placer une lune intérieure à l'intérieur de la planète qu'elle orbite. À l'échelle réelle rien n'est déplacé, car il n'y a rien à comprimer."],
+          ['p', "Les étoiles proviennent d'un catalogue embarqué d'étoiles brillantes couvrant tout le ciel, à leurs positions et magnitudes réelles ; la couleur est dérivée de l'indice B&minus;V, c'est-à-dire d'une vraie température de couleur."],
+          ['h3', "Positions"],
           ['tex', 'M = E - e\\sin E \\;\\Longrightarrow\\; E_{k+1}=E_k-\\frac{E_k-e\\sin E_k-M}{1-e\\cos E_k}, \\qquad \\tan\\frac{\\nu}{2}=\\sqrt{\\tfrac{1+e}{1-e}}\\tan\\frac{E}{2}'],
-          ['p', 'Planets and moons come from mean elements at a stated epoch: the mean anomaly is advanced, Kepler&rsquo;s equation is solved by Newton&ndash;Raphson (four iterations reach 10<sup>&minus;12</sup> for e &lt; 0.9), and the true anomaly follows. A close giant-planet satellite states its planet&rsquo;s local <b>Laplace plane</b> rather than the ecliptic, and that frame is carried through instead of being read as if it were.'],
-          ['h3', 'The two scales, and what is preserved between them'],
+          ['p', "Les planètes et les lunes viennent d'éléments moyens à une époque donnée : l'anomalie moyenne est avancée, l'équation de Kepler est résolue par Newton&ndash;Raphson (quatre itérations atteignent 10<sup>&minus;12</sup> pour e &lt; 0,9), et l'anomalie vraie en découle. Un satellite proche d'une planète géante se réfère au <b>plan de Laplace</b> local de sa planète plutôt qu'à l'écliptique, et ce repère est propagé au lieu d'être lu comme s'il en était un autre."],
+          ['h3', "Les deux échelles, et ce qui est conservé entre elles"],
           ['tex', 'r_{\\text{model}} = 26\\,\\mathrm{AU}^{0.42}, \\qquad R_{\\text{model}} = 0.12\\left(\\frac{R}{R_\\oplus}\\right)^{1/3}, \\qquad d\' = \\frac{\\mathcal{P}\'\\bigl(\\mathcal{P}^{-1}(d\\tan\\tfrac{\\phi}{2})\\bigr)}{\\tan\\frac{\\phi}{2}}'],
-          ['p', 'Model scale compresses orbital radii by a power of 0.42 and body radii by a cube root, so it is not one scale but two, and no single conversion of the camera&rsquo;s distance can hold both. What is carried across the switch is therefore the <b>real-space radius at the edge of the frame</b> &mdash; convert it out of the old units through that scale&rsquo;s own law and back in through the new one, and the same planets stay in the same places. Where a body fills the frame the invariant becomes its apparent size instead, blended in log space over the range where the picture stops being about the system and starts being about the body.']
+          ['p', "L'échelle du modèle comprime les rayons orbitaux par une puissance 0,42 et les rayons des corps par une racine cubique : ce n'est donc pas une échelle mais deux, et aucune conversion unique de la distance caméra ne peut satisfaire les deux. Ce qui est transporté d'un mode à l'autre est donc le <b>rayon en espace réel au bord de l'image</b> &mdash; convertissez-le hors des anciennes unités par la loi propre à cette échelle, puis de nouveau dedans par la nouvelle, et les mêmes planètes restent aux mêmes places. Lorsqu'un corps occupe toute l'image, l'invariant devient sa taille apparente, mélangée en espace logarithmique sur la plage où l'image cesse de parler du système pour parler du corps."]
         ]
       },
       {
-        id: 'flight', nav: 'Flight model', h: 'Flight model',
+        id: 'flight', nav: "Modèle de vol", h: "Modèle de vol",
         blocks: [
-          ['p', 'Thrust and lift fall with air density, so the <b>service ceiling is not a wall</b>: an aircraft started above it descends until the air can hold it, rather than being clamped.'],
-          ['p', 'The camera sits <em>at</em> the aircraft rather than being a chase view corrected after the fact.'],
-          ['h3', 'The forces'],
+          ['p', "La poussée et la portance décroissent avec la densité de l'air : le <b>plafond pratique n'est donc pas un mur</b> — un appareil démarré au-dessus descend jusqu'à ce que l'air puisse le porter, au lieu d'être bloqué."],
+          ['p', "La caméra se trouve <em>sur</em> l'appareil plutôt que d'être une vue poursuivante corrigée après coup."],
+          ['h3', "Les forces"],
           ['tex', 'L=\\tfrac12\\rho V^{2}S\\,C_L(\\alpha),\\quad D=\\tfrac12\\rho V^{2}S\\bigl(C_{D0}+\\tfrac{C_L^{2}}{\\pi e A\\!R}\\bigr),\\quad T=T_0\\left(\\frac{\\rho}{\\rho_0}\\right)^{0.7}'],
-          ['p', 'Lift is a linear C<sub>L</sub>(&alpha;) up to the stall angle and a modelled post-stall drop after it; induced drag is the standard 1/(&pi;eAR) term, so a wing with a low aspect ratio really does pay for its lift. Thrust falls with density to the 0.7 power, which is what gives a service ceiling without a rule that says &ldquo;stop here&rdquo;: an aircraft started above its ceiling descends until the air can hold it.'],
-          ['h3', 'The air it is flying through'],
+          ['p', "La portance est un C<sub>L</sub>(&alpha;) linéaire jusqu'à l'angle de décrochage, suivi d'une chute post-décrochage modélisée ; la traînée induite est le terme classique en 1/(&pi;eAR), si bien qu'une aile de faible allongement paie réellement sa portance. La poussée décroît avec la densité à la puissance 0,7, ce qui donne un plafond pratique sans règle disant « arrêtez-vous ici » : un appareil démarré au-dessus de son plafond descend jusqu'à ce que l'air puisse le porter."],
+          ['h3', "L'air dans lequel il vole"],
           ['tex', '\\rho(h)=\\rho_0\\left(1-\\frac{Lh}{T_0}\\right)^{\\frac{g}{RL}-1},\\quad L=6.5\\ \\mathrm{K/km};\\qquad \\rho=\\rho_{11}e^{-\\frac{g(h-11\\,\\mathrm{km})}{R\\,T_{11}}}\\ (h>11\\ \\mathrm{km})'],
-          ['p', 'The International Standard Atmosphere, in two pieces: a linear-lapse troposphere and an isothermal stratosphere above 11 km. Airspeed is therefore two different numbers &mdash; true airspeed and the equivalent airspeed the airframe feels &mdash; and the HUD says which is which.'],
-          ['h3', 'The integration'],
+          ['p', "L'atmosphère standard internationale, en deux morceaux : une troposphère à gradient linéaire et une stratosphère isotherme au-dessus de 11 km. La vitesse est donc deux nombres différents &mdash; la vitesse vraie et la vitesse équivalente que ressent la cellule &mdash; et le HUD indique de laquelle il s'agit."],
+          ['h3', "L'intégration"],
           ['tex', '\\mathbf{y}_{n+1}=\\mathbf{y}_n+\\Delta t\\,\\mathbf{f}(\\mathbf{y}_n),\\quad \\Delta t=\\min\\!\\left(\\tfrac{1}{30}\\ \\mathrm{s},\\,\\Delta t_{\\text{frame}}\\right)\\ \\text{sub-stepped so } \\Delta t\\le \\tfrac{1}{120}\\ \\mathrm{s}'],
-          ['p', 'Explicit sub-stepped integration at a bounded step, so a long frame does not become a long time step and put the aircraft through the ground. The camera sits <em>at</em> the aircraft rather than being a chase view corrected afterwards, and the terrain under it is sampled from the same elevation data as every other terrain feature on this page.']
+          ['p', "Intégration explicite en sous-pas bornés : une image longue ne devient pas un grand pas de temps qui ferait traverser le sol à l'appareil. La caméra se trouve <em>sur</em> l'appareil plutôt que d'être une vue poursuivante corrigée après coup, et le relief sous elle est échantillonné à partir des mêmes données d'altitude que toutes les autres fonctions de relief de cette page."]
         ]
       },
       {
-        id: 'routing', nav: 'Routing & reachability', h: 'Routing &amp; reachability',
+        id: 'routing', nav: "Itinéraires et accessibilité", h: "Itinéraires &amp; accessibilité",
         blocks: [
-          ['p', 'Road routes come from OSRM over the OpenStreetMap network, alternatives from the same engine. Rail routing runs on real OSM track and <b>snaps to the largest connected component</b> — snapping to an isolated siding would make the destination unreachable. Public transport uses real timetables via MOTIS/Transitous.'],
-          ['p', 'An isochrone is the set of points a time budget reaches, wrapped in a hull. The hull is for display — <b>reachability itself is decided on the network</b>, not by the hull.'],
-          ['h3', 'What an isochrone actually solves'],
-          ['p', 'A time budget is expanded over the road network from the origin &mdash; a many-to-one shortest-path search, not a circle &mdash; and the reached nodes are then wrapped in a concave hull for drawing. <b>Reachability is decided on the network</b>; the hull is a picture of the answer and is never consulted to produce it. Where the network is sparse the hull is conspicuously wrong-looking and the answer underneath it is still right.']
+          ['p', "Les itinéraires routiers viennent d'OSRM sur le réseau OpenStreetMap, les variantes du même moteur. Le calcul ferroviaire s'exécute sur des voies OSM réelles et <b>se rattache à la plus grande composante connexe</b> — se rattacher à une voie de garage isolée rendrait la destination inaccessible. Les transports en commun utilisent de vrais horaires via MOTIS/Transitous."],
+          ['p', "Une isochrone est l'ensemble des points qu'un budget de temps permet d'atteindre, enveloppé dans une coque. La coque sert à l'affichage — <b>l'accessibilité elle-même est décidée sur le réseau</b>, pas par la coque."],
+          ['h3', "Ce qu'une isochrone résout réellement"],
+          ['p', "Un budget de temps est propagé sur le réseau routier depuis l'origine &mdash; une recherche de plus courts chemins « plusieurs vers un », pas un cercle &mdash; puis les nœuds atteints sont enveloppés dans une coque concave pour le dessin. <b>L'accessibilité est décidée sur le réseau</b> ; la coque est une image de la réponse et n'est jamais consultée pour la produire. Là où le réseau est clairsemé, la coque a l'air visiblement fausse et la réponse qu'elle recouvre reste juste."]
         ]
       },
       {
-        id: 'trade', nav: 'Trade flows', h: 'Trade flows',
+        id: 'trade', nav: "Flux commerciaux", h: "Flux commerciaux",
         blocks: [
-          ['p', 'Bilateral goods trade from BACI (CEPII) via OEC — reporter &times; partner &times; HS section &times; year, 1995–2024.'],
-          ['p', '<b>Line width is proportional to the square root of the value.</b> Two reasons. A country\'s top partner is routinely 500&times; its hundredth, so linear widths erase everything below the top three; and a logarithm makes a $200 M flow look a third as wide as a $200 B one, which lies in the other direction. With &radic;, a stroke\'s <b>area</b> (width &times; length) tracks the quantity — the flow-map convention.'],
+          ['p', "Commerce bilatéral de marchandises d'après BACI (CEPII) via l'OEC — déclarant &times; partenaire &times; section SH &times; année, 1995–2024."],
+          ['p', "<b>L'épaisseur du trait est proportionnelle à la racine carrée de la valeur.</b> Deux raisons. Le premier partenaire d'un pays vaut couramment 500&times; le centième : des épaisseurs linéaires effaceraient donc tout au-delà des trois premiers ; et un logarithme ferait paraître un flux de 200 M$ trois fois moins large qu'un flux de 200 Md$, ce qui ment dans l'autre sens. Avec la &radic;, l'<b>aire</b> d'un trait (épaisseur &times; longueur) suit la quantité — c'est la convention des cartes de flux."],
           ['eq', 'w = 1.2 + 11.8 &middot; &radic;(v / v<sub>max</sub>) &nbsp;px'],
-          ['lim', 'Only the <b>picture</b> is compressed. Hovering shows both the short form (<code>$141.6B</code>) and the <b>exact, unrounded figure</b> (<code>$141,585,432,101</code>). Nothing in this app rescales a value in order to display it.']
+          ['lim', "Seule l'<b>image</b> est comprimée. Le survol affiche à la fois la forme abrégée (<code>141,6 Md$</code>) et le <b>chiffre exact, non arrondi</b> (<code>141 585 432 101 $</code>). Rien dans cette application ne rééchelonne une valeur pour l'afficher."]
         ]
       },
       {
-        id: 'energy', nav: 'Energy mix', h: 'Energy mix',
+        id: 'energy', nav: "Mix énergétique", h: "Mix énergétique",
         blocks: [
-          ['p', 'Electricity mix from Ember, primary energy from the Energy Institute review, both via Our World in Data, per country per year. The map carries the <b>one number that ranks countries</b> (low-carbon share of electricity / fossil share of primary energy); the composition itself is a <b>stacked bar</b>, because nine sources are not one colour.'],
-          ['p', 'Travelling in time re-reads <b>that year\'s rows</b> rather than interpolating. If a country has no row for that year, the newest observation at or before it is used — and the year actually used is stated.']
+          ['p', "Mix électrique d'après Ember, énergie primaire d'après la revue de l'Energy Institute, tous deux via Our World in Data, par pays et par année. La carte porte le <b>seul chiffre qui classe les pays</b> (part bas-carbone de l'électricité / part fossile de l'énergie primaire) ; la composition elle-même est une <b>barre empilée</b>, car neuf sources ne tiennent pas dans une couleur."],
+          ['p', "Voyager dans le temps relit <b>les lignes de cette année-là</b> plutôt que d'interpoler. Si un pays n'a pas de ligne pour cette année, l'observation la plus récente à cette date ou avant est utilisée — et l'année réellement employée est indiquée."]
         ]
       },
       {
-        id: 'crops', nav: 'Crops', h: 'Crops',
+        id: 'crops', nav: "Cultures", h: "Cultures",
         blocks: [
-          ['p', 'The raster is FAO GAEZ v4 — harvested area, yield or production for one crop, at a stated reference year, drawn at the resolution the service returns for the area on screen.'],
-          ['p', 'A cell that carries data is <b>opaque</b>: the ramp says what the number is, so transparency says nothing and belongs entirely to the opacity control. A cell with no crop stays transparent, because that is absence of data rather than a small value.'],
-          ['lim', 'This is a reference-year grid, not a live one, and the panel says which year. A national statistic is not a field map: where you need the physical extent of cultivated ground, ESA WorldCover\'s 10 m cropland class is offered separately, and <b>the two are never blended into one picture</b>.']
+          ['p', "Le raster est celui de la FAO GAEZ v4 — surface récoltée, rendement ou production pour une culture, à une année de référence donnée, dessiné à la résolution que le service renvoie pour la zone affichée."],
+          ['p', "Une maille porteuse de données est <b>opaque</b> : la rampe de couleurs dit ce qu'est le nombre, la transparence ne dit donc rien et appartient entièrement au réglage d'opacité. Une maille sans culture reste transparente, car il s'agit d'une absence de donnée et non d'une petite valeur."],
+          ['lim', "C'est une grille d'année de référence, pas une grille en direct, et le panneau indique l'année. Une statistique nationale n'est pas une carte de terrain : lorsque vous avez besoin de l'étendue physique des terres cultivées, la classe « terres cultivées » à 10 m d'ESA WorldCover est proposée séparément, et <b>les deux ne sont jamais fondues en une seule image</b>."]
         ]
       },
       {
-        id: 'alerts', nav: 'Warnings', h: 'Weather &amp; disaster warnings',
+        id: 'alerts', nav: "Alertes", h: "Alertes météo &amp; catastrophes",
         blocks: [
-          ['p', 'Japan reads the JMA real-time feed <b>at the unit the warning is issued for</b> — it carries both a prefecture-level and a municipality-level tier. The map is painted at the prefecture and the municipality rows are listed on tap. Colour is the highest tier actually in force (emergency warning = purple, warning = red, advisory = yellow). The United States uses the NWS active-alerts feed, which carries its own geometry.'],
-          ['lim', 'Nothing drawn is <b>not</b> the same as nothing in force. Tapping a country whose agency is not wired says so in words — this app will not make a safety claim with an empty map.']
+          ['p', "Pour le Japon, le flux temps réel de la JMA est lu <b>à l'échelle pour laquelle l'alerte est émise</b> — il porte à la fois un niveau préfectoral et un niveau municipal. La carte est peinte à la préfecture et les lignes municipales sont listées au toucher. La couleur correspond au niveau le plus élevé réellement en vigueur (alerte d'urgence = violet, alerte = rouge, avis = jaune). Les États-Unis utilisent le flux d'alertes actives du NWS, qui porte sa propre géométrie."],
+          ['lim', "Rien de dessiné n'est <b>pas</b> la même chose que rien en vigueur. Toucher un pays dont l'agence n'est pas raccordée le dit en toutes lettres — cette application ne fera pas une affirmation de sécurité avec une carte vide."]
         ]
       },
       {
-        id: 'news', nav: 'News geolocation', h: 'News geolocation',
+        id: 'news', nav: "Géolocalisation des actualités", h: "Géolocalisation des actualités",
         blocks: [
-          ['p', 'Placing an article on the map is done by <b>deterministic code</b>, not by a model: extraction, matching and disambiguation are rules and gazetteers, and the AI only ever explains meaning. Clustering is deterministic too, with CJK bigrams for Japanese headlines.'],
-          ['p', 'An article\'s date is <b>not</b> the event\'s date, and the two are kept apart.']
+          ['p', "Placer un article sur la carte est fait par du <b>code déterministe</b>, pas par un modèle : l'extraction, l'appariement et la levée d'ambiguïté sont des règles et des répertoires géographiques, et l'IA n'explique jamais que le sens. Le regroupement est déterministe lui aussi, avec des bigrammes CJC pour les titres japonais."],
+          ['p', "La date d'un article n'est <b>pas</b> la date de l'événement, et les deux sont tenues séparées."]
         ]
       },
       {
-        id: 'time', nav: 'Clock & time machine', h: 'Clock &amp; time machine',
+        id: 'time', nav: "Horloge et machine à remonter le temps", h: "Horloge &amp; machine à remonter le temps",
         blocks: [
-          ['p', 'There is exactly one clock in the app. The day–night terminator, body positions, the year for statistics, the year for trade and the fetch time for warnings all subscribe to it, so moving between "now" and a past instant is a single change that reaches every feature.'],
-          ['p', 'Travelling to a past year also draws <b>that era\'s borders</b> (the nearest historical snapshot at or before the year). Nothing that exists only per year is interpolated to look daily.']
+          ['p', "Il n'y a qu'une seule horloge dans l'application. Le terminateur jour-nuit, les positions des corps célestes, l'année des statistiques, l'année du commerce et l'heure de récupération des alertes y sont tous abonnés : passer de « maintenant » à un instant passé est donc un changement unique qui atteint toutes les fonctions."],
+          ['p', "Voyager vers une année passée dessine aussi <b>les frontières de cette époque</b> (l'instantané historique le plus proche à cette année ou avant). Rien de ce qui n'existe qu'à l'année n'est interpolé pour paraître quotidien."]
         ]
       },
       {
-        id: 'labels', nav: 'Label sizing', h: 'Label sizing',
+        id: 'labels', nav: "Taille des étiquettes", h: "Taille des étiquettes",
         blocks: [
-          ['p', 'Every text size on the map derives from one ladder whose specification is a <b>relation</b>, not a value: a non-place label is smaller than a place label. The reference for non-place labels is kept separate, so raising the ceiling for country names does not silently inflate sea, POI and grid labels with it.']
+          ['p', "Toutes les tailles de texte de la carte dérivent d'une même échelle dont la spécification est une <b>relation</b>, pas une valeur : une étiquette qui n'est pas un lieu est plus petite qu'une étiquette de lieu. La référence des étiquettes hors lieux est tenue à part, si bien que relever le plafond des noms de pays ne gonfle pas silencieusement avec lui les étiquettes de mers, de points d'intérêt et de grille."]
         ]
       },
       {
-        id: 'ai', nav: 'What the AI may not decide', h: 'What the AI is not allowed to decide',
+        id: 'ai', nav: "Ce que l'IA ne décide pas", h: "Ce que l'IA n'a pas le droit de décider",
         blocks: [
-          ['p', 'Atlas (the AI console) is responsible for <b>meaning</b>; the code is responsible for <b>execution</b>. Concretely:'],
+          ['p', "Atlas (la console d'IA) est responsable du <b>sens</b> ; le code est responsable de l'<b>exécution</b>. Concrètement :"],
           ['ul', [
-            'The AI never writes <b>coordinates</b>. It names places as structured targets (ISO codes, place names) which are resolved against real datasets.',
-            'An unresolvable target is neither silently rescued nor silently dropped — the failure is returned as a fact.',
-            'Whether something changed is decided by <b>code</b>; the AI only writes the explanation (monitors and alerts).',
-            'The AI cannot report an action it did not perform; a partial run is marked as partial in the result.'
+            "L'IA n'écrit jamais de <b>coordonnées</b>. Elle nomme des lieux sous forme de cibles structurées (codes ISO, noms de lieux) qui sont résolues contre des jeux de données réels.",
+            "Une cible non résolue n'est ni rattrapée en silence ni abandonnée en silence — l'échec est renvoyé comme un fait.",
+            "Le fait qu'une chose ait changé est décidé par le <b>code</b> ; l'IA n'écrit que l'explication (surveillances et alertes).",
+            "L'IA ne peut pas rapporter une action qu'elle n'a pas effectuée ; une exécution partielle est marquée comme partielle dans le résultat."
           ]]
         ]
       }
