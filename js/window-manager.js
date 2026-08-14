@@ -249,6 +249,14 @@ let __winZ=4300;
     const host=_dockHost(); if(!host) return false;
     try{
       __docked.set(el,{ parent:el.parentNode, next:el.nextSibling, css:el.getAttribute('style')||'' });
+      /* ⚠⚠⚠ (#R239b) WATCH IT BEFORE IT MOVES, NOT AFTER. Measured on production: a legend that was
+         already switched on when the mode was turned on stayed in the tab after its layer was
+         switched off. `setDocked(true)` docked everything first and armed the observer second, and
+         by then `_dockables()` could no longer find those elements — they were in #docked-feed, not
+         under the map container, and a legend is not in `__winReg` either. So the ONE place that is
+         guaranteed to see every docked element is this function, and it is where the watch belongs.
+         (`_watchEl` is idempotent and a no-op while the observer does not exist.) */
+      _watchEl(el);
       el.classList.add('im-docked');
       _flatten(el);
       host.appendChild(el);
@@ -286,9 +294,11 @@ let __winZ=4300;
   function _sweep(){ __docked.forEach((_,el)=>{ if(!el.isConnected) __docked.delete(el); }); }
   function setDocked(on){
     on=!!on; __dockOn=on;
+    /* (#R239b) …and the observer is armed BEFORE the first pass, so `_dockOne` above has one to
+       register with. Turning the mode off still tears it down after the panels have gone home. */
+    if(on) _dockWatch(true);
     if(on){ _dockables().forEach(_dockOne); }
-    else { Array.from(__docked.keys()).forEach(_undockOne); }
-    _dockWatch(on);
+    else { Array.from(__docked.keys()).forEach(_undockOne); _dockWatch(false); }
     _sweep();
     try{ document.body.classList.toggle('im-dock-mode',on); }catch(_){}
     return __docked.size;
