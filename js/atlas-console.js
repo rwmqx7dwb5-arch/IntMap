@@ -38,21 +38,21 @@ window.IntMapModules.atlasConsole=function(HOST){
        しないのはやめろ") — the deterministic reply strings too, not just the AI text. Unsupported detected
        languages (e.g. French) fall back to the UI language. */
     const _mirrorLang=()=>{ try{ const m={Japanese:'jp',German:'de',Russian:'ru',Spanish:'es',English:'en'}[_replyLang()]; return m||HOST.lang; }catch(_){ return HOST.lang; } };
-    const L=window.IntMapLang.pick(()=>_mirrorLang());
+    const L=window.IntMapLang.pick(()=>_mirrorLang()), LA=window.IntMapLang.pickArgs();   /* (#R241) LA = the ARRAY form; see `pickArgs` in js/lang-registry.js. ONE statement: this file is under a shrink-only ceiling (tests/r199 ⑤), and the rule is that a feature moves out, never that the ceiling moves up. */
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    const lx=arr=>arr[Math.max(0,window.IntMapLang.index(_mirrorLang()))]||arr[0];   /* (#R221) the ARRAY form — the registry owns the index, so a new language is picked up here too */
+    const lx=arr=>L.arr(arr);   /* (#R241) through `pick()` itself, so a language past the arguments given gets its inline-table entry instead of English at index 0 */
     /* metric catalog → countryStats keys */
     const METRICS={
-      pop:{label:['Population','人口','Bevölkerung','Население','Población'],get:s=>s.pop},
-      density:{label:['Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad'],get:s=>s.density},
-      area:{label:['Area','面積','Fläche','Площадь','Superficie'],get:s=>s.area},
-      gdp:{label:['GDP (nominal)','GDP（名目）','BIP (nominal)','ВВП (номин.)','PIB (nominal)'],get:s=>s.gdp,log:true},
-      gdppc:{label:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'],get:s=>s.gdppc,log:true},
-      hdi:{label:['HDI','HDI','HDI','ИЧР','IDH'],get:s=>s.hdi},
-      dem:{label:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice democrático'],get:s=>s.dem},
-      milSpend:{label:['Military spending','国防費','Militärausgaben','Военные расходы','Gasto militar'],get:s=>s.milSpend,log:true},
-      milSpendGDP:{label:['Military (% GDP)','国防費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'],get:s=>(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null},
-      tfr:{label:['Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Fecundidad'],get:s=>s.tfr}
+      pop:{label:LA('Population','人口','Bevölkerung','Население','Población'),get:s=>s.pop},
+      density:{label:LA('Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad'),get:s=>s.density},
+      area:{label:LA('Area','面積','Fläche','Площадь','Superficie'),get:s=>s.area},
+      gdp:{label:LA('GDP (nominal)','GDP（名目）','BIP (nominal)','ВВП (номин.)','PIB (nominal)'),get:s=>s.gdp,log:true},
+      gdppc:{label:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'),get:s=>s.gdppc,log:true},
+      hdi:{label:LA('HDI','HDI','HDI','ИЧР','IDH'),get:s=>s.hdi},
+      dem:{label:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice democrático'),get:s=>s.dem},
+      milSpend:{label:LA('Military spending','国防費','Militärausgaben','Военные расходы','Gasto militar'),get:s=>s.milSpend,log:true},
+      milSpendGDP:{label:LA('Military (% GDP)','国防費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'),get:s=>(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null},
+      tfr:{label:LA('Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Fecundidad'),get:s=>s.tfr}
     };
     const nm=s=>{ try{ return cName(s); }catch(_){ return s&&(s.nameEn||s.nameJp)||'?'; } };
     function fmtVal(metric,v){ if(v==null||isNaN(v)) return '—';
@@ -1148,8 +1148,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R75) hoisted from localPlan so _metSpec can translate metric names too */
     const VMET={'population':'pop','人口':'pop','population density':'density','density':'density','人口密度':'density','area':'area','面積':'area','gdp':'gdp','gdp per capita':'gdppc','gdppc':'gdppc','一人当たりgdp':'gdppc','1人当たりgdp':'gdppc','hdi':'hdi','human development index':'hdi','fertility':'tfr','fertility rate':'tfr','出生率':'tfr','合計特殊出生率':'tfr','democracy index':'dem','民主主義指数':'dem','military spending':'milSpend','defense spending':'milSpend','国防費':'milSpend','軍事費':'milSpend','capital':'capital','capital city':'capital','首都':'capital','currency':'currency','通貨':'currency','languages':'languages','language':'languages','言語':'languages','公用語':'languages','flag':'flag','国旗':'flag'};
     const XMET={
-      lifeExp:{label:['Life expectancy','平均寿命','Lebenserwartung','Ожид. продолжительность жизни','Esperanza de vida'],get:s=>s.lifeExp},
-      internet:{label:['Internet users %','ネット利用率','Internetnutzer %','Интернет-пользователи %','Usuarios de internet %'],get:s=>s.internet}
+      lifeExp:{label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожид. продолжительность жизни','Esperanza de vida'),get:s=>s.lifeExp},
+      internet:{label:LA('Internet users %','ネット利用率','Internetnutzer %','Интернет-пользователи %','Usuarios de internet %'),get:s=>s.internet}
     };
     const XVMET={'平均寿命':'lifeExp','寿命':'lifeExp','life expectancy':'lifeExp','lifeexp':'lifeExp','ネット利用率':'internet','インターネット利用率':'internet','internet':'internet','internet users':'internet'};
     function _metSpec(key){ const raw=String(key||'').trim(); if(!raw) return null;
@@ -2307,7 +2307,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* final deposition dose zones */
           const zLbls=r.zones||[]; const rows=[];
           for(let z=0;z<zLbls.length;z++){ const km2=(r.zoneKm2&&r.zoneKm2[z])||0; if(km2<=0) continue;
-            rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(zLbls[z].n[Math.max(0,window.IntMapLang.index(HOST.lang))]||zLbls[z].n[0])+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
+            rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(window.IntMapLang.pick(()=>HOST.lang).arr(zLbls[z].n))+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
           h+='<div style="font-weight:600;margin:6px 0 2px;font-size:12px;">'+L('Final ground deposition (Cs-137-equivalent zones)','最終的な地表沈着（Cs-137換算ゾーン）','Endgültige Bodendeposition','Итоговое выпадение','Deposición final')+'</div>';
           h+=rows.length?('<div style="font-size:11.5px;">'+rows.join('')+'</div>'):('<div style="font-size:11.5px;color:var(--text-muted);">'+L('Deposition stays below mapped thresholds in this run (winds carried most activity out of the modeled area).','この条件では地図化しきい値未満（大半が領域外へ運ばれました）。','unter den Schwellen','ниже порогов','por debajo de umbrales')+'</div>');
           if(r.peakKBqM2>0){ const uH=r.peakDoseUSvH, yr=annualMSv(uH);

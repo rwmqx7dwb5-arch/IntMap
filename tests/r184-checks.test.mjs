@@ -147,7 +147,10 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
      What #7 is actually about is that the row reaches a REAL group rather than falling through to
      Others(beta), so it asks that, and the group it names is the one it is in now. */
   assert.match(dl, /lyrGrpOrbit',\[[^\]]*'sats'/, 'it is filed into a real group of its own');
-  assert.match(dl, /sats:\['Live satellites'/, 'it has a legend');
+  /* (#R241) the legend TITLE table is written as calls now — `LA('Live satellites', …)` — because a
+     bare array is invisible to every translation instrument and has no inline-table fallback, so
+     fr/ko/zh read element 0 (English) for ever. Same table, same key, same assertion. */
+  assert.match(dl, /sats:LA\('Live satellites'/, 'it has a legend');
   assert.match(dl, /HAS_LEGEND=new Set\(\[[\s\S]{0,400}'sats'/, 'and the panel knows the legend exists');
   assert.match(dl, /id==='sats'\)\{ startSats\(\)/, 'switching it on starts it');
   assert.match(dl, /id==='sats'\)\{ stopSats\(\)/, 'switching it off stops it');

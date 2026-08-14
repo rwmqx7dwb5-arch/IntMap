@@ -105,40 +105,25 @@ test('R205 ② the map click has a stated owner and it defaults to the epicentre
   for (const cls of ['sq-cm-epi', 'sq-cm-sta']) assert.ok(s.indexOf('class="' + cls) >= 0, cls + ' is emitted');
 });
 
-/* ── ③ 「ライトモードかつMapを選択した場合、昼の箇所がまぶしすぎて何も見えない」 ─────────────── */
-test('R205 ③ the light basemap gets its own, much weaker atmosphere — and the other two are untouched', () => {
+/* ── ③ 「ライトモードかつMapを選択した場合、昼の箇所がまぶしすぎて何も見えない」 ───────────────
+   ══ ⚠⚠ (#R241) THE COMPLAINT IS ANSWERED HARDER THAN #R205 ANSWERED IT ═════════════════════════
+   #R205 measured the light basemap clipping under 0.80 of blend and gave it 0.15 of its own. This
+   round the reader removed the question rather than re-tuning the answer: 「衛生写真ではあっても、
+   標準マップでは大気はなしって言ってるだろうがクソが」, confirmed as 「Mapでは大気ゼロ（縁の帯も
+   消す）」. Zero is ≤ 0.15 at every zoom, so #R205's own finding — the day side of a light vector
+   basemap must not be washed out — is satisfied strictly more than it was. What this test asserts
+   is therefore that, and only that: NO atmosphere reaches a vector basemap, from EITHER owner.
+   The satellite numbers moved too and live in tests/r241-checks ④ with the screenshots. */
+test('R205 ③ the light basemap is never washed out — and now it gets no atmosphere at all', () => {
   const t = rd('js/theme-sky.js');
-  assert.match(t, /function _mapIsLight\(\)/, 'the light/dark map rule must exist once, as a function');
-  /* (#R227) the three ramps now sit behind `limb?0:` — where the app draws the Earth's edge itself
-     the renderer's own atmosphere pass is switched off so the two do not add. The ramps themselves,
-     which is what this test is about, are unchanged. */
-  const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,700}?\)\}\);/.exec(t);
+  const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,200}?\)\}\);/.exec(t);
   assert.ok(blend, "the atmosphere-blend expression was not found");
-  assert.match(blend[0], /_mapIsLight\(\)/, 'the map basemap branch must ask which colour it is');
-  const ramps = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],([^\]]+)\]/g)]
-    .map((m) => m[1].split(',').map(Number));
-  assert.equal(ramps.length, 3, 'three ramps: satellite, light map, dark map');
-  const stops = (a) => { const o = {}; for (let i = 0; i + 1 < a.length; i += 2) o[a[i]] = a[i + 1]; return o; };
-  const [sat, light, dark] = ramps.map(stops);
-  /* ⚠ #R187's 0.55 for satellite and #R196/#R202's 0.80 for the dark map are previous rounds'
-     measured answers. This round may not move them. */
-  assert.equal(sat[0], 0.55, "#R187's satellite strength must not change");
-  assert.equal(dark[0], 0.80, "the dark basemap's strength must not change");
-  for (const z of Object.keys(dark)) {
-    assert.ok(light[z] != null, `the light ramp is missing the z${z} stop`);
-    assert.ok(light[z] <= dark[z], `light z${z} (${light[z]}) must not exceed dark (${dark[z]})`);
-  }
-  assert.ok(light[0] <= 0.16, `the light z0 strength is ${light[0]}; 0.20 already put 69 % of the globe above luminance 235`);
-  /* the ramp keeps its shape rather than being flattened to a constant
-     ⚠ (#R240) THE STOPS MOVED, THE SHAPE DID NOT. maplibre multiplies this property by globeness,
-     which is 0 by z12, so the ramp's own mid-zoom taper was a SECOND one and it was halving the air
-     on screen between z4 and z11 while the reader zoomed in — 「ある程度までズームインすると途端に
-     見えなくなってしまう」. The middle is flat now and the fall happens where the projection does.
-     What this line has always asserted is that the ramp still FALLS and still reaches zero, so it
-     is written against the first, a middle and the last stop rather than against z4 and z7. */
-  const lz = Object.keys(light).map(Number).sort((a, b) => a - b);
-  assert.ok(light[lz[0]] > light[lz[lz.length - 2]], 'the light ramp still falls with zoom');
-  assert.equal(light[lz[lz.length - 1]], 0, 'and still reaches zero');
+  assert.match(blend[0], /:0\)\}\);/, 'the non-satellite branch is 0, not a weaker ramp');
+  assert.doesNotMatch(blend[0], /_mapIsLight\(\)/, 'so there is no brightness to branch on any more');
+  /* ⚠ AND THE OTHER OWNER. js/limb-layer.js draws the app's own air over the disc; leaving it on
+     would put back exactly the wash this test exists to forbid, in a place #R205 never looked. */
+  const owns = t.slice(t.indexOf('function _limbOwnsRim()'), t.indexOf('function _limbOwnsRim()') + 400);
+  assert.match(owns, /if\(!_airOn\(\)\) return false;/, 'the app-drawn limb is off over a vector basemap too');
 });
 
 /* ── ④ 「ライトモード時に表示する読み込み画面でのロゴはIntMap.Icon_BW-inverted.pngに」 ───────── */
