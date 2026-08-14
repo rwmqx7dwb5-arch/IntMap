@@ -73,6 +73,16 @@ for (const f of files) {
 const byFile = new Map();
 for (const h of hits) byFile.set(h.rel, (byFile.get(h.rel) || 0) + 1);
 
+/* ⚠ (#R239) …AND IT IS A GATE NOW, WHICH IT REFUSED TO BE WHEN IT WAS WRITTEN. The note at the
+   bottom of this file says 「going to zero is a project, not a commit」 — that was true of the 281
+   sites #R231 found and the 65 #R237 found. It reached zero, and a count that has reached zero and
+   is not held there simply climbs back. `--json` is what scripts/i18n-audit.mjs reads; that gate
+   fails on anything above zero. */
+if (process.argv.includes('--json')) {
+  console.log(JSON.stringify({ surface: 'twobranch', total, files: byFile.size }));
+  process.exit(0);
+}
+
 console.log('two-branch language ternaries carrying PROSE (de/ru/es/fr/ko/zh get the English branch)\n');
 for (const [f, n] of [...byFile].sort((x, y) => y[1] - x[1])) console.log(String(n).padStart(5) + '  ' + f);
 console.log('\ntotal: ' + total + ' site(s) in ' + byFile.size + ' file(s)');

@@ -27,8 +27,8 @@ export function makePremiumPlan(HOST, CTX) {
    *  ===================================================================== */
   (function(){
     /* --- i18n keys (merged in; reuses the existing data-i18n update loop) --- */
-    Object.assign(i18n.en,{ proSection:"Premium features", proArchive:"🔒 10-Year Time-Travel Archive", proIntel:"🔒 RU·CN Local Primary-Source Intel", proModalTitle:"Unlock IntMap Pro", proModalSub:"Go beyond the live map — deep historical archives and primary-source intelligence." });
-    Object.assign(i18n.jp,{ proSection:"プレミアム機能", proArchive:"🔒 過去10年のタイムトラベルアーカイブ", proIntel:"🔒 露・中ローカル一次情報インテリジェンス", proModalTitle:"IntMap Pro を解放", proModalSub:"ライブマップの先へ — 深層アーカイブと一次情報インテリジェンス。" });
+
+
 
     /* --- styles (scoped under .premium-* / .ppm-* ; theme-aware via vars) --- */
     const style=document.createElement('style');

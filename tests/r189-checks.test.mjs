@@ -245,7 +245,10 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
      throw the correction away, which is exactly the defect #R235 recorded for the surface waves.
      Both families go through the envelope builder now, so the property this line protects (a
      drawn rupture gets the delayed union, never one circle) is STRONGER, not weaker. */
-  assert.match(src, /const lines=faultFrontLines\(rad\)/, '…and it is what a drawn rupture uses');
+  /* ⚠ (#R239) `train(rad, …)` builds the leading edge, the trailing edge and the band between them,
+     and both come from `faultRing()` — the per-bearing builder `faultFrontLines` is now a front-only
+     wrapper around. Same property, one level up. */
+  assert.match(src, /train\(rad,ph\.col,ph\.w\)/, '…and it is what a drawn rupture uses');
   assert.doesNotMatch(src, /ringLines\(epi,rad\(null\)\)/, 'no front is drawn from a single bearing-free radius');
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
   const atlas = read('js/atlas-console.js');

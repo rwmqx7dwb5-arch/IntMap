@@ -19,11 +19,11 @@ window.IntMapModules.workspace=function(HOST){
     const KEY='intmap_ws4';   /* (#R84) bumped — default restored to Countries·Map·Layers·Atlas (role-based tiling); old saved layouts not carried over */
     const T=window.IntMapLang.pick(()=>HOST.lang);
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
-    try{ Object.assign(i18n.en,{lblWsMode:'Window workspace (desktop)',wsOff:'Off (default)',wsOn:'On — free floating, resizable windows',wsHint:'News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.'});
-      Object.assign(i18n.jp,{lblWsMode:'ウィンドウ・ワークスペース（デスクトップ）',wsOff:'オフ（デフォルト）',wsOn:'オン — 自由に配置・リサイズできるウィンドウ',wsHint:'ニュース・国・地図・レイヤー・Atlasがそれぞれ独立したウィンドウになり、自由に移動・リサイズ・折りたたみ・重ね替えできます。レイアウトは保存されます。'});
-      Object.assign(i18n.de,{lblWsMode:'Fenster-Workspace (Desktop)',wsOff:'Aus (Standard)',wsOn:'An — frei bewegliche Fenster',wsHint:'News, Länder, Karte, Ebenen und Atlas werden zu eigenen Fenstern, die Sie frei verschieben, skalieren, einklappen und stapeln können. Das Layout wird gespeichert.'});
-      Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Новости, страны, карта, слои и Atlas становятся отдельными окнами, которые можно свободно перемещать, масштабировать, сворачивать и накладывать. Раскладка сохраняется.'});
-      Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Noticias, países, el mapa, las capas y Atlas se convierten en ventanas propias que puedes mover, redimensionar, plegar y apilar libremente. Tu diseño se guarda.'}); }catch(_){}
+    try{
+
+
+
+}catch(_){}
     let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null, _tickerBtn=null, _escH=null, _lastBottom=null;   /* (#R101) menu-bar ticker toggle; (#R102) ESC-fullscreen handler + last ticker-adjusted bottom */
     /* (#R78c) window set per the re-report: NO ticker window (「画面外の最下部に固定と何度も言っている」— it is a
        fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the

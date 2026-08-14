@@ -148,8 +148,13 @@ test('R202 ③c the satellite layer is in a group somebody would open', () => {
   const dl = rd('js/data-layers.js');
   assert.match(dl, /\['lyrGrpOrbit',\['sats'\]\]/, 'sats is in its own group');
   assert.doesNotMatch(dl, /lyrGrpMaritime',\[[^\]]*'sats'/, 'and no longer under Oceans & maritime');
-  for (const l of ['en', 'jp', 'de', 'ru', 'es']) {
-    assert.match(dl, new RegExp(`i18n\\.${l},\\{ lyrGrpOrbit:`), `the group is named in ${l}`);
+  /* ⚠ (#R239) SAME CLAIM, NEW HOME — every keyed string moved into js/locales/ui.<code>.js.
+     The `Object.assign(i18n.en…es,{…})` shape this test read was five languages by
+     construction, and fr/ko/zh fell back to English for ~170 keys declared that way
+     (scripts/i18n-keyed-audit.mjs). Nine locale files is the stricter form of the same
+     question. (#R203: move the assertion, say why.) */
+  for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+    assert.ok((() => { const t = rd('js/locales/ui.' + c + '.js'); return t.includes('lyrGrpOrbit:') || t.includes('"lyrGrpOrbit":'); })(), `the group is named in ${c}`);
   }
 });
 

@@ -223,7 +223,9 @@ window.IntMapLang.define('zh-hans', {
       aiSumBtn:"以 AI 摘要这个区域", popInArea:"此区域人口", popCalcing:"正在计算人口…", popFail:"人口查询失败 — 请再试一次。", newsInArea:"此区域的新闻", elevProfile:"高程剖面", finalizeMeas:"保留在地图上", aiSumTitle:"区域简报", aiSumSub:"所选区域内有 {n} 个新闻图钉", aiSumNoArea:"请先画出范围或放置圆形。", aiSumNoNews:"此区域内没有新闻图钉。",
       aiViewSumBtn:"摘要目前画面", aiViewSumTitle:"画面上正在发生什么",
       aiVisHead:"AI 变化侦测", aiVisBtn:"侦测变化", aiVisTitle:"卫星影像变化报告", aiVisSub:"比较 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之后", aiVisCapturing:"正在撷取影像…", aiVisPickDates:"请选择两个日期进行比较。", aiVisNeedsDated:"请在卫星模式中改用可选日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"无法撷取地图影像。" 
-},
+,
+      tabMonitors:"监控",
+    },
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
@@ -2412,5 +2414,10 @@ window.IntMapLang.define('zh-hans', {
   "Observation points": "观测地点",
   "Each point is added to the table below.": "每个地点都会加入下方表格。",
   "A wavefront from a finite rupture is still a circle about the hypocenter whenever the rupture runs slower than the wave — the first arrival always comes from the point where the break started — so the shape you drew appears as the RUPTURE FRONT running across it (the filled area and its bright edge), not as a dent in the rings. What does bend the rings is the crust they cross: the body-wave travel time is corrected over its crustal share and the surface-wave group velocity is integrated along each great circle, so an oceanic path runs ahead of a continental one.": "只要破裂的传播速度慢于波速，有限震源的初动波面仍是以震央为中心的圆——最早抵达的永远是破裂起点发出的波。因此您所画的形状会以「破裂前缘」的方式出现（填色区域与其明亮的边缘），而不是让波环凹陷。真正让波环变形的是它们所穿越的地壳：实体波的走时会依其地壳路径比例修正，表面波的群速度则沿各大圆路径积分，因此海洋路径会领先大陆路径。",
+  "Add observation points": "新增观测地点",
+  "Every point you tap is added to the table.": "每点击一处，都会加入下方表格。",
+  "Tap each corner on the map, then press Done.": "在地图上依序点击各个角，然后按「完成」。",
+  "Tap inside the rupture area — this is where the rupture starts.": "请点击震源域内侧——这里就是破裂的起点。",
+  "Tap the map. Tapping again moves it.": "点一下地图即可放置；再点一下会移到新位置。",
   }
 });

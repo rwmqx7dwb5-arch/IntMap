@@ -176,11 +176,20 @@ test('R219 ⑥ js/locales/pages.*.js and IntMapPageI18N.LANGS are the same set',
      files on disk against THAT. The property being enforced is unchanged: a file without its row,
      or a row without its file, fails the build instead of shipping a language that never loads. */
   const reg = read('js/lang-registry.js');
-  const listed = [...reg.matchAll(/\{ code: '[^']+',[^}]*html: '([^']+)'/g)]
-    .map((m) => m[1].toLowerCase()).sort();
+  /* ⚠ (#R239) THE REGISTRY ONLY SPELLS OUT THE ROWS THAT NEED AN EXPLICIT TAG. Since #R232 a
+     language is one ui.*.js file and js/lang-registry.js derives its label/tag from the code, so
+     `html: '…'` appears only where the tag differs from the code (ja, zh-Hant, zh-Hans). The set to
+     compare against is therefore the GENERATED list plus that mapping — which is exactly what
+     scripts/i18n-pages-audit.mjs `pageCodes()` computes, and this now asks it rather than
+     re-deriving it here (one quantity, one place). */
+  const codes = JSON.parse(/window\.IntMapLangCodes\s*=\s*(\[[^\]]*\])/
+    .exec(read('js/locales/_langs.js'))[1]);
+  const explicit = new Map([...reg.matchAll(/\{ code: '([^']+)',[^}]*html: '([^']+)'/g)]
+    .map((m) => [m[1], m[2].toLowerCase()]));
+  const listed = codes.map((c) => explicit.get(c) || c).sort();
   assert.ok(listed.length >= 5, 'the registry has its languages');
   assert.deepEqual(files, listed,
-    'every locale file needs its registry row and vice versa — on disk: ' + files.join(',') + ' / listed: ' + listed.join(','));
+    'every registered language needs its reading-page document and vice versa — on disk: ' + files.join(',') + ' / listed: ' + listed.join(','));
   /* and each file must actually define the two documents the two pages render */
   for (const code of files) {
     const t = read('js/locales/pages.' + code + '.js');

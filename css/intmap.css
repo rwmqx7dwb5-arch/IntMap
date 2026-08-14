@@ -2972,18 +2972,50 @@
    preserved and re-applied on the way out (see `__docked` in js/window-manager.js), so switching the
    mode off puts each panel back exactly where it was dragged to. */
 #docked-feed{ flex-direction:column; gap:10px; overflow-y:auto; overflow-x:hidden; padding:2px 0 14px; }
+/* ══ ⚠⚠⚠ (#R239) WHAT THIS BLOCK MAY AND MAY NOT SAY ═══════════════════════════════════════════
+   「勝手に透明度選択とかの凡例の機能削除してんじゃねーよボケ。これまでのポップアップや凡例と完全
+     対応させろ。勝手に作り直して別の新たな例外を生み出すな。」
+   #R238's version also carried `display:block !important`. Every one of these panels is a FLEX
+   COLUMN whose last child is its footer — for a data legend that footer IS the opacity slider — so
+   forcing `block` inside a box that keeps `overflow:hidden` cropped the control out of sight. It
+   also made switching the layer off impossible, because the owner hides a legend by writing
+   `display:none` inline and a stylesheet `!important` beats a plain inline value.
+   ⚠ SO THE RULE IS: this block may say where a box IS, never what a box IS. `display`,
+   `flex-direction`, colours, borders and every other declaration the panel's author wrote stay
+   untouched — js/window-manager.js removes the GEOMETRY properties from the inline style instead
+   of deleting the whole attribute, which is why the `!important`s that remain here are only the
+   ones overriding #R47's inline `left/top/width/height`. */
 .im-docked{
   position:relative !important; left:auto !important; top:auto !important; right:auto !important;
   bottom:auto !important; inset:auto !important; transform:none !important;
   width:100% !important; max-width:100% !important; min-width:0 !important;
   height:auto !important; max-height:none !important; min-height:0 !important;
   margin:0 !important; z-index:auto !important; resize:none !important;
-  box-sizing:border-box !important; flex:0 0 auto !important; display:block !important;
+  box-sizing:border-box !important; flex:0 0 auto !important;
 }
 /* a docked panel is inside the sidebar's own surface, so it drops the floating chrome that only
    made sense over the map — one border stays so two panels in a row are still two panels */
 .im-docked{ box-shadow:none !important; border-radius:12px !important; }
+/* ⚠ (#R239) 「中で左右に動かせないようにきちんと幅を左右詰めて固定して。」 — the drag and the
+   edge-resize are refused in js/window-manager.js, which is what actually moves a panel; this is the
+   other half, so that nothing INSIDE one can push the column sideways either. A wide child (a table,
+   a long readout) scrolls in its own box; the panel never does. */
+.im-docked{ overflow-x:hidden !important; }
+.im-docked > *{ max-width:100% !important; }
 /* ⚠ the drag handle is still there and still says «this is the title bar»; it simply has nowhere to
    drag to. `cursor:default` is what stops it claiming otherwise. */
-.im-docked .panel-head, .im-docked [class$="-head"]{ cursor:default !important; }
+.im-docked .panel-head, .im-docked [class$="-head"], .im-docked .iol-head, .im-docked .kl-drag, .im-docked .dl-drag{ cursor:default !important; }
+/* the ✕ stays — 「パネル内のポップアップや凡例は×可能」 — so nothing here touches it.
+   The ⋮⋮ grip does not: it is the affordance for a gesture that is now refused, and an affordance
+   that lies is worse than none. (The header keeps its own padding, so nothing reflows.) */
+.im-docked .kl-drag, .im-docked .dl-drag{ display:none !important; }
+
+/* ══ ⚠ (#R239) THE OBJECT LIST IS OPEN, AND THE COLUMN TAKES UP THE SLACK ══════════════════════
+   「オブジェクト一覧は展開された状態で置き、変化に応じて上下は詰めるように。」
+   Floating over the map, js/map-tools.js caps the Objects panel at `max-height:74vh` and scrolls
+   `.iol-body` inside it — correct for a box that must not cover the map. In the column it is the
+   wrong shape twice over: a scroller inside a scroller, and a panel that stays 74vh tall when it
+   holds two rows. Docked, the list is simply as tall as the objects in it and the panels below it
+   move up when one is deleted. Same for any legend that scrolls its own body. */
+.im-docked .iol-body, .im-docked .kl-scroll{ max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
 #docked-feed .dock-empty{ padding:36px 16px; }

@@ -48,25 +48,25 @@ window.IntMapModules.dataLayers=function(HOST){
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
   (function(){
     if(!GE().hasRenderer()) return;
-    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNightSide:"Day & night shading", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 Satellite Drop" });
-    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNightSide:"昼夜の表示", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 サテライトドロップ" });
+
+
     /* (#R12) New layer-category labels for the re-organized panel. */
-    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
-    Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
-    Object.assign(i18n.es,{ lyrGrpClimate:"Clima y meteorología", lyrGrpHazard:"Riesgos y cielo nocturno", lyrGrpDemo:"Población y economía", lyrGrpGeoPol:"Geopolítica y defensa", lyrGrpOthers:"Otras (beta)", lyrGrpMaritime:"Océanos y marítimo", lyrGrpTerrain:"Terreno y tierra", lyrGrpIndic:"Indicadores y capas" });   /* (#R40) Spanish layer-group names */
+
+
+/* (#R40) Spanish layer-group names */
     /* (#R41) Russian layer-group names were MISSING entirely → group headers showed English in RU. */
-    Object.assign(i18n.ru,{ lyrGrpClimate:"Климат и погода", lyrGrpHazard:"Опасности и ночное небо", lyrGrpDemo:"Население и экономика", lyrGrpGeoPol:"Геополитика и оборона", lyrGrpOthers:"Прочее (бета)", lyrGrpMaritime:"Океаны и море", lyrGrpTerrain:"Рельеф и высота", lyrGrpIndic:"Индикаторы и слои" });
+
     /* ══ (#R202) A GROUP CALLED WHAT IT IS ═══════════════════════════════════════════════════════
        「いや今衛星レイヤーなんてないわ」— it was there, and it was filed under 「海洋・船舶」 (Oceans &
        maritime), because #R184 put it beside the live-aircraft layer to say the two are built the
        same way. That is a fact about the CODE, and nobody looking for satellites opens Oceans. A
        layer nobody can find is a layer that does not exist, which is exactly what the report said. */
-    Object.assign(i18n.en,{ lyrGrpOrbit:"Space & orbit" });
-    Object.assign(i18n.jp,{ lyrGrpOrbit:"宇宙・軌道" });
-    Object.assign(i18n.de,{ lyrGrpOrbit:"Weltraum & Orbit" });
-    Object.assign(i18n.ru,{ lyrGrpOrbit:"Космос и орбита" });
-    Object.assign(i18n.es,{ lyrGrpOrbit:"Espacio y órbita" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
+
+
+
+
+
+
     /* ⚠ (#R219) THE FOUR TRANSLATIONS WERE WRITTEN INTO THE ENGLISH OBJECT, ONE AFTER ANOTHER.
        One key repeated five times inside one object literal — English, Japanese, German, Russian and
        Spanish, all written into `i18n.en` — is a LEGAL object whose fifth value wins, so
@@ -75,38 +75,15 @@ window.IntMapModules.dataLayers=function(HOST){
        「海流」 layer row read «Corrientes oceánicas» in all five. One key per language object.
        ⚠ (#R224) The key itself is gone with the row it labelled (see the note by the row list); the
        rule it is here to state is not, and every `Object.assign` around it still obeys it. */
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
+
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
-    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNightSide:"Tag-/Nachtschattierung", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 Satellite Drop",
-      lyrGrpClimate:"Klima & Wetter", lyrGrpHazard:"Gefahren & Nachthimmel", lyrGrpDemo:"Bevölkerung & Wirtschaft", lyrGrpGeoPol:"Geopolitik & Verteidigung", lyrGrpOthers:"Weitere (Beta)",
-      lyrGrpMaritime:"Ozeane & Seefahrt", lyrGrpIndic:"Indikatoren & Overlays", lyrGrpTerrain:"Gelände & Höhe", lyrHillshade:"Reliefschattierung", lyrContours:"Höhenlinien", lyrPopGrid:"Bevölkerungsdichte (1-km-Raster)", lgdTempTitle:"Lufttemp. (2 m)", lyrTimeMonth:"Monat", mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig", lyrRelief:"Höhe (Farbrelief)", lyrSubcables:"Seekabel", lgdReliefTitle:"Höhe", lgdSubcablesTitle:"Seekabel", lyrMilSpend:"Militärausgaben ($ Mrd.)", lyrMilSpendGDP:"Militärausgaben (% BIP)", lyrGDPpc:"BIP pro Kopf", lyrTFR:"Geburtenrate", lyrSeaLevel:"Meeresspiegeländerung", lgdSeaLevelTitle:"Meeresspiegeländerung" });
+
     /* (#R33) German country-stat + common labels so the country panel/stats aren't English in DE mode. */
-    Object.assign(i18n.de,{ statPop:"Bevölkerung", statGdp:"BIP (nominal)", statGdpPc:"BIP pro Kopf", statGdpPPP:"BIP (KKP)", statGdpPcPPP:"BIP pro Kopf (KKP)", statArea:"Fläche", statDensity:"Bev.-dichte", statRegion:"Region", statSub:"Subregion", statCapital:"Hauptstadt", statCurrency:"Währung", statLang:"Sprachen", statHDI:"HDI", statDem:"Demokratie-Idx", statMil:"Militärausgaben", statLife:"Lebenserwartung", statInet:"Internetnutzer", dataNA:"—", points:"Punkte", total:"Gesamt", perimeter:"Umfang", area:"Fläche", radius:"Radius", circumference:"Umfang", opacity:"Deckkraft", color:"Farbe", presetLbl:"Voreinstellung", clear:"Löschen", undoPt:"Punkt zurück", removeAll:"Alle entfernen", finalizeMeas:"Auf Karte behalten", elevProfile:"Höhenprofil", newsInArea:"Nachrichten im Gebiet", bearing:"Peilung", tabNews:"Nachrichten", tabInfo:"Informationen", tabStats:"Länder" });
+
     /* (#R36) Complete the German dictionary so every t()-driven dynamic surface (measure/area/radius tool,
        community, satellite controller, AI features, context menu, sources/premium modals, etc.) renders in
        German instead of falling back to English — closes the visible EN-leak in DE mode. */
-    Object.assign(i18n.de,{
-      loading:"Artikel werden geladen...", noMatch:"Keine Ergebnisse gefunden.", networkError:"Nachrichten konnten nicht geladen werden. Erneuter Versuch…",
-      emptyHint:"Kein Tab ausgewählt — die Karte ist frei.<br>Wählen Sie oben einen Tab, um Inhalte anzuzeigen.",
-      dashCatMil:"Militärbasen", dashCatTech:"Technik / Cyber", dashCatMar:"Maritim / Engstellen", dashCatGeo:"Geo / Klima", readWiki:"Auf Wikipedia lesen ↗",
-      measure:"Messen", areaTool:"Fläche", measureHint:"Klicken zum Hinzufügen von Punkten · Doppelklick zum Beenden", areaHint:"3+ Punkte zum Umschließen hinzufügen · Doppelklick zum Beenden",
-      radiusHint:"Klicken Sie auf die Karte, um einen Kreis zu platzieren. Mehrere Kreise möglich.", addCircle:"Kreis platzieren", details:"Details ↗",
-      loadingData:"Länderdaten werden geladen...", noData:"Länderdaten nicht verfügbar.", sortGdp:"BIP", sortPop:"Bev.", sortArea:"Fläche", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil.$", elev:"Höhe", presetNone:"— auswählen —",
-      spRunway:"Start-/Landebahn", spGarrison:"Garnison", spOperator:"Betreiber", spEstd:"Gegründet", spAircraft:"Flugzeuge", spType:"Typ", spCapacity:"Kapazität", spDepth:"Tiefe", spOutput:"Leistung", spReserves:"Reserven",
-      widgetsBtn:"Widgets", measureBtn:"📏 Messen", areaBtn:"📐 Fläche",
-      ctxDropPin:"Pin setzen", ctxMeasureFrom:"Messung beginnen", ctxPostHere:"In der Community posten", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
-      lyrEEZ:"Maritime AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)",
-      planesZoomHint:"Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenendatum",
-      commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Veröffentlichen", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte anzeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Beliebt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
-      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
-      satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ausweichquelle umgeschaltet",
-      aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft auf dem Gerät in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Wird getestet…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die integrierte Chrome-KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder wählen Sie einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Erneut versuchen",
-      aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Wird verortet…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Wird übersetzt…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
-      aiSumBtn:"Dieses Gebiet mit KI zusammenfassen", aiSumTitle:"Gebietsbriefing", aiSumSub:"{n} Nachrichten-Pins im ausgewählten Gebiet", aiSumNoArea:"Zeichnen Sie zuerst ein Gebiet oder platzieren Sie einen Kreis.", aiSumNoNews:"Keine Nachrichten-Pins in diesem Gebiet.", aiViewSumTitle:"Was auf dem Bildschirm passiert",
-      aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem Anbieter mit Datumsauswahl (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Die Kartenbilder konnten nicht erfasst werden.",
-      lblNavInertia:"Trägheit", proSection:"Premium-Funktionen", proArchive:"🔒 10-Jahre-Zeitreise-Archiv", proIntel:"🔒 RU·CN lokale Primärquellen-Intel", proModalTitle:"IntMap Pro freischalten", proModalSub:"Gehen Sie über die Live-Karte hinaus — tiefe historische Archive und Primärquellen-Informationen.", srcModalTitle:"Datenquellen & Namensnennung", srcModalSub:"IntMap aggregiert die folgenden Drittanbieter-Daten, -Bilder und -APIs. Alle Marken gehören ihren Eigentümern.", screenshotSaved:"Screenshot gespeichert ✓", screenshotBusy:"Wird erfasst…", measureClickClose:"Klicken Sie auf den ersten Punkt zum Schließen",
-      blueberryTitle:"IntMap unterstützen", blueberryBody:"Mein Ziel ist es, eine Karte zu schaffen, auf der Geografie, Klima, Geschichte, Ökologie, Demografie und das Weltgeschehen an einem Ort erkundet werden können.\nIntMap wird unabhängig entwickelt und wird laufend um neue Ebenen, Datensätze und Funktionen erweitert.\nWenn Ihnen IntMap gefällt und Sie seine zukünftige Entwicklung unterstützen möchten, können Sie unten beitragen.", blueberryGo:"Betrag auswählen ↗", blueberryNote:"Öffnet eine externe Seite (Stripe)."
-    });
+
 
     const style=document.createElement('style');
     style.textContent=`
@@ -497,7 +474,27 @@ window.IntMapModules.dataLayers=function(HOST){
           setp('left',x+'px'); setp('top',y+'px');
         };
       };
+      /* ══ ⚠⚠⚠ (#R239) A DOCKED LEGEND DOES NOT DRAG — AND THIS IS THE SECOND DRAG IMPLEMENTATION ══
+         「パネル内のポップアップや凡例は×可能だがドラッグ可能にはしないように。」
+         「タップしたらどんどん消えていく現象ふざけるな。」
+
+         js/window-manager.js refuses the gesture for a docked panel, and that fix did NOT stop the
+         legends — measured in the sidebar: a 100 px drag on the Köppen legend's header still moved
+         it 378 px down and wrote `inset:378.25px auto auto 8px !important`, i.e. straight out of the
+         column. Because a legend has never gone through `makeDraggable`: #R19 gave the legends their
+         own delegated drag HERE, so that an `innerHTML` rebuild could not orphan the handle. Two
+         implementations of one gesture, and the guard was added to one of them —
+         [[intmap-recurring-lessons]] G, one level down from the defect it was fixing.
+
+         ⚠ THE TEST IS THE CLASS, NOT A NEW GLOBAL. `im-docked` is what js/window-manager.js puts on
+         every docked element and what the stylesheet already keys off, so this asks the same
+         question the CSS asks and there is no third place that decides what «docked» means.
+         ⚠ AND WHY IT LOOKED LIKE «消えていく»: `begin()` pins the legend to its on-screen spot with
+         inline `!important` before releasing the anchors. In the column that spot is measured from
+         the map container, hundreds of pixels away, so one touch that moved a few pixels teleported
+         the legend out of view. It never closed. */
       const hitHandle=(t)=>{ const h=t&&t.closest&&t.closest(HANDLE); if(!h||!el.contains(h)) return null;
+        if(el.classList&&el.classList.contains('im-docked')) return null;
         if(t.closest('button,input,select,a,.legend-min,.layer-popup-x,.tp-close')) return null;   /* keep controls tappable */
         return h; };
       el.addEventListener('mousedown',ev=>{ const h=hitHandle(ev.target); if(!h) return; ev.preventDefault();
@@ -509,7 +506,8 @@ window.IntMapModules.dataLayers=function(HOST){
         const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
         document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
       /* the h4 cursor/touch-action hints are cosmetic — set them now and after any rebuild on hover */
-      const hint=()=>{ el.querySelectorAll('h4').forEach(h=>{ h.style.cursor='move'; h.style.touchAction='none'; h.style.userSelect='none'; }); };
+      const hint=()=>{ const dk=el.classList&&el.classList.contains('im-docked');
+        el.querySelectorAll('h4').forEach(h=>{ h.style.cursor=dk?'default':'move'; h.style.touchAction=dk?'':'none'; h.style.userSelect='none'; }); };
       hint(); el.addEventListener('mouseenter',hint);
     }
     window._wireLegendDrag=wireDrag;

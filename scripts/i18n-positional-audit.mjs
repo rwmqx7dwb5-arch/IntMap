@@ -102,6 +102,16 @@ for (const f of files) {
   });
 }
 
+/* ⚠ (#R239) the machine-readable form scripts/i18n-audit.mjs reads — one gate, one copy of each
+   measurement (see the header of scripts/i18n-pages-audit.mjs). */
+if (process.argv.includes('--json')) {
+  console.log(JSON.stringify({
+    surface: 'positional', sites, short: short.length,
+    rows: LANGS.map(({ code }) => ({ code, same: same[code].length })),
+  }));
+  process.exit(0);
+}
+
 const show = (rows) => rows.slice(0, ALL ? rows.length : 40)
   .forEach((r) => console.log('    ' + r.where + '  ' + JSON.stringify(r.en).slice(0, 90)));
 

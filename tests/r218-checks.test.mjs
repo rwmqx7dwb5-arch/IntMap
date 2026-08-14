@@ -186,8 +186,16 @@ test('⑤ each language is exactly one file, and js/page-i18n.js lists them all'
   const rt = read('js/page-i18n.js');
   const codes = [...rt.matchAll(/\{ code: '([a-z]{2})'/g)].map((m) => m[1]);
   assert.deepEqual(codes, ['en', 'ja', 'de', 'ru', 'es'], 'the LANGS table is not the five languages');
-  const files = readdirSync(join(ROOT, 'js', 'locales')).filter((f) => /^pages\.[a-z]{2}\.js$/.test(f)).sort();
-  assert.deepEqual(files, codes.map((c) => 'pages.' + c + '.js').sort(), 'a listed language has no file, or a file is not listed');
+  /* ⚠ (#R239) THE FIVE ARE A FLOOR, NOT THE SET. js/page-i18n.js keeps those five as its literal
+     fallback (the real list comes from IntMapLang.list()), and the directory now also holds
+     pages.fr.js, pages.ko.js, pages.zh-hant.js and pages.zh-hans.js — the two that DID NOT EXIST
+     are exactly what scripts/i18n-pages-audit.mjs was written to find. So the claim becomes: every
+     language the app registers has its document, and every document belongs to a registered
+     language. tests/r219-checks ⑥ holds the same invariant against the registry. */
+  const files = readdirSync(join(ROOT, 'js', 'locales'))
+    .filter((f) => /^pages\.[a-z]{2}(-[a-z]+)?\.js$/.test(f)).sort();
+  for (const c of codes) assert.ok(files.includes('pages.' + c + '.js'), c + ' has no document');
+  assert.ok(files.length >= 9, 'every registered language has one, on disk: ' + files.join(','));
   /* adding a language must not mean editing the build list: the DIRECTORY is what ships */
   assert.match(read('vite.config.js'), /'js\/locales',/, 'js/locales is not copied to dist as a directory');
 });
