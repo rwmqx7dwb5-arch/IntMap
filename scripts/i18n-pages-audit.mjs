@@ -119,12 +119,23 @@ export function pageDoc(html) {
    leave the page looking for an element that no longer exists. They are identifiers in a string's
    clothing, so they are structural — which is why this function needs the whole document rather
    than one string to answer. */
+/* ⚠⚠⚠ AND A FORMULA IS NOT PROSE. `['tex', 'h = (R·256 + G + B/256) − 32768']` is LaTeX and
+   `['eq', …]` is its plain-text form; both are the same in every language, so counting them as work
+   would demand that a translator change mathematics. They are structural too. */
 const TAGS = new Set(['tagline', 'p', 'h3', 'ul', 'eq', 'tex', 'lim', 'note', 'table', 'slot']);
+const VERBATIM = new Set(['slot', 'tex', 'eq']);
+
+/* ⚠ THE HANDFUL OF STRINGS THAT ARE THE SAME WORD IN EVERY LANGUAGE. Same idea, and the same rule,
+   as the NEUTRAL list in scripts/i18n-positional-audit.mjs: every entry here was READ once and is a
+   claim that the word is right, not a way to quiet the gate. `z` is a zoom symbol, `~10 m` is a
+   measurement, and «Tsunami» is the German and Spanish word as well as the English one. */
+export const NEUTRAL = new Set(['z', '~10 m', '~54 m', '~860 m', 'Tsunami']);
 export function isStructural(path, value, doc) {
   if (/\.sections\[\d+\]\.(id|count)$/.test(path)) return true;
   const m = /^(.*\.blocks\[\d+\])\[(\d+)\]$/.exec(path);
   if (!m) return false;
   if (m[2] === '0') return TAGS.has(value);
+  if (m[2] === '1' && doc && doc.get && VERBATIM.has(doc.get(m[1] + '[0]'))) return true;
   /* element 1 of a slot block is the slot's id */
   if (m[2] === '1' && doc && doc.get && doc.get(m[1] + '[0]') === 'slot') return true;
   return false;
@@ -140,7 +151,8 @@ function main() {
   if (wantMissing >= 0) {
     const html = process.argv[wantMissing + 1];
     const doc = pageDoc(html) || new Map();
-    const gaps = work.filter((k) => !doc.has(k));
+    const needsWork = (v) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim());
+    const gaps = work.filter((k) => !doc.has(k) || (needsWork(en.get(k)) && doc.get(k) === en.get(k)));
     console.error(`${html}: ${gaps.length} of ${work.length} translatable strings have no entry`);
     for (const k of gaps) console.log(k + '\t' + JSON.stringify(en.get(k)));
     return;
@@ -173,9 +185,21 @@ function main() {
     return;
   }
 
+  /* ══ ⚠⚠⚠ COVERED MEANS TRANSLATED, NOT MERELY PRESENT ═══════════════════════════════════════
+     The first cut of this file counted a path as covered when the target document HAD a string
+     there. That is the right rule for a table whose rows are added one at a time, and it is the
+     WRONG rule here, because scripts/i18n-pages-apply.mjs seeds a new language from the ENGLISH
+     document — so the instant pages.fr.js existed it reported 333/333, with 276 English sentences
+     in it. An instrument that says «done» about untouched English is the exact defect this whole
+     round is about ([[intmap-recurring-lessons]] B), and it was one command away from shipping.
+     ⚠ SO THE TEST IS «DIFFERENT FROM ENGLISH», with one narrow exemption: a string with no letters
+     in it at all (a number, a symbol, a bare year range) is the same in every language and is
+     counted as done. Formulas and slot ids never reach here — they are structural, above. */
+  const needsWork = (v) => /\p{L}/u.test(String(v)) && !NEUTRAL.has(String(v).trim());
   const rows = pageCodes().map(({ code, html }) => {
     const doc = pageDoc(html);
-    const have = doc ? work.filter((k) => doc.has(k)).length : 0;
+    const have = doc ? work.filter((k) => doc.has(k)
+      && (code === 'en' || !needsWork(en.get(k)) || doc.get(k) !== en.get(k))).length : 0;
     return { code, html, file: !!doc, have, want: work.length };
   });
   if (process.argv.includes('--json')) {
